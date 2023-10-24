@@ -13,65 +13,53 @@ We can use any programming language to implement this small program. This tutori
 Before we create the counter contract program, we can use the CLI command provided by Rooch to initialize an empty project:
 
 ```shell
-rooch move new counter
+rooch move new quick_start_counter
 ```
 
 For detailed methods, please refer to [Creating a Rooch Move Contract](./create-rooch-move-contract.en-US.mdx).
-
-For a clearer demonstration, I need to slightly modify the `Move.toml` file to make the aliasing of addresses (named addresses) clearer:
-
-```toml
-[addresses]
-counter_addr = "0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6"
-```
-
-Change `counter` of `[addresses]` to `counter_addr`.
 
 Next, create a `counter.move` file in the `sources` directory to write our contract code.
 
 ## Contract writing
 
 ```move
-module counter_addr::counter {
+module quick_start_counter::quick_start_counter {
     use moveos_std::account_storage;
     use moveos_std::context::Context;
 
     struct Counter has key {
-        value: u64
+        count_value: u64
     }
 
     fun init(ctx: &mut Context, account: &signer) {
-        account_storage::global_move_to(ctx, account, Counter { value: 0 })
+        account_storage::global_move_to(ctx, account, Counter { count_value: 0 });
     }
 
-    fun increase(ctx: &mut Context) {
-        let counter = account_storage::global_borrow_mut<Counter>(ctx, @counter_addr);
-        counter.value = counter.value + 1;
-    }
-
-    entry fun incr(ctx: &mut Context) {
-        increase(ctx);
+    entry fun increase(ctx: &mut Context) {
+        let counter = account_storage::global_borrow_mut<Counter>(ctx, @quick_start_counter);
+        counter.count_value = counter.count_value + 1;
     }
 }
 ```
 
-With a simple 21 lines of code, a simple counter function is implemented on Rooch Move.
+With a simple 17 lines of code, a simple counter function is implemented on Rooch Move.
 
 What follows is a detailed description of what each line of code does.
 
 ### Module declaration
 
-In the Move language, contracts are usually written in modules. Simple contracts can be completed through one module, while complex contracts may be composed of multiple modules. Our counter contract is very simple, so there is only one `counter` module.
+In the Move language, contracts are usually written in modules. Simple contracts can be completed through one module, while complex contracts may be composed of multiple modules. Our counter contract is very simple, so there is only one `quick_start_counter` module.
 
 Modules usually contain data types and functions required to implement the current module functions.
 
 ```move
-module counter_addr::counter {
+module quick_start_counter::quick_start_counter {
 ```
 
-In line 1, we declare a `counter` module using the `module` keyword.
+In line 1, we declare a `quick_start_counter` module using the `module` keyword.
 
 In the Move-based blockchain system, modules are uniquely identified by address, that is, an address can only have one module of the same type, and modules of the same type cannot be released multiple times. The same contract can be issued by multiple addresses. In order to identify who issued the contract module in the huge blockchain system, it needs to be uniquely identified by the `address`.
+In the Move-based blockchain system, modules are uniquely identified by address, that is, an address can only have one module with the same name, and modules with the same name cannot be published multiple times. The same contract can be published by multiple addresses. In order to identify who published the contract module in the blockchain system, it needs to be uniquely identified by the `address`.
 
 Therefore, the syntax for declaring a Move module is `module address::module_name`.
 
@@ -88,13 +76,13 @@ In lines 2~3, it is a statement that imports modules. To implement a counter con
 
 ```move
 struct Counter has key {
-    value: u64
+    count_value: u64
 }
 ```
 
-We define a `Counter` type structure to record the count value. The structure only contains a `u64` type field.
+We define a `Counter` type structure to record the count value. The structure only contains a `u64` type field `count_value`.
 
-We want to record the value of `Counter` type into Rooch's global storage, so we need to provide a `key` ability for this type so that Move can find data through the `key`.
+We want to record the value of the `Counter` type into Rooch's global storage, so we need to provide a `key` ability for this type so that Move can find the data through the **key**.
 
 ### Initialization function
 
@@ -115,9 +103,9 @@ Line 9 is the function signature of the `init` function, which accepts two param
 Next, we need to define an incrementing function that will increment the counter value by `1` every time it is executed.
 
 ```move
-fun increase(ctx: &mut Context) {
-    let counter = account_storage::global_borrow_mut<Counter>(ctx, @counter_addr);
-    counter.value = counter.value + 1;
+entry fun increase(ctx: &mut Context) {
+    let counter = account_storage::global_borrow_mut<Counter>(ctx, @quick_start_counter);
+    counter.count_value = counter.count_value + 1;
 }
 ```
 
@@ -127,7 +115,7 @@ In line 14, the `global_borrow_mut` instruction of the account storage provided 
 
 The `global_borrow_mut` function accepts a context parameter and an address parameter to borrow the `Counter` resource. For simplicity, we directly use the address of the published counter module as the borrower.
 
-In line 15, we obtain the field value of `Counter` through member operations and perform an increment operation.
+In line 15, we obtain the field value of the `Counter` structure through member operations and perform an increment operation.
 
 At this point, we have implemented the incrementing logic of the counter.
 
@@ -137,32 +125,26 @@ The entry function is a function modified by the `entry` keyword.
 
 For security reasons, the Move virtual machine prohibits external (command line, etc.) direct calls to functions that operate module data. Instead, a method called an `entry function` is provided to indirectly call logical functions. The entry function is the contract exposed to the outside what an interface.
 
-```move
-entry fun incr(ctx: &mut Context) {
-    increase(ctx);
-}
-```
+> Note: In order to simplify the counter contract demonstrated in this example as much as possible, we merged the logical operation and entry function into one `increase` function. In actual development, it is recommended to encapsulate the logic and entry function separately into different functions.
 
-As you can see, lines 18~20 are the entry functions for calling the `increase` function. With the entry function, we can perform the counter increment operation in the command line or other clients.
+As you can see, the `increase` function on line 13 is modified with the `entry` keyword, so it becomes an entry function. With the entry function, we can perform the counter increment operation in the command line or other clients.
 
-Line 18 is the function signature of the entry function `incr`, which accepts a context parameter. Note in particular that the context parameters here are parameters automatically passed by Move VM, so you do not need to pass any parameters when calling the `incr` function on the command line.
+> Special note that the context parameters of the `increase` function are parameters automatically passed by Move VM. They need to be passed explicitly when writing the contract. However, for external calls, they do not need to be passed manually, so when calling the `increase` function on the command line, they do not need to pass any arguments.
 
 ## Demo counter program in Rooch's CLI
 
-1. First start the Rooch service:
+1. First check whether the currently activated Rooch network is the `dev` network:
 
 ```shell
-$ rooch server start
+$ rooch env list
 
-StoreConfig init store dir "/home/joe/.rooch/local/roochdb/rooch_store" "/home/joe/.rooch/local/roochdb/moveos_store"
-2023-10-13T04:04:16.379378Z  INFO moveos_common::utils: set max open fds 45056
-2023-10-13T04:04:17.614000Z  INFO rooch_rpc_server: RPC Server sequencer address: 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6
-2023-10-13T04:04:17.614128Z  INFO rooch_sequencer::actor::sequencer: Load latest sequencer order 0
-2023-10-13T04:04:17.614550Z  INFO rooch_rpc_server: RPC Server proposer address: 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6
-2023-10-13T04:04:17.614974Z  INFO rooch_rpc_server: acl=Const("*")
-2023-10-13T04:04:17.615380Z  INFO rooch_rpc_server: JSON-RPC HTTP Server start listening 0.0.0.0:50051
-2023-10-13T04:04:17.615393Z  INFO rooch_rpc_server: Available JSON-RPC methods : ["eth_blockNumber", "eth_getBalance", "eth_gasPrice", "net_version", "rooch_listAnnotatedStates", "rooch_getBalance", "rooch_sendRawTransaction", "rooch_getAnnotatedStates", "rooch_getTransactionsByHash", "rooch_executeRawTransaction", "rooch_getEventsByEventHandle", "eth_getTransactionCount", "eth_sendTransaction", "rooch_executeViewFunction", "rooch_getBalances", "eth_getBlockByNumber", "eth_feeHistory", "rooch_listStates", "rooch_getTransactionsByOrder", "eth_sendRawTransaction", "rooch_getChainID", "eth_getTransactionByHash", "eth_getBlockByHash", "eth_getTransactionReceipt", "eth_chainId", "eth_estimateGas", "rooch_getStates"]
+       Env Alias         |                     RPC URL                      |                  Websocket URL                   |  Active Env
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+         local           |               http://0.0.0.0:50051               |                       Null                       |
+          dev            |       https://dev-seed.rooch.network:443/        |                       Null                       |     True
 ```
+
+Note that if the `dev` environment of `Active Env` is not `True`, use the `rooch env switch --alias dev` command to switch to the development network.
 
 2. Open another terminal, switch to the root directory of the `counter` project, and compile the contract:
 
@@ -178,29 +160,40 @@ UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
 INCLUDING DEPENDENCY MoveStdlib
 INCLUDING DEPENDENCY MoveosStdlib
 INCLUDING DEPENDENCY RoochFramework
-BUILDING counter
+BUILDING quick_start_counter
 Success
 ```
 
 3. Publish the counter contract to Rooch:
 
 ```shell
-......
-Publish modules to address: 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6
+$ rooch move publish
+
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+INCLUDING DEPENDENCY MoveStdlib
+INCLUDING DEPENDENCY MoveosStdlib
+INCLUDING DEPENDENCY RoochFramework
+BUILDING quick_start_counter
+Publish modules to address: 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81
 {
   "sequence_info": {
-    "tx_order": "0",
+    "tx_order": "17128",
     "tx_order_signature": {
       "auth_validator_id": "0",
-      "payload": "0x003c988e0674b1c83fc01dcd6ed91f5fc1229905cdfc2b05355529e05b6eb19542ba634898496e4cd9b3c37f983fd7d6a066834d1b192cc4b22ce3e3c8e3dfa50cff7601c5cb4b3728059c9de799e94d7f47d6e32ab1cdeef3c96264de23a58103"
+      "payload": "0x00b5d56a8178299d628e0d341fff4b97904f7ff80f9e3e8aca10f0d1d9ac65e5736757caec9be17aa54b1da860b183a6d1574f1db9ba632910fb308c4d6283d30eca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
     },
-    "tx_accumulator_root": "0xd59793bd681a120c201d6c69d880812184b2409a9dde53474aea97d57fe5e658"
+    "tx_accumulator_root": "0xb408f55b7e003f54fa37a87ccaa25937bedb7d04d3d8a06f745de4e30b25a3cf"
   },
   "execution_info": {
-    "tx_hash": "0xfa2b589b718951f3acb4e23a43579947879cff95f11f2e19a552a39fe7ede649",
-    "state_root": "0x9679155aa61bf01ace2bb370ddea5c36e328631d18b747e065c611ea038a536a",
-    "event_root": "0xd58502028bbdee763851bdb1d42554926a85ef1144b5706e760363f48d5b103f",
-    "gas_used": 1604134,
+    "tx_hash": "0xa45998b0a7d979597d0ed4021c2ffbe778d2e0889d3151ad29493e3d91f177a6",
+    "state_root": "0x0a5f095123b459749938b4fc436c06c429066f6a48a8f014bba6360471b6d03b",
+    "event_root": "0x8be169d5a1b2bdace1ff085fae4753e37f69095ec543a83ef34cae23e9ebb747",
+    "gas_used": 1644906,
     "status": {
       "type": "executed"
     }
@@ -208,31 +201,29 @@ Publish modules to address: 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f2
 ......
 ```
 
-When you see `executed` appears in the `status` of the output result, it means that the counter contract has been successfully released and the counter has been initialized.
+When you see `executed` in the `execution_info.status` of the output result, it means that the counter contract has been successfully released and the counter has been initialized.
 
 4. We use the resource search command provided by Rooch to obtain information about `Counter` resources.
 
 The syntax is `rooch resource --address address_of_published_resource --resource resource_type`:
 
-```move
-$ rooch resource --address 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6 --resource 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter
+```shell
+$ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81 --resource 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter
 
 {
-  "state": {
-    "value": "0x0000000000000000",
-    "value_type": "0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter"
-  },
-  "move_value": {
+  "value": "0x0000000000000000",
+  "value_type": "0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter",
+  "decoded_value": {
     "abilities": 8,
-    "type": "0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter",
+    "type": "0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter",
     "value": {
-      "value": "0"
+      "count_value": "0"
     }
   }
 }
 ```
 
-Pay attention to the `value` attribute. You can see that in the output information of the `Counter` resource, the field `value` of Counter is indeed `0`.
+Pay attention to the `value` attribute. You can see that in the output information of the `Counter` resource, the field `count_value` of Counter is indeed `0`.
 
 5. Then we call the counter’s increment function:
 
@@ -241,23 +232,44 @@ The syntax is `rooch move run --function address_published_by_the_module::module
 > Note: In the blockchain system, performing certain operations is usually performed by sending a transaction to the blockchain system to perform the corresponding operation.
 
 ```shell
-$ rooch move run --function 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::incr --sender-account 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6
+$ rooch move run --function 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::increase --sender-account 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81
+
+{
+  "sequence_info": {
+    "tx_order": "17160",
+    "tx_order_signature": {
+      "auth_validator_id": "0",
+      "payload": "0x00f3809e65ee7aef9d9f4f7f79820ad6a25d44aed583c74300f30a0550f8256e371546e4515125636646acb3e625bb5d02db933656218832103300861b4a2b9d07ca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
+    },
+    "tx_accumulator_root": "0x89ace9f8d15707a008f7237566761e28743a4c73d9f5b19622c65e4a072850bc"
+  },
+  "execution_info": {
+    "tx_hash": "0x19139e0f8779c43e7feb989553d66e41eab2840705417898dee376b3ea2ea3d0",
+    "state_root": "0xb876495e3c144700fb315cf2697a990d25578b4b832f9b34bb74e4f233d4faf2",
+    "event_root": "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+    "gas_used": 12769,
+    "status": {
+      "type": "executed"
+    }
+  },
+......
 ```
+
+If you see `executed` in the `status`, it proves that the `increase` function call was successful.
 
 6. Check again to see if the counter value is what we expected:
 
 ```shell
-$ rooch resource --address 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6 --resource 0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter
+$ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81 --resource 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter
+
 {
-  "state": {
-    "value": "0x0100000000000000",
-    "value_type": "0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter"
-  },
-  "move_value": {
+  "value": "0x0100000000000000",
+  "value_type": "0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter",
+  "decoded_value": {
     "abilities": 8,
-    "type": "0x796736e1937532c985ca39da1f49e7d4acc2bf17e8814d87f21445199bf04bd6::counter::Counter",
+    "type": "0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter",
     "value": {
-      "value": "1"
+      "count_value": "1"
     }
   }
 }
@@ -268,3 +280,24 @@ As you can see, the value of the `Counter`'s `value` field has indeed been updat
 At this point, you already know how to write contracts in Rooch and how to call contracts from the command line.
 
 Next, let's increase the difficulty a little bit and we will demonstrate how to run and use the counter contract program in the front end.
+
+## Quick experience
+
+The source code of this example is stored in the `rooch/examples/quick_start_counter` directory. To make testing easier, we change the address in the `Move.toml` file to the wildcard character `_`.
+
+If you run it directly using the example we provided, the executed Shell command will be a little different:
+
+```shell
+$ rooch move build --named-addresses quick_start_counter=default
+
+$ rooch move publish --named-addresses quick_start_counter=default
+
+# 注意 `0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81` 是我演示的地址，当你实际运行时，需要更改为你自己的钱包地址
+$ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81 --resource 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter
+
+$ rooch move run --function 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::increase --sender-account default
+
+$ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81 --resource 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter
+```
+
+> Note: The `default` in the command represents the default address in the Rooch configuration. If you want to use another address, you can also directly pass the address starting with `0x`.
