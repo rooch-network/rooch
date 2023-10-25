@@ -18,6 +18,7 @@ export function sha256Pad(prehash_prepad_m: Uint8Array, maxShaBytes: number): [U
   while ((prehash_prepad_m.length * 8 + length_in_bytes.length * 8) % 512 !== 0) {
     prehash_prepad_m = mergeUInt8Arrays(prehash_prepad_m, int8toBytes(0))
   }
+  console.log('length_in_bytes:', length_in_bytes)
   prehash_prepad_m = mergeUInt8Arrays(prehash_prepad_m, length_in_bytes)
   assert((prehash_prepad_m.length * 8) % 512 === 0, 'Padding did not complete properly!')
   let messageLen = prehash_prepad_m.length
