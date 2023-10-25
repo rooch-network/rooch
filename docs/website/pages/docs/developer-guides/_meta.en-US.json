@@ -3,7 +3,6 @@
   "cli": "CLI",
   "connect-devnet": "Connect to devnet",
   "run-local-testnet": "Run a local testnet",
-  "local-env": "Local dev environment",
   "faucet": {
     "title": "Faucet",
     "display": "hidden"
