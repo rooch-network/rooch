@@ -64,8 +64,7 @@ module rooch_framework::coin_store_test{
             assert!(coin_store::balance(coin_store) == 90, 3);
             coin::burn_extend(&mut ctx, coin_withdrawn);
         };
-        let coin_store = object_ref::remove(coin_store_ref);
-        let coin = coin_store::drop_coin_store<FakeCoin>(coin_store);
+        let coin = coin_store::remove_coin_store<FakeCoin>(coin_store_ref);
         assert!(coin::value(&coin) == 90, 4);
         coin::burn_extend(&mut ctx, coin);
         assert!(coin::supply<FakeCoin>(&ctx) == 0, 5);

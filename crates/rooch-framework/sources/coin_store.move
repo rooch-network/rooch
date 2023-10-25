@@ -58,11 +58,14 @@ module rooch_framework::coin_store {
     }
     
 
-     /// Drop the CoinStore, return the Coin<T> in balance 
-    public fun drop_coin_store<CoinType: key>(coin_store: CoinStore) : Coin<CoinType> {
+     /// Remove the CoinStore Object, return the Coin<T> in balance 
+    public fun remove_coin_store<CoinType: key>(coin_store_object: ObjectRef<CoinStore>) : Coin<CoinType> {
+        let coin_store = object_ref::remove(coin_store_object);
         let coin_type = type_info::type_name<CoinType>();
         assert!(coin_store.coin_type == coin_type, error::invalid_argument(ErrorCoinTypeAndStoreMismatch));
-        let CoinStore{coin_type:_, balance, frozen:_} = coin_store;
+        let CoinStore{coin_type:_, balance, frozen} = coin_store;
+        // Cannot remove a frozen CoinStore, because if we allow this, the frozen is meaningless
+        assert!(!frozen, error::permission_denied(ErrorCoinStoreIsFrozen));
         let Balance{value} = balance;
         coin::pack<CoinType>(value)
     }

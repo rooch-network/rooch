@@ -2,19 +2,21 @@
 
 //# publish
 module creator::test0 {
-    struct KeyStruct has key {
+    struct KeyStruct has key, drop {
         x: u64,
+    }
+    public fun new_key_struct(x: u64) : KeyStruct {
+        KeyStruct { x }
     }
 }
 
 //# publish
 module creator::test {
     use std::string;
-    use std::debug;
-    use creator::test0::KeyStruct;
+    use creator::test0::{Self, KeyStruct};
     use moveos_std::account_storage;
     use moveos_std::context::{Self, Context};
-    use moveos_std::object::ObjectID;
+    use moveos_std::object_ref;
 
     struct Foo has key {
         x: u64,
@@ -30,9 +32,8 @@ module creator::test {
         publish_foo<KeyStruct>(ctx, s)
     }
 
-    public fun call_moveos_std<T:store>(ctx: &mut Context, sender: &signer, object_id: ObjectID) {
-        debug::print(&object_id);
-        let (_id,_owner,value) = context::remove_object<KeyStruct>(ctx, object_id);
-        account_storage::global_move_to(ctx, sender, value);
+    public fun call_moveos_std<T:store>(ctx: &mut Context) {
+        let object = context::new_object(ctx, test0::new_key_struct(100));
+        let _key_struct = object_ref::remove(object);
     }
 }

@@ -4,9 +4,7 @@
 module creator::test {
     use std::string;
     use moveos_std::account_storage;
-    use moveos_std::context::{Self, Context};
-    use moveos_std::object::ObjectID;
-    use std::debug;
+    use moveos_std::context::{Context};
 
     struct Foo has key, store {
         x: u64,
@@ -20,12 +18,6 @@ module creator::test {
     public fun run(ctx: &mut Context, s: &signer) {
         let _ = string::utf8(b"account_storage");
         publish_foo<Foo>(ctx, s)
-    }
-
-    public fun call_moveos_std<T: store>(ctx: &mut Context, sender: &signer, object_id: ObjectID) {
-        debug::print(&object_id);
-        let (_id,_owner,value) = context::remove_object<Foo>(ctx, object_id);
-        account_storage::global_move_to<Foo>(ctx, sender, value);
     }
 }
 
