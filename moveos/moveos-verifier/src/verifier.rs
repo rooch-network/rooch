@@ -8,8 +8,9 @@ use crate::metadata::{
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMError, VMResult};
 use move_binary_format::file_format::{
-    Bytecode, FunctionDefinition, FunctionDefinitionIndex, FunctionInstantiation,
-    FunctionInstantiationIndex, SignatureToken, StructHandleIndex, Visibility,
+    Bytecode, FunctionDefinition, FunctionDefinitionIndex, FunctionHandleIndex,
+    FunctionInstantiation, FunctionInstantiationIndex, Signature, SignatureToken,
+    StructHandleIndex, Visibility,
 };
 use move_binary_format::{access::ModuleAccess, CompiledModule};
 use move_core_types::identifier::Identifier;
@@ -32,6 +33,7 @@ where
     verify_private_generics(module, &db)?;
     verify_entry_function_at_publish(module)?;
     verify_global_storage_access(module)?;
+    verify_gas_free_function(module)?;
     verify_init_function(module)
 }
 
@@ -463,6 +465,339 @@ where
     }
 
     Ok(true)
+}
+
+pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
+    if let Err(err) = check_metadata_format(module) {
+        return Err(PartialVMError::new(StatusCode::MALFORMED)
+            .with_message(err.to_string())
+            .finish(Location::Module(module.self_id())));
+    }
+
+    let metadata_opt = get_metadata_from_compiled_module(module);
+    match metadata_opt {
+        None => {
+            // If ROOCH_METADATA_KEY cannot be found in the metadata,
+            // it means that the user's code did not use #[private_generics(T)],
+            // or the user intentionally deleted the data in the metadata.
+            // In either case, we will skip the verification.
+            return Ok(true);
+        }
+
+        Some(metadata) => {
+            let gas_free_functions = metadata.gas_free_function_map;
+            let view = BinaryIndexedView::Module(module);
+
+            for (gas_free_function, gas_function_def) in gas_free_functions.iter() {
+                // check the existence of the #[gas_free] function, if not we will return failed info.
+                // The existence means that the #[gas_free] function must be defined in current module.
+                let (func_exists, func_handle_index) =
+                    check_if_function_exist(module, gas_free_function);
+
+                if !func_exists {
+                    let full_path_module_name = generate_full_module_name(func_handle_index, view);
+
+                    let err_msg = format!(
+                        "#[gas_free] function {:?} not defined in module {:?}",
+                        gas_free_function, full_path_module_name
+                    );
+
+                    return generate_vm_error(
+                        StatusCode::RESOURCE_DOES_NOT_EXIST,
+                        err_msg,
+                        func_handle_index,
+                        module,
+                    );
+                }
+
+                // check the existence of the 'gas validate' function, if not we will return failed info.
+                let gas_validate_function = gas_function_def.gas_validate.clone();
+                let (func_exists, func_handle_index) =
+                    check_if_function_exist(module, &gas_validate_function);
+                if !func_exists {
+                    let full_path_module_name = generate_full_module_name(func_handle_index, view);
+
+                    let err_msg = format!(
+                        "gas_validate function {:?} not defined in module {:?}",
+                        gas_validate_function, full_path_module_name
+                    );
+
+                    return generate_vm_error(
+                        StatusCode::RESOURCE_DOES_NOT_EXIST,
+                        err_msg,
+                        func_handle_index,
+                        module,
+                    );
+                }
+
+                // check if the parameters and return types of the 'gas validate' function are legally.
+                let func_handle = view.function_handle_at(func_handle_index);
+                let func_parameters_index = func_handle.parameters;
+                let func_signature = view.signature_at(func_parameters_index);
+                let return_type_index = func_handle.return_;
+                let return_signature = view.signature_at(return_type_index);
+
+                if func_signature.is_empty() || return_signature.is_empty() {
+                    let full_path_module_name = generate_full_module_name(func_handle_index, view);
+
+                    let err_msg = format!(
+                        "function {:?} in module {:?} with empty arguments or empty return value.",
+                        gas_validate_function, full_path_module_name
+                    );
+
+                    return generate_vm_error(
+                        StatusCode::RESOURCE_DOES_NOT_EXIST,
+                        err_msg,
+                        func_handle_index,
+                        module,
+                    );
+                }
+
+                if func_signature.len() != 1 && return_signature.len() != 1 {
+                    let full_path_module_name = generate_full_module_name(func_handle_index, view);
+
+                    let err_msg = format!(
+                            "function {:?} in module {:?} with incorrect number of parameters or return values.",
+                            gas_validate_function, full_path_module_name
+                        );
+
+                    return generate_vm_error(
+                        StatusCode::TOO_MANY_PARAMETERS,
+                        err_msg,
+                        func_handle_index,
+                        module,
+                    );
+                }
+
+                let parameter_allowed =
+                    check_gas_validate_function(&view, func_signature, return_signature);
+                if !parameter_allowed {
+                    let full_path_module_name = generate_full_module_name(func_handle_index, view);
+
+                    let err_msg = format!(
+                        "gas validate function {:?} in module {:?} has incorrect parameter type or return type.",
+                        gas_validate_function, full_path_module_name
+                    );
+                    return generate_vm_error(
+                        StatusCode::TYPE_MISMATCH,
+                        err_msg,
+                        func_handle_index,
+                        module,
+                    );
+                }
+
+                // check the existence of the 'gas charge post' function, if not we will return failed info.
+                // check if the parameters and return types of the 'gas charge' function are legally.
+                let gas_charge_post_function = gas_function_def.gas_charge_post.clone();
+                let (func_exists, func_handle_index) =
+                    check_if_function_exist(module, &gas_charge_post_function);
+                if !func_exists {
+                    let full_path_module_name = generate_full_module_name(func_handle_index, view);
+
+                    let err_msg = format!(
+                        "gas_validate function {:?} not defined in module {:?}",
+                        gas_charge_post_function, full_path_module_name
+                    );
+
+                    return generate_vm_error(
+                        StatusCode::RESOURCE_DOES_NOT_EXIST,
+                        err_msg,
+                        func_handle_index,
+                        module,
+                    );
+                }
+
+                // check if the parameters and return types of the 'gas validate' function are legally.
+                let func_handle = view.function_handle_at(func_handle_index);
+                let func_parameters_index = func_handle.parameters;
+                let func_signature = view.signature_at(func_parameters_index);
+                let return_type_index = func_handle.return_;
+                let return_signature = view.signature_at(return_type_index);
+
+                if func_signature.is_empty() || return_signature.is_empty() {
+                    let full_path_module_name = generate_full_module_name(func_handle_index, view);
+
+                    let err_msg = format!(
+                        "function {:?} in module {:?} with empty arguments or empty return value.",
+                        gas_validate_function, full_path_module_name
+                    );
+
+                    return generate_vm_error(
+                        StatusCode::RESOURCE_DOES_NOT_EXIST,
+                        err_msg,
+                        func_handle_index,
+                        module,
+                    );
+                }
+
+                if func_signature.len() != 2 || return_signature.len() != 1 {
+                    let full_path_module_name = generate_full_module_name(func_handle_index, view);
+
+                    let err_msg = format!(
+                        "function {:?} in module {:?} with incorrect number of parameters or return values.",
+                        gas_validate_function, full_path_module_name
+                    );
+
+                    return generate_vm_error(
+                        StatusCode::TOO_MANY_PARAMETERS,
+                        err_msg,
+                        func_handle_index,
+                        module,
+                    );
+                }
+
+                let parameter_allowed =
+                    check_gas_charge_post_function(&view, func_signature, return_signature);
+
+                if !parameter_allowed {
+                    let full_path_module_name = generate_full_module_name(func_handle_index, view);
+
+                    let err_msg = format!(
+                        "function {:?} in module {:?} has incorrect parameter type or return type.",
+                        gas_validate_function, full_path_module_name
+                    );
+                    return generate_vm_error(
+                        StatusCode::TYPE_MISMATCH,
+                        err_msg,
+                        func_handle_index,
+                        module,
+                    );
+                }
+            }
+        }
+    }
+
+    Ok(true)
+}
+
+fn generate_full_module_name(
+    fhandle_index: FunctionHandleIndex,
+    view: BinaryIndexedView,
+) -> String {
+    let fhandle = view.function_handle_at(fhandle_index);
+    let module_handle = view.module_handle_at(fhandle.module);
+
+    let module_address = view
+        .address_identifier_at(module_handle.address)
+        .to_hex_literal();
+    let module_name = view.identifier_at(module_handle.name);
+    format!("{}::{}", module_address, module_name)
+}
+
+pub fn generate_vm_error(
+    status_code: StatusCode,
+    error_msg: String,
+    fhandle: FunctionHandleIndex,
+    module: &CompiledModule,
+) -> VMResult<bool> {
+    Err(PartialVMError::new(status_code)
+        .with_message(error_msg)
+        .at_code_offset(FunctionDefinitionIndex::new(fhandle.0), 0_u16)
+        .finish(Location::Module(module.self_id())))
+}
+
+fn check_if_function_exist(
+    module: &CompiledModule,
+    function_name: &String,
+) -> (bool, FunctionHandleIndex) {
+    let module_bin_view = BinaryIndexedView::Module(module);
+    for fdef in module.function_defs.iter() {
+        let func_handle = module_bin_view.function_handle_at(fdef.function);
+        let module_address = module.address().to_hex_literal();
+        let module_name = module.name().to_string();
+        let func_name = module_bin_view.identifier_at(func_handle.name).to_string();
+        let full_func_name = format!("{}::{}::{}", module_address, module_name, func_name);
+        if &full_func_name == function_name {
+            let fhandle_index = fdef.function.0;
+            return (true, FunctionHandleIndex::new(fhandle_index));
+        }
+    }
+
+    (false, FunctionHandleIndex::new(0))
+}
+
+fn check_gas_validate_function(
+    view: &BinaryIndexedView,
+    func_signature: &Signature,
+    return_signature: &Signature,
+) -> bool {
+    // let mut parameter_check_result = false;
+    let first_parameter = func_signature.0.get(0).unwrap();
+
+    let check_struct_type = |struct_handle_idx: &StructHandleIndex| -> bool {
+        let struct_name = struct_full_name_from_sid(struct_handle_idx, view);
+        if struct_name == "0x2::context::Context" {
+            return true;
+        }
+
+        false
+    };
+
+    let parameter_check_result = match first_parameter {
+        SignatureToken::Reference(reference) => match reference.as_ref() {
+            SignatureToken::Struct(struct_handle_idx) => check_struct_type(struct_handle_idx),
+            _ => false,
+        },
+        SignatureToken::Struct(struct_handle_idx) => check_struct_type(struct_handle_idx),
+        _ => false,
+    };
+
+    if !parameter_check_result {
+        return parameter_check_result;
+    }
+
+    if return_signature.len() != 1 {
+        return false;
+    }
+
+    let first_return_signature = return_signature.0.get(0).unwrap();
+    matches!(first_return_signature, SignatureToken::Bool)
+}
+
+fn check_gas_charge_post_function(
+    view: &BinaryIndexedView,
+    func_signature: &Signature,
+    return_signature: &Signature,
+) -> bool {
+    let first_parameter = func_signature.0.get(0).unwrap();
+
+    let check_struct_type = |struct_handle_idx: &StructHandleIndex| -> bool {
+        let struct_name = struct_full_name_from_sid(struct_handle_idx, view);
+        if struct_name == "0x2::context::Context" {
+            return true;
+        }
+
+        false
+    };
+
+    let first_checking_result = {
+        match first_parameter {
+            SignatureToken::MutableReference(reference) => match reference.as_ref() {
+                SignatureToken::Struct(struct_handle_idx) => check_struct_type(struct_handle_idx),
+                _ => false,
+            },
+            SignatureToken::Struct(struct_handle_idx) => check_struct_type(struct_handle_idx),
+            _ => false,
+        }
+    };
+
+    if !first_checking_result {
+        return first_checking_result;
+    }
+
+    let second_parameter = func_signature.0.get(1).unwrap();
+    let second_checking_result = matches!(second_parameter, SignatureToken::U128);
+
+    if !second_checking_result {
+        return second_checking_result;
+    }
+
+    if return_signature.len() != 1 {
+        return false;
+    }
+
+    let first_return_signature = return_signature.0.get(0).unwrap();
+    matches!(first_return_signature, SignatureToken::Bool)
 }
 
 // Find the module where a function is located based on its InstantiationIndex.

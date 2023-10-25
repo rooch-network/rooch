@@ -16,6 +16,7 @@ pub const MODULE_NAME: &IdentStr = ident_str!("tx_result");
 pub struct TxResult {
     pub executed: bool,
     pub gas_used: u64,
+    pub gas_payment_account: AccountAddress,
 }
 
 impl MoveStructType for TxResult {
@@ -29,15 +30,17 @@ impl MoveStructState for TxResult {
         move_core_types::value::MoveStructLayout::new(vec![
             move_core_types::value::MoveTypeLayout::Bool,
             move_core_types::value::MoveTypeLayout::U64,
+            move_core_types::value::MoveTypeLayout::Address,
         ])
     }
 }
 
 impl TxResult {
-    pub fn new(status: &KeptVMStatus, gas_used: u64) -> Self {
+    pub fn new(status: &KeptVMStatus, gas_used: u64, gas_payment_account: AccountAddress) -> Self {
         Self {
             executed: matches!(status, KeptVMStatus::Executed),
             gas_used,
+            gas_payment_account,
         }
     }
 }
