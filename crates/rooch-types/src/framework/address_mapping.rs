@@ -9,7 +9,7 @@ use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::option::MoveOption,
     moveos_std::tx_context::TxContext,
-    state::MoveStructState,
+    state::MoveState,
     transaction::FunctionCall,
 };
 
