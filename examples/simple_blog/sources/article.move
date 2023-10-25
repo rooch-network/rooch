@@ -41,7 +41,7 @@ module simple_blog::article {
         owner: &signer,
         title: String,
         body: String,
-    ): ObjectID {
+    ): ObjectRef<Article> {
         assert!(std::string::length(&title) <= 200, error::invalid_argument(ErrorDataTooLong));
         assert!(std::string::length(&body) <= 2000, error::invalid_argument(ErrorDataTooLong));
 
@@ -51,19 +51,18 @@ module simple_blog::article {
             body,
         };
         let owner_addr = signer::address_of(owner);
-        let article_ref = context::new_object(
+        let article_obj = context::new_object(
             ctx,
             article,
         );
-        let id = object_ref::id(&article_ref);
+        let id = object_ref::id(&article_obj);
 
         let article_created_event = ArticleCreatedEvent {
             id,
         };
         event::emit(ctx, article_created_event);
-        object_ref::transfer(&mut article_ref, owner_addr);
-        object_ref::drop(article_ref);
-        id
+        object_ref::transfer(&mut article_obj, owner_addr);
+        article_obj
     }
 
     /// Update article
@@ -94,14 +93,8 @@ module simple_blog::article {
         ctx: &mut Context,
         article_obj: ObjectRef<Article>,
     ) {
-
-        //let owner_address = signer::address_of(owner);
         let id = object_ref::id(&article_obj);
         let article = object_ref::remove(article_obj);
-        //let (id, owner, article) = context::remove_object<Article>(ctx, id);
-        
-        // only article owner can delete the article 
-        //assert!(owner == owner_address, error::permission_denied(ErrorNotOwnerAccount));
 
         let article_deleted_event = ArticleDeletedEvent {
             id,
@@ -123,18 +116,18 @@ module simple_blog::article {
 
 
     /// get article version
-    public fun version(article_obj: &ObjectRef<Article>): u64 {
-        object_ref::borrow(article_obj).version
+    public fun version(article: &Article): u64 {
+        article.version
     }
 
     /// get article title
-    public fun title(article_obj: &ObjectRef<Article>): String {
-        object_ref::borrow(article_obj).title
+    public fun title(article: &Article): String {
+        article.title
     }
 
     /// get article body
-    public fun body(article_obj: &ObjectRef<Article>): String {
-        object_ref::borrow(article_obj).body
+    public fun body(article: &Article): String {
+        article.body
     }
     
 }
