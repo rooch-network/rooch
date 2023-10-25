@@ -5,6 +5,7 @@ use crate::gas::table::{initial_cost_schedule, MoveOSGasMeter};
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
 use anyhow::{bail, ensure, Result};
 use backtrace::Backtrace;
+use itertools::Itertools;
 use move_binary_format::errors::VMError;
 use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
 use move_core_types::value::MoveValue;
@@ -264,15 +265,33 @@ impl MoveOS {
                 match gas_free_function_info {
                     None => Ok(None),
                     Some(gas_func_info) => {
-                        let gas_func_info_opt = gas_func_info.get(&called_function_name);
+                        let full_called_function = format!(
+                            "0x{}::{}::{}",
+                            call.function_id.module_id.address().to_hex(),
+                            call.function_id.module_id.name(),
+                            called_function_name
+                        );
+                        let gas_func_info_opt = gas_func_info.get(&full_called_function);
 
                         if let Some(gas_func_info) = gas_func_info_opt {
                             let gas_validate_func_name = gas_func_info.gas_validate.clone();
 
+                            let split_function = gas_validate_func_name.split("::").collect_vec();
+                            if split_function.len() != 3 {
+                                return Err(PartialVMError::new(StatusCode::VM_EXTENSION_ERROR)
+                                    .with_message(
+                                        "The name of the gas_validate_function is incorrect."
+                                            .to_string(),
+                                    )
+                                    .finish(Location::Module(call.clone().function_id.module_id)));
+                            }
+                            let real_gas_validate_func_name =
+                                split_function.get(2).unwrap().to_string();
+
                             let gas_validate_func_call = FunctionCall::new(
                                 FunctionId::new(
                                     call.function_id.module_id.clone(),
-                                    Identifier::new(gas_validate_func_name).unwrap(),
+                                    Identifier::new(real_gas_validate_func_name).unwrap(),
                                 ),
                                 vec![],
                                 vec![],
@@ -290,7 +309,12 @@ impl MoveOS {
                                     ),
                                 ))
                             } else {
-                                Ok(None)
+                                return Err(PartialVMError::new(StatusCode::VM_EXTENSION_ERROR)
+                                    .with_message(
+                                        "the return value of gas_validate_function is empty."
+                                            .to_string(),
+                                    )
+                                    .finish(Location::Module(call.clone().function_id.module_id)));
                             };
                         }
 
@@ -324,18 +348,37 @@ impl MoveOS {
                 match gas_free_function_info {
                     None => Ok(None),
                     Some(gas_func_info) => {
-                        let gas_func_info_opt = gas_func_info.get(&called_function_name);
+                        let full_called_function = format!(
+                            "0x{}::{}::{}",
+                            call.function_id.module_id.address().to_hex(),
+                            call.function_id.module_id.name(),
+                            called_function_name
+                        );
+                        let gas_func_info_opt = gas_func_info.get(&full_called_function);
 
                         if let Some(gas_func_info) = gas_func_info_opt {
                             let gas_charge_post_func_name = gas_func_info.gas_charge_post.clone();
 
+                            let split_function =
+                                gas_charge_post_func_name.split("::").collect_vec();
+                            if split_function.len() != 3 {
+                                return Err(PartialVMError::new(StatusCode::VM_EXTENSION_ERROR)
+                                    .with_message(
+                                        "The name of the gas_validate_function is incorrect."
+                                            .to_string(),
+                                    )
+                                    .finish(Location::Module(call.clone().function_id.module_id)));
+                            }
+                            let real_gas_charge_post_func_name =
+                                split_function.get(2).unwrap().to_string();
+
                             let gas_validate_func_call = FunctionCall::new(
                                 FunctionId::new(
                                     call.function_id.module_id.clone(),
-                                    Identifier::new(gas_charge_post_func_name).unwrap(),
+                                    Identifier::new(real_gas_charge_post_func_name).unwrap(),
                                 ),
                                 vec![],
-                                vec![MoveValue::U64(session.query_gas_used())
+                                vec![MoveValue::U128(session.query_gas_used() as u128)
                                     .simple_serialize()
                                     .unwrap()],
                             );
@@ -509,16 +552,7 @@ impl MoveOS {
             can_pay_gas = self.execute_gas_validate(&mut session, &action)?;
         }
 
-        // update txn result to TxContext
-        let gas_used = session.query_gas_used();
-        //TODO is it a good approach to add tx_result to TxContext?
-        let tx_result = TxResult::new(&kept_status, gas_used);
-        session
-            .storage_context_mut()
-            .tx_context
-            .add(tx_result)
-            .expect("Add tx_result to TxContext should always success");
-
+        let mut gas_payment_account = session.storage_context_mut().tx_context.sender;
         if let Some(pay_gas) = can_pay_gas {
             if pay_gas {
                 let verified_action = &action_opt_cloned.clone().unwrap();
@@ -530,11 +564,21 @@ impl MoveOS {
                 };
 
                 if let Some(func_call) = func_call_opt {
-                    let module_id = func_call.function_id.module_id.address();
-                    session.storage_context_mut().tx_context.sender = *module_id;
+                    let module_address = func_call.function_id.module_id.address();
+                    gas_payment_account = *module_address;
                 }
             }
         }
+
+        // update txn result to TxContext
+        let gas_used = session.query_gas_used();
+        //TODO is it a good approach to add tx_result to TxContext?
+        let tx_result = TxResult::new(&kept_status, gas_used, gas_payment_account);
+        session
+            .storage_context_mut()
+            .tx_context
+            .add(tx_result)
+            .expect("Add tx_result to TxContext should always success");
 
         // system post_execute
         // we do not charge gas for system_post_execute function
@@ -542,8 +586,10 @@ impl MoveOS {
             .execute_function_call(self.system_post_execute_functions.clone(), false)
             .expect("system_post_execute should not fail.");
 
-        if can_pay_gas.is_some() {
-            self.execute_gas_charge_post(&mut session, &action_opt_cloned.unwrap())?;
+        if let Some(pay_gas) = can_pay_gas {
+            if pay_gas {
+                self.execute_gas_charge_post(&mut session, &action_opt_cloned.unwrap())?;
+            }
         }
 
         let (_ctx, output) = session.finish_with_extensions(kept_status)?;

@@ -146,7 +146,7 @@ module rooch_framework::transaction_validator {
     fun post_execute(
         ctx: &mut Context,
     ) {
-        let sender = context::sender(ctx);
+        // let sender = context::sender(ctx);
 
         // Active the session key
 
@@ -158,11 +158,12 @@ module rooch_framework::transaction_validator {
 
         // Increment sequence number
         account::increment_sequence_number(ctx);
-        
+
         let tx_result = context::tx_result(ctx);
+        let gas_payment_account = tx_result::gas_payment_account(&tx_result);
         let gas_used = tx_result::gas_used(&tx_result);
         let gas = transaction_fee::calculate_gas(ctx, gas_used);
-        let gas_coin = gas_coin::deduct_gas(ctx, sender, gas);
+        let gas_coin = gas_coin::deduct_gas(ctx, gas_payment_account, gas);
         transaction_fee::deposit_fee(ctx, gas_coin);
     }
 }
