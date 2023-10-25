@@ -204,19 +204,9 @@ fn request_init_functions(
     let account_address = pop_arg!(args, AccountAddress);
     let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
     for name_str in pop_arg!(args, Vec<Value>) {
-        let mut fields = name_str.value_as::<Struct>()?.unpack()?; // std::string::String;
-        let val = fields.next().ok_or_else(|| {
-            PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE)
-                .with_message("There must have only one field".to_owned())
-        })?;
-        let name_bytes = val.value_as::<Vec<u8>>()?;
-        cost += gas_params.per_byte * NumBytes::new(name_bytes.len() as u64);
-        let module_id = ModuleId::new(
-            account_address,
-            Identifier::from_utf8(name_bytes).map_err(|e| {
-                PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
-            })?,
-        );
+        let name_ident = unpack_string_to_identifier(name_str)?;
+        cost += gas_params.per_byte * NumBytes::new(1u64);
+        let module_id = ModuleId::new(account_address, name_ident);
         module_context.init_functions.insert(module_id);
     }
     Ok(NativeResult::ok(cost, smallvec![]))
@@ -270,22 +260,22 @@ fn check_compatibililty_inner(
 }
 
 /***************************************************************************************************
- * native fun remap_module_addresses_inner(
+ * native fun replace_address_identifiers(
  *     bytes: vector<vector<u8>>,
  *     old_addresses: vector<address>,
  *     new_addresses: vector<address>,
- * ): (vector<u8>, vector<vector<u8>>);
+ * ): vector<vector<u8>>;
  * Native function to remap addresses in module binary where the length of
  * `old_addresses` must equal to that of `new_addresses`.
  **************************************************************************************************/
 #[derive(Debug, Clone)]
-pub struct RemapAddressesGasParameters {
+pub struct ReplaceAddressIdentifierGasParameters {
     pub base: InternalGas,
     pub per_byte: InternalGasPerByte,
 }
 
-fn remap_module_addresses_inner(
-    gas_params: &RemapAddressesGasParameters,
+fn replace_address_identifiers(
+    gas_params: &ReplaceAddressIdentifierGasParameters,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -321,39 +311,175 @@ fn remap_module_addresses_inner(
         cost += gas_params.per_byte * NumBytes::new(byte_codes.len() as u64);
         bundle.push(byte_codes);
     }
-    let mut compiled_modules = bundle
+    let output_modules = modify_modules(bundle, |module| {
+        module_replace_address_identifiers(module, &address_mapping)
+    })?;
+    Ok(NativeResult::ok(cost, smallvec![output_modules]))
+}
+
+/***************************************************************************************************
+ * native fun replace_addresses_constant(
+ *     bytes: vector<vector<u8>>,
+ *     old_addresses: vector<address>,
+ *     new_addresses: vector<address>,
+ * ): (vector<u8>, vector<vector<u8>>);
+ * Native function to replace constant addresses in module binary where the length of
+ * `old_addresses` must equal to that of `new_addresses`.
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct ReplaceAddressConstantGasParameters {
+    pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
+}
+
+fn replace_addresses_constant(
+    gas_params: &ReplaceAddressConstantGasParameters,
+    _context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(args.len() == 3, "Wrong number of arguments");
+    let mut cost = gas_params.base;
+    let new_address_vec = pop_arg!(args, Vector);
+    let old_address_vec = pop_arg!(args, Vector);
+    let num_addresses = new_address_vec.elem_views().len();
+    if num_addresses != old_address_vec.elem_views().len() {
+        return Ok(NativeResult::err(
+            cost,
+            moveos_types::move_std::error::invalid_argument(E_LENTH_NOT_MATCH),
+        ));
+    };
+    let num_addresses = num_addresses as u64;
+    let new_addresses = new_address_vec.unpack(&Type::Address, num_addresses)?;
+    let old_addresses = old_address_vec.unpack(&Type::Address, num_addresses)?;
+
+    let address_mapping: HashMap<AccountAddress, AccountAddress> =
+        zip_eq(old_addresses, new_addresses)
+            .map(|(a, b)| {
+                Ok((
+                    a.value_as::<AccountAddress>()?,
+                    b.value_as::<AccountAddress>()?,
+                ))
+            })
+            .collect::<PartialVMResult<_>>()?;
+
+    let mut bundle = vec![];
+    for module in pop_arg!(args, Vec<Value>) {
+        let byte_codes = module.value_as::<Vec<u8>>()?;
+        cost += gas_params.per_byte * NumBytes::new(byte_codes.len() as u64);
+        bundle.push(byte_codes);
+    }
+    let output_modules = modify_modules(bundle, |module| {
+        module_replace_constant_addresses(module, &address_mapping)
+    })?;
+    Ok(NativeResult::ok(cost, smallvec![output_modules]))
+}
+
+/***************************************************************************************************
+ * native fun replace_identifiers(
+ *     bytes: vector<vector<u8>>,
+ *     old_idents: vector<String>,
+ *     new_idents: vector<String>,
+ * ): vector<vector<u8>>;
+ * Native function to replace the name identifier `old_idents` to `new_idents` in module binary.
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct ReplaceIdentifierGasParameters {
+    pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
+}
+
+fn replace_identifiers(
+    gas_params: &ReplaceIdentifierGasParameters,
+    _context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(args.len() == 3, "Wrong number of arguments");
+    let mut cost = gas_params.base;
+
+    let new_identifiers = pop_arg!(args, Vec<Value>);
+    let old_identifiers = pop_arg!(args, Vec<Value>);
+    let num_identifiers = new_identifiers.len();
+    if num_identifiers != old_identifiers.len() {
+        return Ok(NativeResult::err(
+            cost,
+            moveos_types::move_std::error::invalid_argument(E_LENTH_NOT_MATCH),
+        ));
+    };
+
+    let identifier_mapping: HashMap<Identifier, Identifier> =
+        zip_eq(old_identifiers, new_identifiers)
+            .map(|(a, b)| {
+                Ok((
+                    unpack_string_to_identifier(a)?,
+                    unpack_string_to_identifier(b)?,
+                ))
+            })
+            .collect::<PartialVMResult<_>>()?;
+
+    let mut bundle = vec![];
+    for module in pop_arg!(args, Vec<Value>) {
+        let byte_codes = module.value_as::<Vec<u8>>()?;
+        cost += gas_params.per_byte * NumBytes::new(byte_codes.len() as u64);
+        bundle.push(byte_codes);
+    }
+    let output_modules = modify_modules(bundle, |module| {
+        module_replace_identifiers(module, &identifier_mapping)
+    })?;
+    Ok(NativeResult::ok(cost, smallvec![output_modules]))
+}
+
+fn modify_modules(
+    module_bundles: Vec<Vec<u8>>,
+    replace_fn: impl Fn(&mut CompiledModule) -> PartialVMResult<()>,
+) -> PartialVMResult<Value> {
+    let mut compiled_modules = module_bundles
         .into_iter()
         .map(|b| CompiledModule::deserialize(&b))
         .collect::<PartialVMResult<Vec<CompiledModule>>>()?;
 
     let mut remapped_bubdles = vec![];
-    for m in compiled_modules.iter_mut() {
-        // TODO: charge gas
-        module_remap_addresses(m, &address_mapping)?;
+    for module in compiled_modules.iter_mut() {
+        replace_fn(module)?;
         let mut binary: Vec<u8> = vec![];
-        m.serialize(&mut binary).map_err(|e| {
+        module.serialize(&mut binary).map_err(|e| {
             PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR).with_message(e.to_string())
         })?;
         let value = Value::vector_u8(binary);
         remapped_bubdles.push(value);
     }
     let output_modules = Vector::pack(&Type::Vector(Box::new(Type::U8)), remapped_bubdles)?;
-    Ok(NativeResult::ok(cost, smallvec![output_modules]))
+    Ok(output_modules)
 }
 
-fn module_remap_constant_addresses(value: &mut MoveValue, f: &dyn Fn(&mut AccountAddress)) {
+fn movevalue_replace_addresses(value: &mut MoveValue, f: &dyn Fn(&mut AccountAddress)) {
     match value {
         MoveValue::Address(addr) => f(addr),
         MoveValue::Vector(vals) => {
             vals.iter_mut()
-                .for_each(|val| module_remap_constant_addresses(val, f));
+                .for_each(|val| movevalue_replace_addresses(val, f));
         }
         // TODO: handle constant addresses in Other struct
         _ => {}
     }
 }
 
-fn module_remap_addresses(
+fn module_replace_identifiers(
+    module: &mut CompiledModule,
+    identifier_mapping: &HashMap<Identifier, Identifier>,
+) -> PartialVMResult<()> {
+    for i in 0..module.identifiers.len() {
+        if let Some(new_ident) = identifier_mapping.get(&module.identifiers[i]) {
+            module.identifiers[i] = Identifier::new(new_ident.to_string()).map_err(|e| {
+                PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
+            })?;
+        }
+    }
+    Ok(())
+}
+
+fn module_replace_address_identifiers(
     module: &mut CompiledModule,
     address_mapping: &HashMap<AccountAddress, AccountAddress>,
 ) -> PartialVMResult<()> {
@@ -363,6 +489,13 @@ fn module_remap_addresses(
             *addr = *new_addr;
         }
     }
+    Ok(())
+}
+
+fn module_replace_constant_addresses(
+    module: &mut CompiledModule,
+    address_mapping: &HashMap<AccountAddress, AccountAddress>,
+) -> PartialVMResult<()> {
     // replace addresses in constant.
     for constant in module.constant_pool.iter_mut() {
         let mut constant_value = constant.deserialize_constant().ok_or_else(|| {
@@ -370,7 +503,7 @@ fn module_remap_addresses(
                 .with_message("cannot deserialize constant".to_string())
         })?;
 
-        module_remap_constant_addresses(&mut constant_value, &|addr| {
+        movevalue_replace_addresses(&mut constant_value, &|addr| {
             if let Some(new_addr) = address_mapping.get(addr) {
                 *addr = *new_addr;
             }
@@ -385,6 +518,19 @@ fn module_remap_addresses(
     Ok(())
 }
 
+/// Unpack input `std::string::String` to identifier.
+fn unpack_string_to_identifier(value: Value) -> PartialVMResult<Identifier> {
+    let mut fields = value.value_as::<Struct>()?.unpack()?; // std::string::String;
+    let val = fields.next().ok_or_else(|| {
+        PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE)
+            .with_message("There must have only one field".to_owned())
+    })?;
+    let bytes = val.value_as::<Vec<u8>>()?;
+    let ident = Identifier::from_utf8(bytes).map_err(|e| {
+        PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
+    })?;
+    Ok(ident)
+}
 /***************************************************************************************************
  * module
  *
@@ -395,7 +541,9 @@ pub struct GasParameters {
     pub sort_and_verify_modules_inner: VerifyModulesGasParameters,
     pub request_init_functions: RequestInitFunctionsGasParameters,
     pub check_compatibililty_inner: CheckCompatibilityInnerGasParameters,
-    pub remap_module_addresses_inner: RemapAddressesGasParameters,
+    pub replace_address_identifiers: ReplaceAddressIdentifierGasParameters,
+    pub replace_addresses_constant: ReplaceAddressConstantGasParameters,
+    pub replace_identifiers: ReplaceIdentifierGasParameters,
 }
 
 impl GasParameters {
@@ -417,7 +565,15 @@ impl GasParameters {
                 base: 0.into(),
                 per_byte: 0.into(),
             },
-            remap_module_addresses_inner: RemapAddressesGasParameters {
+            replace_address_identifiers: ReplaceAddressIdentifierGasParameters {
+                base: 0.into(),
+                per_byte: 0.into(),
+            },
+            replace_addresses_constant: ReplaceAddressConstantGasParameters {
+                base: 0.into(),
+                per_byte: 0.into(),
+            },
+            replace_identifiers: ReplaceIdentifierGasParameters {
                 base: 0.into(),
                 per_byte: 0.into(),
             },
@@ -450,11 +606,22 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             ),
         ),
         (
-            "remap_module_addresses_inner",
+            "replace_address_identifiers",
             make_native(
-                gas_params.remap_module_addresses_inner,
-                remap_module_addresses_inner,
+                gas_params.replace_address_identifiers,
+                replace_address_identifiers,
             ),
+        ),
+        (
+            "replace_addresses_constant",
+            make_native(
+                gas_params.replace_addresses_constant,
+                replace_addresses_constant,
+            ),
+        ),
+        (
+            "replace_identifiers",
+            make_native(gas_params.replace_identifiers, replace_identifiers),
         ),
     ];
     make_module_natives(natives)

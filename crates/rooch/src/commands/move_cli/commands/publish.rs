@@ -90,6 +90,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         let empty_modules = modules.iter_modules_owned().is_empty();
         let pkg_address = if !empty_modules {
             let first_module = &modules.iter_modules_owned()[0];
+            println!("compiled module: {:?}", first_module.clone());
             first_module.self_id().address().to_owned()
         } else {
             return Err(RoochError::MoveCompilationError(format!(
