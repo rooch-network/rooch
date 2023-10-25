@@ -5171,6 +5171,7 @@ dependencies = [
  "move-bytecode-utils",
  "move-core-types",
  "move-resource-viewer",
+ "move-vm-types",
  "once_cell",
  "primitive-types 0.12.1",
  "proptest",

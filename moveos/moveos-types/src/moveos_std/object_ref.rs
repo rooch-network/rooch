@@ -4,7 +4,7 @@
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     moveos_std::object::ObjectID,
-    state::{MoveStructState, MoveStructType},
+    state::{MoveState, MoveStructState, MoveStructType},
 };
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, language_storage::TypeTag,

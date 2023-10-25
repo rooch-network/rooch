@@ -10,12 +10,10 @@ use move_core_types::{
     u256,
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
-use moveos_types::move_std::ascii::MoveAsciiString;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types::parse_module_id;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::moveos_std::type_info::TypeInfo;
-use moveos_types::state::MoveStructState;
 use moveos_types::transaction::MoveAction;
 use moveos_types::{
     access_path::AccessPath,
@@ -24,6 +22,7 @@ use moveos_types::{
     moveos_std::object::{AnnotatedObject, ObjectID},
     transaction::{FunctionCall, ScriptCall},
 };
+use moveos_types::{move_std::ascii::MoveAsciiString, state::MoveStructType};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -97,15 +96,15 @@ pub enum SpecificStructView {
 
 impl SpecificStructView {
     pub fn try_from_annotated(move_struct: AnnotatedMoveStruct) -> Option<Self> {
-        if MoveString::type_match(&move_struct.type_) {
+        if MoveString::struct_tag_match(&move_struct.type_) {
             MoveString::try_from(move_struct)
                 .ok()
                 .map(SpecificStructView::MoveString)
-        } else if MoveAsciiString::type_match(&move_struct.type_) {
+        } else if MoveAsciiString::struct_tag_match(&move_struct.type_) {
             MoveAsciiString::try_from(move_struct)
                 .ok()
                 .map(SpecificStructView::MoveAsciiString)
-        } else if ObjectID::type_match(&move_struct.type_) {
+        } else if ObjectID::struct_tag_match(&move_struct.type_) {
             ObjectID::try_from(move_struct)
                 .ok()
                 .map(SpecificStructView::ObjectID)

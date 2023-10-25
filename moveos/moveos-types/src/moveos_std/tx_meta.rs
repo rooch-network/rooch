@@ -5,7 +5,7 @@ use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     move_std::ascii::MoveAsciiString,
     move_std::option::MoveOption,
-    state::{MoveStructState, MoveStructType},
+    state::{MoveState, MoveStructState, MoveStructType},
     transaction::MoveAction,
 };
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
