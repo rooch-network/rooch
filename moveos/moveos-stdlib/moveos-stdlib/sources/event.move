@@ -42,14 +42,14 @@ module moveos_std::event {
     fun borrow_event_handle<T>(ctx: &Context): &EventHandle {
         let event_handle_id = derive_event_handle_id<T>();
         let object = context::borrow_object<EventHandle>(ctx, event_handle_id);
-        object_ref::borrow_extend(object)
+        object_ref::borrow(object)
     }
 
     /// Borrow a mut event handle from the object storage
     fun borrow_event_handle_mut<T>(ctx: &mut Context): &mut EventHandle {
         let event_handle_id = derive_event_handle_id<T>();
-        let object = context::borrow_object_mut<EventHandle>(ctx, event_handle_id);
-        object_ref::borrow_mut_extend(object)
+        let object = context::borrow_object_mut_extend<EventHandle>(ctx, event_handle_id);
+        object_ref::borrow_mut(object)
     }
 
     /// Get event handle owner
@@ -85,7 +85,7 @@ module moveos_std::event {
         let type_info = type_info::type_of<T>();
         let owner = type_info::account_address(&type_info);
         object_ref::transfer_extend(&mut obj, owner);
-        object_ref::to_external(obj);
+        object_ref::drop(obj);
     }
 
     public fun ensure_event_handle<T>(ctx: &mut Context) {

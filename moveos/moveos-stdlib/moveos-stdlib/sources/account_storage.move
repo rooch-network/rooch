@@ -55,7 +55,7 @@ module moveos_std::account_storage {
         };
         let obj = context::new_object_with_id(ctx, object_id, account_storage);
         object_ref::transfer_extend(&mut obj, account);
-        object_ref::to_external(obj);
+        object_ref::drop(obj);
     }
 
     /// check if account storage eixst
@@ -75,13 +75,13 @@ module moveos_std::account_storage {
     fun borrow_account_storage(ctx: &Context, account: address): &AccountStorage{
         let object_id = object::address_to_object_id(account);
         let object = context::borrow_object<AccountStorage>(ctx, object_id);
-        object_ref::borrow_extend(object)
+        object_ref::borrow(object)
     }
 
     fun borrow_account_storage_mut(ctx: &mut Context, account: address): &mut AccountStorage{
         let object_id = object::address_to_object_id(account);
-        let object = context::borrow_object_mut<AccountStorage>(ctx, object_id);
-        object_ref::borrow_mut_extend(object)
+        let object = context::borrow_object_mut_extend<AccountStorage>(ctx, object_id);
+        object_ref::borrow_mut(object)
     }
 
     /// Borrow a resource from the AccountStorage

@@ -437,6 +437,7 @@ impl<'a> ExtendedChecker<'a> {
                     self.env
                         .get_struct(mid.qualified(*sid))
                         .get_full_name_with_address(),
+                    false,
                 ) =>
             {
                 // Specific struct types are allowed
@@ -470,7 +471,7 @@ impl<'a> ExtendedChecker<'a> {
                     .env
                     .get_struct(mid.qualified(*sid))
                     .get_full_name_with_address();
-                if is_allowed_input_struct(struct_name) {
+                if is_allowed_input_struct(struct_name, true) {
                     return true;
                 }
                 false
@@ -480,15 +481,16 @@ impl<'a> ExtendedChecker<'a> {
     }
 }
 
-pub fn is_allowed_input_struct(name: String) -> bool {
+pub fn is_allowed_input_struct(name: String, is_ref: bool) -> bool {
     matches!(
         name.as_str(),
         "0x1::string::String"
             | "0x1::ascii::String"
             | "0x2::object::ObjectID"
             | "0x2::context::Context"
-            | "0x2::object_ref::ObjectRef"
-    )
+    ) ||
+    // ObjectRef only support reference type
+     (is_ref && name.as_str() == "0x2::object_ref::ObjectRef")
 }
 
 // ----------------------------------------------------------------------------------

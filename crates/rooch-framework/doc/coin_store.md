@@ -373,7 +373,7 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
     frozen: bool,
 ) {
     <b>assert</b>!(<a href="_exist_object">context::exist_object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;(ctx, coin_store_id), <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin_store.md#0x3_coin_store_ErrorCoinStoreNotFound">ErrorCoinStoreNotFound</a>));
-    <b>let</b> coin_store_object = <a href="_borrow_object_mut">context::borrow_object_mut</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;(ctx, coin_store_id);
+    <b>let</b> coin_store_object = <a href="_borrow_object_mut_extend">context::borrow_object_mut_extend</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;(ctx, coin_store_id);
     <a href="_borrow_mut">object_ref::borrow_mut</a>(coin_store_object).frozen = frozen;
 }
 </code></pre>

@@ -9,13 +9,10 @@
 -  [Function `new_internal`](#0x2_object_ref_new_internal)
 -  [Function `as_ref`](#0x2_object_ref_as_ref)
 -  [Function `as_mut_ref`](#0x2_object_ref_as_mut_ref)
--  [Function `to_external`](#0x2_object_ref_to_external)
 -  [Function `borrow`](#0x2_object_ref_borrow)
--  [Function `borrow_extend`](#0x2_object_ref_borrow_extend)
 -  [Function `borrow_mut`](#0x2_object_ref_borrow_mut)
--  [Function `borrow_mut_extend`](#0x2_object_ref_borrow_mut_extend)
 -  [Function `remove`](#0x2_object_ref_remove)
--  [Function `remove_extend`](#0x2_object_ref_remove_extend)
+-  [Function `drop`](#0x2_object_ref_drop)
 -  [Function `transfer`](#0x2_object_ref_transfer)
 -  [Function `transfer_extend`](#0x2_object_ref_transfer_extend)
 -  [Function `id`](#0x2_object_ref_id)
@@ -132,34 +129,6 @@ It likes ObjectID, but it contains the type information of the object.
 
 </details>
 
-<a name="0x2_object_ref_to_external"></a>
-
-## Function `to_external`
-
-Drop the ObjectRef<T>, and make the object to be a external object.
-The external object can be used as transaction argument
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_to_external">to_external</a>&lt;T: key&gt;(self: <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_to_external">to_external</a>&lt;T: key&gt;(self: <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>&lt;T&gt;){
-    <b>let</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>{id} = self;
-    <b>let</b> obj = <a href="raw_table.md#0x2_raw_table_borrow_mut_from_global">raw_table::borrow_mut_from_global</a>&lt;T&gt;(&id);
-    <a href="object.md#0x2_object_set_external">object::set_external</a>(obj, <b>true</b>);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_ref_borrow"></a>
 
 ## Function `borrow`
@@ -167,7 +136,7 @@ The external object can be used as transaction argument
 Borrow the object value
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_borrow">borrow</a>&lt;T: store, key&gt;(self: &<a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): &T
+<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_borrow">borrow</a>&lt;T: key&gt;(self: &<a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): &T
 </code></pre>
 
 
@@ -176,32 +145,7 @@ Borrow the object value
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_borrow">borrow</a>&lt;T: key + store&gt;(self: &<a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>&lt;T&gt;): &T {
-    <b>let</b> obj = <a href="raw_table.md#0x2_raw_table_borrow_from_global">raw_table::borrow_from_global</a>&lt;T&gt;(&self.id);
-    <a href="object.md#0x2_object_borrow">object::borrow</a>(obj)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_object_ref_borrow_extend"></a>
-
-## Function `borrow_extend`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_borrow_extend">borrow_extend</a>&lt;T: key&gt;(self: &<a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): &T
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_borrow_extend">borrow_extend</a>&lt;T: key&gt;(self: &<a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>&lt;T&gt;): &T {
+<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_borrow">borrow</a>&lt;T: key&gt;(self: &<a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>&lt;T&gt;): &T {
     <b>let</b> obj = <a href="raw_table.md#0x2_raw_table_borrow_from_global">raw_table::borrow_from_global</a>&lt;T&gt;(&self.id);
     <a href="object.md#0x2_object_borrow">object::borrow</a>(obj)
 }
@@ -218,7 +162,7 @@ Borrow the object value
 Borrow the object mutable value
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_borrow_mut">borrow_mut</a>&lt;T: store, key&gt;(self: &<b>mut</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): &<b>mut</b> T
+<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_borrow_mut">borrow_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): &<b>mut</b> T
 </code></pre>
 
 
@@ -227,32 +171,7 @@ Borrow the object mutable value
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_borrow_mut">borrow_mut</a>&lt;T: key + store&gt;(self: &<b>mut</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>&lt;T&gt;): &<b>mut</b> T {
-    <b>let</b> obj = <a href="raw_table.md#0x2_raw_table_borrow_mut_from_global">raw_table::borrow_mut_from_global</a>&lt;T&gt;(&self.id);
-    <a href="object.md#0x2_object_borrow_mut">object::borrow_mut</a>(obj)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_object_ref_borrow_mut_extend"></a>
-
-## Function `borrow_mut_extend`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_borrow_mut_extend">borrow_mut_extend</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): &<b>mut</b> T
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_borrow_mut_extend">borrow_mut_extend</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>&lt;T&gt;): &<b>mut</b> T {
+<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_borrow_mut">borrow_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>&lt;T&gt;): &<b>mut</b> T {
     <b>let</b> obj = <a href="raw_table.md#0x2_raw_table_borrow_mut_from_global">raw_table::borrow_mut_from_global</a>&lt;T&gt;(&self.id);
     <a href="object.md#0x2_object_borrow_mut">object::borrow_mut</a>(obj)
 }
@@ -267,9 +186,10 @@ Borrow the object mutable value
 ## Function `remove`
 
 Remove the object from the global storage, and return the object value
+This function is only can be called by the module of <code>T</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_remove">remove</a>&lt;T: store, key&gt;(self: <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): T
+<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_remove">remove</a>&lt;T: key&gt;(self: <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): T
 </code></pre>
 
 
@@ -278,7 +198,7 @@ Remove the object from the global storage, and return the object value
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_remove">remove</a>&lt;T: key + store&gt;(self: <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>&lt;T&gt;) : T {
+<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_remove">remove</a>&lt;T: key&gt;(self: <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>&lt;T&gt;) : T {
     <b>let</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>{id} = self;
     <b>let</b> <a href="object.md#0x2_object">object</a> = <a href="raw_table.md#0x2_raw_table_remove_from_global">raw_table::remove_from_global</a>(&id);
     <b>let</b> (_id, _owner, value) = <a href="object.md#0x2_object_unpack">object::unpack</a>(<a href="object.md#0x2_object">object</a>);
@@ -290,13 +210,15 @@ Remove the object from the global storage, and return the object value
 
 </details>
 
-<a name="0x2_object_ref_remove_extend"></a>
+<a name="0x2_object_ref_drop"></a>
 
-## Function `remove_extend`
+## Function `drop`
+
+Directly drop the ObjectRef, the object will can not be removed from the object storage.
+If you want to remove the object, please use <code>remove</code> function.
 
 
-
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_remove_extend">remove_extend</a>&lt;T: key&gt;(self: <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;): T
+<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_drop">drop</a>&lt;T: key&gt;(self: <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;)
 </code></pre>
 
 
@@ -305,11 +227,8 @@ Remove the object from the global storage, and return the object value
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_remove_extend">remove_extend</a>&lt;T: key&gt;(self: <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>&lt;T&gt;) : T {
-    <b>let</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>{id} = self;
-    <b>let</b> <a href="object.md#0x2_object">object</a> = <a href="raw_table.md#0x2_raw_table_remove_from_global">raw_table::remove_from_global</a>(&id);
-    <b>let</b> (_id, _owner, value) = <a href="object.md#0x2_object_unpack">object::unpack</a>(<a href="object.md#0x2_object">object</a>);
-    value
+<pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_drop">drop</a>&lt;T: key&gt;(self: <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>&lt;T&gt;) {
+    <b>let</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>{id:_} = self;
 }
 </code></pre>
 
@@ -321,6 +240,8 @@ Remove the object from the global storage, and return the object value
 
 ## Function `transfer`
 
+Transfer the object to the new owner
+Only the <code>T</code> with <code>store</code> can be directly transferred.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_transfer">transfer</a>&lt;T: store, key&gt;(self: &<b>mut</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;, new_owner: <b>address</b>)
@@ -346,6 +267,8 @@ Remove the object from the global storage, and return the object value
 
 ## Function `transfer_extend`
 
+Transfer the object to the new owner
+This function is for the module of <code>T</code> to extend the <code>transfer</code> function.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_transfer_extend">transfer_extend</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;, new_owner: <b>address</b>)

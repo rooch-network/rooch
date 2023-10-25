@@ -7,17 +7,21 @@
 module moveos_std::context {
 
     use std::option::Option;
+    use std::error;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context::{Self, TxContext};
     use moveos_std::object::{Self, ObjectID};
     use moveos_std::object_ref::{Self, ObjectRef};
     use moveos_std::tx_meta::{TxMeta};
     use moveos_std::tx_result::{TxResult};
+    use moveos_std::signer;
 
     friend moveos_std::table;
     friend moveos_std::type_table;
     friend moveos_std::account_storage;
     friend moveos_std::event;
+
+    const ErrorObjectOwnerNotMatch: u64 = 1;
 
     /// Information about the global context include TxContext and StorageContext
     /// We can not put the StorageContext to TxContext, because object module depends on tx_context module,
@@ -93,16 +97,25 @@ module moveos_std::context {
 
     // Wrap functions for StorageContext
 
-    #[private_generics(T)]
     /// Borrow Object from object store with object_id
+    /// Any one can borrow an &ObjectRef from the global object storage
     public fun borrow_object<T: key>(self: &Context, object_id: ObjectID): &ObjectRef<T> {
         let object_entity = storage_context::borrow<T>(&self.storage_context, object_id);
         object_ref::as_ref(object_entity)
     }
 
-    #[private_generics(T)]
     /// Borrow mut Object from object store with object_id
-    public fun borrow_object_mut<T: key>(self: &mut Context, object_id: ObjectID): &mut ObjectRef<T> {
+    /// Only the owner can borrow an &mut ObjectRef from the global object storage
+    public fun borrow_object_mut<T: key>(self: &mut Context, owner: &signer, object_id: ObjectID): &mut ObjectRef<T> {
+        let object_entity = storage_context::borrow_mut<T>(&mut self.storage_context, object_id);
+        let owner_address = signer::address_of(owner);
+        assert!(object::owner(object_entity) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
+        object_ref::as_mut_ref(object_entity)
+    }
+
+    #[private_generics(T)]
+    /// The module of T can borrow mut Object from object store with any object_id
+    public fun borrow_object_mut_extend<T: key>(self: &mut Context, object_id: ObjectID) : &mut ObjectRef<T> {
         let object_entity = storage_context::borrow_mut<T>(&mut self.storage_context, object_id);
         object_ref::as_mut_ref(object_entity)
     }
@@ -176,14 +189,14 @@ module moveos_std::context {
         let ref = new_object(&mut ctx, TestObjectValue{value: 1});
         
         {
-            let obj_value = object_ref::borrow_mut_extend(&mut ref);
+            let obj_value = object_ref::borrow_mut(&mut ref);
             obj_value.value = 2;
         };
         {
-            let obj_value = object_ref::borrow_extend(&ref);
+            let obj_value = object_ref::borrow(&ref);
             assert!(obj_value.value == 2, 1000);
         };
-        object_ref::to_external(ref);
+        object_ref::drop(ref);
         drop_test_context(ctx);
     }
 }

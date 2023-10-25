@@ -9,6 +9,7 @@ and let developers customize the storage
 
 
 -  [Struct `Context`](#0x2_context_Context)
+-  [Constants](#@Constants_0)
 -  [Function `tx_context`](#0x2_context_tx_context)
 -  [Function `tx_context_mut`](#0x2_context_tx_context_mut)
 -  [Function `sender`](#0x2_context_sender)
@@ -23,15 +24,18 @@ and let developers customize the storage
 -  [Function `tx_result`](#0x2_context_tx_result)
 -  [Function `borrow_object`](#0x2_context_borrow_object)
 -  [Function `borrow_object_mut`](#0x2_context_borrow_object_mut)
+-  [Function `borrow_object_mut_extend`](#0x2_context_borrow_object_mut_extend)
 -  [Function `exist_object`](#0x2_context_exist_object)
 -  [Function `new_object`](#0x2_context_new_object)
 -  [Function `new_object_with_id`](#0x2_context_new_object_with_id)
 -  [Function `new_singleton_object`](#0x2_context_new_singleton_object)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::error</a>;
+<b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="object_ref.md#0x2_object_ref">0x2::object_ref</a>;
+<b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
 <b>use</b> <a href="storage_context.md#0x2_storage_context">0x2::storage_context</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 <b>use</b> <a href="tx_meta.md#0x2_tx_meta">0x2::tx_meta</a>;
@@ -77,6 +81,20 @@ The Context can not be <code>drop</code> or <code>store</code>, so developers ne
 
 
 </details>
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x2_context_ErrorObjectOwnerNotMatch"></a>
+
+
+
+<pre><code><b>const</b> <a href="context.md#0x2_context_ErrorObjectOwnerNotMatch">ErrorObjectOwnerNotMatch</a>: u64 = 1;
+</code></pre>
+
+
 
 <a name="0x2_context_tx_context"></a>
 
@@ -381,6 +399,7 @@ Get a value from the context map
 ## Function `borrow_object`
 
 Borrow Object from object store with object_id
+Any one can borrow an &ObjectRef from the global object storage
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object">borrow_object</a>&lt;T: key&gt;(self: &<a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;
@@ -407,9 +426,10 @@ Borrow Object from object store with object_id
 ## Function `borrow_object_mut`
 
 Borrow mut Object from object store with object_id
+Only the owner can borrow an &mut ObjectRef from the global object storage
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut">borrow_object_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut">borrow_object_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, owner: &<a href="">signer</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;
 </code></pre>
 
 
@@ -418,7 +438,35 @@ Borrow mut Object from object store with object_id
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut">borrow_object_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID): &<b>mut</b> ObjectRef&lt;T&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut">borrow_object_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, owner: &<a href="">signer</a>, object_id: ObjectID): &<b>mut</b> ObjectRef&lt;T&gt; {
+    <b>let</b> object_entity = <a href="storage_context.md#0x2_storage_context_borrow_mut">storage_context::borrow_mut</a>&lt;T&gt;(&<b>mut</b> self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, object_id);
+    <b>let</b> owner_address = <a href="_address_of">signer::address_of</a>(owner);
+    <b>assert</b>!(<a href="object.md#0x2_object_owner">object::owner</a>(object_entity) == owner_address, <a href="_permission_denied">error::permission_denied</a>(<a href="context.md#0x2_context_ErrorObjectOwnerNotMatch">ErrorObjectOwnerNotMatch</a>));
+    <a href="object_ref.md#0x2_object_ref_as_mut_ref">object_ref::as_mut_ref</a>(object_entity)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_context_borrow_object_mut_extend"></a>
+
+## Function `borrow_object_mut_extend`
+
+The module of T can borrow mut Object from object store with any object_id
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut_extend">borrow_object_mut_extend</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut_extend">borrow_object_mut_extend</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID) : &<b>mut</b> ObjectRef&lt;T&gt; {
     <b>let</b> object_entity = <a href="storage_context.md#0x2_storage_context_borrow_mut">storage_context::borrow_mut</a>&lt;T&gt;(&<b>mut</b> self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, object_id);
     <a href="object_ref.md#0x2_object_ref_as_mut_ref">object_ref::as_mut_ref</a>(object_entity)
 }

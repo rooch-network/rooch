@@ -33,61 +33,44 @@ module moveos_std::object_ref {
     native fun as_ref_inner<T>(object_id: ObjectID): &T;
     native fun as_mut_ref_inner<T>(object_id: ObjectID): &mut T;
 
-    #[private_generics(T)]
-    /// Drop the ObjectRef<T>, and make the object to be a external object.
-    /// The external object can be used as transaction argument
-    public fun to_external<T: key>(self: ObjectRef<T>){
-        let ObjectRef{id} = self;
-        let obj = raw_table::borrow_mut_from_global<T>(&id);
-        object::set_external(obj, true);
-    }
-
     /// Borrow the object value
-    public fun borrow<T: key + store>(self: &ObjectRef<T>): &T {
-        let obj = raw_table::borrow_from_global<T>(&self.id);
-        object::borrow(obj)
-    }
-
-    #[private_generics(T)]
-    public fun borrow_extend<T: key>(self: &ObjectRef<T>): &T {
+    public fun borrow<T: key>(self: &ObjectRef<T>): &T {
         let obj = raw_table::borrow_from_global<T>(&self.id);
         object::borrow(obj)
     }
 
     /// Borrow the object mutable value
-    public fun borrow_mut<T: key + store>(self: &mut ObjectRef<T>): &mut T {
+    public fun borrow_mut<T: key>(self: &mut ObjectRef<T>): &mut T {
         let obj = raw_table::borrow_mut_from_global<T>(&self.id);
         object::borrow_mut(obj)
     }
 
     #[private_generics(T)]
-    public fun borrow_mut_extend<T: key>(self: &mut ObjectRef<T>): &mut T {
-        let obj = raw_table::borrow_mut_from_global<T>(&self.id);
-        object::borrow_mut(obj)
-    } 
-
     /// Remove the object from the global storage, and return the object value
-    public fun remove<T: key + store>(self: ObjectRef<T>) : T {
+    /// This function is only can be called by the module of `T`.
+    public fun remove<T: key>(self: ObjectRef<T>) : T {
         let ObjectRef{id} = self;
         let object = raw_table::remove_from_global(&id);
         let (_id, _owner, value) = object::unpack(object);
         value
     }
 
-    #[private_generics(T)]
-    public fun remove_extend<T: key>(self: ObjectRef<T>) : T {
-        let ObjectRef{id} = self;
-        let object = raw_table::remove_from_global(&id);
-        let (_id, _owner, value) = object::unpack(object);
-        value
+    /// Directly drop the ObjectRef, the object will can not be removed from the object storage.
+    /// If you want to remove the object, please use `remove` function.
+    public fun drop<T: key>(self: ObjectRef<T>) {
+        let ObjectRef{id:_} = self;
     }
 
+    /// Transfer the object to the new owner
+    /// Only the `T` with `store` can be directly transferred.
     public fun transfer<T: key + store>(self: &mut ObjectRef<T>, new_owner: address) {
         let obj = raw_table::borrow_mut_from_global<T>(&self.id);
         object::set_owner(obj, new_owner);
     }
 
     #[private_generics(T)]
+    /// Transfer the object to the new owner
+    /// This function is for the module of `T` to extend the `transfer` function.
     public fun transfer_extend<T: key>(self: &mut ObjectRef<T>, new_owner: address) {
         let obj = raw_table::borrow_mut_from_global<T>(&self.id);
         object::set_owner(obj, new_owner);

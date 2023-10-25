@@ -134,7 +134,10 @@ impl GasParameters {
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [
-        ("as_ref_inner", make_native_as_ref_inner(gas_params.as_ref_inner)),
+        (
+            "as_ref_inner",
+            make_native_as_ref_inner(gas_params.as_ref_inner),
+        ),
         (
             "as_mut_ref_inner",
             make_native_as_mut_ref_inner(gas_params.as_mut_ref_inner),

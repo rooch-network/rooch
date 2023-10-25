@@ -201,7 +201,7 @@ Create a new account storage space
     };
     <b>let</b> obj = <a href="context.md#0x2_context_new_object_with_id">context::new_object_with_id</a>(ctx, object_id, <a href="account_storage.md#0x2_account_storage">account_storage</a>);
     <a href="object_ref.md#0x2_object_ref_transfer_extend">object_ref::transfer_extend</a>(&<b>mut</b> obj, account);
-    <a href="object_ref.md#0x2_object_ref_to_external">object_ref::to_external</a>(obj);
+    <a href="object_ref.md#0x2_object_ref_drop">object_ref::drop</a>(obj);
 }
 </code></pre>
 
