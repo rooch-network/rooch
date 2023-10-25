@@ -21,7 +21,8 @@ module moveos_std::object {
     friend moveos_std::raw_table;
 
     const CODE_OWNER_ADDRESS: address = @0x0;
-   
+    
+    ///TODO rename to ObjectEntity
     /// Box style object
     /// The object can not be copied, droped and stored. It only can be consumed by StorageContext API.
     struct Object<T> {
@@ -29,6 +30,8 @@ module moveos_std::object {
         id: ObjectID,
         // The owner of the object
         owner: address,
+        /// Whether the object is external
+        //external: bool,
         // The value of the object
         // The value must be the last field
         value: T,
@@ -67,23 +70,11 @@ module moveos_std::object {
         Object<T>{id, value, owner}
     }
 
-    #[private_generics(T)]
-    // Borrow the object value
-    public fun borrow<T>(self: &Object<T>): &T {
+    public(friend) fun borrow<T>(self: &Object<T>): &T {
         &self.value
     }
 
-    public(friend) fun internal_borrow<T>(self: &Object<T>): &T {
-        &self.value
-    }
-
-    #[private_generics(T)]
-    /// Borrow the mutable object value
-    public fun borrow_mut<T>(self: &mut Object<T>): &mut T {
-        &mut self.value
-    }
-
-    public(friend) fun internal_borrow_mut<T>(self: &mut Object<T>): &mut T {
+    public(friend) fun borrow_mut<T>(self: &mut Object<T>): &mut T {
         &mut self.value
     }
 
@@ -91,10 +82,8 @@ module moveos_std::object {
         self.owner = owner;
     }
 
-    #[private_generics(T)]
-    /// Transfer object to recipient
-    public fun transfer<T: key>(self: &mut Object<T>, recipient: address) {
-        self.owner = recipient;
+    public(friend) fun set_external<T>(_self: &mut Object<T>, _external: bool) {
+        //self.external = external;
     }
 
     public fun id<T>(self: &Object<T>): ObjectID {
@@ -105,13 +94,8 @@ module moveos_std::object {
         self.owner
     }
 
-    #[private_generics(T)]
     /// Unpack the object, return the id, owner, and value
-    public fun unpack<T>(self: Object<T>): (ObjectID, address, T) {
-        unpack_internal(self)
-    }
-
-    public(friend) fun unpack_internal<T>(self: Object<T>): (ObjectID, address, T) {
+    public(friend) fun unpack<T>(self: Object<T>): (ObjectID, address, T) {
         let Object{id, owner, value} = self;
         (id, owner, value)
     }
@@ -135,7 +119,7 @@ module moveos_std::object {
         let borrow_object = borrow_mut(&mut obj);
         assert!(borrow_object.count == object_count, 1001);
 
-        transfer(&mut obj, @0x10);
+        set_owner(&mut obj, @0x10);
         let obj_owner = owner(&obj);
         assert!(obj_owner != sender_addr, 1002);
 

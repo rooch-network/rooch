@@ -358,7 +358,7 @@ This function is for he <code>CoinType</code> module to extend,
 Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the coin store id
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_freeze_coin_store_extend">freeze_coin_store_extend</a>&lt;CoinType: key&gt;(_ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _coin_store_id: <a href="_ObjectID">object::ObjectID</a>, _frozen: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_freeze_coin_store_extend">freeze_coin_store_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, coin_store_id: <a href="_ObjectID">object::ObjectID</a>, frozen: bool)
 </code></pre>
 
 
@@ -368,14 +368,13 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_freeze_coin_store_extend">freeze_coin_store_extend</a>&lt;CoinType: key&gt;(
-    _ctx: &<b>mut</b> Context,
-    _coin_store_id: ObjectID,
-    _frozen: bool,
+    ctx: &<b>mut</b> Context,
+    coin_store_id: ObjectID,
+    frozen: bool,
 ) {
-    //TODO how <b>to</b> provide <b>freeze</b> <a href="coin.md#0x3_coin">coin</a> store via <a href="coin.md#0x3_coin">coin</a> store id
-    // <b>assert</b>!(<a href="_exist_object">context::exist_object</a>(ctx, coin_store_id), <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin_store.md#0x3_coin_store_ErrorCoinStoreNotFound">ErrorCoinStoreNotFound</a>));
-    // <b>let</b> coin_store_object = <a href="_borrow_object_mut">context::borrow_object_mut</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;(ctx, coin_store_id);
-    // <a href="_borrow_mut">object::borrow_mut</a>(coin_store_object).frozen = frozen;
+    <b>assert</b>!(<a href="_exist_object">context::exist_object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;(ctx, coin_store_id), <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin_store.md#0x3_coin_store_ErrorCoinStoreNotFound">ErrorCoinStoreNotFound</a>));
+    <b>let</b> coin_store_object = <a href="_borrow_object_mut">context::borrow_object_mut</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;(ctx, coin_store_id);
+    <a href="_borrow_mut">object_ref::borrow_mut</a>(coin_store_object).frozen = frozen;
 }
 </code></pre>
 

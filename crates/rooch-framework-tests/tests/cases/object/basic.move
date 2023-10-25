@@ -17,9 +17,8 @@ module test::m {
         // if the tx hash change, need to figure out why.
         assert!(x"7852c5dcbd87e82102dba0db36d44b5a9fb0006b3e828c0b5f0832f70a8ff6ee" == tx_hash, 1000);
         let obj_ref = context::new_object(ctx, S { v: 1});
-        let sender = context::sender(ctx);
         debug::print(&obj_ref);
-        object_ref::to_user_owner(obj_ref, sender);
+        object_ref::to_external(obj_ref);
     }
 
     public entry fun move_s_to_global(ctx: &mut Context, sender: signer, object_s: ObjectRef<S>) {
@@ -32,8 +31,7 @@ module test::m {
     public entry fun mint_cup<T: store>(ctx: &mut Context) {
         let obj_ref = context::new_object(ctx, Cup<T> { v: 2 });
         debug::print(&obj_ref);
-        let sender = context::sender(ctx);
-        object_ref::to_user_owner(obj_ref, sender);
+        object_ref::to_external(obj_ref);
     }
 
     public entry fun move_cup_to_global<T:store>(ctx: &mut Context, sender: signer, object_s: ObjectRef<Cup<S>>) {

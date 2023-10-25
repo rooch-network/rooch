@@ -21,6 +21,7 @@ pub struct GasParameters {
     pub test_helper: moveos_stdlib::test_helper::GasParameters,
     pub signer: moveos_stdlib::signer::GasParameters,
     pub move_module: moveos_stdlib::move_module::GasParameters,
+    pub object: moveos_stdlib::object::GasParameters,
 }
 
 impl GasParameters {
@@ -36,6 +37,7 @@ impl GasParameters {
             test_helper: moveos_stdlib::test_helper::GasParameters::zeros(),
             signer: moveos_stdlib::signer::GasParameters::zeros(),
             move_module: moveos_stdlib::move_module::GasParameters::zeros(),
+            object: moveos_stdlib::object::GasParameters::zeros(),
         }
     }
 }
@@ -89,6 +91,10 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     add_natives!(
         "move_module",
         moveos_stdlib::move_module::make_all(gas_params.move_module)
+    );
+    add_natives!(
+        "object_ref",
+        moveos_stdlib::object::make_all(gas_params.object)
     );
 
     let moveos_native_fun_table = make_table_from_iter(MOVEOS_STD_ADDRESS, natives);

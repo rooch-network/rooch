@@ -9,7 +9,7 @@ module moveos_std::context {
     use std::option::Option;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context::{Self, TxContext};
-    use moveos_std::object::{Self, Object, ObjectID};
+    use moveos_std::object::{Self, ObjectID};
     use moveos_std::object_ref::{Self, ObjectRef};
     use moveos_std::tx_meta::{TxMeta};
     use moveos_std::tx_result::{TxResult};
@@ -93,34 +93,29 @@ module moveos_std::context {
 
     // Wrap functions for StorageContext
 
+    #[private_generics(T)]
     /// Borrow Object from object store with object_id
-    public(friend) fun borrow_object<T: key>(self: &Context, object_id: ObjectID): &Object<T> {
-        storage_context::borrow<T>(&self.storage_context, object_id)
+    public fun borrow_object<T: key>(self: &Context, object_id: ObjectID): &ObjectRef<T> {
+        let object_entity = storage_context::borrow<T>(&self.storage_context, object_id);
+        object_ref::as_ref(object_entity)
     }
 
+    #[private_generics(T)]
     /// Borrow mut Object from object store with object_id
-    public(friend) fun borrow_object_mut<T: key>(self: &mut Context, object_id: ObjectID): &mut Object<T> {
-        storage_context::borrow_mut<T>(&mut self.storage_context, object_id)
+    public fun borrow_object_mut<T: key>(self: &mut Context, object_id: ObjectID): &mut ObjectRef<T> {
+        let object_entity = storage_context::borrow_mut<T>(&mut self.storage_context, object_id);
+        object_ref::as_mut_ref(object_entity)
     }
 
-    /// Remove object from object store, and unpack the Object
-    public(friend) fun remove_object<T: key>(self: &mut Context, object_id: ObjectID): (ObjectID, address, T) {
-        let obj = storage_context::remove<T>(&mut self.storage_context, object_id);
-        object::unpack_internal(obj)
-    }
-
-    public(friend) fun add_object<T: key>(self: &mut Context, object: Object<T>) {
-        storage_context::add(&mut self.storage_context, object);
-    }
-
-    public(friend) fun exist_object(self: &Context, object_id: ObjectID): bool {
+    public fun exist_object<T: key>(self: &Context, object_id: ObjectID): bool {
         storage_context::contains(&self.storage_context, object_id)
+        //TODO check the object type
     }
 
     // Wrap functions for Object
 
     #[private_generics(T)]
-    /// Create a new Object, the owner is the `sender`
+    /// Create a new Object, the default owner is the `sender`
     /// Add the Object to the global object storage and return the ObjectRef
     public fun new_object<T: key>(self: &mut Context, value: T): ObjectRef<T> {
         let id = fresh_object_id(self);
@@ -128,9 +123,10 @@ module moveos_std::context {
     }
 
     public(friend) fun new_object_with_id<T: key>(self: &mut Context, id: ObjectID, value: T) : ObjectRef<T> {
-        let obj = object::new(id, value);
-        let obj_ref = object_ref::new_internal(&mut obj);
-        storage_context::add(&mut self.storage_context, obj);
+        let obj_entity = object::new(id, value);
+        object::set_owner(&mut obj_entity, sender(self)); 
+        let obj_ref = object_ref::new_internal(&mut obj_entity);
+        storage_context::add(&mut self.storage_context, obj_entity);
         obj_ref
     }
 
@@ -187,7 +183,7 @@ module moveos_std::context {
             let obj_value = object_ref::borrow_extend(&ref);
             assert!(obj_value.value == 2, 1000);
         };
-        object_ref::to_user_owner(ref, sender);
+        object_ref::to_external(ref);
         drop_test_context(ctx);
     }
 }

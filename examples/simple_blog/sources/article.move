@@ -61,7 +61,8 @@ module simple_blog::article {
             id,
         };
         event::emit(ctx, article_created_event);
-        object_ref::to_user_owner(article_ref, owner_addr);
+        object_ref::transfer(&mut article_ref, owner_addr);
+        object_ref::to_external(article_ref);
         id
     }
 

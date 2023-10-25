@@ -8,7 +8,7 @@ module rooch_framework::coin_store {
     use moveos_std::object::{ObjectID};
     use moveos_std::context::{Self, Context};
     use moveos_std::type_info;
-    use moveos_std::object_ref::{ObjectRef};
+    use moveos_std::object_ref::{Self, ObjectRef};
     use rooch_framework::coin::{Self, Coin};
 
     friend rooch_framework::account_coin_store;
@@ -96,14 +96,13 @@ module rooch_framework::coin_store {
     /// This function is for he `CoinType` module to extend,
     /// Only the `CoinType` module can freeze or unfreeze a CoinStore by the coin store id
     public fun freeze_coin_store_extend<CoinType: key>(
-        _ctx: &mut Context,
-        _coin_store_id: ObjectID,
-        _frozen: bool,
+        ctx: &mut Context,
+        coin_store_id: ObjectID,
+        frozen: bool,
     ) {
-        //TODO how to provide freeze coin store via coin store id
-        // assert!(context::exist_object(ctx, coin_store_id), error::invalid_argument(ErrorCoinStoreNotFound));
-        // let coin_store_object = context::borrow_object_mut<CoinStore>(ctx, coin_store_id);
-        // object::borrow_mut(coin_store_object).frozen = frozen;
+        assert!(context::exist_object<CoinStore>(ctx, coin_store_id), error::invalid_argument(ErrorCoinStoreNotFound));
+        let coin_store_object = context::borrow_object_mut<CoinStore>(ctx, coin_store_id);
+        object_ref::borrow_mut(coin_store_object).frozen = frozen;
     }
 
     // Internal functions

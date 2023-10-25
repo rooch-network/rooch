@@ -109,6 +109,16 @@ where
                             ))
                             .finish(Location::Undefined));
                     }
+                    if object.owner != self.ctx.tx_context.sender() {
+                        return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
+                            .with_message(format!(
+                                "Object owner mismatch, object owner:{:?}, sender:{:?}",
+                                object.owner,
+                                self.ctx.tx_context.sender()
+                            ))
+                            .finish(Location::Undefined));
+                    }
+                    //TODO check the object is external object.
                 }
             }
         }
@@ -117,7 +127,7 @@ where
 
     pub fn load_argument(&mut self, _func: &LoadedFunctionInstantiation, _args: &[Vec<u8>]) {
         //TODO load the object argument to the session
-        // If the argument is `ObjectRef`, we need to change the Object to code owner object.
+        // If the argument is `ObjectRef`, we need to change the Object to internal object.
         // We need to refactor the raw table, migrate the TableData to StorageContext.
     }
 }

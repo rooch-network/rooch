@@ -4,6 +4,7 @@
 pub mod bcs;
 pub mod event;
 pub mod move_module;
+pub mod object;
 pub mod raw_table;
 pub mod rlp;
 pub mod signer;

@@ -12,6 +12,7 @@ module moveos_std::account_storage {
     use moveos_std::type_table::{Self, TypeTable};
     use moveos_std::table::{Self, Table};
     use moveos_std::object::{Self, ObjectID};
+    use moveos_std::object_ref;
     use moveos_std::context::{Self, Context};
     use moveos_std::tx_context;
     use moveos_std::move_module::{Self, MoveModule};
@@ -47,19 +48,20 @@ module moveos_std::account_storage {
     /// Create a new account storage space
     public fun create_account_storage(ctx: &mut Context, account: address) {
         let object_id = object::address_to_object_id(account);
-        assert!(!context::exist_object(ctx, object_id), ErrorAccountAlreadyExists);
+        assert!(!context::exist_object<AccountStorage>(ctx, object_id), ErrorAccountAlreadyExists);
         let account_storage = AccountStorage {
             resources: type_table::new_with_id(named_table_id(account, NamedTableResource)),
             modules: table::new_with_id(named_table_id(account, NamedTableModule)),
         };
-        let obj = object::new(object_id, account_storage);
-        context::add_object(ctx, obj);
+        let obj = context::new_object_with_id(ctx, object_id, account_storage);
+        object_ref::transfer_extend(&mut obj, account);
+        object_ref::to_external(obj);
     }
 
     /// check if account storage eixst
     public fun exist_account_storage(ctx: &Context, account: address): bool {
         let object_id = object::address_to_object_id(account);
-        context::exist_object(ctx, object_id)
+        context::exist_object<AccountStorage>(ctx, object_id)
     }
 
     public fun ensure_account_storage(ctx: &mut Context, account: address) {
@@ -73,13 +75,13 @@ module moveos_std::account_storage {
     fun borrow_account_storage(ctx: &Context, account: address): &AccountStorage{
         let object_id = object::address_to_object_id(account);
         let object = context::borrow_object<AccountStorage>(ctx, object_id);
-        object::borrow(object)
+        object_ref::borrow_extend(object)
     }
 
     fun borrow_account_storage_mut(ctx: &mut Context, account: address): &mut AccountStorage{
         let object_id = object::address_to_object_id(account);
         let object = context::borrow_object_mut<AccountStorage>(ctx, object_id);
-        object::borrow_mut(object)
+        object_ref::borrow_mut_extend(object)
     }
 
     /// Borrow a resource from the AccountStorage

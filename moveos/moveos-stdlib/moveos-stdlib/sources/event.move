@@ -10,6 +10,7 @@ module moveos_std::event {
     use moveos_std::bcs;
     use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, ObjectID};
+    use moveos_std::object_ref;
     use moveos_std::type_info;
 
     #[test_only]
@@ -20,7 +21,7 @@ module moveos_std::event {
     /// A handle for an event such that:
     /// 1. Other modules can emit events to this handle.
     /// 2. Storage can use this handle to prove the total number of events that happened in the past.
-    struct EventHandle has key, store {
+    struct EventHandle has key {
         /// Total number of events emitted to this event stream.
         counter: u64,
     }
@@ -34,28 +35,28 @@ module moveos_std::event {
 
     fun exists_event_handle<T>(ctx: &Context): bool {
         let event_handle_id = derive_event_handle_id<T>();
-        context::exist_object(ctx, event_handle_id)
+        context::exist_object<EventHandle>(ctx, event_handle_id)
     }
 
     /// Borrow a event handle from the object storage
     fun borrow_event_handle<T>(ctx: &Context): &EventHandle {
         let event_handle_id = derive_event_handle_id<T>();
         let object = context::borrow_object<EventHandle>(ctx, event_handle_id);
-        object::borrow(object)
+        object_ref::borrow_extend(object)
     }
 
     /// Borrow a mut event handle from the object storage
     fun borrow_event_handle_mut<T>(ctx: &mut Context): &mut EventHandle {
         let event_handle_id = derive_event_handle_id<T>();
         let object = context::borrow_object_mut<EventHandle>(ctx, event_handle_id);
-        object::borrow_mut(object)
+        object_ref::borrow_mut_extend(object)
     }
 
     /// Get event handle owner
     fun get_event_handle_owner<T>(ctx: &Context): address {
         let event_handle_id = derive_event_handle_id<T>();
         let object = context::borrow_object<EventHandle>(ctx, event_handle_id);
-        object::owner(object)
+        object_ref::owner(object)
     }
 
     /// Method to get event handle Metadata
@@ -80,8 +81,11 @@ module moveos_std::event {
             counter: 0,
         };
         //TODO refactor EventHandle with singleton Object.
-        let event_handle_object = object::new(event_handle_id, event_handle);
-        context::add_object(ctx, event_handle_object);
+        let obj = context::new_object_with_id(ctx, event_handle_id, event_handle);
+        let type_info = type_info::type_of<T>();
+        let owner = type_info::account_address(&type_info);
+        object_ref::transfer_extend(&mut obj, owner);
+        object_ref::to_external(obj);
     }
 
     public fun ensure_event_handle<T>(ctx: &mut Context) {
