@@ -5068,6 +5068,7 @@ dependencies = [
  "better_any",
  "fastcrypto",
  "hex",
+ "itertools",
  "linked-hash-map",
  "log",
  "move-binary-format",

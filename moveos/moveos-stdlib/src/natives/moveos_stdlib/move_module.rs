@@ -3,6 +3,7 @@
 
 use crate::natives::helpers::{make_module_natives, make_native};
 use better_any::{Tid, TidAble};
+use itertools::zip_eq;
 use move_binary_format::{
     compatibility::Compatibility,
     errors::{PartialVMError, PartialVMResult},
@@ -14,6 +15,7 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::ModuleId,
     resolver::ModuleResolver,
+    value::MoveValue,
     vm_status::StatusCode,
 };
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -25,13 +27,14 @@ use move_vm_types::{
 };
 use moveos_stdlib_builder::dependency_order::sort_by_dependency_order;
 use smallvec::smallvec;
-use std::collections::{BTreeSet, VecDeque};
+use std::collections::{BTreeSet, HashMap, VecDeque};
 
 // ========================================================================================
 
 const E_ADDRESS_NOT_MATCH_WITH_SIGNER: u64 = 1;
 const E_MODULE_VERIFICATION_ERROR: u64 = 2;
 const E_MODULE_INCOMPATIBLE: u64 = 3;
+const E_LENTH_NOT_MATCH: u64 = 4;
 
 /// The native module context.
 #[derive(Tid)]
@@ -265,6 +268,123 @@ fn check_compatibililty_inner(
     }
     Ok(NativeResult::ok(cost, smallvec![]))
 }
+
+/***************************************************************************************************
+ * native fun remap_module_addresses_inner(
+ *     bytes: vector<vector<u8>>,
+ *     old_addresses: vector<address>,
+ *     new_addresses: vector<address>,
+ * ): (vector<u8>, vector<vector<u8>>);
+ * Native function to remap addresses in module binary where the length of
+ * `old_addresses` must equal to that of `new_addresses`.
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct RemapAddressesGasParameters {
+    pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
+}
+
+fn remap_module_addresses_inner(
+    gas_params: &RemapAddressesGasParameters,
+    _context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(args.len() == 3, "Wrong number of arguments");
+    let mut cost = gas_params.base;
+    let new_address_vec = pop_arg!(args, Vector);
+    let old_address_vec = pop_arg!(args, Vector);
+    let num_addresses = new_address_vec.elem_views().len();
+    if num_addresses != old_address_vec.elem_views().len() {
+        return Ok(NativeResult::err(
+            cost,
+            moveos_types::move_std::error::invalid_argument(E_LENTH_NOT_MATCH),
+        ));
+    };
+    let num_addresses = num_addresses as u64;
+    let new_addresses = new_address_vec.unpack(&Type::Address, num_addresses)?;
+    let old_addresses = old_address_vec.unpack(&Type::Address, num_addresses)?;
+
+    let address_mapping: HashMap<AccountAddress, AccountAddress> =
+        zip_eq(old_addresses, new_addresses)
+            .map(|(a, b)| {
+                Ok((
+                    a.value_as::<AccountAddress>()?,
+                    b.value_as::<AccountAddress>()?,
+                ))
+            })
+            .collect::<PartialVMResult<_>>()?;
+
+    let mut bundle = vec![];
+    for module in pop_arg!(args, Vec<Value>) {
+        let byte_codes = module.value_as::<Vec<u8>>()?;
+        cost += gas_params.per_byte * NumBytes::new(byte_codes.len() as u64);
+        bundle.push(byte_codes);
+    }
+    let mut compiled_modules = bundle
+        .into_iter()
+        .map(|b| CompiledModule::deserialize(&b))
+        .collect::<PartialVMResult<Vec<CompiledModule>>>()?;
+
+    let mut remapped_bubdles = vec![];
+    for m in compiled_modules.iter_mut() {
+        // TODO: charge gas
+        module_remap_addresses(m, &address_mapping)?;
+        let mut binary: Vec<u8> = vec![];
+        m.serialize(&mut binary).map_err(|e| {
+            PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR).with_message(e.to_string())
+        })?;
+        let value = Value::vector_u8(binary);
+        remapped_bubdles.push(value);
+    }
+    let output_modules = Vector::pack(&Type::Vector(Box::new(Type::U8)), remapped_bubdles)?;
+    Ok(NativeResult::ok(cost, smallvec![output_modules]))
+}
+
+fn module_remap_constant_addresses(value: &mut MoveValue, f: &dyn Fn(&mut AccountAddress)) {
+    match value {
+        MoveValue::Address(addr) => f(addr),
+        MoveValue::Vector(vals) => {
+            vals.iter_mut()
+                .for_each(|val| module_remap_constant_addresses(val, f));
+        }
+        // TODO: handle constant addresses in Other struct
+        _ => {}
+    }
+}
+
+fn module_remap_addresses(
+    module: &mut CompiledModule,
+    address_mapping: &HashMap<AccountAddress, AccountAddress>,
+) -> PartialVMResult<()> {
+    // replace addresses in address identifiers.
+    for addr in module.address_identifiers.iter_mut() {
+        if let Some(new_addr) = address_mapping.get(addr) {
+            *addr = *new_addr;
+        }
+    }
+    // replace addresses in constant.
+    for constant in module.constant_pool.iter_mut() {
+        let mut constant_value = constant.deserialize_constant().ok_or_else(|| {
+            PartialVMError::new(StatusCode::VALUE_DESERIALIZATION_ERROR)
+                .with_message("cannot deserialize constant".to_string())
+        })?;
+
+        module_remap_constant_addresses(&mut constant_value, &|addr| {
+            if let Some(new_addr) = address_mapping.get(addr) {
+                *addr = *new_addr;
+            }
+        });
+
+        let bytes = constant_value.simple_serialize().ok_or_else(|| {
+            PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR)
+                .with_message("cannot serialize constant".to_string())
+        })?;
+        constant.data = bytes;
+    }
+    Ok(())
+}
+
 /***************************************************************************************************
  * module
  *
@@ -275,6 +395,7 @@ pub struct GasParameters {
     pub sort_and_verify_modules_inner: VerifyModulesGasParameters,
     pub request_init_functions: RequestInitFunctionsGasParameters,
     pub check_compatibililty_inner: CheckCompatibilityInnerGasParameters,
+    pub remap_module_addresses_inner: RemapAddressesGasParameters,
 }
 
 impl GasParameters {
@@ -293,6 +414,10 @@ impl GasParameters {
                 per_byte: 0.into(),
             },
             check_compatibililty_inner: CheckCompatibilityInnerGasParameters {
+                base: 0.into(),
+                per_byte: 0.into(),
+            },
+            remap_module_addresses_inner: RemapAddressesGasParameters {
                 base: 0.into(),
                 per_byte: 0.into(),
             },
@@ -322,6 +447,13 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             make_native(
                 gas_params.check_compatibililty_inner,
                 check_compatibililty_inner,
+            ),
+        ),
+        (
+            "remap_module_addresses_inner",
+            make_native(
+                gas_params.remap_module_addresses_inner,
+                remap_module_addresses_inner,
             ),
         ),
     ];

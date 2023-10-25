@@ -12,10 +12,12 @@
 -  [Function `module_name`](#0x2_move_module_module_name)
 -  [Function `sort_and_verify_modules`](#0x2_move_module_sort_and_verify_modules)
 -  [Function `check_comatibility`](#0x2_move_module_check_comatibility)
+-  [Function `remap_module_addresses`](#0x2_move_module_remap_module_addresses)
 -  [Function `request_init_functions`](#0x2_move_module_request_init_functions)
 
 
-<pre><code><b>use</b> <a href="">0x1::string</a>;
+<pre><code><b>use</b> <a href="">0x1::error</a>;
+<b>use</b> <a href="">0x1::string</a>;
 </code></pre>
 
 
@@ -58,6 +60,16 @@ Module address is not the same as the signer
 
 
 <pre><code><b>const</b> <a href="move_module.md#0x2_move_module_ErrorAddressNotMatchWithSigner">ErrorAddressNotMatchWithSigner</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x2_move_module_ErrorLengthNotMatch"></a>
+
+Vector length not match
+
+
+<pre><code><b>const</b> <a href="move_module.md#0x2_move_module_ErrorLengthNotMatch">ErrorLengthNotMatch</a>: u64 = 4;
 </code></pre>
 
 
@@ -188,6 +200,59 @@ Abort if the new module is not compatible with the old module.
 
 <pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_check_comatibility">check_comatibility</a>(new_module: &<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>, old_module: &<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>) {
     <a href="move_module.md#0x2_move_module_check_compatibililty_inner">check_compatibililty_inner</a>(new_module.byte_codes, old_module.byte_codes);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_move_module_remap_module_addresses"></a>
+
+## Function `remap_module_addresses`
+
+Remap addresses in module binary where the length of
+<code>old_addresses</code> must equal to that of <code>new_addresses</code>.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_remap_module_addresses">remap_module_addresses</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;, new_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_remap_module_addresses">remap_module_addresses</a>(
+    modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt;,
+    old_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;,
+    new_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;,
+): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt; {
+    <b>assert</b>!(
+        <a href="_length">vector::length</a>(&old_addresses) == <a href="_length">vector::length</a>(&new_addresses),
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="move_module.md#0x2_move_module_ErrorLengthNotMatch">ErrorLengthNotMatch</a>)
+    );
+    <b>let</b> bytes_vec = <a href="_empty">vector::empty</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;();
+    <b>let</b> i = 0u64;
+    <b>let</b> len = <a href="_length">vector::length</a>(&modules);
+    <b>while</b> (i &lt; len) {
+        <a href="_push_back">vector::push_back</a>(&<b>mut</b> bytes_vec, <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> modules).byte_codes);
+        i = i + 1;
+    };
+    <b>let</b> remapped_bytes = <a href="move_module.md#0x2_move_module_remap_module_addresses_inner">remap_module_addresses_inner</a>(bytes_vec, old_addresses, new_addresses);
+    // <b>let</b> remapped_bytes = <a href="move_module.md#0x2_move_module_remap_module_addresses_inner">remap_module_addresses_inner</a>(bytes_vec);
+    <b>let</b> remapped_modules = <a href="_empty">vector::empty</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt;();
+    i = 0u64;
+    <b>let</b> len = <a href="_length">vector::length</a>(&remapped_bytes);
+    <b>while</b> (i &lt; len) {
+        <a href="_push_back">vector::push_back</a>(&<b>mut</b> remapped_modules, <a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a> {
+            byte_codes: <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> remapped_bytes),
+        });
+        i = i + 1;
+    };
+    <a href="_destroy_empty">vector::destroy_empty</a>(remapped_bytes);
+    remapped_modules
 }
 </code></pre>
 
