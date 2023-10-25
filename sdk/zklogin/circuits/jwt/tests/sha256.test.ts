@@ -3,7 +3,7 @@
 
 import { wasm as wasm_tester } from 'circom_tester'
 import path from 'path'
-import { padString, sha256Pad, shaHash, Uint8ArrayToCharArray, uint8ToBits } from '../src'
+import { padString, sha256Pad, shaHash, Uint8ArrayToCharArray, uint8ToBits, getDecoratedOutputArray, getDecoratedOutputValue } from '../src'
 
 describe('SHA256', () => {
   jest.setTimeout(10 * 60 * 1000) // 10 minutes
@@ -65,6 +65,7 @@ describe('SHA256', () => {
       const inputs = [
         'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0',
       ]
+
       for (const input of inputs) {
         const padText = padString(input, 640)
         const [paddedMsg, messageLen] = sha256Pad(encoder.encode(input), 640)
@@ -76,7 +77,14 @@ describe('SHA256', () => {
         console.log('input:', input)
         console.log('paddedMsg:', JSON.stringify(Array.from(paddedMsg)))
         console.log('messageLen:', messageLen)
-        console.log('witness:', JSON.stringify(witness))
+        console.log(
+          'padded_len:',
+          JSON.stringify(await getDecoratedOutputValue(circuit, witness, 'main.padded_len')),
+        )
+        console.log(
+          'padded_text:',
+          JSON.stringify(await getDecoratedOutputArray(circuit, witness, 'main.padded_text', 640)),
+        )
 
         await circuit.checkConstraints(witness)
         await circuit.assertOut(witness, {
