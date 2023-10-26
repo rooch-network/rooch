@@ -1,9 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use self::{
-    authenticator::Authenticator, rooch::RoochTransaction, ethereum::EthereumTransaction,
-};
+use self::{authenticator::Authenticator, ethereum::EthereumTransaction, rooch::RoochTransaction};
 use crate::address::MultiChainAddress;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;

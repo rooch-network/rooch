@@ -251,7 +251,7 @@ impl EthereumTransaction {
             block_hash: None,
             block_number: None,
             transaction_index: None,
-            from: H160::from_slice(&sender.0.0[..20]), // scrape first 20 bytes as ethereum address
+            from: H160::from_slice(&sender.0 .0[..20]), // scrape first 20 bytes as ethereum address
             to: None,
             value: U256::one(),
             gas_price: None,

@@ -63,9 +63,11 @@ fn test_validate_ethereum() {
     let tx = EthereumTransaction::new_for_test(sender, sequence_number, action_bytes);
 
     let multi_chain_address_sender = tx.sender();
-    let resolved_sender = address_mapping.resolve_or_generate(multi_chain_address_sender.clone()).unwrap(); 
-    let authenticator = tx.authenticator_info().unwrap(); 
-    let moveos_tx = tx.construct_moveos_transaction(resolved_sender).unwrap(); 
+    let resolved_sender = address_mapping
+        .resolve_or_generate(multi_chain_address_sender.clone())
+        .unwrap();
+    let authenticator = tx.authenticator_info().unwrap();
+    let moveos_tx = tx.construct_moveos_transaction(resolved_sender).unwrap();
 
     transaction_validator
         .validate(&moveos_tx.ctx, authenticator)
