@@ -44,11 +44,11 @@ template Sha256Pad(max_bytes) {
     padded_len <-- (len.length + 9) + (64 - (len.length + 9) % 64);
     assert(padded_len % 64 == 0);
 
-    component len2bytes = Packed2Bytes(8);
-    len2bytes.in <== len.length;
+    component len2bytes = Packed2BytesBigEndian(8);
+    len2bytes.in <== len.length * 8;
 
     for (var i = 0; i < max_bytes; i++) {
-        padded_text[i] <-- i < len.length ? text[i] : (i == len.length ? (1 << 7) : (i < padded_len ? (i % 64 < 56 ? 0 : (i % 64 > 56 ? len2bytes.out[7 - (i % 64 - 56)]: 0)) : 0)); // Add the 1 on the end and text length
+        padded_text[i] <-- i < len.length ? text[i] : (i == len.length ? (1 << 7) : (i < padded_len ? (i % 64 < 56 ? 0 : (i % 64 > 56 ? len2bytes.out[(i % 64 - 56)]: 0)) : 0)); // Add the 1 on the end and text length
     }
 }
 

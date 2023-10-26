@@ -3,14 +3,13 @@
 
 import { wasm as wasm_tester } from 'circom_tester'
 import path from 'path'
-import { padString, sha256Pad, shaHash, Uint8ArrayToCharArray, uint8ToBits, getDecoratedOutputArray, getDecoratedOutputValue } from '../src'
+import { padString, sha256Pad, shaHash, Uint8ArrayToCharArray, uint8ToBits } from '../src'
 
 describe('SHA256', () => {
   jest.setTimeout(10 * 60 * 1000) // 10 minutes
 
   let circuit: any
 
-  /*
   describe('Sha256Bytes', () => {
     beforeAll(async () => {
       circuit = await wasm_tester(path.join(__dirname, './sha256-bytes-test.circom'), {
@@ -46,7 +45,6 @@ describe('SHA256', () => {
       }
     })
   })
-  */
 
   describe('Sha256Pad', () => {
     beforeAll(async () => {
@@ -74,18 +72,6 @@ describe('SHA256', () => {
           text: padText,
         })
 
-        console.log('input:', input)
-        console.log('paddedMsg:', JSON.stringify(Array.from(paddedMsg)))
-        console.log('messageLen:', messageLen)
-        console.log(
-          'padded_len:',
-          JSON.stringify(await getDecoratedOutputValue(circuit, witness, 'main.padded_len')),
-        )
-        console.log(
-          'padded_text:',
-          JSON.stringify(await getDecoratedOutputArray(circuit, witness, 'main.padded_text', 640)),
-        )
-
         await circuit.checkConstraints(witness)
         await circuit.assertOut(witness, {
           padded_len: messageLen,
@@ -95,7 +81,6 @@ describe('SHA256', () => {
     })
   })
 
-  /*
   describe('Sha256String', () => {
     beforeAll(async () => {
       circuit = await wasm_tester(path.join(__dirname, './sha256-string-test.circom'), {
@@ -126,5 +111,4 @@ describe('SHA256', () => {
       }
     })
   })
-  */
 })

@@ -20,7 +20,6 @@ template JWTSplit(max_bytes) {
 }
 
 template JWTVerify(max_bytes, n, k) {
-  assert(max_bytes % 64 == 0);
   assert(n * k > 2048); // constraints for 2048 bit RSA
   assert(n < (255 \ 2)); // we want a multiplication to fit into a circom signal
 
@@ -28,12 +27,8 @@ template JWTVerify(max_bytes, n, k) {
   signal input signature[k];
   signal input pubkey[k];
 
-  // JWT length
-  component jwt_len = Len(max_bytes);
-  jwt_len.text <== jwt;
-
   // JWT hash
-  signal output sha[256] <== Sha256Bytes(max_bytes)(jwt, jwt_len.length);
+  signal output sha[256] <== Sha256String(max_bytes)(jwt);
 
   var msg_len = (256 + n) \ n;
 

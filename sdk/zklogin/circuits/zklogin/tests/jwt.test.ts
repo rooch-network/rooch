@@ -12,7 +12,6 @@ describe('JWT Test', () => {
 
   let circuit: any
 
-  /*
   describe('JWTSplit', () => {
     beforeAll(async () => {
       circuit = await wasm_tester(path.join(__dirname, './jwt-split-test.circom'), {
@@ -53,7 +52,6 @@ describe('JWT Test', () => {
       }
     })
   })
-  */
 
   describe('JWTVerify', () => {
     beforeAll(async () => {
@@ -79,6 +77,7 @@ describe('JWT Test', () => {
       const pubKeyData = pki.publicKeyFromPem(publicKeyPem.toString())
       const pubkeyBigInt = BigInt(pubKeyData.n.toString())
 
+      const startTime = new Date().getTime()
       const witness = await circuit.calculateWitness({
         jwt: padString(
           'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0',
@@ -87,6 +86,7 @@ describe('JWT Test', () => {
         signature: toCircomBigIntBytes(signatureBigInt),
         pubkey: toCircomBigIntBytes(pubkeyBigInt),
       })
+      console.log('duration:', new Date().getTime() - startTime)
 
       await circuit.checkConstraints(witness)
       await circuit.assertOut(witness, {})
