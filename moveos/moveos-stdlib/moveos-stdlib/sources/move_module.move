@@ -86,8 +86,8 @@ module moveos_std::move_module {
         rebinded_modules
     }
 
-    /// Replace given module's name to the new name
-    public fun replace_module_name(
+    /// Replace given module's identifier to the new ones
+    public fun replace_module_identiner (
         modules: vector<MoveModule>,
         old_names: vector<String>,
         new_names: vector<String>,
@@ -118,13 +118,13 @@ module moveos_std::move_module {
         rebinded_modules
     }
 
-    /// Replace given struct's name to the new name
-    public fun replace_struct_name(
+    /// Replace given struct's identifier to the new ones
+    public fun replace_struct_identifier(
         modules: vector<MoveModule>,
         old_names: vector<String>,
         new_names: vector<String>,
     ): vector<MoveModule> {
-        replace_module_name(modules, old_names, new_names)
+        replace_module_identiner(modules, old_names, new_names)
     }
 
     native fun module_name_inner(byte_codes: &vector<u8>): String;
