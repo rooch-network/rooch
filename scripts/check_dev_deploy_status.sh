@@ -18,9 +18,9 @@ STATUS=$(docker inspect --format '{{.State.Status}}' $CONTAINER_ID)
 if [ "$STATUS" != "running" ]; then
     echo "Container $CONTAINER_ID is not running，trying to clean data and restart"
     echo "Start cleaning the data."
-    rooch server clean -n dev
+    docker run -v /root:/root ghcr.io/rooch-network/rooch:$IMAGE_TAG server clean -n dev
     rm -rf ~/.rooch
-    rooch init -m "$DEV_MNEMONIC_PHRASE" --skip-password
+    docker run -v /root:/root ghcr.io/rooch-network/rooch:$IMAGE_TAG init -m "$(echo $DEV_MNEMONIC_PHRASE)" --skip-password
     docker start $CONTAINER_ID
     if [ $? -eq 0 ]; then
         echo "Container $CONTAINER_ID Successfully restarted."
