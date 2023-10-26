@@ -578,23 +578,15 @@ fn module_replace_constant_bytes(
                 .with_message("cannot deserialize constant".to_string())
         })?;
 
-        // match constant_value {
-        //     MoveValue::Vector(vals) => MoveValue::vec_to_vec_u8(vals)?,
-        // }
         if let MoveValue::Vector(vals) = constant_value {
-            match MoveValue::vec_to_vec_u8(vals) {
-                Ok(bytes) => {
-                    if let Some(new_bytes) = bytes_mapping.get(&bytes) {
-                        constant.data = MoveValue::vector_u8(new_bytes.clone())
-                            .simple_serialize()
-                            .ok_or_else(|| {
-                                PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR)
-                                    .with_message("cannot serialize constant".to_string())
-                            })?;
-                    }
-                }
-                Err(_) => {
-                    // Inner type is not u8, just pass
+            if let Ok(bytes) = MoveValue::vec_to_vec_u8(vals) {
+                if let Some(new_bytes) = bytes_mapping.get(&bytes) {
+                    constant.data = MoveValue::vector_u8(new_bytes.clone())
+                        .simple_serialize()
+                        .ok_or_else(|| {
+                            PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR)
+                                .with_message("cannot serialize constant".to_string())
+                        })?;
                 }
             }
         }

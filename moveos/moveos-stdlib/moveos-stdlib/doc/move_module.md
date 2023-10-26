@@ -13,7 +13,8 @@
 -  [Function `sort_and_verify_modules`](#0x2_move_module_sort_and_verify_modules)
 -  [Function `check_comatibility`](#0x2_move_module_check_comatibility)
 -  [Function `binding_module_address`](#0x2_move_module_binding_module_address)
--  [Function `binding_module_name`](#0x2_move_module_binding_module_name)
+-  [Function `replace_module_name`](#0x2_move_module_replace_module_name)
+-  [Function `replace_struct_name`](#0x2_move_module_replace_struct_name)
 -  [Function `request_init_functions`](#0x2_move_module_request_init_functions)
 -  [Function `replace_address_identifiers`](#0x2_move_module_replace_address_identifiers)
 -  [Function `replace_identifiers`](#0x2_move_module_replace_identifiers)
@@ -21,7 +22,8 @@
 -  [Function `replace_bytes_constant`](#0x2_move_module_replace_bytes_constant)
 
 
-<pre><code><b>use</b> <a href="">0x1::string</a>;
+<pre><code><b>use</b> <a href="">0x1::error</a>;
+<b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 </code></pre>
 
@@ -263,14 +265,14 @@ Binding given module's address to the new address
 
 </details>
 
-<a name="0x2_move_module_binding_module_name"></a>
+<a name="0x2_move_module_replace_module_name"></a>
 
-## Function `binding_module_name`
+## Function `replace_module_name`
 
-Binding given module's name to the new name
+Replace given module's name to the new name
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_binding_module_name">binding_module_name</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_name: <a href="_String">string::String</a>, new_name: <a href="_String">string::String</a>): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_module_name">replace_module_name</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, new_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
 </code></pre>
 
 
@@ -279,11 +281,15 @@ Binding given module's name to the new name
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_binding_module_name">binding_module_name</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_module_name">replace_module_name</a>(
     modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt;,
-    old_name: String,
-    new_name: String,
+    old_names: <a href="">vector</a>&lt;String&gt;,
+    new_names: <a href="">vector</a>&lt;String&gt;,
 ): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt; {
+    <b>assert</b>!(
+        <a href="_length">vector::length</a>(&old_names) == <a href="_length">vector::length</a>(&new_names),
+        <a href="_invalid_argument">error::invalid_argument</a>(<a href="move_module.md#0x2_move_module_ErrorLengthNotMatch">ErrorLengthNotMatch</a>)
+    );
     <b>let</b> bytes_vec = <a href="_empty">vector::empty</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;();
     <b>let</b> i = 0u64;
     <b>let</b> len = <a href="_length">vector::length</a>(&modules);
@@ -291,8 +297,6 @@ Binding given module's name to the new name
         <a href="_push_back">vector::push_back</a>(&<b>mut</b> bytes_vec, <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> modules).byte_codes);
         i = i + 1;
     };
-    <b>let</b> old_names = <a href="_singleton">vector::singleton</a>(old_name);
-    <b>let</b> new_names = <a href="_singleton">vector::singleton</a>(new_name);
 
     <b>let</b> rebinded_bytes = <a href="move_module.md#0x2_move_module_replace_identifiers">replace_identifiers</a>(bytes_vec, old_names, new_names);
     <b>let</b> rebinded_modules = <a href="_empty">vector::empty</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt;();
@@ -306,6 +310,35 @@ Binding given module's name to the new name
     };
     <a href="_destroy_empty">vector::destroy_empty</a>(rebinded_bytes);
     rebinded_modules
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_move_module_replace_struct_name"></a>
+
+## Function `replace_struct_name`
+
+Replace given struct's name to the new name
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_struct_name">replace_struct_name</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, new_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_struct_name">replace_struct_name</a>(
+    modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt;,
+    old_names: <a href="">vector</a>&lt;String&gt;,
+    new_names: <a href="">vector</a>&lt;String&gt;,
+): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt; {
+    <a href="move_module.md#0x2_move_module_replace_module_name">replace_module_name</a>(modules, old_names, new_names)
 }
 </code></pre>
 

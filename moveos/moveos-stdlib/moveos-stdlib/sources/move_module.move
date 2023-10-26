@@ -4,6 +4,7 @@
 /// `move_module` provides some basic functions for handle Move module in Move.
 module moveos_std::move_module {
     use std::vector;
+    use std::error;
     use std::string::String;
 
     friend moveos_std::account_storage;
@@ -85,12 +86,16 @@ module moveos_std::move_module {
         rebinded_modules
     }
 
-    /// Binding given module's name to the new name
-    public fun binding_module_name(
+    /// Replace given module's name to the new name
+    public fun replace_module_name(
         modules: vector<MoveModule>,
-        old_name: String,
-        new_name: String,
+        old_names: vector<String>,
+        new_names: vector<String>,
     ): vector<MoveModule> {
+        assert!(
+            vector::length(&old_names) == vector::length(&new_names),
+            error::invalid_argument(ErrorLengthNotMatch)
+        );
         let bytes_vec = vector::empty<vector<u8>>();
         let i = 0u64;
         let len = vector::length(&modules);
@@ -98,8 +103,6 @@ module moveos_std::move_module {
             vector::push_back(&mut bytes_vec, vector::pop_back(&mut modules).byte_codes);
             i = i + 1;
         };
-        let old_names = vector::singleton(old_name);
-        let new_names = vector::singleton(new_name);
         
         let rebinded_bytes = replace_identifiers(bytes_vec, old_names, new_names);
         let rebinded_modules = vector::empty<MoveModule>();
@@ -113,6 +116,15 @@ module moveos_std::move_module {
         };
         vector::destroy_empty(rebinded_bytes);
         rebinded_modules
+    }
+
+    /// Replace given struct's name to the new name
+    public fun replace_struct_name(
+        modules: vector<MoveModule>,
+        old_names: vector<String>,
+        new_names: vector<String>,
+    ): vector<MoveModule> {
+        replace_module_name(modules, old_names, new_names)
     }
 
     native fun module_name_inner(byte_codes: &vector<u8>): String;
