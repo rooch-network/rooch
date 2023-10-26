@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use self::{
-    authenticator::Authenticator, ethereum::EthereumTransactionData, rooch::RoochTransaction,
+    authenticator::Authenticator, rooch::RoochTransaction, ethereum::EthereumTransaction,
 };
 use crate::address::MultiChainAddress;
 use anyhow::Result;
@@ -74,7 +74,7 @@ pub trait AbstractTransaction {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum TypedTransaction {
     Rooch(RoochTransaction),
-    Ethereum(EthereumTransactionData),
+    Ethereum(EthereumTransaction),
 }
 
 impl TryFrom<RawTransaction> for TypedTransaction {
@@ -87,7 +87,7 @@ impl TryFrom<RawTransaction> for TypedTransaction {
                 Ok(TypedTransaction::Rooch(tx))
             }
             TransactionType::Ethereum => {
-                let tx = ethereum::EthereumTransactionData::decode(&raw.raw)?;
+                let tx = EthereumTransaction::decode(&raw.raw)?;
                 Ok(TypedTransaction::Ethereum(tx))
             }
         }

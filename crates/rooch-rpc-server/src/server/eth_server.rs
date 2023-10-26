@@ -37,7 +37,7 @@ use rooch_types::{
     framework::gas_coin::GasCoin,
     transaction::{AbstractTransaction, TypedTransaction},
 };
-use rooch_types::{chain_id::ChainID, transaction::ethereum::EthereumTransactionData};
+use rooch_types::{chain_id::ChainID, transaction::ethereum::EthereumTransaction};
 use std::iter;
 use std::str::FromStr;
 use std::time::SystemTime;
@@ -353,7 +353,7 @@ impl EthAPIServer for EthServer {
 
     async fn send_raw_transaction(&self, bytes: BytesView) -> RpcResult<H256View> {
         info!("send_raw_transaction: {:?}", bytes);
-        let eth_tx = EthereumTransactionData::decode(&bytes.0)?;
+        let eth_tx = EthereumTransaction::decode(&bytes.0)?;
         info!("send_raw_transaction input: {:?}", eth_tx.0.input);
         let action = eth_tx.decode_calldata_to_action()?;
         info!(
