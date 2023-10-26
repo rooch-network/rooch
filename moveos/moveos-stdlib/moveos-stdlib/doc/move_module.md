@@ -13,8 +13,12 @@
 -  [Function `sort_and_verify_modules`](#0x2_move_module_sort_and_verify_modules)
 -  [Function `check_comatibility`](#0x2_move_module_check_comatibility)
 -  [Function `binding_module_address`](#0x2_move_module_binding_module_address)
--  [Function `replace_module_name`](#0x2_move_module_replace_module_name)
+-  [Function `binding_module_name`](#0x2_move_module_binding_module_name)
 -  [Function `request_init_functions`](#0x2_move_module_request_init_functions)
+-  [Function `replace_address_identifiers`](#0x2_move_module_replace_address_identifiers)
+-  [Function `replace_identifiers`](#0x2_move_module_replace_identifiers)
+-  [Function `replace_addresses_constant`](#0x2_move_module_replace_addresses_constant)
+-  [Function `replace_bytes_constant`](#0x2_move_module_replace_bytes_constant)
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
@@ -259,14 +263,14 @@ Binding given module's address to the new address
 
 </details>
 
-<a name="0x2_move_module_replace_module_name"></a>
+<a name="0x2_move_module_binding_module_name"></a>
 
-## Function `replace_module_name`
+## Function `binding_module_name`
 
-Binding given module's address to the new address
+Binding given module's name to the new name
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_module_name">replace_module_name</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_name: <a href="_String">string::String</a>, new_name: <a href="_String">string::String</a>): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_binding_module_name">binding_module_name</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_name: <a href="_String">string::String</a>, new_name: <a href="_String">string::String</a>): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
 </code></pre>
 
 
@@ -275,7 +279,7 @@ Binding given module's address to the new address
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_module_name">replace_module_name</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_binding_module_name">binding_module_name</a>(
     modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt;,
     old_name: String,
     new_name: String,
@@ -328,6 +332,117 @@ account_address: address of all the modules
 
 
 <pre><code><b>native</b> <b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_request_init_functions">request_init_functions</a>(module_names: <a href="">vector</a>&lt;String&gt;, account_address: <b>address</b>);
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_move_module_replace_address_identifiers"></a>
+
+## Function `replace_address_identifiers`
+
+Native function to replace addresses identifier in module binary where the length of
+<code>old_addresses</code> must equal to that of <code>new_addresses</code>.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_address_identifiers">replace_address_identifiers</a>(bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, old_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;, new_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;): <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>native</b> <b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_address_identifiers">replace_address_identifiers</a>(
+    bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;,
+    old_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;,
+    new_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;,
+): <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;;
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_move_module_replace_identifiers"></a>
+
+## Function `replace_identifiers`
+
+Native function to replace the name identifier <code>old_name</code> to <code>new_name</code> in module binary.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_identifiers">replace_identifiers</a>(bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, old_idents: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, new_idents: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;): <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>native</b> <b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_identifiers">replace_identifiers</a>(
+    bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;,
+    old_idents: <a href="">vector</a>&lt;String&gt;,
+    new_idents: <a href="">vector</a>&lt;String&gt;,
+): <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;;
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_move_module_replace_addresses_constant"></a>
+
+## Function `replace_addresses_constant`
+
+Native function to replace constant addresses in module binary where the length of
+<code>old_addresses</code> must equal to that of <code>new_addresses</code>.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_addresses_constant">replace_addresses_constant</a>(bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, old_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;, new_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;): <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>native</b> <b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_addresses_constant">replace_addresses_constant</a>(
+    bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;,
+    old_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;,
+    new_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;,
+): <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;;
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_move_module_replace_bytes_constant"></a>
+
+## Function `replace_bytes_constant`
+
+Native function to replace constant bytes in module binary where the length of
+<code>old_addresses</code> must equal to that of <code>new_addresses</code>.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_bytes_constant">replace_bytes_constant</a>(bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, old_bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, new_bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;): <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>native</b> <b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_bytes_constant">replace_bytes_constant</a>(
+    bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;,
+    old_bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;,
+    new_bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;,
+): <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;;
 </code></pre>
 
 

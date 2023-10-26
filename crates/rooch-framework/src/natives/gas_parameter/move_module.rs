@@ -19,4 +19,6 @@ crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasPar
     [.replace_addresses_constant.per_byte, "replace_addresses_constant.per_byte", (5 + 1) * MUL],
     [.replace_identifiers.base, "replace_identifiers.base", (5 + 1) * MUL],
     [.replace_identifiers.per_byte, "replace_identifiers.per_byte", (5 + 1) * MUL],
+    [.replace_bytes_constant.base, "replace_bytes_constant.base", (5 + 1) * MUL],
+    [.replace_bytes_constant.per_byte, "replace_bytes_constant.per_byte", (5 + 1) * MUL],
 ]);

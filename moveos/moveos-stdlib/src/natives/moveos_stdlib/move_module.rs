@@ -430,6 +430,55 @@ fn replace_identifiers(
     Ok(NativeResult::ok(cost, smallvec![output_modules]))
 }
 
+/***************************************************************************************************
+ * native public(friend) fun replace_bytes_constant(
+ *     bytes: vector<vector<u8>>,
+ *     old_bytes: vector<vector<u8>>,
+ *     new_bytes: vector<vector<u8>>,
+ * ): vector<vector<u8>>;
+ * Native function to replace the name identifier `old_idents` to `new_idents` in module binary.
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct ReplaceBytesConstantfierGasParameters {
+    pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
+}
+
+fn replace_bytes_constant(
+    gas_params: &ReplaceBytesConstantfierGasParameters,
+    _context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(args.len() == 3, "Wrong number of arguments");
+    let mut cost = gas_params.base;
+
+    let new_bytes = pop_arg!(args, Vec<Value>);
+    let old_bytes = pop_arg!(args, Vec<Value>);
+    let num = new_bytes.len();
+    if num != old_bytes.len() {
+        return Ok(NativeResult::err(
+            cost,
+            moveos_types::move_std::error::invalid_argument(E_LENTH_NOT_MATCH),
+        ));
+    };
+
+    let bytes_mapping: HashMap<Vec<u8>, Vec<u8>> = zip_eq(old_bytes, new_bytes)
+        .map(|(a, b)| Ok((a.value_as::<Vec<u8>>()?, b.value_as::<Vec<u8>>()?)))
+        .collect::<PartialVMResult<_>>()?;
+
+    let mut bundle = vec![];
+    for module in pop_arg!(args, Vec<Value>) {
+        let byte_codes = module.value_as::<Vec<u8>>()?;
+        cost += gas_params.per_byte * NumBytes::new(byte_codes.len() as u64);
+        bundle.push(byte_codes);
+    }
+    let output_modules = modify_modules(bundle, |module| {
+        module_replace_constant_bytes(module, &bytes_mapping)
+    })?;
+    Ok(NativeResult::ok(cost, smallvec![output_modules]))
+}
+
 fn modify_modules(
     module_bundles: Vec<Vec<u8>>,
     replace_fn: impl Fn(&mut CompiledModule) -> PartialVMResult<()>,
@@ -518,6 +567,41 @@ fn module_replace_constant_addresses(
     Ok(())
 }
 
+fn module_replace_constant_bytes(
+    module: &mut CompiledModule,
+    bytes_mapping: &HashMap<Vec<u8>, Vec<u8>>,
+) -> PartialVMResult<()> {
+    // replace bytes in constant.
+    for constant in module.constant_pool.iter_mut() {
+        let constant_value = constant.deserialize_constant().ok_or_else(|| {
+            PartialVMError::new(StatusCode::VALUE_DESERIALIZATION_ERROR)
+                .with_message("cannot deserialize constant".to_string())
+        })?;
+
+        // match constant_value {
+        //     MoveValue::Vector(vals) => MoveValue::vec_to_vec_u8(vals)?,
+        // }
+        if let MoveValue::Vector(vals) = constant_value {
+            match MoveValue::vec_to_vec_u8(vals) {
+                Ok(bytes) => {
+                    if let Some(new_bytes) = bytes_mapping.get(&bytes) {
+                        constant.data = MoveValue::vector_u8(new_bytes.clone())
+                            .simple_serialize()
+                            .ok_or_else(|| {
+                                PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR)
+                                    .with_message("cannot serialize constant".to_string())
+                            })?;
+                    }
+                }
+                Err(_) => {
+                    // Inner type is not u8, just pass
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Unpack input `std::string::String` to identifier.
 fn unpack_string_to_identifier(value: Value) -> PartialVMResult<Identifier> {
     let mut fields = value.value_as::<Struct>()?.unpack()?; // std::string::String;
@@ -544,6 +628,7 @@ pub struct GasParameters {
     pub replace_address_identifiers: ReplaceAddressIdentifierGasParameters,
     pub replace_addresses_constant: ReplaceAddressConstantGasParameters,
     pub replace_identifiers: ReplaceIdentifierGasParameters,
+    pub replace_bytes_constant: ReplaceBytesConstantfierGasParameters,
 }
 
 impl GasParameters {
@@ -574,6 +659,10 @@ impl GasParameters {
                 per_byte: 0.into(),
             },
             replace_identifiers: ReplaceIdentifierGasParameters {
+                base: 0.into(),
+                per_byte: 0.into(),
+            },
+            replace_bytes_constant: ReplaceBytesConstantfierGasParameters {
                 base: 0.into(),
                 per_byte: 0.into(),
             },
@@ -622,6 +711,10 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         (
             "replace_identifiers",
             make_native(gas_params.replace_identifiers, replace_identifiers),
+        ),
+        (
+            "replace_bytes_constant",
+            make_native(gas_params.replace_bytes_constant, replace_bytes_constant),
         ),
     ];
     make_module_natives(natives)
