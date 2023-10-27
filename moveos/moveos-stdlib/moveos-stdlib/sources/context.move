@@ -105,11 +105,13 @@ module moveos_std::context {
     }
 
     /// Borrow mut Object from object store with object_id
-    /// Only the owner can borrow an &mut ObjectRef from the global object storage
+    /// If the object is not shared, only the owner can borrow an &mut ObjectRef from the global object storage
     public fun borrow_object_mut<T: key>(self: &mut Context, owner: &signer, object_id: ObjectID): &mut ObjectRef<T> {
         let object_entity = storage_context::borrow_mut<T>(&mut self.storage_context, object_id);
-        let owner_address = signer::address_of(owner);
-        assert!(object::owner(object_entity) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
+        if(!object::is_shared(object_entity)) {
+            let owner_address = signer::address_of(owner);
+            assert!(object::owner(object_entity) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
+        };
         object_ref::as_mut_ref(object_entity)
     }
 
@@ -137,7 +139,7 @@ module moveos_std::context {
 
     public(friend) fun new_object_with_id<T: key>(self: &mut Context, id: ObjectID, value: T) : ObjectRef<T> {
         let obj_entity = object::new(id, value);
-        object::set_owner(&mut obj_entity, sender(self)); 
+        object::transfer(&mut obj_entity, sender(self)); 
         let obj_ref = object_ref::new_internal(&mut obj_entity);
         storage_context::add(&mut self.storage_context, obj_entity);
         obj_ref
@@ -196,7 +198,7 @@ module moveos_std::context {
             let obj_value = object_ref::borrow(&ref);
             assert!(obj_value.value == 2, 1000);
         };
-        object_ref::drop(ref);
+        object_ref::to_permanent(ref);
         drop_test_context(ctx);
     }
 }

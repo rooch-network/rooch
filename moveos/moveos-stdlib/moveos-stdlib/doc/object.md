@@ -15,18 +15,22 @@ The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/5
 -  [Constants](#@Constants_0)
 -  [Function `address_to_object_id`](#0x2_object_address_to_object_id)
 -  [Function `singleton_object_id`](#0x2_object_singleton_object_id)
--  [Function `code_owner_address`](#0x2_object_code_owner_address)
 -  [Function `new`](#0x2_object_new)
 -  [Function `borrow`](#0x2_object_borrow)
 -  [Function `borrow_mut`](#0x2_object_borrow_mut)
--  [Function `set_owner`](#0x2_object_set_owner)
--  [Function `set_external`](#0x2_object_set_external)
+-  [Function `transfer`](#0x2_object_transfer)
+-  [Function `transfer_to_system`](#0x2_object_transfer_to_system)
+-  [Function `to_shared`](#0x2_object_to_shared)
+-  [Function `is_shared`](#0x2_object_is_shared)
+-  [Function `to_frozen`](#0x2_object_to_frozen)
+-  [Function `is_frozen`](#0x2_object_is_frozen)
 -  [Function `id`](#0x2_object_id)
 -  [Function `owner`](#0x2_object_owner)
 -  [Function `unpack`](#0x2_object_unpack)
 
 
-<pre><code><b>use</b> <a href="">0x1::hash</a>;
+<pre><code><b>use</b> <a href="">0x1::error</a>;
+<b>use</b> <a href="">0x1::hash</a>;
 <b>use</b> <a href="address.md#0x2_address">0x2::address</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
@@ -69,7 +73,7 @@ The object can not be copied, droped and stored. It only can be consumed by Stor
 <code>value: T</code>
 </dt>
 <dd>
- Whether the object is external
+ A flag to indicate whether the object is shared or frozen
 </dd>
 </dl>
 
@@ -109,11 +113,20 @@ An object ID
 ## Constants
 
 
-<a name="0x2_object_CODE_OWNER_ADDRESS"></a>
+<a name="0x2_object_ErrorInvalidOwnerAddress"></a>
 
 
 
-<pre><code><b>const</b> <a href="object.md#0x2_object_CODE_OWNER_ADDRESS">CODE_OWNER_ADDRESS</a>: <b>address</b> = 0;
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorInvalidOwnerAddress">ErrorInvalidOwnerAddress</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x2_object_SYSTEM_OWNER_ADDRESS"></a>
+
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_SYSTEM_OWNER_ADDRESS">SYSTEM_OWNER_ADDRESS</a>: <b>address</b> = 0;
 </code></pre>
 
 
@@ -175,30 +188,6 @@ Generate a new ObjectID from an address
 
 </details>
 
-<a name="0x2_object_code_owner_address"></a>
-
-## Function `code_owner_address`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_code_owner_address">code_owner_address</a>(): <b>address</b>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_code_owner_address">code_owner_address</a>(): <b>address</b> {
-    <a href="object.md#0x2_object_CODE_OWNER_ADDRESS">CODE_OWNER_ADDRESS</a>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_new"></a>
 
 ## Function `new`
@@ -216,7 +205,7 @@ Create a new object, the object is owned by <code>owner</code>
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(id: <a href="object.md#0x2_object_ObjectID">ObjectID</a>, value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
-    <b>let</b> owner = <a href="object.md#0x2_object_CODE_OWNER_ADDRESS">CODE_OWNER_ADDRESS</a>;
+    <b>let</b> owner = <a href="object.md#0x2_object_SYSTEM_OWNER_ADDRESS">SYSTEM_OWNER_ADDRESS</a>;
     <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;{id, value, owner}
 }
 </code></pre>
@@ -273,13 +262,13 @@ Create a new object, the object is owned by <code>owner</code>
 
 </details>
 
-<a name="0x2_object_set_owner"></a>
+<a name="0x2_object_transfer"></a>
 
-## Function `set_owner`
+## Function `transfer`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_set_owner">set_owner</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, owner: <b>address</b>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_transfer">transfer</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, owner: <b>address</b>)
 </code></pre>
 
 
@@ -288,7 +277,8 @@ Create a new object, the object is owned by <code>owner</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_set_owner">set_owner</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;, owner: <b>address</b>) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_transfer">transfer</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;, owner: <b>address</b>) {
+    <b>assert</b>!(owner != <a href="object.md#0x2_object_SYSTEM_OWNER_ADDRESS">SYSTEM_OWNER_ADDRESS</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="object.md#0x2_object_ErrorInvalidOwnerAddress">ErrorInvalidOwnerAddress</a>));
     self.owner = owner;
 }
 </code></pre>
@@ -297,13 +287,13 @@ Create a new object, the object is owned by <code>owner</code>
 
 </details>
 
-<a name="0x2_object_set_external"></a>
+<a name="0x2_object_transfer_to_system"></a>
 
-## Function `set_external`
+## Function `transfer_to_system`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_set_external">set_external</a>&lt;T&gt;(_self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, _external: bool)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_transfer_to_system">transfer_to_system</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;)
 </code></pre>
 
 
@@ -312,8 +302,106 @@ Create a new object, the object is owned by <code>owner</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_set_external">set_external</a>&lt;T&gt;(_self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;, _external: bool) {
-    //self.external = external;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_transfer_to_system">transfer_to_system</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;){
+    self.owner = <a href="object.md#0x2_object_SYSTEM_OWNER_ADDRESS">SYSTEM_OWNER_ADDRESS</a>;
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_object_to_shared"></a>
+
+## Function `to_shared`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_to_shared">to_shared</a>&lt;T&gt;(_self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_to_shared">to_shared</a>&lt;T&gt;(_self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;) {
+    // TODO set the flag
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_object_is_shared"></a>
+
+## Function `is_shared`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_is_shared">is_shared</a>&lt;T&gt;(_self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_is_shared">is_shared</a>&lt;T&gt;(_self: &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;) : bool {
+    // TODO check the flag
+    <b>false</b>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_object_to_frozen"></a>
+
+## Function `to_frozen`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_to_frozen">to_frozen</a>&lt;T&gt;(_self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_to_frozen">to_frozen</a>&lt;T&gt;(_self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;) {
+    // TODO set the flag
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_object_is_frozen"></a>
+
+## Function `is_frozen`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_is_frozen">is_frozen</a>&lt;T&gt;(_self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_is_frozen">is_frozen</a>&lt;T&gt;(_self: &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;) : bool {
+    // TODO check the flag
+    <b>false</b>
 }
 </code></pre>
 

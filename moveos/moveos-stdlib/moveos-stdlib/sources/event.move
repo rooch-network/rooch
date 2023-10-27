@@ -85,7 +85,7 @@ module moveos_std::event {
         let type_info = type_info::type_of<T>();
         let owner = type_info::account_address(&type_info);
         object_ref::transfer_extend(&mut obj, owner);
-        object_ref::drop(obj);
+        object_ref::to_permanent(obj);
     }
 
     public fun ensure_event_handle<T>(ctx: &mut Context) {

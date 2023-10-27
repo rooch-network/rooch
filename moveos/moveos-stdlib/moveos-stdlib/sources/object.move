@@ -8,6 +8,7 @@
 /// 2. The Object is a use case of the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by StorageContext API after creation.
 module moveos_std::object {
 
+    use std::error;
     use std::hash;
     use moveos_std::type_info;
     use moveos_std::bcs;
@@ -20,7 +21,9 @@ module moveos_std::object {
     friend moveos_std::object_ref;
     friend moveos_std::raw_table;
 
-    const CODE_OWNER_ADDRESS: address = @0x0;
+    const ErrorInvalidOwnerAddress:u64 = 1;
+
+    const SYSTEM_OWNER_ADDRESS: address = @0x0;
     
     ///TODO rename to ObjectEntity
     /// Box style object
@@ -30,8 +33,8 @@ module moveos_std::object {
         id: ObjectID,
         // The owner of the object
         owner: address,
-        /// Whether the object is external
-        //external: bool,
+        /// A flag to indicate whether the object is shared or frozen
+        //flag: u8,
         // The value of the object
         // The value must be the last field
         value: T,
@@ -60,13 +63,9 @@ module moveos_std::object {
         )
     }
 
-    public fun code_owner_address(): address {
-        CODE_OWNER_ADDRESS
-    }
-
     /// Create a new object, the object is owned by `owner`
     public(friend) fun new<T: key>(id: ObjectID, value: T): Object<T> {
-        let owner = CODE_OWNER_ADDRESS;
+        let owner = SYSTEM_OWNER_ADDRESS;
         Object<T>{id, value, owner}
     }
 
@@ -78,14 +77,33 @@ module moveos_std::object {
         &mut self.value
     }
 
-    public(friend) fun set_owner<T>(self: &mut Object<T>, owner: address) {
+    public(friend) fun transfer<T>(self: &mut Object<T>, owner: address) {
+        assert!(owner != SYSTEM_OWNER_ADDRESS, error::invalid_argument(ErrorInvalidOwnerAddress));
         self.owner = owner;
     }
 
-    public(friend) fun set_external<T>(_self: &mut Object<T>, _external: bool) {
-        //self.external = external;
+    public(friend) fun transfer_to_system<T>(self: &mut Object<T>){
+        self.owner = SYSTEM_OWNER_ADDRESS;
     }
 
+    public(friend) fun to_shared<T>(_self: &mut Object<T>) {
+        // TODO set the flag
+    }
+
+    public(friend) fun is_shared<T>(_self: &Object<T>) : bool {
+        // TODO check the flag
+        false
+    }
+
+    public(friend) fun to_frozen<T>(_self: &mut Object<T>) {
+        // TODO set the flag
+    }
+
+    public(friend) fun is_frozen<T>(_self: &Object<T>) : bool {
+        // TODO check the flag
+        false
+    }
+    
     public fun id<T>(self: &Object<T>): ObjectID {
         self.id
     }
@@ -119,7 +137,7 @@ module moveos_std::object {
         let borrow_object = borrow_mut(&mut obj);
         assert!(borrow_object.count == object_count, 1001);
 
-        set_owner(&mut obj, @0x10);
+        transfer(&mut obj, @0x10);
         let obj_owner = owner(&obj);
         assert!(obj_owner != sender_addr, 1002);
 

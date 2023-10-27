@@ -426,7 +426,7 @@ Any one can borrow an &ObjectRef from the global object storage
 ## Function `borrow_object_mut`
 
 Borrow mut Object from object store with object_id
-Only the owner can borrow an &mut ObjectRef from the global object storage
+If the object is not shared, only the owner can borrow an &mut ObjectRef from the global object storage
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut">borrow_object_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, owner: &<a href="">signer</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;
@@ -440,8 +440,10 @@ Only the owner can borrow an &mut ObjectRef from the global object storage
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut">borrow_object_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, owner: &<a href="">signer</a>, object_id: ObjectID): &<b>mut</b> ObjectRef&lt;T&gt; {
     <b>let</b> object_entity = <a href="storage_context.md#0x2_storage_context_borrow_mut">storage_context::borrow_mut</a>&lt;T&gt;(&<b>mut</b> self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, object_id);
-    <b>let</b> owner_address = <a href="_address_of">signer::address_of</a>(owner);
-    <b>assert</b>!(<a href="object.md#0x2_object_owner">object::owner</a>(object_entity) == owner_address, <a href="_permission_denied">error::permission_denied</a>(<a href="context.md#0x2_context_ErrorObjectOwnerNotMatch">ErrorObjectOwnerNotMatch</a>));
+    <b>if</b>(!<a href="object.md#0x2_object_is_shared">object::is_shared</a>(object_entity)) {
+        <b>let</b> owner_address = <a href="_address_of">signer::address_of</a>(owner);
+        <b>assert</b>!(<a href="object.md#0x2_object_owner">object::owner</a>(object_entity) == owner_address, <a href="_permission_denied">error::permission_denied</a>(<a href="context.md#0x2_context_ErrorObjectOwnerNotMatch">ErrorObjectOwnerNotMatch</a>));
+    };
     <a href="object_ref.md#0x2_object_ref_as_mut_ref">object_ref::as_mut_ref</a>(object_entity)
 }
 </code></pre>
@@ -545,7 +547,7 @@ Add the Object to the global object storage and return the ObjectRef
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, id: ObjectID, value: T) : ObjectRef&lt;T&gt; {
     <b>let</b> obj_entity = <a href="object.md#0x2_object_new">object::new</a>(id, value);
-    <a href="object.md#0x2_object_set_owner">object::set_owner</a>(&<b>mut</b> obj_entity, <a href="context.md#0x2_context_sender">sender</a>(self));
+    <a href="object.md#0x2_object_transfer">object::transfer</a>(&<b>mut</b> obj_entity, <a href="context.md#0x2_context_sender">sender</a>(self));
     <b>let</b> obj_ref = <a href="object_ref.md#0x2_object_ref_new_internal">object_ref::new_internal</a>(&<b>mut</b> obj_entity);
     <a href="storage_context.md#0x2_storage_context_add">storage_context::add</a>(&<b>mut</b> self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, obj_entity);
     obj_ref

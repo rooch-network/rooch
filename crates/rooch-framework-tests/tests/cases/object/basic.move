@@ -17,7 +17,7 @@ module test::m {
         assert!(x"7852c5dcbd87e82102dba0db36d44b5a9fb0006b3e828c0b5f0832f70a8ff6ee" == tx_hash, 1000);
         let obj_ref = context::new_object(ctx, S { v: 1});
         debug::print(&obj_ref);
-        object_ref::drop(obj_ref);
+        object_ref::to_permanent(obj_ref);
     }
 
     //We can not use `ObjectRef<S>` as transaction argument now.
@@ -31,7 +31,7 @@ module test::m {
     public entry fun mint_cup<T: store>(ctx: &mut Context) {
         let obj_ref = context::new_object(ctx, Cup<T> { v: 2 });
         debug::print(&obj_ref);
-        object_ref::drop(obj_ref);
+        object_ref::to_permanent(obj_ref);
     }
 
     // public entry fun move_cup_to_global<T:store>(ctx: &mut Context, sender: signer, object_s: ObjectRef<Cup<S>>) {

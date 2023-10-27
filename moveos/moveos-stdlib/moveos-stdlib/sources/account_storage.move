@@ -55,7 +55,7 @@ module moveos_std::account_storage {
         };
         let obj = context::new_object_with_id(ctx, object_id, account_storage);
         object_ref::transfer_extend(&mut obj, account);
-        object_ref::drop(obj);
+        object_ref::to_permanent(obj);
     }
 
     /// check if account storage eixst
