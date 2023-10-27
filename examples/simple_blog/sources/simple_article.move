@@ -1,7 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module simple_blog::article {
+/// Name the module to `simple_article` for avoid name conflict with `examples/blog`
+module simple_blog::simple_article {
 
     use std::error;
     use std::signer;

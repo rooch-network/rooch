@@ -1,7 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module simple_blog::blog {
+/// Name the module to `simple_blog` for avoid name conflict with `examples/blog`
+module simple_blog::simple_blog {
     use std::error;
     use std::signer;
     use std::string::{Self,String};
@@ -10,7 +11,7 @@ module simple_blog::blog {
     use moveos_std::object_ref::{Self, ObjectRef};
     use moveos_std::context::Context;
     use moveos_std::account_storage;
-    use simple_blog::article::{Self, Article};
+    use simple_blog::simple_article::{Self, Article};
 
     const ErrorDataTooLong: u64 = 1;
     const ErrorNotFound: u64 = 2;
@@ -83,7 +84,7 @@ module simple_blog::blog {
         title: String,
         body: String,
     ) {
-        let article_id = article::create_article(ctx, &owner, title, body);
+        let article_id = simple_article::create_article(ctx, &owner, title, body);
         add_article_to_myblog(ctx, &owner, article_id);
     }
 
@@ -93,7 +94,7 @@ module simple_blog::blog {
         new_title: String,
         new_body: String,
     ) {
-        article::update_article(ctx, article_obj, new_title, new_body);
+        simple_article::update_article(ctx, article_obj, new_title, new_body);
     }
 
     public entry fun delete_article(
@@ -102,6 +103,6 @@ module simple_blog::blog {
         article_id: ObjectID,
     ) {
         let article_obj = delete_article_from_myblog(ctx, owner, article_id);
-        article::delete_article(ctx, article_obj);
+        simple_article::delete_article(ctx, article_obj);
     }
 }
