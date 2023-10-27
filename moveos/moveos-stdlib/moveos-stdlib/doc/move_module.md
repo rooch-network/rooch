@@ -13,8 +13,8 @@
 -  [Function `sort_and_verify_modules`](#0x2_move_module_sort_and_verify_modules)
 -  [Function `check_comatibility`](#0x2_move_module_check_comatibility)
 -  [Function `binding_module_address`](#0x2_move_module_binding_module_address)
--  [Function `replace_module_name`](#0x2_move_module_replace_module_name)
--  [Function `replace_struct_name`](#0x2_move_module_replace_struct_name)
+-  [Function `replace_module_identiner`](#0x2_move_module_replace_module_identiner)
+-  [Function `replace_struct_identifier`](#0x2_move_module_replace_struct_identifier)
 -  [Function `request_init_functions`](#0x2_move_module_request_init_functions)
 -  [Function `replace_address_identifiers`](#0x2_move_module_replace_address_identifiers)
 -  [Function `replace_identifiers`](#0x2_move_module_replace_identifiers)
@@ -265,14 +265,14 @@ Binding given module's address to the new address
 
 </details>
 
-<a name="0x2_move_module_replace_module_name"></a>
+<a name="0x2_move_module_replace_module_identiner"></a>
 
-## Function `replace_module_name`
+## Function `replace_module_identiner`
 
-Replace given module's name to the new name
+Replace given module's identifier to the new ones
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_module_name">replace_module_name</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, new_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_module_identiner">replace_module_identiner</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, new_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
 </code></pre>
 
 
@@ -281,7 +281,7 @@ Replace given module's name to the new name
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_module_name">replace_module_name</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_module_identiner">replace_module_identiner</a> (
     modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt;,
     old_names: <a href="">vector</a>&lt;String&gt;,
     new_names: <a href="">vector</a>&lt;String&gt;,
@@ -317,14 +317,14 @@ Replace given module's name to the new name
 
 </details>
 
-<a name="0x2_move_module_replace_struct_name"></a>
+<a name="0x2_move_module_replace_struct_identifier"></a>
 
-## Function `replace_struct_name`
+## Function `replace_struct_identifier`
 
-Replace given struct's name to the new name
+Replace given struct's identifier to the new ones
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_struct_name">replace_struct_name</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, new_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_struct_identifier">replace_struct_identifier</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, new_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
 </code></pre>
 
 
@@ -333,12 +333,12 @@ Replace given struct's name to the new name
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_struct_name">replace_struct_name</a>(
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_struct_identifier">replace_struct_identifier</a>(
     modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt;,
     old_names: <a href="">vector</a>&lt;String&gt;,
     new_names: <a href="">vector</a>&lt;String&gt;,
 ): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a>&gt; {
-    <a href="move_module.md#0x2_move_module_replace_module_name">replace_module_name</a>(modules, old_names, new_names)
+    <a href="move_module.md#0x2_move_module_replace_module_identiner">replace_module_identiner</a>(modules, old_names, new_names)
 }
 </code></pre>
 
