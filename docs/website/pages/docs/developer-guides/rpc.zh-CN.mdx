@@ -11,6 +11,59 @@
 - `u64`、`u128`、`u256` 在 JSON 中用 string 来表示。
 - `ObjectID` 和 `address` 在 JSON 中用以 `0x` 开头的 hex string 来表示。
 
-## 引用
+## 示例
 
-- [Rooch RPC spec](https://playground.open-rpc.org/?schemaUrl=https://raw.githubusercontent.com/rooch-network/rooch/main/crates/rooch-open-rpc-spec/schemas/openrpc.json)
+接下来通过几个小例子来演示如何调用 Rooch 的 JSON-RPC 接口。
+
+### rooch_getChainID
+
+`rooch_getChainID` 这个接口方法是用来获取 Rooch 的链 ID 的。
+
+#### 使用命令行程序 curl 作为客户端
+
+```shell
+curl --location 'https://dev-seed.rooch.network/' --header 'Content-Type: application/json' --data '{
+    "jsonrpc": "2.0",
+    "method": "rooch_getChainID",
+    "params": [],
+    "id": 0
+}'
+```
+
+`--location` 指定要请求的节点 URL，此处指定的是 Rooch 的 `dev` 网络节点。
+
+`--header` 指定的是请求的头部信息，比如指定 JSON 格式的数据类型等。
+
+`--date` 指定的就是我们要请求 RPC 接口中的**方法名**和**参数**等信息，这里要以 JSON 的数据格式来填写。
+
+```shell
+{"jsonrpc":"2.0","result":"20230103","id":0}
+```
+
+这是 RPC 请求后从 Rooch 节点以 JSON 格式返回的响应信息，我们重点关注 `result` 字段，即 RPC 的执行结果，Rooch 的 `dev` 网络的链 ID 号为 `20230103`。
+
+#### 使用 Web 页面的客户端向 Rooch 节点发送请求
+
+上面我们介绍了如何在命令行界面来向 Rooch 节点发送 RPC 请求，接下来将介绍如何使用 Rooch 提供的 Web 客户端来发送请求。
+
+![Web JSON-RPC Client](/docs/web-rpc-client.png)
+
+- 点击连接，使用 Web 版本的 [Rooch JSON-RPC](https://playground.open-rpc.org/?schemaUrl=https://raw.githubusercontent.com/rooch-network/rooch/main/crates/rooch-open-rpc-spec/schemas/openrpc.json) 客户端。
+
+页面右边的 `Methods` 是目前 Rooch 对外提供的可调用的 RPC 接口。
+
+![](/docs/web-rpc-try.png)
+
+我们点开 `rooch_getChainID` 这个方法，点击 `TRY IT NOW` 按钮，就会在页面下方展示调用页面，如下图。
+
+这个 Web 程序相比 curl 程序更易使用，而且提供了相应的请求模板，只需要我们填写必需的请求信息即可。
+
+![](/docs/web-rpc-run.png)
+
+- 第一步，填写 Rooch 网络的节点 URL，这里使用 `dev` 节点网络：`https://dev-seed.rooch.network/`
+- 第二步，填写要调用的 RPC 方法名，比如：`rooch_getChainID`
+- 第三步，点击运行按钮
+
+当调用成功后，可以看到右侧提示成功响应了，并在下方返回了相应的响应信息，跟 `curl` 命令返回的信息是一样的：
+
+![](/docs/web-rpc-ok.png)
