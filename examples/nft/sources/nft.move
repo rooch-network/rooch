@@ -91,6 +91,19 @@ module nft::nft {
         nft.creator
     }
 
+    /// Mint a new NFT and transfer it to sender
+    /// Because only the creator of the collection can get `&mut ObjectRef<collection::Collection>`
+    /// So, only the creator of the collection can mint a new NFT
+    /// If we want to allow other people to mint NFT, we need to make the `ObjectRef<collection::Collection>` to shared
+    entry fun mint_entry(ctx: &mut Context, collection_obj: &mut ObjectRef<collection::Collection>, name: String, uri: String) {
+        let sender = context::sender(ctx);
+        let nft_obj = mint(ctx, collection_obj, name, uri);
+        object_ref::transfer(&mut nft_obj, sender);
+        //Because the NFT becomes permanent Object here, we can not to burn it.
+        //Maybe we need to design a NFTGallery to store all the NFTs of user.
+        object_ref::to_permanent(nft_obj);
+    }
+
     #[test(sender = @nft)]
     public fun test_create_nft (sender: address){
         let storage_context = context::new_test_context(sender);

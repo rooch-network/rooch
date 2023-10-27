@@ -48,6 +48,7 @@ module nft::collection{
         object_ref::to_permanent(collection_display_obj);
     }
 
+    /// Create a new collection Object
     public fun create_collection(
         ctx: &mut Context,
         name: String,
@@ -55,7 +56,7 @@ module nft::collection{
         creator: address,
         description: String,
         max_supply: Option<u64>,
-    ):ObjectRef<Collection> {
+    ) : ObjectRef<Collection> {
 
         let collection = Collection {
             name,
@@ -67,16 +68,14 @@ module nft::collection{
             },
         };
 
-        let object_ref = context::new_object(
+        let collection_obj = context::new_object(
             ctx,
             collection
         );
-        object_ref::transfer_extend(&mut object_ref, creator);
-
         event::emit(
             ctx,
             CreateCollectionEvent {
-                objectID: object_ref::id(&object_ref),
+                objectID: object_ref::id(&collection_obj),
                 name,
                 uri,
                 creator,
@@ -84,7 +83,8 @@ module nft::collection{
                 description,
             }
         );
-        object_ref
+        object_ref::transfer_extend(&mut collection_obj, creator);
+        collection_obj
     }
 
     public(friend) fun increment_supply(collection: &mut Collection): Option<u64>{
