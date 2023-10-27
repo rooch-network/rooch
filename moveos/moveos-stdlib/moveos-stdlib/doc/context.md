@@ -507,8 +507,9 @@ The module of T can borrow mut Object from object store with any object_id
 
 ## Function `new_object`
 
-Create a new Object, the default owner is the <code>sender</code>
-Add the Object to the global object storage and return the ObjectRef
+Create a new Object, Add the Object to the global object storage and return the ObjectRef
+Note: the default owner is the <code>System</code>, the caller should explicitly transfer the Object to the owner.
+The owner can get the <code>&<b>mut</b> ObjectRef</code> by <code>borrow_object_mut</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_object">new_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, value: T): <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;

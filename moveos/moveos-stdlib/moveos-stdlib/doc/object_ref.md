@@ -275,7 +275,6 @@ The shared object also can be removed from the object storage.
 <pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_to_shared">to_shared</a>&lt;T: key&gt;(self: <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>&lt;T&gt;) {
     <b>let</b> obj = <a href="raw_table.md#0x2_raw_table_borrow_mut_from_global">raw_table::borrow_mut_from_global</a>&lt;T&gt;(&self.id);
     <a href="object.md#0x2_object_to_shared">object::to_shared</a>(obj);
-    <a href="object.md#0x2_object_transfer_to_system">object::transfer_to_system</a>(obj);
     <a href="object_ref.md#0x2_object_ref_to_permanent">to_permanent</a>(self);
 }
 </code></pre>
@@ -303,7 +302,6 @@ Make the Object frozen, Any one can not get the &mut ObjectRef<T> from frozen ob
 <pre><code><b>public</b> <b>fun</b> <a href="object_ref.md#0x2_object_ref_to_frozen">to_frozen</a>&lt;T: key&gt;(self: <a href="object_ref.md#0x2_object_ref_ObjectRef">ObjectRef</a>&lt;T&gt;) {
     <b>let</b> obj = <a href="raw_table.md#0x2_raw_table_borrow_mut_from_global">raw_table::borrow_mut_from_global</a>&lt;T&gt;(&self.id);
     <a href="object.md#0x2_object_to_frozen">object::to_frozen</a>(obj);
-    <a href="object.md#0x2_object_transfer_to_system">object::transfer_to_system</a>(obj);
     <a href="object_ref.md#0x2_object_ref_to_permanent">to_permanent</a>(self);
 }
 </code></pre>

@@ -18,6 +18,7 @@
 -  [Function `deposit`](#0x3_coin_store_deposit)
 -  [Function `freeze_coin_store_extend`](#0x3_coin_store_freeze_coin_store_extend)
 -  [Function `create_coin_store_internal`](#0x3_coin_store_create_coin_store_internal)
+-  [Function `transfer`](#0x3_coin_store_transfer)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -67,7 +68,7 @@ A holder of a specific coin types.
 These are kept in a single resource to ensure locality of data.
 
 
-<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a> <b>has</b> store, key
+<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a> <b>has</b> key
 </code></pre>
 
 
@@ -408,6 +409,30 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
         balance: <a href="coin_store.md#0x3_coin_store_Balance">Balance</a> { value: 0 },
         frozen: <b>false</b>,
     })
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_coin_store_transfer"></a>
+
+## Function `transfer`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transfer.md#0x3_transfer">transfer</a>(coin_store_obj: &<b>mut</b> <a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;, owner: <b>address</b>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transfer.md#0x3_transfer">transfer</a>(coin_store_obj: &<b>mut</b> ObjectRef&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;, owner: <b>address</b>){
+    <a href="_transfer_extend">object_ref::transfer_extend</a>(coin_store_obj, owner)
 }
 </code></pre>
 

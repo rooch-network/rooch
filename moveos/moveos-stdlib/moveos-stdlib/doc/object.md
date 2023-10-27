@@ -317,7 +317,7 @@ Create a new object, the object is owned by <code>owner</code>
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_to_shared">to_shared</a>&lt;T&gt;(_self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_to_shared">to_shared</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;)
 </code></pre>
 
 
@@ -326,8 +326,9 @@ Create a new object, the object is owned by <code>owner</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_to_shared">to_shared</a>&lt;T&gt;(_self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_to_shared">to_shared</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;) {
     // TODO set the flag
+    <a href="object.md#0x2_object_transfer_to_system">transfer_to_system</a>(self);
 }
 </code></pre>
 
@@ -366,7 +367,7 @@ Create a new object, the object is owned by <code>owner</code>
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_to_frozen">to_frozen</a>&lt;T&gt;(_self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_to_frozen">to_frozen</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;)
 </code></pre>
 
 
@@ -375,8 +376,9 @@ Create a new object, the object is owned by <code>owner</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_to_frozen">to_frozen</a>&lt;T&gt;(_self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;) {
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_to_frozen">to_frozen</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;) {
     // TODO set the flag
+    <a href="object.md#0x2_object_transfer_to_system">transfer_to_system</a>(self);
 }
 </code></pre>
 

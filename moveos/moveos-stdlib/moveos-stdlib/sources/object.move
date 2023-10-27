@@ -86,8 +86,9 @@ module moveos_std::object {
         self.owner = SYSTEM_OWNER_ADDRESS;
     }
 
-    public(friend) fun to_shared<T>(_self: &mut Object<T>) {
+    public(friend) fun to_shared<T>(self: &mut Object<T>) {
         // TODO set the flag
+        transfer_to_system(self);
     }
 
     public(friend) fun is_shared<T>(_self: &Object<T>) : bool {
@@ -95,8 +96,9 @@ module moveos_std::object {
         false
     }
 
-    public(friend) fun to_frozen<T>(_self: &mut Object<T>) {
+    public(friend) fun to_frozen<T>(self: &mut Object<T>) {
         // TODO set the flag
+        transfer_to_system(self);
     }
 
     public(friend) fun is_frozen<T>(_self: &Object<T>) : bool {

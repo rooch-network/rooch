@@ -69,8 +69,7 @@ module moveos_std::object_ref {
     /// The shared object also can be removed from the object storage.
     public fun to_shared<T: key>(self: ObjectRef<T>) {
         let obj = raw_table::borrow_mut_from_global<T>(&self.id);
-        object::to_shared(obj);
-        object::transfer_to_system(obj);
+        object::to_shared(obj); 
         to_permanent(self);
     }
 
@@ -78,7 +77,6 @@ module moveos_std::object_ref {
     public fun to_frozen<T: key>(self: ObjectRef<T>) {
         let obj = raw_table::borrow_mut_from_global<T>(&self.id);
         object::to_frozen(obj);
-        object::transfer_to_system(obj);
         to_permanent(self);
     }
 
