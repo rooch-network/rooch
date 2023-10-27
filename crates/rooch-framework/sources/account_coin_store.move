@@ -286,6 +286,7 @@ module rooch_framework::account_coin_store {
 
     fun create_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address) {
         let coin_store_ref = coin_store::create_coin_store_internal<CoinType>(ctx);
+        coin_store::transfer(&mut coin_store_ref, addr);
         let coin_stores = account_storage::global_borrow_mut<CoinStores>(ctx, addr);
         let coin_type = type_info::type_name<CoinType>();
         table::add(&mut coin_stores.coin_stores, coin_type, coin_store_ref);

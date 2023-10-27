@@ -35,7 +35,7 @@ module rooch_framework::coin_store {
 
     /// A holder of a specific coin types.
     /// These are kept in a single resource to ensure locality of data.
-    struct CoinStore has key,store {
+    struct CoinStore has key {
         coin_type: string::String,
         balance: Balance,
         frozen: bool,
@@ -57,8 +57,7 @@ module rooch_framework::coin_store {
         create_coin_store_internal<CoinType>(ctx)
     }
     
-
-     /// Remove the CoinStore Object, return the Coin<T> in balance 
+    /// Remove the CoinStore Object, return the Coin<T> in balance 
     public fun remove_coin_store<CoinType: key>(coin_store_object: ObjectRef<CoinStore>) : Coin<CoinType> {
         let coin_store = object_ref::remove(coin_store_object);
         let coin_type = type_info::type_name<CoinType>();
@@ -118,6 +117,12 @@ module rooch_framework::coin_store {
             balance: Balance { value: 0 },
             frozen: false,
         })
+    }
+
+    // We do not allow to transfer a CoinStore to another account, CoinStore is default ownerd by the system.
+    // Only provide a internal function for account_coin_store.
+    public(friend) fun transfer(coin_store_obj: &mut ObjectRef<CoinStore>, owner: address){
+        object_ref::transfer_extend(coin_store_obj, owner)
     }
 
     fun check_coin_store_not_frozen(coin_store: &CoinStore) {

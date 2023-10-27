@@ -82,10 +82,10 @@ module moveos_std::event {
         };
         //TODO refactor EventHandle with singleton Object.
         let obj = context::new_object_with_id(ctx, event_handle_id, event_handle);
-        let type_info = type_info::type_of<T>();
-        let owner = type_info::account_address(&type_info);
-        object_ref::transfer_extend(&mut obj, owner);
-        object_ref::to_permanent(obj);
+        // The event handle should be a shared object
+        // Any one can emit event to this handle
+        // TODO provide a emit event function with event handle
+        object_ref::to_shared(obj);
     }
 
     public fun ensure_event_handle<T>(ctx: &mut Context) {

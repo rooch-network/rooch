@@ -130,8 +130,9 @@ module moveos_std::context {
     // Wrap functions for Object
 
     #[private_generics(T)]
-    /// Create a new Object, the default owner is the `sender`
-    /// Add the Object to the global object storage and return the ObjectRef
+    /// Create a new Object, Add the Object to the global object storage and return the ObjectRef
+    /// Note: the default owner is the `System`, the caller should explicitly transfer the Object to the owner.
+    /// The owner can get the `&mut ObjectRef` by `borrow_object_mut`
     public fun new_object<T: key>(self: &mut Context, value: T): ObjectRef<T> {
         let id = fresh_object_id(self);
         new_object_with_id(self, id, value)
