@@ -6,6 +6,7 @@ use crate::Client;
 use anyhow::anyhow;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::gas_config::GasConfig;
+use moveos_types::h256::H256;
 use moveos_types::transaction::MoveAction;
 use rooch_config::config::{Config, PersistedConfig};
 use rooch_config::server_config::ServerConfig;
@@ -122,6 +123,7 @@ impl WalletContext {
             sequence_number,
             chain_id,
             GasConfig::DEFAULT_MAX_GAS_AMOUNT,
+            H256::zero(), // TODO: tx accumulator root
             action,
         );
         Ok(tx_data)

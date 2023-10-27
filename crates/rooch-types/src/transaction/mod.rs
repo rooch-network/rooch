@@ -66,6 +66,7 @@ pub trait AbstractTransaction {
     fn construct_moveos_transaction(
         self,
         resolved_sender: AccountAddress,
+        tx_accumulator_root: H256,
     ) -> Result<MoveOSTransaction>;
 }
 
@@ -132,10 +133,15 @@ impl AbstractTransaction for TypedTransaction {
     fn construct_moveos_transaction(
         self,
         resolved_sender: AccountAddress,
+        tx_accumulator_root: H256,
     ) -> Result<moveos_types::transaction::MoveOSTransaction> {
         match self {
-            TypedTransaction::Rooch(tx) => tx.construct_moveos_transaction(resolved_sender),
-            TypedTransaction::Ethereum(tx) => tx.construct_moveos_transaction(resolved_sender),
+            TypedTransaction::Rooch(tx) => {
+                tx.construct_moveos_transaction(resolved_sender, tx_accumulator_root)
+            }
+            TypedTransaction::Ethereum(tx) => {
+                tx.construct_moveos_transaction(resolved_sender, tx_accumulator_root)
+            }
         }
     }
 
