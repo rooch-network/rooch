@@ -8,7 +8,6 @@
 
 module rooch_examples::blog_updated {
 
-    use moveos_std::object::ObjectID;
     use rooch_examples::blog::{Self, BlogUpdated};
     use std::string::String;
 

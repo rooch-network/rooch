@@ -4,7 +4,6 @@
 module rooch_examples::article_update_logic {
     use std::signer;
     use moveos_std::object_ref::{Self, ObjectRef};
-    use moveos_std::context::Context;
     use rooch_examples::article::{Self, Article};
     use rooch_examples::article_updated;
     use std::string::String;

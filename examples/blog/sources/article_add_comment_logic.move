@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::article_add_comment_logic {
-    use moveos_std::context::Context;
     use moveos_std::object_ref::ObjectRef;
     use rooch_examples::article::{Self, Article};
     use rooch_examples::comment;
@@ -29,7 +28,6 @@ module rooch_examples::article_add_comment_logic {
     }
 
     public(friend) fun mutate(
-        ctx: &mut Context,
         _account: &signer,
         comment_added: &article::CommentAdded,
         article_obj: &mut ObjectRef<Article>,
@@ -39,7 +37,6 @@ module rooch_examples::article_add_comment_logic {
         let body = comment_added::body(comment_added);
         let owner = comment_added::owner(comment_added);
         let id = article::id(article_obj);
-        let _ = ctx;
         let _ = id;
         let comment = comment::new_comment(
             comment_seq_id,
@@ -47,7 +44,7 @@ module rooch_examples::article_add_comment_logic {
             body,
             owner,
         );
-        article::add_comment(ctx, article_obj, comment);
+        article::add_comment(article_obj, comment);
     }
 
 }

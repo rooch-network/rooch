@@ -91,15 +91,16 @@ module rooch_examples::article {
         article.body = body;
     }
 
-    public(friend) fun add_comment(ctx: &mut Context, article_obj: &mut ObjectRef<Article>, comment: Comment) {
+    public(friend) fun add_comment(article_obj: &mut ObjectRef<Article>, comment: Comment) {
         let article = object_ref::borrow_mut(article_obj);
         let comment_seq_id = comment::comment_seq_id(&comment);
         assert!(!table::contains(&article.comments, comment_seq_id), ErrorIdAlreadyExists);
         table::add(&mut article.comments, comment_seq_id, comment);
-        event::emit(ctx, CommentTableItemAdded {
-            article_id: id(article_obj),
-            comment_seq_id,
-        });
+        //TODO enable event after refactor event API to remove `&mut Context`
+        // event::emit(ctx, CommentTableItemAdded {
+        //     article_id: id(article_obj),
+        //     comment_seq_id,
+        // });
     }
 
     public(friend) fun remove_comment(article_obj: &mut ObjectRef<Article>, comment_seq_id: u64) {

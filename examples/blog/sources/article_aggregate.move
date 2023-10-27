@@ -75,14 +75,12 @@ module rooch_examples::article_aggregate {
     ) {
         let article_obj = article::get_article_mut(ctx, id);
         let comment_added = article_add_comment_logic::verify(
-            ctx,
             account,
             commenter,
             body,
             article_obj,
         );
         article_add_comment_logic::mutate(
-            ctx,
             account,
             &comment_added,
             article_obj,

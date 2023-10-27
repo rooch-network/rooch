@@ -3,7 +3,6 @@
 
 module rooch_examples::article_update_comment_logic {
     use moveos_std::object_ref::ObjectRef;
-    use moveos_std::context::Context;
     use rooch_examples::article::{Self, Article};
     use rooch_examples::comment;
     use rooch_examples::comment_updated;
