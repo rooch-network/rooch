@@ -47,7 +47,7 @@ impl<'a> AddressMapping<'a> {
         }
     }
 
-    pub fn resovle_or_generate(
+    pub fn resolve_or_generate(
         &self,
         multichain_address: MultiChainAddress,
     ) -> Result<AccountAddress> {
