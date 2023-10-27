@@ -8,16 +8,11 @@
 
 module rooch_examples::blog_created {
 
-    use moveos_std::object::ObjectID;
     use rooch_examples::blog::{Self, BlogCreated};
     use std::string::String;
 
     public fun name(blog_created: &BlogCreated): String {
         blog::blog_created_name(blog_created)
-    }
-
-    public fun articles(blog_created: &BlogCreated): vector<ObjectID> {
-        blog::blog_created_articles(blog_created)
     }
 
 }

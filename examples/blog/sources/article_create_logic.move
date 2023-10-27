@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::article_create_logic {
-    use moveos_std::object_ref::ObjectRef;
     use moveos_std::context::Context;
+    use moveos_std::object_ref;
+    use moveos_std::object::ObjectID;
     use rooch_examples::article::{Self, Article};
     use rooch_examples::article_created;
     use std::string::String;
@@ -29,7 +30,7 @@ module rooch_examples::article_create_logic {
         ctx: &mut Context,
         _account: &signer,
         article_created: &article::ArticleCreated,
-    ): ObjectRef<Article> {
+    ) : ObjectID {
         let title = article_created::title(article_created);
         let body = article_created::body(article_created);
         let article_obj = article::create_article(
@@ -37,10 +38,9 @@ module rooch_examples::article_create_logic {
             title,
             body,
         );
-        // ///////////////////////////
-        blog_aggregate::add_article(ctx, article::id(&article_obj));
-        // ///////////////////////////
-        article_obj
+        let article_id = object_ref::id(&article_obj);
+        blog_aggregate::add_article(ctx, article_obj);
+        article_id
     }
 
 }

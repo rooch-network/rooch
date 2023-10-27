@@ -15,9 +15,5 @@ module rooch_examples::blog_updated {
     public fun name(blog_updated: &BlogUpdated): String {
         blog::blog_updated_name(blog_updated)
     }
-
-    public fun articles(blog_updated: &BlogUpdated): vector<ObjectID> {
-        blog::blog_updated_articles(blog_updated)
-    }
-
+   
 }

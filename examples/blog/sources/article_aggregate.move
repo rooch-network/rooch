@@ -27,23 +27,21 @@ module rooch_examples::article_aggregate {
         body: String,
         owner: address,
     ) {
-        let article_obj = article::get_article(ctx, id);
+        let article_obj = article::get_article_mut(ctx, id);
         let comment_updated = article_update_comment_logic::verify(
-            ctx,
             account,
             comment_seq_id,
             commenter,
             body,
             owner,
-            &article_obj,
+            article_obj,
         );
-        let updated_article_obj = article_update_comment_logic::mutate(
-            ctx,
+        article_update_comment_logic::mutate(
             account,
             &comment_updated,
             article_obj,
         );
-        article::update_version_and_add(ctx, updated_article_obj);
+        article::update_version(article_obj);
         article::emit_comment_updated(ctx, comment_updated);
     }
 
@@ -53,20 +51,18 @@ module rooch_examples::article_aggregate {
         id: ObjectID,
         comment_seq_id: u64,
     ) {
-        let article_obj = article::get_article(ctx, id);
+        let article_obj = article::get_article_mut(ctx, id);
         let comment_removed = article_remove_comment_logic::verify(
-            ctx,
             account,
             comment_seq_id,
-            &article_obj,
+            article_obj,
         );
-        let updated_article_obj = article_remove_comment_logic::mutate(
-            ctx,
+        article_remove_comment_logic::mutate(
             account,
             &comment_removed,
             article_obj,
         );
-        article::update_version_and_add(ctx, updated_article_obj);
+        article::update_version(article_obj);
         article::emit_comment_removed(ctx, comment_removed);
     }
 
@@ -77,21 +73,21 @@ module rooch_examples::article_aggregate {
         commenter: String,
         body: String,
     ) {
-        let article_obj = article::get_article(ctx, id);
+        let article_obj = article::get_article_mut(ctx, id);
         let comment_added = article_add_comment_logic::verify(
             ctx,
             account,
             commenter,
             body,
-            &article_obj,
+            article_obj,
         );
-        let updated_article_obj = article_add_comment_logic::mutate(
+        article_add_comment_logic::mutate(
             ctx,
             account,
             &comment_added,
             article_obj,
         );
-        article::update_version_and_add(ctx, updated_article_obj);
+        article::update_version(article_obj);
         article::emit_comment_added(ctx, comment_added);
     }
 
@@ -107,13 +103,12 @@ module rooch_examples::article_aggregate {
             title,
             body,
         );
-        let article_obj = article_create_logic::mutate(
+        let article_id = article_create_logic::mutate(
             ctx,
             account,
             &article_created,
         );
-        article::set_article_created_id(&mut article_created, article::id(&article_obj));
-        article::add_article(ctx, article_obj);
+        article::set_article_created_id(&mut article_created, article_id);
         article::emit_article_created(ctx, article_created);
     }
 
@@ -124,21 +119,19 @@ module rooch_examples::article_aggregate {
         title: String,
         body: String,
     ) {
-        let article_obj = article::get_article(ctx, id);
+        let article_obj = article::get_article_mut(ctx, id);
         let article_updated = article_update_logic::verify(
-            ctx,
             account,
             title,
             body,
-            &article_obj,
+            article_obj,
         );
-        let updated_article_obj = article_update_logic::mutate(
-            ctx,
+        article_update_logic::mutate(
             account,
             &article_updated,
             article_obj,
         );
-        article::update_version_and_add(ctx, updated_article_obj);
+        article::update_version(article_obj);
         article::emit_article_updated(ctx, article_updated);
     }
 
@@ -149,15 +142,14 @@ module rooch_examples::article_aggregate {
     ) {
         let article_obj = article::get_article(ctx, id);
         let article_deleted = article_delete_logic::verify(
-            ctx,
             account,
-            &article_obj,
+            article_obj,
         );
         let updated_article_obj = article_delete_logic::mutate(
             ctx,
             account,
             &article_deleted,
-            article_obj,
+            id,
         );
         article::drop_article(updated_article_obj);
         article::emit_article_deleted(ctx, article_deleted);
