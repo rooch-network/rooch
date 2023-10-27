@@ -1,10 +1,69 @@
 # Rooch JSON-RPC
 
+In the blockchain network, the interaction between the client and the server is carried out through requests and responses. RPC (Remote Process Call) is a protocol for interaction between the client and the server. This protocol standardizes the data format when the client interacts with the server that implements the RPC interface.
+
+There are many RPC interface implementations on the market, such as `JSON-RPC`, `XML-RPC`, `Protobuf-RPC`, etc. Rooch adopts the JSON-RPC protocol specification.
+
+The caller writes the RPC request according to the RPC protocol specification. The client serializes the function name and parameters of the RPC interface. After sending it to the server, the server extracts the functions and parameters in the request through deserialization. The server calls Related functions and return the result of the call to the client. This is the general workflow of the RPC interface.
+
 ## Type Conversions
 
 - `u64`, `u128`, `u256` are represented as strings in JSON.
 - `ObjectID` and `address` are represented in JSON as hexadecimal strings beginning with `0x`.
 
-## Reference
+## Examples
 
-- [Rooch RPC spec](https://playground.open-rpc.org/?schemaUrl=https://raw.githubusercontent.com/rooch-network/rooch/main/crates/rooch-open-rpc-spec/schemas/openrpc.json)
+Next, we will use a few small examples to demonstrate how to call Rooch's JSON-RPC interface.
+
+### rooch_getChainID
+
+`rooch_getChainID` This interface method is used to obtain the chain ID of Rooch.
+
+#### Using the command line program curl as a client
+
+```shell
+curl --location 'https://dev-seed.rooch.network/' --header 'Content-Type: application/json' --data '{
+    "jsonrpc": "2.0",
+    "method": "rooch_getChainID",
+    "params": [],
+    "id": 0
+}'
+```
+
+`--location` specifies the node URL to request, which is Rooch's `dev` network node.
+
+`--header` specifies the header information of the request, such as specifying the data type in JSON format, etc.
+
+`--date` specifies that we want to request the **method name** and **parameters** in the RPC interface, which must be filled in in JSON data format.
+
+```shell
+{"jsonrpc":"2.0","result":"20230103","id":0}
+```
+
+This is the response information returned in JSON format from the Rooch node after the RPC request. We focus on the `result` field, which is the execution result of the RPC. The chain ID number of Rooch's `dev` network is `20230103`.
+
+#### The client using the web page sends a request to the Rooch node
+
+Above we have introduced how to send RPC requests to Rooch nodes through the command line interface. Next, we will introduce how to use the web client provided by Rooch to send requests.
+
+![Web JSON-RPC Client](/docs/web-rpc-client.png)
+
+- Click Connect to use the web version of the [Rooch JSON-RPC](https://playground.open-rpc.org/?schemaUrl=https://raw.githubusercontent.com/rooch-network/rooch/main/crates/rooch-open-rpc-spec/schemas/openrpc.json) client.
+
+The `Methods` on the right side of the page are the callable RPC interfaces currently provided by Rooch.
+
+![](/docs/web-rpc-try.png)
+
+We click on the `rooch_getChainID` method, click the `TRY IT NOW` button, and the calling page will be displayed at the bottom of the page, as shown below.
+
+This web program is easier to use than the curl program, and provides a corresponding request template, which only requires us to fill in the necessary request information.
+
+![](/docs/web-rpc-run.png)
+
+- The first step is to fill in the node URL of the Rooch network. Here we use the `dev` node network: `https://dev-seed.rooch.network/`
+- The second step is to fill in the name of the RPC method to be called, for example: `rooch_getChainID`
+- The third step Click the Run button
+
+When the call is successful, you can see that the prompt on the right has responded successfully, and the corresponding response information is returned below, which is the same as the information returned by the `curl` command:
+
+![](/docs/web-rpc-ok.png)
