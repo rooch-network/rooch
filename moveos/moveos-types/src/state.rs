@@ -142,7 +142,7 @@ pub trait MoveState: MoveType + DeserializeOwned + Serialize {
     fn to_runtime_value(&self) -> Value {
         let blob = self.to_bytes();
         Value::simple_deserialize(&blob, &Self::type_layout())
-            .expect("Deserialize the MoveValue from MoveState should success")
+            .expect("Deserialize the Move Runtime Value from MoveState should success")
     }
 
     /// Deserialize the MoveState from MoveRuntime Value
