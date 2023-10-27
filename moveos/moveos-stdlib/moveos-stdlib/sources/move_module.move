@@ -164,7 +164,7 @@ module moveos_std::move_module {
     ): vector<vector<u8>>;
 
     /// Native function to replace constant bytes in module binary where the length of
-    /// `old_addresses` must equal to that of `new_addresses`.    
+    /// `old_bytes` must equal to that of `new_bytes`.    
     native public(friend) fun replace_bytes_constant(
         bytes: vector<vector<u8>>,
         old_bytes: vector<vector<u8>>,

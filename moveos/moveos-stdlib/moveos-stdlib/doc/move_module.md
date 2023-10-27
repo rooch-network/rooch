@@ -459,7 +459,7 @@ Native function to replace constant addresses in module binary where the length 
 ## Function `replace_bytes_constant`
 
 Native function to replace constant bytes in module binary where the length of
-<code>old_addresses</code> must equal to that of <code>new_addresses</code>.
+<code>old_bytes</code> must equal to that of <code>new_bytes</code>.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_bytes_constant">replace_bytes_constant</a>(bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, old_bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, new_bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;): <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
