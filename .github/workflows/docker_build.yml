@@ -63,6 +63,8 @@ jobs:
               exit 1
           fi
 
+          sleep 30
+
           # get container status
           STATUS=$(docker inspect --format "{{.State.Status}}" $CONTAINER_ID)
 
