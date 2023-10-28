@@ -46,7 +46,7 @@ export function fromHex(hexString: string): Uint8Array {
     hexStringTrimmed = hexString.slice(2)
   }
   const bytes = new Uint8Array(Math.floor((hexStringTrimmed || '').length / 2))
-  let i;
+  let i
   for (i = 0; i < bytes.length; i++) {
     const a = MAP_HEX[hexStringTrimmed[i * 2] as keyof typeof MAP_HEX]
     const b = MAP_HEX[hexStringTrimmed[i * 2 + 1] as keyof typeof MAP_HEX]
