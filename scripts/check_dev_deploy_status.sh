@@ -12,7 +12,7 @@ IMAGE_TAG="$1"
 DEV_MNEMONIC_PHRASE="$2"
 
 # get the container id
-CONTAINER_ID=$(docker ps -a | grep $KEYWORD | awk \'{print $1}\')
+CONTAINER_ID=$(docker ps -a | grep $KEYWORD | awk '{print $1}')
 
 if [ -z "$CONTAINER_ID" ]; then
     echo "No container found related to the keyword $KEYWORD"
