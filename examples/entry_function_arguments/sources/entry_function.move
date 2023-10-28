@@ -3,6 +3,7 @@
 
 module rooch_examples::entry_function {
    use moveos_std::event;
+   use moveos_std::object_ref::{Self, ObjectRef};
    use moveos_std::object::ObjectID;
    use moveos_std::context::Context;
 
@@ -94,5 +95,22 @@ module rooch_examples::entry_function {
    public entry fun emit_mix(ctx: &mut Context, value1: u8, value2: vector<ObjectID>) {
       event::emit<U8Event>(ctx, U8Event { value: value1 });
       event::emit<VecObjectIDEvent>(ctx, VecObjectIDEvent { value: value2 });     
+   }
+
+   struct TestStruct has key{}
+
+   struct ObjectEvent{
+      is_mut: bool,
+      value: ObjectID,
+   }
+
+   public entry fun emit_object(ctx: &mut Context, obj: &ObjectRef<TestStruct>) {
+      let object_id = object_ref::id(obj);
+      event::emit<ObjectEvent>(ctx, ObjectEvent { is_mut: false, value: object_id });
+   }
+
+   public entry fun emit_object_mut(ctx: &mut Context, obj: &mut ObjectRef<TestStruct>) {
+      let object_id = object_ref::id(obj);
+      event::emit<ObjectEvent>(ctx, ObjectEvent { is_mut: true, value: object_id });
    }
 }

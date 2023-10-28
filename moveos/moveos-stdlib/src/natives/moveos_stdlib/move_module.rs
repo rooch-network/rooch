@@ -144,11 +144,13 @@ fn native_sort_and_verify_modules_inner(
                 }
                 module_names.push(module.self_id().name().to_owned().into_string());
             }
-            Err(_) => {
+            Err(e) => {
+                //TODO provide a flag to control whether to print debug log.
+                log::info!("module {} verification error: {:?}", module.self_id(), e);
                 return Ok(NativeResult::err(
                     cost,
                     moveos_types::move_std::error::invalid_argument(E_MODULE_VERIFICATION_ERROR),
-                ))
+                ));
             }
         }
     }

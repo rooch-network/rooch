@@ -34,7 +34,7 @@ A handle for an event such that:
 2. Storage can use this handle to prove the total number of events that happened in the past.
 
 
-<pre><code><b>struct</b> <a href="event.md#0x2_event_EventHandle">EventHandle</a> <b>has</b> store, key
+<pre><code><b>struct</b> <a href="event.md#0x2_event_EventHandle">EventHandle</a> <b>has</b> key
 </code></pre>
 
 

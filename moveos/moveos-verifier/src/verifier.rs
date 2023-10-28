@@ -12,6 +12,7 @@ use move_binary_format::file_format::{
     FunctionInstantiation, FunctionInstantiationIndex, Signature, SignatureToken,
     StructHandleIndex, Visibility,
 };
+use move_binary_format::IndexKind;
 use move_binary_format::{access::ModuleAccess, CompiledModule};
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::ModuleId;
@@ -181,10 +182,11 @@ pub fn verify_entry_function_at_publish(module: &CompiledModule) -> VMResult<boo
             .0
             .clone();
 
-        for ty in &func_parameters_types {
+        for (idx, ty) in func_parameters_types.iter().enumerate() {
             if !check_transaction_input_type_at_publish(ty, &module_bin_view) {
                 return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
-                    .with_message(format!("parameter type {:?} is not allowed", ty))
+                    .with_message(format!("The type of the {} paramter is not allowed", idx))
+                    .at_index(IndexKind::FunctionDefinition, fdef.function.0)
                     .finish(Location::Module(module.self_id())));
             }
         }
@@ -196,7 +198,7 @@ pub fn verify_entry_function_at_publish(module: &CompiledModule) -> VMResult<boo
 pub fn verify_entry_function<S>(
     func: &LoadedFunctionInstantiation,
     session: &Session<S>,
-) -> PartialVMResult<bool>
+) -> PartialVMResult<()>
 where
     S: DataStore + TransactionCache,
 {
@@ -207,14 +209,14 @@ where
         );
     }
 
-    for ty in &func.parameters {
+    for (idx, ty) in func.parameters.iter().enumerate() {
         if !check_transaction_input_type(ty, session) {
             return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
-                .with_message("parameter type is not allowed".to_owned()));
+                .with_message(format!("The type of the {} paramter is not allowed", idx)));
         }
     }
 
-    Ok(true)
+    Ok(())
 }
 
 fn check_transaction_input_type_at_publish(
@@ -238,10 +240,7 @@ fn check_transaction_input_type_at_publish(
         }
         Struct(sid) | StructInstantiation(sid, _) => {
             let struct_full_name = struct_full_name_from_sid(sid, module_bin_view);
-            if is_allowed_input_struct(struct_full_name) {
-                return true;
-            }
-            false
+            is_allowed_input_struct(struct_full_name, false)
         }
 
         _ => {
@@ -256,13 +255,9 @@ fn is_allowed_reference_types_at_publish(
     module_bin_view: &BinaryIndexedView,
 ) -> bool {
     match bt {
-        SignatureToken::Struct(sid) => {
+        SignatureToken::Struct(sid) | SignatureToken::StructInstantiation(sid, _) => {
             let struct_full_name = struct_full_name_from_sid(sid, module_bin_view);
-            if is_allowed_input_struct(struct_full_name) {
-                return true;
-            }
-
-            false
+            is_allowed_input_struct(struct_full_name, true)
         }
         _ => false,
     }
@@ -304,7 +299,7 @@ where
         Struct(idx) | StructInstantiation(idx, _) => {
             if let Some(st) = session.get_struct_type(*idx) {
                 let full_name = format!("{}::{}", st.module.short_str_lossless(), st.name);
-                is_allowed_input_struct(full_name)
+                is_allowed_input_struct(full_name, false)
             } else {
                 false
             }
@@ -332,15 +327,19 @@ where
     S: DataStore + TransactionCache,
 {
     match bt {
-        Type::Struct(sid) => {
-            if let Some(st) = session.get_struct_type(*sid) {
+        Type::Struct(sid) | Type::StructInstantiation(sid, _) => {
+            let st_option = session.get_struct_type(*sid);
+            debug_assert!(
+                st_option.is_some(),
+                "Can not find by struct handle index:{:?}",
+                sid
+            );
+            if let Some(st) = st_option {
                 let full_name = format!("{}::{}", st.module.short_str_lossless(), st.name);
-                if is_allowed_input_struct(full_name) {
-                    return true;
-                }
+                is_allowed_input_struct(full_name, true)
+            } else {
+                false
             }
-
-            false
         }
         _ => false,
     }

@@ -10,10 +10,14 @@ module rooch_examples::blog {
     use moveos_std::account_storage;
     use moveos_std::event;
     use moveos_std::object::ObjectID;
+    use moveos_std::object_ref::ObjectRef;
     use moveos_std::context::Context;
+    use moveos_std::table::{Self, Table};
     use std::error;
     use std::signer;
     use std::string::String;
+    use rooch_examples::article::Article;
+
     friend rooch_examples::blog_add_article_logic;
     friend rooch_examples::blog_remove_article_logic;
     friend rooch_examples::blog_create_logic;
@@ -28,7 +32,7 @@ module rooch_examples::blog {
     struct Blog has key, store {
         version: u64,
         name: String,
-        articles: vector<ObjectID>,
+        articles: Table<ObjectID, ObjectRef<Article>>,
     }
 
     public fun version(blog: &Blog): u64 {
@@ -44,17 +48,17 @@ module rooch_examples::blog {
         blog.name = name;
     }
 
-    public fun articles(blog: &Blog): vector<ObjectID> {
-        blog.articles
+    public fun articles(blog: &Blog): &Table<ObjectID, ObjectRef<Article>> {
+        &blog.articles
     }
 
-    public(friend) fun set_articles(blog: &mut Blog, articles: vector<ObjectID>) {
-        blog.articles = articles;
+    public fun articles_mut(blog: &mut Blog): &mut Table<ObjectID, ObjectRef<Article>> {
+        &mut blog.articles
     }
 
     public(friend) fun new_blog(
         name: String,
-        articles: vector<ObjectID>,
+        articles: Table<ObjectID, ObjectRef<Article>>,
     ): Blog {
         assert!(std::string::length(&name) <= 200, ErrorDataTooLong);
         Blog {
@@ -104,50 +108,36 @@ module rooch_examples::blog {
 
     struct BlogCreated has key {
         name: String,
-        articles: vector<ObjectID>,
     }
 
     public fun blog_created_name(blog_created: &BlogCreated): String {
         blog_created.name
     }
 
-    public fun blog_created_articles(blog_created: &BlogCreated): vector<ObjectID> {
-        blog_created.articles
-    }
-
     public(friend) fun new_blog_created(
         name: String,
-        articles: vector<ObjectID>,
     ): BlogCreated {
         BlogCreated {
             name,
-            articles,
         }
     }
 
     struct BlogUpdated has key {
         version: u64,
         name: String,
-        articles: vector<ObjectID>,
     }
 
     public fun blog_updated_name(blog_updated: &BlogUpdated): String {
         blog_updated.name
     }
 
-    public fun blog_updated_articles(blog_updated: &BlogUpdated): vector<ObjectID> {
-        blog_updated.articles
-    }
-
     public(friend) fun new_blog_updated(
         blog: &Blog,
         name: String,
-        articles: vector<ObjectID>,
     ): BlogUpdated {
         BlogUpdated {
             version: version(blog),
             name,
-            articles,
         }
     }
 
@@ -189,8 +179,9 @@ module rooch_examples::blog {
         let Blog {
             version: _version,
             name: _name,
-            articles: _articles,
+            articles,
         } = blog;
+        table::destroy_empty(articles);
     }
 
     public(friend) fun borrow_mut_blog(ctx: &mut Context): &mut Blog {

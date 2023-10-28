@@ -82,10 +82,9 @@ module rooch_framework::account_coin_store {
     
     /// Returns the balance of `addr` for provided `CoinType`.
     public fun balance<CoinType: key>(ctx: &Context, addr: address): u256 {
-        let coin_store_id_option = coin_store_id<CoinType>(ctx, addr);
-        if (option::is_some(&coin_store_id_option)) {
-            let coin_store_id = option::extract(&mut coin_store_id_option);
-            coin_store::get_balance_with_id(ctx, coin_store_id)
+        if(exist_account_coin_store<CoinType>(ctx, addr)) {
+            let coin_store = borrow_account_coin_store<CoinType>(ctx, addr);
+            coin_store::balance(coin_store)
         } else {
             0u256
         }
@@ -287,6 +286,7 @@ module rooch_framework::account_coin_store {
 
     fun create_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address) {
         let coin_store_ref = coin_store::create_coin_store_internal<CoinType>(ctx);
+        coin_store::transfer(&mut coin_store_ref, addr);
         let coin_stores = account_storage::global_borrow_mut<CoinStores>(ctx, addr);
         let coin_type = type_info::type_name<CoinType>();
         table::add(&mut coin_stores.coin_stores, coin_type, coin_store_ref);

@@ -77,6 +77,7 @@ impl FromOnChainGasSchedule for MoveOSGasParameters {
             test_helper: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             signer: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             move_module: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
+            object: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
         })
     }
 }
@@ -94,6 +95,7 @@ impl InitialGasSchedule for MoveOSGasParameters {
             test_helper: InitialGasSchedule::initial(),
             signer: InitialGasSchedule::initial(),
             move_module: InitialGasSchedule::initial(),
+            object: InitialGasSchedule::initial(),
         }
     }
 }

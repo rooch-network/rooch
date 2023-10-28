@@ -8,17 +8,24 @@
 /// 2. The Object is a use case of the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by StorageContext API after creation.
 module moveos_std::object {
 
+    use std::error;
     use std::hash;
     use moveos_std::type_info;
     use moveos_std::bcs;
     use moveos_std::address;
+
     friend moveos_std::context;
     friend moveos_std::account_storage;
     friend moveos_std::storage_context;
     friend moveos_std::event;
     friend moveos_std::object_ref;
     friend moveos_std::raw_table;
-   
+
+    const ErrorInvalidOwnerAddress:u64 = 1;
+
+    const SYSTEM_OWNER_ADDRESS: address = @0x0;
+    
+    ///TODO rename to ObjectEntity
     /// Box style object
     /// The object can not be copied, droped and stored. It only can be consumed by StorageContext API.
     struct Object<T> {
@@ -26,6 +33,8 @@ module moveos_std::object {
         id: ObjectID,
         // The owner of the object
         owner: address,
+        /// A flag to indicate whether the object is shared or frozen
+        //flag: u8,
         // The value of the object
         // The value must be the last field
         value: T,
@@ -55,36 +64,48 @@ module moveos_std::object {
     }
 
     /// Create a new object, the object is owned by `owner`
-    public(friend) fun new<T: key>(id: ObjectID, owner: address, value: T): Object<T> {
+    public(friend) fun new<T: key>(id: ObjectID, value: T): Object<T> {
+        let owner = SYSTEM_OWNER_ADDRESS;
         Object<T>{id, value, owner}
     }
 
-    #[private_generics(T)]
-    // Borrow the object value
-    public fun borrow<T>(self: &Object<T>): &T {
+    public(friend) fun borrow<T>(self: &Object<T>): &T {
         &self.value
     }
 
-    public(friend) fun internal_borrow<T>(self: &Object<T>): &T {
-        &self.value
-    }
-
-    #[private_generics(T)]
-    /// Borrow the mutable object value
-    public fun borrow_mut<T>(self: &mut Object<T>): &mut T {
+    public(friend) fun borrow_mut<T>(self: &mut Object<T>): &mut T {
         &mut self.value
     }
 
-    public(friend) fun internal_borrow_mut<T>(self: &mut Object<T>): &mut T {
-        &mut self.value
+    public(friend) fun transfer<T>(self: &mut Object<T>, owner: address) {
+        assert!(owner != SYSTEM_OWNER_ADDRESS, error::invalid_argument(ErrorInvalidOwnerAddress));
+        self.owner = owner;
     }
 
-    #[private_generics(T)]
-    /// Transfer object to recipient
-    public fun transfer<T: key>(self: &mut Object<T>, recipient: address) {
-        self.owner = recipient;
+    public(friend) fun transfer_to_system<T>(self: &mut Object<T>){
+        self.owner = SYSTEM_OWNER_ADDRESS;
     }
 
+    public(friend) fun to_shared<T>(self: &mut Object<T>) {
+        // TODO set the flag
+        transfer_to_system(self);
+    }
+
+    public(friend) fun is_shared<T>(_self: &Object<T>) : bool {
+        // TODO check the flag
+        false
+    }
+
+    public(friend) fun to_frozen<T>(self: &mut Object<T>) {
+        // TODO set the flag
+        transfer_to_system(self);
+    }
+
+    public(friend) fun is_frozen<T>(_self: &Object<T>) : bool {
+        // TODO check the flag
+        false
+    }
+    
     public fun id<T>(self: &Object<T>): ObjectID {
         self.id
     }
@@ -93,13 +114,8 @@ module moveos_std::object {
         self.owner
     }
 
-    #[private_generics(T)]
     /// Unpack the object, return the id, owner, and value
-    public fun unpack<T>(self: Object<T>): (ObjectID, address, T) {
-        unpack_internal(self)
-    }
-
-    public(friend) fun unpack_internal<T>(self: Object<T>): (ObjectID, address, T) {
+    public(friend) fun unpack<T>(self: Object<T>): (ObjectID, address, T) {
         let Object{id, owner, value} = self;
         (id, owner, value)
     }
@@ -118,7 +134,7 @@ module moveos_std::object {
             count: object_count,
         };
         let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut tx_context));
-        let obj = new<TestObject>(object_id, sender_addr, object);
+        let obj = new<TestObject>(object_id, object);
 
         let borrow_object = borrow_mut(&mut obj);
         assert!(borrow_object.count == object_count, 1001);

@@ -9,6 +9,7 @@ use move_bytecode_utils::dependency_graph::DependencyGraph;
 use move_bytecode_utils::Modules;
 use move_cli::Move;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
+use moveos_verifier::verifier;
 use rooch_key::key_derive::verify_password;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_types::transaction::rooch::RoochTransaction;
@@ -101,7 +102,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         // Initialize bundles vector and sort modules by dependency order
         let mut bundles: Vec<Vec<u8>> = vec![];
         let sorted_modules = sort_by_dependency_order(modules.iter_modules())?;
-
+        let resolver = context.get_client().await?;
         // Serialize and collect module binaries into bundles
         for module in sorted_modules {
             let module_address = module.self_id().address().to_owned();
@@ -112,6 +113,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                     pkg_address.clone(),
                 )));
             };
+            verifier::verify_module(&module, &resolver)?;
             let mut binary: Vec<u8> = vec![];
             module.serialize(&mut binary)?;
             bundles.push(binary);

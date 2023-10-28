@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::blog_add_article_logic {
-    use std::vector;
 
+    use moveos_std::object_ref::ObjectRef;
     use moveos_std::object::ObjectID;
+    use moveos_std::table;
     use rooch_examples::article_added_to_blog;
     use rooch_examples::blog;
+    use rooch_examples::article::Article;
 
     friend rooch_examples::blog_aggregate;
 
@@ -22,13 +24,11 @@ module rooch_examples::blog_add_article_logic {
 
     public(friend) fun mutate(
         article_added_to_blog: &blog::ArticleAddedToBlog,
+        article_obj: ObjectRef<Article>,
         blog: &mut blog::Blog,
     ) {
         let article_id = article_added_to_blog::article_id(article_added_to_blog);
-        let articles = blog::articles(blog);
-        if (!vector::contains(&articles, &article_id)) {
-            vector::push_back(&mut articles, article_id);
-            blog::set_articles(blog, articles);
-        };
+        let articles = blog::articles_mut(blog);
+        table::add(articles, article_id, article_obj);
     }
 }

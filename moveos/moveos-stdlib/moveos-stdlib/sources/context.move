@@ -7,18 +7,21 @@
 module moveos_std::context {
 
     use std::option::Option;
-    use moveos_std::type_info;
+    use std::error;
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context::{Self, TxContext};
-    use moveos_std::object::{Self, Object, ObjectID};
+    use moveos_std::object::{Self, ObjectID};
     use moveos_std::object_ref::{Self, ObjectRef};
     use moveos_std::tx_meta::{TxMeta};
     use moveos_std::tx_result::{TxResult};
+    use moveos_std::signer;
 
     friend moveos_std::table;
     friend moveos_std::type_table;
     friend moveos_std::account_storage;
     friend moveos_std::event;
+
+    const ErrorObjectOwnerNotMatch: u64 = 1;
 
     /// Information about the global context include TxContext and StorageContext
     /// We can not put the StorageContext to TxContext, because object module depends on tx_context module,
@@ -92,61 +95,61 @@ module moveos_std::context {
     }
 
 
-    // Wrap functions for StorageContext and ObjectRef 
+    // Wrap functions for StorageContext
 
-    #[private_generics(T)]
     /// Borrow Object from object store with object_id
-    public fun borrow_object<T: key>(self: &Context, object_id: ObjectID): &Object<T> {
-        storage_context::borrow<T>(&self.storage_context, object_id)
+    /// Any one can borrow an &ObjectRef from the global object storage
+    public fun borrow_object<T: key>(self: &Context, object_id: ObjectID): &ObjectRef<T> {
+        let object_entity = storage_context::borrow<T>(&self.storage_context, object_id);
+        object_ref::as_ref(object_entity)
     }
 
-    #[private_generics(T)]
     /// Borrow mut Object from object store with object_id
-    public fun borrow_object_mut<T: key>(self: &mut Context, object_id: ObjectID): &mut Object<T> {
-        storage_context::borrow_mut<T>(&mut self.storage_context, object_id)
+    /// If the object is not shared, only the owner can borrow an &mut ObjectRef from the global object storage
+    public fun borrow_object_mut<T: key>(self: &mut Context, owner: &signer, object_id: ObjectID): &mut ObjectRef<T> {
+        let object_entity = storage_context::borrow_mut<T>(&mut self.storage_context, object_id);
+        if(!object::is_shared(object_entity)) {
+            let owner_address = signer::address_of(owner);
+            assert!(object::owner(object_entity) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
+        };
+        object_ref::as_mut_ref(object_entity)
     }
 
     #[private_generics(T)]
-    /// Remove object from object store, and unpack the Object
-    public fun remove_object<T: key>(self: &mut Context, object_id: ObjectID): (ObjectID, address, T) {
-        let obj = storage_context::remove<T>(&mut self.storage_context, object_id);
-        object::unpack_internal(obj)
+    /// The module of T can borrow mut Object from object store with any object_id
+    public fun borrow_object_mut_extend<T: key>(self: &mut Context, object_id: ObjectID) : &mut ObjectRef<T> {
+        let object_entity = storage_context::borrow_mut<T>(&mut self.storage_context, object_id);
+        object_ref::as_mut_ref(object_entity)
     }
 
-    public fun exist_object(self: &Context, object_id: ObjectID): bool {
+    public fun exist_object<T: key>(self: &Context, object_id: ObjectID): bool {
         storage_context::contains(&self.storage_context, object_id)
+        //TODO check the object type
     }
 
     // Wrap functions for Object
 
     #[private_generics(T)]
-    /// Create a new Object, the owner is the `sender`
-    /// Add the Object to the global object storage and return the ObjectRef
+    /// Create a new Object, Add the Object to the global object storage and return the ObjectRef
+    /// Note: the default owner is the `System`, the caller should explicitly transfer the Object to the owner.
+    /// The owner can get the `&mut ObjectRef` by `borrow_object_mut`
     public fun new_object<T: key>(self: &mut Context, value: T): ObjectRef<T> {
         let id = fresh_object_id(self);
-        let owner = sender(self);
-        new_object_with_id(self, id, owner, value)
+        new_object_with_id(self, id, value)
     }
 
-    #[private_generics(T)]
-    /// Create a new Object with owner
-    /// Add the Object to the global object storage and return the ObjectRef
-    public fun new_object_with_owner<T: key>(self: &mut Context, owner: address, value: T): ObjectRef<T> {
-        let object_id = fresh_object_id(self);
-        new_object_with_id(self, object_id, owner, value)
-    }
-
-    public(friend) fun new_object_with_id<T: key>(self: &mut Context, id: ObjectID, owner: address, value: T) : ObjectRef<T> {
-        let obj = object::new(id, owner, value);
-        let obj_ref = object_ref::new_internal(&mut obj);
-        storage_context::add(&mut self.storage_context, obj);
+    public(friend) fun new_object_with_id<T: key>(self: &mut Context, id: ObjectID, value: T) : ObjectRef<T> {
+        let obj_entity = object::new(id, value);
+        object::transfer(&mut obj_entity, sender(self)); 
+        let obj_ref = object_ref::new_internal(&mut obj_entity);
+        storage_context::add(&mut self.storage_context, obj_entity);
         obj_ref
     }
 
     #[private_generics(T)]
     public fun new_singleton_object<T: key>(self: &mut Context, value: T): ObjectRef<T> {
         let object_id = object::singleton_object_id<T>();
-        new_object_with_id(self, object_id, type_info::account_address(&type_info::type_of<T>()), value)
+        new_object_with_id(self, object_id, value)
     }
 
     #[test_only]
@@ -196,6 +199,7 @@ module moveos_std::context {
             let obj_value = object_ref::borrow(&ref);
             assert!(obj_value.value == 2, 1000);
         };
+        object_ref::to_permanent(ref);
         drop_test_context(ctx);
     }
 }

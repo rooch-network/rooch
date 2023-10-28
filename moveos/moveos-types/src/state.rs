@@ -9,6 +9,7 @@ use anyhow::{bail, ensure, Result};
 use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
+    ident_str,
     identifier::{IdentStr, Identifier},
     language_storage::{StructTag, TypeTag},
     resolver::MoveResolver,
@@ -47,6 +48,10 @@ pub trait MoveStructType: MoveType {
     const ADDRESS: AccountAddress = move_core_types::language_storage::CORE_CODE_ADDRESS;
     const MODULE_NAME: &'static IdentStr;
     const STRUCT_NAME: &'static IdentStr;
+
+    fn module_address() -> AccountAddress {
+        Self::ADDRESS
+    }
 
     fn module_identifier() -> Identifier {
         Self::MODULE_NAME.to_owned()
@@ -137,7 +142,7 @@ pub trait MoveState: MoveType + DeserializeOwned + Serialize {
     fn to_runtime_value(&self) -> Value {
         let blob = self.to_bytes();
         Value::simple_deserialize(&blob, &Self::type_layout())
-            .expect("Deserialize the MoveValue from MoveState should success")
+            .expect("Deserialize the Move Runtime Value from MoveState should success")
     }
 
     /// Deserialize the MoveState from MoveRuntime Value
@@ -285,6 +290,20 @@ where
 {
     fn type_layout() -> MoveTypeLayout {
         MoveTypeLayout::Vector(Box::new(S::type_layout()))
+    }
+}
+
+/// A placeholder struct for unknown Move Struct
+/// Sometimes we need a generic struct type, but we don't know the struct type
+pub struct PlaceholderStruct;
+
+impl MoveStructType for PlaceholderStruct {
+    const ADDRESS: AccountAddress = AccountAddress::ZERO;
+    const MODULE_NAME: &'static IdentStr = ident_str!("placeholder");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("PlaceholderStruct");
+
+    fn type_params() -> Vec<TypeTag> {
+        panic!("PlaceholderStruct should not be used as a type")
     }
 }
 

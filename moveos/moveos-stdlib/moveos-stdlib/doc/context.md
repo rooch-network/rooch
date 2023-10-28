@@ -9,6 +9,7 @@ and let developers customize the storage
 
 
 -  [Struct `Context`](#0x2_context_Context)
+-  [Constants](#@Constants_0)
 -  [Function `tx_context`](#0x2_context_tx_context)
 -  [Function `tx_context_mut`](#0x2_context_tx_context_mut)
 -  [Function `sender`](#0x2_context_sender)
@@ -23,22 +24,22 @@ and let developers customize the storage
 -  [Function `tx_result`](#0x2_context_tx_result)
 -  [Function `borrow_object`](#0x2_context_borrow_object)
 -  [Function `borrow_object_mut`](#0x2_context_borrow_object_mut)
--  [Function `remove_object`](#0x2_context_remove_object)
+-  [Function `borrow_object_mut_extend`](#0x2_context_borrow_object_mut_extend)
 -  [Function `exist_object`](#0x2_context_exist_object)
 -  [Function `new_object`](#0x2_context_new_object)
--  [Function `new_object_with_owner`](#0x2_context_new_object_with_owner)
 -  [Function `new_object_with_id`](#0x2_context_new_object_with_id)
 -  [Function `new_singleton_object`](#0x2_context_new_singleton_object)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::error</a>;
+<b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="object_ref.md#0x2_object_ref">0x2::object_ref</a>;
+<b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
 <b>use</b> <a href="storage_context.md#0x2_storage_context">0x2::storage_context</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 <b>use</b> <a href="tx_meta.md#0x2_tx_meta">0x2::tx_meta</a>;
 <b>use</b> <a href="tx_result.md#0x2_tx_result">0x2::tx_result</a>;
-<b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
 </code></pre>
 
 
@@ -80,6 +81,20 @@ The Context can not be <code>drop</code> or <code>store</code>, so developers ne
 
 
 </details>
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x2_context_ErrorObjectOwnerNotMatch"></a>
+
+
+
+<pre><code><b>const</b> <a href="context.md#0x2_context_ErrorObjectOwnerNotMatch">ErrorObjectOwnerNotMatch</a>: u64 = 1;
+</code></pre>
+
+
 
 <a name="0x2_context_tx_context"></a>
 
@@ -384,9 +399,10 @@ Get a value from the context map
 ## Function `borrow_object`
 
 Borrow Object from object store with object_id
+Any one can borrow an &ObjectRef from the global object storage
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object">borrow_object</a>&lt;T: key&gt;(self: &<a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object">borrow_object</a>&lt;T: key&gt;(self: &<a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;
 </code></pre>
 
 
@@ -395,8 +411,9 @@ Borrow Object from object store with object_id
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object">borrow_object</a>&lt;T: key&gt;(self: &<a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID): &Object&lt;T&gt; {
-    <a href="storage_context.md#0x2_storage_context_borrow">storage_context::borrow</a>&lt;T&gt;(&self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, object_id)
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object">borrow_object</a>&lt;T: key&gt;(self: &<a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID): &ObjectRef&lt;T&gt; {
+    <b>let</b> object_entity = <a href="storage_context.md#0x2_storage_context_borrow">storage_context::borrow</a>&lt;T&gt;(&self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, object_id);
+    <a href="object_ref.md#0x2_object_ref_as_ref">object_ref::as_ref</a>(object_entity)
 }
 </code></pre>
 
@@ -409,9 +426,10 @@ Borrow Object from object store with object_id
 ## Function `borrow_object_mut`
 
 Borrow mut Object from object store with object_id
+If the object is not shared, only the owner can borrow an &mut ObjectRef from the global object storage
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut">borrow_object_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut">borrow_object_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, owner: &<a href="">signer</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;
 </code></pre>
 
 
@@ -420,8 +438,13 @@ Borrow mut Object from object store with object_id
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut">borrow_object_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID): &<b>mut</b> Object&lt;T&gt; {
-    <a href="storage_context.md#0x2_storage_context_borrow_mut">storage_context::borrow_mut</a>&lt;T&gt;(&<b>mut</b> self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, object_id)
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut">borrow_object_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, owner: &<a href="">signer</a>, object_id: ObjectID): &<b>mut</b> ObjectRef&lt;T&gt; {
+    <b>let</b> object_entity = <a href="storage_context.md#0x2_storage_context_borrow_mut">storage_context::borrow_mut</a>&lt;T&gt;(&<b>mut</b> self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, object_id);
+    <b>if</b>(!<a href="object.md#0x2_object_is_shared">object::is_shared</a>(object_entity)) {
+        <b>let</b> owner_address = <a href="_address_of">signer::address_of</a>(owner);
+        <b>assert</b>!(<a href="object.md#0x2_object_owner">object::owner</a>(object_entity) == owner_address, <a href="_permission_denied">error::permission_denied</a>(<a href="context.md#0x2_context_ErrorObjectOwnerNotMatch">ErrorObjectOwnerNotMatch</a>));
+    };
+    <a href="object_ref.md#0x2_object_ref_as_mut_ref">object_ref::as_mut_ref</a>(object_entity)
 }
 </code></pre>
 
@@ -429,14 +452,14 @@ Borrow mut Object from object store with object_id
 
 </details>
 
-<a name="0x2_context_remove_object"></a>
+<a name="0x2_context_borrow_object_mut_extend"></a>
 
-## Function `remove_object`
+## Function `borrow_object_mut_extend`
 
-Remove object from object store, and unpack the Object
+The module of T can borrow mut Object from object store with any object_id
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_remove_object">remove_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): (<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, <b>address</b>, T)
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut_extend">borrow_object_mut_extend</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;
 </code></pre>
 
 
@@ -445,9 +468,9 @@ Remove object from object store, and unpack the Object
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_remove_object">remove_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID): (ObjectID, <b>address</b>, T) {
-    <b>let</b> obj = <a href="storage_context.md#0x2_storage_context_remove">storage_context::remove</a>&lt;T&gt;(&<b>mut</b> self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, object_id);
-    <a href="object.md#0x2_object_unpack_internal">object::unpack_internal</a>(obj)
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut_extend">borrow_object_mut_extend</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID) : &<b>mut</b> ObjectRef&lt;T&gt; {
+    <b>let</b> object_entity = <a href="storage_context.md#0x2_storage_context_borrow_mut">storage_context::borrow_mut</a>&lt;T&gt;(&<b>mut</b> self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, object_id);
+    <a href="object_ref.md#0x2_object_ref_as_mut_ref">object_ref::as_mut_ref</a>(object_entity)
 }
 </code></pre>
 
@@ -461,7 +484,7 @@ Remove object from object store, and unpack the Object
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exist_object">exist_object</a>(self: &<a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exist_object">exist_object</a>&lt;T: key&gt;(self: &<a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
 </code></pre>
 
 
@@ -470,8 +493,9 @@ Remove object from object store, and unpack the Object
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exist_object">exist_object</a>(self: &<a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exist_object">exist_object</a>&lt;T: key&gt;(self: &<a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID): bool {
     <a href="storage_context.md#0x2_storage_context_contains">storage_context::contains</a>(&self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, object_id)
+    //TODO check the <a href="object.md#0x2_object">object</a> type
 }
 </code></pre>
 
@@ -483,8 +507,9 @@ Remove object from object store, and unpack the Object
 
 ## Function `new_object`
 
-Create a new Object, the owner is the <code>sender</code>
-Add the Object to the global object storage and return the ObjectRef
+Create a new Object, Add the Object to the global object storage and return the ObjectRef
+Note: the default owner is the <code>System</code>, the caller should explicitly transfer the Object to the owner.
+The owner can get the <code>&<b>mut</b> ObjectRef</code> by <code>borrow_object_mut</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_object">new_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, value: T): <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;
@@ -498,35 +523,7 @@ Add the Object to the global object storage and return the ObjectRef
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_object">new_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, value: T): ObjectRef&lt;T&gt; {
     <b>let</b> id = <a href="context.md#0x2_context_fresh_object_id">fresh_object_id</a>(self);
-    <b>let</b> owner = <a href="context.md#0x2_context_sender">sender</a>(self);
-    <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>(self, id, owner, value)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_context_new_object_with_owner"></a>
-
-## Function `new_object_with_owner`
-
-Create a new Object with owner
-Add the Object to the global object storage and return the ObjectRef
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_object_with_owner">new_object_with_owner</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, owner: <b>address</b>, value: T): <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_object_with_owner">new_object_with_owner</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, owner: <b>address</b>, value: T): ObjectRef&lt;T&gt; {
-    <b>let</b> object_id = <a href="context.md#0x2_context_fresh_object_id">fresh_object_id</a>(self);
-    <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>(self, object_id, owner, value)
+    <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>(self, id, value)
 }
 </code></pre>
 
@@ -540,7 +537,7 @@ Add the Object to the global object storage and return the ObjectRef
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, owner: <b>address</b>, value: T): <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, value: T): <a href="object_ref.md#0x2_object_ref_ObjectRef">object_ref::ObjectRef</a>&lt;T&gt;
 </code></pre>
 
 
@@ -549,10 +546,11 @@ Add the Object to the global object storage and return the ObjectRef
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, id: ObjectID, owner: <b>address</b>, value: T) : ObjectRef&lt;T&gt; {
-    <b>let</b> obj = <a href="object.md#0x2_object_new">object::new</a>(id, owner, value);
-    <b>let</b> obj_ref = <a href="object_ref.md#0x2_object_ref_new_internal">object_ref::new_internal</a>(&<b>mut</b> obj);
-    <a href="storage_context.md#0x2_storage_context_add">storage_context::add</a>(&<b>mut</b> self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, obj);
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, id: ObjectID, value: T) : ObjectRef&lt;T&gt; {
+    <b>let</b> obj_entity = <a href="object.md#0x2_object_new">object::new</a>(id, value);
+    <a href="object.md#0x2_object_transfer">object::transfer</a>(&<b>mut</b> obj_entity, <a href="context.md#0x2_context_sender">sender</a>(self));
+    <b>let</b> obj_ref = <a href="object_ref.md#0x2_object_ref_new_internal">object_ref::new_internal</a>(&<b>mut</b> obj_entity);
+    <a href="storage_context.md#0x2_storage_context_add">storage_context::add</a>(&<b>mut</b> self.<a href="storage_context.md#0x2_storage_context">storage_context</a>, obj_entity);
     obj_ref
 }
 </code></pre>
@@ -578,7 +576,7 @@ Add the Object to the global object storage and return the ObjectRef
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_singleton_object">new_singleton_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, value: T): ObjectRef&lt;T&gt; {
     <b>let</b> object_id = <a href="object.md#0x2_object_singleton_object_id">object::singleton_object_id</a>&lt;T&gt;();
-    <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>(self, object_id, <a href="type_info.md#0x2_type_info_account_address">type_info::account_address</a>(&<a href="type_info.md#0x2_type_info_type_of">type_info::type_of</a>&lt;T&gt;()), value)
+    <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>(self, object_id, value)
 }
 </code></pre>
 
