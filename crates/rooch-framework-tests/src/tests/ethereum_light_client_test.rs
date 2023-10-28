@@ -53,7 +53,7 @@ fn test_submit_block() {
 
     let block_header = BlockHeader::try_from(&ethereum_block).unwrap();
     let action = MoveAction::Function(rooch_types::framework::ethereum_light_client::EthereumLightClientModule::create_submit_new_block_call(&block_header));
-    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
+    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, H256::zero(), action);
     let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
     binding_test.execute(tx).unwrap();
 
