@@ -50,45 +50,4 @@ jobs:
           echo "$PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
           ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST bash -c "'sleep 30' && docker ps | grep rooch | awk '{print \$1}' | xargs -r docker stop && docker ps -a | grep rooch | awk '{print \$1}' | xargs -r docker rm -f && docker pull 'ghcr.io/rooch-network/rooch:${{ steps.docker_meta.outputs.version }}' && docker run -d -v /root:/root -p 50051:50051 'ghcr.io/rooch-network/rooch:${{ steps.docker_meta.outputs.version }}' server start -n dev --eth-rpc-url https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161"
-          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST $'
-          KEYWORD="rooch"
-          IMAGE_TAG=${{ steps.docker_meta.outputs.version }}
-          DEV_MNEMONIC_PHRASE=${{ secrets.DEV_MNEMONIC_PHRASE }}
-
-          # get the container id
-          CONTAINER_ID=$(docker ps -a | grep $KEYWORD | awk \'{print $1}\')
-
-          if [ -z "$CONTAINER_ID" ]; then
-              echo "No container found related to the keyword $KEYWORD"
-              exit 1
-          fi
-
-          sleep 30
-
-          # get container status
-          STATUS=$(docker inspect --format "{{.State.Status}}" $CONTAINER_ID)
-
-          if [ "$STATUS" != "running" ]; then
-              echo "Container $CONTAINER_ID is not running, trying to clean data and restart"
-              echo "Start cleaning the data with image_tag: $IMAGE_TAG"
-              docker run --rm -v "/root:/root" ghcr.io/rooch-network/rooch:$IMAGE_TAG server clean -n dev
-              rm -rf ~/.rooch
-              docker run --rm -v "/root:/root" ghcr.io/rooch-network/rooch:$IMAGE_TAG init -m "$(echo $DEV_MNEMONIC_PHRASE)" --skip-password
-              docker start $CONTAINER_ID
-              if [ $? -eq 0 ]; then
-                  echo "Container $CONTAINER_ID Successfully restarted."
-                  echo "Redeploy the examples"
-                  for dir in /root/rooch/examples/*/; do
-                      dir=${dir%*/}
-                      name_addr=$(basename $dir)
-                      echo $name_addr
-                      docker run --rm -v "/root:/root" ghcr.io/rooch-network/rooch:$IMAGE_TAG move build -p "$dir" --named-addresses rooch_examples=default,$name_addr=default
-                      docker run --rm -v "/root:/root" ghcr.io/rooch-network/rooch:$IMAGE_TAG move publish -p "$dir" --named-addresses rooch_examples=default,$name_addr=default
-                  done
-              else
-                  echo "Container $CONTAINER_ID Startup failed, please check the reason."
-              fi
-          else
-              echo "Container $CONTAINER_ID is running"
-          fi
-          '
+          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST "cd /root/rooch && git pull origin main && bash scripts/check_dev_deploy_status.sh ${{ steps.docker_meta.outputs.version }} ${{ secrets.DEV_MNEMONIC_PHRASE }}"
