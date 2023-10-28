@@ -25,7 +25,7 @@ sleep 30
 STATUS=$(docker inspect --format "{{.State.Status}}" $CONTAINER_ID)
 
 if [ "$STATUS" != "running" ]; then
-    echo "Container $CONTAINER_ID is not running, trying to clean data and restart"
+    echo "!!! Container $CONTAINER_ID is not running, trying to clean data and restart"
     echo "Start cleaning the data with image_tag: $IMAGE_TAG"
     docker run --rm -v "/root:/root" ghcr.io/rooch-network/rooch:$IMAGE_TAG server clean -n dev
     rm -rf ~/.rooch
