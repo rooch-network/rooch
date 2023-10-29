@@ -8,7 +8,7 @@ module simple_blog::simple_blog {
     use std::string::{Self,String};
     use std::vector;
     use moveos_std::object::ObjectID;
-    use moveos_std::object_ref::{Self, ObjectRef};
+    use moveos_std::object::{Self, Object};
     use moveos_std::context::Context;
     use moveos_std::account_storage;
     use simple_blog::simple_article::{Self, Article};
@@ -18,7 +18,7 @@ module simple_blog::simple_blog {
 
     struct MyBlog has key {
         name: String,
-        articles: vector<ObjectRef<Article>>,
+        articles: vector<Object<Article>>,
     }
 
     /// This init function is called when the module is published
@@ -48,7 +48,7 @@ module simple_blog::simple_blog {
         myblog.name = blog_name;
     }
 
-    fun add_article_to_myblog(ctx: &mut Context, owner: &signer, article_obj: ObjectRef<Article>) {
+    fun add_article_to_myblog(ctx: &mut Context, owner: &signer, article_obj: Object<Article>) {
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
         if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
@@ -58,13 +58,13 @@ module simple_blog::simple_blog {
         vector::push_back(&mut myblog.articles, article_obj);
     }
 
-    fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID): ObjectRef<Article> {
+    fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID): Object<Article> {
         let owner_address = signer::address_of(owner);
         let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
         let idx = 0;
         while(idx < vector::length(&myblog.articles)){
             let article_obj = vector::borrow(&myblog.articles, idx);
-            if(object_ref::id(article_obj) == article_id){
+            if(object::id(article_obj) == article_id){
                 return vector::remove(&mut myblog.articles, idx)
             };
             idx = idx + 1;
@@ -73,7 +73,7 @@ module simple_blog::simple_blog {
     }
 
     /// Get owner's blog's articles
-    public fun get_blog_articles(ctx: &Context, owner_address: address): &vector<ObjectRef<Article>> {
+    public fun get_blog_articles(ctx: &Context, owner_address: address): &vector<Object<Article>> {
         let myblog = account_storage::global_borrow<MyBlog>(ctx, owner_address);
         &myblog.articles
     }
@@ -90,7 +90,7 @@ module simple_blog::simple_blog {
 
     public entry fun update_article(
         ctx: &mut Context,
-        article_obj: &mut ObjectRef<Article>,
+        article_obj: &mut Object<Article>,
         new_title: String,
         new_body: String,
     ) {

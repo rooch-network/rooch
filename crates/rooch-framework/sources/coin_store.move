@@ -8,7 +8,7 @@ module rooch_framework::coin_store {
     use moveos_std::object::{ObjectID};
     use moveos_std::context::{Self, Context};
     use moveos_std::type_info;
-    use moveos_std::object_ref::{Self, Object};
+    use moveos_std::object::{Self, Object};
     use rooch_framework::coin::{Self, Coin};
 
     friend rooch_framework::account_coin_store;
@@ -59,7 +59,7 @@ module rooch_framework::coin_store {
     
     /// Remove the CoinStore Object, return the Coin<T> in balance 
     public fun remove_coin_store<CoinType: key>(coin_store_object: Object<CoinStore>) : Coin<CoinType> {
-        let coin_store = object_ref::remove(coin_store_object);
+        let coin_store = object::remove(coin_store_object);
         let coin_type = type_info::type_name<CoinType>();
         assert!(coin_store.coin_type == coin_type, error::invalid_argument(ErrorCoinTypeAndStoreMismatch));
         let CoinStore{coin_type:_, balance, frozen} = coin_store;
@@ -104,7 +104,7 @@ module rooch_framework::coin_store {
     ) {
         assert!(context::exist_object<CoinStore>(ctx, coin_store_id), error::invalid_argument(ErrorCoinStoreNotFound));
         let coin_store_object = context::borrow_object_mut_extend<CoinStore>(ctx, coin_store_id);
-        object_ref::borrow_mut(coin_store_object).frozen = frozen;
+        object::borrow_mut(coin_store_object).frozen = frozen;
     }
 
     // Internal functions
@@ -122,7 +122,7 @@ module rooch_framework::coin_store {
     // We do not allow to transfer a CoinStore to another account, CoinStore is default ownerd by the system.
     // Only provide a internal function for account_coin_store.
     public(friend) fun transfer(coin_store_obj: &mut Object<CoinStore>, owner: address){
-        object_ref::transfer_extend(coin_store_obj, owner)
+        object::transfer_extend(coin_store_obj, owner)
     }
 
     fun check_coin_store_not_frozen(coin_store: &CoinStore) {

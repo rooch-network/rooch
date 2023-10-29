@@ -8,10 +8,9 @@ module moveos_std::context {
 
     use std::option::Option;
     use std::error;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::storage_context::{StorageContext};
     use moveos_std::tx_context::{Self, TxContext};
-    use moveos_std::object::{Self, ObjectID};
-    use moveos_std::object_ref::{Self, Object};
+    use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::tx_meta::{TxMeta};
     use moveos_std::tx_result::{TxResult};
     use moveos_std::signer;
@@ -101,25 +100,25 @@ module moveos_std::context {
     /// Any one can borrow an &Object from the global object storage
     public fun borrow_object<T: key>(_self: &Context, object_id: ObjectID): &Object<T> {
         let object_entity = object::borrow_from_global<T>(object_id);
-        object_ref::as_ref(object_entity)
+        object::as_ref(object_entity)
     }
 
     /// Borrow mut Object from object store with object_id
     /// If the object is not shared, only the owner can borrow an &mut Object from the global object storage
     public fun borrow_object_mut<T: key>(_self: &mut Context, owner: &signer, object_id: ObjectID): &mut Object<T> {
         let object_entity = object::borrow_mut_from_global<T>(object_id);
-        if(!object::is_shared(object_entity)) {
+        if(!object::is_shared_internal(object_entity)) {
             let owner_address = signer::address_of(owner);
-            assert!(object::owner(object_entity) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
+            assert!(object::owner_internal(object_entity) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
         };
-        object_ref::as_mut_ref(object_entity)
+        object::as_mut_ref(object_entity)
     }
 
     #[private_generics(T)]
     /// The module of T can borrow mut Object from object store with any object_id
     public fun borrow_object_mut_extend<T: key>(_self: &mut Context, object_id: ObjectID) : &mut Object<T> {
         let object_entity = object::borrow_mut_from_global<T>(object_id);
-        object_ref::as_mut_ref(object_entity)
+        object::as_mut_ref(object_entity)
     }
 
     public fun exist_object<T: key>(_self: &Context, object_id: ObjectID): bool {
@@ -138,12 +137,8 @@ module moveos_std::context {
         new_object_with_id(self, id, value)
     }
 
-    public(friend) fun new_object_with_id<T: key>(self: &mut Context, id: ObjectID, value: T) : Object<T> {
-        let obj_entity = object::new(id, value);
-        object::transfer(&mut obj_entity, sender(self)); 
-        let obj_ref = object_ref::new_internal(&mut obj_entity);
-        object::add_to_global(obj_entity);
-        obj_ref
+    public(friend) fun new_object_with_id<T: key>(_self: &mut Context, id: ObjectID, value: T) : Object<T> {
+        object::new(id, value)
     }
 
     #[private_generics(T)]
@@ -167,7 +162,7 @@ module moveos_std::context {
     /// Create a Context for unit test with random seed
     public fun new_test_context_random(sender: address, seed: vector<u8>): Context {
         let tx_context = tx_context::new_test_context_random(sender, seed);
-        let storage_context = storage_context::new(&mut tx_context);
+        let storage_context = moveos_std::storage_context::new(&mut tx_context);
         Context {
             tx_context,
             storage_context,
@@ -192,14 +187,14 @@ module moveos_std::context {
         let ref = new_object(&mut ctx, TestObjectValue{value: 1});
         
         {
-            let obj_value = object_ref::borrow_mut(&mut ref);
+            let obj_value = object::borrow_mut(&mut ref);
             obj_value.value = 2;
         };
         {
-            let obj_value = object_ref::borrow(&ref);
+            let obj_value = object::borrow(&ref);
             assert!(obj_value.value == 2, 1000);
         };
-        object_ref::to_permanent(ref);
+        object::to_permanent(ref);
         drop_test_context(ctx);
     }
 }

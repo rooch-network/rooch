@@ -4,7 +4,7 @@
 
 module test::m {
     use moveos_std::context::{Self, Context};
-    use moveos_std::object_ref;
+    use moveos_std::object;
     use std::debug;
 
     struct S has store, key { v: u8 }
@@ -17,25 +17,25 @@ module test::m {
         assert!(x"7852c5dcbd87e82102dba0db36d44b5a9fb0006b3e828c0b5f0832f70a8ff6ee" == tx_hash, 1000);
         let obj_ref = context::new_object(ctx, S { v: 1});
         debug::print(&obj_ref);
-        object_ref::to_permanent(obj_ref);
+        object::to_permanent(obj_ref);
     }
 
     //We can not use `Object<S>` as transaction argument now.
     // public entry fun move_s_to_global(ctx: &mut Context, sender: signer, object_s: Object<S>) {
-    //     let object_id = object_ref::id(&object_s);
+    //     let object_id = object::id(&object_s);
     //     debug::print(&object_id);
-    //     let value = object_ref::remove(object_s);
+    //     let value = object::remove(object_s);
     //     account_storage::global_move_to(ctx, &sender, value);
     // }
 
     public entry fun mint_cup<T: store>(ctx: &mut Context) {
         let obj_ref = context::new_object(ctx, Cup<T> { v: 2 });
         debug::print(&obj_ref);
-        object_ref::to_permanent(obj_ref);
+        object::to_permanent(obj_ref);
     }
 
     // public entry fun move_cup_to_global<T:store>(ctx: &mut Context, sender: signer, object_s: Object<Cup<S>>) {
-    //     let value = object_ref::remove(object_s);
+    //     let value = object::remove(object_s);
     //     account_storage::global_move_to(ctx, &sender, value);
     // }
 }

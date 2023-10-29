@@ -4,7 +4,7 @@
 /// StorageContext is part of the StorageAbstraction
 /// TODO we need to redegin the StorageContext and AppStorageContext
 module moveos_std::storage_context {
-    use moveos_std::object::{Self, ObjectID};
+    use moveos_std::object::ObjectID;
 
     friend moveos_std::account_storage;
     friend moveos_std::context;
@@ -32,7 +32,7 @@ module moveos_std::storage_context {
     /// This `new` function is only used for testing
     public fun new(_ctx: &mut moveos_std::tx_context::TxContext): StorageContext {
         StorageContext {
-            handle: object::address_to_object_id(@0x0),
+            handle: moveos_std::object::address_to_object_id(@0x0),
         }
     }
 
@@ -66,8 +66,8 @@ module moveos_std::storage_context {
     //     // The object_id2 is not in the object storage
     //     assert!(!contains(&os, object_id2), 1001);
 
-    //     let object_ref = borrow<TestObject>(&os, object_id);
-    //     let test_obj_ref = object::borrow<TestObject>(object_ref);
+    //     let object = borrow<TestObject>(&os, object_id);
+    //     let test_obj_ref = object::borrow<TestObject>(object);
     //     assert!(test_obj_ref.f == 1, 1002);
 
     //     let object = remove<TestObject>(&mut os, object_id);

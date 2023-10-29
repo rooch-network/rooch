@@ -9,7 +9,7 @@ module simple_blog::simple_article {
     use std::string::String; 
     use moveos_std::event;
     use moveos_std::object::{ObjectID};
-    use moveos_std::object_ref::{Self, ObjectRef};
+    use moveos_std::object::{Self, Object};
     use moveos_std::context::{Self, Context};
 
     const ErrorDataTooLong: u64 = 1;
@@ -42,7 +42,7 @@ module simple_blog::simple_article {
         owner: &signer,
         title: String,
         body: String,
-    ): ObjectRef<Article> {
+    ): Object<Article> {
         assert!(std::string::length(&title) <= 200, error::invalid_argument(ErrorDataTooLong));
         assert!(std::string::length(&body) <= 2000, error::invalid_argument(ErrorDataTooLong));
 
@@ -56,28 +56,28 @@ module simple_blog::simple_article {
             ctx,
             article,
         );
-        let id = object_ref::id(&article_obj);
+        let id = object::id(&article_obj);
 
         let article_created_event = ArticleCreatedEvent {
             id,
         };
         event::emit(ctx, article_created_event);
-        object_ref::transfer(&mut article_obj, owner_addr);
+        object::transfer(&mut article_obj, owner_addr);
         article_obj
     }
 
     /// Update article
     public fun update_article(
         ctx: &mut Context,
-        article_obj: &mut ObjectRef<Article>,
+        article_obj: &mut Object<Article>,
         new_title: String,
         new_body: String,
     ) {
         assert!(std::string::length(&new_title) <= 200, error::invalid_argument(ErrorDataTooLong));
         assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(ErrorDataTooLong));
 
-        let id = object_ref::id(article_obj);
-        let article = object_ref::borrow_mut(article_obj);
+        let id = object::id(article_obj);
+        let article = object::borrow_mut(article_obj);
         article.version = article.version + 1;
         article.title = new_title;
         article.body = new_body;
@@ -92,10 +92,10 @@ module simple_blog::simple_article {
     /// Delete article
     public fun delete_article(
         ctx: &mut Context,
-        article_obj: ObjectRef<Article>,
+        article_obj: Object<Article>,
     ) {
-        let id = object_ref::id(&article_obj);
-        let article = object_ref::remove(article_obj);
+        let id = object::id(&article_obj);
+        let article = object::remove(article_obj);
 
         let article_deleted_event = ArticleDeletedEvent {
             id,

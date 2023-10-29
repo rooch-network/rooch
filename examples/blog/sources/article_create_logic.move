@@ -3,7 +3,7 @@
 
 module rooch_examples::article_create_logic {
     use moveos_std::context::Context;
-    use moveos_std::object_ref;
+    use moveos_std::object;
     use moveos_std::object::ObjectID;
     use rooch_examples::article;
     use rooch_examples::article_created;
@@ -38,7 +38,7 @@ module rooch_examples::article_create_logic {
             title,
             body,
         );
-        let article_id = object_ref::id(&article_obj);
+        let article_id = object::id(&article_obj);
         blog_aggregate::add_article(ctx, article_obj);
         article_id
     }

@@ -25,7 +25,6 @@
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::object_ref</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 </code></pre>
@@ -150,11 +149,11 @@ The CoinType parameter and CoinType in CoinStore do not match
 
 ## Function `create_coin_store`
 
-Create a new CoinStore Object for <code>CoinType</code> and return the ObjectRef
+Create a new CoinStore Object for <code>CoinType</code> and return the Object
 Anyone can create a CoinStore Object for public Coin<CoinType>, the <code>CoinType</code> must has <code>key</code> and <code>store</code> ability
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store">create_coin_store</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): <a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store">create_coin_store</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;
 </code></pre>
 
 
@@ -163,7 +162,7 @@ Anyone can create a CoinStore Object for public Coin<CoinType>, the <code>CoinTy
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store">create_coin_store</a>&lt;CoinType: key + store&gt;(ctx: &<b>mut</b> Context): ObjectRef&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;{
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store">create_coin_store</a>&lt;CoinType: key + store&gt;(ctx: &<b>mut</b> Context): Object&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;{
     <a href="coin_store.md#0x3_coin_store_create_coin_store_internal">create_coin_store_internal</a>&lt;CoinType&gt;(ctx)
 }
 </code></pre>
@@ -179,7 +178,7 @@ Anyone can create a CoinStore Object for public Coin<CoinType>, the <code>CoinTy
 This function is for the <code>CoinType</code> module to extend
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store_extend">create_coin_store_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): <a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store_extend">create_coin_store_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;
 </code></pre>
 
 
@@ -188,7 +187,7 @@ This function is for the <code>CoinType</code> module to extend
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store_extend">create_coin_store_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> Context): ObjectRef&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store_extend">create_coin_store_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> Context): Object&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt; {
     <a href="coin_store.md#0x3_coin_store_create_coin_store_internal">create_coin_store_internal</a>&lt;CoinType&gt;(ctx)
 }
 </code></pre>
@@ -204,7 +203,7 @@ This function is for the <code>CoinType</code> module to extend
 Remove the CoinStore Object, return the Coin<T> in balance
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_remove_coin_store">remove_coin_store</a>&lt;CoinType: key&gt;(coin_store_object: <a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_remove_coin_store">remove_coin_store</a>&lt;CoinType: key&gt;(coin_store_object: <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>
 
 
@@ -213,8 +212,8 @@ Remove the CoinStore Object, return the Coin<T> in balance
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_remove_coin_store">remove_coin_store</a>&lt;CoinType: key&gt;(coin_store_object: ObjectRef&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;) : Coin&lt;CoinType&gt; {
-    <b>let</b> <a href="coin_store.md#0x3_coin_store">coin_store</a> = <a href="_remove">object_ref::remove</a>(coin_store_object);
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_remove_coin_store">remove_coin_store</a>&lt;CoinType: key&gt;(coin_store_object: Object&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;) : Coin&lt;CoinType&gt; {
+    <b>let</b> <a href="coin_store.md#0x3_coin_store">coin_store</a> = <a href="_remove">object::remove</a>(coin_store_object);
     <b>let</b> coin_type = <a href="_type_name">type_info::type_name</a>&lt;CoinType&gt;();
     <b>assert</b>!(<a href="coin_store.md#0x3_coin_store">coin_store</a>.coin_type == coin_type, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin_store.md#0x3_coin_store_ErrorCoinTypeAndStoreMismatch">ErrorCoinTypeAndStoreMismatch</a>));
     <b>let</b> <a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>{coin_type:_, balance, frozen} = <a href="coin_store.md#0x3_coin_store">coin_store</a>;
@@ -378,7 +377,7 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 ) {
     <b>assert</b>!(<a href="_exist_object">context::exist_object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;(ctx, coin_store_id), <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin_store.md#0x3_coin_store_ErrorCoinStoreNotFound">ErrorCoinStoreNotFound</a>));
     <b>let</b> coin_store_object = <a href="_borrow_object_mut_extend">context::borrow_object_mut_extend</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;(ctx, coin_store_id);
-    <a href="_borrow_mut">object_ref::borrow_mut</a>(coin_store_object).frozen = frozen;
+    <a href="_borrow_mut">object::borrow_mut</a>(coin_store_object).frozen = frozen;
 }
 </code></pre>
 
@@ -392,7 +391,7 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store_internal">create_coin_store_internal</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): <a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store_internal">create_coin_store_internal</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;
 </code></pre>
 
 
@@ -401,7 +400,7 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store_internal">create_coin_store_internal</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> Context): ObjectRef&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;{
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store_internal">create_coin_store_internal</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> Context): Object&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;{
     <a href="coin.md#0x3_coin_check_coin_info_registered">coin::check_coin_info_registered</a>&lt;CoinType&gt;(ctx);
 
     <a href="_new_object">context::new_object</a>(ctx, <a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>{
@@ -422,7 +421,7 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transfer.md#0x3_transfer">transfer</a>(coin_store_obj: &<b>mut</b> <a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;, owner: <b>address</b>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transfer.md#0x3_transfer">transfer</a>(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;, owner: <b>address</b>)
 </code></pre>
 
 
@@ -431,8 +430,8 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transfer.md#0x3_transfer">transfer</a>(coin_store_obj: &<b>mut</b> ObjectRef&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;, owner: <b>address</b>){
-    <a href="_transfer_extend">object_ref::transfer_extend</a>(coin_store_obj, owner)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transfer.md#0x3_transfer">transfer</a>(coin_store_obj: &<b>mut</b> Object&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&gt;, owner: <b>address</b>){
+    <a href="_transfer_extend">object::transfer_extend</a>(coin_store_obj, owner)
 }
 </code></pre>
 

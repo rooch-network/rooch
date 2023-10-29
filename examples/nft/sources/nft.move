@@ -5,7 +5,7 @@ module nft::nft {
     use std::string::{Self, String};
     use nft::collection;
     use rooch_framework::display;
-    use moveos_std::object_ref::{Self, ObjectRef};
+    use moveos_std::object::{Self, Object};
     use moveos_std::context::{Self, Context};
     use moveos_std::object::{ObjectID};
     #[test_only]
@@ -28,18 +28,18 @@ module nft::nft {
         let nft_display_object = display::new<NFT>(ctx);
         display::set(&mut nft_display_object, string::utf8(b"name"), string::utf8(b"{ name }"));
         display::set(&mut nft_display_object, string::utf8(b"uri"), string::utf8(b"{ uri }"));
-        object_ref::to_permanent(nft_display_object);
+        object::to_permanent(nft_display_object);
     }
 
     /// Mint a new NFT,
     public fun mint(
         ctx: &mut Context,
-        collection_obj: &mut ObjectRef<collection::Collection>,
+        collection_obj: &mut Object<collection::Collection>,
         name: String,
         uri: String,
-    ): ObjectRef<NFT> {
-        let collection_id = object_ref::id(collection_obj);
-        let collection = object_ref::borrow_mut(collection_obj);
+    ): Object<NFT> {
+        let collection_id = object::id(collection_obj);
+        let collection = object::borrow_mut(collection_obj);
         collection::increment_supply(collection);
         //NFT's creator should be the same as collection's creator?
         let creator = collection::creator(collection);
@@ -58,10 +58,10 @@ module nft::nft {
     }
 
     public fun burn (
-        collection_obj: &mut ObjectRef<collection::Collection>, 
-        nft_object: ObjectRef<NFT>,
+        collection_obj: &mut Object<collection::Collection>, 
+        nft_object: Object<NFT>,
     ) {
-        let collection = object_ref::borrow_mut(collection_obj);
+        let collection = object::borrow_mut(collection_obj);
         collection::decrement_supply(collection);
         let (
             NFT {
@@ -70,7 +70,7 @@ module nft::nft {
                 collection:_,
                 creator:_,
             }
-        ) = object_ref::remove<NFT>(nft_object);
+        ) = object::remove<NFT>(nft_object);
     }
 
     // view
@@ -92,16 +92,16 @@ module nft::nft {
     }
 
     /// Mint a new NFT and transfer it to sender
-    /// Because only the creator of the collection can get `&mut ObjectRef<collection::Collection>`
+    /// Because only the creator of the collection can get `&mut Object<collection::Collection>`
     /// So, only the creator of the collection can mint a new NFT
-    /// If we want to allow other people to mint NFT, we need to make the `ObjectRef<collection::Collection>` to shared
-    entry fun mint_entry(ctx: &mut Context, collection_obj: &mut ObjectRef<collection::Collection>, name: String, uri: String) {
+    /// If we want to allow other people to mint NFT, we need to make the `Object<collection::Collection>` to shared
+    entry fun mint_entry(ctx: &mut Context, collection_obj: &mut Object<collection::Collection>, name: String, uri: String) {
         let sender = context::sender(ctx);
         let nft_obj = mint(ctx, collection_obj, name, uri);
-        object_ref::transfer(&mut nft_obj, sender);
+        object::transfer(&mut nft_obj, sender);
         //Because the NFT becomes permanent Object here, we can not to burn it.
         //Maybe we need to design a NFTGallery to store all the NFTs of user.
-        object_ref::to_permanent(nft_obj);
+        object::to_permanent(nft_obj);
     }
 
     #[test(sender = @nft)]
@@ -126,11 +126,11 @@ module nft::nft {
             string::utf8(b"test_nft_1"),
             string::utf8(b"test_nft_uri"),
         );
-        object_ref::transfer(&mut nft_obj, sender);
+        object::transfer(&mut nft_obj, sender);
 
         burn(&mut collection_obj, nft_obj);
 
-        object_ref::to_permanent(collection_obj);
+        object::to_permanent(collection_obj);
 
         context::drop_test_context(storage_context);
     }

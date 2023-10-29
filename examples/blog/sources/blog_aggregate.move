@@ -9,7 +9,7 @@
 module rooch_examples::blog_aggregate {
     use moveos_std::object::ObjectID;
     use moveos_std::context::Context;
-    use moveos_std::object_ref::{Self, ObjectRef};
+    use moveos_std::object::{Self, Object};
     use rooch_examples::blog;
     use rooch_examples::blog_add_article_logic;
     use rooch_examples::blog_create_logic;
@@ -24,10 +24,10 @@ module rooch_examples::blog_aggregate {
 
     public(friend) fun add_article(
         ctx: &mut Context,
-        article_obj: ObjectRef<Article>,
+        article_obj: Object<Article>,
     ) {
         let blog = blog::borrow_blog(ctx);
-        let article_id = object_ref::id(&article_obj);
+        let article_id = object::id(&article_obj);
         let article_added_to_blog = blog_add_article_logic::verify(
             article_id,
             blog,
@@ -45,7 +45,7 @@ module rooch_examples::blog_aggregate {
     public(friend) fun remove_article(
         ctx: &mut Context,
         article_id: ObjectID,
-    ) : ObjectRef<Article> {
+    ) : Object<Article> {
         let blog = blog::borrow_blog(ctx);
         let article_removed_from_blog = blog_remove_article_logic::verify(
             article_id,

@@ -18,7 +18,7 @@
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::context</a>;
-<b>use</b> <a href="">0x2::object_ref</a>;
+<b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 </code></pre>
 
@@ -57,7 +57,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_new">new</a>&lt;T&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): <a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="display.md#0x3_display_Display">display::Display</a>&lt;T&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_new">new</a>&lt;T&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): <a href="_Object">object::Object</a>&lt;<a href="display.md#0x3_display_Display">display::Display</a>&lt;T&gt;&gt;
 </code></pre>
 
 
@@ -66,7 +66,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_new">new</a>&lt;T&gt;(ctx: &<b>mut</b> Context): ObjectRef&lt;<a href="display.md#0x3_display_Display">Display</a>&lt;T&gt;&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_new">new</a>&lt;T&gt;(ctx: &<b>mut</b> Context): Object&lt;<a href="display.md#0x3_display_Display">Display</a>&lt;T&gt;&gt; {
     <a href="_new_singleton_object">context::new_singleton_object</a>(ctx, <a href="display.md#0x3_display_Display">Display</a>&lt;T&gt; {
         sample_map: <a href="_create">simple_map::create</a>()
     })
@@ -83,7 +83,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_set">set</a>&lt;T&gt;(self: &<b>mut</b> <a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="display.md#0x3_display_Display">display::Display</a>&lt;T&gt;&gt;, key: <a href="_String">string::String</a>, value: <a href="_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_set">set</a>&lt;T&gt;(self: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="display.md#0x3_display_Display">display::Display</a>&lt;T&gt;&gt;, key: <a href="_String">string::String</a>, value: <a href="_String">string::String</a>)
 </code></pre>
 
 
@@ -92,8 +92,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_set">set</a>&lt;T&gt;(self: &<b>mut</b> ObjectRef&lt;<a href="display.md#0x3_display_Display">Display</a>&lt;T&gt;&gt;, key: String, value: String) {
-    <b>let</b> display_ref = <a href="_borrow_mut">object_ref::borrow_mut</a>(self);
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_set">set</a>&lt;T&gt;(self: &<b>mut</b> Object&lt;<a href="display.md#0x3_display_Display">Display</a>&lt;T&gt;&gt;, key: String, value: String) {
+    <b>let</b> display_ref = <a href="_borrow_mut">object::borrow_mut</a>(self);
     <a href="_add">simple_map::add</a>(&<b>mut</b> display_ref.sample_map, key, value);
 }
 </code></pre>
@@ -108,7 +108,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_borrow">borrow</a>&lt;T&gt;(self: &<a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="display.md#0x3_display_Display">display::Display</a>&lt;T&gt;&gt;, key: &<a href="_String">string::String</a>): &<a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_borrow">borrow</a>&lt;T&gt;(self: &<a href="_Object">object::Object</a>&lt;<a href="display.md#0x3_display_Display">display::Display</a>&lt;T&gt;&gt;, key: &<a href="_String">string::String</a>): &<a href="_String">string::String</a>
 </code></pre>
 
 
@@ -117,8 +117,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_borrow">borrow</a>&lt;T&gt;(self: & ObjectRef&lt;<a href="display.md#0x3_display_Display">Display</a>&lt;T&gt;&gt; , key: &String): &String {
-    <b>let</b> display_ref = <a href="_borrow">object_ref::borrow</a>(self);
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_borrow">borrow</a>&lt;T&gt;(self: & Object&lt;<a href="display.md#0x3_display_Display">Display</a>&lt;T&gt;&gt; , key: &String): &String {
+    <b>let</b> display_ref = <a href="_borrow">object::borrow</a>(self);
     <a href="_borrow">simple_map::borrow</a>(&display_ref.sample_map, key)
 }
 </code></pre>
@@ -133,7 +133,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_borrow_mut">borrow_mut</a>&lt;T&gt;(self: &<b>mut</b> <a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="display.md#0x3_display_Display">display::Display</a>&lt;T&gt;&gt;, key: &<a href="_String">string::String</a>): &<b>mut</b> <a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_borrow_mut">borrow_mut</a>&lt;T&gt;(self: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="display.md#0x3_display_Display">display::Display</a>&lt;T&gt;&gt;, key: &<a href="_String">string::String</a>): &<b>mut</b> <a href="_String">string::String</a>
 </code></pre>
 
 
@@ -142,8 +142,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_borrow_mut">borrow_mut</a>&lt;T&gt;(self: &<b>mut</b> ObjectRef&lt;<a href="display.md#0x3_display_Display">Display</a>&lt;T&gt;&gt;, key: &String): &<b>mut</b> String {
-    <b>let</b> display_ref = <a href="_borrow_mut">object_ref::borrow_mut</a>(self);
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_borrow_mut">borrow_mut</a>&lt;T&gt;(self: &<b>mut</b> Object&lt;<a href="display.md#0x3_display_Display">Display</a>&lt;T&gt;&gt;, key: &String): &<b>mut</b> String {
+    <b>let</b> display_ref = <a href="_borrow_mut">object::borrow_mut</a>(self);
     <a href="_borrow_mut">simple_map::borrow_mut</a>(&<b>mut</b> display_ref.sample_map, key)
 }
 </code></pre>
@@ -158,7 +158,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_remove">remove</a>&lt;T&gt;(self: &<b>mut</b> <a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="display.md#0x3_display_Display">display::Display</a>&lt;T&gt;&gt;, key: &<a href="_String">string::String</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_remove">remove</a>&lt;T&gt;(self: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="display.md#0x3_display_Display">display::Display</a>&lt;T&gt;&gt;, key: &<a href="_String">string::String</a>)
 </code></pre>
 
 
@@ -167,8 +167,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_remove">remove</a>&lt;T&gt;(self: &<b>mut</b> ObjectRef&lt;<a href="display.md#0x3_display_Display">Display</a>&lt;T&gt;&gt;, key: &String) {
-    <b>let</b> display_ref = <a href="_borrow_mut">object_ref::borrow_mut</a>(self);
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_remove">remove</a>&lt;T&gt;(self: &<b>mut</b> Object&lt;<a href="display.md#0x3_display_Display">Display</a>&lt;T&gt;&gt;, key: &String) {
+    <b>let</b> display_ref = <a href="_borrow_mut">object::borrow_mut</a>(self);
     <a href="_remove">simple_map::remove</a>(&<b>mut</b> display_ref.sample_map, key);
 }
 </code></pre>
@@ -183,7 +183,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_keys">keys</a>&lt;T&gt;(self: &<a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="display.md#0x3_display_Display">display::Display</a>&lt;T&gt;&gt;): <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_keys">keys</a>&lt;T&gt;(self: &<a href="_Object">object::Object</a>&lt;<a href="display.md#0x3_display_Display">display::Display</a>&lt;T&gt;&gt;): <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
@@ -192,8 +192,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_keys">keys</a>&lt;T&gt;(self: & ObjectRef&lt;<a href="display.md#0x3_display_Display">Display</a>&lt;T&gt;&gt;): <a href="">vector</a>&lt;String&gt; {
-    <b>let</b> display_ref = <a href="_borrow">object_ref::borrow</a>(self);
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_keys">keys</a>&lt;T&gt;(self: & Object&lt;<a href="display.md#0x3_display_Display">Display</a>&lt;T&gt;&gt;): <a href="">vector</a>&lt;String&gt; {
+    <b>let</b> display_ref = <a href="_borrow">object::borrow</a>(self);
     <a href="_keys">simple_map::keys</a>(& display_ref.sample_map)
 }
 </code></pre>
@@ -208,7 +208,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_values">values</a>&lt;T&gt;(self: &<a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="display.md#0x3_display_Display">display::Display</a>&lt;T&gt;&gt;): <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_values">values</a>&lt;T&gt;(self: &<a href="_Object">object::Object</a>&lt;<a href="display.md#0x3_display_Display">display::Display</a>&lt;T&gt;&gt;): <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
@@ -217,8 +217,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_values">values</a>&lt;T&gt;(self: & ObjectRef&lt;<a href="display.md#0x3_display_Display">Display</a>&lt;T&gt;&gt;): <a href="">vector</a>&lt;String&gt; {
-    <b>let</b> display_ref = <a href="_borrow">object_ref::borrow</a>(self);
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_values">values</a>&lt;T&gt;(self: & Object&lt;<a href="display.md#0x3_display_Display">Display</a>&lt;T&gt;&gt;): <a href="">vector</a>&lt;String&gt; {
+    <b>let</b> display_ref = <a href="_borrow">object::borrow</a>(self);
     <a href="_values">simple_map::values</a>(& display_ref.sample_map)
 }
 </code></pre>
@@ -233,7 +233,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_contains_key">contains_key</a>&lt;T&gt;(self: &<a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="display.md#0x3_display_Display">display::Display</a>&lt;T&gt;&gt;, key: &<a href="_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_contains_key">contains_key</a>&lt;T&gt;(self: &<a href="_Object">object::Object</a>&lt;<a href="display.md#0x3_display_Display">display::Display</a>&lt;T&gt;&gt;, key: &<a href="_String">string::String</a>): bool
 </code></pre>
 
 
@@ -242,8 +242,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_contains_key">contains_key</a>&lt;T&gt;(self: & ObjectRef&lt;<a href="display.md#0x3_display_Display">Display</a>&lt;T&gt;&gt;, key: &String): bool {
-    <b>let</b> display_ref = <a href="_borrow">object_ref::borrow</a>(self);
+<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x3_display_contains_key">contains_key</a>&lt;T&gt;(self: & Object&lt;<a href="display.md#0x3_display_Display">Display</a>&lt;T&gt;&gt;, key: &String): bool {
+    <b>let</b> display_ref = <a href="_borrow">object::borrow</a>(self);
     <a href="_contains_key">simple_map::contains_key</a>(& display_ref.sample_map, key)
 }
 </code></pre>

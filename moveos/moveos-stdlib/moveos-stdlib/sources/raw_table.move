@@ -11,7 +11,6 @@ module moveos_std::raw_table {
     friend moveos_std::type_table;
     friend moveos_std::storage_context;
     friend moveos_std::account_storage;
-    friend moveos_std::object_ref;
     friend moveos_std::object;
 
     /// The key already exists in the table

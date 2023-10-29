@@ -19,11 +19,11 @@ module moveos_std::object {
     friend moveos_std::account_storage;
     friend moveos_std::storage_context;
     friend moveos_std::event;
-    friend moveos_std::object_ref;
     friend moveos_std::table;
     friend moveos_std::type_table;
 
-    const ErrorInvalidOwnerAddress:u64 = 1;
+    const ErrorObjectFrozen: u64 = 1;
+    const ErrorInvalidOwnerAddress:u64 = 2;
 
     const SYSTEM_OWNER_ADDRESS: address = @0x0;
     
@@ -39,6 +39,12 @@ module moveos_std::object {
         // The value of the object
         // The value must be the last field
         value: T,
+    }
+
+    /// Object<T> is a reference of the ObjectEntity<T>
+    /// It likes ObjectID, but it contains the type information of the object.
+    struct Object<phantom T> has key, store {
+        id: ObjectID,
     }
   
     /// An object ID
@@ -68,62 +74,131 @@ module moveos_std::object {
         )
     }
 
-    /// Create a new object, the object is owned by `owner`
-    public(friend) fun new<T: key>(id: ObjectID, value: T): ObjectEntity<T> {
+    /// Create a new object, the object is owned by `system` by default.
+    public(friend) fun new<T: key>(id: ObjectID, value: T): Object<T> {
         let owner = SYSTEM_OWNER_ADDRESS;
-        ObjectEntity<T>{id, value, owner}
+        let entity = ObjectEntity<T>{id, value, owner};
+        add_to_global(entity);
+        Object{id}
     }
 
-    public(friend) fun borrow<T>(self: &ObjectEntity<T>): &T {
-        &self.value
+    /// Borrow the object value
+    public fun borrow<T: key>(self: &Object<T>): &T {
+        let obj_enitty = borrow_from_global<T>(self.id);
+        &obj_enitty.value
     }
 
-    public(friend) fun borrow_mut<T>(self: &mut ObjectEntity<T>): &mut T {
-        &mut self.value
+    /// Borrow the object mutable value
+    public fun borrow_mut<T: key>(self: &mut Object<T>): &mut T {
+        let obj_entity = borrow_mut_from_global<T>(self.id);
+        &mut obj_entity.value
     }
 
-    public(friend) fun transfer<T>(self: &mut ObjectEntity<T>, owner: address) {
-        assert!(owner != SYSTEM_OWNER_ADDRESS, error::invalid_argument(ErrorInvalidOwnerAddress));
-        self.owner = owner;
+    #[private_generics(T)]
+    /// Remove the object from the global storage, and return the object value
+    /// This function is only can be called by the module of `T`.
+    public fun remove<T: key>(self: Object<T>) : T {
+        let Object{id} = self;
+        let object_entity = remove_from_global<T>(id);
+        let ObjectEntity{id:_, owner:_, value} = object_entity;
+        value
+    }
+
+    /// Directly drop the Object, and make the Object permanent, the object will can not be removed from the object storage.
+    /// If you want to remove the object, please use `remove` function.
+    public fun to_permanent<T: key>(self: Object<T>) {
+        let Object{id:_} = self;
+    }
+
+    /// Make the Object shared, Any one can get the &mut Object<T> from shared object
+    /// The shared object also can be removed from the object storage.
+    public fun to_shared<T: key>(self: Object<T>) {
+        let obj_entity = borrow_mut_from_global<T>(self.id);
+        // TODO set the flag
+        transfer_to_system(obj_entity); 
+        to_permanent(self);
+    }
+
+    /// Make the Object frozen, Any one can not get the &mut Object<T> from frozen object
+    public fun to_frozen<T: key>(self: Object<T>) {
+        let obj_entity = borrow_mut_from_global<T>(self.id);
+        // TODO set the flag
+        transfer_to_system(obj_entity); 
+        to_permanent(self);
+    }
+
+    /// Transfer the object to the new owner
+    /// Only the `T` with `store` can be directly transferred.
+    public fun transfer<T: key + store>(self: &mut Object<T>, new_owner: address) {
+        let obj_entity = borrow_mut_from_global<T>(self.id);
+        transer_internal(obj_entity, new_owner);
+    }
+
+    #[private_generics(T)]
+    /// Transfer the object to the new owner
+    /// This function is for the module of `T` to extend the `transfer` function.
+    public fun transfer_extend<T: key>(self: &mut Object<T>, new_owner: address) {
+        let obj = borrow_mut_from_global<T>(self.id);
+        transer_internal(obj, new_owner);
+    }
+
+    fun transer_internal<T: key>(self: &mut ObjectEntity<T>, new_owner: address) {
+        assert!(new_owner != SYSTEM_OWNER_ADDRESS, error::invalid_argument(ErrorInvalidOwnerAddress));
+        self.owner = new_owner;
     }
 
     public(friend) fun transfer_to_system<T>(self: &mut ObjectEntity<T>){
         self.owner = SYSTEM_OWNER_ADDRESS;
     }
 
-    public(friend) fun to_shared<T>(self: &mut ObjectEntity<T>) {
-        // TODO set the flag
-        transfer_to_system(self);
+    public fun id<T>(self: &Object<T>): ObjectID {
+        self.id
     }
 
-    public(friend) fun is_shared<T>(_self: &ObjectEntity<T>) : bool {
+    public fun owner<T: key>(self: &Object<T>): address {
+        let obj_enitty = borrow_from_global<T>(self.id);
+        obj_enitty.owner
+    }
+
+    public(friend) fun owner_internal<T: key>(self: &ObjectEntity<T>): address {
+        self.owner
+    }
+
+    public fun is_shared<T>(_self: &Object<T>) : bool {
         // TODO check the flag
         false
     }
 
-    public(friend) fun to_frozen<T>(self: &mut ObjectEntity<T>) {
-        // TODO set the flag
-        transfer_to_system(self);
+    public(friend) fun is_shared_internal<T>(_self: &ObjectEntity<T>) : bool {
+        // TODO check the flag
+        false
     }
 
-    public(friend) fun is_frozen<T>(_self: &ObjectEntity<T>) : bool {
+    public fun is_frozen<T>(_self: &Object<T>) : bool {
+        // TODO check the flag
+        false
+    }
+
+    public(friend) fun is_frozen_internal<T>(_self: &ObjectEntity<T>) : bool {
         // TODO check the flag
         false
     }
     
-    public fun id<T>(self: &ObjectEntity<T>): ObjectID {
-        self.id
+
+    // === Object Ref ===
+
+    public(friend) fun as_ref<T: key>(object_entity: &ObjectEntity<T>) : &Object<T>{
+        as_ref_inner<Object<T>>(object_entity.id)
+    }
+    public(friend) fun as_mut_ref<T: key>(object_entity: &mut ObjectEntity<T>) : &mut Object<T>{
+        assert!(!is_frozen_internal(object_entity), error::permission_denied(ErrorObjectFrozen));
+        as_mut_ref_inner<Object<T>>(object_entity.id)
     }
 
-    public fun owner<T>(self: &ObjectEntity<T>): address {
-        self.owner
-    }
-
-    /// Unpack the object, return the id, owner, and value
-    public(friend) fun unpack<T>(self: ObjectEntity<T>): (ObjectID, address, T) {
-        let ObjectEntity{id, owner, value} = self;
-        (id, owner, value)
-    }
+    /// Convert the ObjectID to &T or &mut T
+    /// The caller must ensure the T only has one `ObjectID` field, such as `Object<T>` or `Table<K,V>`, or `TypeTable`.
+    native fun as_ref_inner<T>(object_id: ObjectID): &T;
+    native fun as_mut_ref_inner<T>(object_id: ObjectID): &mut T;
 
     // === Object Storage ===
 
@@ -135,7 +210,7 @@ module moveos_std::object {
     }
 
     public(friend) fun add_to_global<T: key>(obj: ObjectEntity<T>) {
-        raw_table::add<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), id(&obj), obj);
+        raw_table::add<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), obj.id, obj);
     }
 
     public(friend) fun borrow_from_global<T: key>(object_id: ObjectID): &ObjectEntity<T> {
@@ -173,11 +248,11 @@ module moveos_std::object {
         let borrow_object = borrow_mut(&mut obj);
         assert!(borrow_object.count == object_count, 1001);
 
-        transfer(&mut obj, @0x10);
+        transfer_extend(&mut obj, @0x10);
         let obj_owner = owner(&obj);
         assert!(obj_owner != sender_addr, 1002);
 
-        let (_id, _owner, test_obj) = unpack(obj);
+        let test_obj = remove(obj);
         let TestObject{count: _count} = test_obj;
     }
 }

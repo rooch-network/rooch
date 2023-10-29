@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::article_delete_logic {
-    use moveos_std::object_ref::ObjectRef;
+    use moveos_std::object::Object;
     use moveos_std::context::Context;
     use moveos_std::object::ObjectID;
     use rooch_examples::article::{Self, Article};
@@ -12,7 +12,7 @@ module rooch_examples::article_delete_logic {
 
     public(friend) fun verify(
         account: &signer,
-        article_obj: &ObjectRef<Article>,
+        article_obj: &Object<Article>,
     ): article::ArticleDeleted {
         let _ = account;
         article::new_article_deleted(
@@ -25,7 +25,7 @@ module rooch_examples::article_delete_logic {
         _account: &signer,
         article_deleted: &article::ArticleDeleted,
         article_id: ObjectID,
-    ) : ObjectRef<Article> {
+    ) : Object<Article> {
         let _ = article_deleted;
         blog_aggregate::remove_article(ctx, article_id)
     }

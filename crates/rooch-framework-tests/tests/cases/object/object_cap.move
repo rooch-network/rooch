@@ -22,13 +22,13 @@ module test::m {
 //# run --signers A
 script {
     use moveos_std::context::{Self, Context};
-    use moveos_std::object_ref;
+    use moveos_std::object;
     use test::m::{Self, TestStruct};
 
     fun main(ctx: &mut Context) {
         let object = m::new_test_struct(12);
         let obj_ref = context::new_object<TestStruct>(ctx, object);
-        let test_struct = object_ref::remove(obj_ref);
+        let test_struct = object::remove(obj_ref);
         m::destroy_test_struct(test_struct);
     }
 }

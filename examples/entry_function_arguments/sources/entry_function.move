@@ -3,7 +3,7 @@
 
 module rooch_examples::entry_function {
    use moveos_std::event;
-   use moveos_std::object_ref::{Self, ObjectRef};
+   use moveos_std::object::{Self, Object};
    use moveos_std::object::ObjectID;
    use moveos_std::context::Context;
 
@@ -104,13 +104,13 @@ module rooch_examples::entry_function {
       value: ObjectID,
    }
 
-   public entry fun emit_object(ctx: &mut Context, obj: &ObjectRef<TestStruct>) {
-      let object_id = object_ref::id(obj);
+   public entry fun emit_object(ctx: &mut Context, obj: &Object<TestStruct>) {
+      let object_id = object::id(obj);
       event::emit<ObjectEvent>(ctx, ObjectEvent { is_mut: false, value: object_id });
    }
 
-   public entry fun emit_object_mut(ctx: &mut Context, obj: &mut ObjectRef<TestStruct>) {
-      let object_id = object_ref::id(obj);
+   public entry fun emit_object_mut(ctx: &mut Context, obj: &mut Object<TestStruct>) {
+      let object_id = object::id(obj);
       event::emit<ObjectEvent>(ctx, ObjectEvent { is_mut: true, value: object_id });
    }
 }

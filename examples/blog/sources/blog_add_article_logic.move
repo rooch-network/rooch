@@ -3,7 +3,7 @@
 
 module rooch_examples::blog_add_article_logic {
 
-    use moveos_std::object_ref::ObjectRef;
+    use moveos_std::object::Object;
     use moveos_std::object::ObjectID;
     use moveos_std::table;
     use rooch_examples::article_added_to_blog;
@@ -24,7 +24,7 @@ module rooch_examples::blog_add_article_logic {
 
     public(friend) fun mutate(
         article_added_to_blog: &blog::ArticleAddedToBlog,
-        article_obj: ObjectRef<Article>,
+        article_obj: Object<Article>,
         blog: &mut blog::Blog,
     ) {
         let article_id = article_added_to_blog::article_id(article_added_to_blog);

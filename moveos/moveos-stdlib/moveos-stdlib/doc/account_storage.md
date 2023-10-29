@@ -31,7 +31,6 @@ It is used to store the account's resources and modules
 <b>use</b> <a href="context.md#0x2_context">0x2::context</a>;
 <b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="object_ref.md#0x2_object_ref">0x2::object_ref</a>;
 <b>use</b> <a href="table.md#0x2_table">0x2::table</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 <b>use</b> <a href="type_table.md#0x2_type_table">0x2::type_table</a>;
@@ -200,8 +199,8 @@ Create a new account storage space
         modules: <a href="table.md#0x2_table_new_with_id">table::new_with_id</a>(<a href="account_storage.md#0x2_account_storage_named_table_id">named_table_id</a>(account, <a href="account_storage.md#0x2_account_storage_NamedTableModule">NamedTableModule</a>)),
     };
     <b>let</b> obj = <a href="context.md#0x2_context_new_object_with_id">context::new_object_with_id</a>(ctx, object_id, <a href="account_storage.md#0x2_account_storage">account_storage</a>);
-    <a href="object_ref.md#0x2_object_ref_transfer_extend">object_ref::transfer_extend</a>(&<b>mut</b> obj, account);
-    <a href="object_ref.md#0x2_object_ref_to_permanent">object_ref::to_permanent</a>(obj);
+    <a href="object.md#0x2_object_transfer_extend">object::transfer_extend</a>(&<b>mut</b> obj, account);
+    <a href="object.md#0x2_object_to_permanent">object::to_permanent</a>(obj);
 }
 </code></pre>
 

@@ -3,7 +3,7 @@
 
 module rooch_examples::blog_create_logic {
     use moveos_std::object::ObjectID;
-    use moveos_std::object_ref::ObjectRef;
+    use moveos_std::object::Object;
     use moveos_std::context::Context;
     use moveos_std::table;
     use rooch_examples::blog;
@@ -31,7 +31,7 @@ module rooch_examples::blog_create_logic {
         blog_created: &blog::BlogCreated,
     ): blog::Blog {
         let name = blog_created::name(blog_created);
-        let articles = table::new<ObjectID, ObjectRef<Article>>(ctx);
+        let articles = table::new<ObjectID, Object<Article>>(ctx);
         blog::new_blog(
             name,
             articles,

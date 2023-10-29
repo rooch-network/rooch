@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::article_remove_comment_logic {
-    use moveos_std::object_ref::ObjectRef;
+    use moveos_std::object::Object;
     use rooch_examples::article::{Self, Article};
     use rooch_examples::comment;
     use rooch_examples::comment_removed;
@@ -14,7 +14,7 @@ module rooch_examples::article_remove_comment_logic {
     public(friend) fun verify(
         account: &signer,
         comment_seq_id: u64,
-        article_obj: &ObjectRef<Article>,
+        article_obj: &Object<Article>,
     ): article::CommentRemoved {
         let comment = article::borrow_comment(article_obj, comment_seq_id);
         assert!(std::signer::address_of(account) == comment::owner(comment), ErrorNotOwnerAccount);
@@ -27,7 +27,7 @@ module rooch_examples::article_remove_comment_logic {
     public(friend) fun mutate(
         _account: &signer,
         comment_removed: &article::CommentRemoved,
-        article_obj: &mut ObjectRef<Article>,
+        article_obj: &mut Object<Article>,
     ) {
         let comment_seq_id = comment_removed::comment_seq_id(comment_removed);
         let id = article::id(article_obj);
