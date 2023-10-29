@@ -17,7 +17,7 @@ use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::VMStatus;
 use move_resource_viewer::MoveValueAnnotator;
-use moveos::moveos::MoveOS;
+use moveos::moveos::{GasPaymentAccount, MoveOS};
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
@@ -32,10 +32,10 @@ use moveos_types::moveos_std::event::EventHandle;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::state_resolver::{AnnotatedStateReader, StateReader};
-use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
+use moveos_types::transaction::{FunctionCall, MoveAction};
 use rooch_genesis::RoochGenesis;
 use rooch_store::RoochStore;
 use rooch_types::address::MultiChainAddress;
@@ -132,6 +132,42 @@ impl ExecutorActor {
         let mut moveos_tx = tx.construct_moveos_transaction(resolved_sender)?;
 
         let vm_result = self.validate_authenticator(&moveos_tx.ctx, authenticator)?;
+
+        let can_pay_gas = self.moveos.execute_gas_validate(&moveos_tx)?;
+
+        let mut pay_by_module_account = false;
+        let mut gas_payment_account = moveos_tx.ctx.sender;
+
+        if let Some(pay_gas) = can_pay_gas {
+            if pay_gas {
+                let account_balance = self.moveos.get_address_balance(&moveos_tx)?;
+                let module_account = {
+                    match &moveos_tx.action {
+                        MoveAction::Function(call) => Some(*call.function_id.module_id.address()),
+                        _ => None,
+                    }
+                };
+
+                let gas_payment_address = {
+                    if account_balance >= moveos_tx.ctx.max_gas_amount as u128 {
+                        pay_by_module_account = true;
+                        module_account.unwrap()
+                    } else {
+                        moveos_tx.ctx.sender
+                    }
+                };
+
+                gas_payment_account = gas_payment_address;
+            }
+        }
+
+        moveos_tx
+            .ctx
+            .add(GasPaymentAccount {
+                account: gas_payment_account,
+                pay_gas_by_module_account: pay_by_module_account,
+            })
+            .expect("adding GasPaymentAccount to tx context failed.");
 
         match vm_result {
             Ok((tx_validate_result, pre_execute_functions, post_execute_functions)) => {

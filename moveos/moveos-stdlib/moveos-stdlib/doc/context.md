@@ -20,6 +20,7 @@ and let developers customize the storage
 -  [Function `add`](#0x2_context_add)
 -  [Function `get`](#0x2_context_get)
 -  [Function `tx_meta`](#0x2_context_tx_meta)
+-  [Function `tx_gas_payment_account`](#0x2_context_tx_gas_payment_account)
 -  [Function `tx_result`](#0x2_context_tx_result)
 -  [Function `borrow_object`](#0x2_context_borrow_object)
 -  [Function `borrow_object_mut`](#0x2_context_borrow_object_mut)
@@ -348,6 +349,30 @@ Get a value from the context map
 
 <pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta">tx_meta</a>(self: &<a href="context.md#0x2_context_Context">Context</a>): TxMeta {
     <a href="tx_context.md#0x2_tx_context_tx_meta">tx_context::tx_meta</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_context_tx_gas_payment_account"></a>
+
+## Function `tx_gas_payment_account`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_tx_gas_payment_account">tx_gas_payment_account</a>(self: &<a href="context.md#0x2_context_Context">context::Context</a>): <b>address</b>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_tx_gas_payment_account">tx_gas_payment_account</a>(self: &<a href="context.md#0x2_context_Context">Context</a>): <b>address</b> {
+    <a href="tx_context.md#0x2_tx_context_tx_gas_payment_account">tx_context::tx_gas_payment_account</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
 }
 </code></pre>
 
