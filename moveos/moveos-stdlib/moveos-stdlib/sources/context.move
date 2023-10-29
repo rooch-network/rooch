@@ -99,15 +99,15 @@ module moveos_std::context {
 
     /// Borrow Object from object store with object_id
     /// Any one can borrow an &ObjectRef from the global object storage
-    public fun borrow_object<T: key>(self: &Context, object_id: ObjectID): &ObjectRef<T> {
-        let object_entity = storage_context::borrow<T>(&self.storage_context, object_id);
+    public fun borrow_object<T: key>(_self: &Context, object_id: ObjectID): &ObjectRef<T> {
+        let object_entity = object::borrow_from_global<T>(object_id);
         object_ref::as_ref(object_entity)
     }
 
     /// Borrow mut Object from object store with object_id
     /// If the object is not shared, only the owner can borrow an &mut ObjectRef from the global object storage
-    public fun borrow_object_mut<T: key>(self: &mut Context, owner: &signer, object_id: ObjectID): &mut ObjectRef<T> {
-        let object_entity = storage_context::borrow_mut<T>(&mut self.storage_context, object_id);
+    public fun borrow_object_mut<T: key>(_self: &mut Context, owner: &signer, object_id: ObjectID): &mut ObjectRef<T> {
+        let object_entity = object::borrow_mut_from_global<T>(object_id);
         if(!object::is_shared(object_entity)) {
             let owner_address = signer::address_of(owner);
             assert!(object::owner(object_entity) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
@@ -117,13 +117,13 @@ module moveos_std::context {
 
     #[private_generics(T)]
     /// The module of T can borrow mut Object from object store with any object_id
-    public fun borrow_object_mut_extend<T: key>(self: &mut Context, object_id: ObjectID) : &mut ObjectRef<T> {
-        let object_entity = storage_context::borrow_mut<T>(&mut self.storage_context, object_id);
+    public fun borrow_object_mut_extend<T: key>(_self: &mut Context, object_id: ObjectID) : &mut ObjectRef<T> {
+        let object_entity = object::borrow_mut_from_global<T>(object_id);
         object_ref::as_mut_ref(object_entity)
     }
 
-    public fun exist_object<T: key>(self: &Context, object_id: ObjectID): bool {
-        storage_context::contains(&self.storage_context, object_id)
+    public fun exist_object<T: key>(_self: &Context, object_id: ObjectID): bool {
+        object::contains_global(object_id)
         //TODO check the object type
     }
 
@@ -142,7 +142,7 @@ module moveos_std::context {
         let obj_entity = object::new(id, value);
         object::transfer(&mut obj_entity, sender(self)); 
         let obj_ref = object_ref::new_internal(&mut obj_entity);
-        storage_context::add(&mut self.storage_context, obj_entity);
+        object::add_to_global(obj_entity);
         obj_ref
     }
 
@@ -167,7 +167,7 @@ module moveos_std::context {
     /// Create a Context for unit test with random seed
     public fun new_test_context_random(sender: address, seed: vector<u8>): Context {
         let tx_context = tx_context::new_test_context_random(sender, seed);
-        let storage_context = storage_context::new_with_id(storage_context::global_object_storage_handle());
+        let storage_context = storage_context::new(&mut tx_context);
         Context {
             tx_context,
             storage_context,

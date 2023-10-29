@@ -5,7 +5,6 @@ module moveos_std::object_ref {
 
     use std::error;
     use moveos_std::object::{Self, Object, ObjectID};
-    use moveos_std::raw_table;
 
     friend moveos_std::context;
 
@@ -39,13 +38,13 @@ module moveos_std::object_ref {
 
     /// Borrow the object value
     public fun borrow<T: key>(self: &ObjectRef<T>): &T {
-        let obj = raw_table::borrow_from_global<T>(&self.id);
+        let obj = object::borrow_from_global<T>(self.id);
         object::borrow(obj)
     }
 
     /// Borrow the object mutable value
     public fun borrow_mut<T: key>(self: &mut ObjectRef<T>): &mut T {
-        let obj = raw_table::borrow_mut_from_global<T>(&self.id);
+        let obj = object::borrow_mut_from_global<T>(self.id);
         object::borrow_mut(obj)
     }
 
@@ -54,7 +53,7 @@ module moveos_std::object_ref {
     /// This function is only can be called by the module of `T`.
     public fun remove<T: key>(self: ObjectRef<T>) : T {
         let ObjectRef{id} = self;
-        let object = raw_table::remove_from_global(&id);
+        let object = object::remove_from_global(id);
         let (_id, _owner, value) = object::unpack(object);
         value
     }
@@ -68,14 +67,14 @@ module moveos_std::object_ref {
     /// Make the Object shared, Any one can get the &mut ObjectRef<T> from shared object
     /// The shared object also can be removed from the object storage.
     public fun to_shared<T: key>(self: ObjectRef<T>) {
-        let obj = raw_table::borrow_mut_from_global<T>(&self.id);
+        let obj = object::borrow_mut_from_global<T>(self.id);
         object::to_shared(obj); 
         to_permanent(self);
     }
 
     /// Make the Object frozen, Any one can not get the &mut ObjectRef<T> from frozen object
     public fun to_frozen<T: key>(self: ObjectRef<T>) {
-        let obj = raw_table::borrow_mut_from_global<T>(&self.id);
+        let obj = object::borrow_mut_from_global<T>(self.id);
         object::to_frozen(obj);
         to_permanent(self);
     }
@@ -83,7 +82,7 @@ module moveos_std::object_ref {
     /// Transfer the object to the new owner
     /// Only the `T` with `store` can be directly transferred.
     public fun transfer<T: key + store>(self: &mut ObjectRef<T>, new_owner: address) {
-        let obj = raw_table::borrow_mut_from_global<T>(&self.id);
+        let obj = object::borrow_mut_from_global<T>(self.id);
         object::transfer(obj, new_owner);
     }
 
@@ -91,7 +90,7 @@ module moveos_std::object_ref {
     /// Transfer the object to the new owner
     /// This function is for the module of `T` to extend the `transfer` function.
     public fun transfer_extend<T: key>(self: &mut ObjectRef<T>, new_owner: address) {
-        let obj = raw_table::borrow_mut_from_global<T>(&self.id);
+        let obj = object::borrow_mut_from_global<T>(self.id);
         object::transfer(obj, new_owner);
     }
 
@@ -100,7 +99,7 @@ module moveos_std::object_ref {
     }
 
     public fun owner<T: key>(self: &ObjectRef<T>): address {
-        let obj = raw_table::borrow_from_global<T>(&self.id);
+        let obj = object::borrow_from_global<T>(self.id);
         object::owner(obj)
     }
 

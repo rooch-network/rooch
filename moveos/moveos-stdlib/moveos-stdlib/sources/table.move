@@ -11,7 +11,7 @@
 module moveos_std::table {
     use moveos_std::raw_table;
     use moveos_std::context::{Self, Context};
-    use moveos_std::object::ObjectID;
+    use moveos_std::object::{Self, ObjectID};
 
     friend moveos_std::account_storage;
 
@@ -22,9 +22,9 @@ module moveos_std::table {
 
     /// Create a new Table.
     public fun new<K: copy + drop, V: store>(ctx: &mut Context): Table<K, V> {
-        let tx_ctx = context::tx_context_mut(ctx);
+        let handle = object::address_to_object_id(context::fresh_address(ctx));
         Table {
-            handle: raw_table::new_table_handle(tx_ctx),
+            handle,
         }
     }
 
@@ -39,71 +39,71 @@ module moveos_std::table {
     /// key already exists. The entry itself is not stored in the
     /// table, and cannot be discovered from it.
     public fun add<K: copy + drop, V>(table: &mut Table<K, V>, key: K, val: V) {
-        raw_table::add<K, V>(&table.handle, key, val)
+        raw_table::add<K, V>(object::object_id_to_table_handle(table.handle), key, val)
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public fun borrow<K: copy + drop, V>(table: &Table<K, V>, key: K): &V {
-        raw_table::borrow<K, V>(&table.handle, key)
+        raw_table::borrow<K, V>(object::object_id_to_table_handle(table.handle), key)
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Returns specified default value if there is no entry for `key`.
     public fun borrow_with_default<K: copy + drop, V>(table: &Table<K, V>, key: K, default: &V): &V {
-        raw_table::borrow_with_default<K, V>(&table.handle, key, default)
+        raw_table::borrow_with_default<K, V>(object::object_id_to_table_handle(table.handle), key, default)
     }
 
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public fun borrow_mut<K: copy + drop, V>(table: &mut Table<K, V>, key: K): &mut V {
-        raw_table::borrow_mut<K, V>(&table.handle, key)
+        raw_table::borrow_mut<K, V>(object::object_id_to_table_handle(table.handle), key)
     }
 
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Insert the pair (`key`, `default`) first if there is no entry for `key`.
     public fun borrow_mut_with_default<K: copy + drop, V: drop>(table: &mut Table<K, V>, key: K, default: V): &mut V {
-        raw_table::borrow_mut_with_default<K, V>(&table.handle, key, default)
+        raw_table::borrow_mut_with_default<K, V>(object::object_id_to_table_handle(table.handle), key, default)
     }
 
     /// Insert the pair (`key`, `value`) if there is no entry for `key`.
     /// update the value of the entry for `key` to `value` otherwise
     public fun upsert<K: copy + drop, V: drop>(table: &mut Table<K, V>, key: K, value: V) {
-        raw_table::upsert<K, V>(&table.handle, key, value)
+        raw_table::upsert<K, V>(object::object_id_to_table_handle(table.handle), key, value)
     }
 
     /// Remove from `table` and return the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public fun remove<K: copy + drop, V>(table: &mut Table<K, V>, key: K): V {
-        raw_table::remove<K, V>(&table.handle, key)
+        raw_table::remove<K, V>(object::object_id_to_table_handle(table.handle), key)
     }
 
     /// Returns true if `table` contains an entry for `key`.
     public fun contains<K: copy + drop, V>(table: &Table<K, V>, key: K): bool {
-        raw_table::contains<K>(&table.handle, key)
+        raw_table::contains<K>(object::object_id_to_table_handle(table.handle), key)
     }
 
     /// Destroy a table. Aborts if the table is not empty.
     public fun destroy_empty<K: copy + drop, V>(table: Table<K, V>) {
         let Table { handle } = table;
-        raw_table::destroy_empty(&handle)
+        raw_table::destroy_empty(object::object_id_to_table_handle(handle))
     }
 
     /// Returns the size of the table, the number of key-value pairs
     public fun length<K: copy + drop, V>(table: &Table<K, V>): u64 {
-        raw_table::length(&table.handle)
+        raw_table::length(object::object_id_to_table_handle(table.handle))
     }
 
     /// Returns true iff the table is empty (if `length` returns `0`)
     public fun is_empty<K: copy + drop, V>(table: &Table<K, V>): bool {
-        raw_table::length(&table.handle) == 0
+        raw_table::length(object::object_id_to_table_handle(table.handle)) == 0
     }
 
     /// Drop a possibly non-empty table.
     /// Usable only if the value type `V` has the `drop` ability
     public fun drop<K: copy + drop, V: drop>(table: Table<K, V>) {
         let Table { handle } = table;
-        raw_table::drop_unchecked(&handle)
+        raw_table::drop_unchecked(object::object_id_to_table_handle(handle))
     }
 
 
@@ -111,7 +111,7 @@ module moveos_std::table {
     /// Testing only: allows to drop a table even if it is not empty.
     public fun drop_unchecked<K: copy + drop, V>(table: Table<K, V>) {
         let Table { handle } = table;
-        raw_table::drop_unchecked(&handle)
+        raw_table::drop_unchecked(object::object_id_to_table_handle(handle))
     }
 
 

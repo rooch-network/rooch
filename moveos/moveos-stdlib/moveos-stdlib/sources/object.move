@@ -13,13 +13,15 @@ module moveos_std::object {
     use moveos_std::type_info;
     use moveos_std::bcs;
     use moveos_std::address;
+    use moveos_std::raw_table::{Self, TableHandle};
 
     friend moveos_std::context;
     friend moveos_std::account_storage;
     friend moveos_std::storage_context;
     friend moveos_std::event;
     friend moveos_std::object_ref;
-    friend moveos_std::raw_table;
+    friend moveos_std::table;
+    friend moveos_std::type_table;
 
     const ErrorInvalidOwnerAddress:u64 = 1;
 
@@ -49,6 +51,10 @@ module moveos_std::object {
     /// Generate a new ObjectID from an address
     public(friend) fun address_to_object_id(address: address): ObjectID {
         ObjectID { id: address }
+    }
+
+    public(friend) fun object_id_to_table_handle(object_id: ObjectID): TableHandle {
+        raw_table::new_table_handle(object_id.id)
     }
 
     public(friend) fun singleton_object_id<T>(): ObjectID {
@@ -118,6 +124,35 @@ module moveos_std::object {
     public(friend) fun unpack<T>(self: Object<T>): (ObjectID, address, T) {
         let Object{id, owner, value} = self;
         (id, owner, value)
+    }
+
+    // === Object Storage ===
+
+    const GlobalObjectStorageHandle: address = @0x0;
+
+    /// The global object storage's table handle should be `0x0`
+    public(friend) fun global_object_storage_handle(): TableHandle {
+        raw_table::new_table_handle(GlobalObjectStorageHandle)
+    }
+
+    public(friend) fun add_to_global<T: key>(obj: Object<T>) {
+        raw_table::add<ObjectID, Object<T>>(global_object_storage_handle(), id(&obj), obj);
+    }
+
+    public(friend) fun borrow_from_global<T: key>(object_id: ObjectID): &Object<T> {
+        raw_table::borrow<ObjectID, Object<T>>(global_object_storage_handle(), object_id)
+    }
+
+    public(friend) fun borrow_mut_from_global<T: key>(object_id: ObjectID): &mut Object<T> {
+        raw_table::borrow_mut<ObjectID, Object<T>>(global_object_storage_handle(), object_id)
+    }
+
+    public(friend) fun remove_from_global<T: key>(object_id: ObjectID): Object<T> {
+        raw_table::remove<ObjectID, Object<T>>(global_object_storage_handle(), object_id)
+    }
+
+    public(friend) fun contains_global(object_id: ObjectID): bool {
+        raw_table::contains<ObjectID>(global_object_storage_handle(), object_id)
     }
 
     #[test_only]
