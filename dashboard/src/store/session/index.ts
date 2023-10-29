@@ -78,6 +78,7 @@ export const fetchData = createAsyncThunk('state/fetchData', async (params: Data
   const { account_address, cursor, limit } = params
 
   try {
+    console.log(account_address)
     const accessPath = `/resource/${account_address}/0x3::session_key::SessionKeys`
     const stateResult = await params.provider.getStates(accessPath)
 
