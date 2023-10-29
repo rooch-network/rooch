@@ -20,8 +20,8 @@ module test::m {
         object_ref::to_permanent(obj_ref);
     }
 
-    //We can not use `ObjectRef<S>` as transaction argument now.
-    // public entry fun move_s_to_global(ctx: &mut Context, sender: signer, object_s: ObjectRef<S>) {
+    //We can not use `Object<S>` as transaction argument now.
+    // public entry fun move_s_to_global(ctx: &mut Context, sender: signer, object_s: Object<S>) {
     //     let object_id = object_ref::id(&object_s);
     //     debug::print(&object_id);
     //     let value = object_ref::remove(object_s);
@@ -34,7 +34,7 @@ module test::m {
         object_ref::to_permanent(obj_ref);
     }
 
-    // public entry fun move_cup_to_global<T:store>(ctx: &mut Context, sender: signer, object_s: ObjectRef<Cup<S>>) {
+    // public entry fun move_cup_to_global<T:store>(ctx: &mut Context, sender: signer, object_s: Object<Cup<S>>) {
     //     let value = object_ref::remove(object_s);
     //     account_storage::global_move_to(ctx, &sender, value);
     // }

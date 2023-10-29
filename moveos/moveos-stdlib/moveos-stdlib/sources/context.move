@@ -11,7 +11,7 @@ module moveos_std::context {
     use moveos_std::storage_context::{Self, StorageContext};
     use moveos_std::tx_context::{Self, TxContext};
     use moveos_std::object::{Self, ObjectID};
-    use moveos_std::object_ref::{Self, ObjectRef};
+    use moveos_std::object_ref::{Self, Object};
     use moveos_std::tx_meta::{TxMeta};
     use moveos_std::tx_result::{TxResult};
     use moveos_std::signer;
@@ -98,15 +98,15 @@ module moveos_std::context {
     // Wrap functions for StorageContext
 
     /// Borrow Object from object store with object_id
-    /// Any one can borrow an &ObjectRef from the global object storage
-    public fun borrow_object<T: key>(_self: &Context, object_id: ObjectID): &ObjectRef<T> {
+    /// Any one can borrow an &Object from the global object storage
+    public fun borrow_object<T: key>(_self: &Context, object_id: ObjectID): &Object<T> {
         let object_entity = object::borrow_from_global<T>(object_id);
         object_ref::as_ref(object_entity)
     }
 
     /// Borrow mut Object from object store with object_id
-    /// If the object is not shared, only the owner can borrow an &mut ObjectRef from the global object storage
-    public fun borrow_object_mut<T: key>(_self: &mut Context, owner: &signer, object_id: ObjectID): &mut ObjectRef<T> {
+    /// If the object is not shared, only the owner can borrow an &mut Object from the global object storage
+    public fun borrow_object_mut<T: key>(_self: &mut Context, owner: &signer, object_id: ObjectID): &mut Object<T> {
         let object_entity = object::borrow_mut_from_global<T>(object_id);
         if(!object::is_shared(object_entity)) {
             let owner_address = signer::address_of(owner);
@@ -117,7 +117,7 @@ module moveos_std::context {
 
     #[private_generics(T)]
     /// The module of T can borrow mut Object from object store with any object_id
-    public fun borrow_object_mut_extend<T: key>(_self: &mut Context, object_id: ObjectID) : &mut ObjectRef<T> {
+    public fun borrow_object_mut_extend<T: key>(_self: &mut Context, object_id: ObjectID) : &mut Object<T> {
         let object_entity = object::borrow_mut_from_global<T>(object_id);
         object_ref::as_mut_ref(object_entity)
     }
@@ -130,15 +130,15 @@ module moveos_std::context {
     // Wrap functions for Object
 
     #[private_generics(T)]
-    /// Create a new Object, Add the Object to the global object storage and return the ObjectRef
+    /// Create a new Object, Add the Object to the global object storage and return the Object
     /// Note: the default owner is the `System`, the caller should explicitly transfer the Object to the owner.
-    /// The owner can get the `&mut ObjectRef` by `borrow_object_mut`
-    public fun new_object<T: key>(self: &mut Context, value: T): ObjectRef<T> {
+    /// The owner can get the `&mut Object` by `borrow_object_mut`
+    public fun new_object<T: key>(self: &mut Context, value: T): Object<T> {
         let id = fresh_object_id(self);
         new_object_with_id(self, id, value)
     }
 
-    public(friend) fun new_object_with_id<T: key>(self: &mut Context, id: ObjectID, value: T) : ObjectRef<T> {
+    public(friend) fun new_object_with_id<T: key>(self: &mut Context, id: ObjectID, value: T) : Object<T> {
         let obj_entity = object::new(id, value);
         object::transfer(&mut obj_entity, sender(self)); 
         let obj_ref = object_ref::new_internal(&mut obj_entity);
@@ -147,7 +147,7 @@ module moveos_std::context {
     }
 
     #[private_generics(T)]
-    public fun new_singleton_object<T: key>(self: &mut Context, value: T): ObjectRef<T> {
+    public fun new_singleton_object<T: key>(self: &mut Context, value: T): Object<T> {
         let object_id = object::singleton_object_id<T>();
         new_object_with_id(self, object_id, value)
     }

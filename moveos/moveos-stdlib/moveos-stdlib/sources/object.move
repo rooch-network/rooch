@@ -27,7 +27,6 @@ module moveos_std::object {
 
     const SYSTEM_OWNER_ADDRESS: address = @0x0;
     
-    ///TODO rename to ObjectEntity
     /// Box style object
     /// The object can not be copied, droped and stored. It only can be consumed by StorageContext API.
     struct ObjectEntity<T> {

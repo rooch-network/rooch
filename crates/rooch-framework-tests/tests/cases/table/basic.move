@@ -55,10 +55,10 @@ script {
 //# run --signers test --args @0x1a2c876ea44c751aedab69ef139181114c79abf4fb8bca363b66969218e7d815
 script {
     use std::string;
-    use moveos_std::object_ref::{Self, ObjectRef};
+    use moveos_std::object_ref::{Self, Object};
     use test::m::{Self, KVStore};
 
-    fun main(kv_object: &ObjectRef<KVStore>) {
+    fun main(kv_object: &Object<KVStore>) {
         let kv = object_ref::borrow(kv_object);
         assert!(m::contains(kv, string::utf8(b"test")), 1000);
         let v = m::borrow(kv, string::utf8(b"test"));

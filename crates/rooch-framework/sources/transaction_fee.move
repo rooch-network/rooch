@@ -5,7 +5,7 @@ module rooch_framework::transaction_fee {
 
     use moveos_std::account_storage;
     use moveos_std::context::Context;
-    use moveos_std::object_ref::{Self, ObjectRef};
+    use moveos_std::object_ref::{Self, Object};
     use rooch_framework::coin_store::{Self, CoinStore};
     use rooch_framework::coin::Coin;
     use rooch_framework::gas_coin::{GasCoin};
@@ -14,7 +14,7 @@ module rooch_framework::transaction_fee {
     friend rooch_framework::transaction_validator;
 
     struct TransactionFeePool has key,store {
-        fee: ObjectRef<CoinStore>,
+        fee: Object<CoinStore>,
     }
 
     public(friend) fun genesis_init(ctx: &mut Context, genesis_account: &signer)  {

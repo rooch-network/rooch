@@ -8,7 +8,7 @@ module rooch_framework::coin_store {
     use moveos_std::object::{ObjectID};
     use moveos_std::context::{Self, Context};
     use moveos_std::type_info;
-    use moveos_std::object_ref::{Self, ObjectRef};
+    use moveos_std::object_ref::{Self, Object};
     use rooch_framework::coin::{Self, Coin};
 
     friend rooch_framework::account_coin_store;
@@ -45,20 +45,20 @@ module rooch_framework::coin_store {
     // Public functions
     //
 
-    /// Create a new CoinStore Object for `CoinType` and return the ObjectRef
+    /// Create a new CoinStore Object for `CoinType` and return the Object
     /// Anyone can create a CoinStore Object for public Coin<CoinType>, the `CoinType` must has `key` and `store` ability
-    public fun create_coin_store<CoinType: key + store>(ctx: &mut Context): ObjectRef<CoinStore>{
+    public fun create_coin_store<CoinType: key + store>(ctx: &mut Context): Object<CoinStore>{
         create_coin_store_internal<CoinType>(ctx) 
     }
 
     #[private_generics(CoinType)]
     /// This function is for the `CoinType` module to extend
-    public fun create_coin_store_extend<CoinType: key>(ctx: &mut Context): ObjectRef<CoinStore> {
+    public fun create_coin_store_extend<CoinType: key>(ctx: &mut Context): Object<CoinStore> {
         create_coin_store_internal<CoinType>(ctx)
     }
     
     /// Remove the CoinStore Object, return the Coin<T> in balance 
-    public fun remove_coin_store<CoinType: key>(coin_store_object: ObjectRef<CoinStore>) : Coin<CoinType> {
+    public fun remove_coin_store<CoinType: key>(coin_store_object: Object<CoinStore>) : Coin<CoinType> {
         let coin_store = object_ref::remove(coin_store_object);
         let coin_type = type_info::type_name<CoinType>();
         assert!(coin_store.coin_type == coin_type, error::invalid_argument(ErrorCoinTypeAndStoreMismatch));
@@ -109,7 +109,7 @@ module rooch_framework::coin_store {
 
     // Internal functions
 
-    public(friend) fun create_coin_store_internal<CoinType: key>(ctx: &mut Context): ObjectRef<CoinStore>{
+    public(friend) fun create_coin_store_internal<CoinType: key>(ctx: &mut Context): Object<CoinStore>{
         coin::check_coin_info_registered<CoinType>(ctx);
 
         context::new_object(ctx, CoinStore{
@@ -121,7 +121,7 @@ module rooch_framework::coin_store {
 
     // We do not allow to transfer a CoinStore to another account, CoinStore is default ownerd by the system.
     // Only provide a internal function for account_coin_store.
-    public(friend) fun transfer(coin_store_obj: &mut ObjectRef<CoinStore>, owner: address){
+    public(friend) fun transfer(coin_store_obj: &mut Object<CoinStore>, owner: address){
         object_ref::transfer_extend(coin_store_obj, owner)
     }
 
