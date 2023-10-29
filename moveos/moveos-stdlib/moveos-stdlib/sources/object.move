@@ -30,7 +30,7 @@ module moveos_std::object {
     ///TODO rename to ObjectEntity
     /// Box style object
     /// The object can not be copied, droped and stored. It only can be consumed by StorageContext API.
-    struct Object<T> {
+    struct ObjectEntity<T> {
         // The object id
         id: ObjectID,
         // The owner of the object
@@ -70,59 +70,59 @@ module moveos_std::object {
     }
 
     /// Create a new object, the object is owned by `owner`
-    public(friend) fun new<T: key>(id: ObjectID, value: T): Object<T> {
+    public(friend) fun new<T: key>(id: ObjectID, value: T): ObjectEntity<T> {
         let owner = SYSTEM_OWNER_ADDRESS;
-        Object<T>{id, value, owner}
+        ObjectEntity<T>{id, value, owner}
     }
 
-    public(friend) fun borrow<T>(self: &Object<T>): &T {
+    public(friend) fun borrow<T>(self: &ObjectEntity<T>): &T {
         &self.value
     }
 
-    public(friend) fun borrow_mut<T>(self: &mut Object<T>): &mut T {
+    public(friend) fun borrow_mut<T>(self: &mut ObjectEntity<T>): &mut T {
         &mut self.value
     }
 
-    public(friend) fun transfer<T>(self: &mut Object<T>, owner: address) {
+    public(friend) fun transfer<T>(self: &mut ObjectEntity<T>, owner: address) {
         assert!(owner != SYSTEM_OWNER_ADDRESS, error::invalid_argument(ErrorInvalidOwnerAddress));
         self.owner = owner;
     }
 
-    public(friend) fun transfer_to_system<T>(self: &mut Object<T>){
+    public(friend) fun transfer_to_system<T>(self: &mut ObjectEntity<T>){
         self.owner = SYSTEM_OWNER_ADDRESS;
     }
 
-    public(friend) fun to_shared<T>(self: &mut Object<T>) {
+    public(friend) fun to_shared<T>(self: &mut ObjectEntity<T>) {
         // TODO set the flag
         transfer_to_system(self);
     }
 
-    public(friend) fun is_shared<T>(_self: &Object<T>) : bool {
+    public(friend) fun is_shared<T>(_self: &ObjectEntity<T>) : bool {
         // TODO check the flag
         false
     }
 
-    public(friend) fun to_frozen<T>(self: &mut Object<T>) {
+    public(friend) fun to_frozen<T>(self: &mut ObjectEntity<T>) {
         // TODO set the flag
         transfer_to_system(self);
     }
 
-    public(friend) fun is_frozen<T>(_self: &Object<T>) : bool {
+    public(friend) fun is_frozen<T>(_self: &ObjectEntity<T>) : bool {
         // TODO check the flag
         false
     }
     
-    public fun id<T>(self: &Object<T>): ObjectID {
+    public fun id<T>(self: &ObjectEntity<T>): ObjectID {
         self.id
     }
 
-    public fun owner<T>(self: &Object<T>): address {
+    public fun owner<T>(self: &ObjectEntity<T>): address {
         self.owner
     }
 
     /// Unpack the object, return the id, owner, and value
-    public(friend) fun unpack<T>(self: Object<T>): (ObjectID, address, T) {
-        let Object{id, owner, value} = self;
+    public(friend) fun unpack<T>(self: ObjectEntity<T>): (ObjectID, address, T) {
+        let ObjectEntity{id, owner, value} = self;
         (id, owner, value)
     }
 
@@ -135,20 +135,20 @@ module moveos_std::object {
         raw_table::new_table_handle(GlobalObjectStorageHandle)
     }
 
-    public(friend) fun add_to_global<T: key>(obj: Object<T>) {
-        raw_table::add<ObjectID, Object<T>>(global_object_storage_handle(), id(&obj), obj);
+    public(friend) fun add_to_global<T: key>(obj: ObjectEntity<T>) {
+        raw_table::add<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), id(&obj), obj);
     }
 
-    public(friend) fun borrow_from_global<T: key>(object_id: ObjectID): &Object<T> {
-        raw_table::borrow<ObjectID, Object<T>>(global_object_storage_handle(), object_id)
+    public(friend) fun borrow_from_global<T: key>(object_id: ObjectID): &ObjectEntity<T> {
+        raw_table::borrow<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id)
     }
 
-    public(friend) fun borrow_mut_from_global<T: key>(object_id: ObjectID): &mut Object<T> {
-        raw_table::borrow_mut<ObjectID, Object<T>>(global_object_storage_handle(), object_id)
+    public(friend) fun borrow_mut_from_global<T: key>(object_id: ObjectID): &mut ObjectEntity<T> {
+        raw_table::borrow_mut<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id)
     }
 
-    public(friend) fun remove_from_global<T: key>(object_id: ObjectID): Object<T> {
-        raw_table::remove<ObjectID, Object<T>>(global_object_storage_handle(), object_id)
+    public(friend) fun remove_from_global<T: key>(object_id: ObjectID): ObjectEntity<T> {
+        raw_table::remove<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id)
     }
 
     public(friend) fun contains_global(object_id: ObjectID): bool {

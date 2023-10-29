@@ -4,29 +4,29 @@
 module moveos_std::object_ref {
 
     use std::error;
-    use moveos_std::object::{Self, Object, ObjectID};
+    use moveos_std::object::{Self, ObjectEntity, ObjectID};
 
     friend moveos_std::context;
 
     const ErrorObjectFrozen: u64 = 1;
 
     ///TODO rename to Object
-    /// ObjectRef<T> is a reference of the Object<T>
+    /// ObjectRef<T> is a reference of the ObjectEntity<T>
     /// It likes ObjectID, but it contains the type information of the object.
     struct ObjectRef<phantom T> has key, store {
         id: ObjectID,
     }
 
-    public(friend) fun new_internal<T: key>(object: &mut Object<T>) : ObjectRef<T> {
+    public(friend) fun new_internal<T: key>(object: &mut ObjectEntity<T>) : ObjectRef<T> {
         ObjectRef {
             id: object::id(object),
         }
     }
 
-    public(friend) fun as_ref<T: key>(object: &Object<T>) : &ObjectRef<T>{
+    public(friend) fun as_ref<T: key>(object: &ObjectEntity<T>) : &ObjectRef<T>{
         as_ref_inner<ObjectRef<T>>(object::id(object))
     }
-    public(friend) fun as_mut_ref<T: key>(object: &mut Object<T>) : &mut ObjectRef<T>{
+    public(friend) fun as_mut_ref<T: key>(object: &mut ObjectEntity<T>) : &mut ObjectRef<T>{
         assert!(!object::is_frozen(object), error::permission_denied(ErrorObjectFrozen));
         as_mut_ref_inner<ObjectRef<T>>(object::id(object))
     }
