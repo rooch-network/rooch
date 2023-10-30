@@ -1,6 +1,7 @@
 {
   "installation": "安装",
   "cli": "CLI",
+  "quick-start": "快速开始",
   "connect-devnet": "连接开发网络",
   "run-local-testnet": "运行本地测试网络",
   "faucet": {

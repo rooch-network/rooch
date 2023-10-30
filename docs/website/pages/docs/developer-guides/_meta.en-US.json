@@ -1,6 +1,7 @@
 {
   "installation": "Installation",
   "cli": "CLI",
+  "quick-start": "Quick start",
   "connect-devnet": "Connect to devnet",
   "run-local-testnet": "Run a local testnet",
   "faucet": {
