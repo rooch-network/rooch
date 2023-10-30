@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module rooch_framework::display{
+module moveos_std::display{
     use std::string::String;
     use moveos_std::object::{Self, Object};
     use moveos_std::context::{Self, Context};

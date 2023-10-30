@@ -4,7 +4,7 @@
 module nft::nft {
     use std::string::{Self, String};
     use nft::collection;
-    use rooch_framework::display;
+    use moveos_std::display;
     use moveos_std::object::{Self, Object};
     use moveos_std::context::{Self, Context};
     use moveos_std::object::{ObjectID};
