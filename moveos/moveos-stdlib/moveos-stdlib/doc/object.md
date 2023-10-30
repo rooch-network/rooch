@@ -4,6 +4,10 @@
 # Module `0x2::object`
 
 Move Object
+For more details, please refer to https://rooch.network/docs/developer-guides/object
+
+
+For more details please refer https://rooch.network/docs/developer-guides/object
 The Object is a box style Object
 The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/object.move#L75):
 1. The Object is a struct in Move
@@ -18,6 +22,7 @@ The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/5
 -  [Function `object_id_to_table_handle`](#0x2_object_object_id_to_table_handle)
 -  [Function `singleton_object_id`](#0x2_object_singleton_object_id)
 -  [Function `new`](#0x2_object_new)
+-  [Function `new_singleton`](#0x2_object_new_singleton)
 -  [Function `borrow`](#0x2_object_borrow)
 -  [Function `borrow_mut`](#0x2_object_borrow_mut)
 -  [Function `remove`](#0x2_object_remove)
@@ -58,8 +63,8 @@ The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/5
 
 ## Struct `ObjectEntity`
 
-Box style object
-The object can not be copied, droped and stored. It only can be consumed by StorageContext API.
+ObjectEntity<T> is a box of the value of T
+It does not have any ability, so it can not be <code>drop</code>, <code><b>copy</b></code>, or <code>store</code>, and can only be handled by storage API after creation.
 
 
 <pre><code><b>struct</b> <a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>&lt;T&gt;
@@ -99,8 +104,9 @@ The object can not be copied, droped and stored. It only can be consumed by Stor
 
 ## Resource `Object`
 
-Object<T> is a reference of the ObjectEntity<T>
-It likes ObjectID, but it contains the type information of the object.
+Object<T> is a pointer to the ObjectEntity<T>, It has <code>key</code> and <code>store</code> ability.
+It has the same lifetime as the ObjectEntity<T>
+Developers only need to use Object<T> related APIs and do not need to know the ObjectEntity<T>.
 
 
 <pre><code><b>struct</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; <b>has</b> store, key
@@ -128,7 +134,7 @@ It likes ObjectID, but it contains the type information of the object.
 
 ## Struct `ObjectID`
 
-An object ID
+ObjectID is a unique identifier for the Object
 
 
 <pre><code><b>struct</b> <a href="object.md#0x2_object_ObjectID">ObjectID</a> <b>has</b> <b>copy</b>, drop, store
@@ -278,7 +284,7 @@ Generate a new ObjectID from an address
 
 ## Function `new`
 
-Create a new object, the object is owned by <code>system</code> by default.
+Create a new object, the object is owned by <code>System</code> by default.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
@@ -295,6 +301,33 @@ Create a new object, the object is owned by <code>system</code> by default.
     <b>let</b> entity = <a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>&lt;T&gt;{id, value, owner};
     <a href="object.md#0x2_object_add_to_global">add_to_global</a>(entity);
     <a href="object.md#0x2_object_Object">Object</a>{id}
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_object_new_singleton"></a>
+
+## Function `new_singleton`
+
+Create a new singleton object, singleton object is always owned by <code>System</code> and is p
+Singleton object means the object of <code>T</code> is only one instance in the Object Storage.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new_singleton">new_singleton</a>&lt;T: key&gt;(value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new_singleton">new_singleton</a>&lt;T: key&gt;(value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
+    <b>let</b> id = <a href="object.md#0x2_object_singleton_object_id">singleton_object_id</a>&lt;T&gt;();
+    <a href="object.md#0x2_object_new">new</a>(id, value)
 }
 </code></pre>
 

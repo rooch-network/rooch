@@ -4,7 +4,7 @@
 module nft::nft {
     use std::string::{Self, String};
     use nft::collection;
-    use rooch_framework::display;
+    use moveos_std::display;
     use moveos_std::object::{Self, Object};
     use moveos_std::context::{Self, Context};
     use moveos_std::object::{ObjectID};
@@ -13,22 +13,20 @@ module nft::nft {
     #[test_only]
     use rooch_framework::account;
 
-    const ErrorNftNotExist: u64 = 1;
-    const ErrorMutatorNotExist: u64 = 2;
-    const ErrorBurnerNotExist: u64 = 3;
+    const ErrorCreatorNotMatch: u64 = 1;
 
     struct NFT has key,store {
         name: String,
-        uri: String,
         collection: ObjectID,
         creator: address,
     }
 
     fun init(ctx: &mut Context){
-        let nft_display_object = display::new<NFT>(ctx);
-        display::set(&mut nft_display_object, string::utf8(b"name"), string::utf8(b"{ name }"));
-        display::set(&mut nft_display_object, string::utf8(b"uri"), string::utf8(b"{ uri }"));
-        object::to_permanent(nft_display_object);
+        let nft_display_object = display::object_display<NFT>(ctx);
+        display::set_value(nft_display_object, string::utf8(b"name"), string::utf8(b"{ value.name }"));
+        display::set_value(nft_display_object, string::utf8(b"owner"), string::utf8(b"{ owner }"));
+        display::set_value(nft_display_object, string::utf8(b"creator"), string::utf8(b"{ value.creator }"));
+        display::set_value(nft_display_object, string::utf8(b"uri"), string::utf8(b"https://base_url/{ collection }/{ id }"));
     }
 
     /// Mint a new NFT,
@@ -36,7 +34,6 @@ module nft::nft {
         ctx: &mut Context,
         collection_obj: &mut Object<collection::Collection>,
         name: String,
-        uri: String,
     ): Object<NFT> {
         let collection_id = object::id(collection_obj);
         let collection = object::borrow_mut(collection_obj);
@@ -45,7 +42,6 @@ module nft::nft {
         let creator = collection::creator(collection);
         let nft = NFT {
             name,
-            uri,
             collection: collection_id,
             creator,
         };
@@ -66,7 +62,6 @@ module nft::nft {
         let (
             NFT {
                 name:_,
-                uri:_,
                 collection:_,
                 creator:_,
             }
@@ -79,9 +74,6 @@ module nft::nft {
         nft.name
     }
 
-    public fun uri(nft: &NFT): String {
-        nft.uri
-    }
 
     public fun collection(nft: &NFT): ObjectID {
         nft.collection
@@ -95,13 +87,24 @@ module nft::nft {
     /// Because only the creator of the collection can get `&mut Object<collection::Collection>`
     /// So, only the creator of the collection can mint a new NFT
     /// If we want to allow other people to mint NFT, we need to make the `Object<collection::Collection>` to shared
-    entry fun mint_entry(ctx: &mut Context, collection_obj: &mut Object<collection::Collection>, name: String, uri: String) {
+    entry fun mint_entry(ctx: &mut Context, collection_obj: &mut Object<collection::Collection>, name: String) {
         let sender = context::sender(ctx);
-        let nft_obj = mint(ctx, collection_obj, name, uri);
+        let nft_obj = mint(ctx, collection_obj, name);
         object::transfer(&mut nft_obj, sender);
         //Because the NFT becomes permanent Object here, we can not to burn it.
         //Maybe we need to design a NFTGallery to store all the NFTs of user.
         object::to_permanent(nft_obj);
+    }
+
+     /// Update the base uri of the NFT
+    /// In the future, the Collection will be shared object, so we need to check the creator of collection.
+    entry fun update_base_uri(ctx: &mut Context, collection_obj: &Object<collection::Collection>, new_base_uri: String){
+        let sender_address = context::sender(ctx);
+        let collection = object::borrow(collection_obj);
+        assert!(collection::creator(collection) == sender_address, ErrorCreatorNotMatch);
+        let nft_display_obj = display::object_display<NFT>(ctx);
+        string::append(&mut new_base_uri, string::utf8(b"{ collection }/{ id }"));
+        display::set_value(nft_display_obj, string::utf8(b"uri"), new_base_uri);
     }
 
     #[test(sender = @nft)]
@@ -113,7 +116,6 @@ module nft::nft {
         let collection_obj = collection::create_collection(
             ctx,
             string::utf8(b"test_collection_name1"),
-            string::utf8(b"test_collection_uri1"),
             sender,
             string::utf8(b"test_collection_description1"),
             option::none(),
@@ -124,7 +126,6 @@ module nft::nft {
             ctx,
             &mut collection_obj,
             string::utf8(b"test_nft_1"),
-            string::utf8(b"test_nft_uri"),
         );
         object::transfer(&mut nft_obj, sender);
 

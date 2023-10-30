@@ -79,7 +79,7 @@ module moveos_std::account_storage {
 
     fun borrow_account_storage_mut(ctx: &mut Context, account: address): &mut AccountStorage{
         let object_id = object::address_to_object_id(account);
-        let object = context::borrow_object_mut_extend<AccountStorage>(ctx, object_id);
+        let object = context::borrow_mut_object_extend<AccountStorage>(ctx, object_id);
         object::borrow_mut(object)
     }
 

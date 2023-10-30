@@ -103,7 +103,7 @@ module rooch_framework::coin_store {
         frozen: bool,
     ) {
         assert!(context::exist_object<CoinStore>(ctx, coin_store_id), error::invalid_argument(ErrorCoinStoreNotFound));
-        let coin_store_object = context::borrow_object_mut_extend<CoinStore>(ctx, coin_store_id);
+        let coin_store_object = context::borrow_mut_object_extend<CoinStore>(ctx, coin_store_id);
         object::borrow_mut(coin_store_object).frozen = frozen;
     }
 
