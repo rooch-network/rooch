@@ -15,7 +15,7 @@ module rooch_framework::account_coin_store {
     use moveos_std::event;
     use moveos_std::type_info;
     use moveos_std::signer;
-    use moveos_std::object_ref::{Self, ObjectRef};
+    use moveos_std::object::{Self, Object};
     use rooch_framework::coin::{Coin};
     use rooch_framework::coin_store::{Self, CoinStore};
  
@@ -35,9 +35,9 @@ module rooch_framework::account_coin_store {
         auto_accept_coins: Table<address, bool>,
     }
 
-    /// A resource that holds all the ObjectRef<CoinStore> for account.
+    /// A resource that holds all the Object<CoinStore> for account.
     struct CoinStores has key {
-        coin_stores: Table<string::String, ObjectRef<CoinStore>>,
+        coin_stores: Table<string::String, Object<CoinStore>>,
     }
 
     /// Event for auto accept coin set
@@ -73,7 +73,7 @@ module rooch_framework::account_coin_store {
 
     public(friend) fun init_account_coin_stores(ctx: &mut Context, account: &signer){
         let coin_stores = CoinStores {
-            coin_stores: table::new<string::String, ObjectRef<CoinStore>>(ctx),
+            coin_stores: table::new<string::String, Object<CoinStore>>(ctx),
         };
         account_storage::global_move_to(ctx, account, coin_stores);
     }
@@ -96,7 +96,7 @@ module rooch_framework::account_coin_store {
             let coin_stores = account_storage::global_borrow<CoinStores>(ctx, addr);
             let coin_type = type_info::type_name<CoinType>();
             let coin_store_ref = table::borrow(&coin_stores.coin_stores, coin_type);
-            option::some(object_ref::id(coin_store_ref))
+            option::some(object::id(coin_store_ref))
         } else {
             option::none<ObjectID>()
         }
@@ -262,14 +262,14 @@ module rooch_framework::account_coin_store {
         let coin_stores = account_storage::global_borrow<CoinStores>(ctx, addr);
         let coin_type = type_info::type_name<CoinType>();
         let ref = table::borrow(&coin_stores.coin_stores, coin_type);
-        object_ref::borrow(ref)
+        object::borrow(ref)
     }
 
     fun borrow_mut_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address): &mut CoinStore{
         let coin_stores = account_storage::global_borrow_mut<CoinStores>(ctx, addr);
         let coin_type = type_info::type_name<CoinType>();
         let ref = table::borrow_mut(&mut coin_stores.coin_stores, coin_type);
-        object_ref::borrow_mut(ref)
+        object::borrow_mut(ref)
     }
 
     fun ensure_coin_store<CoinType: key>(ctx: &mut Context, addr: address) {

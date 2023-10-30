@@ -12,7 +12,6 @@ module moveos_std::account_storage {
     use moveos_std::type_table::{Self, TypeTable};
     use moveos_std::table::{Self, Table};
     use moveos_std::object::{Self, ObjectID};
-    use moveos_std::object_ref;
     use moveos_std::context::{Self, Context};
     use moveos_std::tx_context;
     use moveos_std::move_module::{Self, MoveModule};
@@ -54,8 +53,8 @@ module moveos_std::account_storage {
             modules: table::new_with_id(named_table_id(account, NamedTableModule)),
         };
         let obj = context::new_object_with_id(ctx, object_id, account_storage);
-        object_ref::transfer_extend(&mut obj, account);
-        object_ref::to_permanent(obj);
+        object::transfer_extend(&mut obj, account);
+        object::to_permanent(obj);
     }
 
     /// check if account storage eixst
@@ -75,13 +74,13 @@ module moveos_std::account_storage {
     fun borrow_account_storage(ctx: &Context, account: address): &AccountStorage{
         let object_id = object::address_to_object_id(account);
         let object = context::borrow_object<AccountStorage>(ctx, object_id);
-        object_ref::borrow(object)
+        object::borrow(object)
     }
 
     fun borrow_account_storage_mut(ctx: &mut Context, account: address): &mut AccountStorage{
         let object_id = object::address_to_object_id(account);
         let object = context::borrow_object_mut_extend<AccountStorage>(ctx, object_id);
-        object_ref::borrow_mut(object)
+        object::borrow_mut(object)
     }
 
     /// Borrow a resource from the AccountStorage

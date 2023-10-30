@@ -10,7 +10,6 @@ module moveos_std::event {
     use moveos_std::bcs;
     use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, ObjectID};
-    use moveos_std::object_ref;
     use moveos_std::type_info;
 
     #[test_only]
@@ -42,21 +41,21 @@ module moveos_std::event {
     fun borrow_event_handle<T>(ctx: &Context): &EventHandle {
         let event_handle_id = derive_event_handle_id<T>();
         let object = context::borrow_object<EventHandle>(ctx, event_handle_id);
-        object_ref::borrow(object)
+        object::borrow(object)
     }
 
     /// Borrow a mut event handle from the object storage
     fun borrow_event_handle_mut<T>(ctx: &mut Context): &mut EventHandle {
         let event_handle_id = derive_event_handle_id<T>();
         let object = context::borrow_object_mut_extend<EventHandle>(ctx, event_handle_id);
-        object_ref::borrow_mut(object)
+        object::borrow_mut(object)
     }
 
     /// Get event handle owner
     fun get_event_handle_owner<T>(ctx: &Context): address {
         let event_handle_id = derive_event_handle_id<T>();
         let object = context::borrow_object<EventHandle>(ctx, event_handle_id);
-        object_ref::owner(object)
+        object::owner(object)
     }
 
     /// Method to get event handle Metadata
@@ -85,7 +84,7 @@ module moveos_std::event {
         // The event handle should be a shared object
         // Any one can emit event to this handle
         // TODO provide a emit event function with event handle
-        object_ref::to_shared(obj);
+        object::to_shared(obj);
     }
 
     public fun ensure_event_handle<T>(ctx: &mut Context) {

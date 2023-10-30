@@ -490,7 +490,7 @@ pub fn is_allowed_input_struct(name: String, is_ref: bool) -> bool {
             | "0x2::context::Context"
     ) ||
     // ObjectRef only support reference type
-     (is_ref && name.as_str() == "0x2::object_ref::ObjectRef")
+     (is_ref && name.as_str() == "0x2::object::Object")
 }
 
 // ----------------------------------------------------------------------------------

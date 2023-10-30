@@ -347,7 +347,7 @@ impl Object<AccountStorage> {
 }
 
 pub const OBJECT_MODULE_NAME: &IdentStr = ident_str!("object");
-pub const OBJECT_STRUCT_NAME: &IdentStr = ident_str!("Object");
+pub const OBJECT_STRUCT_NAME: &IdentStr = ident_str!("ObjectEntity");
 
 impl<T> MoveStructType for Object<T>
 where

@@ -92,10 +92,7 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
         "move_module",
         moveos_stdlib::move_module::make_all(gas_params.move_module)
     );
-    add_natives!(
-        "object_ref",
-        moveos_stdlib::object::make_all(gas_params.object)
-    );
+    add_natives!("object", moveos_stdlib::object::make_all(gas_params.object));
 
     let moveos_native_fun_table = make_table_from_iter(MOVEOS_STD_ADDRESS, natives);
     native_fun_table.extend(moveos_native_fun_table);

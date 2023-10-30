@@ -8,10 +8,9 @@ module moveos_std::context {
 
     use std::option::Option;
     use std::error;
-    use moveos_std::storage_context::{Self, StorageContext};
+    use moveos_std::storage_context::{StorageContext};
     use moveos_std::tx_context::{Self, TxContext};
-    use moveos_std::object::{Self, ObjectID};
-    use moveos_std::object_ref::{Self, ObjectRef};
+    use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::tx_meta::{TxMeta};
     use moveos_std::tx_result::{TxResult};
     use moveos_std::signer;
@@ -98,56 +97,52 @@ module moveos_std::context {
     // Wrap functions for StorageContext
 
     /// Borrow Object from object store with object_id
-    /// Any one can borrow an &ObjectRef from the global object storage
-    public fun borrow_object<T: key>(self: &Context, object_id: ObjectID): &ObjectRef<T> {
-        let object_entity = storage_context::borrow<T>(&self.storage_context, object_id);
-        object_ref::as_ref(object_entity)
+    /// Any one can borrow an &Object from the global object storage
+    public fun borrow_object<T: key>(_self: &Context, object_id: ObjectID): &Object<T> {
+        let object_entity = object::borrow_from_global<T>(object_id);
+        object::as_ref(object_entity)
     }
 
     /// Borrow mut Object from object store with object_id
-    /// If the object is not shared, only the owner can borrow an &mut ObjectRef from the global object storage
-    public fun borrow_object_mut<T: key>(self: &mut Context, owner: &signer, object_id: ObjectID): &mut ObjectRef<T> {
-        let object_entity = storage_context::borrow_mut<T>(&mut self.storage_context, object_id);
-        if(!object::is_shared(object_entity)) {
+    /// If the object is not shared, only the owner can borrow an &mut Object from the global object storage
+    public fun borrow_object_mut<T: key>(_self: &mut Context, owner: &signer, object_id: ObjectID): &mut Object<T> {
+        let object_entity = object::borrow_mut_from_global<T>(object_id);
+        if(!object::is_shared_internal(object_entity)) {
             let owner_address = signer::address_of(owner);
-            assert!(object::owner(object_entity) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
+            assert!(object::owner_internal(object_entity) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
         };
-        object_ref::as_mut_ref(object_entity)
+        object::as_mut_ref(object_entity)
     }
 
     #[private_generics(T)]
     /// The module of T can borrow mut Object from object store with any object_id
-    public fun borrow_object_mut_extend<T: key>(self: &mut Context, object_id: ObjectID) : &mut ObjectRef<T> {
-        let object_entity = storage_context::borrow_mut<T>(&mut self.storage_context, object_id);
-        object_ref::as_mut_ref(object_entity)
+    public fun borrow_object_mut_extend<T: key>(_self: &mut Context, object_id: ObjectID) : &mut Object<T> {
+        let object_entity = object::borrow_mut_from_global<T>(object_id);
+        object::as_mut_ref(object_entity)
     }
 
-    public fun exist_object<T: key>(self: &Context, object_id: ObjectID): bool {
-        storage_context::contains(&self.storage_context, object_id)
+    public fun exist_object<T: key>(_self: &Context, object_id: ObjectID): bool {
+        object::contains_global(object_id)
         //TODO check the object type
     }
 
     // Wrap functions for Object
 
     #[private_generics(T)]
-    /// Create a new Object, Add the Object to the global object storage and return the ObjectRef
+    /// Create a new Object, Add the Object to the global object storage and return the Object
     /// Note: the default owner is the `System`, the caller should explicitly transfer the Object to the owner.
-    /// The owner can get the `&mut ObjectRef` by `borrow_object_mut`
-    public fun new_object<T: key>(self: &mut Context, value: T): ObjectRef<T> {
+    /// The owner can get the `&mut Object` by `borrow_object_mut`
+    public fun new_object<T: key>(self: &mut Context, value: T): Object<T> {
         let id = fresh_object_id(self);
         new_object_with_id(self, id, value)
     }
 
-    public(friend) fun new_object_with_id<T: key>(self: &mut Context, id: ObjectID, value: T) : ObjectRef<T> {
-        let obj_entity = object::new(id, value);
-        object::transfer(&mut obj_entity, sender(self)); 
-        let obj_ref = object_ref::new_internal(&mut obj_entity);
-        storage_context::add(&mut self.storage_context, obj_entity);
-        obj_ref
+    public(friend) fun new_object_with_id<T: key>(_self: &mut Context, id: ObjectID, value: T) : Object<T> {
+        object::new(id, value)
     }
 
     #[private_generics(T)]
-    public fun new_singleton_object<T: key>(self: &mut Context, value: T): ObjectRef<T> {
+    public fun new_singleton_object<T: key>(self: &mut Context, value: T): Object<T> {
         let object_id = object::singleton_object_id<T>();
         new_object_with_id(self, object_id, value)
     }
@@ -167,7 +162,7 @@ module moveos_std::context {
     /// Create a Context for unit test with random seed
     public fun new_test_context_random(sender: address, seed: vector<u8>): Context {
         let tx_context = tx_context::new_test_context_random(sender, seed);
-        let storage_context = storage_context::new_with_id(storage_context::global_object_storage_handle());
+        let storage_context = moveos_std::storage_context::new(&mut tx_context);
         Context {
             tx_context,
             storage_context,
@@ -192,14 +187,14 @@ module moveos_std::context {
         let ref = new_object(&mut ctx, TestObjectValue{value: 1});
         
         {
-            let obj_value = object_ref::borrow_mut(&mut ref);
+            let obj_value = object::borrow_mut(&mut ref);
             obj_value.value = 2;
         };
         {
-            let obj_value = object_ref::borrow(&ref);
+            let obj_value = object::borrow(&ref);
             assert!(obj_value.value == 2, 1000);
         };
-        object_ref::to_permanent(ref);
+        object::to_permanent(ref);
         drop_test_context(ctx);
     }
 }

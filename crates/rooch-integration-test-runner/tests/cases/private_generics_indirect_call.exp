@@ -10,11 +10,11 @@ Error: error: resource type "KeyStruct" in function "0x2::context::new_object" n
 32 │         let object = context::new_object(ctx, test0::new_key_struct(100));
    │                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-error: resource type "KeyStruct" in function "0x2::object_ref::remove" not defined in current module or not allowed
+error: resource type "KeyStruct" in function "0x2::object::remove" not defined in current module or not allowed
    ┌─ /tmp/tempfile:33:27
    │
-33 │         let _key_struct = object_ref::remove(object);
-   │                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+33 │         let _key_struct = object::remove(object);
+   │                           ^^^^^^^^^^^^^^^^^^^^^^
 
 error: resource type "KeyStruct" in function "0x42::test::publish_foo" not defined in current module or not allowed
    ┌─ /tmp/tempfile:29:9

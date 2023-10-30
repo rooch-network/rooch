@@ -10,10 +10,10 @@ Error: error: resource type "TestStruct" in function "0x2::context::new_object" 
 29 │         let obj_ref = context::new_object<TestStruct>(ctx, object);
    │                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-error: resource type "TestStruct" in function "0x2::object_ref::remove" not defined in current module or not allowed
+error: resource type "TestStruct" in function "0x2::object::remove" not defined in current module or not allowed
    ┌─ /tmp/tempfile:30:27
    │
-30 │         let test_struct = object_ref::remove(obj_ref);
-   │                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+30 │         let test_struct = object::remove(obj_ref);
+   │                           ^^^^^^^^^^^^^^^^^^^^^^^
 
 

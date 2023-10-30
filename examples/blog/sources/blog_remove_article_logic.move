@@ -3,7 +3,7 @@
 
 module rooch_examples::blog_remove_article_logic {
     use moveos_std::object::ObjectID;
-    use moveos_std::object_ref::ObjectRef;
+    use moveos_std::object::Object;
     use moveos_std::table;
     use rooch_examples::article_removed_from_blog;
     use rooch_examples::blog;
@@ -24,7 +24,7 @@ module rooch_examples::blog_remove_article_logic {
     public(friend) fun mutate(
         article_removed_from_blog: &blog::ArticleRemovedFromBlog,
         blog: &mut blog::Blog,
-    ) : ObjectRef<Article> {
+    ) : Object<Article> {
         let article_id = article_removed_from_blog::article_id(article_removed_from_blog);
         let articles = blog::articles_mut(blog);
         table::remove(articles, article_id)

@@ -5,7 +5,7 @@ module rooch_framework::coin_store_test{
     use std::string;
     use std::option;
     use moveos_std::context::{Context};
-    use moveos_std::object_ref;
+    use moveos_std::object;
     use rooch_framework::account;
     use rooch_framework::coin;
     use rooch_framework::account_coin_store;
@@ -51,7 +51,7 @@ module rooch_framework::coin_store_test{
 
         let coin_store_ref = coin_store::create_coin_store<FakeCoin>(&mut ctx);
         {
-            let coin_store = object_ref::borrow_mut(&mut coin_store_ref);
+            let coin_store = object::borrow_mut(&mut coin_store_ref);
 
             let coin_minted = coin::mint_extend<FakeCoin>(&mut ctx, 100);
             coin_store::deposit(coin_store, coin_minted);

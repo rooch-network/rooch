@@ -9,7 +9,7 @@ module nft::collection{
     use moveos_std::object::{ObjectID};
     use moveos_std::event;
     use moveos_std::context::{Self, Context};
-    use moveos_std::object_ref::{Self, ObjectRef};
+    use moveos_std::object::{Self, Object};
 
     friend nft::nft;
 
@@ -45,7 +45,7 @@ module nft::collection{
         display::set(&mut collection_display_obj, string::utf8(b"description"), string::utf8(b"{ description }"));
         display::set(&mut collection_display_obj, string::utf8(b"creator"), string::utf8(b"{ creator }"));
         display::set(&mut collection_display_obj, string::utf8(b"supply"), string::utf8(b"{ supply }"));
-        object_ref::to_permanent(collection_display_obj);
+        object::to_permanent(collection_display_obj);
     }
 
     /// Create a new collection Object
@@ -56,7 +56,7 @@ module nft::collection{
         creator: address,
         description: String,
         max_supply: Option<u64>,
-    ) : ObjectRef<Collection> {
+    ) : Object<Collection> {
 
         let collection = Collection {
             name,
@@ -75,7 +75,7 @@ module nft::collection{
         event::emit(
             ctx,
             CreateCollectionEvent {
-                objectID: object_ref::id(&collection_obj),
+                objectID: object::id(&collection_obj),
                 name,
                 uri,
                 creator,
@@ -83,7 +83,7 @@ module nft::collection{
                 description,
             }
         );
-        object_ref::transfer_extend(&mut collection_obj, creator);
+        object::transfer_extend(&mut collection_obj, creator);
         collection_obj
     }
 
