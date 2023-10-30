@@ -4,7 +4,7 @@ use super::{account_storage::AccountStorage, raw_table::TableInfo};
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     h256,
-    state::{MoveStructState, MoveStructType, State},
+    state::{MoveState, MoveStructState, MoveStructType, State},
 };
 use anyhow::{bail, ensure, Result};
 use fastcrypto::encoding::Hex;
@@ -213,24 +213,24 @@ impl FromStr for ObjectID {
     }
 }
 
-pub type TableObject = Object<TableInfo>;
-pub type AccountStorageObject = Object<AccountStorage>;
+pub type TableObject = ObjectEntity<TableInfo>;
+pub type AccountStorageObject = ObjectEntity<AccountStorage>;
 
+/// The Entity of the Object<T>
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
-pub struct Object<T> {
+pub struct ObjectEntity<T> {
     pub id: ObjectID,
     pub owner: AccountAddress,
-    //#[serde(flatten)]
     pub value: T,
 }
 
-impl<T> Object<T> {
-    pub fn new(id: ObjectID, owner: AccountAddress, value: T) -> Object<T> {
+impl<T> ObjectEntity<T> {
+    pub fn new(id: ObjectID, owner: AccountAddress, value: T) -> ObjectEntity<T> {
         Self { id, owner, value }
     }
 }
 
-impl<T> Object<T>
+impl<T> ObjectEntity<T>
 where
     T: MoveStructState,
 {
@@ -250,16 +250,16 @@ where
     }
 }
 
-impl<T> From<Object<T>> for RawObject
+impl<T> From<ObjectEntity<T>> for RawObject
 where
     T: MoveStructState,
 {
-    fn from(object: Object<T>) -> Self {
+    fn from(object: ObjectEntity<T>) -> Self {
         object.to_raw()
     }
 }
 
-impl Object<TableInfo> {
+impl ObjectEntity<TableInfo> {
     pub fn new_table_object(id: ObjectID, value: TableInfo) -> TableObject {
         Self {
             id,
@@ -270,7 +270,7 @@ impl Object<TableInfo> {
     }
 }
 
-impl Object<AccountStorage> {
+impl ObjectEntity<AccountStorage> {
     pub fn new_account_storage_object(account: AccountAddress) -> AccountStorageObject {
         Self {
             id: ObjectID::from(account),
@@ -280,23 +280,20 @@ impl Object<AccountStorage> {
     }
 }
 
-pub const OBJECT_MODULE_NAME: &IdentStr = MODULE_NAME;
-pub const OBJECT_STRUCT_NAME: &IdentStr = ident_str!("ObjectEntity");
-
-impl<T> MoveStructType for Object<T>
+impl<T> MoveStructType for ObjectEntity<T>
 where
     T: MoveStructType,
 {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = OBJECT_STRUCT_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("ObjectEntity");
 
     fn type_params() -> Vec<TypeTag> {
         vec![TypeTag::Struct(Box::new(T::struct_tag()))]
     }
 }
 
-impl<T> MoveStructState for Object<T>
+impl<T> MoveStructState for ObjectEntity<T>
 where
     T: MoveStructState,
 {
@@ -310,7 +307,7 @@ where
     }
 }
 
-pub type RawObject = Object<RawData>;
+pub type RawObject = ObjectEntity<RawData>;
 
 #[derive(Eq, PartialEq, Debug, Clone)]
 pub struct RawData {
@@ -353,7 +350,7 @@ impl TryFrom<State> for RawObject {
     }
 }
 
-pub type AnnotatedObject = Object<AnnotatedMoveStruct>;
+pub type AnnotatedObject = ObjectEntity<AnnotatedMoveStruct>;
 
 impl AnnotatedObject {
     pub fn new_annotated_object(
@@ -390,6 +387,35 @@ impl AnnotatedObject {
             _ => bail!("Object value field should be struct"),
         };
         Ok(Self::new_annotated_object(object_id, owner, value))
+    }
+}
+
+/// In Move, Object<T> is like a pointer to ObjectEntity<T>
+#[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub struct Object<T> {
+    pub id: ObjectID,
+    pub ty: std::marker::PhantomData<T>,
+}
+
+impl<T> MoveStructType for Object<T>
+where
+    T: MoveStructType,
+{
+    const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Object");
+
+    fn type_params() -> Vec<TypeTag> {
+        vec![T::type_tag()]
+    }
+}
+
+impl<T> MoveStructState for Object<T>
+where
+    T: MoveStructType,
+{
+    fn struct_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![ObjectID::type_layout()])
     }
 }
 
@@ -435,11 +461,11 @@ mod tests {
         //let struct_type = TestStruct::struct_tag();
         let object_value = TestStruct { v: 1 };
         let object_id = ObjectID::new(crate::h256::H256::random().into());
-        let object = Object::new(object_id, AccountAddress::random(), object_value);
+        let object = ObjectEntity::new(object_id, AccountAddress::random(), object_value);
 
         let raw_object: RawObject = object.to_raw();
 
-        let object2 = bcs::from_bytes::<Object<TestStruct>>(&raw_object.to_bytes()).unwrap();
+        let object2 = bcs::from_bytes::<ObjectEntity<TestStruct>>(&raw_object.to_bytes()).unwrap();
         assert_eq!(object, object2);
     }
 

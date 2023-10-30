@@ -18,7 +18,7 @@ use moveos_types::{
 use moveos_types::{
     moveos_std::account_storage::AccountStorage,
     moveos_std::context,
-    moveos_std::object::{Object, ObjectID, RawObject},
+    moveos_std::object::{ObjectEntity, ObjectID, RawObject},
     moveos_std::raw_table::TableInfo,
 };
 use moveos_types::{moveos_std::raw_table, state::MoveStructType};
@@ -147,7 +147,7 @@ impl StateDBStore {
         self.global_table.list(cursor, limit)
     }
 
-    fn get_as_object<T: MoveStructState>(&self, id: ObjectID) -> Result<Option<Object<T>>> {
+    fn get_as_object<T: MoveStructState>(&self, id: ObjectID) -> Result<Option<ObjectEntity<T>>> {
         self.get(id)?
             .map(|state| state.as_object::<T>())
             .transpose()
@@ -164,17 +164,17 @@ impl StateDBStore {
     fn get_as_account_storage(
         &self,
         account: AccountAddress,
-    ) -> Result<Option<Object<AccountStorage>>> {
+    ) -> Result<Option<ObjectEntity<AccountStorage>>> {
         self.get_as_object::<AccountStorage>(account.into())
     }
 
     fn get_as_account_storage_or_create(
         &self,
         account: AccountAddress,
-    ) -> Result<Object<AccountStorage>> {
+    ) -> Result<ObjectEntity<AccountStorage>> {
         let account_storage = self
             .get_as_account_storage(account)?
-            .unwrap_or_else(|| Object::new_account_storage_object(account));
+            .unwrap_or_else(|| ObjectEntity::new_account_storage_object(account));
         self.get_as_table_or_create(account_storage.value.resources)?;
         self.get_as_table_or_create(account_storage.value.modules)?;
         Ok(account_storage)
@@ -183,7 +183,7 @@ impl StateDBStore {
     fn get_as_table(
         &self,
         id: ObjectID,
-    ) -> Result<Option<(Object<TableInfo>, TreeTable<NodeDBStore>)>> {
+    ) -> Result<Option<(ObjectEntity<TableInfo>, TreeTable<NodeDBStore>)>> {
         let object = self.get_as_object::<TableInfo>(id)?;
         match object {
             Some(object) => {
@@ -203,17 +203,20 @@ impl StateDBStore {
     fn get_as_table_or_create(
         &self,
         id: ObjectID,
-    ) -> Result<(Object<TableInfo>, TreeTable<NodeDBStore>)> {
+    ) -> Result<(ObjectEntity<TableInfo>, TreeTable<NodeDBStore>)> {
         Ok(self.get_as_table(id)?.unwrap_or_else(|| {
             self.create_table(id)
                 .expect("create_table should succ when get_as_table_or_create")
         }))
     }
 
-    fn create_table(&self, id: ObjectID) -> Result<(Object<TableInfo>, TreeTable<NodeDBStore>)> {
+    fn create_table(
+        &self,
+        id: ObjectID,
+    ) -> Result<(ObjectEntity<TableInfo>, TreeTable<NodeDBStore>)> {
         let table = TreeTable::new(self.node_store.clone());
         let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()));
-        let object = Object::new_table_object(id, table_info);
+        let object = ObjectEntity::new_table_object(id, table_info);
         Ok((object, table))
     }
 
@@ -284,7 +287,7 @@ impl StateDBStore {
 
     //Only for unit test and integration test runner
     pub fn create_account_storage(&self, account: AccountAddress) -> Result<()> {
-        let account_storage = Object::new_account_storage_object(account);
+        let account_storage = ObjectEntity::new_account_storage_object(account);
         self.global_table.puts((
             ObjectID::from(account).to_bytes(),
             State::from(account_storage),
