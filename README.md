@@ -17,6 +17,22 @@
 * **X-Chain Rollup**: Rooch(Execution) + X-Chain(Settlement + Arbitration) + DA
 * **Sovereign Rollup**: Rooch + DA
 
+## Developer Network Information
+
+* Name: dev
+* ChainID: 20230103
+* RPC: https://dev-seed.rooch.network/
+
+Please refer to [Connect to Developer Test Network](https://rooch.network/docs/developer-guides/connect-devnet) for more information.
+
+## MoveStd & MoveosStd & RoochFramework documentation
+
+* std: 0x1 [MoveStdlib](./moveos/moveos-stdlib/move-stdlib/doc)
+* moveos_std: 0x2 [MoveosStdlib](./moveos/moveos-stdlib/moveos-stdlib/doc)
+* rooch_framework: 0x3 [RoochFramework](./crates/rooch-framework/doc/)
+
+Please refer to [Rooch's built-in library](https://rooch.network/docs/developer-guides/library) for more information.
+
 ## Getting Started
 
 1. Building from source:
@@ -43,6 +59,7 @@
     rooch server start
     ```
    * *`RUST_LOG=debug rooch server start` for debugging information*
+   * You can directly use the devnet and skip this step.
 
 6. Publishing the Move project
     ```bash
@@ -56,7 +73,7 @@
 <details>
 <summary>Storage Abstraction</summary>
 
-- [Docs](./docs/website/pages/docs/tech-highlights/storage_abstraction.en-US.mdx)
+- [Docs](https://rooch.network/docs/dive-into-rooch/storage-abstraction)
 
 - Overview:
 
