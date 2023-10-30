@@ -26,9 +26,9 @@ module nft::nft {
 
     fun init(ctx: &mut Context){
         let nft_display_object = display::new<NFT>(ctx);
-        display::set(&mut nft_display_object, string::utf8(b"name"), string::utf8(b"{ name }"));
-        display::set(&mut nft_display_object, string::utf8(b"uri"), string::utf8(b"{ uri }"));
-        object::to_permanent(nft_display_object);
+        //How to display the NFT object id?
+        display::set_value(nft_display_object, string::utf8(b"name"), string::utf8(b"{ name }"));
+        display::set_value(nft_display_object, string::utf8(b"uri"), string::utf8(b"{ uri }"));
     }
 
     /// Mint a new NFT,

@@ -23,13 +23,15 @@ and let developers customize the storage
 -  [Function `tx_meta`](#0x2_context_tx_meta)
 -  [Function `tx_gas_payment_account`](#0x2_context_tx_gas_payment_account)
 -  [Function `tx_result`](#0x2_context_tx_result)
--  [Function `borrow_object`](#0x2_context_borrow_object)
--  [Function `borrow_object_mut`](#0x2_context_borrow_object_mut)
--  [Function `borrow_object_mut_extend`](#0x2_context_borrow_object_mut_extend)
--  [Function `exist_object`](#0x2_context_exist_object)
 -  [Function `new_object`](#0x2_context_new_object)
 -  [Function `new_object_with_id`](#0x2_context_new_object_with_id)
--  [Function `new_singleton_object`](#0x2_context_new_singleton_object)
+-  [Function `new_singleton`](#0x2_context_new_singleton)
+-  [Function `borrow_object`](#0x2_context_borrow_object)
+-  [Function `borrow_singleton`](#0x2_context_borrow_singleton)
+-  [Function `borrow_object_mut`](#0x2_context_borrow_object_mut)
+-  [Function `borrow_mut_singleton`](#0x2_context_borrow_mut_singleton)
+-  [Function `borrow_object_mut_extend`](#0x2_context_borrow_object_mut_extend)
+-  [Function `exist_object`](#0x2_context_exist_object)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -418,12 +420,90 @@ Get a value from the context map
 
 </details>
 
+<a name="0x2_context_new_object"></a>
+
+## Function `new_object`
+
+Create a new Object, Add the Object to the global object storage and return the Object
+Note: the default owner is the <code>System</code>, the caller should explicitly transfer the Object to the owner.
+The owner can get the <code>&<b>mut</b> Object</code> by <code>borrow_object_mut</code>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_object">new_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_object">new_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, value: T): Object&lt;T&gt; {
+    <b>let</b> id = <a href="context.md#0x2_context_fresh_object_id">fresh_object_id</a>(self);
+    <a href="object.md#0x2_object_new">object::new</a>(id, value)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_context_new_object_with_id"></a>
+
+## Function `new_object_with_id`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, id: ObjectID, value: T) : Object&lt;T&gt; {
+    <a href="object.md#0x2_object_new">object::new</a>(id, value)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_context_new_singleton"></a>
+
+## Function `new_singleton`
+
+Create a new singleton object, the object is owned by <code>System</code> by default.
+Singleton object means the object of <code>T</code> is only one instance in the Object Storage.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_singleton">new_singleton</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_singleton">new_singleton</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, value: T): Object&lt;T&gt; {
+    <a href="object.md#0x2_object_new_singleton">object::new_singleton</a>(value)
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x2_context_borrow_object"></a>
 
 ## Function `borrow_object`
 
 Borrow Object from object store with object_id
-Any one can borrow an &Object from the global object storage
+Any one can borrow an <code>&Object&lt;T&gt;</code> from the global object storage
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object">borrow_object</a>&lt;T: key&gt;(_self: &<a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
@@ -445,12 +525,38 @@ Any one can borrow an &Object from the global object storage
 
 </details>
 
+<a name="0x2_context_borrow_singleton"></a>
+
+## Function `borrow_singleton`
+
+Borrow singleton Object from global object storage
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_singleton">borrow_singleton</a>&lt;T: key&gt;(self: &<a href="context.md#0x2_context_Context">context::Context</a>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_singleton">borrow_singleton</a>&lt;T: key&gt;(self: &<a href="context.md#0x2_context_Context">Context</a>): &Object&lt;T&gt; {
+    <b>let</b> object_id = <a href="object.md#0x2_object_singleton_object_id">object::singleton_object_id</a>&lt;T&gt;();
+    <a href="context.md#0x2_context_borrow_object">borrow_object</a>(self, object_id)
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x2_context_borrow_object_mut"></a>
 
 ## Function `borrow_object_mut`
 
 Borrow mut Object from object store with object_id
-If the object is not shared, only the owner can borrow an &mut Object from the global object storage
+If the object is not shared, only the owner can borrow an <code>&<b>mut</b> Object&lt;T&gt;</code> from the global object storage
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut">borrow_object_mut</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, owner: &<a href="">signer</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
@@ -468,6 +574,34 @@ If the object is not shared, only the owner can borrow an &mut Object from the g
         <b>let</b> owner_address = <a href="_address_of">signer::address_of</a>(owner);
         <b>assert</b>!(<a href="object.md#0x2_object_owner_internal">object::owner_internal</a>(object_entity) == owner_address, <a href="_permission_denied">error::permission_denied</a>(<a href="context.md#0x2_context_ErrorObjectOwnerNotMatch">ErrorObjectOwnerNotMatch</a>));
     };
+    <a href="object.md#0x2_object_as_mut_ref">object::as_mut_ref</a>(object_entity)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_context_borrow_mut_singleton"></a>
+
+## Function `borrow_mut_singleton`
+
+Borrow mut singleton Object from global object storage
+Only the module of T can borrow mut singleton Object from object store
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_singleton">borrow_mut_singleton</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_singleton">borrow_mut_singleton</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>): &<b>mut</b> Object&lt;T&gt; {
+    <b>let</b> object_id = <a href="object.md#0x2_object_singleton_object_id">object::singleton_object_id</a>&lt;T&gt;();
+    <b>let</b> object_entity = <a href="object.md#0x2_object_borrow_mut_from_global">object::borrow_mut_from_global</a>&lt;T&gt;(object_id);
     <a href="object.md#0x2_object_as_mut_ref">object::as_mut_ref</a>(object_entity)
 }
 </code></pre>
@@ -520,83 +654,6 @@ The module of T can borrow mut Object from object store with any object_id
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exist_object">exist_object</a>&lt;T: key&gt;(_self: &<a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID): bool {
     <a href="object.md#0x2_object_contains_global">object::contains_global</a>(object_id)
     //TODO check the <a href="object.md#0x2_object">object</a> type
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_context_new_object"></a>
-
-## Function `new_object`
-
-Create a new Object, Add the Object to the global object storage and return the Object
-Note: the default owner is the <code>System</code>, the caller should explicitly transfer the Object to the owner.
-The owner can get the <code>&<b>mut</b> Object</code> by <code>borrow_object_mut</code>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_object">new_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_object">new_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, value: T): Object&lt;T&gt; {
-    <b>let</b> id = <a href="context.md#0x2_context_fresh_object_id">fresh_object_id</a>(self);
-    <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>(self, id, value)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_context_new_object_with_id"></a>
-
-## Function `new_object_with_id`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, id: ObjectID, value: T) : Object&lt;T&gt; {
-    <a href="object.md#0x2_object_new">object::new</a>(id, value)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_context_new_singleton_object"></a>
-
-## Function `new_singleton_object`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_singleton_object">new_singleton_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_singleton_object">new_singleton_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, value: T): Object&lt;T&gt; {
-    <b>let</b> object_id = <a href="object.md#0x2_object_singleton_object_id">object::singleton_object_id</a>&lt;T&gt;();
-    <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>(self, object_id, value)
 }
 </code></pre>
 

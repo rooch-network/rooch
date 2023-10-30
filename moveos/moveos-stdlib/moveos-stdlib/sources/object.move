@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// Move Object
+/// For more details, please refer to https://rooch.network/docs/developer-guides/object
+/// 
+/// 
+/// For more details please refer https://rooch.network/docs/developer-guides/object
 /// The Object is a box style Object
 /// The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/object.move#L75):
 /// 1. The Object is a struct in Move
@@ -27,8 +31,8 @@ module moveos_std::object {
 
     const SYSTEM_OWNER_ADDRESS: address = @0x0;
     
-    /// Box style object
-    /// The object can not be copied, droped and stored. It only can be consumed by StorageContext API.
+    /// ObjectEntity<T> is a box of the value of T
+    /// It does not have any ability, so it can not be `drop`, `copy`, or `store`, and can only be handled by storage API after creation.
     struct ObjectEntity<T> {
         // The object id
         id: ObjectID,
@@ -41,15 +45,15 @@ module moveos_std::object {
         value: T,
     }
 
-    /// Object<T> is a reference of the ObjectEntity<T>
-    /// It likes ObjectID, but it contains the type information of the object.
+    /// Object<T> is a pointer to the ObjectEntity<T>, It has `key` and `store` ability. 
+    /// It has the same lifetime as the ObjectEntity<T>
+    /// Developers only need to use Object<T> related APIs and do not need to know the ObjectEntity<T>.
     struct Object<phantom T> has key, store {
         id: ObjectID,
     }
   
-    /// An object ID
+    /// ObjectID is a unique identifier for the Object
     struct ObjectID has store, copy, drop {
-        // TODO should use u256 to replace address?
         id: address,
     }
 
@@ -74,12 +78,19 @@ module moveos_std::object {
         )
     }
 
-    /// Create a new object, the object is owned by `system` by default.
+    /// Create a new object, the object is owned by `System` by default.
     public(friend) fun new<T: key>(id: ObjectID, value: T): Object<T> {
         let owner = SYSTEM_OWNER_ADDRESS;
         let entity = ObjectEntity<T>{id, value, owner};
         add_to_global(entity);
         Object{id}
+    }
+
+    /// Create a new singleton object, singleton object is always owned by `System` and is p
+    /// Singleton object means the object of `T` is only one instance in the Object Storage.
+    public(friend) fun new_singleton<T: key>(value: T): Object<T> {
+        let id = singleton_object_id<T>();
+        new(id, value)
     }
 
     /// Borrow the object value
@@ -230,7 +241,12 @@ module moveos_std::object {
     }
 
     #[test_only]
-    struct TestObject has key {
+    struct TestStruct has key {
+        count: u64,
+    }
+
+    #[test_only]
+    struct TestStruct2 has key {
         count: u64,
     }
 
@@ -238,21 +254,75 @@ module moveos_std::object {
     fun test_object(sender: signer) {
         let sender_addr = std::signer::address_of(&sender);
         let tx_context = moveos_std::tx_context::new_test_context(sender_addr);
-        let object_count = 12;
-        let object = TestObject {
-            count: object_count,
+        let init_count = 12;
+        let test_struct = TestStruct {
+            count: init_count,
         };
         let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut tx_context));
-        let obj = new<TestObject>(object_id, object);
-
-        let borrow_object = borrow_mut(&mut obj);
-        assert!(borrow_object.count == object_count, 1001);
-
-        transfer_extend(&mut obj, @0x10);
-        let obj_owner = owner(&obj);
-        assert!(obj_owner != sender_addr, 1002);
+        let obj = new<TestStruct>(object_id, test_struct);
+        assert!(contains_global(object_id), 1000);
+        {
+            transfer_extend(&mut obj, sender_addr);
+            assert!(owner(&obj) == sender_addr, 1001);
+        };
+        {
+            let test_struct_mut = borrow_mut(&mut obj);
+            test_struct_mut.count = test_struct_mut.count + 1;
+        };
+        {
+            let test_struct_ref = borrow(&obj);
+            assert!(test_struct_ref.count == init_count + 1, 1002);
+        };
+        { 
+            transfer_extend(&mut obj, @0x10);
+            assert!(owner(&obj) != sender_addr, 1003);
+        };
 
         let test_obj = remove(obj);
-        let TestObject{count: _count} = test_obj;
+        let TestStruct{count: _count} = test_obj;
+    }
+
+
+    #[test(sender = @0x42)]
+    #[expected_failure(abort_code = 393218, location = moveos_std::raw_table)]
+    fun test_borrow_not_exist_failure(sender: signer) {
+        let sender_addr = std::signer::address_of(&sender);
+        let ctx = moveos_std::tx_context::new_test_context(sender_addr);
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut ctx));
+        let obj = new(object_id, TestStruct { count: 1 });
+        let TestStruct { count : _ } = remove(obj); 
+        let _obj_ref = borrow_from_global<TestStruct>(object_id);
+    }
+
+    #[test(sender = @0x42)]
+    #[expected_failure(abort_code = 393218, location = moveos_std::raw_table)]
+    fun test_double_remove_failure(sender: signer) {
+        let sender_addr = std::signer::address_of(&sender);
+        let ctx = moveos_std::tx_context::new_test_context(sender_addr);
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut ctx));
+        let object = new(object_id, TestStruct { count: 1 });
+        
+        let ObjectEntity{ id:_,owner:_,value:test_struct1} = remove_from_global<TestStruct>(object_id);
+        let test_struct2 = remove(object);
+        let TestStruct { count : _ } = test_struct1;
+        let TestStruct { count : _ } = test_struct2;
+    }
+
+    #[test(sender = @0x42)]
+    #[expected_failure(abort_code = 393218, location = moveos_std::raw_table)]
+    fun test_type_mismatch(sender: signer) {
+        let sender_addr = std::signer::address_of(&sender);
+        let ctx = moveos_std::tx_context::new_test_context(sender_addr);
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut ctx));
+        let obj = new(object_id, TestStruct { count: 1 });
+        {
+            let test_struct_ref = borrow(&obj);
+            assert!(test_struct_ref.count == 1, 1001);
+        };
+        {
+            let test_struct2_object_entity = borrow_from_global<TestStruct2>(object_id);
+            assert!(test_struct2_object_entity.value.count == 1, 1002);
+        };
+        to_permanent(obj);
     }
 }

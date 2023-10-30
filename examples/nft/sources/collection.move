@@ -30,7 +30,7 @@ module nft::collection{
     }
 
     struct CreateCollectionEvent{
-        objectID: ObjectID,
+        object_id: ObjectID,
         name: String,
         uri: String,
         creator: address,
@@ -40,12 +40,12 @@ module nft::collection{
 
     fun init(ctx: &mut Context){
         let collection_display_obj = display::new<Collection>(ctx); 
-        display::set(&mut collection_display_obj, string::utf8(b"name"), string::utf8(b"{ name }"));
-        display::set(&mut collection_display_obj, string::utf8(b"uri"), string::utf8(b"{ uri }"));
-        display::set(&mut collection_display_obj, string::utf8(b"description"), string::utf8(b"{ description }"));
-        display::set(&mut collection_display_obj, string::utf8(b"creator"), string::utf8(b"{ creator }"));
-        display::set(&mut collection_display_obj, string::utf8(b"supply"), string::utf8(b"{ supply }"));
-        object::to_permanent(collection_display_obj);
+        //How to display the Collection object id?
+        display::set_value(collection_display_obj, string::utf8(b"name"), string::utf8(b"{ name }"));
+        display::set_value(collection_display_obj, string::utf8(b"uri"), string::utf8(b"{ uri }"));
+        display::set_value(collection_display_obj, string::utf8(b"description"), string::utf8(b"{ description }"));
+        display::set_value(collection_display_obj, string::utf8(b"creator"), string::utf8(b"{ creator }"));
+        display::set_value(collection_display_obj, string::utf8(b"supply"), string::utf8(b"{ supply }"));
     }
 
     /// Create a new collection Object
@@ -75,7 +75,7 @@ module nft::collection{
         event::emit(
             ctx,
             CreateCollectionEvent {
-                objectID: object::id(&collection_obj),
+                object_id: object::id(&collection_obj),
                 name,
                 uri,
                 creator,

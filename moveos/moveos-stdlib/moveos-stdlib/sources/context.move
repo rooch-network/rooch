@@ -98,23 +98,58 @@ module moveos_std::context {
     }
 
 
-    // Wrap functions for StorageContext
+    // Wrap functions for Object
+
+    #[private_generics(T)]
+    /// Create a new Object, Add the Object to the global object storage and return the Object
+    /// Note: the default owner is the `System`, the caller should explicitly transfer the Object to the owner.
+    /// The owner can get the `&mut Object` by `borrow_object_mut`
+    public fun new_object<T: key>(self: &mut Context, value: T): Object<T> {
+        let id = fresh_object_id(self);
+        object::new(id, value)
+    }
+
+    public(friend) fun new_object_with_id<T: key>(_self: &mut Context, id: ObjectID, value: T) : Object<T> {
+        object::new(id, value)
+    }
+
+    #[private_generics(T)]
+    /// Create a new singleton object, the object is owned by `System` by default.
+    /// Singleton object means the object of `T` is only one instance in the Object Storage.
+    public fun new_singleton<T: key>(_self: &mut Context, value: T): Object<T> {
+        object::new_singleton(value)
+    }
 
     /// Borrow Object from object store with object_id
-    /// Any one can borrow an &Object from the global object storage
+    /// Any one can borrow an `&Object<T>` from the global object storage
     public fun borrow_object<T: key>(_self: &Context, object_id: ObjectID): &Object<T> {
         let object_entity = object::borrow_from_global<T>(object_id);
         object::as_ref(object_entity)
     }
 
+    /// Borrow singleton Object from global object storage
+    public fun borrow_singleton<T: key>(self: &Context): &Object<T> {
+        let object_id = object::singleton_object_id<T>();
+        borrow_object(self, object_id)
+    }
+
     /// Borrow mut Object from object store with object_id
-    /// If the object is not shared, only the owner can borrow an &mut Object from the global object storage
+    /// If the object is not shared, only the owner can borrow an `&mut Object<T>` from the global object storage
     public fun borrow_object_mut<T: key>(_self: &mut Context, owner: &signer, object_id: ObjectID): &mut Object<T> {
         let object_entity = object::borrow_mut_from_global<T>(object_id);
         if(!object::is_shared_internal(object_entity)) {
             let owner_address = signer::address_of(owner);
             assert!(object::owner_internal(object_entity) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
         };
+        object::as_mut_ref(object_entity)
+    }
+
+    #[private_generics(T)]
+    /// Borrow mut singleton Object from global object storage
+    /// Only the module of T can borrow mut singleton Object from object store
+    public fun borrow_mut_singleton<T: key>(_self: &mut Context): &mut Object<T> {
+        let object_id = object::singleton_object_id<T>();
+        let object_entity = object::borrow_mut_from_global<T>(object_id);
         object::as_mut_ref(object_entity)
     }
 
@@ -128,27 +163,6 @@ module moveos_std::context {
     public fun exist_object<T: key>(_self: &Context, object_id: ObjectID): bool {
         object::contains_global(object_id)
         //TODO check the object type
-    }
-
-    // Wrap functions for Object
-
-    #[private_generics(T)]
-    /// Create a new Object, Add the Object to the global object storage and return the Object
-    /// Note: the default owner is the `System`, the caller should explicitly transfer the Object to the owner.
-    /// The owner can get the `&mut Object` by `borrow_object_mut`
-    public fun new_object<T: key>(self: &mut Context, value: T): Object<T> {
-        let id = fresh_object_id(self);
-        new_object_with_id(self, id, value)
-    }
-
-    public(friend) fun new_object_with_id<T: key>(_self: &mut Context, id: ObjectID, value: T) : Object<T> {
-        object::new(id, value)
-    }
-
-    #[private_generics(T)]
-    public fun new_singleton_object<T: key>(self: &mut Context, value: T): Object<T> {
-        let object_id = object::singleton_object_id<T>();
-        new_object_with_id(self, object_id, value)
     }
 
     #[test_only]
