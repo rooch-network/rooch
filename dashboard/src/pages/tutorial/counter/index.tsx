@@ -22,8 +22,8 @@ const CounterPage = () => {
   const session = useSession()
 
   const [value, setValue] = useState<number>(0)
-  const [loading, setLoading] = useState(true)
-
+  const [fetch, setFetch] = useState(true)
+  const [loading, setLoading] = useState(false)
   const active = () => {
     return rooch.getActiveChina() === DevChain
   }
@@ -37,7 +37,7 @@ const CounterPage = () => {
       }
     }
 
-    fetchCounterValue().finally(() => setLoading(false))
+    fetchCounterValue().finally(() => setFetch(false))
   }, [rooch])
 
   const handlerIncrease = async () => {
@@ -50,13 +50,13 @@ const CounterPage = () => {
     const func = `${devCounterModule}::increase`
 
     if (session) {
-      const result = await session.account?.runFunction(func, [], [], { maxGasAmount: 10000 })
+      const result = await session.account
+        ?.runFunction(func, [], [], { maxGasAmount: 10000 })
+        .finally(() => setLoading(false))
       if (result) {
         setValue(value + 1)
       }
     }
-
-    setLoading(false)
   }
 
   return (
@@ -84,7 +84,7 @@ const CounterPage = () => {
             <Card>
               <CardContent>
                 <Typography sx={{ fontWeight: 1000, mb: 1, textAlign: 'center' }}>
-                  {loading ? 'loading...' : value}
+                  {fetch ? 'loading...' : value}
                 </Typography>
                 <Typography variant="body2" sx={{ my: 'auto', textAlign: 'center' }}>
                   Dev network total counter

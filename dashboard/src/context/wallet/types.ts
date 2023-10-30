@@ -13,6 +13,8 @@ export type ETHValueType = {
   accounts: string[]
   isConnect: boolean
   connect: (china?: ChainInfo) => Promise<void>
+  sendTransaction: (params: any[]) => Promise<any>
+  waitTxConfirmed: (txHash: string) => Promise<any>
   disconnect: () => void
   switchChina: (chain: ChainInfo) => Promise<void>
   addChina: (params: ChainInfo) => Promise<void>

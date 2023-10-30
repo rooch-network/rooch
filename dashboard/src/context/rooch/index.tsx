@@ -86,10 +86,6 @@ const RoochProvider = ({ children }: Props) => {
   }
 
   const saveCustomChain = (chain: Chain) => {
-    // if (AllChain.some((v) => v.id === chain.id)) {
-    //   return
-    // }
-
     let chains = getCustomChains()
 
     if (chains.some((v) => v.id === chain.id && v.url === chain.url)) {
