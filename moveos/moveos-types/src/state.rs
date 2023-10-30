@@ -1,10 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    addresses::MOVEOS_STD_ADDRESS,
-    moveos_std::object::{self, AnnotatedObject, Object, ObjectID, RawObject},
-};
+use crate::moveos_std::object::{AnnotatedObject, ObjectEntity, ObjectID, RawObject};
 use anyhow::{bail, ensure, Result};
 use move_core_types::{
     account_address::AccountAddress,
@@ -74,8 +71,16 @@ pub trait MoveStructType: MoveType {
         }
     }
 
-    fn struct_tag_match(type_tag: &StructTag) -> bool {
-        type_tag == &Self::struct_tag()
+    /// Check the `struct_tag` argument is match Self::struct_tag
+    fn struct_tag_match(struct_tag: &StructTag) -> bool {
+        struct_tag == &Self::struct_tag()
+    }
+
+    /// Check the `struct_tag` argument is match Self::struct_tag, but ignore the type param.
+    fn struct_tag_match_without_type_param(struct_tag: &StructTag) -> bool {
+        struct_tag.address == Self::ADDRESS
+            && struct_tag.module == Self::module_identifier()
+            && struct_tag.name == Self::struct_identifier()
     }
 }
 
@@ -354,18 +359,17 @@ impl State {
         let val_type = self.value_type();
         match val_type {
             TypeTag::Struct(struct_tag) => {
-                if struct_tag.address == MOVEOS_STD_ADDRESS
-                    && struct_tag.module.as_ident_str() == object::OBJECT_MODULE_NAME
-                    && struct_tag.name.as_ident_str() == object::OBJECT_STRUCT_NAME
-                {
+                if ObjectEntity::<PlaceholderStruct>::struct_tag_match_without_type_param(
+                    struct_tag,
+                ) {
                     let object_type_param = struct_tag
                         .type_params
                         .get(0)
-                        .expect("The Object<T> should have a type param");
+                        .expect("The ObjectEntity<T> should have a type param");
                     match object_type_param {
                         TypeTag::Struct(struct_tag) => Some(struct_tag.as_ref().clone()),
                         _ => {
-                            unreachable!("The Object<T> should have a struct type param")
+                            unreachable!("The ObjectEntity<T> should have a struct type param")
                         }
                     }
                 } else {
@@ -376,16 +380,19 @@ impl State {
         }
     }
 
-    pub fn as_object<T>(&self) -> Result<Object<T>>
+    pub fn as_object<T>(&self) -> Result<ObjectEntity<T>>
     where
         T: MoveStructState,
     {
-        self.as_move_state::<Object<T>>()
+        self.as_move_state::<ObjectEntity<T>>()
     }
 
     pub fn as_raw_object(&self) -> Result<RawObject> {
         let object_struct_tag = self.get_object_struct_tag().ok_or_else(|| {
-            anyhow::anyhow!("Expect type Object but the state type:{}", self.value_type)
+            anyhow::anyhow!(
+                "Expect type ObjectEntity<T> but the state type:{}",
+                self.value_type
+            )
         })?;
         RawObject::from_bytes(&self.value, object_struct_tag)
     }

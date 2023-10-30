@@ -17,6 +17,7 @@ use move_core_types::{
 };
 use serde::{Deserialize, Serialize};
 
+pub const MODULE_NAME: &IdentStr = ident_str!("context");
 pub const GLOBAL_OBJECT_STORAGE_HANDLE: ObjectID = state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -26,7 +27,7 @@ pub struct StorageContext {
 
 impl MoveStructType for StorageContext {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("storage_context");
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("StorageContext");
 }
 
@@ -35,9 +36,6 @@ impl MoveStructState for StorageContext {
         MoveStructLayout::new(vec![MoveTypeLayout::Struct(ObjectID::struct_layout())])
     }
 }
-
-pub const STORAGE_CONTEXT_MODULE_NAME: &IdentStr = ident_str!("context");
-pub const STORAGE_CONTEXT_STRUCT_NAME: &IdentStr = ident_str!("Context");
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Context {
@@ -67,8 +65,8 @@ impl Context {
 
 impl MoveStructType for Context {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = STORAGE_CONTEXT_MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = STORAGE_CONTEXT_STRUCT_NAME;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Context");
 }
 
 impl MoveStructState for Context {

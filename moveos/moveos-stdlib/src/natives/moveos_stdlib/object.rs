@@ -10,7 +10,7 @@ use move_vm_types::{
     values::{GlobalValue, Struct, Value},
 };
 use moveos_types::{
-    moveos_std::object_ref::ObjectRef,
+    moveos_std::object::Object,
     state::{MoveState, PlaceholderStruct},
 };
 use smallvec::smallvec;
@@ -109,8 +109,8 @@ fn borrow_object_reference(
         .map_err(|e| e.to_partial())?;
 
     debug_assert!(
-        ObjectRef::<PlaceholderStruct>::type_layout_match(&type_layout),
-        "Expected a struct type with layout same as ObjectRef"
+        Object::<PlaceholderStruct>::type_layout_match(&type_layout),
+        "Expected a struct type with layout same as Object<T>"
     );
 
     //TODO should we keep the GlobalValue in Context?

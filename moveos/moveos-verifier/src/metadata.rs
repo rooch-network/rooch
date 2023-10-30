@@ -371,7 +371,7 @@ impl<'a> ExtendedChecker<'a> {
                         if !check_storage_context_struct_tag(struct_tag.unwrap().to_canonical_string()){
                             self.env.error(
                                 &fun.get_loc(),
-                                "module init function should not input reference structures other than storageContext"
+                                "module init function should not input reference structures other than Context"
                             )
                         }
                     }
@@ -489,7 +489,7 @@ pub fn is_allowed_input_struct(name: String, is_ref: bool) -> bool {
             | "0x2::object::ObjectID"
             | "0x2::context::Context"
     ) ||
-    // ObjectRef only support reference type
+    // Object<T> only support passing argument by-ref, not by-value
      (is_ref && name.as_str() == "0x2::object::Object")
 }
 

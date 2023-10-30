@@ -15,7 +15,10 @@ use move_vm_types::{
     loaded_data::runtime_types::{StructType, Type},
 };
 use moveos_types::{
-    moveos_std::{context::Context, object::ObjectID, object_ref::ObjectRef},
+    moveos_std::{
+        context::Context,
+        object::{Object, ObjectID},
+    },
     state::{MoveStructType, PlaceholderStruct},
     state_resolver::MoveOSResolver,
 };
@@ -43,11 +46,7 @@ where
                 );
             }
             let struct_opt = as_struct_no_panic(&self.session, t);
-            if struct_opt
-                .as_ref()
-                .map(|t| is_storage_context(t))
-                .unwrap_or(false)
-            {
+            if struct_opt.as_ref().map(|t| is_context(t)).unwrap_or(false) {
                 args.insert(i, self.ctx.to_bytes());
             }
         });
@@ -111,10 +110,10 @@ where
                     }
                     match paramter {
                         Type::Reference(_r) => {
-                            // Any one can get any &ObjectRef<T>
+                            // Any one can get any &Object<T>
                         }
                         Type::MutableReference(_r) => {
-                            // Only the owner can get &mut ObjectRef<T>
+                            // Only the owner can get &mut Object<T>
                             if object.owner != self.ctx.tx_context.sender() {
                                 return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
                                     .with_message(format!(
@@ -128,7 +127,7 @@ where
                         _ => {
                             return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
                                 .with_message(
-                                    "Object type only support `&ObjectRef<T>` and `&mut Object<T>`, do not support `Object<T>`".to_string())
+                                    "Object type only support `&Object<T>` and `&mut Object<T>`, do not support `Object<T>`".to_string())
                                 .finish(Location::Undefined));
                         }
                     }
@@ -172,23 +171,14 @@ where
     }
 }
 
-pub fn is_storage_context(t: &StructType) -> bool {
+fn is_context(t: &StructType) -> bool {
     t.module.address() == &Context::ADDRESS
         && t.module.name() == Context::module_identifier().as_ident_str()
         && t.name == Context::struct_identifier()
 }
 
-pub fn is_object(t: &TypeTag) -> bool {
-    match t {
-        TypeTag::Struct(s) => is_object_struct(s),
-        _ => false,
-    }
-}
-
-pub fn is_object_struct(t: &StructTag) -> bool {
-    t.address == ObjectRef::<PlaceholderStruct>::module_address()
-        && t.module == ObjectRef::<PlaceholderStruct>::module_identifier()
-        && t.name == ObjectRef::<PlaceholderStruct>::struct_identifier()
+fn is_object_struct(t: &StructTag) -> bool {
+    Object::<PlaceholderStruct>::struct_tag_match_without_type_param(t)
 }
 
 pub fn get_object_type(type_tag: &TypeTag) -> Option<TypeTag> {

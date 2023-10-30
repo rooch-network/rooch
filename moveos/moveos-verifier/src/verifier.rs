@@ -103,7 +103,7 @@ pub fn verify_init_function(module: &CompiledModule) -> VMResult<bool> {
                     if !check_storage_context_struct_tag(struct_full_name) {
                         return Err(vm_error_for_init_func_checking(
                             StatusCode::TYPE_MISMATCH,
-                            "init function should not input structures other than storageContext",
+                            "init function should not input structures other than Context",
                             fdef,
                             module.self_id(),
                         ));

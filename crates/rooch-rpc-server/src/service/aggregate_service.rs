@@ -10,8 +10,7 @@ use moveos_types::function_return_value::FunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::event::EventModule;
-use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::moveos_std::object_ref::ObjectRef;
+use moveos_types::moveos_std::object::{Object, ObjectID};
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state_resolver::resource_tag_to_key;
 use moveos_types::transaction::FunctionCall;
@@ -138,7 +137,7 @@ impl AggregateService {
                     .await?
                     .into_iter()
                     .map(|(k, v)| {
-                        let coin_store_ref = v.as_move_state::<ObjectRef<CoinStore>>()?;
+                        let coin_store_ref = v.as_move_state::<Object<CoinStore>>()?;
                         Ok((k, coin_store_ref.id))
                     })
                     .collect::<Result<Vec<_>>>()?;

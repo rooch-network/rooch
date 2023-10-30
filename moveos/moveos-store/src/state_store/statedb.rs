@@ -8,7 +8,6 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{StructTag, TypeTag},
 };
-use moveos_types::move_types::is_table;
 use moveos_types::state::StateSet;
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
@@ -17,9 +16,12 @@ use moveos_types::{
     state::{MoveStructState, State},
 };
 use moveos_types::{
+    moveos_std::account_storage::AccountStorage,
     moveos_std::context,
-    moveos_std::object::{AccountStorage, Object, ObjectID, RawObject, TableInfo},
+    moveos_std::object::{ObjectEntity, ObjectID, RawObject},
+    moveos_std::raw_table::TableInfo,
 };
+use moveos_types::{moveos_std::raw_table, state::MoveStructType};
 use moveos_types::{
     state::StateChangeSet,
     state_resolver::{self, module_name_to_key, resource_tag_to_key, StateResolver},
@@ -145,7 +147,7 @@ impl StateDBStore {
         self.global_table.list(cursor, limit)
     }
 
-    fn get_as_object<T: MoveStructState>(&self, id: ObjectID) -> Result<Option<Object<T>>> {
+    fn get_as_object<T: MoveStructState>(&self, id: ObjectID) -> Result<Option<ObjectEntity<T>>> {
         self.get(id)?
             .map(|state| state.as_object::<T>())
             .transpose()
@@ -162,17 +164,17 @@ impl StateDBStore {
     fn get_as_account_storage(
         &self,
         account: AccountAddress,
-    ) -> Result<Option<Object<AccountStorage>>> {
+    ) -> Result<Option<ObjectEntity<AccountStorage>>> {
         self.get_as_object::<AccountStorage>(account.into())
     }
 
     fn get_as_account_storage_or_create(
         &self,
         account: AccountAddress,
-    ) -> Result<Object<AccountStorage>> {
+    ) -> Result<ObjectEntity<AccountStorage>> {
         let account_storage = self
             .get_as_account_storage(account)?
-            .unwrap_or_else(|| Object::new_account_storage_object(account));
+            .unwrap_or_else(|| ObjectEntity::new_account_storage_object(account));
         self.get_as_table_or_create(account_storage.value.resources)?;
         self.get_as_table_or_create(account_storage.value.modules)?;
         Ok(account_storage)
@@ -181,7 +183,7 @@ impl StateDBStore {
     fn get_as_table(
         &self,
         id: ObjectID,
-    ) -> Result<Option<(Object<TableInfo>, TreeTable<NodeDBStore>)>> {
+    ) -> Result<Option<(ObjectEntity<TableInfo>, TreeTable<NodeDBStore>)>> {
         let object = self.get_as_object::<TableInfo>(id)?;
         match object {
             Some(object) => {
@@ -201,17 +203,20 @@ impl StateDBStore {
     fn get_as_table_or_create(
         &self,
         id: ObjectID,
-    ) -> Result<(Object<TableInfo>, TreeTable<NodeDBStore>)> {
+    ) -> Result<(ObjectEntity<TableInfo>, TreeTable<NodeDBStore>)> {
         Ok(self.get_as_table(id)?.unwrap_or_else(|| {
             self.create_table(id)
                 .expect("create_table should succ when get_as_table_or_create")
         }))
     }
 
-    fn create_table(&self, id: ObjectID) -> Result<(Object<TableInfo>, TreeTable<NodeDBStore>)> {
+    fn create_table(
+        &self,
+        id: ObjectID,
+    ) -> Result<(ObjectEntity<TableInfo>, TreeTable<NodeDBStore>)> {
         let table = TreeTable::new(self.node_store.clone());
         let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()));
-        let object = Object::new_table_object(id, table_info);
+        let object = ObjectEntity::new_table_object(id, table_info);
         Ok((object, table))
     }
 
@@ -282,7 +287,7 @@ impl StateDBStore {
 
     //Only for unit test and integration test runner
     pub fn create_account_storage(&self, account: AccountAddress) -> Result<()> {
-        let account_storage = Object::new_account_storage_object(account);
+        let account_storage = ObjectEntity::new_account_storage_object(account);
         self.global_table.puts((
             ObjectID::from(account).to_bytes(),
             State::from(account_storage),
@@ -346,18 +351,20 @@ impl StateDBStore {
         for (key, state) in global_states.into_iter() {
             // If the state is an Object, and the T's struct_tag of Object<T> is Table
             let struct_tag = state.get_object_struct_tag();
-            if struct_tag.is_some() && is_table(&struct_tag.unwrap()) {
-                let table_handle = ObjectID::from_bytes(key.as_slice())?;
-                let result = self.get_as_table(table_handle)?;
-                if result.is_none() {
-                    continue;
+            if let Some(struct_tag) = struct_tag {
+                if raw_table::TableInfo::struct_tag_match(&struct_tag) {
+                    let table_handle = ObjectID::from_bytes(key.as_slice())?;
+                    let result = self.get_as_table(table_handle)?;
+                    if result.is_none() {
+                        continue;
+                    }
+                    let table_states = result.unwrap().1.dump()?;
+                    let mut update_set = UpdateSet::new();
+                    for (inner_key, inner_state) in table_states.into_iter() {
+                        update_set.put(inner_key, inner_state);
+                    }
+                    state_set.state_sets.insert(table_handle, update_set);
                 }
-                let table_states = result.unwrap().1.dump()?;
-                let mut update_set = UpdateSet::new();
-                for (inner_key, inner_state) in table_states.into_iter() {
-                    update_set.put(inner_key, inner_state);
-                }
-                state_set.state_sets.insert(table_handle, update_set);
             }
 
             golbal_update_set.put(key, state);
