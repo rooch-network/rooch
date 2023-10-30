@@ -20,7 +20,7 @@ module moveos_std::event {
     /// A handle for an event such that:
     /// 1. Other modules can emit events to this handle.
     /// 2. Storage can use this handle to prove the total number of events that happened in the past.
-    struct EventHandle has key, store {
+    struct EventHandle has key {
         /// Total number of events emitted to this event stream.
         counter: u64,
     }
@@ -34,7 +34,7 @@ module moveos_std::event {
 
     fun exists_event_handle<T>(ctx: &Context): bool {
         let event_handle_id = derive_event_handle_id<T>();
-        context::exist_object(ctx, event_handle_id)
+        context::exist_object<EventHandle>(ctx, event_handle_id)
     }
 
     /// Borrow a event handle from the object storage
@@ -47,7 +47,7 @@ module moveos_std::event {
     /// Borrow a mut event handle from the object storage
     fun borrow_event_handle_mut<T>(ctx: &mut Context): &mut EventHandle {
         let event_handle_id = derive_event_handle_id<T>();
-        let object = context::borrow_object_mut<EventHandle>(ctx, event_handle_id);
+        let object = context::borrow_object_mut_extend<EventHandle>(ctx, event_handle_id);
         object::borrow_mut(object)
     }
 
@@ -75,13 +75,16 @@ module moveos_std::event {
     /// Use EventHandle to generate a unique event handle
     /// user doesn't need to call this method directly
     fun new_event_handle<T>(ctx: &mut Context) {
-        let account_addr = context::sender(ctx);
         let event_handle_id = derive_event_handle_id<T>();
         let event_handle = EventHandle {
             counter: 0,
         };
-        //TODO should we keep the event_handle_ref?
-        let _handle_ref = context::new_object_with_id<EventHandle>(ctx, event_handle_id, account_addr, event_handle);
+        //TODO refactor EventHandle with singleton Object.
+        let obj = context::new_object_with_id(ctx, event_handle_id, event_handle);
+        // The event handle should be a shared object
+        // Any one can emit event to this handle
+        // TODO provide a emit event function with event handle
+        object::to_shared(obj);
     }
 
     public fun ensure_event_handle<T>(ctx: &mut Context) {

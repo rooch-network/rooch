@@ -9,12 +9,14 @@
 module rooch_examples::blog_aggregate {
     use moveos_std::object::ObjectID;
     use moveos_std::context::Context;
+    use moveos_std::object::{Self, Object};
     use rooch_examples::blog;
     use rooch_examples::blog_add_article_logic;
     use rooch_examples::blog_create_logic;
     use rooch_examples::blog_delete_logic;
     use rooch_examples::blog_remove_article_logic;
     use rooch_examples::blog_update_logic;
+    use rooch_examples::article::Article;
     use std::string::String;
 
     friend rooch_examples::article_create_logic;
@@ -22,9 +24,10 @@ module rooch_examples::blog_aggregate {
 
     public(friend) fun add_article(
         ctx: &mut Context,
-        article_id: ObjectID,
+        article_obj: Object<Article>,
     ) {
         let blog = blog::borrow_blog(ctx);
+        let article_id = object::id(&article_obj);
         let article_added_to_blog = blog_add_article_logic::verify(
             article_id,
             blog,
@@ -32,6 +35,7 @@ module rooch_examples::blog_aggregate {
         let mut_blog = blog::borrow_mut_blog(ctx);
         blog_add_article_logic::mutate(
             &article_added_to_blog,
+            article_obj,
             mut_blog,
         );
         blog::update_version(mut_blog);
@@ -41,32 +45,31 @@ module rooch_examples::blog_aggregate {
     public(friend) fun remove_article(
         ctx: &mut Context,
         article_id: ObjectID,
-    ) {
+    ) : Object<Article> {
         let blog = blog::borrow_blog(ctx);
         let article_removed_from_blog = blog_remove_article_logic::verify(
             article_id,
             blog,
         );
         let mut_blog = blog::borrow_mut_blog(ctx);
-        blog_remove_article_logic::mutate(
+        let article_obj = blog_remove_article_logic::mutate(
             &article_removed_from_blog,
             mut_blog,
         );
         blog::update_version(mut_blog);
         blog::emit_article_removed_from_blog(ctx, article_removed_from_blog);
+        article_obj
     }
 
     public entry fun create(
         ctx: &mut Context,
         account: &signer,
         name: String,
-        articles: vector<ObjectID>,
     ) {
         let blog_created = blog_create_logic::verify(
             ctx,
             account,
             name,
-            articles,
         );
         let blog = blog_create_logic::mutate(
             ctx,
@@ -81,14 +84,12 @@ module rooch_examples::blog_aggregate {
         ctx: &mut Context,
         account: &signer,
         name: String,
-        articles: vector<ObjectID>,
     ) {
         let blog = blog::remove_blog(ctx);
         let blog_updated = blog_update_logic::verify(
             ctx,
             account,
             name,
-            articles,
             &blog,
         );
         let updated_blog = blog_update_logic::mutate(

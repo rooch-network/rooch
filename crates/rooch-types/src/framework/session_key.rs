@@ -6,17 +6,14 @@ use crate::authentication_key::AuthenticationKey;
 use anyhow::Result;
 use move_core_types::value::MoveValue;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
-use moveos_types::move_std::ascii::MoveAsciiString;
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
+    move_std::ascii::MoveAsciiString,
     move_std::option::MoveOption,
     moveos_std::tx_context::TxContext,
-    state::MoveState,
-    transaction::{FunctionCall, MoveAction},
-};
-use moveos_types::{
     serde::Readable,
-    state::{MoveStructState, MoveStructType},
+    state::{MoveState, MoveStructState, MoveStructType},
+    transaction::{FunctionCall, MoveAction},
 };
 use serde::{Deserialize, Serialize};
 use serde_with::hex::Hex;
@@ -52,8 +49,8 @@ impl MoveStructState for SessionScope {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
             move_core_types::value::MoveTypeLayout::Address,
-            <MoveAsciiString as MoveStructState>::type_layout(),
-            <MoveAsciiString as MoveStructState>::type_layout(),
+            MoveAsciiString::type_layout(),
+            MoveAsciiString::type_layout(),
         ])
     }
 }
@@ -112,9 +109,7 @@ impl MoveStructState for SessionKey {
             move_core_types::value::MoveTypeLayout::Vector(Box::new(
                 move_core_types::value::MoveTypeLayout::U8,
             )),
-            move_core_types::value::MoveTypeLayout::Vector(Box::new(
-                <SessionScope as MoveStructState>::type_layout(),
-            )),
+            move_core_types::value::MoveTypeLayout::Vector(Box::new(SessionScope::type_layout())),
             move_core_types::value::MoveTypeLayout::U64,
             move_core_types::value::MoveTypeLayout::U64,
             move_core_types::value::MoveTypeLayout::U64,

@@ -10,7 +10,7 @@ use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::option::MoveOption,
     moveos_std::tx_context::TxContext,
-    state::{MoveStructState, MoveStructType},
+    state::{MoveState, MoveStructState, MoveStructType},
     transaction::FunctionCall,
 };
 use serde::{Deserialize, Serialize};

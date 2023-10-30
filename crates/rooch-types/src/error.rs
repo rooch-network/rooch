@@ -1,16 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use move_core_types::vm_status::VMStatus;
+use move_binary_format::errors::VMError;
 use moveos_types::genesis_info::GenesisInfo;
-use serde::{Deserialize, Serialize};
 use std::io;
 use thiserror::Error;
 
 pub type RoochResult<T> = Result<T, RoochError>;
 
 /// Custom error type for Rooch.
-#[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize, Error, Hash)]
+#[derive(Eq, PartialEq, Clone, Debug, Error)]
 pub enum RoochError {
     /// config
     #[error("Unable to find config {0}, have you run `rooch init`?")]
@@ -37,8 +36,6 @@ pub enum RoochError {
     UnableToReadFile(String, String),
     #[error("Error: {0}")]
     UnexpectedError(String),
-    #[error("Error: {0}")]
-    UnexpectedVMStatusError(String),
 
     #[error("Simulation failed with status: {0}")]
     SimulationError(String),
@@ -120,6 +117,9 @@ pub enum RoochError {
 
     #[error("Invalid sequencer or proposer or relayer key pair")]
     InvalidSequencerOrProposerOrRelayerKeyPair,
+
+    #[error("VM error: {0}")]
+    VMError(VMError),
 }
 
 impl From<anyhow::Error> for RoochError {
@@ -140,9 +140,9 @@ impl From<io::Error> for RoochError {
     }
 }
 
-impl From<VMStatus> for RoochError {
-    fn from(e: VMStatus) -> Self {
-        RoochError::UnexpectedVMStatusError(e.to_string())
+impl From<VMError> for RoochError {
+    fn from(e: VMError) -> Self {
+        RoochError::VMError(e)
     }
 }
 

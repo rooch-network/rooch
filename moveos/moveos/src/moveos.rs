@@ -5,8 +5,10 @@ use crate::gas::table::{initial_cost_schedule, MoveOSGasMeter};
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
 use anyhow::{bail, ensure, Result};
 use backtrace::Backtrace;
+use itertools::Itertools;
 use move_binary_format::errors::VMError;
 use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
+use move_core_types::value::MoveValue;
 use move_core_types::vm_status::{KeptVMStatus, VMStatus};
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, vm_status::StatusCode,
@@ -20,6 +22,7 @@ use moveos_store::transaction_store::TransactionDBStore;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::move_types::FunctionId;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::moveos_std::tx_result::TxResult;
 use moveos_types::startup_info::StartupInfo;
@@ -29,6 +32,7 @@ use moveos_types::transaction::{
     MoveOSTransaction, TransactionOutput, VerifiedMoveAction, VerifiedMoveOSTransaction,
 };
 use moveos_types::{h256::H256, transaction::FunctionCall};
+use moveos_verifier::metadata::load_module_metadata;
 
 pub struct MoveOSConfig {
     pub vm_config: VMConfig,
@@ -211,11 +215,11 @@ impl MoveOS {
 
         match self.execute_user_action(
             &mut session,
-            action,
+            action.clone(),
             pre_execute_functions.clone(),
             post_execute_functions.clone(),
         ) {
-            Ok(status) => self.execution_cleanup(session, status),
+            Ok(status) => self.execution_cleanup(session, status, Some(action)),
             Err((vm_err, need_respawn)) => {
                 if need_respawn {
                     let mut s = session.respawn(system_env);
@@ -231,11 +235,162 @@ impl MoveOS {
                     // We just cleanup with the VM error return by `execute_user_action`, ignore
                     // the result of `execute_pre_and_post`
                     // TODO: do we need to handle the result of `execute_pre_and_post` after respawn?
-                    self.execution_cleanup(s, vm_err.into_vm_status())
+                    self.execution_cleanup(s, vm_err.into_vm_status(), None)
                 } else {
-                    self.execution_cleanup(session, vm_err.into_vm_status())
+                    self.execution_cleanup(session, vm_err.into_vm_status(), None)
                 }
             }
+        }
+    }
+
+    fn execute_gas_validate(
+        &self,
+        session: &mut MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
+        action: &VerifiedMoveAction,
+    ) -> VMResult<Option<bool>> {
+        match action {
+            VerifiedMoveAction::Function { call } => {
+                let module_id = &call.function_id.module_id;
+                let loaded_module_bytes = session.get_data_store().load_module(module_id);
+
+                let module_metadata = load_module_metadata(module_id, loaded_module_bytes)?;
+                let gas_free_function_info = {
+                    match module_metadata {
+                        None => None,
+                        Some(runtime_metadata) => Some(runtime_metadata.gas_free_function_map),
+                    }
+                };
+
+                let called_function_name = call.function_id.function_name.to_string();
+                match gas_free_function_info {
+                    None => Ok(None),
+                    Some(gas_func_info) => {
+                        let full_called_function = format!(
+                            "0x{}::{}::{}",
+                            call.function_id.module_id.address().to_hex(),
+                            call.function_id.module_id.name(),
+                            called_function_name
+                        );
+                        let gas_func_info_opt = gas_func_info.get(&full_called_function);
+
+                        if let Some(gas_func_info) = gas_func_info_opt {
+                            let gas_validate_func_name = gas_func_info.gas_validate.clone();
+
+                            let split_function = gas_validate_func_name.split("::").collect_vec();
+                            if split_function.len() != 3 {
+                                return Err(PartialVMError::new(StatusCode::VM_EXTENSION_ERROR)
+                                    .with_message(
+                                        "The name of the gas_validate_function is incorrect."
+                                            .to_string(),
+                                    )
+                                    .finish(Location::Module(call.clone().function_id.module_id)));
+                            }
+                            let real_gas_validate_func_name =
+                                split_function.get(2).unwrap().to_string();
+
+                            let gas_validate_func_call = FunctionCall::new(
+                                FunctionId::new(
+                                    call.function_id.module_id.clone(),
+                                    Identifier::new(real_gas_validate_func_name).unwrap(),
+                                ),
+                                vec![],
+                                vec![],
+                            );
+
+                            let return_value = session
+                                .execute_function_bypass_visibility(gas_validate_func_call)?;
+
+                            return if !return_value.is_empty() {
+                                let first_return_value = return_value.get(0).unwrap();
+                                Ok(Some(
+                                    bcs::from_bytes::<bool>(first_return_value.value.as_slice())
+                                        .expect(
+                                        "the return value of gas validate function should be bool",
+                                    ),
+                                ))
+                            } else {
+                                return Err(PartialVMError::new(StatusCode::VM_EXTENSION_ERROR)
+                                    .with_message(
+                                        "the return value of gas_validate_function is empty."
+                                            .to_string(),
+                                    )
+                                    .finish(Location::Module(call.clone().function_id.module_id)));
+                            };
+                        }
+
+                        Ok(None)
+                    }
+                }
+            }
+            _ => Ok(None),
+        }
+    }
+
+    fn execute_gas_charge_post(
+        &self,
+        session: &mut MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
+        action: &VerifiedMoveAction,
+    ) -> VMResult<Option<bool>> {
+        match action {
+            VerifiedMoveAction::Function { call } => {
+                let module_id = &call.function_id.module_id;
+                let loaded_module_bytes = session.get_data_store().load_module(module_id);
+
+                let module_metadata = load_module_metadata(module_id, loaded_module_bytes)?;
+                let gas_free_function_info = {
+                    match module_metadata {
+                        None => None,
+                        Some(runtime_metadata) => Some(runtime_metadata.gas_free_function_map),
+                    }
+                };
+
+                let called_function_name = call.function_id.function_name.to_string();
+                match gas_free_function_info {
+                    None => Ok(None),
+                    Some(gas_func_info) => {
+                        let full_called_function = format!(
+                            "0x{}::{}::{}",
+                            call.function_id.module_id.address().to_hex(),
+                            call.function_id.module_id.name(),
+                            called_function_name
+                        );
+                        let gas_func_info_opt = gas_func_info.get(&full_called_function);
+
+                        if let Some(gas_func_info) = gas_func_info_opt {
+                            let gas_charge_post_func_name = gas_func_info.gas_charge_post.clone();
+
+                            let split_function =
+                                gas_charge_post_func_name.split("::").collect_vec();
+                            if split_function.len() != 3 {
+                                return Err(PartialVMError::new(StatusCode::VM_EXTENSION_ERROR)
+                                    .with_message(
+                                        "The name of the gas_validate_function is incorrect."
+                                            .to_string(),
+                                    )
+                                    .finish(Location::Module(call.clone().function_id.module_id)));
+                            }
+                            let real_gas_charge_post_func_name =
+                                split_function.get(2).unwrap().to_string();
+
+                            let gas_validate_func_call = FunctionCall::new(
+                                FunctionId::new(
+                                    call.function_id.module_id.clone(),
+                                    Identifier::new(real_gas_charge_post_func_name).unwrap(),
+                                ),
+                                vec![],
+                                vec![MoveValue::U128(session.query_gas_used() as u128)
+                                    .simple_serialize()
+                                    .unwrap()],
+                            );
+
+                            session.execute_function_bypass_visibility(gas_validate_func_call)?;
+                        }
+
+                        Ok(None)
+                    }
+                }
+            }
+            _ => Ok(None),
         }
     }
 
@@ -380,6 +535,7 @@ impl MoveOS {
         &self,
         mut session: MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
         status: VMStatus,
+        action_opt: Option<VerifiedMoveAction>,
     ) -> Result<TransactionOutput> {
         let kept_status = match status.keep_or_discard() {
             Ok(kept_status) => kept_status,
@@ -389,10 +545,35 @@ impl MoveOS {
                 panic!("Discard status: {:?}\n{:?}", discard_status, backtrace);
             }
         };
+
+        let mut can_pay_gas = None;
+        let action_opt_cloned = action_opt.clone();
+        if let Some(action) = action_opt {
+            can_pay_gas = self.execute_gas_validate(&mut session, &action)?;
+        }
+
+        let mut gas_payment_account = session.storage_context_mut().tx_context.sender;
+        if let Some(pay_gas) = can_pay_gas {
+            if pay_gas {
+                let verified_action = &action_opt_cloned.clone().unwrap();
+                let func_call_opt = {
+                    match verified_action {
+                        VerifiedMoveAction::Function { call } => Some(call),
+                        _ => None,
+                    }
+                };
+
+                if let Some(func_call) = func_call_opt {
+                    let module_address = func_call.function_id.module_id.address();
+                    gas_payment_account = *module_address;
+                }
+            }
+        }
+
         // update txn result to TxContext
         let gas_used = session.query_gas_used();
         //TODO is it a good approach to add tx_result to TxContext?
-        let tx_result = TxResult::new(&kept_status, gas_used);
+        let tx_result = TxResult::new(&kept_status, gas_used, gas_payment_account);
         session
             .storage_context_mut()
             .tx_context
@@ -404,6 +585,12 @@ impl MoveOS {
         session
             .execute_function_call(self.system_post_execute_functions.clone(), false)
             .expect("system_post_execute should not fail.");
+
+        if let Some(pay_gas) = can_pay_gas {
+            if pay_gas {
+                self.execute_gas_charge_post(&mut session, &action_opt_cloned.unwrap())?;
+            }
+        }
 
         let (_ctx, output) = session.finish_with_extensions(kept_status)?;
         Ok(output)

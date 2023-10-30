@@ -4,7 +4,7 @@
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     moveos_std::object::ObjectID,
-    state::{MoveStructState, MoveStructType},
+    state::{MoveState, MoveStructState, MoveStructType},
 };
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, language_storage::TypeTag,
@@ -12,7 +12,7 @@ use move_core_types::{
 };
 use serde::{Deserialize, Serialize};
 
-pub const MODULE_NAME: &IdentStr = ident_str!("object_ref");
+pub const MODULE_NAME: &IdentStr = ident_str!("object");
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct ObjectRef<T> {
@@ -26,7 +26,7 @@ where
 {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("ObjectRef");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Object");
 
     fn type_params() -> Vec<TypeTag> {
         vec![T::type_tag()]

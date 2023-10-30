@@ -29,6 +29,12 @@
       "typesetting": "article"
     }
   },
+  "dashboard": {
+    "title": "仪表盘",
+    "type": "page",
+    "href": "https://dashboard.rooch.network/",
+    "newWindow": true
+  },
   "404": {
     "type": "page",
     "theme": {

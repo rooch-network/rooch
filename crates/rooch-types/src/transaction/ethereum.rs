@@ -3,7 +3,7 @@
 
 use super::{authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo};
 use crate::{
-    address::EthereumAddress,
+    address::{EthereumAddress, RoochAddress},
     chain_id::RoochChainID,
     error::RoochError,
     framework::{
@@ -28,11 +28,11 @@ use moveos_types::{
 };
 use serde::{Deserialize, Serialize};
 
-// TODO: Remove EthereumTransactionData and only keep Transaction body
+// TODO: Remove EthereumTransaction and only keep Transaction body
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub struct EthereumTransactionData(pub Transaction);
+pub struct EthereumTransaction(pub Transaction);
 
-pub struct EthereumTransactionDataBuilder {
+pub struct EthereumTransactionBuilder {
     hash: H256,
     nonce: U256,
     block_hash: Option<H256>,
@@ -55,9 +55,9 @@ pub struct EthereumTransactionDataBuilder {
     other: OtherFields,
 }
 
-impl EthereumTransactionDataBuilder {
+impl EthereumTransactionBuilder {
     pub fn new() -> Self {
-        EthereumTransactionDataBuilder {
+        EthereumTransactionBuilder {
             hash: Default::default(),
             nonce: Default::default(),
             block_hash: None,
@@ -181,7 +181,7 @@ impl EthereumTransactionDataBuilder {
         self
     }
 
-    pub fn build(self) -> EthereumTransactionData {
+    pub fn build(self) -> EthereumTransaction {
         let transaction = Transaction {
             hash: self.hash,
             nonce: self.nonce,
@@ -205,19 +205,19 @@ impl EthereumTransactionDataBuilder {
             other: self.other,
         };
 
-        EthereumTransactionData(transaction)
+        EthereumTransaction(transaction)
     }
 }
 
-impl Default for EthereumTransactionDataBuilder {
+impl Default for EthereumTransactionBuilder {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl EthereumTransactionData {
+impl EthereumTransaction {
     pub fn new(&self) -> Self {
-        let builder = EthereumTransactionDataBuilder::new();
+        let builder = EthereumTransactionBuilder::new();
         builder
             .nonce(self.0.nonce)
             .hash(self.0.hash)
@@ -242,7 +242,7 @@ impl EthereumTransactionData {
             .build()
     }
 
-    pub fn new_for_test(sender: EthereumAddress, nonce: U256, action: Bytes) -> Self {
+    pub fn new_for_test(sender: RoochAddress, nonce: U256, action: Bytes) -> Self {
         let sender_and_action = (sender, action.clone());
         let tx_hash = h256::sha3_256_of(bcs::to_bytes(&sender_and_action).unwrap().as_slice());
         let transaction = Transaction {
@@ -251,7 +251,7 @@ impl EthereumTransactionData {
             block_hash: None,
             block_number: None,
             transaction_index: None,
-            from: sender.0,
+            from: H160::from_slice(&sender.0 .0[..20]), // scrape first 20 bytes as ethereum address
             to: None,
             value: U256::one(),
             gas_price: None,
@@ -324,7 +324,7 @@ impl EthereumTransactionData {
     }
 }
 
-impl AbstractTransaction for EthereumTransactionData {
+impl AbstractTransaction for EthereumTransaction {
     fn transaction_type(&self) -> super::TransactionType {
         super::TransactionType::Ethereum
     }

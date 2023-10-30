@@ -14,6 +14,7 @@ mod move_module;
 pub mod move_std;
 pub mod native;
 pub mod nursery;
+mod object;
 mod rlp;
 mod schnorr;
 mod signer;

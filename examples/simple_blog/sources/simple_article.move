@@ -1,20 +1,21 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module simple_blog::article {
+/// Name the module to `simple_article` for avoid name conflict with `examples/blog`
+module simple_blog::simple_article {
 
     use std::error;
     use std::signer;
     use std::string::String; 
     use moveos_std::event;
-    use moveos_std::object::{Self, Object, ObjectID};
-    use moveos_std::object_ref;
+    use moveos_std::object::{ObjectID};
+    use moveos_std::object::{Self, Object};
     use moveos_std::context::{Self, Context};
 
     const ErrorDataTooLong: u64 = 1;
     const ErrorNotOwnerAccount: u64 = 2;
 
-    struct Article has key {
+    struct Article has key,store {
         version: u64,
         title: String,
         body: String,
@@ -41,7 +42,7 @@ module simple_blog::article {
         owner: &signer,
         title: String,
         body: String,
-    ): ObjectID {
+    ): Object<Article> {
         assert!(std::string::length(&title) <= 200, error::invalid_argument(ErrorDataTooLong));
         assert!(std::string::length(&body) <= 2000, error::invalid_argument(ErrorDataTooLong));
 
@@ -51,37 +52,31 @@ module simple_blog::article {
             body,
         };
         let owner_addr = signer::address_of(owner);
-        let article_ref = context::new_object_with_owner(
+        let article_obj = context::new_object(
             ctx,
-            owner_addr,
             article,
         );
-        let id = object_ref::id(&article_ref);
+        let id = object::id(&article_obj);
 
         let article_created_event = ArticleCreatedEvent {
             id,
         };
         event::emit(ctx, article_created_event);
-        id
+        object::transfer(&mut article_obj, owner_addr);
+        article_obj
     }
 
     /// Update article
     public fun update_article(
         ctx: &mut Context,
-        owner: &signer,
-        id: ObjectID,
+        article_obj: &mut Object<Article>,
         new_title: String,
         new_body: String,
     ) {
         assert!(std::string::length(&new_title) <= 200, error::invalid_argument(ErrorDataTooLong));
         assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(ErrorDataTooLong));
 
-        let article_obj = context::borrow_object_mut<Article>(ctx, id);
-        let owner_address = signer::address_of(owner);
-        
-        // only article owner can update the article 
-        assert!(object::owner(article_obj) == owner_address, error::permission_denied(ErrorNotOwnerAccount));
-
+        let id = object::id(article_obj);
         let article = object::borrow_mut(article_obj);
         article.version = article.version + 1;
         article.title = new_title;
@@ -97,16 +92,10 @@ module simple_blog::article {
     /// Delete article
     public fun delete_article(
         ctx: &mut Context,
-        owner: &signer,
-        id: ObjectID,
+        article_obj: Object<Article>,
     ) {
-
-        
-        let owner_address = signer::address_of(owner);
-        let (id, owner, article) = context::remove_object<Article>(ctx, id);
-        
-        // only article owner can delete the article 
-        assert!(owner == owner_address, error::permission_denied(ErrorNotOwnerAccount));
+        let id = object::id(&article_obj);
+        let article = object::remove(article_obj);
 
         let article_deleted_event = ArticleDeletedEvent {
             id,
@@ -126,29 +115,20 @@ module simple_blog::article {
 
     /// Read function of article
 
-    /// get article object by id
-    public fun get_article(ctx: &Context, article_id: ObjectID): &Object<Article> {
-        context::borrow_object<Article>(ctx, article_id)
-    }
-
-    /// get article id
-    public fun id(article_obj: &Object<Article>): ObjectID {
-        object::id(article_obj)
-    }
 
     /// get article version
-    public fun version(article_obj: &Object<Article>): u64 {
-        object::borrow(article_obj).version
+    public fun version(article: &Article): u64 {
+        article.version
     }
 
     /// get article title
-    public fun title(article_obj: &Object<Article>): String {
-        object::borrow(article_obj).title
+    public fun title(article: &Article): String {
+        article.title
     }
 
     /// get article body
-    public fun body(article_obj: &Object<Article>): String {
-        object::borrow(article_obj).body
+    public fun body(article: &Article): String {
+        article.body
     }
     
 }

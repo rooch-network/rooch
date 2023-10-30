@@ -9,6 +9,7 @@ use anyhow::{bail, ensure, Result};
 use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
+    ident_str,
     identifier::{IdentStr, Identifier},
     language_storage::{StructTag, TypeTag},
     resolver::MoveResolver,
@@ -16,6 +17,7 @@ use move_core_types::{
     value::{MoveStructLayout, MoveTypeLayout, MoveValue},
 };
 use move_resource_viewer::{AnnotatedMoveValue, MoveValueAnnotator};
+use move_vm_types::values::Value;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use smt::UpdateSet;
 use std::collections::{btree_map, BTreeMap, BTreeSet};
@@ -33,15 +35,23 @@ pub struct State {
 /// The rust representation of a Move value
 pub trait MoveType {
     fn type_tag() -> TypeTag;
+
+    fn type_tag_match(type_tag: &TypeTag) -> bool {
+        type_tag == &Self::type_tag()
+    }
 }
 
 /// The rust representation of a Move Struct
 /// This trait copy from `move_core_types::move_resource::MoveStructType`
 /// For auto implement `MoveType` to `MoveStructType`
-pub trait MoveStructType {
+pub trait MoveStructType: MoveType {
     const ADDRESS: AccountAddress = move_core_types::language_storage::CORE_CODE_ADDRESS;
     const MODULE_NAME: &'static IdentStr;
     const STRUCT_NAME: &'static IdentStr;
+
+    fn module_address() -> AccountAddress {
+        Self::ADDRESS
+    }
 
     fn module_identifier() -> Identifier {
         Self::MODULE_NAME.to_owned()
@@ -64,14 +74,51 @@ pub trait MoveStructType {
         }
     }
 
-    fn type_tag() -> TypeTag {
-        TypeTag::Struct(Box::new(Self::struct_tag()))
+    fn struct_tag_match(type_tag: &StructTag) -> bool {
+        type_tag == &Self::struct_tag()
+    }
+}
+
+fn type_layout_match(first_layout: &MoveTypeLayout, second_layout: &MoveTypeLayout) -> bool {
+    match (first_layout, second_layout) {
+        (MoveTypeLayout::Address, MoveTypeLayout::Address) => true,
+        (MoveTypeLayout::Signer, MoveTypeLayout::Signer) => true,
+        (MoveTypeLayout::Bool, MoveTypeLayout::Bool) => true,
+        (MoveTypeLayout::U8, MoveTypeLayout::U8) => true,
+        (MoveTypeLayout::U16, MoveTypeLayout::U16) => true,
+        (MoveTypeLayout::U32, MoveTypeLayout::U32) => true,
+        (MoveTypeLayout::U64, MoveTypeLayout::U64) => true,
+        (MoveTypeLayout::U128, MoveTypeLayout::U128) => true,
+        (MoveTypeLayout::U256, MoveTypeLayout::U256) => true,
+        (
+            MoveTypeLayout::Vector(first_inner_layout),
+            MoveTypeLayout::Vector(second_inner_layout),
+        ) => type_layout_match(first_inner_layout, second_inner_layout),
+        (
+            MoveTypeLayout::Struct(first_struct_layout),
+            MoveTypeLayout::Struct(second_struct_layout),
+        ) => {
+            if first_struct_layout.fields().len() != second_struct_layout.fields().len() {
+                false
+            } else {
+                first_struct_layout
+                    .fields()
+                    .iter()
+                    .zip(second_struct_layout.fields().iter())
+                    .all(|(first_field, second_field)| type_layout_match(first_field, second_field))
+            }
+        }
+        (_, _) => false,
     }
 }
 
 /// The rust representation of a Move value state
 pub trait MoveState: MoveType + DeserializeOwned + Serialize {
     fn type_layout() -> MoveTypeLayout;
+    fn type_layout_match(other_type_layout: &MoveTypeLayout) -> bool {
+        let self_layout = Self::type_layout();
+        type_layout_match(&self_layout, other_type_layout)
+    }
     fn from_bytes(bytes: &[u8]) -> Result<Self>
     where
         Self: Sized,
@@ -90,6 +137,28 @@ pub trait MoveState: MoveType + DeserializeOwned + Serialize {
         let blob = self.to_bytes();
         MoveValue::simple_deserialize(&blob, &Self::type_layout())
             .expect("Deserialize the MoveValue from MoveState should success")
+    }
+
+    fn to_runtime_value(&self) -> Value {
+        let blob = self.to_bytes();
+        Value::simple_deserialize(&blob, &Self::type_layout())
+            .expect("Deserialize the Move Runtime Value from MoveState should success")
+    }
+
+    /// Deserialize the MoveState from MoveRuntime Value
+    fn from_runtime_value(value: Value) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let blob = value
+            .simple_serialize(&Self::type_layout())
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Serialize the MoveState from Value error: {:?}",
+                    Self::type_tag()
+                )
+            })?;
+        Self::from_bytes(&blob)
     }
 }
 
@@ -224,30 +293,24 @@ where
     }
 }
 
+/// A placeholder struct for unknown Move Struct
+/// Sometimes we need a generic struct type, but we don't know the struct type
+pub struct PlaceholderStruct;
+
+impl MoveStructType for PlaceholderStruct {
+    const ADDRESS: AccountAddress = AccountAddress::ZERO;
+    const MODULE_NAME: &'static IdentStr = ident_str!("placeholder");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("PlaceholderStruct");
+
+    fn type_params() -> Vec<TypeTag> {
+        panic!("PlaceholderStruct should not be used as a type")
+    }
+}
+
 /// Move State is a trait that is used to represent the state of a Move Resource in Rust
 /// It is like the `MoveResource` in move_core_types
-pub trait MoveStructState: MoveStructType + DeserializeOwned + Serialize {
-    fn type_layout() -> MoveTypeLayout {
-        MoveTypeLayout::Struct(Self::struct_layout())
-    }
+pub trait MoveStructState: MoveState + MoveStructType + DeserializeOwned + Serialize {
     fn struct_layout() -> MoveStructLayout;
-    fn type_match(type_tag: &StructTag) -> bool {
-        type_tag == &Self::struct_tag()
-    }
-    fn from_bytes(bytes: &[u8]) -> Result<Self>
-    where
-        Self: Sized,
-    {
-        bcs::from_bytes(bytes)
-            .map_err(|e| anyhow::anyhow!("Deserialize the MoveState error: {:?}", e))
-    }
-    fn to_bytes(&self) -> Vec<u8> {
-        bcs::to_bytes(self).expect("Serialize the MoveState should success")
-    }
-    fn into_state(self) -> State {
-        let value = self.to_bytes();
-        State::new(value, TypeTag::Struct(Box::new(Self::struct_tag())))
-    }
 }
 
 impl<T> From<T> for State
@@ -258,6 +321,8 @@ where
         state.into_state()
     }
 }
+
+pub trait MoveRuntimeValue {}
 
 impl State {
     pub fn new(value: Vec<u8>, value_type: TypeTag) -> Self {

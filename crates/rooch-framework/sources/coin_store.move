@@ -5,10 +5,10 @@ module rooch_framework::coin_store {
 
     use std::string;
     use std::error;
-    use moveos_std::object::{Self, ObjectID};
+    use moveos_std::object::{ObjectID};
     use moveos_std::context::{Self, Context};
     use moveos_std::type_info;
-    use moveos_std::object_ref::{ObjectRef};
+    use moveos_std::object::{Self, Object};
     use rooch_framework::coin::{Self, Coin};
 
     friend rooch_framework::account_coin_store;
@@ -45,24 +45,26 @@ module rooch_framework::coin_store {
     // Public functions
     //
 
-    /// Create a new CoinStore Object for `CoinType` and return the ObjectRef
+    /// Create a new CoinStore Object for `CoinType` and return the Object
     /// Anyone can create a CoinStore Object for public Coin<CoinType>, the `CoinType` must has `key` and `store` ability
-    public fun create_coin_store<CoinType: key + store>(ctx: &mut Context): ObjectRef<CoinStore>{
+    public fun create_coin_store<CoinType: key + store>(ctx: &mut Context): Object<CoinStore>{
         create_coin_store_internal<CoinType>(ctx) 
     }
 
     #[private_generics(CoinType)]
     /// This function is for the `CoinType` module to extend
-    public fun create_coin_store_extend<CoinType: key>(ctx: &mut Context): ObjectRef<CoinStore> {
+    public fun create_coin_store_extend<CoinType: key>(ctx: &mut Context): Object<CoinStore> {
         create_coin_store_internal<CoinType>(ctx)
     }
     
-
-     /// Drop the CoinStore, return the Coin<T> in balance 
-    public fun drop_coin_store<CoinType: key>(coin_store: CoinStore) : Coin<CoinType> {
+    /// Remove the CoinStore Object, return the Coin<T> in balance 
+    public fun remove_coin_store<CoinType: key>(coin_store_object: Object<CoinStore>) : Coin<CoinType> {
+        let coin_store = object::remove(coin_store_object);
         let coin_type = type_info::type_name<CoinType>();
         assert!(coin_store.coin_type == coin_type, error::invalid_argument(ErrorCoinTypeAndStoreMismatch));
-        let CoinStore{coin_type:_, balance, frozen:_} = coin_store;
+        let CoinStore{coin_type:_, balance, frozen} = coin_store;
+        // Cannot remove a frozen CoinStore, because if we allow this, the frozen is meaningless
+        assert!(!frozen, error::permission_denied(ErrorCoinStoreIsFrozen));
         let Balance{value} = balance;
         coin::pack<CoinType>(value)
     }
@@ -91,28 +93,6 @@ module rooch_framework::coin_store {
         merge_to_balance<CoinType>(coin_store, coin);
     }
 
-    /// Get if the CoinStore is frozen via the coin store id
-    public fun is_coin_store_frozen(ctx: &Context, coin_store_id: ObjectID): bool {
-        if (context::exist_object(ctx, coin_store_id)){
-            let coin_store_object = context::borrow_object<CoinStore>(ctx, coin_store_id);
-            object::borrow(coin_store_object).frozen
-        }else{
-            //TODO if the coin store is not exist, should we return true or false?
-            false
-        }
-    }
-
-    /// Get the balance of the CoinStore with the coin store id
-    /// If the CoinStore is not exist, return 0
-    public fun get_balance_with_id(ctx: &Context, coin_store_id: ObjectID): u256 {
-        if (context::exist_object(ctx, coin_store_id)){
-            let coin_store_object = context::borrow_object<CoinStore>(ctx, coin_store_id);
-            object::borrow(coin_store_object).balance.value
-        }else{
-            0u256
-        }
-    }
-
     #[private_generics(CoinType)]
     /// Freeze or Unfreeze a CoinStore to prevent withdraw and desposit
     /// This function is for he `CoinType` module to extend,
@@ -122,14 +102,14 @@ module rooch_framework::coin_store {
         coin_store_id: ObjectID,
         frozen: bool,
     ) {
-        assert!(context::exist_object(ctx, coin_store_id), error::invalid_argument(ErrorCoinStoreNotFound));
-        let coin_store_object = context::borrow_object_mut<CoinStore>(ctx, coin_store_id);
+        assert!(context::exist_object<CoinStore>(ctx, coin_store_id), error::invalid_argument(ErrorCoinStoreNotFound));
+        let coin_store_object = context::borrow_object_mut_extend<CoinStore>(ctx, coin_store_id);
         object::borrow_mut(coin_store_object).frozen = frozen;
     }
 
     // Internal functions
 
-    public(friend) fun create_coin_store_internal<CoinType: key>(ctx: &mut Context): ObjectRef<CoinStore>{
+    public(friend) fun create_coin_store_internal<CoinType: key>(ctx: &mut Context): Object<CoinStore>{
         coin::check_coin_info_registered<CoinType>(ctx);
 
         context::new_object(ctx, CoinStore{
@@ -137,6 +117,12 @@ module rooch_framework::coin_store {
             balance: Balance { value: 0 },
             frozen: false,
         })
+    }
+
+    // We do not allow to transfer a CoinStore to another account, CoinStore is default ownerd by the system.
+    // Only provide a internal function for account_coin_store.
+    public(friend) fun transfer(coin_store_obj: &mut Object<CoinStore>, owner: address){
+        object::transfer_extend(coin_store_obj, owner)
     }
 
     fun check_coin_store_not_frozen(coin_store: &CoinStore) {

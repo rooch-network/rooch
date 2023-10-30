@@ -47,19 +47,20 @@ module moveos_std::account_storage {
     /// Create a new account storage space
     public fun create_account_storage(ctx: &mut Context, account: address) {
         let object_id = object::address_to_object_id(account);
-        assert!(!context::exist_object(ctx, object_id), ErrorAccountAlreadyExists);
+        assert!(!context::exist_object<AccountStorage>(ctx, object_id), ErrorAccountAlreadyExists);
         let account_storage = AccountStorage {
             resources: type_table::new_with_id(named_table_id(account, NamedTableResource)),
             modules: table::new_with_id(named_table_id(account, NamedTableModule)),
         };
-        //Should we keep the storage ref?
-        let _account_storage_ref = context::new_object_with_id(ctx, object_id, account, account_storage);
+        let obj = context::new_object_with_id(ctx, object_id, account_storage);
+        object::transfer_extend(&mut obj, account);
+        object::to_permanent(obj);
     }
 
     /// check if account storage eixst
     public fun exist_account_storage(ctx: &Context, account: address): bool {
         let object_id = object::address_to_object_id(account);
-        context::exist_object(ctx, object_id)
+        context::exist_object<AccountStorage>(ctx, object_id)
     }
 
     public fun ensure_account_storage(ctx: &mut Context, account: address) {
@@ -78,7 +79,7 @@ module moveos_std::account_storage {
 
     fun borrow_account_storage_mut(ctx: &mut Context, account: address): &mut AccountStorage{
         let object_id = object::address_to_object_id(account);
-        let object = context::borrow_object_mut<AccountStorage>(ctx, object_id);
+        let object = context::borrow_object_mut_extend<AccountStorage>(ctx, object_id);
         object::borrow_mut(object)
     }
 
@@ -429,5 +430,18 @@ module moveos_std::account_storage {
             version: _
         } = test;
         context::drop_test_context(ctx);
+    }
+
+    #[test(account=@0x42)]
+    fun test_publish_modules(account: &signer) {
+        let addr = signer::address_of(account);
+        let ctx = context::new_test_context(addr);
+        Self::create_account_storage(&mut ctx, addr);
+        // The following is the bytes and hex of the compiled module: example/counter/sources/counter.move
+        // with account 0x42       
+        let module_bytes: vector<u8> = x"a11ceb0b060000000b010006020608030e26043406053a32076c7d08e9014006a902220acb02050cd002560da6030200000101010200030c00020400000005000100000600010000070201000008030400010907080108010a09010108010b0a0b0108040605060606010708010002070801060c0106080101030107080001080002070801050107090003070801060c090002060801050106090007636f756e7465720f6163636f756e745f73746f7261676507636f6e7465787407436f756e74657207436f6e7465787408696e63726561736509696e6372656173655f04696e69740576616c756511676c6f62616c5f626f72726f775f6d75740e676c6f62616c5f6d6f76655f746f0d676c6f62616c5f626f72726f77000000000000000000000000000000000000000000000000000000000000004200000000000000000000000000000000000000000000000000000000000000020520000000000000000000000000000000000000000000000000000000000000004200020108030001040001030b0011010201010000050d0b00070038000c010a01100014060100000000000000160b010f0015020200000001060b000b0106000000000000000012003801020301000001060b000700380210001402000000";
+        let m: MoveModule = move_module::new(module_bytes);
+        Self::publish_modules(&mut ctx, account, vector::singleton(m));
+        context::drop_test_context(ctx);  
     }
 }

@@ -7,7 +7,7 @@ module coins::private_coin {
     use std::string;
     use moveos_std::signer;
     use moveos_std::context::Context;
-    use moveos_std::object_ref::{Self, ObjectRef};
+    use moveos_std::object::{Self, Object};
     use moveos_std::account_storage;
     use rooch_framework::coin::{Self, Coin};
     use rooch_framework::coin_store::{Self, CoinStore};
@@ -20,7 +20,7 @@ module coins::private_coin {
     struct PRC has key {}
 
     struct Treasury has key {
-        coin_store: ObjectRef<CoinStore>
+        coin_store: Object<CoinStore>
     }
 
     fun init(ctx: &mut Context) {
@@ -58,6 +58,6 @@ module coins::private_coin {
 
     fun deposit_to_treaury(ctx: &mut Context, coin: Coin<PRC>) {
         let treasury = account_storage::global_borrow_mut<Treasury>(ctx, @coins);
-        coin_store::deposit(object_ref::borrow_mut(&mut treasury.coin_store), coin);
+        coin_store::deposit(object::borrow_mut(&mut treasury.coin_store), coin);
     }
 }

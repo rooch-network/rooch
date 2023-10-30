@@ -1,22 +1,24 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module simple_blog::blog {
+/// Name the module to `simple_blog` for avoid name conflict with `examples/blog`
+module simple_blog::simple_blog {
     use std::error;
     use std::signer;
     use std::string::{Self,String};
     use std::vector;
     use moveos_std::object::ObjectID;
+    use moveos_std::object::{Self, Object};
     use moveos_std::context::Context;
     use moveos_std::account_storage;
-    use simple_blog::article;
+    use simple_blog::simple_article::{Self, Article};
 
     const ErrorDataTooLong: u64 = 1;
     const ErrorNotFound: u64 = 2;
 
     struct MyBlog has key {
         name: String,
-        articles: vector<ObjectID>,
+        articles: vector<Object<Article>>,
     }
 
     /// This init function is called when the module is published
@@ -46,32 +48,34 @@ module simple_blog::blog {
         myblog.name = blog_name;
     }
 
-    fun add_article_to_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
+    fun add_article_to_myblog(ctx: &mut Context, owner: &signer, article_obj: Object<Article>) {
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
         if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
             create_blog(ctx, owner);
         };
         let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
-        vector::push_back(&mut myblog.articles, article_id);
+        vector::push_back(&mut myblog.articles, article_obj);
     }
 
-    fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
+    fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID): Object<Article> {
         let owner_address = signer::address_of(owner);
         let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
-        let (contains, index) = vector::index_of(&myblog.articles, &article_id);
-        assert!(contains, error::not_found(ErrorNotFound));
-        vector::remove(&mut myblog.articles, index); 
+        let idx = 0;
+        while(idx < vector::length(&myblog.articles)){
+            let article_obj = vector::borrow(&myblog.articles, idx);
+            if(object::id(article_obj) == article_id){
+                return vector::remove(&mut myblog.articles, idx)
+            };
+            idx = idx + 1;
+        };
+        abort error::not_found(ErrorNotFound)
     }
 
     /// Get owner's blog's articles
-    public fun get_blog_articles(ctx: &Context, owner_address: address): vector<ObjectID> {
-        if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
-            vector::empty()
-        }else{
-            let myblog = account_storage::global_borrow<MyBlog>(ctx, owner_address);
-            myblog.articles
-        }
+    public fun get_blog_articles(ctx: &Context, owner_address: address): &vector<Object<Article>> {
+        let myblog = account_storage::global_borrow<MyBlog>(ctx, owner_address);
+        &myblog.articles
     }
 
     public entry fun create_article(
@@ -80,26 +84,25 @@ module simple_blog::blog {
         title: String,
         body: String,
     ) {
-        let article_id = article::create_article(ctx, &owner, title, body);
+        let article_id = simple_article::create_article(ctx, &owner, title, body);
         add_article_to_myblog(ctx, &owner, article_id);
     }
 
     public entry fun update_article(
         ctx: &mut Context,
-        owner: signer,
-        id: ObjectID,
+        article_obj: &mut Object<Article>,
         new_title: String,
         new_body: String,
     ) {
-        article::update_article(ctx, &owner, id, new_title, new_body);
+        simple_article::update_article(ctx, article_obj, new_title, new_body);
     }
 
     public entry fun delete_article(
         ctx: &mut Context,
-        owner: signer,
-        id: ObjectID,
+        owner: &signer,
+        article_id: ObjectID,
     ) {
-        article::delete_article(ctx, &owner, id);
-        delete_article_from_myblog(ctx, &owner, id);
+        let article_obj = delete_article_from_myblog(ctx, owner, article_id);
+        simple_article::delete_article(ctx, article_obj);
     }
 }

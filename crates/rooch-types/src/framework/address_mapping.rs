@@ -9,7 +9,7 @@ use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::option::MoveOption,
     moveos_std::tx_context::TxContext,
-    state::MoveStructState,
+    state::MoveState,
     transaction::FunctionCall,
 };
 
@@ -47,7 +47,7 @@ impl<'a> AddressMapping<'a> {
         }
     }
 
-    pub fn resovle_or_generate(
+    pub fn resolve_or_generate(
         &self,
         multichain_address: MultiChainAddress,
     ) -> Result<AccountAddress> {

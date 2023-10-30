@@ -5,9 +5,10 @@ module rooch_examples::complex_struct {
 
    use moveos_std::context::{Self, Context};
    use moveos_std::account_storage;
-   use moveos_std::object_ref;
+   use moveos_std::object::{Self, Object};
    use moveos_std::object::ObjectID;
    use moveos_std::bcs;
+   use moveos_std::signer;
    use std::vector;
 
    struct SimpleStruct has store, copy, drop {
@@ -104,20 +105,21 @@ module rooch_examples::complex_struct {
    } 
 
    //init when module publish
-   fun init(ctx: &mut Context, sender: signer) {
-      
+   fun init(ctx: &mut Context) {
+      let module_signer = signer::module_signer<ComplexStruct>();
       let object_id = context::fresh_object_id(ctx);
       let s = new_complex_struct(object_id);
-      let complex_object_ref = {
-         context::new_object(ctx, s)
-      };
-      let complex_object_id = object_ref::id(&complex_object_ref);
-
-      let s2 = new_complex_struct(complex_object_id);
-      account_storage::global_move_to(ctx, &sender, s2);
+      let complex_object = context::new_object(ctx, s);
+      object::to_permanent(complex_object);
+      let s2 = new_complex_struct(object_id);
+      account_storage::global_move_to(ctx, &module_signer, s2);
    }
 
-   public fun value(ctx: & Context): &ComplexStruct {
+   public fun value(ctx: &Context): &ComplexStruct {
       account_storage::global_borrow<ComplexStruct>(ctx,@rooch_examples)
+   }
+
+   public fun value_of_object(obj: &Object<ComplexStruct>) : &ComplexStruct {
+      object::borrow(obj)
    }
 }

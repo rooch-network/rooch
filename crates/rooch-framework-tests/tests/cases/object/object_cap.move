@@ -3,18 +3,18 @@
 //# publish
 
 module test::m {
-    struct TestObject has key{
+    struct TestStruct has key{
         f: u8
     }
 
-    public fun new_test_object(f: u8): TestObject {
-        TestObject{
+    public fun new_test_struct(f: u8): TestStruct {
+        TestStruct{
             f,
         }
     }
 
-    public fun destroy_test_object(test_object: TestObject) {
-        let TestObject{f : _f} = test_object;
+    public fun destroy_test_struct(test_struct: TestStruct) {
+        let TestStruct{f : _f} = test_struct;
     }
 }
 
@@ -22,14 +22,14 @@ module test::m {
 //# run --signers A
 script {
     use moveos_std::context::{Self, Context};
-    use moveos_std::object_ref;
-    use test::m::{Self, TestObject};
+    use moveos_std::object;
+    use test::m::{Self, TestStruct};
 
     fun main(ctx: &mut Context) {
-        let object = m::new_test_object(12);
-        let obj_ref = context::new_object<TestObject>(ctx, object);
-        let (_id, _owner, test_object) = context::remove_object<TestObject>(ctx, object_ref::id(&obj_ref));
-        m::destroy_test_object(test_object);
+        let object = m::new_test_struct(12);
+        let obj_ref = context::new_object<TestStruct>(ctx, object);
+        let test_struct = object::remove(obj_ref);
+        m::destroy_test_struct(test_struct);
     }
 }
 

@@ -4,10 +4,7 @@
 module test::m {
     use std::string::String;
     use moveos_std::table::{Self, Table};
-    use moveos_std::context::{Self, Context};
-    use moveos_std::object;
-    use moveos_std::object_ref::{ObjectRef};
-    use moveos_std::object::ObjectID;
+    use moveos_std::context::{Context};
     use moveos_std::account_storage;
 
     struct KVStore has store, key {
@@ -35,16 +32,7 @@ module test::m {
     public fun borrow(store: &KVStore, key: String): &vector<u8> {
         table::borrow(&store.table, key)
     }
-
-    public fun save_to_object_storage(ctx: &mut Context, kv: KVStore) : ObjectRef<KVStore> {        
-        context::new_object(ctx, kv)
-    }
-
-    public fun borrow_from_object_storage(ctx: &mut Context, object_id: ObjectID): &KVStore {
-        let object = context::borrow_object(ctx, object_id);
-        object::borrow<KVStore>(object)
-    }
-
+    
     public fun save_to_account_storage(ctx: &mut Context, account: &signer, store: KVStore){
         account_storage::global_move_to(ctx, account, store);
     }

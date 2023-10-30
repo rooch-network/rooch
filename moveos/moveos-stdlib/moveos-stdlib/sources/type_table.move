@@ -8,7 +8,7 @@ module moveos_std::type_table {
     use std::ascii::String;
     use moveos_std::raw_table;
     use moveos_std::context::{Self, Context};
-    use moveos_std::object::ObjectID;
+    use moveos_std::object::{Self, ObjectID};
 
     friend moveos_std::account_storage;
 
@@ -18,9 +18,9 @@ module moveos_std::type_table {
 
     /// Create a new Table.
     public fun new(ctx: &mut Context): TypeTable {
-        let tx_ctx = context::tx_context_mut(ctx);
+        let handle = object::address_to_object_id(context::fresh_address(ctx));
         TypeTable {
-            handle: raw_table::new_table_handle(tx_ctx),
+            handle,
         }
     }
 
@@ -40,30 +40,30 @@ module moveos_std::type_table {
     /// Add a new entry of `V` to the table. Aborts if an entry for
     /// entry of `V` type already exists.
     public fun add<V: key>(table: &mut TypeTable, val: V) {
-        raw_table::add<String, V>(&table.handle, key<V>(), val);
+        raw_table::add<String, V>(object::object_id_to_table_handle(table.handle), key<V>(), val);
     }
 
     /// Acquire an immutable reference to the value which type is `V`.
     /// Aborts if there is no entry for `V`.
     public fun borrow<V: key>(table: &TypeTable): &V {
-        raw_table::borrow<String, V>(&table.handle, key<V>())
+        raw_table::borrow<String, V>(object::object_id_to_table_handle(table.handle), key<V>())
     }
 
     /// Acquire a mutable reference to the value which type is `V`.
     /// Aborts if there is no entry for `V`.
     public fun borrow_mut<V: key>(table: &mut TypeTable): &mut V {
-        raw_table::borrow_mut<String, V>(&table.handle, key<V>())
+        raw_table::borrow_mut<String, V>(object::object_id_to_table_handle(table.handle), key<V>())
     }
 
     /// Remove from `table` and return the value which type is `V`.
     /// Aborts if there is no entry for `V`.
     public fun remove<V: key>(table: &mut TypeTable): V {
-        raw_table::remove<String, V>(&table.handle, key<V>())
+        raw_table::remove<String, V>(object::object_id_to_table_handle(table.handle), key<V>())
     }
 
     /// Returns true if `table` contains an entry for type `V`.
     public fun contains<V: key>(table: &TypeTable): bool {
-        raw_table::contains<String>(&table.handle, key<V>())
+        raw_table::contains<String>(object::object_id_to_table_handle(table.handle), key<V>())
     }
 
     /// Returns table handle of `table`.
@@ -75,13 +75,13 @@ module moveos_std::type_table {
     /// Testing only: allows to drop a table even if it is not empty.
     public fun drop_unchecked(table: TypeTable) {
         let TypeTable{handle} = table;
-        raw_table::drop_unchecked(&handle)
+        raw_table::drop_unchecked(object::object_id_to_table_handle(handle))
     }
 
     /// Destroy a table. The table must be empty to succeed.
     public fun destroy_empty(table: TypeTable) {
         let TypeTable{handle} = table;
-        raw_table::destroy_empty(&handle)
+        raw_table::destroy_empty(object::object_id_to_table_handle(handle))
     }
 
     #[test_only]

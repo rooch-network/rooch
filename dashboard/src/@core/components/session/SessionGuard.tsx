@@ -28,8 +28,17 @@ interface Props {
   onLogout?: () => void
 }
 
+// Todo:
+// option 1 : All scopes are counted here to provide optional authorization when first created
+// option 2 : Each app is authorized separately
+const defaultScope = [
+  '0x1::*::*',
+  '0x3::*::*',
+  '0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35::*::*',
+]
+
 const AuthDialog: React.FC<Props> = ({ open, onReqAuthorize, onLogout }) => {
-  const [scope, setScope] = useState<Array<string>>(['0x1::*::*', '0x3::*::*'])
+  const [scope, setScope] = useState<Array<string>>(defaultScope)
   const [maxInactiveInterval, setMaxInactiveInterval] = useState<number>(1200)
 
   const handleAuth = () => {

@@ -40,7 +40,6 @@
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::object_ref</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
@@ -83,7 +82,7 @@ The main scenario is that the user can actively turn off the AutoAcceptCoin sett
 
 ## Resource `CoinStores`
 
-A resource that holds all the ObjectRef<CoinStore> for account.
+A resource that holds all the Object<CoinStore> for account.
 
 
 <pre><code><b>struct</b> <a href="account_coin_store.md#0x3_account_coin_store_CoinStores">CoinStores</a> <b>has</b> key
@@ -97,7 +96,7 @@ A resource that holds all the ObjectRef<CoinStore> for account.
 
 <dl>
 <dt>
-<code>coin_stores: <a href="_Table">table::Table</a>&lt;<a href="_String">string::String</a>, <a href="_ObjectRef">object_ref::ObjectRef</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;&gt;</code>
+<code>coin_stores: <a href="_Table">table::Table</a>&lt;<a href="_String">string::String</a>, <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;&gt;</code>
 </dt>
 <dd>
 
@@ -274,7 +273,7 @@ Account hasn't accept <code>CoinType</code>
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_init_account_coin_stores">init_account_coin_stores</a>(ctx: &<b>mut</b> Context, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>){
     <b>let</b> coin_stores = <a href="account_coin_store.md#0x3_account_coin_store_CoinStores">CoinStores</a> {
-        coin_stores: <a href="_new">table::new</a>&lt;<a href="_String">string::String</a>, ObjectRef&lt;CoinStore&gt;&gt;(ctx),
+        coin_stores: <a href="_new">table::new</a>&lt;<a href="_String">string::String</a>, Object&lt;CoinStore&gt;&gt;(ctx),
     };
     <a href="_global_move_to">account_storage::global_move_to</a>(ctx, <a href="account.md#0x3_account">account</a>, coin_stores);
 }
@@ -301,10 +300,9 @@ Returns the balance of <code>addr</code> for provided <code>CoinType</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_balance">balance</a>&lt;CoinType: key&gt;(ctx: &Context, addr: <b>address</b>): u256 {
-    <b>let</b> coin_store_id_option = <a href="account_coin_store.md#0x3_account_coin_store_coin_store_id">coin_store_id</a>&lt;CoinType&gt;(ctx, addr);
-    <b>if</b> (<a href="_is_some">option::is_some</a>(&coin_store_id_option)) {
-        <b>let</b> coin_store_id = <a href="_extract">option::extract</a>(&<b>mut</b> coin_store_id_option);
-        <a href="coin_store.md#0x3_coin_store_get_balance_with_id">coin_store::get_balance_with_id</a>(ctx, coin_store_id)
+    <b>if</b>(<a href="account_coin_store.md#0x3_account_coin_store_exist_account_coin_store">exist_account_coin_store</a>&lt;CoinType&gt;(ctx, addr)) {
+        <b>let</b> <a href="coin_store.md#0x3_coin_store">coin_store</a> = <a href="account_coin_store.md#0x3_account_coin_store_borrow_account_coin_store">borrow_account_coin_store</a>&lt;CoinType&gt;(ctx, addr);
+        <a href="coin_store.md#0x3_coin_store_balance">coin_store::balance</a>(<a href="coin_store.md#0x3_coin_store">coin_store</a>)
     } <b>else</b> {
         0u256
     }
@@ -336,7 +334,7 @@ Return the account CoinStore object id for addr
         <b>let</b> coin_stores = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account_coin_store.md#0x3_account_coin_store_CoinStores">CoinStores</a>&gt;(ctx, addr);
         <b>let</b> coin_type = <a href="_type_name">type_info::type_name</a>&lt;CoinType&gt;();
         <b>let</b> coin_store_ref = <a href="_borrow">table::borrow</a>(&coin_stores.coin_stores, coin_type);
-        <a href="_some">option::some</a>(<a href="_id">object_ref::id</a>(coin_store_ref))
+        <a href="_some">option::some</a>(<a href="_id">object::id</a>(coin_store_ref))
     } <b>else</b> {
         <a href="_none">option::none</a>&lt;ObjectID&gt;()
     }

@@ -3,9 +3,12 @@
 
 module rooch_examples::blog_create_logic {
     use moveos_std::object::ObjectID;
+    use moveos_std::object::Object;
     use moveos_std::context::Context;
+    use moveos_std::table;
     use rooch_examples::blog;
     use rooch_examples::blog_created;
+    use rooch_examples::article::Article;
     use std::string::String;
 
     friend rooch_examples::blog_aggregate;
@@ -14,13 +17,11 @@ module rooch_examples::blog_create_logic {
         ctx: &mut Context,
         account: &signer,
         name: String,
-        articles: vector<ObjectID>,
     ): blog::BlogCreated {
         let _ = ctx;
         let _ = account;
         blog::new_blog_created(
             name,
-            articles,
         )
     }
 
@@ -30,8 +31,7 @@ module rooch_examples::blog_create_logic {
         blog_created: &blog::BlogCreated,
     ): blog::Blog {
         let name = blog_created::name(blog_created);
-        let articles = blog_created::articles(blog_created);
-        let _ = ctx;
+        let articles = table::new<ObjectID, Object<Article>>(ctx);
         blog::new_blog(
             name,
             articles,
