@@ -66,6 +66,8 @@ import '../../styles/globals.css'
 import { ETHProvider } from 'src/context/wallet/index'
 import { RoochProvider } from 'src/context/rooch/index'
 
+import { GoogleAnalytics } from 'nextjs-google-analytics'
+
 // ** Extend App Props with Emotion
 type ExtendedAppProps = AppProps & {
   Component: NextPage
@@ -143,7 +145,12 @@ const App = (props: ExtendedAppProps) => {
                       return (
                         <ThemeComponent settings={settings}>
                           <Guard authGuard={authGuard} guestGuard={guestGuard}>
-                            {getLayout(<Component {...pageProps} />)}
+                            {getLayout(
+                              <>
+                                <GoogleAnalytics trackPageViews></GoogleAnalytics>
+                                <Component {...pageProps} />
+                              </>,
+                            )}
                           </Guard>
                           <ReactHotToast>
                             <Toaster
