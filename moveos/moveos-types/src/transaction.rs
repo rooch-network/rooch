@@ -121,6 +121,10 @@ impl MoveAction {
         }
     }
 
+    pub fn action_name(self) -> String {
+        self.to_string()
+    }
+
     pub fn new_module_bundle(modules: Vec<Vec<u8>>) -> Self {
         Self::ModuleBundle(modules)
     }

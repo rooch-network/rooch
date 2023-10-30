@@ -20,6 +20,12 @@ pub enum TransactionType {
     Ethereum,
 }
 
+impl TransactionType {
+    pub fn transaction_type_name(self) -> String {
+        self.to_string()
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct RawTransaction {
     pub transaction_type: TransactionType,

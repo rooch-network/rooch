@@ -36,7 +36,8 @@ members = [
     "crates/rooch-open-rpc-spec",
     "crates/rooch-open-rpc-spec-builder",
     "crates/rooch-open-rpc-macros",
-    "crates/rooch-store"
+    "crates/rooch-store",
+    "crates/rooch-indexer"
 ]
 
 default-members = [
@@ -97,6 +98,7 @@ rooch-open-rpc-spec = { path = "crates/rooch-open-rpc-spec" }
 rooch-open-rpc-spec-builder = { path = "crates/rooch-open-rpc-spec-builder" }
 rooch-open-rpc-macros = { path = "crates/rooch-open-rpc-macros" }
 rooch-store = { path = "crates/rooch-store" }
+rooch-indexer = { path = "crates/rooch-indexer" }
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
@@ -210,6 +212,18 @@ fixed-hash = "0.8.0"
 uint = "0.9.5"
 open-fastrlp = "0.1.4"
 const-hex = "1.6.2"
+
+cached = "0.43.0"
+diesel = { version = "2.1.0", features = [
+    "chrono",
+    "sqlite",
+    "r2d2",
+    "serde_json",
+    "64-column-tables",
+] }
+diesel-derive-enum = { version = "2.0.1", features = ["sqlite"] }
+diesel_migrations = { version = "2.0.0" }
+tap = "1.0.1"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES
