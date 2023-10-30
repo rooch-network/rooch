@@ -8,10 +8,11 @@ use backtrace::Backtrace;
 use itertools::Itertools;
 use move_binary_format::errors::VMError;
 use move_binary_format::errors::{vm_status_of_result, Location, PartialVMError, VMResult};
+use move_core_types::identifier::IdentStr;
 use move_core_types::value::MoveValue;
 use move_core_types::vm_status::{KeptVMStatus, VMStatus};
 use move_core_types::{
-    account_address::AccountAddress, identifier::Identifier, vm_status::StatusCode,
+    account_address::AccountAddress, ident_str, identifier::Identifier, vm_status::StatusCode,
 };
 use move_vm_runtime::config::VMConfig;
 use move_vm_runtime::native_functions::NativeFunction;
@@ -20,19 +21,42 @@ use moveos_store::event_store::EventDBStore;
 use moveos_store::state_store::statedb::StateDBStore;
 use moveos_store::transaction_store::TransactionDBStore;
 use moveos_store::MoveOSStore;
+use moveos_types::addresses::MOVEOS_STD_ADDRESS;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::FunctionId;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::moveos_std::tx_result::TxResult;
 use moveos_types::startup_info::StartupInfo;
-use moveos_types::state::MoveState;
+use moveos_types::state::{MoveState, MoveStructState, MoveStructType};
 use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_types::transaction::{
     MoveOSTransaction, TransactionOutput, VerifiedMoveAction, VerifiedMoveOSTransaction,
 };
 use moveos_types::{h256::H256, transaction::FunctionCall};
 use moveos_verifier::metadata::load_module_metadata;
+use serde::{Deserialize, Serialize};
+
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+pub struct GasPaymentAccount {
+    pub account: AccountAddress,
+    pub pay_gas_by_module_account: bool,
+}
+
+impl MoveStructType for GasPaymentAccount {
+    const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = ident_str!("tx_context");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("GasPaymentAccount");
+}
+
+impl MoveStructState for GasPaymentAccount {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            move_core_types::value::MoveTypeLayout::Address,
+            move_core_types::value::MoveTypeLayout::Bool,
+        ])
+    }
+}
 
 pub struct MoveOSConfig {
     pub vm_config: VMConfig,
@@ -243,89 +267,6 @@ impl MoveOS {
         }
     }
 
-    fn execute_gas_validate(
-        &self,
-        session: &mut MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
-        action: &VerifiedMoveAction,
-    ) -> VMResult<Option<bool>> {
-        match action {
-            VerifiedMoveAction::Function { call } => {
-                let module_id = &call.function_id.module_id;
-                let loaded_module_bytes = session.get_data_store().load_module(module_id);
-
-                let module_metadata = load_module_metadata(module_id, loaded_module_bytes)?;
-                let gas_free_function_info = {
-                    match module_metadata {
-                        None => None,
-                        Some(runtime_metadata) => Some(runtime_metadata.gas_free_function_map),
-                    }
-                };
-
-                let called_function_name = call.function_id.function_name.to_string();
-                match gas_free_function_info {
-                    None => Ok(None),
-                    Some(gas_func_info) => {
-                        let full_called_function = format!(
-                            "0x{}::{}::{}",
-                            call.function_id.module_id.address().to_hex(),
-                            call.function_id.module_id.name(),
-                            called_function_name
-                        );
-                        let gas_func_info_opt = gas_func_info.get(&full_called_function);
-
-                        if let Some(gas_func_info) = gas_func_info_opt {
-                            let gas_validate_func_name = gas_func_info.gas_validate.clone();
-
-                            let split_function = gas_validate_func_name.split("::").collect_vec();
-                            if split_function.len() != 3 {
-                                return Err(PartialVMError::new(StatusCode::VM_EXTENSION_ERROR)
-                                    .with_message(
-                                        "The name of the gas_validate_function is incorrect."
-                                            .to_string(),
-                                    )
-                                    .finish(Location::Module(call.clone().function_id.module_id)));
-                            }
-                            let real_gas_validate_func_name =
-                                split_function.get(2).unwrap().to_string();
-
-                            let gas_validate_func_call = FunctionCall::new(
-                                FunctionId::new(
-                                    call.function_id.module_id.clone(),
-                                    Identifier::new(real_gas_validate_func_name).unwrap(),
-                                ),
-                                vec![],
-                                vec![],
-                            );
-
-                            let return_value = session
-                                .execute_function_bypass_visibility(gas_validate_func_call)?;
-
-                            return if !return_value.is_empty() {
-                                let first_return_value = return_value.get(0).unwrap();
-                                Ok(Some(
-                                    bcs::from_bytes::<bool>(first_return_value.value.as_slice())
-                                        .expect(
-                                        "the return value of gas validate function should be bool",
-                                    ),
-                                ))
-                            } else {
-                                return Err(PartialVMError::new(StatusCode::VM_EXTENSION_ERROR)
-                                    .with_message(
-                                        "the return value of gas_validate_function is empty."
-                                            .to_string(),
-                                    )
-                                    .finish(Location::Module(call.clone().function_id.module_id)));
-                            };
-                        }
-
-                        Ok(None)
-                    }
-                }
-            }
-            _ => Ok(None),
-        }
-    }
-
     fn execute_gas_charge_post(
         &self,
         session: &mut MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
@@ -383,7 +324,25 @@ impl MoveOS {
                                     .unwrap()],
                             );
 
-                            session.execute_function_bypass_visibility(gas_validate_func_call)?;
+                            let return_value = session
+                                .execute_function_bypass_visibility(gas_validate_func_call)?;
+
+                            return if !return_value.is_empty() {
+                                let first_return_value = return_value.get(0).unwrap();
+                                Ok(Some(
+                                    bcs::from_bytes::<bool>(first_return_value.value.as_slice())
+                                        .expect(
+                                            "the type of the return value of gas_charge_post_function should be bool",
+                                        ),
+                                ))
+                            } else {
+                                return Err(PartialVMError::new(StatusCode::VM_EXTENSION_ERROR)
+                                    .with_message(
+                                        "the return value of gas_charge_post_function is empty."
+                                            .to_string(),
+                                    )
+                                    .finish(Location::Module(call.clone().function_id.module_id)));
+                            };
                         }
 
                         Ok(None)
@@ -546,34 +505,20 @@ impl MoveOS {
             }
         };
 
-        let mut can_pay_gas = None;
-        let action_opt_cloned = action_opt.clone();
-        if let Some(action) = action_opt {
-            can_pay_gas = self.execute_gas_validate(&mut session, &action)?;
-        }
+        let mut pay_gas = false;
+        let gas_payment_account_opt = session
+            .storage_context_mut()
+            .tx_context
+            .get::<GasPaymentAccount>()?;
 
-        let mut gas_payment_account = session.storage_context_mut().tx_context.sender;
-        if let Some(pay_gas) = can_pay_gas {
-            if pay_gas {
-                let verified_action = &action_opt_cloned.clone().unwrap();
-                let func_call_opt = {
-                    match verified_action {
-                        VerifiedMoveAction::Function { call } => Some(call),
-                        _ => None,
-                    }
-                };
-
-                if let Some(func_call) = func_call_opt {
-                    let module_address = func_call.function_id.module_id.address();
-                    gas_payment_account = *module_address;
-                }
-            }
+        if let Some(gas_payment_account) = gas_payment_account_opt {
+            pay_gas = gas_payment_account.pay_gas_by_module_account;
         }
 
         // update txn result to TxContext
         let gas_used = session.query_gas_used();
         //TODO is it a good approach to add tx_result to TxContext?
-        let tx_result = TxResult::new(&kept_status, gas_used, gas_payment_account);
+        let tx_result = TxResult::new(&kept_status, gas_used);
         session
             .storage_context_mut()
             .tx_context
@@ -586,10 +531,8 @@ impl MoveOS {
             .execute_function_call(self.system_post_execute_functions.clone(), false)
             .expect("system_post_execute should not fail.");
 
-        if let Some(pay_gas) = can_pay_gas {
-            if pay_gas {
-                self.execute_gas_charge_post(&mut session, &action_opt_cloned.unwrap())?;
-            }
+        if pay_gas {
+            self.execute_gas_charge_post(&mut session, &action_opt.unwrap())?;
         }
 
         let (_ctx, output) = session.finish_with_extensions(kept_status)?;

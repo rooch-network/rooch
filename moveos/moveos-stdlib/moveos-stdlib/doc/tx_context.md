@@ -5,6 +5,7 @@
 
 
 
+-  [Struct `GasPaymentAccount`](#0x2_tx_context_GasPaymentAccount)
 -  [Struct `TxContext`](#0x2_tx_context_TxContext)
 -  [Constants](#@Constants_0)
 -  [Function `sender`](#0x2_tx_context_sender)
@@ -17,6 +18,7 @@
 -  [Function `get`](#0x2_tx_context_get)
 -  [Function `contains`](#0x2_tx_context_contains)
 -  [Function `tx_meta`](#0x2_tx_context_tx_meta)
+-  [Function `tx_gas_payment_account`](#0x2_tx_context_tx_gas_payment_account)
 -  [Function `tx_result`](#0x2_tx_context_tx_result)
 
 
@@ -34,6 +36,40 @@
 </code></pre>
 
 
+
+<a name="0x2_tx_context_GasPaymentAccount"></a>
+
+## Struct `GasPaymentAccount`
+
+An account address for paying gas during the transaction validation stage.
+
+
+<pre><code><b>struct</b> <a href="tx_context.md#0x2_tx_context_GasPaymentAccount">GasPaymentAccount</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>account: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>pay_by_module_account: bool</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
 
 <a name="0x2_tx_context_TxContext"></a>
 
@@ -371,6 +407,32 @@ The meta data is only available when executing or validating a transaction, othe
     <b>let</b> meta = <a href="tx_context.md#0x2_tx_context_get">get</a>&lt;TxMeta&gt;(self);
     <b>assert</b>!(<a href="_is_some">option::is_some</a>(&meta), <a href="_invalid_state">error::invalid_state</a>(<a href="tx_context.md#0x2_tx_context_ErrorInvalidContext">ErrorInvalidContext</a>));
     <a href="_extract">option::extract</a>(&<b>mut</b> meta)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_tx_context_tx_gas_payment_account"></a>
+
+## Function `tx_gas_payment_account`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_tx_gas_payment_account">tx_gas_payment_account</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <b>address</b>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_tx_gas_payment_account">tx_gas_payment_account</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): <b>address</b> {
+    <b>let</b> gas_payment_account = <a href="tx_context.md#0x2_tx_context_get">get</a>&lt;<a href="tx_context.md#0x2_tx_context_GasPaymentAccount">GasPaymentAccount</a>&gt;(self);
+    <b>assert</b>!(<a href="_is_some">option::is_some</a>(&gas_payment_account), <a href="_invalid_state">error::invalid_state</a>(<a href="tx_context.md#0x2_tx_context_ErrorInvalidContext">ErrorInvalidContext</a>));
+    <a href="_extract">option::extract</a>(&<b>mut</b> gas_payment_account).account
 }
 </code></pre>
 

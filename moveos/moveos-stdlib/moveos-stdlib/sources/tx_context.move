@@ -29,6 +29,12 @@ module moveos_std::tx_context {
 
     const ErrorInvalidContext: u64 = 1;
 
+    /// An account address for paying gas during the transaction validation stage.
+    struct GasPaymentAccount has copy, store, drop {
+        account: address,
+        pay_by_module_account: bool,
+    }
+
     /// Information about the transaction currently being executed.
     /// This cannot be constructed by a transaction--it is a privileged object created by
     /// the VM, stored in a `Context` and passed in to the entrypoint of the transaction as `&mut Context`.
@@ -120,6 +126,12 @@ module moveos_std::tx_context {
         let meta = get<TxMeta>(self);
         assert!(option::is_some(&meta), error::invalid_state(ErrorInvalidContext));
         option::extract(&mut meta)
+    }
+
+    public(friend) fun tx_gas_payment_account(self: &TxContext): address {
+        let gas_payment_account = get<GasPaymentAccount>(self);
+        assert!(option::is_some(&gas_payment_account), error::invalid_state(ErrorInvalidContext));
+        option::extract(&mut gas_payment_account).account
     }
 
     /// The result is only available in the `post_execute` function.

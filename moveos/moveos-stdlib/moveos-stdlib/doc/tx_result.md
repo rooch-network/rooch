@@ -8,7 +8,6 @@
 -  [Struct `TxResult`](#0x2_tx_result_TxResult)
 -  [Function `is_executed`](#0x2_tx_result_is_executed)
 -  [Function `gas_used`](#0x2_tx_result_gas_used)
--  [Function `gas_payment_account`](#0x2_tx_result_gas_payment_account)
 
 
 <pre><code></code></pre>
@@ -45,12 +44,6 @@ We can get the result in the <code>post_execute</code> function.
 </dt>
 <dd>
  The gas used by the transaction.
-</dd>
-<dt>
-<code>gas_payment_account: <b>address</b></code>
-</dt>
-<dd>
- The account for the gas payment.
 </dd>
 </dl>
 
@@ -98,30 +91,6 @@ We can get the result in the <code>post_execute</code> function.
 
 <pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result_gas_used">gas_used</a>(self: &<a href="tx_result.md#0x2_tx_result_TxResult">TxResult</a>) : u64 {
     self.gas_used
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x2_tx_result_gas_payment_account"></a>
-
-## Function `gas_payment_account`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result_gas_payment_account">gas_payment_account</a>(self: &<a href="tx_result.md#0x2_tx_result_TxResult">tx_result::TxResult</a>): <b>address</b>
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result_gas_payment_account">gas_payment_account</a>(self: &<a href="tx_result.md#0x2_tx_result_TxResult">TxResult</a>): <b>address</b> {
-    self.gas_payment_account
 }
 </code></pre>
 

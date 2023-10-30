@@ -89,6 +89,10 @@ module moveos_std::context {
         tx_context::tx_meta(&self.tx_context)
     }
 
+    public fun tx_gas_payment_account(self: &Context): address {
+        tx_context::tx_gas_payment_account(&self.tx_context)
+    }
+
     public fun tx_result(self: &Context): TxResult {
         tx_context::tx_result(&self.tx_context)
     }
