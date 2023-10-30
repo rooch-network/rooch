@@ -28,9 +28,9 @@ and let developers customize the storage
 -  [Function `new_singleton`](#0x2_context_new_singleton)
 -  [Function `borrow_object`](#0x2_context_borrow_object)
 -  [Function `borrow_singleton`](#0x2_context_borrow_singleton)
--  [Function `borrow_object_mut`](#0x2_context_borrow_object_mut)
+-  [Function `borrow_mut_object`](#0x2_context_borrow_mut_object)
 -  [Function `borrow_mut_singleton`](#0x2_context_borrow_mut_singleton)
--  [Function `borrow_object_mut_extend`](#0x2_context_borrow_object_mut_extend)
+-  [Function `borrow_mut_object_extend`](#0x2_context_borrow_mut_object_extend)
 -  [Function `exist_object`](#0x2_context_exist_object)
 
 
@@ -426,7 +426,7 @@ Get a value from the context map
 
 Create a new Object, Add the Object to the global object storage and return the Object
 Note: the default owner is the <code>System</code>, the caller should explicitly transfer the Object to the owner.
-The owner can get the <code>&<b>mut</b> Object</code> by <code>borrow_object_mut</code>
+The owner can get the <code>&<b>mut</b> Object</code> by <code>borrow_mut_object</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_object">new_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
@@ -551,15 +551,15 @@ Borrow singleton Object from global object storage
 
 </details>
 
-<a name="0x2_context_borrow_object_mut"></a>
+<a name="0x2_context_borrow_mut_object"></a>
 
-## Function `borrow_object_mut`
+## Function `borrow_mut_object`
 
 Borrow mut Object from object store with object_id
 If the object is not shared, only the owner can borrow an <code>&<b>mut</b> Object&lt;T&gt;</code> from the global object storage
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut">borrow_object_mut</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, owner: &<a href="">signer</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_object">borrow_mut_object</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, owner: &<a href="">signer</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 
@@ -568,7 +568,7 @@ If the object is not shared, only the owner can borrow an <code>&<b>mut</b> Obje
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut">borrow_object_mut</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, owner: &<a href="">signer</a>, object_id: ObjectID): &<b>mut</b> Object&lt;T&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_object">borrow_mut_object</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, owner: &<a href="">signer</a>, object_id: ObjectID): &<b>mut</b> Object&lt;T&gt; {
     <b>let</b> object_entity = <a href="object.md#0x2_object_borrow_mut_from_global">object::borrow_mut_from_global</a>&lt;T&gt;(object_id);
     <b>if</b>(!<a href="object.md#0x2_object_is_shared_internal">object::is_shared_internal</a>(object_entity)) {
         <b>let</b> owner_address = <a href="_address_of">signer::address_of</a>(owner);
@@ -610,14 +610,14 @@ Only the module of T can borrow mut singleton Object from object store
 
 </details>
 
-<a name="0x2_context_borrow_object_mut_extend"></a>
+<a name="0x2_context_borrow_mut_object_extend"></a>
 
-## Function `borrow_object_mut_extend`
+## Function `borrow_mut_object_extend`
 
 The module of T can borrow mut Object from object store with any object_id
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut_extend">borrow_object_mut_extend</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_object_extend">borrow_mut_object_extend</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 
@@ -626,7 +626,7 @@ The module of T can borrow mut Object from object store with any object_id
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object_mut_extend">borrow_object_mut_extend</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID) : &<b>mut</b> Object&lt;T&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_object_extend">borrow_mut_object_extend</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID) : &<b>mut</b> Object&lt;T&gt; {
     <b>let</b> object_entity = <a href="object.md#0x2_object_borrow_mut_from_global">object::borrow_mut_from_global</a>&lt;T&gt;(object_id);
     <a href="object.md#0x2_object_as_mut_ref">object::as_mut_ref</a>(object_entity)
 }

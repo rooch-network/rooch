@@ -103,7 +103,7 @@ module moveos_std::context {
     #[private_generics(T)]
     /// Create a new Object, Add the Object to the global object storage and return the Object
     /// Note: the default owner is the `System`, the caller should explicitly transfer the Object to the owner.
-    /// The owner can get the `&mut Object` by `borrow_object_mut`
+    /// The owner can get the `&mut Object` by `borrow_mut_object`
     public fun new_object<T: key>(self: &mut Context, value: T): Object<T> {
         let id = fresh_object_id(self);
         object::new(id, value)
@@ -135,7 +135,7 @@ module moveos_std::context {
 
     /// Borrow mut Object from object store with object_id
     /// If the object is not shared, only the owner can borrow an `&mut Object<T>` from the global object storage
-    public fun borrow_object_mut<T: key>(_self: &mut Context, owner: &signer, object_id: ObjectID): &mut Object<T> {
+    public fun borrow_mut_object<T: key>(_self: &mut Context, owner: &signer, object_id: ObjectID): &mut Object<T> {
         let object_entity = object::borrow_mut_from_global<T>(object_id);
         if(!object::is_shared_internal(object_entity)) {
             let owner_address = signer::address_of(owner);
@@ -145,17 +145,17 @@ module moveos_std::context {
     }
 
     #[private_generics(T)]
-    /// Borrow mut singleton Object from global object storage
-    /// Only the module of T can borrow mut singleton Object from object store
-    public fun borrow_mut_singleton<T: key>(_self: &mut Context): &mut Object<T> {
-        let object_id = object::singleton_object_id<T>();
+    /// The module of T can borrow mut Object from object store with any object_id
+    public fun borrow_mut_object_extend<T: key>(_self: &mut Context, object_id: ObjectID) : &mut Object<T> {
         let object_entity = object::borrow_mut_from_global<T>(object_id);
         object::as_mut_ref(object_entity)
     }
 
     #[private_generics(T)]
-    /// The module of T can borrow mut Object from object store with any object_id
-    public fun borrow_object_mut_extend<T: key>(_self: &mut Context, object_id: ObjectID) : &mut Object<T> {
+    /// Borrow mut singleton Object from global object storage
+    /// Only the module of T can borrow mut singleton Object from object store
+    public fun borrow_mut_singleton<T: key>(_self: &mut Context): &mut Object<T> {
+        let object_id = object::singleton_object_id<T>();
         let object_entity = object::borrow_mut_from_global<T>(object_id);
         object::as_mut_ref(object_entity)
     }

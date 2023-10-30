@@ -47,7 +47,7 @@ module moveos_std::event {
     /// Borrow a mut event handle from the object storage
     fun borrow_event_handle_mut<T>(ctx: &mut Context): &mut EventHandle {
         let event_handle_id = derive_event_handle_id<T>();
-        let object = context::borrow_object_mut_extend<EventHandle>(ctx, event_handle_id);
+        let object = context::borrow_mut_object_extend<EventHandle>(ctx, event_handle_id);
         object::borrow_mut(object)
     }
 

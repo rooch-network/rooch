@@ -372,7 +372,7 @@ module rooch_examples::article {
     }
 
     public fun get_article_mut(ctx: &mut Context, obj_id: ObjectID): &mut Object<Article> {
-        context::borrow_object_mut_extend<Article>(ctx, obj_id)
+        context::borrow_mut_object_extend<Article>(ctx, obj_id)
     }
 
     public fun get_article(ctx: &mut Context, obj_id: ObjectID): &Object<Article> {
