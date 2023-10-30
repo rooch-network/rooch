@@ -27,22 +27,6 @@ TODO we need to redegin the StorageContext and AppStorageContext
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a></code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x2_storage_context_new_with_id"></a>
 
 ## Function `new_with_id`
@@ -52,20 +36,3 @@ Create a new StorageContext with a given ObjectID.
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_new_with_id">new_with_id</a>(handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_new_with_id">new_with_id</a>(handle: ObjectID): <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a> {
-    <a href="storage_context.md#0x2_storage_context_StorageContext">StorageContext</a> {
-        handle,
-    }
-}
-</code></pre>
-
-
-
-</details>

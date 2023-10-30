@@ -43,17 +43,6 @@ Decode the Bitcoin address bytes with Base58 algorithm and returns a raw address
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="decoding.md#0x3_decoding_base58">base58</a>(encoded_address_bytes: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;;
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_decoding_base58check"></a>
 
 ## Function `base58check`
@@ -65,16 +54,3 @@ Decode the Bitcoin address bytes with Base58Check algorithm and returns a raw ad
 
 <pre><code><b>public</b> <b>fun</b> <a href="decoding.md#0x3_decoding_base58check">base58check</a>(encoded_address_bytes: &<a href="">vector</a>&lt;u8&gt;, version_byte: u8): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="decoding.md#0x3_decoding_base58check">base58check</a>(encoded_address_bytes: &<a href="">vector</a>&lt;u8&gt;, version_byte: u8): <a href="">vector</a>&lt;u8&gt;;
-</code></pre>
-
-
-
-</details>

@@ -62,22 +62,6 @@ The main scenario is that the user can actively turn off the AutoAcceptCoin sett
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>auto_accept_coins: <a href="_Table">table::Table</a>&lt;<b>address</b>, bool&gt;</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x3_account_coin_store_CoinStores"></a>
 
 ## Resource `CoinStores`
@@ -89,22 +73,6 @@ A resource that holds all the Object<CoinStore> for account.
 </code></pre>
 
 
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>coin_stores: <a href="_Table">table::Table</a>&lt;<a href="_String">string::String</a>, <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;&gt;</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
 
 <a name="0x3_account_coin_store_AcceptCoinEvent"></a>
 
@@ -118,22 +86,6 @@ Event for auto accept coin set
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>enable: bool</code>
-</dt>
-<dd>
- auto accept coin config
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x3_account_coin_store_DepositEvent"></a>
 
 ## Struct `DepositEvent`
@@ -146,34 +98,6 @@ Event emitted when some amount of a coin is deposited into an account.
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>coin_store_id: <a href="_ObjectID">object::ObjectID</a></code>
-</dt>
-<dd>
- The id of the coin store that was deposited to
-</dd>
-<dt>
-<code>coin_type: <a href="_String">string::String</a></code>
-</dt>
-<dd>
- The type of the coin that was sent
-</dd>
-<dt>
-<code>amount: u256</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x3_account_coin_store_WithdrawEvent"></a>
 
 ## Struct `WithdrawEvent`
@@ -185,34 +109,6 @@ Event emitted when some amount of a coin is withdrawn from an account.
 </code></pre>
 
 
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>coin_store_id: <a href="_ObjectID">object::ObjectID</a></code>
-</dt>
-<dd>
- The id of the coin store that was withdrawn from
-</dd>
-<dt>
-<code>coin_type: <a href="_String">string::String</a></code>
-</dt>
-<dd>
- The type of the coin that was sent
-</dd>
-<dt>
-<code>amount: u256</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
 
 <a name="@Constants_0"></a>
 
@@ -240,22 +136,6 @@ Account hasn't accept <code>CoinType</code>
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_genesis_init">genesis_init</a>(ctx: &<b>mut</b> Context, genesis_account: &<a href="">signer</a>) {
-    <b>let</b> auto_accepted_coins = <a href="account_coin_store.md#0x3_account_coin_store_AutoAcceptCoins">AutoAcceptCoins</a> {
-        auto_accept_coins: <a href="_new">table::new</a>&lt;<b>address</b>, bool&gt;(ctx),
-    };
-    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, genesis_account, auto_accepted_coins);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_account_coin_store_init_account_coin_stores"></a>
 
 ## Function `init_account_coin_stores`
@@ -266,22 +146,6 @@ Account hasn't accept <code>CoinType</code>
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_init_account_coin_stores">init_account_coin_stores</a>(ctx: &<b>mut</b> Context, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>){
-    <b>let</b> coin_stores = <a href="account_coin_store.md#0x3_account_coin_store_CoinStores">CoinStores</a> {
-        coin_stores: <a href="_new">table::new</a>&lt;<a href="_String">string::String</a>, Object&lt;CoinStore&gt;&gt;(ctx),
-    };
-    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, <a href="account.md#0x3_account">account</a>, coin_stores);
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_account_coin_store_balance"></a>
 
@@ -295,24 +159,6 @@ Returns the balance of <code>addr</code> for provided <code>CoinType</code>.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_balance">balance</a>&lt;CoinType: key&gt;(ctx: &Context, addr: <b>address</b>): u256 {
-    <b>if</b>(<a href="account_coin_store.md#0x3_account_coin_store_exist_account_coin_store">exist_account_coin_store</a>&lt;CoinType&gt;(ctx, addr)) {
-        <b>let</b> <a href="coin_store.md#0x3_coin_store">coin_store</a> = <a href="account_coin_store.md#0x3_account_coin_store_borrow_account_coin_store">borrow_account_coin_store</a>&lt;CoinType&gt;(ctx, addr);
-        <a href="coin_store.md#0x3_coin_store_balance">coin_store::balance</a>(<a href="coin_store.md#0x3_coin_store">coin_store</a>)
-    } <b>else</b> {
-        0u256
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_account_coin_store_coin_store_id"></a>
 
 ## Function `coin_store_id`
@@ -324,26 +170,6 @@ Return the account CoinStore object id for addr
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_coin_store_id">coin_store_id</a>&lt;CoinType: key&gt;(ctx: &Context, addr: <b>address</b>): Option&lt;ObjectID&gt; {
-    <b>if</b> (<a href="account_coin_store.md#0x3_account_coin_store_exist_account_coin_store">exist_account_coin_store</a>&lt;CoinType&gt;(ctx, addr)) {
-        <b>let</b> coin_stores = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account_coin_store.md#0x3_account_coin_store_CoinStores">CoinStores</a>&gt;(ctx, addr);
-        <b>let</b> coin_type = <a href="_type_name">type_info::type_name</a>&lt;CoinType&gt;();
-        <b>let</b> coin_store_ref = <a href="_borrow">table::borrow</a>(&coin_stores.coin_stores, coin_type);
-        <a href="_some">option::some</a>(<a href="_id">object::id</a>(coin_store_ref))
-    } <b>else</b> {
-        <a href="_none">option::none</a>&lt;ObjectID&gt;()
-    }
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_account_coin_store_coin_stores_handle"></a>
 
@@ -357,25 +183,6 @@ Return CoinStores table handle for addr
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_coin_stores_handle">coin_stores_handle</a>(ctx: &Context, addr: <b>address</b>): Option&lt;ObjectID&gt; {
-    <b>if</b> (<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account_coin_store.md#0x3_account_coin_store_CoinStores">CoinStores</a>&gt;(ctx, addr))
-    {
-        <b>let</b> coin_stores = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account_coin_store.md#0x3_account_coin_store_CoinStores">CoinStores</a>&gt;(ctx, addr);
-        <a href="_some">option::some</a>(*<a href="_handle">table::handle</a>(&coin_stores.coin_stores))
-    } <b>else</b> {
-        <a href="_none">option::none</a>&lt;ObjectID&gt;()
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_account_coin_store_is_accept_coin"></a>
 
 ## Function `is_accept_coin`
@@ -387,23 +194,6 @@ Return whether the account at <code>addr</code> accept <code>Coin</code> type co
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_is_accept_coin">is_accept_coin</a>&lt;CoinType: key&gt;(ctx: &Context, addr: <b>address</b>): bool {
-    <b>if</b> (<a href="account_coin_store.md#0x3_account_coin_store_can_auto_accept_coin">can_auto_accept_coin</a>(ctx, addr)) {
-        <b>true</b>
-    } <b>else</b> {
-        <a href="account_coin_store.md#0x3_account_coin_store_exist_account_coin_store">exist_account_coin_store</a>&lt;CoinType&gt;(ctx, addr)
-    }
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_account_coin_store_can_auto_accept_coin"></a>
 
@@ -418,23 +208,6 @@ Default is true if absent
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_can_auto_accept_coin">can_auto_accept_coin</a>(ctx: &Context, addr: <b>address</b>): bool {
-    <b>let</b> auto_accept_coins = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account_coin_store.md#0x3_account_coin_store_AutoAcceptCoins">AutoAcceptCoins</a>&gt;(ctx, @rooch_framework);
-    <b>if</b> (<a href="_contains">table::contains</a>&lt;<b>address</b>, bool&gt;(&auto_accept_coins.auto_accept_coins, addr)) {
-        <b>return</b> *<a href="_borrow">table::borrow</a>&lt;<b>address</b>, bool&gt;(&auto_accept_coins.auto_accept_coins, addr)
-    };
-    <b>true</b>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_account_coin_store_do_accept_coin"></a>
 
 ## Function `do_accept_coin`
@@ -448,20 +221,6 @@ If user turns off AutoAcceptCoin, call this method to receive the corresponding 
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_do_accept_coin">do_accept_coin</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> Context, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-    <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
-    <a href="account_coin_store.md#0x3_account_coin_store_ensure_coin_store_bypass_auto_accept_flag">ensure_coin_store_bypass_auto_accept_flag</a>&lt;CoinType&gt;(ctx, addr);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_account_coin_store_set_auto_accept_coin"></a>
 
 ## Function `set_auto_accept_coin`
@@ -473,27 +232,6 @@ Configure whether auto-accept coins.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_set_auto_accept_coin">set_auto_accept_coin</a>(ctx: &<b>mut</b> Context, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, enable: bool)  {
-    <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
-    <b>let</b> auto_accept_coins = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="account_coin_store.md#0x3_account_coin_store_AutoAcceptCoins">AutoAcceptCoins</a>&gt;(ctx, @rooch_framework);
-    <a href="_upsert">table::upsert</a>&lt;<b>address</b>, bool&gt;(&<b>mut</b> auto_accept_coins.auto_accept_coins, addr, enable);
-
-    <a href="_emit">event::emit</a>&lt;<a href="account_coin_store.md#0x3_account_coin_store_AcceptCoinEvent">AcceptCoinEvent</a>&gt;(ctx,
-        <a href="account_coin_store.md#0x3_account_coin_store_AcceptCoinEvent">AcceptCoinEvent</a> {
-            enable,
-        },
-    );
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_account_coin_store_withdraw"></a>
 
@@ -508,24 +246,6 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_withdraw">withdraw</a>&lt;CoinType: key + store&gt;(
-    ctx: &<b>mut</b> Context,
-    <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>,
-    amount: u256,
-): Coin&lt;CoinType&gt; {
-    <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
-    <a href="account_coin_store.md#0x3_account_coin_store_withdraw_internal">withdraw_internal</a>&lt;CoinType&gt;(ctx, addr, amount)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_account_coin_store_deposit"></a>
 
 ## Function `deposit`
@@ -538,19 +258,6 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_deposit">deposit</a>&lt;CoinType: key + store&gt;(ctx: &<b>mut</b> Context, addr: <b>address</b>, <a href="coin.md#0x3_coin">coin</a>: Coin&lt;CoinType&gt;) {
-    <a href="account_coin_store.md#0x3_account_coin_store_deposit_internal">deposit_internal</a>(ctx, addr, <a href="coin.md#0x3_coin">coin</a>);
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_account_coin_store_transfer"></a>
 
@@ -565,25 +272,6 @@ Any account and module can call this function to transfer coins, the <code>CoinT
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="transfer.md#0x3_transfer">transfer</a>&lt;CoinType: key + store&gt;(
-    ctx: &<b>mut</b> Context,
-    from: &<a href="">signer</a>,
-    <b>to</b>: <b>address</b>,
-    amount: u256,
-) {
-    <b>let</b> from_addr = <a href="_address_of">signer::address_of</a>(from);
-    <a href="account_coin_store.md#0x3_account_coin_store_transfer_internal">transfer_internal</a>&lt;CoinType&gt;(ctx, from_addr, <b>to</b>, amount);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_account_coin_store_exist_account_coin_store"></a>
 
 ## Function `exist_account_coin_store`
@@ -595,25 +283,6 @@ Any account and module can call this function to transfer coins, the <code>CoinT
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_exist_account_coin_store">exist_account_coin_store</a>&lt;CoinType: key&gt;(ctx: &Context, addr: <b>address</b>): bool {
-    <b>if</b> (<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="account_coin_store.md#0x3_account_coin_store_CoinStores">CoinStores</a>&gt;(ctx, addr)) {
-        <b>let</b> coin_stores = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="account_coin_store.md#0x3_account_coin_store_CoinStores">CoinStores</a>&gt;(ctx, addr);
-        <b>let</b> coin_type = <a href="_type_name">type_info::type_name</a>&lt;CoinType&gt;();
-        <a href="_contains">table::contains</a>(&coin_stores.coin_stores, coin_type)
-    } <b>else</b> {
-        <b>false</b>
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_account_coin_store_is_account_coin_store_frozen"></a>
 
 ## Function `is_account_coin_store_frozen`
@@ -624,24 +293,6 @@ Any account and module can call this function to transfer coins, the <code>CoinT
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_is_account_coin_store_frozen">is_account_coin_store_frozen</a>&lt;CoinType: key&gt;(ctx: &Context, addr: <b>address</b>): bool {
-    <b>if</b> (<a href="account_coin_store.md#0x3_account_coin_store_exist_account_coin_store">exist_account_coin_store</a>&lt;CoinType&gt;(ctx, addr)) {
-        <b>let</b> <a href="coin_store.md#0x3_coin_store">coin_store</a> = <a href="account_coin_store.md#0x3_account_coin_store_borrow_account_coin_store">borrow_account_coin_store</a>&lt;CoinType&gt;(ctx, addr);
-        <a href="coin_store.md#0x3_coin_store_is_frozen">coin_store::is_frozen</a>(<a href="coin_store.md#0x3_coin_store">coin_store</a>)
-    } <b>else</b> {
-        <b>false</b>
-    }
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_account_coin_store_withdraw_extend"></a>
 
@@ -656,23 +307,6 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_withdraw_extend">withdraw_extend</a>&lt;CoinType: key&gt;(
-    ctx: &<b>mut</b> Context,
-    addr: <b>address</b>,
-    amount: u256,
-): Coin&lt;CoinType&gt; {
-    <a href="account_coin_store.md#0x3_account_coin_store_withdraw_internal">withdraw_internal</a>&lt;CoinType&gt;(ctx, addr, amount)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_account_coin_store_deposit_extend"></a>
 
 ## Function `deposit_extend`
@@ -685,19 +319,6 @@ This function is only called by the <code>CoinType</code> module, for the develo
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_deposit_extend">deposit_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> Context, addr: <b>address</b>, <a href="coin.md#0x3_coin">coin</a>: Coin&lt;CoinType&gt;) {
-    <a href="account_coin_store.md#0x3_account_coin_store_deposit_internal">deposit_internal</a>(ctx, addr, <a href="coin.md#0x3_coin">coin</a>);
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_account_coin_store_transfer_extend"></a>
 
@@ -712,24 +333,6 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_transfer_extend">transfer_extend</a>&lt;CoinType: key&gt;(
-    ctx: &<b>mut</b> Context,
-    from: <b>address</b>,
-    <b>to</b>: <b>address</b>,
-    amount: u256,
-) {
-    <a href="account_coin_store.md#0x3_account_coin_store_transfer_internal">transfer_internal</a>&lt;CoinType&gt;(ctx, from, <b>to</b>, amount);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_account_coin_store_accept_coin_entry"></a>
 
 ## Function `accept_coin_entry`
@@ -742,19 +345,6 @@ Required if user wants to start accepting deposits of <code>CoinType</code> in h
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_accept_coin_entry">accept_coin_entry</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> Context, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-    <a href="account_coin_store.md#0x3_account_coin_store_do_accept_coin">do_accept_coin</a>&lt;CoinType&gt;(ctx, <a href="account.md#0x3_account">account</a>)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_account_coin_store_enable_auto_accept_coin_entry"></a>
 
@@ -769,19 +359,6 @@ The script function is reenterable.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_enable_auto_accept_coin_entry">enable_auto_accept_coin_entry</a>(ctx: &<b>mut</b> Context, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-    <a href="account_coin_store.md#0x3_account_coin_store_set_auto_accept_coin">set_auto_accept_coin</a>(ctx, <a href="account.md#0x3_account">account</a>, <b>true</b>)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_account_coin_store_disable_auto_accept_coin_entry"></a>
 
 ## Function `disable_auto_accept_coin_entry`
@@ -792,18 +369,3 @@ The script function is reenterable.
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_disable_auto_accept_coin_entry">disable_auto_accept_coin_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_disable_auto_accept_coin_entry">disable_auto_accept_coin_entry</a>(ctx: &<b>mut</b> Context, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-    <a href="account_coin_store.md#0x3_account_coin_store_set_auto_accept_coin">set_auto_accept_coin</a>(ctx, <a href="account.md#0x3_account">account</a>, <b>false</b>);
-}
-</code></pre>
-
-
-
-</details>

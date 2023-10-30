@@ -76,17 +76,6 @@ Encode the address bytes with Base58 algorithm and returns an encoded Bitcoin ad
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="encoding.md#0x3_encoding_base58">base58</a>(address_bytes: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;;
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_encoding_base58check"></a>
 
 ## Function `base58check`
@@ -100,17 +89,6 @@ Encode the address bytes with Base58Check algorithm and returns an encoded Bitco
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="encoding.md#0x3_encoding_base58check">base58check</a>(address_bytes: &<a href="">vector</a>&lt;u8&gt;, version_byte: u8): <a href="">vector</a>&lt;u8&gt;;
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_encoding_bech32"></a>
 
@@ -126,17 +104,6 @@ Encode the public key with Bech32 or Bech32m encoding algorithm and returns 42 o
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="encoding.md#0x3_encoding_bech32">bech32</a>(public_key: &<a href="">vector</a>&lt;u8&gt;, version: u8): <a href="">vector</a>&lt;u8&gt;;
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_encoding_p2sh"></a>
 
 ## Function `p2sh`
@@ -150,17 +117,6 @@ Creates a pay to script hash P2SH address from a script converted from a compres
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="encoding.md#0x3_encoding_p2sh">p2sh</a>(public_key: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;;
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_encoding_p2pkh"></a>
 
 ## Function `p2pkh`
@@ -171,16 +127,3 @@ Creates a pay to (compressed) public key hash address from a public key.
 
 <pre><code><b>public</b> <b>fun</b> <a href="encoding.md#0x3_encoding_p2pkh">p2pkh</a>(public_key: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="encoding.md#0x3_encoding_p2pkh">p2pkh</a>(public_key: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;;
-</code></pre>
-
-
-
-</details>

@@ -35,22 +35,6 @@
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>bytes: <a href="">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -170,41 +154,6 @@ P2TR addresses with Bech32m encoding are 62 characters
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_legacy">new_legacy</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;, decimal_prefix: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
-    // Check the decimal_prefix, i.e. <b>address</b> type
-    <b>assert</b>!(
-        decimal_prefix == <a href="bitcoin_address.md#0x3_bitcoin_address_P2PKH_ADDR_DECIMAL_PREFIX">P2PKH_ADDR_DECIMAL_PREFIX</a>
-        || decimal_prefix == <a href="bitcoin_address.md#0x3_bitcoin_address_P2SH_ADDR_DECIMAL_PREFIX">P2SH_ADDR_DECIMAL_PREFIX</a>,
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidDecimalPrefix">ErrorInvalidDecimalPrefix</a>)
-    );
-    // Check the <b>public</b> key length
-    <b>assert</b>!(
-        <a href="_length">vector::length</a>(pub_key) == <a href="ecdsa_k1.md#0x3_ecdsa_k1_public_key_length">ecdsa_k1::public_key_length</a>(),
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidCompressedPublicKeyLength">ErrorInvalidCompressedPublicKeyLength</a>)
-    );
-    // Perform <b>address</b> creation
-    <b>let</b> <a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a> = <b>if</b> (decimal_prefix == <a href="bitcoin_address.md#0x3_bitcoin_address_P2PKH_ADDR_DECIMAL_PREFIX">P2PKH_ADDR_DECIMAL_PREFIX</a>) { // P2PKH <b>address</b>
-        <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2pkh_address">create_p2pkh_address</a>(pub_key)
-    } <b>else</b> <b>if</b> (decimal_prefix == <a href="bitcoin_address.md#0x3_bitcoin_address_P2SH_ADDR_DECIMAL_PREFIX">P2SH_ADDR_DECIMAL_PREFIX</a>) { // P2SH <b>address</b>
-        <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2sh_address">create_p2sh_address</a>(pub_key)
-    } <b>else</b> {
-        <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
-            bytes: <a href="_empty">vector::empty</a>&lt;u8&gt;()
-        }
-    };
-
-    <a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_bitcoin_address_new_bech32"></a>
 
 ## Function `new_bech32`
@@ -215,40 +164,6 @@ P2TR addresses with Bech32m encoding are 62 characters
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_bech32">new_bech32</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
-    // Check the <b>script</b> version
-    <b>assert</b>!(
-        version &lt;= 16,
-        <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidScriptVersion">ErrorInvalidScriptVersion</a>)
-    );
-    // Check the <b>script</b> version and the <b>public</b> key relationship
-    <b>if</b> (version == 0) {
-        <b>assert</b>!(
-            <a href="_length">vector::length</a>(pub_key) == 20 || <a href="_length">vector::length</a>(pub_key) == 32,
-            <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidHashedPublicKeyLength">ErrorInvalidHashedPublicKeyLength</a>)
-        );
-    };
-    <b>if</b> (version == 1) {
-        <b>assert</b>!(
-            <a href="_length">vector::length</a>(pub_key) == 32,
-            <a href="_invalid_argument">error::invalid_argument</a>(<a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidSchnorrPublicKeyLength">ErrorInvalidSchnorrPublicKeyLength</a>)
-        );
-    };
-    // This will create Segwit Bech32 or Taproot Bech32m addresses depending on the <b>public</b> key length and the <b>script</b> version
-    <b>let</b> <a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a> = <a href="bitcoin_address.md#0x3_bitcoin_address_create_bech32_address">create_bech32_address</a>(pub_key, version);
-
-    <a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a>
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_bitcoin_address_from_bytes"></a>
 
@@ -261,22 +176,6 @@ P2TR addresses with Bech32m encoding are 62 characters
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_from_bytes">from_bytes</a>(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
-    //TODO check the <b>address</b> bytes.
-    <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
-        bytes: bytes,
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_bitcoin_address_as_bytes"></a>
 
 ## Function `as_bytes`
@@ -287,19 +186,6 @@ P2TR addresses with Bech32m encoding are 62 characters
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_as_bytes">as_bytes</a>(addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a>): &<a href="">vector</a>&lt;u8&gt; {
-    &addr.bytes
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_bitcoin_address_into_bytes"></a>
 
@@ -312,20 +198,6 @@ P2TR addresses with Bech32m encoding are 62 characters
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_into_bytes">into_bytes</a>(addr: <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a>): <a href="">vector</a>&lt;u8&gt; {
-    <b>let</b> <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> { bytes } = addr;
-    bytes
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_bitcoin_address_create_p2pkh_address"></a>
 
 ## Function `create_p2pkh_address`
@@ -336,23 +208,6 @@ P2TR addresses with Bech32m encoding are 62 characters
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2pkh_address">create_p2pkh_address</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
-    <b>let</b> address_bytes = <a href="encoding.md#0x3_encoding_p2pkh">encoding::p2pkh</a>(pub_key);
-
-    <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
-        bytes: address_bytes
-    }
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_bitcoin_address_create_p2sh_address"></a>
 
@@ -365,23 +220,6 @@ P2TR addresses with Bech32m encoding are 62 characters
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2sh_address">create_p2sh_address</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
-    <b>let</b> address_bytes = <a href="encoding.md#0x3_encoding_p2sh">encoding::p2sh</a>(pub_key);
-
-    <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
-        bytes: address_bytes
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_bitcoin_address_create_bech32_address"></a>
 
 ## Function `create_bech32_address`
@@ -390,22 +228,3 @@ P2TR addresses with Bech32m encoding are 62 characters
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_bech32_address">create_bech32_address</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_bech32_address">create_bech32_address</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
-    <b>let</b> address_bytes = <a href="encoding.md#0x3_encoding_bech32">encoding::bech32</a>(pub_key, version);
-
-    <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> {
-        bytes: address_bytes
-    }
-}
-</code></pre>
-
-
-
-</details>

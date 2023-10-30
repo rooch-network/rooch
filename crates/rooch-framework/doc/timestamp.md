@@ -41,22 +41,6 @@ A singleton resource holding the current Unix time in microseconds
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>microseconds: u64</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -93,20 +77,6 @@ Conversion factor between seconds and microseconds
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x3_timestamp_genesis_init">genesis_init</a>(ctx: &<b>mut</b> Context, genesis_account: &<a href="">signer</a>, initial_time_microseconds: u64) {
-    <b>let</b> current_time = <a href="timestamp.md#0x3_timestamp_CurrentTimeMicroseconds">CurrentTimeMicroseconds</a> { microseconds: initial_time_microseconds };
-    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, genesis_account, current_time);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_timestamp_update_global_time"></a>
 
 ## Function `update_global_time`
@@ -118,22 +88,6 @@ Updates the wall clock time, if the new time is smaller than the current time, a
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x3_timestamp_update_global_time">update_global_time</a>(ctx: &<b>mut</b> Context, timestamp_microsecs: u64) {
-    <b>let</b> global_timer = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="timestamp.md#0x3_timestamp_CurrentTimeMicroseconds">CurrentTimeMicroseconds</a>&gt;(ctx, @rooch_framework);
-    <b>let</b> now = global_timer.microseconds;
-    <b>assert</b>!(now &lt; timestamp_microsecs, <a href="_invalid_argument">error::invalid_argument</a>(<a href="timestamp.md#0x3_timestamp_ErrorInvalidTimestamp">ErrorInvalidTimestamp</a>));
-    global_timer.microseconds = timestamp_microsecs;
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_timestamp_try_update_global_time"></a>
 
@@ -147,26 +101,6 @@ Tries to update the wall clock time, if the new time is smaller than the current
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x3_timestamp_try_update_global_time">try_update_global_time</a>(ctx: &<b>mut</b> Context, <a href="timestamp.md#0x3_timestamp">timestamp</a>: u64) : bool {
-    <b>let</b> global_timer = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="timestamp.md#0x3_timestamp_CurrentTimeMicroseconds">CurrentTimeMicroseconds</a>&gt;(ctx, @rooch_framework);
-    <b>let</b> now = global_timer.microseconds;
-    <b>if</b>(now &lt; <a href="timestamp.md#0x3_timestamp">timestamp</a>) {
-        global_timer.microseconds = <a href="timestamp.md#0x3_timestamp">timestamp</a>;
-        <b>true</b>
-    }<b>else</b>{
-        <b>false</b>
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_timestamp_now_microseconds"></a>
 
 ## Function `now_microseconds`
@@ -178,19 +112,6 @@ Gets the current time in microseconds.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x3_timestamp_now_microseconds">now_microseconds</a>(ctx: &Context): u64 {
-    <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="timestamp.md#0x3_timestamp_CurrentTimeMicroseconds">CurrentTimeMicroseconds</a>&gt;(ctx, @rooch_framework).microseconds
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_timestamp_now_seconds"></a>
 
@@ -204,19 +125,6 @@ Gets the current time in seconds.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x3_timestamp_now_seconds">now_seconds</a>(ctx: &Context): u64 {
-    <a href="timestamp.md#0x3_timestamp_now_microseconds">now_microseconds</a>(ctx) / <a href="timestamp.md#0x3_timestamp_MICRO_CONVERSION_FACTOR">MICRO_CONVERSION_FACTOR</a>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_timestamp_seconds_to_microseconds"></a>
 
 ## Function `seconds_to_microseconds`
@@ -228,19 +136,6 @@ Gets the current time in seconds.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x3_timestamp_seconds_to_microseconds">seconds_to_microseconds</a>(seconds: u64): u64 {
-    seconds * <a href="timestamp.md#0x3_timestamp_MICRO_CONVERSION_FACTOR">MICRO_CONVERSION_FACTOR</a>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_timestamp_fast_forward_seconds_for_local"></a>
 
 ## Function `fast_forward_seconds_for_local`
@@ -250,19 +145,3 @@ Fast forwards the clock by the given number of seconds, but only if the chain is
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="timestamp.md#0x3_timestamp_fast_forward_seconds_for_local">fast_forward_seconds_for_local</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, timestamp_seconds: u64)
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="timestamp.md#0x3_timestamp_fast_forward_seconds_for_local">fast_forward_seconds_for_local</a>(ctx: &<b>mut</b> Context, timestamp_seconds: u64) {
-    <b>assert</b>!(rooch_framework::chain_id::is_local(ctx), <a href="_invalid_argument">error::invalid_argument</a>(<a href="timestamp.md#0x3_timestamp_ErrorInvalidTimestamp">ErrorInvalidTimestamp</a>));
-    <a href="timestamp.md#0x3_timestamp_fast_forward_seconds">fast_forward_seconds</a>(ctx, timestamp_seconds);
-}
-</code></pre>
-
-
-
-</details>

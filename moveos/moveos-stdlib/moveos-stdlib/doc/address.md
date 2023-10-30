@@ -81,19 +81,6 @@ Aborts with <code><a href="address.md#0x2_address_ErrorAddressParseError">ErrorA
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_from_bytes">from_bytes</a>(bytes: <a href="">vector</a>&lt;u8&gt;): <b>address</b>{
-    bcs::to_address(bytes)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_address_to_bytes"></a>
 
 ## Function `to_bytes`
@@ -106,19 +93,6 @@ Convert <code>a</code> into BCS-encoded bytes.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_to_bytes">to_bytes</a>(a: <b>address</b>): <a href="">vector</a>&lt;u8&gt; {
-    <a href="_to_bytes">bcs::to_bytes</a>(&a)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_address_to_ascii_string"></a>
 
 ## Function `to_ascii_string`
@@ -130,19 +104,6 @@ Convert <code>a</code> to a hex-encoded ASCII string
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_to_ascii_string">to_ascii_string</a>(a: <b>address</b>): <a href="_String">ascii::String</a> {
-    <a href="_string">ascii::string</a>(<a href="hex.md#0x2_hex_encode">hex::encode</a>(<a href="address.md#0x2_address_to_bytes">to_bytes</a>(a)))
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_address_length"></a>
 
@@ -157,19 +118,6 @@ Length of a Rooch address in bytes
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_length">length</a>(): u64 {
-    <a href="address.md#0x2_address_LENGTH">LENGTH</a>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_address_max"></a>
 
 ## Function `max`
@@ -179,18 +127,3 @@ Largest possible address
 
 <pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_max">max</a>(): u256
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_max">max</a>(): u256 {
-    <a href="address.md#0x2_address_MAX">MAX</a>
-}
-</code></pre>
-
-
-
-</details>

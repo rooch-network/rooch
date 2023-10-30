@@ -63,23 +63,6 @@ The Coin has no ability, it is a hot potato type, only can handle by Coin module
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>value: u256</code>
-</dt>
-<dd>
- Amount of coin this address has.
- Following the ERC20 standard, both asset balance and supply are expressed in u256
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x3_coin_CoinInfo"></a>
 
 ## Struct `CoinInfo`
@@ -91,50 +74,6 @@ Information about a specific coin type. Stored in the global CoinInfos table.
 </code></pre>
 
 
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>coin_type: <a href="_String">string::String</a></code>
-</dt>
-<dd>
- Type of the coin: <code>address::my_module::XCoin</code>, same as <code>moveos_std::type_info::type_name&lt;CoinType&gt;()</code>.
- The name and symbol can repeat across different coin types, but the coin type must be unique.
-</dd>
-<dt>
-<code>name: <a href="_String">string::String</a></code>
-</dt>
-<dd>
- Name of the coin.
-</dd>
-<dt>
-<code>symbol: <a href="_String">string::String</a></code>
-</dt>
-<dd>
- Symbol of the coin, usually a shorter version of the name.
- For example, Singapore Dollar is SGD.
-</dd>
-<dt>
-<code>decimals: u8</code>
-</dt>
-<dd>
- Number of decimals used to get its user representation.
- For example, if <code>decimals</code> equals <code>2</code>, a balance of <code>505</code> coins should
- be displayed to a user as <code>5.05</code> (<code>505 / 10 ** 2</code>).
-</dd>
-<dt>
-<code>supply: u256</code>
-</dt>
-<dd>
- The total value for the coin represented by coin type. Mutable.
-</dd>
-</dl>
-
-
-</details>
 
 <a name="0x3_coin_CoinInfos"></a>
 
@@ -148,22 +87,6 @@ A resource that holds the CoinInfo for all accounts.
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>coin_infos: <a href="_Table">table::Table</a>&lt;<a href="_String">string::String</a>, <a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&gt;</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x3_coin_MintEvent"></a>
 
 ## Struct `MintEvent`
@@ -176,28 +99,6 @@ Event emitted when coin minted.
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>coin_type: <a href="_String">string::String</a></code>
-</dt>
-<dd>
- The type of coin that was minted
-</dd>
-<dt>
-<code>amount: u256</code>
-</dt>
-<dd>
- coins added to the system
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x3_coin_BurnEvent"></a>
 
 ## Struct `BurnEvent`
@@ -209,28 +110,6 @@ Event emitted when coin burned.
 </code></pre>
 
 
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>coin_type: <a href="_String">string::String</a></code>
-</dt>
-<dd>
- The type of coin that was burned
-</dd>
-<dt>
-<code>amount: u256</code>
-</dt>
-<dd>
- coins removed from the system
-</dd>
-</dl>
-
-
-</details>
 
 <a name="@Constants_0"></a>
 
@@ -375,22 +254,6 @@ Coin amount cannot be zero
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_genesis_init">genesis_init</a>(ctx: &<b>mut</b> Context, genesis_account: &<a href="">signer</a>) {
-    <b>let</b> coin_infos = <a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a> {
-        coin_infos: <a href="_new">table::new</a>(ctx),
-    };
-    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, genesis_account, coin_infos);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_coin_check_coin_info_registered"></a>
 
 ## Function `check_coin_info_registered`
@@ -402,19 +265,6 @@ A helper function that check the <code>CoinType</code> is registered, if not, ab
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_check_coin_info_registered">check_coin_info_registered</a>&lt;CoinType: key&gt;(ctx: &Context){
-    <b>assert</b>!(<a href="coin.md#0x3_coin_is_registered">is_registered</a>&lt;CoinType&gt;(ctx), <a href="_not_found">error::not_found</a>(<a href="coin.md#0x3_coin_ErrorCoinInfoNotRegistered">ErrorCoinInfoNotRegistered</a>));
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_coin_is_registered"></a>
 
@@ -428,25 +278,6 @@ Returns <code><b>true</b></code> if the type <code>CoinType</code> is an registe
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_registered">is_registered</a>&lt;CoinType: key&gt;(ctx: &Context): bool {
-    <b>if</b> (<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework)) {
-        <b>let</b> coin_infos = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework);
-        <b>let</b> coin_type = <a href="_type_name">type_info::type_name</a>&lt;CoinType&gt;();
-        <a href="_contains">table::contains</a>(&coin_infos.coin_infos, coin_type)
-    } <b>else</b> {
-        <b>false</b>
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_coin_name"></a>
 
 ## Function `name`
@@ -459,19 +290,6 @@ Returns the name of the coin.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_name">name</a>&lt;CoinType: key&gt;(ctx: &Context): <a href="_String">string::String</a> {
-    <a href="coin.md#0x3_coin_borrow_coin_info">borrow_coin_info</a>&lt;CoinType&gt;(ctx).name
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_coin_symbol"></a>
 
 ## Function `symbol`
@@ -483,19 +301,6 @@ Returns the symbol of the coin, usually a shorter version of the name.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_symbol">symbol</a>&lt;CoinType: key&gt;(ctx: &Context): <a href="_String">string::String</a> {
-    <a href="coin.md#0x3_coin_borrow_coin_info">borrow_coin_info</a>&lt;CoinType&gt;(ctx).symbol
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_coin_decimals"></a>
 
@@ -511,19 +316,6 @@ be displayed to a user as <code>5.05</code> (<code>505 / 10 ** 2</code>).
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_decimals">decimals</a>&lt;CoinType: key&gt;(ctx: &Context): u8 {
-    <a href="coin.md#0x3_coin_borrow_coin_info">borrow_coin_info</a>&lt;CoinType&gt;(ctx).decimals
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_coin_supply"></a>
 
 ## Function `supply`
@@ -535,19 +327,6 @@ Returns the amount of coin in existence.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_supply">supply</a>&lt;CoinType: key&gt;(ctx: &Context): u256 {
-    <a href="coin.md#0x3_coin_borrow_coin_info">borrow_coin_info</a>&lt;CoinType&gt;(ctx).supply
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_coin_is_same_coin"></a>
 
@@ -561,19 +340,6 @@ Return true if the type <code>CoinType1</code> is same with <code>CoinType2</cod
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_same_coin">is_same_coin</a>&lt;CoinType1, CoinType2&gt;(): bool {
-    <b>return</b> type_of&lt;CoinType1&gt;() == type_of&lt;CoinType2&gt;()
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_coin_coin_infos_handle"></a>
 
 ## Function `coin_infos_handle`
@@ -585,22 +351,6 @@ Return CoinInfos table handle
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_infos_handle">coin_infos_handle</a>(ctx: &Context): ObjectID {
-    // <a href="coin.md#0x3_coin">coin</a> info ensured via the Genesis transaction, so it should always exist
-    <b>assert</b>!(<a href="_global_exists">account_storage::global_exists</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework), <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorCoinInfosNotFound">ErrorCoinInfosNotFound</a>));
-    <b>let</b> coin_infos = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework);
-    *<a href="_handle">table::handle</a>(&coin_infos.coin_infos)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_coin_destroy_zero"></a>
 
@@ -615,20 +365,6 @@ so it is impossible to "burn" any non-zero amount of <code><a href="coin.md#0x3_
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_destroy_zero">destroy_zero</a>&lt;CoinType: key&gt;(zero_coin: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;) {
-    <b>let</b> <a href="coin.md#0x3_coin_Coin">Coin</a> { value } = zero_coin;
-    <b>assert</b>!(value == 0, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorDestroyOfNonZeroCoin">ErrorDestroyOfNonZeroCoin</a>))
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_coin_extract"></a>
 
 ## Function `extract`
@@ -641,21 +377,6 @@ Extracts <code>amount</code> from the passed-in <code><a href="coin.md#0x3_coin"
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_extract">extract</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: &<b>mut</b> <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;, amount: u256): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
-    <b>assert</b>!(<a href="coin.md#0x3_coin">coin</a>.value &gt;= amount, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorInSufficientBalance">ErrorInSufficientBalance</a>));
-    <a href="coin.md#0x3_coin">coin</a>.value = <a href="coin.md#0x3_coin">coin</a>.value - amount;
-    <a href="coin.md#0x3_coin_Coin">Coin</a> { value: amount }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_coin_extract_all"></a>
 
 ## Function `extract_all`
@@ -667,21 +388,6 @@ Extracts the entire amount from the passed-in <code><a href="coin.md#0x3_coin">c
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_extract_all">extract_all</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: &<b>mut</b> <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
-    <b>let</b> total_value = <a href="coin.md#0x3_coin">coin</a>.value;
-    <a href="coin.md#0x3_coin">coin</a>.value = 0;
-    <a href="coin.md#0x3_coin_Coin">Coin</a> { value: total_value }
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_coin_merge"></a>
 
@@ -696,20 +402,6 @@ to the sum of the two coins (<code>dst_coin</code> and <code>source_coin</code>)
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_merge">merge</a>&lt;CoinType: key&gt;(dst_coin: &<b>mut</b> <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;, source_coin: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;) {
-    <b>let</b> <a href="coin.md#0x3_coin_Coin">Coin</a> { value } = source_coin;
-    dst_coin.value = dst_coin.value + value;
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_coin_value"></a>
 
 ## Function `value`
@@ -722,19 +414,6 @@ Returns the <code>value</code> passed in <code><a href="coin.md#0x3_coin">coin</
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_value">value</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: &<a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;): u256 {
-    <a href="coin.md#0x3_coin">coin</a>.value
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_coin_zero"></a>
 
 ## Function `zero`
@@ -746,21 +425,6 @@ Create a new <code><a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;</cod
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_zero">zero</a>&lt;CoinType: key&gt;(): <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
-    <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
-        value: 0
-    }
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_coin_register_extend"></a>
 
@@ -775,43 +439,6 @@ This function is protected by <code>private_generics</code>, so it can only be c
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_register_extend">register_extend</a>&lt;CoinType: key&gt;(
-    ctx: &<b>mut</b> Context,
-    name: <a href="_String">string::String</a>,
-    symbol: <a href="_String">string::String</a>,
-    decimals: u8,
-){
-
-    <b>let</b> coin_infos = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a>&gt;(ctx, @rooch_framework);
-    <b>let</b> coin_type = <a href="_type_name">type_info::type_name</a>&lt;CoinType&gt;();
-
-    <b>assert</b>!(
-        !<a href="_contains">table::contains</a>(&coin_infos.coin_infos, coin_type),
-        <a href="_already_exists">error::already_exists</a>(<a href="coin.md#0x3_coin_ErrorCoinInfoAlreadyRegistered">ErrorCoinInfoAlreadyRegistered</a>),
-    );
-
-    <b>assert</b>!(<a href="_length">string::length</a>(&name) &lt;= <a href="coin.md#0x3_coin_MAX_COIN_NAME_LENGTH">MAX_COIN_NAME_LENGTH</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorCoinNameTooLong">ErrorCoinNameTooLong</a>));
-    <b>assert</b>!(<a href="_length">string::length</a>(&symbol) &lt;= <a href="coin.md#0x3_coin_MAX_COIN_SYMBOL_LENGTH">MAX_COIN_SYMBOL_LENGTH</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="coin.md#0x3_coin_ErrorCoinSymbolTooLong">ErrorCoinSymbolTooLong</a>));
-
-    <b>let</b> coin_info = <a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a> {
-        coin_type,
-        name,
-        symbol,
-        decimals,
-        supply: 0u256,
-    };
-    <a href="_add">table::add</a>(&<b>mut</b> coin_infos.coin_infos, coin_type, coin_info);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_coin_mint_extend"></a>
 
 ## Function `mint_extend`
@@ -823,19 +450,6 @@ Mint new <code><a href="coin.md#0x3_coin_Coin">Coin</a></code>, this function is
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_mint_extend">mint_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> Context,amount: u256) : <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
-    <a href="coin.md#0x3_coin_mint_internal">mint_internal</a>&lt;CoinType&gt;(ctx, amount)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_coin_burn_extend"></a>
 
@@ -850,22 +464,6 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_burn_extend">burn_extend</a>&lt;CoinType: key&gt;(
-    ctx: &<b>mut</b> Context,
-    <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;,
-) {
-    <a href="coin.md#0x3_coin_burn_internal">burn_internal</a>(ctx, <a href="coin.md#0x3_coin">coin</a>)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_coin_unpack"></a>
 
 ## Function `unpack`
@@ -877,20 +475,6 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_unpack">unpack</a>&lt;CoinType: key&gt;(<a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;) : u256 {
-    <b>let</b> <a href="coin.md#0x3_coin_Coin">Coin</a> { value } = <a href="coin.md#0x3_coin">coin</a>;
-    value
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_coin_pack"></a>
 
 ## Function `pack`
@@ -899,20 +483,3 @@ This function is only called by the <code>CoinType</code> module, for the develo
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_pack">pack</a>&lt;CoinType: key&gt;(value: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_pack">pack</a>&lt;CoinType: key&gt;(value: u256) : <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
-    <a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt; {
-        value
-    }
-}
-</code></pre>
-
-
-
-</details>

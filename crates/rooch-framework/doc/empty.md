@@ -23,18 +23,3 @@ This empty function does nothing
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="empty.md#0x3_empty">empty</a>()
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="empty.md#0x3_empty">empty</a>(){
-    //Just do nothing
-}
-</code></pre>
-
-
-
-</details>

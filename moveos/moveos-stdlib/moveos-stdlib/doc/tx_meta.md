@@ -40,28 +40,6 @@ We can not define MoveAction in Move, so we define a simple meta data struct to 
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>action_type: u8</code>
-</dt>
-<dd>
- The MoveAction type of the current transaction
-</dd>
-<dt>
-<code>function_meta: <a href="_Option">option::Option</a>&lt;<a href="tx_meta.md#0x2_tx_meta_FunctionCallMeta">tx_meta::FunctionCallMeta</a>&gt;</code>
-</dt>
-<dd>
- If the action type is MoveActionFunctionType, this field is the function call meta data
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x2_tx_meta_FunctionCallMeta"></a>
 
 ## Struct `FunctionCallMeta`
@@ -73,34 +51,6 @@ The FunctionCall Meta data
 </code></pre>
 
 
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>module_address: <b>address</b></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>module_name: <a href="_String">ascii::String</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>function_name: <a href="_String">ascii::String</a></code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
 
 <a name="@Constants_0"></a>
 
@@ -145,17 +95,6 @@ The FunctionCall Meta data
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta_move_action_script_type">move_action_script_type</a>(): u8 { <a href="tx_meta.md#0x2_tx_meta_MoveActionScriptType">MoveActionScriptType</a> }
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_tx_meta_move_action_function_type"></a>
 
 ## Function `move_action_function_type`
@@ -166,17 +105,6 @@ The FunctionCall Meta data
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta_move_action_function_type">move_action_function_type</a>(): u8 { <a href="tx_meta.md#0x2_tx_meta_MoveActionFunctionType">MoveActionFunctionType</a> }
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_tx_meta_move_action_module_bundle_type"></a>
 
@@ -189,17 +117,6 @@ The FunctionCall Meta data
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta_move_action_module_bundle_type">move_action_module_bundle_type</a>(): u8 { <a href="tx_meta.md#0x2_tx_meta_MoveActionModuleBundleType">MoveActionModuleBundleType</a> }
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_tx_meta_action_type"></a>
 
 ## Function `action_type`
@@ -210,19 +127,6 @@ The FunctionCall Meta data
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta_action_type">action_type</a>(self: &<a href="tx_meta.md#0x2_tx_meta_TxMeta">TxMeta</a>): u8 {
-    self.action_type
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_tx_meta_is_script_call"></a>
 
@@ -235,19 +139,6 @@ The FunctionCall Meta data
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta_is_script_call">is_script_call</a>(self: &<a href="tx_meta.md#0x2_tx_meta_TxMeta">TxMeta</a>): bool {
-    self.action_type == <a href="tx_meta.md#0x2_tx_meta_MoveActionScriptType">MoveActionScriptType</a>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_tx_meta_is_function_call"></a>
 
 ## Function `is_function_call`
@@ -258,19 +149,6 @@ The FunctionCall Meta data
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta_is_function_call">is_function_call</a>(self: &<a href="tx_meta.md#0x2_tx_meta_TxMeta">TxMeta</a>): bool {
-    self.action_type == <a href="tx_meta.md#0x2_tx_meta_MoveActionFunctionType">MoveActionFunctionType</a>
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_tx_meta_is_module_publish"></a>
 
@@ -283,19 +161,6 @@ The FunctionCall Meta data
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta_is_module_publish">is_module_publish</a>(self: &<a href="tx_meta.md#0x2_tx_meta_TxMeta">TxMeta</a>): bool {
-    self.action_type == <a href="tx_meta.md#0x2_tx_meta_MoveActionModuleBundleType">MoveActionModuleBundleType</a>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_tx_meta_function_meta"></a>
 
 ## Function `function_meta`
@@ -306,19 +171,6 @@ The FunctionCall Meta data
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta_function_meta">function_meta</a>(self: &<a href="tx_meta.md#0x2_tx_meta_TxMeta">TxMeta</a>): Option&lt;<a href="tx_meta.md#0x2_tx_meta_FunctionCallMeta">FunctionCallMeta</a>&gt; {
-    *&self.function_meta
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_tx_meta_function_meta_module_address"></a>
 
@@ -331,19 +183,6 @@ The FunctionCall Meta data
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta_function_meta_module_address">function_meta_module_address</a>(function_meta: &<a href="tx_meta.md#0x2_tx_meta_FunctionCallMeta">FunctionCallMeta</a>): &<b>address</b> {
-    &function_meta.module_address
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_tx_meta_function_meta_module_name"></a>
 
 ## Function `function_meta_module_name`
@@ -355,19 +194,6 @@ The FunctionCall Meta data
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta_function_meta_module_name">function_meta_module_name</a>(function_meta: &<a href="tx_meta.md#0x2_tx_meta_FunctionCallMeta">FunctionCallMeta</a>): &std::ascii::String {
-    &function_meta.module_name
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_tx_meta_function_meta_function_name"></a>
 
 ## Function `function_meta_function_name`
@@ -376,18 +202,3 @@ The FunctionCall Meta data
 
 <pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta_function_meta_function_name">function_meta_function_name</a>(function_meta: &<a href="tx_meta.md#0x2_tx_meta_FunctionCallMeta">tx_meta::FunctionCallMeta</a>): &<a href="_String">ascii::String</a>
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta_function_meta_function_name">function_meta_function_name</a>(function_meta: &<a href="tx_meta.md#0x2_tx_meta_FunctionCallMeta">FunctionCallMeta</a>): &std::ascii::String {
-    &function_meta.function_name
-}
-</code></pre>
-
-
-
-</details>

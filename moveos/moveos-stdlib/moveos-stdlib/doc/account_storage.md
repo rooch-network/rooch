@@ -49,28 +49,6 @@ It is used to store the account's resources and modules
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>resources: <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>modules: <a href="table.md#0x2_table_Table">table::Table</a>&lt;<a href="_String">string::String</a>, <a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x2_account_storage_ModuleUpgradeFlag"></a>
 
 ## Struct `ModuleUpgradeFlag`
@@ -81,22 +59,6 @@ It is used to store the account's resources and modules
 </code></pre>
 
 
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>is_upgrade: bool</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
 
 <a name="@Constants_0"></a>
 
@@ -162,19 +124,6 @@ The resource with the given type not exists
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_named_table_id">named_table_id</a>(account: <b>address</b>, table_type: u64): ObjectID{
-    <a href="object.md#0x2_object_address_to_object_id">object::address_to_object_id</a>(<a href="tx_context.md#0x2_tx_context_derive_id">tx_context::derive_id</a>(<a href="_to_bytes">bcs::to_bytes</a>(&account), table_type))
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_account_storage_create_account_storage"></a>
 
 ## Function `create_account_storage`
@@ -186,27 +135,6 @@ Create a new account storage space
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_create_account_storage">create_account_storage</a>(ctx: &<b>mut</b> Context, account: <b>address</b>) {
-    <b>let</b> object_id = <a href="object.md#0x2_object_address_to_object_id">object::address_to_object_id</a>(account);
-    <b>assert</b>!(!<a href="context.md#0x2_context_exist_object">context::exist_object</a>&lt;<a href="account_storage.md#0x2_account_storage_AccountStorage">AccountStorage</a>&gt;(ctx, object_id), <a href="account_storage.md#0x2_account_storage_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>);
-    <b>let</b> <a href="account_storage.md#0x2_account_storage">account_storage</a> = <a href="account_storage.md#0x2_account_storage_AccountStorage">AccountStorage</a> {
-        resources: <a href="type_table.md#0x2_type_table_new_with_id">type_table::new_with_id</a>(<a href="account_storage.md#0x2_account_storage_named_table_id">named_table_id</a>(account, <a href="account_storage.md#0x2_account_storage_NamedTableResource">NamedTableResource</a>)),
-        modules: <a href="table.md#0x2_table_new_with_id">table::new_with_id</a>(<a href="account_storage.md#0x2_account_storage_named_table_id">named_table_id</a>(account, <a href="account_storage.md#0x2_account_storage_NamedTableModule">NamedTableModule</a>)),
-    };
-    <b>let</b> obj = <a href="context.md#0x2_context_new_object_with_id">context::new_object_with_id</a>(ctx, object_id, <a href="account_storage.md#0x2_account_storage">account_storage</a>);
-    <a href="object.md#0x2_object_transfer_extend">object::transfer_extend</a>(&<b>mut</b> obj, account);
-    <a href="object.md#0x2_object_to_permanent">object::to_permanent</a>(obj);
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_account_storage_exist_account_storage"></a>
 
@@ -220,20 +148,6 @@ check if account storage eixst
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_exist_account_storage">exist_account_storage</a>(ctx: &Context, account: <b>address</b>): bool {
-    <b>let</b> object_id = <a href="object.md#0x2_object_address_to_object_id">object::address_to_object_id</a>(account);
-    <a href="context.md#0x2_context_exist_object">context::exist_object</a>&lt;<a href="account_storage.md#0x2_account_storage_AccountStorage">AccountStorage</a>&gt;(ctx, object_id)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_account_storage_ensure_account_storage"></a>
 
 ## Function `ensure_account_storage`
@@ -244,21 +158,6 @@ check if account storage eixst
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_ensure_account_storage">ensure_account_storage</a>(ctx: &<b>mut</b> Context, account: <b>address</b>) {
-    <b>if</b> (!<a href="account_storage.md#0x2_account_storage_exist_account_storage">exist_account_storage</a>(ctx, account)) {
-        <a href="account_storage.md#0x2_account_storage_create_account_storage">create_account_storage</a>(ctx, account);
-    }
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_account_storage_global_borrow"></a>
 
@@ -273,20 +172,6 @@ This function equates to <code><b>borrow_global</b>&lt;T&gt;(<b>address</b>)</co
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_global_borrow">global_borrow</a>&lt;T: key&gt;(ctx: &Context, account: <b>address</b>): &T {
-    <b>let</b> <a href="account_storage.md#0x2_account_storage">account_storage</a> = <a href="account_storage.md#0x2_account_storage_borrow_account_storage">borrow_account_storage</a>(ctx, account);
-    <a href="account_storage.md#0x2_account_storage_borrow_resource_from_account_storage">borrow_resource_from_account_storage</a>&lt;T&gt;(<a href="account_storage.md#0x2_account_storage">account_storage</a>)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_account_storage_global_borrow_mut"></a>
 
 ## Function `global_borrow_mut`
@@ -299,20 +184,6 @@ This function equates to <code><b>borrow_global_mut</b>&lt;T&gt;(<b>address</b>)
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_global_borrow_mut">global_borrow_mut</a>&lt;T: key&gt;(ctx: &<b>mut</b> Context, account: <b>address</b>): &<b>mut</b> T {
-    <b>let</b> <a href="account_storage.md#0x2_account_storage">account_storage</a> = <a href="account_storage.md#0x2_account_storage_borrow_account_storage_mut">borrow_account_storage_mut</a>(ctx, account);
-    <a href="account_storage.md#0x2_account_storage_borrow_mut_resource_from_account_storage">borrow_mut_resource_from_account_storage</a>&lt;T&gt;(<a href="account_storage.md#0x2_account_storage">account_storage</a>)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_account_storage_global_move_to"></a>
 
@@ -327,23 +198,6 @@ This function equates to <code><b>move_to</b>&lt;T&gt;(&<a href="">signer</a>, r
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_global_move_to">global_move_to</a>&lt;T: key&gt;(ctx: &<b>mut</b> Context, account: &<a href="">signer</a>, resource: T){
-    <b>let</b> account_address = <a href="_address_of">signer::address_of</a>(account);
-    //Auto create the account storage when <b>move</b> resource <b>to</b> the account
-    <a href="account_storage.md#0x2_account_storage_ensure_account_storage">ensure_account_storage</a>(ctx, account_address);
-    <b>let</b> <a href="account_storage.md#0x2_account_storage">account_storage</a> = <a href="account_storage.md#0x2_account_storage_borrow_account_storage_mut">borrow_account_storage_mut</a>(ctx, account_address);
-    <a href="account_storage.md#0x2_account_storage_add_resource_to_account_storage">add_resource_to_account_storage</a>(<a href="account_storage.md#0x2_account_storage">account_storage</a>, resource);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_account_storage_global_move_from"></a>
 
 ## Function `global_move_from`
@@ -356,20 +210,6 @@ This function equates to <code><b>move_from</b>&lt;T&gt;(<b>address</b>)</code> 
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_global_move_from">global_move_from</a>&lt;T: key&gt;(ctx: &<b>mut</b> Context, account: <b>address</b>): T {
-    <b>let</b> <a href="account_storage.md#0x2_account_storage">account_storage</a> = <a href="account_storage.md#0x2_account_storage_borrow_account_storage_mut">borrow_account_storage_mut</a>(ctx, account);
-    <a href="account_storage.md#0x2_account_storage_remove_resource_from_account_storage">remove_resource_from_account_storage</a>&lt;T&gt;(<a href="account_storage.md#0x2_account_storage">account_storage</a>)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_account_storage_global_exists"></a>
 
@@ -384,24 +224,6 @@ This function equates to <code><b>exists</b>&lt;T&gt;(<b>address</b>)</code> ins
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_global_exists">global_exists</a>&lt;T: key&gt;(ctx: &Context, account: <b>address</b>) : bool {
-    <b>if</b> (<a href="account_storage.md#0x2_account_storage_exist_account_storage">exist_account_storage</a>(ctx, account)) {
-        <b>let</b> <a href="account_storage.md#0x2_account_storage">account_storage</a> = <a href="account_storage.md#0x2_account_storage_borrow_account_storage">borrow_account_storage</a>(ctx, account);
-        <a href="account_storage.md#0x2_account_storage_exists_resource_at_account_storage">exists_resource_at_account_storage</a>&lt;T&gt;(<a href="account_storage.md#0x2_account_storage">account_storage</a>)
-    }<b>else</b>{
-        <b>false</b>
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_account_storage_exists_module"></a>
 
 ## Function `exists_module`
@@ -413,20 +235,6 @@ Check if the account has a module with the given name
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_exists_module">exists_module</a>(ctx: &Context, account: <b>address</b>, name: String): bool {
-    <b>let</b> <a href="account_storage.md#0x2_account_storage">account_storage</a> = <a href="account_storage.md#0x2_account_storage_borrow_account_storage">borrow_account_storage</a>(ctx, account);
-    <a href="account_storage.md#0x2_account_storage_exists_module_at_account_storage">exists_module_at_account_storage</a>(<a href="account_storage.md#0x2_account_storage">account_storage</a>, name)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_account_storage_publish_modules"></a>
 
@@ -440,50 +248,6 @@ Publish modules to the account's storage
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_publish_modules">publish_modules</a>(ctx: &<b>mut</b> Context, account: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;MoveModule&gt;) {
-    <b>let</b> account_address = <a href="_address_of">signer::address_of</a>(account);
-    <b>let</b> <a href="account_storage.md#0x2_account_storage">account_storage</a> = <a href="account_storage.md#0x2_account_storage_borrow_account_storage_mut">borrow_account_storage_mut</a>(ctx, account_address);
-    <b>let</b> i = 0;
-    <b>let</b> len = <a href="_length">vector::length</a>(&modules);
-    <b>let</b> (module_names, module_names_with_init_fn) = <a href="move_module.md#0x2_move_module_sort_and_verify_modules">move_module::sort_and_verify_modules</a>(&modules, account_address);
-
-    <b>let</b> upgrade_flag = <b>false</b>;
-    <b>while</b> (i &lt; len) {
-        <b>let</b> name = <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> module_names);
-        <b>let</b> m = <a href="account_storage.md#0x2_account_storage_pop_module_by_name">pop_module_by_name</a>(&<b>mut</b> modules, name);
-
-        // The <b>module</b> already <b>exists</b>, which means we are upgrading the <b>module</b>
-        <b>if</b> (<a href="table.md#0x2_table_contains">table::contains</a>(&<a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name)) {
-            <b>let</b> old_m = <a href="table.md#0x2_table_remove">table::remove</a>(&<b>mut</b> <a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name);
-            <a href="move_module.md#0x2_move_module_check_comatibility">move_module::check_comatibility</a>(&m, &old_m);
-            upgrade_flag = <b>true</b>;
-        } <b>else</b> {
-            // request init function invoking
-            <b>if</b> (<a href="_contains">vector::contains</a>(&module_names_with_init_fn, &name)) {
-                <a href="move_module.md#0x2_move_module_request_init_functions">move_module::request_init_functions</a>(<a href="_singleton">vector::singleton</a>(<b>copy</b> name), account_address);
-            }
-        };
-        <a href="table.md#0x2_table_add">table::add</a>(&<b>mut</b> <a href="account_storage.md#0x2_account_storage">account_storage</a>.modules, name, m);
-        i = i + 1;
-    };
-
-    // Store <a href="account_storage.md#0x2_account_storage_ModuleUpgradeFlag">ModuleUpgradeFlag</a> in <a href="tx_context.md#0x2_tx_context">tx_context</a> which will be fetched in VM in Rust,
-    // and then announce <b>to</b> the VM that the code loading cache should be considered outdated.
-    <b>let</b> tx_ctx = <a href="context.md#0x2_context_tx_context_mut">context::tx_context_mut</a>(ctx);
-    <b>if</b> (!<a href="tx_context.md#0x2_tx_context_contains">tx_context::contains</a>&lt;<a href="account_storage.md#0x2_account_storage_ModuleUpgradeFlag">ModuleUpgradeFlag</a>&gt;(tx_ctx)) {
-        <a href="tx_context.md#0x2_tx_context_add">tx_context::add</a>(tx_ctx, <a href="account_storage.md#0x2_account_storage_ModuleUpgradeFlag">ModuleUpgradeFlag</a> { is_upgrade: upgrade_flag });
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_account_storage_publish_modules_entry"></a>
 
 ## Function `publish_modules_entry`
@@ -494,28 +258,3 @@ The order of modules must be sorted by dependency order.
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="account_storage.md#0x2_account_storage_publish_modules_entry">publish_modules_entry</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="account_storage.md#0x2_account_storage_publish_modules_entry">publish_modules_entry</a>(ctx: &<b>mut</b> Context, account: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;) {
-    <b>let</b> n_modules = <a href="_length">vector::length</a>(&modules);
-    <b>let</b> i = 0;
-    <b>let</b> module_vec = <a href="_empty">vector::empty</a>&lt;MoveModule&gt;();
-    <b>while</b> (i &lt; n_modules) {
-        <b>let</b> code_bytes = <a href="_pop_back">vector::pop_back</a>(&<b>mut</b> modules);
-        <b>let</b> m = <a href="move_module.md#0x2_move_module_new">move_module::new</a>(code_bytes);
-        <a href="_push_back">vector::push_back</a>(&<b>mut</b> module_vec, m);
-        i = i + 1;
-    };
-
-    <a href="account_storage.md#0x2_account_storage_publish_modules">publish_modules</a>(ctx, account, module_vec);
-}
-</code></pre>
-
-
-
-</details>

@@ -67,17 +67,6 @@ Create an empty vector.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_empty">empty</a>&lt;Element&gt;(): <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;;
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_vector_length"></a>
 
 ## Function `length`
@@ -89,17 +78,6 @@ Return the length of the vector.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_length">length</a>&lt;Element&gt;(v: &<a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;): u64;
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_vector_borrow"></a>
 
@@ -114,17 +92,6 @@ Aborts if <code>i</code> is out of bounds.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_borrow">borrow</a>&lt;Element&gt;(v: &<a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;, i: u64): &Element;
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_vector_push_back"></a>
 
 ## Function `push_back`
@@ -136,17 +103,6 @@ Add element <code>e</code> to the end of the vector <code>v</code>.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_push_back">push_back</a>&lt;Element&gt;(v: &<b>mut</b> <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;, e: Element);
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_vector_borrow_mut"></a>
 
@@ -161,17 +117,6 @@ Aborts if <code>i</code> is out of bounds.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_borrow_mut">borrow_mut</a>&lt;Element&gt;(v: &<b>mut</b> <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;, i: u64): &<b>mut</b> Element;
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_vector_pop_back"></a>
 
 ## Function `pop_back`
@@ -184,17 +129,6 @@ Aborts if <code>v</code> is empty.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_pop_back">pop_back</a>&lt;Element&gt;(v: &<b>mut</b> <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;): Element;
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_vector_destroy_empty"></a>
 
@@ -209,17 +143,6 @@ Aborts if <code>v</code> is not empty.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_destroy_empty">destroy_empty</a>&lt;Element&gt;(v: <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;);
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_vector_swap"></a>
 
 ## Function `swap`
@@ -233,17 +156,6 @@ Aborts if <code>i</code> or <code>j</code> is out of bounds.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_swap">swap</a>&lt;Element&gt;(v: &<b>mut</b> <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;, i: u64, j: u64);
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_vector_singleton"></a>
 
 ## Function `singleton`
@@ -255,21 +167,6 @@ Return an vector of size one containing element <code>e</code>.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_singleton">singleton</a>&lt;Element&gt;(e: Element): <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt; {
-    <b>let</b> v = <a href="vector.md#0x1_vector_empty">empty</a>();
-    <a href="vector.md#0x1_vector_push_back">push_back</a>(&<b>mut</b> v, e);
-    v
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_vector_reverse"></a>
 
@@ -283,28 +180,6 @@ Reverses the order of the elements in the vector <code>v</code> in place.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_reverse">reverse</a>&lt;Element&gt;(v: &<b>mut</b> <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;) {
-    <b>let</b> len = <a href="vector.md#0x1_vector_length">length</a>(v);
-    <b>if</b> (len == 0) <b>return</b> ();
-
-    <b>let</b> front_index = 0;
-    <b>let</b> back_index = len -1;
-    <b>while</b> (front_index &lt; back_index) {
-        <a href="vector.md#0x1_vector_swap">swap</a>(v, front_index, back_index);
-        front_index = front_index + 1;
-        back_index = back_index - 1;
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_vector_append"></a>
 
 ## Function `append`
@@ -317,21 +192,6 @@ Pushes all of the elements of the <code>other</code> vector into the <code>lhs</
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_append">append</a>&lt;Element&gt;(lhs: &<b>mut</b> <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;, other: <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;) {
-    <a href="vector.md#0x1_vector_reverse">reverse</a>(&<b>mut</b> other);
-    <b>while</b> (!<a href="vector.md#0x1_vector_is_empty">is_empty</a>(&other)) <a href="vector.md#0x1_vector_push_back">push_back</a>(lhs, <a href="vector.md#0x1_vector_pop_back">pop_back</a>(&<b>mut</b> other));
-    <a href="vector.md#0x1_vector_destroy_empty">destroy_empty</a>(other);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_vector_is_empty"></a>
 
 ## Function `is_empty`
@@ -343,19 +203,6 @@ Return <code><b>true</b></code> if the vector <code>v</code> has no elements and
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_is_empty">is_empty</a>&lt;Element&gt;(v: &<a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;): bool {
-    <a href="vector.md#0x1_vector_length">length</a>(v) == 0
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_vector_contains"></a>
 
@@ -370,25 +217,6 @@ Otherwise, returns false.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_contains">contains</a>&lt;Element&gt;(v: &<a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;, e: &Element): bool {
-    <b>let</b> i = 0;
-    <b>let</b> len = <a href="vector.md#0x1_vector_length">length</a>(v);
-    <b>while</b> (i &lt; len) {
-        <b>if</b> (<a href="vector.md#0x1_vector_borrow">borrow</a>(v, i) == e) <b>return</b> <b>true</b>;
-        i = i + 1;
-    };
-    <b>false</b>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_vector_index_of"></a>
 
 ## Function `index_of`
@@ -401,25 +229,6 @@ Otherwise, returns <code>(<b>false</b>, 0)</code>.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_index_of">index_of</a>&lt;Element&gt;(v: &<a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;, e: &Element): (bool, u64) {
-    <b>let</b> i = 0;
-    <b>let</b> len = <a href="vector.md#0x1_vector_length">length</a>(v);
-    <b>while</b> (i &lt; len) {
-        <b>if</b> (<a href="vector.md#0x1_vector_borrow">borrow</a>(v, i) == e) <b>return</b> (<b>true</b>, i);
-        i = i + 1;
-    };
-    (<b>false</b>, 0)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_vector_remove"></a>
 
@@ -434,25 +243,6 @@ Aborts if <code>i</code> is out of bounds.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_remove">remove</a>&lt;Element&gt;(v: &<b>mut</b> <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;, i: u64): Element {
-    <b>let</b> len = <a href="vector.md#0x1_vector_length">length</a>(v);
-    // i out of bounds; <b>abort</b>
-    <b>if</b> (i &gt;= len) <b>abort</b> <a href="vector.md#0x1_vector_EINDEX_OUT_OF_BOUNDS">EINDEX_OUT_OF_BOUNDS</a>;
-
-    len = len - 1;
-    <b>while</b> (i &lt; len) <a href="vector.md#0x1_vector_swap">swap</a>(v, i, { i = i + 1; i });
-    <a href="vector.md#0x1_vector_pop_back">pop_back</a>(v)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_vector_insert"></a>
 
@@ -470,27 +260,6 @@ Aborts if <code>i &gt; <a href="vector.md#0x1_vector_length">length</a>(v)</code
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_insert">insert</a>&lt;Element&gt;(v: &<b>mut</b> <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;, e: Element, i: u64) {
-    <b>let</b> len = <a href="vector.md#0x1_vector_length">length</a>(v);
-    // i too big <b>abort</b>
-    <b>if</b> (i &gt; len) <b>abort</b> <a href="vector.md#0x1_vector_EINDEX_OUT_OF_BOUNDS">EINDEX_OUT_OF_BOUNDS</a>;
-
-    <a href="vector.md#0x1_vector_push_back">push_back</a>(v, e);
-    <b>while</b> (i &lt; len) {
-        <a href="vector.md#0x1_vector_swap">swap</a>(v, i, len);
-        i = i + 1
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_vector_swap_remove"></a>
 
 ## Function `swap_remove`
@@ -504,22 +273,6 @@ Aborts if <code>i</code> is out of bounds.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="vector.md#0x1_vector_swap_remove">swap_remove</a>&lt;Element&gt;(v: &<b>mut</b> <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;, i: u64): Element {
-    <b>assert</b>!(!<a href="vector.md#0x1_vector_is_empty">is_empty</a>(v), <a href="vector.md#0x1_vector_EINDEX_OUT_OF_BOUNDS">EINDEX_OUT_OF_BOUNDS</a>);
-    <b>let</b> last_idx = <a href="vector.md#0x1_vector_length">length</a>(v) - 1;
-    <a href="vector.md#0x1_vector_swap">swap</a>(v, i, last_idx);
-    <a href="vector.md#0x1_vector_pop_back">pop_back</a>(v)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="@Module_Specification_1"></a>
 

@@ -62,27 +62,6 @@ Encode <code>bytes</code> in lowercase hex
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="hex.md#0x2_hex_encode">encode</a>(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
-    <b>let</b> (i, r, l) = (0, <a href="">vector</a>[], <a href="_length">vector::length</a>(&bytes));
-    <b>while</b> (i &lt; l) {
-        <a href="_append">vector::append</a>(
-            &<b>mut</b> r,
-            *<a href="_borrow">vector::borrow</a>(&<a href="hex.md#0x2_hex_HEX">HEX</a>, (*<a href="_borrow">vector::borrow</a>(&bytes, i) <b>as</b> u64))
-        );
-        i = i + 1;
-    };
-    r
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_hex_decode"></a>
 
 ## Function `decode`
@@ -99,27 +78,6 @@ Aborts if the hex string contains non-valid hex characters (valid characters are
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="hex.md#0x2_hex_decode">decode</a>(<a href="hex.md#0x2_hex">hex</a>: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
-    <b>let</b> (i, r, l) = (0, <a href="">vector</a>[], <a href="_length">vector::length</a>(&<a href="hex.md#0x2_hex">hex</a>));
-    <b>assert</b>!(l % 2 == 0, <a href="hex.md#0x2_hex_ErrorInvalidHexLength">ErrorInvalidHexLength</a>);
-    <b>while</b> (i &lt; l) {
-        <b>let</b> decimal = (<a href="hex.md#0x2_hex_decode_byte">decode_byte</a>(*<a href="_borrow">vector::borrow</a>(&<a href="hex.md#0x2_hex">hex</a>, i)) * 16) +
-                      <a href="hex.md#0x2_hex_decode_byte">decode_byte</a>(*<a href="_borrow">vector::borrow</a>(&<a href="hex.md#0x2_hex">hex</a>, i + 1));
-        <a href="_push_back">vector::push_back</a>(&<b>mut</b> r, decimal);
-        i = i + 2;
-    };
-    r
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="@Module_Specification_1"></a>
 

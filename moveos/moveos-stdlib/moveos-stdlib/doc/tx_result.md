@@ -28,28 +28,6 @@ We can get the result in the <code>post_execute</code> function.
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>executed: bool</code>
-</dt>
-<dd>
- The transaction is executed successfully or not.
-</dd>
-<dt>
-<code>gas_used: u64</code>
-</dt>
-<dd>
- The gas used by the transaction.
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x2_tx_result_is_executed"></a>
 
 ## Function `is_executed`
@@ -61,19 +39,6 @@ We can get the result in the <code>post_execute</code> function.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result_is_executed">is_executed</a>(self: &<a href="tx_result.md#0x2_tx_result_TxResult">TxResult</a>) : bool {
-    self.executed
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_tx_result_gas_used"></a>
 
 ## Function `gas_used`
@@ -82,18 +47,3 @@ We can get the result in the <code>post_execute</code> function.
 
 <pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result_gas_used">gas_used</a>(self: &<a href="tx_result.md#0x2_tx_result_TxResult">tx_result::TxResult</a>): u64
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result_gas_used">gas_used</a>(self: &<a href="tx_result.md#0x2_tx_result_TxResult">TxResult</a>) : u64 {
-    self.gas_used
-}
-</code></pre>
-
-
-
-</details>

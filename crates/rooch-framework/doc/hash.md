@@ -30,19 +30,6 @@ Move standard library and wrap the functions at here.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="hash.md#0x3_hash_sha2_256">sha2_256</a>(data: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
-   std::hash::sha2_256(data)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_hash_sha3_256"></a>
 
 ## Function `sha3_256`
@@ -53,19 +40,6 @@ Move standard library and wrap the functions at here.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="hash.md#0x3_hash_sha3_256">sha3_256</a>(data: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt; {
-   std::hash::sha3_256(data)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_hash_blake2b256"></a>
 
@@ -80,17 +54,6 @@ Hash the input bytes using Blake2b-256 and returns 32 bytes.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="hash.md#0x3_hash_blake2b256">blake2b256</a>(data: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;;
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_hash_keccak256"></a>
 
 ## Function `keccak256`
@@ -104,17 +67,6 @@ Hash the input bytes using keccak256 and returns 32 bytes.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="hash.md#0x3_hash_keccak256">keccak256</a>(data: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;;
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_hash_ripemd160"></a>
 
 ## Function `ripemd160`
@@ -125,16 +77,3 @@ Hash the input bytes using ripemd160 and returns 20 bytes.
 
 <pre><code><b>public</b> <b>fun</b> <a href="hash.md#0x3_hash_ripemd160">ripemd160</a>(data: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="hash.md#0x3_hash_ripemd160">ripemd160</a>(data: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;;
-</code></pre>
-
-
-
-</details>

@@ -26,17 +26,6 @@ Pretty-prints any Move value. For a Move struct, includes its field names, their
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="debug.md#0x1_debug_print">print</a>&lt;T&gt;(x: &T);
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_debug_print_stack_trace"></a>
 
 ## Function `print_stack_trace`
@@ -46,16 +35,3 @@ Prints the calling function's stack trace.
 
 <pre><code><b>public</b> <b>fun</b> <a href="debug.md#0x1_debug_print_stack_trace">print_stack_trace</a>()
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="debug.md#0x1_debug_print_stack_trace">print_stack_trace</a>();
-</code></pre>
-
-
-
-</details>

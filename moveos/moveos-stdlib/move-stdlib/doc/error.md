@@ -193,19 +193,6 @@ Construct a canonical error code from a category and a reason.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="error.md#0x1_error_canonical">canonical</a>(category: u64, reason: u64): u64 {
-  (category &lt;&lt; 16) + reason
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_error_invalid_argument"></a>
 
 ## Function `invalid_argument`
@@ -218,17 +205,6 @@ Functions to construct a canonical error code of the given category.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="error.md#0x1_error_invalid_argument">invalid_argument</a>(r: u64): u64 {  <a href="error.md#0x1_error_canonical">canonical</a>(<a href="error.md#0x1_error_INVALID_ARGUMENT">INVALID_ARGUMENT</a>, r) }
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_error_out_of_range"></a>
 
 ## Function `out_of_range`
@@ -239,17 +215,6 @@ Functions to construct a canonical error code of the given category.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="error.md#0x1_error_out_of_range">out_of_range</a>(r: u64): u64 {  <a href="error.md#0x1_error_canonical">canonical</a>(<a href="error.md#0x1_error_OUT_OF_RANGE">OUT_OF_RANGE</a>, r) }
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_error_invalid_state"></a>
 
@@ -262,17 +227,6 @@ Functions to construct a canonical error code of the given category.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="error.md#0x1_error_invalid_state">invalid_state</a>(r: u64): u64 {  <a href="error.md#0x1_error_canonical">canonical</a>(<a href="error.md#0x1_error_INVALID_STATE">INVALID_STATE</a>, r) }
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_error_unauthenticated"></a>
 
 ## Function `unauthenticated`
@@ -283,17 +237,6 @@ Functions to construct a canonical error code of the given category.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="error.md#0x1_error_unauthenticated">unauthenticated</a>(r: u64): u64 { <a href="error.md#0x1_error_canonical">canonical</a>(<a href="error.md#0x1_error_UNAUTHENTICATED">UNAUTHENTICATED</a>, r) }
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_error_permission_denied"></a>
 
@@ -306,17 +249,6 @@ Functions to construct a canonical error code of the given category.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="error.md#0x1_error_permission_denied">permission_denied</a>(r: u64): u64 { <a href="error.md#0x1_error_canonical">canonical</a>(<a href="error.md#0x1_error_PERMISSION_DENIED">PERMISSION_DENIED</a>, r) }
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_error_not_found"></a>
 
 ## Function `not_found`
@@ -327,17 +259,6 @@ Functions to construct a canonical error code of the given category.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="error.md#0x1_error_not_found">not_found</a>(r: u64): u64 { <a href="error.md#0x1_error_canonical">canonical</a>(<a href="error.md#0x1_error_NOT_FOUND">NOT_FOUND</a>, r) }
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_error_aborted"></a>
 
@@ -350,17 +271,6 @@ Functions to construct a canonical error code of the given category.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="error.md#0x1_error_aborted">aborted</a>(r: u64): u64 { <a href="error.md#0x1_error_canonical">canonical</a>(<a href="error.md#0x1_error_ABORTED">ABORTED</a>, r) }
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_error_already_exists"></a>
 
 ## Function `already_exists`
@@ -371,17 +281,6 @@ Functions to construct a canonical error code of the given category.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="error.md#0x1_error_already_exists">already_exists</a>(r: u64): u64 { <a href="error.md#0x1_error_canonical">canonical</a>(<a href="error.md#0x1_error_ALREADY_EXISTS">ALREADY_EXISTS</a>, r) }
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_error_resource_exhausted"></a>
 
@@ -394,17 +293,6 @@ Functions to construct a canonical error code of the given category.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="error.md#0x1_error_resource_exhausted">resource_exhausted</a>(r: u64): u64 {  <a href="error.md#0x1_error_canonical">canonical</a>(<a href="error.md#0x1_error_RESOURCE_EXHAUSTED">RESOURCE_EXHAUSTED</a>, r) }
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_error_internal"></a>
 
 ## Function `internal`
@@ -415,17 +303,6 @@ Functions to construct a canonical error code of the given category.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <b>internal</b>(r: u64): u64 {  <a href="error.md#0x1_error_canonical">canonical</a>(<a href="error.md#0x1_error_INTERNAL">INTERNAL</a>, r) }
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_error_not_implemented"></a>
 
@@ -438,17 +315,6 @@ Functions to construct a canonical error code of the given category.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="error.md#0x1_error_not_implemented">not_implemented</a>(r: u64): u64 {  <a href="error.md#0x1_error_canonical">canonical</a>(<a href="error.md#0x1_error_NOT_IMPLEMENTED">NOT_IMPLEMENTED</a>, r) }
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_error_unavailable"></a>
 
 ## Function `unavailable`
@@ -457,16 +323,3 @@ Functions to construct a canonical error code of the given category.
 
 <pre><code><b>public</b> <b>fun</b> <a href="error.md#0x1_error_unavailable">unavailable</a>(r: u64): u64
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="error.md#0x1_error_unavailable">unavailable</a>(r: u64): u64 { <a href="error.md#0x1_error_canonical">canonical</a>(<a href="error.md#0x1_error_UNAVAILABLE">UNAVAILABLE</a>, r) }
-</code></pre>
-
-
-
-</details>
