@@ -2,7 +2,7 @@ module rooch_examples::gas_payer {
     use moveos_std::context::Context;
 
     fun gas_validate_function(_ctx: &Context): bool{
-        true
+        false
     }
 
     fun gas_charge_post_function(_ctx: &mut Context, _gas_used: u128): bool {
