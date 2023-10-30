@@ -30,6 +30,12 @@
       "typesetting": "article"
     }
   },
+  "dashboard": {
+    "title": "Dashboard",
+    "type": "page",
+    "href": "https://dashboard.rooch.network/",
+    "newWindow": true
+  },
   "404": {
     "type": "page",
     "theme": {
