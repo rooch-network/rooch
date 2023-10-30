@@ -12,3 +12,6 @@ quick_start_counter = "_"
 std = "0x1"
 moveos_std = "0x2"
 rooch_framework = "0x3"
+
+[dev-addresses]
+quick_start_counter = "0x42"
