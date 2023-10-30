@@ -13,13 +13,10 @@ module nft::collection{
 
     friend nft::nft;
 
-    const ErrorMutatorNotExist: u64 = 1;
-    const ErrorCollectionNotExist: u64 = 2;
-    const ErrorCollectionMaximumSupply: u64 = 3;
+    const ErrorCollectionMaximumSupply: u64 = 1;
 
     struct Collection has key{
         name: String,
-        uri: String,
         creator: address,
         supply:  Supply,
     }
@@ -32,27 +29,24 @@ module nft::collection{
     struct CreateCollectionEvent{
         object_id: ObjectID,
         name: String,
-        uri: String,
         creator: address,
         maximum: Option<u64>,
         description: String,
     }
 
     fun init(ctx: &mut Context){
-        let collection_display_obj = display::new<Collection>(ctx); 
-        //How to display the Collection object id?
-        display::set_value(collection_display_obj, string::utf8(b"name"), string::utf8(b"{ name }"));
-        display::set_value(collection_display_obj, string::utf8(b"uri"), string::utf8(b"{ uri }"));
-        display::set_value(collection_display_obj, string::utf8(b"description"), string::utf8(b"{ description }"));
+        let collection_display_obj = display::object_display<Collection>(ctx); 
+        display::set_value(collection_display_obj, string::utf8(b"name"), string::utf8(b"{ value.name }"));
+        display::set_value(collection_display_obj, string::utf8(b"uri"), string::utf8(b"https:://base_url/{ id }"));
+        display::set_value(collection_display_obj, string::utf8(b"description"), string::utf8(b"{ value.description }"));
         display::set_value(collection_display_obj, string::utf8(b"creator"), string::utf8(b"{ creator }"));
-        display::set_value(collection_display_obj, string::utf8(b"supply"), string::utf8(b"{ supply }"));
+        display::set_value(collection_display_obj, string::utf8(b"supply"), string::utf8(b"{ value.supply }"));
     }
 
     /// Create a new collection Object
     public fun create_collection(
         ctx: &mut Context,
         name: String,
-        uri: String,
         creator: address,
         description: String,
         max_supply: Option<u64>,
@@ -60,7 +54,6 @@ module nft::collection{
 
         let collection = Collection {
             name,
-            uri,
             creator,
             supply: Supply {
                 current: 0,
@@ -77,7 +70,6 @@ module nft::collection{
             CreateCollectionEvent {
                 object_id: object::id(&collection_obj),
                 name,
-                uri,
                 creator,
                 maximum: max_supply,
                 description,
@@ -104,15 +96,11 @@ module nft::collection{
         }else{
             option::none<u64>()
         }
-    }
+    } 
 
     // view
     public fun name(collection: &Collection): String{
         collection.name
-    }
-
-    public fun uri(collection: &Collection): String{
-        collection.uri
     }
 
     public fun creator(collection: &Collection): address{

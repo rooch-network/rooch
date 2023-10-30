@@ -160,9 +160,16 @@ module moveos_std::context {
         object::as_mut_ref(object_entity)
     }
 
+    /// Check if the object exists in the global object storage
     public fun exist_object<T: key>(_self: &Context, object_id: ObjectID): bool {
         object::contains_global(object_id)
         //TODO check the object type
+    }
+
+    /// Check if the singleton object exists in the global object storage
+    public fun exist_singleton<T: key>(_self: &Context): bool {
+        let object_id = object::singleton_object_id<T>();
+        exist_object<T>(_self, object_id)
     }
 
     #[test_only]

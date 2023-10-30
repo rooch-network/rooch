@@ -9,15 +9,15 @@ module rooch_framework::display{
 
     /// Display<T> is a singleton object
     /// It is used to define the display of the `T`
+    /// The Display Object is permanent, can not be deleted after created.
     struct Display<phantom T> has key {
         sample_map: simple_map::SimpleMap<String, String>
     }
 
     #[private_generics(T)]
-    /// Create a new Display object, Object<Display<T>> is a singleton object.
-    /// Only the module of `T` can create a new Display object for `T`.
-    /// The Display Object is permanent, can not be deleted.
-    public fun new<T>(ctx: &mut Context): &mut Object<Display<T>> {
+    /// Create or borrow_mut Display object for resource `T`
+    /// Only the module of `T` can call this function.
+    public fun resource_display<T: key>(ctx: &mut Context): &mut Object<Display<T>> {
         let obj = context::new_singleton(ctx, Display<T> {
             sample_map: simple_map::create()
         });
@@ -26,15 +26,25 @@ module rooch_framework::display{
     }
 
     #[private_generics(T)]
-    /// Borrow the mut Display object
-    /// Only the module of `T` can borrow the mut Display object for `T`.
-    public fun borrow_mut<T>(ctx: &mut Context): &mut Object<Display<T>> {
-        context::borrow_mut_singleton<Display<T>>(ctx)
+    /// Create or borrow_mut Display object for `Object<T>`
+    /// Only the module of `T` can call this function.
+    public fun object_display<T: key>(ctx: &mut Context): &mut Object<Display<Object<T>>> {
+        if (context::exist_singleton<Display<Object<T>>>(ctx)) {
+            context::borrow_mut_singleton<Display<Object<T>>>(ctx)
+        }else{
+            let obj = context::new_singleton(ctx, Display<Object<T>> {
+                sample_map: simple_map::create()
+            });
+            object::to_permanent(obj);
+            context::borrow_mut_singleton<Display<Object<T>>>(ctx)
+        }
     }
 
+    /// Set the key-value pair for the display object
+    /// If the key already exists, the value will be updated, otherwise a new key-value pair will be created.
     public fun set_value<T>(self: &mut Object<Display<T>>, key: String, value: String) {
         let display_ref = object::borrow_mut(self);
-        simple_map::add(&mut display_ref.sample_map, key, value);
+        simple_map::upsert(&mut display_ref.sample_map, key, value);
     }
 
     public fun borrow_value<T>(self: & Object<Display<T>> , key: &String): &String {
