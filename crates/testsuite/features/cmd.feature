@@ -6,7 +6,7 @@ Feature: Rooch CLI integration tests
 
     @serial
     Scenario: ethereum rpc test
-      Given a server for ethereum
+      Given a server for ethereum_rpc_test
       Then cmd: "rpc request --method eth_getBalance --params \"0x1111111111111111111111111111111111111111\""
       Then assert: "{{$.rpc[-1]}} == 0x56bc75e2d63100000"
       Then cmd: "rpc request --method eth_feeHistory --params [\"0x5\",\"0x6524cad7\",[10,20,30]]"
@@ -15,6 +15,17 @@ Feature: Rooch CLI integration tests
       Then assert: "'{{$.rpc[-1]}}' == '20230104'"
       Then stop the server
 
+    @serial
+    Scenario: rooch rpc test
+      Given a server for rooch_rpc_test
+      Then cmd: "rpc request --method rooch_getStates --params '["/resource/0x3/0x3::timestamp::CurrentTimeMicroseconds",{"decode":true}]'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x3::timestamp::CurrentTimeMicroseconds'"
+      Then assert: "{{$.rpc[-1][0].decoded_value.value.microseconds}} == 0"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3",{"decode":true}]'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::account_storage::AccountStorage>'"
+      Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}]"
+      Then assert: "'{{$.rpc[-1]}}' contains '0x3::timestamp::CurrentTimeMicroseconds'"
+      Then stop the server 
 
     @serial
     Scenario: account
