@@ -16,14 +16,20 @@ const navigation = (): VerticalNavItemsType => {
       ],
     },
 
-    // {
-    //   sectionTitle: 'Tutorial',
-    // },
+    {
+      sectionTitle: 'Tutorial',
+    },
+
     // {
     //   title: 'Publish Package',
     //   icon: 'bxs-package',
     //   path: '/tutorial/publish/package',
     // },
+    {
+      title: 'Counter Example',
+      icon: 'bxs-package',
+      path: '/tutorial/counter',
+    },
     {
       sectionTitle: 'Scan',
     },
