@@ -8,7 +8,6 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{StructTag, TypeTag},
 };
-use moveos_types::move_types::is_table;
 use moveos_types::state::StateSet;
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
@@ -17,9 +16,12 @@ use moveos_types::{
     state::{MoveStructState, State},
 };
 use moveos_types::{
+    moveos_std::account_storage::AccountStorage,
     moveos_std::context,
-    moveos_std::object::{AccountStorage, Object, ObjectID, RawObject, TableInfo},
+    moveos_std::object::{Object, ObjectID, RawObject},
+    moveos_std::raw_table::TableInfo,
 };
+use moveos_types::{moveos_std::raw_table, state::MoveStructType};
 use moveos_types::{
     state::StateChangeSet,
     state_resolver::{self, module_name_to_key, resource_tag_to_key, StateResolver},
@@ -346,18 +348,20 @@ impl StateDBStore {
         for (key, state) in global_states.into_iter() {
             // If the state is an Object, and the T's struct_tag of Object<T> is Table
             let struct_tag = state.get_object_struct_tag();
-            if struct_tag.is_some() && is_table(&struct_tag.unwrap()) {
-                let table_handle = ObjectID::from_bytes(key.as_slice())?;
-                let result = self.get_as_table(table_handle)?;
-                if result.is_none() {
-                    continue;
+            if let Some(struct_tag) = struct_tag {
+                if raw_table::TableInfo::struct_tag_match(&struct_tag) {
+                    let table_handle = ObjectID::from_bytes(key.as_slice())?;
+                    let result = self.get_as_table(table_handle)?;
+                    if result.is_none() {
+                        continue;
+                    }
+                    let table_states = result.unwrap().1.dump()?;
+                    let mut update_set = UpdateSet::new();
+                    for (inner_key, inner_state) in table_states.into_iter() {
+                        update_set.put(inner_key, inner_state);
+                    }
+                    state_set.state_sets.insert(table_handle, update_set);
                 }
-                let table_states = result.unwrap().1.dump()?;
-                let mut update_set = UpdateSet::new();
-                for (inner_key, inner_state) in table_states.into_iter() {
-                    update_set.put(inner_key, inner_state);
-                }
-                state_set.state_sets.insert(table_handle, update_set);
             }
 
             golbal_update_set.put(key, state);

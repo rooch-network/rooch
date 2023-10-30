@@ -1,5 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+use super::{account_storage::AccountStorage, raw_table::TableInfo};
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     h256,
@@ -18,6 +19,8 @@ use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+
+pub const MODULE_NAME: &IdentStr = ident_str!("object");
 
 /// Specific Table Object ID associated with an address
 #[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -110,7 +113,7 @@ impl std::fmt::Display for ObjectID {
 
 impl MoveStructType for ObjectID {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("object");
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("ObjectID");
 }
 
@@ -210,75 +213,6 @@ impl FromStr for ObjectID {
     }
 }
 
-#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
-pub struct AccountStorage {
-    pub resources: ObjectID,
-    pub modules: ObjectID,
-}
-
-impl AccountStorage {
-    pub fn new(account: AccountAddress) -> Self {
-        let resources = NamedTableID::Resource(account).to_object_id();
-        let modules = NamedTableID::Module(account).to_object_id();
-        AccountStorage { resources, modules }
-    }
-}
-
-impl MoveStructType for AccountStorage {
-    const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("account_storage");
-    const STRUCT_NAME: &'static IdentStr = ident_str!("AccountStorage");
-
-    fn type_params() -> Vec<TypeTag> {
-        vec![]
-    }
-}
-
-impl MoveStructState for AccountStorage {
-    fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![
-            MoveTypeLayout::Struct(ObjectID::struct_layout()),
-            MoveTypeLayout::Struct(ObjectID::struct_layout()),
-        ])
-    }
-}
-
-#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
-pub struct TableInfo {
-    //TODO use u256?
-    pub state_root: AccountAddress,
-    //TODO keep Table Key TypeTag at here
-    pub size: u64,
-}
-
-impl TableInfo {
-    pub fn new(state_root: AccountAddress) -> Self {
-        TableInfo {
-            state_root,
-            size: 0u64,
-        }
-    }
-}
-
-pub const TABLE_INFO_MODULE_NAME: &IdentStr = ident_str!("raw_table");
-pub const TABLE_INFO_STRUCT_NAME: &IdentStr = ident_str!("TableInfo");
-
-impl MoveStructType for TableInfo {
-    const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = TABLE_INFO_MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = TABLE_INFO_STRUCT_NAME;
-
-    fn type_params() -> Vec<TypeTag> {
-        vec![]
-    }
-}
-
-impl MoveStructState for TableInfo {
-    fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![MoveTypeLayout::Address])
-    }
-}
-
 pub type TableObject = Object<TableInfo>;
 pub type AccountStorageObject = Object<AccountStorage>;
 
@@ -346,7 +280,7 @@ impl Object<AccountStorage> {
     }
 }
 
-pub const OBJECT_MODULE_NAME: &IdentStr = ident_str!("object");
+pub const OBJECT_MODULE_NAME: &IdentStr = MODULE_NAME;
 pub const OBJECT_STRUCT_NAME: &IdentStr = ident_str!("ObjectEntity");
 
 impl<T> MoveStructType for Object<T>
@@ -354,7 +288,7 @@ where
     T: MoveStructType,
 {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = OBJECT_MODULE_NAME;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = OBJECT_STRUCT_NAME;
 
     fn type_params() -> Vec<TypeTag> {
