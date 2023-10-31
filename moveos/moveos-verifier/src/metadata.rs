@@ -6,6 +6,7 @@
 
 use crate::build::ROOCH_METADATA_KEY;
 use crate::verifier::INIT_FN_NAME_IDENTIFIER;
+use itertools::Itertools;
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::{Location, PartialVMError, VMResult};
 use move_binary_format::file_format::{
@@ -16,7 +17,7 @@ use move_core_types::language_storage::ModuleId;
 use move_core_types::metadata::Metadata;
 use move_core_types::vm_status::StatusCode;
 use move_model::ast::{Attribute, AttributeValue};
-use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv};
+use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv, StructEnv};
 use move_model::ty::PrimitiveType;
 use move_model::ty::Type;
 use moveos_types::moveos_std::context::Context;
@@ -30,6 +31,8 @@ use thiserror::Error;
 // When publishing, use FunctionIndex -> ModuleID to read the module from the DB.
 pub static mut GLOBAL_PRIVATE_GENERICS: Lazy<BTreeMap<String, Vec<usize>>> =
     Lazy::new(|| BTreeMap::new());
+
+pub static mut GLOBAL_DATA_STRUCT: Lazy<BTreeMap<String, bool>> = Lazy::new(|| BTreeMap::new());
 
 pub static mut GLOBAL_GAS_FREE_RECORDER: Lazy<BTreeMap<String, Vec<usize>>> =
     Lazy::new(|| BTreeMap::new());
@@ -67,6 +70,9 @@ pub struct RuntimeModuleMetadataV1 {
 
     /// Save information for the gas free function.
     pub gas_free_function_map: BTreeMap<String, GasFreeFunction>,
+
+    /// Save information for the data_struct.
+    pub data_struct_map: BTreeMap<String, bool>,
 }
 
 impl RuntimeModuleMetadataV1 {
@@ -125,6 +131,7 @@ impl<'a> ExtendedChecker<'a> {
                 self.check_init_module(module);
                 self.check_global_storage_access(module);
                 self.check_gas_free_function(module);
+                self.check_data_struct(module);
             }
         }
     }
@@ -794,6 +801,109 @@ impl<'a> ExtendedChecker<'a> {
             }
         }
     }
+}
+
+impl<'a> ExtendedChecker<'a> {
+    fn check_data_struct(&mut self, module_env: &ModuleEnv) {
+        for struct_def in module_env.get_structs() {
+            let struct_attributes = struct_def.get_attributes().to_vec();
+            for attribute in struct_attributes.iter() {
+                if let Attribute::Apply(_, symbol, _) = attribute {
+                    let attr_name = module_env.symbol_pool().string(*symbol).to_string();
+                    if attr_name == "data_struct" {
+                        let (error_message, is_allowed) =
+                            check_data_struct_fields(&struct_def, module_env);
+                        if is_allowed {
+                            let struct_name = module_env
+                                .symbol_pool()
+                                .string(struct_def.get_name())
+                                .to_string();
+                            let full_struct_name =
+                                format!("{}::{}", module_env.get_full_name_str(), struct_name);
+                            unsafe {
+                                GLOBAL_DATA_STRUCT.insert(full_struct_name, true);
+                            }
+                        } else {
+                            self.env
+                                .error(&struct_def.get_loc(), error_message.as_str());
+                        }
+                    }
+                }
+            }
+        }
+
+        let module_metadata = self
+            .output
+            .entry(module_env.get_verified_module().self_id())
+            .or_default();
+
+        let data_struct_map = unsafe {
+            let result: BTreeMap<String, bool> = GLOBAL_DATA_STRUCT
+                .iter()
+                .map(|(key, value)| (key.clone(), *value))
+                .collect();
+            result
+        };
+
+        module_metadata.data_struct_map = data_struct_map;
+    }
+}
+
+fn check_data_struct_fields(struct_def: &StructEnv, module_env: &ModuleEnv) -> (String, bool) {
+    let struct_fields = struct_def.get_fields().collect_vec();
+    for field in struct_fields {
+        let field_type = field.get_type();
+        let field_name = module_env
+            .symbol_pool()
+            .string(field.get_name())
+            .to_string();
+        let is_allowed = check_data_struct_fields_type(&field_type, module_env);
+        if !is_allowed {
+            let struct_name = module_env
+                .symbol_pool()
+                .string(struct_def.get_name())
+                .to_string();
+            let full_struct_name = format!("{}::{}", module_env.get_full_name_str(), struct_name);
+
+            return (
+                format!(
+                    "The field {} in struct {} is not allowed.",
+                    field_name, full_struct_name
+                ),
+                is_allowed,
+            );
+        }
+    }
+
+    ("".to_string(), true)
+}
+
+fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> bool {
+    return match field_type {
+        Type::Primitive(_) => true,
+        Type::Vector(item_type) => check_data_struct_fields_type(item_type.as_ref(), module_env),
+        Type::Struct(module_id, struct_id, _) => {
+            let module = module_env.env.get_module(*module_id);
+
+            let struct_name = module_env
+                .symbol_pool()
+                .string(struct_id.symbol())
+                .to_string();
+            let full_struct_name = format!("{}::{}", module.get_full_name_str(), struct_name);
+
+            if full_struct_name == "0x1::string::String" {
+                return true;
+            }
+
+            let is_allowed_opt = unsafe { GLOBAL_DATA_STRUCT.get(full_struct_name.as_str()) };
+            return if let Some(is_allowed) = is_allowed_opt {
+                *is_allowed
+            } else {
+                false
+            };
+        }
+        _ => false,
+    };
 }
 
 fn get_module_env_function<'a>(
