@@ -494,7 +494,7 @@ mod tests {
         //let struct_type = TestStruct::struct_tag();
         let object_value = TestStruct { v: 1 };
         let object_id = ObjectID::new(crate::h256::H256::random().into());
-        let object = ObjectEntity::new(object_id, AccountAddress::random(), object_value);
+        let object = ObjectEntity::new(object_id, AccountAddress::random(), 0u8, object_value);
 
         let raw_object: RawObject = object.to_raw();
 
