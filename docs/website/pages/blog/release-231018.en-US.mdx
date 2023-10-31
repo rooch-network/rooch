@@ -26,7 +26,7 @@ Main features of this release include:
 * Introduced `AuthenticationAbstraction`, allowing third parties to develop `Authentication Validator` to extend signature validation or social logins.
 * Implemented `SessionKey`. These temporary private keys can sign transactions and are stored within the app rather than the wallet. This avoids the need for wallet signatures with every operation, enhancing user experience.
 
-For a detailed design on Rooch AccountAbstraction, refer to: [Design and Implementation of Account Abstraction](../docs/dive-into-rooch/account-abstraction.en-US.mdx).
+For a detailed design on Rooch AccountAbstraction, refer to: [Design and Implementation of Account Abstraction](../docs/dive-into-rooch/account-abstraction).
 
 ### Ethereum Support
 
@@ -41,8 +41,8 @@ For a detailed design on Rooch AccountAbstraction, refer to: [Design and Impleme
 
 ### Advanced Multi-chain Settlement Solutions
 
-* [Multi-chain Settlement](../tech-highlights/multi-chain-settlement.en-US.mdx)
-* [Multi-chain settlement by L2-Myth or Reality](./multi-chain_settlement_by_layer2-myth_or_Reality.en-US.mdx)
+* [Multi-chain Settlement](../tech-highlights/multi-chain-settlement)
+* [Multi-chain settlement by L2-Myth or Reality](./multi-chain_settlement_by_layer2-myth_or_Reality)
 
 ### Move Standard Library, Framework and Virtual Machine
 
@@ -50,7 +50,7 @@ For a detailed design on Rooch AccountAbstraction, refer to: [Design and Impleme
 * Implemented [Coin](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/coin.move), [CoinStore](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/coin_store.move), and [account_coin_store](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/account_coin_store.move). To further understand Rooch's Coin standards, refer to [examples/coins](https://github.com/rooch-network/rooch/tree/main/examples/coins).
 * Introduced Gas billing and GasToken.
 * Introduced [Event](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/event.move) standards.
-* Improved [Object](../docs/developer-guids/object.en-US.mdx) and [StorageAbstraction](../docs/dive-into-rooch/storage-abstraction.en-US.mdx) designs.
+* Improved [Object](../docs/developer-guids/object) and [StorageAbstraction](../docs/dive-into-rooch/storage-abstraction) designs.
 
 ### JSON RPC and SDK
 
@@ -62,14 +62,14 @@ This version standardizes RPC API outputs and inputs, promising future RPC API c
 * Introduced balance query and traversal API: `rooch_getBalance`, `rooch_getBalances`.
 * Released [Rooch Typescript SDK](https://www.npmjs.com/package/@roochnetwork/sdk).
 
-For currently supported API, see: [Rooch JSON RPC](../docs/developer-guids/rpc.en-US.mdx).
+For currently supported API, see: [Rooch JSON RPC](../docs/developer-guids/rpc).
 
 ### Rooch Dashboard
 
 The Rooch Dashboard is a web application based on Rooch JSON RPC, providing state and transaction queries, and account setting management features. More features will be added in the future.
 Visit: [https://dashboard.rooch.network/](https://dashboard.rooch.network/).
 
-Users can operate the Dashboard through MetaMask. Instructions available at: [Rooch Dashboard User Guide](../docs/user-guides/dashboard.en-US.mdx).
+Users can operate the Dashboard through MetaMask. Instructions available at: [Rooch Dashboard User Guide](../docs/user-guides/dashboard).
 
 ### Developer Testnet
 
@@ -79,7 +79,7 @@ Developer Network Information:
 2. ChainID: 20230103
 3. RPC: https://dev-seed.rooch.network/
 
-For guidance on using the developer testnet, refer to: [Connecting to Developer Testnet](../docs/developer-guides/connect-devnet.en-US.mdx).
+For guidance on using the developer testnet, refer to: [Connecting to Developer Testnet](../docs/developer-guides/connect-devnet).
 
 ## Next Steps
 
@@ -123,5 +123,5 @@ Numerous applications thrive on the Rooch network. Run the mainnet.
 
 ## Conclusion
 
-Rooch's milestones are driven by application scenarios, focusing on the experience of developers and users. The goal is to expand the boundaries of Web3 applications and explore the possibilities of mass adoption. To learn more and try Rooch, please refer to the [Getting Started](../docs/getting-started.en-US.mdx) documentation.
+Rooch's milestones are driven by application scenarios, focusing on the experience of developers and users. The goal is to expand the boundaries of Web3 applications and explore the possibilities of mass adoption. To learn more and try Rooch, please refer to the [Getting Started](../docs/getting-started) documentation.
 For more detailed information on Rooch v0.2, please refer to the [Rooch v0.2 release notes](https://github.com/rooch-network/rooch/releases/tag/v0.2.1). We would like to thank the over ten developers who have contributed to Rooch so far. If you want to learn more and get involved in Rooch, please join the [Rooch Discord](https://discord.gg/rooch).
