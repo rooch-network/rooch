@@ -31,14 +31,10 @@ The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/5
 -  [Function `to_frozen`](#0x2_object_to_frozen)
 -  [Function `transfer`](#0x2_object_transfer)
 -  [Function `transfer_extend`](#0x2_object_transfer_extend)
--  [Function `transfer_to_system`](#0x2_object_transfer_to_system)
 -  [Function `id`](#0x2_object_id)
 -  [Function `owner`](#0x2_object_owner)
--  [Function `owner_internal`](#0x2_object_owner_internal)
 -  [Function `is_shared`](#0x2_object_is_shared)
--  [Function `is_shared_internal`](#0x2_object_is_shared_internal)
 -  [Function `is_frozen`](#0x2_object_is_frozen)
--  [Function `is_frozen_internal`](#0x2_object_is_frozen_internal)
 -  [Function `as_ref`](#0x2_object_as_ref)
 -  [Function `as_mut_ref`](#0x2_object_as_mut_ref)
 -  [Function `global_object_storage_handle`](#0x2_object_global_object_storage_handle)
@@ -121,11 +117,29 @@ ObjectID is a unique identifier for the Object
 
 
 
+<a name="0x2_object_FROZEN_OBJECT_FLAG_MASK"></a>
+
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_FROZEN_OBJECT_FLAG_MASK">FROZEN_OBJECT_FLAG_MASK</a>: u8 = 2;
+</code></pre>
+
+
+
 <a name="0x2_object_GlobalObjectStorageHandle"></a>
 
 
 
 <pre><code><b>const</b> <a href="object.md#0x2_object_GlobalObjectStorageHandle">GlobalObjectStorageHandle</a>: <b>address</b> = 0;
+</code></pre>
+
+
+
+<a name="0x2_object_SHARED_OBJECT_FLAG_MASK"></a>
+
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_SHARED_OBJECT_FLAG_MASK">SHARED_OBJECT_FLAG_MASK</a>: u8 = 1;
 </code></pre>
 
 
@@ -299,17 +313,6 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 
-<a name="0x2_object_transfer_to_system"></a>
-
-## Function `transfer_to_system`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_transfer_to_system">transfer_to_system</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;T&gt;)
-</code></pre>
-
-
-
 <a name="0x2_object_id"></a>
 
 ## Function `id`
@@ -332,35 +335,13 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 
-<a name="0x2_object_owner_internal"></a>
-
-## Function `owner_internal`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_owner_internal">owner_internal</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;T&gt;): <b>address</b>
-</code></pre>
-
-
-
 <a name="0x2_object_is_shared"></a>
 
 ## Function `is_shared`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_is_shared">is_shared</a>&lt;T&gt;(_self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): bool
-</code></pre>
-
-
-
-<a name="0x2_object_is_shared_internal"></a>
-
-## Function `is_shared_internal`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_is_shared_internal">is_shared_internal</a>&lt;T&gt;(_self: &<a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;T&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_is_shared">is_shared</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): bool
 </code></pre>
 
 
@@ -371,18 +352,7 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_is_frozen">is_frozen</a>&lt;T&gt;(_self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): bool
-</code></pre>
-
-
-
-<a name="0x2_object_is_frozen_internal"></a>
-
-## Function `is_frozen_internal`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_is_frozen_internal">is_frozen_internal</a>&lt;T&gt;(_self: &<a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;T&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_is_frozen">is_frozen</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): bool
 </code></pre>
 
 

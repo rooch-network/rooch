@@ -114,7 +114,15 @@ where
                         }
                         Type::MutableReference(_r) => {
                             // Only the owner can get &mut Object<T>
-                            if object.owner != self.ctx.tx_context.sender() {
+                            if object.is_frozen() {
+                                return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
+                                    .with_message(format!(
+                                        "Object is frozen, object id:{:?}",
+                                        object_id
+                                    ))
+                                    .finish(Location::Undefined));
+                            }
+                            if !object.is_shared() && object.owner != self.ctx.tx_context.sender() {
                                 return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
                                     .with_message(format!(
                                         "Object owner mismatch, object owner:{:?}, sender:{:?}",

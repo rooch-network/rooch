@@ -221,12 +221,28 @@ pub type AccountStorageObject = ObjectEntity<AccountStorage>;
 pub struct ObjectEntity<T> {
     pub id: ObjectID,
     pub owner: AccountAddress,
+    pub flag: u8,
     pub value: T,
 }
 
 impl<T> ObjectEntity<T> {
-    pub fn new(id: ObjectID, owner: AccountAddress, value: T) -> ObjectEntity<T> {
-        Self { id, owner, value }
+    const SHARED_OBJECT_FLAG_MASK: u8 = 1;
+    const FROZEN_OBJECT_FLAG_MASK: u8 = 1 << 1;
+    pub fn new(id: ObjectID, owner: AccountAddress, flag: u8, value: T) -> ObjectEntity<T> {
+        Self {
+            id,
+            owner,
+            flag,
+            value,
+        }
+    }
+
+    pub fn is_shared(&self) -> bool {
+        self.flag & Self::SHARED_OBJECT_FLAG_MASK == Self::SHARED_OBJECT_FLAG_MASK
+    }
+
+    pub fn is_frozen(&self) -> bool {
+        self.flag & Self::FROZEN_OBJECT_FLAG_MASK == Self::FROZEN_OBJECT_FLAG_MASK
     }
 }
 
@@ -242,6 +258,7 @@ where
         RawObject {
             id: self.id,
             owner: self.owner,
+            flag: self.flag,
             value: RawData {
                 struct_tag: T::struct_tag(),
                 value: bcs::to_bytes(&self.value).expect("MoveState to bcs should success"),
@@ -263,8 +280,8 @@ impl ObjectEntity<TableInfo> {
     pub fn new_table_object(id: ObjectID, value: TableInfo) -> TableObject {
         Self {
             id,
-            //TODO table should have a owner?
             owner: AccountAddress::ZERO,
+            flag: 0u8,
             value,
         }
     }
@@ -275,6 +292,7 @@ impl ObjectEntity<AccountStorage> {
         Self {
             id: ObjectID::from(account),
             owner: account,
+            flag: 0u8,
             value: AccountStorage::new(account),
         }
     }
@@ -302,6 +320,7 @@ where
         MoveStructLayout::new(vec![
             MoveTypeLayout::Struct(ObjectID::struct_layout()),
             MoveTypeLayout::Address,
+            MoveTypeLayout::U8,
             MoveTypeLayout::Struct(T::struct_layout()),
         ])
     }
@@ -323,13 +342,15 @@ impl RawObject {
         );
 
         let id: ObjectID = bcs::from_bytes(&bytes[..ObjectID::LENGTH])?;
-        let owner: AccountAddress = bcs::from_bytes(
-            &bytes[AccountAddress::LENGTH..ObjectID::LENGTH + AccountAddress::LENGTH],
-        )?;
-        let value = bytes[ObjectID::LENGTH + AccountAddress::LENGTH..].to_vec();
+        let owner: AccountAddress =
+            bcs::from_bytes(&bytes[ObjectID::LENGTH..ObjectID::LENGTH + AccountAddress::LENGTH])?;
+        let flag = bytes[ObjectID::LENGTH + AccountAddress::LENGTH
+            ..ObjectID::LENGTH + AccountAddress::LENGTH + 1][0];
+        let value = bytes[ObjectID::LENGTH + AccountAddress::LENGTH + 1..].to_vec();
         Ok(RawObject {
             id,
             owner,
+            flag,
             value: RawData { struct_tag, value },
         })
     }
@@ -337,6 +358,7 @@ impl RawObject {
         let mut bytes = vec![];
         bytes.extend(bcs::to_bytes(&self.id).unwrap());
         bytes.extend(bcs::to_bytes(&self.owner).unwrap());
+        bytes.push(self.flag);
         bytes.extend_from_slice(&self.value.value);
         bytes
     }
@@ -356,37 +378,48 @@ impl AnnotatedObject {
     pub fn new_annotated_object(
         id: ObjectID,
         owner: AccountAddress,
+        flag: u8,
         value: AnnotatedMoveStruct,
     ) -> Self {
-        Self::new(id, owner, value)
+        Self::new(id, owner, flag, value)
     }
 
     /// Create a new AnnotatedObject from a AnnotatedMoveStruct
-    /// The MoveStruct is Object<T> in Move, not the T's value
+    /// The MoveStruct is ObjectEntity<T> in Move, not the T
     pub fn new_from_annotated_struct(object_struct: AnnotatedMoveStruct) -> Result<Self> {
         let mut fields = object_struct.value.into_iter();
-        let object_id = ObjectID::try_from(fields.next().expect("Object should have id").1)?;
-        let owner = match fields.next().expect("Object should have owner") {
+        let object_id = ObjectID::try_from(fields.next().expect("ObjectEntity should have id").1)?;
+        let owner = match fields.next().expect("ObjectEntity should have owner") {
             (field_name, AnnotatedMoveValue::Address(field_value)) => {
                 debug_assert!(
                     field_name.as_str() == "owner",
-                    "Object owner field name should be owner"
+                    "ObjectEntity owner field name should be owner"
                 );
                 field_value
             }
-            _ => bail!("Object owner field should be address"),
+            _ => bail!("ObjectEntity owner field should be address"),
         };
-        let value = match fields.next().expect("Object should have value") {
+        let flag = match fields.next().expect("ObjectEntity should have flag") {
+            (field_name, AnnotatedMoveValue::U8(field_value)) => {
+                debug_assert!(
+                    field_name.as_str() == "flag",
+                    "ObjectEntity flag field name should be flag"
+                );
+                field_value
+            }
+            _ => bail!("ObjectEntity flag field should be u8"),
+        };
+        let value = match fields.next().expect("ObjectEntity should have value") {
             (field_name, AnnotatedMoveValue::Struct(field_value)) => {
                 debug_assert!(
                     field_name.as_str() == "value",
-                    "Object value field name should be value"
+                    "ObjectEntity value field name should be value"
                 );
                 field_value
             }
-            _ => bail!("Object value field should be struct"),
+            _ => bail!("ObjectEntity value field should be struct"),
         };
-        Ok(Self::new_annotated_object(object_id, owner, value))
+        Ok(Self::new_annotated_object(object_id, owner, flag, value))
     }
 }
 

@@ -137,11 +137,12 @@ module moveos_std::context {
     /// If the object is not shared, only the owner can borrow an `&mut Object<T>` from the global object storage
     public fun borrow_mut_object<T: key>(_self: &mut Context, owner: &signer, object_id: ObjectID): &mut Object<T> {
         let object_entity = object::borrow_mut_from_global<T>(object_id);
-        if(!object::is_shared_internal(object_entity)) {
+        let obj = object::as_mut_ref(object_entity);
+        if(!object::is_shared(obj)) {
             let owner_address = signer::address_of(owner);
-            assert!(object::owner_internal(object_entity) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
+            assert!(object::owner(obj) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
         };
-        object::as_mut_ref(object_entity)
+        obj
     }
 
     #[private_generics(T)]
@@ -201,7 +202,7 @@ module moveos_std::context {
     }
 
     #[test_only]
-    struct TestObjectValue has key {
+    struct TestStruct has key {
         value: u64,
     }
 
@@ -209,17 +210,125 @@ module moveos_std::context {
     fun test_object_mut(sender: address){
         let ctx = new_test_context(sender);
         
-        let ref = new_object(&mut ctx, TestObjectValue{value: 1});
+        let obj = new_object(&mut ctx, TestStruct{value: 1});
         
         {
-            let obj_value = object::borrow_mut(&mut ref);
+            let obj_value = object::borrow_mut(&mut obj);
             obj_value.value = 2;
         };
         {
-            let obj_value = object::borrow(&ref);
+            let obj_value = object::borrow(&obj);
             assert!(obj_value.value == 2, 1000);
         };
-        object::to_permanent(ref);
+        object::to_permanent(obj);
+        drop_test_context(ctx);
+    }
+
+    #[test(alice = @0x42)]
+    fun test_borrow_object(alice: &signer){
+        let alice_addr = signer::address_of(alice);
+        let ctx = new_test_context(alice_addr);
+        
+        let obj = new_object(&mut ctx, TestStruct{value: 1});
+        let object_id = object::id(&obj);
+        object::transfer_extend(&mut obj, alice_addr);
+
+        //test borrow_object by id
+        {
+            let _obj = borrow_object<TestStruct>(&mut ctx, object_id);
+        };
+       
+        object::to_permanent(obj);
+        drop_test_context(ctx);
+    }
+
+    #[test(alice = @0x42, bob = @0x43)]
+    #[expected_failure(abort_code = 327681, location = Self)]
+    fun test_borrow_mut_object(alice: &signer, bob: &signer){
+        let alice_addr = signer::address_of(alice);
+        let ctx = new_test_context(alice_addr);
+        
+        let obj = new_object(&mut ctx, TestStruct{value: 1});
+        let object_id = object::id(&obj);
+        object::transfer_extend(&mut obj, alice_addr);
+
+        //test borrow_mut_object by owner
+        {
+            let _obj = borrow_mut_object<TestStruct>(&mut ctx, alice, object_id);
+        };
+
+        // borrow_mut_object by non-owner failed 
+        {
+            let _obj = borrow_mut_object<TestStruct>(&mut ctx, bob, object_id);
+        };
+        object::to_permanent(obj);
+        drop_test_context(ctx);
+    }
+
+    #[test(alice = @0x42, bob = @0x43)] 
+    fun test_shared_object(alice: &signer, bob: &signer){
+        let alice_addr = signer::address_of(alice);
+        let ctx = new_test_context(alice_addr);
+        
+        let obj = new_object(&mut ctx, TestStruct{value: 1});
+        let object_id = object::id(&obj);
+        object::transfer_extend(&mut obj, alice_addr);
+
+        //test borrow_mut_object by owner
+        {
+            let _obj = borrow_mut_object<TestStruct>(&mut ctx, alice, object_id);
+        };
+
+        object::to_shared(obj);
+        // any one can borrow_mut the shared object
+        {
+            let obj = borrow_mut_object<TestStruct>(&mut ctx, bob, object_id);
+            assert!(object::is_shared(obj), 1000);
+        };
+        drop_test_context(ctx);
+    }
+
+    #[test(alice = @0x42)]
+    #[expected_failure(abort_code = 327681, location =  moveos_std::object)]
+    fun test_frozen_object_by_owner(alice: &signer){
+        let alice_addr = signer::address_of(alice);
+        let ctx = new_test_context(alice_addr);
+        
+        let obj = new_object(&mut ctx, TestStruct{value: 1});
+        let object_id = object::id(&obj);
+        object::transfer_extend(&mut obj, alice_addr);
+        object::to_frozen(obj);
+        //test borrow_object by owner
+        {
+            let _obj = borrow_object<TestStruct>(&mut ctx, object_id);
+        };
+
+        // none one can borrow_mut from the frozen object
+        {
+            let _obj = borrow_mut_object<TestStruct>(&mut ctx, alice, object_id);
+        };
+        drop_test_context(ctx);
+    }
+
+    #[test(alice = @0x42)]
+    #[expected_failure(abort_code = 327681, location =  moveos_std::object)]
+    fun test_frozen_object_by_extend(alice: &signer){
+        let alice_addr = signer::address_of(alice);
+        let ctx = new_test_context(alice_addr);
+        
+        let obj = new_object(&mut ctx, TestStruct{value: 1});
+        let object_id = object::id(&obj);
+        object::transfer_extend(&mut obj, alice_addr);
+        object::to_frozen(obj);
+        //test borrow_object by owner
+        {
+            let _obj = borrow_object<TestStruct>(&mut ctx, object_id);
+        };
+
+        // none one can borrow_mut from the frozen object
+        {
+            let _obj = borrow_mut_object_extend<TestStruct>(&mut ctx, object_id);
+        };
         drop_test_context(ctx);
     }
 }

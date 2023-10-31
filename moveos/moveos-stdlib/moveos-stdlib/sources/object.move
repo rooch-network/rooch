@@ -31,6 +31,9 @@ module moveos_std::object {
 
     const SYSTEM_OWNER_ADDRESS: address = @0x0;
     
+    const SHARED_OBJECT_FLAG_MASK: u8 = 1;
+    const FROZEN_OBJECT_FLAG_MASK: u8 = 1 << 1;
+
     /// ObjectEntity<T> is a box of the value of T
     /// It does not have any ability, so it can not be `drop`, `copy`, or `store`, and can only be handled by storage API after creation.
     struct ObjectEntity<T> {
@@ -39,7 +42,7 @@ module moveos_std::object {
         // The owner of the object
         owner: address,
         /// A flag to indicate whether the object is shared or frozen
-        //flag: u8,
+        flag: u8,
         // The value of the object
         // The value must be the last field
         value: T,
@@ -80,8 +83,7 @@ module moveos_std::object {
 
     /// Create a new object, the object is owned by `System` by default.
     public(friend) fun new<T: key>(id: ObjectID, value: T): Object<T> {
-        let owner = SYSTEM_OWNER_ADDRESS;
-        let entity = ObjectEntity<T>{id, value, owner};
+        let entity = new_internal(id, value);
         add_to_global(entity);
         Object{id}
     }
@@ -91,6 +93,11 @@ module moveos_std::object {
     public(friend) fun new_singleton<T: key>(value: T): Object<T> {
         let id = singleton_object_id<T>();
         new(id, value)
+    }
+
+    fun new_internal<T: key>(id: ObjectID, value: T): ObjectEntity<T> {
+        let owner = SYSTEM_OWNER_ADDRESS;
+        ObjectEntity<T>{id, owner, flag: 0u8, value}
     }
 
     /// Borrow the object value
@@ -111,7 +118,7 @@ module moveos_std::object {
     public fun remove<T: key>(self: Object<T>) : T {
         let Object{id} = self;
         let object_entity = remove_from_global<T>(id);
-        let ObjectEntity{id:_, owner:_, value} = object_entity;
+        let ObjectEntity{id:_, owner:_, flag:_, value} = object_entity;
         value
     }
 
@@ -125,17 +132,25 @@ module moveos_std::object {
     /// The shared object also can be removed from the object storage.
     public fun to_shared<T: key>(self: Object<T>) {
         let obj_entity = borrow_mut_from_global<T>(self.id);
-        // TODO set the flag
-        transfer_to_system(obj_entity); 
+        to_shared_internal(obj_entity);
         to_permanent(self);
+    }
+
+    fun to_shared_internal<T: key>(self: &mut ObjectEntity<T>) {
+        self.flag = self.flag | SHARED_OBJECT_FLAG_MASK;
+        transfer_to_system_internal(self); 
     }
 
     /// Make the Object frozen, Any one can not get the &mut Object<T> from frozen object
     public fun to_frozen<T: key>(self: Object<T>) {
         let obj_entity = borrow_mut_from_global<T>(self.id);
-        // TODO set the flag
-        transfer_to_system(obj_entity); 
+        to_frozen_internal(obj_entity);
         to_permanent(self);
+    }
+
+    fun to_frozen_internal<T: key>(self: &mut ObjectEntity<T>) {
+        self.flag = self.flag | FROZEN_OBJECT_FLAG_MASK;
+        transfer_to_system_internal(self); 
     }
 
     /// Transfer the object to the new owner
@@ -158,7 +173,7 @@ module moveos_std::object {
         self.owner = new_owner;
     }
 
-    public(friend) fun transfer_to_system<T>(self: &mut ObjectEntity<T>){
+    fun transfer_to_system_internal<T>(self: &mut ObjectEntity<T>){
         self.owner = SYSTEM_OWNER_ADDRESS;
     }
 
@@ -171,28 +186,26 @@ module moveos_std::object {
         obj_enitty.owner
     }
 
-    public(friend) fun owner_internal<T: key>(self: &ObjectEntity<T>): address {
+    fun owner_internal<T: key>(self: &ObjectEntity<T>): address {
         self.owner
     }
 
-    public fun is_shared<T>(_self: &Object<T>) : bool {
-        // TODO check the flag
-        false
+    public fun is_shared<T: key>(self: &Object<T>) : bool {
+        let obj_enitty = borrow_from_global<T>(self.id);
+        is_shared_internal(obj_enitty)
     }
 
-    public(friend) fun is_shared_internal<T>(_self: &ObjectEntity<T>) : bool {
-        // TODO check the flag
-        false
+    fun is_shared_internal<T>(self: &ObjectEntity<T>) : bool {
+        self.flag & SHARED_OBJECT_FLAG_MASK == SHARED_OBJECT_FLAG_MASK
     }
 
-    public fun is_frozen<T>(_self: &Object<T>) : bool {
-        // TODO check the flag
-        false
+    public fun is_frozen<T:key>(self: &Object<T>) : bool {
+        let obj_enitty = borrow_from_global<T>(self.id);
+        is_frozen_internal(obj_enitty)
     }
 
-    public(friend) fun is_frozen_internal<T>(_self: &ObjectEntity<T>) : bool {
-        // TODO check the flag
-        false
+    fun is_frozen_internal<T>(self: &ObjectEntity<T>) : bool {
+        self.flag & FROZEN_OBJECT_FLAG_MASK == FROZEN_OBJECT_FLAG_MASK
     }
     
 
@@ -250,7 +263,7 @@ module moveos_std::object {
         count: u64,
     }
 
-    #[test(sender = @0x2)]
+    #[test(sender = @0x42)]
     fun test_object(sender: signer) {
         let sender_addr = std::signer::address_of(&sender);
         let tx_context = moveos_std::tx_context::new_test_context(sender_addr);
@@ -282,6 +295,31 @@ module moveos_std::object {
         let TestStruct{count: _count} = test_obj;
     }
 
+    #[test(sender = @0x42)]
+    fun test_shared(sender: address){
+        let ctx = moveos_std::tx_context::new_test_context(sender);
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut ctx));
+        let obj_enitty = new_internal(object_id, TestStruct { count: 1 });
+        assert!(!is_shared_internal(&obj_enitty), 1000);
+        assert!(!is_frozen_internal(&obj_enitty), 1001);
+        to_shared_internal(&mut obj_enitty);
+        assert!(is_shared_internal(&obj_enitty), 1002);
+        assert!(!is_frozen_internal(&obj_enitty), 1003);
+        add_to_global(obj_enitty);
+    }
+
+    #[test(sender = @0x42)]
+    fun test_frozen(sender: address){
+        let ctx = moveos_std::tx_context::new_test_context(sender);
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut ctx));
+        let obj_enitty = new_internal(object_id, TestStruct { count: 1 });
+        assert!(!is_shared_internal(&obj_enitty), 1000);
+        assert!(!is_frozen_internal(&obj_enitty), 1001);
+        to_frozen_internal(&mut obj_enitty);
+        assert!(!is_shared_internal(&obj_enitty), 1002);
+        assert!(is_frozen_internal(&obj_enitty), 1003);
+        add_to_global(obj_enitty);
+    }
 
     #[test(sender = @0x42)]
     #[expected_failure(abort_code = 393218, location = moveos_std::raw_table)]
@@ -302,7 +340,7 @@ module moveos_std::object {
         let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut ctx));
         let object = new(object_id, TestStruct { count: 1 });
         
-        let ObjectEntity{ id:_,owner:_,value:test_struct1} = remove_from_global<TestStruct>(object_id);
+        let ObjectEntity{ id:_,owner:_,flag:_, value:test_struct1} = remove_from_global<TestStruct>(object_id);
         let test_struct2 = remove(object);
         let TestStruct { count : _ } = test_struct1;
         let TestStruct { count : _ } = test_struct2;
