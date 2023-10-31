@@ -16,7 +16,10 @@ use ethers::{
         transaction::eip2930::AccessList, Bytes, OtherFields, Signature, Transaction, H160, U256,
         U64,
     },
-    utils::rlp::{Decodable, Rlp},
+    utils::{
+        keccak256,
+        rlp::{Decodable, Rlp},
+    },
 };
 use move_core_types::account_address::AccountAddress;
 use moveos_types::{
@@ -342,6 +345,10 @@ impl AbstractTransaction for EthereumTransaction {
 
     fn tx_hash(&self) -> H256 {
         self.0.hash()
+    }
+
+    fn tx_accumulator_root(&self) -> H256 {
+        keccak256(self.0.block_hash.unwrap()).into()
     }
 
     fn construct_moveos_transaction(

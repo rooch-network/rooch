@@ -76,6 +76,10 @@ impl RoochTransactionData {
         moveos_types::h256::sha3_256_of(self.encode().as_slice())
     }
 
+    pub fn accumulator_root(&self) -> H256 {
+        moveos_types::h256::sha3_256_of(self.tx_accumulator_root.as_bytes())
+    }
+
     pub fn sign(self, kp: &RoochKeyPair) -> RoochTransaction {
         let signature = Signature::new_hashed(self.hash().as_bytes(), kp);
         //TODO implement Signature into Authenticator
@@ -150,7 +154,7 @@ impl RoochTransaction {
 
         let sender: RoochAddress = RoochAddress::random();
         let sequence_number = 0;
-        let tx_accumulator_root = H256::zero();
+        let tx_accumulator_root = H256::random();
         let payload = MoveAction::new_function_call(
             FunctionId::new(
                 ModuleId::new(AccountAddress::random(), Identifier::new("test").unwrap()),
@@ -177,12 +181,13 @@ impl RoochTransaction {
 impl From<RoochTransaction> for MoveOSTransaction {
     fn from(tx: RoochTransaction) -> Self {
         let tx_hash = tx.tx_hash();
+        let tx_accumulator_root = tx.tx_accumulator_root();
         let tx_ctx = TxContext::new(
             tx.data.sender.into(),
             tx.data.sequence_number,
             tx.data.max_gas_amount,
             tx_hash,
-            tx.data.tx_accumulator_root,
+            tx_accumulator_root,
         );
         MoveOSTransaction::new(tx_ctx, tx.data.action)
     }
@@ -208,6 +213,10 @@ impl AbstractTransaction for RoochTransaction {
     fn tx_hash(&self) -> H256 {
         //TODO cache the hash
         self.data.hash()
+    }
+
+    fn tx_accumulator_root(&self) -> H256 {
+        self.data.accumulator_root()
     }
 
     fn authenticator_info(&self) -> Result<AuthenticatorInfo> {

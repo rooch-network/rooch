@@ -34,7 +34,9 @@ fn test_validate() {
         .resolve_or_generate(multi_chain_address_sender.clone())
         .unwrap();
     let authenticator = tx.authenticator_info().unwrap();
-    let moveos_tx = tx.construct_moveos_transaction(resolved_sender, H256::zero()).unwrap();
+    let moveos_tx = tx
+        .construct_moveos_transaction(resolved_sender, H256::zero())
+        .unwrap();
 
     ethereum_validator
         .validate(&moveos_tx.ctx, authenticator.authenticator.payload)

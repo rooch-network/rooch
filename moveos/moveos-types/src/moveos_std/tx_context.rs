@@ -33,7 +33,7 @@ pub struct TxContext {
     pub tx_hash: Vec<u8>,
     /// Number of `ObjectID`'s generated during execution of the current transaction
     pub ids_created: u64,
-    /// TODO: tx_accumulator_root
+    /// Transaction accumulator root
     pub tx_accumulator_root: Vec<u8>,
     /// A map for storing context data
     pub map: SimpleMap<MoveString, Any>,

@@ -37,7 +37,9 @@ fn test_validate_rooch() {
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, H256::zero(), action);
     let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
     let auth_info = tx.authenticator_info().unwrap();
-    let move_tx = tx.construct_moveos_transaction(sender.into(), H256::zero()).unwrap();
+    let move_tx = tx
+        .construct_moveos_transaction(sender.into(), H256::zero())
+        .unwrap();
 
     transaction_validator
         .validate(&move_tx.ctx, auth_info)
@@ -68,7 +70,9 @@ fn test_validate_ethereum() {
         .resolve_or_generate(multi_chain_address_sender.clone())
         .unwrap();
     let authenticator = tx.authenticator_info().unwrap();
-    let moveos_tx = tx.construct_moveos_transaction(resolved_sender, H256::zero()).unwrap();
+    let moveos_tx = tx
+        .construct_moveos_transaction(resolved_sender, H256::zero())
+        .unwrap();
 
     transaction_validator
         .validate(&moveos_tx.ctx, authenticator)
@@ -117,7 +121,8 @@ fn test_session_key_rooch() {
     // send transaction via session key
 
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
-    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number + 1, H256::zero(), action);
+    let tx_data =
+        RoochTransactionData::new_for_test(sender, sequence_number + 1, H256::zero(), action);
     let tx = keystore
         .sign_transaction_via_session_key(&sender, tx_data, &session_auth_key, None)
         .unwrap();
@@ -136,7 +141,8 @@ fn test_session_key_rooch() {
             .simple_serialize()
             .unwrap()],
     );
-    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number + 2, H256::zero(), action);
+    let tx_data =
+        RoochTransactionData::new_for_test(sender, sequence_number + 2, H256::zero(), action);
     let tx = keystore
         .sign_transaction_via_session_key(&sender, tx_data, &session_auth_key, None)
         .unwrap();
@@ -169,13 +175,18 @@ fn test_session_key_rooch() {
     let update_time_action =
         TimestampModule::create_fast_forward_seconds_for_local_action(max_inactive_interval + 1);
     // because previous transaction is failed, so the sequence number is not increased.
-    let tx_data =
-        RoochTransactionData::new_for_test(sender, sequence_number + 2, H256::zero(), update_time_action);
+    let tx_data = RoochTransactionData::new_for_test(
+        sender,
+        sequence_number + 2,
+        H256::zero(),
+        update_time_action,
+    );
     let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
     binding_test.execute(tx).unwrap();
 
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
-    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number + 3, H256::zero(), action);
+    let tx_data =
+        RoochTransactionData::new_for_test(sender, sequence_number + 3, H256::zero(), action);
     let tx = keystore
         .sign_transaction_via_session_key(&sender, tx_data, &session_auth_key, None)
         .unwrap();
