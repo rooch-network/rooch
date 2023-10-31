@@ -29,6 +29,7 @@ import {
   PrivateKeyAuth,
 } from '@rooch/sdk'
 import { Session } from 'src/context/session/types'
+import { useETH } from '../../hooks/useETH'
 
 type Props = {
   children: ReactNode
@@ -92,6 +93,7 @@ const clearSessionAccountInSessionStorage = (provider: IProvider, roochAddress: 
 const SessionProvider = ({ children }: Props) => {
   const auth = useAuth()
   const rooch = useRooch()
+  const eth = useETH()
 
   const [loading, setLoading] = useState<boolean>(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -156,24 +158,7 @@ const SessionProvider = ({ children }: Props) => {
     }
   }, [auth.defaultAccount, filterdProvider])
 
-  const waitTxConfirmed = async (ethereum: any, txHash: string) => {
-    let receipt
-    while (!receipt) {
-      receipt = await ethereum.request({
-        method: 'eth_getTransactionReceipt',
-        params: [txHash],
-      })
-
-      if (!receipt) {
-        await new Promise((resolve) => setTimeout(resolve, 3000)) // wait for 3 seconds before checking again
-      }
-    }
-
-    return receipt
-  }
-
   const registerSessionKey = async (
-    ethereum: any,
     account: string,
     authKey: string,
     scopes: Array<string>,
@@ -240,12 +225,10 @@ const SessionProvider = ({ children }: Props) => {
       },
     ]
 
-    const tx = await ethereum.request({
-      method: 'eth_sendTransaction',
-      params,
-    })
+    console.log('auth')
 
-    const result = await waitTxConfirmed(ethereum, tx)
+    const tx = await eth.sendTransaction(params)
+    const result = await eth.waitTxConfirmed(tx)
     console.log(`result:`, result)
   }
 
@@ -259,13 +242,7 @@ const SessionProvider = ({ children }: Props) => {
     const authKey = pk.getPublicKey().toRoochAddress()
 
     try {
-      await registerSessionKey(
-        window.ethereum,
-        account.address,
-        authKey,
-        scope,
-        maxInactiveInterval,
-      )
+      await registerSessionKey(account.address, authKey, scope, maxInactiveInterval)
 
       const key = makeSessionAccountStoreKey(provider.getChainId(), account.roochAddress)
       window.sessionStorage.setItem(key, pk.export().privateKey)

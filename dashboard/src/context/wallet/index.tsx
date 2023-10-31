@@ -27,6 +27,8 @@ const defaultProvider: ETHValueType = {
   provider: undefined,
   accounts: [],
   isConnect: false,
+  sendTransaction: async () => Promise.resolve(),
+  waitTxConfirmed: async () => Promise.resolve(),
   switchChina: async () => Promise.resolve(),
   addChina: async () => Promise.resolve(),
   connect: async () => Promise.resolve(),
@@ -151,6 +153,37 @@ const ETHProvider = ({ children }: Props) => {
     // }
   }
 
+  const sendTransaction = async (params: unknown[]) => {
+    const curChain = rooch.getActiveChina()
+
+    console.log('cur chain ', curChain)
+
+    if (String(curChain.id) !== chainId) {
+      await switchChina(curChain.info)
+    }
+
+    return await window.ethereum?.request({
+      method: 'eth_sendTransaction',
+      params,
+    })
+  }
+
+  const waitTxConfirmed = async (txHash: string) => {
+    let receipt
+    while (!receipt) {
+      receipt = await window.ethereum?.request({
+        method: 'eth_getTransactionReceipt',
+        params: [txHash],
+      })
+
+      if (!receipt) {
+        await new Promise((resolve) => setTimeout(resolve, 3000)) // wait for 3 seconds before checking again
+      }
+    }
+
+    return receipt
+  }
+
   const values = {
     loading,
     chainId,
@@ -158,6 +191,8 @@ const ETHProvider = ({ children }: Props) => {
     provider: hasProvider ? window.ethereum : null,
     accounts,
     isConnect: hasProvider,
+    sendTransaction,
+    waitTxConfirmed,
     addChina,
     switchChina,
     connect,
