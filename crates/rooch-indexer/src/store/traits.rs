@@ -7,10 +7,10 @@ use async_trait::async_trait;
 
 #[async_trait]
 pub trait IndexerStore {
-    async fn save_transactions(
+    async fn persist_transactions(
         &self,
         transactions: Vec<IndexedTransaction>,
     ) -> Result<(), IndexerError>;
 
-    async fn save_events(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError>;
+    async fn persist_events(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError>;
 }

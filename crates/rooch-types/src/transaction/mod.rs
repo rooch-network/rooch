@@ -7,6 +7,7 @@ use self::{
 use crate::address::MultiChainAddress;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
+use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::{h256::H256, transaction::MoveOSTransaction};
 use serde::{Deserialize, Serialize};
 
@@ -178,6 +179,14 @@ impl TransactionSequenceInfo {
             tx_accumulator_root,
         }
     }
+}
+
+/// Transaction with sequence info and execution info.
+#[derive(Debug, Clone)]
+pub struct TransactionWithInfo {
+    pub transaction: TypedTransaction,
+    pub sequence_info: TransactionSequenceInfo,
+    pub execution_info: TransactionExecutionInfo,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]

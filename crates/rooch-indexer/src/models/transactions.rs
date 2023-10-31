@@ -2,11 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use diesel::prelude::*;
+use move_core_types::vm_status::KeptVMStatus;
 
 use crate::schema::transactions;
-use crate::types::IndexedTransaction;
+use crate::types::{IndexedTransaction, IndexerResult};
 
-use diesel::sql_types::Text;
+use moveos_types::transaction::TransactionExecutionInfo;
+use rooch_types::transaction::authenticator::Authenticator;
+use rooch_types::transaction::TransactionWithInfo;
+use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
 
 #[derive(Clone, Debug, Queryable, Insertable, QueryableByName)]
 #[diesel(table_name = transactions)]
@@ -98,5 +102,33 @@ impl From<IndexedTransaction> for StoredTransaction {
             created_at: transaction.created_at as i64,
             updated_at: transaction.updated_at as i64,
         }
+    }
+}
+
+impl StoredTransaction {
+    pub fn try_into_transaction_with_info(self) -> IndexerResult<TransactionWithInfo> {
+        //TODO construct TypedTransaction
+        let transaction = TypedTransaction {};
+        let sequence_info = TransactionSequenceInfo {
+            tx_order: self.tx_order as u128,
+            tx_order_signature: Authenticator {
+                auth_validator_id: self.tx_order_auth_validator_id as u64,
+                payload: self.tx_order_authenticator_payload,
+            },
+            tx_accumulator_root: self.tx_accumulator_root.into(),
+        };
+        let execution_info = TransactionExecutionInfo {
+            tx_hash: self.tx_hash.into(),
+            state_root: self.state_root.into(),
+            event_root: self.state_root.into(),
+            gas_used: self.gas_used as u64,
+            //TODO convert KeptVMStatus
+            status: KeptVMStatus::Executed,
+        };
+        Ok(TransactionWithInfo {
+            transaction,
+            sequence_info,
+            execution_info,
+        })
     }
 }

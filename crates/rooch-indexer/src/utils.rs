@@ -3,8 +3,7 @@
 
 use crate::SqlitePoolConnection;
 use anyhow::anyhow;
-use diesel::migration::MigrationSource;
-use diesel::{SqliteConnection, RunQueryDsl};
+use diesel::{RunQueryDsl, SqliteConnection};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use tracing::info;
 
@@ -17,10 +16,9 @@ const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 pub fn reset_database(
     conn: &mut SqlitePoolConnection,
     drop_all: bool,
-    use_v2: bool,
 ) -> Result<(), anyhow::Error> {
     info!("Resetting database ...");
-    let migration = if use_v2 { MIGRATIONS_V2 } else { MIGRATIONS };
+    let migration = MIGRATIONS;
     if drop_all {
         drop_all_tables(conn)
             .map_err(|e| anyhow!("Encountering error when dropping all tables {e}"))?;
@@ -28,7 +26,7 @@ pub fn reset_database(
         conn.revert_all_migrations(migration)
             .map_err(|e| anyhow!("Error reverting all migrations {e}"))?;
     }
-    let migration = if use_v2 { MIGRATIONS_V2 } else { MIGRATIONS };
+    let migration = MIGRATIONS;
     conn.run_migrations(&migration.migrations().unwrap())
         .map_err(|e| anyhow!("Failed to run migrations {e}"))?;
     info!("Reset database complete.");

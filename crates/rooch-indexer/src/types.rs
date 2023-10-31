@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::errors::IndexerError;
 use move_core_types::language_storage::TypeTag;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
@@ -9,6 +10,8 @@ use moveos_types::transaction::MoveAction;
 use rooch_types::address::RoochAddress;
 use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::TransactionType;
+
+pub type IndexerResult<T> = Result<T, IndexerError>;
 
 #[derive(Debug, Clone)]
 pub struct IndexedTransaction {

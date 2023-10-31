@@ -61,7 +61,7 @@ impl SqliteIndexerStore {
         }
     }
 
-    fn save_transactions_chunk(
+    fn persist_transactions_chunk(
         &self,
         transactions: Vec<IndexedTransaction>,
     ) -> Result<(), IndexerError> {
@@ -79,7 +79,7 @@ impl SqliteIndexerStore {
                         .on_conflict_do_nothing()
                         .execute(conn)
                         .map_err(IndexerError::from)
-                        .context("Failed to write transactions to PostgresDB")?;
+                        .context("Failed to write transactions to SQLiteDB")?;
                 }
                 Ok::<(), IndexerError>(())
             },
@@ -94,7 +94,7 @@ impl SqliteIndexerStore {
         })
     }
 
-    fn save_events_chunk(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError> {
+    fn persist_events_chunk(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError> {
         let len = events.len();
         let events = events
             .into_iter()
@@ -110,7 +110,7 @@ impl SqliteIndexerStore {
                         .on_conflict_do_nothing()
                         .execute(conn)
                         .map_err(IndexerError::from)
-                        .context("Failed to write events to PostgresDB")?;
+                        .context("Failed to write events to SQLiteDB")?;
                 }
                 Ok::<(), IndexerError>(())
             },
@@ -164,7 +164,7 @@ impl SqliteIndexerStore {
 
 #[async_trait]
 impl IndexerStore for SqliteIndexerStore {
-    async fn save_transactions(
+    async fn persist_transactions(
         &self,
         transactions: Vec<IndexedTransaction>,
     ) -> Result<(), IndexerError> {
@@ -173,7 +173,7 @@ impl IndexerStore for SqliteIndexerStore {
         let chunks = chunk!(transactions, self.parallel_chunk_size);
         let futures = chunks
             .into_iter()
-            .map(|c| self.spawn_blocking_task(move |this| this.save_transactions_chunk(c)))
+            .map(|c| self.spawn_blocking_task(move |this| this.persist_transactions_chunk(c)))
             .collect::<Vec<_>>();
 
         futures::future::join_all(futures)
@@ -181,7 +181,7 @@ impl IndexerStore for SqliteIndexerStore {
             .into_iter()
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| {
-                IndexerError::PostgresWriteError(format!(
+                IndexerError::SQLiteWriteError(format!(
                     "Failed to persist all transactions chunks: {:?}",
                     e
                 ))
@@ -190,7 +190,7 @@ impl IndexerStore for SqliteIndexerStore {
         Ok(())
     }
 
-    async fn save_events(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError> {
+    async fn persist_events(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError> {
         if events.is_empty() {
             return Ok(());
         }
@@ -198,7 +198,7 @@ impl IndexerStore for SqliteIndexerStore {
         let chunks = chunk!(events, self.parallel_chunk_size);
         let futures = chunks
             .into_iter()
-            .map(|c| self.spawn_blocking_task(move |this| this.save_events_chunk(c)))
+            .map(|c| self.spawn_blocking_task(move |this| this.persist_events_chunk(c)))
             .collect::<Vec<_>>();
 
         futures::future::join_all(futures)
@@ -206,7 +206,7 @@ impl IndexerStore for SqliteIndexerStore {
             .into_iter()
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| {
-                IndexerError::PostgresWriteError(format!(
+                IndexerError::SQLiteWriteError(format!(
                     "Failed to persist all events chunks: {:?}",
                     e
                 ))

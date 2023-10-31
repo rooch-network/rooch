@@ -22,27 +22,18 @@ hex = { workspace = true }
 parking_lot = { workspace = true }
 once_cell = { workspace = true }
 fastcrypto = { workspace = true }
-
-#anyhow = { workspace = true }
 async-trait = { workspace = true }
-#axum = { workspace = true }
-#backoff = { workspace = true }
-#bcs = { workspace = true }
 chrono = { workspace = true }
 serde_with = { workspace = true }
 clap = { workspace = true }
 tap = { workspace = true }
 futures = { workspace = true }
 itertools = { workspace = true }
-#jsonrpsee = { workspace = true }
-#serde = { workspace = true }
 serde_json = { workspace = true }
 regex = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
-#url = { workspace = true }
-
 diesel = { workspace = true }
 diesel-derive-enum = { workspace = true }
 diesel_migrations = { workspace = true }
@@ -57,3 +48,4 @@ moveos-config = { workspace = true }
 moveos-types = { workspace = true }
 
 rooch-types = { workspace = true }
+rooch-config = { workspace = true }
