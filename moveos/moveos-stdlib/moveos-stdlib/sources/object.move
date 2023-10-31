@@ -3,13 +3,6 @@
 
 /// Move Object
 /// For more details, please refer to https://rooch.network/docs/developer-guides/object
-/// 
-/// 
-/// For more details please refer https://rooch.network/docs/developer-guides/object
-/// The Object is a box style Object
-/// The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/object.move#L75):
-/// 1. The Object is a struct in Move
-/// 2. The Object is a use case of the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by StorageContext API after creation.
 module moveos_std::object {
 
     use std::error;
@@ -317,6 +310,22 @@ module moveos_std::object {
         assert!(!is_frozen_internal(&obj_enitty), 1001);
         to_frozen_internal(&mut obj_enitty);
         assert!(!is_shared_internal(&obj_enitty), 1002);
+        assert!(is_frozen_internal(&obj_enitty), 1003);
+        add_to_global(obj_enitty);
+    }
+
+    // An object can not be shared and frozen at the same time
+    // This test just ensure the flag can be set at the same time
+    #[test(sender = @0x42)]
+    fun test_all_flag(sender: address){
+        let ctx = moveos_std::tx_context::new_test_context(sender);
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut ctx));
+        let obj_enitty = new_internal(object_id, TestStruct { count: 1 });
+        assert!(!is_shared_internal(&obj_enitty), 1000);
+        assert!(!is_frozen_internal(&obj_enitty), 1001);
+        to_shared_internal(&mut obj_enitty);
+        to_frozen_internal(&mut obj_enitty);
+        assert!(is_shared_internal(&obj_enitty), 1002);
         assert!(is_frozen_internal(&obj_enitty), 1003);
         add_to_global(obj_enitty);
     }

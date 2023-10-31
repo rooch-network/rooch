@@ -7,13 +7,6 @@ Move Object
 For more details, please refer to https://rooch.network/docs/developer-guides/object
 
 
-For more details please refer https://rooch.network/docs/developer-guides/object
-The Object is a box style Object
-The differents with the Object in [Sui](https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-framework/sources/object.move#L75):
-1. The Object is a struct in Move
-2. The Object is a use case of the Hot Potato pattern in Move. Objects do not have any ability, so they cannot be drop, copy, or store, and can only be handled by StorageContext API after creation.
-
-
 -  [Struct `ObjectEntity`](#0x2_object_ObjectEntity)
 -  [Resource `Object`](#0x2_object_Object)
 -  [Struct `ObjectID`](#0x2_object_ObjectID)
