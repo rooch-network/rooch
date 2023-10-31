@@ -1,1 +1,37 @@
-#
+# pr.sh script introduction
+
+When contributing code to Rooch, we need to do some checking.
+
+In order to avoid introducing some bugs every time we submit the code, we provide the `scripts/pr.sh` script, which can help us perform CI checks locally when submitting a PR (pull request) to Rooch.
+
+For example, when we contribute a example to `examples`, after using `rooch move new` to initialize the project, in addition to replacing the project address of the `Move.toml` file with `_` wildcards, we also need to add a `[dev-addresses]` table and fill in a field for unit testing. address.
+
+The `[dev-addresses]` table not added to `examples/quick_start_counter/Move.toml`:
+
+```shell
+BUILDING quick_start_counter
+Success
+    Finished dev [unoptimized + debuginfo] target(s) in 0.53s
+     Running `target/debug/rooch move test -p examples/quick_start_counter`
+thread 'main' panicked at 'resolve package dep failed: Unresolved addresses found: [
+Named address 'quick_start_counter' in package 'quick_start_counter'
+]
+To fix this, add an entry for each unresolved address to the [addresses] section of examples/quick_start_counter/Move.toml: e.g.,
+[addresses]
+Std = "0x1"
+Alternatively, you can also define [dev-addresses] and call with the -d flag', crates/rooch/src/commands/move_cli/commands/unit_test.rs:64:14
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+Error: Process completed with exit code 101.
+```
+
+## Use
+
+Switch to the root directory of the Rooch project and run the following command:
+
+```shell
+./scripts/pr.sh -e
+```
+
+During the process of running the CI check, if a corresponding error occurs, it will be automatically interrupted. Make corresponding modifications to the code to be submitted based on the modification suggestions provided at the check point, and run again.
+
+Until all checks pass, submit your code to Rooch's remote repository.
