@@ -35,22 +35,6 @@ This module defines Rooch Gas Coin.
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>dummy_field: bool</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x3_gas_coin_balance"></a>
 
 ## Function `balance`
@@ -62,19 +46,6 @@ This module defines Rooch Gas Coin.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_balance">balance</a>(ctx: &Context, addr: <b>address</b>): u256 {
-    <a href="account_coin_store.md#0x3_account_coin_store_balance">account_coin_store::balance</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;(ctx, addr)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_gas_coin_burn"></a>
 
 ## Function `burn`
@@ -85,19 +56,6 @@ This module defines Rooch Gas Coin.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_burn">burn</a>(ctx: &<b>mut</b> Context, <a href="coin.md#0x3_coin">coin</a>: Coin&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;) {
-    <a href="coin.md#0x3_coin_burn_extend">coin::burn_extend</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;(ctx, <a href="coin.md#0x3_coin">coin</a>);
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_gas_coin_deduct_gas"></a>
 
@@ -111,19 +69,6 @@ deduct gas coin from the given account.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_deduct_gas">deduct_gas</a>(ctx: &<b>mut</b> Context, addr: <b>address</b>, amount: u256):Coin&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt; {
-    <a href="account_coin_store.md#0x3_account_coin_store_withdraw_extend">account_coin_store::withdraw_extend</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;(ctx, addr, amount)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_gas_coin_faucet"></a>
 
 ## Function `faucet`
@@ -135,20 +80,6 @@ Mint gas coin to the given account.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_faucet">faucet</a>(ctx: &<b>mut</b> Context, addr: <b>address</b>, amount: u256) {
-    <b>let</b> <a href="coin.md#0x3_coin">coin</a> = <a href="gas_coin.md#0x3_gas_coin_mint">mint</a>(ctx, amount);
-    <a href="account_coin_store.md#0x3_account_coin_store_deposit_extend">account_coin_store::deposit_extend</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;(ctx, addr, <a href="coin.md#0x3_coin">coin</a>);
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_gas_coin_faucet_entry"></a>
 
@@ -162,22 +93,6 @@ TODO find a way to protect this function from DOS attack.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_faucet_entry">faucet_entry</a>(ctx: &<b>mut</b> Context, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-    //100 RGC
-    <b>let</b> amount = 100_000_000_000_000_000_000u256;
-    <b>let</b> addr = <a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>);
-    <a href="gas_coin.md#0x3_gas_coin_faucet">faucet</a>(ctx, addr, amount);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_gas_coin_genesis_init"></a>
 
 ## Function `genesis_init`
@@ -187,23 +102,3 @@ Can only be called during genesis to initialize the Rooch coin.
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _genesis_account: &<a href="">signer</a>)
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_genesis_init">genesis_init</a>(ctx: &<b>mut</b> Context, _genesis_account: &<a href="">signer</a>){
-    <a href="coin.md#0x3_coin_register_extend">coin::register_extend</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">GasCoin</a>&gt;(
-        ctx,
-        <a href="_utf8">string::utf8</a>(b"Rooch Gas Coin"),
-        <a href="_utf8">string::utf8</a>(b"RGC"),
-        18, // decimals
-    );
-}
-</code></pre>
-
-
-
-</details>

@@ -42,28 +42,6 @@ extension: Option<Any>
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code><a href="">type_name</a>: <a href="_String">string::String</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>data: <a href="">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -92,22 +70,6 @@ also required from <code>T</code>.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="any.md#0x2_any_pack">pack</a>&lt;T: drop + store&gt;(x: T): <a href="any.md#0x2_any_Any">Any</a> {
-    <a href="any.md#0x2_any_Any">Any</a> {
-        <a href="">type_name</a>: <a href="type_info.md#0x2_type_info_type_name">type_info::type_name</a>&lt;T&gt;(),
-        data: <a href="_to_bytes">bcs::to_bytes</a>(&x)
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_any_unpack"></a>
 
 ## Function `unpack`
@@ -120,20 +82,6 @@ Unpack a value from the <code><a href="any.md#0x2_any_Any">Any</a></code> repres
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="any.md#0x2_any_unpack">unpack</a>&lt;T&gt;(x: <a href="any.md#0x2_any_Any">Any</a>): T {
-    <b>assert</b>!(<a href="type_info.md#0x2_type_info_type_name">type_info::type_name</a>&lt;T&gt;() == x.<a href="">type_name</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="any.md#0x2_any_ErrorTypeMismatch">ErrorTypeMismatch</a>));
-    bcs::from_bytes&lt;T&gt;(x.data)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_any_type_name"></a>
 
 ## Function `type_name`
@@ -143,18 +91,3 @@ Returns the type name of this Any
 
 <pre><code><b>public</b> <b>fun</b> <a href="">type_name</a>(x: &<a href="any.md#0x2_any_Any">any::Any</a>): &<a href="_String">string::String</a>
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="">type_name</a>(x: &<a href="any.md#0x2_any_Any">Any</a>): &String {
-    &x.<a href="">type_name</a>
-}
-</code></pre>
-
-
-
-</details>

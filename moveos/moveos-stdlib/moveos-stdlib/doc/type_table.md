@@ -38,22 +38,6 @@ TypeTable is a table use struct Type as Key, struct as Value
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a></code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x2_type_table_new"></a>
 
 ## Function `new`
@@ -66,22 +50,6 @@ Create a new Table.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_new">new</a>(ctx: &<b>mut</b> Context): <a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a> {
-    <b>let</b> handle = <a href="object.md#0x2_object_address_to_object_id">object::address_to_object_id</a>(<a href="context.md#0x2_context_fresh_address">context::fresh_address</a>(ctx));
-    <a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a> {
-        handle,
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_type_table_new_with_id"></a>
 
 ## Function `new_with_id`
@@ -93,21 +61,6 @@ Create a new Table with a given handle.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="type_table.md#0x2_type_table_new_with_id">new_with_id</a>(handle: ObjectID): <a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a>{
-    <a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a> {
-        handle,
-    }
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_type_table_add"></a>
 
@@ -122,19 +75,6 @@ entry of <code>V</code> type already exists.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_add">add</a>&lt;V: key&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a>, val: V) {
-    <a href="raw_table.md#0x2_raw_table_add">raw_table::add</a>&lt;String, V&gt;(<a href="object.md#0x2_object_object_id_to_table_handle">object::object_id_to_table_handle</a>(<a href="table.md#0x2_table">table</a>.handle), <a href="type_table.md#0x2_type_table_key">key</a>&lt;V&gt;(), val);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_type_table_borrow"></a>
 
 ## Function `borrow`
@@ -147,19 +87,6 @@ Aborts if there is no entry for <code>V</code>.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_borrow">borrow</a>&lt;V: key&gt;(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a>): &V {
-    <a href="raw_table.md#0x2_raw_table_borrow">raw_table::borrow</a>&lt;String, V&gt;(<a href="object.md#0x2_object_object_id_to_table_handle">object::object_id_to_table_handle</a>(<a href="table.md#0x2_table">table</a>.handle), <a href="type_table.md#0x2_type_table_key">key</a>&lt;V&gt;())
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_type_table_borrow_mut"></a>
 
@@ -174,19 +101,6 @@ Aborts if there is no entry for <code>V</code>.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_borrow_mut">borrow_mut</a>&lt;V: key&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a>): &<b>mut</b> V {
-    <a href="raw_table.md#0x2_raw_table_borrow_mut">raw_table::borrow_mut</a>&lt;String, V&gt;(<a href="object.md#0x2_object_object_id_to_table_handle">object::object_id_to_table_handle</a>(<a href="table.md#0x2_table">table</a>.handle), <a href="type_table.md#0x2_type_table_key">key</a>&lt;V&gt;())
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_type_table_remove"></a>
 
 ## Function `remove`
@@ -200,19 +114,6 @@ Aborts if there is no entry for <code>V</code>.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_remove">remove</a>&lt;V: key&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a>): V {
-    <a href="raw_table.md#0x2_raw_table_remove">raw_table::remove</a>&lt;String, V&gt;(<a href="object.md#0x2_object_object_id_to_table_handle">object::object_id_to_table_handle</a>(<a href="table.md#0x2_table">table</a>.handle), <a href="type_table.md#0x2_type_table_key">key</a>&lt;V&gt;())
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_type_table_contains"></a>
 
 ## Function `contains`
@@ -224,19 +125,6 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_contains">contains</a>&lt;V: key&gt;(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a>): bool {
-    <a href="raw_table.md#0x2_raw_table_contains">raw_table::contains</a>&lt;String&gt;(<a href="object.md#0x2_object_object_id_to_table_handle">object::object_id_to_table_handle</a>(<a href="table.md#0x2_table">table</a>.handle), <a href="type_table.md#0x2_type_table_key">key</a>&lt;V&gt;())
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_type_table_handle"></a>
 
@@ -250,19 +138,6 @@ Returns table handle of <code><a href="table.md#0x2_table">table</a></code>.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_handle">handle</a>(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a>): &ObjectID {
-    &<a href="table.md#0x2_table">table</a>.handle
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_type_table_destroy_empty"></a>
 
 ## Function `destroy_empty`
@@ -272,19 +147,3 @@ Destroy a table. The table must be empty to succeed.
 
 <pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_destroy_empty">destroy_empty</a>(<a href="table.md#0x2_table">table</a>: <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>)
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_destroy_empty">destroy_empty</a>(<a href="table.md#0x2_table">table</a>: <a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a>) {
-    <b>let</b> <a href="type_table.md#0x2_type_table_TypeTable">TypeTable</a>{handle} = <a href="table.md#0x2_table">table</a>;
-    <a href="raw_table.md#0x2_raw_table_destroy_empty">raw_table::destroy_empty</a>(<a href="object.md#0x2_object_object_id_to_table_handle">object::object_id_to_table_handle</a>(handle))
-}
-</code></pre>
-
-
-
-</details>

@@ -96,19 +96,6 @@ The operation can only be performed by the VM
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_genesis">assert_rooch_genesis</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-    <a href="core_addresses.md#0x3_core_addresses_assert_rooch_genesis_address">assert_rooch_genesis_address</a>(<a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>))
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_core_addresses_assert_rooch_genesis_address"></a>
 
 ## Function `assert_rooch_genesis_address`
@@ -119,19 +106,6 @@ The operation can only be performed by the VM
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_genesis_address">assert_rooch_genesis_address</a>(addr: <b>address</b>) {
-    <b>assert</b>!(<a href="core_addresses.md#0x3_core_addresses_is_rooch_genesis_address">is_rooch_genesis_address</a>(addr), <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotGenesisAddress">ErrorNotGenesisAddress</a>))
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_core_addresses_is_rooch_genesis_address"></a>
 
@@ -144,19 +118,6 @@ The operation can only be performed by the VM
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_is_rooch_genesis_address">is_rooch_genesis_address</a>(addr: <b>address</b>): bool {
-    addr == <a href="core_addresses.md#0x3_core_addresses_genesis_address">genesis_address</a>()
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_core_addresses_assert_rooch_association"></a>
 
 ## Function `assert_rooch_association`
@@ -167,19 +128,6 @@ The operation can only be performed by the VM
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_association">assert_rooch_association</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-    <a href="core_addresses.md#0x3_core_addresses_assert_rooch_association_address">assert_rooch_association_address</a>(<a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>))
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_core_addresses_assert_rooch_association_address"></a>
 
@@ -192,19 +140,6 @@ The operation can only be performed by the VM
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_association_address">assert_rooch_association_address</a>(addr: <b>address</b>) {
-    <b>assert</b>!(<a href="core_addresses.md#0x3_core_addresses_is_rooch_association_address">is_rooch_association_address</a>(addr), <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotAssociationAddress">ErrorNotAssociationAddress</a>))
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_core_addresses_is_rooch_association_address"></a>
 
 ## Function `is_rooch_association_address`
@@ -215,19 +150,6 @@ The operation can only be performed by the VM
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_is_rooch_association_address">is_rooch_association_address</a>(addr: <b>address</b>): bool {
-    addr == @rooch_association
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_core_addresses_assert_rooch_framework"></a>
 
@@ -240,22 +162,6 @@ The operation can only be performed by the VM
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_framework">assert_rooch_framework</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-    <b>assert</b>!(
-        <a href="core_addresses.md#0x3_core_addresses_is_rooch_framework_address">is_rooch_framework_address</a>(<a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>)),
-        <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotRoochFrameworkAddress">ErrorNotRoochFrameworkAddress</a>),
-    )
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_core_addresses_assert_framework_reserved_address"></a>
 
 ## Function `assert_framework_reserved_address`
@@ -267,19 +173,6 @@ The operation can only be performed by the VM
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_framework_reserved_address">assert_framework_reserved_address</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-    <a href="core_addresses.md#0x3_core_addresses_assert_framework_reserved">assert_framework_reserved</a>(<a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>));
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_core_addresses_assert_framework_reserved"></a>
 
 ## Function `assert_framework_reserved`
@@ -290,22 +183,6 @@ The operation can only be performed by the VM
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_framework_reserved">assert_framework_reserved</a>(addr: <b>address</b>) {
-    <b>assert</b>!(
-        <a href="core_addresses.md#0x3_core_addresses_is_framework_reserved_address">is_framework_reserved_address</a>(addr),
-        <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotFrameworkReservedAddress">ErrorNotFrameworkReservedAddress</a>),
-    )
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_core_addresses_is_framework_reserved_address"></a>
 
@@ -319,28 +196,6 @@ Return true if <code>addr</code> is 0x0 or under the on chain governance's contr
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_is_framework_reserved_address">is_framework_reserved_address</a>(addr: <b>address</b>): bool {
-    <a href="core_addresses.md#0x3_core_addresses_is_rooch_framework_address">is_rooch_framework_address</a>(addr) ||
-        addr == @0x2 ||
-        addr == @0x3 ||
-        addr == @0x4 ||
-        addr == @0x5 ||
-        addr == @0x6 ||
-        addr == @0x7 ||
-        addr == @0x8 ||
-        addr == @0x9 ||
-        addr == @0xa
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_core_addresses_is_rooch_framework_address"></a>
 
 ## Function `is_rooch_framework_address`
@@ -352,19 +207,6 @@ Return true if <code>addr</code> is 0x3.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_is_rooch_framework_address">is_rooch_framework_address</a>(addr: <b>address</b>): bool {
-    addr == @rooch_framework
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_core_addresses_assert_vm"></a>
 
@@ -378,19 +220,6 @@ Assert that the signer has the VM reserved address.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_vm">assert_vm</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>) {
-    <b>assert</b>!(<a href="core_addresses.md#0x3_core_addresses_is_vm">is_vm</a>(<a href="account.md#0x3_account">account</a>), <a href="_permission_denied">error::permission_denied</a>(<a href="core_addresses.md#0x3_core_addresses_ErrorNotVM">ErrorNotVM</a>))
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_core_addresses_is_vm"></a>
 
 ## Function `is_vm`
@@ -402,19 +231,6 @@ Return true if <code>addr</code> is a reserved address for the VM to call system
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_is_vm">is_vm</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>): bool {
-    <a href="core_addresses.md#0x3_core_addresses_is_vm_address">is_vm_address</a>(<a href="_address_of">signer::address_of</a>(<a href="account.md#0x3_account">account</a>))
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_core_addresses_is_vm_address"></a>
 
@@ -428,19 +244,6 @@ Return true if <code>addr</code> is a reserved address for the VM to call system
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_is_vm_address">is_vm_address</a>(addr: <b>address</b>): bool {
-    addr == @vm_reserved
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_core_addresses_is_reserved_address"></a>
 
 ## Function `is_reserved_address`
@@ -453,19 +256,6 @@ Return true if <code>addr</code> is either the VM address or an Rooch Framework 
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_is_reserved_address">is_reserved_address</a>(addr: <b>address</b>): bool {
-    <a href="core_addresses.md#0x3_core_addresses_is_rooch_framework_address">is_rooch_framework_address</a>(addr) || <a href="core_addresses.md#0x3_core_addresses_is_vm_address">is_vm_address</a>(addr)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_core_addresses_genesis_address"></a>
 
 ## Function `genesis_address`
@@ -475,18 +265,3 @@ The address of the genesis
 
 <pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_genesis_address">genesis_address</a>(): <b>address</b>
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_genesis_address">genesis_address</a>(): <b>address</b> {
-    @rooch_framework
-}
-</code></pre>
-
-
-
-</details>

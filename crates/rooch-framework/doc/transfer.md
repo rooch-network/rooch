@@ -31,28 +31,6 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin">transfer_coin</a>&lt;CoinType: key + store&gt;(
-    ctx: &<b>mut</b> Context,
-    from: &<a href="">signer</a>,
-    <b>to</b>: <b>address</b>,
-    amount: u256,
-) {
-    <b>if</b>(!<a href="account.md#0x3_account_exists_at">account::exists_at</a>(ctx, <b>to</b>)) {
-        <a href="account.md#0x3_account_create_account">account::create_account</a>(ctx, <b>to</b>);
-    };
-
-    <a href="account_coin_store.md#0x3_account_coin_store_transfer">account_coin_store::transfer</a>&lt;CoinType&gt;(ctx, from, <b>to</b>, amount)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_transfer_transfer_coin_to_multichain_address"></a>
 
 ## Function `transfer_coin_to_multichain_address`
@@ -64,30 +42,3 @@ This public entry function requires the <code>CoinType</code> to have <code>key<
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin_to_multichain_address">transfer_coin_to_multichain_address</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, from: &<a href="">signer</a>, multichain_id: u64, raw_address: <a href="">vector</a>&lt;u8&gt;, amount: u256)
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin_to_multichain_address">transfer_coin_to_multichain_address</a>&lt;CoinType: key + store&gt;(
-    ctx: &<b>mut</b> Context,
-    from: &<a href="">signer</a>,
-    multichain_id: u64,
-    raw_address: <a href="">vector</a>&lt;u8&gt;,
-    amount: u256,
-) {
-    <b>let</b> maddress = <a href="multichain_address.md#0x3_multichain_address_new">multichain_address::new</a>(multichain_id, raw_address);
-    <b>let</b> <b>to</b> = <a href="address_mapping.md#0x3_address_mapping_resolve_or_generate">address_mapping::resolve_or_generate</a>(ctx, maddress);
-    <b>if</b>(!<a href="account.md#0x3_account_exists_at">account::exists_at</a>(ctx, <b>to</b>)) {
-        <a href="account.md#0x3_account_create_account">account::create_account</a>(ctx, <b>to</b>);
-        <a href="address_mapping.md#0x3_address_mapping_bind_no_check">address_mapping::bind_no_check</a>(ctx, <b>to</b>, maddress);
-    };
-    <a href="account_coin_store.md#0x3_account_coin_store_transfer">account_coin_store::transfer</a>&lt;CoinType&gt;(ctx, from, <b>to</b>, amount)
-}
-</code></pre>
-
-
-
-</details>

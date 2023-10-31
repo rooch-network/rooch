@@ -51,19 +51,6 @@ The request Move type is not match with input Move type.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x3_bcs_to_bytes">to_bytes</a>&lt;MoveValue&gt;(v: &MoveValue): <a href="">vector</a>&lt;u8&gt; {
-    std::bcs::to_bytes(v)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_bcs_to_bool"></a>
 
 ## Function `to_bool`
@@ -74,19 +61,6 @@ The request Move type is not match with input Move type.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x3_bcs_to_bool">to_bool</a>(v: <a href="">vector</a>&lt;u8&gt;): bool {
-    <a href="bcs.md#0x3_bcs_from_bytes">from_bytes</a>&lt;bool&gt;(v)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_bcs_to_u8"></a>
 
@@ -99,19 +73,6 @@ The request Move type is not match with input Move type.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x3_bcs_to_u8">to_u8</a>(v: <a href="">vector</a>&lt;u8&gt;): u8 {
-    <a href="bcs.md#0x3_bcs_from_bytes">from_bytes</a>&lt;u8&gt;(v)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_bcs_to_u64"></a>
 
 ## Function `to_u64`
@@ -122,19 +83,6 @@ The request Move type is not match with input Move type.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x3_bcs_to_u64">to_u64</a>(v: <a href="">vector</a>&lt;u8&gt;): u64 {
-    <a href="bcs.md#0x3_bcs_from_bytes">from_bytes</a>&lt;u64&gt;(v)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_bcs_to_u128"></a>
 
@@ -147,19 +95,6 @@ The request Move type is not match with input Move type.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x3_bcs_to_u128">to_u128</a>(v: <a href="">vector</a>&lt;u8&gt;): u128 {
-    <a href="bcs.md#0x3_bcs_from_bytes">from_bytes</a>&lt;u128&gt;(v)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_bcs_to_address"></a>
 
 ## Function `to_address`
@@ -171,19 +106,6 @@ The request Move type is not match with input Move type.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x3_bcs_to_address">to_address</a>(v: <a href="">vector</a>&lt;u8&gt;): <b>address</b> {
-    <a href="bcs.md#0x3_bcs_from_bytes">from_bytes</a>&lt;<b>address</b>&gt;(v)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_bcs_from_bytes"></a>
 
 ## Function `from_bytes`
@@ -194,16 +116,3 @@ Note the <code>private_generics</code> ensure only the <code>MoveValue</code>'s 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bcs.md#0x3_bcs_from_bytes">from_bytes</a>&lt;MoveValue&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): MoveValue
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b>(<b>friend</b>) <b>fun</b> <a href="bcs.md#0x3_bcs_from_bytes">from_bytes</a>&lt;MoveValue&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): MoveValue;
-</code></pre>
-
-
-
-</details>

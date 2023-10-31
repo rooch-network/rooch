@@ -40,22 +40,6 @@ The Display Object is permanent, can not be deleted after created.
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>sample_map: <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="_String">string::String</a>&gt;</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x2_display_resource_display"></a>
 
 ## Function `resource_display`
@@ -68,23 +52,6 @@ Only the module of <code>T</code> can call this function.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_resource_display">resource_display</a>&lt;T: key&gt;(ctx: &<b>mut</b> Context): &<b>mut</b> Object&lt;<a href="display.md#0x2_display_Display">Display</a>&lt;T&gt;&gt; {
-    <b>let</b> obj = <a href="context.md#0x2_context_new_singleton">context::new_singleton</a>(ctx, <a href="display.md#0x2_display_Display">Display</a>&lt;T&gt; {
-        sample_map: <a href="simple_map.md#0x2_simple_map_create">simple_map::create</a>()
-    });
-    <a href="object.md#0x2_object_to_permanent">object::to_permanent</a>(obj);
-    <a href="context.md#0x2_context_borrow_mut_singleton">context::borrow_mut_singleton</a>&lt;<a href="display.md#0x2_display_Display">Display</a>&lt;T&gt;&gt;(ctx)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_display_object_display"></a>
 
@@ -99,27 +66,6 @@ Only the module of <code>T</code> can call this function.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_object_display">object_display</a>&lt;T: key&gt;(ctx: &<b>mut</b> Context): &<b>mut</b> Object&lt;<a href="display.md#0x2_display_Display">Display</a>&lt;Object&lt;T&gt;&gt;&gt; {
-    <b>if</b> (<a href="context.md#0x2_context_exist_singleton">context::exist_singleton</a>&lt;<a href="display.md#0x2_display_Display">Display</a>&lt;Object&lt;T&gt;&gt;&gt;(ctx)) {
-        <a href="context.md#0x2_context_borrow_mut_singleton">context::borrow_mut_singleton</a>&lt;<a href="display.md#0x2_display_Display">Display</a>&lt;Object&lt;T&gt;&gt;&gt;(ctx)
-    }<b>else</b>{
-        <b>let</b> obj = <a href="context.md#0x2_context_new_singleton">context::new_singleton</a>(ctx, <a href="display.md#0x2_display_Display">Display</a>&lt;Object&lt;T&gt;&gt; {
-            sample_map: <a href="simple_map.md#0x2_simple_map_create">simple_map::create</a>()
-        });
-        <a href="object.md#0x2_object_to_permanent">object::to_permanent</a>(obj);
-        <a href="context.md#0x2_context_borrow_mut_singleton">context::borrow_mut_singleton</a>&lt;<a href="display.md#0x2_display_Display">Display</a>&lt;Object&lt;T&gt;&gt;&gt;(ctx)
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_display_set_value"></a>
 
 ## Function `set_value`
@@ -133,20 +79,6 @@ If the key already exists, the value will be updated, otherwise a new key-value 
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_set_value">set_value</a>&lt;T&gt;(self: &<b>mut</b> Object&lt;<a href="display.md#0x2_display_Display">Display</a>&lt;T&gt;&gt;, key: String, value: String) {
-    <b>let</b> display_ref = <a href="object.md#0x2_object_borrow_mut">object::borrow_mut</a>(self);
-    <a href="simple_map.md#0x2_simple_map_upsert">simple_map::upsert</a>(&<b>mut</b> display_ref.sample_map, key, value);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_display_borrow_value"></a>
 
 ## Function `borrow_value`
@@ -157,20 +89,6 @@ If the key already exists, the value will be updated, otherwise a new key-value 
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_borrow_value">borrow_value</a>&lt;T&gt;(self: & Object&lt;<a href="display.md#0x2_display_Display">Display</a>&lt;T&gt;&gt; , key: &String): &String {
-    <b>let</b> display_ref = <a href="object.md#0x2_object_borrow">object::borrow</a>(self);
-    <a href="simple_map.md#0x2_simple_map_borrow">simple_map::borrow</a>(&display_ref.sample_map, key)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_display_borrow_mut_value"></a>
 
@@ -183,20 +101,6 @@ If the key already exists, the value will be updated, otherwise a new key-value 
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_borrow_mut_value">borrow_mut_value</a>&lt;T&gt;(self: &<b>mut</b> Object&lt;<a href="display.md#0x2_display_Display">Display</a>&lt;T&gt;&gt;, key: &String): &<b>mut</b> String {
-    <b>let</b> display_ref = <a href="object.md#0x2_object_borrow_mut">object::borrow_mut</a>(self);
-    <a href="simple_map.md#0x2_simple_map_borrow_mut">simple_map::borrow_mut</a>(&<b>mut</b> display_ref.sample_map, key)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_display_remove_value"></a>
 
 ## Function `remove_value`
@@ -207,20 +111,6 @@ If the key already exists, the value will be updated, otherwise a new key-value 
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_remove_value">remove_value</a>&lt;T&gt;(self: &<b>mut</b> Object&lt;<a href="display.md#0x2_display_Display">Display</a>&lt;T&gt;&gt;, key: &String) {
-    <b>let</b> display_ref = <a href="object.md#0x2_object_borrow_mut">object::borrow_mut</a>(self);
-    <a href="simple_map.md#0x2_simple_map_remove">simple_map::remove</a>(&<b>mut</b> display_ref.sample_map, key);
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_display_keys"></a>
 
@@ -233,20 +123,6 @@ If the key already exists, the value will be updated, otherwise a new key-value 
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_keys">keys</a>&lt;T&gt;(self: & Object&lt;<a href="display.md#0x2_display_Display">Display</a>&lt;T&gt;&gt;): <a href="">vector</a>&lt;String&gt; {
-    <b>let</b> display_ref = <a href="object.md#0x2_object_borrow">object::borrow</a>(self);
-    <a href="simple_map.md#0x2_simple_map_keys">simple_map::keys</a>(& display_ref.sample_map)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_display_values"></a>
 
 ## Function `values`
@@ -258,20 +134,6 @@ If the key already exists, the value will be updated, otherwise a new key-value 
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_values">values</a>&lt;T&gt;(self: & Object&lt;<a href="display.md#0x2_display_Display">Display</a>&lt;T&gt;&gt;): <a href="">vector</a>&lt;String&gt; {
-    <b>let</b> display_ref = <a href="object.md#0x2_object_borrow">object::borrow</a>(self);
-    <a href="simple_map.md#0x2_simple_map_values">simple_map::values</a>(& display_ref.sample_map)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_display_contains_key"></a>
 
 ## Function `contains_key`
@@ -280,19 +142,3 @@ If the key already exists, the value will be updated, otherwise a new key-value 
 
 <pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_contains_key">contains_key</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;, key: &<a href="_String">string::String</a>): bool
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_contains_key">contains_key</a>&lt;T&gt;(self: & Object&lt;<a href="display.md#0x2_display_Display">Display</a>&lt;T&gt;&gt;, key: &String): bool {
-    <b>let</b> display_ref = <a href="object.md#0x2_object_borrow">object::borrow</a>(self);
-    <a href="simple_map.md#0x2_simple_map_contains_key">simple_map::contains_key</a>(& display_ref.sample_map, key)
-}
-</code></pre>
-
-
-
-</details>

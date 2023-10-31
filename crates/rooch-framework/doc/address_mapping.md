@@ -39,22 +39,6 @@
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>mapping: <a href="_Table">table::Table</a>&lt;<a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>, <b>address</b>&gt;</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -80,22 +64,6 @@
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_genesis_init">genesis_init</a>(ctx: &<b>mut</b> Context, genesis_account: &<a href="">signer</a>) {
-    <b>let</b> mapping = <a href="_new">table::new</a>&lt;MultiChainAddress, <b>address</b>&gt;(ctx);
-    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, genesis_account, <a href="address_mapping.md#0x3_address_mapping_AddressMapping">AddressMapping</a>{
-        mapping,
-    });
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_address_mapping_resolve"></a>
 
 ## Function `resolve`
@@ -107,28 +75,6 @@ Resolve a multi-chain address to a rooch address
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve">resolve</a>(ctx: &Context, maddress: MultiChainAddress): Option&lt;<b>address</b>&gt; {
-    <b>if</b> (<a href="multichain_address.md#0x3_multichain_address_is_rooch_address">multichain_address::is_rooch_address</a>(&maddress)) {
-        <b>return</b> <a href="_some">option::some</a>(<a href="multichain_address.md#0x3_multichain_address_into_rooch_address">multichain_address::into_rooch_address</a>(maddress))
-    };
-    <b>let</b> am = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">AddressMapping</a>&gt;(ctx, @rooch_framework);
-    <b>if</b>(<a href="_contains">table::contains</a>(&am.mapping, maddress)){
-        <b>let</b> addr = <a href="_borrow">table::borrow</a>(&am.mapping, maddress);
-        <a href="_some">option::some</a>(*addr)
-    }<b>else</b>{
-        <a href="_none">option::none</a>()
-    }
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_address_mapping_resolve_or_generate"></a>
 
@@ -142,24 +88,6 @@ Resolve a multi-chain address to a rooch address, if not exists, generate a new 
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_or_generate">resolve_or_generate</a>(ctx: &Context, maddress: MultiChainAddress): <b>address</b> {
-    <b>let</b> addr = <a href="address_mapping.md#0x3_address_mapping_resolve">resolve</a>(ctx, maddress);
-    <b>if</b>(<a href="_is_none">option::is_none</a>(&addr)){
-        <a href="address_mapping.md#0x3_address_mapping_generate_rooch_address">generate_rooch_address</a>(&maddress)
-    }<b>else</b>{
-        <a href="_extract">option::extract</a>(&<b>mut</b> addr)
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_address_mapping_exists_mapping"></a>
 
 ## Function `exists_mapping`
@@ -171,23 +99,6 @@ Check if a multi-chain address is bound to a rooch address
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_exists_mapping">exists_mapping</a>(ctx: &Context, maddress: MultiChainAddress): bool {
-    <b>if</b> (<a href="multichain_address.md#0x3_multichain_address_is_rooch_address">multichain_address::is_rooch_address</a>(&maddress)) {
-        <b>return</b> <b>true</b>
-    };
-    <b>let</b> am = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">AddressMapping</a>&gt;(ctx, @rooch_framework);
-    <a href="_contains">table::contains</a>(&am.mapping, maddress)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_address_mapping_bind"></a>
 
@@ -202,19 +113,6 @@ The caller need to ensure the relationship between the multi-chain address and t
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind">bind</a>(ctx: &<b>mut</b> Context, sender: &<a href="">signer</a>, maddress: MultiChainAddress) {
-    <a href="address_mapping.md#0x3_address_mapping_bind_no_check">bind_no_check</a>(ctx, <a href="_address_of">signer::address_of</a>(sender), maddress);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_address_mapping_bind_no_check"></a>
 
 ## Function `bind_no_check`
@@ -224,26 +122,3 @@ Bind a rooch address to a multi-chain address
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_no_check">bind_no_check</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, rooch_address: <b>address</b>, maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>)
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_no_check">bind_no_check</a>(ctx: &<b>mut</b> Context, rooch_address: <b>address</b>, maddress: MultiChainAddress) {
-    <b>if</b>(<a href="multichain_address.md#0x3_multichain_address_is_rooch_address">multichain_address::is_rooch_address</a>(&maddress)){
-        <b>assert</b>!(
-            <a href="multichain_address.md#0x3_multichain_address_into_rooch_address">multichain_address::into_rooch_address</a>(maddress) == rooch_address,
-            <a href="_invalid_argument">error::invalid_argument</a>(<a href="address_mapping.md#0x3_address_mapping_ErrorMultiChainAddressInvalid">ErrorMultiChainAddressInvalid</a>)
-        );
-    };
-    <b>let</b> am = <a href="_global_borrow_mut">account_storage::global_borrow_mut</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">AddressMapping</a>&gt;(ctx, @rooch_framework);
-    <a href="_add">table::add</a>(&<b>mut</b> am.mapping, maddress, rooch_address);
-    //TODO matienance the reverse mapping rooch_address -&gt; <a href="">vector</a>&lt;MultiChainAddress&gt;
-}
-</code></pre>
-
-
-
-</details>

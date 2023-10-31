@@ -33,22 +33,6 @@ The ChainID in the global storage
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>id: u64</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -101,22 +85,6 @@ The ChainID in the global storage
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="chain_id.md#0x3_chain_id_genesis_init">genesis_init</a>(ctx: &<b>mut</b> Context, genesis_account: &<a href="">signer</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64){
-    <b>let</b> <a href="chain_id.md#0x3_chain_id">chain_id</a> = <a href="chain_id.md#0x3_chain_id_ChainID">ChainID</a>{
-        id: <a href="chain_id.md#0x3_chain_id">chain_id</a>
-    };
-    <a href="_global_move_to">account_storage::global_move_to</a>(ctx, genesis_account, <a href="chain_id.md#0x3_chain_id">chain_id</a>);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_chain_id_chain_id"></a>
 
 ## Function `chain_id`
@@ -127,20 +95,6 @@ The ChainID in the global storage
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx: &Context) : u64 {
-    <b>let</b> <a href="chain_id.md#0x3_chain_id">chain_id</a> = <a href="_global_borrow">account_storage::global_borrow</a>&lt;<a href="chain_id.md#0x3_chain_id_ChainID">ChainID</a>&gt;(ctx, @rooch_framework);
-    <a href="chain_id.md#0x3_chain_id">chain_id</a>.id
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_chain_id_is_local"></a>
 
@@ -153,19 +107,6 @@ The ChainID in the global storage
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_local">is_local</a>(ctx: &Context) : bool {
-    <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx) == <a href="chain_id.md#0x3_chain_id_CHAIN_ID_LOCAL">CHAIN_ID_LOCAL</a>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_chain_id_is_dev"></a>
 
 ## Function `is_dev`
@@ -176,19 +117,6 @@ The ChainID in the global storage
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_dev">is_dev</a>(ctx: &Context) : bool {
-    <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx) == <a href="chain_id.md#0x3_chain_id_CHAIN_ID_DEV">CHAIN_ID_DEV</a>
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_chain_id_is_test"></a>
 
@@ -201,19 +129,6 @@ The ChainID in the global storage
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_test">is_test</a>(ctx: &Context) : bool {
-    <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx) == <a href="chain_id.md#0x3_chain_id_CHAIN_ID_TEST">CHAIN_ID_TEST</a>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_chain_id_is_main"></a>
 
 ## Function `is_main`
@@ -222,18 +137,3 @@ The ChainID in the global storage
 
 <pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_main">is_main</a>(ctx: &<a href="_Context">context::Context</a>): bool
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_main">is_main</a>(ctx: &Context) : bool {
-    <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx) == <a href="chain_id.md#0x3_chain_id_CHAIN_ID_MAIN">CHAIN_ID_MAIN</a>
-}
-</code></pre>
-
-
-
-</details>

@@ -63,28 +63,6 @@ The Context can not be <code>drop</code> or <code>store</code>, so developers ne
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code><a href="tx_context.md#0x2_tx_context">tx_context</a>: <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code><a href="storage_context.md#0x2_storage_context">storage_context</a>: <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a></code>
-</dt>
-<dd>
- The Global Object Storage
-</dd>
-</dl>
-
-
-</details>
-
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -111,19 +89,6 @@ Get an immutable reference to the transaction context from the storage context
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context">tx_context</a>(self: &<a href="context.md#0x2_context_Context">Context</a>): &TxContext {
-    &self.<a href="tx_context.md#0x2_tx_context">tx_context</a>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_context_tx_context_mut"></a>
 
 ## Function `tx_context_mut`
@@ -135,19 +100,6 @@ Get a mutable reference to the transaction context from the storage context
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="context.md#0x2_context_tx_context_mut">tx_context_mut</a>(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>): &<b>mut</b> TxContext {
-    &<b>mut</b> self.<a href="tx_context.md#0x2_tx_context">tx_context</a>
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_context_sender"></a>
 
@@ -161,19 +113,6 @@ Return the address of the user that signed the current transaction
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_sender">sender</a>(self: &<a href="context.md#0x2_context_Context">Context</a>): <b>address</b> {
-    <a href="tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_context_sequence_number"></a>
 
 ## Function `sequence_number`
@@ -185,19 +124,6 @@ Return the sequence number of the current transaction
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_sequence_number">sequence_number</a>(self: &<a href="context.md#0x2_context_Context">Context</a>): u64 {
-    <a href="tx_context.md#0x2_tx_context_sequence_number">tx_context::sequence_number</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_context_max_gas_amount"></a>
 
@@ -211,19 +137,6 @@ Return the maximum gas amount that can be used by the current transaction
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_max_gas_amount">max_gas_amount</a>(self: &<a href="context.md#0x2_context_Context">Context</a>): u64 {
-    <a href="tx_context.md#0x2_tx_context_max_gas_amount">tx_context::max_gas_amount</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_context_fresh_address"></a>
 
 ## Function `fresh_address`
@@ -235,19 +148,6 @@ Generate a new unique address
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_fresh_address">fresh_address</a>(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>): <b>address</b> {
-    <a href="tx_context.md#0x2_tx_context_fresh_address">tx_context::fresh_address</a>(&<b>mut</b> self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_context_fresh_object_id"></a>
 
@@ -261,19 +161,6 @@ Generate a new unique object ID
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_fresh_object_id">fresh_object_id</a>(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>): ObjectID {
-    <a href="object.md#0x2_object_address_to_object_id">object::address_to_object_id</a>(<a href="tx_context.md#0x2_tx_context_fresh_address">tx_context::fresh_address</a>(&<b>mut</b> self.<a href="tx_context.md#0x2_tx_context">tx_context</a>))
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_context_tx_hash"></a>
 
 ## Function `tx_hash`
@@ -285,19 +172,6 @@ Return the hash of the current transaction
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_tx_hash">tx_hash</a>(self: &<a href="context.md#0x2_context_Context">Context</a>): <a href="">vector</a>&lt;u8&gt; {
-    <a href="tx_context.md#0x2_tx_context_tx_hash">tx_context::tx_hash</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_context_add"></a>
 
@@ -311,19 +185,6 @@ Add a value to the context map
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_add">add</a>&lt;T: drop + store + <b>copy</b>&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, value: T) {
-    <a href="tx_context.md#0x2_tx_context_add">tx_context::add</a>(&<b>mut</b> self.<a href="tx_context.md#0x2_tx_context">tx_context</a>, value);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_context_get"></a>
 
 ## Function `get`
@@ -336,19 +197,6 @@ Get a value from the context map
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_get">get</a>&lt;T: drop + store + <b>copy</b>&gt;(self: &<a href="context.md#0x2_context_Context">Context</a>): Option&lt;T&gt; {
-    <a href="tx_context.md#0x2_tx_context_get">tx_context::get</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_context_tx_meta"></a>
 
 ## Function `tx_meta`
@@ -359,19 +207,6 @@ Get a value from the context map
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta">tx_meta</a>(self: &<a href="context.md#0x2_context_Context">Context</a>): TxMeta {
-    <a href="tx_context.md#0x2_tx_context_tx_meta">tx_context::tx_meta</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_context_tx_gas_payment_account"></a>
 
@@ -384,19 +219,6 @@ Get a value from the context map
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_tx_gas_payment_account">tx_gas_payment_account</a>(self: &<a href="context.md#0x2_context_Context">Context</a>): <b>address</b> {
-    <a href="tx_context.md#0x2_tx_context_tx_gas_payment_account">tx_context::tx_gas_payment_account</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_context_tx_result"></a>
 
 ## Function `tx_result`
@@ -407,19 +229,6 @@ Get a value from the context map
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(self: &<a href="context.md#0x2_context_Context">Context</a>): TxResult {
-    <a href="tx_context.md#0x2_tx_context_tx_result">tx_context::tx_result</a>(&self.<a href="tx_context.md#0x2_tx_context">tx_context</a>)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_context_new_object"></a>
 
@@ -435,20 +244,6 @@ The owner can get the <code>&<b>mut</b> Object</code> by <code>borrow_mut_object
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_object">new_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, value: T): Object&lt;T&gt; {
-    <b>let</b> id = <a href="context.md#0x2_context_fresh_object_id">fresh_object_id</a>(self);
-    <a href="object.md#0x2_object_new">object::new</a>(id, value)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_context_new_object_with_id"></a>
 
 ## Function `new_object_with_id`
@@ -459,19 +254,6 @@ The owner can get the <code>&<b>mut</b> Object</code> by <code>borrow_mut_object
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="context.md#0x2_context_new_object_with_id">new_object_with_id</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, id: ObjectID, value: T) : Object&lt;T&gt; {
-    <a href="object.md#0x2_object_new">object::new</a>(id, value)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_context_new_singleton"></a>
 
@@ -486,19 +268,6 @@ Singleton object means the object of <code>T</code> is only one instance in the 
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_singleton">new_singleton</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, value: T): Object&lt;T&gt; {
-    <a href="object.md#0x2_object_new_singleton">object::new_singleton</a>(value)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_context_borrow_object"></a>
 
 ## Function `borrow_object`
@@ -512,20 +281,6 @@ Any one can borrow an <code>&Object&lt;T&gt;</code> from the global object stora
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object">borrow_object</a>&lt;T: key&gt;(_self: &<a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID): &Object&lt;T&gt; {
-    <b>let</b> object_entity = <a href="object.md#0x2_object_borrow_from_global">object::borrow_from_global</a>&lt;T&gt;(object_id);
-    <a href="object.md#0x2_object_as_ref">object::as_ref</a>(object_entity)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_context_borrow_singleton"></a>
 
 ## Function `borrow_singleton`
@@ -537,20 +292,6 @@ Borrow singleton Object from global object storage
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_singleton">borrow_singleton</a>&lt;T: key&gt;(self: &<a href="context.md#0x2_context_Context">Context</a>): &Object&lt;T&gt; {
-    <b>let</b> object_id = <a href="object.md#0x2_object_singleton_object_id">object::singleton_object_id</a>&lt;T&gt;();
-    <a href="context.md#0x2_context_borrow_object">borrow_object</a>(self, object_id)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_context_borrow_mut_object"></a>
 
@@ -565,24 +306,6 @@ If the object is not shared, only the owner can borrow an <code>&<b>mut</b> Obje
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_object">borrow_mut_object</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, owner: &<a href="">signer</a>, object_id: ObjectID): &<b>mut</b> Object&lt;T&gt; {
-    <b>let</b> object_entity = <a href="object.md#0x2_object_borrow_mut_from_global">object::borrow_mut_from_global</a>&lt;T&gt;(object_id);
-    <b>if</b>(!<a href="object.md#0x2_object_is_shared_internal">object::is_shared_internal</a>(object_entity)) {
-        <b>let</b> owner_address = <a href="_address_of">signer::address_of</a>(owner);
-        <b>assert</b>!(<a href="object.md#0x2_object_owner_internal">object::owner_internal</a>(object_entity) == owner_address, <a href="_permission_denied">error::permission_denied</a>(<a href="context.md#0x2_context_ErrorObjectOwnerNotMatch">ErrorObjectOwnerNotMatch</a>));
-    };
-    <a href="object.md#0x2_object_as_mut_ref">object::as_mut_ref</a>(object_entity)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_context_borrow_mut_object_extend"></a>
 
 ## Function `borrow_mut_object_extend`
@@ -594,20 +317,6 @@ The module of T can borrow mut Object from object store with any object_id
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_object_extend">borrow_mut_object_extend</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID) : &<b>mut</b> Object&lt;T&gt; {
-    <b>let</b> object_entity = <a href="object.md#0x2_object_borrow_mut_from_global">object::borrow_mut_from_global</a>&lt;T&gt;(object_id);
-    <a href="object.md#0x2_object_as_mut_ref">object::as_mut_ref</a>(object_entity)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_context_borrow_mut_singleton"></a>
 
@@ -622,21 +331,6 @@ Only the module of T can borrow mut singleton Object from object store
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_singleton">borrow_mut_singleton</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">Context</a>): &<b>mut</b> Object&lt;T&gt; {
-    <b>let</b> object_id = <a href="object.md#0x2_object_singleton_object_id">object::singleton_object_id</a>&lt;T&gt;();
-    <b>let</b> object_entity = <a href="object.md#0x2_object_borrow_mut_from_global">object::borrow_mut_from_global</a>&lt;T&gt;(object_id);
-    <a href="object.md#0x2_object_as_mut_ref">object::as_mut_ref</a>(object_entity)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_context_exist_object"></a>
 
 ## Function `exist_object`
@@ -649,20 +343,6 @@ Check if the object exists in the global object storage
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exist_object">exist_object</a>&lt;T: key&gt;(_self: &<a href="context.md#0x2_context_Context">Context</a>, object_id: ObjectID): bool {
-    <a href="object.md#0x2_object_contains_global">object::contains_global</a>(object_id)
-    //TODO check the <a href="object.md#0x2_object">object</a> type
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_context_exist_singleton"></a>
 
 ## Function `exist_singleton`
@@ -672,19 +352,3 @@ Check if the singleton object exists in the global object storage
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exist_singleton">exist_singleton</a>&lt;T: key&gt;(_self: &<a href="context.md#0x2_context_Context">context::Context</a>): bool
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exist_singleton">exist_singleton</a>&lt;T: key&gt;(_self: &<a href="context.md#0x2_context_Context">Context</a>): bool {
-    <b>let</b> object_id = <a href="object.md#0x2_object_singleton_object_id">object::singleton_object_id</a>&lt;T&gt;();
-    <a href="context.md#0x2_context_exist_object">exist_object</a>&lt;T&gt;(_self, object_id)
-}
-</code></pre>
-
-
-
-</details>

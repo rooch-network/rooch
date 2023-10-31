@@ -43,28 +43,6 @@
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>multichain_id: u64</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>raw_address: <a href="">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -126,17 +104,6 @@
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_multichain_id_bitcoin">multichain_id_bitcoin</a>(): u64 { <a href="multichain_address.md#0x3_multichain_address_MULTICHAIN_ID_BITCOIN">MULTICHAIN_ID_BITCOIN</a> }
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_multichain_address_multichain_id_ether"></a>
 
 ## Function `multichain_id_ether`
@@ -147,17 +114,6 @@
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_multichain_id_ether">multichain_id_ether</a>(): u64 { <a href="multichain_address.md#0x3_multichain_address_MULTICHAIN_ID_ETHER">MULTICHAIN_ID_ETHER</a> }
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_multichain_address_multichain_id_nostr"></a>
 
@@ -170,17 +126,6 @@
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_multichain_id_nostr">multichain_id_nostr</a>(): u64 { <a href="multichain_address.md#0x3_multichain_address_MULTICHAIN_ID_NOSTR">MULTICHAIN_ID_NOSTR</a> }
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_multichain_address_multichain_id_rooch"></a>
 
 ## Function `multichain_id_rooch`
@@ -191,17 +136,6 @@
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_multichain_id_rooch">multichain_id_rooch</a>(): u64 { <a href="multichain_address.md#0x3_multichain_address_MULTICHAIN_ID_ROOCH">MULTICHAIN_ID_ROOCH</a> }
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_multichain_address_new"></a>
 
@@ -214,22 +148,6 @@
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_new">new</a>(multichain_id: u64, raw_address: <a href="">vector</a>&lt;u8&gt;): <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">MultiChainAddress</a> {
-    <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">MultiChainAddress</a> {
-        multichain_id: multichain_id,
-        raw_address: raw_address,
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_multichain_address_from_eth"></a>
 
 ## Function `from_eth`
@@ -240,22 +158,6 @@
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_from_eth">from_eth</a>(eth_address: ETHAddress): <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">MultiChainAddress</a> {
-    <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">MultiChainAddress</a> {
-        multichain_id: <a href="multichain_address.md#0x3_multichain_address_MULTICHAIN_ID_ETHER">MULTICHAIN_ID_ETHER</a>,
-        raw_address: <a href="ethereum_address.md#0x3_ethereum_address_into_bytes">ethereum_address::into_bytes</a>(eth_address),
-    }
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_multichain_address_from_bitcoin"></a>
 
@@ -268,22 +170,6 @@
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_from_bitcoin">from_bitcoin</a>(<a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a>: BTCAddress): <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">MultiChainAddress</a> {
-    <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">MultiChainAddress</a> {
-        multichain_id: <a href="multichain_address.md#0x3_multichain_address_MULTICHAIN_ID_BITCOIN">MULTICHAIN_ID_BITCOIN</a>,
-        raw_address: <a href="bitcoin_address.md#0x3_bitcoin_address_into_bytes">bitcoin_address::into_bytes</a>(<a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a>),
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_multichain_address_multichain_id"></a>
 
 ## Function `multichain_id`
@@ -294,19 +180,6 @@
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_multichain_id">multichain_id</a>(self: &<a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">MultiChainAddress</a>): u64 {
-    self.multichain_id
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_multichain_address_raw_address"></a>
 
@@ -319,19 +192,6 @@
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_raw_address">raw_address</a>(self: &<a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">MultiChainAddress</a>): &<a href="">vector</a>&lt;u8&gt; {
-    &self.raw_address
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_multichain_address_is_rooch_address"></a>
 
 ## Function `is_rooch_address`
@@ -342,19 +202,6 @@
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_is_rooch_address">is_rooch_address</a>(maddress: &<a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">MultiChainAddress</a>) : bool{
-    maddress.multichain_id == <a href="multichain_address.md#0x3_multichain_address_MULTICHAIN_ID_ROOCH">MULTICHAIN_ID_ROOCH</a>
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_multichain_address_is_eth_address"></a>
 
@@ -367,19 +214,6 @@
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_is_eth_address">is_eth_address</a>(maddress: &<a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">MultiChainAddress</a>) : bool{
-    maddress.multichain_id == <a href="multichain_address.md#0x3_multichain_address_MULTICHAIN_ID_ETHER">MULTICHAIN_ID_ETHER</a>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_multichain_address_is_bitcoin_address"></a>
 
 ## Function `is_bitcoin_address`
@@ -390,19 +224,6 @@
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_is_bitcoin_address">is_bitcoin_address</a>(maddress: &<a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">MultiChainAddress</a>) : bool{
-    maddress.multichain_id == <a href="multichain_address.md#0x3_multichain_address_MULTICHAIN_ID_BITCOIN">MULTICHAIN_ID_BITCOIN</a>
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_multichain_address_into_rooch_address"></a>
 
@@ -415,20 +236,6 @@
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_into_rooch_address">into_rooch_address</a>(maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">MultiChainAddress</a>) : <b>address</b> {
-    <b>assert</b>!(maddress.multichain_id == <a href="multichain_address.md#0x3_multichain_address_MULTICHAIN_ID_ROOCH">MULTICHAIN_ID_ROOCH</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="multichain_address.md#0x3_multichain_address_ErrorMultiChainIDMismatch">ErrorMultiChainIDMismatch</a>));
-    moveos_std::bcs::to_address(maddress.raw_address)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_multichain_address_into_eth_address"></a>
 
 ## Function `into_eth_address`
@@ -440,20 +247,6 @@
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_into_eth_address">into_eth_address</a>(maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">MultiChainAddress</a>) : ETHAddress {
-    <b>assert</b>!(maddress.multichain_id == <a href="multichain_address.md#0x3_multichain_address_MULTICHAIN_ID_ETHER">MULTICHAIN_ID_ETHER</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="multichain_address.md#0x3_multichain_address_ErrorMultiChainIDMismatch">ErrorMultiChainIDMismatch</a>));
-    <a href="ethereum_address.md#0x3_ethereum_address_from_bytes">ethereum_address::from_bytes</a>(maddress.raw_address)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_multichain_address_into_bitcoin_address"></a>
 
 ## Function `into_bitcoin_address`
@@ -462,19 +255,3 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_into_bitcoin_address">into_bitcoin_address</a>(maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_into_bitcoin_address">into_bitcoin_address</a>(maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">MultiChainAddress</a>) : BTCAddress {
-    <b>assert</b>!(maddress.multichain_id == <a href="multichain_address.md#0x3_multichain_address_MULTICHAIN_ID_BITCOIN">MULTICHAIN_ID_BITCOIN</a>, <a href="_invalid_argument">error::invalid_argument</a>(<a href="multichain_address.md#0x3_multichain_address_ErrorMultiChainIDMismatch">ErrorMultiChainIDMismatch</a>));
-    <a href="bitcoin_address.md#0x3_bitcoin_address_from_bytes">bitcoin_address::from_bytes</a>(maddress.raw_address)
-}
-</code></pre>
-
-
-
-</details>

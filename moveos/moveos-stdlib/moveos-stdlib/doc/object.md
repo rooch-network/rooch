@@ -72,34 +72,6 @@ It does not have any ability, so it can not be <code>drop</code>, <code><b>copy<
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>owner: <b>address</b></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>value: T</code>
-</dt>
-<dd>
- A flag to indicate whether the object is shared or frozen
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x2_object_Object"></a>
 
 ## Resource `Object`
@@ -114,22 +86,6 @@ Developers only need to use Object<T> related APIs and do not need to know the O
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a></code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x2_object_ObjectID"></a>
 
 ## Struct `ObjectID`
@@ -141,22 +97,6 @@ ObjectID is a unique identifier for the Object
 </code></pre>
 
 
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>id: <b>address</b></code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
 
 <a name="@Constants_0"></a>
 
@@ -211,19 +151,6 @@ Generate a new ObjectID from an address
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_address_to_object_id">address_to_object_id</a>(<b>address</b>: <b>address</b>): <a href="object.md#0x2_object_ObjectID">ObjectID</a> {
-    <a href="object.md#0x2_object_ObjectID">ObjectID</a> { id: <b>address</b> }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_object_id_to_table_handle"></a>
 
 ## Function `object_id_to_table_handle`
@@ -234,19 +161,6 @@ Generate a new ObjectID from an address
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_object_id_to_table_handle">object_id_to_table_handle</a>(object_id: <a href="object.md#0x2_object_ObjectID">ObjectID</a>): TableHandle {
-    <a href="raw_table.md#0x2_raw_table_new_table_handle">raw_table::new_table_handle</a>(object_id.id)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_object_singleton_object_id"></a>
 
@@ -259,27 +173,6 @@ Generate a new ObjectID from an address
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_singleton_object_id">singleton_object_id</a>&lt;T&gt;(): <a href="object.md#0x2_object_ObjectID">ObjectID</a> {
-    <a href="object.md#0x2_object_address_to_object_id">address_to_object_id</a>(
-        <a href="address.md#0x2_address_from_bytes">address::from_bytes</a>(
-            <a href="_sha3_256">hash::sha3_256</a>(
-                <a href="_to_bytes">bcs::to_bytes</a>(
-                    &<a href="type_info.md#0x2_type_info_type_of">type_info::type_of</a>&lt;T&gt;()
-                )
-            )
-        )
-    )
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_new"></a>
 
 ## Function `new`
@@ -291,22 +184,6 @@ Create a new object, the object is owned by <code>System</code> by default.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(id: <a href="object.md#0x2_object_ObjectID">ObjectID</a>, value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
-    <b>let</b> owner = <a href="object.md#0x2_object_SYSTEM_OWNER_ADDRESS">SYSTEM_OWNER_ADDRESS</a>;
-    <b>let</b> entity = <a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>&lt;T&gt;{id, value, owner};
-    <a href="object.md#0x2_object_add_to_global">add_to_global</a>(entity);
-    <a href="object.md#0x2_object_Object">Object</a>{id}
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_object_new_singleton"></a>
 
@@ -321,20 +198,6 @@ Singleton object means the object of <code>T</code> is only one instance in the 
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new_singleton">new_singleton</a>&lt;T: key&gt;(value: T): <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt; {
-    <b>let</b> id = <a href="object.md#0x2_object_singleton_object_id">singleton_object_id</a>&lt;T&gt;();
-    <a href="object.md#0x2_object_new">new</a>(id, value)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_borrow"></a>
 
 ## Function `borrow`
@@ -347,20 +210,6 @@ Borrow the object value
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow">borrow</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): &T {
-    <b>let</b> obj_enitty = <a href="object.md#0x2_object_borrow_from_global">borrow_from_global</a>&lt;T&gt;(self.id);
-    &obj_enitty.value
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_borrow_mut"></a>
 
 ## Function `borrow_mut`
@@ -372,20 +221,6 @@ Borrow the object mutable value
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut">borrow_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): &<b>mut</b> T {
-    <b>let</b> obj_entity = <a href="object.md#0x2_object_borrow_mut_from_global">borrow_mut_from_global</a>&lt;T&gt;(self.id);
-    &<b>mut</b> obj_entity.value
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_object_remove"></a>
 
@@ -400,22 +235,6 @@ This function is only can be called by the module of <code>T</code>.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_remove">remove</a>&lt;T: key&gt;(self: <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;) : T {
-    <b>let</b> <a href="object.md#0x2_object_Object">Object</a>{id} = self;
-    <b>let</b> object_entity = <a href="object.md#0x2_object_remove_from_global">remove_from_global</a>&lt;T&gt;(id);
-    <b>let</b> <a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>{id:_, owner:_, value} = object_entity;
-    value
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_to_permanent"></a>
 
 ## Function `to_permanent`
@@ -428,19 +247,6 @@ If you want to remove the object, please use <code>remove</code> function.
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_to_permanent">to_permanent</a>&lt;T: key&gt;(self: <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;) {
-    <b>let</b> <a href="object.md#0x2_object_Object">Object</a>{id:_} = self;
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_object_to_shared"></a>
 
@@ -455,22 +261,6 @@ The shared object also can be removed from the object storage.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_to_shared">to_shared</a>&lt;T: key&gt;(self: <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;) {
-    <b>let</b> obj_entity = <a href="object.md#0x2_object_borrow_mut_from_global">borrow_mut_from_global</a>&lt;T&gt;(self.id);
-    // TODO set the flag
-    <a href="object.md#0x2_object_transfer_to_system">transfer_to_system</a>(obj_entity);
-    <a href="object.md#0x2_object_to_permanent">to_permanent</a>(self);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_to_frozen"></a>
 
 ## Function `to_frozen`
@@ -482,22 +272,6 @@ Make the Object frozen, Any one can not get the &mut Object<T> from frozen objec
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_to_frozen">to_frozen</a>&lt;T: key&gt;(self: <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;) {
-    <b>let</b> obj_entity = <a href="object.md#0x2_object_borrow_mut_from_global">borrow_mut_from_global</a>&lt;T&gt;(self.id);
-    // TODO set the flag
-    <a href="object.md#0x2_object_transfer_to_system">transfer_to_system</a>(obj_entity);
-    <a href="object.md#0x2_object_to_permanent">to_permanent</a>(self);
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_object_transfer"></a>
 
@@ -512,20 +286,6 @@ Only the <code>T</code> with <code>store</code> can be directly transferred.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_transfer">transfer</a>&lt;T: key + store&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;, new_owner: <b>address</b>) {
-    <b>let</b> obj_entity = <a href="object.md#0x2_object_borrow_mut_from_global">borrow_mut_from_global</a>&lt;T&gt;(self.id);
-    <a href="object.md#0x2_object_transer_internal">transer_internal</a>(obj_entity, new_owner);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_transfer_extend"></a>
 
 ## Function `transfer_extend`
@@ -539,20 +299,6 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_transfer_extend">transfer_extend</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;, new_owner: <b>address</b>) {
-    <b>let</b> obj = <a href="object.md#0x2_object_borrow_mut_from_global">borrow_mut_from_global</a>&lt;T&gt;(self.id);
-    <a href="object.md#0x2_object_transer_internal">transer_internal</a>(obj, new_owner);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_transfer_to_system"></a>
 
 ## Function `transfer_to_system`
@@ -563,19 +309,6 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_transfer_to_system">transfer_to_system</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>&lt;T&gt;){
-    self.owner = <a href="object.md#0x2_object_SYSTEM_OWNER_ADDRESS">SYSTEM_OWNER_ADDRESS</a>;
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_object_id"></a>
 
@@ -588,19 +321,6 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_id">id</a>&lt;T&gt;(self: &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): <a href="object.md#0x2_object_ObjectID">ObjectID</a> {
-    self.id
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_owner"></a>
 
 ## Function `owner`
@@ -611,20 +331,6 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_owner">owner</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;): <b>address</b> {
-    <b>let</b> obj_enitty = <a href="object.md#0x2_object_borrow_from_global">borrow_from_global</a>&lt;T&gt;(self.id);
-    obj_enitty.owner
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_object_owner_internal"></a>
 
@@ -637,19 +343,6 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_owner_internal">owner_internal</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>&lt;T&gt;): <b>address</b> {
-    self.owner
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_is_shared"></a>
 
 ## Function `is_shared`
@@ -660,20 +353,6 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_is_shared">is_shared</a>&lt;T&gt;(_self: &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;) : bool {
-    // TODO check the flag
-    <b>false</b>
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_object_is_shared_internal"></a>
 
@@ -686,20 +365,6 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_is_shared_internal">is_shared_internal</a>&lt;T&gt;(_self: &<a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>&lt;T&gt;) : bool {
-    // TODO check the flag
-    <b>false</b>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_is_frozen"></a>
 
 ## Function `is_frozen`
@@ -710,20 +375,6 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_is_frozen">is_frozen</a>&lt;T&gt;(_self: &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;) : bool {
-    // TODO check the flag
-    <b>false</b>
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_object_is_frozen_internal"></a>
 
@@ -736,20 +387,6 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_is_frozen_internal">is_frozen_internal</a>&lt;T&gt;(_self: &<a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>&lt;T&gt;) : bool {
-    // TODO check the flag
-    <b>false</b>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_as_ref"></a>
 
 ## Function `as_ref`
@@ -761,19 +398,6 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_as_ref">as_ref</a>&lt;T: key&gt;(object_entity: &<a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>&lt;T&gt;) : &<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;{
-    <a href="object.md#0x2_object_as_ref_inner">as_ref_inner</a>&lt;<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;&gt;(object_entity.id)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_as_mut_ref"></a>
 
 ## Function `as_mut_ref`
@@ -784,20 +408,6 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_as_mut_ref">as_mut_ref</a>&lt;T: key&gt;(object_entity: &<b>mut</b> <a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>&lt;T&gt;) : &<b>mut</b> <a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;{
-    <b>assert</b>!(!<a href="object.md#0x2_object_is_frozen_internal">is_frozen_internal</a>(object_entity), <a href="_permission_denied">error::permission_denied</a>(<a href="object.md#0x2_object_ErrorObjectFrozen">ErrorObjectFrozen</a>));
-    <a href="object.md#0x2_object_as_mut_ref_inner">as_mut_ref_inner</a>&lt;<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;&gt;(object_entity.id)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_object_global_object_storage_handle"></a>
 
@@ -811,19 +421,6 @@ The global object storage's table handle should be <code>0x0</code>
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_global_object_storage_handle">global_object_storage_handle</a>(): TableHandle {
-    <a href="raw_table.md#0x2_raw_table_new_table_handle">raw_table::new_table_handle</a>(<a href="object.md#0x2_object_GlobalObjectStorageHandle">GlobalObjectStorageHandle</a>)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_add_to_global"></a>
 
 ## Function `add_to_global`
@@ -834,19 +431,6 @@ The global object storage's table handle should be <code>0x0</code>
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_add_to_global">add_to_global</a>&lt;T: key&gt;(obj: <a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>&lt;T&gt;) {
-    <a href="raw_table.md#0x2_raw_table_add">raw_table::add</a>&lt;<a href="object.md#0x2_object_ObjectID">ObjectID</a>, <a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>&lt;T&gt;&gt;(<a href="object.md#0x2_object_global_object_storage_handle">global_object_storage_handle</a>(), obj.id, obj);
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_object_borrow_from_global"></a>
 
@@ -859,19 +443,6 @@ The global object storage's table handle should be <code>0x0</code>
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_from_global">borrow_from_global</a>&lt;T: key&gt;(object_id: <a href="object.md#0x2_object_ObjectID">ObjectID</a>): &<a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>&lt;T&gt; {
-    <a href="raw_table.md#0x2_raw_table_borrow">raw_table::borrow</a>&lt;<a href="object.md#0x2_object_ObjectID">ObjectID</a>, <a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>&lt;T&gt;&gt;(<a href="object.md#0x2_object_global_object_storage_handle">global_object_storage_handle</a>(), object_id)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_borrow_mut_from_global"></a>
 
 ## Function `borrow_mut_from_global`
@@ -882,19 +453,6 @@ The global object storage's table handle should be <code>0x0</code>
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_mut_from_global">borrow_mut_from_global</a>&lt;T: key&gt;(object_id: <a href="object.md#0x2_object_ObjectID">ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>&lt;T&gt; {
-    <a href="raw_table.md#0x2_raw_table_borrow_mut">raw_table::borrow_mut</a>&lt;<a href="object.md#0x2_object_ObjectID">ObjectID</a>, <a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>&lt;T&gt;&gt;(<a href="object.md#0x2_object_global_object_storage_handle">global_object_storage_handle</a>(), object_id)
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x2_object_remove_from_global"></a>
 
@@ -907,19 +465,6 @@ The global object storage's table handle should be <code>0x0</code>
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_remove_from_global">remove_from_global</a>&lt;T: key&gt;(object_id: <a href="object.md#0x2_object_ObjectID">ObjectID</a>): <a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>&lt;T&gt; {
-    <a href="raw_table.md#0x2_raw_table_remove">raw_table::remove</a>&lt;<a href="object.md#0x2_object_ObjectID">ObjectID</a>, <a href="object.md#0x2_object_ObjectEntity">ObjectEntity</a>&lt;T&gt;&gt;(<a href="object.md#0x2_object_global_object_storage_handle">global_object_storage_handle</a>(), object_id)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x2_object_contains_global"></a>
 
 ## Function `contains_global`
@@ -928,18 +473,3 @@ The global object storage's table handle should be <code>0x0</code>
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_contains_global">contains_global</a>(object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_contains_global">contains_global</a>(object_id: <a href="object.md#0x2_object_ObjectID">ObjectID</a>): bool {
-    <a href="raw_table.md#0x2_raw_table_contains">raw_table::contains</a>&lt;<a href="object.md#0x2_object_ObjectID">ObjectID</a>&gt;(<a href="object.md#0x2_object_global_object_storage_handle">global_object_storage_handle</a>(), object_id)
-}
-</code></pre>
-
-
-
-</details>

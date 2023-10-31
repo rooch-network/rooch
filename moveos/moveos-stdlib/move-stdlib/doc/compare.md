@@ -83,33 +83,3 @@ Keep this in mind when using this function to compare addresses.
 
 <pre><code><b>public</b> <b>fun</b> <a href="compare.md#0x1_compare_cmp_bcs_bytes">cmp_bcs_bytes</a>(v1: &<a href="vector.md#0x1_vector">vector</a>&lt;u8&gt;, v2: &<a href="vector.md#0x1_vector">vector</a>&lt;u8&gt;): u8
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="compare.md#0x1_compare_cmp_bcs_bytes">cmp_bcs_bytes</a>(v1: &<a href="vector.md#0x1_vector">vector</a>&lt;u8&gt;, v2: &<a href="vector.md#0x1_vector">vector</a>&lt;u8&gt;): u8 {
-    <b>let</b> i1 = <a href="vector.md#0x1_vector_length">vector::length</a>(v1);
-    <b>let</b> i2 = <a href="vector.md#0x1_vector_length">vector::length</a>(v2);
-    <b>let</b> len_cmp = <a href="compare.md#0x1_compare_cmp_u64">cmp_u64</a>(i1, i2);
-
-    // BCS uses little endian encoding for all integer types, so we <b>choose</b> <b>to</b> <a href="compare.md#0x1_compare">compare</a> from left
-    // <b>to</b> right. Going right <b>to</b> left would make the behavior of compare::cmp diverge from the
-    // bytecode operators &lt; and &gt; on integer values (which would be confusing).
-    <b>while</b> (i1 &gt; 0 && i2 &gt; 0) {
-        i1 = i1 - 1;
-        i2 = i2 - 1;
-        <b>let</b> elem_cmp = <a href="compare.md#0x1_compare_cmp_u8">cmp_u8</a>(*<a href="vector.md#0x1_vector_borrow">vector::borrow</a>(v1, i1), *<a href="vector.md#0x1_vector_borrow">vector::borrow</a>(v2, i2));
-        <b>if</b> (elem_cmp != 0) <b>return</b> elem_cmp
-        // <b>else</b>, <a href="compare.md#0x1_compare">compare</a> next element
-    };
-    // all compared elements equal; <b>use</b> length comparion <b>to</b> <b>break</b> the tie
-    len_cmp
-}
-</code></pre>
-
-
-
-</details>

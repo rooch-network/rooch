@@ -102,19 +102,6 @@ built-in functions
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_auth_validator_id_length">auth_validator_id_length</a>(): u64 {
-    <a href="ecdsa_k1.md#0x3_ecdsa_k1_ECDSA_K1_TO_BITCOIN_VALIDATOR_ID_LENGTH">ECDSA_K1_TO_BITCOIN_VALIDATOR_ID_LENGTH</a>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_ecdsa_k1_public_key_length"></a>
 
 ## Function `public_key_length`
@@ -125,19 +112,6 @@ built-in functions
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_public_key_length">public_key_length</a>(): u64 {
-    <a href="ecdsa_k1.md#0x3_ecdsa_k1_ECDSA_K1_COMPRESSED_PUBKEY_LENGTH">ECDSA_K1_COMPRESSED_PUBKEY_LENGTH</a>
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_ecdsa_k1_signature_length"></a>
 
@@ -150,19 +124,6 @@ built-in functions
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_signature_length">signature_length</a>(): u64 {
-    <a href="ecdsa_k1.md#0x3_ecdsa_k1_ECDSA_K1_SIG_LENGTH">ECDSA_K1_SIG_LENGTH</a>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_ecdsa_k1_sha256"></a>
 
 ## Function `sha256`
@@ -174,19 +135,6 @@ built-in functions
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_sha256">sha256</a>(): u8 {
-    <a href="ecdsa_k1.md#0x3_ecdsa_k1_SHA256">SHA256</a>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_ecdsa_k1_ripemd160"></a>
 
 ## Function `ripemd160`
@@ -197,19 +145,6 @@ built-in functions
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_ripemd160">ripemd160</a>(): u8 {
-    <a href="ecdsa_k1.md#0x3_ecdsa_k1_RIPEMD160">RIPEMD160</a>
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_ecdsa_k1_verify"></a>
 
@@ -226,21 +161,3 @@ If the signature is valid to the pubkey and hashed message, return true. Else fa
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify">verify</a>(signature: &<a href="">vector</a>&lt;u8&gt;, public_key: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;, <a href="">hash</a>: u8): bool
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1_verify">verify</a>(
-    signature: &<a href="">vector</a>&lt;u8&gt;,
-    public_key: &<a href="">vector</a>&lt;u8&gt;,
-    msg: &<a href="">vector</a>&lt;u8&gt;,
-    <a href="">hash</a>: u8
-): bool;
-</code></pre>
-
-
-
-</details>

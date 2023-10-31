@@ -39,28 +39,6 @@ GenesisContext is a genesis init parameters in the TxContext.
 
 
 
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code><a href="chain_id.md#0x3_chain_id">chain_id</a>: u64</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code><a href="timestamp.md#0x3_timestamp">timestamp</a>: u64</code>
-</dt>
-<dd>
- genesis timestamp in microseconds
-</dd>
-</dl>
-
-
-</details>
-
 <a name="@Constants_0"></a>
 
 ## Constants

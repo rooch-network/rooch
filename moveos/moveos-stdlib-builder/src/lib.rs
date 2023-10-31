@@ -154,7 +154,7 @@ impl StdlibBuildConfig {
         let options = move_docgen::DocgenOptions {
             root_doc_templates: vec![self.document_template.to_string_lossy().to_string()],
             include_specs: false,
-            include_impl: true,
+            include_impl: false,
             include_private_fun: false,
             output_directory: self.document_output_directory.to_string_lossy().to_string(),
             compile_relative_to_output_dir: false,

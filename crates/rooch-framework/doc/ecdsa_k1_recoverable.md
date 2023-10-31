@@ -115,19 +115,6 @@ built-in functions
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_public_key_length">public_key_length</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH">ECDSA_K1_RECOVERABLE_COMPRESSED_PUBKEY_LENGTH</a>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_ecdsa_k1_recoverable_uncompressed_public_key_length"></a>
 
 ## Function `uncompressed_public_key_length`
@@ -138,19 +125,6 @@ built-in functions
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_uncompressed_public_key_length">uncompressed_public_key_length</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH">ECDSA_K1_RECOVERABLE_UNCOMPRESSED_PUBKEY_LENGTH</a>
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_ecdsa_k1_recoverable_signature_length"></a>
 
@@ -163,19 +137,6 @@ built-in functions
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_signature_length">signature_length</a>(): u64 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ECDSA_K1_RECOVERABLE_SIG_LENGTH">ECDSA_K1_RECOVERABLE_SIG_LENGTH</a>
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_ecdsa_k1_recoverable_keccak256"></a>
 
 ## Function `keccak256`
@@ -186,19 +147,6 @@ built-in functions
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_keccak256">keccak256</a>(): u8 {
-    <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_KECCAK256">KECCAK256</a>
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x3_ecdsa_k1_recoverable_ecrecover"></a>
 
@@ -219,17 +167,6 @@ applied to Ecdsa signatures.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ecrecover">ecrecover</a>(signature: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;, <a href="">hash</a>: u8): <a href="">vector</a>&lt;u8&gt;;
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_ecdsa_k1_recoverable_decompress_pubkey"></a>
 
 ## Function `decompress_pubkey`
@@ -245,17 +182,6 @@ otherwise throw error.
 
 
 
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_decompress_pubkey">decompress_pubkey</a>(pubkey: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;;
-</code></pre>
-
-
-
-</details>
-
 <a name="0x3_ecdsa_k1_recoverable_verify"></a>
 
 ## Function `verify`
@@ -270,20 +196,3 @@ If the signature is valid to the pubkey and hashed message, return true. Else fa
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_verify">verify</a>(signature: &<a href="">vector</a>&lt;u8&gt;, msg: &<a href="">vector</a>&lt;u8&gt;, <a href="">hash</a>: u8): bool
 </code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_verify">verify</a>(
-    signature: &<a href="">vector</a>&lt;u8&gt;,
-    msg: &<a href="">vector</a>&lt;u8&gt;,
-    <a href="">hash</a>: u8
-): bool;
-</code></pre>
-
-
-
-</details>
