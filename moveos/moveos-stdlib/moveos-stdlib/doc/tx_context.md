@@ -14,6 +14,7 @@
 -  [Function `fresh_address`](#0x2_tx_context_fresh_address)
 -  [Function `derive_id`](#0x2_tx_context_derive_id)
 -  [Function `tx_hash`](#0x2_tx_context_tx_hash)
+-  [Function `tx_accumulator_root`](#0x2_tx_context_tx_accumulator_root)
 -  [Function `add`](#0x2_tx_context_add)
 -  [Function `get`](#0x2_tx_context_get)
 -  [Function `contains`](#0x2_tx_context_contains)
@@ -120,6 +121,12 @@ the VM, stored in a <code>Context</code> and passed in to the entrypoint of the 
 <dd>
  Counter recording the number of fresh id's created while executing
  this transaction. Always 0 at the start of a transaction
+</dd>
+<dt>
+<code>tx_accumulator_root: <a href="">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ Transaction accumulator root
 </dd>
 <dt>
 <code>map: <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="copyable_any.md#0x2_copyable_any_Any">copyable_any::Any</a>&gt;</code>
@@ -294,6 +301,31 @@ Return the hash of the current transaction
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_tx_hash">tx_hash</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): <a href="">vector</a>&lt;u8&gt; {
     self.tx_hash
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x2_tx_context_tx_accumulator_root"></a>
+
+## Function `tx_accumulator_root`
+
+Return the accumulator root of the current transaction
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_tx_accumulator_root">tx_accumulator_root</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_tx_accumulator_root">tx_accumulator_root</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>): <a href="">vector</a>&lt;u8&gt; {
+    self.tx_accumulator_root
 }
 </code></pre>
 

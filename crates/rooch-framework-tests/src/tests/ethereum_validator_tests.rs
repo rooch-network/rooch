@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use ethers::types::{Bytes, U256};
+use moveos_types::h256::H256;
 use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
@@ -33,7 +34,9 @@ fn test_validate() {
         .resolve_or_generate(multi_chain_address_sender.clone())
         .unwrap();
     let authenticator = tx.authenticator_info().unwrap();
-    let moveos_tx = tx.construct_moveos_transaction(resolved_sender).unwrap();
+    let moveos_tx = tx
+        .construct_moveos_transaction(resolved_sender, H256::zero())
+        .unwrap();
 
     ethereum_validator
         .validate(&moveos_tx.ctx, authenticator.authenticator.payload)

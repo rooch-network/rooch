@@ -33,6 +33,8 @@ pub struct TxContext {
     pub tx_hash: Vec<u8>,
     /// Number of `ObjectID`'s generated during execution of the current transaction
     pub ids_created: u64,
+    /// Transaction accumulator root
+    pub tx_accumulator_root: Vec<u8>,
     /// A map for storing context data
     pub map: SimpleMap<MoveString, Any>,
 }
@@ -45,6 +47,7 @@ impl std::fmt::Debug for TxContext {
             .field("max_gas_amount", &self.max_gas_amount)
             .field("tx_hash", &self.tx_hash)
             .field("ids_created", &self.ids_created)
+            .field("tx_accumulator_root", &self.tx_accumulator_root)
             .field("map", &self.map)
             .finish()
     }
@@ -56,6 +59,7 @@ impl TxContext {
         sequence_number: u64,
         max_gas_amount: u64,
         tx_hash: H256,
+        tx_accumulator_root: H256,
     ) -> Self {
         Self {
             sender,
@@ -63,6 +67,7 @@ impl TxContext {
             max_gas_amount,
             tx_hash: tx_hash.0.to_vec(),
             ids_created: 0,
+            tx_accumulator_root: tx_accumulator_root.0.to_vec(),
             map: SimpleMap::create(),
         }
     }
@@ -70,7 +75,13 @@ impl TxContext {
     /// Create a new TxContext with a zero tx_hash for read-only function call cases
     pub fn new_readonly_ctx(sender: AccountAddress) -> Self {
         //TODO define read-only function gas limit
-        Self::new(sender, 0, GasConfig::DEFAULT_MAX_GAS_AMOUNT, H256::zero())
+        Self::new(
+            sender,
+            0,
+            GasConfig::DEFAULT_MAX_GAS_AMOUNT,
+            H256::zero(),
+            H256::zero(),
+        )
     }
 
     /// Spawn a new TxContext with a new `ids_created` counter and empty map
@@ -81,6 +92,7 @@ impl TxContext {
             max_gas_amount: self.max_gas_amount,
             tx_hash: self.tx_hash,
             ids_created: 0,
+            tx_accumulator_root: self.tx_accumulator_root,
             map: env,
         }
     }
@@ -94,6 +106,7 @@ impl TxContext {
             max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT,
             tx_hash: vec![0u8; h256::LENGTH],
             ids_created: 0,
+            tx_accumulator_root: vec![0u8; h256::LENGTH],
             map: SimpleMap::create(),
         }
     }
@@ -125,6 +138,7 @@ impl TxContext {
             AccountAddress::random(),
             0,
             GasConfig::DEFAULT_MAX_GAS_AMOUNT,
+            H256::random(),
             H256::random(),
         )
     }
@@ -165,6 +179,7 @@ impl MoveStructState for TxContext {
             MoveTypeLayout::U64,
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
             MoveTypeLayout::U64,
+            MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
             MoveTypeLayout::Struct(SimpleMap::<MoveString, Any>::struct_layout()),
         ])
     }

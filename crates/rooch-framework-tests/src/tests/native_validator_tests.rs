@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use moveos_types::h256::H256;
 use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
@@ -20,10 +21,12 @@ fn test_validate() {
     let sender = keystore.addresses()[0];
     let sequence_number = 0;
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
-    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
+    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, H256::zero(), action);
     let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
     let auth_info = tx.authenticator_info().unwrap();
-    let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
+    let move_tx = tx
+        .construct_moveos_transaction(sender.into(), H256::zero())
+        .unwrap();
 
     native_validator
         .validate(&move_tx.ctx, auth_info.authenticator.payload)

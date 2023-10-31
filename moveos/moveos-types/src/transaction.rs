@@ -211,6 +211,7 @@ impl MoveOSTransaction {
             0,
             GasConfig::DEFAULT_MAX_GAS_AMOUNT,
             tx_hash,
+            H256::zero(), // TODO: tx accumulator root
         );
         Self::new(ctx, sender_and_action.1)
     }

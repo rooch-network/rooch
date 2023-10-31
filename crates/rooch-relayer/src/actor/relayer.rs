@@ -7,7 +7,7 @@ use crate::{Relayer, TxSubmiter};
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-use moveos_types::{gas_config::GasConfig, transaction::MoveAction};
+use moveos_types::{gas_config::GasConfig, h256::H256, transaction::MoveAction};
 use rooch_rpc_api::jsonrpc_types::KeptVMStatusView;
 use rooch_rpc_client::ClientBuilder;
 use rooch_types::{
@@ -71,6 +71,7 @@ impl RelayerActor {
                         sequence_number,
                         self.chain_id,
                         self.max_gas_amount,
+                        H256::zero(), // TODO: accumulator root
                         action,
                     );
                     let tx = tx_data.sign(&self.relayer_key);

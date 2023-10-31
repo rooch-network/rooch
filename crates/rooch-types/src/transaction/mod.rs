@@ -61,11 +61,14 @@ pub trait AbstractTransaction {
 
     fn tx_hash(&self) -> H256;
 
+    fn tx_accumulator_root(&self) -> H256;
+
     fn authenticator_info(&self) -> Result<AuthenticatorInfo>;
 
     fn construct_moveos_transaction(
         self,
         resolved_sender: AccountAddress,
+        tx_accumulator_root: H256,
     ) -> Result<MoveOSTransaction>;
 }
 
@@ -122,6 +125,13 @@ impl AbstractTransaction for TypedTransaction {
         }
     }
 
+    fn tx_accumulator_root(&self) -> H256 {
+        match self {
+            TypedTransaction::Rooch(tx) => tx.tx_accumulator_root(),
+            TypedTransaction::Ethereum(tx) => tx.tx_accumulator_root(),
+        }
+    }
+
     fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
         match self {
             TypedTransaction::Rooch(tx) => tx.authenticator_info(),
@@ -132,10 +142,15 @@ impl AbstractTransaction for TypedTransaction {
     fn construct_moveos_transaction(
         self,
         resolved_sender: AccountAddress,
+        tx_accumulator_root: H256,
     ) -> Result<moveos_types::transaction::MoveOSTransaction> {
         match self {
-            TypedTransaction::Rooch(tx) => tx.construct_moveos_transaction(resolved_sender),
-            TypedTransaction::Ethereum(tx) => tx.construct_moveos_transaction(resolved_sender),
+            TypedTransaction::Rooch(tx) => {
+                tx.construct_moveos_transaction(resolved_sender, tx_accumulator_root)
+            }
+            TypedTransaction::Ethereum(tx) => {
+                tx.construct_moveos_transaction(resolved_sender, tx_accumulator_root)
+            }
         }
     }
 

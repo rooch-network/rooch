@@ -50,6 +50,8 @@ module moveos_std::tx_context {
         /// Counter recording the number of fresh id's created while executing
         /// this transaction. Always 0 at the start of a transaction
         ids_created: u64,
+        /// Transaction accumulator root
+        tx_accumulator_root: vector<u8>,
         /// A Key-Value map that can be used to store context information
         map: SimpleMap<String, Any>,
     }
@@ -87,6 +89,11 @@ module moveos_std::tx_context {
     /// Return the hash of the current transaction
     public(friend) fun tx_hash(self: &TxContext): vector<u8> {
         self.tx_hash
+    }
+
+    /// Return the accumulator root of the current transaction
+    public(friend) fun tx_accumulator_root(self: &TxContext): vector<u8> {
+        self.tx_accumulator_root
     }
 
     /// Return the number of ids created by the current transaction.
@@ -144,19 +151,21 @@ module moveos_std::tx_context {
     #[test_only]
     /// Create a TxContext for unit test
     public fun new_test_context(sender: address): TxContext {
-        new_test_context_random(sender, b"test_tx")
+        new_test_context_random(sender, b"test_tx", b"test_accumulator_root")
     }
 
     #[test_only]
     /// Create a random TxContext for unit test
-    public fun new_test_context_random(sender: address, seed: vector<u8>): TxContext {
+    public fun new_test_context_random(sender: address, seed: vector<u8>, root: vector<u8>): TxContext {
         let tx_hash = hash::sha3_256(seed);
+        let tx_accumulator_root = hash::sha3_256(root);
         TxContext {
             sender,
             sequence_number: 0,
             max_gas_amount: 100000000,
             tx_hash,
             ids_created: 0,
+            tx_accumulator_root,
             map: simple_map::create(),
         }
     }

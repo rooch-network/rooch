@@ -16,7 +16,10 @@ use ethers::{
         transaction::eip2930::AccessList, Bytes, OtherFields, Signature, Transaction, H160, U256,
         U64,
     },
-    utils::rlp::{Decodable, Rlp},
+    utils::{
+        keccak256,
+        rlp::{Decodable, Rlp},
+    },
 };
 use move_core_types::account_address::AccountAddress;
 use moveos_types::{
@@ -344,14 +347,25 @@ impl AbstractTransaction for EthereumTransaction {
         self.0.hash()
     }
 
+    fn tx_accumulator_root(&self) -> H256 {
+        keccak256(self.0.block_hash.unwrap()).into()
+    }
+
     fn construct_moveos_transaction(
         self,
         resolved_sender: AccountAddress,
+        tx_accumulator_root: H256,
     ) -> Result<MoveOSTransaction> {
         let action = self.decode_calldata_to_action()?;
         let sequence_number = self.0.nonce.as_u64();
         let gas = self.0.gas.as_u64();
-        let tx_ctx = TxContext::new(resolved_sender, sequence_number, gas, self.tx_hash());
+        let tx_ctx = TxContext::new(
+            resolved_sender,
+            sequence_number,
+            gas,
+            self.tx_hash(),
+            tx_accumulator_root,
+        );
         Ok(MoveOSTransaction::new(tx_ctx, action))
     }
 

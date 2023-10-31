@@ -27,6 +27,8 @@ pub struct RoochTransactionData {
     pub chain_id: u64,
     // The max gas to be used.
     pub max_gas_amount: u64,
+    /// The transaction accumulator root.
+    pub tx_accumulator_root: H256,
     // The MoveAction to execute.
     pub action: MoveAction,
 }
@@ -37,6 +39,7 @@ impl RoochTransactionData {
         sequence_number: u64,
         chain_id: u64,
         max_gas_amount: u64,
+        tx_accumulator_root: H256,
         action: MoveAction,
     ) -> Self {
         Self {
@@ -44,16 +47,23 @@ impl RoochTransactionData {
             sequence_number,
             chain_id,
             max_gas_amount,
+            tx_accumulator_root,
             action,
         }
     }
 
-    pub fn new_for_test(sender: RoochAddress, sequence_number: u64, action: MoveAction) -> Self {
+    pub fn new_for_test(
+        sender: RoochAddress,
+        sequence_number: u64,
+        tx_accumulator_root: H256,
+        action: MoveAction,
+    ) -> Self {
         Self {
             sender,
             sequence_number,
             chain_id: RoochChainID::LOCAL.chain_id().id(),
             max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT,
+            tx_accumulator_root,
             action,
         }
     }
@@ -64,6 +74,10 @@ impl RoochTransactionData {
 
     pub fn hash(&self) -> H256 {
         moveos_types::h256::sha3_256_of(self.encode().as_slice())
+    }
+
+    pub fn accumulator_root(&self) -> H256 {
+        moveos_types::h256::sha3_256_of(self.tx_accumulator_root.as_bytes())
     }
 
     pub fn sign(self, kp: &RoochKeyPair) -> RoochTransaction {
@@ -91,10 +105,18 @@ impl RoochTransaction {
     pub fn new_genesis_tx(
         genesis_address: RoochAddress,
         chain_id: u64,
+        tx_accumulator_root: H256,
         action: MoveAction,
     ) -> Self {
         Self {
-            data: RoochTransactionData::new(genesis_address, 0, chain_id, u64::max_value(), action),
+            data: RoochTransactionData::new(
+                genesis_address,
+                0,
+                chain_id,
+                u64::max_value(),
+                tx_accumulator_root,
+                action,
+            ),
             authenticator: Authenticator::rooch(Signature::Ed25519RoochSignature(
                 Ed25519RoochSignature::default(),
             )),
@@ -132,6 +154,7 @@ impl RoochTransaction {
 
         let sender: RoochAddress = RoochAddress::random();
         let sequence_number = 0;
+        let tx_accumulator_root = H256::random();
         let payload = MoveAction::new_function_call(
             FunctionId::new(
                 ModuleId::new(AccountAddress::random(), Identifier::new("test").unwrap()),
@@ -141,7 +164,12 @@ impl RoochTransaction {
             vec![],
         );
 
-        let transaction_data = RoochTransactionData::new_for_test(sender, sequence_number, payload);
+        let transaction_data = RoochTransactionData::new_for_test(
+            sender,
+            sequence_number,
+            tx_accumulator_root,
+            payload,
+        );
         let mut rng = rand::thread_rng();
         let ed25519_keypair: Ed25519KeyPair = Ed25519KeyPair::generate(&mut rng);
         let auth =
@@ -153,11 +181,13 @@ impl RoochTransaction {
 impl From<RoochTransaction> for MoveOSTransaction {
     fn from(tx: RoochTransaction) -> Self {
         let tx_hash = tx.tx_hash();
+        let tx_accumulator_root = tx.tx_accumulator_root();
         let tx_ctx = TxContext::new(
             tx.data.sender.into(),
             tx.data.sequence_number,
             tx.data.max_gas_amount,
             tx_hash,
+            tx_accumulator_root,
         );
         MoveOSTransaction::new(tx_ctx, tx.data.action)
     }
@@ -185,6 +215,10 @@ impl AbstractTransaction for RoochTransaction {
         self.data.hash()
     }
 
+    fn tx_accumulator_root(&self) -> H256 {
+        self.data.accumulator_root()
+    }
+
     fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
         Ok(AuthenticatorInfo::new(
             self.chain_id(),
@@ -195,6 +229,7 @@ impl AbstractTransaction for RoochTransaction {
     fn construct_moveos_transaction(
         self,
         resolved_sender: AccountAddress,
+        _tx_accumulator_root: H256,
     ) -> Result<MoveOSTransaction> {
         debug_assert!(self.sender() == resolved_sender.into());
         Ok(self.into())

@@ -160,6 +160,7 @@ impl GenesisPackage {
                 RoochTransaction::new_genesis_tx(
                     genesis_account.into(),
                     genesis_ctx.chain_id,
+                    H256::zero(), // TODO tx accumulator root
                     MoveAction::ModuleBundle(bundle),
                 )
             })
