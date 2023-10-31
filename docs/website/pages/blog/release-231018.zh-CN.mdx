@@ -26,7 +26,7 @@ Rooch v0.2 发布，实现账户抽象，提供 Dashboard，启动开发者测�
 * 实现了身份验证抽象，允许第三方开发身份验证器来扩展签名验证或者社交登陆。
 * 实现了会话私钥。会话私钥是一种临时的私钥，它可以用来签名交易，但保存在应用中，而不是钱包中，避免用户每次操作都需要通过钱包签名，从而提高用户体验。
 
-关于 Rooch 账户抽象的详细设计请参看：[账户抽象的设计与实现](../docs/dive-into-rooch/account-abstraction.zh-CN.mdx)。
+关于 Rooch 账户抽象的详细设计请参看：[账户抽象的设计与实现](../docs/dive-into-rooch/account-abstraction)。
 
 ### Ethereum 支持
 
@@ -41,8 +41,8 @@ Rooch v0.2 发布，实现账户抽象，提供 Dashboard，启动开发者测�
 
 ### 完善多链结算的方案
 
-* [多链结算](../tech-highlights/multi-chain-settlement.zh-CN.mdx)
-* [二层网络实现多链结算-神话还是现实](./multi-chain_settlement_by_layer2-myth_or_Reality.zh-CN.mdx)
+* [多链结算](../docs/tech-highlights/multi-chain-settlement)
+* [二层网络实现多链结算-神话还是现实](./multi-chain_settlement_by_layer2-myth_or_Reality)
 
 ### Move 标准库以及虚拟机
 
@@ -50,7 +50,7 @@ Rooch v0.2 发布，实现账户抽象，提供 Dashboard，启动开发者测�
 * 实现了 [Coin](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/coin.move)， [CoinStore](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/coin_store.move) 以及 [account_coin_store](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/account_coin_store.move)。想进一步了解 Rooch 的 Coin 标准，可以参考 [examples/coins](https://github.com/rooch-network/rooch/tree/main/examples/coins)。
 * 实现了 Gas 计费以及 GasToken。
 * 实现了 [Event](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/event.move) 标准。
-* 改进了 [Object](../docs/developer-guids/object.zh-CN.mdx) 以及 [StorageAbstraction](../docs/dive-into-rooch/storage-abstraction.zh-CN.mdx) 的设计。
+* 改进了 [Object](../docs/developer-guides/object) 以及 [StorageAbstraction](../docs/dive-into-rooch/storage-abstraction) 的设计。
 
 
 ### JSON RPC 以及 SDK
@@ -64,7 +64,7 @@ Rooch v0.2 发布，实现账户抽象，提供 Dashboard，启动开发者测�
 * 发布了 [Rooch Typescript SDK](https://www.npmjs.com/package/@roochnetwork/sdk)。
 
 
-Rooch 当前支持的接口请参看：[Rooch JSON RPC](../docs/developer-guids/rpc.zh-CN.mdx)。
+Rooch 当前支持的接口请参看：[Rooch JSON RPC](../docs/developer-guides/rpc)。
 
 
 ### Rooch Dashboard
@@ -72,7 +72,7 @@ Rooch 当前支持的接口请参看：[Rooch JSON RPC](../docs/developer-guids/
 Rooch Dashboard 是一个基于 Rooch JSON RPC 的 Web 应用，提供状态和交易查询，账户设置管理能功能，未来会增加新的功能。
 访问地址：[https://dashboard.rooch.network/](https://dashboard.rooch.network/)。 
 
-用户可以通过 MetaMask 操作 Dashboard，使用说明请参看：[Rooch Dashboard 使用说明](../docs/user-guides/dashboard.zh-CN.mdx)。
+用户可以通过 MetaMask 操作 Dashboard，使用说明请参看：[Rooch Dashboard 使用说明](../docs/user-guides/dashboard)。
 
 ### 开发者测试网
 
@@ -82,7 +82,7 @@ Rooch Dashboard 是一个基于 Rooch JSON RPC 的 Web 应用，提供状态和�
 2. ChainID: 20230103
 3. RPC: https://dev-seed.rooch.network/
 
-如何使用开发者测试网，请参考文档：[连接开发者测试网络](../docs/developer-guides/connect-devnet.zh-CN.mdx)
+如何使用开发者测试网，请参考文档：[连接开发者测试网络](../docs/developer-guides/connect-devnet)
 
 ## 下一步的目标
 
@@ -125,5 +125,5 @@ Rooch 在主网启动之前一共有五个里程碑。我们用植物的生长�
 
 ## 总结
 
-Rooch 的里程碑遵循应用场景驱动的原则，以开发者和用户的使用体验为中心，尝试拓展 Web3 应用的边界，探索 Web3 大规模采用落地的可能。想了解并试用 Rooch，请参看文档：[新手入门](../docs/getting-started.zh-US.mdx)。
+Rooch 的里程碑遵循应用场景驱动的原则，以开发者和用户的使用体验为中心，尝试拓展 Web3 应用的边界，探索 Web3 大规模采用落地的可能。想了解并试用 Rooch，请参看文档：[新手入门](../docs/getting-started)。
 Rooch v0.2 详细的发布说明请参看：[Rooch v0.2.1](https://github.com/rooch-network/rooch/releases/tag/v0.2.1)。感谢参与贡献的十多位开发者，如果想进一步了解和参与 Rooch，请加入 [Rooch Discord](https://discord.gg/rooch)。
