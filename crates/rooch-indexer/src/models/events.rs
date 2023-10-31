@@ -12,7 +12,7 @@ pub struct StoredEvent {
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub event_handle_id: String,
     /// the number of messages that have been emitted to the path previously
-    #[diesel(sql_type = diesel::sql_types::Integer)]
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub event_seq: i64,
     /// the type of the event data
     #[diesel(sql_type = diesel::sql_types::Text)]
@@ -21,22 +21,22 @@ pub struct StoredEvent {
     #[diesel(sql_type = diesel::sql_types::Blob)]
     pub event_data: Vec<u8>,
     /// event index in the transaction events
-    #[diesel(sql_type = diesel::sql_types::Integer)]
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub event_index: i64,
 
     /// the hash of this transaction.
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub tx_hash: String,
     /// the tx order of this transaction.
-    #[diesel(sql_type = diesel::sql_types::Integer)]
-    pub tx_order: i128,
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub tx_order: i64,
     /// the rooch address of sender who emit the event
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub sender: String,
 
-    #[diesel(sql_type = diesel::sql_types::Integer)]
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub created_at: i64,
-    #[diesel(sql_type = diesel::sql_types::Integer)]
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub updated_at: i64,
 }
 
@@ -51,7 +51,7 @@ impl From<IndexedEvent> for StoredEvent {
 
             // TODO use tx_hash: StrView(event.tx_hash) ?
             tx_hash: event.tx_hash.to_string(),
-            tx_order: event.tx_order as i128,
+            tx_order: event.tx_order as i64,
             sender: event.sender.to_string(),
 
             created_at: event.created_at as i64,

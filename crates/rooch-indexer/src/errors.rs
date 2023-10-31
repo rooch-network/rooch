@@ -58,6 +58,19 @@ pub enum IndexerError {
 
     #[error("Invalid argument with error: `{0}`")]
     InvalidArgumentError(String),
+
+    #[error("`{0}`: `{1}`")]
+    ErrorWithContext(String, Box<IndexerError>),
+}
+
+pub trait Context<T> {
+    fn context(self, context: &str) -> Result<T, IndexerError>;
+}
+
+impl<T> Context<T> for Result<T, IndexerError> {
+    fn context(self, context: &str) -> Result<T, IndexerError> {
+        self.map_err(|e| IndexerError::ErrorWithContext(context.to_string(), Box::new(e)))
+    }
 }
 
 impl From<tokio::task::JoinError> for IndexerError {

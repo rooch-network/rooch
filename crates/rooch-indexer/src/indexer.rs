@@ -9,8 +9,7 @@ use crate::{
 };
 use anyhow::{anyhow, Result};
 use diesel::{
-    r2d2::ConnectionManager, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl,
-    SqliteConnection,
+    r2d2::ConnectionManager, Connection, ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection,
 };
 use itertools::Itertools;
 use rooch_types::transaction::TransactionWithInfo;
@@ -67,12 +66,15 @@ impl IndexerReader {
     {
         blocking_call_is_ok_or_panic();
 
-        let mut connection = self.get_connection()?;
-        connection
-            .build_transaction()
-            .read_only()
-            .run(query)
-            .map_err(|e| IndexerError::SQLiteReadError(e.to_string()))
+        // let mut connection = self.get_connection()?;
+        // connection
+        //     .build_transaction()
+        //     .read_only()
+        //     .run(query)
+        //     .map_err(|e| IndexerError::SQLiteReadError(e.to_string()))
+
+        //TODO implements sqlite query
+        Err(IndexerError::SQLiteReadError("Not implements".to_string()))
     }
 
     pub async fn spawn_blocking<F, R, E>(&self, f: F) -> Result<R, E>
@@ -130,13 +132,15 @@ fn blocking_call_is_ok_or_panic() {
 impl IndexerReader {
     fn multi_get_transactions(
         &self,
-        tx_orders: Vec<u128>,
+        tx_orders: Vec<i64>,
     ) -> Result<Vec<StoredTransaction>, IndexerError> {
-        self.run_query(|conn| {
-            transactions::table
-                .filter(transactions::tx_order.eq_any(tx_orders))
-                .load::<StoredTransaction>(conn)
-        })
+        // self.run_query(|conn| {
+        //     transactions::table
+        //         .filter(transactions::tx_order.eq_any(tx_orders))
+        //         .load::<StoredTransaction>(conn)
+        // })
+        //TODO
+        Ok(vec![])
     }
 
     fn stored_transaction_to_transaction_block(

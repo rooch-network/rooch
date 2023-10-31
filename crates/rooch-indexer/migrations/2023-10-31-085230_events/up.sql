@@ -1,16 +1,16 @@
 CREATE TABLE events
 (
     event_handle_id    VARCHAR      NOT NULL,
-    event_seq          INTEGER      NOT NULL,
+    event_seq          BIGINT      NOT NULL,
     type_tag           VARCHAR      NOT NULL,
     event_data         BLOB         NOT NULL,
-    event_index        INTEGER      NOT NULL,
+    event_index        BIGINT      NOT NULL,
 
     tx_hash            VARCHAR      NOT NULL,
-    tx_order           INTEGER      NOT NULL,
+    tx_order           BIGINT      NOT NULL,
     sender             VARCHAR      NOT NULL,
-    created_at         INTEGER      NOT NULL,
-    updated_at         INTEGER      NOT NULL,
+    created_at         BIGINT      NOT NULL,
+    updated_at         BIGINT      NOT NULL,
     -- Constraints
     PRIMARY KEY (event_handle_id, event_seq)
 );

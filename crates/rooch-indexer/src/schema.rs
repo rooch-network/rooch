@@ -3,15 +3,15 @@
 diesel::table! {
     events (event_handle_id, event_seq) {
         event_handle_id -> Text,
-        event_seq -> Integer,
+        event_seq -> BigInt,
         type_tag -> Text,
         event_data -> Binary,
-        event_index -> Integer,
+        event_index -> BigInt,
         tx_hash -> Text,
-        tx_order -> Integer,
+        tx_order -> BigInt,
         sender -> Text,
-        created_at -> Integer,
-        updated_at -> Integer,
+        created_at -> BigInt,
+        updated_at -> BigInt,
     }
 }
 
@@ -26,28 +26,28 @@ diesel::table! {
 
 diesel::table! {
     transactions (tx_order) {
-        tx_order -> Integer,
+        tx_order -> BigInt,
         tx_hash -> Text,
         transaction_type -> Text,
-        sequence_number -> Integer,
+        sequence_number -> BigInt,
         multichain_id -> Text,
         multichain_raw_address -> Binary,
         sender -> Text,
         action -> Text,
         action_type -> SmallInt,
         action_raw -> Binary,
-        auth_validator_id -> Integer,
+        auth_validator_id -> BigInt,
         authenticator_payload -> Binary,
         tx_accumulator_root -> Text,
         transaction_raw -> Binary,
         state_root -> Text,
         event_root -> Text,
-        gas_used -> Integer,
+        gas_used -> BigInt,
         status -> Text,
-        tx_order_auth_validator_id -> Integer,
+        tx_order_auth_validator_id -> BigInt,
         tx_order_authenticator_payload -> Binary,
-        created_at -> Integer,
-        updated_at -> Integer,
+        created_at -> BigInt,
+        updated_at -> BigInt,
     }
 }
 

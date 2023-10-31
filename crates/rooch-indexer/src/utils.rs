@@ -3,6 +3,7 @@
 
 use crate::SqlitePoolConnection;
 use anyhow::anyhow;
+use diesel::migration::MigrationSource;
 use diesel::{RunQueryDsl, SqliteConnection};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use tracing::info;

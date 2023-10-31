@@ -34,7 +34,7 @@ impl IndexerConfig {
     }
 
     pub fn init(&self) -> Result<()> {
-        let indexer_db = self.get_indexer_db();
+        let indexer_db = self.clone().get_indexer_db();
         if !indexer_db.exists() {
             std::fs::create_dir_all(indexer_db.clone())?;
         }
@@ -50,10 +50,10 @@ impl IndexerConfig {
         self.base().data_dir()
     }
 
-    pub fn get_indexer_db(self) -> PathBuf {
+    pub fn get_indexer_db(&self) -> PathBuf {
         self.data_dir()
             .join(R_DEFAULT_DB_DIR.as_path())
-            .join(ROOCH_INDEXER_DB_FILENAME.as_path())
+            .join(ROOCH_INDEXER_DB_FILENAME)
     }
 }
 

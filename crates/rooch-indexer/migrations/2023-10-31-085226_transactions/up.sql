@@ -1,29 +1,29 @@
 CREATE TABLE transactions (
-    tx_order                            INTEGER      NOT NULL      PRIMARY KEY,
+    tx_order                            BIGINT      NOT NULL      PRIMARY KEY,
     tx_hash                             VARCHAR      NOT NULL,
     transaction_type                    VARCHAR      NOT NULL,
-    sequence_number                     INTEGER      NOT NULL,
+    sequence_number                     BIGINT      NOT NULL,
     multichain_id                       VARCHAR      NOT NULL,
     multichain_raw_address              BLOB         NOT NULL,
     sender                              VARCHAR      NOT NULL,
     action                              VARCHAR      NOT NULL,
     action_type                         SMALLINT     NOT NULL,
     action_raw                          BLOB         NOT NULL,
-    auth_validator_id                   INTEGER      NOT NULL,
+    auth_validator_id                   BIGINT      NOT NULL,
     authenticator_payload               BLOB         NOT NULL,
     tx_accumulator_root                 VARCHAR      NOT NULL,
     transaction_raw                     BLOB         NOT NULL,
 
     state_root                          VARCHAR      NOT NULL,
     event_root                          VARCHAR      NOT NULL,
-    gas_used                            INTEGER      NOT NULL,
+    gas_used                            BIGINT      NOT NULL,
     status                              VARCHAR      NOT NULL,
 
-    tx_order_auth_validator_id          INTEGER      NOT NULL,
+    tx_order_auth_validator_id          BIGINT      NOT NULL,
     tx_order_authenticator_payload      BLOB         NOT NULL,
 
-    created_at                          INTEGER      NOT NULL,
-    updated_at                          INTEGER      NOT NULL,
+    created_at                          BIGINT      NOT NULL,
+    updated_at                          BIGINT      NOT NULL,
     UNIQUE (tx_hash)
 );
 

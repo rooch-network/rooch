@@ -9,7 +9,6 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use clap::Parser;
 use diesel::r2d2::ConnectionManager;
 use diesel::sqlite::SqliteConnection;
 use tracing::info;

@@ -33,6 +33,7 @@ serde_json = { workspace = true }
 regex = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+backoff = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 diesel = { workspace = true }
 diesel-derive-enum = { workspace = true }

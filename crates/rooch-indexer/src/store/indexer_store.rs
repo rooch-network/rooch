@@ -17,6 +17,7 @@ use crate::errors::{Context, IndexerError};
 
 use crate::models::events::StoredEvent;
 use crate::models::transactions::StoredTransaction;
+use crate::schema::{events, transactions};
 use crate::store::diesel_macro::transactional_blocking_with_retry;
 use crate::types::{IndexedEvent, IndexedTransaction};
 use crate::SqliteConnectionPool;
@@ -66,7 +67,7 @@ impl SqliteIndexerStore {
         transactions: Vec<IndexedTransaction>,
     ) -> Result<(), IndexerError> {
         let transactions = transactions
-            .iter()
+            .into_iter()
             .map(StoredTransaction::from)
             .collect::<Vec<_>>();
 
@@ -85,13 +86,7 @@ impl SqliteIndexerStore {
             },
             Duration::from_secs(60)
         )
-        .tap(|_| {
-            info!(
-                elapsed,
-                "Persisted {} chunked transactions",
-                transactions.len()
-            )
-        })
+        .tap(|_| info!("Persisted {} chunked transactions", transactions.len()))
     }
 
     fn persist_events_chunk(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError> {
@@ -116,7 +111,7 @@ impl SqliteIndexerStore {
             },
             Duration::from_secs(60)
         )
-        .tap(|_| info!(elapsed, "Persisted {} chunked events", len))
+        .tap(|_| info!("Persisted {} chunked events", len))
     }
 
     async fn execute_in_blocking_worker<F, R>(&self, f: F) -> Result<R, IndexerError>
@@ -186,7 +181,7 @@ impl IndexerStore for SqliteIndexerStore {
                     e
                 ))
             })?;
-        info!(elapsed, "Persisted {} transactions", len);
+        info!("Persisted {} transactions", len);
         Ok(())
     }
 
@@ -211,7 +206,7 @@ impl IndexerStore for SqliteIndexerStore {
                     e
                 ))
             })?;
-        info!(elapsed, "Persisted {} events", len);
+        info!("Persisted {} events", len);
         Ok(())
     }
 }

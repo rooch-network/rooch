@@ -10,6 +10,8 @@ use move_core_types::account_address::AccountAddress;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::{h256::H256, transaction::MoveOSTransaction};
 use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::fmt::{Display, Formatter};
 
 pub mod authenticator;
 pub mod ethereum;
@@ -24,6 +26,15 @@ pub enum TransactionType {
 impl TransactionType {
     pub fn transaction_type_name(self) -> String {
         self.to_string()
+    }
+}
+
+impl Display for TransactionType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            TransactionType::Rooch => write!(f, "Rooch"),
+            TransactionType::Ethereum => write!(f, "Ethereum"),
+        }
     }
 }
 

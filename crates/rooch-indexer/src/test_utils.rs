@@ -6,27 +6,22 @@ use tokio::task::JoinHandle;
 
 use crate::errors::IndexerError;
 use crate::store::SqliteIndexerStore;
-use crate::utils::reset_database;
 use crate::{new_sqlite_connection_pool, Indexer, IndexerConfig};
 
 /// Spawns an indexer thread with provided SQLite DB url
 pub async fn start_test_indexer(
     config: IndexerConfig,
 ) -> Result<(SqliteIndexerStore, JoinHandle<Result<(), IndexerError>>), anyhow::Error> {
-    let parsed_url = config.base_connection_url()?;
-    let blocking_pool = new_sqlite_connection_pool(&parsed_url)
-        .map_err(|e| anyhow!("unable to connect to SQLite, is it running? {e}"))?;
-    if config.reset_db {
-        reset_database(
-            &mut blocking_pool
-                .get()
-                .map_err(|e| anyhow!("Fail to get sqlite_connection_pool {e}"))?,
-            true,
-        )?;
-    }
+    let indexer_db = config
+        .get_indexer_db()
+        .to_str()
+        .ok_or_else(|| anyhow!("Indexer_db doest not exist"))?
+        .to_string();
+    let blocking_pool = new_sqlite_connection_pool(indexer_db.as_str())
+        .map_err(|e| anyhow!("Unable to connect to SQLite, is it running? {e}"))?;
 
     let store = SqliteIndexerStore::new(blocking_pool);
     let store_clone = store.clone();
-    let handle = tokio::spawn(async move { Indexer::start(&config, store_clone, None).await });
+    let handle = tokio::spawn(async move { Indexer::start(&config, store_clone).await });
     Ok((store, handle))
 }
