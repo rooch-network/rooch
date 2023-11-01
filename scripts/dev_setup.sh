@@ -585,6 +585,23 @@ function install_postgres {
   fi
 }
 
+function install_sqlite3 {
+  PACKAGE_MANAGER=$1
+
+  if [[ "$PACKAGE_MANAGER" == "apt-get" ]] || [[ "$PACKAGE_MANAGER" == "apk" ]]; then
+    install_pkg libsqlite3-dev "$PACKAGE_MANAGER"
+  fi
+  if [[ "$PACKAGE_MANAGER" == "pacman" ]] || [[ "$PACKAGE_MANAGER" == "yum" ]]; then
+    install_pkg sqlite-devel "$PACKAGE_MANAGER"
+  fi
+  if [[ "$PACKAGE_MANAGER" == "dnf" ]]; then
+    install_pkg sqlite-devel "$PACKAGE_MANAGER"
+  fi
+  if [[ "$PACKAGE_MANAGER" == "brew" ]]; then
+    install_pkg sqlite3 "$PACKAGE_MANAGER"
+  fi
+}
+
 function install_lld {
   # Right now, only install lld for linux
   if [[ "$(uname)" == "Linux" ]]; then
@@ -827,6 +844,7 @@ if [[ "$INSTALL_BUILD_TOOLS" == "true" ]]; then
   install_cargo_nextest
   install_grcov
   install_postgres
+  install_sqlite3 "$PACKAGE_MANAGER"
   install_pkg git "$PACKAGE_MANAGER"
   install_lcov "$PACKAGE_MANAGER"
   install_pkg unzip "$PACKAGE_MANAGER"

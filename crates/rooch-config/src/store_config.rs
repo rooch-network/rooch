@@ -14,9 +14,10 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
 
-static R_DEFAULT_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("roochdb"));
+pub static R_DEFAULT_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("roochdb"));
 static R_DEFAULT_DB_MOVEOS_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("moveos_store"));
 static R_DEFAULT_DB_ROOCH_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("rooch_store"));
+
 pub const DEFAULT_CACHE_SIZE: usize = 20000;
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
@@ -56,11 +57,7 @@ pub struct StoreConfig {
 }
 
 impl StoreConfig {
-    pub fn merge_with_opt_then_init(
-        &mut self,
-        opt: &RoochOpt,
-        base: Arc<BaseConfig>,
-    ) -> Result<()> {
+    pub fn merge_with_opt_and_init(&mut self, opt: &RoochOpt, base: Arc<BaseConfig>) -> Result<()> {
         self.merge_with_opt(opt, base)?;
         self.init()?;
         Ok(())

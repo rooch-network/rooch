@@ -121,6 +121,14 @@ impl MoveAction {
         }
     }
 
+    pub fn action_name(&self) -> String {
+        match self {
+            MoveAction::Script(_) => "Script".to_string(),
+            MoveAction::Function(_) => "Function".to_string(),
+            MoveAction::ModuleBundle(_) => "ModuleBundle".to_string(),
+        }
+    }
+
     pub fn new_module_bundle(modules: Vec<Vec<u8>>) -> Self {
         Self::ModuleBundle(modules)
     }

@@ -161,7 +161,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     //Init store
     let base_config = BaseConfig::load_with_opt(opt)?;
     let mut store_config = StoreConfig::default();
-    store_config.merge_with_opt_then_init(opt, Arc::new(base_config))?;
+    store_config.merge_with_opt_and_init(opt, Arc::new(base_config))?;
     let (moveos_store, rooch_store) = init_storage(&store_config)?;
 
     // Init executor

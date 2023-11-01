@@ -4,18 +4,9 @@
 use crate::jsonrpc_types::{
     TransactionExecutionInfoView, TransactionSequenceInfoView, TransactionView,
 };
-use moveos_types::transaction::TransactionExecutionInfo;
-use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
+use rooch_types::transaction::TransactionWithInfo;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-
-/// Transaction with sequence info and execution info.
-#[derive(Debug, Clone)]
-pub struct TransactionWithInfo {
-    pub transaction: TypedTransaction,
-    pub sequence_info: TransactionSequenceInfo,
-    pub execution_info: TransactionExecutionInfo,
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionWithInfoView {

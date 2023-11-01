@@ -468,6 +468,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "async_once"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ce4f10ea3abcd6617873bae9f91d1c5332b4a778bd9ce34d0cd517474c1de82"
+
+[[package]]
 name = "atty"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -545,6 +551,20 @@ dependencies = [
  "rustversion",
  "tower-layer",
  "tower-service",
+]
+
+[[package]]
+name = "backoff"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b62ddb9cb1ec0a098ad4bbf9344d0713fa193ae1a80af55febcff2627b6a00c1"
+dependencies = [
+ "futures-core",
+ "getrandom 0.2.10",
+ "instant",
+ "pin-project-lite",
+ "rand 0.8.5",
+ "tokio",
 ]
 
 [[package]]
@@ -1036,6 +1056,44 @@ dependencies = [
  "libc",
  "pkg-config",
 ]
+
+[[package]]
+name = "cached"
+version = "0.43.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc2fafddf188d13788e7099295a59b99e99b2148ab2195cae454e754cc099925"
+dependencies = [
+ "async-trait",
+ "async_once",
+ "cached_proc_macro",
+ "cached_proc_macro_types",
+ "futures",
+ "hashbrown 0.13.2",
+ "instant",
+ "lazy_static 1.4.0",
+ "once_cell",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "cached_proc_macro"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e10ca87c81aaa3a949dbbe2b5e6c2c45dbc94ba4897e45ea31ff9ec5087be3dc"
+dependencies = [
+ "cached_proc_macro_types",
+ "darling 0.14.4",
+ "proc-macro2 1.0.66",
+ "quote 1.0.33",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "cached_proc_macro_types"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a4f925191b4367301851c6d99b09890311d74b0d43f274c0b34c86d308a3663"
 
 [[package]]
 name = "camino"
@@ -2002,6 +2060,64 @@ name = "deunicode"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d95203a6a50906215a502507c0f879a0ce7ff205a6111e2db2a5ef8e4bb92e43"
+
+[[package]]
+name = "diesel"
+version = "2.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2268a214a6f118fce1838edba3d1561cf0e78d8de785475957a580a7f8c69d33"
+dependencies = [
+ "chrono",
+ "diesel_derives",
+ "libsqlite3-sys",
+ "r2d2",
+ "serde_json",
+ "time 0.3.28",
+]
+
+[[package]]
+name = "diesel-derive-enum"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81c5131a2895ef64741dad1d483f358c2a229a3a2d1b256778cdc5e146db64d4"
+dependencies = [
+ "heck 0.4.1",
+ "proc-macro2 1.0.66",
+ "quote 1.0.33",
+ "syn 2.0.29",
+]
+
+[[package]]
+name = "diesel_derives"
+version = "2.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef8337737574f55a468005a83499da720f20c65586241ffea339db9ecdfd2b44"
+dependencies = [
+ "diesel_table_macro_syntax",
+ "proc-macro2 1.0.66",
+ "quote 1.0.33",
+ "syn 2.0.29",
+]
+
+[[package]]
+name = "diesel_migrations"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6036b3f0120c5961381b570ee20a02432d7e2d27ea60de9578799cf9156914ac"
+dependencies = [
+ "diesel",
+ "migrations_internals",
+ "migrations_macros",
+]
+
+[[package]]
+name = "diesel_table_macro_syntax"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc5557efc453706fed5e4fa85006fe9817c224c3f480a34c7e5959fd700921c5"
+dependencies = [
+ "syn 2.0.29",
+]
 
 [[package]]
 name = "diff"
@@ -4056,6 +4172,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "libsqlite3-sys"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "afc22eff61b133b115c6e8c74e818c628d6d5e7a502afea6f64dee076dd94326"
+dependencies = [
+ "pkg-config",
+ "vcpkg",
+]
+
+[[package]]
 name = "libtest-mimic"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4211,6 +4337,27 @@ dependencies = [
  "psutil",
  "serde_json",
  "timeout-join-handler",
+]
+
+[[package]]
+name = "migrations_internals"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f23f71580015254b020e856feac3df5878c2c7a8812297edd6c0a485ac9dada"
+dependencies = [
+ "serde 1.0.188",
+ "toml 0.7.6",
+]
+
+[[package]]
+name = "migrations_macros"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cce3325ac70e67bbab5bd837a31cae01f1a6db64e0e744a33cb03a543469ef08"
+dependencies = [
+ "migrations_internals",
+ "proc-macro2 1.0.66",
+ "quote 1.0.33",
 ]
 
 [[package]]
@@ -6457,6 +6604,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "r2d2"
+version = "0.8.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51de85fb3fb6524929c8a2eb85e6b6d363de4e8c48f9e2c2eac4944abc181c93"
+dependencies = [
+ "log",
+ "parking_lot 0.12.1",
+ "scheduled-thread-pool",
+]
+
+[[package]]
 name = "radium"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7149,6 +7307,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "rooch-indexer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "backoff",
+ "bcs",
+ "cached",
+ "chrono",
+ "clap 3.2.25",
+ "diesel",
+ "diesel-derive-enum",
+ "diesel_migrations",
+ "fastcrypto",
+ "futures",
+ "hex",
+ "itertools",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-core-types",
+ "move-resource-viewer",
+ "moveos-config",
+ "moveos-types",
+ "once_cell",
+ "parking_lot 0.12.1",
+ "regex",
+ "rooch-config",
+ "rooch-types",
+ "serde 1.0.188",
+ "serde_bytes",
+ "serde_json",
+ "serde_with",
+ "tap",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "rooch-integration-test-runner"
 version = "0.1.0"
 dependencies = [
@@ -7812,6 +8009,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c3733bf4cf7ea0880754e19cb5a462007c4a8c1914bff372ccc95b464f1df88"
 dependencies = [
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "scheduled-thread-pool"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3cbc66816425a074528352f5789333ecff06ca41b36b0b0efdfbb29edc391a19"
+dependencies = [
+ "parking_lot 0.12.1",
 ]
 
 [[package]]

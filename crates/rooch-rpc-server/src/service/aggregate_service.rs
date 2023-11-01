@@ -14,12 +14,11 @@ use moveos_types::moveos_std::object::{Object, ObjectID};
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state_resolver::resource_tag_to_key;
 use moveos_types::transaction::FunctionCall;
-use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionWithInfo;
 use rooch_types::account::BalanceInfo;
 use rooch_types::framework::account_coin_store::AccountCoinStoreModule;
 use rooch_types::framework::coin::{CoinInfo, CoinModule};
 use rooch_types::framework::coin_store::CoinStore;
-use rooch_types::transaction::TransactionSequenceInfoMapping;
+use rooch_types::transaction::{TransactionSequenceInfoMapping, TransactionWithInfo};
 use std::collections::HashMap;
 use tokio::runtime::Handle;
 

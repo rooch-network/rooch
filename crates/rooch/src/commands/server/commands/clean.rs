@@ -19,7 +19,7 @@ impl CleanCommand {
     pub fn execute(self) -> RoochResult<()> {
         let base_config = BaseConfig::load_with_opt(&self.opt)?;
         let mut store_config = StoreConfig::default();
-        store_config.merge_with_opt_then_init(&self.opt, Arc::new(base_config))?;
+        store_config.merge_with_opt_and_init(&self.opt, Arc::new(base_config))?;
 
         let rooch_store_dir = store_config.get_rooch_store_dir();
         let moveos_store_dir = store_config.get_moveos_store_dir();
