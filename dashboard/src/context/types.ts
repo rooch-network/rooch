@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+import { Ed25519Keypair } from '@rooch/sdk'
+
 export type ErrCallbackType = (err: { [key: string]: string }) => void
 export type Callback = () => void
 
@@ -9,10 +11,17 @@ export type AddAccountBySecretKeyParams = {
   rememberMe?: boolean
 }
 
+export enum AccountType {
+  ETH = 'ETH',
+  ROOCH = 'Rooch',
+}
+
 export type AccountDataType = {
+  roochAddress: string
   address: string
-  kp: string | null
+  kp: Ed25519Keypair | null
   activate: boolean
+  type: AccountType
 }
 
 export type AuthValuesType = {

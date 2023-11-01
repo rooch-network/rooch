@@ -18,8 +18,15 @@ import {
   TransactionWithInfoView,
   StateOptions,
   EventOptions,
+  bcsTypes,
 } from '../types'
-import { functionIdToStirng, typeTagToString, encodeArg, toHexString } from '../utils'
+import {
+  functionIdToStirng,
+  typeTagToString,
+  encodeArg,
+  toHexString,
+  addressToSeqNumber,
+} from '../utils'
 import { IProvider } from './interface'
 
 /**
@@ -163,5 +170,38 @@ export class JsonRpcProvider implements IProvider {
     return await this.client.rooch_listStates(access_path, cursor as any, limit.toString(), {
       decode: true,
     } as StateOptions)
+  }
+
+  // Resolve the rooch address
+  async resoleRoochAddress(ethAddress: string): Promise<string> {
+    const multiChainIDEther = 60
+
+    const ma = new bcsTypes.MultiChainAddress(
+      BigInt(multiChainIDEther),
+      addressToSeqNumber(ethAddress),
+    )
+
+    const result = await this.executeViewFunction(
+      '0x3::address_mapping::resolve_or_generate',
+      [],
+      [
+        {
+          type: {
+            Struct: {
+              address: '0x3',
+              module: 'address_mapping',
+              name: 'MultiChainAddress',
+            },
+          },
+          value: ma,
+        },
+      ],
+    )
+
+    if (result && result.vm_status === 'Executed' && result.return_values) {
+      return result.return_values[0].decoded_value as string
+    }
+
+    throw new Error('resolve rooch address fail')
   }
 }

@@ -19,7 +19,7 @@ const devCounterModule = `${devCounterAddress}::counter`
 
 const CounterPage = () => {
   const rooch = useRooch()
-  const session = useSession()
+  const { account } = useSession()
 
   const [value, setValue] = useState<number>(0)
   const [fetch, setFetch] = useState(true)
@@ -29,6 +29,9 @@ const CounterPage = () => {
   }
 
   useEffect(() => {
+    if (loading) {
+      return
+    }
     const fetchCounterValue = async () => {
       const result = await rooch.provider?.executeViewFunction(`${devCounterModule}::value`)
 
@@ -38,9 +41,9 @@ const CounterPage = () => {
     }
 
     fetchCounterValue().finally(() => setFetch(false))
-  }, [rooch])
+  }, [rooch, loading])
 
-  const handlerIncrease = async () => {
+  const handlerIncrease = () => {
     if (loading) {
       return
     }
@@ -49,13 +52,8 @@ const CounterPage = () => {
 
     const func = `${devCounterModule}::increase`
 
-    if (session) {
-      const result = await session.account
-        ?.runFunction(func, [], [], { maxGasAmount: 10000 })
-        .finally(() => setLoading(false))
-      if (result) {
-        setValue(value + 1)
-      }
+    if (account) {
+      account?.runFunction(func, [], [], { maxGasAmount: 10000 }).finally(() => setLoading(false))
     }
   }
 
