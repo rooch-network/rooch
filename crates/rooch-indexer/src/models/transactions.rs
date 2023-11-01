@@ -32,8 +32,8 @@ pub struct StoredTransaction {
     pub sequence_number: i64,
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub multichain_id: String,
-    #[diesel(sql_type = diesel::sql_types::Blob)]
-    pub multichain_raw_address: Vec<u8>,
+    #[diesel(sql_type = diesel::sql_types::Text)]
+    pub multichain_raw_address: String,
     /// the rooch address of sender who send the transaction
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub sender: String,

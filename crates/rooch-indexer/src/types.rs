@@ -23,7 +23,8 @@ pub struct IndexedTransaction {
     pub transaction_type: TransactionType,
     pub sequence_number: u64,
     pub multichain_id: RoochMultiChainID,
-    pub multichain_raw_address: Vec<u8>,
+    //TODO transform to hex
+    pub multichain_raw_address: String,
     /// the rooch address of sender who send the transaction
     pub sender: RoochAddress,
     pub action: MoveAction,

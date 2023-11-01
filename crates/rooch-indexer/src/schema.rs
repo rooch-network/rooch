@@ -34,7 +34,7 @@ diesel::table! {
         transaction_type -> Text,
         sequence_number -> BigInt,
         multichain_id -> Text,
-        multichain_raw_address -> Binary,
+        multichain_raw_address -> Text,
         sender -> Text,
         action -> Text,
         action_type -> SmallInt,

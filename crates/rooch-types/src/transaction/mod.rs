@@ -24,7 +24,7 @@ pub enum TransactionType {
 }
 
 impl TransactionType {
-    pub fn transaction_type_name(self) -> String {
+    pub fn transaction_type_name(&self) -> String {
         self.to_string()
     }
 }
