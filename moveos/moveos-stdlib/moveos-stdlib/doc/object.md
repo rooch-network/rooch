@@ -175,7 +175,7 @@ Generate a new ObjectID from an address
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_singleton_object_id">singleton_object_id</a>&lt;T&gt;(): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_singleton_object_id">singleton_object_id</a>&lt;T&gt;(): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 

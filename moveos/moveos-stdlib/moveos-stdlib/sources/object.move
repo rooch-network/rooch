@@ -62,7 +62,7 @@ module moveos_std::object {
         raw_table::new_table_handle(object_id.id)
     }
 
-    public(friend) fun singleton_object_id<T>(): ObjectID {
+    public fun singleton_object_id<T>(): ObjectID {
         address_to_object_id(
             address::from_bytes(
                 hash::sha3_256(

@@ -127,12 +127,6 @@ module moveos_std::context {
         object::as_ref(object_entity)
     }
 
-    /// Borrow singleton Object from global object storage
-    public fun borrow_singleton<T: key>(self: &Context): &Object<T> {
-        let object_id = object::singleton_object_id<T>();
-        borrow_object(self, object_id)
-    }
-
     /// Borrow mut Object from object store with object_id
     /// If the object is not shared, only the owner can borrow an `&mut Object<T>` from the global object storage
     public fun borrow_mut_object<T: key>(_self: &mut Context, owner: &signer, object_id: ObjectID): &mut Object<T> {
@@ -152,25 +146,10 @@ module moveos_std::context {
         object::as_mut_ref(object_entity)
     }
 
-    #[private_generics(T)]
-    /// Borrow mut singleton Object from global object storage
-    /// Only the module of T can borrow mut singleton Object from object store
-    public fun borrow_mut_singleton<T: key>(_self: &mut Context): &mut Object<T> {
-        let object_id = object::singleton_object_id<T>();
-        let object_entity = object::borrow_mut_from_global<T>(object_id);
-        object::as_mut_ref(object_entity)
-    }
-
     /// Check if the object exists in the global object storage
     public fun exist_object<T: key>(_self: &Context, object_id: ObjectID): bool {
         object::contains_global(object_id)
         //TODO check the object type
-    }
-
-    /// Check if the singleton object exists in the global object storage
-    public fun exist_singleton<T: key>(_self: &Context): bool {
-        let object_id = object::singleton_object_id<T>();
-        exist_object<T>(_self, object_id)
     }
 
     #[test_only]

@@ -27,12 +27,9 @@ and let developers customize the storage
 -  [Function `new_object_with_id`](#0x2_context_new_object_with_id)
 -  [Function `new_singleton`](#0x2_context_new_singleton)
 -  [Function `borrow_object`](#0x2_context_borrow_object)
--  [Function `borrow_singleton`](#0x2_context_borrow_singleton)
 -  [Function `borrow_mut_object`](#0x2_context_borrow_mut_object)
 -  [Function `borrow_mut_object_extend`](#0x2_context_borrow_mut_object_extend)
--  [Function `borrow_mut_singleton`](#0x2_context_borrow_mut_singleton)
 -  [Function `exist_object`](#0x2_context_exist_object)
--  [Function `exist_singleton`](#0x2_context_exist_singleton)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -281,18 +278,6 @@ Any one can borrow an <code>&Object&lt;T&gt;</code> from the global object stora
 
 
 
-<a name="0x2_context_borrow_singleton"></a>
-
-## Function `borrow_singleton`
-
-Borrow singleton Object from global object storage
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_singleton">borrow_singleton</a>&lt;T: key&gt;(self: &<a href="context.md#0x2_context_Context">context::Context</a>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
-</code></pre>
-
-
-
 <a name="0x2_context_borrow_mut_object"></a>
 
 ## Function `borrow_mut_object`
@@ -318,19 +303,6 @@ The module of T can borrow mut Object from object store with any object_id
 
 
 
-<a name="0x2_context_borrow_mut_singleton"></a>
-
-## Function `borrow_mut_singleton`
-
-Borrow mut singleton Object from global object storage
-Only the module of T can borrow mut singleton Object from object store
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_singleton">borrow_mut_singleton</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
-</code></pre>
-
-
-
 <a name="0x2_context_exist_object"></a>
 
 ## Function `exist_object`
@@ -339,16 +311,4 @@ Check if the object exists in the global object storage
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exist_object">exist_object</a>&lt;T: key&gt;(_self: &<a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
-</code></pre>
-
-
-
-<a name="0x2_context_exist_singleton"></a>
-
-## Function `exist_singleton`
-
-Check if the singleton object exists in the global object storage
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exist_singleton">exist_singleton</a>&lt;T: key&gt;(_self: &<a href="context.md#0x2_context_Context">context::Context</a>): bool
 </code></pre>
