@@ -4,13 +4,15 @@
 import MetaMaskSDK from '@metamask/sdk'
 
 import { ChainInfo } from '@rooch/sdk'
+import { AccountDataType } from '../types'
 
 export type ETHValueType = {
   loading: boolean
   hasProvider: boolean
   provider: MetaMaskSDK | undefined
   chainId: string
-  accounts: string[]
+  accounts: Map<string, AccountDataType>
+  activeAccount: AccountDataType | null
   isConnect: boolean
   connect: (china?: ChainInfo) => Promise<void>
   sendTransaction: (params: any[]) => Promise<any>

@@ -18,9 +18,6 @@ import ModeToggler from 'src/@core/layouts/components/shared-components/ModeTogg
 import UserDropdown from 'src/@core/layouts/components/shared-components/UserDropdown'
 import Autocomplete from 'src/layouts/components/Autocomplete'
 
-// ** Hooks
-import { useAuth } from 'src/hooks/useAuth'
-
 interface Props {
   hidden: boolean
   settings: Settings
@@ -31,8 +28,6 @@ interface Props {
 const AppBarContent = (props: Props) => {
   // ** Props
   const { hidden, settings, saveSettings, toggleNavVisibility } = props
-
-  const auth = useAuth()
 
   return (
     <Box
@@ -51,15 +46,7 @@ const AppBarContent = (props: Props) => {
         <ModeToggler settings={settings} saveSettings={saveSettings} />
         <LanguageDropdown settings={settings} saveSettings={saveSettings} />
         <SwitchChainDropdown settings={settings} />
-        <UserDropdown
-          settings={settings}
-          data={Array.from(auth.accounts!).map((k, v) => {
-            return {
-              title: k[1].type,
-              address: k[0],
-            }
-          })}
-        />
+        <UserDropdown settings={settings} />
       </Box>
     </Box>
   )

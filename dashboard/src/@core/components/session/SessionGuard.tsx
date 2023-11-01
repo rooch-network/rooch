@@ -20,7 +20,7 @@ import { useRouter } from 'next/router'
 // ** Hooks Import
 import { useAuth } from 'src/hooks/useAuth'
 import { useSession } from 'src/hooks/useSessionAccount'
-import { AccountType } from '../../../context/auth/types'
+import { AccountType } from 'src/context/types'
 
 interface Props {
   open: boolean
@@ -28,9 +28,6 @@ interface Props {
   onLogout?: () => void
 }
 
-// Todo:
-// option 1 : All scopes are counted here to provide optional authorization when first created
-// option 2 : Each app is authorized separately
 const defaultScope = [
   '0x1::*::*',
   '0x3::*::*',
@@ -101,8 +98,7 @@ const SessionGuard = (props: SessionGuardProps) => {
 
   const auth = useAuth()
   const router = useRouter()
-  const { account, requestAuthorize, close, errorMsg } = useSession()
-
+  const { initialization, account, requestAuthorize, close, errorMsg } = useSession()
   const handleAuth = (scope: Array<string>, maxInactiveInterval: number) => {
     requestAuthorize && requestAuthorize(scope, maxInactiveInterval)
   }
@@ -122,7 +118,7 @@ const SessionGuard = (props: SessionGuardProps) => {
   }
 
   const isSessionInvalid = () => {
-    return account === undefined || account === null
+    return !initialization && (account === undefined || account === null)
   }
 
   return (
