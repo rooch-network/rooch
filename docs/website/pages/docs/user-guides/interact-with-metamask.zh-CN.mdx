@@ -1,9 +1,38 @@
-# Interact with MetaMask
+# 与 MetaMask 交互
 
-1. How to connect to Rooch network which MataMask.
-2. How to switch network.
-3. How to send a tx with MataMask.
-4. How to attach and detach a DApp.
+这一节我们将演示 MetaMask 如何连接 Rooch 网络，如何连接 DApp，如何与 DApp 交互。
+
+MetaMask 第一次与 Rooch Dashboard 交互时，会自动检查是否添加有 Rooch 网络，如果没有则会提示添加。
+
+## 使用 MetaMask 连接 Rooch 网络
+
+点开 [Rooch Dashboard](https://dashboard.rooch.network/login/)，点击 `CONNECT` 按钮，就会自动弹出 MetaMask 的授权页面。
+
+点击 `Approve` 按钮，批准 MetaMask 连接到 Rooch Dashboard：
+
+![](/docs/connect-metamask-add-network.png)
+
+因为当前 MetaMask 连接的是 Etherum 的主网，所以会提示您是否切换到 Rooch 的网络，点击 `Switch network` MetaMask 就会切换到 Rooch 的网络了：
+
+![](/docs/connect-metamask-switch-network.png)
+
+接下来选择要连接到 Rooch 网络的账户，勾选账户后，点击 `Next`：
+
+![](/docs/connect-metamask-account.png)
+
+接下来会显示确认信息，如果没有问题，点击 `Connect` 按钮进行连接：
+
+![](/docs/connect-metamask-confirm.png)
+
+下图显示，MetaMask 已经成功连接到 Rooch Dashboard 了：
+
+![](/docs/connect-metamask-dashboard.png)
+
+接下来，我们点开 MetaMask 检查，看到左上角已经连接到了 Rooch 网络了，此时账户显示的也是 Rooch 的代币余额：
+
+![](/docs/connect-metamask-show.png)
+
+> 注意：我们可以点击左上角的网络图标切换网络。
 
 import { Callout, FileTree } from 'nextra/components'
 
@@ -11,4 +40,7 @@ import { Callout, FileTree } from 'nextra/components'
   TODO:
 
   This document is being improved!
+
+  1. How to send a tx with MetaMask.
+  2. How to attach and detach a DApp.
 </Callout>
