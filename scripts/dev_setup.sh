@@ -589,16 +589,16 @@ function install_sqlite3 {
   PACKAGE_MANAGER=$1
 
   if [[ "$PACKAGE_MANAGER" == "apt-get" ]] || [[ "$PACKAGE_MANAGER" == "apk" ]]; then
-    install_pkg sqlite3 "$PACKAGE_MANAGER"
+    install_pkg libsqlite3-dev "$PACKAGE_MANAGER"
   fi
   if [[ "$PACKAGE_MANAGER" == "pacman" ]] || [[ "$PACKAGE_MANAGER" == "yum" ]]; then
-    install_pkg sqlite3 "$PACKAGE_MANAGER"
+    install_pkg sqlite-devel "$PACKAGE_MANAGER"
   fi
   if [[ "$PACKAGE_MANAGER" == "dnf" ]]; then
     install_pkg sqlite-devel "$PACKAGE_MANAGER"
   fi
   if [[ "$PACKAGE_MANAGER" == "brew" ]]; then
-    install_pkg sqlite "$PACKAGE_MANAGER"
+    install_pkg sqlite3 "$PACKAGE_MANAGER"
   fi
 }
 

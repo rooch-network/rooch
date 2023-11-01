@@ -7,10 +7,10 @@
 
 if [ "$(whoami)" != 'root' ]; then
   sudo apt update
-  sudo apt install git curl clang lld pkg-config libssl-dev libsqlite3-dev
+  sudo apt install git curl clang lld pkg-config libssl-dev
 else
   apt update
-  apt install git curl clang lld pkg-config libssl-dev libsqlite3-dev
+  apt install git curl clang lld pkg-config libssl-dev
 fi
 
 cat << EOF
