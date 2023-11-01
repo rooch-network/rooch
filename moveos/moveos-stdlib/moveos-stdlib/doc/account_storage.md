@@ -75,6 +75,16 @@ The account with the given address already exists
 
 
 
+<a name="0x2_account_storage_ErrorObjectNotExists"></a>
+
+The object not exists in the AccountStorage
+
+
+<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_ErrorObjectNotExists">ErrorObjectNotExists</a>: u64 = 4;
+</code></pre>
+
+
+
 <a name="0x2_account_storage_ErrorResourceAlreadyExists"></a>
 
 The resource with the given type already exists

@@ -93,6 +93,15 @@ module rooch_framework::coin_store {
         merge_to_balance<CoinType>(coin_store, coin);
     }
 
+    // We do not allow to transfer a CoinStore to another account, CoinStore is default ownerd by the system.
+    // Only provide a internal function for account_coin_store.
+    public fun transfer(coin_store_obj: Object<CoinStore>, owner: address){
+        // Cannot transfer a frozen CoinStore
+        // We do not use the frozen Object to represent the frozen CoinStore, because we want allow the T module to unfreeze the CoinStore
+        assert!(!object::borrow(&coin_store_obj).frozen, error::permission_denied(ErrorCoinStoreIsFrozen));
+        object::transfer_extend(coin_store_obj, owner)
+    }
+
     #[private_generics(CoinType)]
     /// Freeze or Unfreeze a CoinStore to prevent withdraw and desposit
     /// This function is for he `CoinType` module to extend,
@@ -111,18 +120,11 @@ module rooch_framework::coin_store {
 
     public(friend) fun create_coin_store_internal<CoinType: key>(ctx: &mut Context): Object<CoinStore>{
         coin::check_coin_info_registered<CoinType>(ctx);
-
         context::new_object(ctx, CoinStore{
             coin_type: type_info::type_name<CoinType>(),
             balance: Balance { value: 0 },
             frozen: false,
         })
-    }
-
-    // We do not allow to transfer a CoinStore to another account, CoinStore is default ownerd by the system.
-    // Only provide a internal function for account_coin_store.
-    public(friend) fun transfer(coin_store_obj: &mut Object<CoinStore>, owner: address){
-        object::transfer_extend(coin_store_obj, owner)
     }
 
     fun check_coin_store_not_frozen(coin_store: &CoinStore) {

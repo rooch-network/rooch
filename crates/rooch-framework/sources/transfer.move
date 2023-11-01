@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_framework::transfer {    
-    use moveos_std::context::Context;
+    use moveos_std::context::{Self, Context};
+    use moveos_std::object::{Self, ObjectID};
     use rooch_framework::account;
     use rooch_framework::account_coin_store;
     use rooch_framework::multichain_address;
@@ -40,5 +41,16 @@ module rooch_framework::transfer {
             address_mapping::bind_no_check(ctx, to, maddress);
         };
         account_coin_store::transfer<CoinType>(ctx, from, to, amount)
+    }
+
+    /// Transfer `from` owned `Object<T>` to `to` account.
+    /// TODO: Currently, we can not pass the `Object<T>` argument by value, so, we use `ObjectID` instead.
+    /// After the `Object<T>` argument can be passed by value, we should change the argument type to `Object<T>`.
+    public entry fun transfer_object<T: key + store>(ctx: &mut Context, from: &signer, to: address, object_id: ObjectID) {
+        if(!account::exists_at(ctx, to)) {
+            account::create_account(ctx, to);
+        };
+        let obj = context::take_object<T>(ctx, from, object_id);
+        object::transfer(obj, to);
     }
 }

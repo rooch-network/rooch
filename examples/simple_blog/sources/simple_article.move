@@ -15,6 +15,7 @@ module simple_blog::simple_article {
     const ErrorDataTooLong: u64 = 1;
     const ErrorNotOwnerAccount: u64 = 2;
 
+    //TODO should we allow Article to be transferred?
     struct Article has key,store {
         version: u64,
         title: String,
@@ -42,7 +43,7 @@ module simple_blog::simple_article {
         owner: &signer,
         title: String,
         body: String,
-    ): Object<Article> {
+    ): ObjectID {
         assert!(std::string::length(&title) <= 200, error::invalid_argument(ErrorDataTooLong));
         assert!(std::string::length(&body) <= 2000, error::invalid_argument(ErrorDataTooLong));
 
@@ -62,8 +63,8 @@ module simple_blog::simple_article {
             id,
         };
         event::emit(ctx, article_created_event);
-        object::transfer(&mut article_obj, owner_addr);
-        article_obj
+        object::transfer(article_obj, owner_addr);
+        id
     }
 
     /// Update article

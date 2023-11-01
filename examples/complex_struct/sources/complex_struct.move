@@ -110,7 +110,7 @@ module rooch_examples::complex_struct {
       let object_id = context::fresh_object_id(ctx);
       let s = new_complex_struct(object_id);
       let complex_object = context::new_object(ctx, s);
-      object::to_permanent(complex_object);
+      object::transfer(complex_object, @rooch_examples);
       let s2 = new_complex_struct(object_id);
       account_storage::global_move_to(ctx, &module_signer, s2);
    }

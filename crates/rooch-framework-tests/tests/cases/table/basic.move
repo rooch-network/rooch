@@ -33,7 +33,7 @@ module test::m {
     public fun save_to_object_storage(ctx: &mut Context, kv: KVStore) : ObjectID {
         let object = context::new_object(ctx, kv);
         let object_id = object::id(&object);
-        object::to_permanent(object);
+        object::to_shared(object);
         object_id
     }
 }

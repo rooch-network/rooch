@@ -22,11 +22,9 @@ module moveos_std::display{
         if (context::exist_object<Display<T>>(ctx, object_id)) {
             context::borrow_mut_object_extend<Display<T>>(ctx, object_id)
         }else{
-            let obj = context::new_singleton(ctx, Display<T> {
+            context::new_singleton(ctx, Display<T> {
                 sample_map: simple_map::create()
-            });
-            object::to_permanent(obj);
-            context::borrow_mut_object_extend<Display<T>>(ctx, object_id)
+            })
         }
     }
 
@@ -38,11 +36,9 @@ module moveos_std::display{
         if (context::exist_object<Display<Object<T>>>(ctx, object_id)) {
             context::borrow_mut_object_extend<Display<Object<T>>>(ctx, object_id)
         }else{
-            let obj = context::new_singleton(ctx, Display<Object<T>> {
+            context::new_singleton(ctx, Display<Object<T>> {
                 sample_map: simple_map::create()
-            });
-            object::to_permanent(obj);
-            context::borrow_mut_object_extend<Display<Object<T>>>(ctx, object_id)
+            })
         }
     }
 
