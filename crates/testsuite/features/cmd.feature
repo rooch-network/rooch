@@ -26,7 +26,6 @@ Feature: Rooch CLI integration tests
       Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}]"
       Then assert: "'{{$.rpc[-1]}}' contains '0x3::timestamp::CurrentTimeMicroseconds'"
       Then stop the server 
-
     @serial
     Scenario: account
       Given a server for account

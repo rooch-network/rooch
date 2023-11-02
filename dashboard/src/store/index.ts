@@ -7,14 +7,16 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux'
 
 // ** Reducers
 import transaction from 'src/store/scan/transaction'
-import state from 'src/store/scan/state'
+import stateView from 'src/store/scan/state/get'
+import statePageView from 'src/store/scan/state/list'
 import session from 'src/store/session'
 
 export const store = configureStore({
   reducer: {
     transaction,
-    state,
     session,
+    stateView,
+    statePageView,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -33,10 +33,10 @@ const MUITableCell = styled(TableCell)<TableCellBaseProps>(({ theme }) => ({
 const TransactionDetail = () => {
   // ** Hook
   const theme = useTheme()
-
-  const { result, status } = useAppSelector((state) => state.transaction)
-
   const router = useRouter()
+
+  // ** States
+  const { result, status } = useAppSelector((state) => state.transaction)
 
   const txHash = router.query.tx_hash
 
