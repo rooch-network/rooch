@@ -7,6 +7,8 @@ import { IProvider } from '../provider'
 import { Ed25519Keypair } from '../utils/keypairs'
 import { Account } from './account'
 import { PrivateKeyAuth } from '../auth'
+import {StatePageView, StateView} from "../generated/client/types.ts";
+import {Bytes} from "../types";
 
 describe('account', () => {
   it('should create Account ok ', async () => {
@@ -17,6 +19,8 @@ describe('account', () => {
       getRpcApiVersion: vi.fn(),
       executeViewFunction: vi.fn(),
       sendRawTransaction: vi.fn(),
+      getStates:vi.fn(),
+      listStates:vi.fn()
     }
 
     const kp = Ed25519Keypair.generate()
@@ -36,6 +40,8 @@ describe('account', () => {
         getRpcApiVersion: vi.fn(),
         executeViewFunction: vi.fn(),
         sendRawTransaction: vi.fn(),
+        getStates:vi.fn(),
+        listStates:vi.fn()
       }
 
       const kp = Ed25519Keypair.generate()
