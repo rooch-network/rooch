@@ -251,7 +251,7 @@ const ETHProvider = ({ children }: Props) => {
     provider: hasProvider ? window.ethereum : null,
     accounts,
     activeAccount,
-    isConnect: hasProvider,
+    isConnect: hasProvider ? window.ethereum?.isConnected() : false,
     sendTransaction,
     waitTxConfirmed,
     addChina,

@@ -272,7 +272,7 @@ const SessionProvider = ({ children }: Props) => {
       window.sessionStorage.setItem(key, pk.export().privateKey)
       const authorizer = new PrivateKeyAuth(pk)
 
-      return new Account(provider, roochAddress, authorizer)
+      return new Account(provider, account.getAddress(), authorizer)
     } catch (err: any) {
       console.log(`registerSessionKey error:`, err)
 
