@@ -4,26 +4,6 @@
 
 为了避免每次提交代码时引入一些错误，我们提供了 `scripts/pr.sh` 脚本，它能帮助我们在向 Rooch 提交 PR（pull request）时，在本地执行 CI 检查。
 
-例如，我们向 `examples` 中贡献示例时，使用 `rooch move new` 初始化项目后，`Move.toml` 文件的项目地址需要使用 `_` 通配符替换外，还需要增加一个 `[dev-addresses]` 表，填写一个用于单元测试的地址。
-
-未向 `examples/quick_start_counter/Move.toml` 添加 `[dev-addresses]` 表：
-
-```shell
-BUILDING quick_start_counter
-Success
-    Finished dev [unoptimized + debuginfo] target(s) in 0.53s
-     Running `target/debug/rooch move test -p examples/quick_start_counter`
-thread 'main' panicked at 'resolve package dep failed: Unresolved addresses found: [
-Named address 'quick_start_counter' in package 'quick_start_counter'
-]
-To fix this, add an entry for each unresolved address to the [addresses] section of examples/quick_start_counter/Move.toml: e.g.,
-[addresses]
-Std = "0x1"
-Alternatively, you can also define [dev-addresses] and call with the -d flag', crates/rooch/src/commands/move_cli/commands/unit_test.rs:64:14
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
-Error: Process completed with exit code 101.
-```
-
 ## 使用
 
 切换到 Rooch 项目的根目录，运行下面的命令：

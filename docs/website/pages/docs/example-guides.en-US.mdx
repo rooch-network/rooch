@@ -28,6 +28,26 @@ move rooch new hello_world
 
 In Rooch's `examples`, the names of the projects we create use `_` connection. As for the actual development, which style to use, please decide according to your preferences.
 
+When we contribute a example to `examples`, after using `rooch move new` to initialize the project, in addition to replacing the project address of the `Move.toml` file with `_` wildcards, we also need to add a `[dev-addresses]` table and fill in a field for unit testing. address.
+
+The `[dev-addresses]` table not added to `examples/quick_start_counter/Move.toml`:
+
+```shell
+BUILDING quick_start_counter
+Success
+    Finished dev [unoptimized + debuginfo] target(s) in 0.53s
+     Running `target/debug/rooch move test -p examples/quick_start_counter`
+thread 'main' panicked at 'resolve package dep failed: Unresolved addresses found: [
+Named address 'quick_start_counter' in package 'quick_start_counter'
+]
+To fix this, add an entry for each unresolved address to the [addresses] section of examples/quick_start_counter/Move.toml: e.g.,
+[addresses]
+Std = "0x1"
+Alternatively, you can also define [dev-addresses] and call with the -d flag', crates/rooch/src/commands/move_cli/commands/unit_test.rs:64:14
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+Error: Process completed with exit code 101.
+```
+
 ## Basic object
 
 This example introduces how to use the Rooch object.
