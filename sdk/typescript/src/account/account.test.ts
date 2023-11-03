@@ -17,6 +17,8 @@ describe('account', () => {
       getRpcApiVersion: vi.fn(),
       executeViewFunction: vi.fn(),
       sendRawTransaction: vi.fn(),
+      getStates: vi.fn(),
+      listStates: vi.fn(),
     }
 
     const kp = Ed25519Keypair.generate()
@@ -36,6 +38,8 @@ describe('account', () => {
         getRpcApiVersion: vi.fn(),
         executeViewFunction: vi.fn(),
         sendRawTransaction: vi.fn(),
+        getStates: vi.fn(),
+        listStates: vi.fn(),
       }
 
       const kp = Ed25519Keypair.generate()
