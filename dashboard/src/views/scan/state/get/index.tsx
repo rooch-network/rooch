@@ -15,7 +15,7 @@ import CardContent from '@mui/material/CardContent'
 import InputAdornment from '@mui/material/InputAdornment'
 
 // ** Store & Actions Imports
-import { fetchData } from 'src/store/scan/state'
+import { fetchData } from 'src/store/scan/state/get'
 import { useAppDispatch, useAppSelector } from 'src/store'
 
 // ** SDK Imports
@@ -23,8 +23,7 @@ import Icon from 'src/@core/components/icon'
 import CardSnippet from 'src/@core/components/card-snippet'
 import { useRooch } from '../../../../hooks/useRooch'
 
-/* eslint-enable */
-const StateList = () => {
+const StateGetView = () => {
   const rooch = useRooch()
 
   // ** State
@@ -32,7 +31,7 @@ const StateList = () => {
 
   // ** Hooks
   const dispatch = useAppDispatch()
-  const { result, status, error } = useAppSelector((state) => state.state)
+  const { result, status, error } = useAppSelector((state) => state.stateView)
 
   const handleSearch = () => {
     dispatch(fetchData({ provider: rooch.provider!, dispatch, accessPath }))
@@ -47,7 +46,6 @@ const StateList = () => {
   const handleKeyUp = useCallback(
     (event: KeyboardEvent) => {
       if (event.keyCode === 13) {
-        console.log(rooch)
         dispatch(fetchData({ provider: rooch.provider!, dispatch, accessPath }))
       }
     },
@@ -114,4 +112,4 @@ const StateList = () => {
   )
 }
 
-export default StateList
+export default StateGetView
