@@ -928,7 +928,7 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
     let mut func_loc_map = BTreeMap::new();
 
     let compiled_module = module_env.get_verified_module();
-    let _view = BinaryIndexedView::Module(compiled_module);
+    let view = BinaryIndexedView::Module(compiled_module);
 
     for ref fun in module_env.get_functions() {
         if extended_checker.has_attribute(fun, DATA_STRUCT_ATTRIBUTE) {
@@ -1044,6 +1044,96 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
                 }
             }
         }
+    }
+
+    for ref fun in module_env.get_functions() {
+        for (_offset, instr) in fun.get_bytecode().iter().enumerate() {
+            if let Bytecode::CallGeneric(finst_idx) = instr {
+                let FunctionInstantiation {
+                    handle,
+                    type_parameters,
+                } = view.function_instantiation_at(*finst_idx);
+
+                let fhandle = view.function_handle_at(*handle);
+                let module_handle = view.module_handle_at(fhandle.module);
+
+                let module_address = view
+                    .address_identifier_at(module_handle.address)
+                    .to_hex_literal();
+
+                let module_name = view.identifier_at(module_handle.name);
+                let func_name = view.identifier_at(fhandle.name).to_string();
+
+                let full_path_func_name =
+                    format!("{}::{}::{}", module_address, module_name, func_name);
+
+                let type_arguments = &view.signature_at(*type_parameters).0;
+
+                let data_struct_func_types = {
+                    unsafe {
+                        GLOBAL_DATA_STRUCT_FUNC
+                            .get(full_path_func_name.as_str())
+                            .map(|list| list.clone())
+                    }
+                };
+
+                if let Some(data_struct_func_indicies) = data_struct_func_types {
+                    for generic_type_index in data_struct_func_indicies {
+                        let type_arg = type_arguments.get(generic_type_index).unwrap();
+
+                        let (is_allowed_struct_type, error_message) =
+                            check_func_data_struct(extended_checker, &view, type_arg);
+
+                        if !is_allowed_struct_type {
+                            extended_checker
+                                .env
+                                .error(&fun.get_loc(), error_message.as_str());
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn check_func_data_struct(
+    extended_checker: &ExtendedChecker,
+    view: &BinaryIndexedView,
+    type_arg: &SignatureToken,
+) -> (bool, String) {
+    match type_arg {
+        SignatureToken::Struct(struct_handle_index) => {
+            let shandle = view.struct_handle_at(*struct_handle_index);
+            let module_id = shandle.module;
+            let module_handle = view.module_handle_at(module_id);
+            let module_address = view.address_identifier_at(module_handle.address);
+            let module_name = view.identifier_at(module_handle.name);
+            let full_module_name = format!("{}::{}", module_address.to_hex_literal(), module_name);
+            let struct_name = view.identifier_at(shandle.name).to_string();
+            let full_struct_name = format!(
+                "{}::{}::{}",
+                module_address.to_hex_literal(),
+                module_name,
+                struct_name
+            );
+
+            let global_env = extended_checker.env;
+            for module in global_env.get_modules() {
+                if module.get_full_name_str() == full_module_name {
+                    for struct_def in module.get_structs() {
+                        if struct_def.get_full_name_with_address() == full_struct_name {
+                            let (error_message, is_allowed) =
+                                check_data_struct_fields(&struct_def, &module);
+                            return (is_allowed, error_message);
+                        }
+                    }
+                }
+            }
+
+            (false, "".to_string())
+        }
+        _ => (false, "".to_string()),
     }
 }
 

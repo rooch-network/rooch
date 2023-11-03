@@ -16,7 +16,12 @@ module rooch_examples::data_struct {
     }
 
     #[data_struct(T)]
-    fun f1<T>(_ctx: &Context): bool{
+    fun f1<T: drop>(_ctx: &Context, _inner: T): bool{
         false
+    }
+
+    fun f2(_ctx: &Context) {
+        let inner = Inner {f_u8: 1};
+        f1(_ctx, inner);
     }
 }
