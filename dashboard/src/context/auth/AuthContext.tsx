@@ -102,7 +102,15 @@ const AuthProvider = ({ children }: Props) => {
       return
     }
 
-    let _accounts = new Map<string, AccountDataType>()
+    const roochAccount = new Map()
+
+    accounts?.forEach((v) => {
+      if (v.type === AccountType.ROOCH) {
+        roochAccount.set(v.address, v)
+      }
+    })
+
+    let _accounts = new Map<string, AccountDataType>(roochAccount)
 
     if (eth.accounts && eth.accounts.size > 0) {
       _accounts = new Map([..._accounts, ...eth.accounts])
@@ -113,6 +121,7 @@ const AuthProvider = ({ children }: Props) => {
     } else {
       setAccounts(null)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eth.accounts, eth.isConnect])
 
   const loginSuccess = () => {
