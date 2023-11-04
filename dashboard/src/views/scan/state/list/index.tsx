@@ -2,24 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // ** React Imports
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import {useState, useEffect, useRef, useMemo, useCallback} from 'react'
 
 // ** Next Import
 import Link from 'next/link'
 
 // ** MUI Imports
 import Card from '@mui/material/Card'
-import { styled } from '@mui/material/styles'
+import {styled} from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
-import { DataGrid, GridColDef } from '@mui/x-data-grid'
+import {DataGrid, GridColDef} from '@mui/x-data-grid'
 
 // ** Store & Actions Imports
-import { fetchData } from 'src/store/scan/state/list'
-import { useAppDispatch, useAppSelector } from 'src/store'
+import {fetchData} from 'src/store/scan/state/list'
+import {useAppDispatch, useAppSelector} from 'src/store'
 
 // ** Utils
-import { formatAddress } from 'src/@core/utils/format'
-import { useRooch } from '../../../../hooks/useRooch'
+import {formatAddress} from 'src/@core/utils/format'
+import {useRooch} from '../../../../hooks/useRooch'
 import CardSnippet from '../../../../@core/components/card-snippet'
 import Grid from '@mui/material/Grid'
 import Spinner from '../../../../@core/components/spinner'
@@ -35,7 +35,7 @@ interface CellType {
 }
 
 // ** Styled components
-const LinkStyled = styled(Link)(({ theme }) => ({
+const LinkStyled = styled(Link)(({theme}) => ({
   fontSize: '1rem',
   textDecoration: 'none',
   color: theme.palette.primary.main,
@@ -45,13 +45,13 @@ const TransactionList = () => {
   // Hook
   const rooch = useRooch()
   const dispatch = useAppDispatch()
-  const { result, status, error } = useAppSelector((state) => state.statePageView)
+  const {result, status, error} = useAppSelector((state) => state.statePageView)
 
   // ** State
   const [accessPath, setAccessPath] = useState<string>('/object/0x1')
   const [cacheResult, setCacheResult] = useState<{ [page: number]: any[] }>({})
 
-  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 })
+  const [paginationModel, setPaginationModel] = useState({page: 0, pageSize: 10})
   const [curStateView, setCurStateView] = useState<any | null>(null)
   const mapPageToNextCursor = useRef<{ [page: number]: Uint8Array | null }>({})
   const queryOptions = useMemo(
@@ -68,7 +68,7 @@ const TransactionList = () => {
       // We add nextCursor when available
       mapPageToNextCursor.current[paginationModel.page] = result.next_cursor
       cacheResult[paginationModel.page] = result.data
-      setCacheResult({ ...cacheResult })
+      setCacheResult({...cacheResult})
       const count = Object.values(cacheResult).reduce((sum, data) => sum + data.length, 0)
       setCount(count)
     }
@@ -147,7 +147,7 @@ const TransactionList = () => {
       minWidth: 90,
       field: 'type',
       headerName: 'Type',
-      renderCell: ({ row }: CellType) => (
+      renderCell: ({row}: CellType) => (
         <LinkStyled
           href="/"
           onClick={(e) => {
@@ -165,8 +165,8 @@ const TransactionList = () => {
       minWidth: 90,
       field: 'id',
       headerName: 'ID',
-      renderCell: ({ row }: CellType) => (
-        <Typography sx={{ color: 'text.secondary' }}>
+      renderCell: ({row}: CellType) => (
+        <Typography sx={{color: 'text.secondary'}}>
           {formatAddress(row.decoded_value.value.id)}
         </Typography>
       ),
@@ -177,8 +177,8 @@ const TransactionList = () => {
       minWidth: 90,
       field: 'owner',
       headerName: 'Owner',
-      renderCell: ({ row }: CellType) => (
-        <Typography sx={{ color: 'text.secondary' }}>
+      renderCell: ({row}: CellType) => (
+        <Typography sx={{color: 'text.secondary'}}>
           {formatAddress(row.decoded_value.value.owner)}
         </Typography>
       ),
@@ -188,55 +188,51 @@ const TransactionList = () => {
   console.log(status, status === 'loading')
 
   return (
-    <Grid container spacing={6}>
-      <Grid item xs={12}>
-        <Card>
-          <CardHeader title="State Filters" />
-          <CardContent>
-            <TextField
-              id="access-path-id"
-              label="Access Path"
-              fullWidth
-              value={accessPath}
-              helperText={error?.toString()}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment
-                    position="end"
-                    sx={{ color: 'text.primary' }}
-                    onClick={handleSearch}
-                  >
-                    <Button size="small">
-                      <Typography mr={2} color="text.disabled">
-                        Enter
-                      </Typography>
-                      <Icon icon="bx:search" />
-                    </Button>
-                  </InputAdornment>
-                ),
-              }}
-              onChange={(v) => setAccessPath(v.target.value)}
-            />
-          </CardContent>
-        </Card>
-      </Grid>
+    <>
+      <Card>
+        <CardHeader title="State Filters"/>
+        <CardContent>
+          <TextField
+            id="access-path-id"
+            label="Access Path"
+            fullWidth
+            value={accessPath}
+            helperText={error?.toString()}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment
+                  position="end"
+                  sx={{color: 'text.primary'}}
+                  onClick={handleSearch}
+                >
+                  <Button size="small">
+                    <Typography mr={2} color="text.disabled">
+                      Enter
+                    </Typography>
+                    <Icon icon="bx:search"/>
+                  </Button>
+                </InputAdornment>
+              ),
+            }}
+            onChange={(v) => setAccessPath(v.target.value)}
+          />
+        </CardContent>
+      </Card>
       {status === 'loading' ? (
-        <Grid item xs={12}>
-          <Spinner />
-        </Grid>
+          <Spinner/>
       ) : (
         <>
-          <Grid item xs={12}>
-            <Card>
+            <Card sx={{mt:6}}>
               <DataGrid
+                autoHeight
                 pagination
                 disableColumnMenu={true}
                 rowCount={status === 'finished' ? (result.has_next_page ? count + 1 : count) : 0}
                 rows={
                   status === 'finished'
                     ? Object.values(cacheResult)
-                        .flat()
-                        .map((row: any) => ({ ...row, id: row.decoded_value.value.id }))
+                      .flat()
+                      .map((row: any) => ({...row, id: row.decoded_value.value.id}))
                     : []
                 }
                 columns={defaultColumns.map((v) => ({
@@ -247,11 +243,9 @@ const TransactionList = () => {
                 onPaginationModelChange={setPaginationModel}
               />
             </Card>
-          </Grid>
-          <Typography sx={{ color: 'text.secondary', ml: 6, mt: 4 }}>
+          <Typography sx={{color: 'text.secondary', ml: 6, mt: 4, mb:4}}>
             {curStateView ? curStateView.decoded_value.type : 'Current Page Raw Data'}
           </Typography>
-          <Grid item xs={12}>
             <CardSnippet
               defaultShow={true}
               fullHeight={true}
@@ -262,10 +256,9 @@ const TransactionList = () => {
                 },
               ]}
             />
-          </Grid>
         </>
       )}
-    </Grid>
+    </>
   )
 }
 

@@ -76,12 +76,10 @@ const StateList = () => {
   }
 
   return (
-    <Grid container spacing={6}>
       <TabContext value={activeTab}>
         <Grid>
           <Grid item xs={12}>
             <TabList
-              sx={{ ml: 6, mt: 6 }}
               variant="scrollable"
               scrollButtons="auto"
               onChange={handleChange}
@@ -120,7 +118,6 @@ const StateList = () => {
             </TabList>
           </Grid>
         </Grid>
-        <Grid item xs={12}>
           {isLoading ? (
             <Box sx={{ mt: 6, display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
               <CircularProgress sx={{ mb: 4 }} />
@@ -134,9 +131,7 @@ const StateList = () => {
               {tabContentList[activeTab]}
             </TabPanel>
           )}
-        </Grid>
       </TabContext>
-    </Grid>
   )
 }
 
