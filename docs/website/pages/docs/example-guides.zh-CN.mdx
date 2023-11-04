@@ -28,6 +28,26 @@ move rooch new hello_world
 
 在 Rooch 的 `examples` 中，我们创建的项目的名字统一使用 `_` 连接，至于实际开发中，使用那种风格，请根据您的喜好决定。
 
+我们向 `examples` 中贡献示例时，使用 `rooch move new` 初始化项目后，`Move.toml` 文件的项目地址需要使用 `_` 通配符替换外，还需要增加一个 `[dev-addresses]` 表，填写一个用于单元测试的地址。
+
+未向 `examples/quick_start_counter/Move.toml` 添加 `[dev-addresses]` 表：
+
+```shell
+BUILDING quick_start_counter
+Success
+    Finished dev [unoptimized + debuginfo] target(s) in 0.53s
+     Running `target/debug/rooch move test -p examples/quick_start_counter`
+thread 'main' panicked at 'resolve package dep failed: Unresolved addresses found: [
+Named address 'quick_start_counter' in package 'quick_start_counter'
+]
+To fix this, add an entry for each unresolved address to the [addresses] section of examples/quick_start_counter/Move.toml: e.g.,
+[addresses]
+Std = "0x1"
+Alternatively, you can also define [dev-addresses] and call with the -d flag', crates/rooch/src/commands/move_cli/commands/unit_test.rs:64:14
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+Error: Process completed with exit code 101.
+```
+
 ## Basic object
 
 This example introduces how to use the Rooch object.

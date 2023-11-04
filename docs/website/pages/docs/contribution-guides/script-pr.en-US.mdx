@@ -1,0 +1,17 @@
+# pr.sh script introduction
+
+When contributing code to Rooch, we need to do some checking.
+
+In order to avoid introducing some bugs every time we submit the code, we provide the `scripts/pr.sh` script, which can help us perform CI checks locally when submitting a PR (pull request) to Rooch.
+
+## Using
+
+Switch to the root directory of the Rooch project and run the following command:
+
+```shell
+./scripts/pr.sh -e
+```
+
+During the process of running the CI check, if a corresponding error occurs, it will be automatically interrupted. Make corresponding modifications to the code to be submitted based on the modification suggestions provided at the check point, and run again.
+
+Until all checks pass, submit your code to Rooch's remote repository.
