@@ -82,12 +82,11 @@ module simple_blog::simple_blog {
     }
 
     public entry fun update_article(
-        ctx: &mut Context,
         article_obj: &mut Object<Article>,
         new_title: String,
         new_body: String,
     ) {
-        simple_article::update_article(ctx, article_obj, new_title, new_body);
+        simple_article::update_article(article_obj, new_title, new_body);
     }
 
     public entry fun delete_article(
@@ -97,6 +96,6 @@ module simple_blog::simple_blog {
     ) {
         delete_article_from_myblog(ctx, owner, article_id);
         let article_obj = context::take_object(ctx, owner, article_id); 
-        simple_article::delete_article(ctx, article_obj);
+        simple_article::delete_article(article_obj);
     }
 }

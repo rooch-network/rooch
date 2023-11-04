@@ -67,7 +67,6 @@ module nft::collection{
         );
         let collection_id = object::id(&collection_obj);
         event::emit(
-            ctx,
             CreateCollectionEvent {
                 object_id: collection_id,
                 name,

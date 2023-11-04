@@ -68,7 +68,7 @@ module rooch_examples::blog {
         }
     }
 
-    struct ArticleAddedToBlog has key {
+    struct ArticleAddedToBlog has drop {
         version: u64,
         article_id: ObjectID,
     }
@@ -87,7 +87,7 @@ module rooch_examples::blog {
         }
     }
 
-    struct ArticleRemovedFromBlog has key {
+    struct ArticleRemovedFromBlog has drop {
         version: u64,
         article_id: ObjectID,
     }
@@ -106,7 +106,7 @@ module rooch_examples::blog {
         }
     }
 
-    struct BlogCreated has key {
+    struct BlogCreated has drop {
         name: String,
     }
 
@@ -122,7 +122,7 @@ module rooch_examples::blog {
         }
     }
 
-    struct BlogUpdated has key {
+    struct BlogUpdated has drop {
         version: u64,
         name: String,
     }
@@ -141,7 +141,7 @@ module rooch_examples::blog {
         }
     }
 
-    struct BlogDeleted has key {
+    struct BlogDeleted has drop {
         version: u64,
     }
 
@@ -196,24 +196,24 @@ module rooch_examples::blog {
         blog.version = blog.version + 1;
     }
 
-    public(friend) fun emit_article_added_to_blog(ctx: &mut Context, article_added_to_blog: ArticleAddedToBlog) {
-        event::emit(ctx, article_added_to_blog);
+    public(friend) fun emit_article_added_to_blog(article_added_to_blog: ArticleAddedToBlog) {
+        event::emit(article_added_to_blog);
     }
 
-    public(friend) fun emit_article_removed_from_blog(ctx: &mut Context, article_removed_from_blog: ArticleRemovedFromBlog) {
-        event::emit(ctx, article_removed_from_blog);
+    public(friend) fun emit_article_removed_from_blog(article_removed_from_blog: ArticleRemovedFromBlog) {
+        event::emit(article_removed_from_blog);
     }
 
-    public(friend) fun emit_blog_created(ctx: &mut Context, blog_created: BlogCreated) {
-        event::emit(ctx, blog_created);
+    public(friend) fun emit_blog_created(blog_created: BlogCreated) {
+        event::emit(blog_created);
     }
 
-    public(friend) fun emit_blog_updated(ctx: &mut Context, blog_updated: BlogUpdated) {
-        event::emit(ctx, blog_updated);
+    public(friend) fun emit_blog_updated(blog_updated: BlogUpdated) {
+        event::emit(blog_updated);
     }
 
-    public(friend) fun emit_blog_deleted(ctx: &mut Context, blog_deleted: BlogDeleted) {
-        event::emit(ctx, blog_deleted);
+    public(friend) fun emit_blog_deleted(blog_deleted: BlogDeleted) {
+        event::emit(blog_deleted);
     }
 
 }

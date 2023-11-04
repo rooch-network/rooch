@@ -42,7 +42,7 @@ module rooch_examples::article_aggregate {
             article_obj,
         );
         article::update_version(article_obj);
-        article::emit_comment_updated(ctx, comment_updated);
+        article::emit_comment_updated(comment_updated);
     }
 
     public entry fun remove_comment(
@@ -63,7 +63,7 @@ module rooch_examples::article_aggregate {
             article_obj,
         );
         article::update_version(article_obj);
-        article::emit_comment_removed(ctx, comment_removed);
+        article::emit_comment_removed(comment_removed);
     }
 
     public entry fun add_comment(
@@ -86,7 +86,7 @@ module rooch_examples::article_aggregate {
             article_obj,
         );
         article::update_version(article_obj);
-        article::emit_comment_added(ctx, comment_added);
+        article::emit_comment_added(comment_added);
     }
 
     public entry fun create(
@@ -107,7 +107,7 @@ module rooch_examples::article_aggregate {
             &article_created,
         );
         article::set_article_created_id(&mut article_created, article_id);
-        article::emit_article_created(ctx, article_created);
+        article::emit_article_created(article_created);
     }
 
     public entry fun update(
@@ -130,7 +130,7 @@ module rooch_examples::article_aggregate {
             article_obj,
         );
         article::update_version(article_obj);
-        article::emit_article_updated(ctx, article_updated);
+        article::emit_article_updated(article_updated);
     }
 
     public entry fun delete(
@@ -150,7 +150,7 @@ module rooch_examples::article_aggregate {
             id,
         );
         article::drop_article(updated_article_obj);
-        article::emit_article_deleted(ctx, article_deleted);
+        article::emit_article_deleted(article_deleted);
     }
 
 }

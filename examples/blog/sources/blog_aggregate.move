@@ -39,7 +39,7 @@ module rooch_examples::blog_aggregate {
             mut_blog,
         );
         blog::update_version(mut_blog);
-        blog::emit_article_added_to_blog(ctx, article_added_to_blog);
+        blog::emit_article_added_to_blog(article_added_to_blog);
     }
 
     public(friend) fun remove_article(
@@ -57,7 +57,7 @@ module rooch_examples::blog_aggregate {
             mut_blog,
         );
         blog::update_version(mut_blog);
-        blog::emit_article_removed_from_blog(ctx, article_removed_from_blog);
+        blog::emit_article_removed_from_blog(article_removed_from_blog);
         article_obj
     }
 
@@ -77,7 +77,7 @@ module rooch_examples::blog_aggregate {
             &blog_created,
         );
         blog::add_blog(ctx, account, blog);
-        blog::emit_blog_created(ctx, blog_created);
+        blog::emit_blog_created(blog_created);
     }
 
     public entry fun update(
@@ -99,7 +99,7 @@ module rooch_examples::blog_aggregate {
             blog,
         );
         blog::update_version_and_add(ctx, account, updated_blog);
-        blog::emit_blog_updated(ctx, blog_updated);
+        blog::emit_blog_updated(blog_updated);
     }
 
     public entry fun delete(
@@ -119,7 +119,7 @@ module rooch_examples::blog_aggregate {
             blog,
         );
         blog::drop_blog(updated_blog);
-        blog::emit_blog_deleted(ctx, blog_deleted);
+        blog::emit_blog_deleted(blog_deleted);
     }
 
 }

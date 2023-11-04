@@ -167,7 +167,7 @@ module rooch_examples::rooch_examples {
             simple_map::add(&mut state_mut_ref.games, next_game_id, new_game);
         };
         account_coin_store::transfer<WGBCOIN>(ctx, account, resouce_address, prize_pool_amount);
-        event::emit(ctx,
+        event::emit(
             CreateGameEvent {
                 game_id: next_game_id,
                 prize_pool_amount,
@@ -204,7 +204,7 @@ module rooch_examples::rooch_examples {
         option::fill(&mut player_data_mut_ref.decision_hash, decision_hash);
         option::fill(&mut player_data_mut_ref.salt_hash, salt_hash);
 
-        event::emit(ctx,
+        event::emit(
             SubmitDecisionEvent {
                 game_id,
                 player_address,
@@ -270,7 +270,7 @@ module rooch_examples::rooch_examples {
                 }else {
                     account_coin_store::transfer<WGBCOIN>(ctx, resouce_account_signer, @rooch_examples, game.prize_pool_amount);
                 };
-                event::emit(ctx,
+                event::emit(
                     ConcludeGameEvent {
                         game_id,
                         player_one_decision: game.player_one.decision,
@@ -283,7 +283,7 @@ module rooch_examples::rooch_examples {
             (game_id, player_address, decision)
         };
         {
-            event::emit(ctx,
+            event::emit(
                 RevealDecisionEvent {
                     game_id,
                     player_address,
@@ -333,7 +333,7 @@ module rooch_examples::rooch_examples {
             );
         };
 
-        event::emit(ctx,
+        event::emit(
             ReleaseFundsAfterExpirationEvent {
                 game_id,
                 player_one_decision: game.player_one.decision,

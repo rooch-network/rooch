@@ -9,9 +9,9 @@ module test::m {
         amount: u64
     }
 
-    public fun emit_withdraw_event(ctx: &mut Context, addr: address, amount: u64) {
+    public fun emit_withdraw_event(addr: address, amount: u64) {
         let withdraw_event = WithdrawEvent{addr, amount};
-        event::emit<WithdrawEvent>(ctx, withdraw_event);
+        event::emit<WithdrawEvent>(withdraw_event);
     }
 }
 
@@ -23,6 +23,6 @@ script {
 
     fun main(ctx: &mut Context) {
         let sender_addr = context::sender(ctx);
-        m::emit_withdraw_event(ctx, sender_addr, 100);
+        m::emit_withdraw_event(sender_addr, 100);
     }
 }
