@@ -20,6 +20,7 @@ module coins::fixed_supply_coin {
     }
 
     const TOTAL_SUPPLY: u256 = 210_000_000_000u256;
+    const DECIMALS: u8 = 1u8;
 
 
     fun init(ctx: &mut Context) {
@@ -27,7 +28,7 @@ module coins::fixed_supply_coin {
             ctx,
             string::utf8(b"Fixed Supply Coin"),
             string::utf8(b"FSC"),
-            1,
+            DECIMALS,
         );
         let coins_signer = signer::module_signer<FSC>();
         // Mint the total supply of coins, and store it to the treasury

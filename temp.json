@@ -1,0 +1,270 @@
+Publish module: CompiledModule { version: 6, self_module_handle_idx: ModuleHandleIndex(0), module_handles: [ModuleHandle { address: AddressIdentifierIndex(0), name: IdentifierIndex(0)
+        }, ModuleHandle { address: AddressIdentifierIndex(1), name: IdentifierIndex(1)
+        }, ModuleHandle { address: AddressIdentifierIndex(2), name: IdentifierIndex(2)
+        }, ModuleHandle { address: AddressIdentifierIndex(2), name: IdentifierIndex(3)
+        }, ModuleHandle { address: AddressIdentifierIndex(2), name: IdentifierIndex(4)
+        }, ModuleHandle { address: AddressIdentifierIndex(2), name: IdentifierIndex(5)
+        }, ModuleHandle { address: AddressIdentifierIndex(3), name: IdentifierIndex(6)
+        }, ModuleHandle { address: AddressIdentifierIndex(3), name: IdentifierIndex(7)
+        }, ModuleHandle { address: AddressIdentifierIndex(3), name: IdentifierIndex(8)
+        }
+    ], struct_handles: [StructHandle { module: ModuleHandleIndex(0), name: IdentifierIndex(9), abilities: [Store, Key,
+            ], type_parameters: []
+        }, StructHandle { module: ModuleHandleIndex(0), name: IdentifierIndex(10), abilities: [Key,
+            ], type_parameters: []
+        }, StructHandle { module: ModuleHandleIndex(3), name: IdentifierIndex(11), abilities: [], type_parameters: []
+        }, StructHandle { module: ModuleHandleIndex(4), name: IdentifierIndex(15), abilities: [Store, Key,
+            ], type_parameters: [StructTypeParameter { constraints: [], is_phantom: true
+                }
+            ]
+        }, StructHandle { module: ModuleHandleIndex(8), name: IdentifierIndex(16), abilities: [Key,
+            ], type_parameters: []
+        }, StructHandle { module: ModuleHandleIndex(7), name: IdentifierIndex(17), abilities: [], type_parameters: [StructTypeParameter { constraints: [Key,
+                    ], is_phantom: true
+                }
+            ]
+        }, StructHandle { module: ModuleHandleIndex(1), name: IdentifierIndex(23), abilities: [Copy, Drop, Store,
+            ], type_parameters: []
+        }
+    ], function_handles: [FunctionHandle { module: ModuleHandleIndex(0), name: IdentifierIndex(12), parameters: SignatureIndex(0), return_: SignatureIndex(1), type_parameters: []
+        }, FunctionHandle { module: ModuleHandleIndex(0), name: IdentifierIndex(13), parameters: SignatureIndex(2), return_: SignatureIndex(1), type_parameters: []
+        }, FunctionHandle { module: ModuleHandleIndex(5), name: IdentifierIndex(18), parameters: SignatureIndex(4), return_: SignatureIndex(5), type_parameters: []
+        }, FunctionHandle { module: ModuleHandleIndex(2), name: IdentifierIndex(19), parameters: SignatureIndex(7), return_: SignatureIndex(8), type_parameters: [
+                [Key,
+                ]
+            ]
+        }, FunctionHandle { module: ModuleHandleIndex(4), name: IdentifierIndex(20), parameters: SignatureIndex(10), return_: SignatureIndex(8), type_parameters: [
+                [Key,
+                ]
+            ]
+        }, FunctionHandle { module: ModuleHandleIndex(8), name: IdentifierIndex(21), parameters: SignatureIndex(12), return_: SignatureIndex(13), type_parameters: [
+                [Key,
+                ]
+            ]
+        }, FunctionHandle { module: ModuleHandleIndex(6), name: IdentifierIndex(22), parameters: SignatureIndex(14), return_: SignatureIndex(1), type_parameters: [
+                [Store, Key,
+                ]
+            ]
+        }, FunctionHandle { module: ModuleHandleIndex(1), name: IdentifierIndex(24), parameters: SignatureIndex(16), return_: SignatureIndex(17), type_parameters: []
+        }, FunctionHandle { module: ModuleHandleIndex(7), name: IdentifierIndex(25), parameters: SignatureIndex(18), return_: SignatureIndex(1), type_parameters: [
+                [Key,
+                ]
+            ]
+        }, FunctionHandle { module: ModuleHandleIndex(5), name: IdentifierIndex(26), parameters: SignatureIndex(1), return_: SignatureIndex(19), type_parameters: [
+                []
+            ]
+        }, FunctionHandle { module: ModuleHandleIndex(7), name: IdentifierIndex(27), parameters: SignatureIndex(20), return_: SignatureIndex(13), type_parameters: [
+                [Key,
+                ]
+            ]
+        }, FunctionHandle { module: ModuleHandleIndex(8), name: IdentifierIndex(28), parameters: SignatureIndex(2), return_: SignatureIndex(21), type_parameters: [
+                [Store, Key,
+                ]
+            ]
+        }, FunctionHandle { module: ModuleHandleIndex(8), name: IdentifierIndex(22), parameters: SignatureIndex(22), return_: SignatureIndex(1), type_parameters: [
+                [Key,
+                ]
+            ]
+        }, FunctionHandle { module: ModuleHandleIndex(2), name: IdentifierIndex(29), parameters: SignatureIndex(23), return_: SignatureIndex(1), type_parameters: [
+                [Key,
+                ]
+            ]
+        }
+    ], field_handles: [FieldHandle { owner: StructDefinitionIndex(1), field: 0
+        }
+    ], friend_decls: [], struct_def_instantiations: [], function_instantiations: [FunctionInstantiation { handle: FunctionHandleIndex(3), type_parameters: SignatureIndex(6)
+        }, FunctionInstantiation { handle: FunctionHandleIndex(4), type_parameters: SignatureIndex(9)
+        }, FunctionInstantiation { handle: FunctionHandleIndex(5), type_parameters: SignatureIndex(11)
+        }, FunctionInstantiation { handle: FunctionHandleIndex(6), type_parameters: SignatureIndex(11)
+        }, FunctionInstantiation { handle: FunctionHandleIndex(8), type_parameters: SignatureIndex(11)
+        }, FunctionInstantiation { handle: FunctionHandleIndex(9), type_parameters: SignatureIndex(11)
+        }, FunctionInstantiation { handle: FunctionHandleIndex(10), type_parameters: SignatureIndex(11)
+        }, FunctionInstantiation { handle: FunctionHandleIndex(11), type_parameters: SignatureIndex(11)
+        }, FunctionInstantiation { handle: FunctionHandleIndex(12), type_parameters: SignatureIndex(11)
+        }, FunctionInstantiation { handle: FunctionHandleIndex(13), type_parameters: SignatureIndex(6)
+        }
+    ], field_instantiations: [], signatures: [Signature([MutableReference(Struct(StructHandleIndex(2))), Reference(Signer)
+        ]), Signature([]), Signature([MutableReference(Struct(StructHandleIndex(2)))
+        ]), Signature([Address, StructInstantiation(StructHandleIndex(5),
+            [Struct(StructHandleIndex(0))
+            ])
+        ]), Signature([Reference(Signer)
+        ]), Signature([Address
+        ]), Signature([Struct(StructHandleIndex(1))
+        ]), Signature([MutableReference(Struct(StructHandleIndex(2))), Address
+        ]), Signature([MutableReference(TypeParameter(0))
+        ]), Signature([Struct(StructHandleIndex(4))
+        ]), Signature([MutableReference(StructInstantiation(StructHandleIndex(3),
+            [TypeParameter(0)
+            ]))
+        ]), Signature([Struct(StructHandleIndex(0))
+        ]), Signature([MutableReference(Struct(StructHandleIndex(4))), U256
+        ]), Signature([StructInstantiation(StructHandleIndex(5),
+            [TypeParameter(0)
+            ])
+        ]), Signature([MutableReference(Struct(StructHandleIndex(2))), Address, StructInstantiation(StructHandleIndex(5),
+            [TypeParameter(0)
+            ])
+        ]), Signature([StructInstantiation(StructHandleIndex(5),
+            [Struct(StructHandleIndex(0))
+            ]), StructInstantiation(StructHandleIndex(3),
+            [Struct(StructHandleIndex(4))
+            ]), Signer
+        ]), Signature([Vector(U8)
+        ]), Signature([Struct(StructHandleIndex(6))
+        ]), Signature([MutableReference(Struct(StructHandleIndex(2))), Struct(StructHandleIndex(6)), Struct(StructHandleIndex(6)), U8
+        ]), Signature([Signer
+        ]), Signature([MutableReference(Struct(StructHandleIndex(2))), U256
+        ]), Signature([StructInstantiation(StructHandleIndex(3),
+            [Struct(StructHandleIndex(4))
+            ])
+        ]), Signature([MutableReference(Struct(StructHandleIndex(4))), StructInstantiation(StructHandleIndex(5),
+            [TypeParameter(0)
+            ])
+        ]), Signature([MutableReference(Struct(StructHandleIndex(2))), Reference(Signer), TypeParameter(0)
+        ])
+    ], identifiers: [Identifier("coin_module_identifier_placeholder"), Identifier("string"), Identifier("account_storage"), Identifier("context"), Identifier("object"), Identifier("signer"), Identifier("account_coin_store"), Identifier("coin"), Identifier("coin_store"), Identifier("COIN_STRUCT_IDENTIFIER_PLACEHOLDER"), Identifier("Treasury"), Identifier("Context"), Identifier("faucet"), Identifier("init"), Identifier("dummy_field"), Identifier("Object"), Identifier("CoinStore"), Identifier("Coin"), Identifier("address_of"), Identifier("global_borrow_mut"), Identifier("borrow_mut"), Identifier("withdraw"), Identifier("deposit"), Identifier("String"), Identifier("utf8"), Identifier("register_extend"), Identifier("module_signer"), Identifier("mint_extend"), Identifier("create_coin_store"), Identifier("global_move_to")
+    ], address_identifiers: [deadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadead,
+        0000000000000000000000000000000000000000000000000000000000000001,
+        0000000000000000000000000000000000000000000000000000000000000002,
+        0000000000000000000000000000000000000000000000000000000000000003
+    ], constant_pool: [Constant { type_: U8, data: [
+                222
+            ]
+        }, Constant { type_: U256, data: [
+                128,
+                2,
+                131,
+                182,
+                28,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
+        }, Constant { type_: Address, data: [
+                222,
+                173,
+                234,
+                222,
+                173,
+                234,
+                222,
+                173,
+                234,
+                222,
+                173,
+                234,
+                222,
+                173,
+                234,
+                222,
+                173,
+                234,
+                222,
+                173,
+                234,
+                222,
+                173,
+                234,
+                222,
+                173,
+                234,
+                222,
+                173,
+                234,
+                222,
+                173
+            ]
+        }, Constant { type_: Vector(U8), data: [
+                21,
+                67,
+                79,
+                73,
+                78,
+                95,
+                78,
+                65,
+                77,
+                69,
+                95,
+                80,
+                76,
+                65,
+                67,
+                69,
+                72,
+                79,
+                76,
+                68,
+                69,
+                82
+            ]
+        }, Constant { type_: Vector(U8), data: [
+                23,
+                67,
+                79,
+                73,
+                78,
+                95,
+                83,
+                89,
+                77,
+                66,
+                79,
+                76,
+                95,
+                80,
+                76,
+                65,
+                67,
+                69,
+                72,
+                79,
+                76,
+                68,
+                69,
+                82
+            ]
+        }
+    ], metadata: [], struct_defs: [StructDefinition { struct_handle: StructHandleIndex(0), field_information: Declared([FieldDefinition { name: IdentifierIndex(14), signature: TypeSignature(Bool)
+                }
+            ])
+        }, StructDefinition { struct_handle: StructHandleIndex(1), field_information: Declared([FieldDefinition { name: IdentifierIndex(8), signature: TypeSignature(StructInstantiation(StructHandleIndex(3),
+                    [Struct(StructHandleIndex(4))
+                    ]))
+                }
+            ])
+        }
+    ], function_defs: [FunctionDefinition { function: FunctionHandleIndex(0), visibility: Public, is_entry: true, acquires_global_resources: [], code: Some(CodeUnit { locals: SignatureIndex(3), code: [MoveLoc(1), Call(2), StLoc(2), CopyLoc(0), LdConst(2), CallGeneric(0), MutBorrowField(FieldHandleIndex(0)), CallGeneric(1), LdU256(10000), CallGeneric(2), StLoc(3), MoveLoc(0), MoveLoc(2), MoveLoc(3), CallGeneric(3), Ret
+                ]
+            })
+        }, FunctionDefinition { function: FunctionHandleIndex(1), visibility: Private, is_entry: false, acquires_global_resources: [], code: Some(CodeUnit { locals: SignatureIndex(15), code: [CopyLoc(0), LdConst(3), Call(7), LdConst(4), Call(7), LdConst(0), CallGeneric(4), CallGeneric(5), StLoc(3), CopyLoc(0), LdConst(1), CallGeneric(6), StLoc(1), CopyLoc(0), CallGeneric(7), StLoc(2), MutBorrowLoc(2), CallGeneric(1), MoveLoc(1), CallGeneric(8), MoveLoc(0), ImmBorrowLoc(3), MoveLoc(2), Pack(1), CallGeneric(9), Ret
+                ]
+            })
+        }
+    ]
+}

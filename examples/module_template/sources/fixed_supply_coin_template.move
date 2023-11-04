@@ -20,7 +20,7 @@ module template_address::coin_module_identifier_placeholder {
     }
     
     const TOTAL_SUPPLY: u256 = 123_321_123_456u256;
-    const DECIMALS: u8 = 222u8;
+    const DECIMALS: u8 = 222u8; 
 
 
     fun init(ctx: &mut Context) {

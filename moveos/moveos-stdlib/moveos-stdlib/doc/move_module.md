@@ -15,11 +15,14 @@
 -  [Function `binding_module_address`](#0x2_move_module_binding_module_address)
 -  [Function `replace_module_identiner`](#0x2_move_module_replace_module_identiner)
 -  [Function `replace_struct_identifier`](#0x2_move_module_replace_struct_identifier)
+-  [Function `replace_string_constant`](#0x2_move_module_replace_string_constant)
 -  [Function `request_init_functions`](#0x2_move_module_request_init_functions)
 -  [Function `replace_address_identifiers`](#0x2_move_module_replace_address_identifiers)
 -  [Function `replace_identifiers`](#0x2_move_module_replace_identifiers)
 -  [Function `replace_addresses_constant`](#0x2_move_module_replace_addresses_constant)
 -  [Function `replace_bytes_constant`](#0x2_move_module_replace_bytes_constant)
+-  [Function `replace_u8_constant`](#0x2_move_module_replace_u8_constant)
+-  [Function `replace_u256_constant`](#0x2_move_module_replace_u256_constant)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -173,6 +176,18 @@ Replace given struct's identifier to the new ones
 
 
 
+<a name="0x2_move_module_replace_string_constant"></a>
+
+## Function `replace_string_constant`
+
+Replace given string constant to the new ones
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_string_constant">replace_string_constant</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_strings: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, new_strings: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
+</code></pre>
+
+
+
 <a name="0x2_move_module_request_init_functions"></a>
 
 ## Function `request_init_functions`
@@ -234,4 +249,30 @@ Native function to replace constant bytes in module binary where the length of
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_bytes_constant">replace_bytes_constant</a>(bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, old_bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, new_bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;): <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+</code></pre>
+
+
+
+<a name="0x2_move_module_replace_u8_constant"></a>
+
+## Function `replace_u8_constant`
+
+Native function to replace constant u8 in module binary where the length of
+<code>old_u8s</code> must equal to that of <code>new_u8s</code>.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_u8_constant">replace_u8_constant</a>(bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, old_u8s: <a href="">vector</a>&lt;u8&gt;, new_u8s: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+</code></pre>
+
+
+
+<a name="0x2_move_module_replace_u256_constant"></a>
+
+## Function `replace_u256_constant`
+
+Native function to replace constant u256 in module binary where the length of
+<code>old_u256s</code> must equal to that of <code>new_u256s</code>.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_u256_constant">replace_u256_constant</a>(bytes: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, old_u256s: <a href="">vector</a>&lt;u256&gt;, new_u256s: <a href="">vector</a>&lt;u256&gt;): <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
 </code></pre>

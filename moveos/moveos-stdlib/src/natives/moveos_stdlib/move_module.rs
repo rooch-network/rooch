@@ -9,6 +9,7 @@ use move_binary_format::{
     errors::{PartialVMError, PartialVMResult},
     normalized, CompiledModule,
 };
+use move_core_types::u256::U256;
 use move_core_types::{
     account_address::AccountAddress,
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
@@ -481,6 +482,104 @@ fn replace_bytes_constant(
     Ok(NativeResult::ok(cost, smallvec![output_modules]))
 }
 
+/***************************************************************************************************
+ * native public(friend) fun replace_u8_constant(
+ *     bytes: vector<vector<u8>>,
+ *     old_u8s: vector<u8>,
+ *     new_u8s: vector<u8>,
+ * ): vector<vector<u8>>;
+ * Native function to replace the u8 constant `old_u8s` to `new_u8s` in module binary.
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct ReplaceU8ConstantfierGasParameters {
+    pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
+}
+
+fn replace_u8_constant(
+    gas_params: &ReplaceU8ConstantfierGasParameters,
+    _context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(args.len() == 3, "Wrong number of arguments");
+    let mut cost = gas_params.base;
+
+    let new_bytes = pop_arg!(args, Vec<u8>);
+    let old_bytes = pop_arg!(args, Vec<u8>);
+    let num = new_bytes.len();
+    if num != old_bytes.len() {
+        return Ok(NativeResult::err(
+            cost,
+            moveos_types::move_std::error::invalid_argument(E_LENTH_NOT_MATCH),
+        ));
+    };
+
+    let bytes_mapping: HashMap<u8, u8> = zip_eq(old_bytes, new_bytes).collect();
+
+    let mut bundle = vec![];
+    for module in pop_arg!(args, Vec<Value>) {
+        let byte_codes = module.value_as::<Vec<u8>>()?;
+        cost += gas_params.per_byte * NumBytes::new(byte_codes.len() as u64);
+        bundle.push(byte_codes);
+    }
+    let output_modules = modify_modules(bundle, |module| {
+        module_replace_constant_u8(module, &bytes_mapping)
+    })?;
+    Ok(NativeResult::ok(cost, smallvec![output_modules]))
+}
+
+/***************************************************************************************************
+ * native public(friend) fun replace_u256_constant(
+ *     bytes: vector<vector<u8>>,
+ *     old_u256s: vector<u256>,
+ *     new_u256s: vector<u256>,
+ * ): vector<vector<u8>>;
+ * Native function to replace the u256 constant `old_u256s` to `new_u256s` in module binary.
+ **************************************************************************************************/
+#[derive(Debug, Clone)]
+pub struct ReplaceU256ConstantfierGasParameters {
+    pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
+}
+
+fn replace_u256_constant(
+    gas_params: &ReplaceU256ConstantfierGasParameters,
+    _context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(args.len() == 3, "Wrong number of arguments");
+    let mut cost = gas_params.base;
+
+    let new_bytes = pop_arg!(args, Vector);
+    let old_bytes = pop_arg!(args, Vector);
+    let num = new_bytes.elem_views().len();
+    if num != old_bytes.elem_views().len() {
+        return Ok(NativeResult::err(
+            cost,
+            moveos_types::move_std::error::invalid_argument(E_LENTH_NOT_MATCH),
+        ));
+    };
+    let num = num as u64;
+    let new_bytes = new_bytes.unpack(&Type::U256, num)?;
+    let old_bytes = old_bytes.unpack(&Type::U256, num)?;
+
+    let bytes_mapping: HashMap<U256, U256> = zip_eq(old_bytes, new_bytes)
+        .map(|(a, b)| Ok((a.value_as::<U256>()?, b.value_as::<U256>()?)))
+        .collect::<PartialVMResult<_>>()?;
+    let mut bundle = vec![];
+    for module in pop_arg!(args, Vec<Value>) {
+        let byte_codes = module.value_as::<Vec<u8>>()?;
+        cost += gas_params.per_byte * NumBytes::new(byte_codes.len() as u64);
+        bundle.push(byte_codes);
+    }
+    let output_modules = modify_modules(bundle, |module| {
+        module_replace_constant_u256(module, &bytes_mapping)
+    })?;
+    Ok(NativeResult::ok(cost, smallvec![output_modules]))
+}
+
 fn modify_modules(
     module_bundles: Vec<Vec<u8>>,
     replace_fn: impl Fn(&mut CompiledModule) -> PartialVMResult<()>,
@@ -596,6 +695,56 @@ fn module_replace_constant_bytes(
     Ok(())
 }
 
+fn module_replace_constant_u8(
+    module: &mut CompiledModule,
+    bytes_mapping: &HashMap<u8, u8>,
+) -> PartialVMResult<()> {
+    // replace u8 in constant.
+    for constant in module.constant_pool.iter_mut() {
+        let constant_value = constant.deserialize_constant().ok_or_else(|| {
+            PartialVMError::new(StatusCode::VALUE_DESERIALIZATION_ERROR)
+                .with_message("cannot deserialize constant".to_string())
+        })?;
+
+        if let MoveValue::U8(val) = constant_value {
+            if let Some(new_value) = bytes_mapping.get(&val) {
+                constant.data = MoveValue::U8(new_value.clone())
+                    .simple_serialize()
+                    .ok_or_else(|| {
+                        PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR)
+                            .with_message("cannot serialize constant".to_string())
+                    })?;
+            }
+        }
+    }
+    Ok(())
+}
+
+fn module_replace_constant_u256(
+    module: &mut CompiledModule,
+    bytes_mapping: &HashMap<U256, U256>,
+) -> PartialVMResult<()> {
+    // replace u256 in constant.
+    for constant in module.constant_pool.iter_mut() {
+        let constant_value = constant.deserialize_constant().ok_or_else(|| {
+            PartialVMError::new(StatusCode::VALUE_DESERIALIZATION_ERROR)
+                .with_message("cannot deserialize constant".to_string())
+        })?;
+
+        if let MoveValue::U256(val) = constant_value {
+            if let Some(new_value) = bytes_mapping.get(&val) {
+                constant.data = MoveValue::U256(new_value.clone())
+                    .simple_serialize()
+                    .ok_or_else(|| {
+                        PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR)
+                            .with_message("cannot serialize constant".to_string())
+                    })?;
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Unpack input `std::string::String` to identifier.
 fn unpack_string_to_identifier(value: Value) -> PartialVMResult<Identifier> {
     let mut fields = value.value_as::<Struct>()?.unpack()?; // std::string::String;
@@ -623,6 +772,8 @@ pub struct GasParameters {
     pub replace_addresses_constant: ReplaceAddressConstantGasParameters,
     pub replace_identifiers: ReplaceIdentifierGasParameters,
     pub replace_bytes_constant: ReplaceBytesConstantfierGasParameters,
+    pub replace_u8_constant: ReplaceU8ConstantfierGasParameters,
+    pub replace_u256_constant: ReplaceU256ConstantfierGasParameters,
 }
 
 impl GasParameters {
@@ -657,6 +808,14 @@ impl GasParameters {
                 per_byte: 0.into(),
             },
             replace_bytes_constant: ReplaceBytesConstantfierGasParameters {
+                base: 0.into(),
+                per_byte: 0.into(),
+            },
+            replace_u8_constant: ReplaceU8ConstantfierGasParameters {
+                base: 0.into(),
+                per_byte: 0.into(),
+            },
+            replace_u256_constant: ReplaceU256ConstantfierGasParameters {
                 base: 0.into(),
                 per_byte: 0.into(),
             },
@@ -709,6 +868,14 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         (
             "replace_bytes_constant",
             make_native(gas_params.replace_bytes_constant, replace_bytes_constant),
+        ),
+        (
+            "replace_u8_constant",
+            make_native(gas_params.replace_u8_constant, replace_u8_constant),
+        ),
+        (
+            "replace_u256_constant",
+            make_native(gas_params.replace_u256_constant, replace_u256_constant),
         ),
     ];
     make_module_natives(natives)
