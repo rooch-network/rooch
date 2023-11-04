@@ -187,10 +187,11 @@ impl RoochAPIServer for RoochServer {
         };
 
         let has_next_page = (data.len() as u64) > limit_of;
-        data.truncate(limit_of as usize);
         let next_cursor = data
             .last()
             .map_or(cursor, |event| Some(event.event_id.event_seq));
+
+        data.truncate(limit_of as usize);
 
         Ok(EventPageView {
             data,
