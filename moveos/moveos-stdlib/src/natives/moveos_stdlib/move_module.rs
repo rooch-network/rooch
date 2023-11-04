@@ -387,7 +387,7 @@ fn replace_identifiers(
         args,
         Type::Struct(CachedStructIndex(0)), // std::string::String
         module_replace_identifiers,
-        |a| unpack_string_to_identifier(a),
+        unpack_string_to_identifier,
     )
 }
 
