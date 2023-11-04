@@ -8,7 +8,6 @@ import { useAuth } from 'src/hooks/useAuth'
 import { useSession } from 'src/hooks/useSessionAccount'
 import { useRooch } from 'src/hooks/useRooch'
 
-import Grid from '@mui/material/Grid'
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
@@ -53,33 +52,37 @@ const PAGE_SIZE = 100
 
 export default function SessionKeyList() {
   const columns: GridColDef[] = [
-    { field: 'authentication_key', headerName: 'Authentication Key', width: 200 },
     {
+      field: 'authentication_key',
+      flex: 0.2,
+      headerName: 'Authentication Key',
+    },
+    {
+      flex: 0.1,
       field: 'scopes',
       headerName: 'Scopes',
-      width: 200,
       valueGetter: (params: GridValueGetterParams) => {
         return (params.row.scopes as Array<string>).join(', ')
       },
     },
     {
       field: 'max_inactive_interval',
+      flex: 0.1,
       headerName: 'Max Inactive Interval',
-      width: 200,
       type: 'number',
     },
     {
       field: 'last_active_time',
+      flex: 0.1,
       headerName: 'Last Active Time',
-      width: 200,
       valueGetter: (params: GridValueGetterParams) => {
         return formatDate(params.row.last_active_time * 1000)
       },
     },
     {
       field: 'create_time',
+      flex: 0.1,
       headerName: 'Create Time',
-      width: 200,
       valueGetter: (params: GridValueGetterParams) => {
         return formatDate(params.row.create_time * 1000)
       },
@@ -87,7 +90,7 @@ export default function SessionKeyList() {
     {
       field: 'action',
       headerName: 'Action',
-      flex: 1,
+      flex: 0.2,
       align: 'right',
       headerAlign: 'right',
       renderCell: (params: GridRenderCellParams) => (
@@ -230,64 +233,57 @@ export default function SessionKeyList() {
   }
 
   return (
-    <Grid item xs={12}>
-      <Card>
-        <CardHeader title="Session Keys" />
-        <CardContent>
-          <Box sx={{ textAlign: 'right', marginBottom: '10px', mr: '20px' }}>
-            <Button
-              variant="contained"
-              color="primary"
-              size="small"
-              onClick={() => handleRefresh()}
-            >
-              Refresh
+    <Card>
+      <CardHeader title="Session Keys" />
+      <CardContent>
+        <Box sx={{ textAlign: 'right', marginBottom: '10px', mr: '20px' }}>
+          <Button variant="contained" color="primary" size="small" onClick={() => handleRefresh()}>
+            Refresh
+          </Button>
+        </Box>
+        <DataGrid
+          rows={status === 'finished' ? result.data : []}
+          loading={status === ('loading' as 'loading')}
+          columns={columns}
+          pageSizeOptions={[10, 25, 50]}
+          onPaginationModelChange={handlePaginationModelChange}
+          paginationModel={paginationModel}
+          autoHeight
+        />
+        <Snackbar
+          open={!!error}
+          autoHideDuration={6000}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert severity="error">{error}</Alert>
+        </Snackbar>
+        <Dialog
+          open={confirmDeleteDialog.open}
+          onClose={handleConfirmDeleteDialogClose}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">{'Confirm Deletion'}</DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              Are you sure you want to delete this Session Key? Once deleted, the user will be
+              logged out and this action cannot be undone.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleConfirmDeleteDialogClose} color="primary">
+              Cancel
             </Button>
-          </Box>
-          <DataGrid
-            rows={status === 'finished' ? result.data : []}
-            loading={status === ('loading' as 'loading')}
-            columns={columns}
-            pageSizeOptions={[10, 25, 50]}
-            onPaginationModelChange={handlePaginationModelChange}
-            paginationModel={paginationModel}
-            autoHeight
-          />
-          <Snackbar
-            open={!!error}
-            autoHideDuration={6000}
-            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-          >
-            <Alert severity="error">{error}</Alert>
-          </Snackbar>
-          <Dialog
-            open={confirmDeleteDialog.open}
-            onClose={handleConfirmDeleteDialogClose}
-            aria-labelledby="alert-dialog-title"
-            aria-describedby="alert-dialog-description"
-          >
-            <DialogTitle id="alert-dialog-title">{'Confirm Deletion'}</DialogTitle>
-            <DialogContent>
-              <DialogContentText id="alert-dialog-description">
-                Are you sure you want to delete this Session Key? Once deleted, the user will be
-                logged out and this action cannot be undone.
-              </DialogContentText>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleConfirmDeleteDialogClose} color="primary">
-                Cancel
-              </Button>
-              <Button
-                onClick={() => handleConfirmRemove(confirmDeleteDialog.authKey)}
-                color="primary"
-                autoFocus
-              >
-                Confirm
-              </Button>
-            </DialogActions>
-          </Dialog>
-        </CardContent>
-      </Card>
-    </Grid>
+            <Button
+              onClick={() => handleConfirmRemove(confirmDeleteDialog.authKey)}
+              color="primary"
+              autoFocus
+            >
+              Confirm
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </CardContent>
+    </Card>
   )
 }

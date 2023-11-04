@@ -21,7 +21,6 @@ import { useAppDispatch, useAppSelector } from 'src/store'
 import { formatAddress } from 'src/@core/utils/format'
 import { useRooch } from '../../../../hooks/useRooch'
 import CardSnippet from '../../../../@core/components/card-snippet'
-import Grid from '@mui/material/Grid'
 import Spinner from '../../../../@core/components/spinner'
 import CardHeader from '@mui/material/CardHeader'
 import CardContent from '@mui/material/CardContent'
@@ -188,84 +187,77 @@ const TransactionList = () => {
   console.log(status, status === 'loading')
 
   return (
-    <Grid container spacing={6}>
-      <Grid item xs={12}>
-        <Card>
-          <CardHeader title="State Filters" />
-          <CardContent>
-            <TextField
-              id="access-path-id"
-              label="Access Path"
-              fullWidth
-              value={accessPath}
-              helperText={error?.toString()}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment
-                    position="end"
-                    sx={{ color: 'text.primary' }}
-                    onClick={handleSearch}
-                  >
-                    <Button size="small">
-                      <Typography mr={2} color="text.disabled">
-                        Enter
-                      </Typography>
-                      <Icon icon="bx:search" />
-                    </Button>
-                  </InputAdornment>
-                ),
-              }}
-              onChange={(v) => setAccessPath(v.target.value)}
-            />
-          </CardContent>
-        </Card>
-      </Grid>
+    <>
+      <Card>
+        <CardHeader title="State Filters" />
+        <CardContent>
+          <TextField
+            id="access-path-id"
+            label="Access Path"
+            fullWidth
+            value={accessPath}
+            helperText={error?.toString()}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment
+                  position="end"
+                  sx={{ color: 'text.primary' }}
+                  onClick={handleSearch}
+                >
+                  <Button size="small">
+                    <Typography mr={2} color="text.disabled">
+                      Enter
+                    </Typography>
+                    <Icon icon="bx:search" />
+                  </Button>
+                </InputAdornment>
+              ),
+            }}
+            onChange={(v) => setAccessPath(v.target.value)}
+          />
+        </CardContent>
+      </Card>
       {status === 'loading' ? (
-        <Grid item xs={12}>
-          <Spinner />
-        </Grid>
+        <Spinner />
       ) : (
         <>
-          <Grid item xs={12}>
-            <Card>
-              <DataGrid
-                pagination
-                disableColumnMenu={true}
-                rowCount={status === 'finished' ? (result.has_next_page ? count + 1 : count) : 0}
-                rows={
-                  status === 'finished'
-                    ? Object.values(cacheResult)
-                        .flat()
-                        .map((row: any) => ({ ...row, id: row.decoded_value.value.id }))
-                    : []
-                }
-                columns={defaultColumns.map((v) => ({
-                  ...v,
-                  sortable: false,
-                }))}
-                paginationModel={paginationModel}
-                onPaginationModelChange={setPaginationModel}
-              />
-            </Card>
-          </Grid>
-          <Typography sx={{ color: 'text.secondary', ml: 6, mt: 4 }}>
+          <Card sx={{ mt: 6 }}>
+            <DataGrid
+              autoHeight
+              pagination
+              disableColumnMenu={true}
+              rowCount={status === 'finished' ? (result.has_next_page ? count + 1 : count) : 0}
+              rows={
+                status === 'finished'
+                  ? Object.values(cacheResult)
+                      .flat()
+                      .map((row: any) => ({ ...row, id: row.decoded_value.value.id }))
+                  : []
+              }
+              columns={defaultColumns.map((v) => ({
+                ...v,
+                sortable: false,
+              }))}
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
+            />
+          </Card>
+          <Typography sx={{ color: 'text.secondary', ml: 6, mt: 4, mb: 4 }}>
             {curStateView ? curStateView.decoded_value.type : 'Current Page Raw Data'}
           </Typography>
-          <Grid item xs={12}>
-            <CardSnippet
-              defaultShow={true}
-              fullHeight={true}
-              codes={[
-                {
-                  code: JSON.stringify(curStateView ?? cacheResult[paginationModel.page], null, 2),
-                  lng: 'json',
-                },
-              ]}
-            />
-          </Grid>
+          <CardSnippet
+            defaultShow={true}
+            fullHeight={true}
+            codes={[
+              {
+                code: JSON.stringify(curStateView ?? cacheResult[paginationModel.page], null, 2),
+                lng: 'json',
+              },
+            ]}
+          />
         </>
       )}
-    </Grid>
+    </>
   )
 }
 

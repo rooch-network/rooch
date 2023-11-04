@@ -76,67 +76,62 @@ const StateList = () => {
   }
 
   return (
-    <Grid container spacing={6}>
-      <TabContext value={activeTab}>
-        <Grid>
-          <Grid item xs={12}>
-            <TabList
-              sx={{ ml: 6, mt: 6 }}
-              variant="scrollable"
-              scrollButtons="auto"
-              onChange={handleChange}
-              aria-label="customized tabs example"
-            >
-              <Tab
-                value="get"
-                label={
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      ...(!hideText && { '& svg': { mr: 2 } }),
-                    }}
-                  >
-                    <Icon icon="bxs-search" />
-                    {!hideText && 'Get'}
-                  </Box>
-                }
-              />
-              <Tab
-                value="list"
-                label={
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      ...(!hideText && { '& svg': { mr: 2 } }),
-                    }}
-                  >
-                    <Icon icon="bx-list-ul" />
-                    {!hideText && 'List'}
-                  </Box>
-                }
-              />
-            </TabList>
-          </Grid>
-        </Grid>
+    <TabContext value={activeTab}>
+      <Grid>
         <Grid item xs={12}>
-          {isLoading ? (
-            <Box sx={{ mt: 6, display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
-              <CircularProgress sx={{ mb: 4 }} />
-              <Typography>Loading...</Typography>
-            </Box>
-          ) : (
-            <TabPanel
-              sx={{ p: 0, border: 0, boxShadow: 0, backgroundColor: 'transparent' }}
-              value={activeTab}
-            >
-              {tabContentList[activeTab]}
-            </TabPanel>
-          )}
+          <TabList
+            variant="scrollable"
+            scrollButtons="auto"
+            onChange={handleChange}
+            aria-label="customized tabs example"
+          >
+            <Tab
+              value="get"
+              label={
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    ...(!hideText && { '& svg': { mr: 2 } }),
+                  }}
+                >
+                  <Icon icon="bxs-search" />
+                  {!hideText && 'Get'}
+                </Box>
+              }
+            />
+            <Tab
+              value="list"
+              label={
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    ...(!hideText && { '& svg': { mr: 2 } }),
+                  }}
+                >
+                  <Icon icon="bx-list-ul" />
+                  {!hideText && 'List'}
+                </Box>
+              }
+            />
+          </TabList>
         </Grid>
-      </TabContext>
-    </Grid>
+      </Grid>
+      {isLoading ? (
+        <Box sx={{ mt: 6, display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
+          <CircularProgress sx={{ mb: 4 }} />
+          <Typography>Loading...</Typography>
+        </Box>
+      ) : (
+        <TabPanel
+          sx={{ p: 0, border: 0, boxShadow: 0, backgroundColor: 'transparent' }}
+          value={activeTab}
+        >
+          {tabContentList[activeTab]}
+        </TabPanel>
+      )}
+    </TabContext>
   )
 }
 
