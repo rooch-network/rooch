@@ -285,11 +285,14 @@ module rooch_framework::account_coin_store {
     }
 
     fun create_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address) {
-        let coin_store_ref = coin_store::create_coin_store_internal<CoinType>(ctx);
-        coin_store::transfer(&mut coin_store_ref, addr);
+        let coin_store = coin_store::create_coin_store_internal<CoinType>(ctx);
+        //Because the account_coin_store module hold the coin store object
+        //So the object is a SystemOwnedObject
+        //If we want to make the CoinStore to be a UserOwnedObject, we need to support a user singleton object
+        //The object id is generated with the address of the account and the coin type
         let coin_stores = account_storage::global_borrow_mut<CoinStores>(ctx, addr);
         let coin_type = type_info::type_name<CoinType>();
-        table::add(&mut coin_stores.coin_stores, coin_type, coin_store_ref);
+        table::add(&mut coin_stores.coin_stores, coin_type, coin_store);
     }
 
 

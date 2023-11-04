@@ -7,7 +7,8 @@ module rooch_framework::transfer_test{
 
     use std::option;
     use std::string;
-    use moveos_std::context::Context;
+    use moveos_std::context::{Self, Context};
+    use moveos_std::object;
     use rooch_framework::account;
     use rooch_framework::transfer;
     use rooch_framework::gas_coin::{Self, GasCoin};
@@ -17,6 +18,9 @@ module rooch_framework::transfer_test{
     use rooch_framework::coin;
     use rooch_framework::account_coin_store;
 
+    struct TestStruct has key, store{
+        value: u64,
+    }
 
     #[test(from = @0x42, to = @0x43)]
     fun test_transfer_coin(from: address, to: address){
@@ -101,6 +105,23 @@ module rooch_framework::transfer_test{
         transfer::transfer_coin<FakeCoin>(&mut ctx, &from, to_addr, 50u256);
         assert!(account::exists_at(&ctx, to_addr), 1000);
         assert!(account_coin_store::balance<FakeCoin>(&ctx, to_addr) == 50u256, 1001);
+        moveos_std::context::drop_test_context(ctx);
+    }
+
+    #[test(from_addr= @0x33, to_addr= @0x66)]
+    fun test_transfer_object(from_addr: address, to_addr: address) {
+        let ctx = rooch_framework::genesis::init_for_test();
+      
+        let from = account::create_account_for_test(&mut ctx, from_addr);
+        let obj = context::new_object(&mut ctx, TestStruct{value: 100});
+        let object_id = object::id(&obj);
+        object::transfer(obj, from_addr);
+
+        transfer::transfer_object<TestStruct>(&mut ctx, &from, to_addr, object_id);
+        
+        let obj = context::borrow_object<TestStruct>(&ctx, object_id);
+        assert!(object::owner(obj)== to_addr, 1001);
+        
         moveos_std::context::drop_test_context(ctx);
     }
 }

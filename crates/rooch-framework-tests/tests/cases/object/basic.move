@@ -15,9 +15,9 @@ module test::m {
         debug::print(&tx_hash);
         // if the tx hash change, need to figure out why.
         assert!(x"7852c5dcbd87e82102dba0db36d44b5a9fb0006b3e828c0b5f0832f70a8ff6ee" == tx_hash, 1000);
-        let obj_ref = context::new_object(ctx, S { v: 1});
-        debug::print(&obj_ref);
-        object::to_permanent(obj_ref);
+        let obj = context::new_object(ctx, S { v: 1});
+        debug::print(&obj);
+        object::transfer(obj, context::sender(ctx));
     }
 
     //We can not use `Object<S>` as transaction argument now.
@@ -29,9 +29,9 @@ module test::m {
     // }
 
     public entry fun mint_cup<T: store>(ctx: &mut Context) {
-        let obj_ref = context::new_object(ctx, Cup<T> { v: 2 });
-        debug::print(&obj_ref);
-        object::to_permanent(obj_ref);
+        let obj = context::new_object(ctx, Cup<T> { v: 2 });
+        debug::print(&obj);
+        object::transfer(obj, context::sender(ctx));
     }
 
     // public entry fun move_cup_to_global<T:store>(ctx: &mut Context, sender: signer, object_s: Object<Cup<S>>) {

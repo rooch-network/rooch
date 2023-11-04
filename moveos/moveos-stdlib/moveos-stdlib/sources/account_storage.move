@@ -7,7 +7,7 @@ module moveos_std::account_storage {
 
     use std::string::String;
     use std::signer;
-    use std::vector;    
+    use std::vector;
     use moveos_std::bcs;
     use moveos_std::type_table::{Self, TypeTable};
     use moveos_std::table::{Self, Table};
@@ -18,11 +18,12 @@ module moveos_std::account_storage {
 
     /// The account with the given address already exists
     const ErrorAccountAlreadyExists: u64 = 1;
-
     /// The resource with the given type already exists
     const ErrorResourceAlreadyExists: u64 = 2;
     /// The resource with the given type not exists 
     const ErrorResourceNotExists: u64 = 3;
+    /// The object not exists in the AccountStorage
+    const ErrorObjectNotExists: u64 = 4;
 
     const NamedTableResource: u64 = 0;
     const NamedTableModule: u64 = 1;
@@ -53,8 +54,8 @@ module moveos_std::account_storage {
             modules: table::new_with_id(named_table_id(account, NamedTableModule)),
         };
         let obj = context::new_object_with_id(ctx, object_id, account_storage);
-        object::transfer_extend(&mut obj, account);
-        object::to_permanent(obj);
+        //FIXME AccountStorage is an UserOwnedObject, how to prevent the user take it from the object storage?
+        object::transfer_extend(obj, account);
     }
 
     /// check if account storage eixst

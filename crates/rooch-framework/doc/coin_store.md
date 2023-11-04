@@ -16,9 +16,9 @@
 -  [Function `is_frozen`](#0x3_coin_store_is_frozen)
 -  [Function `withdraw`](#0x3_coin_store_withdraw)
 -  [Function `deposit`](#0x3_coin_store_deposit)
+-  [Function `transfer`](#0x3_coin_store_transfer)
 -  [Function `freeze_coin_store_extend`](#0x3_coin_store_freeze_coin_store_extend)
 -  [Function `create_coin_store_internal`](#0x3_coin_store_create_coin_store_internal)
--  [Function `transfer`](#0x3_coin_store_transfer)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -195,6 +195,17 @@ Deposit <code>amount</code> Coin<CoinType> to the balance of the passed-in <code
 
 
 
+<a name="0x3_coin_store_transfer"></a>
+
+## Function `transfer`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="transfer.md#0x3_transfer">transfer</a>(coin_store_obj: <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;, owner: <b>address</b>)
+</code></pre>
+
+
+
 <a name="0x3_coin_store_freeze_coin_store_extend"></a>
 
 ## Function `freeze_coin_store_extend`
@@ -216,15 +227,4 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_coin_store_internal">create_coin_store_internal</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;
-</code></pre>
-
-
-
-<a name="0x3_coin_store_transfer"></a>
-
-## Function `transfer`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transfer.md#0x3_transfer">transfer</a>(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&gt;, owner: <b>address</b>)
 </code></pre>

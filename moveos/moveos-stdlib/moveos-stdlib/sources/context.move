@@ -10,7 +10,7 @@ module moveos_std::context {
     use std::error;
     use moveos_std::storage_context::{StorageContext};
     use moveos_std::tx_context::{Self, TxContext};
-    use moveos_std::object::{Self, ObjectID, Object};
+    use moveos_std::object::{Self, ObjectID, UID, Object};
     use moveos_std::tx_meta::{TxMeta};
     use moveos_std::tx_result::{TxResult};
     use moveos_std::signer;
@@ -21,6 +21,7 @@ module moveos_std::context {
     friend moveos_std::event;
 
     const ErrorObjectOwnerNotMatch: u64 = 1;
+    const ErrorObjectNotShared: u64 = 2;
 
     /// Information about the global context include TxContext and StorageContext
     /// We can not put the StorageContext to TxContext, because object module depends on tx_context module,
@@ -65,9 +66,14 @@ module moveos_std::context {
         tx_context::fresh_address(&mut self.tx_context)
     }
 
-    /// Generate a new unique object ID
+    /// Generate a new unique ObjectID
     public fun fresh_object_id(self: &mut Context): ObjectID {
         object::address_to_object_id(tx_context::fresh_address(&mut self.tx_context))
+    }
+
+    /// Generate a new unique ID
+    public fun fresh_uid(self: &mut Context): UID {
+        object::new_uid(fresh_object_id(self))
     }
 
     /// Return the hash of the current transaction
@@ -104,59 +110,59 @@ module moveos_std::context {
     /// Create a new Object, Add the Object to the global object storage and return the Object
     /// Note: the default owner is the `System`, the caller should explicitly transfer the Object to the owner.
     /// The owner can get the `&mut Object` by `borrow_mut_object`
+    ///TODO should we still keep this function?
     public fun new_object<T: key>(self: &mut Context, value: T): Object<T> {
         let id = fresh_object_id(self);
-        object::new(id, value)
+        object::new_with_id(id, value)
     }
 
     public(friend) fun new_object_with_id<T: key>(_self: &mut Context, id: ObjectID, value: T) : Object<T> {
-        object::new(id, value)
+        object::new_with_id(id, value)
     }
 
     #[private_generics(T)]
     /// Create a new singleton object, the object is owned by `System` by default.
     /// Singleton object means the object of `T` is only one instance in the Object Storage.
-    public fun new_singleton<T: key>(_self: &mut Context, value: T): Object<T> {
+    public fun new_singleton<T: key>(_self: &mut Context, value: T): &mut Object<T> {
         object::new_singleton(value)
     }
 
-    /// Borrow Object from object store with object_id
+    /// Borrow Object from object store by object_id
     /// Any one can borrow an `&Object<T>` from the global object storage
     public fun borrow_object<T: key>(_self: &Context, object_id: ObjectID): &Object<T> {
         let object_entity = object::borrow_from_global<T>(object_id);
         object::as_ref(object_entity)
     }
 
-    /// Borrow singleton Object from global object storage
-    public fun borrow_singleton<T: key>(self: &Context): &Object<T> {
-        let object_id = object::singleton_object_id<T>();
-        borrow_object(self, object_id)
+    /// Borrow mut Object by `owner` and `object_id`
+    public fun borrow_mut_object<T: key>(_self: &mut Context, owner: &signer, object_id: ObjectID): &mut Object<T> {
+        let owner_address = signer::address_of(owner);
+        let object_entity = object::borrow_mut_from_global<T>(object_id);
+        assert!(object::owner_internal(object_entity) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
+        object::as_mut_ref(object_entity)
     }
 
-    /// Borrow mut Object from object store with object_id
-    /// If the object is not shared, only the owner can borrow an `&mut Object<T>` from the global object storage
-    public fun borrow_mut_object<T: key>(_self: &mut Context, owner: &signer, object_id: ObjectID): &mut Object<T> {
+    /// Take out the Object by `owner` and `object_id`
+    /// Note: When the Object is taken out, the Object will auto become `SystemOwned` Object.
+    /// TODO find a better name.
+    public fun take_object<T: key>(_self: &mut Context, owner: &signer, object_id: ObjectID): Object<T> {
+        let owner_address = signer::address_of(owner);
+        let object_entity = object::borrow_mut_from_global<T>(object_id);
+        assert!(object::owner_internal(object_entity) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
+        object::mut_entity_as_object(object_entity)
+    }
+
+    /// Borrow mut Shared Object by object_id
+    public fun borrow_mut_object_shared<T: key>(_self: &mut Context, object_id: ObjectID): &mut Object<T> {
         let object_entity = object::borrow_mut_from_global<T>(object_id);
         let obj = object::as_mut_ref(object_entity);
-        if(!object::is_shared(obj)) {
-            let owner_address = signer::address_of(owner);
-            assert!(object::owner(obj) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
-        };
+        assert!(object::is_shared(obj), error::permission_denied(ErrorObjectNotShared));
         obj
     }
 
     #[private_generics(T)]
-    /// The module of T can borrow mut Object from object store with any object_id
+    /// The module of T can borrow mut Object from object store by any object_id
     public fun borrow_mut_object_extend<T: key>(_self: &mut Context, object_id: ObjectID) : &mut Object<T> {
-        let object_entity = object::borrow_mut_from_global<T>(object_id);
-        object::as_mut_ref(object_entity)
-    }
-
-    #[private_generics(T)]
-    /// Borrow mut singleton Object from global object storage
-    /// Only the module of T can borrow mut singleton Object from object store
-    public fun borrow_mut_singleton<T: key>(_self: &mut Context): &mut Object<T> {
-        let object_id = object::singleton_object_id<T>();
         let object_entity = object::borrow_mut_from_global<T>(object_id);
         object::as_mut_ref(object_entity)
     }
@@ -166,13 +172,7 @@ module moveos_std::context {
         object::contains_global(object_id)
         //TODO check the object type
     }
-
-    /// Check if the singleton object exists in the global object storage
-    public fun exist_singleton<T: key>(_self: &Context): bool {
-        let object_id = object::singleton_object_id<T>();
-        exist_object<T>(_self, object_id)
-    }
-
+    
     #[test_only]
     /// Create a Context for unit test
     public fun new_test_context(sender: address): Context {
@@ -220,7 +220,7 @@ module moveos_std::context {
             let obj_value = object::borrow(&obj);
             assert!(obj_value.value == 2, 1000);
         };
-        object::to_permanent(obj);
+        let TestStruct{value:_} = object::remove(obj);
         drop_test_context(ctx);
     }
 
@@ -231,14 +231,13 @@ module moveos_std::context {
         
         let obj = new_object(&mut ctx, TestStruct{value: 1});
         let object_id = object::id(&obj);
-        object::transfer_extend(&mut obj, alice_addr);
+        object::transfer_extend(obj, alice_addr);
 
         //test borrow_object by id
         {
             let _obj = borrow_object<TestStruct>(&mut ctx, object_id);
         };
        
-        object::to_permanent(obj);
         drop_test_context(ctx);
     }
 
@@ -250,7 +249,7 @@ module moveos_std::context {
         
         let obj = new_object(&mut ctx, TestStruct{value: 1});
         let object_id = object::id(&obj);
-        object::transfer_extend(&mut obj, alice_addr);
+        object::transfer_extend(obj, alice_addr);
 
         //test borrow_mut_object by owner
         {
@@ -261,54 +260,26 @@ module moveos_std::context {
         {
             let _obj = borrow_mut_object<TestStruct>(&mut ctx, bob, object_id);
         };
-        object::to_permanent(obj);
         drop_test_context(ctx);
     }
 
-    #[test(alice = @0x42, bob = @0x43)] 
-    fun test_shared_object(alice: &signer, bob: &signer){
+    #[test(alice = @0x42)] 
+    fun test_shared_object(alice: &signer){
         let alice_addr = signer::address_of(alice);
         let ctx = new_test_context(alice_addr);
         
         let obj = new_object(&mut ctx, TestStruct{value: 1});
         let object_id = object::id(&obj);
-        object::transfer_extend(&mut obj, alice_addr);
-
-        //test borrow_mut_object by owner
-        {
-            let _obj = borrow_mut_object<TestStruct>(&mut ctx, alice, object_id);
-        };
-
+        
         object::to_shared(obj);
         // any one can borrow_mut the shared object
         {
-            let obj = borrow_mut_object<TestStruct>(&mut ctx, bob, object_id);
+            let obj = borrow_mut_object_shared<TestStruct>(&mut ctx, object_id);
             assert!(object::is_shared(obj), 1000);
         };
         drop_test_context(ctx);
     }
 
-    #[test(alice = @0x42)]
-    #[expected_failure(abort_code = 327681, location =  moveos_std::object)]
-    fun test_frozen_object_by_owner(alice: &signer){
-        let alice_addr = signer::address_of(alice);
-        let ctx = new_test_context(alice_addr);
-        
-        let obj = new_object(&mut ctx, TestStruct{value: 1});
-        let object_id = object::id(&obj);
-        object::transfer_extend(&mut obj, alice_addr);
-        object::to_frozen(obj);
-        //test borrow_object by owner
-        {
-            let _obj = borrow_object<TestStruct>(&mut ctx, object_id);
-        };
-
-        // none one can borrow_mut from the frozen object
-        {
-            let _obj = borrow_mut_object<TestStruct>(&mut ctx, alice, object_id);
-        };
-        drop_test_context(ctx);
-    }
 
     #[test(alice = @0x42)]
     #[expected_failure(abort_code = 327681, location =  moveos_std::object)]
@@ -318,9 +289,8 @@ module moveos_std::context {
         
         let obj = new_object(&mut ctx, TestStruct{value: 1});
         let object_id = object::id(&obj);
-        object::transfer_extend(&mut obj, alice_addr);
         object::to_frozen(obj);
-        //test borrow_object by owner
+        //test borrow_object
         {
             let _obj = borrow_object<TestStruct>(&mut ctx, object_id);
         };
