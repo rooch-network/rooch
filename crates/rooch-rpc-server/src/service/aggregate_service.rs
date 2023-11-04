@@ -9,7 +9,6 @@ use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
-use moveos_types::moveos_std::event::EventModule;
 use moveos_types::moveos_std::object::{Object, ObjectID};
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state_resolver::resource_tag_to_key;
@@ -241,14 +240,6 @@ impl AggregateService {
                 }
             })
             .collect::<Result<Vec<_>>>()
-    }
-
-    pub async fn get_event_handle(
-        &self,
-        event_handle_type: StructTag,
-    ) -> Result<(ObjectID, AccountAddress, u64)> {
-        let event_module = self.as_module_binding::<EventModule>();
-        event_module.get_event_handle(event_handle_type)
     }
 }
 

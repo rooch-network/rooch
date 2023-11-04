@@ -146,14 +146,41 @@ impl EventID {
 }
 
 /// Entry produced via a call to the `emit_event` builtin.
-#[derive(Hash, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct TransactionEvent {
+    /// The type of the data
+    pub struct_tag: StructTag,
+    /// The data payload of the event
+    #[serde(with = "serde_bytes")]
+    pub event_data: Vec<u8>,
+    /// event index in the transaction events.
+    pub event_index: u64,
+}
+
+impl TransactionEvent {
+    pub fn new(struct_tag: StructTag, event_data: Vec<u8>, event_index: u64) -> Self {
+        Self {
+            struct_tag,
+            event_data,
+            event_index,
+        }
+    }
+
+    /// The event hashs of the transaction will be collect to build the transaction merkle tree root.
+    /// The event hash is the hash of the event data, does not incloude other fields.
+    pub fn hash(&self) -> H256 {
+        h256::sha3_256_of(&self.event_data)
+    }
+}
+
+/// The Event type in the event store
+/// We generate the EventID in the event store, not in the event module.
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Event {
     /// The unique event_id that the event was emitted to
     pub event_id: EventID,
-    // /// For expansion: The number of messages that have been emitted to the path previously
-    // pub sequence_number: u64,
     /// The type of the data
-    pub type_tag: TypeTag,
+    pub struct_tag: StructTag,
     /// The data payload of the event
     #[serde(with = "serde_bytes")]
     pub event_data: Vec<u8>,
@@ -164,13 +191,13 @@ pub struct Event {
 impl Event {
     pub fn new(
         event_id: EventID,
-        type_tag: TypeTag,
+        struct_tag: StructTag,
         event_data: Vec<u8>,
         event_index: u64,
     ) -> Self {
         Self {
             event_id,
-            type_tag,
+            struct_tag,
             event_data,
             event_index,
         }
@@ -188,16 +215,12 @@ impl Event {
         bcs::from_bytes(self.event_data.as_slice()).map_err(Into::into)
     }
 
-    pub fn type_tag(&self) -> &TypeTag {
-        &self.type_tag
+    pub fn struct_tag(&self) -> &StructTag {
+        &self.struct_tag
     }
 
     pub fn is<EventType: MoveStructType>(&self) -> bool {
-        self.type_tag == TypeTag::Struct(Box::new(EventType::struct_tag()))
-    }
-
-    pub fn hash(&self) -> H256 {
-        h256::sha3_256_of(bcs::to_bytes(self).as_ref().unwrap())
+        self.struct_tag == EventType::struct_tag()
     }
 }
 
@@ -208,7 +231,7 @@ impl std::fmt::Debug for Event {
             "Event {{ event_id: {:?}, type: {:?}, event_data: {:?} }}",
             self.event_id,
             // self.sequence_number,
-            self.type_tag,
+            self.struct_tag,
             hex::encode(&self.event_data)
         )
     }
@@ -223,34 +246,27 @@ impl std::fmt::Display for Event {
 /// A Rust representation of an Event Handle Resource.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EventHandle {
-    /// Number of events in the event stream.
-    count: u64,
     /// each event handle corresponds to a unique event handle id
-    event_handle_id: ObjectID,
-    /// event handle create address
-    sender: AccountAddress,
+    pub id: ObjectID,
+    /// Number of events in the event stream.
+    pub count: u64,
 }
 
 impl EventHandle {
     /// Constructs a new Event Handle
-    pub fn new(event_handle_id: ObjectID, count: u64, sender: AccountAddress) -> Self {
-        EventHandle {
-            event_handle_id,
-            count,
-            sender,
-        }
+    pub fn new(id: ObjectID, count: u64) -> Self {
+        EventHandle { id, count }
     }
 
     /// Return the event_id to where this event is stored in EventDB.
-    pub fn event_handle_id(&self) -> &ObjectID {
-        &self.event_handle_id
+    pub fn id(&self) -> &ObjectID {
+        &self.id
     }
     /// Return the counter for the handle
     pub fn count(&self) -> u64 {
         self.count
     }
 
-    #[cfg(any(test, feature = "fuzzing"))]
     pub fn count_mut(&mut self) -> &mut u64 {
         &mut self.count
     }

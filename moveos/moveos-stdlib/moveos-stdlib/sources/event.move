@@ -101,16 +101,15 @@ module moveos_std::event {
     ///
     /// The type T is the main way to index the event, and can contain
     /// phantom parameters, eg. emit(MyEvent<phantom T>).
-    public fun emit<T>(ctx: &mut Context, event: T) {
-        ensure_event_handle<T>(ctx);
-        let event_handle_id = derive_event_handle_id<T>();
-        let event_handle_ref = borrow_event_handle_mut<T>(ctx);
-        native_emit<T>(&event_handle_id, event_handle_ref.counter, event);
-        event_handle_ref.counter = event_handle_ref.counter + 1;
+    public fun emit<T>(_ctx: &mut Context, event: T) {
+        //ensure_event_handle<T>(ctx);
+        //let event_handle_ref = borrow_event_handle_mut<T>(ctx);
+        native_emit<T>(event);
+        //event_handle_ref.counter = event_handle_ref.counter + 1;
     }
 
     /// Native procedure that writes to the actual event stream in Event store
-    native fun native_emit<T>(event_handle_id: &ObjectID, count: u64, event: T);
+    native fun native_emit<T>(event: T);
 
     #[test_only]
     struct WithdrawEvent has key {

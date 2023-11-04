@@ -4,10 +4,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::move_types::type_tag_match;
+use crate::move_types::struct_tag_match;
 use crate::moveos_std::event::Event;
 use anyhow::Result;
-use move_core_types::language_storage::TypeTag;
+use move_core_types::language_storage::StructTag;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::serde_as;
@@ -26,7 +26,7 @@ pub enum EventFilter {
     MoveEventType(
         // #[schemars(with = "String")]
         // #[serde_as(as = "TypeTag")]
-        TypeTag,
+        StructTag,
     ),
     MoveEventField {
         path: String,
@@ -65,7 +65,9 @@ pub enum EventFilter {
 impl EventFilter {
     fn try_matches(&self, item: &Event) -> Result<bool> {
         Ok(match self {
-            EventFilter::MoveEventType(event_type) => type_tag_match(&item.type_tag, event_type),
+            EventFilter::MoveEventType(event_type) => {
+                struct_tag_match(&item.struct_tag, event_type)
+            }
             EventFilter::MoveEventField { path: _, value: _ } => {
                 // matches!(item.decoded_event_data.pointer(path), Some(v) if v == value)
                 false

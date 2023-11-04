@@ -33,7 +33,7 @@ use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
-use moveos_types::move_types::{as_struct_tag, FunctionId};
+use moveos_types::move_types::FunctionId;
 use moveos_types::moveos_std::event::AnnotatedEvent;
 use moveos_types::moveos_std::event::EventHandle;
 use moveos_types::moveos_std::tx_context::TxContext;
@@ -634,10 +634,8 @@ impl Handler<GetEventsByEventIDsMessage> for ExecutorActor {
             .into_iter()
             .map(|v| match v {
                 Some(event) => {
-                    let event_move_value = MoveValueAnnotator::new(resolver).view_resource(
-                        &as_struct_tag(event.type_tag.clone())?,
-                        event.event_data(),
-                    )?;
+                    let event_move_value = MoveValueAnnotator::new(resolver)
+                        .view_resource(event.struct_tag(), event.event_data())?;
                     Ok(Some(AnnotatedEvent::new(event, event_move_value)))
                 }
                 None => Ok(None),
@@ -661,9 +659,8 @@ impl Handler<GetEventsMessage> for ExecutorActor {
         events
             .into_iter()
             .map(|event| {
-                let struct_tag = as_struct_tag(event.type_tag.clone())?;
                 let event_move_value = MoveValueAnnotator::new(resolver)
-                    .view_resource(&struct_tag, event.event_data())?;
+                    .view_resource(&event.struct_tag, &event.event_data)?;
                 Ok(AnnotatedEvent::new(event, event_move_value))
             })
             .collect::<Result<Vec<_>>>()

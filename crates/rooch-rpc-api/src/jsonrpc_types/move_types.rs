@@ -10,7 +10,6 @@ use move_core_types::{
     u256,
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
-use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types::parse_module_id;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::moveos_std::type_info::TypeInfo;
@@ -23,6 +22,7 @@ use moveos_types::{
     transaction::{FunctionCall, ScriptCall},
 };
 use moveos_types::{move_std::ascii::MoveAsciiString, state::MoveStructType};
+use moveos_types::{move_std::string::MoveString, moveos_std::event::TransactionEvent};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -354,7 +354,7 @@ pub enum EventFilterView {
     MoveEventType(
         // #[schemars(with = "String")]
         // #[serde_as(as = "TypeTag")]
-        TypeTagView,
+        StructTagView,
     ),
     MoveEventField {
         path: String,
@@ -421,9 +421,28 @@ impl From<EventFilterView> for EventFilter {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+pub struct TransactionEventView {
+    pub struct_tag: StructTagView,
+    pub event_data: StrView<Vec<u8>>,
+    pub event_index: u64,
+    pub decoded_event_data: Option<AnnotatedMoveStructView>,
+}
+
+impl From<TransactionEvent> for TransactionEventView {
+    fn from(event: TransactionEvent) -> Self {
+        TransactionEventView {
+            struct_tag: event.struct_tag.into(),
+            event_data: StrView(event.event_data),
+            event_index: event.event_index,
+            decoded_event_data: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct EventView {
     pub event_id: EventID,
-    pub type_tag: TypeTagView,
+    pub struct_tag: StructTagView,
     pub event_data: BytesView,
     pub event_index: u64,
     pub decoded_event_data: Option<AnnotatedMoveStructView>,
@@ -433,7 +452,7 @@ impl From<Event> for EventView {
     fn from(event: Event) -> Self {
         EventView {
             event_id: event.event_id,
-            type_tag: event.type_tag.into(),
+            struct_tag: event.struct_tag.into(),
             event_data: StrView(event.event_data),
             event_index: event.event_index,
             decoded_event_data: None,
@@ -445,7 +464,7 @@ impl From<EventView> for Event {
     fn from(event: EventView) -> Self {
         Event {
             event_id: event.event_id,
-            type_tag: event.type_tag.into(),
+            struct_tag: event.struct_tag.into(),
             event_data: event.event_data.0,
             event_index: event.event_index,
         }
@@ -456,7 +475,7 @@ impl From<AnnotatedEvent> for EventView {
     fn from(event: AnnotatedEvent) -> Self {
         EventView {
             event_id: event.event.event_id,
-            type_tag: event.event.type_tag.into(),
+            struct_tag: event.event.struct_tag.into(),
             event_data: StrView(event.event.event_data),
             event_index: event.event.event_index,
             decoded_event_data: Some(event.decoded_event_data.into()),

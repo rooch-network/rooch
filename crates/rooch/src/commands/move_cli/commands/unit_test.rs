@@ -10,6 +10,7 @@ use move_package::BuildConfig;
 use move_unit_test::extensions::set_extension_hook;
 use move_vm_runtime::native_extensions::NativeContextExtensions;
 use moveos_stdlib::natives::moveos_stdlib::{
+    event::NativeEventContext,
     move_module::NativeModuleContext,
     raw_table::{NativeTableContext, TableData},
 };
@@ -108,7 +109,8 @@ fn new_moveos_natives_runtime(ext: &mut NativeContextExtensions) {
     let table_data = Arc::new(RwLock::new(TableData::default()));
     let table_ext = NativeTableContext::new(statedb, table_data);
     let module_ext = NativeModuleContext::new(statedb);
-
+    let event_ext = NativeEventContext::default();
     ext.add(table_ext);
     ext.add(module_ext);
+    ext.add(event_ext);
 }

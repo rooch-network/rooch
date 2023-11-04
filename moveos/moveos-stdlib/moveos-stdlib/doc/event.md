@@ -87,5 +87,5 @@ The type T is the main way to index the event, and can contain
 phantom parameters, eg. emit(MyEvent<phantom T>).
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_emit">emit</a>&lt;T&gt;(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="event.md#0x2_event">event</a>: T)
+<pre><code><b>public</b> <b>fun</b> <a href="event.md#0x2_event_emit">emit</a>&lt;T&gt;(_ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="event.md#0x2_event">event</a>: T)
 </code></pre>
