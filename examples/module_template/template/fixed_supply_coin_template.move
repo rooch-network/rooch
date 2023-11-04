@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module template_address::coin_module_identifier_placeholder {
+module 0xdeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadead::coin_module_identifier_placeholder {
 
     use std::string;
     use moveos_std::signer;
@@ -42,7 +42,7 @@ module template_address::coin_module_identifier_placeholder {
     /// In a real world scenario, the coins should be given out in the application business logic.
     public entry fun faucet(ctx: &mut Context, account: &signer) {
         let account_addr = signer::address_of(account);
-        let treasury = account_storage::global_borrow_mut<Treasury>(ctx, @template_address);
+        let treasury = account_storage::global_borrow_mut<Treasury>(ctx, @0xdeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadead);
         let coin = coin_store::withdraw<COIN_STRUCT_IDENTIFIER_PLACEHOLDER>(object::borrow_mut(&mut treasury.coin_store), 10000);
         account_coin_store::deposit(ctx, account_addr, coin);
     }
