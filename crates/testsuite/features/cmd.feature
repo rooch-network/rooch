@@ -159,8 +159,8 @@ Feature: Rooch CLI integration tests
 
       Then stop the server
 
- @serial
-    Scenario: coins example
+  @serial
+  Scenario: coins example
       Given a server for coins
       Then cmd: "account create"
       Then cmd: "move publish -p ../../examples/coins --sender-account {default} --named-addresses coins={default}"
@@ -170,3 +170,14 @@ Feature: Rooch CLI integration tests
 
       Then stop the server
 
+  @serial
+  Scenario: Issue a coin through entry function
+    Given a server for issue_coin
+    Then cmd: "move publish -p ../../examples/module_template/ --sender-account {default} --named-addresses rooch_examples={default}"
+    Then cmd: "move run --function {default}::coin_factory::register_fixed_supply_coin --args string:my_coin  --args string:"My first coin" --args string:MyCoin --args 1010101u256 --args 8u8  --sender-account {default}"
+    Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+    # check module `my_coin` is published
+    Then cmd: "move run --function {default}::my_coin::faucet --sender-account {default}"
+    Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+    Then stop the server

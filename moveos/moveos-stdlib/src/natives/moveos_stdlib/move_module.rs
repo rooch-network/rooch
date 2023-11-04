@@ -28,11 +28,8 @@ use move_vm_types::{
 };
 use moveos_stdlib_builder::dependency_order::sort_by_dependency_order;
 use smallvec::smallvec;
+use std::collections::{BTreeSet, HashMap, VecDeque};
 use std::hash::Hash;
-use std::{
-    collections::{BTreeSet, HashMap, VecDeque},
-    marker::PhantomData,
-};
 
 // ========================================================================================
 
@@ -279,7 +276,7 @@ fn module_replace_template<C, F, TF>(
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
-    arg_type: Type,
+    element_type: Type,
     modify_fn: F,
     type_cast_fn: TF,
 ) -> PartialVMResult<NativeResult>
@@ -300,8 +297,8 @@ where
         ));
     };
     let vec_len = vec_len as u64;
-    let new_values = new_vec.unpack(&arg_type, vec_len)?;
-    let old_values = old_vec.unpack(&arg_type, vec_len)?;
+    let new_values = new_vec.unpack(&element_type, vec_len)?;
+    let old_values = old_vec.unpack(&element_type, vec_len)?;
 
     let address_mapping: HashMap<C, C> = zip_eq(old_values, new_values)
         .map(|(a, b)| Ok((type_cast_fn(a)?, type_cast_fn(b)?)))
@@ -440,6 +437,31 @@ fn replace_u8_constant(
         Type::U8,
         module_replace_constants,
         |a| a.value_as::<u8>(),
+    )
+}
+
+/***************************************************************************************************
+ * native public(friend) fun replace_u64_constant(
+ *     bytes: vector<vector<u8>>,
+ *     old_u64s: vector<u64>,
+ *     new_u64s: vector<u64>,
+ * ): vector<vector<u8>>;
+ * Native function to replace the u64 constant `old_u64s` to `new_u64s` in module binary.
+ **************************************************************************************************/
+fn replace_u64_constant(
+    gas_params: &ModuleModifyGasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    module_replace_template(
+        gas_params,
+        context,
+        ty_args,
+        args,
+        Type::U64,
+        module_replace_constants,
+        |a| a.value_as::<u64>(),
     )
 }
 
@@ -680,6 +702,7 @@ pub struct GasParameters {
     pub replace_identifiers: ModuleModifyGasParameters,
     pub replace_bytes_constant: ModuleModifyGasParameters,
     pub replace_u8_constant: ModuleModifyGasParameters,
+    pub replace_u64_constant: ModuleModifyGasParameters,
     pub replace_u256_constant: ModuleModifyGasParameters,
 }
 
@@ -719,6 +742,10 @@ impl GasParameters {
                 per_byte: 0.into(),
             },
             replace_u8_constant: ModuleModifyGasParameters {
+                base: 0.into(),
+                per_byte: 0.into(),
+            },
+            replace_u64_constant: ModuleModifyGasParameters {
                 base: 0.into(),
                 per_byte: 0.into(),
             },
@@ -779,6 +806,10 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         (
             "replace_u8_constant",
             make_native(gas_params.replace_u8_constant, replace_u8_constant),
+        ),
+        (
+            "replace_u64_constant",
+            make_native(gas_params.replace_u64_constant, replace_u64_constant),
         ),
         (
             "replace_u256_constant",
