@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // ** React Imports
-import {useState, useRef, useMemo, useEffect} from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 
-import {useAuth} from 'src/hooks/useAuth'
-import {useSession} from 'src/hooks/useSessionAccount'
-import {useRooch} from 'src/hooks/useRooch'
+import { useAuth } from 'src/hooks/useAuth'
+import { useSession } from 'src/hooks/useSessionAccount'
+import { useRooch } from 'src/hooks/useRooch'
 
-import Grid from '@mui/material/Grid'
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
@@ -30,8 +29,8 @@ import {
 } from '@mui/x-data-grid'
 
 // ** Store & Actions Imports
-import {fetchData, removeRow} from 'src/store/session'
-import {useAppDispatch, useAppSelector} from 'src/store'
+import { fetchData, removeRow } from 'src/store/session'
+import { useAppDispatch, useAppSelector } from 'src/store'
 
 const formatDate = (timestamp: number) => {
   if (timestamp === 0) {
@@ -128,7 +127,7 @@ export default function SessionKeyList() {
 
   // ** Hooks
   const dispatch = useAppDispatch()
-  const {result, status, error} = useAppSelector((state) => state.session)
+  const { result, status, error } = useAppSelector((state) => state.session)
 
   useEffect(() => {
     const defaultAccount = auth.defaultAccount
@@ -235,15 +234,10 @@ export default function SessionKeyList() {
 
   return (
     <Card>
-      <CardHeader title="Session Keys"/>
+      <CardHeader title="Session Keys" />
       <CardContent>
-        <Box sx={{textAlign: 'right', marginBottom: '10px', mr: '20px'}}>
-          <Button
-            variant="contained"
-            color="primary"
-            size="small"
-            onClick={() => handleRefresh()}
-          >
+        <Box sx={{ textAlign: 'right', marginBottom: '10px', mr: '20px' }}>
+          <Button variant="contained" color="primary" size="small" onClick={() => handleRefresh()}>
             Refresh
           </Button>
         </Box>
@@ -259,7 +253,7 @@ export default function SessionKeyList() {
         <Snackbar
           open={!!error}
           autoHideDuration={6000}
-          anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
           <Alert severity="error">{error}</Alert>
         </Snackbar>

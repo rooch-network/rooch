@@ -76,62 +76,62 @@ const StateList = () => {
   }
 
   return (
-      <TabContext value={activeTab}>
-        <Grid>
-          <Grid item xs={12}>
-            <TabList
-              variant="scrollable"
-              scrollButtons="auto"
-              onChange={handleChange}
-              aria-label="customized tabs example"
-            >
-              <Tab
-                value="get"
-                label={
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      ...(!hideText && { '& svg': { mr: 2 } }),
-                    }}
-                  >
-                    <Icon icon="bxs-search" />
-                    {!hideText && 'Get'}
-                  </Box>
-                }
-              />
-              <Tab
-                value="list"
-                label={
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      ...(!hideText && { '& svg': { mr: 2 } }),
-                    }}
-                  >
-                    <Icon icon="bx-list-ul" />
-                    {!hideText && 'List'}
-                  </Box>
-                }
-              />
-            </TabList>
-          </Grid>
+    <TabContext value={activeTab}>
+      <Grid>
+        <Grid item xs={12}>
+          <TabList
+            variant="scrollable"
+            scrollButtons="auto"
+            onChange={handleChange}
+            aria-label="customized tabs example"
+          >
+            <Tab
+              value="get"
+              label={
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    ...(!hideText && { '& svg': { mr: 2 } }),
+                  }}
+                >
+                  <Icon icon="bxs-search" />
+                  {!hideText && 'Get'}
+                </Box>
+              }
+            />
+            <Tab
+              value="list"
+              label={
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    ...(!hideText && { '& svg': { mr: 2 } }),
+                  }}
+                >
+                  <Icon icon="bx-list-ul" />
+                  {!hideText && 'List'}
+                </Box>
+              }
+            />
+          </TabList>
         </Grid>
-          {isLoading ? (
-            <Box sx={{ mt: 6, display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
-              <CircularProgress sx={{ mb: 4 }} />
-              <Typography>Loading...</Typography>
-            </Box>
-          ) : (
-            <TabPanel
-              sx={{ p: 0, border: 0, boxShadow: 0, backgroundColor: 'transparent' }}
-              value={activeTab}
-            >
-              {tabContentList[activeTab]}
-            </TabPanel>
-          )}
-      </TabContext>
+      </Grid>
+      {isLoading ? (
+        <Box sx={{ mt: 6, display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
+          <CircularProgress sx={{ mb: 4 }} />
+          <Typography>Loading...</Typography>
+        </Box>
+      ) : (
+        <TabPanel
+          sx={{ p: 0, border: 0, boxShadow: 0, backgroundColor: 'transparent' }}
+          value={activeTab}
+        >
+          {tabContentList[activeTab]}
+        </TabPanel>
+      )}
+    </TabContext>
   )
 }
 
