@@ -635,7 +635,7 @@ impl Handler<GetEventsByEventIDsMessage> for ExecutorActor {
             .map(|v| match v {
                 Some(event) => {
                     let event_move_value = MoveValueAnnotator::new(resolver)
-                        .view_resource(event.struct_tag(), event.event_data())?;
+                        .view_resource(event.event_type(), event.event_data())?;
                     Ok(Some(AnnotatedEvent::new(event, event_move_value)))
                 }
                 None => Ok(None),
@@ -660,7 +660,7 @@ impl Handler<GetEventsMessage> for ExecutorActor {
             .into_iter()
             .map(|event| {
                 let event_move_value = MoveValueAnnotator::new(resolver)
-                    .view_resource(&event.struct_tag, &event.event_data)?;
+                    .view_resource(&event.event_type, &event.event_data)?;
                 Ok(AnnotatedEvent::new(event, event_move_value))
             })
             .collect::<Result<Vec<_>>>()

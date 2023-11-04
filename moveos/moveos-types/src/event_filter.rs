@@ -66,7 +66,7 @@ impl EventFilter {
     fn try_matches(&self, item: &Event) -> Result<bool> {
         Ok(match self {
             EventFilter::MoveEventType(event_type) => {
-                struct_tag_match(&item.struct_tag, event_type)
+                struct_tag_match(&item.event_type, event_type)
             }
             EventFilter::MoveEventField { path: _, value: _ } => {
                 // matches!(item.decoded_event_data.pointer(path), Some(v) if v == value)

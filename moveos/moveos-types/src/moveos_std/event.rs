@@ -149,7 +149,7 @@ impl EventID {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionEvent {
     /// The type of the data
-    pub struct_tag: StructTag,
+    pub event_type: StructTag,
     /// The data payload of the event
     #[serde(with = "serde_bytes")]
     pub event_data: Vec<u8>,
@@ -158,9 +158,9 @@ pub struct TransactionEvent {
 }
 
 impl TransactionEvent {
-    pub fn new(struct_tag: StructTag, event_data: Vec<u8>, event_index: u64) -> Self {
+    pub fn new(event_type: StructTag, event_data: Vec<u8>, event_index: u64) -> Self {
         Self {
-            struct_tag,
+            event_type,
             event_data,
             event_index,
         }
@@ -180,7 +180,7 @@ pub struct Event {
     /// The unique event_id that the event was emitted to
     pub event_id: EventID,
     /// The type of the data
-    pub struct_tag: StructTag,
+    pub event_type: StructTag,
     /// The data payload of the event
     #[serde(with = "serde_bytes")]
     pub event_data: Vec<u8>,
@@ -191,13 +191,13 @@ pub struct Event {
 impl Event {
     pub fn new(
         event_id: EventID,
-        struct_tag: StructTag,
+        event_type: StructTag,
         event_data: Vec<u8>,
         event_index: u64,
     ) -> Self {
         Self {
             event_id,
-            struct_tag,
+            event_type,
             event_data,
             event_index,
         }
@@ -215,12 +215,12 @@ impl Event {
         bcs::from_bytes(self.event_data.as_slice()).map_err(Into::into)
     }
 
-    pub fn struct_tag(&self) -> &StructTag {
-        &self.struct_tag
+    pub fn event_type(&self) -> &StructTag {
+        &self.event_type
     }
 
     pub fn is<EventType: MoveStructType>(&self) -> bool {
-        self.struct_tag == EventType::struct_tag()
+        self.event_type == EventType::struct_tag()
     }
 }
 
@@ -230,8 +230,7 @@ impl std::fmt::Debug for Event {
             f,
             "Event {{ event_id: {:?}, type: {:?}, event_data: {:?} }}",
             self.event_id,
-            // self.sequence_number,
-            self.struct_tag,
+            self.event_type,
             hex::encode(&self.event_data)
         )
     }

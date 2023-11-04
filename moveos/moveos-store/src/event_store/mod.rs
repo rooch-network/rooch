@@ -93,7 +93,7 @@ impl EventDBStore {
     pub fn save_events(&self, tx_events: Vec<TransactionEvent>) -> Result<Vec<EventID>> {
         let event_types = tx_events
             .iter()
-            .map(|event| event.struct_tag.clone())
+            .map(|event| event.event_type.clone())
             .collect::<HashSet<_>>();
         let mut event_handles = event_types
             .into_iter()
@@ -107,12 +107,12 @@ impl EventDBStore {
             .into_iter()
             .map(|tx_event| {
                 let handle = event_handles
-                    .get_mut(&tx_event.struct_tag)
+                    .get_mut(&tx_event.event_type)
                     .expect("Event handle must exist");
                 let event_id = EventID::new(handle.id, handle.count);
                 let event = Event::new(
                     event_id,
-                    tx_event.struct_tag,
+                    tx_event.event_type,
                     tx_event.event_data,
                     tx_event.event_index,
                 );

@@ -113,13 +113,13 @@ fn test_event_store() {
     let event_ids = store.save_events(tx_events.clone()).unwrap();
     assert_eq!(event_ids.len(), 2);
     let event0 = store.get_event(event_ids[0]).unwrap().unwrap();
-    assert_eq!(event0.struct_tag, tx_events[0].struct_tag);
+    assert_eq!(event0.event_type, tx_events[0].event_type);
     assert_eq!(event0.event_data, tx_events[0].event_data);
     assert_eq!(event0.event_index, tx_events[0].event_index);
     assert_eq!(event0.event_id.event_seq, 0);
 
     let event1 = store.get_event(event_ids[1]).unwrap().unwrap();
-    assert_eq!(event1.struct_tag, tx_events[1].struct_tag);
+    assert_eq!(event1.event_type, tx_events[1].event_type);
     assert_eq!(event1.event_data, tx_events[1].event_data);
     assert_eq!(event1.event_index, tx_events[1].event_index);
     assert_eq!(event1.event_id.event_seq, 1);
