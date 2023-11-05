@@ -3,8 +3,7 @@
 //# publish
 module test::m {
     use moveos_std::event;
-    use moveos_std::context::Context;
-    struct WithdrawEvent{
+    struct WithdrawEvent has drop {
         addr: address,
         amount: u64
     }
