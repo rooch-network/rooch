@@ -16,7 +16,7 @@ pub struct StoredEvent {
     pub event_seq: i64,
     /// the type of the event data
     #[diesel(sql_type = diesel::sql_types::Text)]
-    pub struct_tag: String,
+    pub event_type: String,
     /// the data payload of the event
     #[diesel(sql_type = diesel::sql_types::Blob)]
     pub event_data: Vec<u8>,
@@ -45,7 +45,7 @@ impl From<IndexedEvent> for StoredEvent {
         Self {
             event_handle_id: event.event_handle_id.to_string(),
             event_seq: event.event_seq as i64,
-            struct_tag: event.struct_tag.to_canonical_string(),
+            event_type: event.event_type.to_canonical_string(),
             event_data: event.event_data,
             event_index: event.event_index as i64,
 

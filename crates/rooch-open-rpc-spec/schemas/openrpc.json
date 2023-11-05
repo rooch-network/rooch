@@ -517,7 +517,7 @@
           "event_data",
           "event_id",
           "event_index",
-          "type_tag"
+          "event_type"
         ],
         "properties": {
           "decoded_event_data": {
@@ -541,8 +541,8 @@
             "format": "uint64",
             "minimum": 0.0
           },
-          "type_tag": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+          "event_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
           }
         }
       },
@@ -1106,6 +1106,37 @@
           }
         }
       },
+      "TransactionEventView": {
+        "type": "object",
+        "required": [
+          "event_data",
+          "event_index",
+          "event_type"
+        ],
+        "properties": {
+          "decoded_event_data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnnotatedMoveStructView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_data": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "event_index": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "event_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+          }
+        }
+      },
       "TransactionExecutionInfoView": {
         "type": "object",
         "required": [
@@ -1147,7 +1178,7 @@
           "events": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/EventView"
+              "$ref": "#/components/schemas/TransactionEventView"
             }
           },
           "gas_used": {
