@@ -22,16 +22,16 @@ module simple_blog::simple_article {
         body: String,
     }
 
-    struct ArticleCreatedEvent has copy,store {
+    struct ArticleCreatedEvent has copy,store,drop {
         id: ObjectID,
     }
 
-    struct ArticleUpdatedEvent has copy,store {
+    struct ArticleUpdatedEvent has copy,store,drop {
         id: ObjectID,
         version: u64,
     }
 
-    struct ArticleDeletedEvent has copy,store {
+    struct ArticleDeletedEvent has copy,store,drop {
         id: ObjectID,
         version: u64,
     }
@@ -62,14 +62,13 @@ module simple_blog::simple_article {
         let article_created_event = ArticleCreatedEvent {
             id,
         };
-        event::emit(ctx, article_created_event);
+        event::emit(article_created_event);
         object::transfer(article_obj, owner_addr);
         id
     }
 
     /// Update article
     public fun update_article(
-        ctx: &mut Context,
         article_obj: &mut Object<Article>,
         new_title: String,
         new_body: String,
@@ -87,12 +86,11 @@ module simple_blog::simple_article {
             id,
             version: article.version,
         };
-        event::emit(ctx, article_update_event);
+        event::emit(article_update_event);
     }
 
     /// Delete article
     public fun delete_article(
-        ctx: &mut Context,
         article_obj: Object<Article>,
     ) {
         let id = object::id(&article_obj);
@@ -102,7 +100,7 @@ module simple_blog::simple_article {
             id,
             version: article.version,
         };
-        event::emit(ctx, article_deleted_event);
+        event::emit(article_deleted_event);
         drop_article(article);
     }
 

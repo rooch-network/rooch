@@ -26,7 +26,7 @@ module nft::collection{
         maximum: Option<u64>,
     }
 
-    struct CreateCollectionEvent{
+    struct CreateCollectionEvent has drop {
         object_id: ObjectID,
         name: String,
         creator: address,
@@ -67,7 +67,6 @@ module nft::collection{
         );
         let collection_id = object::id(&collection_obj);
         event::emit(
-            ctx,
             CreateCollectionEvent {
                 object_id: collection_id,
                 name,

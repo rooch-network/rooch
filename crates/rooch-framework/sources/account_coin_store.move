@@ -145,11 +145,7 @@ module rooch_framework::account_coin_store {
         let auto_accept_coins = account_storage::global_borrow_mut<AutoAcceptCoins>(ctx, @rooch_framework);
         table::upsert<address, bool>(&mut auto_accept_coins.auto_accept_coins, addr, enable);
 
-        event::emit<AcceptCoinEvent>(ctx,
-            AcceptCoinEvent {
-                enable,
-            },
-        );
+        event::emit<AcceptCoinEvent>(AcceptCoinEvent { enable});
     }
 
     /// Withdraw specifed `amount` of coin `CoinType` from the signing account.

@@ -1,19 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::{EVENT_HANDLE_PREFIX_NAME, EVENT_INDEX_PREFIX_NAME, EVENT_PREFIX_NAME};
 use anyhow::{anyhow, Result};
-use move_core_types::language_storage::TypeTag;
+use move_core_types::language_storage::StructTag;
 use moveos_types::event_filter::EventFilter;
 use moveos_types::h256::H256;
-use moveos_types::move_types::type_tag_match;
-use moveos_types::moveos_std::event::{Event, EventID};
+use moveos_types::moveos_std::event::{Event, EventHandle, EventID, TransactionEvent};
 use moveos_types::moveos_std::object::ObjectID;
-
-use crate::{EVENT_INDEX_PREFIX_NAME, EVENT_PREFIX_NAME};
 use raw_store::{derive_store, CodecKVStore, StoreInstance};
+use std::cmp::min;
+use std::collections::{HashMap, HashSet};
 
 derive_store!(EventDBBaseStore, (ObjectID, u64), Event, EVENT_PREFIX_NAME);
 
+//TODO the EventIndexDBStore is not used now, should remove it, and use the Indexer to get the event by tx_hash
 derive_store!(
     EventIndexDBStore,
     (H256, u64),
@@ -21,10 +22,15 @@ derive_store!(
     EVENT_INDEX_PREFIX_NAME
 );
 
-pub trait EventStore {
-    fn save_event(&self, event: Event) -> Result<()>;
+derive_store!(
+    EventHandleDBStore,
+    ObjectID,
+    EventHandle,
+    EVENT_HANDLE_PREFIX_NAME
+);
 
-    fn save_events(&self, events: Vec<Event>) -> Result<()>;
+pub trait EventStore {
+    fn save_events(&self, events: Vec<TransactionEvent>) -> Result<Vec<EventID>>;
 
     fn get_event(&self, event_id: EventID) -> Result<Option<Event>>;
 
@@ -38,7 +44,12 @@ pub trait EventStore {
         limit: u64,
     ) -> Result<Vec<Event>>;
 
-    fn get_events_by_event_handle_type(&self, event_handle_type: &TypeTag) -> Result<Vec<Event>>;
+    fn get_events_by_event_handle_type(
+        &self,
+        event_handle_type: &StructTag,
+        cursor: Option<u64>,
+        limit: u64,
+    ) -> Result<Vec<Event>>;
 
     fn get_events_with_filter(&self, filter: EventFilter) -> Result<Vec<Event>>;
 }
@@ -47,33 +58,77 @@ pub trait EventStore {
 pub struct EventDBStore {
     event_store: EventDBBaseStore,
     indexer_store: EventIndexDBStore,
+    event_handle_store: EventHandleDBStore,
 }
 
 impl EventDBStore {
     pub fn new(instance: StoreInstance) -> Self {
         EventDBStore {
             event_store: EventDBBaseStore::new(instance.clone()),
-            indexer_store: EventIndexDBStore::new(instance),
+            indexer_store: EventIndexDBStore::new(instance.clone()),
+            event_handle_store: EventHandleDBStore::new(instance),
         }
     }
 
-    pub fn save_event(&self, event: Event) -> Result<()> {
-        let key = (event.event_id.event_handle_id, event.event_id.event_seq);
-        self.event_store.kv_put(key, event)
+    fn get_event_handle(&self, event_handle_id: ObjectID) -> Result<Option<EventHandle>> {
+        self.event_handle_store.kv_get(event_handle_id)
     }
 
-    pub fn save_events(&self, events: Vec<Event>) -> Result<()> {
-        self.event_store.put_all(
-            events
-                .into_iter()
-                .map(|event| {
-                    (
-                        (event.event_id.event_handle_id, event.event_id.event_seq),
-                        event,
-                    )
-                })
-                .collect(),
-        )
+    fn get_or_create_event_handle(&self, event_handle_type: StructTag) -> Result<EventHandle> {
+        let event_handle_id = EventHandle::derive_event_handle_id(event_handle_type);
+        let event_handle = self.get_event_handle(event_handle_id)?;
+        if let Some(event_handle) = event_handle {
+            return Ok(event_handle);
+        }
+        let event_handle = EventHandle::new(event_handle_id, 0);
+        self.save_event_handle(event_handle.clone())?;
+        Ok(event_handle)
+    }
+
+    fn save_event_handle(&self, event_handle: EventHandle) -> Result<()> {
+        self.event_handle_store
+            .put_all(vec![(event_handle.id, event_handle)])
+    }
+
+    pub fn save_events(&self, tx_events: Vec<TransactionEvent>) -> Result<Vec<EventID>> {
+        let event_types = tx_events
+            .iter()
+            .map(|event| event.event_type.clone())
+            .collect::<HashSet<_>>();
+        let mut event_handles = event_types
+            .into_iter()
+            .map(|event_type| {
+                let handle = self.get_or_create_event_handle(event_type.clone())?;
+                Ok((event_type, handle))
+            })
+            .collect::<Result<HashMap<_, _>>>()?;
+        let mut event_ids = vec![];
+        let events = tx_events
+            .into_iter()
+            .map(|tx_event| {
+                let handle = event_handles
+                    .get_mut(&tx_event.event_type)
+                    .expect("Event handle must exist");
+                let event_id = EventID::new(handle.id, handle.count);
+                let event = Event::new(
+                    event_id,
+                    tx_event.event_type,
+                    tx_event.event_data,
+                    tx_event.event_index,
+                );
+                handle.count += 1;
+                event_ids.push(event_id);
+                ((event_id.event_handle_id, event_id.event_seq), event)
+            })
+            .collect::<Vec<_>>();
+        self.event_store.put_all(events)?;
+        self.event_handle_store.put_all(
+            event_handles
+                .into_values()
+                .map(|handle| (handle.id, handle))
+                .collect::<Vec<_>>(),
+        )?;
+        Ok(event_ids)
     }
 
     pub fn get_event(&self, event_id: EventID) -> Result<Option<Event>> {
@@ -115,59 +170,33 @@ impl EventDBStore {
         cursor: Option<u64>,
         limit: u64,
     ) -> Result<Vec<Event>> {
-        //  will not cross the boundary even if the size exceeds the storage capacity,
-        let start = cursor.unwrap_or(0);
-        let end = start + limit;
-        let mut iter = self.event_store.iter()?;
-        let seek_key = (*event_handle_id, start);
-        iter.seek(bcs::to_bytes(&seek_key)?).map_err(|e| {
-            anyhow::anyhow!("EventStore get_events_by_event_handle_id seek: {:?}", e)
+        let event_handle = self.get_event_handle(*event_handle_id)?.ok_or_else(|| {
+            anyhow!(
+                "Can not find event handle by id: {}",
+                event_handle_id.to_string()
+            )
         })?;
-
-        let data: Vec<Event> = iter
-            .filter_map(|item| {
-                let ((handle_id, event_seq), event) = item.unwrap_or_else(|err| {
-                    panic!(
-                        "{}",
-                        format!("Get events by event handle id error, {:?}", err)
-                    )
-                });
-                if Option::is_some(&cursor) {
-                    if handle_id == *event_handle_id && (event_seq > start && event_seq <= end) {
-                        return Some(event);
-                    }
-                } else if handle_id == *event_handle_id && (event_seq >= start && event_seq < end) {
-                    return Some(event);
-                }
-                None
-            })
+        let last_seq = event_handle.count;
+        let start = cursor.unwrap_or(0);
+        let end = min(start + limit, last_seq);
+        let event_ids = (start..end)
+            .map(|v| (EventID::new(*event_handle_id, v)))
             .collect::<Vec<_>>();
-        Ok(data)
+        Ok(self
+            .multi_get_events(event_ids)?
+            .into_iter()
+            .flatten()
+            .collect())
     }
 
     pub fn get_events_by_event_handle_type(
         &self,
-        event_handle_type: &TypeTag,
+        event_handle_type: &StructTag,
+        cursor: Option<u64>,
+        limit: u64,
     ) -> Result<Vec<Event>> {
-        let mut iter = self.event_store.iter()?;
-        //TODO choose the right seek key to optimize performance
-        iter.seek_to_first();
-        let data: Vec<_> = iter
-            .filter_map(|item| {
-                let ((_event_handle_id, _event_seq), event) = item.unwrap_or_else(|err| {
-                    panic!(
-                        "{}",
-                        format!("Get events by event handle type error, {:?}", err)
-                    )
-                });
-                if type_tag_match(event.type_tag(), event_handle_type) {
-                    Some(event)
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-        Ok(data)
+        let event_handle_id = EventHandle::derive_event_handle_id(event_handle_type.clone());
+        self.get_events_by_event_handle_id(&event_handle_id, cursor, limit)
     }
 
     // TODO The complete event filter implementation depends on Indexer
@@ -180,7 +209,7 @@ impl EventDBStore {
             }
             // EventFilter::Transaction(tx_hash) => self.get_events_by_tx_hash(&tx_hash)?,
             EventFilter::MoveEventType(move_event_type) => {
-                self.get_events_by_event_handle_type(&move_event_type)?
+                self.get_events_by_event_handle_type(&move_event_type, Some(0), 100)?
             }
             // EventFilter::Sender(_sender) => {
             //     return Err(anyhow!(

@@ -26,6 +26,7 @@ Feature: Rooch CLI integration tests
       Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}]"
       Then assert: "'{{$.rpc[-1]}}' contains '0x3::timestamp::CurrentTimeMicroseconds'"
       Then stop the server 
+    
     @serial
     Scenario: account
       Given a server for account
@@ -44,12 +45,20 @@ Feature: Rooch CLI integration tests
       Then cmd: "transaction get-transactions-by-order --cursor 0 --limit 1"
       Then cmd: "transaction get-transactions-by-hash --hashes {{$.transaction[-1].data[0].execution_info.tx_hash}}"
 
-      # event example
+      # event example and event prc
       Then cmd: "move publish -p ../../examples/event --sender-account {default} --named-addresses rooch_examples={default}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function {default}::event_test::emit_event --sender-account {default} --args 10u64"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+       Then cmd: "move run --function {default}::event_test::emit_event --sender-account {default} --args 11u64"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "event get-events-by-event-handle --event_handle_type {default}::event_test::WithdrawEvent --cursor 0 --limit 1"
+      Then assert: "{{$.event[-1].data[0].event_id.event_seq}} == 0"
+      Then assert: "{{$.event[-1].next_cursor}} == 1"
+      Then assert: "{{$.event[-1].has_next_page}} == true"
+      Then cmd: "event get-events-by-event-handle --event_handle_type {default}::event_test::WithdrawEvent --cursor 1 --limit 1"
+      Then assert: "{{$.event[-1].data[0].event_id.event_seq}} == 1"
+      Then assert: "{{$.event[-1].has_next_page}} == false"
 
       # account balance
       Then cmd: "move publish -p ../../examples/coins --sender-account {default} --named-addresses coins={default}"
@@ -183,3 +192,4 @@ Feature: Rooch CLI integration tests
     Then cmd: "move run --function {default}::my_coin::faucet --sender-account {default}"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
     Then stop the server
+  

@@ -282,7 +282,7 @@ module rooch_framework::coin {
         let coin_info = borrow_mut_coin_info<CoinType>(ctx);
         coin_info.supply = coin_info.supply + amount;
         let coin_type = type_info::type_name<CoinType>();
-        event::emit<MintEvent>(ctx, MintEvent {
+        event::emit<MintEvent>(MintEvent {
             coin_type,
             amount,
         });
@@ -298,7 +298,7 @@ module rooch_framework::coin {
         let coin_type = type_info::type_name<CoinType>();
         let coin_info = borrow_mut_coin_info<CoinType>(ctx);
         coin_info.supply = coin_info.supply - amount;
-        event::emit<BurnEvent>(ctx, BurnEvent {
+        event::emit<BurnEvent>(BurnEvent {
             coin_type,
             amount,
         });

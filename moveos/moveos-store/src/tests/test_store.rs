@@ -11,7 +11,7 @@ use move_core_types::language_storage::{StructTag, TypeTag};
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_config::store_config::RocksdbConfig;
 use moveos_types::h256::H256;
-use moveos_types::moveos_std::event::{Event, EventID};
+use moveos_types::moveos_std::event::TransactionEvent;
 use moveos_types::transaction::TransactionExecutionInfo;
 use raw_store::rocks::{RocksDB, DEFAULT_PREFIX_NAME};
 use raw_store::traits::DBStore;
@@ -105,19 +105,24 @@ fn test_event_store() {
         name: Identifier::new("Name").unwrap(),
         type_params: vec![TypeTag::Bool],
     };
-    let test_type_tag = TypeTag::Struct(Box::new(test_struct_tag));
-    let event1 = Event::new(
-        EventID::new(AccountAddress::random().into(), rand::random()),
-        test_type_tag,
-        b"testeventdata".to_vec(),
-        rand::random(),
-    );
+    let tx_events = vec![
+        TransactionEvent::new(test_struct_tag.clone(), b"data0".to_vec(), 100),
+        TransactionEvent::new(test_struct_tag, b"data1".to_vec(), 101),
+    ];
 
-    let _id = (event1.event_id.event_handle_id, event1.event_id.event_seq);
-    store.save_event(event1.clone()).unwrap();
-    let event2 = store.get_event(event1.event_id).unwrap();
-    assert!(event2.is_some());
-    assert_eq!(event1, event2.unwrap());
+    let event_ids = store.save_events(tx_events.clone()).unwrap();
+    assert_eq!(event_ids.len(), 2);
+    let event0 = store.get_event(event_ids[0]).unwrap().unwrap();
+    assert_eq!(event0.event_type, tx_events[0].event_type);
+    assert_eq!(event0.event_data, tx_events[0].event_data);
+    assert_eq!(event0.event_index, tx_events[0].event_index);
+    assert_eq!(event0.event_id.event_seq, 0);
+
+    let event1 = store.get_event(event_ids[1]).unwrap().unwrap();
+    assert_eq!(event1.event_type, tx_events[1].event_type);
+    assert_eq!(event1.event_data, tx_events[1].event_data);
+    assert_eq!(event1.event_index, tx_events[1].event_index);
+    assert_eq!(event1.event_id.event_seq, 1);
 }
 
 #[test]
