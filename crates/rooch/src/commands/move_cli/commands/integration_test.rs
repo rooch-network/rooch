@@ -12,13 +12,13 @@ use move_compiler::shared::{NamedAddressMapIndex, NamedAddressMaps};
 use move_compiler::{
     cfgir, expansion, hlir, naming, parser, typing, Compiler, Flags, FullyCompiledProgram,
 };
-use move_core_types::account_address::AccountAddress;
 use move_package::compilation::build_plan::BuildPlan;
 use move_package::source_package::layout::SourcePackageLayout;
 use moveos_types::addresses::MOVEOS_NAMED_ADDRESS_MAPPING;
 use once_cell::sync::Lazy;
+use rooch_config::rooch_config_dir;
 use rooch_integration_test_runner;
-use rooch_types::error::RoochError;
+use rooch_rpc_client::wallet_context::WalletContext;
 use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::num::NonZeroUsize;
@@ -135,7 +135,7 @@ pub struct IntegrationTest {
 }
 
 impl IntegrationTest {
-    pub fn execute(self, move_arg: Move) -> anyhow::Result<()> {
+    pub async fn execute(self, move_arg: Move) -> anyhow::Result<()> {
         let rerooted_path = {
             let path = match move_arg.package_path {
                 Some(_) => move_arg.package_path,
@@ -145,15 +145,19 @@ impl IntegrationTest {
             SourcePackageLayout::try_find_root(&path.as_ref().unwrap().canonicalize()?)?
         };
 
+        let rooch_dir = rooch_config_dir().unwrap();
+        let wallet_context = WalletContext::new(Some(rooch_dir.clone())).await.unwrap();
+
         // force move to rebuild all packages, so that we can use compile_driver to generate the full compiled program.
         let mut build_config = move_arg.build_config;
         let _ = self
             .named_addresses
             .iter()
             .map(|(key, value)| {
-                build_config
-                    .additional_named_addresses
-                    .insert(key.clone(), parse_account_arg(value.clone()).ok()?)
+                build_config.additional_named_addresses.insert(
+                    key.clone(),
+                    wallet_context.parse_account_arg(value.clone()).ok()?,
+                )
             })
             .collect::<Vec<_>>();
         build_config.force_recompilation = true;
@@ -337,24 +341,5 @@ impl IntegrationTest {
         datatest_stable::runner_with_opts(&[requirements], test_opts);
 
         Ok(())
-    }
-}
-
-fn parse_account_arg(account: String) -> Result<AccountAddress, RoochError> {
-    if account.starts_with("0x") {
-        AccountAddress::from_hex_literal(&account).map_err(|err| {
-            RoochError::CommandArgumentError(format!("Failed to parse AccountAddress {}", err))
-        })
-    } else if let Ok(account_address) = AccountAddress::from_str(&account) {
-        Ok(account_address)
-    } else {
-        let address = match account.as_str() {
-            "default" => AccountAddress::from_str("0x42").unwrap(),
-            _ => Err(RoochError::CommandArgumentError(
-                "invalid account address".to_owned(),
-            ))?,
-        };
-
-        Ok(address)
     }
 }

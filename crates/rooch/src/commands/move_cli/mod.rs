@@ -117,6 +117,7 @@ impl CommandAction<String> for MoveCli {
             MoveCommand::View(c) => c.execute_serialized().await,
             MoveCommand::IntegrationTest(c) => c
                 .execute(move_args)
+                .await
                 .map(|_| "Success".to_owned())
                 .map_err(RoochError::from),
             MoveCommand::Explain(c) => c
