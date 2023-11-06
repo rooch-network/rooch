@@ -1082,7 +1082,7 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
                         let type_arg = type_arguments.get(generic_type_index).unwrap();
 
                         let (is_allowed_struct_type, error_message) =
-                            check_func_data_struct(extended_checker, &view, type_arg);
+                            check_func_data_struct(&view, fun, type_arg);
 
                         if !is_allowed_struct_type {
                             extended_checker
@@ -1098,10 +1098,11 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
 }
 
 fn check_func_data_struct(
-    extended_checker: &ExtendedChecker,
     view: &BinaryIndexedView,
+    func_env: &FunctionEnv,
     type_arg: &SignatureToken,
 ) -> (bool, String) {
+    let func_name = func_env.get_full_name_str();
     match type_arg {
         SignatureToken::Struct(struct_handle_index) => {
             let shandle = view.struct_handle_at(*struct_handle_index);
@@ -1118,22 +1119,23 @@ fn check_func_data_struct(
                 struct_name
             );
 
-            let global_env = extended_checker.env;
-            for module in global_env.get_modules() {
-                if module.get_full_name_str() == full_module_name {
-                    for struct_def in module.get_structs() {
-                        if struct_def.get_full_name_with_address() == full_struct_name {
-                            let (error_message, is_allowed) =
-                                check_data_struct_fields(&struct_def, &module);
-                            return (is_allowed, error_message);
-                        }
+            unsafe {
+                let data_struct_opt = GLOBAL_DATA_STRUCT.get(full_struct_name.as_str());
+                if let Some(is_data_struct) = data_struct_opt {
+                    if *is_data_struct {
+                        return (true, "".to_string());
                     }
                 }
             }
 
-            (false, "".to_string())
+            (false, format!("The type argument {} of #[data_struct] for function {} in the module {} is not allowed.",
+            full_struct_name, func_name, full_module_name))
         }
-        _ => (false, "".to_string()),
+        _ => {
+            let module_id = view.self_id().unwrap().to_string();
+            (false, format!("The type argument of #[data_struct] for function {} in the module {} is not allowed.",
+            func_name, module_id))
+        }
     }
 }
 
