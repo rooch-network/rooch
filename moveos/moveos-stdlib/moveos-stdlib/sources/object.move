@@ -181,7 +181,7 @@ module moveos_std::object {
         to_system_owned_internal(obj_entity);
     }
 
-    fun to_system_owned_internal<T>(self: &mut ObjectEntity<T>){
+    public(friend) fun to_system_owned_internal<T>(self: &mut ObjectEntity<T>){
         self.owner = SYSTEM_OWNER_ADDRESS;
     }
 
@@ -230,7 +230,18 @@ module moveos_std::object {
     fun is_frozen_internal<T>(self: &ObjectEntity<T>) : bool {
         self.flag & FROZEN_OBJECT_FLAG_MASK == FROZEN_OBJECT_FLAG_MASK
     }
+
+    public fun is_system_owned<T: key>(self: &Object<T>) : bool {
+        owner(self) == SYSTEM_OWNER_ADDRESS
+    } 
     
+    public(friend) fun is_user_owned_internal<T: key>(self: &ObjectEntity<T>) : bool {
+        owner_internal(self) != SYSTEM_OWNER_ADDRESS
+    }
+
+    public fun is_user_owned<T: key>(self: &Object<T>) : bool {
+        owner(self) != SYSTEM_OWNER_ADDRESS
+    } 
 
     // === Object Ref ===
 
@@ -278,6 +289,12 @@ module moveos_std::object {
 
     public(friend) fun contains_global(object_id: ObjectID): bool {
         raw_table::contains<ObjectID>(global_object_storage_handle(), object_id)
+    }
+
+    #[test_only]
+    public fun new_uid_for_test(tx_context: &mut moveos_std::tx_context::TxContext) : UID {
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(tx_context));
+        new_uid(object_id)
     }
 
     #[test_only]

@@ -10,8 +10,7 @@
 
 module moveos_std::table {
     use moveos_std::raw_table;
-    use moveos_std::context::{Self, Context};
-    use moveos_std::object::{Self, ObjectID};
+    use moveos_std::object::{Self, UID, ObjectID};
 
     friend moveos_std::account_storage;
 
@@ -21,8 +20,8 @@ module moveos_std::table {
     }
 
     /// Create a new Table.
-    public fun new<K: copy + drop, V: store>(ctx: &mut Context): Table<K, V> {
-        let handle = object::address_to_object_id(context::fresh_address(ctx));
+    public fun new<K: copy + drop, V: store>(id: UID): Table<K, V> {
+        let handle = object::uid_to_object_id(id);
         Table {
             handle,
         }
@@ -125,11 +124,11 @@ module moveos_std::table {
         t: Table<K, V>
     }
 
-    #[test(account = @0x1)]
-    fun test_upsert(account: signer) {
-        let sender = std::signer::address_of(&account);
-        let ctx = moveos_std::context::new_test_context(sender);
-        let t = new<u64, u8>(&mut ctx);
+    #[test(sender = @0x42)]
+    fun test_upsert(sender: address) {
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let uid = object::new_uid_for_test(&mut tx_context);
+        let t = new<u64, u8>(uid);
         let key: u64 = 111;
         let error_code: u64 = 1;
         assert!(!contains(&t, key), error_code);
@@ -139,14 +138,13 @@ module moveos_std::table {
         assert!(*borrow(&t, key) == 23, error_code);
 
         drop_unchecked(t);
-        moveos_std::context::drop_test_context(ctx);
     }
 
-    #[test(account = @0x1)]
-    fun test_borrow_with_default(account: signer) {
-        let sender = std::signer::address_of(&account);
-        let ctx = moveos_std::context::new_test_context(sender);
-        let t = new<u64, u8>(&mut ctx);
+    #[test(sender = @0x42)]
+    fun test_borrow_with_default(sender: address) {
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let uid = object::new_uid_for_test(&mut tx_context);
+        let t = new<u64, u8>(uid);
         let key: u64 = 100;
         let error_code: u64 = 1;
         assert!(!contains(&t, key), error_code);
@@ -155,14 +153,13 @@ module moveos_std::table {
         assert!(*borrow_with_default(&t, key, &12) == 1, error_code);
 
         drop_unchecked(t);
-        moveos_std::context::drop_test_context(ctx);
     }
 
-    #[test(account = @0x1)]
-    fun test_all(account: signer) {
-        let sender = std::signer::address_of(&account);
-        let ctx = moveos_std::context::new_test_context(sender);
-        let t = new<u64, u8>(&mut ctx);
+    #[test(sender = @0x42)]
+    fun test_all(sender: address) {
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let uid = object::new_uid_for_test(&mut tx_context);
+        let t = new<u64, u8>(uid);
         let key: u64 = 100;
         let error_code: u64 = 1;
         assert!(!contains(&t, key), error_code);
@@ -173,68 +170,68 @@ module moveos_std::table {
         remove(&mut t, key);
         assert!(!contains(&t, key), error_code);
         drop_unchecked(t);
-        moveos_std::context::drop_test_context(ctx);
     }
 
-    #[test(account = @0x1)]
+    #[test(sender = @0x42)]
     #[expected_failure]
-    fun test_add_key_exist_failure(account: signer) {
-        let sender = std::signer::address_of(&account);
-        let ctx = moveos_std::context::new_test_context(sender);
-        let t = new<u64, u8>(&mut ctx);
+    fun test_add_key_exist_failure(sender: address) {
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let uid = object::new_uid_for_test(&mut tx_context);
+        let t = new<u64, u8>(uid);
         let key: u64 = 100;
         add(&mut t, key, 1);
         add(&mut t, key, 2);
 
         drop_unchecked(t);
-        moveos_std::context::drop_test_context(ctx);
+        
     }
 
-    #[test(account = @0x1)]
+    #[test(sender = @0x42)]
     #[expected_failure]
-    fun test_borrow_key_not_exist_failure(account: signer) {
-        let sender = std::signer::address_of(&account);
-        let ctx = moveos_std::context::new_test_context(sender);
-        let t = new<u64, u8>(&mut ctx);
+    fun test_borrow_key_not_exist_failure(sender: address) {
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let uid = object::new_uid_for_test(&mut tx_context);
+        let t = new<u64, u8>(uid);
         let key: u64 = 100;
         let _ = borrow(&mut t, key);
 
         drop_unchecked(t);
-        moveos_std::context::drop_test_context(ctx);
+        
     }
 
-    #[test(account = @0x1)]
+    #[test(sender = @0x42)]
     #[expected_failure]
-    fun test_borrow_mut_key_not_exist_failure(account: signer) {
-        let sender = std::signer::address_of(&account);
-        let ctx = moveos_std::context::new_test_context(sender);
-        let t = new<u64, u8>(&mut ctx);
+    fun test_borrow_mut_key_not_exist_failure(sender: address) {
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let uid = object::new_uid_for_test(&mut tx_context);
+        let t = new<u64, u8>(uid);
         let key: u64 = 100;
         let _ = borrow_mut(&mut t, key);
 
         drop_unchecked(t);
-        moveos_std::context::drop_test_context(ctx);
+        
     }
 
-    #[test(account = @0x1)]
+    #[test(sender = @0x42)]
     #[expected_failure]
-    fun test_remove_key_not_exist_failure(account: signer) {
-        let sender = std::signer::address_of(&account);
-        let ctx = moveos_std::context::new_test_context(sender);
-        let t = new<u64, u8>(&mut ctx);
+    fun test_remove_key_not_exist_failure(sender: address) {
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let uid = object::new_uid_for_test(&mut tx_context);
+        let t = new<u64, u8>(uid);
         let key: u64 = 100;
         remove(&mut t, key);
 
         drop_unchecked(t);
-        moveos_std::context::drop_test_context(ctx);
+        
     }
 
-    #[test(account = @0x1)]
-    fun test_nested_table(account: signer) {
-        let sender = std::signer::address_of(&account);
-        let ctx = moveos_std::context::new_test_context(sender);
-        let t1 = new<u64, Table<u8, u32>>(&mut ctx);
-        let t2 = new<u8, u32>(&mut ctx);
+    #[test(sender = @0x42)]
+    fun test_nested_table(sender: address) {
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let uid1 = object::new_uid_for_test(&mut tx_context);
+        let uid2 = object::new_uid_for_test(&mut tx_context);
+        let t1 = new<u64, Table<u8, u32>>(uid1);
+        let t2 = new<u8, u32>(uid2);
         let t2_id = t2.handle;
 
         let t1_key = 2u64;
@@ -258,29 +255,30 @@ module moveos_std::table {
         
         drop_unchecked(t3); // No need to drop t2 as t2 shares same handle with t3
         drop_unchecked(t1);
-        moveos_std::context::drop_test_context(ctx);
+        
     }
 
-    #[test(account = @0x1)]
+    #[test(sender = @0x42)]
     #[expected_failure]
-    fun test_destroy_nonempty_table(account: signer) {
-        let sender = std::signer::address_of(&account);
-        let ctx = moveos_std::context::new_test_context(sender);
-        let t = new<u64, u8>(&mut ctx);
+    fun test_destroy_nonempty_table(sender: address) {
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let uid = object::new_uid_for_test(&mut tx_context);
+        let t = new<u64, u8>(uid);
         let key: u64 = 100;
         add(&mut t, key, 1);
 
         destroy_empty(t);
-        moveos_std::context::drop_test_context(ctx);
+        
     }
 
-    #[test(account = @0x1)]
+    #[test(sender = @0x42)]
     #[expected_failure]
-    fun test_nested_table_destroy(account: signer) {
-        let sender = std::signer::address_of(&account);
-        let ctx = moveos_std::context::new_test_context(sender);
-        let t1 = new<u64, Table<u8, u32>>(&mut ctx);
-        let t2 = new<u8, u32>(&mut ctx);
+    fun test_nested_table_destroy(sender: address) {
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let uid1 = object::new_uid_for_test(&mut tx_context);
+        let uid2 = object::new_uid_for_test(&mut tx_context);
+        let t1 = new<u64, Table<u8, u32>>(uid1);
+        let t2 = new<u8, u32>(uid2);
         let t2_id = t2.handle;
 
         let t1_key = 2u64;
@@ -294,7 +292,7 @@ module moveos_std::table {
         assert!(*borrow(&t2, t2_key) == 32u32, 1);
 
         drop_unchecked(t2);
-        moveos_std::context::drop_test_context(ctx);
+        
     }
 
 
