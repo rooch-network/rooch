@@ -170,7 +170,7 @@ pub fn get_sqlite_pool_connection(
 ) -> Result<SqlitePoolConnection, IndexerError> {
     pool.get().map_err(|e| {
         IndexerError::SqlitePoolConnectionError(format!(
-            "Failed to get connection from PG connection pool with error: {:?}",
+            "Failed to get connection from SQLite connection pool with error: {:?}",
             e
         ))
     })
