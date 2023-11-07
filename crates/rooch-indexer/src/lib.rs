@@ -15,14 +15,12 @@ use diesel::sqlite::SqliteConnection;
 // use tracing::info;
 
 use crate::store::sqlite_store::SqliteIndexerStore;
-use crate::store::IndexerStoreTrait;
 use errors::IndexerError;
 
 pub mod errors;
 pub mod indexer_reader;
 pub mod models;
 pub mod schema;
-// pub mod sqlite_extend;
 pub mod actor;
 pub mod proxy;
 pub mod store;

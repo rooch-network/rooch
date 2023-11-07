@@ -8,28 +8,28 @@ pub mod sqlite_store;
 pub mod traits;
 
 pub(crate) mod diesel_macro {
-    macro_rules! read_only_blocking {
-        ($pool:expr, $query:expr) => {{
-            let mut sqlite_pool_conn = crate::get_sqlite_pool_connection($pool)?;
-            sqlite_pool_conn
-                .build_transaction()
-                .read_only()
-                .run($query)
-                .map_err(|e| IndexerError::SQLiteReadError(e.to_string()))
-        }};
-    }
+    // macro_rules! read_only_blocking {
+    //     ($pool:expr, $query:expr) => {{
+    //         let mut sqlite_pool_conn = crate::get_sqlite_pool_connection($pool)?;
+    //         sqlite_pool_conn
+    //             .build_transaction()
+    //             .read_only()
+    //             .run($query)
+    //             .map_err(|e| IndexerError::SQLiteReadError(e.to_string()))
+    //     }};
+    // }
 
-    macro_rules! transactional_blocking {
-        ($pool:expr, $query:expr) => {{
-            let mut sqlite_pool_conn = crate::get_sqlite_pool_connection($pool)?;
-            sqlite_pool_conn
-                .build_transaction()
-                .serializable()
-                .read_write()
-                .run($query)
-                .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
-        }};
-    }
+    // macro_rules! transactional_blocking {
+    //     ($pool:expr, $query:expr) => {{
+    //         let mut sqlite_pool_conn = crate::get_sqlite_pool_connection($pool)?;
+    //         sqlite_pool_conn
+    //             .build_transaction()
+    //             .serializable()
+    //             .read_write()
+    //             .run($query)
+    //             .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
+    //     }};
+    // }
 
     macro_rules! transactional_blocking_with_retry {
         ($pool:expr, $query:expr, $max_elapsed:expr) => {{
@@ -69,7 +69,7 @@ pub(crate) mod diesel_macro {
         }};
     }
 
-    pub(crate) use read_only_blocking;
-    pub(crate) use transactional_blocking;
+    // pub(crate) use read_only_blocking;
+    // pub(crate) use transactional_blocking;
     pub(crate) use transactional_blocking_with_retry;
 }

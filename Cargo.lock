@@ -7347,6 +7347,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "serde_with",
+ "sized-chunks",
  "tap",
  "thiserror",
  "tokio",

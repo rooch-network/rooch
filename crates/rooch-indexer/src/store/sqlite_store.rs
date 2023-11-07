@@ -18,34 +18,30 @@ use crate::store::diesel_macro::transactional_blocking_with_retry;
 use crate::types::{IndexedEvent, IndexedTransaction};
 use crate::SqliteConnectionPool;
 
-// #[macro_export]
-// macro_rules! chunk {
-//     ($data: expr, $size: expr) => {{
-//         $data
-//             .into_iter()
-//             .chunks($size)
-//             .into_iter()
-//             .map(|c| c.collect())
-//             .collect::<Vec<Vec<_>>>()
-//     }};
-// }
-
-// #[derive(Clone)]
-// pub struct IndexerStore {
-//     pub store: SqliteIndexerStore,
-// }
+#[macro_export]
+macro_rules! chunk {
+    ($data: expr, $size: expr) => {{
+        $data
+            .into_iter()
+            .chunks($size)
+            .into_iter()
+            .map(|c| c.collect())
+            .collect::<Vec<Vec<_>>>()
+    }};
+}
 
 // In one DB transaction, the update could be chunked into
 // a few statements, this is the amount of rows to update in one statement
 // TODO: I think with the `per_db_tx` params, `SQLITE_COMMIT_CHUNK_SIZE_INTRA_DB_TX`
 // is now less relevant. We should do experiments and remove it if it's true.
-pub(crate) const SQLITE_COMMIT_CHUNK_SIZE_INTRA_DB_TX: usize = 1000;
+// pub(crate) const SQLITE_COMMIT_CHUNK_SIZE_INTRA_DB_TX: usize = 1000;
 // The amount of rows to update in one DB transcation
 pub(crate) const SQLITE_COMMIT_PARALLEL_CHUNK_SIZE_PER_DB_TX: usize = 500;
 
 #[derive(Clone)]
+#[allow(unused)]
 pub struct SqliteIndexerStore {
-    blocking_cp: SqliteConnectionPool,
+    pub(crate) blocking_cp: SqliteConnectionPool,
     pub(crate) parallel_chunk_size: usize,
 }
 
@@ -90,7 +86,7 @@ impl SqliteIndexerStore {
 
     pub fn persist_events_chunk(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError> {
         let len = events.len();
-        let events = events
+        let _events = events
             .into_iter()
             .map(StoredEvent::from)
             .collect::<Vec<_>>();
@@ -113,7 +109,7 @@ impl SqliteIndexerStore {
         .tap(|_| info!("Persisted {} chunked events", len))
     }
 
-    async fn execute_in_blocking_worker<F, R>(&self, f: F) -> Result<R, IndexerError>
+    pub async fn execute_in_blocking_worker<F, R>(&self, f: F) -> Result<R, IndexerError>
     where
         F: FnOnce(Self) -> Result<R, IndexerError> + Send + 'static,
         R: Send + 'static,
@@ -145,7 +141,7 @@ impl SqliteIndexerStore {
         })
     }
 
-    fn spawn_task<F, Fut, R>(&self, f: F) -> tokio::task::JoinHandle<Result<R, IndexerError>>
+    pub fn spawn_task<F, Fut, R>(&self, f: F) -> tokio::task::JoinHandle<Result<R, IndexerError>>
     where
         F: FnOnce(Self) -> Fut + Send + 'static,
         Fut: std::future::Future<Output = Result<R, IndexerError>> + Send + 'static,

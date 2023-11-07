@@ -14,12 +14,13 @@ pub const SEQUENCE_NUMBER_STR: &str = "sequence_number";
 pub const EVENT_SEQ_STR: &str = "event_seq";
 
 #[derive(Clone)]
-pub struct IndexerReader {
+pub(crate) struct InnerIndexerReader {
     pool: crate::SqliteConnectionPool,
 }
 
 // Impl for common initialization and utilities
-impl IndexerReader {
+#[allow(unused)]
+impl InnerIndexerReader {
     pub fn new<T: Into<String>>(db_url: T) -> Result<Self> {
         let config = SqliteConnectionPoolConfig::default();
         Self::new_with_config(db_url, config)
@@ -46,7 +47,7 @@ impl IndexerReader {
         Ok(Self { pool })
     }
 
-    fn get_connection(&self) -> Result<SqlitePoolConnection, IndexerError> {
+    pub fn get_connection(&self) -> Result<SqlitePoolConnection, IndexerError> {
         self.pool.get().map_err(|e| {
             IndexerError::SqlitePoolConnectionError(format!(
                 "Failed to get connection from SQLite connection pool with error: {:?}",
@@ -128,14 +129,37 @@ fn blocking_call_is_ok_or_panic() {
     }
 }
 
+#[derive(Clone)]
+#[allow(unused)]
+pub struct IndexerReader {
+    pub(crate) inner_indexer_reader: InnerIndexerReader,
+}
+
 // Impl for reading data from the DB
 impl IndexerReader {
-    fn multi_get_transactions(
+    pub fn new<T: Into<String>>(db_url: T) -> Result<Self> {
+        let inner_indexer_reader = InnerIndexerReader::new(db_url)?;
+        Ok(IndexerReader {
+            inner_indexer_reader,
+        })
+    }
+
+    pub fn new_with_config<T: Into<String>>(
+        db_url: T,
+        config: SqliteConnectionPoolConfig,
+    ) -> Result<Self> {
+        let inner_indexer_reader = InnerIndexerReader::new_with_config(db_url, config)?;
+        Ok(IndexerReader {
+            inner_indexer_reader,
+        })
+    }
+
+    pub fn multi_get_transactions(
         &self,
         _tx_orders: Vec<i64>,
     ) -> Result<Vec<StoredTransaction>, IndexerError> {
         // // TODO multi_get
-        // self.run_query(|conn| {
+        // self.inner_indexer_reader.run_query(|conn| {
         //     transactions::table
         //         .filter(transactions::tx_order.eq_any(tx_orders))
         //         .load::<StoredTransaction>(conn)
@@ -145,7 +169,7 @@ impl IndexerReader {
         Ok(vec![])
     }
 
-    fn stored_transaction_to_transaction_block(
+    pub fn stored_transaction_to_transaction_block(
         &self,
         stored_transactions: Vec<StoredTransaction>,
     ) -> IndexerResult<Vec<TransactionWithInfo>> {

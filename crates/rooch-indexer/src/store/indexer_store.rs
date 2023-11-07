@@ -13,51 +13,22 @@ use rooch_types::transaction::TransactionWithInfo;
 use tracing::info;
 
 use crate::errors::IndexerError;
-use crate::IndexerStore;
+use crate::{chunk, IndexerStore};
 
 use crate::types::{IndexedEvent, IndexedTransaction};
 
 use super::IndexerStoreTrait;
 
-#[macro_export]
-macro_rules! chunk {
-    ($data: expr, $size: expr) => {{
-        $data
-            .into_iter()
-            .chunks($size)
-            .into_iter()
-            .map(|c| c.collect())
-            .collect::<Vec<Vec<_>>>()
-    }};
-}
-
-// #[derive(Clone)]
-// pub struct IndexerStore {
-//     pub sqlite_store: SqliteIndexerStore,
-// }
-//
-// impl IndexerStore {
-//     pub fn new(cp_pool: SqliteConnectionPool) -> Result<Self> {
-//         let store = Self {
-//             sqlite_store: SqliteIndexerStore::new(cp_pool),
-//         };
-//         Ok(store)
-//     }
-//
-//     // //TODO implement a mock indexer store
-//     // pub fn mock_indexer_store() -> Result<Self> {
-//     // }
-// }
-//
-// impl Display for IndexerStore {
-//     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-//         write!(f, "{}", self.clone())
-//     }
-// }
-// impl Debug for IndexerStore {
-//     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-//         write!(f, "{}", self)
-//     }
+// #[macro_export]
+// macro_rules! chunk {
+//     ($data: expr, $size: expr) => {{
+//         $data
+//             .into_iter()
+//             .chunks($size)
+//             .into_iter()
+//             .map(|c| c.collect())
+//             .collect::<Vec<Vec<_>>>()
+//     }};
 // }
 
 #[async_trait]
