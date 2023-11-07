@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::counter {
-   use moveos_std::account_storage;
-   use moveos_std::context::{Context};
+   use moveos_std::context::{Self, Context};
 
    struct Counter has key, store {
       value:u64,
@@ -11,15 +10,15 @@ module rooch_examples::counter {
 
    #[test_only]
    public fun init_for_test(ctx: &mut Context, account: &signer) {
-      account_storage::global_move_to(ctx, account, Counter { value: 0 });
+      context::move_resource_to(ctx, account, Counter { value: 0 });
    }
 
    fun init(ctx: &mut Context, account: &signer) {
-      account_storage::global_move_to(ctx, account, Counter { value: 0 });
+      context::move_resource_to(ctx, account, Counter { value: 0 });
    }
 
    public fun increase_(ctx: &mut Context) {
-      let counter = account_storage::global_borrow_mut<Counter>(ctx, @rooch_examples);
+      let counter = context::borrow_mut_resource<Counter>(ctx, @rooch_examples);
       counter.value = counter.value + 1;
    }
 
@@ -28,7 +27,7 @@ module rooch_examples::counter {
    }
 
    public fun value(ctx: &Context): u64 {
-      let counter = account_storage::global_borrow<Counter>(ctx, @rooch_examples);
+      let counter = context::borrow_resource<Counter>(ctx, @rooch_examples);
       counter.value
    }
 }

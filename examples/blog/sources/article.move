@@ -132,7 +132,7 @@ module rooch_examples::article {
             version: 0,
             title,
             body,
-            comments: table::new<u64, Comment>(ctx),
+            comments: context::new_table<u64, Comment>(ctx),
             comment_seq_id_generator: CommentSeqIdGenerator { sequence: 0, },
         }
     }

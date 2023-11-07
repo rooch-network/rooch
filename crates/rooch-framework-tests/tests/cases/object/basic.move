@@ -25,7 +25,7 @@ module test::m {
     //     let object_id = object::id(&object_s);
     //     debug::print(&object_id);
     //     let value = object::remove(object_s);
-    //     account_storage::global_move_to(ctx, &sender, value);
+    //     context::move_resource_to(ctx, &sender, value);
     // }
 
     public entry fun mint_cup<T: store>(ctx: &mut Context) {
@@ -36,7 +36,7 @@ module test::m {
 
     // public entry fun move_cup_to_global<T:store>(ctx: &mut Context, sender: signer, object_s: Object<Cup<S>>) {
     //     let value = object::remove(object_s);
-    //     account_storage::global_move_to(ctx, &sender, value);
+    //     context::move_resource_to(ctx, &sender, value);
     // }
 }
 

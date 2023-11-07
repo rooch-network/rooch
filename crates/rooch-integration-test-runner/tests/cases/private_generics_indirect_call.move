@@ -14,7 +14,6 @@ module creator::test0 {
 module creator::test {
     use std::string;
     use creator::test0::{Self, KeyStruct};
-    use moveos_std::account_storage;
     use moveos_std::context::{Self, Context};
     use moveos_std::object;
 
@@ -24,7 +23,7 @@ module creator::test {
 
     #[private_generics(T1)]
     public fun publish_foo<T1>(ctx: &mut Context, s: &signer) {
-        account_storage::global_move_to<Foo>(ctx, s, Foo { x: 500 })
+        context::move_resource_to<Foo>(ctx, s, Foo { x: 500 })
     }
 
     public fun run(ctx: &mut Context, s: &signer) {

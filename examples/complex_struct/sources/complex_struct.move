@@ -4,7 +4,6 @@
 module rooch_examples::complex_struct {
 
    use moveos_std::context::{Self, Context};
-   use moveos_std::account_storage;
    use moveos_std::object::{Self, Object};
    use moveos_std::object::ObjectID;
    use moveos_std::bcs;
@@ -112,11 +111,11 @@ module rooch_examples::complex_struct {
       let complex_object = context::new_object(ctx, s);
       object::transfer(complex_object, @rooch_examples);
       let s2 = new_complex_struct(object_id);
-      account_storage::global_move_to(ctx, &module_signer, s2);
+      context::move_resource_to(ctx, &module_signer, s2);
    }
 
    public fun value(ctx: &Context): &ComplexStruct {
-      account_storage::global_borrow<ComplexStruct>(ctx,@rooch_examples)
+      context::borrow_resource<ComplexStruct>(ctx,@rooch_examples)
    }
 
    public fun value_of_object(obj: &Object<ComplexStruct>) : &ComplexStruct {

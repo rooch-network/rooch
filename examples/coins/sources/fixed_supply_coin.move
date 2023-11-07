@@ -5,8 +5,7 @@ module coins::fixed_supply_coin {
 
     use std::string;
     use moveos_std::signer;
-    use moveos_std::account_storage;
-    use moveos_std::context::Context;
+    use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, Object};
     use rooch_framework::coin;
     use rooch_framework::coin_store::{Self, CoinStore};
@@ -35,14 +34,14 @@ module coins::fixed_supply_coin {
         let coin = coin::mint_extend<FSC>(ctx, TOTAL_SUPPLY);
         let coin_store_ref = coin_store::create_coin_store<FSC>(ctx);
         coin_store::deposit(object::borrow_mut(&mut coin_store_ref), coin);
-        account_storage::global_move_to(ctx, &coins_signer, Treasury { coin_store: coin_store_ref });
+        context::move_resource_to(ctx, &coins_signer, Treasury { coin_store: coin_store_ref });
     }
 
     /// Provide a faucet to give out coins to users
     /// In a real world scenario, the coins should be given out in the application business logic.
     public entry fun faucet(ctx: &mut Context, account: &signer) {
         let account_addr = signer::address_of(account);
-        let treasury = account_storage::global_borrow_mut<Treasury>(ctx, @coins);
+        let treasury = context::borrow_mut_resource<Treasury>(ctx, @coins);
         let coin = coin_store::withdraw<FSC>(object::borrow_mut(&mut treasury.coin_store), 10000);
         account_coin_store::deposit(ctx, account_addr, coin);
     }
