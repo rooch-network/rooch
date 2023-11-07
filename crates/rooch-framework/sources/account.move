@@ -8,7 +8,6 @@ module rooch_framework::account {
    use std::signer;
    use moveos_std::bcs;
    use moveos_std::context::{Self, Context};
-   use moveos_std::account_storage;
    use rooch_framework::account_authentication;
    use rooch_framework::account_coin_store;
 
@@ -76,7 +75,7 @@ module rooch_framework::account {
 
       // Make sure the Account is not already created.
       assert!(
-         !account_storage::global_exists<Account>(ctx, new_address),
+         !context::exists_resource<Account>(ctx, new_address),
          error::already_exists(ErrorAccountAlreadyExists)
       ); 
 
@@ -87,8 +86,7 @@ module rooch_framework::account {
    fun create_account_unchecked(ctx: &mut Context, new_address: address): signer {
       let new_account = create_signer(new_address);
 
-      account_storage::ensure_account_storage(ctx, new_address);
-      account_storage::global_move_to<Account>(ctx,
+      context::move_resource_to<Account>(ctx,
          &new_account,
          Account {
             sequence_number: 0,
@@ -123,10 +121,10 @@ module rooch_framework::account {
    public fun sequence_number(ctx: &Context, addr: address): u64 {
       // if account does not exist, return 0 as sequence number
       // TODO: refactor this after we decide how to handle account create.
-      if (!account_storage::global_exists<Account>(ctx, addr)) {
+      if (!context::exists_resource<Account>(ctx, addr)) {
          return 0
       };
-      let account = account_storage::global_borrow<Account>(ctx, addr);
+      let account = context::borrow_resource<Account>(ctx, addr);
       sequence_number_for_account(account)
    }
 
@@ -139,7 +137,7 @@ module rooch_framework::account {
       let sender = context::sender(ctx);
       let tx_sequence_number = context::sequence_number(ctx);
 
-      let account = account_storage::global_borrow_mut<Account>(ctx, sender);
+      let account = context::borrow_mut_resource<Account>(ctx, sender);
 
       assert!(
          (account.sequence_number as u128) < MAX_U64,
@@ -159,23 +157,13 @@ module rooch_framework::account {
    }
 
    public fun is_resource_account(ctx: &Context, addr: address): bool {
-      // for resource account , account storage maybe not exist when create,
-      // so need check account storage eixst befor call global exist function
-      if(account_storage::exist_account_storage(ctx, addr)){
-         account_storage::global_exists<ResourceAccount>(ctx, addr)
-      } else {
-         false
-      }
+      context::exists_resource<ResourceAccount>(ctx, addr)
    }
 
 
    #[view]
    public fun exists_at(ctx: &Context, addr: address): bool {
-      if(account_storage::exist_account_storage(ctx, addr)){
-         account_storage::global_exists<Account>(ctx, addr)
-      } else {
-         false
-      }
+      context::exists_resource<Account>(ctx, addr)
    }
 
 
@@ -191,14 +179,14 @@ module rooch_framework::account {
       let resource_addr = create_resource_address(&source_addr, seed);
       assert!(!is_resource_account(ctx, resource_addr), error::invalid_state(ErrorAccountIsAlreadyResourceAccount));
       let resource_signer = if (exists_at(ctx, resource_addr)) {
-         let account = account_storage::global_borrow<Account>(ctx, resource_addr);
+         let account = context::borrow_resource<Account>(ctx, resource_addr);
          assert!(account.sequence_number == 0, error::invalid_state(ErrorResourceAccountAlreadyUsed));
          create_signer(resource_addr)
       } else {
          create_account_unchecked(ctx, resource_addr)
       };
 
-      account_storage::global_move_to<ResourceAccount>(ctx,
+      context::move_resource_to<ResourceAccount>(ctx,
          &resource_signer,
          ResourceAccount {}
       );
@@ -278,7 +266,7 @@ module rooch_framework::account {
       let alice = create_account_for_test(&mut ctx, alice_addr);
       let (resource_account, resource_account_cap) = create_resource_account(&mut ctx, &alice);
       let signer_cap_addr = get_signer_capability_address(&resource_account_cap);
-      account_storage::global_move_to<CapResponsbility>(&mut ctx,
+      context::move_resource_to<CapResponsbility>(&mut ctx,
          &resource_account,
          CapResponsbility {
             cap: resource_account_cap
@@ -321,7 +309,7 @@ module rooch_framework::account {
       let ctx = context::new_test_context(sender);
       let sender_signer = create_account_for_test(&mut ctx, sender);
       let (signer, cap) = create_resource_account(&mut ctx, &sender_signer);
-      account_storage::global_move_to<CapResponsbility>(&mut ctx,
+      context::move_resource_to<CapResponsbility>(&mut ctx,
          &signer,
          CapResponsbility {
             cap

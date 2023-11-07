@@ -6,9 +6,8 @@ module rooch_framework::address_mapping{
     use std::option::{Self, Option};
     use std::signer;
     use std::error;
-    use moveos_std::context::Context;
+    use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
-    use moveos_std::account_storage;
     use rooch_framework::hash::{blake2b256};
     use rooch_framework::multichain_address::{Self, MultiChainAddress};
 
@@ -23,8 +22,8 @@ module rooch_framework::address_mapping{
     }
 
     public(friend) fun genesis_init(ctx: &mut Context, genesis_account: &signer) {
-        let mapping = table::new<MultiChainAddress, address>(ctx);
-        account_storage::global_move_to(ctx, genesis_account, AddressMapping{
+        let mapping = context::new_table<MultiChainAddress, address>(ctx);
+        context::move_resource_to(ctx, genesis_account, AddressMapping{
             mapping,
         });
     }
@@ -34,7 +33,7 @@ module rooch_framework::address_mapping{
         if (multichain_address::is_rooch_address(&maddress)) {
             return option::some(multichain_address::into_rooch_address(maddress))
         };
-        let am = account_storage::global_borrow<AddressMapping>(ctx, @rooch_framework);
+        let am = context::borrow_resource<AddressMapping>(ctx, @rooch_framework);
         if(table::contains(&am.mapping, maddress)){
             let addr = table::borrow(&am.mapping, maddress);
             option::some(*addr)
@@ -63,7 +62,7 @@ module rooch_framework::address_mapping{
         if (multichain_address::is_rooch_address(&maddress)) {
             return true
         };
-        let am = account_storage::global_borrow<AddressMapping>(ctx, @rooch_framework);
+        let am = context::borrow_resource<AddressMapping>(ctx, @rooch_framework);
         table::contains(&am.mapping, maddress)
     }
 
@@ -81,7 +80,7 @@ module rooch_framework::address_mapping{
                 error::invalid_argument(ErrorMultiChainAddressInvalid)
             );
         };
-        let am = account_storage::global_borrow_mut<AddressMapping>(ctx, @rooch_framework);
+        let am = context::borrow_mut_resource<AddressMapping>(ctx, @rooch_framework);
         table::add(&mut am.mapping, maddress, rooch_address);
         //TODO matienance the reverse mapping rooch_address -> vector<MultiChainAddress>
     }

@@ -3,8 +3,7 @@
 
 module rooch_framework::chain_id {
     
-    use moveos_std::context::Context;
-    use moveos_std::account_storage;
+    use moveos_std::context::{Self, Context};
 
     friend rooch_framework::genesis;
 
@@ -22,11 +21,11 @@ module rooch_framework::chain_id {
         let chain_id = ChainID{
             id: chain_id
         };
-        account_storage::global_move_to(ctx, genesis_account, chain_id);
+        context::move_resource_to(ctx, genesis_account, chain_id);
     }
 
     public fun chain_id(ctx: &Context) : u64 {
-        let chain_id = account_storage::global_borrow<ChainID>(ctx, @rooch_framework);
+        let chain_id = context::borrow_resource<ChainID>(ctx, @rooch_framework);
         chain_id.id
     }
 
