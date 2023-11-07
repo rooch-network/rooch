@@ -18,8 +18,6 @@ module rooch_examples::rooch_examples {
     use rooch_framework::account::{Self, SignerCapability};
 
     #[test_only]
-    use moveos_std::context;
-    #[test_only]
     use rooch_framework::genesis;
 
     const SEED: vector<u8> = b"SEED";
