@@ -39,6 +39,8 @@ diesel = { workspace = true }
 diesel-derive-enum = { workspace = true }
 diesel_migrations = { workspace = true }
 cached = { workspace = true }
+dotenvy = { workspace = true }
+coerce = { workspace = true }
 
 move-core-types = { workspace = true }
 move-bytecode-utils = { workspace = true }

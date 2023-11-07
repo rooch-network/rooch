@@ -3,6 +3,7 @@
 
 use self::{authenticator::Authenticator, ethereum::EthereumTransaction, rooch::RoochTransaction};
 use crate::address::MultiChainAddress;
+use crate::multichain_id::{MultiChainID, ETHER, ROOCH};
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::transaction::TransactionExecutionInfo;
@@ -85,6 +86,8 @@ pub trait AbstractTransaction {
         self,
         resolved_sender: AccountAddress,
     ) -> Result<MoveOSTransaction>;
+
+    fn multi_chain_id(&self) -> MultiChainID;
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -161,6 +164,13 @@ impl AbstractTransaction for TypedTransaction {
         match self {
             TypedTransaction::Rooch(tx) => AbstractTransaction::sender(tx),
             TypedTransaction::Ethereum(tx) => tx.sender(),
+        }
+    }
+
+    fn multi_chain_id(&self) -> MultiChainID {
+        match self {
+            TypedTransaction::Rooch(_tx) => MultiChainID::from(ROOCH),
+            TypedTransaction::Ethereum(_tx) => MultiChainID::from(ETHER),
         }
     }
 }

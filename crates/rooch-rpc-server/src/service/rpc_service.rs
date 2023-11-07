@@ -71,6 +71,8 @@ impl RpcService {
             .propose_transaction(tx, execution_info.clone(), sequence_info.clone())
             .await?;
 
+        // Last save indexer
+
         Ok(ExecuteTransactionResponse {
             sequence_info,
             execution_info,

@@ -8,9 +8,6 @@ use crate::{
     SqliteConnectionPoolConfig, SqlitePoolConnection,
 };
 use anyhow::{anyhow, Result};
-// use diesel::backend::Backend;
-// use diesel::query_builder::QueryBuilder;
-// use diesel::sqlite::Sqlite;
 use diesel::{
     r2d2::ConnectionManager, Connection, ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection,
 };
@@ -62,15 +59,6 @@ impl IndexerReader {
         })
     }
 
-    // pub fn build_transaction(&mut self) -> TransactionBuilder<'_, Self> {
-    //     TransactionBuilder::new(self)
-    // }
-
-    // fn to_sql(&self, out: &mut DB::QueryBuilder, backend: &DB) -> QueryResult<()> {
-    //     let mut options = AstPassToSqlOptions::default();
-    //     self.walk_ast(AstPass::to_sql(out, &mut options, backend))
-    // }
-
     pub fn run_query<T, E, F>(&self, query: F) -> Result<T, IndexerError>
     where
         F: FnOnce(&mut SqliteConnection) -> Result<T, E>,
@@ -80,27 +68,17 @@ impl IndexerReader {
 
         let mut connection = self.get_connection()?;
 
-        connection
-            .transaction(query)
-            .map_err(|e| IndexerError::SQLiteReadError(e.to_string()))
-
-        // let mut query_builder = <Sqlite as Backend>::QueryBuilder::default();
-        // self.to_sql(&mut query_builder, &Sqlite)?;
-        // let sql = query_builder.finish();
-
-        // AnsiTransactionManager::begin_transaction_sql(&mut *self.connection, &sql)?;
-        //
-        // let sqlite_connection = connection.borrow_mut();
-        // TransactionBuilder::new(sqlite_connection)
-        //     .read_only()
-        //     .run(query)
-        //     .map_err(|e| IndexerError::SQLiteReadError(e.to_string()))
-
         // connection
-        //     .build_transaction()
+        //     .transaction(query)
+        //     .map_err(|e| IndexerError::SQLiteReadError(e.to_string()))
+
+        // TransactionBuilder::new(&mut connection)
         //     .read_only()
         //     .run(query)
         //     .map_err(|e| IndexerError::SQLiteReadError(e.to_string()))
+
+        //TODO implements sqlite query
+        Err(IndexerError::SQLiteReadError("Not implements".to_string()))
     }
 
     pub async fn spawn_blocking<F, R, E>(&self, f: F) -> Result<R, E>
@@ -160,12 +138,15 @@ impl IndexerReader {
         &self,
         tx_orders: Vec<i64>,
     ) -> Result<Vec<StoredTransaction>, IndexerError> {
-        // TODO multi_get
-        self.run_query(|conn| {
-            transactions::table
-                .filter(transactions::tx_order.eq_any(tx_orders))
-                .load::<StoredTransaction>(conn)
-        })
+        // // TODO multi_get
+        // self.run_query(|conn| {
+        //     transactions::table
+        //         .filter(transactions::tx_order.eq_any(tx_orders))
+        //         .load::<StoredTransaction>(conn)
+        // })
+
+        //TODO multi_get
+        Ok(vec![])
     }
 
     fn stored_transaction_to_transaction_block(

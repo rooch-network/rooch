@@ -33,7 +33,7 @@ diesel::table! {
         tx_hash -> Text,
         transaction_type -> Text,
         sequence_number -> Int8,
-        multichain_id -> Text,
+        multichain_id -> Int8,
         multichain_raw_address -> Text,
         sender -> Text,
         action -> Text,

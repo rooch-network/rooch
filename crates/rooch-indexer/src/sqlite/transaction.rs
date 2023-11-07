@@ -8,6 +8,7 @@ use diesel::prelude::*;
 use diesel::query_builder::{AstPass, QueryBuilder, QueryFragment};
 use diesel::result::Error;
 
+use crate::SqlitePoolConnection;
 use diesel::sqlite::Sqlite;
 use diesel::Connection;
 
@@ -198,7 +199,7 @@ where
     /// the closure returns `Ok(_)`, it will be rolled back if it returns `Err(_)`.
     /// For both cases the original result value will be returned from this function.
     ///
-    /// If the transaction fails to commit and requires a rollback according to Postgres,
+    /// If the transaction fails to commit and requires a rollback according to SQLite,
     /// (e.g. serialization failure) a rollback will be attempted.
     /// If the rollback fails, the error will be returned in a
     /// [`Error::RollbackErrorOnCommit`](crate::result::Error::RollbackErrorOnCommit),
@@ -318,9 +319,8 @@ fn test_transaction_builder_generates_correct_sql() {
         };
     }
 
-    let database_url = dotenvy::var("PG_DATABASE_URL")
-        .or_else(|_| dotenvy::var("DATABASE_URL"))
-        .expect("DATABASE_URL must be set in order to run tests");
+    let database_url =
+        dotenvy::var("DATABASE_URL").expect("DATABASE_URL must be set in order to run tests");
     let mut conn = SqliteConnection::establish(&database_url).unwrap();
 
     assert_sql!(conn.build_transaction(), "BEGIN TRANSACTION");

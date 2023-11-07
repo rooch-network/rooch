@@ -13,14 +13,17 @@ use diesel::r2d2::ConnectionManager;
 use diesel::sqlite::SqliteConnection;
 use tracing::info;
 
+use crate::store::IndexerStoreTrait;
 use errors::IndexerError;
 use rooch_config::indexer_config::IndexerConfig;
-use store::IndexerStore;
 
 pub mod errors;
-pub mod indexer;
+pub mod indexer_reader;
 pub mod models;
 pub mod schema;
+// pub mod sqlite_extend;
+pub mod actor;
+pub mod proxy;
 pub mod store;
 pub mod test_utils;
 pub mod types;
@@ -43,7 +46,7 @@ const IMPLEMENTED_METHODS: [&str; 4] = [
 pub struct Indexer;
 
 impl Indexer {
-    pub async fn start<S: IndexerStore + Sync + Send + Clone + 'static>(
+    pub async fn start<S: IndexerStoreTrait + Sync + Send + Clone + 'static>(
         _config: &IndexerConfig,
         _store: S,
     ) -> Result<(), IndexerError> {

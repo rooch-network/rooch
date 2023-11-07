@@ -231,6 +231,7 @@ backoff = { version = "0.4.0", features = [
     "tokio",
     "tokio_1",
 ] }
+dotenvy = "0.15"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

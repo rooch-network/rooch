@@ -1,10 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-pub use indexer_store::SqliteIndexerStore;
 pub use traits::*;
 
 pub mod indexer_store;
+pub mod sqlite_store;
 pub mod traits;
 
 pub(crate) mod diesel_macro {

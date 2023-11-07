@@ -5,7 +5,7 @@ use anyhow::anyhow;
 use tokio::task::JoinHandle;
 
 use crate::errors::IndexerError;
-use crate::store::SqliteIndexerStore;
+use crate::store::sqlite_store::SqliteIndexerStore;
 use crate::{new_sqlite_connection_pool, Indexer, IndexerConfig};
 
 /// Spawns an indexer thread with provided SQLite DB url
