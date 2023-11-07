@@ -62,7 +62,7 @@ impl IndexedTransaction {
         moveos_tx: VerifiedMoveOSTransaction,
     ) -> Result<Self> {
         let move_action = MoveAction::from(moveos_tx.action);
-        let action_raw = move_action.clone().encode()?;
+        let action_raw = move_action.encode()?;
         let transaction_authenticator_info = transaction.authenticator_info()?;
         let indexed_transaction = IndexedTransaction {
             tx_hash: transaction.tx_hash(),
@@ -84,7 +84,7 @@ impl IndexedTransaction {
                 .auth_validator_id,
             authenticator_payload: transaction_authenticator_info.authenticator.payload,
             tx_accumulator_root: sequence_info.tx_accumulator_root,
-            transaction_raw: transaction.clone().encode(),
+            transaction_raw: transaction.encode(),
 
             state_root: execution_info.state_root,
             event_root: execution_info.event_root,

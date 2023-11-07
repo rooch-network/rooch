@@ -15,12 +15,11 @@ use std::sync::Arc;
 
 pub const ROOCH_INDEXER_DB_FILENAME: &str = "indexer.sqlite";
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Parser)]
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize, Parser)]
 #[clap(name = "Rooch indexer")]
 pub struct IndexerConfig {
-    #[clap(skip)]
-    pub db_url: Option<String>,
-
+    // #[clap(skip)]
+    // pub db_url: Option<String>,
     #[serde(skip)]
     #[clap(skip)]
     base: Option<Arc<BaseConfig>>,

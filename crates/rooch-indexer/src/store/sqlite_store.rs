@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use core::result::Result::Ok;
-use itertools::Itertools;
 use std::time::Duration;
 use tap::Tap;
 

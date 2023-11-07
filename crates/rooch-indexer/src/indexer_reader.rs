@@ -1,17 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::schema::transactions;
 use crate::types::IndexerResult;
 use crate::{
     errors::IndexerError, models::transactions::StoredTransaction, SqliteConnectionConfig,
     SqliteConnectionPoolConfig, SqlitePoolConnection,
 };
 use anyhow::{anyhow, Result};
-use diesel::{
-    r2d2::ConnectionManager, Connection, ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection,
-};
-use itertools::Itertools;
+use diesel::{r2d2::ConnectionManager, SqliteConnection};
 use rooch_types::transaction::TransactionWithInfo;
 
 pub const SEQUENCE_NUMBER_STR: &str = "sequence_number";
@@ -59,14 +55,14 @@ impl IndexerReader {
         })
     }
 
-    pub fn run_query<T, E, F>(&self, query: F) -> Result<T, IndexerError>
+    pub fn run_query<T, E, F>(&self, _query: F) -> Result<T, IndexerError>
     where
         F: FnOnce(&mut SqliteConnection) -> Result<T, E>,
         E: From<diesel::result::Error> + std::error::Error,
     {
         blocking_call_is_ok_or_panic();
 
-        let mut connection = self.get_connection()?;
+        // let mut connection = self.get_connection()?;
 
         // connection
         //     .transaction(query)
@@ -136,7 +132,7 @@ fn blocking_call_is_ok_or_panic() {
 impl IndexerReader {
     fn multi_get_transactions(
         &self,
-        tx_orders: Vec<i64>,
+        _tx_orders: Vec<i64>,
     ) -> Result<Vec<StoredTransaction>, IndexerError> {
         // // TODO multi_get
         // self.run_query(|conn| {

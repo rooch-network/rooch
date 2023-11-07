@@ -62,3 +62,4 @@ rooch-key = { workspace = true }
 rooch-store = { workspace = true }
 rooch-rpc-api = { workspace = true }
 rooch-relayer = { workspace = true }
+rooch-indexer = { workspace = true }

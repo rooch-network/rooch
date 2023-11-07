@@ -6,10 +6,9 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 // use tracing::info;
 use crate::actor::messages::{IndexerTransactionMessage, QueryTransactionsByHashMessage};
-use crate::errors::IndexerError;
-use crate::store::indexer_store::IndexerStore;
 use crate::store::IndexerStoreTrait;
 use crate::types::IndexedTransaction;
+use crate::IndexerStore;
 use rooch_types::transaction::TransactionWithInfo;
 
 pub struct IndexerActor {
@@ -40,7 +39,7 @@ impl Handler<IndexerTransactionMessage> for IndexerActor {
 
         let indexed_transaction =
             IndexedTransaction::new(transaction, sequence_info, execution_info, moveos_tx)?;
-        let transactions = vec![indexed_transaction];
+        let transactions = vec![indexed_transaction.clone()];
         self.indexer_store
             .persist_transactions(transactions)
             .await?;

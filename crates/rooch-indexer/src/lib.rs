@@ -6,16 +6,17 @@
 
 #![recursion_limit = "256"]
 
+use std::fmt::{Debug, Display, Formatter};
 use std::time::Duration;
 
 use anyhow::Result;
 use diesel::r2d2::ConnectionManager;
 use diesel::sqlite::SqliteConnection;
-use tracing::info;
+// use tracing::info;
 
+use crate::store::sqlite_store::SqliteIndexerStore;
 use crate::store::IndexerStoreTrait;
 use errors::IndexerError;
-use rooch_config::indexer_config::IndexerConfig;
 
 pub mod errors;
 pub mod indexer_reader;
@@ -25,7 +26,6 @@ pub mod schema;
 pub mod actor;
 pub mod proxy;
 pub mod store;
-pub mod test_utils;
 pub mod types;
 pub mod utils;
 
@@ -35,24 +35,53 @@ pub type SqlitePoolConnection = diesel::r2d2::PooledConnection<ConnectionManager
 /// Returns all endpoints for which we have implemented on the indexer,
 /// some of them are not validated yet.
 /// NOTE: we only use this for integration testing
-const IMPLEMENTED_METHODS: [&str; 4] = [
-    "multi_get_transactions",
-    "multi_get_events",
-    // indexer apis
-    "query_transactions",
-    "query_events",
-];
+// const IMPLEMENTED_METHODS: [&str; 4] = [
+//     "multi_get_transactions",
+//     "multi_get_events",
+//     // indexer apis
+//     "query_transactions",
+//     "query_events",
+// ];
 
-pub struct Indexer;
+#[derive(Clone)]
+pub struct IndexerStore {
+    pub sqlite_store: SqliteIndexerStore,
+}
 
-impl Indexer {
-    pub async fn start<S: IndexerStoreTrait + Sync + Send + Clone + 'static>(
-        _config: &IndexerConfig,
-        _store: S,
-    ) -> Result<(), IndexerError> {
-        info!("Rooch indexer started...",);
+impl IndexerStore {
+    // pub fn new(cp_pool: SqliteConnectionPool) -> Result<Self> {
+    //     let store = Self {
+    //         sqlite_store: SqliteIndexerStore::new(cp_pool),
+    //     };
+    //     Ok(store)
+    // }
 
-        Ok(())
+    pub fn new(db_url: &str) -> Result<Self> {
+        let sqlite_cp = new_sqlite_connection_pool(db_url)?;
+        let store = Self {
+            sqlite_store: SqliteIndexerStore::new(sqlite_cp),
+        };
+        Ok(store)
+    }
+
+    pub fn mock_indexer_store() -> Result<Self> {
+        let tmpdir = moveos_config::temp_dir();
+        let db_url = tmpdir
+            .path()
+            .to_str()
+            .ok_or(anyhow::anyhow!("invalid indexer db temp dir"))?;
+        Self::new(db_url)
+    }
+}
+
+impl Display for IndexerStore {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.clone())
+    }
+}
+impl Debug for IndexerStore {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }
 
