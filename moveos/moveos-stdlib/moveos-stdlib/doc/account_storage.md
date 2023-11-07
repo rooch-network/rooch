@@ -8,27 +8,23 @@ It is used to store the account's resources and modules
 
 
 -  [Resource `AccountStorage`](#0x2_account_storage_AccountStorage)
--  [Struct `ModuleUpgradeFlag`](#0x2_account_storage_ModuleUpgradeFlag)
 -  [Constants](#@Constants_0)
 -  [Function `named_table_id`](#0x2_account_storage_named_table_id)
 -  [Function `create_account_storage`](#0x2_account_storage_create_account_storage)
--  [Function `exist_account_storage`](#0x2_account_storage_exist_account_storage)
--  [Function `ensure_account_storage`](#0x2_account_storage_ensure_account_storage)
--  [Function `global_borrow`](#0x2_account_storage_global_borrow)
--  [Function `global_borrow_mut`](#0x2_account_storage_global_borrow_mut)
--  [Function `global_move_to`](#0x2_account_storage_global_move_to)
--  [Function `global_move_from`](#0x2_account_storage_global_move_from)
--  [Function `global_exists`](#0x2_account_storage_global_exists)
+-  [Function `borrow_resource`](#0x2_account_storage_borrow_resource)
+-  [Function `borrow_mut_resource`](#0x2_account_storage_borrow_mut_resource)
+-  [Function `move_resource_to`](#0x2_account_storage_move_resource_to)
+-  [Function `move_resource_from`](#0x2_account_storage_move_resource_from)
+-  [Function `exists_resource`](#0x2_account_storage_exists_resource)
+-  [Function `transfer`](#0x2_account_storage_transfer)
 -  [Function `exists_module`](#0x2_account_storage_exists_module)
 -  [Function `publish_modules`](#0x2_account_storage_publish_modules)
--  [Function `publish_modules_entry`](#0x2_account_storage_publish_modules_entry)
 
 
-<pre><code><b>use</b> <a href="">0x1::signer</a>;
+<pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
-<b>use</b> <a href="context.md#0x2_context">0x2::context</a>;
 <b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="table.md#0x2_table">0x2::table</a>;
@@ -49,40 +45,9 @@ It is used to store the account's resources and modules
 
 
 
-<a name="0x2_account_storage_ModuleUpgradeFlag"></a>
-
-## Struct `ModuleUpgradeFlag`
-
-
-
-<pre><code><b>struct</b> <a href="account_storage.md#0x2_account_storage_ModuleUpgradeFlag">ModuleUpgradeFlag</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
 <a name="@Constants_0"></a>
 
 ## Constants
-
-
-<a name="0x2_account_storage_ErrorAccountAlreadyExists"></a>
-
-The account with the given address already exists
-
-
-<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>: u64 = 1;
-</code></pre>
-
-
-
-<a name="0x2_account_storage_ErrorObjectNotExists"></a>
-
-The object not exists in the AccountStorage
-
-
-<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_ErrorObjectNotExists">ErrorObjectNotExists</a>: u64 = 4;
-</code></pre>
-
 
 
 <a name="0x2_account_storage_ErrorResourceAlreadyExists"></a>
@@ -90,7 +55,7 @@ The object not exists in the AccountStorage
 The resource with the given type already exists
 
 
-<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_ErrorResourceAlreadyExists">ErrorResourceAlreadyExists</a>: u64 = 2;
+<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_ErrorResourceAlreadyExists">ErrorResourceAlreadyExists</a>: u64 = 1;
 </code></pre>
 
 
@@ -100,7 +65,7 @@ The resource with the given type already exists
 The resource with the given type not exists
 
 
-<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_ErrorResourceNotExists">ErrorResourceNotExists</a>: u64 = 3;
+<pre><code><b>const</b> <a href="account_storage.md#0x2_account_storage_ErrorResourceNotExists">ErrorResourceNotExists</a>: u64 = 2;
 </code></pre>
 
 
@@ -141,95 +106,73 @@ The resource with the given type not exists
 Create a new account storage space
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_create_account_storage">create_account_storage</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account_storage.md#0x2_account_storage_create_account_storage">create_account_storage</a>(account: <b>address</b>): <a href="account_storage.md#0x2_account_storage_AccountStorage">account_storage::AccountStorage</a>
 </code></pre>
 
 
 
-<a name="0x2_account_storage_exist_account_storage"></a>
+<a name="0x2_account_storage_borrow_resource"></a>
 
-## Function `exist_account_storage`
-
-check if account storage eixst
+## Function `borrow_resource`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_exist_account_storage">exist_account_storage</a>(ctx: &<a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): bool
+
+<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_borrow_resource">borrow_resource</a>&lt;T: key&gt;(self: &<a href="account_storage.md#0x2_account_storage_AccountStorage">account_storage::AccountStorage</a>): &T
 </code></pre>
 
 
 
-<a name="0x2_account_storage_ensure_account_storage"></a>
+<a name="0x2_account_storage_borrow_mut_resource"></a>
 
-## Function `ensure_account_storage`
+## Function `borrow_mut_resource`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_ensure_account_storage">ensure_account_storage</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>)
+<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_borrow_mut_resource">borrow_mut_resource</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="account_storage.md#0x2_account_storage_AccountStorage">account_storage::AccountStorage</a>): &<b>mut</b> T
 </code></pre>
 
 
 
-<a name="0x2_account_storage_global_borrow"></a>
+<a name="0x2_account_storage_move_resource_to"></a>
 
-## Function `global_borrow`
-
-Borrow a resource from the account's storage
-This function equates to <code><b>borrow_global</b>&lt;T&gt;(<b>address</b>)</code> instruction in Move
+## Function `move_resource_to`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_global_borrow">global_borrow</a>&lt;T: key&gt;(ctx: &<a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): &T
+
+<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_move_resource_to">move_resource_to</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="account_storage.md#0x2_account_storage_AccountStorage">account_storage::AccountStorage</a>, resource: T)
 </code></pre>
 
 
 
-<a name="0x2_account_storage_global_borrow_mut"></a>
+<a name="0x2_account_storage_move_resource_from"></a>
 
-## Function `global_borrow_mut`
-
-Borrow a mut resource from the account's storage
-This function equates to <code><b>borrow_global_mut</b>&lt;T&gt;(<b>address</b>)</code> instruction in Move
+## Function `move_resource_from`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_global_borrow_mut">global_borrow_mut</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): &<b>mut</b> T
+
+<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_move_resource_from">move_resource_from</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="account_storage.md#0x2_account_storage_AccountStorage">account_storage::AccountStorage</a>): T
 </code></pre>
 
 
 
-<a name="0x2_account_storage_global_move_to"></a>
+<a name="0x2_account_storage_exists_resource"></a>
 
-## Function `global_move_to`
-
-Move a resource to the account's storage
-This function equates to <code><b>move_to</b>&lt;T&gt;(&<a href="">signer</a>, resource)</code> instruction in Move
+## Function `exists_resource`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_global_move_to">global_move_to</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: &<a href="">signer</a>, resource: T)
+
+<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_exists_resource">exists_resource</a>&lt;T: key&gt;(self: &<a href="account_storage.md#0x2_account_storage_AccountStorage">account_storage::AccountStorage</a>): bool
 </code></pre>
 
 
 
-<a name="0x2_account_storage_global_move_from"></a>
+<a name="0x2_account_storage_transfer"></a>
 
-## Function `global_move_from`
-
-Move a resource from the account's storage
-This function equates to <code><b>move_from</b>&lt;T&gt;(<b>address</b>)</code> instruction in Move
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_global_move_from">global_move_from</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): T
-</code></pre>
+## Function `transfer`
 
 
 
-<a name="0x2_account_storage_global_exists"></a>
-
-## Function `global_exists`
-
-Check if the account has a resource of the given type
-This function equates to <code><b>exists</b>&lt;T&gt;(<b>address</b>)</code> instruction in Move
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_global_exists">global_exists</a>&lt;T: key&gt;(ctx: &<a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): bool
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account_storage.md#0x2_account_storage_transfer">transfer</a>(obj: <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account_storage.md#0x2_account_storage_AccountStorage">account_storage::AccountStorage</a>&gt;, account: <b>address</b>)
 </code></pre>
 
 
@@ -241,7 +184,7 @@ This function equates to <code><b>exists</b>&lt;T&gt;(<b>address</b>)</code> ins
 Check if the account has a module with the given name
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_exists_module">exists_module</a>(ctx: &<a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>, name: <a href="_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_exists_module">exists_module</a>(self: &<a href="account_storage.md#0x2_account_storage_AccountStorage">account_storage::AccountStorage</a>, name: <a href="_String">string::String</a>): bool
 </code></pre>
 
 
@@ -251,20 +194,8 @@ Check if the account has a module with the given name
 ## Function `publish_modules`
 
 Publish modules to the account's storage
+Return true if the modules are upgraded
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_storage.md#0x2_account_storage_publish_modules">publish_modules</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;)
-</code></pre>
-
-
-
-<a name="0x2_account_storage_publish_modules_entry"></a>
-
-## Function `publish_modules_entry`
-
-Entry function to publish modules
-The order of modules must be sorted by dependency order.
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="account_storage.md#0x2_account_storage_publish_modules_entry">publish_modules_entry</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account_storage.md#0x2_account_storage_publish_modules">publish_modules</a>(self: &<b>mut</b> <a href="account_storage.md#0x2_account_storage_AccountStorage">account_storage::AccountStorage</a>, account_address: <b>address</b>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;): bool
 </code></pre>

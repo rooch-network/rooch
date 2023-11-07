@@ -7,6 +7,7 @@
 
 -  [Struct `GasPaymentAccount`](#0x2_tx_context_GasPaymentAccount)
 -  [Struct `TxContext`](#0x2_tx_context_TxContext)
+-  [Struct `ModuleUpgradeFlag`](#0x2_tx_context_ModuleUpgradeFlag)
 -  [Constants](#@Constants_0)
 -  [Function `sender`](#0x2_tx_context_sender)
 -  [Function `sequence_number`](#0x2_tx_context_sequence_number)
@@ -20,6 +21,7 @@
 -  [Function `tx_meta`](#0x2_tx_context_tx_meta)
 -  [Function `tx_gas_payment_account`](#0x2_tx_context_tx_gas_payment_account)
 -  [Function `tx_result`](#0x2_tx_context_tx_result)
+-  [Function `set_module_upgrade_flag`](#0x2_tx_context_set_module_upgrade_flag)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -59,6 +61,17 @@ the VM, stored in a <code>Context</code> and passed in to the entrypoint of the 
 
 
 <pre><code><b>struct</b> <a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a> <b>has</b> drop
+</code></pre>
+
+
+
+<a name="0x2_tx_context_ModuleUpgradeFlag"></a>
+
+## Struct `ModuleUpgradeFlag`
+
+
+
+<pre><code><b>struct</b> <a href="tx_context.md#0x2_tx_context_ModuleUpgradeFlag">ModuleUpgradeFlag</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -217,4 +230,15 @@ The result is only available in the <code>post_execute</code> function.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(self: &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="tx_result.md#0x2_tx_result_TxResult">tx_result::TxResult</a>
+</code></pre>
+
+
+
+<a name="0x2_tx_context_set_module_upgrade_flag"></a>
+
+## Function `set_module_upgrade_flag`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_set_module_upgrade_flag">set_module_upgrade_flag</a>(self: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>, is_upgrade: bool)
 </code></pre>
