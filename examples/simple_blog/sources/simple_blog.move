@@ -7,10 +7,8 @@ module simple_blog::simple_blog {
     use std::signer;
     use std::string::{Self,String};
     use std::vector;
-    use moveos_std::object::ObjectID;
-    use moveos_std::object::{Self, Object};
-    use moveos_std::context::Context;
-    use moveos_std::account_storage;
+    use moveos_std::object::{ObjectID, Object};
+    use moveos_std::context::{Self, Context};
     use simple_blog::simple_article::{Self, Article};
 
     const ErrorDataTooLong: u64 = 1;
@@ -18,7 +16,7 @@ module simple_blog::simple_blog {
 
     struct MyBlog has key {
         name: String,
-        articles: vector<Object<Article>>,
+        articles: vector<ObjectID>,
     }
 
     /// This init function is called when the module is published
@@ -34,47 +32,41 @@ module simple_blog::simple_blog {
             name: string::utf8(b"MyBlog"),
             articles,
         };
-        account_storage::global_move_to(ctx, owner, myblog);
+        context::move_resource_to(ctx, owner, myblog);
     }
 
     public entry fun set_blog_name(ctx: &mut Context, owner: &signer, blog_name: String) {
         assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(ErrorDataTooLong));
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
-        if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
+        if(!context::exists_resource<MyBlog>(ctx, owner_address)){
             create_blog(ctx, owner);
         };
-        let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
+        let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
         myblog.name = blog_name;
     }
 
-    fun add_article_to_myblog(ctx: &mut Context, owner: &signer, article_obj: Object<Article>) {
+    fun add_article_to_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
-        if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
+        if(!context::exists_resource<MyBlog>(ctx, owner_address)){
             create_blog(ctx, owner);
         };
-        let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
-        vector::push_back(&mut myblog.articles, article_obj);
+        let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
+        vector::push_back(&mut myblog.articles, article_id);
     }
 
-    fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID): Object<Article> {
+    fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID){
         let owner_address = signer::address_of(owner);
-        let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
-        let idx = 0;
-        while(idx < vector::length(&myblog.articles)){
-            let article_obj = vector::borrow(&myblog.articles, idx);
-            if(object::id(article_obj) == article_id){
-                return vector::remove(&mut myblog.articles, idx)
-            };
-            idx = idx + 1;
-        };
-        abort error::not_found(ErrorNotFound)
+        let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
+        let (contains, index) = vector::index_of(&myblog.articles, &article_id);
+        assert!(contains, error::not_found(ErrorNotFound));
+        vector::remove(&mut myblog.articles, index); 
     }
 
     /// Get owner's blog's articles
-    public fun get_blog_articles(ctx: &Context, owner_address: address): &vector<Object<Article>> {
-        let myblog = account_storage::global_borrow<MyBlog>(ctx, owner_address);
+    public fun get_blog_articles(ctx: &Context, owner_address: address): &vector<ObjectID> {
+        let myblog = context::borrow_resource<MyBlog>(ctx, owner_address);
         &myblog.articles
     }
 
@@ -89,12 +81,11 @@ module simple_blog::simple_blog {
     }
 
     public entry fun update_article(
-        ctx: &mut Context,
         article_obj: &mut Object<Article>,
         new_title: String,
         new_body: String,
     ) {
-        simple_article::update_article(ctx, article_obj, new_title, new_body);
+        simple_article::update_article(article_obj, new_title, new_body);
     }
 
     public entry fun delete_article(
@@ -102,7 +93,8 @@ module simple_blog::simple_blog {
         owner: &signer,
         article_id: ObjectID,
     ) {
-        let article_obj = delete_article_from_myblog(ctx, owner, article_id);
-        simple_article::delete_article(ctx, article_obj);
+        delete_article_from_myblog(ctx, owner, article_id);
+        let article_obj = context::take_object(ctx, owner, article_id); 
+        simple_article::delete_article(article_obj);
     }
 }

@@ -14,6 +14,12 @@ Open the Rooch dashboard url and you will see the following login interface. `Me
 
 ![Dashboard login page](/docs/dashboard-login.png)
 
+### Session key
+
+The first login authentication will prompt the user to authenticate the session key. The session key has an expiration time limit. If it expires, it needs to be verified again:
+
+![](/docs/dashboard-session-key.png)
+
 ## Navigation bar introduction
 
 The top of the dashboard page is the navigation bar, including the search box, light and dark theme switching button, language switching button, network switching button, and connected wallet address.
@@ -28,14 +34,36 @@ The sidebar is a quick navigation for various functions of the Rooch dashboard. 
 
 See an overview of the dashboard here.
 
+### Tutorial
+
+Here are some examples of frontends deployed to the Rooch network.
+
+#### Counter Example
+
+A Counter example is deployed by default in the Dashboard. We can directly experience its counting function. The counter value is displayed on the left and the button for incrementing the counter is on the right.
+
+This counter can be called by all accounts that have authenticated the session key.
+
+![](/docs/dashboard-counter-example.png)
+
 ### SCAN
 
 Rooch’s block explorer function is integrated here.
 
+{/*
 ### Wallets & Assets
 
 Here is the operation page related to wallet and assets.
+*/}
 
 ### AUTHENTICATION
 
 The permission control panel of various DApps that interact with Rooch is integrated here.
+
+#### Session
+
+All records that have been authenticated by the Session key are listed here.
+
+![](/docs/dashboard-session-list.png)
+
+You can click the `RRFRESH` button to refresh the record list of Session key. The last column of Session key is the button to remove the corresponding Session key.

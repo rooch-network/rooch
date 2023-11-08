@@ -28,7 +28,6 @@
 <b>use</b> <a href="">0x1::hash</a>;
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
@@ -88,21 +87,21 @@ So that the capability is always controlled by contracts, not by some EOA.
 
 
 
+<a name="0x3_account_CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER"></a>
+
+
+
+<pre><code><b>const</b> <a href="account.md#0x3_account_CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER">CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER</a>: <a href="">vector</a>&lt;u8&gt; = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
+</code></pre>
+
+
+
 <a name="0x3_account_ErrorAccountAlreadyExists"></a>
 
 Account already exists
 
 
 <pre><code><b>const</b> <a href="account.md#0x3_account_ErrorAccountAlreadyExists">ErrorAccountAlreadyExists</a>: u64 = 1;
-</code></pre>
-
-
-
-<a name="0x3_account_CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER"></a>
-
-
-
-<pre><code><b>const</b> <a href="account.md#0x3_account_CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER">CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER</a>: <a href="">vector</a>&lt;u8&gt; = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
 </code></pre>
 
 

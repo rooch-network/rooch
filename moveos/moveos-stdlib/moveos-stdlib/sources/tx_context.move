@@ -54,6 +54,13 @@ module moveos_std::tx_context {
         map: SimpleMap<String, Any>,
     }
 
+    // Used to indicate module upgrading in this tx and then 
+    // setting mark_loader_cache_as_invalid() in VM, which announce to 
+    // the VM that the code loading cache should be considered outdated. 
+    struct ModuleUpgradeFlag has copy, drop, store {
+        is_upgrade: bool,
+    }
+
     /// Return the address of the user that signed the current transaction
     public(friend) fun sender(self: &TxContext): address {
         self.sender
@@ -139,6 +146,21 @@ module moveos_std::tx_context {
         let result = get<TxResult>(self);
         assert!(option::is_some(&result), error::invalid_state(ErrorInvalidContext));
         option::extract(&mut result)
+    }
+
+    public(friend) fun set_module_upgrade_flag(self: &mut TxContext, is_upgrade: bool) {
+        if(!contains<ModuleUpgradeFlag>(self)){
+            add(self, ModuleUpgradeFlag{is_upgrade});
+        }else{
+            //If the flag is already set, means the module upgrade flag is set in the previous function call.
+            //We only need to set the flag if is_upgrade is true.
+            if(is_upgrade){
+                let flag = get<ModuleUpgradeFlag>(self);
+                assert!(option::is_some(&flag), error::invalid_state(ErrorInvalidContext));
+                option::borrow_mut(&mut flag).is_upgrade = true;
+            }
+        }
+        
     }
 
     #[test_only]

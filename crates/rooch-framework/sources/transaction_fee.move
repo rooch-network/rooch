@@ -3,8 +3,7 @@
 
 module rooch_framework::transaction_fee {
 
-    use moveos_std::account_storage;
-    use moveos_std::context::Context;
+    use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, Object};
     use rooch_framework::coin_store::{Self, CoinStore};
     use rooch_framework::coin::Coin;
@@ -19,7 +18,7 @@ module rooch_framework::transaction_fee {
 
     public(friend) fun genesis_init(ctx: &mut Context, genesis_account: &signer)  {
         let fee_store = coin_store::create_coin_store<GasCoin>(ctx);
-        account_storage::global_move_to(ctx, genesis_account, TransactionFeePool{
+        context::move_resource_to(ctx, genesis_account, TransactionFeePool{
             fee: fee_store,
         })
     }
@@ -35,7 +34,7 @@ module rooch_framework::transaction_fee {
     }
 
     public(friend) fun deposit_fee(ctx: &mut Context, gas_coin: Coin<GasCoin>) {
-        let pool = account_storage::global_borrow_mut<TransactionFeePool>(ctx, @rooch_framework);
+        let pool = context::borrow_mut_resource<TransactionFeePool>(ctx, @rooch_framework);
         let coin_store = object::borrow_mut(&mut pool.fee);
         coin_store::deposit<GasCoin>(coin_store, gas_coin);
     }

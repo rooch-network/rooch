@@ -31,7 +31,7 @@ module rooch_examples::article {
     const ErrorNotGenesisAccount: u64 = 105;
     const ErrorIdNotFound: u64 = 106;
 
-    struct CommentTableItemAdded has key {
+    struct CommentTableItemAdded has drop {
         article_id: ObjectID,
         comment_seq_id: u64,
     }
@@ -96,11 +96,10 @@ module rooch_examples::article {
         let comment_seq_id = comment::comment_seq_id(&comment);
         assert!(!table::contains(&article.comments, comment_seq_id), ErrorIdAlreadyExists);
         table::add(&mut article.comments, comment_seq_id, comment);
-        //TODO enable event after refactor event API to remove `&mut Context`
-        // event::emit(ctx, CommentTableItemAdded {
-        //     article_id: id(article_obj),
-        //     comment_seq_id,
-        // });
+        event::emit(CommentTableItemAdded {
+             article_id: id(article_obj),
+             comment_seq_id,
+        });
     }
 
     public(friend) fun remove_comment(article_obj: &mut Object<Article>, comment_seq_id: u64) {
@@ -133,12 +132,12 @@ module rooch_examples::article {
             version: 0,
             title,
             body,
-            comments: table::new<u64, Comment>(ctx),
+            comments: context::new_table<u64, Comment>(ctx),
             comment_seq_id_generator: CommentSeqIdGenerator { sequence: 0, },
         }
     }
 
-    struct CommentUpdated has key {
+    struct CommentUpdated has drop {
         id: ObjectID,
         version: u64,
         comment_seq_id: u64,
@@ -185,7 +184,7 @@ module rooch_examples::article {
         }
     }
 
-    struct CommentRemoved has key {
+    struct CommentRemoved has drop {
         id: ObjectID,
         version: u64,
         comment_seq_id: u64,
@@ -211,7 +210,7 @@ module rooch_examples::article {
         }
     }
 
-    struct CommentAdded has key {
+    struct CommentAdded has drop {
         id: ObjectID,
         version: u64,
         comment_seq_id: u64,
@@ -258,7 +257,7 @@ module rooch_examples::article {
         }
     }
 
-    struct ArticleCreated has key {
+    struct ArticleCreated has drop {
         id: option::Option<ObjectID>,
         title: String,
         body: String,
@@ -291,7 +290,7 @@ module rooch_examples::article {
         }
     }
 
-    struct ArticleUpdated has key {
+    struct ArticleUpdated has drop {
         id: ObjectID,
         version: u64,
         title: String,
@@ -324,7 +323,7 @@ module rooch_examples::article {
         }
     }
 
-    struct ArticleDeleted has key {
+    struct ArticleDeleted has drop {
         id: ObjectID,
         version: u64,
     }
@@ -394,28 +393,28 @@ module rooch_examples::article {
         table::destroy_empty(comments);
     }
 
-    public(friend) fun emit_comment_updated(ctx: &mut Context, comment_updated: CommentUpdated) {
-        event::emit(ctx, comment_updated);
+    public(friend) fun emit_comment_updated(comment_updated: CommentUpdated) {
+        event::emit(comment_updated);
     }
 
-    public(friend) fun emit_comment_removed(ctx: &mut Context, comment_removed: CommentRemoved) {
-        event::emit(ctx, comment_removed);
+    public(friend) fun emit_comment_removed(comment_removed: CommentRemoved) {
+        event::emit(comment_removed);
     }
 
-    public(friend) fun emit_comment_added(ctx: &mut Context, comment_added: CommentAdded) {
-        event::emit(ctx, comment_added);
+    public(friend) fun emit_comment_added(comment_added: CommentAdded) {
+        event::emit(comment_added);
     }
 
-    public(friend) fun emit_article_created(ctx: &mut Context, article_created: ArticleCreated) {
-        event::emit(ctx, article_created);
+    public(friend) fun emit_article_created(article_created: ArticleCreated) {
+        event::emit(article_created);
     }
 
-    public(friend) fun emit_article_updated(ctx: &mut Context, article_updated: ArticleUpdated) {
-        event::emit(ctx, article_updated);
+    public(friend) fun emit_article_updated(article_updated: ArticleUpdated) {
+        event::emit(article_updated);
     }
 
-    public(friend) fun emit_article_deleted(ctx: &mut Context, article_deleted: ArticleDeleted) {
-        event::emit(ctx, article_deleted);
+    public(friend) fun emit_article_deleted(article_deleted: ArticleDeleted) {
+        event::emit(article_deleted);
     }
 
 }

@@ -48,7 +48,7 @@ pub struct Publish {
 
     /// Whether publish modules by `MoveAction::ModuleBundle`?
     /// If not set, publish moduels through Move entry function
-    /// `moveos_std::account_storage::publish_modules_entry`
+    /// `moveos_std::context::publish_modules_entry`
     #[clap(long, parse(from_flag))]
     pub by_move_action: bool,
 }
@@ -140,7 +140,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                 FunctionId::new(
                     ModuleId::new(
                         MOVEOS_STD_ADDRESS,
-                        Identifier::new("account_storage".to_owned()).unwrap(),
+                        Identifier::new("context".to_owned()).unwrap(),
                     ),
                     Identifier::new("publish_modules_entry".to_owned()).unwrap(),
                 ),

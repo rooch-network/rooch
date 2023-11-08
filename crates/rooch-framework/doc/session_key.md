@@ -27,7 +27,6 @@
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::tx_meta</a>;

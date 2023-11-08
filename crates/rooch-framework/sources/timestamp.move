@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-/// This module keeps a global wall clock that stores the current Unix time in microseconds.
+/// This module keeps a global wall clock that stores the current Unix time in milliseconds.
 /// It interacts with the other modules in the following ways:
 /// * genesis: to initialize the timestamp
 /// * L1 block: update the timestamp via L1s block header timestamp
@@ -9,72 +9,91 @@
 module rooch_framework::timestamp {
    
     use std::error;
-    use moveos_std::account_storage;
-    use moveos_std::context::Context;
+    use moveos_std::object;
+    use moveos_std::context::{Self, Context};
 
     friend rooch_framework::genesis;
     friend rooch_framework::ethereum_light_client;
 
-    /// A singleton resource holding the current Unix time in microseconds
-    struct CurrentTimeMicroseconds has key {
-        microseconds: u64,
+    /// A singleton object holding the current Unix time in milliseconds
+    struct Timestamp has key {
+        milliseconds: u64,
     }
 
-    /// Conversion factor between seconds and microseconds
-    const MICRO_CONVERSION_FACTOR: u64 = 1000000;
+    /// Conversion factor between seconds and milliseconds
+    const MILLI_CONVERSION_FACTOR: u64 = 1000;
 
     /// An invalid timestamp was provided
     const ErrorInvalidTimestamp: u64 = 1;
 
-    public(friend) fun genesis_init(ctx: &mut Context, genesis_account: &signer, initial_time_microseconds: u64) {
-        let current_time = CurrentTimeMicroseconds { microseconds: initial_time_microseconds };
-        account_storage::global_move_to(ctx, genesis_account, current_time);
+    public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer, initial_time_milliseconds: u64) {
+        let timestamp = Timestamp { milliseconds: initial_time_milliseconds };
+        context::new_singleton(ctx, timestamp);
     }
 
-    /// Updates the wall clock time, if the new time is smaller than the current time, aborts.
-    public(friend) fun update_global_time(ctx: &mut Context, timestamp_microsecs: u64) {
-        let global_timer = account_storage::global_borrow_mut<CurrentTimeMicroseconds>(ctx, @rooch_framework);
-        let now = global_timer.microseconds;
-        assert!(now < timestamp_microsecs, error::invalid_argument(ErrorInvalidTimestamp));
-        global_timer.microseconds = timestamp_microsecs;
+    /// Updates the global clock time, if the new time is smaller than the current time, aborts.
+    public(friend) fun update_global_time(ctx: &mut Context, timestamp_milliseconds: u64) {
+        let current_timestamp = timestamp_mut(ctx); 
+        let now = current_timestamp.milliseconds;
+        assert!(now < timestamp_milliseconds, error::invalid_argument(ErrorInvalidTimestamp));
+        current_timestamp.milliseconds = timestamp_milliseconds;
     }
 
-    /// Tries to update the wall clock time, if the new time is smaller than the current time, ignores the update, and returns false.
-    public(friend) fun try_update_global_time(ctx: &mut Context, timestamp: u64) : bool {
-        let global_timer = account_storage::global_borrow_mut<CurrentTimeMicroseconds>(ctx, @rooch_framework);
-        let now = global_timer.microseconds;
-        if(now < timestamp) {
-            global_timer.microseconds = timestamp;
+    /// Tries to update the global clock time, if the new time is smaller than the current time, ignores the update, and returns false.
+    public(friend) fun try_update_global_time(ctx: &mut Context, timestamp_milliseconds: u64) : bool {
+        let current_timestamp = timestamp_mut(ctx); 
+        let now = current_timestamp.milliseconds;
+        if(now < timestamp_milliseconds) {
+            current_timestamp.milliseconds = timestamp_milliseconds;
             true
         }else{
             false
         }
     }
 
-    #[view]
-    /// Gets the current time in microseconds.
-    public fun now_microseconds(ctx: &Context): u64 {
-        account_storage::global_borrow<CurrentTimeMicroseconds>(ctx, @rooch_framework).microseconds
+    fun timestamp_mut(ctx: &mut Context): &mut Timestamp {
+        let object_id = object::singleton_object_id<Timestamp>();
+        let obj = context::borrow_mut_object_extend<Timestamp>(ctx, object_id);
+        object::borrow_mut(obj)
     }
 
-    #[view]
+    public fun timestamp(ctx: &Context): &Timestamp {
+        let object_id = object::singleton_object_id<Timestamp>();
+        let obj = context::borrow_object<Timestamp>(ctx, object_id);
+        object::borrow(obj)
+    }
+
+    public fun milliseconds(self: &Timestamp): u64 {
+        self.milliseconds
+    }
+
+    public fun seconds(self: &Timestamp): u64 {
+        self.milliseconds / MILLI_CONVERSION_FACTOR
+    }
+
+    /// Gets the current time in milliseconds.
+    public fun now_milliseconds(ctx: &Context): u64 {
+        let timestamp = timestamp(ctx);
+        timestamp.milliseconds
+    }
+
     /// Gets the current time in seconds.
     public fun now_seconds(ctx: &Context): u64 {
-        now_microseconds(ctx) / MICRO_CONVERSION_FACTOR
+        now_milliseconds(ctx) / MILLI_CONVERSION_FACTOR
     }
 
-    public fun seconds_to_microseconds(seconds: u64): u64 {
-        seconds * MICRO_CONVERSION_FACTOR
+    public fun seconds_to_milliseconds(seconds: u64): u64 {
+        seconds * MILLI_CONVERSION_FACTOR
     }
 
     #[test_only]
-    public fun update_global_time_for_test(ctx: &mut Context, timestamp_microsecs: u64){
-        update_global_time(ctx, timestamp_microsecs);
+    public fun update_global_time_for_test(ctx: &mut Context, timestamp_milliseconds: u64){
+        update_global_time(ctx, timestamp_milliseconds);
     }
 
     #[test_only]
     public fun update_global_time_for_test_secs(ctx: &mut Context, timestamp_seconds: u64) {
-        update_global_time(ctx, timestamp_seconds * MICRO_CONVERSION_FACTOR);
+        update_global_time(ctx, timestamp_seconds * MILLI_CONVERSION_FACTOR);
     }
 
     #[test_only]
@@ -83,8 +102,8 @@ module rooch_framework::timestamp {
     }
 
     fun fast_forward_seconds(ctx: &mut Context, timestamp_seconds: u64) {
-        let now_microseconds = now_microseconds(ctx);
-        update_global_time(ctx, now_microseconds + (timestamp_seconds * MICRO_CONVERSION_FACTOR));
+        let now_milliseconds = now_milliseconds(ctx);
+        update_global_time(ctx, now_milliseconds + (timestamp_seconds * MILLI_CONVERSION_FACTOR));
     }
 
     /// Fast forwards the clock by the given number of seconds, but only if the chain is in local mode.

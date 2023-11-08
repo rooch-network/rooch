@@ -23,6 +23,7 @@ This is the reference documentation of the MoveOS standard library.
 -  [`0x2::hex`](hex.md#0x2_hex)
 -  [`0x2::move_module`](move_module.md#0x2_move_module)
 -  [`0x2::object`](object.md#0x2_object)
+-  [`0x2::object_table`](object_table.md#0x2_object_table)
 -  [`0x2::raw_table`](raw_table.md#0x2_raw_table)
 -  [`0x2::rlp`](rlp.md#0x2_rlp)
 -  [`0x2::signer`](signer.md#0x2_signer)

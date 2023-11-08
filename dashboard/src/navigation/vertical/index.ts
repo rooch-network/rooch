@@ -36,7 +36,16 @@ const navigation = (): VerticalNavItemsType => {
     {
       title: 'State',
       icon: 'bxs-tree',
-      path: '/scan/state/list',
+      children: [
+        {
+          title: 'Get',
+          path: '/scan/state/get',
+        },
+        {
+          title: 'List',
+          path: '/scan/state/list',
+        },
+      ],
     },
     {
       title: 'Transaction',

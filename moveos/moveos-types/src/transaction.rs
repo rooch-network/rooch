@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    gas_config::GasConfig, h256, h256::H256, move_types::FunctionId, moveos_std::event::Event,
-    moveos_std::tx_context::TxContext, moveos_std::tx_meta::TxMeta, state::StateChangeSet,
+    gas_config::GasConfig, h256, h256::H256, move_types::FunctionId,
+    moveos_std::event::TransactionEvent, moveos_std::tx_context::TxContext,
+    moveos_std::tx_meta::TxMeta, state::StateChangeSet,
 };
 use move_core_types::{
     account_address::AccountAddress,
@@ -271,7 +272,7 @@ pub struct TransactionOutput {
     pub status: KeptVMStatus,
     pub changeset: ChangeSet,
     pub state_changeset: StateChangeSet,
-    pub events: Vec<Event>,
+    pub events: Vec<TransactionEvent>,
     pub gas_used: u64,
 }
 

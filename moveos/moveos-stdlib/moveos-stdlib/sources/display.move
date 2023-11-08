@@ -18,25 +18,27 @@ module moveos_std::display{
     /// Create or borrow_mut Display object for resource `T`
     /// Only the module of `T` can call this function.
     public fun resource_display<T: key>(ctx: &mut Context): &mut Object<Display<T>> {
-        let obj = context::new_singleton(ctx, Display<T> {
-            sample_map: simple_map::create()
-        });
-        object::to_permanent(obj);
-        context::borrow_mut_singleton<Display<T>>(ctx)
+        let object_id = object::singleton_object_id<Display<T>>();
+        if (context::exists_object<Display<T>>(ctx, object_id)) {
+            context::borrow_mut_object_extend<Display<T>>(ctx, object_id)
+        }else{
+            context::new_singleton(ctx, Display<T> {
+                sample_map: simple_map::create()
+            })
+        }
     }
 
     #[private_generics(T)]
     /// Create or borrow_mut Display object for `Object<T>`
     /// Only the module of `T` can call this function.
     public fun object_display<T: key>(ctx: &mut Context): &mut Object<Display<Object<T>>> {
-        if (context::exist_singleton<Display<Object<T>>>(ctx)) {
-            context::borrow_mut_singleton<Display<Object<T>>>(ctx)
+        let object_id = object::singleton_object_id<Display<Object<T>>>();
+        if (context::exists_object<Display<Object<T>>>(ctx, object_id)) {
+            context::borrow_mut_object_extend<Display<Object<T>>>(ctx, object_id)
         }else{
-            let obj = context::new_singleton(ctx, Display<Object<T>> {
+            context::new_singleton(ctx, Display<Object<T>> {
                 sample_map: simple_map::create()
-            });
-            object::to_permanent(obj);
-            context::borrow_mut_singleton<Display<Object<T>>>(ctx)
+            })
         }
     }
 

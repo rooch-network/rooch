@@ -18,7 +18,6 @@
 <pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::signer</a>;
-<b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::table</a>;

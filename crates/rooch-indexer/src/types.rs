@@ -4,7 +4,7 @@
 use crate::errors::IndexerError;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::TypeTag;
+use move_core_types::language_storage::StructTag;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectID;
@@ -112,7 +112,7 @@ pub struct IndexedEvent {
     /// the number of messages that have been emitted to the path previously
     pub event_seq: u64,
     /// the type of the event data
-    pub type_tag: TypeTag,
+    pub event_type: StructTag,
     /// the data payload of the event
     pub event_data: Vec<u8>,
     /// event index in the transaction events

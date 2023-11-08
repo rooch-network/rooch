@@ -27,7 +27,7 @@ impl ModuleUpgradeFlag {
 
 impl MoveStructType for ModuleUpgradeFlag {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("account_storage");
+    const MODULE_NAME: &'static IdentStr = ident_str!("tx_context");
     const STRUCT_NAME: &'static IdentStr = ident_str!("ModuleUpgradeFlag");
 }
 

@@ -1,0 +1,86 @@
+---
+title: Rooch Weekly 2023-11-06
+description: "Improve the refactoring work for the stable development of v0.2 version, and supplement and improve v0.2 related documents"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/11/06
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch's Development Progress
+
+### New features
+
+- **SDK  0.0.2 preview (#1023)** (2023-10-24) @sven Tan
+- **Remapping address when publish modules (#1029)** (2023-10-25) @0xPause
+- **Check the Gas Free function during the compilation of the Move module. (#886)** (2023-10-25) @stevenlaw123
+- **Support replacing identifier, address and string constant in module bytecodes (#1042)** (2023-10-27) @0xPause
+- **Feature owen rooch circomlib (#1054)** (2023-10-28) @Owen Wu
+- **add google analytics (#1070)** (2023-10-30) @sven Tan
+- **add dashboard build test (#1072)** (2023-10-30) @sven Tan
+- **add counter example (#1071)** (2023-10-30) @sven Tan
+- **Changing the execution stage of the gas_validate_function. (#1068)** (2023-10-30) @stevenlaw123
+- **[Object] Implement shared and frozen Object (#1083)** (2023-10-31) @jolestar
+- **Provide indexer store base on SQLite (#1088)** (2023-11-01) @Bai Chuan
+- **add list states feature (#1096)** (2023-11-03) @sven Tan
+- **fix table ui responsive (#1105)** (2023-11-04) @sven Tan
+
+### Major refactoring
+
+- **[types] Refactor MoveState & MoveStructState API (#1040)** (2023-10-25) @jolestar
+- **[MoveosStd] Refactor ObjectRef, allow ObjectRef as transaction argument (#1026)** (2023-10-28) @jolestar
+- **[MoveosStd] Rename ObjectRef to Object (#1065)** (2023-10-30) @jolestar
+- **[types] Rename `Object<T>` to `ObjectEntity<T>`, `ObjectRef<T>` to `Object<T>` (#1074)** (2023-10-30) @jolestar
+- **[MoveosStd] Refactor singleton and display (#1077)** (2023-10-30) @jolestar
+- **Refactor moveos_stdlib::move_module and add example of issue coin without code (#1107)** (2023-11-04) @0xPause
+- **[moveos_std] Refactor object::transfer (#1090)** (2023-11-05) @jolestar
+
+### Improvements and fixes
+
+- **Release v0.2 blog (#1007)** (2023-10-23) @jolestar
+- **add weekly 2023-10-23 (#1025)** (2023-10-23) @Joe Chen
+- **website(blog): The Triple Iron Curtains before Data Availability (#955)** (2023-10-23) @popcnt
+- **add doc content that explains the project name of the `examples` (#1027)** (2023-10-24) @Joe Chen
+- **chore(typo) (#1030)** (2023-10-24) @popcnt
+- **[Document] rooch-as-bitcoin-side-rollup (#1032)** (2023-10-25) @jolestar
+- **optimize the website sidebar display (#1039)** (2023-10-25) @Joe Chen
+- **fix rooch init failed with phrase (#1041)** (2023-10-26) @yourmoonlight
+- **[gh-945] fix integration tests for ethereum. (#1043)** (2023-10-26) @feliciss
+- **fix deploy workflow (#1051)** (2023-10-27) @yourmoonlight
+- **docs: add rooch's json-rpc quick start guide (#1050)** (2023-10-27) @Joe Chen
+- **fix docker: invalid reference format (#1057)** (2023-10-28) @yourmoonlight
+- **Fix ci deploy (#1058)** (2023-10-28) @yourmoonlight
+- **Fix ci deploy (#1060)** (2023-10-28) @yourmoonlight
+- **remove unused slash (#1061)** (2023-10-28) @yourmoonlight
+- **fix devnet workflow (#1062)** (2023-10-29) @yourmoonlight
+- **Update interact-with-metamask.en-US.mdx (#1064)** (2023-10-29) @Elisha Paul Okai(Shinnoks)
+- **rooch network add dashboard menu (#1069)** (2023-10-30) @sven Tan
+- **docs: add quick start guide which use counter example (#952)** (2023-10-30) @Joe Chen
+- **fix dashboard chain (#1082)** (2023-10-31) @sven Tan
+- **[Documents] Make the move document exclude impl and private fun (#1079)** (2023-10-31) @jolestar
+- **[Document] fix documents links (#1086)** (2023-10-31) @jolestar
+- **docs: add MetaMask installation guide (#1089)** (2023-11-01) @Joe Chen
+- **docs: add how to interact with MetaMask guide (#1080)** (2023-11-01) @Joe Chen
+- **fix multi-account-session (#1091)** (2023-11-02) @sven Tan
+- **docs: add MetaMask installation guide en version (#1095)** (2023-11-02) @Joe Chen
+- **Update interact-with-metamask.en-US.mdx (#1099)** (2023-11-03) @Elisha Paul Okai(Shinnoks)
+- **fix rooch account session key (#1098)** (2023-11-03) @sven Tan
+- **fix sdk account test (#1097)** (2023-11-03) @sven Tan
+- **docs: fix typos (#1101)** (2023-11-03) @vuittont60
+- **docs: update dashboard docs (#1102)** (2023-11-03) @Joe Chen
+- **docs: add a contrition guide for `scripts/pr.sh` (#1073)** (2023-11-04) @Joe Chen
+
+### Rooch Community Dev Meeting
+
+- Discuss Dashboard home page link, counter example
+- Discuss website data analysis
+- Discuss `Indexer` service design
+- Discuss issues related to `GasFee` implementation
+- Discuss authentication issues related to Web2 social application login
+- Discuss issues related to DA design and implementation
+- Discuss and share refactoring issues for `Object` and `ObjectRef`, see [#1026](https://github.com/rooch-network/rooch/pull/1026)
+- Discuss `Object Transfer` and `Context`
+- Discuss JS SDK

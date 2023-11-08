@@ -2,15 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::data_cache::{into_change_set, MoveosDataCache};
+use crate::gas::table::initial_cost_schedule;
+use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
 use move_binary_format::{
     compatibility::Compatibility,
     errors::{Location, PartialVMError, VMError, VMResult},
     file_format::AbilitySet,
     CompiledModule,
 };
-
-use crate::gas::table::initial_cost_schedule;
-use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
 use move_core_types::{
     account_address::AccountAddress,
     identifier::Identifier,
@@ -31,6 +30,7 @@ use move_vm_types::{
 };
 
 use moveos_stdlib::natives::moveos_stdlib::{
+    event::NativeEventContext,
     move_module::NativeModuleContext,
     raw_table::{NativeTableContext, TableData},
 };
@@ -40,11 +40,9 @@ use moveos_types::{
     move_types::FunctionId,
     moveos_std::context::Context,
     moveos_std::copyable_any::Any,
-    moveos_std::event::{Event, EventID},
-    moveos_std::module_upgrade_flag::ModuleUpgradeFlag,
-    moveos_std::object::ObjectID,
     moveos_std::simple_map::SimpleMap,
     moveos_std::tx_context::TxContext,
+    moveos_std::{event::TransactionEvent, module_upgrade_flag::ModuleUpgradeFlag},
     state_resolver::MoveOSResolver,
     transaction::{FunctionCall, MoveAction, TransactionOutput, VerifiedMoveAction},
 };
@@ -162,6 +160,7 @@ where
 
         extensions.add(NativeTableContext::new(remote, table_data.clone()));
         extensions.add(NativeModuleContext::new(remote));
+        extensions.add(NativeEventContext::default());
 
         // The VM code loader has bugs around module upgrade. After a module upgrade, the internal
         // cache needs to be flushed to work around those bugs.
@@ -419,7 +418,11 @@ where
             gas_meter: _,
             read_only,
         } = self;
-        let (changeset, raw_events, extensions) = session.finish_with_extensions()?;
+        let (changeset, raw_events, mut extensions) = session.finish_with_extensions()?;
+        //We do not use the event API from data_cache. Instead, we use the NativeEventContext
+        debug_assert!(raw_events.is_empty());
+        let event_context = extensions.remove::<NativeEventContext>();
+        let raw_events = event_context.into_events();
         drop(extensions);
 
         let state_changeset =
@@ -429,12 +432,6 @@ where
             if !changeset.accounts().is_empty() {
                 return Err(PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
                     .with_message("ChangeSet should be empty as never used.".to_owned())
-                    .finish(Location::Undefined));
-            }
-
-            if !raw_events.is_empty() {
-                return Err(PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
-                    .with_message("Events should be empty as never used.".to_owned())
                     .finish(Location::Undefined));
             }
 
@@ -449,17 +446,16 @@ where
                     .with_message("TxContext::ids_created should be zero as never used.".to_owned())
                     .finish(Location::Undefined));
             }
+            //We do not check the event, we allow read_only session to emit event now.
         }
 
         let events = raw_events
             .into_iter()
             .enumerate()
-            .map(|(i, e)| {
-                let event_handle_id = ObjectID::from_bytes(e.0.as_slice())
-                    .expect("the event handle id must be ObjectID");
-                Event::new(EventID::new(event_handle_id, e.1), e.2, e.3, i as u64)
+            .map(|(i, (struct_tag, event_data))| {
+                Ok(TransactionEvent::new(struct_tag, event_data, i as u64))
             })
-            .collect();
+            .collect::<VMResult<_>>()?;
 
         Ok((
             ctx.tx_context,

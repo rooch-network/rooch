@@ -8,8 +8,7 @@ module rooch_framework::coin {
     use moveos_std::object::ObjectID;
     use moveos_std::table;
     use moveos_std::table::Table;
-    use moveos_std::account_storage;
-    use moveos_std::context::{Context};
+    use moveos_std::context::{Self, Context};
     use moveos_std::event;
     use moveos_std::type_info::{Self, type_of};
  
@@ -114,9 +113,9 @@ module rooch_framework::coin {
 
     public(friend) fun genesis_init(ctx: &mut Context, genesis_account: &signer) {
         let coin_infos = CoinInfos {
-            coin_infos: table::new(ctx),
+            coin_infos: context::new_table(ctx),
         };
-        account_storage::global_move_to(ctx, genesis_account, coin_infos);
+        context::move_resource_to(ctx, genesis_account, coin_infos);
     }
 
     
@@ -137,8 +136,8 @@ module rooch_framework::coin {
 
     /// Returns `true` if the type `CoinType` is an registered coin.
     public fun is_registered<CoinType: key>(ctx: &Context): bool {
-        if (account_storage::global_exists<CoinInfos>(ctx, @rooch_framework)) {
-            let coin_infos = account_storage::global_borrow<CoinInfos>(ctx, @rooch_framework);
+        if (context::exists_resource<CoinInfos>(ctx, @rooch_framework)) {
+            let coin_infos = context::borrow_resource<CoinInfos>(ctx, @rooch_framework);
             let coin_type = type_info::type_name<CoinType>();
             table::contains(&coin_infos.coin_infos, coin_type)
         } else {
@@ -176,8 +175,8 @@ module rooch_framework::coin {
     /// Return CoinInfos table handle
     public fun coin_infos_handle(ctx: &Context): ObjectID {
         // coin info ensured via the Genesis transaction, so it should always exist
-        assert!(account_storage::global_exists<CoinInfos>(ctx, @rooch_framework), error::invalid_argument(ErrorCoinInfosNotFound));
-        let coin_infos = account_storage::global_borrow<CoinInfos>(ctx, @rooch_framework);
+        assert!(context::exists_resource<CoinInfos>(ctx, @rooch_framework), error::invalid_argument(ErrorCoinInfosNotFound));
+        let coin_infos = context::borrow_resource<CoinInfos>(ctx, @rooch_framework);
         *table::handle(&coin_infos.coin_infos)
     }
 
@@ -236,7 +235,7 @@ module rooch_framework::coin {
         decimals: u8,
     ){
         
-        let coin_infos = account_storage::global_borrow_mut<CoinInfos>(ctx, @rooch_framework);
+        let coin_infos = context::borrow_mut_resource<CoinInfos>(ctx, @rooch_framework);
         let coin_type = type_info::type_name<CoinType>();
         
         assert!(
@@ -282,7 +281,7 @@ module rooch_framework::coin {
         let coin_info = borrow_mut_coin_info<CoinType>(ctx);
         coin_info.supply = coin_info.supply + amount;
         let coin_type = type_info::type_name<CoinType>();
-        event::emit<MintEvent>(ctx, MintEvent {
+        event::emit<MintEvent>(MintEvent {
             coin_type,
             amount,
         });
@@ -298,21 +297,21 @@ module rooch_framework::coin {
         let coin_type = type_info::type_name<CoinType>();
         let coin_info = borrow_mut_coin_info<CoinType>(ctx);
         coin_info.supply = coin_info.supply - amount;
-        event::emit<BurnEvent>(ctx, BurnEvent {
+        event::emit<BurnEvent>(BurnEvent {
             coin_type,
             amount,
         });
     }
 
     fun borrow_coin_info<CoinType: key>(ctx: &Context): &CoinInfo {
-        let coin_infos = account_storage::global_borrow<CoinInfos>(ctx, @rooch_framework);
+        let coin_infos = context::borrow_resource<CoinInfos>(ctx, @rooch_framework);
         let coin_type = type_info::type_name<CoinType>();
         check_coin_info_registered_internal(coin_infos, coin_type);
         table::borrow(&coin_infos.coin_infos, coin_type)
     }
 
     fun borrow_mut_coin_info<CoinType: key>(ctx: &mut Context): &mut CoinInfo {
-        let coin_infos = account_storage::global_borrow_mut<CoinInfos>(ctx, @rooch_framework);
+        let coin_infos = context::borrow_mut_resource<CoinInfos>(ctx, @rooch_framework);
         let coin_type = type_info::type_name<CoinType>();
         check_coin_info_registered_internal(coin_infos, coin_type);
         table::borrow_mut(&mut coin_infos.coin_infos, coin_type)

@@ -9,7 +9,7 @@ module nft::collection{
     use moveos_std::object::{ObjectID};
     use moveos_std::event;
     use moveos_std::context::{Self, Context};
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object;
 
     friend nft::nft;
 
@@ -26,7 +26,7 @@ module nft::collection{
         maximum: Option<u64>,
     }
 
-    struct CreateCollectionEvent{
+    struct CreateCollectionEvent has drop {
         object_id: ObjectID,
         name: String,
         creator: address,
@@ -50,7 +50,7 @@ module nft::collection{
         creator: address,
         description: String,
         max_supply: Option<u64>,
-    ) : Object<Collection> {
+    ) : ObjectID {
 
         let collection = Collection {
             name,
@@ -65,18 +65,18 @@ module nft::collection{
             ctx,
             collection
         );
+        let collection_id = object::id(&collection_obj);
         event::emit(
-            ctx,
             CreateCollectionEvent {
-                object_id: object::id(&collection_obj),
+                object_id: collection_id,
                 name,
                 creator,
                 maximum: max_supply,
                 description,
             }
         );
-        object::transfer_extend(&mut collection_obj, creator);
-        collection_obj
+        object::to_shared(collection_obj);
+        collection_id
     }
 
     public(friend) fun increment_supply(collection: &mut Collection): Option<u64>{

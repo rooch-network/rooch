@@ -15,6 +15,9 @@ import { ChainInfo, DevChain } from '@rooch/sdk'
 
 // ** Hooks
 import { useRooch } from 'src/hooks/useRooch'
+import authConfig from '../../configs/auth'
+import { AccountDataType, AccountType } from '../types'
+import { RoochProviderValueType } from '../rooch/types'
 
 type Props = {
   children: ReactNode
@@ -25,8 +28,9 @@ const defaultProvider: ETHValueType = {
   chainId: DevChain.info.chainId,
   hasProvider: false,
   provider: undefined,
-  accounts: [],
+  accounts: new Map(),
   isConnect: false,
+  activeAccount: null,
   sendTransaction: async () => Promise.resolve(),
   waitTxConfirmed: async () => Promise.resolve(),
   switchChina: async () => Promise.resolve(),
@@ -43,24 +47,87 @@ const ETHProvider = ({ children }: Props) => {
 
   // States
   const [hasProvider, setHasProvider] = useState<boolean>(defaultProvider.hasProvider)
-  const [accounts, setAccounts] = useState<string[]>(defaultProvider.accounts)
+  const [accounts, setAccounts] = useState<Map<string, AccountDataType>>(defaultProvider.accounts)
+  const [activeAccount, setActiveAccount] = useState(defaultProvider.activeAccount)
+  const [roochAddressMap, setRoochAddressMap] = useState<Map<string, string>>(new Map())
   const [chainId, setChainId] = useState<string>(defaultProvider.chainId)
   const [loading, setLoading] = useState<boolean>(defaultProvider.loading)
 
   useEffect(() => {
+    const roochAddressMapStr = window.localStorage.getItem(authConfig.roochAccountMap)
+
+    if (roochAddressMapStr) {
+      setRoochAddressMap(new Map<string, string>(JSON.parse(roochAddressMapStr)))
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!rooch) {
+      return
+    }
+
     setLoading(true)
+
     const refreshAccounts = (newAccounts: any) => {
-      if (newAccounts && newAccounts.length > 0) {
-        updateWallet(newAccounts)
-      } else {
-        updateWallet([])
-      }
+      updateWallet(rooch, roochAddressMap, newAccounts)
     }
     const refreshChina = (chainId: any) => {
       setChainId(chainId)
 
       // TODO: handle switch to unknown chain ?
       rooch.switchByChinaId(chainId)
+    }
+
+    const updateWallet = async (
+      rooch: RoochProviderValueType,
+      roochAddressMap: Map<string, string>,
+      ethAddresses: string[],
+    ) => {
+      if (ethAddresses.length === 0) {
+        setAccounts(new Map())
+
+        return
+      }
+
+      for (const ethAddress of ethAddresses) {
+        let acc = accounts.get(ethAddress)
+        if (acc && acc.roochAddress) {
+          continue
+        }
+
+        let roochAddress = roochAddressMap.get(ethAddress)
+
+        // Check whether roochAddress exists in the cache
+        if (!roochAddress) {
+          try {
+            roochAddress = await rooch.provider?.resoleRoochAddress(ethAddress)!
+
+            roochAddressMap.set(ethAddress, roochAddress!)
+          } catch (e) {
+            // Normally there should be no errors here，If it does, it must be a contract error
+            console.log(
+              'resole rooch address error, Please feedback here https://github.com/rooch-network/rooch',
+            )
+          }
+        }
+
+        accounts.set(ethAddress, {
+          address: ethAddress,
+          roochAddress: roochAddress!,
+          activate: true,
+          kp: null,
+          type: AccountType.ETH,
+        })
+      }
+
+      setActiveAccount(accounts.get(ethAddresses[0])!)
+
+      window.localStorage.setItem(
+        authConfig.roochAccountMap,
+        JSON.stringify(Array.from(roochAddressMap.entries())),
+      )
+
+      setAccounts(new Map([...accounts]))
     }
 
     const getProvider = async () => {
@@ -87,11 +154,8 @@ const ETHProvider = ({ children }: Props) => {
       window.ethereum?.removeListener('chainChanged', refreshChina)
       window.ethereum?.removeListener('accountsChanged', refreshAccounts)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rooch])
-
-  const updateWallet = (accounts: any) => {
-    setAccounts(accounts)
-  }
 
   const connect = async (targetChain?: ChainInfo) => {
     let connectChain = targetChain ?? rooch.getActiveChina().info
@@ -111,8 +175,6 @@ const ETHProvider = ({ children }: Props) => {
         method: 'eth_requestAccounts',
       })
       .then((accounts: any) => {
-        updateWallet(accounts)
-
         return accounts
       })
   }
@@ -156,8 +218,6 @@ const ETHProvider = ({ children }: Props) => {
   const sendTransaction = async (params: unknown[]) => {
     const curChain = rooch.getActiveChina()
 
-    console.log('cur chain ', curChain)
-
     if (String(curChain.id) !== chainId) {
       await switchChina(curChain.info)
     }
@@ -190,7 +250,8 @@ const ETHProvider = ({ children }: Props) => {
     hasProvider,
     provider: hasProvider ? window.ethereum : null,
     accounts,
-    isConnect: hasProvider,
+    activeAccount,
+    isConnect: hasProvider ? window.ethereum?.isConnected() : false,
     sendTransaction,
     waitTxConfirmed,
     addChina,

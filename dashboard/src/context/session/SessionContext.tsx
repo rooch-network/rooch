@@ -8,7 +8,7 @@ import { createContext, ReactNode, useEffect, useMemo, useState } from 'react'
 import { useAuth } from 'src/hooks/useAuth'
 import { useRooch } from 'src/hooks/useRooch'
 
-import { AccountDataType, AccountType } from 'src/context/auth/types'
+import { AccountDataType, AccountType } from 'src/context/types'
 
 // ** Rooch SDK
 import {
@@ -40,6 +40,7 @@ const SessionContext = createContext<Session>({
   account: null,
   errorMsg: null,
   defaultSession: '',
+  initialization: true,
   requestAuthorize: undefined,
   close: () => {},
 })
@@ -96,6 +97,7 @@ const SessionProvider = ({ children }: Props) => {
   const eth = useETH()
 
   const [loading, setLoading] = useState<boolean>(false)
+  const [initialization, setInitialization] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const filterdProvider = useMemo(() => {
@@ -128,34 +130,24 @@ const SessionProvider = ({ children }: Props) => {
     return new FilteredProvider(rooch.provider!, [new FuncFilter(sessionKeyInvalidFilterFunc)])
   }, [rooch.provider, auth.defaultAccount])
 
-  const [sessionAccount, setSessionAccount] = useState<IAccount | null>(() => {
-    const defaultAccount = auth.defaultAccount
-
-    if (defaultAccount) {
-      const sessionAccount = loadSessionAccountFromSessionStorage(
-        filterdProvider,
-        defaultAccount.roochAddress,
-      )
-
-      return sessionAccount
-    }
-
-    return null
-  })
+  const [sessionAccount, setSessionAccount] = useState<IAccount | null>(null)
 
   useEffect(() => {
-    const defaultAccount = auth.defaultAccount
-
-    if (defaultAccount) {
-      const sessionAccount = loadSessionAccountFromSessionStorage(
-        filterdProvider,
-        defaultAccount.roochAddress,
-      )
-
-      if (sessionAccount) {
-        setSessionAccount(sessionAccount)
-      }
+    // TODO: add new dialog show get roochAddress
+    if (!auth.defaultAccount || !auth.defaultAccount?.roochAddress) {
+      return
     }
+
+    setInitialization(true)
+
+    const sessionAccount = loadSessionAccountFromSessionStorage(
+      filterdProvider,
+      auth.defaultAccount.roochAddress,
+    )
+
+    setSessionAccount(sessionAccount)
+
+    setInitialization(false)
   }, [auth.defaultAccount, filterdProvider])
 
   const registerSessionKey = async (
@@ -225,8 +217,6 @@ const SessionProvider = ({ children }: Props) => {
       },
     ]
 
-    console.log('auth')
-
     const tx = await eth.sendTransaction(params)
     const result = await eth.waitTxConfirmed(tx)
     console.log(`result:`, result)
@@ -282,7 +272,7 @@ const SessionProvider = ({ children }: Props) => {
       window.sessionStorage.setItem(key, pk.export().privateKey)
       const authorizer = new PrivateKeyAuth(pk)
 
-      return new Account(provider, roochAddress, authorizer)
+      return new Account(provider, account.getAddress(), authorizer)
     } catch (err: any) {
       console.log(`registerSessionKey error:`, err)
 
@@ -324,6 +314,9 @@ const SessionProvider = ({ children }: Props) => {
           maxInactiveInterval,
         )
 
+        console.log('申请')
+        console.log(sessionAccount)
+
         if (sessionAccount) {
           setSessionAccount(sessionAccount)
         }
@@ -364,6 +357,7 @@ const SessionProvider = ({ children }: Props) => {
 
   const session = {
     loading,
+    initialization,
     account: sessionAccount,
     errorMsg,
     requestAuthorize,

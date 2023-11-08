@@ -20,7 +20,6 @@ TypeTable is a table use struct Type as Key, struct as Value
 
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
 <b>use</b> <a href="">0x1::type_name</a>;
-<b>use</b> <a href="context.md#0x2_context">0x2::context</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="raw_table.md#0x2_raw_table">0x2::raw_table</a>;
 </code></pre>
@@ -45,7 +44,7 @@ TypeTable is a table use struct Type as Key, struct as Value
 Create a new Table.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_new">new</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_new">new</a>(id: <a href="object.md#0x2_object_UID">object::UID</a>): <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>
 </code></pre>
 
 

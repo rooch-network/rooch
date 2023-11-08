@@ -18,15 +18,18 @@ Feature: Rooch CLI integration tests
     @serial
     Scenario: rooch rpc test
       Given a server for rooch_rpc_test
-      Then cmd: "rpc request --method rooch_getStates --params '["/resource/0x3/0x3::timestamp::CurrentTimeMicroseconds",{"decode":true}]'"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x3::timestamp::CurrentTimeMicroseconds'"
-      Then assert: "{{$.rpc[-1][0].decoded_value.value.microseconds}} == 0"
+      Then cmd: "rpc request --method rooch_getStates --params '["/resource/0x3/0x3::account::Account",{"decode":true}]'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x3::account::Account'"
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3",{"decode":true}]'"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::account_storage::AccountStorage>'"
       Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}]"
-      Then assert: "'{{$.rpc[-1]}}' contains '0x3::timestamp::CurrentTimeMicroseconds'"
+      Then assert: "'{{$.rpc[-1]}}' contains '0x3::account::Account'"
+      #TODO support access path to singleton object shortcut: /object/0x3::timestamp::Timestamp
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x1e9afd0c19db5da27f8e9a1ad98a551259e51db612dc771a9f78c4142059b391",{"decode":true}]'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::timestamp::Timestamp>'"
+      Then assert: "{{$.rpc[-1][0].decoded_value.value.value.value.milliseconds}} == 0"
       Then stop the server 
-
+    
     @serial
     Scenario: account
       Given a server for account
@@ -45,12 +48,20 @@ Feature: Rooch CLI integration tests
       Then cmd: "transaction get-transactions-by-order --cursor 0 --limit 1"
       Then cmd: "transaction get-transactions-by-hash --hashes {{$.transaction[-1].data[0].execution_info.tx_hash}}"
 
-      # event example
+      # event example and event prc
       Then cmd: "move publish -p ../../examples/event --sender-account {default} --named-addresses rooch_examples={default}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function {default}::event_test::emit_event --sender-account {default} --args 10u64"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+       Then cmd: "move run --function {default}::event_test::emit_event --sender-account {default} --args 11u64"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "event get-events-by-event-handle --event_handle_type {default}::event_test::WithdrawEvent --cursor 0 --limit 1"
+      Then assert: "{{$.event[-1].data[0].event_id.event_seq}} == 0"
+      Then assert: "{{$.event[-1].next_cursor}} == 1"
+      Then assert: "{{$.event[-1].has_next_page}} == true"
+      Then cmd: "event get-events-by-event-handle --event_handle_type {default}::event_test::WithdrawEvent --cursor 1 --limit 1"
+      Then assert: "{{$.event[-1].data[0].event_id.event_seq}} == 1"
+      Then assert: "{{$.event[-1].has_next_page}} == false"
 
       # account balance
       Then cmd: "move publish -p ../../examples/coins --sender-account {default} --named-addresses coins={default}"
@@ -160,8 +171,8 @@ Feature: Rooch CLI integration tests
 
       Then stop the server
 
- @serial
-    Scenario: coins example
+  @serial
+  Scenario: coins example
       Given a server for coins
       Then cmd: "account create"
       Then cmd: "move publish -p ../../examples/coins --sender-account {default} --named-addresses coins={default}"
@@ -171,3 +182,17 @@ Feature: Rooch CLI integration tests
 
       Then stop the server
 
+  @serial
+  Scenario: Issue a coin through entry function
+    Given a server for issue_coin
+    Then cmd: "move publish -p ../../examples/module_template/ --sender-account {default} --named-addresses rooch_examples={default}"
+    Then cmd: "move run --function {default}::coin_factory::register_template  --sender-account {default}"
+    Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+    Then cmd: "move run --function {default}::coin_factory::issue_fixed_supply_coin --args string:my_coin  --args string:"My first coin" --args string:MyCoin --args 1010101u256 --args 8u8  --sender-account {default}"
+    Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+    # check module `my_coin` is published, the name `my_coin` is the first arg in the last `move run` cmd.
+    Then cmd: "move run --function {default}::my_coin::faucet --sender-account {default}"
+    Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+    Then stop the server
+  

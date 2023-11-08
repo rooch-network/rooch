@@ -12,22 +12,20 @@ import authConfig from 'src/configs/auth'
 
 // ** Types
 import {
-  AccountDataType,
-  AccountType,
   AddAccountBySecretKeyParams,
   AuthValuesType,
   SupportWalletType,
   WalletType,
 } from 'src/context/auth/types'
 
-import { ErrCallbackType } from 'src/context/types'
+import { AccountDataType, AccountType, ErrCallbackType } from 'src/context/types'
 
 // ** Hooks
 import { useETH } from 'src/hooks/useETH'
 import { useRooch } from '../../hooks/useRooch'
 
 // ** Rooch SDK
-import { addressToSeqNumber, bcsTypes, Ed25519Keypair } from '@rooch/sdk'
+import { bcsTypes, Ed25519Keypair } from '@rooch/sdk'
 
 // ** Defaults
 const defaultProvider: AuthValuesType = {
@@ -50,22 +48,12 @@ type Props = {
 
 const AuthProvider = ({ children }: Props) => {
   // ** Hooks
-  const metamask = useETH()
+  const eth = useETH()
   const rooch = useRooch()
 
   // ** States
-  const [roochAddressMap, setRoochAddressMap] = useState<Map<string, string>>(new Map())
-  const [defaultAccount, setDefaultAccount] = useState<AccountDataType | null>(() => {
-    if (defaultProvider.accounts && defaultProvider.accounts.size > 0) {
-      return defaultProvider.accounts.values().next().value
-    }
-
-    return null
-  })
-
-  const [accounts, setAccounts] = useState<Map<string, AccountDataType> | null>(
-    defaultProvider.accounts,
-  )
+  const [defaultAccount, setDefaultAccount] = useState(defaultProvider.defaultAccount)
+  const [accounts, setAccounts] = useState(defaultProvider.accounts)
 
   const [loading, setLoading] = useState<boolean>(defaultProvider.loading)
 
@@ -75,12 +63,6 @@ const AuthProvider = ({ children }: Props) => {
   useEffect(() => {
     const initAuth = async (): Promise<void> => {
       setLoading(true)
-
-      const roochAddressMapStr = window.localStorage.getItem(authConfig.roochAccountMap)
-
-      if (roochAddressMapStr) {
-        setRoochAddressMap(new Map<string, string>(JSON.parse(roochAddressMapStr)))
-      }
 
       const secretKey = window.localStorage.getItem(authConfig.secretKey)
 
@@ -109,6 +91,39 @@ const AuthProvider = ({ children }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    if (eth.activeAccount) {
+      setDefaultAccount(eth.activeAccount)
+    }
+  }, [eth.activeAccount])
+
+  useEffect(() => {
+    if (!eth.isConnect) {
+      return
+    }
+
+    const roochAccount = new Map()
+
+    accounts?.forEach((v) => {
+      if (v.type === AccountType.ROOCH) {
+        roochAccount.set(v.address, v)
+      }
+    })
+
+    let _accounts = new Map<string, AccountDataType>(roochAccount)
+
+    if (eth.accounts && eth.accounts.size > 0) {
+      _accounts = new Map([..._accounts, ...eth.accounts])
+    }
+
+    if (_accounts.size > 0) {
+      setAccounts(_accounts)
+    } else {
+      setAccounts(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eth.accounts, eth.isConnect])
+
   const loginSuccess = () => {
     const returnUrl = router.query.returnUrl
 
@@ -127,7 +142,7 @@ const AuthProvider = ({ children }: Props) => {
       ...account,
     })
 
-    setAccounts(_accounts)
+    setAccounts(new Map([..._accounts]))
 
     if (_accounts && _accounts.size > 0) {
       setDefaultAccount(_accounts.values().next().value)
@@ -143,7 +158,7 @@ const AuthProvider = ({ children }: Props) => {
       switch (WalletType[key as keyof typeof WalletType]) {
         case WalletType.Metamask:
           result.push({
-            enable: metamask.hasProvider,
+            enable: eth.hasProvider,
             name: WalletType.Metamask,
           })
           break
@@ -162,71 +177,15 @@ const AuthProvider = ({ children }: Props) => {
     return []
   }
 
-  const resoleRoochAddress = async (ethAddress: string): Promise<string> => {
-    const multiChainIDEther = 60
-
-    const ma = new bcsTypes.MultiChainAddress(
-      BigInt(multiChainIDEther),
-      addressToSeqNumber(ethAddress),
-    )
-
-    const result = await rooch?.provider?.executeViewFunction(
-      '0x3::address_mapping::resolve_or_generate',
-      [],
-      [
-        {
-          type: {
-            Struct: {
-              address: '0x3',
-              module: 'address_mapping',
-              name: 'MultiChainAddress',
-            },
-          },
-          value: ma,
-        },
-      ],
-    )
-
-    if (result && result.vm_status === 'Executed' && result.return_values) {
-      return result.return_values[0].decoded_value as string
-    }
-
-    throw new Error('resolve rooch address fail')
-  }
-
-  const updateETHAccount = async (account?: string[]) => {
-    const _account = account ?? metamask.accounts
-    if (_account.length > 0) {
-      const ethAddress = _account[0]
-      const roochAddress = await resoleRoochAddress(ethAddress)
-
-      setAccountWrapper({
-        address: ethAddress,
-        roochAddress: roochAddress,
-        activate: true,
-        kp: null,
-        type: AccountType.ETH,
-      })
-
-      // TODO: clear
-      roochAddressMap.set(ethAddress, roochAddress)
-
-      window.localStorage.setItem(
-        authConfig.roochAccountMap,
-        JSON.stringify(Array.from(roochAddressMap.entries())),
-      )
-    }
-  }
-
   const loginByWallet = (walletType: WalletType, errorCallback?: ErrCallbackType) => {
+    window.localStorage.removeItem(authConfig.roochAccountMap)
+    window.sessionStorage.clear()
     switch (walletType) {
       case WalletType.Metamask:
-        metamask
+        eth
           .connect()
           .then((v: any) => {
-            updateETHAccount(v).then(() => {
-              loginSuccess && loginSuccess()
-            })
+            loginSuccess && loginSuccess()
           })
           .catch((e: any) => {
             if (errorCallback) {
@@ -284,58 +243,41 @@ const AuthProvider = ({ children }: Props) => {
 
   const handleLogout = () => {
     window.localStorage.removeItem(authConfig.secretKey)
-    setAccounts(null)
+
+    let _accounts = accounts ?? new Map<string, AccountDataType>()
+
+    const toDel: string[] = []
+    _accounts.forEach((v) => {
+      if (v.type === AccountType.ROOCH) {
+        toDel.push(v.address)
+      }
+    })
+
+    toDel.forEach((v) => {
+      _accounts.delete(v)
+    })
+
+    if (eth.accounts && eth.accounts.size > 0) {
+      _accounts = new Map([..._accounts, ...eth.accounts])
+    }
+
+    if (_accounts.size > 0) {
+      setAccounts(_accounts)
+    } else {
+      setAccounts(null)
+    }
 
     // TODO: wait fix in next metamask sdk
     // metamask.disconnect()
   }
 
-  const getAccounts = (): Map<string, AccountDataType> | null => {
-    const allAccounts = accounts ?? new Map<string, AccountDataType>()
-
-    // Todo Parse the rooch address
-    if (metamask.accounts.length > 0) {
-      metamask.accounts.forEach((v) => {
-        allAccounts.set(v, {
-          roochAddress: roochAddressMap.get(v) ?? v,
-          address: v,
-          activate: true,
-          kp: null,
-          type: AccountType.ETH,
-        })
-      })
-    }
-
-    return allAccounts.size > 0 ? allAccounts : null
-  }
-
-  const getDefaultAccount = (): AccountDataType | null => {
-    if (defaultAccount) {
-      return defaultAccount
-    }
-
-    if (metamask.accounts.length > 0) {
-      const account = metamask.accounts[0]
-
-      return {
-        roochAddress: roochAddressMap.get(account) ?? account,
-        address: account,
-        kp: null,
-        activate: true,
-        type: AccountType.ETH,
-      }
-    }
-
-    return null
-  }
-
   const values = {
-    loading: metamask.loading ?? loading ?? rooch.loading,
+    loading: eth.loading ? eth.loading : loading ? loading : rooch.loading,
     setLoading,
-    accounts: getAccounts(),
+    accounts: accounts !== null ? accounts : eth.accounts.size > 0 ? eth.accounts : null, // Ensure that the eth account can be accessed in the first frame
     setAccounts,
     supportWallets: supportWallets(),
-    defaultAccount: getDefaultAccount(),
+    defaultAccount: defaultAccount,
     loginByWallet,
     loginBySecretKey,
     loginByNewAccount,

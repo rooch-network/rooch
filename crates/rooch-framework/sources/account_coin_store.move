@@ -10,8 +10,7 @@ module rooch_framework::account_coin_store {
     use moveos_std::object::ObjectID;
     use moveos_std::table;
     use moveos_std::table::Table;
-    use moveos_std::account_storage;
-    use moveos_std::context::{Context};
+    use moveos_std::context::{Self, Context};
     use moveos_std::event;
     use moveos_std::type_info;
     use moveos_std::signer;
@@ -66,16 +65,16 @@ module rooch_framework::account_coin_store {
 
     public(friend) fun genesis_init(ctx: &mut Context, genesis_account: &signer) {
         let auto_accepted_coins = AutoAcceptCoins {
-            auto_accept_coins: table::new<address, bool>(ctx),
+            auto_accept_coins: context::new_table<address, bool>(ctx),
         };
-        account_storage::global_move_to(ctx, genesis_account, auto_accepted_coins);
+        context::move_resource_to(ctx, genesis_account, auto_accepted_coins);
     }
 
     public(friend) fun init_account_coin_stores(ctx: &mut Context, account: &signer){
         let coin_stores = CoinStores {
-            coin_stores: table::new<string::String, Object<CoinStore>>(ctx),
+            coin_stores: context::new_table<string::String, Object<CoinStore>>(ctx),
         };
-        account_storage::global_move_to(ctx, account, coin_stores);
+        context::move_resource_to(ctx, account, coin_stores);
     }
 
     // Public functions
@@ -93,7 +92,7 @@ module rooch_framework::account_coin_store {
     /// Return the account CoinStore object id for addr
     public fun coin_store_id<CoinType: key>(ctx: &Context, addr: address): Option<ObjectID> {
         if (exist_account_coin_store<CoinType>(ctx, addr)) {
-            let coin_stores = account_storage::global_borrow<CoinStores>(ctx, addr);
+            let coin_stores = context::borrow_resource<CoinStores>(ctx, addr);
             let coin_type = type_info::type_name<CoinType>();
             let coin_store_ref = table::borrow(&coin_stores.coin_stores, coin_type);
             option::some(object::id(coin_store_ref))
@@ -104,9 +103,9 @@ module rooch_framework::account_coin_store {
 
     /// Return CoinStores table handle for addr
     public fun coin_stores_handle(ctx: &Context, addr: address): Option<ObjectID> {
-        if (account_storage::global_exists<CoinStores>(ctx, addr))
+        if (context::exists_resource<CoinStores>(ctx, addr))
         {
-            let coin_stores = account_storage::global_borrow<CoinStores>(ctx, addr);
+            let coin_stores = context::borrow_resource<CoinStores>(ctx, addr);
             option::some(*table::handle(&coin_stores.coin_stores))
         } else {
             option::none<ObjectID>()
@@ -125,7 +124,7 @@ module rooch_framework::account_coin_store {
     /// Check whether the address can auto accept coin.
     /// Default is true if absent
     public fun can_auto_accept_coin(ctx: &Context, addr: address): bool {
-        let auto_accept_coins = account_storage::global_borrow<AutoAcceptCoins>(ctx, @rooch_framework);
+        let auto_accept_coins = context::borrow_resource<AutoAcceptCoins>(ctx, @rooch_framework);
         if (table::contains<address, bool>(&auto_accept_coins.auto_accept_coins, addr)) {
             return *table::borrow<address, bool>(&auto_accept_coins.auto_accept_coins, addr)
         };
@@ -142,14 +141,10 @@ module rooch_framework::account_coin_store {
     /// Configure whether auto-accept coins.
     public fun set_auto_accept_coin(ctx: &mut Context, account: &signer, enable: bool)  {
         let addr = signer::address_of(account);
-        let auto_accept_coins = account_storage::global_borrow_mut<AutoAcceptCoins>(ctx, @rooch_framework);
+        let auto_accept_coins = context::borrow_mut_resource<AutoAcceptCoins>(ctx, @rooch_framework);
         table::upsert<address, bool>(&mut auto_accept_coins.auto_accept_coins, addr, enable);
 
-        event::emit<AcceptCoinEvent>(ctx,
-            AcceptCoinEvent {
-                enable,
-            },
-        );
+        event::emit<AcceptCoinEvent>(AcceptCoinEvent { enable});
     }
 
     /// Withdraw specifed `amount` of coin `CoinType` from the signing account.
@@ -183,8 +178,8 @@ module rooch_framework::account_coin_store {
     }
 
     public fun exist_account_coin_store<CoinType: key>(ctx: &Context, addr: address): bool {
-        if (account_storage::global_exists<CoinStores>(ctx, addr)) {
-            let coin_stores = account_storage::global_borrow<CoinStores>(ctx, addr);
+        if (context::exists_resource<CoinStores>(ctx, addr)) {
+            let coin_stores = context::borrow_resource<CoinStores>(ctx, addr);
             let coin_type = type_info::type_name<CoinType>();
             table::contains(&coin_stores.coin_stores, coin_type)
         } else {
@@ -259,14 +254,14 @@ module rooch_framework::account_coin_store {
     // 
 
     fun borrow_account_coin_store<CoinType: key>(ctx: &Context, addr: address): &CoinStore{
-        let coin_stores = account_storage::global_borrow<CoinStores>(ctx, addr);
+        let coin_stores = context::borrow_resource<CoinStores>(ctx, addr);
         let coin_type = type_info::type_name<CoinType>();
         let ref = table::borrow(&coin_stores.coin_stores, coin_type);
         object::borrow(ref)
     }
 
     fun borrow_mut_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address): &mut CoinStore{
-        let coin_stores = account_storage::global_borrow_mut<CoinStores>(ctx, addr);
+        let coin_stores = context::borrow_mut_resource<CoinStores>(ctx, addr);
         let coin_type = type_info::type_name<CoinType>();
         let ref = table::borrow_mut(&mut coin_stores.coin_stores, coin_type);
         object::borrow_mut(ref)
@@ -285,11 +280,14 @@ module rooch_framework::account_coin_store {
     }
 
     fun create_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address) {
-        let coin_store_ref = coin_store::create_coin_store_internal<CoinType>(ctx);
-        coin_store::transfer(&mut coin_store_ref, addr);
-        let coin_stores = account_storage::global_borrow_mut<CoinStores>(ctx, addr);
+        let coin_store = coin_store::create_coin_store_internal<CoinType>(ctx);
+        //Because the account_coin_store module hold the coin store object
+        //So the object is a SystemOwnedObject
+        //If we want to make the CoinStore to be a UserOwnedObject, we need to support a user singleton object
+        //The object id is generated with the address of the account and the coin type
+        let coin_stores = context::borrow_mut_resource<CoinStores>(ctx, addr);
         let coin_type = type_info::type_name<CoinType>();
-        table::add(&mut coin_stores.coin_stores, coin_type, coin_store_ref);
+        table::add(&mut coin_stores.coin_stores, coin_type, coin_store);
     }
 
 

@@ -11,4 +11,5 @@ export interface Session {
   errorMsg: string | null
   requestAuthorize?: (scope: Array<string>, maxInactiveInterval: number) => Promise<void>
   close: () => void
+  initialization: boolean
 }
