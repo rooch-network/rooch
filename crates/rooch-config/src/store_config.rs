@@ -57,9 +57,16 @@ pub struct StoreConfig {
 }
 
 impl StoreConfig {
-    pub fn merge_with_opt_and_init(&mut self, opt: &RoochOpt, base: Arc<BaseConfig>) -> Result<()> {
+    pub fn merge_with_opt_with_init(
+        &mut self,
+        opt: &RoochOpt,
+        base: Arc<BaseConfig>,
+        with_init: bool,
+    ) -> Result<()> {
         self.merge_with_opt(opt, base)?;
-        self.init()?;
+        if with_init {
+            self.init()?;
+        }
         Ok(())
     }
 

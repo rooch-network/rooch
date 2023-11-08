@@ -32,10 +32,7 @@ impl InnerIndexerReader {
     ) -> Result<Self> {
         let manager = ConnectionManager::<SqliteConnection>::new(db_url);
 
-        let connection_config = SqliteConnectionConfig {
-            statement_timeout: config.statement_timeout,
-            read_only: true,
-        };
+        let connection_config = SqliteConnectionConfig { read_only: true };
 
         let pool = diesel::r2d2::Pool::builder()
             .max_size(config.pool_size)

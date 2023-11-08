@@ -17,12 +17,12 @@ use diesel::sqlite::SqliteConnection;
 use crate::store::sqlite_store::SqliteIndexerStore;
 use errors::IndexerError;
 
+pub mod actor;
 pub mod errors;
 pub mod indexer_reader;
 pub mod models;
-pub mod schema;
-pub mod actor;
 pub mod proxy;
+pub mod schema;
 pub mod store;
 pub mod types;
 pub mod utils;
@@ -47,13 +47,6 @@ pub struct IndexerStore {
 }
 
 impl IndexerStore {
-    // pub fn new(cp_pool: SqliteConnectionPool) -> Result<Self> {
-    //     let store = Self {
-    //         sqlite_store: SqliteIndexerStore::new(cp_pool),
-    //     };
-    //     Ok(store)
-    // }
-
     pub fn new(db_url: &str) -> Result<Self> {
         let sqlite_cp = new_sqlite_connection_pool(db_url)?;
         let store = Self {
@@ -67,7 +60,7 @@ impl IndexerStore {
         let db_url = tmpdir
             .path()
             .to_str()
-            .ok_or(anyhow::anyhow!("invalid indexer db temp dir"))?;
+            .ok_or(anyhow::anyhow!("Invalid indexer db temp dir"))?;
         Self::new(db_url)
     }
 }
@@ -112,19 +105,14 @@ pub fn new_sqlite_connection_pool_impl(
 pub struct SqliteConnectionPoolConfig {
     pool_size: u32,
     connection_timeout: Duration,
-    statement_timeout: Duration,
 }
 
 impl SqliteConnectionPoolConfig {
     const DEFAULT_POOL_SIZE: u32 = 100;
     const DEFAULT_CONNECTION_TIMEOUT: u64 = 30;
-    const DEFAULT_STATEMENT_TIMEOUT: u64 = 30;
 
     fn connection_config(&self) -> SqliteConnectionConfig {
-        SqliteConnectionConfig {
-            statement_timeout: self.statement_timeout,
-            read_only: false,
-        }
+        SqliteConnectionConfig { read_only: false }
     }
 
     pub fn set_pool_size(&mut self, size: u32) {
@@ -133,10 +121,6 @@ impl SqliteConnectionPoolConfig {
 
     pub fn set_connection_timeout(&mut self, timeout: Duration) {
         self.connection_timeout = timeout;
-    }
-
-    pub fn set_statement_timeout(&mut self, timeout: Duration) {
-        self.statement_timeout = timeout;
     }
 }
 
@@ -150,22 +134,17 @@ impl Default for SqliteConnectionPoolConfig {
             .ok()
             .and_then(|s| s.parse::<u64>().ok())
             .unwrap_or(Self::DEFAULT_CONNECTION_TIMEOUT);
-        let statement_timeout_secs = std::env::var("DB_STATEMENT_TIMEOUT")
-            .ok()
-            .and_then(|s| s.parse::<u64>().ok())
-            .unwrap_or(Self::DEFAULT_STATEMENT_TIMEOUT);
 
         Self {
             pool_size: db_pool_size,
             connection_timeout: Duration::from_secs(conn_timeout_secs),
-            statement_timeout: Duration::from_secs(statement_timeout_secs),
         }
     }
 }
 
 #[derive(Debug, Clone, Copy)]
 struct SqliteConnectionConfig {
-    statement_timeout: Duration,
+    // SQLite does not support the statement_timeout parameter
     read_only: bool,
 }
 
@@ -178,15 +157,9 @@ impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
     ) -> std::result::Result<(), diesel::r2d2::Error> {
         use diesel::{sql_query, RunQueryDsl};
 
-        sql_query(format!(
-            "SET statement_timeout = {}",
-            self.statement_timeout.as_millis(),
-        ))
-        .execute(conn)
-        .map_err(diesel::r2d2::Error::QueryError)?;
-
+        // This will disable uncommitted reads, putting the connection into read-only mode
         if self.read_only {
-            sql_query("SET default_transaction_read_only = 't'")
+            sql_query("PRAGMA read_uncommitted = 0")
                 .execute(conn)
                 .map_err(diesel::r2d2::Error::QueryError)?;
         }

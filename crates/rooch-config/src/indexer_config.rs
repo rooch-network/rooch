@@ -26,16 +26,29 @@ pub struct IndexerConfig {
 }
 
 impl IndexerConfig {
-    pub fn merge_with_opt_and_init(&mut self, opt: &RoochOpt, base: Arc<BaseConfig>) -> Result<()> {
+    pub fn merge_with_opt_with_init(
+        &mut self,
+        opt: &RoochOpt,
+        base: Arc<BaseConfig>,
+        with_init: bool,
+    ) -> Result<()> {
         self.merge_with_opt(opt, base)?;
-        self.init()?;
+        if with_init {
+            self.init()?;
+        }
         Ok(())
     }
 
     pub fn init(&self) -> Result<()> {
         let indexer_db = self.clone().get_indexer_db();
+        let indexer_db_parent_dir = indexer_db
+            .parent()
+            .ok_or(anyhow::anyhow!("Invalid indexer db dir"))?;
+        if !indexer_db_parent_dir.exists() {
+            std::fs::create_dir_all(indexer_db_parent_dir)?;
+        }
         if !indexer_db.exists() {
-            std::fs::create_dir_all(indexer_db.clone())?;
+            std::fs::File::create(indexer_db.clone())?;
         }
         println!("IndexerConfig init store dir {:?}", indexer_db);
         Ok(())

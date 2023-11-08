@@ -127,16 +127,25 @@ impl RpcModuleBuilder {
 
 // Start json-rpc server
 pub async fn start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<ServerHandle> {
+    let active_env = server_opt.get_active_env();
     match run_start_server(opt, server_opt).await {
         Ok(server_handle) => Ok(server_handle),
         Err(e) => match e.downcast::<GenesisError>() {
             Ok(e) => {
-                log::error!("{:?}, please clean your data dir. `rooch server clean` ", e);
+                log::error!(
+                    "{:?}, please clean your data dir. `rooch server clean -n {:?}` ",
+                    active_env,
+                    e
+                );
                 std::process::exit(R_EXIT_CODE_NEED_HELP);
             }
             Err(e) => match e.downcast::<RawStoreError>() {
                 Ok(e) => {
-                    log::error!("{:?}, please clean your data dir. `rooch server clean` ", e);
+                    log::error!(
+                        "{:?}, please clean your data dir. `rooch server clean -n {:?}` ",
+                        active_env,
+                        e
+                    );
                     std::process::exit(R_EXIT_CODE_NEED_HELP);
                 }
                 Err(e) => {
@@ -165,12 +174,14 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     //Init store
     let base_config = BaseConfig::load_with_opt(opt)?;
     let mut store_config = StoreConfig::default();
-    store_config.merge_with_opt_and_init(opt, Arc::new(base_config.clone()))?;
+    store_config.merge_with_opt_with_init(opt, Arc::new(base_config.clone()), true)?;
+    store_config.init()?;
     let (moveos_store, rooch_store) = init_storage(&store_config)?;
 
     //Init indexer store
     let mut indexer_config = IndexerConfig::default();
-    indexer_config.merge_with_opt_and_init(opt, Arc::new(base_config))?;
+    indexer_config.merge_with_opt_with_init(opt, Arc::new(base_config), true)?;
+    indexer_config.init()?;
     let indexer_store = init_indexer_store(&indexer_config)?;
 
     // Init executor
@@ -370,7 +381,7 @@ fn init_indexer_store(indexer_config: &IndexerConfig) -> Result<IndexerStore> {
     let indexer_db_path = indexer_config.get_indexer_db();
     let indexer_db_url = indexer_db_path
         .to_str()
-        .ok_or(anyhow::anyhow!("invalid indexer db path"))?;
+        .ok_or(anyhow::anyhow!("Invalid indexer db path"))?;
     let indexer_store = IndexerStore::new(indexer_db_url)?;
 
     Ok(indexer_store)
