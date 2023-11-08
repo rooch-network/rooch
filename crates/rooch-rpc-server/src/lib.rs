@@ -175,13 +175,11 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     let base_config = BaseConfig::load_with_opt(opt)?;
     let mut store_config = StoreConfig::default();
     store_config.merge_with_opt_with_init(opt, Arc::new(base_config.clone()), true)?;
-    store_config.init()?;
     let (moveos_store, rooch_store) = init_storage(&store_config)?;
 
     //Init indexer store
     let mut indexer_config = IndexerConfig::default();
     indexer_config.merge_with_opt_with_init(opt, Arc::new(base_config), true)?;
-    indexer_config.init()?;
     let indexer_store = init_indexer_store(&indexer_config)?;
 
     // Init executor

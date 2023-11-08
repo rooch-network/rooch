@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 // use tracing::info;
 use crate::actor::messages::{IndexerTransactionMessage, QueryTransactionsByHashMessage};
-use crate::store::IndexerStoreTrait;
+use crate::store::traits::IndexerStoreTrait;
 use crate::types::IndexedTransaction;
 use crate::IndexerStore;
 use rooch_types::transaction::TransactionWithInfo;
@@ -40,9 +40,7 @@ impl Handler<IndexerTransactionMessage> for IndexerActor {
         let indexed_transaction =
             IndexedTransaction::new(transaction, sequence_info, execution_info, moveos_tx)?;
         let transactions = vec![indexed_transaction.clone()];
-        self.indexer_store
-            .persist_transactions(transactions)
-            .await?;
+        self.indexer_store.persist_transactions(transactions)?;
         Ok(indexed_transaction)
     }
 }
@@ -56,7 +54,6 @@ impl Handler<QueryTransactionsByHashMessage> for IndexerActor {
     ) -> Result<Vec<Option<TransactionWithInfo>>> {
         self.indexer_store
             .query_transactions_by_hash(msg.tx_hashes)
-            .await
             .map_err(|e| anyhow!(format!("Failed to query transactions by hash: {:?}", e)))
     }
 }

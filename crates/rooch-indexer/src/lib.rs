@@ -1,11 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-// Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
-
-#![recursion_limit = "256"]
-
 use std::fmt::{Debug, Display, Formatter};
 use std::time::Duration;
 
@@ -15,7 +10,11 @@ use diesel::sqlite::SqliteConnection;
 // use tracing::info;
 
 use crate::store::sqlite_store::SqliteIndexerStore;
+use crate::store::traits::IndexerStoreTrait;
+use crate::types::{IndexedEvent, IndexedTransaction};
 use errors::IndexerError;
+use moveos_types::h256::H256;
+use rooch_types::transaction::TransactionWithInfo;
 
 pub mod actor;
 pub mod errors;
@@ -78,6 +77,26 @@ impl Debug for IndexerStore {
 
 pub fn new_sqlite_connection_pool(db_url: &str) -> Result<SqliteConnectionPool, IndexerError> {
     new_sqlite_connection_pool_impl(db_url, None)
+}
+
+impl IndexerStoreTrait for IndexerStore {
+    fn persist_transactions(
+        &self,
+        transactions: Vec<IndexedTransaction>,
+    ) -> Result<(), IndexerError> {
+        self.sqlite_store.persist_transactions(transactions)
+    }
+
+    fn persist_events(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError> {
+        self.sqlite_store.persist_events(events)
+    }
+
+    fn query_transactions_by_hash(
+        &self,
+        _tx_hashes: Vec<H256>,
+    ) -> Result<Vec<Option<TransactionWithInfo>>, IndexerError> {
+        Ok(vec![])
+    }
 }
 
 pub fn new_sqlite_connection_pool_impl(
