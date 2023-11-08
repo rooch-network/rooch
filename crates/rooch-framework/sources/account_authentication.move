@@ -9,8 +9,7 @@ module rooch_framework::account_authentication {
    use std::option::{Self, Option};
    use std::signer;
    use std::vector;
-   use moveos_std::account_storage;
-   use moveos_std::context::Context;
+   use moveos_std::context::{Self, Context};
    use moveos_std::type_table::{Self, TypeTable};
    use rooch_framework::auth_validator_registry;
    use rooch_framework::auth_validator;
@@ -50,16 +49,16 @@ module rooch_framework::account_authentication {
 
    public(friend) fun init_authentication_keys(ctx: &mut Context, account: &signer) {
       let authentication_keys = AuthenticationKeys {
-         authentication_keys: type_table::new(ctx),
+         authentication_keys: context::new_type_table(ctx),
       };
-      account_storage::global_move_to<AuthenticationKeys>(ctx, account, authentication_keys);
+      context::move_resource_to<AuthenticationKeys>(ctx, account, authentication_keys);
    }
 
    public fun get_authentication_key<ValidatorType>(ctx: &Context, account_addr: address): Option<vector<u8>> {
-      if(!account_storage::global_exists<AuthenticationKeys>(ctx, account_addr)){
+      if(!context::exists_resource<AuthenticationKeys>(ctx, account_addr)){
          option::none<vector<u8>>()
       }else{
-         let authentication_keys = account_storage::global_borrow<AuthenticationKeys>(ctx, account_addr);
+         let authentication_keys = context::borrow_resource<AuthenticationKeys>(ctx, account_addr);
          if(type_table::contains<AuthenticationKey<ValidatorType>>(&authentication_keys.authentication_keys)){
             option::some(type_table::borrow<AuthenticationKey<ValidatorType>>(&authentication_keys.authentication_keys).authentication_key)
          }else{
@@ -77,11 +76,11 @@ module rooch_framework::account_authentication {
          error::invalid_argument(ErrorMalformedAuthenticationKey)
       );
       assert!(
-         account_storage::global_exists<AuthenticationKeys>(ctx, account_addr),
+         context::exists_resource<AuthenticationKeys>(ctx, account_addr),
          error::not_found(ErrorAuthenticationKeysResourceNotFound)
       );
 
-      let authentication_keys = account_storage::global_borrow_mut<AuthenticationKeys>(ctx, account_addr);
+      let authentication_keys = context::borrow_mut_resource<AuthenticationKeys>(ctx, account_addr);
       if(type_table::contains<AuthenticationKey<ValidatorType>>(&authentication_keys.authentication_keys)){
          let authentication_key = type_table::borrow_mut<AuthenticationKey<ValidatorType>>(&mut authentication_keys.authentication_keys);
          authentication_key.authentication_key = new_auth_key;
@@ -97,10 +96,10 @@ module rooch_framework::account_authentication {
    /// This function is used to remove a resource account's authentication key, only the module which define the `ValidatorType` can call this function.
    public fun remove_authentication_key<ValidatorType>(ctx: &mut Context, account_addr: address): AuthenticationKey<ValidatorType> {
       assert!(
-         account_storage::global_exists<AuthenticationKeys>(ctx, account_addr),
+         context::exists_resource<AuthenticationKeys>(ctx, account_addr),
          error::not_found(ErrorAuthenticationKeysResourceNotFound)
       );
-      let authentication_keys = account_storage::global_borrow_mut<AuthenticationKeys>(ctx, account_addr);
+      let authentication_keys = context::borrow_mut_resource<AuthenticationKeys>(ctx, account_addr);
       assert!(
          type_table::contains<AuthenticationKey<ValidatorType>>(&authentication_keys.authentication_keys),
          error::not_found(ErrorAuthenticationKeyNotFound)
@@ -112,8 +111,8 @@ module rooch_framework::account_authentication {
 
    /// Return if the authentication validator is installed for the account at `account_addr`.
    public fun is_auth_validator_installed(ctx: &Context, account_addr: address, auth_validator_id: u64): bool {
-      if(account_storage::global_exists<InstalledAuthValidator>(ctx, account_addr)){
-         let installed_auth_validator = account_storage::global_borrow<InstalledAuthValidator>(ctx, account_addr);
+      if(context::exists_resource<InstalledAuthValidator>(ctx, account_addr)){
+         let installed_auth_validator = context::borrow_resource<InstalledAuthValidator>(ctx, account_addr);
          vector::contains(&installed_auth_validator.validators, &auth_validator_id)
       }else{
          false
@@ -131,13 +130,13 @@ module rooch_framework::account_authentication {
          error::already_exists(ErrorAuthValidatorAlreadyInstalled));
 
       
-      if(!account_storage::global_exists<InstalledAuthValidator>(ctx, account_addr)){
+      if(!context::exists_resource<InstalledAuthValidator>(ctx, account_addr)){
          let installed_auth_validator = InstalledAuthValidator {
             validators: vector::empty(),
          };
-         account_storage::global_move_to<InstalledAuthValidator>(ctx, account_signer, installed_auth_validator);
+         context::move_resource_to<InstalledAuthValidator>(ctx, account_signer, installed_auth_validator);
       };
-      let installed_auth_validator = account_storage::global_borrow_mut<InstalledAuthValidator>(ctx, account_addr);
+      let installed_auth_validator = context::borrow_mut_resource<InstalledAuthValidator>(ctx, account_addr);
       vector::push_back(&mut installed_auth_validator.validators, validator_id);
    }
 

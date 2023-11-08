@@ -1,5 +1,5 @@
 [package]
-name = "quick_start_counter"
+name = "template"
 version = "0.0.1"
 
 [dependencies]
@@ -7,15 +7,15 @@ version = "0.0.1"
 #MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "moveos/moveos-stdlib/moveos-stdlib", rev = "main" }
 #RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "crates/rooch-framework", rev = "main" }
 
-MoveStdlib = { local = "../../moveos/moveos-stdlib/move-stdlib" }
-MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
-RoochFramework = { local = "../../crates/rooch-framework" }
+MoveStdlib = { local = "../../../moveos/moveos-stdlib/move-stdlib" }
+MoveosStdlib = { local = "../../../moveos/moveos-stdlib/moveos-stdlib" }
+RoochFramework = { local = "../../../crates/rooch-framework" }
 
 [addresses]
-quick_start_counter = "_"
+template = "0xdeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadead"
 std = "0x1"
 moveos_std = "0x2"
 rooch_framework = "0x3"
 
 [dev-addresses]
-quick_start_counter = "0x42"
+template = "0xdeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadead"

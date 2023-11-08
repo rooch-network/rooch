@@ -6,9 +6,8 @@ module coins::private_coin {
     use std::error;
     use std::string;
     use moveos_std::signer;
-    use moveos_std::context::Context;
+    use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, Object};
-    use moveos_std::account_storage;
     use rooch_framework::coin::{Self, Coin};
     use rooch_framework::coin_store::{Self, CoinStore};
     use rooch_framework::account_coin_store;
@@ -32,7 +31,7 @@ module coins::private_coin {
         );
         let coins_signer = signer::module_signer<PRC>();
         let coin_store_ref = coin_store::create_coin_store_extend<PRC>(ctx);
-        account_storage::global_move_to(ctx, &coins_signer, Treasury { coin_store: coin_store_ref });
+        context::move_resource_to(ctx, &coins_signer, Treasury { coin_store: coin_store_ref });
     }
 
     /// Provide a faucet to give out coins to users
@@ -57,7 +56,7 @@ module coins::private_coin {
     }
 
     fun deposit_to_treaury(ctx: &mut Context, coin: Coin<PRC>) {
-        let treasury = account_storage::global_borrow_mut<Treasury>(ctx, @coins);
+        let treasury = context::borrow_mut_resource<Treasury>(ctx, @coins);
         coin_store::deposit(object::borrow_mut(&mut treasury.coin_store), coin);
     }
 }

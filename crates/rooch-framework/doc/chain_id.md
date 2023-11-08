@@ -15,8 +15,7 @@
 -  [Function `is_main`](#0x3_chain_id_is_main)
 
 
-<pre><code><b>use</b> <a href="">0x2::account_storage</a>;
-<b>use</b> <a href="">0x2::context</a>;
+<pre><code><b>use</b> <a href="">0x2::context</a>;
 </code></pre>
 
 

@@ -7,13 +7,9 @@ module rooch_framework::auth_validator_registry {
     use moveos_std::type_info;
     use moveos_std::table::{Self, Table};
     use moveos_std::type_table::{Self, TypeTable};
-    use moveos_std::account_storage;
-    use moveos_std::context::Context;
+    use moveos_std::context::{Self, Context};
     use rooch_framework::auth_validator::{Self, AuthValidator};
 
-    #[test_only]
-    use moveos_std::context;
-    
     friend rooch_framework::genesis;
     friend rooch_framework::builtin_validators;
 
@@ -35,10 +31,10 @@ module rooch_framework::auth_validator_registry {
     public(friend) fun genesis_init(ctx: &mut Context, sender: &signer){
         let registry = ValidatorRegistry {
             validator_num: 0,
-            validators: table::new(ctx),
-            validators_with_type: type_table::new(ctx),
+            validators: context::new_table(ctx),
+            validators_with_type: context::new_type_table(ctx),
         };
-        account_storage::global_move_to(ctx, sender, registry);
+        context::move_resource_to(ctx, sender, registry);
     }
 
     #[private_generics(ValidatorType)]
@@ -52,7 +48,7 @@ module rooch_framework::auth_validator_registry {
         //TODO consider change type_info::module_name to ascii::String.
         let module_name = std::ascii::string(type_info::module_name(&type_info));
 
-        let registry = account_storage::global_borrow_mut<ValidatorRegistry>(ctx, @rooch_framework);
+        let registry = context::borrow_mut_resource<ValidatorRegistry>(ctx, @rooch_framework);
         let id = registry.validator_num;
 
         assert!(!type_table::contains<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type), error::already_exists(ErrorValidatorAlreadyRegistered));
@@ -74,13 +70,13 @@ module rooch_framework::auth_validator_registry {
     }
 
     public fun borrow_validator(ctx: &Context, id: u64): &AuthValidator {
-        let registry = account_storage::global_borrow<ValidatorRegistry>(ctx, @rooch_framework);
+        let registry = context::borrow_resource<ValidatorRegistry>(ctx, @rooch_framework);
         assert!(table::contains(&registry.validators, id), error::not_found(ErrorValidatorUnregistered));
         table::borrow(&registry.validators, id)
     }
 
     public fun borrow_validator_by_type<ValidatorType: store>(ctx: &Context): &AuthValidator {
-        let registry = account_storage::global_borrow<ValidatorRegistry>(ctx, @rooch_framework);
+        let registry = context::borrow_resource<ValidatorRegistry>(ctx, @rooch_framework);
         assert!(type_table::contains<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type), error::not_found(ErrorValidatorUnregistered));
         let validator_with_type = type_table::borrow<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type);
         assert!(table::contains(&registry.validators, validator_with_type.id), error::not_found(ErrorValidatorUnregistered));

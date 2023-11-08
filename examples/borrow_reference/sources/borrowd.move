@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::borrowd {
-    use moveos_std::account_storage;
     use moveos_std::context::{Self, Context};
 
     struct BorrowCapability has key, copy, store {}
@@ -26,7 +25,7 @@ module rooch_examples::borrowd {
         _borrow_cap: &BorrowCapability,
     ) {
         let addr = context::sender(ctx);
-        account_storage::global_exists<BorrowCapability>(ctx, addr);
+        context::exists_resource<BorrowCapability>(ctx, addr);
     }
 
     public fun do_mutable_borrow(
@@ -34,7 +33,7 @@ module rooch_examples::borrowd {
         addr: address,
         data_store: &mut DataStore,
     ) {
-        if (account_storage::global_exists<DataStore>(ctx, addr)) {
+        if (context::exists_resource<DataStore>(ctx, addr)) {
             data_store.v = data_store.v + 1
         }
     }

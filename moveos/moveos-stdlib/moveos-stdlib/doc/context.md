@@ -24,25 +24,41 @@ and let developers customize the storage
 -  [Function `tx_meta`](#0x2_context_tx_meta)
 -  [Function `tx_gas_payment_account`](#0x2_context_tx_gas_payment_account)
 -  [Function `tx_result`](#0x2_context_tx_result)
+-  [Function `new_table`](#0x2_context_new_table)
+-  [Function `new_type_table`](#0x2_context_new_type_table)
+-  [Function `borrow_resource`](#0x2_context_borrow_resource)
+-  [Function `borrow_mut_resource`](#0x2_context_borrow_mut_resource)
+-  [Function `move_resource_to`](#0x2_context_move_resource_to)
+-  [Function `move_resource_from`](#0x2_context_move_resource_from)
+-  [Function `exists_resource`](#0x2_context_exists_resource)
+-  [Function `publish_modules`](#0x2_context_publish_modules)
+-  [Function `exists_module`](#0x2_context_exists_module)
+-  [Function `publish_modules_entry`](#0x2_context_publish_modules_entry)
 -  [Function `new_object`](#0x2_context_new_object)
 -  [Function `new_object_with_id`](#0x2_context_new_object_with_id)
 -  [Function `new_singleton`](#0x2_context_new_singleton)
 -  [Function `borrow_object`](#0x2_context_borrow_object)
 -  [Function `borrow_mut_object`](#0x2_context_borrow_mut_object)
 -  [Function `take_object`](#0x2_context_take_object)
+-  [Function `take_object_extend`](#0x2_context_take_object_extend)
 -  [Function `borrow_mut_object_shared`](#0x2_context_borrow_mut_object_shared)
 -  [Function `borrow_mut_object_extend`](#0x2_context_borrow_mut_object_extend)
--  [Function `exist_object`](#0x2_context_exist_object)
+-  [Function `exists_object`](#0x2_context_exists_object)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="account_storage.md#0x2_account_storage">0x2::account_storage</a>;
+<b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
 <b>use</b> <a href="storage_context.md#0x2_storage_context">0x2::storage_context</a>;
+<b>use</b> <a href="table.md#0x2_table">0x2::table</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 <b>use</b> <a href="tx_meta.md#0x2_tx_meta">0x2::tx_meta</a>;
 <b>use</b> <a href="tx_result.md#0x2_tx_result">0x2::tx_result</a>;
+<b>use</b> <a href="type_table.md#0x2_type_table">0x2::type_table</a>;
 </code></pre>
 
 
@@ -251,6 +267,130 @@ Get a value from the context map
 
 
 
+<a name="0x2_context_new_table"></a>
+
+## Function `new_table`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_table">new_table</a>&lt;K: <b>copy</b>, drop, V: store&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;
+</code></pre>
+
+
+
+<a name="0x2_context_new_type_table"></a>
+
+## Function `new_type_table`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_type_table">new_type_table</a>(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>
+</code></pre>
+
+
+
+<a name="0x2_context_borrow_resource"></a>
+
+## Function `borrow_resource`
+
+Borrow a resource from the account's storage
+This function equates to <code><b>borrow_global</b>&lt;T&gt;(<b>address</b>)</code> instruction in Move
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_resource">borrow_resource</a>&lt;T: key&gt;(self: &<a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): &T
+</code></pre>
+
+
+
+<a name="0x2_context_borrow_mut_resource"></a>
+
+## Function `borrow_mut_resource`
+
+Borrow a mut resource from the account's storage
+This function equates to <code><b>borrow_global_mut</b>&lt;T&gt;(<b>address</b>)</code> instruction in Move
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_resource">borrow_mut_resource</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): &<b>mut</b> T
+</code></pre>
+
+
+
+<a name="0x2_context_move_resource_to"></a>
+
+## Function `move_resource_to`
+
+Move a resource to the account's storage
+This function equates to <code><b>move_to</b>&lt;T&gt;(&<a href="">signer</a>, resource)</code> instruction in Move
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_move_resource_to">move_resource_to</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: &<a href="">signer</a>, resource: T)
+</code></pre>
+
+
+
+<a name="0x2_context_move_resource_from"></a>
+
+## Function `move_resource_from`
+
+Move a resource from the account's storage
+This function equates to <code><b>move_from</b>&lt;T&gt;(<b>address</b>)</code> instruction in Move
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_move_resource_from">move_resource_from</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): T
+</code></pre>
+
+
+
+<a name="0x2_context_exists_resource"></a>
+
+## Function `exists_resource`
+
+Check if the account has a resource of the given type
+This function equates to <code><b>exists</b>&lt;T&gt;(<b>address</b>)</code> instruction in Move
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exists_resource">exists_resource</a>&lt;T: key&gt;(self: &<a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): bool
+</code></pre>
+
+
+
+<a name="0x2_context_publish_modules"></a>
+
+## Function `publish_modules`
+
+Publish modules to the account's storage
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_publish_modules">publish_modules</a>(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;)
+</code></pre>
+
+
+
+<a name="0x2_context_exists_module"></a>
+
+## Function `exists_module`
+
+Check if the account has a module with the given name
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exists_module">exists_module</a>(self: &<a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>, name: <a href="_String">string::String</a>): bool
+</code></pre>
+
+
+
+<a name="0x2_context_publish_modules_entry"></a>
+
+## Function `publish_modules_entry`
+
+Entry function to publish modules
+The order of modules must be sorted by dependency order.
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="context.md#0x2_context_publish_modules_entry">publish_modules_entry</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
+</code></pre>
+
+
+
 <a name="0x2_context_new_object"></a>
 
 ## Function `new_object`
@@ -310,7 +450,7 @@ Any one can borrow an <code>&Object&lt;T&gt;</code> from the global object stora
 Borrow mut Object by <code>owner</code> and <code>object_id</code>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_object">borrow_mut_object</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, owner: &<a href="">signer</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_object">borrow_mut_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, owner: &<a href="">signer</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 
@@ -319,12 +459,25 @@ Borrow mut Object by <code>owner</code> and <code>object_id</code>
 
 ## Function `take_object`
 
-Take out the Object by <code>owner</code> and <code>object_id</code>
+Take out the UserOwnedObject by <code>owner</code> and <code>object_id</code>
+The <code>T</code> must have <code>key + store</code> ability.
 Note: When the Object is taken out, the Object will auto become <code>SystemOwned</code> Object.
-TODO find a better name.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_take_object">take_object</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, owner: &<a href="">signer</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_take_object">take_object</a>&lt;T: store, key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, owner: &<a href="">signer</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<a name="0x2_context_take_object_extend"></a>
+
+## Function `take_object_extend`
+
+Take out the UserOwnedObject by <code>object_id</code>
+This function is for developer to extend, Only the module of <code>T</code> can take out the <code>UserOwnedObject</code> with object_id.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_take_object_extend">take_object_extend</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 
@@ -336,7 +489,7 @@ TODO find a better name.
 Borrow mut Shared Object by object_id
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_object_shared">borrow_mut_object_shared</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_object_shared">borrow_mut_object_shared</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 
@@ -353,12 +506,12 @@ The module of T can borrow mut Object from object store by any object_id
 
 
 
-<a name="0x2_context_exist_object"></a>
+<a name="0x2_context_exists_object"></a>
 
-## Function `exist_object`
+## Function `exists_object`
 
 Check if the object exists in the global object storage
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exist_object">exist_object</a>&lt;T: key&gt;(_self: &<a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exists_object">exists_object</a>&lt;T: key&gt;(_self: &<a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
 </code></pre>

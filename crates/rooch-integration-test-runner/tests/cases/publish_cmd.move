@@ -2,14 +2,13 @@
 
 //# publish
 module creator::test {
-    use moveos_std::context::{Context};
-    use moveos_std::account_storage;
+    use moveos_std::context::{Self, Context};
     struct Foo has key {
         x: u64,
     }
 
     public fun publish_foo(ctx: &mut Context, s: &signer) {
-        account_storage::global_move_to<Foo>(ctx, s, Foo { x: 500 })
+        context::move_resource_to<Foo>(ctx, s, Foo { x: 500 })
     }
 }
 

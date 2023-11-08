@@ -12,8 +12,7 @@
 -  [Function `deposit_fee`](#0x3_transaction_fee_deposit_fee)
 
 
-<pre><code><b>use</b> <a href="">0x2::account_storage</a>;
-<b>use</b> <a href="">0x2::context</a>;
+<pre><code><b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="coin_store.md#0x3_coin_store">0x3::coin_store</a>;

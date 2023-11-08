@@ -4,8 +4,7 @@
 module test::m {
     use std::string::String;
     use moveos_std::table::{Self, Table};
-    use moveos_std::context::{Context};
-    use moveos_std::account_storage;
+    use moveos_std::context::{Self, Context};
 
     struct KVStore has store, key {
         table: Table<String,vector<u8>>,
@@ -13,7 +12,7 @@ module test::m {
 
     public fun make_kv_store(ctx: &mut Context): KVStore{
         KVStore{
-            table: table::new(ctx),
+            table: context::new_table(ctx),
         }
     }
 
@@ -34,19 +33,19 @@ module test::m {
     }
     
     public fun save_to_account_storage(ctx: &mut Context, account: &signer, store: KVStore){
-        account_storage::global_move_to(ctx, account, store);
+        context::move_resource_to(ctx, account, store);
     }
 
     public fun borrow_from_account_storage(ctx: &Context, account: address) : &KVStore{
-        account_storage::global_borrow(ctx, account)
+        context::borrow_resource(ctx, account)
     }
 
     public fun borrow_mut_from_account_storage(ctx: &mut Context, account: address) : &mut KVStore{
-        account_storage::global_borrow_mut(ctx, account)
+        context::borrow_mut_resource(ctx, account)
     }
 
     public fun move_from_account_storage(ctx: &mut Context, account: address) : KVStore{
-        account_storage::global_move_from(ctx, account)
+        context::move_resource_from(ctx, account)
     }
 
     public fun length(kv: &KVStore): u64 {

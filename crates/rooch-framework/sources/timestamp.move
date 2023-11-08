@@ -9,8 +9,7 @@
 module rooch_framework::timestamp {
    
     use std::error;
-    use moveos_std::account_storage;
-    use moveos_std::context::Context;
+    use moveos_std::context::{Self, Context};
 
     friend rooch_framework::genesis;
     friend rooch_framework::ethereum_light_client;
@@ -28,12 +27,12 @@ module rooch_framework::timestamp {
 
     public(friend) fun genesis_init(ctx: &mut Context, genesis_account: &signer, initial_time_microseconds: u64) {
         let current_time = CurrentTimeMicroseconds { microseconds: initial_time_microseconds };
-        account_storage::global_move_to(ctx, genesis_account, current_time);
+        context::move_resource_to(ctx, genesis_account, current_time);
     }
 
     /// Updates the wall clock time, if the new time is smaller than the current time, aborts.
     public(friend) fun update_global_time(ctx: &mut Context, timestamp_microsecs: u64) {
-        let global_timer = account_storage::global_borrow_mut<CurrentTimeMicroseconds>(ctx, @rooch_framework);
+        let global_timer = context::borrow_mut_resource<CurrentTimeMicroseconds>(ctx, @rooch_framework);
         let now = global_timer.microseconds;
         assert!(now < timestamp_microsecs, error::invalid_argument(ErrorInvalidTimestamp));
         global_timer.microseconds = timestamp_microsecs;
@@ -41,7 +40,7 @@ module rooch_framework::timestamp {
 
     /// Tries to update the wall clock time, if the new time is smaller than the current time, ignores the update, and returns false.
     public(friend) fun try_update_global_time(ctx: &mut Context, timestamp: u64) : bool {
-        let global_timer = account_storage::global_borrow_mut<CurrentTimeMicroseconds>(ctx, @rooch_framework);
+        let global_timer = context::borrow_mut_resource<CurrentTimeMicroseconds>(ctx, @rooch_framework);
         let now = global_timer.microseconds;
         if(now < timestamp) {
             global_timer.microseconds = timestamp;
@@ -54,7 +53,7 @@ module rooch_framework::timestamp {
     #[view]
     /// Gets the current time in microseconds.
     public fun now_microseconds(ctx: &Context): u64 {
-        account_storage::global_borrow<CurrentTimeMicroseconds>(ctx, @rooch_framework).microseconds
+        context::borrow_resource<CurrentTimeMicroseconds>(ctx, @rooch_framework).microseconds
     }
 
     #[view]

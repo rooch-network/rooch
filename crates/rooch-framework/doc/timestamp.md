@@ -22,7 +22,6 @@ It interacts with the other modules in the following ways:
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x2::account_storage</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="chain_id.md#0x3_chain_id">0x3::chain_id</a>;
 </code></pre>

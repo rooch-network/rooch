@@ -8,11 +8,10 @@ module test::m {
 //# run --signers test
 script {
     use std::string::{Self};
-    use moveos_std::account_storage;
-    use moveos_std::context::{Context};
+    use moveos_std::context::{Self, Context};
 
     fun main(ctx: &mut Context) {
-        assert!(account_storage::exists_module(ctx, @moveos_std, string::utf8(b"account_storage")), 0);
-        assert!(account_storage::exists_module(ctx, @test, string::utf8(b"m")), 1);
+        assert!(context::exists_module(ctx, @moveos_std, string::utf8(b"account_storage")), 0);
+        assert!(context::exists_module(ctx, @test, string::utf8(b"m")), 1);
     }
 }

@@ -3,8 +3,7 @@
 
 module rooch_examples::kv_store {
 
-   use moveos_std::context::Context;
-   use moveos_std::account_storage;
+   use moveos_std::context::{Self, Context};
    use moveos_std::table::{Self, Table};
    use std::string::{String};
 
@@ -29,19 +28,19 @@ module rooch_examples::kv_store {
    }
 
    public fun borrow_kv_store(ctx: &mut Context): &KVStore {
-      account_storage::global_borrow(ctx, @rooch_examples)
+      context::borrow_resource(ctx, @rooch_examples)
    }
 
    public fun borrow_kv_store_mut(ctx: &mut Context): &mut KVStore {
-      account_storage::global_borrow_mut(ctx, @rooch_examples)
+      context::borrow_mut_resource(ctx, @rooch_examples)
    }
 
    //init when module publish
    fun init(ctx: &mut Context, sender: signer) {
       let kv = KVStore{
-         table: table::new(ctx),
+         table: context::new_table(ctx),
       };
-      account_storage::global_move_to(ctx, &sender, kv);
+      context::move_resource_to(ctx, &sender, kv);
    }
 
    public entry fun add_value(ctx: &mut Context, key: String, value: String) {

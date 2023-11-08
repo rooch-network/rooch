@@ -14,7 +14,7 @@ module test::m {
 
     public fun make_kv_store(ctx: &mut Context): KVStore {
         KVStore{
-            table: table::new(ctx),
+            table: context::new_table(ctx),
         }
     }
 

@@ -27,6 +27,7 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `to_frozen`](#0x2_object_to_frozen)
 -  [Function `to_user_owned`](#0x2_object_to_user_owned)
 -  [Function `to_system_owned`](#0x2_object_to_system_owned)
+-  [Function `to_system_owned_internal`](#0x2_object_to_system_owned_internal)
 -  [Function `transfer`](#0x2_object_transfer)
 -  [Function `transfer_extend`](#0x2_object_transfer_extend)
 -  [Function `id`](#0x2_object_id)
@@ -34,6 +35,9 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `owner_internal`](#0x2_object_owner_internal)
 -  [Function `is_shared`](#0x2_object_is_shared)
 -  [Function `is_frozen`](#0x2_object_is_frozen)
+-  [Function `is_system_owned`](#0x2_object_is_system_owned)
+-  [Function `is_user_owned_internal`](#0x2_object_is_user_owned_internal)
+-  [Function `is_user_owned`](#0x2_object_is_user_owned)
 -  [Function `as_ref`](#0x2_object_as_ref)
 -  [Function `as_mut_ref`](#0x2_object_as_mut_ref)
 -  [Function `mut_entity_as_object`](#0x2_object_mut_entity_as_object)
@@ -343,6 +347,17 @@ Make the Object frozen, Any one can not get the &mut Object<T> from frozen objec
 
 
 
+<a name="0x2_object_to_system_owned_internal"></a>
+
+## Function `to_system_owned_internal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_to_system_owned_internal">to_system_owned_internal</a>&lt;T&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;T&gt;)
+</code></pre>
+
+
+
 <a name="0x2_object_transfer"></a>
 
 ## Function `transfer`
@@ -420,6 +435,39 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_is_frozen">is_frozen</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): bool
+</code></pre>
+
+
+
+<a name="0x2_object_is_system_owned"></a>
+
+## Function `is_system_owned`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_is_system_owned">is_system_owned</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): bool
+</code></pre>
+
+
+
+<a name="0x2_object_is_user_owned_internal"></a>
+
+## Function `is_user_owned_internal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_is_user_owned_internal">is_user_owned_internal</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;T&gt;): bool
+</code></pre>
+
+
+
+<a name="0x2_object_is_user_owned"></a>
+
+## Function `is_user_owned`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_is_user_owned">is_user_owned</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): bool
 </code></pre>
 
 

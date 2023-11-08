@@ -29,8 +29,7 @@ struct itself, while the operations are implemented as native functions. No trav
 -  [Function `handle`](#0x2_table_handle)
 
 
-<pre><code><b>use</b> <a href="context.md#0x2_context">0x2::context</a>;
-<b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
+<pre><code><b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="raw_table.md#0x2_raw_table">0x2::raw_table</a>;
 </code></pre>
 
@@ -55,7 +54,7 @@ Type of tables
 Create a new Table.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_new">new</a>&lt;K: <b>copy</b>, drop, V: store&gt;(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_new">new</a>&lt;K: <b>copy</b>, drop, V: store&gt;(id: <a href="object.md#0x2_object_UID">object::UID</a>): <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;
 </code></pre>
 
 
