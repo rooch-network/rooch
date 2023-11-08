@@ -1,0 +1,47 @@
+# 时间戳
+
+Rooch 的 Framework 提供了一个时间戳功能，位于 `crates/rooch-framework/sources/timestamp.move`，它保存的是 Unix 时间。UNIX 时间，或称 POSIX 时间是 UNIX 或类 UNIX 系统使用的时间表示方式：从 UTC1970 年 1 月 1 日 0 时 0 分 0 秒起至现在的总秒数，在多数 Unix 系统上 Unix 时间可以透过 `date +%s` 命令来检查。
+
+该模块保存一个全局挂钟，以**毫秒**为单位存储当前 Unix 时间。
+
+通过时间戳的概念，能确切定位到 Rooch 网络的创始时间。作为 Layer2，Rooch 需要同步 Layer1 上的区块信息，则时间戳是其保持数据同步的关键因素。
+
+Rooch 需要通过 Layer1 的区块头的时间戳来更新或者检查自身的时间戳。
+
+在未来 Rooch 还将实现 `TickTransaction`，则可以通过时间的偏移量来更新自身的时间戳。
+
+## 中继以太坊区块信息
+
+目前 Rooch 已经实现了中继以太坊区块信息的功能，可以通过下面这条命令来源源不断地获取以太坊上的区块交易信息：
+
+```shell
+rooch server start --eth-rpc-url https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161
+```
+
+![](/docs/relayer-get.png)
+
+> 注意观察区块高度 `number` 之后的 `timestamp`。
+
+## 时间戳的相关函数
+
+`rooch-framework::timestamp` 模块是 `rooch-framework::genesis` 和 `rooch-framework::ethereum_light_client` 的友元。
+
+Rooch 的时间戳类型是全局可索引的信息，所以给 `Timestamp` 赋予 `key` 能力。
+
+### 友元函数
+
+`genesis_init` 生成初始时间戳，`update_global_time` 和 `try_update_global_time` 都是更新全局时间戳的函数，是否成功更新了时间戳它会返回 `true` 或 `false` 来提示调用者，而前者是静默地进行更新。
+
+### 函数
+
+`timestamp_mut` 和 `timestamp` 函数获取 `Timestamp` 的可变引用和不可变引用。
+
+`milliseconds` 通过时间戳获取毫秒。
+
+`seconds` 通过时间戳获取秒。
+
+`now_milliseconds` 获取当前时间的毫秒数。
+
+`now_seconds` 获取当前时间的秒数。
+
+`seconds_to_milliseconds` 将秒数转成毫秒数。
