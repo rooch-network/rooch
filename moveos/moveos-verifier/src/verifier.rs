@@ -35,6 +35,7 @@ where
     verify_entry_function_at_publish(module)?;
     verify_global_storage_access(module)?;
     verify_gas_free_function(module)?;
+    verify_data_struct(module, &db)?;
     verify_init_function(module)
 }
 
@@ -661,6 +662,134 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                         func_handle_index,
                         module,
                     );
+                }
+            }
+        }
+    }
+
+    Ok(true)
+}
+
+pub fn verify_data_struct<Resolver>(caller_module: &CompiledModule, db: &Resolver) -> VMResult<bool>
+where
+    Resolver: ModuleResolver,
+{
+    if let Err(err) = check_metadata_format(caller_module) {
+        return Err(PartialVMError::new(StatusCode::MALFORMED)
+            .with_message(err.to_string())
+            .finish(Location::Module(caller_module.self_id())));
+    }
+
+    let metadata_opt = get_metadata_from_compiled_module(caller_module);
+    match metadata_opt {
+        None => {
+            // If ROOCH_METADATA_KEY cannot be found in the metadata,
+            // it means that the user's code did not use #[data_struct(T)],
+            // or the user intentionally deleted the data in the metadata.
+            // In either case, we will skip the verification.
+            return Ok(true);
+        }
+
+        Some(metadata) => {
+            let data_structs_map = metadata.data_struct_map;
+            let mut data_structs_func_map = metadata.data_struct_func_map;
+            let view = BinaryIndexedView::Module(caller_module);
+
+            for func in &caller_module.function_defs {
+                if let Some(code_unit) = &func.code {
+                    for instr in code_unit.code.clone().into_iter() {
+                        if let Bytecode::CallGeneric(finst_idx) = instr {
+                            // Find the module where a function is located based on its InstantiationIndex,
+                            // and then find the metadata of the module.
+                            let compiled_module_opt =
+                                load_compiled_module_from_finst_idx(db, &view, finst_idx);
+
+                            if let Some(callee_module) = compiled_module_opt {
+                                if let Err(err) = check_metadata_format(&callee_module) {
+                                    return Err(PartialVMError::new(StatusCode::MALFORMED)
+                                        .with_message(err.to_string())
+                                        .finish(Location::Module(callee_module.self_id())));
+                                }
+
+                                // Find the definition records of compile-time data_struct from CompiledModule.
+                                let metadata_opt =
+                                    get_metadata_from_compiled_module(&callee_module);
+                                if let Some(metadata) = metadata_opt {
+                                    let _ = metadata
+                                        .data_struct_func_map
+                                        .iter()
+                                        .map(|(key, value)| {
+                                            data_structs_func_map.insert(key.clone(), value.clone())
+                                        })
+                                        .collect::<Vec<_>>();
+                                }
+                            }
+
+                            let FunctionInstantiation {
+                                handle: fhandle_idx,
+                                type_parameters,
+                            } = view.function_instantiation_at(finst_idx);
+
+                            let fhandle = view.function_handle_at(*fhandle_idx);
+                            let module_handle = view.module_handle_at(fhandle.module);
+
+                            let module_address = view
+                                .address_identifier_at(module_handle.address)
+                                .to_hex_literal();
+                            let module_name = view.identifier_at(module_handle.name);
+                            let func_name = view.identifier_at(fhandle.name).to_string();
+
+                            // The function name which the CallGeneric is called.
+                            let full_path_func_name =
+                                format!("{}::{}::{}", module_address, module_name, func_name);
+
+                            let type_arguments = &view.signature_at(*type_parameters).0;
+                            let data_struct_func_types =
+                                data_structs_func_map.get(full_path_func_name.as_str());
+
+                            if let Some(data_struct_types_indices) = data_struct_func_types {
+                                for generic_type_index in data_struct_types_indices {
+                                    let type_arg = type_arguments.get(*generic_type_index).unwrap();
+                                    match type_arg {
+                                        SignatureToken::Struct(struct_handle_idx) => {
+                                            let struct_handle =
+                                                view.struct_handle_at(*struct_handle_idx);
+                                            let module_handle =
+                                                view.module_handle_at(struct_handle.module);
+                                            let full_struct_name = format!(
+                                                "{}::{}::{}",
+                                                module_handle.address,
+                                                view.identifier_at(module_handle.name),
+                                                view.identifier_at(struct_handle.name)
+                                            );
+                                            let is_data_struct_opt =
+                                                data_structs_map.get(full_struct_name.as_str());
+                                            if is_data_struct_opt.is_none() {
+                                                let error_msg = format!("The type parameter {} when calling function {} is not a data_struct",
+                                                                        full_path_func_name, full_struct_name);
+                                                return generate_vm_error(
+                                                    StatusCode::TYPE_MISMATCH,
+                                                    error_msg,
+                                                    *fhandle_idx,
+                                                    caller_module,
+                                                );
+                                            }
+                                        }
+                                        _ => {
+                                            let error_msg = format!("The type parameter when calling function {} is now allowed",
+                                                                    full_path_func_name);
+                                            return generate_vm_error(
+                                                StatusCode::TYPE_MISMATCH,
+                                                error_msg,
+                                                *fhandle_idx,
+                                                caller_module,
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

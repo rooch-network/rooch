@@ -821,17 +821,7 @@ impl<'a> ExtendedChecker<'a> {
                     if attr_name == DATA_STRUCT_ATTRIBUTE {
                         let (error_message, is_allowed) =
                             check_data_struct_fields(&struct_def, module_env);
-                        if is_allowed {
-                            let struct_name = module_env
-                                .symbol_pool()
-                                .string(struct_def.get_name())
-                                .to_string();
-                            let full_struct_name =
-                                format!("{}::{}", module_env.get_full_name_str(), struct_name);
-                            unsafe {
-                                GLOBAL_DATA_STRUCT.insert(full_struct_name, true);
-                            }
-                        } else {
+                        if !is_allowed {
                             self.env
                                 .error(&struct_def.get_loc(), error_message.as_str());
                         }
@@ -877,12 +867,21 @@ fn check_data_struct_fields(struct_def: &StructEnv, module_env: &ModuleEnv) -> (
 
             return (
                 format!(
-                    "The field {} in struct {} is not allowed.",
+                    "The field [{}] in struct {} is not allowed.",
                     field_name, full_struct_name
                 ),
                 is_allowed,
             );
         }
+    }
+
+    let struct_name = module_env
+        .symbol_pool()
+        .string(struct_def.get_name())
+        .to_string();
+    let full_struct_name = format!("{}::{}", module_env.get_full_name_str(), struct_name);
+    unsafe {
+        GLOBAL_DATA_STRUCT.insert(full_struct_name, true);
     }
 
     ("".to_string(), true)
@@ -905,7 +904,13 @@ fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> b
                 return true;
             }
 
-            let is_allowed_opt = unsafe { GLOBAL_DATA_STRUCT.get(full_struct_name.as_str()) };
+            let struct_module = module_env.env.get_module(*module_id);
+            let struct_env = struct_module.get_struct(*struct_id);
+            check_data_struct_fields(&struct_env, &struct_module);
+
+            let is_allowed_opt = unsafe {
+                GLOBAL_DATA_STRUCT.get(full_struct_name.as_str())
+            };
             return if let Some(is_allowed) = is_allowed_opt {
                 *is_allowed
             } else {
@@ -1045,6 +1050,21 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
             }
         }
     }
+
+    let module_metadata = extended_checker
+        .output
+        .entry(module_env.get_verified_module().self_id())
+        .or_default();
+
+    let data_struct_func_map = unsafe {
+        let result: BTreeMap<String, Vec<usize>> = GLOBAL_DATA_STRUCT_FUNC
+            .iter()
+            .map(|(key, value)| (key.clone(), value.clone()))
+            .collect();
+        result
+    };
+
+    module_metadata.data_struct_func_map = data_struct_func_map;
 
     for ref fun in module_env.get_functions() {
         for (_offset, instr) in fun.get_bytecode().iter().enumerate() {
