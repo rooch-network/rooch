@@ -39,8 +39,8 @@ impl Handler<IndexerTransactionMessage> for IndexerActor {
 
         let indexed_transaction =
             IndexedTransaction::new(transaction, sequence_info, execution_info, moveos_tx)?;
-        let transactions = vec![indexed_transaction.clone()];
-        self.indexer_store.persist_transactions(transactions)?;
+        let _transactions = vec![indexed_transaction.clone()];
+        // self.indexer_store.persist_transactions(transactions)?;
         Ok(indexed_transaction)
     }
 }
