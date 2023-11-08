@@ -60,11 +60,11 @@ fn test_submit_block() {
     let timestamp_module =
         binding_test.as_module_bundle::<rooch_types::framework::timestamp::TimestampModule>();
 
-    let now_microseconds = timestamp_module.now_microseconds().unwrap();
+    let now_milliseconds = timestamp_module.now_milliseconds().unwrap();
     let duration = std::time::Duration::from_secs(block_header.timestamp.unchecked_as_u64());
     println!(
-        "now_microseconds: {}, header_timestamp: {}",
-        now_microseconds, block_header.timestamp
+        "now_milliseconds: {}, header_timestamp: {}",
+        now_milliseconds, block_header.timestamp
     );
-    assert_eq!(now_microseconds, duration.as_micros() as u64);
+    assert_eq!(now_milliseconds, duration.as_millis() as u64);
 }

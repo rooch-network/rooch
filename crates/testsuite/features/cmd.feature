@@ -18,13 +18,16 @@ Feature: Rooch CLI integration tests
     @serial
     Scenario: rooch rpc test
       Given a server for rooch_rpc_test
-      Then cmd: "rpc request --method rooch_getStates --params '["/resource/0x3/0x3::timestamp::CurrentTimeMicroseconds",{"decode":true}]'"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x3::timestamp::CurrentTimeMicroseconds'"
-      Then assert: "{{$.rpc[-1][0].decoded_value.value.microseconds}} == 0"
+      Then cmd: "rpc request --method rooch_getStates --params '["/resource/0x3/0x3::account::Account",{"decode":true}]'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x3::account::Account'"
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3",{"decode":true}]'"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::account_storage::AccountStorage>'"
       Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}]"
-      Then assert: "'{{$.rpc[-1]}}' contains '0x3::timestamp::CurrentTimeMicroseconds'"
+      Then assert: "'{{$.rpc[-1]}}' contains '0x3::account::Account'"
+      #TODO support access path to singleton object shortcut: /object/0x3::timestamp::Timestamp
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x1e9afd0c19db5da27f8e9a1ad98a551259e51db612dc771a9f78c4142059b391",{"decode":true}]'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::timestamp::Timestamp>'"
+      Then assert: "{{$.rpc[-1][0].decoded_value.value.value.value.milliseconds}} == 0"
       Then stop the server 
     
     @serial

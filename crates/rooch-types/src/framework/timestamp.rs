@@ -17,17 +17,17 @@ use serde::{Deserialize, Serialize};
 pub const MODULE_NAME: &IdentStr = ident_str!("timestamp");
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
-pub struct CurrentTimeMicroseconds {
+pub struct Timestamp {
     pub microseconds: u64,
 }
 
-impl MoveStructType for CurrentTimeMicroseconds {
+impl MoveStructType for Timestamp {
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("CurrentTimeMicroseconds");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Timestamp");
 }
 
-impl MoveStructState for CurrentTimeMicroseconds {
+impl MoveStructState for Timestamp {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
             move_core_types::value::MoveTypeLayout::U64,
@@ -41,12 +41,12 @@ pub struct TimestampModule<'a> {
 }
 
 impl<'a> TimestampModule<'a> {
-    pub const NOW_MICROSECONDS_FUNCTION_NAME: &'static IdentStr = ident_str!("now_microseconds");
+    pub const NOW_MICROSECONDS_FUNCTION_NAME: &'static IdentStr = ident_str!("now_milliseconds");
     pub const NOW_SECONDS_FUNCTION_NAME: &'static IdentStr = ident_str!("now_seconds");
     pub const FAST_FORWARD_SECONDS_FOR_LOCAL_FUNCTION_NAME: &'static IdentStr =
         ident_str!("fast_forward_seconds_for_local");
 
-    pub fn now_microseconds(&self) -> Result<u64> {
+    pub fn now_milliseconds(&self) -> Result<u64> {
         let call = FunctionCall::new(
             Self::function_id(Self::NOW_MICROSECONDS_FUNCTION_NAME),
             vec![],
