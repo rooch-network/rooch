@@ -70,7 +70,7 @@ module rooch_framework::ethereum_light_client{
         table::add(&mut block_store.blocks, block_header.number, block_header);
 
         let timestamp_seconds = (block_header.timestamp as u64);
-        timestamp::try_update_global_time(ctx, timestamp::seconds_to_microseconds(timestamp_seconds));        
+        timestamp::try_update_global_time(ctx, timestamp::seconds_to_milliseconds(timestamp_seconds));        
     }
 
     /// The relay server submit a new Ethereum block to the light client.
@@ -78,7 +78,6 @@ module rooch_framework::ethereum_light_client{
         process_block(ctx, block_header_bytes);
     }
 
-    #[view]
     /// Get block via block_number
     public fun get_block(ctx: &Context, block_number: u64): &BlockHeader{
         let block_store = context::borrow_resource<BlockStore>(ctx, @rooch_framework);

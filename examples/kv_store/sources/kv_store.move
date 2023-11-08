@@ -53,7 +53,6 @@ module rooch_examples::kv_store {
       remove(kv, key);
    }
 
-   #[view]
    public fun get_value(ctx: &mut Context, key: String): String {
       let kv = borrow_kv_store(ctx);
       let value = borrow(kv, key);

@@ -39,7 +39,6 @@ module rooch_framework::transaction_validator {
     const ErrorValidateNotInstalledAuthValidator: u64 = 1010;
 
 
-    #[view]
     /// This function is for Rooch to validate the transaction sender's authenticator.
     /// If the authenticator is invaid, abort this function.
     public fun validate(

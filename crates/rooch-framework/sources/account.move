@@ -160,8 +160,6 @@ module rooch_framework::account {
       context::exists_resource<ResourceAccount>(ctx, addr)
    }
 
-
-   #[view]
    public fun exists_at(ctx: &Context, addr: address): bool {
       context::exists_resource<Account>(ctx, addr)
    }

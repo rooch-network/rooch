@@ -15,9 +15,9 @@ pub struct RequestCommand {
     pub method: String,
 
     /// The RPC method params, json value.
-    /// --params '"/resource/0x3/0x3::timestamp::CurrentTimeMicroseconds"'
+    /// --params '"/resource/0x3/0x3::account::Account"'
     /// or
-    /// --params '["/resource/0x3/0x3::timestamp::CurrentTimeMicroseconds", {"decode": true}]'
+    /// --params '["/resource/0x3/0x3::account::Account", {"decode": true}]'
     #[clap(long)]
     pub params: Option<serde_json::Value>,
 
