@@ -59,6 +59,7 @@ pub struct ServerHandle {
     handle: jsonrpsee::server::ServerHandle,
     timers: Vec<Timer>,
     _store_config: StoreConfig,
+    _index_config: IndexerConfig,
 }
 
 impl ServerHandle {
@@ -325,6 +326,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         handle,
         timers,
         _store_config: store_config,
+        _index_config: indexer_config,
     })
 }
 
