@@ -908,9 +908,7 @@ fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> b
             let struct_env = struct_module.get_struct(*struct_id);
             check_data_struct_fields(&struct_env, &struct_module);
 
-            let is_allowed_opt = unsafe {
-                GLOBAL_DATA_STRUCT.get(full_struct_name.as_str())
-            };
+            let is_allowed_opt = unsafe { GLOBAL_DATA_STRUCT.get(full_struct_name.as_str()) };
             return if let Some(is_allowed) = is_allowed_opt {
                 *is_allowed
             } else {
