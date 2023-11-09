@@ -49,7 +49,7 @@ pub struct GetEventsByEventHandle {
 #[async_trait]
 impl CommandAction<EventPageView> for GetEventsByEventHandle {
     async fn execute(self) -> RoochResult<EventPageView> {
-        let client = self.context_options.build().await?.get_client().await?;
+        let client = self.context_options.build()?.get_client().await?;
         let resp = client
             .rooch
             .get_events_by_event_handle(

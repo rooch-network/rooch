@@ -23,7 +23,7 @@ pub struct GetTransactionsByOrderCommand {
 #[async_trait]
 impl CommandAction<TransactionWithInfoPageView> for GetTransactionsByOrderCommand {
     async fn execute(self) -> RoochResult<TransactionWithInfoPageView> {
-        let client = self.context_options.build().await?.get_client().await?;
+        let client = self.context_options.build()?.get_client().await?;
 
         let resp = client
             .rooch

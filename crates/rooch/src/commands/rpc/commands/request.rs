@@ -28,7 +28,7 @@ pub struct RequestCommand {
 #[async_trait]
 impl CommandAction<serde_json::Value> for RequestCommand {
     async fn execute(self) -> RoochResult<serde_json::Value> {
-        let client = self.context_options.build().await?.get_client().await?;
+        let client = self.context_options.build()?.get_client().await?;
         let params = match self.params {
             Some(serde_json::Value::Array(array)) => array,
             Some(value) => {

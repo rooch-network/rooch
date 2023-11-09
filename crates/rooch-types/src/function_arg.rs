@@ -1,14 +1,27 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::error::{RoochError, RoochResult};
-use move_core_types::{
-    account_address::AccountAddress, transaction_argument::TransactionArgument, u256::U256,
+use crate::error::RoochError;
+use anyhow::{anyhow, Result};
+use move_command_line_common::{
+    address::ParsedAddress,
+    parser::Parser,
+    types::ParsedStructType,
+    values::{ParsableValue, ValueToken},
 };
-use serde::Serialize;
+use move_core_types::{
+    account_address::AccountAddress,
+    identifier::Identifier,
+    language_storage::ModuleId,
+    u256::U256,
+    value::{MoveStruct, MoveValue},
+};
+use moveos_types::{
+    move_types::FunctionId,
+    moveos_std::object::{self, ObjectID},
+};
 use std::{
     fmt::{Display, Formatter},
-    ops::Deref,
     str::FromStr,
 };
 
@@ -17,6 +30,7 @@ pub enum FunctionArgType {
     Address,
     Bool,
     ObjectID,
+    Object,
     String,
     U8,
     U16,
@@ -34,6 +48,7 @@ impl Display for FunctionArgType {
             FunctionArgType::Address => write!(f, "address"),
             FunctionArgType::Bool => write!(f, "bool"),
             FunctionArgType::ObjectID => write!(f, "object_id"),
+            FunctionArgType::Object => write!(f, "object"),
             FunctionArgType::String => write!(f, "string"),
             FunctionArgType::U8 => write!(f, "u8"),
             FunctionArgType::U16 => write!(f, "u16"),
@@ -48,127 +63,32 @@ impl Display for FunctionArgType {
 }
 
 impl FunctionArgType {
-    fn parse_arg(&self, arg: &str) -> RoochResult<Vec<u8>> {
+    fn parse_arg(&self, arg: &str) -> Result<FunctionArg> {
         match self {
-            FunctionArgType::Address => bcs::to_bytes(
-                &AccountAddress::from_str(arg)
-                    .map_err(|err| RoochError::UnableToParse("address", err.to_string()))?,
-            ),
-            FunctionArgType::Bool => bcs::to_bytes(
-                &bool::from_str(arg)
-                    .map_err(|err| RoochError::UnableToParse("bool", err.to_string()))?,
-            ),
-            FunctionArgType::ObjectID => bcs::to_bytes(
-                &AccountAddress::from_str(arg)
-                    .map_err(|err| RoochError::UnableToParse("object_id", err.to_string()))?,
-            ),
-            FunctionArgType::String => bcs::to_bytes(arg),
-            FunctionArgType::U8 => bcs::to_bytes(
-                &u8::from_str(arg)
-                    .map_err(|err| RoochError::UnableToParse("u8", err.to_string()))?,
-            ),
-            FunctionArgType::U16 => bcs::to_bytes(
-                &u16::from_str(arg)
-                    .map_err(|err| RoochError::UnableToParse("u16", err.to_string()))?,
-            ),
-            FunctionArgType::U32 => bcs::to_bytes(
-                &u32::from_str(arg)
-                    .map_err(|err| RoochError::UnableToParse("u32", err.to_string()))?,
-            ),
-            FunctionArgType::U64 => bcs::to_bytes(
-                &u64::from_str(arg)
-                    .map_err(|err| RoochError::UnableToParse("u64", err.to_string()))?,
-            ),
-            FunctionArgType::U128 => bcs::to_bytes(
-                &u128::from_str(arg)
-                    .map_err(|err| RoochError::UnableToParse("u128", err.to_string()))?,
-            ),
-            FunctionArgType::U256 => bcs::to_bytes(
-                &U256::from_str(arg)
-                    .map_err(|err| RoochError::UnableToParse("u256", err.to_string()))?,
-            ),
-            FunctionArgType::Raw => {
-                let raw = hex::decode(arg)
-                    .map_err(|err| RoochError::UnableToParse("raw", err.to_string()))?;
-                Ok(raw)
-            }
+            FunctionArgType::Address => ParsedAddress::parse(arg).map(FunctionArg::Address),
+            FunctionArgType::Bool => Ok(FunctionArg::Bool(bool::from_str(arg)?)),
+            FunctionArgType::ObjectID => Ok(FunctionArg::ObjectID(ParsedObjectID::from_str(arg)?)),
+            FunctionArgType::Object => Ok(FunctionArg::Object(ParsedObjectID::from_str(arg)?)),
+            FunctionArgType::String => Ok(FunctionArg::String(arg.to_string())),
+            FunctionArgType::U8 => Ok(FunctionArg::U8(u8::from_str(arg)?)),
+            FunctionArgType::U16 => Ok(FunctionArg::U16(u16::from_str(arg)?)),
+            FunctionArgType::U32 => Ok(FunctionArg::U32(u32::from_str(arg)?)),
+            FunctionArgType::U64 => Ok(FunctionArg::U64(u64::from_str(arg)?)),
+            FunctionArgType::U128 => Ok(FunctionArg::U128(u128::from_str(arg)?)),
+            FunctionArgType::U256 => Ok(FunctionArg::U256(U256::from_str(arg)?)),
+            FunctionArgType::Raw => Ok(FunctionArg::Raw(hex::decode(arg)?)),
             FunctionArgType::Vector(inner) => {
-                let parsed = match inner.deref() {
-                    FunctionArgType::Address => parse_vector_arg(arg, |arg| {
-                        AccountAddress::from_str(arg).map_err(|err| {
-                            RoochError::UnableToParse("vector<address>", err.to_string())
-                        })
-                    }),
-                    FunctionArgType::Bool => parse_vector_arg(arg, |arg| {
-                        bool::from_str(arg).map_err(|err| {
-                            RoochError::UnableToParse("vector<bool>", err.to_string())
-                        })
-                    }),
-                    FunctionArgType::ObjectID => parse_vector_arg(arg, |arg| {
-                        AccountAddress::from_str(arg).map_err(|err| {
-                            RoochError::UnableToParse("vector<object_id>", err.to_string())
-                        })
-                    }),
-                    // Note commas cannot be put into the strings.  But, this should be a less likely case,
-                    // and the utility from having this available should be worth it.
-                    FunctionArgType::String => parse_vector_arg(arg, |arg| {
-                        bcs::to_bytes(arg).map_err(|err| {
-                            RoochError::UnableToParse("vector<string>", err.to_string())
-                        })
-                    }),
-                    FunctionArgType::U8 => parse_vector_arg(arg, |arg| {
-                        u8::from_str(arg)
-                            .map_err(|err| RoochError::UnableToParse("vector<u8>", err.to_string()))
-                    }),
-                    FunctionArgType::U16 => parse_vector_arg(arg, |arg| {
-                        u16::from_str(arg).map_err(|err| {
-                            RoochError::UnableToParse("vector<u16>", err.to_string())
-                        })
-                    }),
-                    FunctionArgType::U32 => parse_vector_arg(arg, |arg| {
-                        u32::from_str(arg).map_err(|err| {
-                            RoochError::UnableToParse("vector<u32>", err.to_string())
-                        })
-                    }),
-                    FunctionArgType::U64 => parse_vector_arg(arg, |arg| {
-                        u64::from_str(arg).map_err(|err| {
-                            RoochError::UnableToParse("vector<u64>", err.to_string())
-                        })
-                    }),
-                    FunctionArgType::U128 => parse_vector_arg(arg, |arg| {
-                        u128::from_str(arg).map_err(|err| {
-                            RoochError::UnableToParse("vector<u128>", err.to_string())
-                        })
-                    }),
-                    FunctionArgType::U256 => parse_vector_arg(arg, |arg| {
-                        U256::from_str(arg).map_err(|err| {
-                            RoochError::UnableToParse("vector<u256>", err.to_string())
-                        })
-                    }),
-                    vector_type => {
-                        panic!("Unsupported vector type vector<{}>", vector_type)
+                let mut parsed_args = vec![];
+                let args = arg.split(',');
+                for arg in args {
+                    if !arg.is_empty() {
+                        parsed_args.push(inner.parse_arg(arg)?);
                     }
-                }?;
-                Ok(parsed)
+                }
+                Ok(FunctionArg::Vector(inner.clone(), parsed_args))
             }
         }
-        .map_err(|err| RoochError::BcsError(err.to_string()))
     }
-}
-
-fn parse_vector_arg<T: Serialize, F: Fn(&str) -> RoochResult<T>>(
-    args: &str,
-    parse: F,
-) -> RoochResult<Vec<u8>> {
-    let mut parsed_args = vec![];
-    let args = args.split(',');
-    for arg in args {
-        if !arg.is_empty() {
-            parsed_args.push(parse(arg)?);
-        }
-    }
-
-    bcs::to_bytes(&parsed_args).map_err(|err| RoochError::BcsError(err.to_string()))
 }
 
 impl FromStr for FunctionArgType {
@@ -179,6 +99,7 @@ impl FromStr for FunctionArgType {
             "address" => Ok(FunctionArgType::Address),
             "bool" => Ok(FunctionArgType::Bool),
             "object_id" => Ok(FunctionArgType::ObjectID),
+            "object" => Ok(FunctionArgType::Object),
             "string" => Ok(FunctionArgType::String),
             "u8" => Ok(FunctionArgType::U8),
             "u16" => Ok(FunctionArgType::U16),
@@ -211,107 +132,189 @@ impl FromStr for FunctionArgType {
     }
 }
 
-/// A parseable arg with a type separated by a colon
-pub struct ArgWithType {
-    pub(crate) _ty: FunctionArgType,
-    pub arg: Vec<u8>,
+#[derive(Clone, Debug)]
+pub struct ParsedModuleId {
+    pub address: ParsedAddress,
+    pub name: Identifier,
 }
 
-impl ArgWithType {
-    pub fn address(account_address: AccountAddress) -> Self {
-        ArgWithType {
-            _ty: FunctionArgType::Address,
-            arg: bcs::to_bytes(&account_address).unwrap(),
+impl ParsedModuleId {
+    pub fn parse(str: &str) -> Result<Self> {
+        let parts: Vec<_> = str.split("::").collect();
+        if parts.len() != 2 {
+            return Err(anyhow!("Invalid module id"));
         }
+        let address = ParsedAddress::parse(parts[0])?;
+        let name = Identifier::new(parts[1])?;
+        Ok(Self { address, name })
     }
 
-    pub fn u64(arg: u64) -> Self {
-        ArgWithType {
-            _ty: FunctionArgType::U64,
-            arg: bcs::to_bytes(&arg).unwrap(),
-        }
+    pub fn into_module_id(
+        self,
+        mapping: &impl Fn(&str) -> Option<AccountAddress>,
+    ) -> Result<ModuleId> {
+        Ok(ModuleId::new(
+            self.address.into_account_address(mapping)?,
+            self.name,
+        ))
     }
+}
 
-    pub fn bytes(arg: Vec<u8>) -> Self {
-        ArgWithType {
-            _ty: FunctionArgType::Raw,
-            arg: bcs::to_bytes(&arg).unwrap(),
-        }
+impl FromStr for ParsedModuleId {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse(s)
     }
+}
 
-    pub fn raw(arg: Vec<u8>) -> Self {
-        ArgWithType {
-            _ty: FunctionArgType::Raw,
-            arg,
+#[derive(Clone, Debug)]
+pub struct ParsedFunctionId {
+    pub module_id: ParsedModuleId,
+    pub function_name: Identifier,
+}
+
+impl ParsedFunctionId {
+    pub fn parse(str: &str) -> Result<Self> {
+        let parts: Vec<_> = str.split("::").collect();
+        if parts.len() != 3 {
+            return Err(anyhow!("Invalid function id"));
         }
-    }
-
-    pub fn to_json(&self) -> RoochResult<serde_json::Value> {
-        match self._ty.clone() {
-            FunctionArgType::Address => {
-                serde_json::to_value(bcs::from_bytes::<AccountAddress>(&self.arg)?)
-            }
-            FunctionArgType::Bool => serde_json::to_value(bcs::from_bytes::<bool>(&self.arg)?),
-            FunctionArgType::ObjectID => {
-                serde_json::to_value(bcs::from_bytes::<Vec<u8>>(&self.arg)?)
-            }
-            FunctionArgType::String => serde_json::to_value(bcs::from_bytes::<String>(&self.arg)?),
-            FunctionArgType::U8 => serde_json::to_value(bcs::from_bytes::<u32>(&self.arg)?),
-            FunctionArgType::U16 => serde_json::to_value(bcs::from_bytes::<u32>(&self.arg)?),
-            FunctionArgType::U32 => serde_json::to_value(bcs::from_bytes::<u32>(&self.arg)?),
-            FunctionArgType::U64 => {
-                serde_json::to_value(bcs::from_bytes::<u64>(&self.arg)?.to_string())
-            }
-            FunctionArgType::U128 => {
-                serde_json::to_value(bcs::from_bytes::<u128>(&self.arg)?.to_string())
-            }
-            FunctionArgType::U256 => {
-                serde_json::to_value(bcs::from_bytes::<U256>(&self.arg)?.to_string())
-            }
-            FunctionArgType::Raw => serde_json::to_value(&self.arg),
-            FunctionArgType::Vector(inner) => match inner.deref() {
-                FunctionArgType::Address => {
-                    serde_json::to_value(bcs::from_bytes::<Vec<AccountAddress>>(&self.arg)?)
-                }
-                FunctionArgType::Bool => {
-                    serde_json::to_value(bcs::from_bytes::<Vec<bool>>(&self.arg)?)
-                }
-                FunctionArgType::ObjectID => {
-                    serde_json::to_value(bcs::from_bytes::<Vec<Vec<u8>>>(&self.arg)?)
-                }
-                FunctionArgType::String => {
-                    serde_json::to_value(bcs::from_bytes::<Vec<String>>(&self.arg)?)
-                }
-                FunctionArgType::U8 => serde_json::to_value(bcs::from_bytes::<Vec<u8>>(&self.arg)?),
-                FunctionArgType::U16 => {
-                    serde_json::to_value(bcs::from_bytes::<Vec<u16>>(&self.arg)?)
-                }
-                FunctionArgType::U32 => {
-                    serde_json::to_value(bcs::from_bytes::<Vec<u32>>(&self.arg)?)
-                }
-                FunctionArgType::U64 => {
-                    serde_json::to_value(bcs::from_bytes::<Vec<u64>>(&self.arg)?)
-                }
-                FunctionArgType::U128 => {
-                    serde_json::to_value(bcs::from_bytes::<Vec<u128>>(&self.arg)?)
-                }
-                FunctionArgType::U256 => {
-                    serde_json::to_value(bcs::from_bytes::<Vec<U256>>(&self.arg)?)
-                }
-                FunctionArgType::Raw | FunctionArgType::Vector(_) => {
-                    return Err(RoochError::UnexpectedError(
-                        "Nested vectors not supported".to_owned(),
-                    ));
-                }
+        let address = ParsedAddress::parse(parts[0])?;
+        let module_name = Identifier::new(parts[1])?;
+        let function_name = Identifier::new(parts[2])?;
+        Ok(Self {
+            module_id: ParsedModuleId {
+                address,
+                name: module_name,
             },
-        }
-        .map_err(|err| {
-            RoochError::UnexpectedError(format!("Failed to parse argument to JSON {}", err))
+            function_name,
         })
     }
+
+    pub fn into_function_id(
+        self,
+        mapping: &impl Fn(&str) -> Option<AccountAddress>,
+    ) -> Result<FunctionId> {
+        let module_id = ModuleId::new(
+            self.module_id.address.into_account_address(mapping)?,
+            self.module_id.name,
+        );
+        Ok(FunctionId::new(module_id, self.function_name))
+    }
 }
 
-impl FromStr for ArgWithType {
+impl FromStr for ParsedFunctionId {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse(s)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum ParsedObjectID {
+    ObjectID(ObjectID),
+    //For singletoken object
+    StructTag(ParsedStructType),
+}
+
+impl FromStr for ParsedObjectID {
+    type Err = RoochError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.starts_with("0x") {
+            Ok(ParsedObjectID::ObjectID(ObjectID::from_str(s)?))
+        } else {
+            let parsed_struct_type = ParsedStructType::parse(s)?;
+            Ok(ParsedObjectID::StructTag(parsed_struct_type))
+        }
+    }
+}
+
+/// A parseable arg with a type separated by a colon
+#[derive(Clone, Debug)]
+pub enum FunctionArg {
+    Address(ParsedAddress),
+    Bool(bool),
+    ObjectID(ParsedObjectID),
+    Object(ParsedObjectID),
+    String(String),
+    U8(u8),
+    U16(u16),
+    U32(u32),
+    U64(u64),
+    U128(u128),
+    U256(U256),
+    Raw(Vec<u8>),
+    Vector(Box<FunctionArgType>, Vec<FunctionArg>),
+}
+
+impl FunctionArg {
+    pub fn arg_type(&self) -> FunctionArgType {
+        match self {
+            FunctionArg::Address(_) => FunctionArgType::Address,
+            FunctionArg::Bool(_) => FunctionArgType::Bool,
+            FunctionArg::ObjectID(_) => FunctionArgType::ObjectID,
+            FunctionArg::Object(_) => FunctionArgType::Object,
+            FunctionArg::String(_) => FunctionArgType::String,
+            FunctionArg::U8(_) => FunctionArgType::U8,
+            FunctionArg::U16(_) => FunctionArgType::U16,
+            FunctionArg::U32(_) => FunctionArgType::U32,
+            FunctionArg::U64(_) => FunctionArgType::U64,
+            FunctionArg::U128(_) => FunctionArgType::U128,
+            FunctionArg::U256(_) => FunctionArgType::U256,
+            FunctionArg::Raw(_) => FunctionArgType::Raw,
+            FunctionArg::Vector(element_type, _) => FunctionArgType::Vector(element_type.clone()),
+        }
+    }
+
+    pub fn to_move_value(
+        self,
+        mapping: &impl Fn(&str) -> Option<AccountAddress>,
+    ) -> Result<MoveValue> {
+        Ok(match self {
+            FunctionArg::Address(address) => {
+                let account_address = address.into_account_address(mapping)?;
+                MoveValue::Address(account_address)
+            }
+            FunctionArg::Bool(arg) => MoveValue::Bool(arg),
+            FunctionArg::ObjectID(parsed_object_id) | FunctionArg::Object(parsed_object_id) => {
+                let object_id = match parsed_object_id {
+                    ParsedObjectID::ObjectID(object_id) => object_id,
+                    ParsedObjectID::StructTag(parsed_struct_type) => {
+                        let struct_tag = parsed_struct_type.into_struct_tag(mapping)?;
+                        object::singleton_object_id(&struct_tag)
+                    }
+                };
+                MoveValue::Address(object_id.into())
+            }
+            FunctionArg::String(arg) => MoveValue::vector_u8(arg.as_bytes().to_vec()),
+            FunctionArg::U8(arg) => MoveValue::U8(arg),
+            FunctionArg::U16(arg) => MoveValue::U16(arg),
+            FunctionArg::U32(arg) => MoveValue::U32(arg),
+            FunctionArg::U64(arg) => MoveValue::U64(arg),
+            FunctionArg::U128(arg) => MoveValue::U128(arg),
+            FunctionArg::U256(arg) => MoveValue::U256(arg),
+            FunctionArg::Raw(arg) => MoveValue::vector_u8(arg),
+            FunctionArg::Vector(_element_type, elements) => {
+                let mut move_elements = vec![];
+                for element in elements {
+                    move_elements.push(element.to_move_value(mapping)?);
+                }
+                MoveValue::Vector(move_elements)
+            }
+        })
+    }
+
+    pub fn into_bytes(self, mapping: &impl Fn(&str) -> Option<AccountAddress>) -> Result<Vec<u8>> {
+        self.to_move_value(mapping)?
+            .simple_serialize()
+            .ok_or_else(|| anyhow!("Unable to serialize argument"))
+    }
+}
+
+impl FromStr for FunctionArg {
     type Err = RoochError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -346,52 +349,70 @@ impl FromStr for ArgWithType {
         };
         let arg = ty.parse_arg(arg)?;
 
-        Ok(ArgWithType { _ty: ty, arg })
+        Ok(arg)
     }
 }
 
-impl TryInto<TransactionArgument> for ArgWithType {
-    type Error = RoochError;
+impl ParsableValue for FunctionArg {
+    type ConcreteValue = MoveValue;
 
-    fn try_into(self) -> Result<TransactionArgument, Self::Error> {
-        match self._ty {
-            FunctionArgType::Address => Ok(TransactionArgument::Address(txn_arg_parser(
-                &self.arg, "address",
-            )?)),
-            FunctionArgType::Bool => Ok(TransactionArgument::Bool(txn_arg_parser(
-                &self.arg, "bool",
-            )?)),
-            FunctionArgType::ObjectID => Ok(TransactionArgument::U8Vector(txn_arg_parser(
-                &self.arg,
-                "object_id",
-            )?)),
-            FunctionArgType::String => Ok(TransactionArgument::U8Vector(txn_arg_parser(
-                &self.arg, "string",
-            )?)),
-            FunctionArgType::U8 => Ok(TransactionArgument::U8(txn_arg_parser(&self.arg, "u8")?)),
-            FunctionArgType::U16 => Ok(TransactionArgument::U16(txn_arg_parser(&self.arg, "u16")?)),
-            FunctionArgType::U32 => Ok(TransactionArgument::U32(txn_arg_parser(&self.arg, "u32")?)),
-            FunctionArgType::U64 => Ok(TransactionArgument::U64(txn_arg_parser(&self.arg, "u64")?)),
-            FunctionArgType::U128 => Ok(TransactionArgument::U128(txn_arg_parser(
-                &self.arg, "u128",
-            )?)),
-            FunctionArgType::U256 => Ok(TransactionArgument::U256(txn_arg_parser(
-                &self.arg, "u256",
-            )?)),
-            FunctionArgType::Raw => Ok(TransactionArgument::U8Vector(txn_arg_parser(
-                &self.arg, "raw",
-            )?)),
-            arg_type => Err(RoochError::CommandArgumentError(format!(
-                "Input type {} not supported",
-                arg_type
-            ))),
+    fn parse_value<'a, I: Iterator<Item = (ValueToken, &'a str)>>(
+        parser: &mut Parser<'a, ValueToken, I>,
+    ) -> Option<anyhow::Result<Self>> {
+        match parser.peek() {
+            Some((ValueToken::Ident, arg_type_str)) => {
+                match FunctionArgType::from_str(arg_type_str) {
+                    Ok(arg_type) => {
+                        //skp current token
+                        parser.advance_any().unwrap();
+                        if let Err(e) = parser.advance(ValueToken::Colon) {
+                            return Some(Err(anyhow!("Expected colon, but got:{:?}", e)));
+                        }
+                        let arg = advance_all(parser);
+                        Some(arg_type.parse_arg(&arg))
+                    }
+                    Err(_e) => None,
+                }
+            }
+            _ => None,
         }
     }
+
+    fn move_value_into_concrete(
+        v: move_core_types::value::MoveValue,
+    ) -> anyhow::Result<Self::ConcreteValue> {
+        Ok(v)
+    }
+
+    fn concrete_vector(elems: Vec<Self::ConcreteValue>) -> anyhow::Result<Self::ConcreteValue> {
+        Ok(MoveValue::Vector(elems))
+    }
+
+    fn concrete_struct(
+        _addr: AccountAddress,
+        _module: String,
+        _name: String,
+        values: std::collections::BTreeMap<String, Self::ConcreteValue>,
+    ) -> anyhow::Result<Self::ConcreteValue> {
+        Ok(MoveValue::Struct(MoveStruct::Runtime(
+            values.into_values().collect(),
+        )))
+    }
+
+    fn into_concrete_value(
+        self,
+        mapping: &impl Fn(&str) -> Option<AccountAddress>,
+    ) -> anyhow::Result<Self::ConcreteValue> {
+        self.to_move_value(mapping)
+    }
 }
 
-fn txn_arg_parser<T: serde::de::DeserializeOwned>(
-    data: &[u8],
-    label: &'static str,
-) -> Result<T, RoochError> {
-    bcs::from_bytes(data).map_err(|err| RoochError::UnableToParse(label, err.to_string()))
+fn advance_all<'a, I: Iterator<Item = (ValueToken, &'a str)>>(
+    parser: &mut Parser<'a, ValueToken, I>,
+) -> String {
+    let mut s = String::new();
+    while let Ok((_, arg)) = parser.advance_any() {
+        s.push_str(arg);
+    }
+    s
 }

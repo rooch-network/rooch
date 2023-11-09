@@ -22,7 +22,7 @@ pub struct ObjectCommand {
 #[async_trait]
 impl CommandAction<Option<StateView>> for ObjectCommand {
     async fn execute(self) -> RoochResult<Option<StateView>> {
-        let client = self.context_options.build().await?.get_client().await?;
+        let client = self.context_options.build()?.get_client().await?;
         let resp = client
             .rooch
             .get_decoded_states(AccessPath::object(self.id))

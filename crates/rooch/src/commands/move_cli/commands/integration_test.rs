@@ -16,14 +16,14 @@ use move_package::compilation::build_plan::BuildPlan;
 use move_package::source_package::layout::SourcePackageLayout;
 use moveos_types::addresses::MOVEOS_NAMED_ADDRESS_MAPPING;
 use once_cell::sync::Lazy;
-use rooch_config::rooch_config_dir;
 use rooch_integration_test_runner;
-use rooch_rpc_client::wallet_context::WalletContext;
 use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::num::NonZeroUsize;
 use std::str::FromStr;
 use std::sync::Mutex;
+
+use crate::cli_types::WalletContextOptions;
 
 pub const INTEGRATION_TESTS_DIR: &str = "integration-tests";
 
@@ -112,6 +112,9 @@ pub struct TestOpts {
 #[derive(Parser)]
 pub struct IntegrationTest {
     #[clap(flatten)]
+    context_options: WalletContextOptions,
+
+    #[clap(flatten)]
     test_opts: TestOpts,
     #[clap(long = "ub")]
     /// update test baseline.
@@ -127,7 +130,7 @@ pub struct IntegrationTest {
 
     /// Named addresses for the move binary
     ///
-    /// Example: alice=0x1234, bob=0x5678
+    /// Example: alice=0x1234, bob=default, alice2=alice
     ///
     /// Note: This will fail if there are duplicates in the Move.toml file remove those first.
     #[clap(long, parse(try_from_str = crate::utils::parse_map), default_value = "")]
@@ -145,21 +148,14 @@ impl IntegrationTest {
             SourcePackageLayout::try_find_root(&path.as_ref().unwrap().canonicalize()?)?
         };
 
-        let rooch_dir = rooch_config_dir().unwrap();
-        let wallet_context = WalletContext::new(Some(rooch_dir.clone())).await.unwrap();
+        let context = self.context_options.build()?;
 
         // force move to rebuild all packages, so that we can use compile_driver to generate the full compiled program.
         let mut build_config = move_arg.build_config;
-        let _ = self
-            .named_addresses
-            .iter()
-            .map(|(key, value)| {
-                build_config.additional_named_addresses.insert(
-                    key.clone(),
-                    wallet_context.parse_account_arg(value.clone()).ok()?,
-                )
-            })
-            .collect::<Vec<_>>();
+        build_config
+            .additional_named_addresses
+            .extend(context.parse_and_resolve_addresses(self.named_addresses)?);
+
         build_config.force_recompilation = true;
 
         let resolved_graph =

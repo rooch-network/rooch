@@ -3,7 +3,7 @@
 
 use async_trait::async_trait;
 use clap::Parser;
-use move_core_types::account_address::AccountAddress;
+use move_command_line_common::address::ParsedAddress;
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_types::authentication_key::AuthenticationKey;
 use rooch_types::error::{RoochError, RoochResult};
@@ -12,7 +12,7 @@ use serde::Serialize;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-pub use rooch_types::function_arg::{ArgWithType, FunctionArgType};
+pub use rooch_types::function_arg::{FunctionArg, FunctionArgType};
 
 #[async_trait]
 pub trait CommandAction<T: Serialize + Send>: Sized + Send {
@@ -72,9 +72,8 @@ pub struct TransactionOptions {
     /// Sender account address.
     /// This allows you to override the account address from the derived account address
     /// in the event that the authentication key was rotated or for a resource account
-    //TODO set default value to sender account
-    #[clap(long, alias = "sender")]
-    pub(crate) sender_account: Option<String>,
+    #[clap(long, alias = "sender", parse(try_from_str = ParsedAddress::parse))]
+    pub(crate) sender_account: Option<ParsedAddress>,
 
     /// Custom the transaction's authenticator
     /// format: `auth_validator_id:payload`, auth validator id is u64, payload is hex string
@@ -96,25 +95,7 @@ pub struct WalletContextOptions {
 }
 
 impl WalletContextOptions {
-    pub async fn build(&self) -> RoochResult<WalletContext> {
-        WalletContext::new(self.config_dir.clone())
-            .await
-            .map_err(RoochError::from)
-    }
-}
-
-/// Loads an account arg and allows for naming based on profiles
-pub fn load_account_arg(str: &str) -> RoochResult<AccountAddress> {
-    if str.starts_with("0x") {
-        AccountAddress::from_hex_literal(str).map_err(|err| {
-            RoochError::CommandArgumentError(format!("Failed to parse AccountAddress {}", err))
-        })
-    } else if let Ok(account_address) = AccountAddress::from_str(str) {
-        Ok(account_address)
-    } else {
-        Err(RoochError::UnableToParse(
-            "Address",
-            "Address should be in hex format".to_owned(),
-        ))
+    pub fn build(&self) -> RoochResult<WalletContext> {
+        WalletContext::new(self.config_dir.clone()).map_err(RoochError::from)
     }
 }

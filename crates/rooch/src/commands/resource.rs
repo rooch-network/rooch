@@ -29,7 +29,7 @@ pub struct ResourceCommand {
 #[async_trait]
 impl CommandAction<Option<StateView>> for ResourceCommand {
     async fn execute(self) -> RoochResult<Option<StateView>> {
-        let client = self.context_options.build().await?.get_client().await?;
+        let client = self.context_options.build()?.get_client().await?;
 
         let resp = client
             .rooch

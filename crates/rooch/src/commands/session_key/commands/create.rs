@@ -36,7 +36,7 @@ pub struct CreateCommand {
 
 impl CreateCommand {
     pub async fn execute(self) -> RoochResult<SessionKey> {
-        let mut context = self.context_options.build().await?;
+        let mut context = self.context_options.build()?;
 
         if self.tx_options.sender_account.is_none() {
             return Err(RoochError::CommandArgumentError(
@@ -44,7 +44,7 @@ impl CreateCommand {
             ));
         }
         let sender: RoochAddress = context
-            .parse_account_arg(self.tx_options.sender_account.unwrap())?
+            .resolve_address(self.tx_options.sender_account.unwrap())?
             .into();
 
         let session_auth_key = if context.keystore.get_if_password_is_empty() {

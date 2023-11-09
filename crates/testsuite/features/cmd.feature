@@ -24,10 +24,11 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::account_storage::AccountStorage>'"
       Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}]"
       Then assert: "'{{$.rpc[-1]}}' contains '0x3::account::Account'"
-      #TODO support access path to singleton object shortcut: /object/0x3::timestamp::Timestamp
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3",{"decode":true}]'"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::timestamp::Timestamp>'"
       Then assert: "{{$.rpc[-1][0].decoded_value.value.value.value.milliseconds}} == 0"
+      Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3::timestamp::Timestamp",{"decode":true}]'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::timestamp::Timestamp>'"
       Then stop the server 
     
     @serial
@@ -112,6 +113,8 @@ Feature: Rooch CLI integration tests
       Then cmd: "move run --function {default}::entry_function::emit_vec_object_id --args "vector<address>:0x1324,0x41234,0x1234" --sender-account {default}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      Then cmd: "move run --function {default}::entry_function::emit_object --args "object:default::entry_function::TestStruct" --sender-account default"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then stop the server

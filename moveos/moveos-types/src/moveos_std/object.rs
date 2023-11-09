@@ -207,9 +207,17 @@ impl FromStr for ObjectID {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let address = AccountAddress::from_hex_literal(s)
-            .map_err(|_e| anyhow::anyhow!("Invalid ObjectID:{}|", s))?;
-        Ok(ObjectID::from(address))
+        //Support singleton struct_type style object id
+        if s.contains("::") {
+            let struct_tag = StructTag::from_str(s).map_err(|_e| {
+                anyhow::anyhow!("Singleton ObjectID must be a valid struct tag:{}", s)
+            })?;
+            Ok(singleton_object_id(&struct_tag))
+        } else {
+            let address = AccountAddress::from_hex_literal(s)
+                .map_err(|_e| anyhow::anyhow!("Invalid ObjectID:{}|", s))?;
+            Ok(ObjectID::from(address))
+        }
     }
 }
 
@@ -555,12 +563,12 @@ mod tests {
             type_params: vec![],
         };
         let timestamp_object_id = singleton_object_id(&struct_tag);
-        assert_eq!(
-            timestamp_object_id,
-            ObjectID::from_str(
-                "0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3"
-            )
-            .unwrap()
-        );
+        let object_id = ObjectID::from_str(
+            "0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3",
+        )
+        .unwrap();
+        let timestamp_object_id2 = ObjectID::from_str("0x3::timestamp::Timestamp").unwrap();
+        assert_eq!(timestamp_object_id, object_id,);
+        assert_eq!(timestamp_object_id2, object_id,);
     }
 }

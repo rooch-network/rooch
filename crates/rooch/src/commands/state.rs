@@ -26,7 +26,7 @@ pub struct StateCommand {
 #[async_trait]
 impl CommandAction<Vec<Option<StateView>>> for StateCommand {
     async fn execute(self) -> RoochResult<Vec<Option<StateView>>> {
-        let client = self.context_options.build().await?.get_client().await?;
+        let client = self.context_options.build()?.get_client().await?;
 
         let resp = client
             .rooch

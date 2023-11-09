@@ -23,7 +23,7 @@ pub struct CreateCommand {
 
 impl CreateCommand {
     pub async fn execute(self) -> RoochResult<String> {
-        let mut context = self.context_options.build().await?;
+        let mut context = self.context_options.build()?;
         let result = if context.keystore.get_if_password_is_empty() {
             context
                 .keystore

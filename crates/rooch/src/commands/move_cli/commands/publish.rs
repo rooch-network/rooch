@@ -40,7 +40,7 @@ pub struct Publish {
 
     /// Named addresses for the move binary
     ///
-    /// Example: alice=0x1234, bob=0x5678
+    /// Example: alice=0x1234, bob=default, alice2=alice
     ///
     /// Note: This will fail if there are duplicates in the Move.toml file remove those first.
     #[clap(long, parse(try_from_str = crate::utils::parse_map), default_value = "")]
@@ -68,7 +68,7 @@ impl Publish {
 impl CommandAction<ExecuteTransactionResponseView> for Publish {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         // Build context and handle errors
-        let context = self.context_options.build().await?;
+        let context = self.context_options.build()?;
 
         // Clone variables for later use
         let package_path = self
@@ -79,7 +79,8 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         let mut config = config.clone();
 
         // Parse named addresses from context and update config
-        config.additional_named_addresses = context.parse_account_args(self.named_addresses)?;
+        config.additional_named_addresses =
+            context.parse_and_resolve_addresses(self.named_addresses)?;
         let config_cloned = config.clone();
 
         // Compile the package and run the verifier
@@ -121,7 +122,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
 
         // Validate sender account if provided
         if let Some(sender_account) = self.tx_options.sender_account {
-            if pkg_address != context.parse_account_arg(sender_account)? {
+            if pkg_address != context.resolve_address(sender_account)? {
                 return Err(RoochError::CommandArgumentError(
                     "--sender-account required and the sender account must be the same as the package address"
                         .to_string(),

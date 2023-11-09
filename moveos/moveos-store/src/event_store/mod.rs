@@ -75,7 +75,7 @@ impl EventDBStore {
     }
 
     fn get_or_create_event_handle(&self, event_handle_type: &StructTag) -> Result<EventHandle> {
-        let event_handle_id = EventHandle::derive_event_handle_id(&event_handle_type);
+        let event_handle_id = EventHandle::derive_event_handle_id(event_handle_type);
         let event_handle = self.get_event_handle(event_handle_id)?;
         if let Some(event_handle) = event_handle {
             return Ok(event_handle);
