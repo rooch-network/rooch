@@ -10,7 +10,7 @@ use itertools::Itertools;
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::{Location, PartialVMError, VMResult};
 use move_binary_format::file_format::{
-    Bytecode, FunctionInstantiation, SignatureToken, Visibility,
+    Ability, Bytecode, FunctionInstantiation, SignatureToken, Visibility,
 };
 use move_binary_format::CompiledModule;
 use move_core_types::language_storage::ModuleId;
@@ -814,18 +814,24 @@ impl<'a> ExtendedChecker<'a> {
 impl<'a> ExtendedChecker<'a> {
     fn check_data_struct(&mut self, module_env: &ModuleEnv) {
         for struct_def in module_env.get_structs() {
-            let struct_attributes = struct_def.get_attributes().to_vec();
-            for attribute in struct_attributes.iter() {
-                if let Attribute::Apply(_, symbol, _) = attribute {
-                    let attr_name = module_env.symbol_pool().string(*symbol).to_string();
-                    if attr_name == DATA_STRUCT_ATTRIBUTE {
-                        let (error_message, is_allowed) =
-                            check_data_struct_fields(&struct_def, module_env);
-                        if !is_allowed {
-                            self.env
-                                .error(&struct_def.get_loc(), error_message.as_str());
-                        }
+            if is_data_struct_annotation(&struct_def, module_env) {
+                if is_copy_drop_struct(&struct_def) {
+                    let (error_message, is_allowed) =
+                        check_data_struct_fields(&struct_def, module_env);
+                    if !is_allowed {
+                        self.env
+                            .error(&struct_def.get_loc(), error_message.as_str());
                     }
+                } else {
+                    let struct_name = struct_def.get_full_name_str();
+                    self.env.error(
+                        &struct_def.get_loc(),
+                        format!(
+                            "The struct {} must have the 'copy' and 'drop' ability",
+                            struct_name
+                        )
+                        .as_str(),
+                    );
                 }
             }
         }
@@ -906,6 +912,15 @@ fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> b
 
             let struct_module = module_env.env.get_module(*module_id);
             let struct_env = struct_module.get_struct(*struct_id);
+
+            if !is_data_struct_annotation(&struct_env, module_env) {
+                return false;
+            }
+
+            if !is_copy_drop_struct(&struct_env) {
+                return false;
+            }
+
             check_data_struct_fields(&struct_env, &struct_module);
 
             let is_allowed_opt = unsafe { GLOBAL_DATA_STRUCT.get(full_struct_name.as_str()) };
@@ -924,6 +939,29 @@ fn is_allowed_data_struct_type(full_struct_name: &str) -> bool {
         full_struct_name,
         "0x1::string::String" | "0x1::ascii::String" | "0x2::object::ObjectID"
     )
+}
+
+fn is_data_struct_annotation(struct_env: &StructEnv, module_env: &ModuleEnv) -> bool {
+    let struct_attributes = struct_env.get_attributes().to_vec();
+    for attribute in struct_attributes.iter() {
+        if let Attribute::Apply(_, symbol, _) = attribute {
+            let attr_name = module_env.symbol_pool().string(*symbol).to_string();
+            if attr_name == DATA_STRUCT_ATTRIBUTE {
+                return true;
+            }
+        }
+    }
+
+    false
+}
+
+fn is_copy_drop_struct(struct_env: &StructEnv) -> bool {
+    let abilities = struct_env.get_abilities();
+    if abilities.has_ability(Ability::Copy) && abilities.has_ability(Ability::Drop) {
+        return true;
+    }
+
+    false
 }
 
 fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &ModuleEnv) {
