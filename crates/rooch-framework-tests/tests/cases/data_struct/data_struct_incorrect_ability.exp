@@ -13,4 +13,12 @@ Error: error: The struct test::AllowedStruct must have the 'copy' and 'drop' abi
 17 │ │     }
    │ ╰─────^
 
+error: The type argument 0x42::test::AllowedStruct of #[data_struct] for function test::f2 in the module 0x42::test is not allowed.
+   ┌─ /tmp/tempfile:21:5
+   │  
+21 │ ╭     public fun f2(ctx: &mut Context) {
+22 │ │         f1<AllowedStruct>(ctx);
+23 │ │     }
+   │ ╰─────^
+
 
