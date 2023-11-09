@@ -57,7 +57,7 @@ impl Handler<IndexerEventsMessage> for IndexerActor {
             moveos_tx,
         } = msg;
 
-        let events = events
+        let _events: Vec<_> = events
             .into_iter()
             .map(|event| {
                 IndexedEvent::new(
