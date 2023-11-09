@@ -8,7 +8,6 @@ module moveos_std::object {
     use std::error;
     use std::hash;
     use moveos_std::type_info;
-    use moveos_std::bcs;
     use moveos_std::address;
     use moveos_std::raw_table::{Self, TableHandle};
 
@@ -81,9 +80,7 @@ module moveos_std::object {
         address_to_object_id(
             address::from_bytes(
                 hash::sha3_256(
-                    bcs::to_bytes(
-                        &type_info::type_of<T>()
-                    )
+                    *std::string::bytes(&type_info::type_name<T>())
                 )
             )
         )

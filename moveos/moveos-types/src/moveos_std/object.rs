@@ -452,6 +452,11 @@ where
     }
 }
 
+pub fn singleton_object_id(struct_tag: &StructTag) -> ObjectID {
+    let event_handle_hash = h256::sha3_256_of(struct_tag.to_canonical_string().as_bytes());
+    AccountAddress::new(event_handle_hash.0).into()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -539,5 +544,23 @@ mod tests {
         test_object_id_roundtrip(ObjectID::ZERO);
         test_object_id_roundtrip(ObjectID::ONE);
         test_object_id_roundtrip(ObjectID::new(crate::h256::H256::random().into()));
+    }
+
+    #[test]
+    fn test_singleton_object_id() {
+        let struct_tag = StructTag {
+            address: AccountAddress::from_str("0x3").unwrap(),
+            module: ident_str!("timestamp").to_owned(),
+            name: ident_str!("Timestamp").to_owned(),
+            type_params: vec![],
+        };
+        let timestamp_object_id = singleton_object_id(&struct_tag);
+        assert_eq!(
+            timestamp_object_id,
+            ObjectID::from_str(
+                "0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3"
+            )
+            .unwrap()
+        );
     }
 }

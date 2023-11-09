@@ -51,8 +51,8 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::hash</a>;
+<b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="address.md#0x2_address">0x2::address</a>;
-<b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="raw_table.md#0x2_raw_table">0x2::raw_table</a>;
 <b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
 </code></pre>

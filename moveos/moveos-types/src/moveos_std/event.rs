@@ -7,7 +7,6 @@
 use crate::addresses::MOVEOS_STD_ADDRESS;
 use crate::h256;
 use crate::moveos_std::object::ObjectID;
-use crate::moveos_std::type_info::TypeInfo;
 use crate::state::MoveStructType;
 use anyhow::{ensure, Error, Result};
 use move_core_types::account_address::AccountAddress;
@@ -24,6 +23,8 @@ use crate::h256::H256;
 use crate::module_binding::{ModuleBinding, MoveFunctionCaller};
 use crate::moveos_std::tx_context::TxContext;
 use crate::transaction::FunctionCall;
+
+use super::object;
 
 /// Rust bindings for MoveosStd event module
 pub struct EventModule<'a> {
@@ -279,16 +280,8 @@ impl EventHandle {
         &mut self.count
     }
 
-    pub fn derive_event_handle_id(event_handle_type: StructTag) -> ObjectID {
-        let type_info = TypeInfo::new(
-            event_handle_type.address,
-            event_handle_type.module,
-            event_handle_type.name,
-        );
-        let event_handle_hash = h256::sha3_256_of(bcs::to_bytes(&type_info).unwrap().as_ref());
-        AccountAddress::try_from(event_handle_hash.as_bytes())
-            .unwrap()
-            .into()
+    pub fn derive_event_handle_id(event_handle_type: &StructTag) -> ObjectID {
+        object::singleton_object_id(event_handle_type)
     }
 }
 
