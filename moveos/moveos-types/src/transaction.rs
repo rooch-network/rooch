@@ -159,8 +159,21 @@ impl MoveAction {
     }
 }
 
+impl From<VerifiedMoveAction> for MoveAction {
+    fn from(verified_action: VerifiedMoveAction) -> Self {
+        match verified_action {
+            VerifiedMoveAction::Script { call } => MoveAction::Script(call),
+            VerifiedMoveAction::Function { call } => MoveAction::Function(call),
+            VerifiedMoveAction::ModuleBundle {
+                module_bundle,
+                init_function_modules: _init_function_modules,
+            } => MoveAction::ModuleBundle(module_bundle),
+        }
+    }
+}
+
 /// The MoveAction after verifier
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum VerifiedMoveAction {
     Script {
         call: ScriptCall,
@@ -244,7 +257,7 @@ impl MoveOSTransaction {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VerifiedMoveOSTransaction {
     pub ctx: TxContext,
     pub action: VerifiedMoveAction,

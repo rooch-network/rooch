@@ -5,6 +5,7 @@ use super::{
     authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo, TransactionType,
 };
 use crate::crypto::{Ed25519RoochSignature, RoochKeyPair, Signature};
+use crate::multichain_id::{MultiChainID, ROOCH};
 use crate::{address::RoochAddress, chain_id::RoochChainID};
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
@@ -202,5 +203,9 @@ impl AbstractTransaction for RoochTransaction {
 
     fn sender(&self) -> crate::address::MultiChainAddress {
         self.sender().into()
+    }
+
+    fn multi_chain_id(&self) -> MultiChainID {
+        MultiChainID::from(ROOCH)
     }
 }

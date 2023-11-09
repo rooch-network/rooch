@@ -173,6 +173,7 @@ pub struct ServerOpt {
     pub sequencer_keypair: Option<RoochKeyPair>,
     pub proposer_keypair: Option<RoochKeyPair>,
     pub relayer_keypair: Option<RoochKeyPair>,
+    pub active_env: Option<String>,
 }
 
 impl std::fmt::Display for ServerOpt {
@@ -191,6 +192,14 @@ impl ServerOpt {
             sequencer_keypair: None,
             proposer_keypair: None,
             relayer_keypair: None,
+            active_env: None,
+        }
+    }
+
+    pub fn get_active_env(&self) -> String {
+        match self.active_env.clone() {
+            Some(env) => env,
+            None => RoochChainID::default().chain_name(),
         }
     }
 }

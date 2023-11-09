@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo};
+use crate::multichain_id::{MultiChainID, ETHER};
 use crate::{
     address::{EthereumAddress, RoochAddress},
     chain_id::RoochChainID,
@@ -366,5 +367,9 @@ impl AbstractTransaction for EthereumTransaction {
             self.into_signature()?.to_vec(),
         );
         Ok(AuthenticatorInfo::new(chain_id, authenticator))
+    }
+
+    fn multi_chain_id(&self) -> MultiChainID {
+        MultiChainID::from(ETHER)
     }
 }

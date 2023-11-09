@@ -12,6 +12,7 @@ use moveos_types::moveos_std::event::{AnnotatedEvent, EventID};
 use moveos_types::state::{AnnotatedState, MoveStructType, State};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
+use rooch_indexer::proxy::IndexerProxy;
 use rooch_proposer::proxy::ProposerProxy;
 use rooch_relayer::TxSubmiter;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponse, ExecuteTransactionResponseView};
@@ -32,6 +33,7 @@ pub struct RpcService {
     executor: ExecutorProxy,
     sequencer: SequencerProxy,
     proposer: ProposerProxy,
+    indexer: IndexerProxy,
 }
 
 impl RpcService {
@@ -40,12 +42,14 @@ impl RpcService {
         executor: ExecutorProxy,
         sequencer: SequencerProxy,
         proposer: ProposerProxy,
+        indexer: IndexerProxy,
     ) -> Self {
         Self {
             chain_id,
             executor,
             sequencer,
             proposer,
+            indexer,
         }
     }
 }
@@ -62,13 +66,18 @@ impl RpcService {
     }
 
     pub async fn execute_tx(&self, tx: TypedTransaction) -> Result<ExecuteTransactionResponse> {
-        //First, validate the transactin
+        // First, validate the transactin
         let moveos_tx = self.executor.validate_transaction(tx.clone()).await?;
         let sequence_info = self.sequencer.sequence_transaction(tx.clone()).await?;
         // Then execute
-        let (output, execution_info) = self.executor.execute_transaction(moveos_tx).await?;
+        let (output, execution_info) = self.executor.execute_transaction(moveos_tx.clone()).await?;
         self.proposer
-            .propose_transaction(tx, execution_info.clone(), sequence_info.clone())
+            .propose_transaction(tx.clone(), execution_info.clone(), sequence_info.clone())
+            .await?;
+
+        // Last save indexer
+        self.indexer
+            .indexer_transaction(tx, sequence_info.clone(), execution_info.clone(), moveos_tx)
             .await?;
 
         Ok(ExecuteTransactionResponse {

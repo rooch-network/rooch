@@ -3,14 +3,19 @@
 
 use crate::errors::IndexerError;
 use crate::types::{IndexedEvent, IndexedTransaction};
-use async_trait::async_trait;
+use moveos_types::h256::H256;
+use rooch_types::transaction::TransactionWithInfo;
 
-#[async_trait]
-pub trait IndexerStore {
-    async fn persist_transactions(
+pub trait IndexerStoreTrait: Send + Sync {
+    fn persist_transactions(
         &self,
         transactions: Vec<IndexedTransaction>,
     ) -> Result<(), IndexerError>;
 
-    async fn persist_events(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError>;
+    fn persist_events(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError>;
+
+    fn query_transactions_by_hash(
+        &self,
+        tx_hashes: Vec<H256>,
+    ) -> Result<Vec<Option<TransactionWithInfo>>, IndexerError>;
 }
