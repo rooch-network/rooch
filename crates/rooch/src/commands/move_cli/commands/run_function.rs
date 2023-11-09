@@ -64,17 +64,9 @@ pub struct RunFunction {
 #[async_trait]
 impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
-        if self.tx_options.sender_account.is_none() {
-            return Err(RoochError::CommandArgumentError(
-                "--sender-account required".to_owned(),
-            ));
-        }
-
         let context = self.context.build()?;
         let address_mapping = context.address_mapping();
-        let sender: RoochAddress = context
-            .resolve_address(self.tx_options.sender_account.unwrap())?
-            .into();
+        let sender: RoochAddress = context.resolve_address(self.tx_options.sender)?.into();
         let function_id = self.function.into_function_id(&address_mapping)?;
         let args = self
             .args

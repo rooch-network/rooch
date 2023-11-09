@@ -67,13 +67,11 @@ impl From<AuthenticatorOptions> for Authenticator {
 }
 
 /// Common options for interacting with an account for a validator
-#[derive(Debug, Default, Parser)]
+#[derive(Debug, Parser)]
 pub struct TransactionOptions {
     /// Sender account address.
-    /// This allows you to override the account address from the derived account address
-    /// in the event that the authentication key was rotated or for a resource account
-    #[clap(long, alias = "sender", parse(try_from_str = ParsedAddress::parse))]
-    pub(crate) sender_account: Option<ParsedAddress>,
+    #[clap(long, alias = "sender-account", parse(try_from_str = ParsedAddress::parse), default_value = "default")]
+    pub(crate) sender: ParsedAddress,
 
     /// Custom the transaction's authenticator
     /// format: `auth_validator_id:payload`, auth validator id is u64, payload is hex string

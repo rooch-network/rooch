@@ -121,13 +121,11 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         }
 
         // Validate sender account if provided
-        if let Some(sender_account) = self.tx_options.sender_account {
-            if pkg_address != context.resolve_address(sender_account)? {
-                return Err(RoochError::CommandArgumentError(
-                    "--sender-account required and the sender account must be the same as the package address"
-                        .to_string(),
-                ));
-            }
+        if pkg_address != context.resolve_address(self.tx_options.sender)? {
+            return Err(RoochError::CommandArgumentError(
+                "--sender-account required and the sender account must be the same as the package address"
+                    .to_string(),
+            ));
         }
 
         // Create a sender RoochAddress

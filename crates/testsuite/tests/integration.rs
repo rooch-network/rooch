@@ -53,7 +53,7 @@ async fn run_cmd(world: &mut World, args: String) {
         .join("rooch_test");
 
     let default = if config_dir.exists() {
-        let context = WalletContext::new(Some(config_dir.clone())).await.unwrap();
+        let context = WalletContext::new(Some(config_dir.clone())).unwrap();
 
         match context.client_config.active_address {
             Some(addr) => AccountAddress::from(addr).to_hex_literal(),
