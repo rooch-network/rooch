@@ -77,7 +77,15 @@ impl RpcService {
 
         // Last save indexer
         self.indexer
-            .indexer_transaction(tx, sequence_info.clone(), execution_info.clone(), moveos_tx)
+            .indexer_transaction(
+                tx.clone(),
+                sequence_info.clone(),
+                execution_info.clone(),
+                moveos_tx.clone(),
+            )
+            .await?;
+        self.indexer
+            .indexer_events(output.events.clone(), tx, sequence_info.clone(), moveos_tx)
             .await?;
 
         Ok(ExecuteTransactionResponse {

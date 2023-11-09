@@ -1,14 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::actor::messages::{
+    IndexerEventsMessage, IndexerTransactionMessage, QueryTransactionsByHashMessage,
+};
+use crate::store::traits::IndexerStoreTrait;
+use crate::types::{IndexedEvent, IndexedTransaction};
+use crate::IndexerStore;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
-// use tracing::info;
-use crate::actor::messages::{IndexerTransactionMessage, QueryTransactionsByHashMessage};
-use crate::store::traits::IndexerStoreTrait;
-use crate::types::IndexedTransaction;
-use crate::IndexerStore;
 use rooch_types::transaction::TransactionWithInfo;
 
 pub struct IndexerActor {
@@ -29,7 +30,7 @@ impl Handler<IndexerTransactionMessage> for IndexerActor {
         &mut self,
         msg: IndexerTransactionMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<IndexedTransaction> {
+    ) -> Result<()> {
         let IndexerTransactionMessage {
             transaction,
             sequence_info,
@@ -39,9 +40,37 @@ impl Handler<IndexerTransactionMessage> for IndexerActor {
 
         let indexed_transaction =
             IndexedTransaction::new(transaction, sequence_info, execution_info, moveos_tx)?;
-        let _transactions = vec![indexed_transaction.clone()];
+        let _transactions = vec![indexed_transaction];
+        //TODO Open after supporting automatic creation of sqlite schema
         // self.indexer_store.persist_transactions(transactions)?;
-        Ok(indexed_transaction)
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl Handler<IndexerEventsMessage> for IndexerActor {
+    async fn handle(&mut self, msg: IndexerEventsMessage, _ctx: &mut ActorContext) -> Result<()> {
+        let IndexerEventsMessage {
+            events,
+            transaction,
+            sequence_info,
+            moveos_tx,
+        } = msg;
+
+        let _events: Vec<_> = events
+            .into_iter()
+            .map(|event| {
+                IndexedEvent::new(
+                    event,
+                    transaction.clone(),
+                    sequence_info.clone(),
+                    moveos_tx.clone(),
+                )
+            })
+            .collect();
+        //TODO Open after supporting automatic creation of sqlite schema
+        // self.indexer_store.persist_events(events)?;
+        Ok(())
     }
 }
 

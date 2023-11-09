@@ -17,6 +17,7 @@ use std::fmt::Display;
 
 #[cfg(any(test, feature = "fuzzing"))]
 use crate::move_types::type_tag_prop_strategy;
+use crate::moveos_std::event::{Event, EventID};
 #[cfg(any(test, feature = "fuzzing"))]
 use move_core_types::identifier::Identifier;
 #[cfg(any(test, feature = "fuzzing"))]
@@ -265,15 +266,51 @@ pub struct VerifiedMoveOSTransaction {
     pub post_execute_functions: Vec<FunctionCall>,
 }
 
-/// TransactionOutput is the execution result of a MoveOS transaction
+/// RawTransactionOutput is the execution result of a MoveOS transaction
+//TODO make RawTransactionOutput serializable
+#[derive(Debug, Clone)]
+pub struct RawTransactionOutput {
+    pub status: KeptVMStatus,
+    pub changeset: ChangeSet,
+    pub state_changeset: StateChangeSet,
+    pub events: Vec<TransactionEvent>,
+    pub gas_used: u64,
+}
+
+/// TransactionOutput is the execution result of a MoveOS transaction, and pack TransactionEvent to Event
 //TODO make TransactionOutput serializable
 #[derive(Debug, Clone)]
 pub struct TransactionOutput {
     pub status: KeptVMStatus,
     pub changeset: ChangeSet,
     pub state_changeset: StateChangeSet,
-    pub events: Vec<TransactionEvent>,
+    pub events: Vec<Event>,
     pub gas_used: u64,
+}
+
+impl TransactionOutput {
+    pub fn new(transaction_output: RawTransactionOutput, event_ids: Vec<EventID>) -> Self {
+        debug_assert!(
+            transaction_output.events.len() == event_ids.len(),
+            "Transaction events len mismatch events len"
+        );
+
+        let events = transaction_output
+            .events
+            .clone()
+            .into_iter()
+            .enumerate()
+            .map(|(index, event)| Event::new_with_event_id(event_ids[index], event))
+            .collect::<Vec<_>>();
+
+        TransactionOutput {
+            status: transaction_output.status,
+            changeset: transaction_output.changeset,
+            state_changeset: transaction_output.state_changeset,
+            events,
+            gas_used: transaction_output.gas_used,
+        }
+    }
 }
 
 /// `TransactionExecutionInfo` represents the result of executing a transaction.

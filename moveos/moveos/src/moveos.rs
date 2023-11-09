@@ -25,13 +25,15 @@ use moveos_types::addresses::MOVEOS_STD_ADDRESS;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::FunctionId;
+use moveos_types::moveos_std::event::EventID;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::moveos_std::tx_result::TxResult;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{MoveState, MoveStructState, MoveStructType};
 use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_types::transaction::{
-    MoveOSTransaction, TransactionOutput, VerifiedMoveAction, VerifiedMoveOSTransaction,
+    MoveOSTransaction, RawTransactionOutput, TransactionOutput, VerifiedMoveAction,
+    VerifiedMoveOSTransaction,
 };
 use moveos_types::{h256::H256, transaction::FunctionCall};
 use moveos_verifier::metadata::load_module_metadata;
@@ -153,11 +155,12 @@ impl MoveOS {
             }
         };
 
-        let (_ctx, output) = session.finish_with_extensions(status)?;
-        if output.status != KeptVMStatus::Executed {
-            bail!("genesis tx should success, error: {:?}", output.status);
+        let (_ctx, raw_output) = session.finish_with_extensions(status)?;
+        if raw_output.status != KeptVMStatus::Executed {
+            bail!("genesis tx should success, error: {:?}", raw_output.status);
         }
-        let state_root = self.apply_transaction_output(output.clone())?;
+        let (state_root, event_ids) = self.apply_transaction_output(raw_output.clone())?;
+        let output = TransactionOutput::new(raw_output, event_ids);
         Ok((state_root, output))
     }
 
@@ -206,7 +209,7 @@ impl MoveOS {
         })
     }
 
-    pub fn execute(&self, tx: VerifiedMoveOSTransaction) -> Result<TransactionOutput> {
+    pub fn execute(&self, tx: VerifiedMoveOSTransaction) -> Result<RawTransactionOutput> {
         let VerifiedMoveOSTransaction {
             ctx,
             action,
@@ -357,14 +360,19 @@ impl MoveOS {
         &mut self,
         tx: VerifiedMoveOSTransaction,
     ) -> Result<(H256, TransactionOutput)> {
-        let output = self.execute(tx)?;
-        let state_root = self.apply_transaction_output(output.clone())?;
+        let raw_output = self.execute(tx)?;
+        let (state_root, event_ids) = self.apply_transaction_output(raw_output.clone())?;
+        let output = TransactionOutput::new(raw_output, event_ids);
+
         Ok((state_root, output))
     }
 
-    fn apply_transaction_output(&mut self, output: TransactionOutput) -> Result<H256> {
+    fn apply_transaction_output(
+        &mut self,
+        output: RawTransactionOutput,
+    ) -> Result<(H256, Vec<EventID>)> {
         //TODO move apply change set to a suitable place, and make MoveOS stateless?
-        let TransactionOutput {
+        let RawTransactionOutput {
             status: _,
             changeset,
             state_changeset,
@@ -381,7 +389,8 @@ impl MoveOS {
                     .with_message(e.to_string())
                     .finish(Location::Undefined)
             })?;
-        self.db
+        let event_ids = self
+            .db
             .0
             .get_event_store()
             .save_events(events)
@@ -399,7 +408,7 @@ impl MoveOS {
                     .with_message(e.to_string())
                     .finish(Location::Undefined)
             })?;
-        Ok(new_state_root)
+        Ok((new_state_root, event_ids))
     }
 
     /// Execute readonly view function
@@ -495,7 +504,7 @@ impl MoveOS {
         mut session: MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
         status: VMStatus,
         action_opt: Option<VerifiedMoveAction>,
-    ) -> Result<TransactionOutput> {
+    ) -> Result<RawTransactionOutput> {
         let kept_status = match status.keep_or_discard() {
             Ok(kept_status) => kept_status,
             Err(discard_status) => {

@@ -34,6 +34,7 @@ use moveos_stdlib::natives::moveos_stdlib::{
     move_module::NativeModuleContext,
     raw_table::{NativeTableContext, TableData},
 };
+use moveos_types::transaction::RawTransactionOutput;
 use moveos_types::{
     function_return_value::FunctionReturnValue,
     move_std::string::MoveString,
@@ -44,7 +45,7 @@ use moveos_types::{
     moveos_std::tx_context::TxContext,
     moveos_std::{event::TransactionEvent, module_upgrade_flag::ModuleUpgradeFlag},
     state_resolver::MoveOSResolver,
-    transaction::{FunctionCall, MoveAction, TransactionOutput, VerifiedMoveAction},
+    transaction::{FunctionCall, MoveAction, VerifiedMoveAction},
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 use parking_lot::RwLock;
@@ -407,7 +408,7 @@ where
     pub fn finish_with_extensions(
         self,
         status: KeptVMStatus,
-    ) -> VMResult<(TxContext, TransactionOutput)> {
+    ) -> VMResult<(TxContext, RawTransactionOutput)> {
         let gas_used = self.query_gas_used();
         let MoveOSSession {
             vm: _,
@@ -459,7 +460,7 @@ where
 
         Ok((
             ctx.tx_context,
-            TransactionOutput {
+            RawTransactionOutput {
                 status,
                 changeset,
                 state_changeset,
