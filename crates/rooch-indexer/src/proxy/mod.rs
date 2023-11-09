@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::indexer::IndexerActor;
-use crate::actor::messages::{IndexerTransactionMessage, QueryTransactionsByHashMessage};
-use crate::types::IndexedTransaction;
+use crate::actor::messages::{
+    IndexerEventsMessage, IndexerTransactionMessage, QueryTransactionsByHashMessage,
+};
 use anyhow::Result;
 use coerce::actor::ActorRef;
 use moveos_types::h256::H256;
+use moveos_types::moveos_std::event::Event;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::transaction::{TransactionSequenceInfo, TransactionWithInfo, TypedTransaction};
 
@@ -26,12 +28,29 @@ impl IndexerProxy {
         sequence_info: TransactionSequenceInfo,
         execution_info: TransactionExecutionInfo,
         moveos_tx: VerifiedMoveOSTransaction,
-    ) -> Result<IndexedTransaction> {
+    ) -> Result<()> {
         self.actor
             .send(IndexerTransactionMessage {
                 transaction,
                 sequence_info,
                 execution_info,
+                moveos_tx,
+            })
+            .await?
+    }
+
+    pub async fn indexer_events(
+        &self,
+        events: Vec<Event>,
+        transaction: TypedTransaction,
+        sequence_info: TransactionSequenceInfo,
+        moveos_tx: VerifiedMoveOSTransaction,
+    ) -> Result<()> {
+        self.actor
+            .send(IndexerEventsMessage {
+                events,
+                transaction,
+                sequence_info,
                 moveos_tx,
             })
             .await?

@@ -7,9 +7,9 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
+use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
-use rooch_types::address::RoochAddress;
 use rooch_types::multichain_id::MultiChainID;
 use rooch_types::transaction::{
     AbstractTransaction, TransactionSequenceInfo, TransactionType, TypedTransaction,
@@ -74,7 +74,7 @@ impl IndexedTransaction {
             multichain_id: transaction.multi_chain_id(),
             //TODO transform to hex
             multichain_raw_address: transaction.sender().to_string(),
-            /// the rooch address of sender who send the transaction
+            /// the account address of sender who send the transaction
             sender: moveos_tx.ctx.sender,
             action: move_action.clone(),
             action_type: move_action.action_type(),
@@ -122,9 +122,34 @@ pub struct IndexedEvent {
     pub tx_hash: H256,
     /// the tx order of this transaction.
     pub tx_order: u128,
-    /// the rooch address of sender who emit the event
-    pub sender: RoochAddress,
+    /// the account address of sender who emit the event
+    pub sender: AccountAddress,
 
     pub created_at: u64,
     pub updated_at: u64,
+}
+
+impl IndexedEvent {
+    pub fn new(
+        event: Event,
+        transaction: TypedTransaction,
+        sequence_info: TransactionSequenceInfo,
+        moveos_tx: VerifiedMoveOSTransaction,
+    ) -> Self {
+        IndexedEvent {
+            event_handle_id: event.event_id.event_handle_id,
+            event_seq: event.event_id.event_seq,
+            event_type: event.event_type,
+            event_data: event.event_data,
+            event_index: event.event_index,
+
+            tx_hash: transaction.tx_hash(),
+            tx_order: sequence_info.tx_order,
+            sender: moveos_tx.ctx.sender,
+
+            //TODO record transaction timestamp
+            created_at: 0,
+            updated_at: 0,
+        }
+    }
 }

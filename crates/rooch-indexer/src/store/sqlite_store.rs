@@ -9,12 +9,11 @@ use crate::errors::{Context, IndexerError};
 
 use crate::models::events::StoredEvent;
 use crate::models::transactions::StoredTransaction;
-use crate::schema::transactions;
+use crate::schema::{events, transactions};
 use crate::types::{IndexedEvent, IndexedTransaction};
 use crate::{get_sqlite_pool_connection, SqliteConnectionPool};
 
 #[derive(Clone)]
-#[allow(unused)]
 pub struct SqliteIndexerStore {
     pub(crate) connection_pool: SqliteConnectionPool,
 }
@@ -28,15 +27,17 @@ impl SqliteIndexerStore {
         &self,
         transactions: Vec<IndexedTransaction>,
     ) -> Result<(), IndexerError> {
-        let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
+        if transactions.is_empty() {
+            return Ok(());
+        }
 
+        let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
         let transactions = transactions
             .into_iter()
             .map(StoredTransaction::from)
             .collect::<Vec<_>>();
 
         diesel::insert_into(transactions::table)
-            // .default_values()
             .values(transactions.as_slice())
             // .on_conflict_do_nothing()
             .execute(&mut connection)
@@ -51,10 +52,18 @@ impl SqliteIndexerStore {
             return Ok(());
         }
 
+        let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
         let events = events
             .into_iter()
             .map(StoredEvent::from)
             .collect::<Vec<_>>();
+
+        diesel::insert_into(events::table)
+            .values(events.as_slice())
+            // .on_conflict_do_nothing()
+            .execute(&mut connection)
+            .map_err(IndexerError::from)
+            .context("Failed to write events to SQLiteDB")?;
 
         info!("Persisted events: {:?}", events);
         Ok(())

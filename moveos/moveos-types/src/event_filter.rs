@@ -10,9 +10,7 @@ use anyhow::Result;
 use move_core_types::language_storage::StructTag;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use serde_with::serde_as;
 
-#[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum EventFilter {
     // /// Query by sender address.

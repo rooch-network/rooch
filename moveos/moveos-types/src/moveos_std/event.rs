@@ -165,12 +165,6 @@ impl TransactionEvent {
             event_index,
         }
     }
-
-    /// The event hashs of the transaction will be collect to build the transaction merkle tree root.
-    /// The event hash is the hash of the event data, does not incloude other fields.
-    pub fn hash(&self) -> H256 {
-        h256::sha3_256_of(&self.event_data)
-    }
 }
 
 /// The Event type in the event store
@@ -203,6 +197,15 @@ impl Event {
         }
     }
 
+    pub fn new_with_event_id(event_id: EventID, transaction_event: TransactionEvent) -> Self {
+        Self {
+            event_id,
+            event_type: transaction_event.event_type,
+            event_data: transaction_event.event_data,
+            event_index: transaction_event.event_index,
+        }
+    }
+
     pub fn event_id(&self) -> &EventID {
         &self.event_id
     }
@@ -221,6 +224,12 @@ impl Event {
 
     pub fn is<EventType: MoveStructType>(&self) -> bool {
         self.event_type == EventType::struct_tag()
+    }
+
+    /// The event hashs of the transaction will be collect to build the transaction merkle tree root.
+    /// The event hash is the hash of the event data, does not include other fields.
+    pub fn hash(&self) -> H256 {
+        h256::sha3_256_of(&self.event_data)
     }
 }
 
