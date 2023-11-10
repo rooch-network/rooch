@@ -52,6 +52,7 @@ RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
         ca-certificates \
+        libsqlite3-dev \
         libssl-dev; \
     rm -rf /var/lib/apt/lists/*
 
