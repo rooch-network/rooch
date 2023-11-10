@@ -16,6 +16,7 @@ RUN set -eux; \
         libsnappy-dev \
         g++ \
         cmake \
+        libsqlite3-dev \
         protobuf-compiler; \
     rm -rf /var/lib/apt/lists/*
 
