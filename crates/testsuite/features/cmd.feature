@@ -35,56 +35,69 @@ Feature: Rooch CLI integration tests
     Scenario: account
       Given a server for account
 
-      Then cmd: "object --id {default}"
       Then cmd: "account create"
       Then cmd: "account list"
       Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce"
 
       # session key
-      Then cmd: "session-key create --sender-account {default} --scope 0x3::empty::empty"
-      Then cmd: "move run --function 0x3::empty::empty --sender-account {default} --session-key {{$.session-key[-1].authentication_key}}"
+      Then cmd: "session-key create  --scope 0x3::empty::empty"
+      Then cmd: "move run --function 0x3::empty::empty  --session-key {{$.session-key[-1].authentication_key}}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # transaction
       Then cmd: "transaction get-transactions-by-order --cursor 0 --limit 1"
       Then cmd: "transaction get-transactions-by-hash --hashes {{$.transaction[-1].data[0].execution_info.tx_hash}}"
 
-      # event example and event prc
-      Then cmd: "move publish -p ../../examples/event --sender-account {default} --named-addresses rooch_examples={default}"
-      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function {default}::event_test::emit_event --sender-account {default} --args 10u64"
-      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-       Then cmd: "move run --function {default}::event_test::emit_event --sender-account {default} --args 11u64"
-      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "event get-events-by-event-handle --event_handle_type {default}::event_test::WithdrawEvent --cursor 0 --limit 1"
-      Then assert: "{{$.event[-1].data[0].event_id.event_seq}} == 0"
-      Then assert: "{{$.event[-1].next_cursor}} == 1"
-      Then assert: "{{$.event[-1].has_next_page}} == true"
-      Then cmd: "event get-events-by-event-handle --event_handle_type {default}::event_test::WithdrawEvent --cursor 1 --limit 1"
-      Then assert: "{{$.event[-1].data[0].event_id.event_seq}} == 1"
-      Then assert: "{{$.event[-1].has_next_page}} == false"
-
       # account balance
-      Then cmd: "move publish -p ../../examples/coins --sender-account {default} --named-addresses coins={default}"
+      Then cmd: "move publish -p ../../examples/coins  --named-addresses coins=default"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function {default}::fixed_supply_coin::faucet --sender-account {default}"
+      Then cmd: "move run --function default::fixed_supply_coin::faucet "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "account balance"
-      Then cmd: "account balance --coin-type {default}::fixed_supply_coin::FSC"
+      Then cmd: "account balance --coin-type default::fixed_supply_coin::FSC"
 
       Then stop the server
 
     @serial
-    Scenario: kv store example
+    Scenario: state
+      Given a server for state
+      Then cmd: "object --id 0x3" 
+      Then cmd: "object --id 0x3::timestamp::Timestamp"
+      Then cmd: "state --access-path /object/0x3::timestamp::Timestamp"
+      Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::timestamp::Timestamp>'"
+      Then stop the server
+
+    @serial
+    Scenario: event
+    Given a server for event
+    # event example and event prc
+    Then cmd: "move publish -p ../../examples/event  --named-addresses rooch_examples=default"
+    Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+    Then cmd: "move run --function default::event_test::emit_event  --args 10u64"
+    Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+    Then cmd: "move run --function default::event_test::emit_event  --args 11u64"
+    Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+    Then cmd: "event get-events-by-event-handle -t default::event_test::WithdrawEvent --cursor 0 --limit 1"
+    Then assert: "{{$.event[-1].data[0].event_id.event_seq}} == 0"
+    Then assert: "{{$.event[-1].next_cursor}} == 1"
+    Then assert: "{{$.event[-1].has_next_page}} == true"
+    Then cmd: "event get-events-by-event-handle -t default::event_test::WithdrawEvent --cursor 1 --limit 1"
+    Then assert: "{{$.event[-1].data[0].event_id.event_seq}} == 1"
+    Then assert: "{{$.event[-1].has_next_page}} == false"
+    Then stop the server
+
+    @serial
+    Scenario: kv_store example
       Given a server for kv_store
-      Then cmd: "move publish -p ../../examples/kv_store --sender-account {default} --named-addresses rooch_examples={default}"
-      #FIXME how to pass args at here.
-      #Then cmd: "move run --function {default}::kv_store::add_value --args 'b\"key1\"' 'b\"value1\"' --sender-account default"
-      #Then cmd: "move view --function {default}::kv_store::get_value --args 'b\"key1\"' "
-      #Then assert: "{{$.move[-1][0].decoded_value}} == "value1""
-      #Then cmd: "state --access-path /resource/{default}/{default}::kv_store::KVStore
-      #Then cmd: "state --access-path /table/{{$.move[-1][0].decoded_value.value.table.value.handle}}/key1"
-      #Then assert: "{{$.move[-1][0].decoded_value}} == "value1""
+      Then cmd: "move publish -p ../../examples/kv_store  --named-addresses rooch_examples=default"
+      Then cmd: "move run --function default::kv_store::add_value --args string:key1 string:value1"
+      Then cmd: "move view --function default::kv_store::get_value --args string:key1"
+      Then assert: "{{$.move[-1].vm_status}} == Executed"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == value1"
+      #the access-path argument do not support named address yet, so, we use `{default}` template var to repleace it.
+      Then cmd: "state --access-path /resource/{default}/{default}::kv_store::KVStore
+      Then cmd: "state --access-path /table/{{$.state[-1][0].decoded_value.value.table.value.handle}}/key1"
+      Then assert: "{{$.state[-1][0].decoded_value}} == "value1""
 
 
       Then stop the server
@@ -93,28 +106,28 @@ Feature: Rooch CLI integration tests
     Scenario: entry function example
       Given a server for entry_function
 
-      Then cmd: "move publish -p ../../examples/entry_function_arguments/ --sender-account {default} --named-addresses rooch_examples={default}"
-      Then cmd: "move run --function {default}::entry_function::emit_bool --args bool:true --sender-account {default}"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default"
+      Then cmd: "move run --function default::entry_function::emit_bool --args bool:true "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function {default}::entry_function::emit_u8 --args u8:3 --sender-account {default}"
+      Then cmd: "move run --function default::entry_function::emit_u8 --args u8:3 "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function {default}::entry_function::emit_u8 --args 4u8 --sender-account {default}"
+      Then cmd: "move run --function default::entry_function::emit_u8 --args 4u8 "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function {default}::entry_function::emit_address --args address:0x3242 --sender-account {default}"
+      Then cmd: "move run --function default::entry_function::emit_address --args address:0x3242 "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function {default}::entry_function::emit_address --args @0x3242 --sender-account {default}"
+      Then cmd: "move run --function default::entry_function::emit_address --args @0x3242 "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function {default}::entry_function::emit_object_id --args object_id:0x3134 --sender-account {default}"
+      Then cmd: "move run --function default::entry_function::emit_object_id --args object_id:0x3134 "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function {default}::entry_function::emit_string --args string:world --sender-account {default}"
+      Then cmd: "move run --function default::entry_function::emit_string --args string:world "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function {default}::entry_function::emit_vec_u8 --args "vector<u8>:2,3,4" --sender-account {default}"
+      Then cmd: "move run --function default::entry_function::emit_vec_u8 --args "vector<u8>:2,3,4" "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function {default}::entry_function::emit_vec_object_id --args "vector<address>:0x1324,0x41234,0x1234" --sender-account {default}"
+      Then cmd: "move run --function default::entry_function::emit_vec_object_id --args "vector<address>:0x1324,0x41234,0x1234" "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
+      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function {default}::entry_function::emit_object --args "object:default::entry_function::TestStruct" --sender-account default"
+      Then cmd: "move run --function default::entry_function::emit_object --args "object:default::entry_function::TestStruct" "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       Then stop the server
@@ -124,25 +137,25 @@ Feature: Rooch CLI integration tests
       Given a server for publish_through_move_action
 
       # The counter example
-      Then cmd: "move publish -p ../../examples/counter --sender-account {default} --named-addresses rooch_examples={default} --by-move-action"
-      Then cmd: "move view --function {default}::counter::value"
+      Then cmd: "move publish -p ../../examples/counter  --named-addresses rooch_examples=default --by-move-action"
+      Then cmd: "move view --function default::counter::value"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 0"
-      Then cmd: "move run --function {default}::counter::increase --sender-account {default}"
-      Then cmd: "move view --function {default}::counter::value"
+      Then cmd: "move run --function default::counter::increase "
+      Then cmd: "move view --function default::counter::value"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 1"
-      Then cmd: "resource --address {default} --resource {default}::counter::Counter"
+      Then cmd: "resource --address default --resource default::counter::Counter"
       Then assert: "{{$.resource[-1].decoded_value.value.value}} == 1"
 
       # The entry_function_arguments example
-      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default} --by-move-action"
-      Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default --by-move-action"
+      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" "
       Then assert: "'{{$.move[-1]}}' contains FUNCTION_RESOLUTION_FAILURE"
-      Then cmd: "move publish -p ../../examples/entry_function_arguments/ --sender-account {default} --named-addresses rooch_examples={default} --by-move-action"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default --by-move-action"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      #Then cmd: "move run --function {default}::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account {default}"
+      #Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" "
       #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       # check compatibility
-      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account {default} --named-addresses rooch_examples={default} --by-move-action"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default --by-move-action"
       Then assert: "'{{$.move[-1].execution_info.status.type}}' == miscellaneouserror"
 
       Then stop the server
@@ -152,25 +165,25 @@ Feature: Rooch CLI integration tests
       Given a server for publish_through_entry_function
 
       # The counter example
-      Then cmd: "move publish -p ../../examples/counter --sender-account {default} --named-addresses rooch_examples={default}"
-      Then cmd: "move view --function {default}::counter::value"
+      Then cmd: "move publish -p ../../examples/counter  --named-addresses rooch_examples=default"
+      Then cmd: "move view --function default::counter::value"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 0"
-      Then cmd: "move run --function {default}::counter::increase --sender-account {default}"
-      Then cmd: "move view --function {default}::counter::value"
+      Then cmd: "move run --function default::counter::increase "
+      Then cmd: "move view --function default::counter::value"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 1"
-      Then cmd: "resource --address {default} --resource {default}::counter::Counter"
+      Then cmd: "resource --address default --resource default::counter::Counter"
       Then assert: "{{$.resource[-1].decoded_value.value.value}} == 1"
 
       # The entry_function_arguments example
-      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account default --named-addresses rooch_examples=default"
-      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account default"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default"
+      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" "
       Then assert: "'{{$.move[-1]}}' contains FUNCTION_RESOLUTION_FAILURE"
-      Then cmd: "move publish -p ../../examples/entry_function_arguments/ --sender-account default --named-addresses rooch_examples=default"
-      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" --sender-account default"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default"
+      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # check compatibility
-      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/ --sender-account default --named-addresses rooch_examples=default"
+      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default"
       Then assert: "'{{$.move[-1].execution_info.status.type}}' == 'moveabort'"
 
       Then stop the server
@@ -179,24 +192,24 @@ Feature: Rooch CLI integration tests
   Scenario: coins example
       Given a server for coins
       Then cmd: "account create"
-      Then cmd: "move publish -p ../../examples/coins --sender-account {default} --named-addresses coins={default}"
-      Then cmd: "move run --function {default}::fixed_supply_coin::faucet --sender-account {default}"
+      Then cmd: "move publish -p ../../examples/coins  --named-addresses coins=default"
+      Then cmd: "move run --function default::fixed_supply_coin::faucet "
       #TODO change the argument `0x3` address to a user account
-      Then cmd: "move run --function 0x3::coin::transfer_entry --type-args {default}::fixed_supply_coin::FSC --args address:0x3  --args 1u256 --sender-account {default}"
+      Then cmd: "move run --function rooch_framework::coin::transfer_entry --type-args default::fixed_supply_coin::FSC --args address:0x3  --args 1u256 "
 
       Then stop the server
 
   @serial
   Scenario: Issue a coin through entry function
     Given a server for issue_coin
-    Then cmd: "move publish -p ../../examples/module_template/ --sender-account {default} --named-addresses rooch_examples={default}"
-    Then cmd: "move run --function {default}::coin_factory::register_template  --sender-account {default}"
+    Then cmd: "move publish -p ../../examples/module_template/  --named-addresses rooch_examples=default"
+    Then cmd: "move run --function default::coin_factory::register_template  "
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-    Then cmd: "move run --function {default}::coin_factory::issue_fixed_supply_coin --args string:my_coin  --args string:"My first coin" --args string:MyCoin --args 1010101u256 --args 8u8  --sender-account {default}"
+    Then cmd: "move run --function default::coin_factory::issue_fixed_supply_coin --args string:my_coin  --args string:"My first coin" --args string:MyCoin --args 1010101u256 --args 8u8  "
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
     # check module `my_coin` is published, the name `my_coin` is the first arg in the last `move run` cmd.
-    Then cmd: "move run --function {default}::my_coin::faucet --sender-account {default}"
+    Then cmd: "move run --function default::my_coin::faucet "
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
     Then stop the server
   

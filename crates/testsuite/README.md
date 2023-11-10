@@ -9,8 +9,16 @@ The feature current supported:
 
 ## How to run test
 
+Run all the tests:
+
 ```bash
 cargo test -p testsuite --test integration
+```
+
+Run a specific Scenario:
+
+```bash
+cargo test -p testsuite --test integration -- --name event
 ```
 
 ## How to add new test cases

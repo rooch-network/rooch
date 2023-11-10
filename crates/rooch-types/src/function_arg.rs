@@ -219,6 +219,21 @@ pub enum ParsedObjectID {
     StructTag(ParsedStructType),
 }
 
+impl ParsedObjectID {
+    pub fn into_object_id(
+        self,
+        mapping: &impl Fn(&str) -> Option<AccountAddress>,
+    ) -> Result<ObjectID> {
+        Ok(match self {
+            ParsedObjectID::ObjectID(object_id) => object_id,
+            ParsedObjectID::StructTag(parsed_struct_type) => {
+                let struct_tag = parsed_struct_type.into_struct_tag(mapping)?;
+                object::singleton_object_id(&struct_tag)
+            }
+        })
+    }
+}
+
 impl FromStr for ParsedObjectID {
     type Err = RoochError;
 
@@ -280,13 +295,7 @@ impl FunctionArg {
             }
             FunctionArg::Bool(arg) => MoveValue::Bool(arg),
             FunctionArg::ObjectID(parsed_object_id) | FunctionArg::Object(parsed_object_id) => {
-                let object_id = match parsed_object_id {
-                    ParsedObjectID::ObjectID(object_id) => object_id,
-                    ParsedObjectID::StructTag(parsed_struct_type) => {
-                        let struct_tag = parsed_struct_type.into_struct_tag(mapping)?;
-                        object::singleton_object_id(&struct_tag)
-                    }
-                };
+                let object_id = parsed_object_id.into_object_id(mapping)?;
                 MoveValue::Address(object_id.into())
             }
             FunctionArg::String(arg) => MoveValue::vector_u8(arg.as_bytes().to_vec()),

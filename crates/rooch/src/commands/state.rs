@@ -11,6 +11,7 @@ use rooch_types::error::{RoochError, RoochResult};
 /// Get states by accessPath
 #[derive(Parser)]
 pub struct StateCommand {
+    //TODO access path should support named address?
     /// /object/$object_id1[,$object_id2]
     /// /resource/$account_address/$resource_type1[,$resource_type2]
     /// /module/$account_address/$module_name1[,$module_name2]
