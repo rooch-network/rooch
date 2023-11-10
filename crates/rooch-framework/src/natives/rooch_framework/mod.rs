@@ -3,4 +3,5 @@
 
 pub mod account;
 pub mod bcs;
+pub(crate) mod bcs_friend;
 pub mod crypto;

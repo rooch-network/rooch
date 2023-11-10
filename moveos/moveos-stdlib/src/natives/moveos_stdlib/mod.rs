@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod bcs;
+pub mod bcs_friend;
 pub mod event;
 pub mod move_module;
 pub mod object;

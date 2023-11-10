@@ -8,7 +8,7 @@ module moveos_std::any {
     use std::error;
     use std::string::String;    
     use moveos_std::type_info;
-    use moveos_std::bcs;
+    use moveos_std::bcs_friend;
 
     friend moveos_std::copyable_any;
 
@@ -36,14 +36,14 @@ module moveos_std::any {
     public fun pack<T: drop + store>(x: T): Any {
         Any {
             type_name: type_info::type_name<T>(),
-            data: bcs::to_bytes(&x)
+            data: bcs_friend::to_bytes(&x)
         }
     }
 
     /// Unpack a value from the `Any` representation. This aborts if the value has not the expected type `T`.
     public fun unpack<T>(x: Any): T {
         assert!(type_info::type_name<T>() == x.type_name, error::invalid_argument(ErrorTypeMismatch));
-        bcs::from_bytes<T>(x.data)
+        bcs_friend::from_bytes<T>(x.data)
     }
 
     /// Returns the type name of this Any

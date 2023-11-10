@@ -7,7 +7,7 @@
 /// to values. This is the opposite of `bcs::to_bytes`. Note that it is not safe to define a generic public `from_bytes`
 /// function because this can violate implicit struct invariants, therefore only primitive types are offerred. If
 /// a general conversion back-and-force is needed, consider the `moveos_std::Any` type which preserves invariants.
-module rooch_framework::bcs {
+module rooch_framework::bcs_friend {
 
     /// The request Move type is not match with input Move type.
     const ErrorTypeNotMatch: u64 = 1;
@@ -42,8 +42,9 @@ module rooch_framework::bcs {
     //2. The fields contained in `T` are either primitive types or are defined by the module that calls from_bytes.
     //We need to find a solution to this problem. If we cannot solve it, then we cannot set from_bytes to public.
     // #[private_generics(MoveValue)]
-    #[data_struct(MoveValue)]
     /// Function to deserialize a type T.
     /// Note the `private_generics` ensure only the `MoveValue`'s owner module can call this function
-    native public fun from_bytes<MoveValue>(bytes: vector<u8>): MoveValue;
+    native public(friend) fun from_bytes<MoveValue>(bytes: vector<u8>): MoveValue;
+
+    friend rooch_framework::ethereum_light_client;
 }

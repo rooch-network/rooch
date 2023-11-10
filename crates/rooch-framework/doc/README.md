@@ -19,6 +19,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::auth_validator`](auth_validator.md#0x3_auth_validator)
 -  [`0x3::auth_validator_registry`](auth_validator_registry.md#0x3_auth_validator_registry)
 -  [`0x3::bcs`](bcs.md#0x3_bcs)
+-  [`0x3::bcs_friend`](bcs_friend.md#0x3_bcs_friend)
 -  [`0x3::bitcoin_address`](bitcoin_address.md#0x3_bitcoin_address)
 -  [`0x3::builtin_validators`](builtin_validators.md#0x3_builtin_validators)
 -  [`0x3::chain_id`](chain_id.md#0x3_chain_id)

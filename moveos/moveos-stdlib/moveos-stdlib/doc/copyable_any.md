@@ -15,7 +15,7 @@ Source from https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framew
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
+<b>use</b> <a href="bcs_friend.md#0x2_bcs_friend">0x2::bcs_friend</a>;
 <b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
 </code></pre>
 

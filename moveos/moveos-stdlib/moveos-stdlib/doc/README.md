@@ -16,6 +16,7 @@ This is the reference documentation of the MoveOS standard library.
 -  [`0x2::address`](address.md#0x2_address)
 -  [`0x2::any`](any.md#0x2_any)
 -  [`0x2::bcs`](bcs.md#0x2_bcs)
+-  [`0x2::bcs_friend`](bcs_friend.md#0x2_bcs_friend)
 -  [`0x2::context`](context.md#0x2_context)
 -  [`0x2::copyable_any`](copyable_any.md#0x2_copyable_any)
 -  [`0x2::display`](display.md#0x2_display)

@@ -25,6 +25,7 @@ pub struct GasParameters {
     encoding: rooch_framework::crypto::encoding::GasParameters,
     decoding: rooch_framework::crypto::decoding::GasParameters,
     bcs: rooch_framework::bcs::GasParameters,
+    bsc_friend: rooch_framework::bcs_friend::GasParameters,
 }
 
 impl FromOnChainGasSchedule for GasParameters {
@@ -42,6 +43,7 @@ impl FromOnChainGasSchedule for GasParameters {
             encoding: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             decoding: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             bcs: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
+            bsc_friend: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
         })
     }
 }
@@ -59,6 +61,7 @@ impl InitialGasSchedule for GasParameters {
             encoding: InitialGasSchedule::initial(),
             decoding: InitialGasSchedule::initial(),
             bcs: InitialGasSchedule::initial(),
+            bsc_friend: InitialGasSchedule::initial(),
         }
     }
 }
@@ -73,6 +76,7 @@ impl FromOnChainGasSchedule for MoveOSGasParameters {
             type_info: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             rlp: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             bcd: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
+            bcd_friend: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             events: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             test_helper: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             signer: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
@@ -91,6 +95,7 @@ impl InitialGasSchedule for MoveOSGasParameters {
             type_info: InitialGasSchedule::initial(),
             rlp: InitialGasSchedule::initial(),
             bcd: InitialGasSchedule::initial(),
+            bcd_friend: InitialGasSchedule::initial(),
             events: InitialGasSchedule::initial(),
             test_helper: InitialGasSchedule::initial(),
             signer: InitialGasSchedule::initial(),
@@ -119,6 +124,7 @@ impl GasParameters {
             encoding: rooch_framework::crypto::encoding::GasParameters::zeros(),
             decoding: rooch_framework::crypto::decoding::GasParameters::zeros(),
             bcs: rooch_framework::bcs::GasParameters::zeros(),
+            bsc_friend: rooch_framework::bcs_friend::GasParameters::zeros(),
         }
     }
 }
@@ -170,6 +176,10 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
         rooch_framework::crypto::decoding::make_all(gas_params.decoding)
     );
     add_natives!("bcs", rooch_framework::bcs::make_all(gas_params.bcs));
+    add_natives!(
+        "bcs_friend",
+        rooch_framework::bcs_friend::make_all(gas_params.bsc_friend)
+    );
 
     let rooch_native_fun_table = make_table_from_iter(ROOCH_FRAMEWORK_ADDRESS, natives);
     native_fun_table.extend(rooch_native_fun_table);

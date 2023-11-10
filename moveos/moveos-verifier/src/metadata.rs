@@ -1187,6 +1187,11 @@ fn check_func_data_struct(
             (false, format!("The type argument {} of #[data_struct] for function {} in the module {} is not allowed.",
             full_struct_name, func_name, full_module_name))
         }
+        SignatureToken::Address => (true, "".to_string()),
+        SignatureToken::U128 => (true, "".to_string()),
+        SignatureToken::U64 => (true, "".to_string()),
+        SignatureToken::U8 => (true, "".to_string()),
+        SignatureToken::Bool => (true, "".to_string()),
         _ => {
             let module_id = view.self_id().unwrap().to_string();
             (false, format!("The type argument of #[data_struct] for function {} in the module {} is not allowed.",

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 mod account;
 mod bcd;
+mod bcd_friend;
 mod decoding;
 mod ecdsa_k1;
 mod ecdsa_k1_recoverable;

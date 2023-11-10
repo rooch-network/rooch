@@ -114,5 +114,5 @@ Function to deserialize a type T.
 Note the <code>private_generics</code> ensure only the <code>MoveValue</code>'s owner module can call this function
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bcs.md#0x3_bcs_from_bytes">from_bytes</a>&lt;MoveValue&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): MoveValue
+<pre><code><b>public</b> <b>fun</b> <a href="bcs.md#0x3_bcs_from_bytes">from_bytes</a>&lt;MoveValue&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): MoveValue
 </code></pre>
