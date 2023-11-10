@@ -461,8 +461,8 @@ where
 }
 
 pub fn singleton_object_id(struct_tag: &StructTag) -> ObjectID {
-    let event_handle_hash = h256::sha3_256_of(struct_tag.to_canonical_string().as_bytes());
-    AccountAddress::new(event_handle_hash.0).into()
+    let struct_tag_hash = h256::sha3_256_of(struct_tag.to_canonical_string().as_bytes());
+    AccountAddress::new(struct_tag_hash.0).into()
 }
 
 #[cfg(test)]
