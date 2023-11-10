@@ -19,8 +19,9 @@ module moveos_std::object {
     friend moveos_std::type_table;
     friend moveos_std::object_table;
 
-    const ErrorObjectFrozen: u64 = 1;
-    const ErrorInvalidOwnerAddress:u64 = 2;
+    const ErrorObjectAlreadyExist: u64 = 1;
+    const ErrorObjectFrozen: u64 = 2;
+    const ErrorInvalidOwnerAddress:u64 = 3;
 
     const SYSTEM_OWNER_ADDRESS: address = @0x0;
     
@@ -109,6 +110,7 @@ module moveos_std::object {
     }
 
     fun new_internal<T: key>(id: ObjectID, value: T): ObjectEntity<T> {
+        assert!(!contains_global(id), error::invalid_state(ErrorObjectAlreadyExist));
         let owner = SYSTEM_OWNER_ADDRESS;
         ObjectEntity<T>{id, owner, flag: 0u8, value}
     }
