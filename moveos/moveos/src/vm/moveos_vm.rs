@@ -337,8 +337,8 @@ where
             //TODO check the type with local index
             let returned_storage_context = Context::from_bytes(value.as_slice())
                 .expect("The return mutable reference should be a Context");
-            if log::log_enabled!(log::Level::Debug) {
-                log::debug!(
+            if log::log_enabled!(log::Level::Trace) {
+                log::trace!(
                     "The returned storage context is {:?}",
                     returned_storage_context
                 );

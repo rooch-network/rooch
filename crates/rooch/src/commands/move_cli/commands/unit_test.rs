@@ -49,11 +49,12 @@ impl Test {
         path: Option<PathBuf>,
         build_config: BuildConfig,
     ) -> anyhow::Result<()> {
-        let context = self.config_options.build().await?;
+        let context = self.config_options.build()?;
 
         let mut build_config = build_config;
-        build_config.additional_named_addresses =
-            context.parse_account_args(self.named_addresses)?;
+        build_config
+            .additional_named_addresses
+            .extend(context.parse_and_resolve_addresses(self.named_addresses)?);
 
         let root_path = path.clone().unwrap_or_else(|| PathBuf::from("."));
 

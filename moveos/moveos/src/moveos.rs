@@ -246,8 +246,25 @@ impl MoveOS {
             pre_execute_functions.clone(),
             post_execute_functions.clone(),
         ) {
-            Ok(status) => self.execution_cleanup(session, status, Some(action)),
+            Ok(status) => {
+                if log::log_enabled!(log::Level::Debug) {
+                    log::debug!(
+                        "execute_user_action ok tx(hash:{}) vm_status:{:?}",
+                        tx_hash,
+                        status
+                    );
+                }
+                self.execution_cleanup(session, status, Some(action))
+            }
             Err((vm_err, need_respawn)) => {
+                if log::log_enabled!(log::Level::Warn) {
+                    log::warn!(
+                        "execute_user_action error tx(hash:{}) vm_err:{:?} need_respawn:{}",
+                        tx_hash,
+                        vm_err,
+                        need_respawn
+                    );
+                }
                 if need_respawn {
                     let mut s = session.respawn(system_env);
                     //Because the session is respawned, the pre_execute function should be called again.

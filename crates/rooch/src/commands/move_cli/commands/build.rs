@@ -21,7 +21,7 @@ use std::{collections::BTreeMap, path::PathBuf};
 pub struct Build {
     /// Named addresses for the move binary
     ///
-    /// Example: alice=0x1234, bob=0x5678
+    /// Example: alice=0x1234, bob=default, alice2=alice
     ///
     /// Note: This will fail if there are duplicates in the Move.toml file remove those first.
     #[clap(long, parse(try_from_str = crate::utils::parse_map), default_value = "")]
@@ -33,10 +33,12 @@ pub struct Build {
 
 impl Build {
     pub async fn execute(self, path: Option<PathBuf>, config: BuildConfig) -> anyhow::Result<()> {
-        let context = self.config_options.build().await?;
+        let context = self.config_options.build()?;
 
         let mut config = config;
-        config.additional_named_addresses = context.parse_account_args(self.named_addresses)?;
+        config
+            .additional_named_addresses
+            .extend(context.parse_and_resolve_addresses(self.named_addresses)?);
 
         let rerooted_path = reroot_path(path)?;
         if config.fetch_deps_only {

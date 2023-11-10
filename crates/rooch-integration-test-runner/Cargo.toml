@@ -47,6 +47,7 @@ moveos = { workspace = true }
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
 
+rooch-types ={ workspace = true }
 rooch-framework = { workspace = true }
 rooch-genesis = { workspace = true }
 

@@ -7,10 +7,24 @@ This module is a empty module that does nothing
 It is used to test or demo some use cases
 
 
+-  [Resource `Empty`](#0x3_empty_Empty)
 -  [Function `empty`](#0x3_empty_empty)
 
 
-<pre><code></code></pre>
+<pre><code><b>use</b> <a href="">0x2::context</a>;
+<b>use</b> <a href="">0x2::object</a>;
+</code></pre>
+
+
+
+<a name="0x3_empty_Empty"></a>
+
+## Resource `Empty`
+
+
+
+<pre><code><b>struct</b> <a href="empty.md#0x3_empty_Empty">Empty</a> <b>has</b> key
+</code></pre>
 
 
 

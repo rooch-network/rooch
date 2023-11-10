@@ -32,7 +32,7 @@ pub struct NullifyCommand {
 #[async_trait]
 impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
-        let mut context = self.context_options.build().await?;
+        let mut context = self.context_options.build()?;
 
         let existing_address = RoochAddress::from_str(self.address.as_str()).map_err(|e| {
             RoochError::CommandArgumentError(format!("Invalid Rooch address String: {}", e))
