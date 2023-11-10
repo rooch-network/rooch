@@ -422,7 +422,7 @@ module moveos_std::context {
 
 
     #[test(alice = @0x42)]
-    #[expected_failure(abort_code = 327681, location =  moveos_std::object)]
+    #[expected_failure(abort_code = 327682, location =  moveos_std::object)]
     fun test_frozen_object_by_extend(alice: &signer){
         let alice_addr = signer::address_of(alice);
         let ctx = new_test_context(alice_addr);
