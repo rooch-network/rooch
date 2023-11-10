@@ -200,8 +200,8 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                     .await?
             }
         };
-
-        // Assert and handle the execution result
-        context.assert_execute_success(tx_result)
+        //Directly return the result, the publish transaction may be failed.
+        //Caller need to check the `execution_info.status` field.
+        Ok(tx_result)
     }
 }
