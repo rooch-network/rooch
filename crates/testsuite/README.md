@@ -44,12 +44,17 @@ All the previous command outputs are stored in an array named `{{$.<subcommand_n
 The command output is like this: 
 ```
 {
-  "code": "Ok",
-  "message": null,
-  "data": [
-    0
+  "vm_status": "Executed",
+  "return_values": [
+    {
+      "value": {
+        "type_tag": "u64",
+        "value": "0x0000000000000000"
+      },
+      "decoded_value": "0"
+    }
   ]
 }
 ```
 
-You can get the value by `{{$.move[-1].data[0]}}` which you can use in the next command or check if it is equal to expected value.
+You can get the value by `{{$.move[-1].return_values[0].decoded_value}}` which you can use in the next command or check if it is equal to expected value.
