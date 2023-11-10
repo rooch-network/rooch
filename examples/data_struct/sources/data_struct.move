@@ -7,7 +7,7 @@ module rooch_examples::data_struct {
     }
 
     #[data_struct]
-    struct Outer{
+    struct Outer has copy,drop {
         f_u64: u64,
         f_address: address,
         f_bool: bool,
