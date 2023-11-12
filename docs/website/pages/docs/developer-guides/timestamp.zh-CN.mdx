@@ -28,10 +28,6 @@ rooch server start --eth-rpc-url https://goerli.infura.io/v3/9aa3d95b3bc440fa88e
 
 Rooch 的时间戳类型是全局可索引的信息，所以给 `Timestamp` 赋予 `key` 能力。
 
-### 友元函数
-
-`genesis_init` 生成初始时间戳，`update_global_time` 和 `try_update_global_time` 都是更新全局时间戳的函数，是否成功更新了时间戳它会返回 `true` 或 `false` 来提示调用者，而前者是静默地进行更新。
-
 ### 函数
 
 `timestamp_mut` 和 `timestamp` 函数获取 `Timestamp` 的可变引用和不可变引用。
