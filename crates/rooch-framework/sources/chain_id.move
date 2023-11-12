@@ -4,6 +4,7 @@
 module rooch_framework::chain_id {
     
     use moveos_std::context::{Self, Context};
+    use moveos_std::object;
 
     friend rooch_framework::genesis;
 
@@ -13,19 +14,29 @@ module rooch_framework::chain_id {
     const CHAIN_ID_MAIN: u64 = 20230101;
 
     /// The ChainID in the global storage
-    struct ChainID has key,store,copy,drop {
+    struct ChainID has key,store {
         id: u64
     }
 
-    public(friend) fun genesis_init(ctx: &mut Context, genesis_account: &signer, chain_id: u64){
+    public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer, chain_id: u64){
         let chain_id = ChainID{
             id: chain_id
         };
-        context::move_resource_to(ctx, genesis_account, chain_id);
+        context::new_singleton(ctx, chain_id);
+    }
+
+    public fun id(self: &ChainID) : u64 {
+        self.id
+    }
+
+    public fun borrow(ctx: &Context) : &ChainID {
+        let object_id = object::singleton_object_id<ChainID>();
+        let obj = context::borrow_object<ChainID>(ctx, object_id);
+        object::borrow(obj)
     }
 
     public fun chain_id(ctx: &Context) : u64 {
-        let chain_id = context::borrow_resource<ChainID>(ctx, @rooch_framework);
+        let chain_id = borrow(ctx);
         chain_id.id
     }
 
