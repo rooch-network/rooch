@@ -43,7 +43,7 @@ module moveos_std::any {
     /// Unpack a value from the `Any` representation. This aborts if the value has not the expected type `T`.
     public fun unpack<T>(x: Any): T {
         assert!(type_info::type_name<T>() == x.type_name, error::invalid_argument(ErrorTypeMismatch));
-        bcs::from_bytes<T>(x.data)
+        bcs::from_bytes_friend<T>(x.data)
     }
 
     /// Returns the type name of this Any

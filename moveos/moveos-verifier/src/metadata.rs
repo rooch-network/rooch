@@ -25,6 +25,7 @@ use moveos_types::state::MoveStructType;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::ops::Deref;
 use thiserror::Error;
 
 // This is only used for local integration testing and compiling multiple Move Packages.
@@ -1187,6 +1188,18 @@ fn check_func_data_struct(
             (false, format!("The type argument {} of #[data_struct] for function {} in the module {} is not allowed.",
             full_struct_name, func_name, full_module_name))
         }
+        // #[data_struct(T)] supports not only structs, but also primitive types and vectors.
+        SignatureToken::Vector(item_type) => {
+            check_func_data_struct(view, func_env, item_type.deref())
+        }
+        SignatureToken::Address => (true, "".to_string()),
+        SignatureToken::Bool => (true, "".to_string()),
+        SignatureToken::U8 => (true, "".to_string()),
+        SignatureToken::U16 => (true, "".to_string()),
+        SignatureToken::U32 => (true, "".to_string()),
+        SignatureToken::U64 => (true, "".to_string()),
+        SignatureToken::U128 => (true, "".to_string()),
+        SignatureToken::U256 => (true, "".to_string()),
         _ => {
             let module_id = view.self_id().unwrap().to_string();
             (false, format!("The type argument of #[data_struct] for function {} in the module {} is not allowed.",

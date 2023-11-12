@@ -42,10 +42,12 @@ module moveos_std::bcs{
     //2. The fields contained in `T` are either primitive types or are defined by the module that calls from_bytes. 
     //We need to find a solution to this problem. If we cannot solve it, then we cannot set from_bytes to public.
     // #[private_generics(MoveValue)]
+    #[data_struct(MoveValue)]
     /// Function to deserialize a type T.
     /// Note the `private_generics` ensure only the `MoveValue`'s owner module can call this function
     native public fun from_bytes<MoveValue>(bytes: vector<u8>): MoveValue;
-    
+
+    native public(friend) fun from_bytes_friend<MoveValue>(bytes: vector<u8>): MoveValue;
     friend moveos_std::any;
     friend moveos_std::copyable_any;
 
