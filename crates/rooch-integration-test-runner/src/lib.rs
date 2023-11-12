@@ -14,6 +14,7 @@ use move_command_line_common::{
 };
 use move_compiler::shared::PackagePaths;
 use move_compiler::FullyCompiledProgram;
+use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use move_package::BuildConfig;
 use move_transactional_test_runner::{
     tasks::{InitCommand, SyntaxChoice},
@@ -23,10 +24,13 @@ use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
 use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
 use moveos_store::MoveOSStore;
-use moveos_types::move_types::FunctionId;
-use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::state_resolver::AnnotatedStateReader;
-use moveos_types::transaction::{MoveAction, MoveOSTransaction, TransactionOutput};
+use moveos_types::{
+    addresses::MOVEOS_STD_ADDRESS,
+    move_types::FunctionId,
+    moveos_std::object::ObjectID,
+    state_resolver::AnnotatedStateReader,
+    transaction::{MoveAction, MoveOSTransaction, TransactionOutput},
+};
 use moveos_verifier::build::build_model;
 use moveos_verifier::metadata::run_extended_checks;
 use regex::Regex;
@@ -215,10 +219,20 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         let id = module.self_id();
         let sender = *id.address();
 
-        let tx = MoveOSTransaction::new_for_test(
-            sender,
-            MoveAction::new_module_bundle(vec![module_bytes]),
+        let args = bcs::to_bytes(&vec![module_bytes]).unwrap();
+        let action = MoveAction::new_function_call(
+            FunctionId::new(
+                ModuleId::new(
+                    MOVEOS_STD_ADDRESS,
+                    Identifier::new("context".to_owned()).unwrap(),
+                ),
+                Identifier::new("publish_modules_entry".to_owned()).unwrap(),
+            ),
+            vec![],
+            vec![args],
         );
+
+        let tx = MoveOSTransaction::new_for_test(sender, action);
         let verified_tx = self.moveos.verify(tx)?;
         let (_state_root, output) = self.moveos.execute_and_apply(verified_tx)?;
         Ok((Some(tx_output_to_str(output)), module))
