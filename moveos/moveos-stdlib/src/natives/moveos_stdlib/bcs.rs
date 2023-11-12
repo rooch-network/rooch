@@ -80,12 +80,10 @@ impl GasParameters {
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [
-        (
-            "native_from_bytes",
-            make_native(gas_params.from_bytes, native_from_bytes),
-        ),
-    ];
+    let natives = [(
+        "native_from_bytes",
+        make_native(gas_params.from_bytes, native_from_bytes),
+    )];
 
     make_module_natives(natives)
 }
