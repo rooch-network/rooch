@@ -82,11 +82,7 @@ impl GasParameters {
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [
         (
-            "from_bytes",
-            make_native(gas_params.from_bytes.clone(), native_from_bytes),
-        ),
-        (
-            "from_bytes_friend",
+            "native_from_bytes",
             make_native(gas_params.from_bytes, native_from_bytes),
         ),
     ];

@@ -31,7 +31,7 @@ module moveos_std::copyable_any {
     /// Unpack a value from the `Any` representation. This aborts if the value has not the expected type `T`.
     public fun unpack<T>(x: Any): T {
         assert!(type_info::type_name<T>() == x.type_name, error::invalid_argument(ErrorTypeMismatch));
-        bcs::from_bytes_friend<T>(x.data)
+        bcs::native_from_bytes<T>(x.data)
     }
 
     /// Returns the type name of this Any

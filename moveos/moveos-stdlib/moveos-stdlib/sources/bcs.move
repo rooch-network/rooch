@@ -45,9 +45,11 @@ module moveos_std::bcs{
     #[data_struct(MoveValue)]
     /// Function to deserialize a type T.
     /// Note the `private_generics` ensure only the `MoveValue`'s owner module can call this function
-    native public fun from_bytes<MoveValue>(bytes: vector<u8>): MoveValue;
+    public fun from_bytes<MoveValue>(bytes: vector<u8>): MoveValue {
+        native_from_bytes(bytes)
+    }
 
-    native public(friend) fun from_bytes_friend<MoveValue>(bytes: vector<u8>): MoveValue;
+    native public(friend) fun native_from_bytes<MoveValue>(bytes: vector<u8>): MoveValue;
     friend moveos_std::any;
     friend moveos_std::copyable_any;
 

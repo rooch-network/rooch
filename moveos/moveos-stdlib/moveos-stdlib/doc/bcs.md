@@ -18,7 +18,7 @@ a general conversion back-and-force is needed, consider the <code>moveos_std::An
 -  [Function `to_u128`](#0x2_bcs_to_u128)
 -  [Function `to_address`](#0x2_bcs_to_address)
 -  [Function `from_bytes`](#0x2_bcs_from_bytes)
--  [Function `from_bytes_friend`](#0x2_bcs_from_bytes_friend)
+-  [Function `native_from_bytes`](#0x2_bcs_native_from_bytes)
 
 
 <pre><code><b>use</b> <a href="">0x1::bcs</a>;
@@ -120,11 +120,11 @@ Note the <code>private_generics</code> ensure only the <code>MoveValue</code>'s 
 
 
 
-<a name="0x2_bcs_from_bytes_friend"></a>
+<a name="0x2_bcs_native_from_bytes"></a>
 
-## Function `from_bytes_friend`
+## Function `native_from_bytes`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bcs.md#0x2_bcs_from_bytes_friend">from_bytes_friend</a>&lt;MoveValue&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): MoveValue
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bcs.md#0x2_bcs_native_from_bytes">native_from_bytes</a>&lt;MoveValue&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): MoveValue
 </code></pre>
