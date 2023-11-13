@@ -5,7 +5,6 @@ module rooch_framework::coin_store_test{
     use std::string;
     use std::option;
     use moveos_std::context::{Context};
-    use moveos_std::object;
     use rooch_framework::account;
     use rooch_framework::coin::{Self, CoinInfo};
     use rooch_framework::account_coin_store;
@@ -53,21 +52,19 @@ module rooch_framework::coin_store_test{
             coin::mint_extend<FakeCoin>(coin_info, 100)
         };
 
-        let coin_store = coin_store::create_coin_store<FakeCoin>(&mut ctx);
+        let coin_store_obj = coin_store::create_coin_store<FakeCoin>(&mut ctx);
         {
-            let coin_store = object::borrow_mut(&mut coin_store);
+            coin_store::deposit(&mut coin_store_obj, coin_minted);
 
-            coin_store::deposit(coin_store, coin_minted);
+            assert!(coin_store::balance(&coin_store_obj) == 100, 1);
 
-            assert!(coin_store::balance(coin_store) == 100, 1);
-
-            let coin_withdrawn = coin_store::withdraw<FakeCoin>(coin_store, 10);
+            let coin_withdrawn = coin_store::withdraw<FakeCoin>(&mut coin_store_obj, 10);
 
             assert!(coin::value(&coin_withdrawn) == 10, 2);
-            assert!(coin_store::balance(coin_store) == 90, 3);
+            assert!(coin_store::balance(&coin_store_obj) == 90, 3);
             coin::burn_extend(coin::coin_info_mut_extend(&mut ctx), coin_withdrawn);
         };
-        let coin = coin_store::remove_coin_store<FakeCoin>(coin_store);
+        let coin = coin_store::remove_coin_store<FakeCoin>(coin_store_obj);
         assert!(coin::value(&coin) == 90, 4);
         {
             let coin_info = coin::coin_info_mut_extend(&mut ctx);

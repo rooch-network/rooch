@@ -8,8 +8,6 @@
 -  [Resource `AutoAcceptCoins`](#0x3_account_coin_store_AutoAcceptCoins)
 -  [Resource `CoinStores`](#0x3_account_coin_store_CoinStores)
 -  [Struct `AcceptCoinEvent`](#0x3_account_coin_store_AcceptCoinEvent)
--  [Struct `DepositEvent`](#0x3_account_coin_store_DepositEvent)
--  [Struct `WithdrawEvent`](#0x3_account_coin_store_WithdrawEvent)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_account_coin_store_genesis_init)
 -  [Function `init_account_coin_stores`](#0x3_account_coin_store_init_account_coin_stores)
@@ -65,7 +63,8 @@ The main scenario is that the user can actively turn off the AutoAcceptCoin sett
 
 ## Resource `CoinStores`
 
-A resource that holds all the Object<CoinStore> for account.
+A resource that holds all the ids of Object<CoinStore<T>> for account.
+TODO after the indexer is ready, we can use the indexer to list all the CoinStore<T> objects for account
 
 
 <pre><code><b>struct</b> <a href="account_coin_store.md#0x3_account_coin_store_CoinStores">CoinStores</a> <b>has</b> key
@@ -81,30 +80,6 @@ Event for auto accept coin set
 
 
 <pre><code><b>struct</b> <a href="account_coin_store.md#0x3_account_coin_store_AcceptCoinEvent">AcceptCoinEvent</a> <b>has</b> drop, store
-</code></pre>
-
-
-
-<a name="0x3_account_coin_store_DepositEvent"></a>
-
-## Struct `DepositEvent`
-
-Event emitted when some amount of a coin is deposited into an account.
-
-
-<pre><code><b>struct</b> <a href="account_coin_store.md#0x3_account_coin_store_DepositEvent">DepositEvent</a> <b>has</b> drop, store
-</code></pre>
-
-
-
-<a name="0x3_account_coin_store_WithdrawEvent"></a>
-
-## Struct `WithdrawEvent`
-
-Event emitted when some amount of a coin is withdrawn from an account.
-
-
-<pre><code><b>struct</b> <a href="account_coin_store.md#0x3_account_coin_store_WithdrawEvent">WithdrawEvent</a> <b>has</b> drop, store
 </code></pre>
 
 
