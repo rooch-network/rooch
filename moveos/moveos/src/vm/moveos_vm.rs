@@ -332,12 +332,7 @@ where
     // Because the Context can be mut argument, if the function change the Context,
     // we need to update the Context via return values, and pass the updated Context to the next function.
     fn update_storage_context_via_return_values(&mut self, return_values: &SerializedReturnValues) {
-        //The only mutable reference output is &mut Context
-        debug_assert!(
-            return_values.mutable_reference_outputs.len() <= 1,
-            "The function should not return more than one mutable reference"
-        );
-
+        //TODO check the type with local index, find the index of Context
         if let Some((_index, value, _layout)) = return_values.mutable_reference_outputs.get(0) {
             //TODO check the type with local index
             let returned_storage_context = Context::from_bytes(value.as_slice())

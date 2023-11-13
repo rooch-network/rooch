@@ -38,7 +38,10 @@ Feature: Rooch CLI integration tests
       Then cmd: "account create"
       Then cmd: "account list"
       Then cmd: "account nullify --address 0xebf29d2aed4da3d2e13a32d71266a302fbfd5ceb3ff1f465c006fa207f1789ce"
-
+      # Get gas
+      Then cmd: "move run --function rooch_framework::gas_coin::faucet_entry"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      
       # session key
       Then cmd: "session-key create  --scope 0x3::empty::empty"
       Then cmd: "move run --function 0x3::empty::empty  --session-key {{$.session-key[-1].authentication_key}}"

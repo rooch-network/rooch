@@ -89,8 +89,8 @@ pub struct CoinInfoView {
     pub supply: StrView<U256>,
 }
 
-impl From<CoinInfo> for CoinInfoView {
-    fn from(coin_info: CoinInfo) -> Self {
+impl<CoinType> From<CoinInfo<CoinType>> for CoinInfoView {
+    fn from(coin_info: CoinInfo<CoinType>) -> Self {
         Self {
             //We convert the coin_type to Coin Type tag here
             //Because the coin_type string is the `to_canonical_string` of the StructTag

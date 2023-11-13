@@ -225,10 +225,10 @@ impl EthAPIServer for EthServer {
             .get_balance(account_address, GasCoin::struct_tag())
             .await
             .map(|balance_info| {
-                if balance_info.balance == move_core_types::u256::U256::zero() {
+                if balance_info.balance.0 == move_core_types::u256::U256::zero() {
                     default_balance
                 } else {
-                    balance_info.balance
+                    balance_info.balance.0
                 }
             })?;
         Ok(StrView(U256::from_little_endian(
@@ -340,7 +340,7 @@ impl EthAPIServer for EthServer {
             .await?
             .pop()
             .flatten()
-            .map(|state_view| state_view.as_move_state::<Account>())
+            .map(|state_view| state_view.cast::<Account>())
             .transpose()?
             .map_or(StrView(U256::zero()), |account| {
                 StrView(<u64 as Into<U256>>::into(account.sequence_number))

@@ -9,11 +9,12 @@ use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
-use moveos_types::moveos_std::object::{Object, ObjectID};
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state_resolver::resource_tag_to_key;
+use moveos_types::state::PlaceholderStruct;
 use moveos_types::transaction::FunctionCall;
-use rooch_types::account::BalanceInfo;
+use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
+use rooch_rpc_api::jsonrpc_types::CoinInfoView;
 use rooch_types::framework::account_coin_store::AccountCoinStoreModule;
 use rooch_types::framework::coin::{CoinInfo, CoinModule};
 use rooch_types::framework::coin_store::CoinStore;
@@ -37,13 +38,13 @@ impl AggregateService {
     pub async fn get_coin_infos(
         &self,
         coin_types: Vec<StructTag>,
-    ) -> Result<HashMap<StructTag, Option<CoinInfo>>> {
-        let coin_module = self.as_module_binding::<CoinModule>();
-        let coin_info_handle = coin_module.coin_infos_handle()?;
-
-        let access_path = AccessPath::table(
-            coin_info_handle,
-            coin_types.iter().map(resource_tag_to_key).collect(),
+    ) -> Result<HashMap<StructTag, Option<CoinInfoView>>> {
+        let access_path = AccessPath::objects(
+            coin_types
+                .iter()
+                .cloned()
+                .map(CoinModule::coin_info_id)
+                .collect(),
         );
         self.rpc_service
             .get_states(access_path)
@@ -54,7 +55,13 @@ impl AggregateService {
                 Ok((
                     coin_type,
                     state_opt
-                        .map(|state| state.as_move_state::<CoinInfo>())
+                        .map(|state| {
+                            Ok::<CoinInfoView, anyhow::Error>(CoinInfoView::from(
+                                state
+                                    .as_object_uncheck::<CoinInfo<PlaceholderStruct>>()?
+                                    .value,
+                            ))
+                        })
                         .transpose()?,
                 ))
             })
@@ -64,7 +71,7 @@ impl AggregateService {
     pub async fn get_coin_stores(
         &self,
         coin_store_ids: Vec<ObjectID>,
-    ) -> Result<Vec<Option<CoinStore>>> {
+    ) -> Result<Vec<Option<CoinStore<PlaceholderStruct>>>> {
         let access_path = AccessPath::objects(coin_store_ids);
         self.rpc_service
             .get_states(access_path)
@@ -72,7 +79,11 @@ impl AggregateService {
             .into_iter()
             .map(|state_opt| {
                 state_opt
-                    .map(|state| Ok(state.as_object::<CoinStore>()?.value))
+                    .map(|state| {
+                        Ok(state
+                            .as_object_uncheck::<CoinStore<PlaceholderStruct>>()?
+                            .value)
+                    })
                     .transpose()
             })
             .collect::<Result<Vec<_>>>()
@@ -82,9 +93,7 @@ impl AggregateService {
         &self,
         account_addr: AccountAddress,
         coin_type: StructTag,
-    ) -> Result<BalanceInfo> {
-        let account_coin_store_module = self.as_module_binding::<AccountCoinStoreModule>();
-
+    ) -> Result<BalanceInfoView> {
         let coin_info = self
             .get_coin_infos(vec![coin_type.clone()])
             .await?
@@ -95,23 +104,16 @@ impl AggregateService {
                 anyhow::anyhow!("Can not find CoinInfo with coin_type: {}", coin_type)
             })?;
 
-        let coin_store_id =
-            account_coin_store_module.coin_store_id(account_addr, coin_type.clone())?;
-        let balance = match coin_store_id {
-            Some(coin_store_id) => {
-                let coin_store = self
-                    .get_coin_stores(vec![coin_store_id])
-                    .await?
-                    .pop()
-                    .flatten()
-                    .ok_or_else(|| {
-                        anyhow::anyhow!("Can not find CoinStore with id: {}", coin_store_id)
-                    })?;
-                coin_store.balance()
-            }
-            None => move_core_types::u256::U256::zero(),
-        };
-        Ok(BalanceInfo::new(coin_info, balance))
+        let coin_store_id = AccountCoinStoreModule::account_coin_store_id(account_addr, coin_type);
+        let balance = self
+            .get_coin_stores(vec![coin_store_id])
+            .await?
+            .pop()
+            .flatten()
+            .map(|coin_store| coin_store.balance())
+            .unwrap_or_default();
+
+        Ok(BalanceInfoView::new(coin_info, balance))
     }
 
     pub async fn get_balances(
@@ -119,7 +121,7 @@ impl AggregateService {
         account_addr: AccountAddress,
         cursor: Option<Vec<u8>>,
         limit: usize,
-    ) -> Result<Vec<(Option<Vec<u8>>, BalanceInfo)>> {
+    ) -> Result<Vec<(Option<Vec<u8>>, BalanceInfoView)>> {
         let account_coin_store_module = self.as_module_binding::<AccountCoinStoreModule>();
         let coin_stores_handle_opt = account_coin_store_module.coin_stores_handle(account_addr)?;
 
@@ -135,8 +137,8 @@ impl AggregateService {
                     .await?
                     .into_iter()
                     .map(|(k, v)| {
-                        let coin_store_ref = v.as_move_state::<Object<CoinStore>>()?;
-                        Ok((k, coin_store_ref.id))
+                        let coin_store_id = v.cast::<ObjectID>()?;
+                        Ok((k, coin_store_id))
                     })
                     .collect::<Result<Vec<_>>>()?;
 
@@ -164,7 +166,8 @@ impl AggregateService {
                         .ok_or_else(|| {
                             anyhow::anyhow!("Can not find CoinInfo for {}", coin_store.coin_type())
                         })?;
-                    let balance_info = BalanceInfo::new(coin_info.clone(), coin_store.balance());
+                    let balance_info =
+                        BalanceInfoView::new(coin_info.clone(), coin_store.balance());
                     result.push((Some(key), balance_info))
                 }
 

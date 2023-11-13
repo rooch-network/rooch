@@ -247,7 +247,7 @@ impl TxSubmiter for RpcService {
             .await?
             .pop()
             .flatten()
-            .map(|state| state.as_move_state::<Account>())
+            .map(|state| state.cast::<Account>())
             .transpose()?
             .map_or(0, |account| account.sequence_number))
     }
