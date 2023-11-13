@@ -312,10 +312,7 @@ impl RoochAPIServer for RoochServer {
         let mut data = self
             .aggregate_service
             .get_balances(account_addr.into(), cursor_of, limit_of + 1)
-            .await?
-            .into_iter()
-            .map(|(key, balance_info)| (key, BalanceInfoView::from(balance_info)))
-            .collect::<Vec<_>>();
+            .await?;
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
