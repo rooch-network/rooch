@@ -102,8 +102,10 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             moveos_store,
             genesis.all_natives(),
             genesis.config_for_test.clone(),
+            rooch_types::framework::system_pre_execute_functions(),
             vec![],
-            vec![],
+            //TODO FIXME https://github.com/rooch-network/rooch/issues/1137
+            //rooch_types::framework::system_post_execute_functions(),
         )
         .unwrap();
 
@@ -130,79 +132,12 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
                 .unwrap();
         }
 
-        /*
-        // Apply new modules and add precompiled address mapping
-        let mut table_change_set = StateChangeSet::default();
-        // let mut mutated_accounts = BTreeSet::new();
-        let module_value_type = TypeTag::Struct(Box::new(MoveModule::struct_tag()));
-        if let Some(pre_compiled_lib) = pre_compiled_deps {
-            for c in &pre_compiled_lib.compiled {
-                if let CompiledUnitEnum::Module(m) = c {
-                    // update named_address_mapping
-                    if let Some(named_address) = &m.address_name {
-                        let name = named_address.value.to_string();
-                        let already_assigned_with_different_value = named_address_mapping
-                            .get(&name)
-                            .filter(|existed| {
-                                existed.into_inner() != m.named_module.address.into_inner()
-                            })
-                            .is_some();
-                        if already_assigned_with_different_value {
-                            panic!(
-                                "Invalid init. The named address '{}' is already assigned with {}",
-                                name,
-                                named_address_mapping.get(&name).unwrap(),
-                            )
-                        }
-                        named_address_mapping.insert(name, m.named_module.address);
-                    }
-                    let (_, module_id) = m.module_id();
-                    let mut bytes = vec![];
-                    m.named_module.module.serialize(&mut bytes).unwrap();
-
-                    let handle = NamedTableID::Module(*module_id.address()).to_object_id();
-                    table_change_set.add_op(
-                        handle,
-                        module_name_to_key(module_id.name()),
-                        Op::New(State {
-                            value_type: module_value_type.clone(),
-                            value: bytes,
-                        }),
-                    );
-                    moveos
-                        .state()
-                        .create_account_storage(*module_id.address())
-                        .unwrap();
-                }
-            }
-        }
-        let change_set = ChangeSet::new();
-        moveos
-            .state()
-            .apply_change_set(change_set, table_change_set)
-            .unwrap();
-         */
-
         let adapter = Self {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),
             default_syntax,
             moveos,
         };
 
-        /*
-        //Auto generate interface to Framework modules
-        let stdlib_modules = genesis.modules().unwrap();
-
-        for module in stdlib_modules
-            .iter()
-            .filter(|module| !adapter.compiled_state.is_precompiled_dep(&module.self_id()))
-            .collect::<Vec<_>>()
-        {
-            adapter
-                .compiled_state
-                .add_and_generate_interface_file(module.clone());
-        }
-         */
         (adapter, None)
     }
 
