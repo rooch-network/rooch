@@ -65,6 +65,11 @@ Feature: Rooch CLI integration tests
       Then cmd: "object --id 0x3::timestamp::Timestamp"
       Then cmd: "state --access-path /object/0x3::timestamp::Timestamp"
       Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::timestamp::Timestamp>'"
+      Then cmd: "state --access-path /object/0x3::chain_id::ChainID"
+      Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::chain_id::ChainID>'"
+      Then assert: "{{$.state[-1][0].decoded_value.value.value.value.id}} == 20230104"
+      Then cmd: "state --access-path /object/0x3::address_mapping::AddressMapping"
+      Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::address_mapping::AddressMapping>'"
       Then stop the server
 
     @serial
