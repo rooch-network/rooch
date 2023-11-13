@@ -73,6 +73,8 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.state[-1][0].decoded_value.value.value.value.id}} == 20230104"
       Then cmd: "state --access-path /object/0x3::address_mapping::AddressMapping"
       Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::address_mapping::AddressMapping>'"
+      Then cmd: "state --access-path /object/0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"
+      Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>>'"
       Then stop the server
 
     @serial
@@ -208,11 +210,9 @@ Feature: Rooch CLI integration tests
       Then stop the server
 
   @serial
-  Scenario: Issue a coin through entry function
+  Scenario: Issue a coin through module_template
     Given a server for issue_coin
     Then cmd: "move publish -p ../../examples/module_template/  --named-addresses rooch_examples=default"
-    Then cmd: "move run --function default::coin_factory::register_template  "
-    Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
     Then cmd: "move run --function default::coin_factory::issue_fixed_supply_coin --args string:my_coin  --args string:"My first coin" --args string:MyCoin --args 1010101u256 --args 8u8  "
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
