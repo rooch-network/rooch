@@ -59,6 +59,6 @@ module coins::private_coin {
     fun deposit_to_treaury(ctx: &mut Context, coin: Coin<PRC>) {
         let treasury_object_id = object::singleton_object_id<Treasury>();
         let treasury_obj = context::borrow_mut_object_extend<Treasury>(ctx, treasury_object_id);
-        coin_store::deposit(&mut object::borrow_mut(treasury_obj).coin_store, coin);
+        coin_store::deposit_extend(&mut object::borrow_mut(treasury_obj).coin_store, coin);
     }
 }
