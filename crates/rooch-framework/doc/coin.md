@@ -7,20 +7,21 @@ This module provides the foundation for typesafe Coins.
 
 
 -  [Struct `Coin`](#0x3_coin_Coin)
--  [Struct `CoinInfo`](#0x3_coin_CoinInfo)
--  [Resource `CoinInfos`](#0x3_coin_CoinInfos)
+-  [Resource `CoinInfo`](#0x3_coin_CoinInfo)
 -  [Struct `MintEvent`](#0x3_coin_MintEvent)
 -  [Struct `BurnEvent`](#0x3_coin_BurnEvent)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_coin_genesis_init)
+-  [Function `coin_address`](#0x3_coin_coin_address)
 -  [Function `check_coin_info_registered`](#0x3_coin_check_coin_info_registered)
 -  [Function `is_registered`](#0x3_coin_is_registered)
+-  [Function `coin_info`](#0x3_coin_coin_info)
+-  [Function `coin_info_id`](#0x3_coin_coin_info_id)
 -  [Function `name`](#0x3_coin_name)
 -  [Function `symbol`](#0x3_coin_symbol)
 -  [Function `decimals`](#0x3_coin_decimals)
 -  [Function `supply`](#0x3_coin_supply)
 -  [Function `is_same_coin`](#0x3_coin_is_same_coin)
--  [Function `coin_infos_handle`](#0x3_coin_coin_infos_handle)
 -  [Function `destroy_zero`](#0x3_coin_destroy_zero)
 -  [Function `extract`](#0x3_coin_extract)
 -  [Function `extract_all`](#0x3_coin_extract_all)
@@ -28,6 +29,7 @@ This module provides the foundation for typesafe Coins.
 -  [Function `value`](#0x3_coin_value)
 -  [Function `zero`](#0x3_coin_zero)
 -  [Function `register_extend`](#0x3_coin_register_extend)
+-  [Function `coin_info_mut_extend`](#0x3_coin_coin_info_mut_extend)
 -  [Function `mint_extend`](#0x3_coin_mint_extend)
 -  [Function `burn_extend`](#0x3_coin_burn_extend)
 -  [Function `unpack`](#0x3_coin_unpack)
@@ -39,7 +41,6 @@ This module provides the foundation for typesafe Coins.
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 </code></pre>
 
@@ -64,24 +65,13 @@ The Coin has no ability, it is a hot potato type, only can handle by Coin module
 
 <a name="0x3_coin_CoinInfo"></a>
 
-## Struct `CoinInfo`
+## Resource `CoinInfo`
 
-Information about a specific coin type. Stored in the global CoinInfos table.
-
-
-<pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a> <b>has</b> store
-</code></pre>
+Information about a specific coin type. Stored in the global Object storage.
+CoinInfo<CoinType> is a singleton object, the <code>coin_type</code> is the unique key.
 
 
-
-<a name="0x3_coin_CoinInfos"></a>
-
-## Resource `CoinInfos`
-
-A resource that holds the CoinInfo for all accounts.
-
-
-<pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinInfos">CoinInfos</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType: key&gt; <b>has</b> key
 </code></pre>
 
 
@@ -248,7 +238,19 @@ Coin amount cannot be zero
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, genesis_account: &<a href="">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_genesis_init">genesis_init</a>(_ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _genesis_account: &<a href="">signer</a>)
+</code></pre>
+
+
+
+<a name="0x3_coin_coin_address"></a>
+
+## Function `coin_address`
+
+A helper function that returns the address of CoinType.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_address">coin_address</a>&lt;CoinType: key&gt;(): <b>address</b>
 </code></pre>
 
 
@@ -277,6 +279,30 @@ Returns <code><b>true</b></code> if the type <code>CoinType</code> is an registe
 
 
 
+<a name="0x3_coin_coin_info"></a>
+
+## Function `coin_info`
+
+Borrow the CoinInfo<CoinType>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info">coin_info</a>&lt;CoinType: key&gt;(ctx: &<a href="_Context">context::Context</a>): &<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;
+</code></pre>
+
+
+
+<a name="0x3_coin_coin_info_id"></a>
+
+## Function `coin_info_id`
+
+Return the ObjectID of Object<CoinInfo<CoinType>>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info_id">coin_info_id</a>&lt;CoinType: key&gt;(): <a href="_ObjectID">object::ObjectID</a>
+</code></pre>
+
+
+
 <a name="0x3_coin_name"></a>
 
 ## Function `name`
@@ -284,7 +310,7 @@ Returns <code><b>true</b></code> if the type <code>CoinType</code> is an registe
 Returns the name of the coin.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_name">name</a>&lt;CoinType: key&gt;(ctx: &<a href="_Context">context::Context</a>): <a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_name">name</a>&lt;CoinType: key&gt;(coin_info: &<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;): <a href="_String">string::String</a>
 </code></pre>
 
 
@@ -296,7 +322,7 @@ Returns the name of the coin.
 Returns the symbol of the coin, usually a shorter version of the name.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_symbol">symbol</a>&lt;CoinType: key&gt;(ctx: &<a href="_Context">context::Context</a>): <a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_symbol">symbol</a>&lt;CoinType: key&gt;(coin_info: &<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;): <a href="_String">string::String</a>
 </code></pre>
 
 
@@ -310,7 +336,7 @@ For example, if <code>decimals</code> equals <code>2</code>, a balance of <code>
 be displayed to a user as <code>5.05</code> (<code>505 / 10 ** 2</code>).
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_decimals">decimals</a>&lt;CoinType: key&gt;(ctx: &<a href="_Context">context::Context</a>): u8
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_decimals">decimals</a>&lt;CoinType: key&gt;(coin_info: &<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;): u8
 </code></pre>
 
 
@@ -322,7 +348,7 @@ be displayed to a user as <code>5.05</code> (<code>505 / 10 ** 2</code>).
 Returns the amount of coin in existence.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_supply">supply</a>&lt;CoinType: key&gt;(ctx: &<a href="_Context">context::Context</a>): u256
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_supply">supply</a>&lt;CoinType: key&gt;(coin_info: &<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;): u256
 </code></pre>
 
 
@@ -335,18 +361,6 @@ Return true if the type <code>CoinType1</code> is same with <code>CoinType2</cod
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_same_coin">is_same_coin</a>&lt;CoinType1, CoinType2&gt;(): bool
-</code></pre>
-
-
-
-<a name="0x3_coin_coin_infos_handle"></a>
-
-## Function `coin_infos_handle`
-
-Return CoinInfos table handle
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_infos_handle">coin_infos_handle</a>(ctx: &<a href="_Context">context::Context</a>): <a href="_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -433,7 +447,20 @@ Creates a new Coin with given <code>CoinType</code>
 This function is protected by <code>private_generics</code>, so it can only be called by the <code>CoinType</code> module.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_register_extend">register_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, name: <a href="_String">string::String</a>, symbol: <a href="_String">string::String</a>, decimals: u8)
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_register_extend">register_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, name: <a href="_String">string::String</a>, symbol: <a href="_String">string::String</a>, decimals: u8): &<b>mut</b> <a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;
+</code></pre>
+
+
+
+<a name="0x3_coin_coin_info_mut_extend"></a>
+
+## Function `coin_info_mut_extend`
+
+Borrow the mutable CoinInfo<CoinType>
+This function is protected by <code>private_generics</code>, so it can only be called by the <code>CoinType</code> module.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info_mut_extend">coin_info_mut_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): &<b>mut</b> <a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;
 </code></pre>
 
 
@@ -445,7 +472,7 @@ This function is protected by <code>private_generics</code>, so it can only be c
 Mint new <code><a href="coin.md#0x3_coin_Coin">Coin</a></code>, this function is only called by the <code>CoinType</code> module, for the developer to extend custom mint logic
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_mint_extend">mint_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_mint_extend">mint_extend</a>&lt;CoinType: key&gt;(coin_info: &<b>mut</b> <a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>
 
 
@@ -458,7 +485,7 @@ Burn <code><a href="coin.md#0x3_coin">coin</a></code>
 This function is only called by the <code>CoinType</code> module, for the developer to extend custom burn logic
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_burn_extend">burn_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_burn_extend">burn_extend</a>&lt;CoinType: key&gt;(coin_info: &<b>mut</b> <a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
 </code></pre>
 
 

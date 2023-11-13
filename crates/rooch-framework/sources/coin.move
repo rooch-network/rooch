@@ -5,9 +5,7 @@
 module rooch_framework::coin {
     use std::string;
     use std::error;
-    use moveos_std::object::ObjectID;
-    use moveos_std::table;
-    use moveos_std::table::Table;
+    use moveos_std::object::{Self, ObjectID};
     use moveos_std::context::{Self, Context};
     use moveos_std::event;
     use moveos_std::type_info::{Self, type_of};
@@ -72,8 +70,9 @@ module rooch_framework::coin {
 
     const MAX_U256: u256 = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
-    /// Information about a specific coin type. Stored in the global CoinInfos table.
-    struct CoinInfo has store {
+    /// Information about a specific coin type. Stored in the global Object storage.
+    /// CoinInfo<CoinType> is a singleton object, the `coin_type` is the unique key.
+    struct CoinInfo<phantom CoinType : key> has key {
         /// Type of the coin: `address::my_module::XCoin`, same as `moveos_std::type_info::type_name<CoinType>()`.
         /// The name and symbol can repeat across different coin types, but the coin type must be unique.
         coin_type: string::String,
@@ -88,11 +87,6 @@ module rooch_framework::coin {
         decimals: u8,
         /// The total value for the coin represented by coin type. Mutable.
         supply: u256,
-    }
-
-    /// A resource that holds the CoinInfo for all accounts.
-    struct CoinInfos has key {
-        coin_infos: Table<string::String, CoinInfo>,
     }
 
     /// Event emitted when coin minted.
@@ -111,11 +105,8 @@ module rooch_framework::coin {
         amount: u256,
     }
 
-    public(friend) fun genesis_init(ctx: &mut Context, genesis_account: &signer) {
-        let coin_infos = CoinInfos {
-            coin_infos: context::new_table(ctx),
-        };
-        context::move_resource_to(ctx, genesis_account, coin_infos);
+    public(friend) fun genesis_init(_ctx: &mut Context, _genesis_account: &signer) {
+        
     }
 
     
@@ -124,7 +115,7 @@ module rooch_framework::coin {
     //
 
     /// A helper function that returns the address of CoinType.
-    fun coin_address<CoinType: key>(): address {
+    public fun coin_address<CoinType: key>(): address {
         let type_info = type_info::type_of<CoinType>();
         type_info::account_address(&type_info)
     }
@@ -136,48 +127,47 @@ module rooch_framework::coin {
 
     /// Returns `true` if the type `CoinType` is an registered coin.
     public fun is_registered<CoinType: key>(ctx: &Context): bool {
-        if (context::exists_resource<CoinInfos>(ctx, @rooch_framework)) {
-            let coin_infos = context::borrow_resource<CoinInfos>(ctx, @rooch_framework);
-            let coin_type = type_info::type_name<CoinType>();
-            table::contains(&coin_infos.coin_infos, coin_type)
-        } else {
-            false
-        }
+        let object_id = coin_info_id<CoinType>();
+        context::exists_object<CoinInfo<CoinType>>(ctx, object_id)
+    }
+
+    /// Borrow the CoinInfo<CoinType>
+    public fun coin_info<CoinType: key>(ctx: &Context): &CoinInfo<CoinType> {
+        let coin_info_id = coin_info_id<CoinType>();
+        let coin_info_obj = context::borrow_object<CoinInfo<CoinType>>(ctx, coin_info_id);
+        object::borrow(coin_info_obj)
+    }
+
+    /// Return the ObjectID of Object<CoinInfo<CoinType>>
+    public fun coin_info_id<CoinType: key>() : ObjectID {
+        object::singleton_object_id<CoinInfo<CoinType>>()
     }
 
     /// Returns the name of the coin.
-    public fun name<CoinType: key>(ctx: &Context): string::String {
-        borrow_coin_info<CoinType>(ctx).name
+    public fun name<CoinType: key>(coin_info: &CoinInfo<CoinType>): string::String {
+        coin_info.name
     }
 
     /// Returns the symbol of the coin, usually a shorter version of the name.
-    public fun symbol<CoinType: key>(ctx: &Context): string::String {
-        borrow_coin_info<CoinType>(ctx).symbol
+    public fun symbol<CoinType: key>(coin_info: &CoinInfo<CoinType>): string::String {
+        coin_info.symbol
     }
 
     /// Returns the number of decimals used to get its user representation.
     /// For example, if `decimals` equals `2`, a balance of `505` coins should
     /// be displayed to a user as `5.05` (`505 / 10 ** 2`).
-    public fun decimals<CoinType: key>(ctx: &Context): u8 {
-        borrow_coin_info<CoinType>(ctx).decimals
+    public fun decimals<CoinType: key>(coin_info: &CoinInfo<CoinType>): u8 {
+        coin_info.decimals
     }
 
     /// Returns the amount of coin in existence.
-    public fun supply<CoinType: key>(ctx: &Context): u256 {
-        borrow_coin_info<CoinType>(ctx).supply
+    public fun supply<CoinType: key>(coin_info: &CoinInfo<CoinType>): u256 {
+        coin_info.supply
     }
 
     /// Return true if the type `CoinType1` is same with `CoinType2`
     public fun is_same_coin<CoinType1, CoinType2>(): bool {
         return type_of<CoinType1>() == type_of<CoinType2>()
-    }
-
-    /// Return CoinInfos table handle
-    public fun coin_infos_handle(ctx: &Context): ObjectID {
-        // coin info ensured via the Genesis transaction, so it should always exist
-        assert!(context::exists_resource<CoinInfos>(ctx, @rooch_framework), error::invalid_argument(ErrorCoinInfosNotFound));
-        let coin_infos = context::borrow_resource<CoinInfos>(ctx, @rooch_framework);
-        *table::handle(&coin_infos.coin_infos)
     }
 
     
@@ -233,52 +223,57 @@ module rooch_framework::coin {
         name: string::String,
         symbol: string::String,
         decimals: u8,
-    ){
-        
-        let coin_infos = context::borrow_mut_resource<CoinInfos>(ctx, @rooch_framework);
-        let coin_type = type_info::type_name<CoinType>();
-        
+    ) : &mut CoinInfo<CoinType> {
         assert!(
-            !table::contains(&coin_infos.coin_infos, coin_type),
+            !is_registered<CoinType>(ctx),
             error::already_exists(ErrorCoinInfoAlreadyRegistered),
         ); 
+
+        let coin_type = type_info::type_name<CoinType>();
 
         assert!(string::length(&name) <= MAX_COIN_NAME_LENGTH, error::invalid_argument(ErrorCoinNameTooLong));
         assert!(string::length(&symbol) <= MAX_COIN_SYMBOL_LENGTH, error::invalid_argument(ErrorCoinSymbolTooLong));
 
-        let coin_info = CoinInfo {
+        let coin_info = CoinInfo<CoinType> {
             coin_type,
             name,
             symbol,
             decimals,
             supply: 0u256,
         };
-        table::add(&mut coin_infos.coin_infos, coin_type, coin_info);
+        let obj = context::new_singleton(ctx, coin_info);
+        object::borrow_mut(obj)
+    }
+
+    #[private_generics(CoinType)]
+    /// Borrow the mutable CoinInfo<CoinType>
+    /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
+    public fun coin_info_mut_extend<CoinType: key>(ctx: &mut Context) : &mut CoinInfo<CoinType> {
+        borrow_mut_coin_info<CoinType>(ctx)
     }
 
     #[private_generics(CoinType)]
     /// Mint new `Coin`, this function is only called by the `CoinType` module, for the developer to extend custom mint logic
-    public fun mint_extend<CoinType: key>(ctx: &mut Context,amount: u256) : Coin<CoinType> {
-        mint_internal<CoinType>(ctx, amount)
+    public fun mint_extend<CoinType: key>(coin_info: &mut CoinInfo<CoinType>,amount: u256) : Coin<CoinType> {
+        mint_internal<CoinType>(coin_info, amount)
     }
 
     #[private_generics(CoinType)]
     /// Burn `coin`
     /// This function is only called by the `CoinType` module, for the developer to extend custom burn logic
     public fun burn_extend<CoinType: key>(
-        ctx: &mut Context,
+        coin_info: &mut CoinInfo<CoinType>,
         coin: Coin<CoinType>,
     ) {
-        burn_internal(ctx, coin) 
+        burn_internal(coin_info, coin) 
     }
 
     //
     // Internal functions
     //
 
-    fun mint_internal<CoinType: key>(ctx: &mut Context,
+    fun mint_internal<CoinType: key>(coin_info: &mut CoinInfo<CoinType>,
         amount: u256): Coin<CoinType>{
-        let coin_info = borrow_mut_coin_info<CoinType>(ctx);
         coin_info.supply = coin_info.supply + amount;
         let coin_type = type_info::type_name<CoinType>();
         event::emit<MintEvent>(MintEvent {
@@ -289,13 +284,12 @@ module rooch_framework::coin {
     }
 
     fun burn_internal<CoinType: key>(
-        ctx: &mut Context,
+        coin_info: &mut CoinInfo<CoinType>,
         coin: Coin<CoinType>,
     ) {
         let Coin { value: amount } = coin;
 
         let coin_type = type_info::type_name<CoinType>();
-        let coin_info = borrow_mut_coin_info<CoinType>(ctx);
         coin_info.supply = coin_info.supply - amount;
         event::emit<BurnEvent>(BurnEvent {
             coin_type,
@@ -303,25 +297,10 @@ module rooch_framework::coin {
         });
     }
 
-    fun borrow_coin_info<CoinType: key>(ctx: &Context): &CoinInfo {
-        let coin_infos = context::borrow_resource<CoinInfos>(ctx, @rooch_framework);
-        let coin_type = type_info::type_name<CoinType>();
-        check_coin_info_registered_internal(coin_infos, coin_type);
-        table::borrow(&coin_infos.coin_infos, coin_type)
-    }
-
-    fun borrow_mut_coin_info<CoinType: key>(ctx: &mut Context): &mut CoinInfo {
-        let coin_infos = context::borrow_mut_resource<CoinInfos>(ctx, @rooch_framework);
-        let coin_type = type_info::type_name<CoinType>();
-        check_coin_info_registered_internal(coin_infos, coin_type);
-        table::borrow_mut(&mut coin_infos.coin_infos, coin_type)
-    }
-
-    fun check_coin_info_registered_internal(coin_infos: &CoinInfos, coin_type: string::String) {
-        assert!(
-            table::contains(&coin_infos.coin_infos, coin_type),
-            error::not_found(ErrorCoinInfoNotRegistered),
-        );
+    fun borrow_mut_coin_info<CoinType: key>(ctx: &mut Context): &mut CoinInfo<CoinType> {
+        let coin_info_id = coin_info_id<CoinType>();
+        let coin_info_obj = context::borrow_mut_object_extend<CoinInfo<CoinType>>(ctx, coin_info_id);
+        object::borrow_mut(coin_info_obj)
     }
 
     // Unpack the Coin and return the value

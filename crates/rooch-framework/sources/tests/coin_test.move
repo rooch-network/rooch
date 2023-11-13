@@ -19,13 +19,13 @@ module rooch_framework::coin_test{
     fun register_fake_coin(
         ctx: &mut Context,
         decimals: u8,
-    ) {
+    ) : &mut coin::CoinInfo<FakeCoin> {
         coin::register_extend<FakeCoin>(
             ctx,
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
             decimals,
-        );
+        )
     }
 
     #[test]
@@ -37,36 +37,36 @@ module rooch_framework::coin_test{
         let symbol = string::utf8(b"FCD");
         let decimals = 9u8;
 
-        register_extend<FakeCoin>(
+        let coin_info = register_extend<FakeCoin>(
             &mut source_ctx,
             name,
             symbol,
             decimals,
         );
         
-        assert!(supply<FakeCoin>(&source_ctx) == 0, 0);
+        assert!(supply<FakeCoin>(coin_info) == 0, 0);
 
-        assert!(name<FakeCoin>(&source_ctx) == name, 1);
-        assert!(symbol<FakeCoin>(&source_ctx) == symbol, 2);
-        assert!(decimals<FakeCoin>(&source_ctx) == decimals, 3);
+        assert!(name<FakeCoin>(coin_info) == name, 1);
+        assert!(symbol<FakeCoin>(coin_info) == symbol, 2);
+        assert!(decimals<FakeCoin>(coin_info) == decimals, 3);
 
-        let coins_minted = mint_extend<FakeCoin>(&mut source_ctx, 100);
+        let coins_minted = mint_extend<FakeCoin>(coin_info, 100);
         
-        assert!(supply<FakeCoin>(&source_ctx) == 100, 4);
+        assert!(supply<FakeCoin>(coin_info) == 100, 4);
 
-        let coins_minted2 = mint_extend<FakeCoin>(&mut source_ctx, 100);
+        let coins_minted2 = mint_extend<FakeCoin>(coin_info, 100);
 
-        assert!(supply<FakeCoin>(&source_ctx) == 200, 5);
+        assert!(supply<FakeCoin>(coin_info) == 200, 5);
         
         let coin = extract(&mut coins_minted, 50);
 
-        burn_extend(&mut source_ctx, coin);
-        assert!(supply<FakeCoin>(&source_ctx) == 150, 6);
+        burn_extend(coin_info, coin);
+        assert!(supply<FakeCoin>(coin_info) == 150, 6);
 
-        burn_extend(&mut source_ctx, coins_minted); 
-        burn_extend(&mut source_ctx, coins_minted2); 
+        burn_extend(coin_info, coins_minted); 
+        burn_extend(coin_info, coins_minted2); 
 
-        assert!(supply<FakeCoin>(&source_ctx) == 0, 7);
+        assert!(supply<FakeCoin>(coin_info) == 0, 7);
 
         moveos_std::context::drop_test_context(source_ctx);
     }
@@ -99,8 +99,8 @@ module rooch_framework::coin_test{
     ) {
         let source_ctx = rooch_framework::genesis::init_for_test();
 
-        register_fake_coin(&mut source_ctx, 9);
-        let coins_minted = mint_extend<FakeCoin>(&mut source_ctx, 100);
+        let coin_info = register_fake_coin(&mut source_ctx, 9);
+        let coins_minted = mint_extend<FakeCoin>(coin_info, 100);
         destroy_zero(coins_minted);
 
         moveos_std::context::drop_test_context(source_ctx);
@@ -110,15 +110,15 @@ module rooch_framework::coin_test{
     #[test]
     fun test_test_extract() {
         let source_ctx = rooch_framework::genesis::init_for_test();
-        register_fake_coin(&mut source_ctx, 9);
-        let coins_minted = mint_extend<FakeCoin>(&mut source_ctx, 100);
+        let coin_info = register_fake_coin(&mut source_ctx, 9);
+        let coins_minted = mint_extend<FakeCoin>(coin_info, 100);
 
         let extracted = extract(&mut coins_minted, 25);
         assert!(value(&coins_minted) == 75, 0);
         assert!(value(&extracted) == 25, 1);
 
-        burn_extend(&mut source_ctx, coins_minted);
-        burn_extend(&mut source_ctx, extracted);
+        burn_extend(coin_info, coins_minted);
+        burn_extend(coin_info, extracted);
 
         moveos_std::context::drop_test_context(source_ctx);
     }

@@ -7,7 +7,7 @@ module rooch_framework::coin_store_test{
     use moveos_std::context::{Context};
     use moveos_std::object;
     use rooch_framework::account;
-    use rooch_framework::coin;
+    use rooch_framework::coin::{Self, CoinInfo};
     use rooch_framework::account_coin_store;
     use rooch_framework::coin_store;
 
@@ -18,18 +18,19 @@ module rooch_framework::coin_store_test{
     fun register_fake_coin(
         ctx: &mut Context,
         decimals: u8,
-    ) {
+    ) : &mut CoinInfo<FakeCoin> {
         coin::register_extend<FakeCoin>(
             ctx,
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
             decimals,
-        );
+        )
     }
 
     #[test_only]
     fun mint_and_deposit(ctx: &mut Context,to_address: address, amount: u256) {
-        let coins_minted = coin::mint_extend<FakeCoin>(ctx, amount);
+        let coin_info = coin::coin_info_mut_extend<FakeCoin>(ctx);
+        let coins_minted = coin::mint_extend<FakeCoin>(coin_info, amount);
         account_coin_store::deposit(ctx, to_address, coins_minted);
     }
 
@@ -47,13 +48,15 @@ module rooch_framework::coin_store_test{
     #[test]
     public fun test_coin_store(){
         let ctx = rooch_framework::genesis::init_for_test();
-        register_fake_coin(&mut ctx, 9);
+        let coin_minted = {
+            let coin_info = register_fake_coin(&mut ctx, 9);
+            coin::mint_extend<FakeCoin>(coin_info, 100)
+        };
 
-        let coin_store_ref = coin_store::create_coin_store<FakeCoin>(&mut ctx);
+        let coin_store = coin_store::create_coin_store<FakeCoin>(&mut ctx);
         {
-            let coin_store = object::borrow_mut(&mut coin_store_ref);
+            let coin_store = object::borrow_mut(&mut coin_store);
 
-            let coin_minted = coin::mint_extend<FakeCoin>(&mut ctx, 100);
             coin_store::deposit(coin_store, coin_minted);
 
             assert!(coin_store::balance(coin_store) == 100, 1);
@@ -62,13 +65,15 @@ module rooch_framework::coin_store_test{
 
             assert!(coin::value(&coin_withdrawn) == 10, 2);
             assert!(coin_store::balance(coin_store) == 90, 3);
-            coin::burn_extend(&mut ctx, coin_withdrawn);
+            coin::burn_extend(coin::coin_info_mut_extend(&mut ctx), coin_withdrawn);
         };
-        let coin = coin_store::remove_coin_store<FakeCoin>(coin_store_ref);
+        let coin = coin_store::remove_coin_store<FakeCoin>(coin_store);
         assert!(coin::value(&coin) == 90, 4);
-        coin::burn_extend(&mut ctx, coin);
-        assert!(coin::supply<FakeCoin>(&ctx) == 0, 5);
-
+        {
+            let coin_info = coin::coin_info_mut_extend(&mut ctx);
+            coin::burn_extend(coin_info, coin);
+            assert!(coin::supply<FakeCoin>(coin_info) == 0, 5);
+        };
         moveos_std::context::drop_test_context(ctx);
     }
 
@@ -107,7 +112,7 @@ module rooch_framework::coin_store_test{
         mint_and_deposit(&mut ctx, account_addr, 100);
         freeze_account_coin_store(&mut ctx, account_addr, true);
         let coin = account_coin_store::withdraw<FakeCoin>(&mut ctx, &account, 10);
-        coin::burn_extend(&mut ctx, coin);
+        coin::burn_extend(coin::coin_info_mut_extend<FakeCoin>(&mut ctx), coin);
 
         moveos_std::context::drop_test_context(ctx);
     }
@@ -122,7 +127,7 @@ module rooch_framework::coin_store_test{
         register_fake_coin(&mut ctx, 9);
 
         mint_and_deposit(&mut ctx, account_addr, 100);
-        let coins_minted = coin::mint_extend<FakeCoin>(&mut ctx, 100);
+        let coins_minted = coin::mint_extend<FakeCoin>(coin::coin_info_mut_extend<FakeCoin>(&mut ctx), 100);
         freeze_account_coin_store(&mut ctx, account_addr, true);
         account_coin_store::deposit(&mut ctx, account_addr, coins_minted);
 
@@ -138,7 +143,7 @@ module rooch_framework::coin_store_test{
         register_fake_coin(&mut ctx, 9);
         mint_and_deposit(&mut ctx, account_addr, 100);
 
-        let coins_minted = coin::mint_extend<FakeCoin>(&mut ctx, 100);
+        let coins_minted = coin::mint_extend<FakeCoin>(coin::coin_info_mut_extend<FakeCoin>(&mut ctx), 100);
         freeze_account_coin_store(&mut ctx, account_addr, true);
         freeze_account_coin_store(&mut ctx, account_addr, false);
         account_coin_store::deposit(&mut ctx, account_addr, coins_minted);
@@ -146,7 +151,7 @@ module rooch_framework::coin_store_test{
         freeze_account_coin_store(&mut ctx, account_addr, true);
         freeze_account_coin_store(&mut ctx, account_addr, false);
         let coin = account_coin_store::withdraw<FakeCoin>(&mut ctx, &account, 10);
-        coin::burn_extend(&mut ctx, coin);
+        coin::burn_extend(coin::coin_info_mut_extend<FakeCoin>(&mut ctx), coin);
 
         moveos_std::context::drop_test_context(ctx);
     }
