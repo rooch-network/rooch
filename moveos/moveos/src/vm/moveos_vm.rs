@@ -277,6 +277,11 @@ where
             } => {
                 //TODO check the modules package address with the sender
                 let sender = self.ctx.tx_context.sender();
+                // Check if module is first published. Only the first published module can run init function
+                let modules_with_init = init_function_modules
+                    .into_iter()
+                    .filter(|m| self.session.get_data_store().exists_module(m) == Ok(false))
+                    .collect();
                 //TODO check the compatiblity
                 let compat_config = Compatibility::full_check();
                 self.session.publish_module_bundle_with_compat_config(
@@ -285,7 +290,7 @@ where
                     &mut self.gas_meter,
                     compat_config,
                 )?;
-                self.execute_init_modules(init_function_modules)
+                self.execute_init_modules(modules_with_init)
             }
         };
 
