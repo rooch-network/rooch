@@ -38,7 +38,7 @@ module coins::private_coin {
     /// In a real world scenario, the coins should be given out in the application business logic.
     public entry fun faucet(ctx: &mut Context, account: &signer) {
         let account_addr = signer::address_of(account);
-        let coin_info = coin::coin_info_mut_extend<PRC>(ctx);
+        let coin_info = coin::borrow_mut_coin_info_extend<PRC>(ctx);
         let coin = coin::mint_extend<PRC>(coin_info, 10000);
         account_coin_store::deposit_extend(ctx, account_addr, coin);
     }

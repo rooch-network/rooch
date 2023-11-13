@@ -88,7 +88,7 @@ module rooch_framework::transfer_test{
 
     #[test_only]
     fun mint_and_deposit(ctx: &mut Context,to_address: address, amount: u256) {
-        let coins_minted = coin::mint_extend<FakeCoin>(coin::coin_info_mut_extend<FakeCoin>(ctx), amount);
+        let coins_minted = coin::mint_extend<FakeCoin>(coin::borrow_mut_coin_info_extend<FakeCoin>(ctx), amount);
         account_coin_store::deposit(ctx, to_address, coins_minted);
     }
 

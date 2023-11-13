@@ -131,13 +131,6 @@ module rooch_framework::coin {
         context::exists_object<CoinInfo<CoinType>>(ctx, object_id)
     }
 
-    /// Borrow the CoinInfo<CoinType>
-    public fun coin_info<CoinType: key>(ctx: &Context): &CoinInfo<CoinType> {
-        let coin_info_id = coin_info_id<CoinType>();
-        let coin_info_obj = context::borrow_object<CoinInfo<CoinType>>(ctx, coin_info_id);
-        object::borrow(coin_info_obj)
-    }
-
     /// Return the ObjectID of Object<CoinInfo<CoinType>>
     public fun coin_info_id<CoinType: key>() : ObjectID {
         object::singleton_object_id<CoinInfo<CoinType>>()
@@ -211,9 +204,25 @@ module rooch_framework::coin {
         }
     }
 
+    /// Borrow the CoinInfo<CoinType>
+    public fun borrow_coin_info<CoinType: key>(ctx: &Context): &CoinInfo<CoinType> {
+        let coin_info_id = coin_info_id<CoinType>();
+        let coin_info_obj = context::borrow_object<CoinInfo<CoinType>>(ctx, coin_info_id);
+        object::borrow(coin_info_obj)
+    }
+
     //
     // Extend functions
     //
+
+     #[private_generics(CoinType)]
+    /// Borrow the mutable CoinInfo<CoinType>
+    /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
+    public fun borrow_mut_coin_info_extend<CoinType: key>(ctx: &mut Context) : &mut CoinInfo<CoinType> {
+        let coin_info_id = coin_info_id<CoinType>();
+        let coin_info_obj = context::borrow_mut_object_extend<CoinInfo<CoinType>>(ctx, coin_info_id);
+        object::borrow_mut(coin_info_obj)
+    }
 
     #[private_generics(CoinType)]
     /// Creates a new Coin with given `CoinType`
@@ -243,13 +252,6 @@ module rooch_framework::coin {
         };
         let obj = context::new_singleton(ctx, coin_info);
         object::borrow_mut(obj)
-    }
-
-    #[private_generics(CoinType)]
-    /// Borrow the mutable CoinInfo<CoinType>
-    /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
-    public fun coin_info_mut_extend<CoinType: key>(ctx: &mut Context) : &mut CoinInfo<CoinType> {
-        borrow_mut_coin_info<CoinType>(ctx)
     }
 
     #[private_generics(CoinType)]
@@ -295,12 +297,6 @@ module rooch_framework::coin {
             coin_type,
             amount,
         });
-    }
-
-    fun borrow_mut_coin_info<CoinType: key>(ctx: &mut Context): &mut CoinInfo<CoinType> {
-        let coin_info_id = coin_info_id<CoinType>();
-        let coin_info_obj = context::borrow_mut_object_extend<CoinInfo<CoinType>>(ctx, coin_info_id);
-        object::borrow_mut(coin_info_obj)
     }
 
     // Unpack the Coin and return the value

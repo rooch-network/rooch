@@ -15,7 +15,6 @@ This module provides the foundation for typesafe Coins.
 -  [Function `coin_address`](#0x3_coin_coin_address)
 -  [Function `check_coin_info_registered`](#0x3_coin_check_coin_info_registered)
 -  [Function `is_registered`](#0x3_coin_is_registered)
--  [Function `coin_info`](#0x3_coin_coin_info)
 -  [Function `coin_info_id`](#0x3_coin_coin_info_id)
 -  [Function `name`](#0x3_coin_name)
 -  [Function `symbol`](#0x3_coin_symbol)
@@ -28,8 +27,9 @@ This module provides the foundation for typesafe Coins.
 -  [Function `merge`](#0x3_coin_merge)
 -  [Function `value`](#0x3_coin_value)
 -  [Function `zero`](#0x3_coin_zero)
+-  [Function `borrow_coin_info`](#0x3_coin_borrow_coin_info)
+-  [Function `borrow_mut_coin_info_extend`](#0x3_coin_borrow_mut_coin_info_extend)
 -  [Function `register_extend`](#0x3_coin_register_extend)
--  [Function `coin_info_mut_extend`](#0x3_coin_coin_info_mut_extend)
 -  [Function `mint_extend`](#0x3_coin_mint_extend)
 -  [Function `burn_extend`](#0x3_coin_burn_extend)
 -  [Function `unpack`](#0x3_coin_unpack)
@@ -279,18 +279,6 @@ Returns <code><b>true</b></code> if the type <code>CoinType</code> is an registe
 
 
 
-<a name="0x3_coin_coin_info"></a>
-
-## Function `coin_info`
-
-Borrow the CoinInfo<CoinType>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info">coin_info</a>&lt;CoinType: key&gt;(ctx: &<a href="_Context">context::Context</a>): &<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;
-</code></pre>
-
-
-
 <a name="0x3_coin_coin_info_id"></a>
 
 ## Function `coin_info_id`
@@ -439,6 +427,31 @@ Create a new <code><a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;</cod
 
 
 
+<a name="0x3_coin_borrow_coin_info"></a>
+
+## Function `borrow_coin_info`
+
+Borrow the CoinInfo<CoinType>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_borrow_coin_info">borrow_coin_info</a>&lt;CoinType: key&gt;(ctx: &<a href="_Context">context::Context</a>): &<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;
+</code></pre>
+
+
+
+<a name="0x3_coin_borrow_mut_coin_info_extend"></a>
+
+## Function `borrow_mut_coin_info_extend`
+
+Borrow the mutable CoinInfo<CoinType>
+This function is protected by <code>private_generics</code>, so it can only be called by the <code>CoinType</code> module.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_borrow_mut_coin_info_extend">borrow_mut_coin_info_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): &<b>mut</b> <a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;
+</code></pre>
+
+
+
 <a name="0x3_coin_register_extend"></a>
 
 ## Function `register_extend`
@@ -448,19 +461,6 @@ This function is protected by <code>private_generics</code>, so it can only be c
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_register_extend">register_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, name: <a href="_String">string::String</a>, symbol: <a href="_String">string::String</a>, decimals: u8): &<b>mut</b> <a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;
-</code></pre>
-
-
-
-<a name="0x3_coin_coin_info_mut_extend"></a>
-
-## Function `coin_info_mut_extend`
-
-Borrow the mutable CoinInfo<CoinType>
-This function is protected by <code>private_generics</code>, so it can only be called by the <code>CoinType</code> module.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info_mut_extend">coin_info_mut_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): &<b>mut</b> <a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;
 </code></pre>
 
 

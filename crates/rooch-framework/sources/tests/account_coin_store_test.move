@@ -29,7 +29,7 @@ module rooch_framework::account_coin_store_test{
 
     #[test_only]
     fun mint_and_deposit(ctx: &mut Context,to_address: address, amount: u256) {
-        let coins_minted = coin::mint_extend<FakeCoin>(coin::coin_info_mut_extend(ctx), amount);
+        let coins_minted = coin::mint_extend<FakeCoin>(coin::borrow_mut_coin_info_extend(ctx), amount);
         account_coin_store::deposit(ctx, to_address, coins_minted);
     }
 
@@ -73,15 +73,15 @@ module rooch_framework::account_coin_store_test{
 
         register_fake_coin(&mut source_ctx, 9);
 
-        let coins_minted = mint_extend<FakeCoin>(coin::coin_info_mut_extend(&mut source_ctx), 100);
+        let coins_minted = mint_extend<FakeCoin>(coin::borrow_mut_coin_info_extend(&mut source_ctx), 100);
         deposit(&mut source_ctx, source_addr, coins_minted);
         assert!(balance<FakeCoin>(&source_ctx, source_addr) == 100, 0);
-        assert!(supply<FakeCoin>(coin::coin_info<FakeCoin>(&source_ctx)) == 100, 1);
+        assert!(supply<FakeCoin>(coin::borrow_coin_info<FakeCoin>(&source_ctx)) == 100, 1);
 
         let coin = withdraw_extend<FakeCoin>(&mut source_ctx, source_addr, 10);
-        burn_extend<FakeCoin>(coin::coin_info_mut_extend(&mut source_ctx), coin);
+        burn_extend<FakeCoin>(coin::borrow_mut_coin_info_extend(&mut source_ctx), coin);
         assert!(balance<FakeCoin>(&source_ctx, source_addr) == 90, 2);
-        assert!(supply<FakeCoin>(coin::coin_info<FakeCoin>(&source_ctx)) == 90, 3);
+        assert!(supply<FakeCoin>(coin::borrow_coin_info<FakeCoin>(&source_ctx)) == 90, 3);
 
         moveos_std::context::drop_test_context(source_ctx);
     }

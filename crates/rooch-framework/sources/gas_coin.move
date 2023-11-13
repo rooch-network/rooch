@@ -21,7 +21,7 @@ module rooch_framework::gas_coin {
     }
 
     fun mint(ctx: &mut Context, amount: u256): Coin<GasCoin> {
-        coin::mint_extend<GasCoin>(coin::coin_info_mut_extend<GasCoin>(ctx), amount)
+        coin::mint_extend<GasCoin>(coin::borrow_mut_coin_info_extend<GasCoin>(ctx), amount)
     }
 
     #[test_only]
@@ -30,7 +30,7 @@ module rooch_framework::gas_coin {
     }
 
     public fun burn(ctx: &mut Context, coin: Coin<GasCoin>) {
-        coin::burn_extend<GasCoin>(coin::coin_info_mut_extend<GasCoin>(ctx), coin);
+        coin::burn_extend<GasCoin>(coin::borrow_mut_coin_info_extend<GasCoin>(ctx), coin);
     }
 
     /// deduct gas coin from the given account.
