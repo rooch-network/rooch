@@ -9,7 +9,7 @@ use crate::actor::{
     executor::ExecutorActor,
     messages::{
         AnnotatedStatesMessage, ExecuteViewFunctionMessage, GetEventsByEventHandleMessage,
-        GetEventsMessage, ResolveMessage, StatesMessage, ValidateTransactionMessage,
+        ResolveMessage, StatesMessage, ValidateTransactionMessage,
     },
 };
 use anyhow::Result;
@@ -24,7 +24,6 @@ use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::{access_path::AccessPath, transaction::VerifiedMoveOSTransaction};
 use moveos_types::{
-    event_filter::EventFilter,
     moveos_std::event::AnnotatedEvent,
     state::{AnnotatedState, State},
 };
@@ -136,10 +135,6 @@ impl ExecutorProxy {
         self.actor
             .send(GetEventsByEventIDsMessage { event_ids })
             .await?
-    }
-
-    pub async fn get_events(&self, filter: EventFilter) -> Result<Vec<AnnotatedEvent>> {
-        self.actor.send(GetEventsMessage { filter }).await?
     }
 
     pub async fn get_transaction_execution_infos_by_hash(

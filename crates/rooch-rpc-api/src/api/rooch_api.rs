@@ -2,16 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::account_view::BalanceInfoView;
+use crate::jsonrpc_types::event_view::EventFilterView;
 use crate::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use crate::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, BalanceInfoPageView,
     BytesView, EventOptions, EventPageView, ExecuteTransactionResponseView, FunctionCallView,
-    H256View, StateOptions, StateView, StatesPageView, StrView, StructTagView,
-    TransactionWithInfoPageView,
+    H256View, IndexerEventPageView, StateOptions, StateView, StatesPageView, StrView,
+    StructTagView, TransactionWithInfoPageView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use rooch_open_rpc_macros::open_rpc;
+use rooch_types::indexer::event_filter::IndexerEventID;
 
 #[open_rpc(namespace = "rooch")]
 #[rpc(server, client, namespace = "rooch")]
@@ -100,4 +102,15 @@ pub trait RoochAPI {
         cursor: Option<BytesView>,
         limit: Option<StrView<usize>>,
     ) -> RpcResult<BalanceInfoPageView>;
+
+    /// Query the events indexer by event filter
+    #[method(name = "queryEvents")]
+    async fn query_events(
+        &self,
+        filter: EventFilterView,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerEventID>,
+        limit: Option<StrView<usize>>,
+        descending_order: Option<bool>,
+    ) -> RpcResult<IndexerEventPageView>;
 }

@@ -8,10 +8,11 @@ use jsonrpsee::{
     RpcModule,
 };
 use moveos_types::h256::H256;
-use rooch_rpc_api::jsonrpc_types::{account_view::BalanceInfoView, StateOptions};
+use rooch_rpc_api::jsonrpc_types::event_view::{EventFilterView, EventView, IndexerEventView};
 use rooch_rpc_api::jsonrpc_types::{
-    transaction_view::TransactionWithInfoView, EventOptions, EventView,
+    account_view::BalanceInfoView, IndexerEventPageView, StateOptions,
 };
+use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AccountAddressView, BalanceInfoPageView, EventPageView,
     ExecuteTransactionResponseView, FunctionCallView, H256View, StateView, StatesPageView, StrView,
@@ -26,6 +27,7 @@ use rooch_rpc_api::{
     api::{MAX_RESULT_LIMIT, MAX_RESULT_LIMIT_USIZE},
     jsonrpc_types::BytesView,
 };
+use rooch_types::indexer::event_filter::IndexerEventID;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::{AbstractTransaction, TypedTransaction};
 use std::cmp::min;
@@ -330,6 +332,38 @@ impl RoochAPIServer for RoochServer {
                 .into_iter()
                 .map(|(_, balance_info)| balance_info)
                 .collect(),
+            next_cursor,
+            has_next_page,
+        })
+    }
+
+    async fn query_events(
+        &self,
+        filter: EventFilterView,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerEventID>,
+        limit: Option<StrView<usize>>,
+        descending_order: Option<bool>,
+    ) -> RpcResult<IndexerEventPageView> {
+        // let limit = cap_page_limit(limit);
+        // if limit == 0 {
+        //     return Ok(EventPage::empty());
+        // }
+        let limit = 10;
+        let descending_order = descending_order.unwrap_or(true);
+        let mut results = self
+            .rpc_service
+            .query_events(filter.into(), cursor, limit + 1, descending_order)
+            .await?
+            .into_iter()
+            .map(IndexerEventView::from)
+            .collect::<Vec<_>>();
+
+        let has_next_page = results.len() > limit;
+        results.truncate(limit);
+        let next_cursor = results.last().map(|e| e.indexer_event_id.clone());
+        Ok(IndexerEventPageView {
+            data: results,
             next_cursor,
             has_next_page,
         })

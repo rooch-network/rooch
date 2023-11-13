@@ -3,13 +3,15 @@
 
 use crate::actor::indexer::IndexerActor;
 use crate::actor::messages::{
-    IndexerEventsMessage, IndexerTransactionMessage, QueryTransactionsByHashMessage,
+    IndexerEventsMessage, IndexerTransactionMessage, QueryIndexerEventsMessage,
+    QueryTransactionsByHashMessage,
 };
 use anyhow::Result;
 use coerce::actor::ActorRef;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
+use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::transaction::{TransactionSequenceInfo, TransactionWithInfo, TypedTransaction};
 
 #[derive(Clone)]
@@ -62,6 +64,24 @@ impl IndexerProxy {
     ) -> Result<Vec<Option<TransactionWithInfo>>> {
         self.actor
             .send(QueryTransactionsByHashMessage { tx_hashes })
+            .await?
+    }
+
+    pub async fn query_events(
+        &self,
+        filter: EventFilter,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerEventID>,
+        limit: usize,
+        descending_order: bool,
+    ) -> Result<Vec<IndexerEvent>> {
+        self.actor
+            .send(QueryIndexerEventsMessage {
+                filter,
+                cursor,
+                limit,
+                descending_order,
+            })
             .await?
     }
 }

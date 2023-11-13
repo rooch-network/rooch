@@ -23,7 +23,6 @@ CREATE TABLE transactions (
     tx_order_authenticator_payload      BLOB         NOT NULL,
 
     created_at                          BIGINT       NOT NULL,
-    updated_at                          BIGINT       NOT NULL,
     UNIQUE (tx_hash)
 );
 

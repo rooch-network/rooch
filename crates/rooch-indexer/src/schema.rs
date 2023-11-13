@@ -14,16 +14,6 @@ diesel::table! {
         tx_order -> BigInt,
         sender -> Text,
         created_at -> BigInt,
-        updated_at -> BigInt,
-    }
-}
-
-diesel::table! {
-    posts (id) {
-        id -> Integer,
-        title -> Text,
-        body -> Text,
-        published -> Bool,
     }
 }
 
@@ -50,8 +40,7 @@ diesel::table! {
         tx_order_auth_validator_id -> BigInt,
         tx_order_authenticator_payload -> Binary,
         created_at -> BigInt,
-        updated_at -> BigInt,
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(events, posts, transactions,);
+diesel::allow_tables_to_appear_in_same_query!(events, transactions,);

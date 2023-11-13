@@ -6,6 +6,7 @@ use coerce::actor::message::Message;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
+use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::transaction::{TransactionSequenceInfo, TransactionWithInfo, TypedTransaction};
 use serde::{Deserialize, Serialize};
 
@@ -43,4 +44,18 @@ pub struct QueryTransactionsByHashMessage {
 
 impl Message for QueryTransactionsByHashMessage {
     type Result = Result<Vec<Option<TransactionWithInfo>>>;
+}
+
+/// Query Indexer Events Message
+#[derive(Debug, Serialize, Deserialize)]
+pub struct QueryIndexerEventsMessage {
+    pub filter: EventFilter,
+    // exclusive cursor if `Some`, otherwise start from the beginning
+    pub cursor: Option<IndexerEventID>,
+    pub limit: usize,
+    pub descending_order: bool,
+}
+
+impl Message for QueryIndexerEventsMessage {
+    type Result = Result<Vec<IndexerEvent>>;
 }

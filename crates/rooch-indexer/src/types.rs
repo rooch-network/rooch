@@ -7,9 +7,10 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
-use moveos_types::moveos_std::event::Event;
+use moveos_types::moveos_std::event::{Event, EventID};
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
+use rooch_types::indexer::event_filter::{IndexerEvent, IndexerEventID};
 use rooch_types::multichain_id::MultiChainID;
 use rooch_types::transaction::{
     AbstractTransaction, TransactionSequenceInfo, TransactionType, TypedTransaction,
@@ -51,7 +52,6 @@ pub struct IndexedTransaction {
     pub tx_order_authenticator_payload: Vec<u8>,
 
     pub created_at: u64,
-    pub updated_at: u64,
 }
 
 impl IndexedTransaction {
@@ -99,7 +99,6 @@ impl IndexedTransaction {
 
             //TODO record transaction timestamp
             created_at: 0,
-            updated_at: 0,
         };
         Ok(indexed_transaction)
     }
@@ -126,7 +125,6 @@ pub struct IndexedEvent {
     pub sender: AccountAddress,
 
     pub created_at: u64,
-    pub updated_at: u64,
 }
 
 impl IndexedEvent {
@@ -149,7 +147,20 @@ impl IndexedEvent {
 
             //TODO record transaction timestamp
             created_at: 0,
-            updated_at: 0,
+        }
+    }
+}
+
+impl From<IndexedEvent> for IndexerEvent {
+    fn from(event: IndexedEvent) -> Self {
+        Self {
+            indexer_event_id: IndexerEventID::new(event.tx_order, event.event_index),
+            event_id: EventID::new(event.event_handle_id, event.event_seq),
+            event_type: event.event_type,
+            event_data: event.event_data,
+            tx_hash: event.tx_hash,
+            sender: event.sender,
+            created_at: event.created_at,
         }
     }
 }

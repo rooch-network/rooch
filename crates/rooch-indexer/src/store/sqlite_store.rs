@@ -39,7 +39,6 @@ impl SqliteIndexerStore {
 
         diesel::insert_into(transactions::table)
             .values(transactions.as_slice())
-            // .on_conflict_do_nothing()
             .execute(&mut connection)
             .map_err(IndexerError::from)
             .context("Failed to write transactions to SQLiteDB")?;
@@ -60,7 +59,6 @@ impl SqliteIndexerStore {
 
         diesel::insert_into(events::table)
             .values(events.as_slice())
-            // .on_conflict_do_nothing()
             .execute(&mut connection)
             .map_err(IndexerError::from)
             .context("Failed to write events to SQLiteDB")?;

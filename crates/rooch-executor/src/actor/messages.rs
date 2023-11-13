@@ -6,7 +6,6 @@ use coerce::actor::message::Message;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
-use moveos_types::event_filter::EventFilter;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{AnnotatedEvent, EventID};
@@ -122,15 +121,6 @@ pub struct GetEventsByEventIDsMessage {
 
 impl Message for GetEventsByEventIDsMessage {
     type Result = Result<Vec<Option<AnnotatedEvent>>>;
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetEventsMessage {
-    pub filter: EventFilter,
-}
-
-impl Message for GetEventsMessage {
-    type Result = Result<Vec<AnnotatedEvent>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

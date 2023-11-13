@@ -2,23 +2,30 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    IndexerEventsMessage, IndexerTransactionMessage, QueryTransactionsByHashMessage,
+    IndexerEventsMessage, IndexerTransactionMessage, QueryIndexerEventsMessage,
+    QueryTransactionsByHashMessage,
 };
+use crate::indexer_reader::IndexerReader;
 use crate::store::traits::IndexerStoreTrait;
 use crate::types::{IndexedEvent, IndexedTransaction};
 use crate::IndexerStore;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use rooch_types::indexer::event_filter::IndexerEvent;
 use rooch_types::transaction::TransactionWithInfo;
 
 pub struct IndexerActor {
     indexer_store: IndexerStore,
+    indexer_reader: IndexerReader,
 }
 
 impl IndexerActor {
-    pub fn new(indexer_store: IndexerStore) -> Result<Self> {
-        Ok(Self { indexer_store })
+    pub fn new(indexer_store: IndexerStore, indexer_reader: IndexerReader) -> Result<Self> {
+        Ok(Self {
+            indexer_store,
+            indexer_reader,
+        })
     }
 }
 
@@ -84,5 +91,24 @@ impl Handler<QueryTransactionsByHashMessage> for IndexerActor {
         self.indexer_store
             .query_transactions_by_hash(msg.tx_hashes)
             .map_err(|e| anyhow!(format!("Failed to query transactions by hash: {:?}", e)))
+    }
+}
+
+#[async_trait]
+impl Handler<QueryIndexerEventsMessage> for IndexerActor {
+    async fn handle(
+        &mut self,
+        msg: QueryIndexerEventsMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<IndexerEvent>> {
+        let QueryIndexerEventsMessage {
+            filter,
+            cursor,
+            limit,
+            descending_order,
+        } = msg;
+        self.indexer_reader
+            .query_events_with_filter(filter, cursor, limit, descending_order)
+            .map_err(|e| anyhow!(format!("Failed to query indexer events: {:?}", e)))
     }
 }

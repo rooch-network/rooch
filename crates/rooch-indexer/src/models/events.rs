@@ -36,8 +36,6 @@ pub struct StoredEvent {
 
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub created_at: i64,
-    #[diesel(sql_type = diesel::sql_types::BigInt)]
-    pub updated_at: i64,
 }
 
 impl From<IndexedEvent> for StoredEvent {
@@ -55,7 +53,6 @@ impl From<IndexedEvent> for StoredEvent {
             sender: event.sender.to_string(),
 
             created_at: event.created_at as i64,
-            updated_at: event.updated_at as i64,
         }
     }
 }

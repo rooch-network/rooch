@@ -3,8 +3,8 @@
 
 use super::messages::{
     AnnotatedStatesMessage, ExecuteTransactionMessage, ExecuteTransactionResult,
-    ExecuteViewFunctionMessage, GetEventsByEventHandleMessage, GetEventsMessage, ResolveMessage,
-    StatesMessage, ValidateTransactionMessage,
+    ExecuteViewFunctionMessage, GetEventsByEventHandleMessage, ResolveMessage, StatesMessage,
+    ValidateTransactionMessage,
 };
 use crate::actor::messages::{
     GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
@@ -639,29 +639,6 @@ impl Handler<GetEventsByEventIDsMessage> for ExecutorActor {
                     Ok(Some(AnnotatedEvent::new(event, event_move_value)))
                 }
                 None => Ok(None),
-            })
-            .collect::<Result<Vec<_>>>()
-    }
-}
-
-#[async_trait]
-impl Handler<GetEventsMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: GetEventsMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Vec<AnnotatedEvent>> {
-        let GetEventsMessage { filter } = msg;
-        let event_store = self.moveos.event_store();
-        let resolver = self.moveos.moveos_resolver();
-
-        let events = event_store.get_events_with_filter(filter)?;
-        events
-            .into_iter()
-            .map(|event| {
-                let event_move_value = MoveValueAnnotator::new(resolver)
-                    .view_resource(&event.event_type, &event.event_data)?;
-                Ok(AnnotatedEvent::new(event, event_move_value))
             })
             .collect::<Result<Vec<_>>>()
     }

@@ -5,7 +5,6 @@ use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
-use moveos_types::event_filter::EventFilter;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{AnnotatedEvent, EventID};
@@ -19,6 +18,7 @@ use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponse, ExecuteTransactio
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::account::Account;
 use rooch_types::address::{MultiChainAddress, RoochAddress};
+use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::TypedTransaction;
@@ -166,11 +166,6 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_events(&self, filter: EventFilter) -> Result<Vec<AnnotatedEvent>> {
-        let resp = self.executor.get_events(filter).await?;
-        Ok(resp)
-    }
-
     pub async fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>> {
         let resp = self.sequencer.get_transaction_by_hash(hash).await?;
         Ok(resp)
@@ -230,6 +225,22 @@ impl RpcService {
 
     pub async fn get_sequencer_order(&self) -> Result<Option<SequencerOrder>> {
         let resp = self.sequencer.get_sequencer_order().await?;
+        Ok(resp)
+    }
+
+    pub async fn query_events(
+        &self,
+        filter: EventFilter,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerEventID>,
+        limit: usize,
+        descending_order: bool,
+    ) -> Result<Vec<IndexerEvent>> {
+        // ) -> Result<Vec<AnnotatedEvent>> {
+        let resp = self
+            .indexer
+            .query_events(filter, cursor, limit, descending_order)
+            .await?;
         Ok(resp)
     }
 }
