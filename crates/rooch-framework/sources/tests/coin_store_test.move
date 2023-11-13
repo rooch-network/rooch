@@ -58,7 +58,7 @@ module rooch_framework::coin_store_test{
 
             assert!(coin_store::balance(&coin_store_obj) == 100, 1);
 
-            let coin_withdrawn = coin_store::withdraw<FakeCoin>(&mut coin_store_obj, 10);
+            let coin_withdrawn = coin_store::withdraw(&mut coin_store_obj, 10);
 
             assert!(coin::value(&coin_withdrawn) == 10, 2);
             assert!(coin_store::balance(&coin_store_obj) == 90, 3);
@@ -108,7 +108,7 @@ module rooch_framework::coin_store_test{
 
         mint_and_deposit(&mut ctx, account_addr, 100);
         freeze_account_coin_store(&mut ctx, account_addr, true);
-        let coin = account_coin_store::withdraw<FakeCoin>(&mut ctx, &account, 10);
+        let coin = account_coin_store::withdraw(&mut ctx, &account, 10);
         coin::burn_extend(coin::coin_info_mut_extend<FakeCoin>(&mut ctx), coin);
 
         moveos_std::context::drop_test_context(ctx);

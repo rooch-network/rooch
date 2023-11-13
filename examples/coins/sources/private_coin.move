@@ -19,7 +19,7 @@ module coins::private_coin {
     struct PRC has key {}
 
     struct Treasury has key {
-        coin_store: Object<CoinStore>
+        coin_store: Object<CoinStore<PRC>>
     }
 
     fun init(ctx: &mut Context) {
@@ -29,16 +29,17 @@ module coins::private_coin {
             string::utf8(b"PRC"),
             1,
         );
-        let coins_signer = signer::module_signer<PRC>();
-        let coin_store_ref = coin_store::create_coin_store_extend<PRC>(ctx);
-        context::move_resource_to(ctx, &coins_signer, Treasury { coin_store: coin_store_ref });
+
+        let coin_store = coin_store::create_coin_store_extend<PRC>(ctx);
+        context::new_singleton(ctx, Treasury { coin_store });
     }
 
     /// Provide a faucet to give out coins to users
     /// In a real world scenario, the coins should be given out in the application business logic.
     public entry fun faucet(ctx: &mut Context, account: &signer) {
         let account_addr = signer::address_of(account);
-        let coin = coin::mint_extend<PRC>(ctx, 10000);
+        let coin_info = coin::coin_info_mut_extend<PRC>(ctx);
+        let coin = coin::mint_extend<PRC>(coin_info, 10000);
         account_coin_store::deposit_extend(ctx, account_addr, coin);
     }
 
@@ -56,7 +57,8 @@ module coins::private_coin {
     }
 
     fun deposit_to_treaury(ctx: &mut Context, coin: Coin<PRC>) {
-        let treasury = context::borrow_mut_resource<Treasury>(ctx, @coins);
-        coin_store::deposit(object::borrow_mut(&mut treasury.coin_store), coin);
+        let treasury_object_id = object::singleton_object_id<Treasury>();
+        let treasury_obj = context::borrow_mut_object_extend<Treasury>(ctx, treasury_object_id);
+        coin_store::deposit(&mut object::borrow_mut(treasury_obj).coin_store, coin);
     }
 }

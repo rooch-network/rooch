@@ -266,7 +266,7 @@ module rooch_framework::account_coin_store {
         amount: u256,
     ): Coin<CoinType> {
         let coin_store = borrow_mut_account_coin_store<CoinType>(ctx, addr);
-        coin_store::withdraw<CoinType>(coin_store, amount)
+        coin_store::withdraw(coin_store, amount)
     }
 
     fun deposit_internal<CoinType: key>(ctx: &mut Context, addr: address, coin: Coin<CoinType>) {
