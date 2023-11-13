@@ -12,7 +12,7 @@
 -  [Function `genesis_init`](#0x3_account_coin_store_genesis_init)
 -  [Function `init_account_coin_stores`](#0x3_account_coin_store_init_account_coin_stores)
 -  [Function `balance`](#0x3_account_coin_store_balance)
--  [Function `coin_store_id`](#0x3_account_coin_store_coin_store_id)
+-  [Function `account_coin_store_id`](#0x3_account_coin_store_account_coin_store_id)
 -  [Function `coin_stores_handle`](#0x3_account_coin_store_coin_stores_handle)
 -  [Function `is_accept_coin`](#0x3_account_coin_store_is_accept_coin)
 -  [Function `can_auto_accept_coin`](#0x3_account_coin_store_can_auto_accept_coin)
@@ -133,14 +133,15 @@ Returns the balance of <code>addr</code> for provided <code>CoinType</code>.
 
 
 
-<a name="0x3_account_coin_store_coin_store_id"></a>
+<a name="0x3_account_coin_store_account_coin_store_id"></a>
 
-## Function `coin_store_id`
+## Function `account_coin_store_id`
 
 Return the account CoinStore object id for addr
+Because the account CoinStore is a account singleton object, the id is fixed for each addr and CoinType
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_coin_store_id">coin_store_id</a>&lt;CoinType: key&gt;(ctx: &<a href="_Context">context::Context</a>, addr: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_account_coin_store_id">account_coin_store_id</a>&lt;CoinType: key&gt;(addr: <b>address</b>): <a href="_ObjectID">object::ObjectID</a>
 </code></pre>
 
 

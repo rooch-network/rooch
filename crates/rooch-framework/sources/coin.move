@@ -220,6 +220,7 @@ module rooch_framework::coin {
     /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
     public fun borrow_mut_coin_info_extend<CoinType: key>(ctx: &mut Context) : &mut CoinInfo<CoinType> {
         let coin_info_id = coin_info_id<CoinType>();
+        assert!(context::exists_object<CoinInfo<CoinType>>(ctx, coin_info_id), error::not_found(ErrorCoinInfosNotFound));
         let coin_info_obj = context::borrow_mut_object_extend<CoinInfo<CoinType>>(ctx, coin_info_id);
         object::borrow_mut(coin_info_obj)
     }

@@ -17,12 +17,16 @@
 -  [Function `balance`](#0x3_coin_store_balance)
 -  [Function `is_frozen`](#0x3_coin_store_is_frozen)
 -  [Function `withdraw`](#0x3_coin_store_withdraw)
+-  [Function `withdraw_extend`](#0x3_coin_store_withdraw_extend)
 -  [Function `deposit`](#0x3_coin_store_deposit)
+-  [Function `deposit_extend`](#0x3_coin_store_deposit_extend)
 -  [Function `transfer`](#0x3_coin_store_transfer)
 -  [Function `freeze_coin_store_extend`](#0x3_coin_store_freeze_coin_store_extend)
 -  [Function `create_coin_store_internal`](#0x3_coin_store_create_coin_store_internal)
 -  [Function `create_account_coin_store`](#0x3_coin_store_create_account_coin_store)
 -  [Function `borrow_mut_coin_store`](#0x3_coin_store_borrow_mut_coin_store)
+-  [Function `withdraw_internal`](#0x3_coin_store_withdraw_internal)
+-  [Function `deposit_internal`](#0x3_coin_store_deposit_internal)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -205,9 +209,23 @@ Remove the CoinStore Object, return the Coin<T> in balance
 ## Function `withdraw`
 
 Withdraw <code>amount</code> Coin<CoinType> from the balance of the passed-in <code><a href="coin_store.md#0x3_coin_store">coin_store</a></code>
+This function requires the <code>CoinType</code> must has <code>key</code> and <code>store</code> ability
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_withdraw">withdraw</a>&lt;CoinType: key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_withdraw">withdraw</a>&lt;CoinType: store, key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+</code></pre>
+
+
+
+<a name="0x3_coin_store_withdraw_extend"></a>
+
+## Function `withdraw_extend`
+
+Withdraw <code>amount</code> Coin<CoinType> from the balance of the passed-in <code><a href="coin_store.md#0x3_coin_store">coin_store</a></code>
+This function is for the <code>CoinType</code> module to extend
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_withdraw_extend">withdraw_extend</a>&lt;CoinType: key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>
 
 
@@ -217,9 +235,23 @@ Withdraw <code>amount</code> Coin<CoinType> from the balance of the passed-in <c
 ## Function `deposit`
 
 Deposit <code>amount</code> Coin<CoinType> to the balance of the passed-in <code><a href="coin_store.md#0x3_coin_store">coin_store</a></code>
+This function requires the <code>CoinType</code> must has <code>key</code> and <code>store</code> ability
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_deposit">deposit</a>&lt;CoinType: key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_deposit">deposit</a>&lt;CoinType: store, key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
+</code></pre>
+
+
+
+<a name="0x3_coin_store_deposit_extend"></a>
+
+## Function `deposit_extend`
+
+Deposit <code>amount</code> Coin<CoinType> to the balance of the passed-in <code><a href="coin_store.md#0x3_coin_store">coin_store</a></code>
+This function is for the <code>CoinType</code> module to extend
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_deposit_extend">deposit_extend</a>&lt;CoinType: key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
 </code></pre>
 
 
@@ -278,4 +310,27 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_borrow_mut_coin_store">borrow_mut_coin_store</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, object_id: <a href="_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;
+</code></pre>
+
+
+
+<a name="0x3_coin_store_withdraw_internal"></a>
+
+## Function `withdraw_internal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_withdraw_internal">withdraw_internal</a>&lt;CoinType: key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+</code></pre>
+
+
+
+<a name="0x3_coin_store_deposit_internal"></a>
+
+## Function `deposit_internal`
+
+Deposit <code>amount</code> Coin<CoinType> to the balance of the passed-in <code><a href="coin_store.md#0x3_coin_store">coin_store</a></code>
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_deposit_internal">deposit_internal</a>&lt;CoinType: key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
 </code></pre>

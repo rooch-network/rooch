@@ -3,7 +3,6 @@
 module rooch_framework::coin_store_test{
     use std::signer;
     use std::string;
-    use std::option;
     use moveos_std::context::{Context};
     use rooch_framework::account;
     use rooch_framework::coin::{Self, CoinInfo};
@@ -39,8 +38,7 @@ module rooch_framework::coin_store_test{
         addr: address,
         frozen: bool,
     ) {
-        let coin_store_id_opt = account_coin_store::coin_store_id<FakeCoin>(ctx, addr);
-        let coin_store_id = option::extract(&mut coin_store_id_opt);
+        let coin_store_id = account_coin_store::account_coin_store_id<FakeCoin>(addr);
         coin_store::freeze_coin_store_extend<FakeCoin>(ctx, coin_store_id, frozen);
     }
 

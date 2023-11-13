@@ -50,7 +50,7 @@ module rooch_framework::gas_coin {
     }
 
     /// TODO find a way to protect this function from DOS attack.
-    public entry fun faucet_entry(ctx: &mut Context, account: &signer) {
+    public entry fun faucet_entry(ctx: &mut Context, account: &signer) { 
         //100 RGC
         let amount = 100_000_000_000_000_000_000u256;
         let addr = signer::address_of(account);

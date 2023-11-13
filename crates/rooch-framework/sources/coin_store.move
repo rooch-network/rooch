@@ -100,31 +100,29 @@ module rooch_framework::coin_store {
     }
 
     /// Withdraw `amount` Coin<CoinType> from the balance of the passed-in `coin_store`
-    public fun withdraw<CoinType: key>(coin_store_obj: &mut Object<CoinStore<CoinType>>, amount: u256) : Coin<CoinType> {
-        let object_id = object::id(coin_store_obj);
-        let coin_store = object::borrow_mut(coin_store_obj);
-        check_coin_store_not_frozen(coin_store);
-        let coin = extract_from_balance<CoinType>(coin_store, amount);
-        event::emit(WithdrawEvent{
-            coin_store_id: object_id,
-            coin_type: coin_store.coin_type,
-            amount: amount,
-        });
-        coin
+    /// This function requires the `CoinType` must has `key` and `store` ability
+    public fun withdraw<CoinType: key + store>(coin_store_obj: &mut Object<CoinStore<CoinType>>, amount: u256) : Coin<CoinType> {
+        withdraw_internal(coin_store_obj, amount)
+    }
+
+    #[private_generics(CoinType)]
+    /// Withdraw `amount` Coin<CoinType> from the balance of the passed-in `coin_store`
+    /// This function is for the `CoinType` module to extend
+    public fun withdraw_extend<CoinType: key>(coin_store_obj: &mut Object<CoinStore<CoinType>>, amount: u256) : Coin<CoinType> {
+        withdraw_internal(coin_store_obj, amount)
     }
 
     /// Deposit `amount` Coin<CoinType> to the balance of the passed-in `coin_store`
-    public fun deposit<CoinType: key>(coin_store_obj: &mut Object<CoinStore<CoinType>>, coin: Coin<CoinType>) {
-        let object_id = object::id(coin_store_obj);
-        let coin_store = object::borrow_mut(coin_store_obj);
-        check_coin_store_not_frozen(coin_store);
-        let amount = coin::value(&coin);
-        merge_to_balance<CoinType>(coin_store, coin);
-        event::emit(DepositEvent{
-            coin_store_id: object_id,
-            coin_type: coin_store.coin_type,
-            amount,
-        });
+    /// This function requires the `CoinType` must has `key` and `store` ability
+    public fun deposit<CoinType: key + store>(coin_store_obj: &mut Object<CoinStore<CoinType>>, coin: Coin<CoinType>) {
+        deposit_internal(coin_store_obj, coin)
+    }
+
+    #[private_generics(CoinType)]
+    /// Deposit `amount` Coin<CoinType> to the balance of the passed-in `coin_store`
+    /// This function is for the `CoinType` module to extend
+    public fun deposit_extend<CoinType: key>(coin_store_obj: &mut Object<CoinStore<CoinType>>, coin: Coin<CoinType>) {
+        deposit_internal(coin_store_obj, coin)
     }
 
     // We do not allow to transfer a CoinStore to another account, CoinStore is default ownerd by the system.
@@ -173,6 +171,7 @@ module rooch_framework::coin_store {
     }
 
     public(friend) fun borrow_mut_coin_store<CoinType: key>(ctx: &mut Context, object_id: ObjectID): &mut Object<CoinStore<CoinType>>{
+        assert!(context::exists_object<CoinStore<CoinType>>(ctx, object_id), error::invalid_argument(ErrorCoinStoreNotFound));
         context::borrow_mut_object_extend<CoinStore<CoinType>>(ctx, object_id)
     }
 
@@ -191,5 +190,32 @@ module rooch_framework::coin_store {
     fun merge_to_balance<CoinType: key>(coin_store: &mut CoinStore<CoinType>, source_coin: Coin<CoinType>) {
         let value = coin::unpack(source_coin);
         coin_store.balance.value = coin_store.balance.value + value;
+    }
+
+    public(friend) fun withdraw_internal<CoinType: key>(coin_store_obj: &mut Object<CoinStore<CoinType>>, amount: u256) : Coin<CoinType> {
+        let object_id = object::id(coin_store_obj);
+        let coin_store = object::borrow_mut(coin_store_obj);
+        check_coin_store_not_frozen(coin_store);
+        let coin = extract_from_balance<CoinType>(coin_store, amount);
+        event::emit(WithdrawEvent{
+            coin_store_id: object_id,
+            coin_type: coin_store.coin_type,
+            amount: amount,
+        });
+        coin
+    }
+
+    /// Deposit `amount` Coin<CoinType> to the balance of the passed-in `coin_store`
+    public(friend) fun deposit_internal<CoinType: key>(coin_store_obj: &mut Object<CoinStore<CoinType>>, coin: Coin<CoinType>) {
+        let object_id = object::id(coin_store_obj);
+        let coin_store = object::borrow_mut(coin_store_obj);
+        check_coin_store_not_frozen(coin_store);
+        let amount = coin::value(&coin);
+        merge_to_balance<CoinType>(coin_store, coin);
+        event::emit(DepositEvent{
+            coin_store_id: object_id,
+            coin_type: coin_store.coin_type,
+            amount,
+        });
     }
 }
