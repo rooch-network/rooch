@@ -36,7 +36,7 @@ It interacts with the other modules in the following ways:
 
 ## Resource `Timestamp`
 
-A singleton object holding the current Unix time in milliseconds
+A object holding the current Unix time in milliseconds
 
 
 <pre><code><b>struct</b> <a href="timestamp.md#0x3_timestamp_Timestamp">Timestamp</a> <b>has</b> key

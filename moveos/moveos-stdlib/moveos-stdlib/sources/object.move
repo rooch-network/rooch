@@ -71,6 +71,14 @@ module moveos_std::object {
         UID{id}
     }
 
+    struct TypedUID<phantom T> has drop {
+        id: ObjectID,
+    }
+
+    public(friend) fun new_typed_uid<T>(id: ObjectID): TypedUID<T> {
+        TypedUID{id}
+    }
+
     /// Generate a new ObjectID from an address
     public(friend) fun address_to_object_id(address: address): ObjectID {
         ObjectID { id: address }
@@ -80,7 +88,7 @@ module moveos_std::object {
         raw_table::new_table_handle(object_id.id)
     }
 
-    public fun singleton_object_id<T>(): ObjectID {
+    public fun named_object_id<T>(): ObjectID {
         address_to_object_id(
             address::from_bytes(
                 hash::sha3_256(
@@ -90,7 +98,7 @@ module moveos_std::object {
         )
     }
 
-    public fun account_singleton_object_id<T>(account: address): ObjectID {
+    public fun account_named_object_id<T>(account: address): ObjectID {
         let bytes = bcs::to_bytes(&account);
         vector::append(&mut bytes, *std::string::bytes(&type_info::type_name<T>()));
         address_to_object_id(
@@ -103,7 +111,7 @@ module moveos_std::object {
     #[private_generics(T)]
     /// Create a new Object, Add the Object to the global object storage and return the Object
     /// Note: the default owner is the SystemOwned Object, the caller should explicitly transfer the Object to the owner.
-    public fun new<T: key>(id: UID, value: T): Object<T> {
+    public fun new<T: key>(id: TypedUID<T>, value: T): Object<T> {
         new_with_id(id.id, value)
     }
 
@@ -111,27 +119,6 @@ module moveos_std::object {
         let obj_entity = new_internal(id, value);
         add_to_global(obj_entity);
         Object{id}
-    }
-
-    /// Create a new singleton object, singleton object is always owned by `System`
-    /// Singleton object means the object of `T` is only one instance in the Object Storage.
-    public(friend) fun new_singleton<T: key>(value: T): &mut Object<T> {
-        let id = singleton_object_id<T>();
-        let obj_entity = new_internal(id, value);
-        to_bound_internal(&mut obj_entity);
-        add_to_global(obj_entity);
-        as_mut_ref_inner<Object<T>>(id)
-    }
-
-    /// Create a new account singleton object, account singleton object is always owned by the account
-    /// One account can only have one Account Singleton Object of `T` in the Object Storage.
-    public(friend) fun new_account_singleton<T: key>(account: address, value: T): &mut Object<T> {
-        let id = account_singleton_object_id<T>(account);
-        let obj_entity = new_internal(id, value);
-        obj_entity.owner = account;
-        to_bound_internal(&mut obj_entity);
-        add_to_global(obj_entity);
-        as_mut_ref_inner<Object<T>>(id)
     }
 
     fun new_internal<T: key>(id: ObjectID, value: T): ObjectEntity<T> {
@@ -167,7 +154,6 @@ module moveos_std::object {
         let Object{id:_} = self;
     }
 
-    #[private_generics(T)]
     /// Make the Object shared, Any one can get the &mut Object<T> from shared object
     /// The shared object also can be removed from the object storage.
     public fun to_shared<T: key>(self: Object<T>) {
@@ -190,7 +176,6 @@ module moveos_std::object {
         self.flag & SHARED_OBJECT_FLAG_MASK == SHARED_OBJECT_FLAG_MASK
     }
 
-    #[private_generics(T)]
     /// Make the Object frozen, Any one can not get the &mut Object<T> from frozen object
     public fun to_frozen<T: key>(self: Object<T>) {
         let obj_entity = borrow_mut_from_global<T>(self.id);

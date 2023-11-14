@@ -4,9 +4,10 @@
 /// This module defines Rooch Gas Coin.
 module rooch_framework::gas_coin {
     use std::string;
-    use std::signer;
-    use moveos_std::context::Context;
-    use rooch_framework::coin::{Self, Coin};
+    use moveos_std::signer;
+    use moveos_std::context::{Self, Context};
+    use moveos_std::object::{Self, Object};
+    use rooch_framework::coin::{Self, Coin, CoinInfo};
     use rooch_framework::account_coin_store;
 
     friend rooch_framework::genesis;
@@ -20,8 +21,15 @@ module rooch_framework::gas_coin {
         account_coin_store::balance<GasCoin>(ctx, addr)
     }
 
+    fun borrow_mut_coin_info(ctx: &mut Context) : &mut Object<CoinInfo<GasCoin>> {
+        let signer = signer::module_signer<GasCoin>();
+        let coin_info_id = coin::coin_info_id<GasCoin>();
+        context::borrow_mut_object<CoinInfo<GasCoin>>(ctx, &signer, coin_info_id)
+    }
+
     fun mint(ctx: &mut Context, amount: u256): Coin<GasCoin> {
-        coin::mint_extend<GasCoin>(coin::borrow_mut_coin_info_extend<GasCoin>(ctx), amount)
+        let coin_info = borrow_mut_coin_info(ctx);
+        coin::mint_extend<GasCoin>(coin_info, amount)
     }
 
     #[test_only]
@@ -30,7 +38,8 @@ module rooch_framework::gas_coin {
     }
 
     public fun burn(ctx: &mut Context, coin: Coin<GasCoin>) {
-        coin::burn_extend<GasCoin>(coin::borrow_mut_coin_info_extend<GasCoin>(ctx), coin);
+        let coin_info = borrow_mut_coin_info(ctx); 
+        coin::burn_extend<GasCoin>(coin_info, coin);
     }
 
     /// deduct gas coin from the given account.
@@ -59,12 +68,13 @@ module rooch_framework::gas_coin {
 
     /// Can only be called during genesis to initialize the Rooch coin.
     public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer){
-        coin::register_extend<GasCoin>(
+        let coin_info_obj = coin::register_extend<GasCoin>(
             ctx,
             string::utf8(b"Rooch Gas Coin"),
             string::utf8(b"RGC"),
             18, // decimals
         );
+        object::transfer(coin_info_obj, @rooch_framework)
     }
 
 

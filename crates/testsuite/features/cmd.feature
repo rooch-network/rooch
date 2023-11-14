@@ -203,7 +203,7 @@ Feature: Rooch CLI integration tests
       Given a server for coins
       Then cmd: "account create"
       Then cmd: "move publish -p ../../examples/coins  --named-addresses coins=default"
-      Then cmd: "move run --function default::fixed_supply_coin::faucet "
+      Then cmd: "move run --function default::fixed_supply_coin::faucet --args object:default::fixed_supply_coin::Treasury"
       #TODO change the argument `0x3` address to a user account
       Then cmd: "move run --function rooch_framework::coin::transfer_entry --type-args default::fixed_supply_coin::FSC --args address:0x3  --args 1u256 "
 
@@ -217,7 +217,7 @@ Feature: Rooch CLI integration tests
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
     # check module `my_coin` is published, the name `my_coin` is the first arg in the last `move run` cmd.
-    Then cmd: "move run --function default::my_coin::faucet "
+    Then cmd: "move run --function default::my_coin::faucet --args object:default::my_coin::Treasury"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
     Then stop the server
   

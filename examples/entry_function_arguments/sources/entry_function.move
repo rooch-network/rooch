@@ -8,7 +8,7 @@ module rooch_examples::entry_function {
    use moveos_std::context::{Self, Context};
 
    fun init(ctx: &mut Context) {
-      context::new_singleton(ctx, TestStruct{});      
+      context::new_named_object(ctx, TestStruct{});      
    }
 
    struct BoolEvent has drop {

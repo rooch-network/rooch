@@ -281,7 +281,7 @@ impl EventHandle {
     }
 
     pub fn derive_event_handle_id(event_handle_type: &StructTag) -> ObjectID {
-        object::singleton_object_id(event_handle_type)
+        object::named_object_id(event_handle_type)
     }
 }
 

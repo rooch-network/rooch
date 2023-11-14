@@ -211,19 +211,21 @@ module rooch_framework::coin_store {
         coin_store_obj
     }
 
-    public(friend) fun create_account_coin_store<CoinType: key>(ctx: &mut Context, account: address): &mut Object<CoinStore<CoinType>>{
+    public(friend) fun create_account_coin_store<CoinType: key>(ctx: &mut Context, account: address): ObjectID{
         coin::check_coin_info_registered<CoinType>(ctx);
         let coin_type = type_info::type_name<CoinType>();
-        let coin_store_obj = context::new_account_singleton(ctx, account, CoinStore<CoinType>{
+        let coin_store_obj = context::new_account_named_object(ctx, account, CoinStore<CoinType>{
             coin_type,
             balance: Balance { value: 0 },
             frozen: false,
         });
+        let coin_store_id = object::id(&coin_store_obj);
+        object::transfer_extend(coin_store_obj, account);
         event::emit(CreateEvent{
-            coin_store_id: object::id(coin_store_obj),
+            coin_store_id,
             coin_type,
         });
-        coin_store_obj
+        coin_store_id
     }
 
     public(friend) fun borrow_mut_coin_store_internal<CoinType: key>(ctx: &mut Context, object_id: ObjectID): &mut Object<CoinStore<CoinType>>{

@@ -8,14 +8,14 @@ module rooch_framework::transfer_test{
     use std::option;
     use std::string;
     use moveos_std::context::{Self, Context};
-    use moveos_std::object;
+    use moveos_std::object::{Self, Object};
     use rooch_framework::account;
     use rooch_framework::transfer;
     use rooch_framework::gas_coin::{Self, GasCoin};
     use rooch_framework::multichain_address::{Self, MultiChainAddress};
     use rooch_framework::ethereum_address;
     use rooch_framework::address_mapping;
-    use rooch_framework::coin;
+    use rooch_framework::coin::{Self, CoinInfo};
     use rooch_framework::account_coin_store;
 
     struct TestStruct has key, store{
@@ -77,34 +77,35 @@ module rooch_framework::transfer_test{
     fun register_fake_coin(
         ctx: &mut Context,
         decimals: u8,
-    ) {
+    ) : Object<CoinInfo<FakeCoin>> {
         coin::register_extend<FakeCoin>(
             ctx,
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
             decimals,
-        );
+        )
     }
 
     #[test_only]
-    fun mint_and_deposit(ctx: &mut Context,to_address: address, amount: u256) {
-        let coins_minted = coin::mint_extend<FakeCoin>(coin::borrow_mut_coin_info_extend<FakeCoin>(ctx), amount);
+    fun mint_and_deposit(ctx: &mut Context,coin_info_obj: &mut Object<CoinInfo<FakeCoin>>, to_address: address, amount: u256) {
+        let coins_minted = coin::mint_extend<FakeCoin>(coin_info_obj, amount);
         account_coin_store::deposit(ctx, to_address, coins_minted);
     }
 
     #[test(from_addr= @0x33, to_addr= @0x66)]
     fun test_transfer_to_no_exists_account(from_addr: address, to_addr: address) {
         let ctx = rooch_framework::genesis::init_for_test();
-        register_fake_coin(&mut ctx, 9);
+        let coin_info_obj = register_fake_coin(&mut ctx, 9);
 
         let from = account::create_account_for_test(&mut ctx, from_addr);
         assert!(!account::exists_at(&ctx, to_addr), 1000);
 
         let amount = 100u256;
-        mint_and_deposit(&mut ctx, from_addr, amount);
+        mint_and_deposit(&mut ctx, &mut coin_info_obj, from_addr, amount);
         transfer::transfer_coin<FakeCoin>(&mut ctx, &from, to_addr, 50u256);
         assert!(account::exists_at(&ctx, to_addr), 1000);
         assert!(account_coin_store::balance<FakeCoin>(&ctx, to_addr) == 50u256, 1001);
+        object::transfer(coin_info_obj, @rooch_framework);
         moveos_std::context::drop_test_context(ctx);
     }
 
