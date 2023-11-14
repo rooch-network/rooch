@@ -5,7 +5,7 @@ module rooch_framework::account_coin_store_test{
     use std::string;
     use moveos_std::context::{Self, Context};
     use rooch_framework::account;
-    use rooch_framework::coin::{Self,
+    use rooch_framework::coin::{Self, CoinInfo,
         supply, value, mint_extend, burn_extend
     };
     use rooch_framework::account_coin_store::{Self, transfer, withdraw, withdraw_extend,
@@ -18,18 +18,18 @@ module rooch_framework::account_coin_store_test{
     fun register_fake_coin(
         ctx: &mut Context,
         decimals: u8,
-    ) {
+    ) : &mut CoinInfo<FakeCoin> {
         coin::register_extend<FakeCoin>(
             ctx,
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
             decimals,
-        );
+        )
     }
 
     #[test_only]
     fun mint_and_deposit(ctx: &mut Context,to_address: address, amount: u256) {
-        let coins_minted = coin::mint_extend<FakeCoin>(ctx, amount);
+        let coins_minted = coin::mint_extend<FakeCoin>(coin::borrow_mut_coin_info_extend(ctx), amount);
         account_coin_store::deposit(ctx, to_address, coins_minted);
     }
 
@@ -43,11 +43,11 @@ module rooch_framework::account_coin_store_test{
         let destination_addr = signer::address_of(&destination);
         let destination_ctx = context::new_test_context_random(signer::address_of(&destination), b"test_tx1");
 
-        register_fake_coin(&mut source_ctx, 9);
+        let coin_info = register_fake_coin(&mut source_ctx, 9);
 
         account::create_account_for_test(&mut destination_ctx, signer::address_of(&destination));
 
-        let coins_minted = mint_extend<FakeCoin>(&mut source_ctx, 100);
+        let coins_minted = mint_extend<FakeCoin>(coin_info, 100);
         deposit(&mut source_ctx, source_addr, coins_minted);
 
         let coin = withdraw<FakeCoin>(&mut source_ctx, &source, 10);
@@ -73,15 +73,15 @@ module rooch_framework::account_coin_store_test{
 
         register_fake_coin(&mut source_ctx, 9);
 
-        let coins_minted = mint_extend<FakeCoin>(&mut source_ctx, 100);
+        let coins_minted = mint_extend<FakeCoin>(coin::borrow_mut_coin_info_extend(&mut source_ctx), 100);
         deposit(&mut source_ctx, source_addr, coins_minted);
         assert!(balance<FakeCoin>(&source_ctx, source_addr) == 100, 0);
-        assert!(supply<FakeCoin>(&source_ctx) == 100, 1);
+        assert!(supply<FakeCoin>(coin::borrow_coin_info<FakeCoin>(&source_ctx)) == 100, 1);
 
         let coin = withdraw_extend<FakeCoin>(&mut source_ctx, source_addr, 10);
-        burn_extend<FakeCoin>(&mut source_ctx, coin);
+        burn_extend<FakeCoin>(coin::borrow_mut_coin_info_extend(&mut source_ctx), coin);
         assert!(balance<FakeCoin>(&source_ctx, source_addr) == 90, 2);
-        assert!(supply<FakeCoin>(&source_ctx) == 90, 3);
+        assert!(supply<FakeCoin>(coin::borrow_coin_info<FakeCoin>(&source_ctx)) == 90, 3);
 
         moveos_std::context::drop_test_context(source_ctx);
     }
@@ -109,10 +109,10 @@ module rooch_framework::account_coin_store_test{
         let source2_addr = signer::address_of(&source2);
         let source1_ctx = context::new_test_context_random(source1_addr, b"test_tx2");
         let source2_ctx = context::new_test_context_random(source2_addr, b"test_tx3");
-        register_fake_coin(&mut ctx, 9);
+        let coin_info = register_fake_coin(&mut ctx, 9);
 
-        let mint_coins1 = mint_extend<FakeCoin>(&mut ctx, 10);
-        let mint_coins2 = mint_extend<FakeCoin>(&mut ctx, 20);
+        let mint_coins1 = mint_extend<FakeCoin>(coin_info, 10);
+        let mint_coins2 = mint_extend<FakeCoin>(coin_info, 20);
 
         account::create_account_for_test(&mut source1_ctx, source1_addr);
         account::create_account_for_test(&mut source2_ctx, source2_addr);
@@ -137,10 +137,10 @@ module rooch_framework::account_coin_store_test{
         let source2_addr = signer::address_of(&source2);
         let source1_ctx = context::new_test_context_random(source1_addr, b"test_tx2");
         let source2_ctx = context::new_test_context_random(source2_addr, b"test_tx3");
-        register_fake_coin(&mut ctx, 9);
+        let coin_info = register_fake_coin(&mut ctx, 9);
 
-        let mint_coins1 = mint_extend<FakeCoin>(&mut ctx, 10);
-        let mint_coins2 = mint_extend<FakeCoin>(&mut ctx, 20);
+        let mint_coins1 = mint_extend<FakeCoin>(coin_info, 10);
+        let mint_coins2 = mint_extend<FakeCoin>(coin_info, 20);
 
         account::create_account_for_test(&mut source1_ctx, source1_addr);
         account::create_account_for_test(&mut source2_ctx, source2_addr);
@@ -172,10 +172,10 @@ module rooch_framework::account_coin_store_test{
         let destination_addr = signer::address_of(&destination);
         let destination_ctx = context::new_test_context_random(signer::address_of(&destination), b"test_tx1");
 
-        register_fake_coin(&mut source_ctx, 9);
-        assert!(supply<FakeCoin>(&source_ctx) == 0, 0);
+        let coin_info = register_fake_coin(&mut source_ctx, 9);
+        assert!(supply<FakeCoin>(coin_info) == 0, 0);
 
-        let coins_minted = mint_extend<FakeCoin>(&mut source_ctx, 100);
+        let coins_minted = mint_extend<FakeCoin>(coin_info, 100);
         deposit(&mut source_ctx, source_addr, coins_minted);
         transfer<FakeCoin>(&mut source_ctx, &source, destination_addr, 50);
 

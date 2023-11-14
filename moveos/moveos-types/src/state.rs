@@ -384,7 +384,14 @@ impl State {
     where
         T: MoveStructState,
     {
-        self.as_move_state::<ObjectEntity<T>>()
+        self.cast::<ObjectEntity<T>>()
+    }
+
+    pub fn as_object_uncheck<T>(&self) -> Result<ObjectEntity<T>>
+    where
+        T: DeserializeOwned,
+    {
+        self.cast_unchecked::<ObjectEntity<T>>()
     }
 
     pub fn as_raw_object(&self) -> Result<RawObject> {
@@ -397,25 +404,30 @@ impl State {
         RawObject::from_bytes(&self.value, object_struct_tag)
     }
 
-    pub fn as_move_state<T>(&self) -> Result<T>
+    /// Case the state to T
+    pub fn cast<T>(&self) -> Result<T>
     where
         T: MoveStructState,
     {
         let val_type = self.value_type();
         match val_type {
             TypeTag::Struct(struct_tag) => {
-                let expect_type = T::struct_tag();
                 //TODO define error code and rasie it to Move
                 ensure!(
-                    struct_tag.as_ref() == &expect_type,
+                    T::struct_tag_match(struct_tag),
                     "Expect type:{} but the state type:{}",
-                    expect_type,
+                    T::struct_tag(),
                     struct_tag
                 );
                 bcs::from_bytes(&self.value).map_err(Into::into)
             }
             _ => bail!("Expect type Object but the state type:{}", val_type),
         }
+    }
+
+    /// Directly cast the state to T without type check
+    pub fn cast_unchecked<T: DeserializeOwned>(&self) -> Result<T> {
+        bcs::from_bytes(&self.value).map_err(Into::into)
     }
 
     pub fn into_annotated_state<T: MoveResolver + ?Sized>(

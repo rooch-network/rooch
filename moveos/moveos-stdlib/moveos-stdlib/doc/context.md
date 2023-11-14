@@ -37,6 +37,7 @@ and let developers customize the storage
 -  [Function `new_object`](#0x2_context_new_object)
 -  [Function `new_object_with_id`](#0x2_context_new_object_with_id)
 -  [Function `new_singleton`](#0x2_context_new_singleton)
+-  [Function `new_account_singleton`](#0x2_context_new_account_singleton)
 -  [Function `borrow_object`](#0x2_context_borrow_object)
 -  [Function `borrow_mut_object`](#0x2_context_borrow_mut_object)
 -  [Function `take_object`](#0x2_context_take_object)
@@ -82,6 +83,16 @@ The Context can not be <code>drop</code> or <code>store</code>, so developers ne
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x2_context_ErrorObjectIsBound"></a>
+
+Can not take out the object which is bound to the account
+
+
+<pre><code><b>const</b> <a href="context.md#0x2_context_ErrorObjectIsBound">ErrorObjectIsBound</a>: u64 = 3;
+</code></pre>
+
 
 
 <a name="0x2_context_ErrorObjectNotShared"></a>
@@ -426,6 +437,19 @@ Singleton object means the object of <code>T</code> is only one instance in the 
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_singleton">new_singleton</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, value: T): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<a name="0x2_context_new_account_singleton"></a>
+
+## Function `new_account_singleton`
+
+Create a new account singleton object, account singleton object is always owned by the account
+One account can only have one Account Singleton Object of <code>T</code> in the Object Storage.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_account_singleton">new_account_singleton</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>, value: T): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 

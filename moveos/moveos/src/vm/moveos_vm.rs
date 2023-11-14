@@ -4,6 +4,7 @@
 use super::data_cache::{into_change_set, MoveosDataCache};
 use crate::gas::table::initial_cost_schedule;
 use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
+use crate::vm::tx_argument_resolver;
 use move_binary_format::{
     compatibility::Compatibility,
     errors::{Location, PartialVMError, VMError, VMResult},
@@ -243,7 +244,7 @@ where
                             ret.return_values.is_empty(),
                             "Script function should not return values"
                         );
-                        self.update_storage_context_via_return_values(&ret);
+                        self.update_storage_context_via_return_values(&loaded_function, &ret);
                     })
             }
             VerifiedMoveAction::Function { call } => {
@@ -268,7 +269,7 @@ where
                             ret.return_values.is_empty(),
                             "Entry function should not return values"
                         );
-                        self.update_storage_context_via_return_values(&ret);
+                        self.update_storage_context_via_return_values(&loaded_function, &ret);
                     })
             }
             VerifiedMoveAction::ModuleBundle {
@@ -331,24 +332,49 @@ where
 
     // Because the Context can be mut argument, if the function change the Context,
     // we need to update the Context via return values, and pass the updated Context to the next function.
-    fn update_storage_context_via_return_values(&mut self, return_values: &SerializedReturnValues) {
-        //The only mutable reference output is &mut Context
-        debug_assert!(
-            return_values.mutable_reference_outputs.len() <= 1,
-            "The function should not return more than one mutable reference"
-        );
-
-        if let Some((_index, value, _layout)) = return_values.mutable_reference_outputs.get(0) {
-            //TODO check the type with local index
-            let returned_storage_context = Context::from_bytes(value.as_slice())
-                .expect("The return mutable reference should be a Context");
-            if log::log_enabled!(log::Level::Trace) {
-                log::trace!(
-                    "The returned storage context is {:?}",
-                    returned_storage_context
-                );
+    fn update_storage_context_via_return_values(
+        &mut self,
+        loaded_function: &LoadedFunctionInstantiation,
+        return_values: &SerializedReturnValues,
+    ) {
+        let mut_ref_arguments = loaded_function
+            .parameters
+            .iter()
+            .filter(|ty| matches!(ty, Type::MutableReference(_)))
+            .collect::<Vec<_>>();
+        debug_assert!(mut_ref_arguments.len() == return_values.mutable_reference_outputs.len(), "The number of mutable reference arguments should be equal to the number of mutable reference outputs");
+        for (arg_ty, (_index, value, _layout)) in mut_ref_arguments
+            .into_iter()
+            .zip(return_values.mutable_reference_outputs.iter())
+        {
+            match arg_ty {
+                Type::MutableReference(ty) => match ty.as_ref() {
+                    Type::Struct(struct_tag_index) => {
+                        let struct_type = self
+                            .session
+                            .get_struct_type(*struct_tag_index)
+                            .expect("The struct type should be in cache");
+                        if tx_argument_resolver::is_context(&struct_type) {
+                            let returned_storage_context = Context::from_bytes(value.as_slice())
+                                .expect("The return mutable reference should be a Context");
+                            if log::log_enabled!(log::Level::Trace) {
+                                log::trace!(
+                                    "The returned storage context is {:?}",
+                                    returned_storage_context
+                                );
+                            }
+                            self.ctx = returned_storage_context;
+                        }
+                    }
+                    _ => {
+                        //Do nothing
+                        if log::log_enabled!(log::Level::Trace) {
+                            log::trace!("Mut argument type: {:?}", arg_ty);
+                        }
+                    }
+                },
+                _ => unreachable!(),
             }
-            self.ctx = returned_storage_context;
         }
     }
 
@@ -370,7 +396,7 @@ where
             resolved_args,
             &mut self.gas_meter,
         )?;
-        self.update_storage_context_via_return_values(&return_values);
+        self.update_storage_context_via_return_values(&loaded_function, &return_values);
         return_values
             .return_values
             .into_iter()

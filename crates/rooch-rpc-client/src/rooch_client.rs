@@ -103,7 +103,7 @@ impl RoochRpcClient {
             .flatten()
             .map(|state_view| {
                 let state = State::from(state_view);
-                state.as_move_state::<Account>()
+                state.cast::<Account>()
             })
             .transpose()?
             .map_or(0, |account| account.sequence_number))

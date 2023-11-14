@@ -15,7 +15,7 @@ module coins::fixed_supply_coin {
     struct FSC has key, store {}
 
     struct Treasury has key {
-        coin_store: Object<CoinStore>
+        coin_store: Object<CoinStore<FSC>>
     }
 
     const TOTAL_SUPPLY: u256 = 210_000_000_000u256;
@@ -23,26 +23,27 @@ module coins::fixed_supply_coin {
 
 
     fun init(ctx: &mut Context) {
-        coin::register_extend<FSC>(
+        let coin_info = coin::register_extend<FSC>(
             ctx,
             string::utf8(b"Fixed Supply Coin"),
             string::utf8(b"FSC"),
             DECIMALS,
         );
-        let coins_signer = signer::module_signer<FSC>();
         // Mint the total supply of coins, and store it to the treasury
-        let coin = coin::mint_extend<FSC>(ctx, TOTAL_SUPPLY);
-        let coin_store_ref = coin_store::create_coin_store<FSC>(ctx);
-        coin_store::deposit(object::borrow_mut(&mut coin_store_ref), coin);
-        context::move_resource_to(ctx, &coins_signer, Treasury { coin_store: coin_store_ref });
+        let coin = coin::mint_extend<FSC>(coin_info, TOTAL_SUPPLY);
+        let coin_store_obj = coin_store::create_coin_store<FSC>(ctx);
+        coin_store::deposit(&mut coin_store_obj, coin);
+        context::new_singleton(ctx, Treasury { coin_store: coin_store_obj });
     }
 
     /// Provide a faucet to give out coins to users
     /// In a real world scenario, the coins should be given out in the application business logic.
     public entry fun faucet(ctx: &mut Context, account: &signer) {
         let account_addr = signer::address_of(account);
-        let treasury = context::borrow_mut_resource<Treasury>(ctx, @coins);
-        let coin = coin_store::withdraw<FSC>(object::borrow_mut(&mut treasury.coin_store), 10000);
+        let treasury_object_id = object::singleton_object_id<Treasury>();
+        let treasury_object = context::borrow_mut_object_extend<Treasury>(ctx, treasury_object_id);
+        let treasury = object::borrow_mut(treasury_object);
+        let coin = coin_store::withdraw(&mut treasury.coin_store, 10000);
         account_coin_store::deposit(ctx, account_addr, coin);
     }
 }

@@ -34,33 +34,16 @@ module rooch_framework::account_coin_store {
         auto_accept_coins: Table<address, bool>,
     }
 
-    /// A resource that holds all the Object<CoinStore> for account.
+    /// A resource that holds all the ids of Object<CoinStore<T>> for account.
+    /// TODO after the indexer is ready, we can use the indexer to list all the CoinStore<T> objects for account
     struct CoinStores has key {
-        coin_stores: Table<string::String, Object<CoinStore>>,
+        coin_stores: Table<string::String, ObjectID>,
     }
 
     /// Event for auto accept coin set
     struct AcceptCoinEvent has drop, store {
         /// auto accept coin config
         enable: bool,
-    }
-
-    /// Event emitted when some amount of a coin is deposited into an account.
-    struct DepositEvent has drop, store {
-        /// The id of the coin store that was deposited to
-        coin_store_id: ObjectID,
-        /// The type of the coin that was sent
-        coin_type: string::String,
-        amount: u256,
-    }
-
-    /// Event emitted when some amount of a coin is withdrawn from an account.
-    struct WithdrawEvent has drop, store {
-        /// The id of the coin store that was withdrawn from
-        coin_store_id: ObjectID,
-        /// The type of the coin that was sent
-        coin_type: string::String,
-        amount: u256,
     }
 
     public(friend) fun genesis_init(ctx: &mut Context, genesis_account: &signer) {
@@ -72,7 +55,7 @@ module rooch_framework::account_coin_store {
 
     public(friend) fun init_account_coin_stores(ctx: &mut Context, account: &signer){
         let coin_stores = CoinStores {
-            coin_stores: context::new_table<string::String, Object<CoinStore>>(ctx),
+            coin_stores: context::new_table<string::String, ObjectID>(ctx),
         };
         context::move_resource_to(ctx, account, coin_stores);
     }
@@ -90,15 +73,9 @@ module rooch_framework::account_coin_store {
     }
 
     /// Return the account CoinStore object id for addr
-    public fun coin_store_id<CoinType: key>(ctx: &Context, addr: address): Option<ObjectID> {
-        if (exist_account_coin_store<CoinType>(ctx, addr)) {
-            let coin_stores = context::borrow_resource<CoinStores>(ctx, addr);
-            let coin_type = type_info::type_name<CoinType>();
-            let coin_store_ref = table::borrow(&coin_stores.coin_stores, coin_type);
-            option::some(object::id(coin_store_ref))
-        } else {
-            option::none<ObjectID>()
-        }
+    /// Because the account CoinStore is a account singleton object, the id is fixed for each addr and CoinType
+    public fun account_coin_store_id<CoinType: key>(addr: address): ObjectID {
+        object::account_singleton_object_id<CoinStore<CoinType>>(addr)
     }
 
     /// Return CoinStores table handle for addr
@@ -135,7 +112,7 @@ module rooch_framework::account_coin_store {
     /// If user turns off AutoAcceptCoin, call this method to receive the corresponding Coin
     public fun do_accept_coin<CoinType: key>(ctx: &mut Context, account: &signer) {
         let addr = signer::address_of(account);
-        ensure_coin_store_bypass_auto_accept_flag<CoinType>(ctx, addr);
+        create_or_borrow_mut_account_coin_store<CoinType>(ctx, addr);
     }
 
     /// Configure whether auto-accept coins.
@@ -178,13 +155,8 @@ module rooch_framework::account_coin_store {
     }
 
     public fun exist_account_coin_store<CoinType: key>(ctx: &Context, addr: address): bool {
-        if (context::exists_resource<CoinStores>(ctx, addr)) {
-            let coin_stores = context::borrow_resource<CoinStores>(ctx, addr);
-            let coin_type = type_info::type_name<CoinType>();
-            table::contains(&coin_stores.coin_stores, coin_type)
-        } else {
-            false
-        }
+        let account_coin_store_id = account_coin_store_id<CoinType>(addr);
+        context::exists_object<CoinStore<CoinType>>(ctx, account_coin_store_id)
     }
 
     public fun is_account_coin_store_frozen<CoinType: key>(ctx: &Context, addr: address): bool {
@@ -253,41 +225,30 @@ module rooch_framework::account_coin_store {
     // Internal functions
     // 
 
-    fun borrow_account_coin_store<CoinType: key>(ctx: &Context, addr: address): &CoinStore{
-        let coin_stores = context::borrow_resource<CoinStores>(ctx, addr);
-        let coin_type = type_info::type_name<CoinType>();
-        let ref = table::borrow(&coin_stores.coin_stores, coin_type);
-        object::borrow(ref)
+    fun borrow_account_coin_store<CoinType: key>(ctx: &Context, addr: address): &Object<CoinStore<CoinType>>{
+        let account_coin_store_id = account_coin_store_id<CoinType>(addr);
+        context::borrow_object<CoinStore<CoinType>>(ctx, account_coin_store_id)
     }
 
-    fun borrow_mut_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address): &mut CoinStore{
-        let coin_stores = context::borrow_mut_resource<CoinStores>(ctx, addr);
-        let coin_type = type_info::type_name<CoinType>();
-        let ref = table::borrow_mut(&mut coin_stores.coin_stores, coin_type);
-        object::borrow_mut(ref)
+    fun borrow_mut_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address): &mut Object<CoinStore<CoinType>>{
+        let account_coin_store_id = account_coin_store_id<CoinType>(addr);
+        coin_store::borrow_mut_coin_store<CoinType>(ctx, account_coin_store_id)
     }
 
-    fun ensure_coin_store<CoinType: key>(ctx: &mut Context, addr: address) {
-        if (!exist_account_coin_store<CoinType>(ctx, addr) && can_auto_accept_coin(ctx, addr)) {
-            create_account_coin_store<CoinType>(ctx, addr)
-        }
-    }
-
-    fun ensure_coin_store_bypass_auto_accept_flag<CoinType: key>(ctx: &mut Context, addr: address) {
-        if (!exist_account_coin_store<CoinType>(ctx, addr)) {
-            create_account_coin_store<CoinType>(ctx, addr)
-        }
+    fun create_or_borrow_mut_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address): &mut Object<CoinStore<CoinType>>{
+        let account_coin_store_id = account_coin_store_id<CoinType>(addr);
+        if(!context::exists_object<CoinStore<CoinType>>(ctx, account_coin_store_id)) {
+            create_account_coin_store<CoinType>(ctx, addr);
+        };
+        coin_store::borrow_mut_coin_store<CoinType>(ctx, account_coin_store_id)
     }
 
     fun create_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address) {
-        let coin_store = coin_store::create_coin_store_internal<CoinType>(ctx);
-        //Because the account_coin_store module hold the coin store object
-        //So the object is a SystemOwnedObject
-        //If we want to make the CoinStore to be a UserOwnedObject, we need to support a user singleton object
-        //The object id is generated with the address of the account and the coin type
+        let coin_store_obj = coin_store::create_account_coin_store<CoinType>(ctx, addr);
+        let account_coin_store_id = object::id(coin_store_obj);
         let coin_stores = context::borrow_mut_resource<CoinStores>(ctx, addr);
         let coin_type = type_info::type_name<CoinType>();
-        table::add(&mut coin_stores.coin_stores, coin_type, coin_store);
+        table::add(&mut coin_stores.coin_stores, coin_type, account_coin_store_id);
     }
 
 
@@ -297,19 +258,16 @@ module rooch_framework::account_coin_store {
         amount: u256,
     ): Coin<CoinType> {
         let coin_store = borrow_mut_account_coin_store<CoinType>(ctx, addr);
-        coin_store::withdraw<CoinType>(coin_store, amount)
+        coin_store::withdraw_internal(coin_store, amount)
     }
 
     fun deposit_internal<CoinType: key>(ctx: &mut Context, addr: address, coin: Coin<CoinType>) {
         assert!(
             is_accept_coin<CoinType>(ctx, addr),
             error::not_found(ErrorAccountNotAcceptCoin),
-        );
-
-        ensure_coin_store<CoinType>(ctx, addr);
-
-        let coin_store = borrow_mut_account_coin_store<CoinType>(ctx, addr);
-        coin_store::deposit<CoinType>(coin_store, coin)
+        ); 
+        let coin_store = create_or_borrow_mut_account_coin_store<CoinType>(ctx, addr);
+        coin_store::deposit_internal<CoinType>(coin_store, coin)
     }
 
     fun transfer_internal<CoinType: key>(

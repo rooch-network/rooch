@@ -2,18 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
-use anyhow::Result;
 use move_core_types::language_storage::StructTag;
 use move_core_types::u256::U256;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
+use moveos_types::module_binding::{ModuleBinding, MoveFunctionCaller};
 use moveos_types::move_std::string::MoveString;
-use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::state::{MoveState, MoveStructState, MoveStructType};
-use moveos_types::{
-    module_binding::{ModuleBinding, MoveFunctionCaller},
-    moveos_std::tx_context::TxContext,
-    transaction::FunctionCall,
-};
+use moveos_types::moveos_std::object::{self, ObjectID};
+use moveos_types::state::{MoveState, MoveStructState, MoveStructType, PlaceholderStruct};
 use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("coin");
@@ -22,29 +17,16 @@ pub const DEFAULT_DECIMALS: u8 = 9;
 
 /// Rust bindings for RoochFramework coin module
 pub struct CoinModule<'a> {
-    caller: &'a dyn MoveFunctionCaller,
+    //avoid #[warn(dead_code)] warning
+    //TODO change this to private after we use the caller
+    pub caller: &'a dyn MoveFunctionCaller,
 }
 
 impl<'a> CoinModule<'a> {
-    pub const COIN_INFOS_HANDLE_FUNCTION_NAME: &'static IdentStr = ident_str!("coin_infos_handle");
-
-    pub fn coin_infos_handle(&self) -> Result<ObjectID> {
-        let ctx = TxContext::zero();
-        let call = FunctionCall::new(
-            Self::function_id(Self::COIN_INFOS_HANDLE_FUNCTION_NAME),
-            vec![],
-            vec![],
-        );
-
-        let result = self
-            .caller
-            .call_function(&ctx, call)?
-            .into_result()
-            .map_err(|e| anyhow::anyhow!("Call coin info handle error:{}", e))?;
-        match result.get(0) {
-            Some(value) => Ok(bcs::from_bytes::<ObjectID>(&value.value)?),
-            None => Err(anyhow::anyhow!("Coin info handle should have value")),
-        }
+    pub fn coin_info_id(coin_type: StructTag) -> ObjectID {
+        let coin_info_struct_tag =
+            CoinInfo::<PlaceholderStruct>::struct_tag_with_coin_type(coin_type);
+        object::singleton_object_id(&coin_info_struct_tag)
     }
 }
 
@@ -105,15 +87,19 @@ where
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CoinInfo {
+pub struct CoinInfo<CoinType> {
     coin_type: MoveString,
     name: MoveString,
     symbol: MoveString,
     decimals: u8,
     supply: U256,
+    phantom: std::marker::PhantomData<CoinType>,
 }
 
-impl MoveStructType for CoinInfo {
+impl<CoinType> MoveStructType for CoinInfo<CoinType>
+where
+    CoinType: MoveStructType,
+{
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("CoinInfo");
@@ -123,12 +109,15 @@ impl MoveStructType for CoinInfo {
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![],
+            type_params: vec![CoinType::struct_tag().into()],
         }
     }
 }
 
-impl MoveStructState for CoinInfo {
+impl<CoinType> MoveStructState for CoinInfo<CoinType>
+where
+    CoinType: MoveStructType,
+{
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
             MoveString::type_layout(),
@@ -140,7 +129,20 @@ impl MoveStructState for CoinInfo {
     }
 }
 
-impl CoinInfo {
+impl<CoinType> CoinInfo<CoinType>
+where
+    CoinType: MoveStructType,
+{
+    pub fn struct_tag_with_coin_type(coin_type: StructTag) -> StructTag {
+        move_core_types::language_storage::StructTag {
+            address: Self::ADDRESS,
+            module: Self::MODULE_NAME.to_owned(),
+            name: Self::STRUCT_NAME.to_owned(),
+            type_params: vec![coin_type.into()],
+        }
+    }
+}
+impl<CoinType> CoinInfo<CoinType> {
     pub fn coin_type(&self) -> String {
         self.coin_type.to_string()
     }

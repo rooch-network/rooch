@@ -40,13 +40,17 @@ impl MoveStructState for Balance {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CoinStore {
+pub struct CoinStore<CoinType> {
     coin_type: MoveString,
     balance: Balance,
     frozen: bool,
+    phantom: std::marker::PhantomData<CoinType>,
 }
 
-impl MoveStructType for CoinStore {
+impl<CoinType> MoveStructType for CoinStore<CoinType>
+where
+    CoinType: MoveStructType,
+{
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("CoinStore");
@@ -56,12 +60,15 @@ impl MoveStructType for CoinStore {
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![],
+            type_params: vec![CoinType::type_tag()],
         }
     }
 }
 
-impl MoveStructState for CoinStore {
+impl<CoinType> MoveStructState for CoinStore<CoinType>
+where
+    CoinType: MoveStructType,
+{
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
             MoveString::type_layout(),
@@ -71,7 +78,21 @@ impl MoveStructState for CoinStore {
     }
 }
 
-impl CoinStore {
+impl<CoinType> CoinStore<CoinType>
+where
+    CoinType: MoveStructType,
+{
+    pub fn struct_tag_with_coin_type(coin_type: StructTag) -> StructTag {
+        move_core_types::language_storage::StructTag {
+            address: Self::ADDRESS,
+            module: Self::MODULE_NAME.to_owned(),
+            name: Self::STRUCT_NAME.to_owned(),
+            type_params: vec![coin_type.into()],
+        }
+    }
+}
+
+impl<CoinType> CoinStore<CoinType> {
     pub fn coin_type(&self) -> String {
         self.coin_type.to_string()
     }

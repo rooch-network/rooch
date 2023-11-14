@@ -23,6 +23,8 @@ module moveos_std::context {
 
     const ErrorObjectOwnerNotMatch: u64 = 1;
     const ErrorObjectNotShared: u64 = 2;
+    ///Can not take out the object which is bound to the account
+    const ErrorObjectIsBound: u64 = 3;
 
     /// Information about the global context include TxContext and StorageContext
     /// We can not put the StorageContext to TxContext, because object module depends on tx_context module,
@@ -225,6 +227,13 @@ module moveos_std::context {
         object::new_singleton(value)
     }
 
+    #[private_generics(T)]
+    /// Create a new account singleton object, account singleton object is always owned by the account
+    /// One account can only have one Account Singleton Object of `T` in the Object Storage.
+    public fun new_account_singleton<T: key>(_self: &mut Context, account: address, value: T): &mut Object<T> {
+        object::new_account_singleton(account, value)
+    }
+
     /// Borrow Object from object store by object_id
     /// Any one can borrow an `&Object<T>` from the global object storage
     public fun borrow_object<T: key>(_self: &Context, object_id: ObjectID): &Object<T> {
@@ -247,6 +256,7 @@ module moveos_std::context {
         let owner_address = signer::address_of(owner);
         let object_entity = object::borrow_mut_from_global<T>(object_id);
         assert!(object::owner_internal(object_entity) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
+        assert!(!object::is_bound_internal(object_entity), error::permission_denied(ErrorObjectIsBound));
         object::to_system_owned_internal(object_entity);
         object::mut_entity_as_object(object_entity)
     }
@@ -257,6 +267,7 @@ module moveos_std::context {
     public fun take_object_extend<T: key>(_self: &mut Context, object_id: ObjectID): Object<T> {
         let object_entity = object::borrow_mut_from_global<T>(object_id);
         assert!(object::is_user_owned_internal(object_entity), error::permission_denied(ErrorObjectOwnerNotMatch));
+        assert!(!object::is_bound_internal(object_entity), error::permission_denied(ErrorObjectIsBound));
         object::to_system_owned_internal(object_entity);
         object::mut_entity_as_object(object_entity)
     }

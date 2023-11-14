@@ -113,9 +113,9 @@ module rooch_examples::rooch_examples {
             addr: resource_address
         });
         
-        coin::register_extend<WGBCOIN>(ctx,string::utf8(b"WGBCOIN"),string::utf8(b"WGB"), 8);
+        let coin_info = coin::register_extend<WGBCOIN>(ctx,string::utf8(b"WGBCOIN"),string::utf8(b"WGB"), 8);
 
-        let coin = coin::mint_extend<WGBCOIN>(ctx, 1000 * 1000 * 1000);
+        let coin = coin::mint_extend<WGBCOIN>(coin_info, 1000 * 1000 * 1000);
         account_coin_store::do_accept_coin<WGBCOIN>(ctx,account);
         account_coin_store::do_accept_coin<WGBCOIN>(ctx,&signer);
         account_coin_store::deposit_extend(ctx, signer::address_of(account), coin);
