@@ -3,7 +3,6 @@
 
 use crate::actor::messages::{
     IndexerEventsMessage, IndexerTransactionMessage, QueryIndexerEventsMessage,
-    QueryTransactionsByHashMessage,
 };
 use crate::indexer_reader::IndexerReader;
 use crate::store::traits::IndexerStoreTrait;
@@ -13,7 +12,6 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use rooch_types::indexer::event_filter::IndexerEvent;
-use rooch_types::transaction::TransactionWithInfo;
 
 pub struct IndexerActor {
     indexer_store: IndexerStore,
@@ -64,7 +62,7 @@ impl Handler<IndexerEventsMessage> for IndexerActor {
             moveos_tx,
         } = msg;
 
-        let _events: Vec<_> = events
+        let events: Vec<_> = events
             .into_iter()
             .map(|event| {
                 IndexedEvent::new(
@@ -76,21 +74,8 @@ impl Handler<IndexerEventsMessage> for IndexerActor {
             })
             .collect();
         //TODO Open after supporting automatic creation of sqlite schema
-        // self.indexer_store.persist_events(events)?;
+        self.indexer_store.persist_events(events)?;
         Ok(())
-    }
-}
-
-#[async_trait]
-impl Handler<QueryTransactionsByHashMessage> for IndexerActor {
-    async fn handle(
-        &mut self,
-        msg: QueryTransactionsByHashMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Vec<Option<TransactionWithInfo>>> {
-        self.indexer_store
-            .query_transactions_by_hash(msg.tx_hashes)
-            .map_err(|e| anyhow!(format!("Failed to query transactions by hash: {:?}", e)))
     }
 }
 

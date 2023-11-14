@@ -102,6 +102,7 @@ impl From<IndexerEvent> for IndexerEventView {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub enum EventFilterView {
     /// Query by event type.
     EventType(StructTagView),
@@ -110,19 +111,19 @@ pub enum EventFilterView {
     /// Return events emitted by the given transaction hash.
     TxHash(H256View),
     /// Return events emitted in [start_time, end_time) interval
-    #[serde(rename_all = "camelCase")]
+    // #[serde(rename_all = "camelCase")]
     TimeRange {
-        /// left endpoint of time interval, milliseconds since epoch, inclusive
+        /// left endpoint of time interval, milliseconds since block, inclusive
         // #[schemars(with = "u64")]
         // #[serde_as(as = "u64")]
         start_time: u64,
-        /// right endpoint of time interval, milliseconds since epoch, exclusive
+        /// right endpoint of time interval, milliseconds since block, exclusive
         // #[schemars(with = "u64")]
         // #[serde_as(as = "u64")]
         end_time: u64,
     },
-    /// Return events emitted in [from_tx_order, to_tx_order) interval
-    #[serde(rename_all = "camelCase")]
+    /// Return events emitted in [from_order, to_order) interval
+    // #[serde(rename_all = "camelCase")]
     TxOrderRange {
         /// left endpoint of transaction order, inclusive
         // #[schemars(with = "u128")]
@@ -140,7 +141,7 @@ impl From<EventFilterView> for EventFilter {
         match event_filter {
             EventFilterView::EventType(event_type) => Self::EventType(event_type.into()),
             EventFilterView::Sender(address) => Self::Sender(address.into()),
-            EventFilterView::TxHash(tx_hash) => Self::Transaction(tx_hash.into()),
+            EventFilterView::TxHash(tx_hash) => Self::TxHash(tx_hash.into()),
             EventFilterView::TimeRange {
                 start_time,
                 end_time,

@@ -237,6 +237,9 @@ impl RpcService {
         descending_order: bool,
     ) -> Result<Vec<IndexerEvent>> {
         // ) -> Result<Vec<AnnotatedEvent>> {
+
+        println!("[Indexer RPC Debug] rpc service filter: {:?}", filter);
+
         let resp = self
             .indexer
             .query_events(filter, cursor, limit, descending_order)

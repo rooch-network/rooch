@@ -7,14 +7,11 @@ use std::time::Duration;
 use anyhow::Result;
 use diesel::r2d2::ConnectionManager;
 use diesel::sqlite::SqliteConnection;
-// use tracing::info;
 
 use crate::store::sqlite_store::SqliteIndexerStore;
 use crate::store::traits::IndexerStoreTrait;
 use crate::types::{IndexedEvent, IndexedTransaction};
 use errors::IndexerError;
-use moveos_types::h256::H256;
-use rooch_types::transaction::TransactionWithInfo;
 
 pub mod actor;
 pub mod errors;
@@ -89,13 +86,6 @@ impl IndexerStoreTrait for IndexerStore {
 
     fn persist_events(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError> {
         self.sqlite_store.persist_events(events)
-    }
-
-    fn query_transactions_by_hash(
-        &self,
-        _tx_hashes: Vec<H256>,
-    ) -> Result<Vec<Option<TransactionWithInfo>>, IndexerError> {
-        Ok(vec![])
     }
 }
 

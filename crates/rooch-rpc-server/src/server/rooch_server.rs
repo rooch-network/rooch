@@ -345,25 +345,31 @@ impl RoochAPIServer for RoochServer {
         limit: Option<StrView<usize>>,
         descending_order: Option<bool>,
     ) -> RpcResult<IndexerEventPageView> {
-        // let limit = cap_page_limit(limit);
-        // if limit == 0 {
-        //     return Ok(EventPage::empty());
-        // }
-        let limit = 10;
+        println!("[Indexer RPC Debug] rooch server filter: {:?}", filter);
+
+        let limit_of = min(
+            limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
+            MAX_RESULT_LIMIT_USIZE,
+        );
         let descending_order = descending_order.unwrap_or(true);
-        let mut results = self
+
+        let mut data = self
             .rpc_service
-            .query_events(filter.into(), cursor, limit + 1, descending_order)
+            .query_events(filter.into(), cursor, limit_of + 1, descending_order)
             .await?
             .into_iter()
             .map(IndexerEventView::from)
             .collect::<Vec<_>>();
 
-        let has_next_page = results.len() > limit;
-        results.truncate(limit);
-        let next_cursor = results.last().map(|e| e.indexer_event_id.clone());
+        let has_next_page = data.len() > limit_of;
+        data.truncate(limit_of);
+        let next_cursor = data
+            .last()
+            .cloned()
+            .map_or(cursor, |e| Some(e.indexer_event_id));
+
         Ok(IndexerEventPageView {
-            data: results,
+            data,
             next_cursor,
             has_next_page,
         })

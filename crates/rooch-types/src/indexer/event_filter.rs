@@ -8,9 +8,12 @@ use move_core_types::language_storage::StructTag;
 use moveos_types::h256::H256;
 use moveos_types::move_types::struct_tag_match;
 use moveos_types::moveos_std::event::EventID;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(
+    Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize, JsonSchema,
+)]
 pub struct IndexerEventID {
     pub tx_order: u128,
     pub event_index: u64,

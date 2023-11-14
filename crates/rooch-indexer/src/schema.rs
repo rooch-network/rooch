@@ -1,10 +1,7 @@
-// Copyright (c) RoochNetwork
-// SPDX-License-Identifier: Apache-2.0
-
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    events (event_handle_id, event_seq) {
+    events (event_index, tx_order) {
         event_handle_id -> Text,
         event_seq -> BigInt,
         event_type -> Text,
@@ -43,4 +40,7 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(events, transactions,);
+diesel::allow_tables_to_appear_in_same_query!(
+    events,
+    transactions,
+);

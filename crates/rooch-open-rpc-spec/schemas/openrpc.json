@@ -294,6 +294,44 @@
       }
     },
     {
+      "name": "rooch_queryEvents",
+      "description": "Query the events indexer by event filter",
+      "params": [
+        {
+          "name": "filter",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/EventFilterView"
+          }
+        },
+        {
+          "name": "cursor",
+          "schema": {
+            "$ref": "#/components/schemas/IndexerEventID"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "$ref": "#/components/schemas/usize"
+          }
+        },
+        {
+          "name": "descending_order",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "IndexerEventPageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_IndexerEventView_and_IndexerEventID"
+        }
+      }
+    },
+    {
       "name": "rooch_sendRawTransaction",
       "description": "Send the signed transaction in bcs hex format This method does not block waiting for the transaction to be executed.",
       "params": [
@@ -477,6 +515,111 @@
           }
         }
       },
+      "EventFilterView": {
+        "oneOf": [
+          {
+            "description": "Query by event type.",
+            "type": "object",
+            "required": [
+              "EventType"
+            ],
+            "properties": {
+              "EventType": {
+                "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by sender address.",
+            "type": "object",
+            "required": [
+              "Sender"
+            ],
+            "properties": {
+              "Sender": {
+                "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Return events emitted by the given transaction hash.",
+            "type": "object",
+            "required": [
+              "TxHash"
+            ],
+            "properties": {
+              "TxHash": {
+                "$ref": "#/components/schemas/primitive_types::H256"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Return events emitted in [start_time, end_time) interval",
+            "type": "object",
+            "required": [
+              "TimeRange"
+            ],
+            "properties": {
+              "TimeRange": {
+                "type": "object",
+                "required": [
+                  "endTime",
+                  "startTime"
+                ],
+                "properties": {
+                  "endTime": {
+                    "description": "right endpoint of time interval, milliseconds since block, exclusive",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "startTime": {
+                    "description": "left endpoint of time interval, milliseconds since block, inclusive",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Return events emitted in [from_order, to_order) interval",
+            "type": "object",
+            "required": [
+              "TxOrderRange"
+            ],
+            "properties": {
+              "TxOrderRange": {
+                "type": "object",
+                "required": [
+                  "fromOrder",
+                  "toOrder"
+                ],
+                "properties": {
+                  "fromOrder": {
+                    "description": "left endpoint of transaction order, inclusive",
+                    "type": "integer",
+                    "format": "uint128",
+                    "minimum": 0.0
+                  },
+                  "toOrder": {
+                    "description": "right endpoint of transaction order, exclusive",
+                    "type": "integer",
+                    "format": "uint128",
+                    "minimum": 0.0
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
       "EventID": {
         "description": "A struct that represents a globally unique id for an Event stream that a user can listen to. the Unique ID is a combination of event handle id and event seq number. the ID is local to this particular fullnode and will be different from other fullnode.",
         "type": "object",
@@ -608,6 +751,72 @@
       "Hex": {
         "description": "Hex string encoding.",
         "type": "string"
+      },
+      "IndexerEventID": {
+        "type": "object",
+        "required": [
+          "event_index",
+          "tx_order"
+        ],
+        "properties": {
+          "event_index": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "tx_order": {
+            "type": "integer",
+            "format": "uint128",
+            "minimum": 0.0
+          }
+        }
+      },
+      "IndexerEventView": {
+        "type": "object",
+        "required": [
+          "created_at",
+          "event_data",
+          "event_id",
+          "event_type",
+          "indexer_event_id",
+          "sender",
+          "tx_hash"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "decoded_event_data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnnotatedMoveStructView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "event_data": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "event_id": {
+            "$ref": "#/components/schemas/EventID"
+          },
+          "event_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+          },
+          "indexer_event_id": {
+            "$ref": "#/components/schemas/IndexerEventID"
+          },
+          "sender": {
+            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+          },
+          "tx_hash": {
+            "$ref": "#/components/schemas/primitive_types::H256"
+          }
+        }
       },
       "KeptVMStatusView": {
         "oneOf": [
@@ -919,6 +1128,35 @@
             ],
             "format": "uint64",
             "minimum": 0.0
+          }
+        }
+      },
+      "PageView_for_IndexerEventView_and_IndexerEventID": {
+        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
+        "type": "object",
+        "required": [
+          "data",
+          "has_next_page"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndexerEventView"
+            }
+          },
+          "has_next_page": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IndexerEventID"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
