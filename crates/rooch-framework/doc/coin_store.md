@@ -5,10 +5,13 @@
 
 
 
--  [Struct `DepositEvent`](#0x3_coin_store_DepositEvent)
--  [Struct `WithdrawEvent`](#0x3_coin_store_WithdrawEvent)
 -  [Struct `Balance`](#0x3_coin_store_Balance)
 -  [Resource `CoinStore`](#0x3_coin_store_CoinStore)
+-  [Struct `CreateEvent`](#0x3_coin_store_CreateEvent)
+-  [Struct `DepositEvent`](#0x3_coin_store_DepositEvent)
+-  [Struct `WithdrawEvent`](#0x3_coin_store_WithdrawEvent)
+-  [Struct `FreezeEvent`](#0x3_coin_store_FreezeEvent)
+-  [Struct `RemoveEvent`](#0x3_coin_store_RemoveEvent)
 -  [Constants](#@Constants_0)
 -  [Function `create_coin_store`](#0x3_coin_store_create_coin_store)
 -  [Function `create_coin_store_extend`](#0x3_coin_store_create_coin_store_extend)
@@ -21,10 +24,11 @@
 -  [Function `deposit`](#0x3_coin_store_deposit)
 -  [Function `deposit_extend`](#0x3_coin_store_deposit_extend)
 -  [Function `transfer`](#0x3_coin_store_transfer)
+-  [Function `borrow_mut_coin_store_extend`](#0x3_coin_store_borrow_mut_coin_store_extend)
 -  [Function `freeze_coin_store_extend`](#0x3_coin_store_freeze_coin_store_extend)
 -  [Function `create_coin_store_internal`](#0x3_coin_store_create_coin_store_internal)
 -  [Function `create_account_coin_store`](#0x3_coin_store_create_account_coin_store)
--  [Function `borrow_mut_coin_store`](#0x3_coin_store_borrow_mut_coin_store)
+-  [Function `borrow_mut_coin_store_internal`](#0x3_coin_store_borrow_mut_coin_store_internal)
 -  [Function `withdraw_internal`](#0x3_coin_store_withdraw_internal)
 -  [Function `deposit_internal`](#0x3_coin_store_deposit_internal)
 
@@ -36,30 +40,6 @@
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
-</code></pre>
-
-
-
-<a name="0x3_coin_store_DepositEvent"></a>
-
-## Struct `DepositEvent`
-
-Event emitted when some amount of a coin is deposited into an account.
-
-
-<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_DepositEvent">DepositEvent</a> <b>has</b> drop, store
-</code></pre>
-
-
-
-<a name="0x3_coin_store_WithdrawEvent"></a>
-
-## Struct `WithdrawEvent`
-
-Event emitted when some amount of a coin is withdrawn from an account.
-
-
-<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_WithdrawEvent">WithdrawEvent</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -85,6 +65,66 @@ These are kept in a single resource to ensure locality of data.
 
 
 <pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_CoinStore">CoinStore</a>&lt;CoinType: key&gt; <b>has</b> key
+</code></pre>
+
+
+
+<a name="0x3_coin_store_CreateEvent"></a>
+
+## Struct `CreateEvent`
+
+Event emitted when a coin store is created.
+
+
+<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_CreateEvent">CreateEvent</a> <b>has</b> drop, store
+</code></pre>
+
+
+
+<a name="0x3_coin_store_DepositEvent"></a>
+
+## Struct `DepositEvent`
+
+Event emitted when some amount of a coin is deposited into a coin store.
+
+
+<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_DepositEvent">DepositEvent</a> <b>has</b> drop, store
+</code></pre>
+
+
+
+<a name="0x3_coin_store_WithdrawEvent"></a>
+
+## Struct `WithdrawEvent`
+
+Event emitted when some amount of a coin is withdrawn from a coin store.
+
+
+<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_WithdrawEvent">WithdrawEvent</a> <b>has</b> drop, store
+</code></pre>
+
+
+
+<a name="0x3_coin_store_FreezeEvent"></a>
+
+## Struct `FreezeEvent`
+
+Event emitted when a coin store is frozen or unfrozen.
+
+
+<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_FreezeEvent">FreezeEvent</a> <b>has</b> drop, store
+</code></pre>
+
+
+
+<a name="0x3_coin_store_RemoveEvent"></a>
+
+## Struct `RemoveEvent`
+
+Event emitted when a coin store is removed.
+
+
+<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_RemoveEvent">RemoveEvent</a> <b>has</b> drop, store
 </code></pre>
 
 
@@ -120,6 +160,16 @@ The CoinStore is not found in the global object store
 
 
 <pre><code><b>const</b> <a href="coin_store.md#0x3_coin_store_ErrorCoinStoreNotFound">ErrorCoinStoreNotFound</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_coin_store_ErrorCoinStoreTransferNotSupported"></a>
+
+Transfer is not supported for CoinStore
+
+
+<pre><code><b>const</b> <a href="coin_store.md#0x3_coin_store_ErrorCoinStoreTransferNotSupported">ErrorCoinStoreTransferNotSupported</a>: u64 = 5;
 </code></pre>
 
 
@@ -262,7 +312,20 @@ This function is for the <code>CoinType</code> module to extend
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="transfer.md#0x3_transfer">transfer</a>&lt;CoinType: key&gt;(coin_store_obj: <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;, owner: <b>address</b>)
+<pre><code><b>public</b> <b>fun</b> <a href="transfer.md#0x3_transfer">transfer</a>&lt;CoinType: key&gt;(_coin_store_obj: <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;, _owner: <b>address</b>)
+</code></pre>
+
+
+
+<a name="0x3_coin_store_borrow_mut_coin_store_extend"></a>
+
+## Function `borrow_mut_coin_store_extend`
+
+Borrow a mut CoinStore Object by the coin store id
+This function is for the <code>CoinType</code> module to extend
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_borrow_mut_coin_store_extend">borrow_mut_coin_store_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, object_id: <a href="_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;
 </code></pre>
 
 
@@ -276,7 +339,7 @@ This function is for he <code>CoinType</code> module to extend,
 Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the coin store id
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_freeze_coin_store_extend">freeze_coin_store_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, coin_store_id: <a href="_ObjectID">object::ObjectID</a>, frozen: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_freeze_coin_store_extend">freeze_coin_store_extend</a>&lt;CoinType: key&gt;(coin_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;, frozen: bool)
 </code></pre>
 
 
@@ -303,13 +366,13 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 
 
 
-<a name="0x3_coin_store_borrow_mut_coin_store"></a>
+<a name="0x3_coin_store_borrow_mut_coin_store_internal"></a>
 
-## Function `borrow_mut_coin_store`
+## Function `borrow_mut_coin_store_internal`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_borrow_mut_coin_store">borrow_mut_coin_store</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, object_id: <a href="_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_borrow_mut_coin_store_internal">borrow_mut_coin_store_internal</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, object_id: <a href="_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;
 </code></pre>
 
 
