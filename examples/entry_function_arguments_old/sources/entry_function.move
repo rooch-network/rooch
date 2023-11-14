@@ -6,6 +6,9 @@ module rooch_examples::entry_function {
    use moveos_std::object::ObjectID;
    use moveos_std::context::Context;
 
+   fun init(_ctx: &mut Context) {
+   }
+
    struct BoolEvent has drop {
       value: bool
    }

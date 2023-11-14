@@ -4,7 +4,7 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::{Parser, Subcommand};
-use move_core_types::language_storage::StructTag;
+use move_command_line_common::types::ParsedStructType;
 use rooch_rpc_api::jsonrpc_types::{EventOptions, EventPageView};
 use rooch_types::error::{RoochError, RoochResult};
 
@@ -33,8 +33,8 @@ pub enum EventSubCommand {
 pub struct GetEventsByEventHandle {
     /// Struct name as `ADDRESS::MODULE_NAME::STRUCT_NAME<TypeParam1?, TypeParam2?>`
     /// Example: `0x123::event_test::WithdrawEvent --cursor 0 --limit 1`
-    #[clap(long = "event_handle_type")]
-    event_handle_type: StructTag,
+    #[clap(short = 't',long = "event-handle-type", parse(try_from_str = ParsedStructType::parse))]
+    event_handle_type: ParsedStructType,
     /// start position
     #[clap(long)]
     cursor: Option<u64>,
@@ -49,11 +49,14 @@ pub struct GetEventsByEventHandle {
 #[async_trait]
 impl CommandAction<EventPageView> for GetEventsByEventHandle {
     async fn execute(self) -> RoochResult<EventPageView> {
-        let client = self.context_options.build().await?.get_client().await?;
+        let context = self.context_options.build()?;
+        let address_mapping = context.address_mapping();
+        let event_handle_type = self.event_handle_type.into_struct_tag(&address_mapping)?;
+        let client = context.get_client().await?;
         let resp = client
             .rooch
             .get_events_by_event_handle(
-                self.event_handle_type.into(),
+                event_handle_type.into(),
                 self.cursor,
                 self.limit,
                 Some(EventOptions::default().decode(true)),

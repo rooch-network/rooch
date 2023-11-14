@@ -14,7 +14,7 @@ pub struct ListCommand {
 
 impl ListCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        let context = self.context_options.build().await?;
+        let context = self.context_options.build()?;
 
         println!(
             "{:^24} | {:^48} | {:^48} | {:^12}",

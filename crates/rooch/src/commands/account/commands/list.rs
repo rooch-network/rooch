@@ -19,7 +19,7 @@ pub struct ListCommand {
 #[async_trait]
 impl CommandAction<()> for ListCommand {
     async fn execute(self) -> RoochResult<()> {
-        let context = self.context_options.build().await?;
+        let context = self.context_options.build()?;
         let active_address = context.client_config.active_address;
 
         let password = if context.keystore.get_if_password_is_empty() {

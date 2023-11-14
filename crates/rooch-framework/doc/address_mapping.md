@@ -8,6 +8,10 @@
 -  [Resource `AddressMapping`](#0x3_address_mapping_AddressMapping)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_address_mapping_genesis_init)
+-  [Function `borrow`](#0x3_address_mapping_borrow)
+-  [Function `resolve_address`](#0x3_address_mapping_resolve_address)
+-  [Function `resolve_or_generate_address`](#0x3_address_mapping_resolve_or_generate_address)
+-  [Function `exists_mapping_address`](#0x3_address_mapping_exists_mapping_address)
 -  [Function `resolve`](#0x3_address_mapping_resolve)
 -  [Function `resolve_or_generate`](#0x3_address_mapping_resolve_or_generate)
 -  [Function `exists_mapping`](#0x3_address_mapping_exists_mapping)
@@ -20,6 +24,7 @@
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
+<b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="hash.md#0x3_hash">0x3::hash</a>;
 <b>use</b> <a href="multichain_address.md#0x3_multichain_address">0x3::multichain_address</a>;
@@ -58,7 +63,52 @@
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, genesis_account: &<a href="">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _genesis_account: &<a href="">signer</a>)
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_borrow"></a>
+
+## Function `borrow`
+
+Borrow the address mapping object
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_borrow">borrow</a>(ctx: &<a href="_Context">context::Context</a>): &<a href="_Object">object::Object</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">address_mapping::AddressMapping</a>&gt;
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_resolve_address"></a>
+
+## Function `resolve_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_address">resolve_address</a>(obj: &<a href="_Object">object::Object</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">address_mapping::AddressMapping</a>&gt;, maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_resolve_or_generate_address"></a>
+
+## Function `resolve_or_generate_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_or_generate_address">resolve_or_generate_address</a>(obj: &<a href="_Object">object::Object</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">address_mapping::AddressMapping</a>&gt;, maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_exists_mapping_address"></a>
+
+## Function `exists_mapping_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_exists_mapping_address">exists_mapping_address</a>(obj: &<a href="_Object">object::Object</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">address_mapping::AddressMapping</a>&gt;, maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): bool
 </code></pre>
 
 

@@ -3,7 +3,8 @@
 
 use crate::client_config::{ClientConfig, DEFAULT_EXPIRATION_SECS};
 use crate::Client;
-use anyhow::anyhow;
+use anyhow::{anyhow, Result};
+use move_command_line_common::address::ParsedAddress;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::gas_config::GasConfig;
 use moveos_types::transaction::MoveAction;
@@ -15,6 +16,7 @@ use rooch_key::keystore::file_keystore::FileBasedKeystore;
 use rooch_key::keystore::Keystore;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
 use rooch_types::address::RoochAddress;
+use rooch_types::addresses;
 use rooch_types::crypto::Signature;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::transaction::{
@@ -23,7 +25,6 @@ use rooch_types::transaction::{
 };
 use std::collections::BTreeMap;
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
@@ -33,10 +34,13 @@ pub struct WalletContext {
     pub client_config: PersistedConfig<ClientConfig>,
     pub server_config: PersistedConfig<ServerConfig>,
     pub keystore: Keystore,
+    pub address_mapping: BTreeMap<String, AccountAddress>,
 }
 
+pub type AddressMappingFn = Box<dyn Fn(&str) -> Option<AccountAddress> + Send + Sync>;
+
 impl WalletContext {
-    pub async fn new(config_path: Option<PathBuf>) -> Result<Self, anyhow::Error> {
+    pub fn new(config_path: Option<PathBuf>) -> Result<Self, anyhow::Error> {
         let config_dir = config_path.unwrap_or(rooch_config_dir()?);
         let client_config_path = config_dir.join(ROOCH_CLIENT_CONFIG);
         let server_config_path = config_dir.join(ROOCH_SERVER_CONFIG);
@@ -62,26 +66,57 @@ impl WalletContext {
             Err(error) => return Err(error),
         };
 
+        let mut address_mapping = BTreeMap::new();
+        address_mapping.extend(addresses::rooch_framework_named_addresses());
+
+        //TODO support account name alias name.
+        if let Some(active_address) = client_config.active_address {
+            address_mapping.insert("default".to_string(), AccountAddress::from(active_address));
+        }
+
         Ok(Self {
             client: Default::default(),
             client_config,
             server_config,
             keystore,
+            address_mapping,
         })
     }
 
-    pub fn parse_account_arg(&self, arg: String) -> Result<AccountAddress, RoochError> {
-        self.parse(arg)
+    pub fn add_address_mapping(&mut self, name: String, address: AccountAddress) {
+        self.address_mapping.insert(name, address);
     }
 
-    pub fn parse_account_args(
+    pub fn address_mapping(&self) -> AddressMappingFn {
+        let address_mapping = self.address_mapping.clone();
+        Box::new(move |name| address_mapping.get(name).cloned())
+    }
+
+    pub fn resolve_address(&self, parsed_address: ParsedAddress) -> RoochResult<AccountAddress> {
+        match parsed_address {
+            ParsedAddress::Numerical(address) => Ok(address.into_inner()),
+            ParsedAddress::Named(name) => {
+                self.address_mapping.get(&name).cloned().ok_or_else(|| {
+                    RoochError::CommandArgumentError(format!("Unknown named address: {}", name))
+                })
+            }
+        }
+    }
+
+    /// Parse and resolve addresses from a map of name to address string    
+    pub fn parse_and_resolve_addresses(
         &self,
-        args: BTreeMap<String, String>,
-    ) -> Result<BTreeMap<String, AccountAddress>, RoochError> {
-        Ok(args
+        addresses: BTreeMap<String, String>,
+    ) -> RoochResult<BTreeMap<String, AccountAddress>> {
+        addresses
             .into_iter()
-            .map(|(key, value)| (key, self.parse(value).unwrap()))
-            .collect())
+            .map(|(key, value)| {
+                let parsed_address = ParsedAddress::parse(value.as_str())?;
+                let account_address = self.resolve_address(parsed_address)?;
+                Ok((key, account_address))
+            })
+            .collect::<Result<BTreeMap<_, _>>>()
+            .map_err(|e| RoochError::CommandArgumentError(e.to_string()))
     }
 
     pub async fn get_client(&self) -> Result<Client, anyhow::Error> {
@@ -171,25 +206,6 @@ impl WalletContext {
     ) -> RoochResult<ExecuteTransactionResponseView> {
         let tx = self.sign(sender, action, password).await?;
         self.execute(tx).await
-    }
-
-    fn parse(&self, account: String) -> Result<AccountAddress, RoochError> {
-        if account.starts_with("0x") {
-            AccountAddress::from_hex_literal(&account).map_err(|err| {
-                RoochError::CommandArgumentError(format!("Failed to parse AccountAddress {}", err))
-            })
-        } else if let Ok(account_address) = AccountAddress::from_str(&account) {
-            Ok(account_address)
-        } else {
-            let address = match account.as_str() {
-                "default" => AccountAddress::from(self.client_config.active_address.unwrap()),
-                _ => Err(RoochError::CommandArgumentError(
-                    "Use rooch init configuration".to_owned(),
-                ))?,
-            };
-
-            Ok(address)
-        }
     }
 
     pub fn assert_execute_success(

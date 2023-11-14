@@ -30,8 +30,8 @@ pub struct StoredTransaction {
     pub transaction_type: String,
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub sequence_number: i64,
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    pub multichain_id: String,
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub multichain_id: i64,
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub multichain_raw_address: String,
     /// the rooch address of sender who send the transaction
@@ -82,7 +82,7 @@ impl From<IndexedTransaction> for StoredTransaction {
             tx_order: transaction.tx_order as i64,
             transaction_type: transaction.transaction_type.transaction_type_name(),
             sequence_number: transaction.sequence_number as i64,
-            multichain_id: transaction.multichain_id.multichain_name(),
+            multichain_id: transaction.multichain_id.id() as i64,
             multichain_raw_address: transaction.multichain_raw_address,
             sender: transaction.sender.to_string(),
             action: transaction.action.action_name(),

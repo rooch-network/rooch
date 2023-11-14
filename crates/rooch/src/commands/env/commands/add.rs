@@ -22,7 +22,7 @@ pub struct AddCommand {
 
 impl AddCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        let mut context = self.context_options.build().await?;
+        let mut context = self.context_options.build()?;
         let AddCommand { alias, rpc, ws, .. } = self;
         let env = Env {
             ws,

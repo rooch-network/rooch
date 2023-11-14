@@ -7,22 +7,22 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use move_core_types::account_address::AccountAddress;
+use move_command_line_common::address::ParsedAddress;
+use move_command_line_common::types::ParsedStructType;
 use rooch_rpc_api::api::MAX_RESULT_LIMIT_USIZE;
-use rooch_rpc_api::jsonrpc_types::{AccountAddressView, StructTagView};
 use rooch_types::error::RoochResult;
 
 /// Show account balance, only the accounts managed by the current node are supported
 #[derive(Debug, Parser)]
 pub struct BalanceCommand {
-    #[clap(short = 'a', long = "address")]
+    #[clap(short = 'a', long = "address", parse(try_from_str = ParsedAddress::parse), default_value = "default")]
     /// The account's address to show balance, if absent, show the default active account.
-    address: Option<AccountAddressView>,
+    address: ParsedAddress,
 
     /// Struct name as `<ADDRESS>::<MODULE_ID>::<STRUCT_NAME><TypeParam>`
     /// Example: `0x3::gas_coin::GasCoin`, `0x123::Coin::Box<0x123::coin_box::FCoin>`
-    #[clap(long)]
-    coin_type: Option<StructTagView>,
+    #[clap(long, parse(try_from_str = ParsedStructType::parse))]
+    coin_type: Option<ParsedStructType>,
 
     #[clap(flatten)]
     pub context_options: WalletContextOptions,
@@ -31,28 +31,28 @@ pub struct BalanceCommand {
 #[async_trait]
 impl CommandAction<()> for BalanceCommand {
     async fn execute(self) -> RoochResult<()> {
-        let context = self.context_options.build().await?;
-        let address_addr = self
-            .address
-            .map_or(
-                context
-                    .client_config
-                    .active_address
-                    .map(|active_address| AccountAddress::from(active_address).into()),
-                Some,
-            )
-            .ok_or_else(|| anyhow::anyhow!("Account not found error"))?;
-
+        let context = self.context_options.build()?;
+        let mapping = context.address_mapping();
+        let address_addr = self.address.into_account_address(&mapping)?;
+        let coin_type = self
+            .coin_type
+            .map(|t| t.into_struct_tag(&mapping))
+            .transpose()?;
         let client = context.get_client().await?;
 
-        let balances = match self.coin_type {
+        let balances = match coin_type {
             Some(coin_type) => {
-                vec![client.rooch.get_balance(address_addr, coin_type).await?]
+                vec![
+                    client
+                        .rooch
+                        .get_balance(address_addr.into(), coin_type.into())
+                        .await?,
+                ]
             }
             None => {
                 client
                     .rooch
-                    .get_balances(address_addr, None, Some(MAX_RESULT_LIMIT_USIZE))
+                    .get_balances(address_addr.into(), None, Some(MAX_RESULT_LIMIT_USIZE))
                     .await?
                     .data
             }

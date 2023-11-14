@@ -6,17 +6,18 @@
 
 use crate::build::ROOCH_METADATA_KEY;
 use crate::verifier::INIT_FN_NAME_IDENTIFIER;
+use itertools::Itertools;
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::{Location, PartialVMError, VMResult};
 use move_binary_format::file_format::{
-    Bytecode, FunctionInstantiation, SignatureToken, Visibility,
+    Ability, Bytecode, FunctionInstantiation, SignatureToken, Visibility,
 };
 use move_binary_format::CompiledModule;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::metadata::Metadata;
 use move_core_types::vm_status::StatusCode;
 use move_model::ast::{Attribute, AttributeValue};
-use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv};
+use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv, StructEnv};
 use move_model::ty::PrimitiveType;
 use move_model::ty::Type;
 use moveos_types::moveos_std::context::Context;
@@ -24,11 +25,17 @@ use moveos_types::state::MoveStructType;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::ops::Deref;
 use thiserror::Error;
 
 // This is only used for local integration testing and compiling multiple Move Packages.
 // When publishing, use FunctionIndex -> ModuleID to read the module from the DB.
 pub static mut GLOBAL_PRIVATE_GENERICS: Lazy<BTreeMap<String, Vec<usize>>> =
+    Lazy::new(|| BTreeMap::new());
+
+pub static mut GLOBAL_DATA_STRUCT: Lazy<BTreeMap<String, bool>> = Lazy::new(|| BTreeMap::new());
+
+pub static mut GLOBAL_DATA_STRUCT_FUNC: Lazy<BTreeMap<String, Vec<usize>>> =
     Lazy::new(|| BTreeMap::new());
 
 pub static mut GLOBAL_GAS_FREE_RECORDER: Lazy<BTreeMap<String, Vec<usize>>> =
@@ -39,6 +46,8 @@ const PRIVATE_GENERICS_ATTRIBUTE: &str = "private_generics";
 const GAS_FREE_ATTRIBUTE: &str = "gas_free";
 const GAS_FREE_VALIDATE: &str = "gas_validate";
 const GAS_FREE_CHARGE_POST: &str = "gas_charge_post";
+
+const DATA_STRUCT_ATTRIBUTE: &str = "data_struct";
 
 /// Enumeration of potentially known attributes
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -67,6 +76,12 @@ pub struct RuntimeModuleMetadataV1 {
 
     /// Save information for the gas free function.
     pub gas_free_function_map: BTreeMap<String, GasFreeFunction>,
+
+    /// Save information for the data_struct.
+    pub data_struct_map: BTreeMap<String, bool>,
+
+    /// Save information for the data_struct in the Move function.
+    pub data_struct_func_map: BTreeMap<String, Vec<usize>>,
 }
 
 impl RuntimeModuleMetadataV1 {
@@ -125,6 +140,7 @@ impl<'a> ExtendedChecker<'a> {
                 self.check_init_module(module);
                 self.check_global_storage_access(module);
                 self.check_gas_free_function(module);
+                self.check_data_struct(module);
             }
         }
     }
@@ -792,6 +808,402 @@ impl<'a> ExtendedChecker<'a> {
                     .or_default();
                 module_metadata.gas_free_function_map = gas_free_function_map;
             }
+        }
+    }
+}
+
+impl<'a> ExtendedChecker<'a> {
+    fn check_data_struct(&mut self, module_env: &ModuleEnv) {
+        for struct_def in module_env.get_structs() {
+            if is_data_struct_annotation(&struct_def, module_env) {
+                if is_copy_drop_struct(&struct_def) {
+                    let (error_message, is_allowed) =
+                        check_data_struct_fields(&struct_def, module_env);
+                    if !is_allowed {
+                        self.env
+                            .error(&struct_def.get_loc(), error_message.as_str());
+                    }
+                } else {
+                    let struct_name = struct_def.get_full_name_str();
+                    self.env.error(
+                        &struct_def.get_loc(),
+                        format!(
+                            "The struct {} must have the 'copy' and 'drop' ability",
+                            struct_name
+                        )
+                        .as_str(),
+                    );
+                }
+            }
+        }
+
+        let module_metadata = self
+            .output
+            .entry(module_env.get_verified_module().self_id())
+            .or_default();
+
+        let data_struct_map = unsafe {
+            let result: BTreeMap<String, bool> = GLOBAL_DATA_STRUCT
+                .iter()
+                .map(|(key, value)| (key.clone(), *value))
+                .collect();
+            result
+        };
+
+        module_metadata.data_struct_map = data_struct_map;
+
+        check_data_struct_func(self, module_env);
+    }
+}
+
+fn check_data_struct_fields(struct_def: &StructEnv, module_env: &ModuleEnv) -> (String, bool) {
+    let struct_fields = struct_def.get_fields().collect_vec();
+    for field in struct_fields {
+        let field_type = field.get_type();
+        let field_name = module_env
+            .symbol_pool()
+            .string(field.get_name())
+            .to_string();
+        let is_allowed = check_data_struct_fields_type(&field_type, module_env);
+        if !is_allowed {
+            let struct_name = module_env
+                .symbol_pool()
+                .string(struct_def.get_name())
+                .to_string();
+            let full_struct_name = format!("{}::{}", module_env.get_full_name_str(), struct_name);
+
+            return (
+                format!(
+                    "The field [{}] in struct {} is not allowed.",
+                    field_name, full_struct_name
+                ),
+                is_allowed,
+            );
+        }
+    }
+
+    let struct_name = module_env
+        .symbol_pool()
+        .string(struct_def.get_name())
+        .to_string();
+    let full_struct_name = format!("{}::{}", module_env.get_full_name_str(), struct_name);
+    unsafe {
+        GLOBAL_DATA_STRUCT.insert(full_struct_name, true);
+    }
+
+    ("".to_string(), true)
+}
+
+fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> bool {
+    return match field_type {
+        Type::Primitive(_) => true,
+        Type::Vector(item_type) => check_data_struct_fields_type(item_type.as_ref(), module_env),
+        Type::Struct(module_id, struct_id, _) => {
+            let module = module_env.env.get_module(*module_id);
+
+            let struct_name = module_env
+                .symbol_pool()
+                .string(struct_id.symbol())
+                .to_string();
+            let full_struct_name = format!("{}::{}", module.get_full_name_str(), struct_name);
+
+            if is_allowed_data_struct_type(&full_struct_name) {
+                return true;
+            }
+
+            let struct_module = module_env.env.get_module(*module_id);
+            let struct_env = struct_module.get_struct(*struct_id);
+
+            if !is_data_struct_annotation(&struct_env, module_env) {
+                return false;
+            }
+
+            if !is_copy_drop_struct(&struct_env) {
+                return false;
+            }
+
+            check_data_struct_fields(&struct_env, &struct_module);
+
+            let is_allowed_opt = unsafe { GLOBAL_DATA_STRUCT.get(full_struct_name.as_str()) };
+            return if let Some(is_allowed) = is_allowed_opt {
+                *is_allowed
+            } else {
+                false
+            };
+        }
+        _ => false,
+    };
+}
+
+fn is_allowed_data_struct_type(full_struct_name: &str) -> bool {
+    matches!(
+        full_struct_name,
+        "0x1::string::String" | "0x1::ascii::String" | "0x2::object::ObjectID"
+    )
+}
+
+fn is_data_struct_annotation(struct_env: &StructEnv, module_env: &ModuleEnv) -> bool {
+    let struct_attributes = struct_env.get_attributes().to_vec();
+    for attribute in struct_attributes.iter() {
+        if let Attribute::Apply(_, symbol, _) = attribute {
+            let attr_name = module_env.symbol_pool().string(*symbol).to_string();
+            if attr_name == DATA_STRUCT_ATTRIBUTE {
+                return true;
+            }
+        }
+    }
+
+    false
+}
+
+fn is_copy_drop_struct(struct_env: &StructEnv) -> bool {
+    let abilities = struct_env.get_abilities();
+    if abilities.has_ability(Ability::Copy) && abilities.has_ability(Ability::Drop) {
+        return true;
+    }
+
+    false
+}
+
+fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &ModuleEnv) {
+    let mut type_name_indices: BTreeMap<String, Vec<usize>> = BTreeMap::new();
+    let mut func_loc_map = BTreeMap::new();
+
+    let compiled_module = module_env.get_verified_module();
+    let view = BinaryIndexedView::Module(compiled_module);
+
+    for ref fun in module_env.get_functions() {
+        if extended_checker.has_attribute(fun, DATA_STRUCT_ATTRIBUTE) {
+            let mut func_type_params_name_list = vec![];
+            let type_params = fun.get_named_type_parameters();
+
+            for t in type_params {
+                let type_name = extended_checker
+                    .env
+                    .symbol_pool()
+                    .string(t.0)
+                    .as_str()
+                    .to_string();
+                func_type_params_name_list.push(type_name);
+            }
+
+            if func_type_params_name_list.is_empty() {
+                extended_checker
+                    .env
+                    .error(&fun.get_loc(), "Function do not has type parameter.");
+            }
+
+            let attributes = fun.get_attributes();
+
+            for attr in attributes {
+                if let Attribute::Apply(_, _, types) = attr {
+                    if types.is_empty() {
+                        extended_checker.env.error(
+                            &fun.get_loc(),
+                            "A type name is needed for data_struct function.",
+                        );
+                    }
+
+                    let mut attribute_type_index = vec![];
+                    let mut attribute_type_names = vec![];
+
+                    for (idx, type_name) in func_type_params_name_list.iter().enumerate() {
+                        let _ = types
+                            .iter()
+                            .map(|attr| {
+                                if let Attribute::Apply(_, name, _) = attr {
+                                    let attribute_type_name = extended_checker
+                                        .env
+                                        .symbol_pool()
+                                        .string(*name)
+                                        .as_str()
+                                        .to_string();
+
+                                    if attribute_type_name == type_name.as_str() {
+                                        attribute_type_index.push(idx);
+                                        attribute_type_names.push(attribute_type_name);
+                                    }
+                                }
+                            })
+                            .collect::<Vec<_>>();
+                    }
+
+                    let _ = types
+                        .iter()
+                        .map(|attr| {
+                            if let Attribute::Apply(_, name, _) = attr {
+                                let attribute_type_name = extended_checker
+                                    .env
+                                    .symbol_pool()
+                                    .string(*name)
+                                    .as_str()
+                                    .to_string();
+                                if !attribute_type_names.contains(&attribute_type_name) {
+                                    let func_name = extended_checker
+                                        .env
+                                        .symbol_pool()
+                                        .string(fun.get_name())
+                                        .as_str()
+                                        .to_string();
+
+                                    extended_checker.env.error(
+                                        &fun.get_loc(),
+                                        format!(
+                                            "type name {:?} not defined in function {:?}",
+                                            attribute_type_name, func_name
+                                        )
+                                        .as_str(),
+                                    );
+                                }
+                            }
+                        })
+                        .collect::<Vec<_>>();
+
+                    let module_address = module_env.self_address().to_hex_literal();
+                    let module_name = extended_checker
+                        .env
+                        .symbol_pool()
+                        .string(module_env.get_name().name())
+                        .as_str()
+                        .to_string();
+                    let func_name = extended_checker
+                        .env
+                        .symbol_pool()
+                        .string(fun.get_name())
+                        .as_str()
+                        .to_string();
+                    let full_path_func_name =
+                        format!("{}::{}::{}", module_address, module_name, func_name);
+                    type_name_indices
+                        .insert(full_path_func_name.clone(), attribute_type_index.clone());
+
+                    unsafe {
+                        GLOBAL_DATA_STRUCT_FUNC
+                            .insert(full_path_func_name, attribute_type_index.clone());
+                    }
+
+                    func_loc_map.insert(func_name, fun.get_loc());
+                }
+            }
+        }
+    }
+
+    let module_metadata = extended_checker
+        .output
+        .entry(module_env.get_verified_module().self_id())
+        .or_default();
+
+    let data_struct_func_map = unsafe {
+        let result: BTreeMap<String, Vec<usize>> = GLOBAL_DATA_STRUCT_FUNC
+            .iter()
+            .map(|(key, value)| (key.clone(), value.clone()))
+            .collect();
+        result
+    };
+
+    module_metadata.data_struct_func_map = data_struct_func_map;
+
+    for ref fun in module_env.get_functions() {
+        for (_offset, instr) in fun.get_bytecode().iter().enumerate() {
+            if let Bytecode::CallGeneric(finst_idx) = instr {
+                let FunctionInstantiation {
+                    handle,
+                    type_parameters,
+                } = view.function_instantiation_at(*finst_idx);
+
+                let fhandle = view.function_handle_at(*handle);
+                let module_handle = view.module_handle_at(fhandle.module);
+
+                let module_address = view
+                    .address_identifier_at(module_handle.address)
+                    .to_hex_literal();
+
+                let module_name = view.identifier_at(module_handle.name);
+                let func_name = view.identifier_at(fhandle.name).to_string();
+
+                let full_path_func_name =
+                    format!("{}::{}::{}", module_address, module_name, func_name);
+
+                let type_arguments = &view.signature_at(*type_parameters).0;
+
+                let data_struct_func_types = {
+                    unsafe {
+                        GLOBAL_DATA_STRUCT_FUNC
+                            .get(full_path_func_name.as_str())
+                            .map(|list| list.clone())
+                    }
+                };
+
+                if let Some(data_struct_func_indicies) = data_struct_func_types {
+                    for generic_type_index in data_struct_func_indicies {
+                        let type_arg = type_arguments.get(generic_type_index).unwrap();
+
+                        let (is_allowed_struct_type, error_message) =
+                            check_func_data_struct(&view, fun, type_arg);
+
+                        if !is_allowed_struct_type {
+                            extended_checker
+                                .env
+                                .error(&fun.get_loc(), error_message.as_str());
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn check_func_data_struct(
+    view: &BinaryIndexedView,
+    func_env: &FunctionEnv,
+    type_arg: &SignatureToken,
+) -> (bool, String) {
+    let func_name = func_env.get_full_name_str();
+    match type_arg {
+        SignatureToken::Struct(struct_handle_index) => {
+            let shandle = view.struct_handle_at(*struct_handle_index);
+            let module_id = shandle.module;
+            let module_handle = view.module_handle_at(module_id);
+            let module_address = view.address_identifier_at(module_handle.address);
+            let module_name = view.identifier_at(module_handle.name);
+            let full_module_name = format!("{}::{}", module_address.to_hex_literal(), module_name);
+            let struct_name = view.identifier_at(shandle.name).to_string();
+            let full_struct_name = format!(
+                "{}::{}::{}",
+                module_address.to_hex_literal(),
+                module_name,
+                struct_name
+            );
+
+            unsafe {
+                let data_struct_opt = GLOBAL_DATA_STRUCT.get(full_struct_name.as_str());
+                if let Some(is_data_struct) = data_struct_opt {
+                    if *is_data_struct {
+                        return (true, "".to_string());
+                    }
+                }
+            }
+
+            (false, format!("The type argument {} of #[data_struct] for function {} in the module {} is not allowed.",
+            full_struct_name, func_name, full_module_name))
+        }
+        // #[data_struct(T)] supports not only structs, but also primitive types and vectors.
+        SignatureToken::Vector(item_type) => {
+            check_func_data_struct(view, func_env, item_type.deref())
+        }
+        SignatureToken::Address => (true, "".to_string()),
+        SignatureToken::Bool => (true, "".to_string()),
+        SignatureToken::U8 => (true, "".to_string()),
+        SignatureToken::U16 => (true, "".to_string()),
+        SignatureToken::U32 => (true, "".to_string()),
+        SignatureToken::U64 => (true, "".to_string()),
+        SignatureToken::U128 => (true, "".to_string()),
+        SignatureToken::U256 => (true, "".to_string()),
+        _ => {
+            let module_id = view.self_id().unwrap().to_string();
+            (false, format!("The type argument of #[data_struct] for function {} in the module {} is not allowed.",
+            func_name, module_id))
         }
     }
 }

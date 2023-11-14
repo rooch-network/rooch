@@ -1,0 +1,23 @@
+processed 2 tasks
+
+task 1 'publish'. lines 3-24:
+Error: error: The field [simple_map] in struct 0x42::test1::DisallowedStruct is not allowed.
+   ┌─ /tmp/tempfile:9:5
+   │  
+ 9 │ ╭     struct DisallowedStruct<Key: store, Value: store> has copy, drop {
+10 │ │         simple_map: SimpleMap<Key, Value>,
+11 │ │     }
+   │ ╰─────^
+
+error: The type argument of #[data_struct] for function test1::f2 in the module 0000000000000000000000000000000000000000000000000000000000000042::test1 is not allowed.
+   ┌─ /tmp/tempfile:15:5
+   │  
+15 │ ╭     public fun f2(_ctx: &mut Context) {
+16 │ │         let disallowed_struct = DisallowedStruct {
+17 │ │             simple_map: simple_map::create<u8, u8>()
+18 │ │         };
+19 │ │         f1<DisallowedStruct<u8, u8>>(disallowed_struct);
+20 │ │     }
+   │ ╰─────^
+
+

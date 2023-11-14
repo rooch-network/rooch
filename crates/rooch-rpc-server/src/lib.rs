@@ -17,11 +17,15 @@ use moveos_store::{MoveOSDB, MoveOSStore};
 use raw_store::errors::RawStoreError;
 use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
+use rooch_config::indexer_config::IndexerConfig;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::store_config::StoreConfig;
 use rooch_config::{BaseConfig, RoochOpt, ServerOpt};
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
+use rooch_indexer::actor::indexer::IndexerActor;
+use rooch_indexer::proxy::IndexerProxy;
+use rooch_indexer::IndexerStore;
 use rooch_key::key_derive::{generate_new_key_pair, retrieve_key_pair};
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
@@ -55,6 +59,7 @@ pub struct ServerHandle {
     handle: jsonrpsee::server::ServerHandle,
     timers: Vec<Timer>,
     _store_config: StoreConfig,
+    _index_config: IndexerConfig,
 }
 
 impl ServerHandle {
@@ -123,16 +128,25 @@ impl RpcModuleBuilder {
 
 // Start json-rpc server
 pub async fn start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<ServerHandle> {
+    let active_env = server_opt.get_active_env();
     match run_start_server(opt, server_opt).await {
         Ok(server_handle) => Ok(server_handle),
         Err(e) => match e.downcast::<GenesisError>() {
             Ok(e) => {
-                log::error!("{:?}, please clean your data dir. `rooch server clean` ", e);
+                log::error!(
+                    "{:?}, please clean your data dir. `rooch server clean -n {}` ",
+                    e,
+                    active_env
+                );
                 std::process::exit(R_EXIT_CODE_NEED_HELP);
             }
             Err(e) => match e.downcast::<RawStoreError>() {
                 Ok(e) => {
-                    log::error!("{:?}, please clean your data dir. `rooch server clean` ", e);
+                    log::error!(
+                        "{:?}, please clean your data dir. `rooch server clean -n {}` ",
+                        e,
+                        active_env
+                    );
                     std::process::exit(R_EXIT_CODE_NEED_HELP);
                 }
                 Err(e) => {
@@ -161,8 +175,13 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     //Init store
     let base_config = BaseConfig::load_with_opt(opt)?;
     let mut store_config = StoreConfig::default();
-    store_config.merge_with_opt_and_init(opt, Arc::new(base_config))?;
+    store_config.merge_with_opt_with_init(opt, Arc::new(base_config.clone()), true)?;
     let (moveos_store, rooch_store) = init_storage(&store_config)?;
+
+    //Init indexer store
+    let mut indexer_config = IndexerConfig::default();
+    indexer_config.merge_with_opt_with_init(opt, Arc::new(base_config), true)?;
+    let indexer_store = init_indexer_store(&indexer_config)?;
 
     // Init executor
     let is_genesis = moveos_store.statedb.is_genesis();
@@ -222,11 +241,18 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     );
     timers.push(proposer_timer);
 
+    // Init indexer
+    let indexer_executor = IndexerActor::new(indexer_store)?
+        .into_actor(Some("Indexer"), &actor_system)
+        .await?;
+    let indexer_proxy = IndexerProxy::new(indexer_executor.into());
+
     let rpc_service = RpcService::new(
         chain_id_opt.chain_id().id(),
         executor_proxy,
         sequencer_proxy,
         proposer_proxy,
+        indexer_proxy,
     );
     let aggregate_service = AggregateService::new(rpc_service.clone());
 
@@ -300,6 +326,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         handle,
         timers,
         _store_config: store_config,
+        _index_config: indexer_config,
     })
 }
 
@@ -348,4 +375,14 @@ fn init_storage(store_config: &StoreConfig) -> Result<(MoveOSStore, RoochStore)>
         None,
     )?))?;
     Ok((moveos_store, rooch_store))
+}
+
+fn init_indexer_store(indexer_config: &IndexerConfig) -> Result<IndexerStore> {
+    let indexer_db_path = indexer_config.get_indexer_db();
+    let indexer_db_url = indexer_db_path
+        .to_str()
+        .ok_or(anyhow::anyhow!("Invalid indexer db path"))?;
+    let indexer_store = IndexerStore::new(indexer_db_url)?;
+
+    Ok(indexer_store)
 }

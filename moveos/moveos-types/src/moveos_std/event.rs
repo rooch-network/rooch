@@ -7,7 +7,6 @@
 use crate::addresses::MOVEOS_STD_ADDRESS;
 use crate::h256;
 use crate::moveos_std::object::ObjectID;
-use crate::moveos_std::type_info::TypeInfo;
 use crate::state::MoveStructType;
 use anyhow::{ensure, Error, Result};
 use move_core_types::account_address::AccountAddress;
@@ -24,6 +23,8 @@ use crate::h256::H256;
 use crate::module_binding::{ModuleBinding, MoveFunctionCaller};
 use crate::moveos_std::tx_context::TxContext;
 use crate::transaction::FunctionCall;
+
+use super::object;
 
 /// Rust bindings for MoveosStd event module
 pub struct EventModule<'a> {
@@ -165,12 +166,6 @@ impl TransactionEvent {
             event_index,
         }
     }
-
-    /// The event hashs of the transaction will be collect to build the transaction merkle tree root.
-    /// The event hash is the hash of the event data, does not incloude other fields.
-    pub fn hash(&self) -> H256 {
-        h256::sha3_256_of(&self.event_data)
-    }
 }
 
 /// The Event type in the event store
@@ -203,6 +198,15 @@ impl Event {
         }
     }
 
+    pub fn new_with_event_id(event_id: EventID, transaction_event: TransactionEvent) -> Self {
+        Self {
+            event_id,
+            event_type: transaction_event.event_type,
+            event_data: transaction_event.event_data,
+            event_index: transaction_event.event_index,
+        }
+    }
+
     pub fn event_id(&self) -> &EventID {
         &self.event_id
     }
@@ -221,6 +225,12 @@ impl Event {
 
     pub fn is<EventType: MoveStructType>(&self) -> bool {
         self.event_type == EventType::struct_tag()
+    }
+
+    /// The event hashs of the transaction will be collect to build the transaction merkle tree root.
+    /// The event hash is the hash of the event data, does not include other fields.
+    pub fn hash(&self) -> H256 {
+        h256::sha3_256_of(&self.event_data)
     }
 }
 
@@ -270,16 +280,8 @@ impl EventHandle {
         &mut self.count
     }
 
-    pub fn derive_event_handle_id(event_handle_type: StructTag) -> ObjectID {
-        let type_info = TypeInfo::new(
-            event_handle_type.address,
-            event_handle_type.module,
-            event_handle_type.name,
-        );
-        let event_handle_hash = h256::sha3_256_of(bcs::to_bytes(&type_info).unwrap().as_ref());
-        AccountAddress::try_from(event_handle_hash.as_bytes())
-            .unwrap()
-            .into()
+    pub fn derive_event_handle_id(event_handle_type: &StructTag) -> ObjectID {
+        object::singleton_object_id(event_handle_type)
     }
 }
 

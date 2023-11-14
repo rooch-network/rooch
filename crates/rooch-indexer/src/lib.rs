@@ -1,28 +1,28 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-// Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
-
-#![recursion_limit = "256"]
-
+use std::fmt::{Debug, Display, Formatter};
 use std::time::Duration;
 
 use anyhow::Result;
 use diesel::r2d2::ConnectionManager;
 use diesel::sqlite::SqliteConnection;
-use tracing::info;
+// use tracing::info;
 
+use crate::store::sqlite_store::SqliteIndexerStore;
+use crate::store::traits::IndexerStoreTrait;
+use crate::types::{IndexedEvent, IndexedTransaction};
 use errors::IndexerError;
-use rooch_config::indexer_config::IndexerConfig;
-use store::IndexerStore;
+use moveos_types::h256::H256;
+use rooch_types::transaction::TransactionWithInfo;
 
+pub mod actor;
 pub mod errors;
-pub mod indexer;
+pub mod indexer_reader;
 pub mod models;
+pub mod proxy;
 pub mod schema;
 pub mod store;
-pub mod test_utils;
 pub mod types;
 pub mod utils;
 
@@ -32,29 +32,71 @@ pub type SqlitePoolConnection = diesel::r2d2::PooledConnection<ConnectionManager
 /// Returns all endpoints for which we have implemented on the indexer,
 /// some of them are not validated yet.
 /// NOTE: we only use this for integration testing
-const IMPLEMENTED_METHODS: [&str; 4] = [
-    "multi_get_transactions",
-    "multi_get_events",
-    // indexer apis
-    "query_transactions",
-    "query_events",
-];
+// const IMPLEMENTED_METHODS: [&str; 4] = [
+//     "multi_get_transactions",
+//     "multi_get_events",
+//     // indexer apis
+//     "query_transactions",
+//     "query_events",
+// ];
 
-pub struct Indexer;
+#[derive(Clone)]
+pub struct IndexerStore {
+    pub sqlite_store: SqliteIndexerStore,
+}
 
-impl Indexer {
-    pub async fn start<S: IndexerStore + Sync + Send + Clone + 'static>(
-        _config: &IndexerConfig,
-        _store: S,
-    ) -> Result<(), IndexerError> {
-        info!("Rooch indexer started...",);
+impl IndexerStore {
+    pub fn new(db_url: &str) -> Result<Self> {
+        let sqlite_cp = new_sqlite_connection_pool(db_url)?;
+        let store = Self {
+            sqlite_store: SqliteIndexerStore::new(sqlite_cp),
+        };
+        Ok(store)
+    }
 
-        Ok(())
+    pub fn mock_indexer_store() -> Result<Self> {
+        let tmpdir = moveos_config::temp_dir();
+        let db_url = tmpdir
+            .path()
+            .to_str()
+            .ok_or(anyhow::anyhow!("Invalid indexer db temp dir"))?;
+        Self::new(db_url)
+    }
+}
+
+impl Display for IndexerStore {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.clone())
+    }
+}
+impl Debug for IndexerStore {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }
 
 pub fn new_sqlite_connection_pool(db_url: &str) -> Result<SqliteConnectionPool, IndexerError> {
     new_sqlite_connection_pool_impl(db_url, None)
+}
+
+impl IndexerStoreTrait for IndexerStore {
+    fn persist_transactions(
+        &self,
+        transactions: Vec<IndexedTransaction>,
+    ) -> Result<(), IndexerError> {
+        self.sqlite_store.persist_transactions(transactions)
+    }
+
+    fn persist_events(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError> {
+        self.sqlite_store.persist_events(events)
+    }
+
+    fn query_transactions_by_hash(
+        &self,
+        _tx_hashes: Vec<H256>,
+    ) -> Result<Vec<Option<TransactionWithInfo>>, IndexerError> {
+        Ok(vec![])
+    }
 }
 
 pub fn new_sqlite_connection_pool_impl(
@@ -82,19 +124,14 @@ pub fn new_sqlite_connection_pool_impl(
 pub struct SqliteConnectionPoolConfig {
     pool_size: u32,
     connection_timeout: Duration,
-    statement_timeout: Duration,
 }
 
 impl SqliteConnectionPoolConfig {
     const DEFAULT_POOL_SIZE: u32 = 100;
     const DEFAULT_CONNECTION_TIMEOUT: u64 = 30;
-    const DEFAULT_STATEMENT_TIMEOUT: u64 = 30;
 
     fn connection_config(&self) -> SqliteConnectionConfig {
-        SqliteConnectionConfig {
-            statement_timeout: self.statement_timeout,
-            read_only: false,
-        }
+        SqliteConnectionConfig { read_only: false }
     }
 
     pub fn set_pool_size(&mut self, size: u32) {
@@ -103,10 +140,6 @@ impl SqliteConnectionPoolConfig {
 
     pub fn set_connection_timeout(&mut self, timeout: Duration) {
         self.connection_timeout = timeout;
-    }
-
-    pub fn set_statement_timeout(&mut self, timeout: Duration) {
-        self.statement_timeout = timeout;
     }
 }
 
@@ -120,22 +153,17 @@ impl Default for SqliteConnectionPoolConfig {
             .ok()
             .and_then(|s| s.parse::<u64>().ok())
             .unwrap_or(Self::DEFAULT_CONNECTION_TIMEOUT);
-        let statement_timeout_secs = std::env::var("DB_STATEMENT_TIMEOUT")
-            .ok()
-            .and_then(|s| s.parse::<u64>().ok())
-            .unwrap_or(Self::DEFAULT_STATEMENT_TIMEOUT);
 
         Self {
             pool_size: db_pool_size,
             connection_timeout: Duration::from_secs(conn_timeout_secs),
-            statement_timeout: Duration::from_secs(statement_timeout_secs),
         }
     }
 }
 
 #[derive(Debug, Clone, Copy)]
 struct SqliteConnectionConfig {
-    statement_timeout: Duration,
+    // SQLite does not support the statement_timeout parameter
     read_only: bool,
 }
 
@@ -148,15 +176,9 @@ impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
     ) -> std::result::Result<(), diesel::r2d2::Error> {
         use diesel::{sql_query, RunQueryDsl};
 
-        sql_query(format!(
-            "SET statement_timeout = {}",
-            self.statement_timeout.as_millis(),
-        ))
-        .execute(conn)
-        .map_err(diesel::r2d2::Error::QueryError)?;
-
+        // This will disable uncommitted reads, putting the connection into read-only mode
         if self.read_only {
-            sql_query("SET default_transaction_read_only = 't'")
+            sql_query("PRAGMA read_uncommitted = 0")
                 .execute(conn)
                 .map_err(diesel::r2d2::Error::QueryError)?;
         }
@@ -170,7 +192,7 @@ pub fn get_sqlite_pool_connection(
 ) -> Result<SqlitePoolConnection, IndexerError> {
     pool.get().map_err(|e| {
         IndexerError::SqlitePoolConnectionError(format!(
-            "Failed to get connection from PG connection pool with error: {:?}",
+            "Failed to get connection from SQLite connection pool with error: {:?}",
             e
         ))
     })

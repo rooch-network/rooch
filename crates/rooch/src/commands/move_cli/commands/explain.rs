@@ -3,9 +3,7 @@
 
 use bcs_ext;
 use clap::*;
-use move_core_types::account_address::AccountAddress;
 use move_core_types::errmap::{ErrorDescription, ErrorMapping};
-use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::AbortLocation;
 use moveos_types::addresses::MOVEOS_STD_ADDRESS;
@@ -14,16 +12,22 @@ use rooch_genesis::{
     move_std_error_descriptions, moveos_std_error_descriptions, rooch_framework_error_descriptions,
 };
 use rooch_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
+use rooch_types::function_arg::ParsedModuleId;
 use serde::{Deserialize, Serialize};
+
+use crate::cli_types::WalletContextOptions;
 
 ///Explain Move abort codes. Errors are defined as
 ///a global category + module-specific reason for the error.
 #[derive(Parser)]
 #[clap(name = "explain")]
 pub struct Explain {
+    #[clap(flatten)]
+    context_options: WalletContextOptions,
+
     /// The location (module id) returned with a `MoveAbort` error
     #[clap(long = "location", short = 'l')]
-    location: String,
+    location: ParsedModuleId,
     /// The abort code returned with a `MoveAbort` error
     #[clap(long = "abort-code", short = 'a')]
     abort_code: u64,
@@ -31,22 +35,9 @@ pub struct Explain {
 
 impl Explain {
     pub async fn execute(self) -> anyhow::Result<()> {
-        let mut location = self.location.split("::");
-        let mut address_literal = location.next().expect("Could not find address").to_string();
-        let module_name = location
-            .next()
-            .expect("Could not find module name")
-            .to_string();
-
-        if !address_literal.starts_with("0x") {
-            address_literal = format!("0x{}", address_literal);
-        }
-
-        let module_id = ModuleId::new(
-            AccountAddress::from_hex_literal(&address_literal)
-                .expect("Unable to parse module address"),
-            Identifier::new(module_name).expect("Invalid module name encountered"),
-        );
+        let context = self.context_options.build()?;
+        let address_mapping = context.address_mapping();
+        let module_id = self.location.into_module_id(&address_mapping)?;
 
         let error_description_bytes = {
             match *module_id.address() {

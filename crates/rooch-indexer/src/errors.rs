@@ -17,10 +17,12 @@ pub enum IndexerError {
     #[error("Indexer failed to convert structs to diesel Insertable with error: `{0}`")]
     InsertableParsingError(String),
 
-    #[error("Indexer failed to build PG connection pool with error: `{0}`")]
+    #[error("Indexer failed to build SQLite connection pool with error: `{0}`")]
     SqliteConnectionPoolInitError(String),
 
-    #[error("Indexer failed to get a pool connection from PG connection pool with error: `{0}`")]
+    #[error(
+        "Indexer failed to get a pool connection from SQLite connection pool with error: `{0}`"
+    )]
     SqlitePoolConnectionError(String),
 
     #[error("Indexer failed to read SQLiteDB with error: `{0}`")]

@@ -8,6 +8,8 @@
 -  [Resource `ChainID`](#0x3_chain_id_ChainID)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_chain_id_genesis_init)
+-  [Function `id`](#0x3_chain_id_id)
+-  [Function `borrow`](#0x3_chain_id_borrow)
 -  [Function `chain_id`](#0x3_chain_id_chain_id)
 -  [Function `is_local`](#0x3_chain_id_is_local)
 -  [Function `is_dev`](#0x3_chain_id_is_dev)
@@ -16,6 +18,7 @@
 
 
 <pre><code><b>use</b> <a href="">0x2::context</a>;
+<b>use</b> <a href="">0x2::object</a>;
 </code></pre>
 
 
@@ -27,7 +30,7 @@
 The ChainID in the global storage
 
 
-<pre><code><b>struct</b> <a href="chain_id.md#0x3_chain_id_ChainID">ChainID</a> <b>has</b> <b>copy</b>, drop, store, key
+<pre><code><b>struct</b> <a href="chain_id.md#0x3_chain_id_ChainID">ChainID</a> <b>has</b> store, key
 </code></pre>
 
 
@@ -79,7 +82,29 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="chain_id.md#0x3_chain_id_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, genesis_account: &<a href="">signer</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="chain_id.md#0x3_chain_id_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _genesis_account: &<a href="">signer</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64)
+</code></pre>
+
+
+
+<a name="0x3_chain_id_id"></a>
+
+## Function `id`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_id">id</a>(self: &<a href="chain_id.md#0x3_chain_id_ChainID">chain_id::ChainID</a>): u64
+</code></pre>
+
+
+
+<a name="0x3_chain_id_borrow"></a>
+
+## Function `borrow`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_borrow">borrow</a>(ctx: &<a href="_Context">context::Context</a>): &<a href="chain_id.md#0x3_chain_id_ChainID">chain_id::ChainID</a>
 </code></pre>
 
 

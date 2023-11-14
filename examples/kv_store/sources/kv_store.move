@@ -3,6 +3,7 @@
 
 module rooch_examples::kv_store {
 
+   use moveos_std::signer;
    use moveos_std::context::{Self, Context};
    use moveos_std::table::{Self, Table};
    use std::string::{String};
@@ -27,7 +28,7 @@ module rooch_examples::kv_store {
       table::borrow(&store.table, key)
    }
 
-   public fun borrow_kv_store(ctx: &mut Context): &KVStore {
+   public fun borrow_kv_store(ctx: &Context): &KVStore {
       context::borrow_resource(ctx, @rooch_examples)
    }
 
@@ -36,11 +37,12 @@ module rooch_examples::kv_store {
    }
 
    //init when module publish
-   fun init(ctx: &mut Context, sender: signer) {
+   fun init(ctx: &mut Context) {
       let kv = KVStore{
          table: context::new_table(ctx),
       };
-      context::move_resource_to(ctx, &sender, kv);
+      let module_signer = signer::module_signer<KVStore>();
+      context::move_resource_to(ctx, &module_signer, kv);
    }
 
    public entry fun add_value(ctx: &mut Context, key: String, value: String) {
@@ -53,8 +55,9 @@ module rooch_examples::kv_store {
       remove(kv, key);
    }
 
-   public fun get_value(ctx: &mut Context, key: String): String {
+   public fun get_value(ctx: &Context, key: String): String {
       let kv = borrow_kv_store(ctx);
+      //std::debug::print(&key);
       let value = borrow(kv, key);
       *value
    }

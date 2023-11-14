@@ -2,7 +2,7 @@ CREATE TABLE events
 (
     event_handle_id    VARCHAR      NOT NULL,
     event_seq          BIGINT      NOT NULL,
-    type_tag           VARCHAR      NOT NULL,
+    event_type         VARCHAR      NOT NULL,
     event_data         BLOB         NOT NULL,
     event_index        BIGINT      NOT NULL,
 

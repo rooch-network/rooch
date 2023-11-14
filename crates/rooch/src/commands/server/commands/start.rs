@@ -31,7 +31,7 @@ pub struct StartCommand {
 #[async_trait]
 impl CommandAction<()> for StartCommand {
     async fn execute(mut self) -> RoochResult<()> {
-        let mut context = self.context_options.build().await?;
+        let mut context = self.context_options.build()?;
 
         //Parse key pair from Rooch opt
         let sequencer_account = if self.opt.sequencer_account.is_none() {
@@ -135,15 +135,18 @@ impl CommandAction<()> for StartCommand {
         server_opt.proposer_keypair = Some(proposer_keypair.copy());
         server_opt.relayer_keypair = Some(relayer_keypair.copy());
 
+        let active_env = context.client_config.get_active_env()?;
+        server_opt.active_env = Some(active_env.clone().alias);
+
         let mut service = Service::new();
         service
             .start(&self.opt.clone(), server_opt)
             .await
             .map_err(RoochError::from)?;
 
-        //Automatically switch env when use start server, if network is local or dev seed
-        // let mut context = self.context_options.build().await?;
-        let active_env = context.client_config.get_active_env()?;
+        // Automatically switch env when use start server, if network is local or dev seed
+        // let mut context = self.context_options.build()?;
+        // let active_env = context.client_config.get_active_env()?;
         let rooch_chain_id = self.opt.chain_id.unwrap_or_default();
         let chain_name = rooch_chain_id.chain_name().to_lowercase();
         // When chain_id is not equals to env alias

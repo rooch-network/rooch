@@ -34,6 +34,7 @@ use moveos_stdlib::natives::moveos_stdlib::{
     move_module::NativeModuleContext,
     raw_table::{NativeTableContext, TableData},
 };
+use moveos_types::transaction::RawTransactionOutput;
 use moveos_types::{
     function_return_value::FunctionReturnValue,
     move_std::string::MoveString,
@@ -44,7 +45,7 @@ use moveos_types::{
     moveos_std::tx_context::TxContext,
     moveos_std::{event::TransactionEvent, module_upgrade_flag::ModuleUpgradeFlag},
     state_resolver::MoveOSResolver,
-    transaction::{FunctionCall, MoveAction, TransactionOutput, VerifiedMoveAction},
+    transaction::{FunctionCall, MoveAction, VerifiedMoveAction},
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 use parking_lot::RwLock;
@@ -276,6 +277,11 @@ where
             } => {
                 //TODO check the modules package address with the sender
                 let sender = self.ctx.tx_context.sender();
+                // Check if module is first published. Only the first published module can run init function
+                let modules_with_init = init_function_modules
+                    .into_iter()
+                    .filter(|m| self.session.get_data_store().exists_module(m) == Ok(false))
+                    .collect();
                 //TODO check the compatiblity
                 let compat_config = Compatibility::full_check();
                 self.session.publish_module_bundle_with_compat_config(
@@ -284,7 +290,7 @@ where
                     &mut self.gas_meter,
                     compat_config,
                 )?;
-                self.execute_init_modules(init_function_modules)
+                self.execute_init_modules(modules_with_init)
             }
         };
 
@@ -336,8 +342,8 @@ where
             //TODO check the type with local index
             let returned_storage_context = Context::from_bytes(value.as_slice())
                 .expect("The return mutable reference should be a Context");
-            if log::log_enabled!(log::Level::Debug) {
-                log::debug!(
+            if log::log_enabled!(log::Level::Trace) {
+                log::trace!(
                     "The returned storage context is {:?}",
                     returned_storage_context
                 );
@@ -407,7 +413,7 @@ where
     pub fn finish_with_extensions(
         self,
         status: KeptVMStatus,
-    ) -> VMResult<(TxContext, TransactionOutput)> {
+    ) -> VMResult<(TxContext, RawTransactionOutput)> {
         let gas_used = self.query_gas_used();
         let MoveOSSession {
             vm: _,
@@ -459,7 +465,7 @@ where
 
         Ok((
             ctx.tx_context,
-            TransactionOutput {
+            RawTransactionOutput {
                 status,
                 changeset,
                 state_changeset,

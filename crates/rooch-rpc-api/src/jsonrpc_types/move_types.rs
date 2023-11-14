@@ -443,7 +443,7 @@ impl From<TransactionEvent> for TransactionEventView {
 pub struct EventView {
     pub event_id: EventID,
     pub event_type: StructTagView,
-    pub event_data: BytesView,
+    pub event_data: StrView<Vec<u8>>,
     pub event_index: u64,
     pub decoded_event_data: Option<AnnotatedMoveStructView>,
 }
