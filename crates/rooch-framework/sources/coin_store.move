@@ -28,25 +28,10 @@ module rooch_framework::coin_store {
     /// Not enough balance to withdraw from CoinStore
     const ErrorInSufficientBalance: u64 = 4;
 
-     /// Event emitted when some amount of a coin is deposited into an account.
-    struct DepositEvent has drop, store {
-        /// The id of the coin store that was deposited to
-        coin_store_id: ObjectID,
-        /// The type of the coin that was sent
-        coin_type: string::String,
-        amount: u256,
-    }
+    /// Transfer is not supported for CoinStore
+    const ErrorCoinStoreTransferNotSupported: u64 = 5;
 
-    /// Event emitted when some amount of a coin is withdrawn from an account.
-    struct WithdrawEvent has drop, store {
-        /// The id of the coin store that was withdrawn from
-        coin_store_id: ObjectID,
-        /// The type of the coin that was sent
-        coin_type: string::String,
-        amount: u256,
-    }
-
-
+    
     /// The Balance resource that stores the balance of a specific coin type.
     struct Balance has store {
         value: u256,
@@ -58,6 +43,49 @@ module rooch_framework::coin_store {
         coin_type: string::String,
         balance: Balance,
         frozen: bool,
+    }
+
+    /// Event emitted when a coin store is created.
+    struct CreateEvent has drop, store {
+        /// The id of the coin store that was created
+        coin_store_id: ObjectID,
+        /// The type of the coin that was created
+        coin_type: string::String,
+    }
+
+    /// Event emitted when some amount of a coin is deposited into a coin store.
+    struct DepositEvent has drop, store {
+        /// The id of the coin store that was deposited to
+        coin_store_id: ObjectID,
+        /// The type of the coin that was sent
+        coin_type: string::String,
+        amount: u256,
+    }
+
+    /// Event emitted when some amount of a coin is withdrawn from a coin store.
+    struct WithdrawEvent has drop, store {
+        /// The id of the coin store that was withdrawn from
+        coin_store_id: ObjectID,
+        /// The type of the coin that was sent
+        coin_type: string::String,
+        amount: u256,
+    }
+
+    /// Event emitted when a coin store is frozen or unfrozen.
+    struct FreezeEvent has drop, store {
+        /// The id of the coin store that was frozen or unfrozen
+        coin_store_id: ObjectID,
+        /// The type of the coin that was frozen or unfrozen
+        coin_type: string::String,
+        frozen: bool,
+    }
+
+    /// Event emitted when a coin store is removed.
+    struct RemoveEvent has drop, store {
+        /// The id of the coin store that was removed
+        coin_store_id: ObjectID,
+        /// The type of the coin that was removed
+        coin_type: string::String,
     }
 
     //
@@ -78,13 +106,21 @@ module rooch_framework::coin_store {
     
     /// Remove the CoinStore Object, return the Coin<T> in balance 
     public fun remove_coin_store<CoinType: key>(coin_store_object: Object<CoinStore<CoinType>>) : Coin<CoinType> {
+        let coin_store_id = object::id(&coin_store_object);
         let coin_store = object::remove(coin_store_object);
         
-        let CoinStore{coin_type:_, balance, frozen} = coin_store;
+        let CoinStore{coin_type, balance, frozen} = coin_store;
         // Cannot remove a frozen CoinStore, because if we allow this, the frozen is meaningless
         assert!(!frozen, error::permission_denied(ErrorCoinStoreIsFrozen));
         let Balance{value} = balance;
-        coin::pack<CoinType>(value)
+        let coin = coin::pack<CoinType>(value);
+
+        event::emit(RemoveEvent{
+            coin_store_id,
+            coin_type,
+        });
+
+        coin
     }
 
     public fun coin_type<CoinType: key>(coin_store_obj: &Object<CoinStore<CoinType>>): string::String {
@@ -125,15 +161,18 @@ module rooch_framework::coin_store {
         deposit_internal(coin_store_obj, coin)
     }
 
-    // We do not allow to transfer a CoinStore to another account, CoinStore is default ownerd by the system.
-    // Only provide a internal function for account_coin_store.
-    public fun transfer<CoinType: key>(coin_store_obj: Object<CoinStore<CoinType>>, owner: address){
-        // Cannot transfer a frozen CoinStore
-        // We do not use the frozen Object to represent the frozen CoinStore, because we want allow the T module to unfreeze the CoinStore
-        assert!(!object::borrow(&coin_store_obj).frozen, error::permission_denied(ErrorCoinStoreIsFrozen));
-        //TODO if the owner has the CoinStore<CoinType>, we should merge this CoinStore<CoinType> to the owner's CoinStore<CoinType>
-        //So, we need to migrate account_coin_store to coin_store module.
-        object::transfer_extend(coin_store_obj, owner)
+    // We do not allow to transfer a CoinStore to another account, this function will abort directly.
+    // Because we need to ensure one Account only has one CoinStore for one CoinType
+    // If you want tranfer a CoinStore to another account, you can call `coin_store::remove(Object<CoinStore<CoinType>>)` and deposit the Coin<CoinType> to another account.
+    public fun transfer<CoinType: key>(_coin_store_obj: Object<CoinStore<CoinType>>, _owner: address){
+        abort error::not_implemented(ErrorCoinStoreTransferNotSupported)
+    }
+
+    #[private_generics(CoinType)]
+    /// Borrow a mut CoinStore Object by the coin store id
+    /// This function is for the `CoinType` module to extend
+    public fun borrow_mut_coin_store_extend<CoinType: key>(ctx: &mut Context, object_id: ObjectID): &mut Object<CoinStore<CoinType>>{
+        borrow_mut_coin_store_internal(ctx, object_id)
     }
 
     #[private_generics(CoinType)]
@@ -141,36 +180,53 @@ module rooch_framework::coin_store {
     /// This function is for he `CoinType` module to extend,
     /// Only the `CoinType` module can freeze or unfreeze a CoinStore by the coin store id
     public fun freeze_coin_store_extend<CoinType: key>(
-        ctx: &mut Context,
-        coin_store_id: ObjectID,
+        coin_store_obj: &mut Object<CoinStore<CoinType>>,
         frozen: bool,
     ) {
-        assert!(context::exists_object<CoinStore<CoinType>>(ctx, coin_store_id), error::invalid_argument(ErrorCoinStoreNotFound));
-        let coin_store_object = context::borrow_mut_object_extend<CoinStore<CoinType>>(ctx, coin_store_id);
-        object::borrow_mut(coin_store_object).frozen = frozen;
+        let coin_store_id = object::id(coin_store_obj);
+        let coin_store = object::borrow_mut(coin_store_obj);
+        let coin_type = coin_store.coin_type;
+        coin_store.frozen = frozen;
+        event::emit(FreezeEvent{
+            coin_store_id,
+            coin_type,
+            frozen,
+        });
     }
 
     // Internal functions
 
     public(friend) fun create_coin_store_internal<CoinType: key>(ctx: &mut Context): Object<CoinStore<CoinType>>{
         coin::check_coin_info_registered<CoinType>(ctx);
-        context::new_object(ctx, CoinStore<CoinType>{
-            coin_type: type_info::type_name<CoinType>(),
+        let coin_type = type_info::type_name<CoinType>();
+        let coin_store_obj = context::new_object(ctx, CoinStore<CoinType>{
+            coin_type,
             balance: Balance { value: 0 },
             frozen: false,
-        })
+        });
+        event::emit(CreateEvent{
+            coin_store_id: object::id(&coin_store_obj),
+            coin_type,
+        });
+        coin_store_obj
     }
 
     public(friend) fun create_account_coin_store<CoinType: key>(ctx: &mut Context, account: address): &mut Object<CoinStore<CoinType>>{
         coin::check_coin_info_registered<CoinType>(ctx);
-        context::new_account_singleton(ctx, account, CoinStore<CoinType>{
-            coin_type: type_info::type_name<CoinType>(),
+        let coin_type = type_info::type_name<CoinType>();
+        let coin_store_obj = context::new_account_singleton(ctx, account, CoinStore<CoinType>{
+            coin_type,
             balance: Balance { value: 0 },
             frozen: false,
-        })
+        });
+        event::emit(CreateEvent{
+            coin_store_id: object::id(coin_store_obj),
+            coin_type,
+        });
+        coin_store_obj
     }
 
-    public(friend) fun borrow_mut_coin_store<CoinType: key>(ctx: &mut Context, object_id: ObjectID): &mut Object<CoinStore<CoinType>>{
+    public(friend) fun borrow_mut_coin_store_internal<CoinType: key>(ctx: &mut Context, object_id: ObjectID): &mut Object<CoinStore<CoinType>>{
         assert!(context::exists_object<CoinStore<CoinType>>(ctx, object_id), error::invalid_argument(ErrorCoinStoreNotFound));
         context::borrow_mut_object_extend<CoinStore<CoinType>>(ctx, object_id)
     }

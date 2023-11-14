@@ -39,7 +39,8 @@ module rooch_framework::coin_store_test{
         frozen: bool,
     ) {
         let coin_store_id = account_coin_store::account_coin_store_id<FakeCoin>(addr);
-        coin_store::freeze_coin_store_extend<FakeCoin>(ctx, coin_store_id, frozen);
+        let coin_store_obj = coin_store::borrow_mut_coin_store_extend<FakeCoin>(ctx, coin_store_id);
+        coin_store::freeze_coin_store_extend<FakeCoin>(coin_store_obj, frozen);
     }
 
     #[test]

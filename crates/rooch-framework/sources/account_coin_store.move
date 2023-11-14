@@ -232,7 +232,7 @@ module rooch_framework::account_coin_store {
 
     fun borrow_mut_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address): &mut Object<CoinStore<CoinType>>{
         let account_coin_store_id = account_coin_store_id<CoinType>(addr);
-        coin_store::borrow_mut_coin_store<CoinType>(ctx, account_coin_store_id)
+        coin_store::borrow_mut_coin_store_internal<CoinType>(ctx, account_coin_store_id)
     }
 
     fun create_or_borrow_mut_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address): &mut Object<CoinStore<CoinType>>{
@@ -240,7 +240,7 @@ module rooch_framework::account_coin_store {
         if(!context::exists_object<CoinStore<CoinType>>(ctx, account_coin_store_id)) {
             create_account_coin_store<CoinType>(ctx, addr);
         };
-        coin_store::borrow_mut_coin_store<CoinType>(ctx, account_coin_store_id)
+        coin_store::borrow_mut_coin_store_internal<CoinType>(ctx, account_coin_store_id)
     }
 
     fun create_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address) {
