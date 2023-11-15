@@ -76,7 +76,7 @@ impl RoochRpcClient {
 
     pub async fn get_transactions_by_order(
         &self,
-        cursor: Option<u128>,
+        cursor: Option<u64>,
         limit: Option<u64>,
     ) -> Result<TransactionWithInfoPageView> {
         Ok(self
@@ -103,7 +103,7 @@ impl RoochRpcClient {
             .flatten()
             .map(|state_view| {
                 let state = State::from(state_view);
-                state.as_move_state::<Account>()
+                state.cast::<Account>()
             })
             .transpose()?
             .map_or(0, |account| account.sequence_number))

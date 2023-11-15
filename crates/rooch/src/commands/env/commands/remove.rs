@@ -16,7 +16,7 @@ pub struct RemoveCommand {
 
 impl RemoveCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        let mut context = self.context_options.build().await?;
+        let mut context = self.context_options.build()?;
         if let Some(active_env) = &context.client_config.active_env {
             if active_env == &self.env {
                 return Err(RoochError::RemoveEnvError(

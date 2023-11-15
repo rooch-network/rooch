@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
-use crate::framework::coin::CoinInfo;
-use move_core_types::u256::U256;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
@@ -68,32 +66,5 @@ impl<'a> ModuleBinding<'a> for AccountModule<'a> {
         Self: Sized,
     {
         Self { caller }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AccountInfo {
-    pub sequence_number: u64,
-    pub balances: Vec<Option<BalanceInfo>>,
-}
-
-impl AccountInfo {
-    pub fn new(sequence_number: u64, balances: Vec<Option<BalanceInfo>>) -> Self {
-        Self {
-            sequence_number,
-            balances,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BalanceInfo {
-    pub coin_info: CoinInfo,
-    pub balance: U256,
-}
-
-impl BalanceInfo {
-    pub fn new(coin_info: CoinInfo, balance: U256) -> Self {
-        Self { coin_info, balance }
     }
 }

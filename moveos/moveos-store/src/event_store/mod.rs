@@ -59,7 +59,7 @@ impl EventDBStore {
         self.event_handle_store.kv_get(event_handle_id)
     }
 
-    fn get_or_create_event_handle(&self, event_handle_type: StructTag) -> Result<EventHandle> {
+    fn get_or_create_event_handle(&self, event_handle_type: &StructTag) -> Result<EventHandle> {
         let event_handle_id = EventHandle::derive_event_handle_id(event_handle_type);
         let event_handle = self.get_event_handle(event_handle_id)?;
         if let Some(event_handle) = event_handle {
@@ -83,7 +83,7 @@ impl EventDBStore {
         let mut event_handles = event_types
             .into_iter()
             .map(|event_type| {
-                let handle = self.get_or_create_event_handle(event_type.clone())?;
+                let handle = self.get_or_create_event_handle(&event_type)?;
                 Ok((event_type, handle))
             })
             .collect::<Result<HashMap<_, _>>>()?;
@@ -160,7 +160,7 @@ impl EventDBStore {
         cursor: Option<u64>,
         limit: u64,
     ) -> Result<Vec<Event>> {
-        let event_handle_id = EventHandle::derive_event_handle_id(event_handle_type.clone());
+        let event_handle_id = EventHandle::derive_event_handle_id(event_handle_type);
         self.get_events_by_event_handle_id(&event_handle_id, cursor, limit)
     }
 }

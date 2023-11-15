@@ -3,7 +3,6 @@
 
 use crate::SqlitePoolConnection;
 use anyhow::anyhow;
-use diesel::migration::MigrationSource;
 use diesel::{RunQueryDsl, SqliteConnection};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use tracing::info;
@@ -11,7 +10,9 @@ use tracing::info;
 const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
 /// creates all the tables by applying all migrations.
-pub fn create_all_tables_if_not_exists(conn: &mut SqlitePoolConnection) -> Result<(), anyhow::Error> {
+pub fn create_all_tables_if_not_exists(
+    conn: &mut SqlitePoolConnection,
+) -> Result<(), anyhow::Error> {
     info!("Indexer creates all tables in the db ...");
     let migration = MIGRATIONS;
 

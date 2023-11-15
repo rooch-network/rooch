@@ -1,0 +1,24 @@
+processed 2 tasks
+
+task 1 'publish'. lines 3-28:
+Error: error: The struct test::AllowedStruct must have the 'copy' and 'drop' ability
+   ┌─ /tmp/tempfile:11:5
+   │  
+11 │ ╭     struct AllowedStruct {
+12 │ │        f_u64: u64,
+13 │ │        f_address: address,
+14 │ │        f_bool: bool,
+15 │ │        f_str: std::string::String,
+16 │ │        f_custom: Inner,
+17 │ │     }
+   │ ╰─────^
+
+error: The type argument 0x42::test::AllowedStruct of #[data_struct] for function test::f2 in the module 0x42::test is not allowed.
+   ┌─ /tmp/tempfile:21:5
+   │  
+21 │ ╭     public fun f2(ctx: &mut Context) {
+22 │ │         f1<AllowedStruct>(ctx);
+23 │ │     }
+   │ ╰─────^
+
+

@@ -237,7 +237,7 @@
         {
           "name": "cursor",
           "schema": {
-            "$ref": "#/components/schemas/u128"
+            "$ref": "#/components/schemas/u64"
           }
         },
         {
@@ -251,7 +251,7 @@
         "name": "TransactionWithInfoPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_TransactionWithInfoView_and_uint128"
+          "$ref": "#/components/schemas/PageView_for_TransactionWithInfoView_and_uint64"
         }
       }
     },
@@ -604,13 +604,13 @@
                   "from_order": {
                     "description": "left endpoint of transaction order, inclusive",
                     "type": "integer",
-                    "format": "uint128",
+                    "format": "uint64",
                     "minimum": 0.0
                   },
                   "to_order": {
                     "description": "right endpoint of transaction order, exclusive",
                     "type": "integer",
-                    "format": "uint128",
+                    "format": "uint64",
                     "minimum": 0.0
                   }
                 }
@@ -766,7 +766,7 @@
           },
           "tx_order": {
             "type": "integer",
-            "format": "uint128",
+            "format": "uint64",
             "minimum": 0.0
           }
         }
@@ -1189,7 +1189,7 @@
           }
         }
       },
-      "PageView_for_TransactionWithInfoView_and_uint128": {
+      "PageView_for_TransactionWithInfoView_and_uint64": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -1211,7 +1211,7 @@
               "integer",
               "null"
             ],
-            "format": "uint128",
+            "format": "uint64",
             "minimum": 0.0
           }
         }
@@ -1413,7 +1413,7 @@
             "$ref": "#/components/schemas/primitive_types::H256"
           },
           "tx_order": {
-            "$ref": "#/components/schemas/u128"
+            "$ref": "#/components/schemas/u64"
           },
           "tx_order_signature": {
             "$ref": "#/components/schemas/AuthenticatorView"

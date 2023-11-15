@@ -179,7 +179,7 @@ where
     }
 }
 
-fn is_context(t: &StructType) -> bool {
+pub(crate) fn is_context(t: &StructType) -> bool {
     t.module.address() == &Context::ADDRESS
         && t.module.name() == Context::module_identifier().as_ident_str()
         && t.name == Context::struct_identifier()

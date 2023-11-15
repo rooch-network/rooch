@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
     Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize, JsonSchema,
 )]
 pub struct IndexerEventID {
-    pub tx_order: u128,
+    pub tx_order: u64,
     pub event_index: u64,
 }
 
@@ -30,7 +30,7 @@ impl std::fmt::Display for IndexerEventID {
 }
 
 impl IndexerEventID {
-    pub fn new(tx_order: u128, event_index: u64) -> Self {
+    pub fn new(tx_order: u64, event_index: u64) -> Self {
         IndexerEventID {
             tx_order,
             event_index,
@@ -77,9 +77,9 @@ pub enum EventFilter {
     /// Return events emitted in [from_tx_order, to_tx_order) interval
     TxOrderRange {
         /// left endpoint of transaction order, inclusive
-        from_order: u128,
+        from_order: u64,
         /// right endpoint of transaction order, exclusive
-        to_order: u128,
+        to_order: u64,
     },
 }
 

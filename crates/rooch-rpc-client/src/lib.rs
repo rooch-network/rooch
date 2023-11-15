@@ -122,7 +122,7 @@ impl ModuleResolver for &Client {
                 .flatten()
                 .map(|state_view| {
                     let state = State::from(state_view);
-                    let module = state.as_move_state::<MoveModule>()?;
+                    let module = state.cast::<MoveModule>()?;
                     Ok(module.byte_codes)
                 })
                 .transpose()

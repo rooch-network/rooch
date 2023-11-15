@@ -604,7 +604,7 @@ impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
         let event_store = self.moveos.event_store();
         let resolver = self.moveos.moveos_resolver();
 
-        let event_handle_id = EventHandle::derive_event_handle_id(event_handle_type.clone());
+        let event_handle_id = EventHandle::derive_event_handle_id(&event_handle_type);
         let events = event_store.get_events_by_event_handle_id(&event_handle_id, cursor, limit)?;
 
         events

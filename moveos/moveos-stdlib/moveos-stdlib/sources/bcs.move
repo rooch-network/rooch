@@ -36,16 +36,14 @@ module moveos_std::bcs{
         from_bytes<address>(v)
     }
 
-    //TODO https://github.com/rooch-network/rooch/issues/145
-    //Relying on private_generics alone cannot guarantee type safety. In order to achieve type safety for from_bytes, several conditions must be met:
-    //1. The caller of from_bytes is the module that defines the `T`. This is ensured by private_generics.
-    //2. The fields contained in `T` are either primitive types or are defined by the module that calls from_bytes. 
-    //We need to find a solution to this problem. If we cannot solve it, then we cannot set from_bytes to public.
-    // #[private_generics(MoveValue)]
+    #[data_struct(MoveValue)]
     /// Function to deserialize a type T.
     /// Note the `private_generics` ensure only the `MoveValue`'s owner module can call this function
-    native public fun from_bytes<MoveValue>(bytes: vector<u8>): MoveValue;
-    
+    public fun from_bytes<MoveValue>(bytes: vector<u8>): MoveValue {
+        native_from_bytes(bytes)
+    }
+
+    native public(friend) fun native_from_bytes<MoveValue>(bytes: vector<u8>): MoveValue;
     friend moveos_std::any;
     friend moveos_std::copyable_any;
 

@@ -138,16 +138,15 @@ impl IndexerReader {
 
         let main_where_clause = match filter {
             EventFilter::EventType(struct_tag) => {
-                format!(
-                    "{EVENT_TYPE_STR} = \"{}\"",
-                    format!("0x{}", struct_tag.to_canonical_string())
-                )
+                let event_type_str = format!("0x{}", struct_tag.to_canonical_string());
+                format!("{EVENT_TYPE_STR} = \"{}\"", event_type_str)
             }
             EventFilter::Sender(sender) => {
                 format!("{EVENT_SENDER_STR} = \"{}\"", sender.to_hex_literal())
             }
             EventFilter::TxHash(tx_hash) => {
-                format!("{TX_HASH_STR} = \"{}\"", format!("{:?}", tx_hash))
+                let tx_hash_str = format!("{:?}", tx_hash);
+                format!("{TX_HASH_STR} = \"{}\"", tx_hash_str)
             }
             EventFilter::TimeRange {
                 start_time,

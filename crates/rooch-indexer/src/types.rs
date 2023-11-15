@@ -22,7 +22,7 @@ pub struct IndexedTransaction {
     /// The hash of this transaction.
     pub tx_hash: H256,
     /// The tx order of this transaction.
-    pub tx_order: u128,
+    pub tx_order: u64,
 
     pub transaction_type: TransactionType,
     pub sequence_number: u64,
@@ -119,7 +119,7 @@ pub struct IndexedEvent {
     /// the hash of this transaction.
     pub tx_hash: H256,
     /// the tx order of this transaction.
-    pub tx_order: u128,
+    pub tx_order: u64,
     /// the account address of sender who emit the event
     pub sender: AccountAddress,
 

@@ -24,7 +24,7 @@ use rooch_types::{
 use tracing::info;
 
 pub struct SequencerActor {
-    last_order: u128,
+    last_order: u64,
     sequencer_key: RoochKeyPair,
     rooch_store: RoochStore,
 }
@@ -39,7 +39,7 @@ impl SequencerActor {
             .get_meta_store()
             .get_sequencer_order()?
             .map(|order| order.last_order);
-        let last_order = last_order_opt.unwrap_or(0u128);
+        let last_order = last_order_opt.unwrap_or(0u64);
         info!("Load latest sequencer order {:?}", last_order);
         Ok(Self {
             last_order,

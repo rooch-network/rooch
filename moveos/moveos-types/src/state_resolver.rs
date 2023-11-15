@@ -92,7 +92,7 @@ where
         //So we need unwrap the MoveModule type.
         self.0
             .resolve_table_item(&module_table_id, &key)?
-            .map(|s| Ok(s.as_move_state::<MoveModule>()?.byte_codes))
+            .map(|s| Ok(s.cast::<MoveModule>()?.byte_codes))
             .transpose()
     }
 }

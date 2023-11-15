@@ -8,6 +8,7 @@ module rooch_framework::address_mapping{
     use std::error;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
+    use moveos_std::object::{Self, Object};
     use rooch_framework::hash::{blake2b256};
     use rooch_framework::multichain_address::{Self, MultiChainAddress};
 
@@ -21,19 +22,29 @@ module rooch_framework::address_mapping{
         mapping: Table<MultiChainAddress, address>,
     }
 
-    public(friend) fun genesis_init(ctx: &mut Context, genesis_account: &signer) {
+    public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer) {
         let mapping = context::new_table<MultiChainAddress, address>(ctx);
-        context::move_resource_to(ctx, genesis_account, AddressMapping{
+        context::new_singleton(ctx, AddressMapping{
             mapping,
         });
     }
 
-    /// Resolve a multi-chain address to a rooch address
-    public fun resolve(ctx: &Context, maddress: MultiChainAddress): Option<address> {
+    /// Borrow the address mapping object
+    public fun borrow(ctx: &Context) : &Object<AddressMapping> {
+        let object_id = object::singleton_object_id<AddressMapping>();
+        context::borrow_object<AddressMapping>(ctx, object_id)
+    }
+
+    fun borrow_mut(ctx: &mut Context) : &mut Object<AddressMapping> {
+        let object_id = object::singleton_object_id<AddressMapping>();
+        context::borrow_mut_object_extend<AddressMapping>(ctx, object_id)
+    }
+
+    public fun resolve_address(obj: &Object<AddressMapping>, maddress: MultiChainAddress): Option<address> {
+        let am = object::borrow(obj);
         if (multichain_address::is_rooch_address(&maddress)) {
             return option::some(multichain_address::into_rooch_address(maddress))
         };
-        let am = context::borrow_resource<AddressMapping>(ctx, @rooch_framework);
         if(table::contains(&am.mapping, maddress)){
             let addr = table::borrow(&am.mapping, maddress);
             option::some(*addr)
@@ -42,14 +53,33 @@ module rooch_framework::address_mapping{
         }
     }
 
-    /// Resolve a multi-chain address to a rooch address, if not exists, generate a new rooch address
-    public fun resolve_or_generate(ctx: &Context, maddress: MultiChainAddress): address {
-        let addr = resolve(ctx, maddress);
+    public fun resolve_or_generate_address(obj: &Object<AddressMapping>, maddress: MultiChainAddress): address {
+        let addr = resolve_address(obj, maddress);
         if(option::is_none(&addr)){
             generate_rooch_address(&maddress)
         }else{
             option::extract(&mut addr)
         }
+    }
+
+    public fun exists_mapping_address(obj: &Object<AddressMapping>, maddress: MultiChainAddress): bool {
+        if (multichain_address::is_rooch_address(&maddress)) {
+            return true
+        };
+        let am = object::borrow(obj);
+        table::contains(&am.mapping, maddress)
+    }
+
+    /// Resolve a multi-chain address to a rooch address
+    public fun resolve(ctx: &Context, maddress: MultiChainAddress): Option<address> {
+        let am = Self::borrow(ctx);
+        Self::resolve_address(am, maddress)
+    }
+
+    /// Resolve a multi-chain address to a rooch address, if not exists, generate a new rooch address
+    public fun resolve_or_generate(ctx: &Context, maddress: MultiChainAddress): address {
+        let am = Self::borrow(ctx);
+        Self::resolve_or_generate_address(am, maddress)
     }
     
     fun generate_rooch_address(maddress: &MultiChainAddress): address {
@@ -59,11 +89,8 @@ module rooch_framework::address_mapping{
 
     /// Check if a multi-chain address is bound to a rooch address
     public fun exists_mapping(ctx: &Context, maddress: MultiChainAddress): bool {
-        if (multichain_address::is_rooch_address(&maddress)) {
-            return true
-        };
-        let am = context::borrow_resource<AddressMapping>(ctx, @rooch_framework);
-        table::contains(&am.mapping, maddress)
+        let obj = Self::borrow(ctx);
+        Self::exists_mapping_address(obj, maddress)
     }
 
     /// Bind a multi-chain address to the sender's rooch address
@@ -80,7 +107,8 @@ module rooch_framework::address_mapping{
                 error::invalid_argument(ErrorMultiChainAddressInvalid)
             );
         };
-        let am = context::borrow_mut_resource<AddressMapping>(ctx, @rooch_framework);
+        let obj = Self::borrow_mut(ctx);
+        let am = object::borrow_mut(obj);
         table::add(&mut am.mapping, maddress, rooch_address);
         //TODO matienance the reverse mapping rooch_address -> vector<MultiChainAddress>
     }

@@ -14,6 +14,7 @@ use move_command_line_common::{
 };
 use move_compiler::shared::PackagePaths;
 use move_compiler::FullyCompiledProgram;
+use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use move_package::BuildConfig;
 use move_transactional_test_runner::{
     tasks::{InitCommand, SyntaxChoice},
@@ -23,14 +24,18 @@ use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
 use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
 use moveos_store::MoveOSStore;
-use moveos_types::move_types::FunctionId;
-use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::state_resolver::AnnotatedStateReader;
-use moveos_types::transaction::{MoveAction, MoveOSTransaction, TransactionOutput};
+use moveos_types::{
+    addresses::MOVEOS_STD_ADDRESS,
+    move_types::FunctionId,
+    moveos_std::object::ObjectID,
+    state_resolver::AnnotatedStateReader,
+    transaction::{MoveAction, MoveOSTransaction, TransactionOutput},
+};
 use moveos_verifier::build::build_model;
 use moveos_verifier::metadata::run_extended_checks;
 use regex::Regex;
 use rooch_genesis::RoochGenesis;
+use rooch_types::function_arg::FunctionArg;
 use std::path::PathBuf;
 use std::{collections::BTreeMap, path::Path};
 
@@ -68,7 +73,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
     type ExtraRunArgs = MoveOSRunArgs;
     type Subcommand = MoveOSSubcommands;
     type ExtraInitArgs = MoveOSExtraInitArgs;
-    type ExtraValueArgs = ();
+    type ExtraValueArgs = FunctionArg;
 
     fn compiled_state(&mut self) -> &mut CompiledState<'a> {
         &mut self.compiled_state
@@ -97,8 +102,10 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             moveos_store,
             genesis.all_natives(),
             genesis.config_for_test.clone(),
+            rooch_types::framework::system_pre_execute_functions(),
             vec![],
-            vec![],
+            //TODO FIXME https://github.com/rooch-network/rooch/issues/1137
+            //rooch_types::framework::system_post_execute_functions(),
         )
         .unwrap();
 
@@ -106,7 +113,10 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             .init_genesis(genesis.genesis_txs(), genesis.genesis_ctx())
             .unwrap();
 
-        let mut named_address_mapping = rooch_framework::rooch_framework_named_addresses();
+        let mut named_address_mapping = rooch_framework::rooch_framework_named_addresses()
+            .into_iter()
+            .map(|(k, v)| (k, NumericalAddress::new(v.into_bytes(), NumberFormat::Hex)))
+            .collect::<BTreeMap<_, _>>();
         for (name, addr) in additional_mapping {
             if named_address_mapping.contains_key(&name) {
                 panic!(
@@ -122,79 +132,12 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
                 .unwrap();
         }
 
-        /*
-        // Apply new modules and add precompiled address mapping
-        let mut table_change_set = StateChangeSet::default();
-        // let mut mutated_accounts = BTreeSet::new();
-        let module_value_type = TypeTag::Struct(Box::new(MoveModule::struct_tag()));
-        if let Some(pre_compiled_lib) = pre_compiled_deps {
-            for c in &pre_compiled_lib.compiled {
-                if let CompiledUnitEnum::Module(m) = c {
-                    // update named_address_mapping
-                    if let Some(named_address) = &m.address_name {
-                        let name = named_address.value.to_string();
-                        let already_assigned_with_different_value = named_address_mapping
-                            .get(&name)
-                            .filter(|existed| {
-                                existed.into_inner() != m.named_module.address.into_inner()
-                            })
-                            .is_some();
-                        if already_assigned_with_different_value {
-                            panic!(
-                                "Invalid init. The named address '{}' is already assigned with {}",
-                                name,
-                                named_address_mapping.get(&name).unwrap(),
-                            )
-                        }
-                        named_address_mapping.insert(name, m.named_module.address);
-                    }
-                    let (_, module_id) = m.module_id();
-                    let mut bytes = vec![];
-                    m.named_module.module.serialize(&mut bytes).unwrap();
-
-                    let handle = NamedTableID::Module(*module_id.address()).to_object_id();
-                    table_change_set.add_op(
-                        handle,
-                        module_name_to_key(module_id.name()),
-                        Op::New(State {
-                            value_type: module_value_type.clone(),
-                            value: bytes,
-                        }),
-                    );
-                    moveos
-                        .state()
-                        .create_account_storage(*module_id.address())
-                        .unwrap();
-                }
-            }
-        }
-        let change_set = ChangeSet::new();
-        moveos
-            .state()
-            .apply_change_set(change_set, table_change_set)
-            .unwrap();
-         */
-
         let adapter = Self {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),
             default_syntax,
             moveos,
         };
 
-        /*
-        //Auto generate interface to Framework modules
-        let stdlib_modules = genesis.modules().unwrap();
-
-        for module in stdlib_modules
-            .iter()
-            .filter(|module| !adapter.compiled_state.is_precompiled_dep(&module.self_id()))
-            .collect::<Vec<_>>()
-        {
-            adapter
-                .compiled_state
-                .add_and_generate_interface_file(module.clone());
-        }
-         */
         (adapter, None)
     }
 
@@ -211,10 +154,20 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         let id = module.self_id();
         let sender = *id.address();
 
-        let tx = MoveOSTransaction::new_for_test(
-            sender,
-            MoveAction::new_module_bundle(vec![module_bytes]),
+        let args = bcs::to_bytes(&vec![module_bytes]).unwrap();
+        let action = MoveAction::new_function_call(
+            FunctionId::new(
+                ModuleId::new(
+                    MOVEOS_STD_ADDRESS,
+                    Identifier::new("context".to_owned()).unwrap(),
+                ),
+                Identifier::new("publish_modules_entry".to_owned()).unwrap(),
+            ),
+            vec![],
+            vec![args],
         );
+
+        let tx = MoveOSTransaction::new_for_test(sender, action);
         let verified_tx = self.moveos.verify(tx)?;
         let (_state_root, output) = self.moveos.execute_and_apply(verified_tx)?;
         Ok((Some(tx_output_to_str(output)), module))
@@ -467,20 +420,19 @@ pub fn moveos_std_info() -> (Vec<String>, BTreeMap<String, NumericalAddress>) {
     (files, named_addresses)
 }
 
-pub fn rooch_framework_named_addresses_info() -> BTreeMap<String, NumericalAddress> {
-    let mut address_mapping = moveos_stdlib::moveos_stdlib_named_addresses();
-    address_mapping.extend(
-        ROOCH_NAMED_ADDRESS_MAPPING
-            .iter()
-            .map(|(name, addr)| (name.to_string(), NumericalAddress::parse_str(addr).unwrap())),
-    );
-    address_mapping
-}
+// pub fn rooch_framework_named_addresses_info() -> BTreeMap<String, NumericalAddress> {
+//     let mut address_mapping = moveos_stdlib::moveos_stdlib_named_addresses();
+//     address_mapping.extend(
+//         ROOCH_NAMED_ADDRESS_MAPPING
+//             .iter()
+//             .map(|(name, addr)| (name.to_string(), NumericalAddress::parse_str(addr).unwrap())),
+//     );
+//     address_mapping
+// }
 
 pub fn rooch_framework_info() -> (Vec<String>, BTreeMap<String, NumericalAddress>) {
     let rooch_framework_path = PathBuf::from("../rooch-framework/");
-    let mut named_addresses = resolve_package_named_addresses(rooch_framework_path.clone());
-    named_addresses.extend(rooch_framework_named_addresses_info());
+    let named_addresses = resolve_package_named_addresses(rooch_framework_path.clone());
 
     let binding = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join(rooch_framework_path.join("sources"))
@@ -503,16 +455,14 @@ pub static ROOCH_NAMED_ADDRESS_MAPPING: [(&str, &str); 1] = [(
 )];
 
 pub fn all_pre_compiled_libs() -> Option<FullyCompiledProgram> {
-    let (move_std_files, mut move_std_named_addresses) = move_std_info();
-    move_std_named_addresses.extend(move_stdlib::move_stdlib_named_addresses());
+    let (move_std_files, move_std_named_addresses) = move_std_info();
     let stdlib_package = PackagePaths {
         name: None,
         paths: move_std_files,
         named_address_map: move_std_named_addresses,
     };
 
-    let (moveos_std_files, mut moveos_std_named_addresses) = moveos_std_info();
-    moveos_std_named_addresses.extend(moveos_stdlib::moveos_stdlib_named_addresses());
+    let (moveos_std_files, moveos_std_named_addresses) = moveos_std_info();
     let moveos_stdlib_package = PackagePaths {
         name: None,
         paths: moveos_std_files,
@@ -521,13 +471,13 @@ pub fn all_pre_compiled_libs() -> Option<FullyCompiledProgram> {
 
     let (rooch_framework_files, addresses) = rooch_framework_info();
 
-    let mut rooch_framework_named_addresses = rooch_framework_named_addresses_info();
-    rooch_framework_named_addresses.extend(addresses);
+    //let mut rooch_framework_named_addresses = rooch_framework_named_addresses_info();
+    //rooch_framework_named_addresses.extend(addresses);
 
     let rooch_framework_package = PackagePaths {
         name: None,
         paths: rooch_framework_files,
-        named_address_map: rooch_framework_named_addresses,
+        named_address_map: addresses,
     };
 
     let program_res = move_compiler::construct_pre_compiled_lib(

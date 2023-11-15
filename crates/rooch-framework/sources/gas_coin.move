@@ -21,7 +21,7 @@ module rooch_framework::gas_coin {
     }
 
     fun mint(ctx: &mut Context, amount: u256): Coin<GasCoin> {
-        coin::mint_extend<GasCoin>(ctx, amount)
+        coin::mint_extend<GasCoin>(coin::borrow_mut_coin_info_extend<GasCoin>(ctx), amount)
     }
 
     #[test_only]
@@ -30,7 +30,7 @@ module rooch_framework::gas_coin {
     }
 
     public fun burn(ctx: &mut Context, coin: Coin<GasCoin>) {
-        coin::burn_extend<GasCoin>(ctx, coin);
+        coin::burn_extend<GasCoin>(coin::borrow_mut_coin_info_extend<GasCoin>(ctx), coin);
     }
 
     /// deduct gas coin from the given account.
@@ -50,7 +50,7 @@ module rooch_framework::gas_coin {
     }
 
     /// TODO find a way to protect this function from DOS attack.
-    public entry fun faucet_entry(ctx: &mut Context, account: &signer) {
+    public entry fun faucet_entry(ctx: &mut Context, account: &signer) { 
         //100 RGC
         let amount = 100_000_000_000_000_000_000u256;
         let addr = signer::address_of(account);

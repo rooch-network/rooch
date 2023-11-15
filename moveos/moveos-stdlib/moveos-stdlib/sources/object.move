@@ -7,8 +7,9 @@ module moveos_std::object {
 
     use std::error;
     use std::hash;
-    use moveos_std::type_info;
+    use std::vector;
     use moveos_std::bcs;
+    use moveos_std::type_info;
     use moveos_std::address;
     use moveos_std::raw_table::{Self, TableHandle};
 
@@ -20,13 +21,15 @@ module moveos_std::object {
     friend moveos_std::type_table;
     friend moveos_std::object_table;
 
-    const ErrorObjectFrozen: u64 = 1;
-    const ErrorInvalidOwnerAddress:u64 = 2;
+    const ErrorObjectAlreadyExist: u64 = 1;
+    const ErrorObjectFrozen: u64 = 2;
+    const ErrorInvalidOwnerAddress:u64 = 3;
 
     const SYSTEM_OWNER_ADDRESS: address = @0x0;
     
     const SHARED_OBJECT_FLAG_MASK: u8 = 1;
     const FROZEN_OBJECT_FLAG_MASK: u8 = 1 << 1;
+    const BOUND_OBJECT_FLAG_MASK: u8 = 1 << 2;
 
     /// ObjectEntity<T> is a box of the value of T
     /// It does not have any ability, so it can not be `drop`, `copy`, or `store`, and can only be handled by storage API after creation.
@@ -81,10 +84,18 @@ module moveos_std::object {
         address_to_object_id(
             address::from_bytes(
                 hash::sha3_256(
-                    bcs::to_bytes(
-                        &type_info::type_of<T>()
-                    )
+                    *std::string::bytes(&type_info::type_name<T>())
                 )
+            )
+        )
+    }
+
+    public fun account_singleton_object_id<T>(account: address): ObjectID {
+        let bytes = bcs::to_bytes(&account);
+        vector::append(&mut bytes, *std::string::bytes(&type_info::type_name<T>()));
+        address_to_object_id(
+            address::from_bytes(
+                hash::sha3_256(bytes)
             )
         )
     }
@@ -97,8 +108,8 @@ module moveos_std::object {
     }
 
     public(friend) fun new_with_id<T: key>(id: ObjectID, value: T): Object<T> {
-        let entity = new_internal(id, value);
-        add_to_global(entity);
+        let obj_entity = new_internal(id, value);
+        add_to_global(obj_entity);
         Object{id}
     }
 
@@ -106,12 +117,25 @@ module moveos_std::object {
     /// Singleton object means the object of `T` is only one instance in the Object Storage.
     public(friend) fun new_singleton<T: key>(value: T): &mut Object<T> {
         let id = singleton_object_id<T>();
-        let obj = new_with_id(id, value);
-        drop(obj);
+        let obj_entity = new_internal(id, value);
+        to_bound_internal(&mut obj_entity);
+        add_to_global(obj_entity);
+        as_mut_ref_inner<Object<T>>(id)
+    }
+
+    /// Create a new account singleton object, account singleton object is always owned by the account
+    /// One account can only have one Account Singleton Object of `T` in the Object Storage.
+    public(friend) fun new_account_singleton<T: key>(account: address, value: T): &mut Object<T> {
+        let id = account_singleton_object_id<T>(account);
+        let obj_entity = new_internal(id, value);
+        obj_entity.owner = account;
+        to_bound_internal(&mut obj_entity);
+        add_to_global(obj_entity);
         as_mut_ref_inner<Object<T>>(id)
     }
 
     fun new_internal<T: key>(id: ObjectID, value: T): ObjectEntity<T> {
+        assert!(!contains_global(id), error::invalid_state(ErrorObjectAlreadyExist));
         let owner = SYSTEM_OWNER_ADDRESS;
         ObjectEntity<T>{id, owner, flag: 0u8, value}
     }
@@ -157,6 +181,15 @@ module moveos_std::object {
         to_system_owned_internal(self); 
     }
 
+    public fun is_shared<T: key>(self: &Object<T>) : bool {
+        let obj_enitty = borrow_from_global<T>(self.id);
+        is_shared_internal(obj_enitty)
+    }
+
+    fun is_shared_internal<T>(self: &ObjectEntity<T>) : bool {
+        self.flag & SHARED_OBJECT_FLAG_MASK == SHARED_OBJECT_FLAG_MASK
+    }
+
     #[private_generics(T)]
     /// Make the Object frozen, Any one can not get the &mut Object<T> from frozen object
     public fun to_frozen<T: key>(self: Object<T>) {
@@ -169,6 +202,30 @@ module moveos_std::object {
         self.flag = self.flag | FROZEN_OBJECT_FLAG_MASK;
         to_system_owned_internal(self); 
     }
+
+    public fun is_frozen<T:key>(self: &Object<T>) : bool {
+        let obj_enitty = borrow_from_global<T>(self.id);
+        is_frozen_internal(obj_enitty)
+    }
+
+    fun is_frozen_internal<T>(self: &ObjectEntity<T>) : bool {
+        self.flag & FROZEN_OBJECT_FLAG_MASK == FROZEN_OBJECT_FLAG_MASK
+    }
+
+    //TODO how to provide public bound object API
+
+    fun to_bound_internal<T>(self: &mut ObjectEntity<T>) {
+        self.flag = self.flag | BOUND_OBJECT_FLAG_MASK;
+    }
+
+    public fun is_bound<T: key>(self: &Object<T>) : bool {
+        let obj_enitty = borrow_from_global<T>(self.id);
+        is_bound_internal(obj_enitty)
+    }
+    
+    public(friend) fun is_bound_internal<T>(self: &ObjectEntity<T>) : bool {
+        self.flag & BOUND_OBJECT_FLAG_MASK == BOUND_OBJECT_FLAG_MASK
+    } 
 
     public(friend) fun to_user_owned<T: key>(self: &mut Object<T>, new_owner: address) {
         assert!(new_owner != SYSTEM_OWNER_ADDRESS, error::invalid_argument(ErrorInvalidOwnerAddress));
@@ -213,24 +270,6 @@ module moveos_std::object {
         self.owner
     }
 
-    public fun is_shared<T: key>(self: &Object<T>) : bool {
-        let obj_enitty = borrow_from_global<T>(self.id);
-        is_shared_internal(obj_enitty)
-    }
-
-    fun is_shared_internal<T>(self: &ObjectEntity<T>) : bool {
-        self.flag & SHARED_OBJECT_FLAG_MASK == SHARED_OBJECT_FLAG_MASK
-    }
-
-    public fun is_frozen<T:key>(self: &Object<T>) : bool {
-        let obj_enitty = borrow_from_global<T>(self.id);
-        is_frozen_internal(obj_enitty)
-    }
-
-    fun is_frozen_internal<T>(self: &ObjectEntity<T>) : bool {
-        self.flag & FROZEN_OBJECT_FLAG_MASK == FROZEN_OBJECT_FLAG_MASK
-    }
-
     public fun is_system_owned<T: key>(self: &Object<T>) : bool {
         owner(self) == SYSTEM_OWNER_ADDRESS
     } 
@@ -241,7 +280,7 @@ module moveos_std::object {
 
     public fun is_user_owned<T: key>(self: &Object<T>) : bool {
         owner(self) != SYSTEM_OWNER_ADDRESS
-    } 
+    }
 
     // === Object Ref ===
 

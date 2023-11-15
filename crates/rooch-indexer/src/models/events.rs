@@ -70,7 +70,7 @@ impl StoredEvent {
         let event_type = StructTag::from_str(self.event_type.as_str())?;
 
         let indexer_event = IndexerEvent {
-            indexer_event_id: IndexerEventID::new(self.tx_order as u128, self.event_index as u64),
+            indexer_event_id: IndexerEventID::new(self.tx_order as u64, self.event_index as u64),
             event_id: EventID::new(event_handle_id, self.event_seq as u64),
             event_type,
             event_data: self.event_data.clone(),

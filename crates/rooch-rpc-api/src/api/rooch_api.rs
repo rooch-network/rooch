@@ -82,7 +82,7 @@ pub trait RoochAPI {
     #[method(name = "getTransactionsByOrder")]
     async fn get_transactions_by_order(
         &self,
-        cursor: Option<StrView<u128>>,
+        cursor: Option<StrView<u64>>,
         limit: Option<StrView<u64>>,
     ) -> RpcResult<TransactionWithInfoPageView>;
 

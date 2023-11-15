@@ -23,14 +23,14 @@ derive_store!(
 
 derive_store!(
     TxSequenceInfoStore,
-    u128,
+    u64,
     TransactionSequenceInfo,
     TX_SEQUENCE_INFO_PREFIX_NAME
 );
 
 derive_store!(
     TxSequenceInfoMappingStore,
-    u128,
+    u64,
     H256,
     TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME
 );
@@ -38,7 +38,7 @@ derive_store!(
 derive_store!(
     TxSequenceInfoReverseMappingStore,
     H256,
-    u128,
+    u64,
     TX_SEQUENCE_INFO_REVERSE_MAPPING_PREFIX_NAME
 );
 
@@ -53,16 +53,16 @@ pub trait TransactionStore {
     fn save_tx_sequence_info(&self, tx_sequence_info: TransactionSequenceInfo) -> Result<()>;
     fn get_tx_sequence_infos_by_order(
         &self,
-        cursor: Option<u128>,
+        cursor: Option<u64>,
         limit: u64,
     ) -> Result<Vec<Option<TransactionSequenceInfo>>>;
-    fn save_tx_sequence_info_mapping(&self, tx_order: u128, tx_hash: H256) -> Result<()>;
+    fn save_tx_sequence_info_mapping(&self, tx_order: u64, tx_hash: H256) -> Result<()>;
     fn get_tx_sequence_info_mapping_by_order(
         &self,
-        tx_orders: Vec<u128>,
+        tx_orders: Vec<u64>,
     ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>>;
 
-    fn save_tx_sequence_info_reverse_mapping(&self, tx_hash: H256, tx_order: u128) -> Result<()>;
+    fn save_tx_sequence_info_reverse_mapping(&self, tx_hash: H256, tx_order: u64) -> Result<()>;
     fn multi_get_tx_sequence_info_mapping_by_hash(
         &self,
         tx_hashes: Vec<H256>,
@@ -108,11 +108,11 @@ impl TransactionDBStore {
 
     pub fn get_tx_sequence_infos_by_order(
         &self,
-        cursor: Option<u128>,
+        cursor: Option<u64>,
         limit: u64,
     ) -> Result<Vec<Option<TransactionSequenceInfo>>> {
         let start = cursor.unwrap_or(0);
-        let end = start + (limit as u128);
+        let end = start + limit;
 
         // Since tx order is strictly incremental, traversing the SMT Tree can be optimized into a multi get query to improve query performance.
         let tx_orders: Vec<_> = if cursor.is_some() {
@@ -123,14 +123,14 @@ impl TransactionDBStore {
         self.tx_sequence_info_store.multiple_get(tx_orders)
     }
 
-    pub fn save_tx_sequence_info_mapping(&self, tx_order: u128, tx_hash: H256) -> Result<()> {
+    pub fn save_tx_sequence_info_mapping(&self, tx_order: u64, tx_hash: H256) -> Result<()> {
         self.tx_sequence_info_mapping_store
             .kv_put(tx_order, tx_hash)
     }
 
     pub fn get_tx_sequence_info_mapping_by_order(
         &self,
-        tx_orders: Vec<u128>,
+        tx_orders: Vec<u64>,
     ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
         let mappings = self
             .tx_sequence_info_mapping_store
@@ -153,7 +153,7 @@ impl TransactionDBStore {
 
     pub fn get_tx_sequence_infos(
         &self,
-        orders: Vec<u128>,
+        orders: Vec<u64>,
     ) -> Result<Vec<Option<TransactionSequenceInfo>>> {
         self.tx_sequence_info_store.multiple_get(orders)
     }
@@ -161,7 +161,7 @@ impl TransactionDBStore {
     pub fn save_tx_sequence_info_reverse_mapping(
         &self,
         tx_hash: H256,
-        tx_order: u128,
+        tx_order: u64,
     ) -> Result<()> {
         self.tx_sequence_info_reverse_mapping_store
             .kv_put(tx_hash, tx_order)

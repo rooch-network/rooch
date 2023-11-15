@@ -114,7 +114,7 @@ impl StoredTransaction {
         };
         let transaction = TypedTransaction::try_from(raw_transaction)?;
         let sequence_info = TransactionSequenceInfo {
-            tx_order: self.tx_order as u128,
+            tx_order: self.tx_order as u64,
             tx_order_signature: Authenticator {
                 auth_validator_id: self.tx_order_auth_validator_id as u64,
                 payload: self.tx_order_authenticator_payload,

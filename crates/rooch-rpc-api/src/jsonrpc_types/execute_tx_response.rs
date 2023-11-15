@@ -96,7 +96,7 @@ impl From<Authenticator> for AuthenticatorView {
 }
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct TransactionSequenceInfoView {
-    pub tx_order: StrView<u128>,
+    pub tx_order: StrView<u64>,
     pub tx_order_signature: AuthenticatorView,
     pub tx_accumulator_root: H256View,
 }

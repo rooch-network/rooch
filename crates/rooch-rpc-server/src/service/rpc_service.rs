@@ -181,7 +181,7 @@ impl RpcService {
 
     pub async fn get_transaction_sequence_infos(
         &self,
-        orders: Vec<u128>,
+        orders: Vec<u64>,
     ) -> Result<Vec<Option<TransactionSequenceInfo>>> {
         let resp = self
             .sequencer
@@ -192,7 +192,7 @@ impl RpcService {
 
     pub async fn get_tx_sequence_info_mapping_by_order(
         &self,
-        tx_orders: Vec<u128>,
+        tx_orders: Vec<u64>,
     ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
         let resp = self
             .sequencer
@@ -259,7 +259,7 @@ impl TxSubmiter for RpcService {
             .await?
             .pop()
             .flatten()
-            .map(|state| state.as_move_state::<Account>())
+            .map(|state| state.cast::<Account>())
             .transpose()?
             .map_or(0, |account| account.sequence_number))
     }

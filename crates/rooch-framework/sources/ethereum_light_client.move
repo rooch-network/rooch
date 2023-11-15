@@ -8,12 +8,13 @@ module rooch_framework::ethereum_light_client{
     use moveos_std::table::{Self, Table};
     use rooch_framework::ethereum_address::ETHAddress;
     use rooch_framework::timestamp;    
-    use rooch_framework::bcs;
+    use moveos_std::bcs;
 
     friend rooch_framework::genesis;
 
     const ErrorBlockNotFound:u64 = 1;
 
+    #[data_struct]
     struct BlockHeader has store, copy, drop {
         /// Hash of the block
         hash: vector<u8>,

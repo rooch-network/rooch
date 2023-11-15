@@ -226,7 +226,7 @@ impl RoochAPIServer for RoochServer {
 
     async fn get_transactions_by_order(
         &self,
-        cursor: Option<StrView<u128>>,
+        cursor: Option<StrView<u64>>,
         limit: Option<StrView<u64>>,
     ) -> RpcResult<TransactionWithInfoPageView> {
         let last_sequencer_order = self
@@ -238,7 +238,7 @@ impl RoochAPIServer for RoochServer {
         let limit_of = limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT);
         let cursor = cursor.map(|v| v.0);
         let start = cursor.unwrap_or(0);
-        let end = min(start + ((limit_of + 1) as u128), last_sequencer_order + 1);
+        let end = min(start + (limit_of + 1), last_sequencer_order + 1);
 
         let mut tx_orders: Vec<_> = if cursor.is_some() {
             ((start + 1)..=end).collect()
@@ -314,10 +314,7 @@ impl RoochAPIServer for RoochServer {
         let mut data = self
             .aggregate_service
             .get_balances(account_addr.into(), cursor_of, limit_of + 1)
-            .await?
-            .into_iter()
-            .map(|(key, balance_info)| (key, BalanceInfoView::from(balance_info)))
-            .collect::<Vec<_>>();
+            .await?;
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);

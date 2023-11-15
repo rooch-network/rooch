@@ -121,9 +121,9 @@ pub enum EventFilterView {
     // #[serde(rename_all = "camelCase")]
     TxOrderRange {
         /// left endpoint of transaction order, inclusive
-        from_order: u128,
+        from_order: u64,
         /// right endpoint of transaction order, exclusive
-        to_order: u128,
+        to_order: u64,
     },
 }
 

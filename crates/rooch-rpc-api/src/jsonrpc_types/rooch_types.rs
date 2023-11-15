@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use std::string::String;
 
 pub type EventPageView = PageView<EventView, u64>;
-pub type TransactionWithInfoPageView = PageView<TransactionWithInfoView, u128>;
+pub type TransactionWithInfoPageView = PageView<TransactionWithInfoView, u64>;
 pub type StatesPageView = PageView<StateView, BytesView>;
 pub type BalanceInfoPageView = PageView<BalanceInfoView, BytesView>;
 pub type IndexerEventPageView = PageView<IndexerEventView, IndexerEventID>;
@@ -92,8 +92,8 @@ pub struct CoinInfoView {
     pub supply: StrView<U256>,
 }
 
-impl From<CoinInfo> for CoinInfoView {
-    fn from(coin_info: CoinInfo) -> Self {
+impl<CoinType> From<CoinInfo<CoinType>> for CoinInfoView {
+    fn from(coin_info: CoinInfo<CoinType>) -> Self {
         Self {
             //We convert the coin_type to Coin Type tag here
             //Because the coin_type string is the `to_canonical_string` of the StructTag

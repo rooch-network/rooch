@@ -4,7 +4,7 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
+use move_command_line_common::{address::ParsedAddress, types::ParsedStructType};
 use moveos_types::access_path::AccessPath;
 use rooch_rpc_api::jsonrpc_types::StateView;
 use rooch_types::error::RoochResult;
@@ -14,13 +14,13 @@ use rooch_types::error::RoochResult;
 /// Get account resource by tag
 pub struct ResourceCommand {
     /// Account address where the resource stored.
-    #[clap(long)]
-    pub address: AccountAddress,
+    #[clap(long, parse(try_from_str = ParsedAddress::parse))]
+    pub address: ParsedAddress,
 
     /// Struct name as `<ADDRESS>::<MODULE_ID>::<STRUCT_NAME><TypeParam1?, TypeParam2?>`
     /// Example: `0x123::counter::Counter`, `0x123::counter::Box<0x123::counter::Counter>`
-    #[clap(long = "resource")]
-    pub resource: StructTag,
+    #[clap(long = "resource", parse(try_from_str = ParsedStructType::parse))]
+    pub resource: ParsedStructType,
 
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
@@ -29,11 +29,15 @@ pub struct ResourceCommand {
 #[async_trait]
 impl CommandAction<Option<StateView>> for ResourceCommand {
     async fn execute(self) -> RoochResult<Option<StateView>> {
-        let client = self.context_options.build().await?.get_client().await?;
+        let context = self.context_options.build()?;
+        let mapping = context.address_mapping();
+        let address = self.address.into_account_address(&mapping)?;
+        let resource = self.resource.into_struct_tag(&mapping)?;
+        let client = context.get_client().await?;
 
         let resp = client
             .rooch
-            .get_decoded_states(AccessPath::resource(self.address, self.resource))
+            .get_decoded_states(AccessPath::resource(address, resource))
             .await?
             .pop()
             .flatten();

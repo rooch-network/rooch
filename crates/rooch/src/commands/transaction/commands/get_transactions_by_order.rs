@@ -11,7 +11,7 @@ use rooch_types::error::RoochResult;
 pub struct GetTransactionsByOrderCommand {
     /// Transaction's hash
     #[clap(long)]
-    pub cursor: Option<u128>,
+    pub cursor: Option<u64>,
 
     #[clap(long)]
     pub limit: Option<u64>,
@@ -23,7 +23,7 @@ pub struct GetTransactionsByOrderCommand {
 #[async_trait]
 impl CommandAction<TransactionWithInfoPageView> for GetTransactionsByOrderCommand {
     async fn execute(self) -> RoochResult<TransactionWithInfoPageView> {
-        let client = self.context_options.build().await?.get_client().await?;
+        let client = self.context_options.build()?.get_client().await?;
 
         let resp = client
             .rooch

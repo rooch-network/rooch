@@ -16,7 +16,7 @@ pub struct SwitchCommand {
 
 impl SwitchCommand {
     pub async fn execute(self) -> RoochResult<()> {
-        let mut context = self.context_options.build().await?;
+        let mut context = self.context_options.build()?;
         let env = Some(self.alias.clone());
 
         if context.client_config.get_env(&env).is_none() {

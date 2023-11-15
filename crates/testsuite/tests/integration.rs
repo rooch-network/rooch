@@ -11,7 +11,7 @@ use rooch_config::{rooch_config_dir, RoochOpt, ServerOpt};
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_rpc_server::Service;
 use serde_json::Value;
-use tracing::info;
+use tracing::{debug, info};
 
 #[derive(cucumber::World, Debug, Default)]
 struct World {
@@ -53,7 +53,7 @@ async fn run_cmd(world: &mut World, args: String) {
         .join("rooch_test");
 
     let default = if config_dir.exists() {
-        let context = WalletContext::new(Some(config_dir.clone())).await.unwrap();
+        let context = WalletContext::new(Some(config_dir.clone())).unwrap();
 
         match context.client_config.active_address {
             Some(addr) => AccountAddress::from(addr).to_hex_literal(),
@@ -78,7 +78,7 @@ async fn run_cmd(world: &mut World, args: String) {
     args.push(config_dir.to_str().unwrap().to_string());
     let opts: RoochCli = RoochCli::parse_from(args);
     let ret = rooch::run_cli(opts).await;
-
+    debug!("run_cli result: {:?}", ret);
     match ret {
         Ok(output) => {
             let result_json = serde_json::from_str::<Value>(&output);
@@ -94,6 +94,7 @@ async fn run_cmd(world: &mut World, args: String) {
             tpl_ctx.entry(cmd_name).append::<Value>(err_msg);
         }
     }
+    debug!("current tpl_ctx: {:?}", tpl_ctx);
 }
 
 #[then(regex = r#"assert: "([^"]*)""#)]
@@ -102,7 +103,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
     assert!(orginal_args.len() > 0, "assert args is empty");
     let args = eval_command_args(world.tpl_ctx.as_ref().unwrap(), orginal_args.clone());
     let splited_args = split_string_with_quotes(&args).expect("Invalid commands");
-    info!(
+    debug!(
         "originl args: {}\n after eval: {}\n after split: {:?}",
         orginal_args, args, splited_args
     );
@@ -116,7 +117,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
         let op = chunk.get(1).cloned();
         let second = chunk.get(2).cloned();
 
-        info!("assert value: {:?} {:?} {:?}", first, op, second);
+        debug!("assert value: {:?} {:?} {:?}", first, op, second);
 
         match (first, op, second) {
             (Some(first), Some(op), Some(second)) => match op.as_str() {
@@ -140,10 +141,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
 }
 
 fn eval_command_args(ctx: &TemplateContext, args: String) -> String {
-    //info!("args: {}", args);
-    //let args = args.replace("\\\"", "\"");
     let eval_args = jpst::format_str!(&args, ctx);
-    //info!("eval args:{}", eval_args);
     eval_args
 }
 

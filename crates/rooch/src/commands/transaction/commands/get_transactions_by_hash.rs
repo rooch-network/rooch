@@ -21,7 +21,7 @@ pub struct GetTransactionsByHashCommand {
 #[async_trait]
 impl CommandAction<Vec<Option<TransactionWithInfoView>>> for GetTransactionsByHashCommand {
     async fn execute(self) -> RoochResult<Vec<Option<TransactionWithInfoView>>> {
-        let client = self.context_options.build().await?.get_client().await?;
+        let client = self.context_options.build()?.get_client().await?;
 
         let resp = client.rooch.get_transactions_by_hash(self.hashes).await?;
 
