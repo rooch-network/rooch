@@ -2,49 +2,285 @@
 
 import { Callout, FileTree } from 'nextra/components'
 
-Rooch 中的 Object 采用一种箱子（Box）模式的 Object。它相当于一个带有全局唯一 ID 的箱子，可以将类型 `T` 封装为一个 Object。
+Rooch 中的 Object 采用一种箱子（Box）模式的 Object。
+
+Object Storage 是一个全局的存储空间，创建一个 Object 相当于在这个空间中创建了一个箱子(`ObjectEntity<T>`)，可以将类型 `T` 的实例封装在箱子中，而返回的 `Object<T>` 是这个箱子的钥匙，`ObjectID` 是这个箱子的地址。
+
+## ObjectEntity 和 Object 的定义
 
 ```move
 module moveos_std::object{
-    struct Object<T: key>{
+    
+    struct ObjectEntity<T>{
         id: ObjectID,
         owner: address,
+        /// A flag to indicate whether the object is shared or frozen
+        flag: u8,
         value: T,
+    }
+
+    struct Object<phantom T> has key, store {
+        id: ObjectID,
     }
 }
 ```
 
-`Object` 提供以下函数，可以对 `Object` 进行操作：
+`ObjectEntity` 没有任何 `ability`，只能被底层的存储接口访问。开发者可以通过 `Object<T>` 访问 `ObjectEntity<T>` 中封装的数据，二者的生命周期也是相同的，开发者只需操作 `Object<T>` 相关的接口，不需要关心 `ObjectEntity<T>`。
 
-|Object 函数                                               |说明|
-|---------------------------------------------------------|------------------------------------------------------------------------|
-|`context::new_object<T: key>(self: &mut Context, value: T): Object<T` | 将 `T` 封装到 `Object` 箱子中，返回 `Object<T>`|
-|`context::new_object_with_owner<T: key>(self: &mut Context, owner: address, value: T): Object<T>` | 将 `T` 封装到 `Object` 箱子中，指定 `Object` 的所有者，返回 `Object<T>`|
-|`object::borrow<T>(&Object<T>): &T`                        | 通过 `Object` 借用 `T` 的只读引用|
-|`object::borrow_mut<T>(&mut Object<T>): &mut T`            | 通过 `Object` 借用 `T` 的可变引用|
-|`object::transfer<T>(&mut Object<T>,address)`              | 通过 `Object` 将 `Object` 所有权转移给 `address`|
-|`object::unpack<T>(Object<T>): (ObjectID, address, T)`     | 解包 `Object<T>`|
 
-以上函数都通过 `#[private_generics<T>]` 限定，保证只有 `T` 所在的模块才能调用以上方法。
+## Object 的所有权
 
-Rooch Object 也是 Move 中的 [Hot Potato](https://examples.sui.io/patterns/hot-potato.html) 模式的一个使用案例。Object 不具有任何 `ability`，所以它不可以被 `drop`，`copy`，`store`，创建之后只能被 `Context` 提供的函数处理。
+`ObjectEntity` 的 `owner` 字段代表 Object 属于哪个账户地址，通过 `owner` 可以将 Object 分为两种：
 
-`Context` 提供了以下操作 `Object` 的接口函数：
+1. `SystemOwnedObject`: `owner` 为 `0x0` 的 Object。Object 创建后默认为 `SystemOwnedObject`。
+2. `UserOwnedObject`: `owner` 为非 `0x0` 的 Object。Object 被转让给某个用户后，`owner` 会被设置为该用户的地址。
 
-|Context 函数                                                                |说明|
-|---------------------------------------------------------------------------------|----------------------------------|
-|`context::borrow_object<T: key>(self: &Context, object_id: ObjectID): &Object<T>`              | 通过 `ObjectID` 借用 `Object<T>` 引用   |
-|`context::borrow_object_mut<T: key>(self: &mut Context, object_id: ObjectID): &mut Object<T>`  | 通过 `ObjectID` 借用可变 `Object<T>` 引用|
-|`context::add_object<T: key>(self: &mut Context, obj: Object<T>)`                       | 添加 `Object<T>` 到全局储存中    |
-|`context::remove_object<T: key>(self: &mut Context, object_id: ObjectID): Object<T>`           | 通过 `ObjectID` 删除 `Object<T>`，并返回 `Object<T>`|
-|`contains_object(self: &Context, object_id: ObjectID): bool` | `ObjectID` 是否存在于全局储存中 |
+## Object 的生命周期
 
-以上函数除了 `contains_object` 都通过 `#[private_generics<T>]` 限定，保证只有 `T` 所在的模块才能调用以上方法。
+### 创建 Object
+
+通过调用 `context::new_object` 方法可以创建出类型为 `T` 的 Object。
+
+```move
+module moveos_std::context{
+    #[private_generics(T)]
+    public fun new_object<T: key>(&mut Context, value: T): Object<T>; 
+}
+```
+* 该方法受 `private_generics(T)` 保护，所以只有 `T` 所在的模块才能调用该方法。`T` 模块的开发者可以决定是否提供将 `T` 封装到 `Object` 中的方法。
+* `T` 必须拥有 `key` ability。
+* 该 Object 的 ObjectID 是系统自动分配的全局唯一 ID。
+
+同时还提供了两种特殊的 Object 创建方式，不自动分配 ID，而是通过预先确定的算法来生成 ID，叫做 Named Object。
+
+```move
+module moveos_std::context{
+    #[private_generics(T)]
+    public fun new_named_object<T: key>(&mut Context, value: T): Object<T>;
+
+    #[private_generics(T)]
+    public fun new_account_named_object<T: key>(&mut Context, account: address, value: T): Object<T>;
+}
+```
+
+* NamedObject: 用类型 `T` 的类型名来生成 ObjectID。生成的公式为 `sha3(type_name<T>())`。一般用于全局唯一的 Object，比如 `0x3::timestamp::Timestamp`。
+* Account NamedObject: 是用 account 地址和 `T` 类型名来生成 ObjectID。生成的公式为 `sha3(account + type_name<T>())`。一般用于每个用户只有一个的 Object，比如 `0x3::coin_store::CoinStore<CoinType>`。
+
+### 操作 Object
+
+#### 所有权转让
+
+将 Object 转让给 `new_owner`： 
+
+```move
+module moveos_std::object{
+    public fun transfer<T: key + store>(obj: Object<T>, new_owner: address);
+}
+```
+
+`owner` 将属于自己的 Object 通过 `object_id` 拿出来
+
+```move
+module moveos_std::context{
+    public fun take_object<T: key + store>(&mut Context, owner: &signer, object_id: ObjectID): Object<T>;
+}
+```
+>注意：当 Object 被拿出来后，`owner` 会被设置为 `0x0`，这时候 Object 就变成了 `SystemOwnedObject`。   
+
+以上方法的 `T` 都必须拥有 `key + store` ability，我们可以把这种类型的 Object 称为 `PublicObject`，用户可以自己转让 `PublicObject` 的所有权。
+
+如果是只有 `key` ability 的 Object，我们可以称为 `PrivateObject`，用户无法直接转让 `PrivateObject` 的所有权，需要借助 `T` 所在的模块提供的接口来转让 `PrivateObject` 的所有权。
+
+```move
+module moveos_std::object{
+    #[private_generics(T)]
+    public fun transfer_extend<T: key>(obj: Object<T>, new_owner: address);
+}
+
+module moveos_std::context{
+    #[private_generics(T)]
+    public fun take_object_extend<T: key>(&mut Context, object_id: ObjectID): Object<T>;
+}
+```
+
+以上两个方法都受 `private_generics(T)` 保护，只有 `T` 所在的模块才能调用，开发者可以决定是否提供将 `PrivateObject` 转让给其他用户的方法。
+
+
+#### Object 的引用
+
+`Object<T>` 有两种引用方式，一种是只读引用 `&Object<T>`，一种是可变引用 `&mut Object<T>`。
+我们可以通过 `object::borrow(&Object<T>)` 方法获取到 `&T`，通过 `object::borrow_mut(&mut Object<T>)` 获取到 `&mut T`。
+至于获取到 `&T` 和 `&mut T` 后，可以进行哪些操作，这个由 `T` 的模块来定义。
+
+有两种方法获取 Object 的引用：
+
+1. 通过 `entry` 方法传递进来。
+
+```move
+entry fun my_entry(obj: &Object<MyStruct>, obj_mut: &mut Object<MyStruct>){
+    //do something 
+}
+```
+
+2. 通过 `context` 提供的方法获取。
+
+```move
+module moveos_std::context{
+
+    public fun borrow_object<T: key>(&Context, object_id: ObjectID): &Object<T>;
+
+    public fun borrow_mut_object<T: key>(&mut Context, &signer, object_id: ObjectID): &mut Object<T>;
+}
+```
+
+* 注意，Rooch 中的所有 Object 都是读公开的，任何人都可以通过 `ObjectID` 获取到任意的 `&Object<T>`。
+* Object 的所有者可以通过 `context::borrow_mut_object` 获取 `&mut Object<T>` 引用。
+
+给开发者的扩展方法：
+
+```move
+module moveos_std::context{
+    #[private_generics(T)]
+    public fun borrow_mut_object_extend<T: key>(&mut Context, object_id: ObjectID): &mut Object<T>;
+}
+```
+
+* `T` 所在的模块可以通过 `ObjectID` 获取任意 `&mut Object<T>` 引用，除非该 Object 被冻结。
+
+#### 共享的(Shared)和冻结的(Frozen) Object
+
+`Object<T>` 有两种状态，一种是 `shared`，一种是 `frozen`。
+
+* `SharedObject`：任何人都可以直接获取到 `&mut Object<T>` 引用。
+* `FrozenObject`：任何人都无法获取到 `&mut Object<T>` 引用，包括 `T` 所在的模块。
+
+通过以下方法可以将 `Object<T>` 变为 `shared` 或 `frozen`。
+
+```move
+module moveos_std::object{
+    public fun to_shared<T: key>(obj: Object<T>);
+    public fun to_frozen<T: key>(obj: Object<T>);
+}
+```
+
+要获取 SharedObject 的可变引用，需要通过 `entry` 参数传递或者 `context` 提供的方法：
+
+```move
+module moveos_std::context{
+    public fun borrow_mut_object_shared<T: key>(&mut Context, object_id: ObjectID): &mut Object<T>;
+}
+```
+
+一旦 Object 变为 `frozen` 或者 `shared`，Object 就自动归属于 `SystemOwnedObject`，任何人都无法直接获取到 `Object<T>` 的实例，只能通过引用来操作 Object。
+
+
+#### 嵌套的 Object
+
+`Object<T>` 本身拥有 `store` ability，所以可以嵌套在另外的结构体中作为字段，或者保存到 `vector`,`Table` 等容器中。
+
+```move
+struct Avatar has key{
+    head: Object<Head>,
+    body: Object<Body>,
+}
+```
+
+上面的例子中，`Object<Head>`,`Object<Body>` 可以理解为归属 `Avatar` 这个结构体，如果 `Object<Avatar>` 被转让给其他用户，那么 `Object<Head>`,`Object<Body>` 也会随着 `Object<Avatar>` 被转让给其他用户。
+
+* 被嵌套的 Object 依然会在 Object Storage 中，可以通过前面描述的引用获取方法来获取 `Object<T>` 的引用。
+* 被嵌套的 Object 一定是 `SystemOwnedObject`。
+
+#### 删除 Object
+
+通过以下方法可以删除 Object：
+
+```move
+module moveos_std::object{
+    #[private_generics(T)]
+    public fun remove<T: key>(obj: Object<T>): T;
+}
+```
+
+删除 Object 后会返回 Object 中封装的数据，只有 `T` 所在的模块才能调用该方法。
+
+### Object RPC
+
+通过 `rooch_getState` RPC 接口可以获取到 `ObjectEntity` 的数据。
+
+```bash
+curl -H "Content-Type: application/json" -X POST \
+--data '{"jsonrpc":"2.0","method":"rooch_getStates","params":["/object/0x3::timestamp::Timestamp", {"decode":true}],"id":1}' \
+https://dev-seed.rooch.network
+``` 
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": [
+    {
+      "value": "0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3000000000000000000000000000000000000000000000000000000000000000004002db02e34050600",
+      "value_type": "0x2::object::ObjectEntity<0x3::timestamp::Timestamp>",
+      "decoded_value": {
+        "abilities": 0,
+        "type": "0x2::object::ObjectEntity<0x3::timestamp::Timestamp>",
+        "value": {
+          "flag": 4,
+          "id": "0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3",
+          "owner": "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "value": {
+            "abilities": 8,
+            "type": "0x3::timestamp::Timestamp",
+            "value": {
+              "milliseconds": "1694571540000000"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "id": 1
+}
+```
+
+### Object 相关的方法列表
+
+`context` 和 `object` 模块提供以下函数，可以对 `Object` 进行操作：
+
+|Object 函数                                                                             |`#[private_generics<T>]` |说明 |
+|-------------------------------------------------------------------------------------- |--------------------------|----------------------------------------------|
+|`context::new_object<T: key>(&mut Context, T): Object<T>`                              | true |创建 `Object`，将 `T` 封装到 `Object` 中，返回 `Object<T>`|
+|`context::new_named_object<T: key>(&mut Context, T): Object<T>`                        | true |该 `Object` 的 `ObjectID` 由 `T` 类型生成|
+|`context::new_account_named_object<T: key>(&mut Context, address, T): Object<T>`       | true |该 `Object` 的 `ObjectID` 由 address 和 `T` 类型生成|
+|`context::borrow_object<T: key>(&Context, ObjectID): &Object<T>`                       | false| 通过 ID 借用 `Object<T>` 的只读引用|
+|`context::borrow_mut_object<T: key>(&mut Context, &signer, ObjectID): &mut Object<T>`  | false| owner(&signer) 通过 ID 借用 `Object<T>` 的可变引用|
+|`context::borrow_mut_object_shared<T: key>(&mut Context, ObjectID): &mut Object<T>`    | false| 通过 ID 借用共享 `Object<T>` 的可变引用|
+|`context::borrow_mut_object_extend<T: key>(&mut Context, ObjectID): &mut Object<T>`    | true | 给开发者的扩展方法，`T` 所在的模块可以通过 ObjectID 获取任意 `&mut Object<T>`|
+|`context::exist_object<T: key>(&Context, ObjectID): bool`                              | false | 通过 ObjectID 检测 Object 是否存在｜
+|`object::borrow<T: key>(&Object<T>): &T`                                               | false | `&Object` 借用 `T` 的只读引用|
+|`object::borrow_mut<T: key>(&mut Object<T>): &mut T`                                   | false | 通过 `&mut Object` 借用 `T` 的可变引用|
+|`object::transfer<T: key+store>(Object<T>,address)`                                    | false | 将 `Object<T>` 所有权转移给 `address`|
+|`object::transfer_extend<T: key>(Object<T>,address)`                                   | true  | 给开发者的扩展方法，将 `Object<T>` 所有权转移给 `address`|
+|`object::to_shared<T: key>(Object<T>)`                                                 | false | 将 `Object<T>` 变为 `SharedObject`，任何人都可以直接获取到 `&mut Object<T>` |
+|`object::to_frozen<T: key>(Object<T>)`                                                 | false | 将 `Object<T>` 变为 `FrozenObject`，任何人都无法获取到 `&mut Object<T>` |
+|`object::remove<T: key>(Object<T>): T`                                                 | true  | 删除 `Object<T>`，并返回其中的 `T`，只有 `T` 所在的模块才能删除 `Object<T>`|
+
+以上函数中，如果 `#[private_generics<T>]` 列为 `true`，表明只有 `T` 所在的模块才能调用。
+
 
 ### Rooch Object, Sui Object, Aptos Object 的比较
 
-1. Sui Object 是一种特殊的 `struct` 要求该 `struct` 必须拥有 `key` ability, 同时第一个字段必须是 `UID`。
-2. Aptos Object 是一种特殊的账户，该账户的 `address` 即 `ObjectID`。
+#### Sui Object 
+
+* Sui Object 是一种特殊的 `struct` 要求该 `struct` 必须拥有 `key` ability, 同时第一个字段必须是 `UID`，Object 是虚拟机和存储提供的，Move 中并不存在 Object 类型。
+Rooch 中的 Object 是在 Move 中定义的类型。
+* Sui Object 由外部系统索引，合约内并没有提供通过 ID 获取 Object 的方法，只能通过参数传递。Rooch 同时提供两种方式。  
+* Sui Object 如果发生嵌套或者保存到其他容器中，Object 在全局 Object Storage 就不可见。而 Rooch 中的 Object 嵌套或者保存到其他容器中，Object 依然在全局 Object Storage 中可访问。
+
+#### Aptos Object 
+
+* Aptos Object 底层是一种特殊的账户，该账户的 `address` 即 `ObjectID`。
+* `Object<T>` 代表对 Object 的引用，可以 `copy`,`drop`，而 Rooch 中 `Object<T>` 只有一个实例，不可以 `copy`,`drop`。
+* Aptos Object 通过 `DeleteRef`，`ExtendRef`，`TransferRef` 来表达对 Object 不同的操作权限，而 Rooch Object 通过只读引用，可变应用以及实例来区分不同的权限。
 
 <Callout>
 TODO: This part of this document needs to be improved
@@ -58,6 +294,6 @@ TODO: This part of this document needs to be improved
 4. [Rooch Context Source code](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/context.move)
 5. [Sui Object](https://docs.sui.io/learn/objects)
 6. [Aptos Object](https://aptos.dev/standards/aptos-object/)
-7. [StorageAbstraction](../dive-into-rooch/storage-abstraction.zh-CN.md)
+7. [StorageAbstraction](../dive-into-rooch/storage-abstraction.zh-CN.mdx)
 7. [Hot Potato](https://examples.sui.io/patterns/hot-potato.html)
 
