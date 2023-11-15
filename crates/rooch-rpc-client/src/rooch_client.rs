@@ -76,7 +76,7 @@ impl RoochRpcClient {
 
     pub async fn get_transactions_by_order(
         &self,
-        cursor: Option<u128>,
+        cursor: Option<u64>,
         limit: Option<u64>,
     ) -> Result<TransactionWithInfoPageView> {
         Ok(self

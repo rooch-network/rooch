@@ -41,7 +41,7 @@ impl Message for GetTransactionsByHashMessage {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetTxSequenceInfoMappingByOrderMessage {
-    pub tx_orders: Vec<u128>,
+    pub tx_orders: Vec<u64>,
 }
 
 impl Message for GetTxSequenceInfoMappingByOrderMessage {
@@ -59,7 +59,7 @@ impl Message for GetTxSequenceInfoMappingByHashMessage {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetTxSequenceInfosMessage {
-    pub orders: Vec<u128>,
+    pub orders: Vec<u64>,
 }
 
 impl Message for GetTxSequenceInfosMessage {

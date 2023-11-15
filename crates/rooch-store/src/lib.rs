@@ -117,27 +117,27 @@ impl TransactionStore for RoochStore {
 
     fn get_tx_sequence_infos_by_order(
         &self,
-        cursor: Option<u128>,
+        cursor: Option<u64>,
         limit: u64,
     ) -> Result<Vec<Option<TransactionSequenceInfo>>> {
         self.transaction_store
             .get_tx_sequence_infos_by_order(cursor, limit)
     }
 
-    fn save_tx_sequence_info_mapping(&self, tx_order: u128, tx_hash: H256) -> Result<()> {
+    fn save_tx_sequence_info_mapping(&self, tx_order: u64, tx_hash: H256) -> Result<()> {
         self.transaction_store
             .save_tx_sequence_info_mapping(tx_order, tx_hash)
     }
 
     fn get_tx_sequence_info_mapping_by_order(
         &self,
-        tx_orders: Vec<u128>,
+        tx_orders: Vec<u64>,
     ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
         self.transaction_store
             .get_tx_sequence_info_mapping_by_order(tx_orders)
     }
 
-    fn save_tx_sequence_info_reverse_mapping(&self, tx_hash: H256, tx_order: u128) -> Result<()> {
+    fn save_tx_sequence_info_reverse_mapping(&self, tx_hash: H256, tx_order: u64) -> Result<()> {
         self.transaction_store
             .save_tx_sequence_info_reverse_mapping(tx_hash, tx_order)
     }

@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::string::String;
 
 pub type EventPageView = PageView<EventView, u64>;
-pub type TransactionWithInfoPageView = PageView<TransactionWithInfoView, u128>;
+pub type TransactionWithInfoPageView = PageView<TransactionWithInfoView, u64>;
 pub type StatesPageView = PageView<StateView, BytesView>;
 pub type BalanceInfoPageView = PageView<BalanceInfoView, BytesView>;
 

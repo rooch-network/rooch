@@ -179,7 +179,7 @@ impl AbstractTransaction for TypedTransaction {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionSequenceInfo {
     /// The tx order
-    pub tx_order: u128,
+    pub tx_order: u64,
     /// The tx order signature, it is the signature of the sequencer to commit the tx order.
     pub tx_order_signature: Authenticator,
     /// The tx accumulator root after the tx is append to the accumulator.
@@ -188,7 +188,7 @@ pub struct TransactionSequenceInfo {
 
 impl TransactionSequenceInfo {
     pub fn new(
-        tx_order: u128,
+        tx_order: u64,
         tx_order_signature: Authenticator,
         tx_accumulator_root: H256,
     ) -> TransactionSequenceInfo {
@@ -211,13 +211,13 @@ pub struct TransactionWithInfo {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionSequenceInfoMapping {
     /// The tx order
-    pub tx_order: u128,
+    pub tx_order: u64,
     /// The tx hash.
     pub tx_hash: H256,
 }
 
 impl TransactionSequenceInfoMapping {
-    pub fn new(tx_order: u128, tx_hash: H256) -> TransactionSequenceInfoMapping {
+    pub fn new(tx_order: u64, tx_hash: H256) -> TransactionSequenceInfoMapping {
         TransactionSequenceInfoMapping { tx_order, tx_hash }
     }
 }

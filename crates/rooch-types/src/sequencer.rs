@@ -7,7 +7,7 @@ use std::fmt::Debug;
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct SequencerOrder {
-    pub last_order: u128,
+    pub last_order: u64,
 }
 
 impl fmt::Display for SequencerOrder {
@@ -17,7 +17,7 @@ impl fmt::Display for SequencerOrder {
 }
 
 impl SequencerOrder {
-    pub fn new(last_order: u128) -> Self {
+    pub fn new(last_order: u64) -> Self {
         SequencerOrder { last_order }
     }
 }
