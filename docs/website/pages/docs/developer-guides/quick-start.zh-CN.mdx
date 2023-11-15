@@ -24,19 +24,18 @@ rooch move new quick_start_counter
 
 ```move
 module quick_start_counter::quick_start_counter {
-    use moveos_std::account_storage;
-    use moveos_std::context::Context;
+    use moveos_std::context::{Self, Context};
 
     struct Counter has key {
         count_value: u64
     }
 
     fun init(ctx: &mut Context, account: &signer) {
-        account_storage::global_move_to(ctx, account, Counter { count_value: 0 });
+        context::move_resource_to(ctx, account, Counter { count_value: 0 });
     }
 
     entry fun increase(ctx: &mut Context) {
-        let counter = account_storage::global_borrow_mut<Counter>(ctx, @quick_start_counter);
+        let counter = context::borrow_mut_resource<Counter>(ctx, @quick_start_counter);
         counter.count_value = counter.count_value + 1;
     }
 }
@@ -65,11 +64,10 @@ module quick_start_counter::quick_start_counter {
 ### 导入模块
 
 ```move
-use moveos_std::account_storage;
-use moveos_std::context::Context;
+use moveos_std::context::{Self, Context};
 ```
 
-在第 2~3 行中，是导入模块的语句。要在 Rooch 上实现计数器合约，我们需要使用 Rooch 的某些功能库，此合约使用了 MoveOS 标准库提供的 `account_storage` 和 `context` 等功能模块。
+在第 2~3 行中，是导入模块的语句。要在 Rooch 上实现计数器合约，我们需要使用 Rooch 的某些功能库，此合约使用了 MoveOS 标准库提供 `context` 等功能模块。
 
 ### 定义数据结构
 
@@ -87,7 +85,7 @@ struct Counter has key {
 
 ```move
 fun init(ctx: &mut Context, account: &signer) {
-    account_storage::global_move_to(ctx, account, Counter { value: 0 })
+    context::move_resource_to(ctx, account, Counter { value: 0 })
 }
 ```
 
@@ -103,16 +101,16 @@ Move 中提供一个特定的初始化函数 `init` 来自动初始化合约，�
 
 ```move
 entry fun increase(ctx: &mut Context) {
-    let counter = account_storage::global_borrow_mut<Counter>(ctx, @quick_start_counter);
+    let counter = context::borrow_mut_resource<Counter>(ctx, @quick_start_counter);
     counter.count_value = counter.count_value + 1;
 }
 ```
 
 第 13 行是 `increase` 函数的签名，接受一个上下文参数。
 
-在第 14 行中，调用 Rooch 提供的账户存储的 `global_borrow_mut` 指令来获取 `Counter` 类型的可变引用，并将函数的返回值绑定到 `counter` 变量。借用到 `Counter` 的可变引用，我们就可以对他的值进行修改操作。
+在第 14 行中，调用 Rooch 提供的账户存储的 `borrow_mut_resource` 指令来获取 `Counter` 类型的可变引用，并将函数的返回值绑定到 `counter` 变量。借用到 `Counter` 的可变引用，我们就可以对他的值进行修改操作。
 
-`global_borrow_mut` 函数接受一个上下文参数，和一个要借用 `Counter` 资源的地址参数，为了简单起见，我们直接使用发布计数器模块的地址作为借用方。
+`borrow_mut_resource` 函数接受一个上下文参数，和一个要借用 `Counter` 资源的地址参数，为了简单起见，我们直接使用发布计数器模块的地址作为借用方。
 
 在第 15 行中，我们通过成员运算获取到 `Counter` 结构的字段值，并进行加一操作。
 

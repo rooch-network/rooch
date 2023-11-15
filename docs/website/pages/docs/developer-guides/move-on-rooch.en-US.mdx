@@ -24,18 +24,15 @@ The goal of storage abstraction is to allow developers to more flexibly define t
 
 | Move store instructions                    | Functions in Rooch                                                               | Explanation                                                      |
 |--------------------------------------------|----------------------------------------------------------------------------------|------------------------------------------------------------------|
-| `move_to<T:key>(&signer,T)`                | `account_storage::global_move_to<T:key>(&mut Context,&signer,T)`          | Store resources of type `T` in the user state space of `signer`. |
-| `move_from<T:key>(address):T`              | `account_storage::global_move_from<T:key>(&mut Context,address): T`       | Take resources of type `T` out of user state space.              |
-| `borrow_global<T:key>(address):&T`         | `account_storage::global_borrow<T:key>(&Context,address): &T`             | Read an immutable reference of type `T` from user space.         |
-| `borrow_global_mut<T:key>(address):&mut T` | `account_storage::global_borrow_mut<T:key>(&mut Context,address): &mut T` | Read a mutable reference of type `T` from user space.            |
-| `exists<T:key>(address):bool`              | `account_storage::global_exists<T:key>(&Context,address): bool`           | Determine whether there is a resource of type `T` in user space. |
+| `move_to<T:key>(&signer,T)`                | `context::move_resource_to<T:key>(&mut Context,&signer,T)`          | Store resources of type `T` in the user state space of `signer`. |
+| `move_from<T:key>(address):T`              | `context::move_resource_from<T:key>(&mut Context,address): T`       | Take resources of type `T` out of user state space.              |
+| `borrow_global<T:key>(address):&T`         | `context::borrow_resource<T:key>(&Context,address): &T`             | Read an immutable reference of type `T` from user space.         |
+| `borrow_global_mut<T:key>(address):&mut T` | `context::borrow_mut_resource<T:key>(&mut Context,address): &mut T` | Read a mutable reference of type `T` from user space.            |
+| `exists<T:key>(address):bool`              | `context::exists_resource<T:key>(&Context,address): bool`           | Determine whether there is a resource of type `T` in user space. |
 
 The above methods provided by `account_storage` are all constrained by the `private_generics(T)` annotation, ensuring that the security is consistent with the Move storage instruction.
 
-In addition to `account_storage` Rooch also provides the following storage modules:
-
-1. `storage_context`: Use `ObjectID` as key to store any type of data. For detailed information about Rooch Object, see [Rooch Object](./object.en-US.mdx).
-2. `type_table`: Use type as key to store any type of data.
+In addition to `Account Resource，` Rooch also provides Object Storage, For detailed information about Rooch Object, see [Rooch Object](./object.en-US.mdx).
 
 Regarding the design of storage abstraction, you can refer to [Storage Abstraction](../dive-into-rooch/storage-abstraction.en-US.mdx).
 
@@ -64,7 +61,7 @@ module example::my_module{
 
 ### Get the `signer` of the current module
 
-The function `moveos_std::signer::module_signer<T>():signer` can be used to obtain the `signer` of the current module, and call `account_storage::global_move_to` and other functions that require a `signer` as the account of the current module.
+The function `moveos_std::signer::module_signer<T>():signer` can be used to obtain the `signer` of the current module, and call `context::move_resource_to` and other functions that require a `signer` as the account of the current module.
 
 `T` here is subject to `private_generics(T)`, ensuring the safety of the call.
 

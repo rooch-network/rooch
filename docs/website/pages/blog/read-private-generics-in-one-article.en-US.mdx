@@ -295,7 +295,7 @@ public(friend) fun init_authentication_keys(ctx: &mut Context, account: &signer)
   let authentication_keys = AuthenticationKeys {
      authentication_keys: type_table::new(ctx),
   };
-  account_storage::global_move_to<AuthenticationKeys>(ctx, account, authentication_keys);
+  context::move_resource_to<AuthenticationKeys>(ctx, account, authentication_keys);
 }
 ```
 

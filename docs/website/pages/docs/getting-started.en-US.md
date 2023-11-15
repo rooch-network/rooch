@@ -168,17 +168,17 @@ public fun create_blog(ctx: &mut Context, owner: &signer) {
         name: string::utf8(b"MyBlog"),
         articles,
     };
-    account_storage::global_move_to(ctx, owner, myblog);
+    context::move_resource_to(ctx, owner, myblog);
 }
 
 public entry fun set_blog_name(ctx: &mut Context, owner: &signer, blog_name: String) {
     assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(EDATA_TOO_LONG));
     let owner_address = signer::address_of(owner);
     // if blog not exist, create it
-    if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
+    if(!context::exists_resource<MyBlog>(ctx, owner_address)){
         create_blog(ctx, owner);
     };
-    let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
+    let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
     myblog.name = blog_name;
 }
 ```
@@ -205,8 +205,7 @@ module simple_blog::blog {
     use std::string::{Self,String};
     use std::vector;
     use moveos_std::object_id::ObjectID;
-    use moveos_std::context::Context;
-    use moveos_std::account_storage;
+    use moveos_std::context::{Self, Context};
 
     const EDATA_TOO_LONG: u64 = 1;
     const ENOT_FOUND: u64 = 2;
@@ -229,33 +228,33 @@ module simple_blog::blog {
             name: string::utf8(b"MyBlog"),
             articles,
         };
-        account_storage::global_move_to(ctx, owner, myblog);
+        context::move_resource_to(ctx, owner, myblog);
     }
 
     public entry fun set_blog_name(ctx: &mut Context, owner: &signer, blog_name: String) {
         assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(EDATA_TOO_LONG));
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
-        if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
+        if(!context::exists_resource<MyBlog>(ctx, owner_address)){
             create_blog(ctx, owner);
         };
-        let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
+        let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
         myblog.name = blog_name;
     }
 
     fun add_article_to_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
-        if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
+        if(!context::exists_resource<MyBlog>(ctx, owner_address)){
             create_blog(ctx, owner);
         };
-        let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
+        let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
         vector::push_back(&mut myblog.articles, article_id);
     }
 
     fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
         let owner_address = signer::address_of(owner);
-        let myblog = account_storage::global_borrow_mut<MyBlog>(ctx, owner_address);
+        let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
         let (contains, index) = vector::index_of(&myblog.articles, &article_id);
         assert!(contains, error::not_found(ENOT_FOUND));
         vector::remove(&mut myblog.articles, index); 
@@ -263,10 +262,10 @@ module simple_blog::blog {
 
     /// Get owner's blog's articles
     public fun get_blog_articles(ctx: &Context, owner_address: address): vector<ObjectID> {
-        if(!account_storage::global_exists<MyBlog>(ctx, owner_address)){
+        if(!context::exists_resource<MyBlog>(ctx, owner_address)){
             vector::empty()
         }else{
-            let myblog = account_storage::global_borrow<MyBlog>(ctx, owner_address);
+            let myblog = context::borrow_resource<MyBlog>(ctx, owner_address);
             myblog.articles
         }
     }

@@ -36,8 +36,7 @@ We simply write a Move contract to demonstrate storing a "Hello Rooch!" string i
 ```move
 module hello_rooch::hello_rooch {
     use std::string;
-    use moveos_std::account_storage;
-    use moveos_std::context::Context;
+    use moveos_std::context::{Self, Context};
 
     struct HelloMessage has key {
         text: string::String
@@ -45,7 +44,7 @@ module hello_rooch::hello_rooch {
 
     entry fun say_hello(ctx: &mut Context, owner: &signer) {
         let hello = HelloMessage { text: string::utf8(b"Hello Rooch!") };
-        account_storage::global_move_to(ctx, owner, hello);
+        context::move_resource_to(ctx, owner, hello);
     }
 }
 ```
