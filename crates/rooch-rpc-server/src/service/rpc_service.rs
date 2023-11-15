@@ -186,7 +186,7 @@ impl RpcService {
 
     pub async fn get_transaction_sequence_infos(
         &self,
-        orders: Vec<u128>,
+        orders: Vec<u64>,
     ) -> Result<Vec<Option<TransactionSequenceInfo>>> {
         let resp = self
             .sequencer
@@ -197,7 +197,7 @@ impl RpcService {
 
     pub async fn get_tx_sequence_info_mapping_by_order(
         &self,
-        tx_orders: Vec<u128>,
+        tx_orders: Vec<u64>,
     ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
         let resp = self
             .sequencer

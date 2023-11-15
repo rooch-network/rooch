@@ -11,7 +11,7 @@ use rooch_types::error::RoochResult;
 pub struct GetTransactionsByOrderCommand {
     /// Transaction's hash
     #[clap(long)]
-    pub cursor: Option<u128>,
+    pub cursor: Option<u64>,
 
     #[clap(long)]
     pub limit: Option<u64>,
