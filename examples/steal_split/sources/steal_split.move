@@ -12,6 +12,7 @@ module rooch_examples::rooch_examples {
     use moveos_std::event::Self;
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::context::{Self, Context};
+    use moveos_std::object;
     use rooch_framework::coin;
     use rooch_framework::account_coin_store;
     use rooch_examples::timestamp;
@@ -115,11 +116,11 @@ module rooch_examples::rooch_examples {
         
         let coin_info = coin::register_extend<WGBCOIN>(ctx,string::utf8(b"WGBCOIN"),string::utf8(b"WGB"), 8);
 
-        let coin = coin::mint_extend<WGBCOIN>(coin_info, 1000 * 1000 * 1000);
+        let coin = coin::mint_extend<WGBCOIN>(&mut coin_info, 1000 * 1000 * 1000);
         account_coin_store::do_accept_coin<WGBCOIN>(ctx,account);
         account_coin_store::do_accept_coin<WGBCOIN>(ctx,&signer);
         account_coin_store::deposit_extend(ctx, signer::address_of(account), coin);
-
+        object::transfer(coin_info, resource_address);
         context::move_resource_to(ctx, &signer, State {
             next_game_id: 0,
             games: simple_map::create(),

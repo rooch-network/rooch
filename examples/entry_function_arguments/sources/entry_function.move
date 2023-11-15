@@ -3,12 +3,12 @@
 
 module rooch_examples::entry_function {
    use moveos_std::event;
-   use moveos_std::object::{Self, Object};
-   use moveos_std::object::ObjectID;
+   use moveos_std::object::{Self, Object, ObjectID};
    use moveos_std::context::{Self, Context};
 
    fun init(ctx: &mut Context) {
-      context::new_named_object(ctx, TestStruct{});      
+      let obj = context::new_named_object(ctx, TestStruct{});
+      object::to_shared(obj);      
    }
 
    struct BoolEvent has drop {
