@@ -521,10 +521,10 @@
             "description": "Query by event type.",
             "type": "object",
             "required": [
-              "EventType"
+              "eventType"
             ],
             "properties": {
-              "EventType": {
+              "eventType": {
                 "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
               }
             },
@@ -534,10 +534,10 @@
             "description": "Query by sender address.",
             "type": "object",
             "required": [
-              "Sender"
+              "sender"
             ],
             "properties": {
-              "Sender": {
+              "sender": {
                 "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
               }
             },
@@ -547,10 +547,10 @@
             "description": "Return events emitted by the given transaction hash.",
             "type": "object",
             "required": [
-              "TxHash"
+              "txHash"
             ],
             "properties": {
-              "TxHash": {
+              "txHash": {
                 "$ref": "#/components/schemas/primitive_types::H256"
               }
             },
@@ -560,23 +560,23 @@
             "description": "Return events emitted in [start_time, end_time) interval",
             "type": "object",
             "required": [
-              "TimeRange"
+              "timeRange"
             ],
             "properties": {
-              "TimeRange": {
+              "timeRange": {
                 "type": "object",
                 "required": [
-                  "endTime",
-                  "startTime"
+                  "end_time",
+                  "start_time"
                 ],
                 "properties": {
-                  "endTime": {
+                  "end_time": {
                     "description": "right endpoint of time interval, milliseconds since block, exclusive",
                     "type": "integer",
                     "format": "uint64",
                     "minimum": 0.0
                   },
-                  "startTime": {
+                  "start_time": {
                     "description": "left endpoint of time interval, milliseconds since block, inclusive",
                     "type": "integer",
                     "format": "uint64",
@@ -591,23 +591,23 @@
             "description": "Return events emitted in [from_order, to_order) interval",
             "type": "object",
             "required": [
-              "TxOrderRange"
+              "txOrderRange"
             ],
             "properties": {
-              "TxOrderRange": {
+              "txOrderRange": {
                 "type": "object",
                 "required": [
-                  "fromOrder",
-                  "toOrder"
+                  "from_order",
+                  "to_order"
                 ],
                 "properties": {
-                  "fromOrder": {
+                  "from_order": {
                     "description": "left endpoint of transaction order, inclusive",
                     "type": "integer",
                     "format": "uint128",
                     "minimum": 0.0
                   },
-                  "toOrder": {
+                  "to_order": {
                     "description": "right endpoint of transaction order, exclusive",
                     "type": "integer",
                     "format": "uint128",

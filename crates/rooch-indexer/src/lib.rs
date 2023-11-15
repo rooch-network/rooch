@@ -11,6 +11,7 @@ use diesel::sqlite::SqliteConnection;
 use crate::store::sqlite_store::SqliteIndexerStore;
 use crate::store::traits::IndexerStoreTrait;
 use crate::types::{IndexedEvent, IndexedTransaction};
+use crate::utils::create_all_tables;
 use errors::IndexerError;
 
 pub mod actor;
@@ -58,6 +59,11 @@ impl IndexerStore {
             .to_str()
             .ok_or(anyhow::anyhow!("Invalid indexer db temp dir"))?;
         Self::new(db_url)
+    }
+
+    pub fn create_all_tables(&self) -> Result<()> {
+        let mut connection = get_sqlite_pool_connection(&self.sqlite_store.connection_pool)?;
+        create_all_tables(&mut connection)
     }
 }
 

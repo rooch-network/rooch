@@ -9,6 +9,17 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use tracing::info;
 
 const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
+
+/// creates all the tables by applying all migrations.
+pub fn create_all_tables(conn: &mut SqlitePoolConnection) -> Result<(), anyhow::Error> {
+    info!("Creates all tables in the database ...");
+    let migration = MIGRATIONS;
+    conn.run_migrations(&migration.migrations().unwrap())
+        .map_err(|e| anyhow!("Failed to run migrations {e}"))?;
+    info!("Creates all tables complete.");
+    Ok(())
+}
+
 /// Resets the database by reverting all migrations and reapplying them.
 ///
 /// If `drop_all` is set to `true`, the function will drop all tables in the database before

@@ -11,12 +11,4 @@ pub trait IndexerStoreTrait: Send + Sync {
     ) -> Result<(), IndexerError>;
 
     fn persist_events(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError>;
-
-    // fn query_events_with_filter(
-    //     &self,
-    //     filter: EventFilter,
-    //     cursor: Option<IndexerEventID>,
-    //     limit: usize,
-    //     descending_order: bool,
-    // ) -> IndexerResult<Vec<IndexerEvent>>;
 }

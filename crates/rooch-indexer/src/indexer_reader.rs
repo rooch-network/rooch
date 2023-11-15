@@ -128,11 +128,9 @@ impl IndexerReader {
                 self.inner_indexer_reader.run_query(|conn| {
                     events::dsl::events
                         .select((events::tx_order, events::event_index))
-                        // .order((events::tx_order.desc(), events::event_index.desc())
                         .order_by((events::tx_order.desc(), events::event_index.desc()))
                         .first::<(i64, i64)>(conn)
                 })?;
-            // (max_tx_order + 1, 0)
             ((max_tx_order as i128) + 1, event_index)
         } else {
             (-1, 0)
