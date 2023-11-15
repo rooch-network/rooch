@@ -103,7 +103,9 @@ Feature: Rooch CLI integration tests
     Scenario: kv_store example
       Given a server for kv_store
       Then cmd: "move publish -p ../../examples/kv_store  --named-addresses rooch_examples=default"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::kv_store::add_value --args string:key1 string:value1"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move view --function default::kv_store::get_value --args string:key1"
       Then assert: "{{$.move[-1].vm_status}} == Executed"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == value1"
@@ -120,6 +122,7 @@ Feature: Rooch CLI integration tests
       Given a server for entry_function
 
       Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::entry_function::emit_bool --args bool:true "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::entry_function::emit_u8 --args u8:3 "
@@ -153,6 +156,7 @@ Feature: Rooch CLI integration tests
 
       # The counter example
       Then cmd: "move publish -p ../../examples/counter  --named-addresses rooch_examples=default --by-move-action"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move view --function default::counter::value"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 0"
       Then cmd: "move run --function default::counter::increase "
@@ -163,6 +167,7 @@ Feature: Rooch CLI integration tests
 
       # The entry_function_arguments example
       Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default --by-move-action"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" "
       Then assert: "'{{$.move[-1]}}' contains FUNCTION_RESOLUTION_FAILURE"
       Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default --by-move-action"
@@ -181,6 +186,7 @@ Feature: Rooch CLI integration tests
 
       # The counter example
       Then cmd: "move publish -p ../../examples/counter  --named-addresses rooch_examples=default"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move view --function default::counter::value"
       Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 0"
       Then cmd: "move run --function default::counter::increase "
@@ -191,9 +197,11 @@ Feature: Rooch CLI integration tests
 
       # The entry_function_arguments example
       Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" "
       Then assert: "'{{$.move[-1]}}' contains FUNCTION_RESOLUTION_FAILURE"
       Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
@@ -208,6 +216,7 @@ Feature: Rooch CLI integration tests
       Given a server for coins
       Then cmd: "account create"
       Then cmd: "move publish -p ../../examples/coins  --named-addresses coins=default"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::fixed_supply_coin::faucet --args object:default::fixed_supply_coin::Treasury"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       
@@ -224,6 +233,7 @@ Feature: Rooch CLI integration tests
   Scenario: Issue a coin through module_template
     Given a server for issue_coin
     Then cmd: "move publish -p ../../examples/module_template/  --named-addresses rooch_examples=default"
+    Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
     Then cmd: "move run --function default::coin_factory::issue_fixed_supply_coin --args string:my_coin  --args string:"My first coin" --args string:MyCoin --args 1010101u256 --args 8u8  "
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
