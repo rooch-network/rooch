@@ -215,7 +215,7 @@ impl FromStr for ParsedFunctionId {
 #[derive(Clone, Debug)]
 pub enum ParsedObjectID {
     ObjectID(ObjectID),
-    //For singletoken object
+    //For named object
     StructTag(ParsedStructType),
 }
 
@@ -228,7 +228,7 @@ impl ParsedObjectID {
             ParsedObjectID::ObjectID(object_id) => object_id,
             ParsedObjectID::StructTag(parsed_struct_type) => {
                 let struct_tag = parsed_struct_type.into_struct_tag(mapping)?;
-                object::singleton_object_id(&struct_tag)
+                object::named_object_id(&struct_tag)
             }
         })
     }

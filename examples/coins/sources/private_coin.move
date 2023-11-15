@@ -8,7 +8,7 @@ module coins::private_coin {
     use moveos_std::signer;
     use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, Object};
-    use rooch_framework::coin::{Self, Coin};
+    use rooch_framework::coin::{Self, Coin, CoinInfo};
     use rooch_framework::coin_store::{Self, CoinStore};
     use rooch_framework::account_coin_store;
 
@@ -23,23 +23,25 @@ module coins::private_coin {
     }
 
     fun init(ctx: &mut Context) {
-        coin::register_extend<PRC>(
+        let coin_info_obj = coin::register_extend<PRC>(
             ctx,
             string::utf8(b"Private Coin"),
             string::utf8(b"PRC"),
             1,
         );
-
+        object::transfer(coin_info_obj, @coins);
         let coin_store = coin_store::create_coin_store_extend<PRC>(ctx);
-        context::new_singleton(ctx, Treasury { coin_store });
+        let treasury_obj = context::new_named_object(ctx, Treasury { coin_store });
+        object::transfer_extend(treasury_obj, @coins);
     }
 
     /// Provide a faucet to give out coins to users
     /// In a real world scenario, the coins should be given out in the application business logic.
     public entry fun faucet(ctx: &mut Context, account: &signer) {
         let account_addr = signer::address_of(account);
-        let coin_info = coin::borrow_mut_coin_info_extend<PRC>(ctx);
-        let coin = coin::mint_extend<PRC>(coin_info, 10000);
+        let coin_signer = signer::module_signer<Treasury>();
+        let coin_info_obj = context::borrow_mut_object<CoinInfo<PRC>>(ctx, &coin_signer, coin::coin_info_id<PRC>());
+        let coin = coin::mint_extend<PRC>(coin_info_obj, 10000);
         account_coin_store::deposit_extend(ctx, account_addr, coin);
     }
 
@@ -57,7 +59,7 @@ module coins::private_coin {
     }
 
     fun deposit_to_treaury(ctx: &mut Context, coin: Coin<PRC>) {
-        let treasury_object_id = object::singleton_object_id<Treasury>();
+        let treasury_object_id = object::named_object_id<Treasury>();
         let treasury_obj = context::borrow_mut_object_extend<Treasury>(ctx, treasury_object_id);
         coin_store::deposit_extend(&mut object::borrow_mut(treasury_obj).coin_store, coin);
     }

@@ -5,7 +5,7 @@
 module rooch_framework::coin {
     use std::string;
     use std::error;
-    use moveos_std::object::{Self, ObjectID};
+    use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::context::{Self, Context};
     use moveos_std::event;
     use moveos_std::type_info::{Self, type_of};
@@ -71,8 +71,8 @@ module rooch_framework::coin {
     const MAX_U256: u256 = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
     /// Information about a specific coin type. Stored in the global Object storage.
-    /// CoinInfo<CoinType> is a singleton object, the `coin_type` is the unique key.
-    struct CoinInfo<phantom CoinType : key> has key {
+    /// CoinInfo<CoinType> is a named Object, the `coin_type` is the unique key.
+    struct CoinInfo<phantom CoinType : key> has key, store {
         /// Type of the coin: `address::my_module::XCoin`, same as `moveos_std::type_info::type_name<CoinType>()`.
         /// The name and symbol can repeat across different coin types, but the coin type must be unique.
         coin_type: string::String,
@@ -133,7 +133,7 @@ module rooch_framework::coin {
 
     /// Return the ObjectID of Object<CoinInfo<CoinType>>
     public fun coin_info_id<CoinType: key>() : ObjectID {
-        object::singleton_object_id<CoinInfo<CoinType>>()
+        object::named_object_id<CoinInfo<CoinType>>()
     }
 
     /// Returns the name of the coin.
@@ -205,7 +205,7 @@ module rooch_framework::coin {
     }
 
     /// Borrow the CoinInfo<CoinType>
-    public fun borrow_coin_info<CoinType: key>(ctx: &Context): &CoinInfo<CoinType> {
+    public fun coin_info<CoinType: key>(ctx: &Context): &CoinInfo<CoinType> {
         let coin_info_id = coin_info_id<CoinType>();
         assert!(context::exists_object<CoinInfo<CoinType>>(ctx, coin_info_id), error::not_found(ErrorCoinInfosNotFound));
         let coin_info_obj = context::borrow_object<CoinInfo<CoinType>>(ctx, coin_info_id);
@@ -216,15 +216,6 @@ module rooch_framework::coin {
     // Extend functions
     //
 
-     #[private_generics(CoinType)]
-    /// Borrow the mutable CoinInfo<CoinType>
-    /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
-    public fun borrow_mut_coin_info_extend<CoinType: key>(ctx: &mut Context) : &mut CoinInfo<CoinType> {
-        let coin_info_id = coin_info_id<CoinType>();
-        assert!(context::exists_object<CoinInfo<CoinType>>(ctx, coin_info_id), error::not_found(ErrorCoinInfosNotFound));
-        let coin_info_obj = context::borrow_mut_object_extend<CoinInfo<CoinType>>(ctx, coin_info_id);
-        object::borrow_mut(coin_info_obj)
-    }
 
     #[private_generics(CoinType)]
     /// Creates a new Coin with given `CoinType`
@@ -234,7 +225,7 @@ module rooch_framework::coin {
         name: string::String,
         symbol: string::String,
         decimals: u8,
-    ) : &mut CoinInfo<CoinType> {
+    ) : Object<CoinInfo<CoinType>> {
         assert!(
             !is_registered<CoinType>(ctx),
             error::already_exists(ErrorCoinInfoAlreadyRegistered),
@@ -252,21 +243,30 @@ module rooch_framework::coin {
             decimals,
             supply: 0u256,
         };
-        let obj = context::new_singleton(ctx, coin_info);
-        object::borrow_mut(obj)
+        context::new_named_object(ctx, coin_info)
+    }
+
+    /// Public coin can mint by anyone with the mutable Object<CoinInfo<CoinType>>
+    public fun mint<CoinType: key + store>(coin_info: &mut Object<CoinInfo<CoinType>>, amount: u256) : Coin<CoinType> {
+        mint_internal(coin_info, amount)
     }
 
     #[private_generics(CoinType)]
     /// Mint new `Coin`, this function is only called by the `CoinType` module, for the developer to extend custom mint logic
-    public fun mint_extend<CoinType: key>(coin_info: &mut CoinInfo<CoinType>,amount: u256) : Coin<CoinType> {
+    public fun mint_extend<CoinType: key>(coin_info: &mut Object<CoinInfo<CoinType>>, amount: u256) : Coin<CoinType> {
         mint_internal<CoinType>(coin_info, amount)
+    }
+
+    /// Public coin can burn by anyone with the mutable Object<CoinInfo<CoinType>>
+    public fun burn<CoinType: key + store>(coin_info: &mut Object<CoinInfo<CoinType>>, coin: Coin<CoinType>) {
+        burn_internal(coin_info, coin)
     }
 
     #[private_generics(CoinType)]
     /// Burn `coin`
     /// This function is only called by the `CoinType` module, for the developer to extend custom burn logic
     public fun burn_extend<CoinType: key>(
-        coin_info: &mut CoinInfo<CoinType>,
+        coin_info: &mut Object<CoinInfo<CoinType>>,
         coin: Coin<CoinType>,
     ) {
         burn_internal(coin_info, coin) 
@@ -276,8 +276,9 @@ module rooch_framework::coin {
     // Internal functions
     //
 
-    fun mint_internal<CoinType: key>(coin_info: &mut CoinInfo<CoinType>,
+    fun mint_internal<CoinType: key>(coin_info_obj: &mut Object<CoinInfo<CoinType>>,
         amount: u256): Coin<CoinType>{
+        let coin_info = object::borrow_mut(coin_info_obj);
         coin_info.supply = coin_info.supply + amount;
         let coin_type = type_info::type_name<CoinType>();
         event::emit<MintEvent>(MintEvent {
@@ -288,9 +289,10 @@ module rooch_framework::coin {
     }
 
     fun burn_internal<CoinType: key>(
-        coin_info: &mut CoinInfo<CoinType>,
+        coin_info_obj: &mut Object<CoinInfo<CoinType>>,
         coin: Coin<CoinType>,
     ) {
+        let coin_info = object::borrow_mut(coin_info_obj); 
         let Coin { value: amount } = coin;
 
         let coin_type = type_info::type_name<CoinType>();

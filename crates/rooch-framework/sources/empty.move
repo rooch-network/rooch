@@ -5,11 +5,13 @@
 /// It is used to test or demo some use cases
 module rooch_framework::empty{
     use moveos_std::context::{Self, Context};
+    use moveos_std::object;
 
     struct Empty has key{}
 
     fun init(ctx: &mut Context){
-        context::new_singleton(ctx, Empty{});        
+        let obj = context::new_named_object(ctx, Empty{});
+        object::to_shared(obj);        
     }
     
     /// This empty function does nothing

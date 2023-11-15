@@ -361,7 +361,7 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_account_coin_store">create_account_coin_store</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: <b>address</b>): &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_account_coin_store">create_account_coin_store</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: <b>address</b>): <a href="_ObjectID">object::ObjectID</a>
 </code></pre>
 
 

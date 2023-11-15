@@ -22,7 +22,8 @@ module rooch_framework::chain_id {
         let chain_id = ChainID{
             id: chain_id
         };
-        context::new_singleton(ctx, chain_id);
+        let obj = context::new_named_object(ctx, chain_id);
+        object::to_frozen(obj);
     }
 
     public fun id(self: &ChainID) : u64 {
@@ -30,7 +31,7 @@ module rooch_framework::chain_id {
     }
 
     public fun borrow(ctx: &Context) : &ChainID {
-        let object_id = object::singleton_object_id<ChainID>();
+        let object_id = object::named_object_id<ChainID>();
         let obj = context::borrow_object<ChainID>(ctx, object_id);
         object::borrow(obj)
     }

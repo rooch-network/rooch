@@ -5,7 +5,7 @@ module nft::nft {
     use std::string::{Self, String};
     use nft::collection;
     use moveos_std::display;
-    use moveos_std::object::{Self, ObjectID, UID, Object};
+    use moveos_std::object::{Self, ObjectID, TypedUID, Object};
     use moveos_std::context::{Self, Context};
     #[test_only]
     use std::option;
@@ -31,7 +31,7 @@ module nft::nft {
     /// Mint a new NFT,
     public fun mint(
         collection_obj: &mut Object<collection::Collection>,
-        nft_id: UID,
+        nft_id: TypedUID<NFT>,
         name: String,
     ): Object<NFT> {
         let collection_id = object::id(collection_obj);
@@ -86,7 +86,7 @@ module nft::nft {
     /// The Collection is shared object, so anyone can mint a new NFT
     entry fun mint_entry(ctx: &mut Context, collection_obj: &mut Object<collection::Collection>, name: String) {
         let sender = context::sender(ctx);
-        let nft_id = context::fresh_uid(ctx);
+        let nft_id = context::new_object_uid<NFT>(ctx);
         let nft_obj = mint(collection_obj, nft_id, name);
         object::transfer(nft_obj, sender);
     }
@@ -114,7 +114,7 @@ module nft::nft {
             string::utf8(b"test_collection_description1"),
             option::none(),
         );
-        let nft_id = context::fresh_uid(&mut ctx);
+        let nft_id = context::new_object_uid<NFT>(&mut ctx);
 
         let collection_obj = context::borrow_mut_object_shared(&mut ctx, collection_id);
         let nft_obj = mint(

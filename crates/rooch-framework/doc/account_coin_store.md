@@ -138,7 +138,7 @@ Returns the balance of <code>addr</code> for provided <code>CoinType</code>.
 ## Function `account_coin_store_id`
 
 Return the account CoinStore object id for addr
-Because the account CoinStore is a account singleton object, the id is fixed for each addr and CoinType
+the account CoinStore is a account named object, the id is determinate for each addr and CoinType
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_account_coin_store_id">account_coin_store_id</a>&lt;CoinType: key&gt;(addr: <b>address</b>): <a href="_ObjectID">object::ObjectID</a>

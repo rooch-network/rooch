@@ -12,15 +12,16 @@ module rooch_framework::transaction_fee {
     friend rooch_framework::genesis;
     friend rooch_framework::transaction_validator;
 
-    struct TransactionFeePool has key,store {
+    struct TransactionFeePool has key {
         fee: Object<CoinStore<GasCoin>>,
     }
 
     public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer)  {
         let fee_store = coin_store::create_coin_store<GasCoin>(ctx);
-        context::new_singleton(ctx, TransactionFeePool{
+        let obj = context::new_named_object(ctx, TransactionFeePool{
             fee: fee_store,
         });
+        object::transfer_extend(obj, @rooch_framework);
     }
 
     /// Returns the gas factor of gas.
@@ -34,7 +35,7 @@ module rooch_framework::transaction_fee {
     }
 
     public(friend) fun deposit_fee(ctx: &mut Context, gas_coin: Coin<GasCoin>) {
-        let object_id = object::singleton_object_id<TransactionFeePool>();
+        let object_id = object::named_object_id<TransactionFeePool>();
         let pool_object = context::borrow_mut_object_extend<TransactionFeePool>(ctx, object_id);
         let pool = object::borrow_mut(pool_object);
         coin_store::deposit<GasCoin>(&mut pool.fee, gas_coin);

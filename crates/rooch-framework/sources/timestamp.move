@@ -15,7 +15,7 @@ module rooch_framework::timestamp {
     friend rooch_framework::genesis;
     friend rooch_framework::ethereum_light_client;
 
-    /// A singleton object holding the current Unix time in milliseconds
+    /// A object holding the current Unix time in milliseconds
     struct Timestamp has key {
         milliseconds: u64,
     }
@@ -28,7 +28,8 @@ module rooch_framework::timestamp {
 
     public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer, initial_time_milliseconds: u64) {
         let timestamp = Timestamp { milliseconds: initial_time_milliseconds };
-        context::new_singleton(ctx, timestamp);
+        let obj = context::new_named_object(ctx, timestamp);
+        object::transfer_extend(obj, @rooch_framework);
     }
 
     /// Updates the global clock time, if the new time is smaller than the current time, aborts.
@@ -52,13 +53,13 @@ module rooch_framework::timestamp {
     }
 
     fun timestamp_mut(ctx: &mut Context): &mut Timestamp {
-        let object_id = object::singleton_object_id<Timestamp>();
+        let object_id = object::named_object_id<Timestamp>();
         let obj = context::borrow_mut_object_extend<Timestamp>(ctx, object_id);
         object::borrow_mut(obj)
     }
 
     public fun timestamp(ctx: &Context): &Timestamp {
-        let object_id = object::singleton_object_id<Timestamp>();
+        let object_id = object::named_object_id<Timestamp>();
         let obj = context::borrow_object<Timestamp>(ctx, object_id);
         object::borrow(obj)
     }

@@ -27,10 +27,11 @@ This module provides the foundation for typesafe Coins.
 -  [Function `merge`](#0x3_coin_merge)
 -  [Function `value`](#0x3_coin_value)
 -  [Function `zero`](#0x3_coin_zero)
--  [Function `borrow_coin_info`](#0x3_coin_borrow_coin_info)
--  [Function `borrow_mut_coin_info_extend`](#0x3_coin_borrow_mut_coin_info_extend)
+-  [Function `coin_info`](#0x3_coin_coin_info)
 -  [Function `register_extend`](#0x3_coin_register_extend)
+-  [Function `mint`](#0x3_coin_mint)
 -  [Function `mint_extend`](#0x3_coin_mint_extend)
+-  [Function `burn`](#0x3_coin_burn)
 -  [Function `burn_extend`](#0x3_coin_burn_extend)
 -  [Function `unpack`](#0x3_coin_unpack)
 -  [Function `pack`](#0x3_coin_pack)
@@ -68,10 +69,10 @@ The Coin has no ability, it is a hot potato type, only can handle by Coin module
 ## Resource `CoinInfo`
 
 Information about a specific coin type. Stored in the global Object storage.
-CoinInfo<CoinType> is a singleton object, the <code>coin_type</code> is the unique key.
+CoinInfo<CoinType> is a named Object, the <code>coin_type</code> is the unique key.
 
 
-<pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType: key&gt; <b>has</b> key
+<pre><code><b>struct</b> <a href="coin.md#0x3_coin_CoinInfo">CoinInfo</a>&lt;CoinType: key&gt; <b>has</b> store, key
 </code></pre>
 
 
@@ -427,27 +428,14 @@ Create a new <code><a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;</cod
 
 
 
-<a name="0x3_coin_borrow_coin_info"></a>
+<a name="0x3_coin_coin_info"></a>
 
-## Function `borrow_coin_info`
+## Function `coin_info`
 
 Borrow the CoinInfo<CoinType>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_borrow_coin_info">borrow_coin_info</a>&lt;CoinType: key&gt;(ctx: &<a href="_Context">context::Context</a>): &<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;
-</code></pre>
-
-
-
-<a name="0x3_coin_borrow_mut_coin_info_extend"></a>
-
-## Function `borrow_mut_coin_info_extend`
-
-Borrow the mutable CoinInfo<CoinType>
-This function is protected by <code>private_generics</code>, so it can only be called by the <code>CoinType</code> module.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_borrow_mut_coin_info_extend">borrow_mut_coin_info_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>): &<b>mut</b> <a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info">coin_info</a>&lt;CoinType: key&gt;(ctx: &<a href="_Context">context::Context</a>): &<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;
 </code></pre>
 
 
@@ -460,7 +448,19 @@ Creates a new Coin with given <code>CoinType</code>
 This function is protected by <code>private_generics</code>, so it can only be called by the <code>CoinType</code> module.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_register_extend">register_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, name: <a href="_String">string::String</a>, symbol: <a href="_String">string::String</a>, decimals: u8): &<b>mut</b> <a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_register_extend">register_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, name: <a href="_String">string::String</a>, symbol: <a href="_String">string::String</a>, decimals: u8): <a href="_Object">object::Object</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;&gt;
+</code></pre>
+
+
+
+<a name="0x3_coin_mint"></a>
+
+## Function `mint`
+
+Public coin can mint by anyone with the mutable Object<CoinInfo<CoinType>>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_mint">mint</a>&lt;CoinType: store, key&gt;(coin_info: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;&gt;, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>
 
 
@@ -472,7 +472,19 @@ This function is protected by <code>private_generics</code>, so it can only be c
 Mint new <code><a href="coin.md#0x3_coin_Coin">Coin</a></code>, this function is only called by the <code>CoinType</code> module, for the developer to extend custom mint logic
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_mint_extend">mint_extend</a>&lt;CoinType: key&gt;(coin_info: &<b>mut</b> <a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_mint_extend">mint_extend</a>&lt;CoinType: key&gt;(coin_info: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;&gt;, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+</code></pre>
+
+
+
+<a name="0x3_coin_burn"></a>
+
+## Function `burn`
+
+Public coin can burn by anyone with the mutable Object<CoinInfo<CoinType>>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_burn">burn</a>&lt;CoinType: store, key&gt;(coin_info: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;&gt;, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
 </code></pre>
 
 
@@ -485,7 +497,7 @@ Burn <code><a href="coin.md#0x3_coin">coin</a></code>
 This function is only called by the <code>CoinType</code> module, for the developer to extend custom burn logic
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_burn_extend">burn_extend</a>&lt;CoinType: key&gt;(coin_info: &<b>mut</b> <a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_burn_extend">burn_extend</a>&lt;CoinType: key&gt;(coin_info: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;&gt;, <a href="coin.md#0x3_coin">coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;)
 </code></pre>
 
 

@@ -26,7 +26,7 @@ impl<'a> CoinModule<'a> {
     pub fn coin_info_id(coin_type: StructTag) -> ObjectID {
         let coin_info_struct_tag =
             CoinInfo::<PlaceholderStruct>::struct_tag_with_coin_type(coin_type);
-        object::singleton_object_id(&coin_info_struct_tag)
+        object::named_object_id(&coin_info_struct_tag)
     }
 }
 

@@ -73,9 +73,9 @@ module rooch_framework::account_coin_store {
     }
 
     /// Return the account CoinStore object id for addr
-    /// Because the account CoinStore is a account singleton object, the id is fixed for each addr and CoinType
+    /// the account CoinStore is a account named object, the id is determinate for each addr and CoinType
     public fun account_coin_store_id<CoinType: key>(addr: address): ObjectID {
-        object::account_singleton_object_id<CoinStore<CoinType>>(addr)
+        object::account_named_object_id<CoinStore<CoinType>>(addr)
     }
 
     /// Return CoinStores table handle for addr
@@ -244,8 +244,7 @@ module rooch_framework::account_coin_store {
     }
 
     fun create_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address) {
-        let coin_store_obj = coin_store::create_account_coin_store<CoinType>(ctx, addr);
-        let account_coin_store_id = object::id(coin_store_obj);
+        let account_coin_store_id = coin_store::create_account_coin_store<CoinType>(ctx, addr);
         let coin_stores = context::borrow_mut_resource<CoinStores>(ctx, addr);
         let coin_type = type_info::type_name<CoinType>();
         table::add(&mut coin_stores.coin_stores, coin_type, account_coin_store_id);

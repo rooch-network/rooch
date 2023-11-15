@@ -53,7 +53,7 @@ impl<'a> AccountCoinStoreModule<'a> {
     pub fn account_coin_store_id(addr: AccountAddress, coin_type: StructTag) -> ObjectID {
         let coin_store_struct_tag =
             CoinStore::<PlaceholderStruct>::struct_tag_with_coin_type(coin_type);
-        object::account_singleton_object_id(addr, &coin_store_struct_tag)
+        object::account_named_object_id(addr, &coin_store_struct_tag)
     }
 }
 

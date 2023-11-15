@@ -10,7 +10,7 @@ script {
 
     fun main(ctx: &Context, sender: &signer) {
         let account_addr = moveos_std::signer::address_of(sender);
-        let object_id = object::account_singleton_object_id<CoinStore<GasCoin>>(account_addr);
+        let object_id = object::account_named_object_id<CoinStore<GasCoin>>(account_addr);
         std::debug::print(&object_id);
         std::debug::print(&rooch_framework::coin::is_registered<GasCoin>(ctx));
         std::debug::print(&rooch_framework::account_coin_store::balance<GasCoin>(ctx, account_addr));

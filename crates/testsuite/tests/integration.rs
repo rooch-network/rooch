@@ -5,7 +5,6 @@ use anyhow::{bail, Result};
 use clap::Parser;
 use cucumber::{given, then, World as _};
 use jpst::TemplateContext;
-use move_core_types::account_address::AccountAddress;
 use rooch::RoochCli;
 use rooch_config::{rooch_config_dir, RoochOpt, ServerOpt};
 use rooch_rpc_client::wallet_context::WalletContext;
@@ -51,22 +50,21 @@ async fn run_cmd(world: &mut World, args: String) {
         .parent()
         .unwrap()
         .join("rooch_test");
-
-    let default = if config_dir.exists() {
-        let context = WalletContext::new(Some(config_dir.clone())).unwrap();
-
-        match context.client_config.active_address {
-            Some(addr) => AccountAddress::from(addr).to_hex_literal(),
-            None => "".to_owned(),
-        }
-    } else {
-        "".to_owned()
-    };
-
-    let args = args.replace("{default}", &default);
-
+    debug!("config_dir: {:?}", config_dir);
     if world.tpl_ctx.is_none() {
-        world.tpl_ctx = Some(TemplateContext::new());
+        let mut tpl_ctx = TemplateContext::new();
+        if config_dir.exists() {
+            let context = WalletContext::new(Some(config_dir.clone())).unwrap();
+            let address_mapping = serde_json::Value::Object(
+                context
+                    .address_mapping
+                    .iter()
+                    .map(|(k, v)| (k.to_string(), Value::String(v.to_hex_literal())))
+                    .collect(),
+            );
+            tpl_ctx.entry("address_mapping").set(address_mapping);
+        }
+        world.tpl_ctx = Some(tpl_ctx);
     }
     let tpl_ctx = world.tpl_ctx.as_mut().unwrap();
     let args = eval_command_args(tpl_ctx, args);

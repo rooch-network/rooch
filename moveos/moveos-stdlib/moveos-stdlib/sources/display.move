@@ -7,9 +7,7 @@ module moveos_std::display{
     use moveos_std::context::{Self, Context};
     use moveos_std::simple_map;
 
-    /// Display<T> is a singleton object
-    /// It is used to define the display of the `T`
-    /// The Display Object is permanent, can not be deleted after created.
+    /// Display<T> is is used to define the display of the `T`
     struct Display<phantom T> has key {
         sample_map: simple_map::SimpleMap<String, String>
     }
@@ -18,28 +16,32 @@ module moveos_std::display{
     /// Create or borrow_mut Display object for resource `T`
     /// Only the module of `T` can call this function.
     public fun resource_display<T: key>(ctx: &mut Context): &mut Object<Display<T>> {
-        let object_id = object::singleton_object_id<Display<T>>();
-        if (context::exists_object<Display<T>>(ctx, object_id)) {
-            context::borrow_mut_object_extend<Display<T>>(ctx, object_id)
-        }else{
-            context::new_singleton(ctx, Display<T> {
+        let object_id = object::named_object_id<Display<T>>();
+        if (!context::exists_object<Display<T>>(ctx, object_id)) {
+            let display_obj = context::new_named_object(ctx, Display<T> {
                 sample_map: simple_map::create()
-            })
-        }
+            });
+            //We transfer the display object to the moveos_std
+            //And the caller do not need to care about the display object
+            object::transfer_extend(display_obj, @moveos_std);
+        };
+        context::borrow_mut_object_extend<Display<T>>(ctx, object_id)
     }
 
     #[private_generics(T)]
     /// Create or borrow_mut Display object for `Object<T>`
     /// Only the module of `T` can call this function.
     public fun object_display<T: key>(ctx: &mut Context): &mut Object<Display<Object<T>>> {
-        let object_id = object::singleton_object_id<Display<Object<T>>>();
-        if (context::exists_object<Display<Object<T>>>(ctx, object_id)) {
-            context::borrow_mut_object_extend<Display<Object<T>>>(ctx, object_id)
-        }else{
-            context::new_singleton(ctx, Display<Object<T>> {
+        let object_id = object::named_object_id<Display<Object<T>>>();
+        if (!context::exists_object<Display<Object<T>>>(ctx, object_id)) {
+            let display_obj = context::new_named_object(ctx, Display<Object<T>> {
                 sample_map: simple_map::create()
-            })
-        }
+            });
+            //We transfer the display object to the moveos_std
+            //And the caller do not need to care about the display object
+            object::transfer_extend(display_obj, @moveos_std);
+        };
+        context::borrow_mut_object_extend<Display<Object<T>>>(ctx, object_id)
     }
 
     /// Set the key-value pair for the display object

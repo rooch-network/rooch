@@ -24,19 +24,20 @@ module rooch_framework::address_mapping{
 
     public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer) {
         let mapping = context::new_table<MultiChainAddress, address>(ctx);
-        context::new_singleton(ctx, AddressMapping{
+        let obj = context::new_named_object(ctx, AddressMapping{
             mapping,
         });
+        object::transfer_extend(obj, @rooch_framework);
     }
 
     /// Borrow the address mapping object
     public fun borrow(ctx: &Context) : &Object<AddressMapping> {
-        let object_id = object::singleton_object_id<AddressMapping>();
+        let object_id = object::named_object_id<AddressMapping>();
         context::borrow_object<AddressMapping>(ctx, object_id)
     }
 
     fun borrow_mut(ctx: &mut Context) : &mut Object<AddressMapping> {
-        let object_id = object::singleton_object_id<AddressMapping>();
+        let object_id = object::named_object_id<AddressMapping>();
         context::borrow_mut_object_extend<AddressMapping>(ctx, object_id)
     }
 
