@@ -11,11 +11,11 @@ use tracing::info;
 const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
 /// creates all the tables by applying all migrations.
-pub fn create_all_tables(conn: &mut SqlitePoolConnection) -> Result<(), anyhow::Error> {
-    info!("Creates all tables in the database ...");
+pub fn create_all_tables_if_not_exists(conn: &mut SqlitePoolConnection) -> Result<(), anyhow::Error> {
+    info!("Indexer creates all tables in the db ...");
     let migration = MIGRATIONS;
 
-    // Create the __diesel_schema_migrations table is not exist
+    // Create the __diesel_schema_migrations table if not exist
     diesel::sql_query(
         "
         CREATE TABLE IF NOT EXISTS __diesel_schema_migrations (
@@ -26,22 +26,19 @@ pub fn create_all_tables(conn: &mut SqlitePoolConnection) -> Result<(), anyhow::
     )
     .execute(conn)?;
 
-    conn.run_migrations(&migration.migrations().unwrap())
+    conn.run_pending_migrations(migration)
         .map_err(|e| anyhow!("Failed to run migrations {e}"))?;
-    info!("Creates all tables complete.");
+    info!("Indexer creates all tables complete.");
     Ok(())
 }
 
-/// Resets the database by reverting all migrations and reapplying them.
+/// Resets the db by reverting all migrations and reapplying them.
 ///
-/// If `drop_all` is set to `true`, the function will drop all tables in the database before
+/// If `drop_all` is set to `true`, the function will drop all tables in the db before
 /// resetting the migrations. This option is destructive and will result in the loss of all
 /// data in the tables. Use with caution, especially in production environments.
-pub fn reset_database(
-    conn: &mut SqlitePoolConnection,
-    drop_all: bool,
-) -> Result<(), anyhow::Error> {
-    info!("Resetting database ...");
+pub fn reset_db(conn: &mut SqlitePoolConnection, drop_all: bool) -> Result<(), anyhow::Error> {
+    info!("Resetting db ...");
     let migration = MIGRATIONS;
     if drop_all {
         drop_all_tables(conn)
@@ -51,14 +48,14 @@ pub fn reset_database(
             .map_err(|e| anyhow!("Error reverting all migrations {e}"))?;
     }
     let migration = MIGRATIONS;
-    conn.run_migrations(&migration.migrations().unwrap())
+    conn.run_pending_migrations(migration)
         .map_err(|e| anyhow!("Failed to run migrations {e}"))?;
-    info!("Reset database complete.");
+    info!("Reset db complete.");
     Ok(())
 }
 
 pub fn drop_all_tables(conn: &mut SqliteConnection) -> Result<(), diesel::result::Error> {
-    info!("Dropping all tables in the database");
+    info!("Dropping all tables in the db ...");
     let table_names: Vec<String> = diesel::dsl::sql::<diesel::sql_types::Text>(
         "
         SELECT name FROM sqlite_schema WHERE type = 'table'
@@ -81,6 +78,6 @@ pub fn drop_all_tables(conn: &mut SqliteConnection) -> Result<(), diesel::result
     ",
     )
     .execute(conn)?;
-    info!("Dropped all tables in the database");
+    info!("Dropped all tables complete.");
     Ok(())
 }

@@ -384,9 +384,8 @@ fn init_indexer(indexer_config: &IndexerConfig) -> Result<(IndexerStore, Indexer
         .to_str()
         .ok_or(anyhow::anyhow!("Invalid indexer db path"))?;
     let indexer_store = IndexerStore::new(indexer_db_url)?;
-    indexer_store.create_all_tables()?;
+    indexer_store.create_all_tables_if_not_exists()?;
     let indexer_reader = IndexerReader::new(indexer_db_url)?;
 
-    indexer_store.create_all_tables()?;
     Ok((indexer_store, indexer_reader))
 }

@@ -73,7 +73,6 @@ impl Handler<IndexerEventsMessage> for IndexerActor {
                 )
             })
             .collect();
-        //TODO Open after supporting automatic creation of sqlite schema
         self.indexer_store.persist_events(events)?;
         Ok(())
     }
