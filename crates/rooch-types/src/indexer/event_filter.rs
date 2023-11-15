@@ -47,15 +47,10 @@ pub struct IndexerEvent {
     /// The type of the data
     pub event_type: StructTag,
     /// The data payload of the event
-    // #[serde(with = "serde_bytes")]
     pub event_data: Vec<u8>,
-    /// event index in the transaction events.
-    // pub event_index: u64,
 
     /// the hash of this transaction.
     pub tx_hash: H256,
-    /// the tx order of this transaction.
-    // pub tx_order: u128,
     /// the account address of sender who emit the event
     pub sender: AccountAddress,
 
@@ -64,7 +59,7 @@ pub struct IndexerEvent {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase", default)]
+#[serde(rename_all = "camelCase")]
 pub enum EventFilter {
     /// Query by event type.
     EventType(StructTag),
@@ -73,27 +68,17 @@ pub enum EventFilter {
     /// Return events emitted by the given transaction hash.
     TxHash(H256),
     /// Return events emitted in [start_time, end_time) interval
-    #[serde(rename_all = "camelCase")]
     TimeRange {
         /// left endpoint of time interval, milliseconds since epoch, inclusive
-        // #[schemars(with = "u64")]
-        // #[serde_as(as = "u64")]
         start_time: u64,
         /// right endpoint of time interval, milliseconds since epoch, exclusive
-        // #[schemars(with = "u64")]
-        // #[serde_as(as = "u64")]
         end_time: u64,
     },
     /// Return events emitted in [from_tx_order, to_tx_order) interval
-    #[serde(rename_all = "camelCase")]
     TxOrderRange {
         /// left endpoint of transaction order, inclusive
-        // #[schemars(with = "u128")]
-        // #[serde_as(as = "u128")]
         from_order: u128,
         /// right endpoint of transaction order, exclusive
-        // #[schemars(with = "u128")]
-        // #[serde_as(as = "u128")]
         to_order: u128,
     },
 }

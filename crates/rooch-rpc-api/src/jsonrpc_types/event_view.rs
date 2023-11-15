@@ -111,27 +111,18 @@ pub enum EventFilterView {
     /// Return events emitted by the given transaction hash.
     TxHash(H256View),
     /// Return events emitted in [start_time, end_time) interval
-    // #[serde(rename_all = "camelCase")]
     TimeRange {
         /// left endpoint of time interval, milliseconds since block, inclusive
-        // #[schemars(with = "u64")]
-        // #[serde_as(as = "u64")]
         start_time: u64,
         /// right endpoint of time interval, milliseconds since block, exclusive
-        // #[schemars(with = "u64")]
-        // #[serde_as(as = "u64")]
         end_time: u64,
     },
     /// Return events emitted in [from_order, to_order) interval
     // #[serde(rename_all = "camelCase")]
     TxOrderRange {
         /// left endpoint of transaction order, inclusive
-        // #[schemars(with = "u128")]
-        // #[serde_as(as = "u128")]
         from_order: u128,
         /// right endpoint of transaction order, exclusive
-        // #[schemars(with = "u128")]
-        // #[serde_as(as = "u128")]
         to_order: u128,
     },
 }

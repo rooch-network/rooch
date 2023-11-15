@@ -47,28 +47,16 @@ pub struct StoredEvent {
 
 impl From<IndexedEvent> for StoredEvent {
     fn from(event: IndexedEvent) -> Self {
-        println!(
-            "[Indexer RPC Debug] events model from tx_hash 0.1 {:?}",
-            event.tx_hash
-        );
-        println!(
-            "[Indexer RPC Debug] events model from tx_hash 0.2 {}",
-            format!("{:?}", event.tx_hash)
-        );
         Self {
             event_handle_id: event.event_handle_id.to_string(),
             event_seq: event.event_seq as i64,
             event_type: format!("0x{}", event.event_type.to_canonical_string()),
-            // event_type: format!("{:?}", event.event_type),
             event_data: event.event_data,
             event_index: event.event_index as i64,
 
             tx_hash: format!("{:?}", event.tx_hash),
             tx_order: event.tx_order as i64,
-            // sender: event.sender.to_hex_literal(),
-            // sender: event.sender.to_canonical_string(),
-            sender: format!("0x{}", event.sender.to_canonical_string()),
-
+            sender: event.sender.to_hex_literal(),
             created_at: event.created_at as i64,
         }
     }
@@ -77,27 +65,9 @@ impl From<IndexedEvent> for StoredEvent {
 impl StoredEvent {
     pub fn try_into_indexer_event(&self) -> Result<IndexerEvent, anyhow::Error> {
         let event_handle_id = ObjectID::from_str(self.event_handle_id.as_str())?;
-        // let sender = AccountAddress::from_hex_literal(self.sender.as_str())?;
-        let sender = AccountAddress::from_str(self.sender.as_str())?;
-        println!(
-            "[Indexer RPC Debug] events model try_into_indexer_event sender {:?}",
-            sender
-        );
-        println!(
-            "[Indexer RPC Debug] events model try_into_indexer_event tx_hash 1 {:?}",
-            self.tx_hash.as_str()
-        );
+        let sender = AccountAddress::from_hex_literal(self.sender.as_str())?;
         let tx_hash = H256::from_str(self.tx_hash.as_str())?;
-        // let tx_hash = H256::from(self.tx_hash.as_bytes());
-        println!(
-            "[Indexer RPC Debug] events model try_into_indexer_event tx_hash 2 {:?}",
-            tx_hash
-        );
         let event_type = StructTag::from_str(self.event_type.as_str())?;
-        println!(
-            "[Indexer RPC Debug] events model try_into_indexer_event event_type {:?}",
-            event_type
-        );
 
         let indexer_event = IndexerEvent {
             indexer_event_id: IndexerEventID::new(self.tx_order as u128, self.event_index as u64),

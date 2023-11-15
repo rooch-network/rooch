@@ -132,7 +132,6 @@ impl IndexerReader {
                         .order_by((events::tx_order.desc(), events::event_index.desc()))
                         .first::<(i64, i64)>(conn)
                 })?;
-            println!("[Indexer RPC Debug] indexer reader query_events_with_filter max_tx_order {}, event_index {}", max_tx_order, event_index);
             // (max_tx_order + 1, 0)
             ((max_tx_order as i128) + 1, event_index)
         } else {
@@ -141,13 +140,16 @@ impl IndexerReader {
 
         let main_where_clause = match filter {
             EventFilter::EventType(struct_tag) => {
-                format!("{EVENT_TYPE_STR} = \"{}\"", struct_tag.to_canonical_string())
+                format!(
+                    "{EVENT_TYPE_STR} = \"{}\"",
+                    format!("0x{}", struct_tag.to_canonical_string())
+                )
             }
             EventFilter::Sender(sender) => {
-                format!("{EVENT_SENDER_STR} = \"{}\"", sender.to_canonical_string())
+                format!("{EVENT_SENDER_STR} = \"{}\"", sender.to_hex_literal())
             }
             EventFilter::TxHash(tx_hash) => {
-                format!("{TX_HASH_STR} = \"{}\"", tx_hash)
+                format!("{TX_HASH_STR} = \"{}\"", format!("{:?}", tx_hash))
             }
             EventFilter::TimeRange {
                 start_time,
@@ -197,10 +199,6 @@ impl IndexerReader {
         );
 
         tracing::debug!("query events: {}", query);
-        println!(
-            "[Indexer RPC Debug] indexer reader query_events_with_filter query events {}",
-            query
-        );
         let stored_events = self
             .inner_indexer_reader
             .run_query(|conn| diesel::sql_query(query).load::<StoredEvent>(conn))?;
@@ -213,7 +211,6 @@ impl IndexerReader {
                 IndexerError::SQLiteReadError(format!("Cast indexer events failed: {:?}", e))
             })?;
 
-        println!("Debug indexer reader run_query result {:?}", result);
         Ok(result)
     }
 }

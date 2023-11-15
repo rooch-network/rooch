@@ -345,8 +345,6 @@ impl RoochAPIServer for RoochServer {
         limit: Option<StrView<usize>>,
         descending_order: Option<bool>,
     ) -> RpcResult<IndexerEventPageView> {
-        println!("[Indexer RPC Debug] rooch server filter: {:?}", filter);
-
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
