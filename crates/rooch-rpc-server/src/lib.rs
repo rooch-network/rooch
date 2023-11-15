@@ -24,6 +24,7 @@ use rooch_config::{BaseConfig, RoochOpt, ServerOpt};
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::actor::indexer::IndexerActor;
+use rooch_indexer::indexer_reader::IndexerReader;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_indexer::IndexerStore;
 use rooch_key::key_derive::{generate_new_key_pair, retrieve_key_pair};
@@ -181,7 +182,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     //Init indexer store
     let mut indexer_config = IndexerConfig::default();
     indexer_config.merge_with_opt_with_init(opt, Arc::new(base_config), true)?;
-    let indexer_store = init_indexer_store(&indexer_config)?;
+    let (indexer_store, indexer_reader) = init_indexer(&indexer_config)?;
 
     // Init executor
     let is_genesis = moveos_store.statedb.is_genesis();
@@ -242,7 +243,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     timers.push(proposer_timer);
 
     // Init indexer
-    let indexer_executor = IndexerActor::new(indexer_store)?
+    let indexer_executor = IndexerActor::new(indexer_store, indexer_reader)?
         .into_actor(Some("Indexer"), &actor_system)
         .await?;
     let indexer_proxy = IndexerProxy::new(indexer_executor.into());
@@ -377,12 +378,14 @@ fn init_storage(store_config: &StoreConfig) -> Result<(MoveOSStore, RoochStore)>
     Ok((moveos_store, rooch_store))
 }
 
-fn init_indexer_store(indexer_config: &IndexerConfig) -> Result<IndexerStore> {
+fn init_indexer(indexer_config: &IndexerConfig) -> Result<(IndexerStore, IndexerReader)> {
     let indexer_db_path = indexer_config.get_indexer_db();
     let indexer_db_url = indexer_db_path
         .to_str()
         .ok_or(anyhow::anyhow!("Invalid indexer db path"))?;
     let indexer_store = IndexerStore::new(indexer_db_url)?;
+    indexer_store.create_all_tables_if_not_exists()?;
+    let indexer_reader = IndexerReader::new(indexer_db_url)?;
 
-    Ok(indexer_store)
+    Ok((indexer_store, indexer_reader))
 }

@@ -71,8 +71,6 @@ pub struct StoredTransaction {
 
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub created_at: i64,
-    // #[diesel(sql_type = diesel::sql_types::BigInt)]
-    pub updated_at: i64,
 }
 
 impl From<IndexedTransaction> for StoredTransaction {
@@ -103,7 +101,6 @@ impl From<IndexedTransaction> for StoredTransaction {
             tx_order_authenticator_payload: transaction.tx_order_authenticator_payload,
 
             created_at: transaction.created_at as i64,
-            updated_at: transaction.updated_at as i64,
         }
     }
 }

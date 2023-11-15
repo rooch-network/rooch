@@ -51,7 +51,6 @@ pub struct IndexedTransaction {
     pub tx_order_authenticator_payload: Vec<u8>,
 
     pub created_at: u64,
-    pub updated_at: u64,
 }
 
 impl IndexedTransaction {
@@ -99,7 +98,6 @@ impl IndexedTransaction {
 
             //TODO record transaction timestamp
             created_at: 0,
-            updated_at: 0,
         };
         Ok(indexed_transaction)
     }
@@ -126,7 +124,6 @@ pub struct IndexedEvent {
     pub sender: AccountAddress,
 
     pub created_at: u64,
-    pub updated_at: u64,
 }
 
 impl IndexedEvent {
@@ -149,7 +146,6 @@ impl IndexedEvent {
 
             //TODO record transaction timestamp
             created_at: 0,
-            updated_at: 0,
         }
     }
 }

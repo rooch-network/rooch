@@ -19,7 +19,6 @@ use crate::state_store::NodeDBStore;
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
 use move_core_types::language_storage::StructTag;
 use moveos_config::store_config::RocksdbConfig;
-use moveos_types::event_filter::EventFilter;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{Event, EventID, TransactionEvent};
 use moveos_types::moveos_std::object::ObjectID;
@@ -42,7 +41,6 @@ pub mod transaction_store;
 pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
 pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
 pub const EVENT_PREFIX_NAME: ColumnFamilyName = "event";
-pub const EVENT_INDEX_PREFIX_NAME: ColumnFamilyName = "event_index";
 pub const EVENT_HANDLE_PREFIX_NAME: ColumnFamilyName = "event_handle";
 pub const CONFIG_STARTUP_INFO_PREFIX_NAME: ColumnFamilyName = "config_startup_info";
 pub const CONFIG_GENESIS_PREFIX_NAME: ColumnFamilyName = "config_genesis";
@@ -54,7 +52,6 @@ static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         STATE_NODE_PREFIX_NAME,
         TRANSACTION_PREFIX_NAME,
         EVENT_PREFIX_NAME,
-        EVENT_INDEX_PREFIX_NAME,
         EVENT_HANDLE_PREFIX_NAME,
         CONFIG_STARTUP_INFO_PREFIX_NAME,
         CONFIG_GENESIS_PREFIX_NAME,
@@ -197,10 +194,6 @@ impl EventStore for MoveOSStore {
         self.get_event_store().multi_get_events(event_ids)
     }
 
-    fn get_events_by_tx_hash(&self, tx_hash: &H256) -> Result<Vec<Event>> {
-        self.get_event_store().get_events_by_tx_hash(tx_hash)
-    }
-
     fn get_events_by_event_handle_id(
         &self,
         event_handle_id: &ObjectID,
@@ -219,10 +212,6 @@ impl EventStore for MoveOSStore {
     ) -> Result<Vec<Event>> {
         self.get_event_store()
             .get_events_by_event_handle_type(event_handle_type, cursor, limit)
-    }
-
-    fn get_events_with_filter(&self, filter: EventFilter) -> Result<Vec<Event>> {
-        self.get_event_store().get_events_with_filter(filter)
     }
 }
 

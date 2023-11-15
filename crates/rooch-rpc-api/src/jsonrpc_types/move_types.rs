@@ -10,22 +10,19 @@ use move_core_types::{
     u256,
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
+use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types::parse_module_id;
-use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::moveos_std::type_info::TypeInfo;
 use moveos_types::transaction::MoveAction;
 use moveos_types::{
     access_path::AccessPath,
-    event_filter::EventFilter,
     move_types::FunctionId,
     moveos_std::object::{AnnotatedObject, ObjectID},
     transaction::{FunctionCall, ScriptCall},
 };
 use moveos_types::{move_std::ascii::MoveAsciiString, state::MoveStructType};
-use moveos_types::{move_std::string::MoveString, moveos_std::event::TransactionEvent};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
@@ -338,148 +335,6 @@ impl FromStr for StrView<ModuleId> {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(parse_module_id(s)?))
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-pub enum EventFilterView {
-    // /// Query by sender address.
-    // Sender(AccountAddressView),
-    // /// Return events emitted by the given transaction.
-    // Transaction(
-    //     ///tx hash of the transaction
-    //     H256View,
-    // ),
-    /// Return events with the given move event struct name
-    MoveEventType(
-        // #[schemars(with = "String")]
-        // #[serde_as(as = "TypeTag")]
-        StructTagView,
-    ),
-    MoveEventField {
-        path: String,
-        value: Value,
-    },
-    // /// Return events emitted in [start_time, end_time) interval
-    // // #[serde(rename_all = "camelCase")]
-    // TimeRange {
-    //     /// left endpoint of time interval, milliseconds since epoch, inclusive
-    //     // #[schemars(with = "u64")]
-    //     // #[serde_as(as = "u64")]
-    //     start_time: u64,
-    //     /// right endpoint of time interval, milliseconds since epoch, exclusive
-    //     // #[schemars(with = "u64")]
-    //     // #[serde_as(as = "u64")]
-    //     end_time: u64,
-    // },
-    /// Return events emitted in [from_block, to_block) interval
-    // #[serde(rename_all = "camelCase")]
-    // BlockRange {
-    //     /// left endpoint of block height, inclusive
-    //     // #[schemars(with = "u64")]
-    //     // #[serde_as(as = "u64")]
-    //     from_block: u64, //TODO use BlockNumber
-    //     /// right endpoint of block height, exclusive
-    //     // #[schemars(with = "u64")]
-    //     // #[serde_as(as = "u64")]
-    //     to_block: u64, //TODO use BlockNumber
-    // },
-    All(Vec<EventFilterView>),
-    Any(Vec<EventFilterView>),
-    And(Box<EventFilterView>, Box<EventFilterView>),
-    Or(Box<EventFilterView>, Box<EventFilterView>),
-}
-
-impl From<EventFilterView> for EventFilter {
-    fn from(value: EventFilterView) -> Self {
-        match value {
-            // EventFilterView::Sender(address) => Self::Sender(address.into()),
-            // EventFilterView::Transaction(tx_hash) => Self::Transaction(tx_hash.into()),
-            EventFilterView::MoveEventType(type_tag) => Self::MoveEventType(type_tag.into()),
-            EventFilterView::MoveEventField { path, value } => Self::MoveEventField { path, value },
-            // EventFilterView::TimeRange {
-            //     start_time,
-            //     end_time,
-            // } => Self::TimeRange {
-            //     start_time,
-            //     end_time,
-            // },
-            EventFilterView::All(filters) => {
-                Self::All(filters.into_iter().map(|f| f.into()).collect())
-            }
-            EventFilterView::Any(filters) => {
-                Self::Any(filters.into_iter().map(|f| f.into()).collect())
-            }
-            EventFilterView::And(left, right) => {
-                Self::And(Box::new((*left).into()), Box::new((*right).into()))
-            }
-            EventFilterView::Or(left, right) => {
-                Self::Or(Box::new((*left).into()), Box::new((*right).into()))
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-pub struct TransactionEventView {
-    pub event_type: StructTagView,
-    pub event_data: StrView<Vec<u8>>,
-    pub event_index: u64,
-    pub decoded_event_data: Option<AnnotatedMoveStructView>,
-}
-
-impl From<TransactionEvent> for TransactionEventView {
-    fn from(event: TransactionEvent) -> Self {
-        TransactionEventView {
-            event_type: event.event_type.into(),
-            event_data: StrView(event.event_data),
-            event_index: event.event_index,
-            decoded_event_data: None,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-pub struct EventView {
-    pub event_id: EventID,
-    pub event_type: StructTagView,
-    pub event_data: StrView<Vec<u8>>,
-    pub event_index: u64,
-    pub decoded_event_data: Option<AnnotatedMoveStructView>,
-}
-
-impl From<Event> for EventView {
-    fn from(event: Event) -> Self {
-        EventView {
-            event_id: event.event_id,
-            event_type: event.event_type.into(),
-            event_data: StrView(event.event_data),
-            event_index: event.event_index,
-            decoded_event_data: None,
-        }
-    }
-}
-
-impl From<EventView> for Event {
-    fn from(event: EventView) -> Self {
-        Event {
-            event_id: event.event_id,
-            event_type: event.event_type.into(),
-            event_data: event.event_data.0,
-            event_index: event.event_index,
-        }
-    }
-}
-
-impl From<AnnotatedEvent> for EventView {
-    fn from(event: AnnotatedEvent) -> Self {
-        EventView {
-            event_id: event.event.event_id,
-            event_type: event.event.event_type.into(),
-            event_data: StrView(event.event.event_data),
-            event_index: event.event.event_index,
-            decoded_event_data: Some(event.decoded_event_data.into()),
-        }
     }
 }
 

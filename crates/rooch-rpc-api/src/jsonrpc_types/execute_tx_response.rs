@@ -1,8 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{BytesView, EventView};
+use super::BytesView;
 use super::{ModuleIdView, StateChangeSetView, StrView};
+use crate::jsonrpc_types::event_view::EventView;
 use crate::jsonrpc_types::H256View;
 use move_core_types::vm_status::{AbortLocation, KeptVMStatus};
 use moveos_types::transaction::TransactionExecutionInfo;

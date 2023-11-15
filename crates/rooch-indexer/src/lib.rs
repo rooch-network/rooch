@@ -7,14 +7,12 @@ use std::time::Duration;
 use anyhow::Result;
 use diesel::r2d2::ConnectionManager;
 use diesel::sqlite::SqliteConnection;
-// use tracing::info;
 
 use crate::store::sqlite_store::SqliteIndexerStore;
 use crate::store::traits::IndexerStoreTrait;
 use crate::types::{IndexedEvent, IndexedTransaction};
+use crate::utils::create_all_tables_if_not_exists;
 use errors::IndexerError;
-use moveos_types::h256::H256;
-use rooch_types::transaction::TransactionWithInfo;
 
 pub mod actor;
 pub mod errors;
@@ -62,6 +60,11 @@ impl IndexerStore {
             .ok_or(anyhow::anyhow!("Invalid indexer db temp dir"))?;
         Self::new(db_url)
     }
+
+    pub fn create_all_tables_if_not_exists(&self) -> Result<()> {
+        let mut connection = get_sqlite_pool_connection(&self.sqlite_store.connection_pool)?;
+        create_all_tables_if_not_exists(&mut connection)
+    }
 }
 
 impl Display for IndexerStore {
@@ -89,13 +92,6 @@ impl IndexerStoreTrait for IndexerStore {
 
     fn persist_events(&self, events: Vec<IndexedEvent>) -> Result<(), IndexerError> {
         self.sqlite_store.persist_events(events)
-    }
-
-    fn query_transactions_by_hash(
-        &self,
-        _tx_hashes: Vec<H256>,
-    ) -> Result<Vec<Option<TransactionWithInfo>>, IndexerError> {
-        Ok(vec![])
     }
 }
 
