@@ -14,6 +14,18 @@ const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 pub fn create_all_tables(conn: &mut SqlitePoolConnection) -> Result<(), anyhow::Error> {
     info!("Creates all tables in the database ...");
     let migration = MIGRATIONS;
+
+    // Create the __diesel_schema_migrations table is not exist
+    diesel::sql_query(
+        "
+        CREATE TABLE IF NOT EXISTS __diesel_schema_migrations (
+            version VARCHAR(50) PRIMARY KEY NOT NULL,
+            run_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    ",
+    )
+    .execute(conn)?;
+
     conn.run_migrations(&migration.migrations().unwrap())
         .map_err(|e| anyhow!("Failed to run migrations {e}"))?;
     info!("Creates all tables complete.");
@@ -49,7 +61,7 @@ pub fn drop_all_tables(conn: &mut SqliteConnection) -> Result<(), diesel::result
     info!("Dropping all tables in the database");
     let table_names: Vec<String> = diesel::dsl::sql::<diesel::sql_types::Text>(
         "
-        SELECT tablename FROM sqlite_tables WHERE schemaname = 'public'
+        SELECT name FROM sqlite_schema WHERE type = 'table'
     ",
     )
     .load(conn)?;
@@ -63,8 +75,8 @@ pub fn drop_all_tables(conn: &mut SqliteConnection) -> Result<(), diesel::result
     diesel::sql_query(
         "
         CREATE TABLE __diesel_schema_migrations (
-            version VARCHAR(50) PRIMARY KEY,
-            run_on TIMESTAMP NOT NULL DEFAULT NOW()
+            version VARCHAR(50) PRIMARY KEY NOT NULL,
+            run_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     ",
     )
