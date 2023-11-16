@@ -96,7 +96,7 @@ Rooch 的 StateDB 状态树整体架构如下图所示：
 ### Move 中的类型
 
 1. [Context](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/context.md) 代表当前交易以及存储的上下文，当前封装了和状态存储的主要方法。未来提供 `AppSpecific Storage` 方案的时候，应用可以切换 Context，从而将状态存储到不同的存储空间。
-2. [raw_table](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/raw_table.md) 提供最底层的 Key-Value 存储接口，合约状态变更最终都统一为 `RawTable` 的 Key-Value 变更集。每个 RawTable 对应 StateDB 中的一颗 SMT，Global ObjectStore 的 ObjectID 是所有字节都为`0`的一个特殊 ObjectID。
+2. [raw_table](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/raw_table.md) 提供最底层的 Key-Value 存储接口，合约状态变更最终都统一为 `RawTable` 的 Key-Value 变更集。每个 RawTable 对应 StateDB 中的一棵 SMT，Global ObjectStore 的 ObjectID 是所有字节都为 `0` 的一个特殊 ObjectID。
 3. [type_table](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/type_table.md) 是一种特殊的 Table，它以类型为 Key，类型的实例为 Value。
 4. [AccountStorage](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md) 用户存储空间在 Move 中的抽象，它包含两个 Table，Resource Table 和 Module Table，这样可以在 Move 中直接操作 Resource 和 Module，而不需要通过全局存储指令。
 
