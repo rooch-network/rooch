@@ -7,7 +7,7 @@ use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
-use moveos_types::moveos_std::event::{AnnotatedEvent, EventID};
+use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::state::{AnnotatedState, MoveStructType, State};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
@@ -145,12 +145,25 @@ impl RpcService {
             .await
     }
 
-    pub async fn get_events_by_event_handle(
+    pub async fn get_annotated_events_by_event_handle(
         &self,
         event_handle_type: StructTag,
         cursor: Option<u64>,
         limit: u64,
     ) -> Result<Vec<AnnotatedEvent>> {
+        let resp = self
+            .executor
+            .get_annotated_events_by_event_handle(event_handle_type, cursor, limit)
+            .await?;
+        Ok(resp)
+    }
+
+    pub async fn get_events_by_event_handle(
+        &self,
+        event_handle_type: StructTag,
+        cursor: Option<u64>,
+        limit: u64,
+    ) -> Result<Vec<Event>> {
         let resp = self
             .executor
             .get_events_by_event_handle(event_handle_type, cursor, limit)

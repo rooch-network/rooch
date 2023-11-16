@@ -8,7 +8,7 @@ use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
-use moveos_types::moveos_std::event::{AnnotatedEvent, EventID};
+use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
@@ -104,6 +104,17 @@ impl Message for ListAnnotatedStatesMessage {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct GetAnnotatedEventsByEventHandleMessage {
+    pub event_handle_type: StructTag,
+    pub cursor: Option<u64>,
+    pub limit: u64,
+}
+
+impl Message for GetAnnotatedEventsByEventHandleMessage {
+    type Result = Result<Vec<AnnotatedEvent>>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GetEventsByEventHandleMessage {
     pub event_handle_type: StructTag,
     pub cursor: Option<u64>,
@@ -111,7 +122,7 @@ pub struct GetEventsByEventHandleMessage {
 }
 
 impl Message for GetEventsByEventHandleMessage {
-    type Result = Result<Vec<AnnotatedEvent>>;
+    type Result = Result<Vec<Event>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

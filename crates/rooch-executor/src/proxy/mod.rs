@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
-    ListStatesMessage,
+    GetEventsByEventHandleMessage, GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage,
+    ListAnnotatedStatesMessage, ListStatesMessage,
 };
 use crate::actor::{
     executor::ExecutorActor,
     messages::{
-        AnnotatedStatesMessage, ExecuteViewFunctionMessage, GetEventsByEventHandleMessage,
+        AnnotatedStatesMessage, ExecuteViewFunctionMessage, GetAnnotatedEventsByEventHandleMessage,
         ResolveMessage, StatesMessage, ValidateTransactionMessage,
     },
 };
@@ -18,7 +18,7 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
-use moveos_types::moveos_std::event::EventID;
+use moveos_types::moveos_std::event::{Event, EventID};
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
@@ -113,12 +113,27 @@ impl ExecutorProxy {
             .await?
     }
 
-    pub async fn get_events_by_event_handle(
+    pub async fn get_annotated_events_by_event_handle(
         &self,
         event_handle_type: StructTag,
         cursor: Option<u64>,
         limit: u64,
     ) -> Result<Vec<AnnotatedEvent>> {
+        self.actor
+            .send(GetAnnotatedEventsByEventHandleMessage {
+                event_handle_type,
+                cursor,
+                limit,
+            })
+            .await?
+    }
+
+    pub async fn get_events_by_event_handle(
+        &self,
+        event_handle_type: StructTag,
+        cursor: Option<u64>,
+        limit: u64,
+    ) -> Result<Vec<Event>> {
         self.actor
             .send(GetEventsByEventHandleMessage {
                 event_handle_type,
