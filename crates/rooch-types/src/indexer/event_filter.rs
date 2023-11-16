@@ -74,7 +74,7 @@ pub enum EventFilter {
         /// right endpoint of time interval, milliseconds since epoch, exclusive
         end_time: u64,
     },
-    /// Return events emitted in [from_tx_order, to_tx_order) interval
+    /// Return events emitted in [from_order, to_order) interval
     TxOrderRange {
         /// left endpoint of transaction order, inclusive
         from_order: u64,

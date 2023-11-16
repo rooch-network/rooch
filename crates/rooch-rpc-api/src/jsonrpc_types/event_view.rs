@@ -102,7 +102,7 @@ impl From<IndexerEvent> for IndexerEventView {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub enum EventFilterView {
     /// Query by event type.
     EventType(StructTagView),

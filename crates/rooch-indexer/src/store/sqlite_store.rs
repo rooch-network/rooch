@@ -43,6 +43,7 @@ impl SqliteIndexerStore {
             .map_err(IndexerError::from)
             .context("Failed to write transactions to SQLiteDB")?;
 
+        info!("Persisted transactions: {:?}", transactions);
         Ok(())
     }
 
@@ -63,7 +64,6 @@ impl SqliteIndexerStore {
             .map_err(IndexerError::from)
             .context("Failed to write events to SQLiteDB")?;
 
-        info!("Persisted events: {:?}", events);
         Ok(())
     }
 }

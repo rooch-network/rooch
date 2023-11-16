@@ -332,6 +332,44 @@
       }
     },
     {
+      "name": "rooch_queryTransactions",
+      "description": "Query the transactions indexer by transaction filter",
+      "params": [
+        {
+          "name": "filter",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/TransactionFilterView"
+          }
+        },
+        {
+          "name": "cursor",
+          "schema": {
+            "$ref": "#/components/schemas/u64"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "$ref": "#/components/schemas/usize"
+          }
+        },
+        {
+          "name": "descending_order",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "TransactionWithInfoPageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_TransactionWithInfoView_and_uint64"
+        }
+      }
+    },
+    {
       "name": "rooch_sendRawTransaction",
       "description": "Send the signed transaction in bcs hex format This method does not block waiting for the transaction to be executed.",
       "params": [
@@ -521,10 +559,10 @@
             "description": "Query by event type.",
             "type": "object",
             "required": [
-              "eventType"
+              "event_type"
             ],
             "properties": {
-              "eventType": {
+              "event_type": {
                 "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
               }
             },
@@ -547,10 +585,10 @@
             "description": "Return events emitted by the given transaction hash.",
             "type": "object",
             "required": [
-              "txHash"
+              "tx_hash"
             ],
             "properties": {
-              "txHash": {
+              "tx_hash": {
                 "$ref": "#/components/schemas/primitive_types::H256"
               }
             },
@@ -560,10 +598,10 @@
             "description": "Return events emitted in [start_time, end_time) interval",
             "type": "object",
             "required": [
-              "timeRange"
+              "time_range"
             ],
             "properties": {
-              "timeRange": {
+              "time_range": {
                 "type": "object",
                 "required": [
                   "end_time",
@@ -591,10 +629,10 @@
             "description": "Return events emitted in [from_order, to_order) interval",
             "type": "object",
             "required": [
-              "txOrderRange"
+              "tx_order_range"
             ],
             "properties": {
-              "txOrderRange": {
+              "tx_order_range": {
                 "type": "object",
                 "required": [
                   "from_order",
@@ -1372,6 +1410,101 @@
             "$ref": "#/components/schemas/primitive_types::H256"
           }
         }
+      },
+      "TransactionFilterView": {
+        "oneOf": [
+          {
+            "description": "Query by sender address.",
+            "type": "object",
+            "required": [
+              "sender"
+            ],
+            "properties": {
+              "sender": {
+                "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by the given transaction hash.",
+            "type": "object",
+            "required": [
+              "tx_hashes"
+            ],
+            "properties": {
+              "tx_hashes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/primitive_types::H256"
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Return transactions in [start_time, end_time) interval",
+            "type": "object",
+            "required": [
+              "time_range"
+            ],
+            "properties": {
+              "time_range": {
+                "type": "object",
+                "required": [
+                  "end_time",
+                  "start_time"
+                ],
+                "properties": {
+                  "end_time": {
+                    "description": "right endpoint of time interval, milliseconds since block, exclusive",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "start_time": {
+                    "description": "left endpoint of time interval, milliseconds since block, inclusive",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Return events emitted in [from_order, to_order) interval",
+            "type": "object",
+            "required": [
+              "tx_order_range"
+            ],
+            "properties": {
+              "tx_order_range": {
+                "type": "object",
+                "required": [
+                  "from_order",
+                  "to_order"
+                ],
+                "properties": {
+                  "from_order": {
+                    "description": "left endpoint of transaction order, inclusive",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "to_order": {
+                    "description": "right endpoint of transaction order, exclusive",
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
       },
       "TransactionOutputView": {
         "type": "object",

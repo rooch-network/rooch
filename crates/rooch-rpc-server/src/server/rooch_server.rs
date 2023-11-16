@@ -9,6 +9,7 @@ use jsonrpsee::{
 };
 use moveos_types::h256::H256;
 use rooch_rpc_api::jsonrpc_types::event_view::{EventFilterView, EventView, IndexerEventView};
+use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, IndexerEventPageView, StateOptions,
 };
@@ -329,6 +330,43 @@ impl RoochAPIServer for RoochServer {
                 .into_iter()
                 .map(|(_, balance_info)| balance_info)
                 .collect(),
+            next_cursor,
+            has_next_page,
+        })
+    }
+
+    async fn query_transactions(
+        &self,
+        filter: TransactionFilterView,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<StrView<u64>>,
+        limit: Option<StrView<usize>>,
+        descending_order: Option<bool>,
+    ) -> RpcResult<TransactionWithInfoPageView> {
+        let limit_of = min(
+            limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
+            MAX_RESULT_LIMIT_USIZE,
+        );
+        let cursor = cursor.map(|v| v.0);
+        let descending_order = descending_order.unwrap_or(true);
+
+        let mut data = self
+            .rpc_service
+            .query_transactions(filter.into(), cursor, limit_of + 1, descending_order)
+            .await?;
+
+        let has_next_page = data.len() > limit_of;
+        data.truncate(limit_of);
+        let next_cursor = data
+            .last()
+            .cloned()
+            .map_or(cursor, |t| Some(t.sequence_info.tx_order));
+
+        Ok(TransactionWithInfoPageView {
+            data: data
+                .into_iter()
+                .map(TransactionWithInfoView::from)
+                .collect::<Vec<_>>(),
             next_cursor,
             has_next_page,
         })

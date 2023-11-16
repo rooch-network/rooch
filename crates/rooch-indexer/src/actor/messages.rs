@@ -6,7 +6,8 @@ use coerce::actor::message::Message;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
-use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
+use rooch_types::indexer::transaction_filter::TransactionFilter;
+use rooch_types::transaction::{TransactionSequenceInfo, TransactionWithInfo, TypedTransaction};
 use serde::{Deserialize, Serialize};
 
 /// Indexer Transaction write Message
@@ -33,6 +34,20 @@ pub struct IndexerEventsMessage {
 
 impl Message for IndexerEventsMessage {
     type Result = Result<()>;
+}
+
+/// Query Indexer Transactions Message
+#[derive(Debug, Serialize, Deserialize)]
+pub struct QueryIndexerTransactionsMessage {
+    pub filter: TransactionFilter,
+    // exclusive cursor if `Some`, otherwise start from the beginning
+    pub cursor: Option<u64>,
+    pub limit: usize,
+    pub descending_order: bool,
+}
+
+impl Message for QueryIndexerTransactionsMessage {
+    type Result = Result<Vec<TransactionWithInfo>>;
 }
 
 /// Query Indexer Events Message

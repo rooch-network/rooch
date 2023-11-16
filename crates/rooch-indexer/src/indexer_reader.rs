@@ -13,18 +13,23 @@ use diesel::{
 use std::ops::DerefMut;
 
 use crate::models::events::StoredEvent;
-use crate::schema::events;
+use crate::schema::{events, transactions};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
+use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::transaction::TransactionWithInfo;
+
+pub const TX_ORDER_STR: &str = "tx_order";
+pub const TX_HASH_STR: &str = "tx_hash";
+pub const TX_SENDER_STR: &str = "sender";
+pub const CREATED_AT_STR: &str = "created_at";
+
+pub const TRANSACTION_SENDER_STR: &str = "sender";
+pub const TRANSACTION_TYPE_STR: &str = "event_type";
 
 pub const EVENT_HANDLE_ID_STR: &str = "event_handle_id";
 pub const EVENT_INDEX_STR: &str = "event_index";
 pub const EVENT_SEQ_STR: &str = "event_seq";
-pub const TX_ORDER_STR: &str = "tx_order";
-pub const TX_HASH_STR: &str = "tx_hash";
-pub const EVENT_SENDER_STR: &str = "sender";
 pub const EVENT_TYPE_STR: &str = "event_type";
-pub const EVENT_CREATED_TIME_STR: &str = "created_time";
 
 #[derive(Clone)]
 pub(crate) struct InnerIndexerReader {
@@ -100,14 +105,94 @@ impl IndexerReader {
         })
     }
 
-    pub fn stored_transaction_to_transaction_block(
+    pub fn query_transactions_with_filter(
         &self,
-        stored_transactions: Vec<StoredTransaction>,
+        filter: TransactionFilter,
+        cursor: Option<u64>,
+        limit: usize,
+        descending_order: bool,
     ) -> IndexerResult<Vec<TransactionWithInfo>> {
-        stored_transactions
+        let tx_order = if let Some(cursor) = cursor {
+            cursor as i64
+        } else if descending_order {
+            let max_tx_order: i64 = self.inner_indexer_reader.run_query(|conn| {
+                transactions::dsl::transactions
+                    .select(transactions::tx_order)
+                    .order_by(transactions::tx_order.desc())
+                    .first::<i64>(conn)
+            })?;
+            max_tx_order + 1
+        } else {
+            -1
+        };
+
+        let main_where_clause = match filter {
+            TransactionFilter::Sender(sender) => {
+                format!("{TX_SENDER_STR} = \"{}\"", sender.to_hex_literal())
+            }
+            TransactionFilter::TxHashes(tx_hashes) => {
+                let in_tx_hashes_str: String = tx_hashes
+                    .iter()
+                    .map(|tx_hash| format!("\"{:?}\"", tx_hash))
+                    .collect::<Vec<String>>()
+                    .join(",");
+                format!("{TX_HASH_STR} in ({})", in_tx_hashes_str)
+            }
+            TransactionFilter::TimeRange {
+                start_time,
+                end_time,
+            } => {
+                format!(
+                    "({CREATED_AT_STR} >= {} AND {CREATED_AT_STR} < {})",
+                    start_time, end_time
+                )
+            }
+            TransactionFilter::TxOrderRange {
+                from_order,
+                to_order,
+            } => {
+                format!(
+                    "({TX_ORDER_STR} >= {} AND {TX_ORDER_STR} < {})",
+                    from_order, to_order
+                )
+            }
+        };
+
+        let cursor_clause = if descending_order {
+            format!("AND ({TX_ORDER_STR} < {})", tx_order)
+        } else {
+            format!("AND ({TX_ORDER_STR} > {})", tx_order)
+        };
+        let order_clause = if descending_order {
+            format!("{TX_ORDER_STR} DESC")
+        } else {
+            format!("{TX_ORDER_STR} ASC")
+        };
+
+        let query = format!(
+            "
+                SELECT * FROM transactions \
+                WHERE {} {} \
+                ORDER BY {} \
+                LIMIT {}
+            ",
+            main_where_clause, cursor_clause, order_clause, limit,
+        );
+
+        tracing::debug!("query transactions: {}", query);
+        let stored_transactions = self
+            .inner_indexer_reader
+            .run_query(|conn| diesel::sql_query(query).load::<StoredTransaction>(conn))?;
+
+        let result = stored_transactions
             .into_iter()
-            .map(|stored_transaction| stored_transaction.try_into_transaction_with_info())
-            .collect::<IndexerResult<Vec<_>>>()
+            .map(|t| t.try_into_transaction_with_info())
+            .collect::<Result<Vec<_>>>()
+            .map_err(|e| {
+                IndexerError::SQLiteReadError(format!("Cast indexer transactions failed: {:?}", e))
+            })?;
+
+        Ok(result)
     }
 
     pub fn query_events_with_filter(
@@ -122,7 +207,7 @@ impl IndexerReader {
                 tx_order,
                 event_index,
             } = cursor;
-            (tx_order as i128, event_index as i64)
+            (tx_order as i64, event_index as i64)
         } else if descending_order {
             let (max_tx_order, event_index): (i64, i64) =
                 self.inner_indexer_reader.run_query(|conn| {
@@ -131,7 +216,7 @@ impl IndexerReader {
                         .order_by((events::tx_order.desc(), events::event_index.desc()))
                         .first::<(i64, i64)>(conn)
                 })?;
-            ((max_tx_order as i128) + 1, event_index)
+            (max_tx_order + 1, event_index)
         } else {
             (-1, 0)
         };
@@ -142,7 +227,7 @@ impl IndexerReader {
                 format!("{EVENT_TYPE_STR} = \"{}\"", event_type_str)
             }
             EventFilter::Sender(sender) => {
-                format!("{EVENT_SENDER_STR} = \"{}\"", sender.to_hex_literal())
+                format!("{TX_SENDER_STR} = \"{}\"", sender.to_hex_literal())
             }
             EventFilter::TxHash(tx_hash) => {
                 let tx_hash_str = format!("{:?}", tx_hash);
@@ -153,7 +238,7 @@ impl IndexerReader {
                 end_time,
             } => {
                 format!(
-                    "({EVENT_CREATED_TIME_STR} >= {} AND {EVENT_CREATED_TIME_STR} < {})",
+                    "({CREATED_AT_STR} >= {} AND {CREATED_AT_STR} < {})",
                     start_time, end_time
                 )
             }
