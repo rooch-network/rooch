@@ -32,6 +32,8 @@ impl From<TransactionWithInfo> for TransactionWithInfoView {
 pub enum TransactionFilterView {
     /// Query by sender address.
     Sender(AccountAddressView),
+    /// Query by multi chain original address.
+    OriginalAddress(String),
     /// Query by the given transaction hash.
     TxHashes(Vec<H256View>),
     /// Return transactions in [start_time, end_time) interval
@@ -55,6 +57,7 @@ impl From<TransactionFilterView> for TransactionFilter {
     fn from(event_filter: TransactionFilterView) -> Self {
         match event_filter {
             TransactionFilterView::Sender(address) => Self::Sender(address.into()),
+            TransactionFilterView::OriginalAddress(address) => Self::OriginalAddress(address),
             TransactionFilterView::TxHashes(tx_hashes) => {
                 Self::TxHashes(tx_hashes.into_iter().map(Into::into).collect())
             }

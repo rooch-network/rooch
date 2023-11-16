@@ -23,8 +23,7 @@ pub const TX_HASH_STR: &str = "tx_hash";
 pub const TX_SENDER_STR: &str = "sender";
 pub const CREATED_AT_STR: &str = "created_at";
 
-pub const TRANSACTION_SENDER_STR: &str = "sender";
-pub const TRANSACTION_TYPE_STR: &str = "event_type";
+pub const TRANSACTION_ORIGINAL_ADDRESS_STR: &str = "multichain_original_address";
 
 pub const EVENT_HANDLE_ID_STR: &str = "event_handle_id";
 pub const EVENT_INDEX_STR: &str = "event_index";
@@ -129,6 +128,9 @@ impl IndexerReader {
         let main_where_clause = match filter {
             TransactionFilter::Sender(sender) => {
                 format!("{TX_SENDER_STR} = \"{}\"", sender.to_hex_literal())
+            }
+            TransactionFilter::OriginalAddress(address) => {
+                format!("{TRANSACTION_ORIGINAL_ADDRESS_STR} = \"{}\"", address)
             }
             TransactionFilter::TxHashes(tx_hashes) => {
                 let in_tx_hashes_str: String = tx_hashes
