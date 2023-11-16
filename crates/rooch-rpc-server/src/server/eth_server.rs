@@ -309,7 +309,7 @@ impl EthAPIServer for EthServer {
             None => {
                 return Err(JsonRpcError::Custom(String::from(
                     "newest_block not a number",
-                )))
+                )));
             }
         }
     }
@@ -563,6 +563,15 @@ impl EthAPIServer for EthServer {
         };
 
         Ok(block)
+    }
+
+    async fn get_code(
+        &self,
+        _address: H160View,
+        _block_number: Option<StrView<BlockNumber>>,
+    ) -> RpcResult<BytesView> {
+        let code = BytesView::from_str("0x").unwrap();
+        Ok(code)
     }
 }
 
