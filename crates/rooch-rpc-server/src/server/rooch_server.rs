@@ -173,27 +173,26 @@ impl RoochAPIServer for RoochServer {
         let limit = limit_of + 1;
         let mut data = if event_options.decode {
             self.rpc_service
-                .get_events_by_event_handle(event_handle_type.into(), cursor, limit)
+                .get_annotated_events_by_event_handle(event_handle_type.into(), cursor, limit)
                 .await?
                 .into_iter()
                 .map(EventView::from)
                 .collect::<Vec<_>>()
         } else {
-            //TODO provide a function to directly get the Event, not the AnnotatedEvent
             self.rpc_service
                 .get_events_by_event_handle(event_handle_type.into(), cursor, limit)
                 .await?
                 .into_iter()
-                .map(|e| EventView::from(e.event))
+                .map(EventView::from)
                 .collect::<Vec<_>>()
         };
 
         let has_next_page = (data.len() as u64) > limit_of;
+        data.truncate(limit_of as usize);
+        //next_cursor is the last event's event_seq
         let next_cursor = data
             .last()
             .map_or(cursor, |event| Some(event.event_id.event_seq));
-
-        data.truncate(limit_of as usize);
 
         Ok(EventPageView {
             data,

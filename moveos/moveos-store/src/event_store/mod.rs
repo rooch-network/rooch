@@ -129,6 +129,9 @@ impl EventDBStore {
         self.event_store.multiple_get(keys)
     }
 
+    /// Get events by event handle id
+    /// The cursor is the previous last event seq
+    /// So, do not include the result
     pub fn get_events_by_event_handle_id(
         &self,
         event_handle_id: &ObjectID,
@@ -142,7 +145,12 @@ impl EventDBStore {
             )
         })?;
         let last_seq = event_handle.count;
-        let start = cursor.unwrap_or(0);
+        let start = match cursor {
+            //The cursor do not include the result
+            Some(cursor) => cursor + 1,
+            //None means start from -1
+            None => 0,
+        };
         let end = min(start + limit, last_seq);
         let event_ids = (start..end)
             .map(|v| (EventID::new(*event_handle_id, v)))

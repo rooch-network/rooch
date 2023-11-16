@@ -3,8 +3,8 @@
 
 use super::messages::{
     AnnotatedStatesMessage, ExecuteTransactionMessage, ExecuteTransactionResult,
-    ExecuteViewFunctionMessage, GetEventsByEventHandleMessage, ResolveMessage, StatesMessage,
-    ValidateTransactionMessage,
+    ExecuteViewFunctionMessage, GetAnnotatedEventsByEventHandleMessage,
+    GetEventsByEventHandleMessage, ResolveMessage, StatesMessage, ValidateTransactionMessage,
 };
 use crate::actor::messages::{
     GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
@@ -34,8 +34,8 @@ use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::FunctionId;
-use moveos_types::moveos_std::event::AnnotatedEvent;
 use moveos_types::moveos_std::event::EventHandle;
+use moveos_types::moveos_std::event::{AnnotatedEvent, Event};
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::state_resolver::{AnnotatedStateReader, StateReader};
@@ -590,13 +590,13 @@ impl Handler<ListAnnotatedStatesMessage> for ExecutorActor {
 }
 
 #[async_trait]
-impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
+impl Handler<GetAnnotatedEventsByEventHandleMessage> for ExecutorActor {
     async fn handle(
         &mut self,
-        msg: GetEventsByEventHandleMessage,
+        msg: GetAnnotatedEventsByEventHandleMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<AnnotatedEvent>> {
-        let GetEventsByEventHandleMessage {
+        let GetAnnotatedEventsByEventHandleMessage {
             event_handle_type,
             cursor,
             limit,
@@ -615,6 +615,25 @@ impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
                 Ok(AnnotatedEvent::new(event, event_move_value))
             })
             .collect::<Result<Vec<_>>>()
+    }
+}
+
+#[async_trait]
+impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: GetEventsByEventHandleMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<Event>> {
+        let GetEventsByEventHandleMessage {
+            event_handle_type,
+            cursor,
+            limit,
+        } = msg;
+        let event_store = self.moveos.event_store();
+
+        let event_handle_id = EventHandle::derive_event_handle_id(&event_handle_type);
+        event_store.get_events_by_event_handle_id(&event_handle_id, cursor, limit)
     }
 }
 

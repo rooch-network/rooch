@@ -90,12 +90,19 @@ Feature: Rooch CLI integration tests
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
     Then cmd: "move run --function default::event_test::emit_event  --args 11u64"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-    Then cmd: "event get-events-by-event-handle -t default::event_test::WithdrawEvent --cursor 0 --limit 1"
+    Then cmd: "move run --function default::event_test::emit_event  --args 11u64"
+    Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+    #cursor is None
+    Then cmd: "event get-events-by-event-handle -t default::event_test::WithdrawEvent --limit 1"
     Then assert: "{{$.event[-1].data[0].event_id.event_seq}} == 0"
+    Then assert: "{{$.event[-1].next_cursor}} == 0"
+    Then assert: "{{$.event[-1].has_next_page}} == true"
+    Then cmd: "event get-events-by-event-handle -t default::event_test::WithdrawEvent --cursor 0 --limit 1"
+    Then assert: "{{$.event[-1].data[0].event_id.event_seq}} == 1"
     Then assert: "{{$.event[-1].next_cursor}} == 1"
     Then assert: "{{$.event[-1].has_next_page}} == true"
     Then cmd: "event get-events-by-event-handle -t default::event_test::WithdrawEvent --cursor 1 --limit 1"
-    Then assert: "{{$.event[-1].data[0].event_id.event_seq}} == 1"
+    Then assert: "{{$.event[-1].data[0].event_id.event_seq}} == 2"
     Then assert: "{{$.event[-1].has_next_page}} == false"
     Then stop the server
 
