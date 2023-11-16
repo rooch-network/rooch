@@ -2,9 +2,7 @@
 
 import { Callout, FileTree } from 'nextra/components'
 
-Rooch 中的 Object 采用一种箱子（Box）模式的 Object。
-
-Object Storage 是一个全局的存储空间，创建一个 Object 相当于在这个空间中创建了一个箱子(`ObjectEntity<T>`)，可以将类型 `T` 的实例封装在箱子中，而返回的 `Object<T>` 是这个箱子的钥匙，`ObjectID` 是这个箱子的地址。
+Rooch 中的 Object 采用一种箱子（Box）模式的 Object。创建一个 Object 相当于在 Object Storage 空间中创建了一个箱子(`ObjectEntity<T>`)，可以将类型 `T` 的实例封装在箱子中，而返回的 `Object<T>` 是这个箱子的钥匙，`ObjectID` 是这个箱子的地址。
 
 ## ObjectEntity 和 Object 的定义
 
@@ -154,7 +152,7 @@ module moveos_std::context{
 * `SharedObject`：任何人都可以直接获取到 `&mut Object<T>` 引用。
 * `FrozenObject`：任何人都无法获取到 `&mut Object<T>` 引用，包括 `T` 所在的模块。
 
-通过以下方法可以将 `Object<T>` 变为 `shared` 或 `frozen`。
+通过以下方法可以将 `Object<T>` 变为 `SharedObject`。
 
 ```move
 module moveos_std::object{
@@ -171,7 +169,15 @@ module moveos_std::context{
 }
 ```
 
-一旦 Object 变为 `frozen` 或者 `shared`，Object 就自动归属于 `SystemOwnedObject`，任何人都无法直接获取到 `Object<T>` 的实例，只能通过引用来操作 Object。
+通过以下方法可以将 `Object<T>` 变为 `FrozenObject`。
+
+```move
+module moveos_std::object{
+    public fun to_frozen<T: key>(obj: Object<T>);
+}
+```
+
+> 注意：一旦 Object 变为 `frozen` 或者 `shared`，Object 就自动归属于 `SystemOwnedObject`，任何人都无法直接获取到 `Object<T>` 的实例，只能通过引用来操作 Object。
 
 
 #### 嵌套的 Object
@@ -280,7 +286,7 @@ Rooch 中的 Object 是在 Move 中定义的类型。
 
 * Aptos Object 底层是一种特殊的账户，该账户的 `address` 即 `ObjectID`。
 * `Object<T>` 代表对 Object 的引用，可以 `copy`,`drop`，而 Rooch 中 `Object<T>` 只有一个实例，不可以 `copy`,`drop`。
-* Aptos Object 通过 `DeleteRef`，`ExtendRef`，`TransferRef` 来表达对 Object 不同的操作权限，而 Rooch Object 通过只读引用，可变应用以及实例来区分不同的权限。
+* Aptos Object 通过 `DeleteRef`，`ExtendRef`，`TransferRef` 来表达对 Object 不同的操作权限，而 Rooch Object 通过只读引用，可变引用以及实例来区分不同的权限。
 
 <Callout>
 TODO: This part of this document needs to be improved
@@ -294,6 +300,6 @@ TODO: This part of this document needs to be improved
 4. [Rooch Context Source code](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/context.move)
 5. [Sui Object](https://docs.sui.io/learn/objects)
 6. [Aptos Object](https://aptos.dev/standards/aptos-object/)
-7. [StorageAbstraction](../dive-into-rooch/storage-abstraction.zh-CN.mdx)
+7. [StorageAbstraction](../dive-into-rooch/storage-abstraction)
 7. [Hot Potato](https://examples.sui.io/patterns/hot-potato.html)
 
