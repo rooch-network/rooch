@@ -12,11 +12,11 @@ Move 语言的特性可以查阅文末的参考资料，这里主要介绍 Rooch
 
 ### 内置标准库
 
-Rooch 当前内置了三个标准库，分别是 `MoveStdlib`、`MoveosStdlib` 和 `RoochFramework`，详细介绍参看[内置库](./library.zh-CN.mdx)。
+Rooch 当前内置了三个标准库，分别是 `MoveStdlib`、`MoveosStdlib` 和 `RoochFramework`，详细介绍参看[内置库](./library)。
 
 ### 私有泛型
 
-`#[private_generics(T)]` 是一个函数注解，它保证了添加该注解的函数，只能在定义 `T` 的模块内调用，安全模型上遵循和 Move 存储指令类似约束，但把这个能力开放给了开发者。这个特性是后面几个特性的基础条件，详细介绍参看[私有泛型](./private-generics.zh-CN.mdx)。 
+`#[private_generics(T)]` 是一个函数注解，它保证了添加该注解的函数，只能在定义 `T` 的模块内调用，安全模型上遵循和 Move 存储指令类似约束，但把这个能力开放给了开发者。这个特性是后面几个特性的基础条件，详细介绍参看[私有泛型](./private-generics)。 
 
 ### 存储抽象
 
@@ -32,9 +32,9 @@ Rooch 当前内置了三个标准库，分别是 `MoveStdlib`、`MoveosStdlib` �
 
 `context` 提供的以上方法，都有 `private_generics(T)` 注解的约束，保证安全性上和 Move 存储指令一致。
 
-除了 Account Resource， Rooch 还同时提供 Object 存储。关于 Rooch Object 的详细信息参看 [Rooch Object](./object.zh-CN.mdx)。
+除了 Account Resource， Rooch 还同时提供 Object 存储。关于 Rooch Object 的详细信息参看 [Rooch Object](./object)。
 
-关于存储抽象的设计，可以参考[存储抽象](../dive-into-rooch/storage-abstraction.zh-CN.mdx)。
+关于存储抽象的设计，可以参考[存储抽象](../dive-into-rooch/storage-abstraction)。
 
 ### Context
 

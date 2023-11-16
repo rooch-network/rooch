@@ -92,7 +92,7 @@ Please refer to [Rooch's built-in library](https://rooch.network/docs/developer-
 <details>
 <summary>Transaction Flow</summary>
 
-- [Docs](./docs/website/pages/docs/tech-highlights/transaction_flow.en-US.mdx)
+- [Docs](https://rooch.network/docs/dive-into-rooch/transaction-flow)
 - Overview:
 ![Rooch Transaction Flow](./docs/website/public/docs/rooch-design-transaction-flow-functional-perspective.svg)
 
