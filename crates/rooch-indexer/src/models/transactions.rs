@@ -32,7 +32,9 @@ pub struct StoredTransaction {
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub multichain_id: i64,
     #[diesel(sql_type = diesel::sql_types::Text)]
-    pub multichain_raw_address: String,
+    pub multichain_address: String,
+    #[diesel(sql_type = diesel::sql_types::Text)]
+    pub multichain_original_address: String,
     /// the rooch address of sender who send the transaction
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub sender: String,
@@ -60,7 +62,7 @@ pub struct StoredTransaction {
     pub gas_used: i64,
     /// The vm status.
     #[diesel(sql_type = diesel::sql_types::Text)]
-    pub status: String,
+    pub tx_execute_status: String,
 
     /// The tx order signature,
     #[diesel(sql_type = diesel::sql_types::BigInt)]
@@ -80,8 +82,8 @@ impl From<IndexedTransaction> for StoredTransaction {
             transaction_type: transaction.transaction_type.transaction_type_name(),
             sequence_number: transaction.sequence_number as i64,
             multichain_id: transaction.multichain_id.id() as i64,
-            //TODO check
-            multichain_raw_address: transaction.multichain_raw_address,
+            multichain_address: transaction.multichain_address,
+            multichain_original_address: transaction.multichain_original_address,
             sender: transaction.sender.to_hex_literal(),
             action: transaction.action.action_name(),
             action_type: transaction.action.action_type() as i16,
@@ -94,8 +96,7 @@ impl From<IndexedTransaction> for StoredTransaction {
             state_root: format!("{:?}", transaction.state_root),
             event_root: format!("{:?}", transaction.event_root),
             gas_used: transaction.gas_used as i64,
-            // TODO how to index and display the vm status ?
-            status: transaction.status.to_string(),
+            tx_execute_status: transaction.tx_execute_status,
 
             tx_order_auth_validator_id: transaction.tx_order_auth_validator_id as i64,
             tx_order_authenticator_payload: transaction.tx_order_authenticator_payload,
@@ -107,9 +108,8 @@ impl From<IndexedTransaction> for StoredTransaction {
 
 impl StoredTransaction {
     pub fn try_into_transaction_with_info(self) -> Result<TransactionWithInfo, anyhow::Error> {
-        //TODO construct TypedTransaction
         let raw_transaction = RawTransaction {
-            transaction_type: TransactionType::Rooch,
+            transaction_type: TransactionType::from_str(self.transaction_type.as_str())?,
             raw: self.transaction_raw,
         };
         let transaction = TypedTransaction::try_from(raw_transaction)?;
@@ -121,13 +121,15 @@ impl StoredTransaction {
             },
             tx_accumulator_root: H256::from_str(self.tx_accumulator_root.as_str())?,
         };
+
+        let tx_execute_status: KeptVMStatus =
+            serde_json::from_str(self.tx_execute_status.as_str())?;
         let execution_info = TransactionExecutionInfo {
             tx_hash: H256::from_str(self.tx_hash.as_str())?,
             state_root: H256::from_str(self.state_root.as_str())?,
             event_root: H256::from_str(self.state_root.as_str())?,
             gas_used: self.gas_used as u64,
-            //TODO convert KeptVMStatus
-            status: KeptVMStatus::Executed,
+            status: tx_execute_status,
         };
         Ok(TransactionWithInfo {
             transaction,

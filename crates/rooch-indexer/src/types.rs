@@ -5,7 +5,6 @@ use crate::errors::IndexerError;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
-use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::object::ObjectID;
@@ -27,8 +26,9 @@ pub struct IndexedTransaction {
     pub transaction_type: TransactionType,
     pub sequence_number: u64,
     pub multichain_id: MultiChainID,
-    //TODO transform to hex
-    pub multichain_raw_address: String,
+    pub multichain_address: String,
+    // the orginal address str
+    pub multichain_original_address: String,
     /// the account address of sender who send the transaction
     pub sender: AccountAddress,
     pub action: MoveAction,
@@ -44,8 +44,7 @@ pub struct IndexedTransaction {
     /// the amount of gas used.
     pub gas_used: u64,
     /// the vm status.
-    pub status: KeptVMStatus,
-
+    pub tx_execute_status: String,
     /// The tx order signature,
     pub tx_order_auth_validator_id: u64,
     pub tx_order_authenticator_payload: Vec<u8>,
@@ -63,6 +62,8 @@ impl IndexedTransaction {
         let move_action = MoveAction::from(moveos_tx.action);
         let action_raw = move_action.encode()?;
         let transaction_authenticator_info = transaction.authenticator_info()?;
+        let tx_execute_status = serde_json::to_string(&execution_info.status)?;
+
         let indexed_transaction = IndexedTransaction {
             tx_hash: transaction.tx_hash(),
             /// The tx order of this transaction.
@@ -71,8 +72,8 @@ impl IndexedTransaction {
             transaction_type: transaction.transaction_type(),
             sequence_number: moveos_tx.ctx.sequence_number,
             multichain_id: transaction.multi_chain_id(),
-            //TODO transform to hex
-            multichain_raw_address: transaction.sender().to_string(),
+            multichain_address: transaction.sender().to_string(),
+            multichain_original_address: transaction.original_address_str(),
             /// the account address of sender who send the transaction
             sender: moveos_tx.ctx.sender,
             action: move_action.clone(),
@@ -90,7 +91,7 @@ impl IndexedTransaction {
             /// the amount of gas used.
             gas_used: execution_info.gas_used,
             /// the vm status.
-            status: execution_info.status,
+            tx_execute_status,
 
             /// The tx order signature,
             tx_order_auth_validator_id: sequence_info.tx_order_signature.auth_validator_id,

@@ -4,7 +4,8 @@ CREATE TABLE transactions (
     transaction_type                    VARCHAR      NOT NULL,
     sequence_number                     BIGINT       NOT NULL,
     multichain_id                       BIGINT       NOT NULL,
-    multichain_raw_address              VARCHAR      NOT NULL,
+    multichain_address                  VARCHAR      NOT NULL,
+    multichain_original_address         VARCHAR      NOT NULL,
     sender                              VARCHAR      NOT NULL,
     action                              VARCHAR      NOT NULL,
     action_type                         SMALLINT     NOT NULL,
@@ -17,7 +18,7 @@ CREATE TABLE transactions (
     state_root                          VARCHAR      NOT NULL,
     event_root                          VARCHAR      NOT NULL,
     gas_used                            BIGINT       NOT NULL,
-    status                              VARCHAR      NOT NULL,
+    tx_execute_status                   VARCHAR      NOT NULL,
 
     tx_order_auth_validator_id          BIGINT       NOT NULL,
     tx_order_authenticator_payload      BLOB         NOT NULL,
