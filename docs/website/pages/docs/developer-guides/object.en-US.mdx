@@ -2,28 +2,7 @@
 
 import { Callout, FileTree } from 'nextra/components'
 
-Object in Rooch is designed as a Box style Object. When an Object is created, it is essentially like creating a box (`ObjectEntity<T>`) in global Object Storage, encapsulating an instance of type `T` inside it. The returned `Object<T>` serves as the key to this box, while `ObjectID` is the address of the box.
-
-## Definitions of ObjectEntity and Object
-
-```move
-module moveos_std::object{
-    
-    struct ObjectEntity<T>{
-        id: ObjectID,
-        owner: address,
-        /// A flag to indicate whether the object is shared or frozen
-        flag: u8,
-        value: T,
-    }
-
-    struct Object<phantom T> has key, store {
-        id: ObjectID,
-    }
-}
-```
-
-`ObjectEntity` has no `ability` and can only be accessed by the underlying storage interface. Developers can access the encapsulated data in `ObjectEntity<T>` through `Object<T>`. The lifecycles of the two are identical, and developers only need to operate the API related to `Object<T>`, without considering `ObjectEntity<T>`.
+The Object in Rooch implements a Box (boxing) pattern. Creating an Object is like creating a box in the Object Storage space. You can encapsulate an instance of type `T` in this box, and the `ObjectID` is the address of this box.
 
 ## Ownership of Object
 
@@ -260,12 +239,16 @@ The `context` and `object` modules provide the following functions that can oper
 |`context::borrow_mut_object_shared<T: key>(&mut Context, ObjectID): &mut Object<T>`             | false |Borrow mutable reference of a shared `Object<T>` through ID|
 |`context::borrow_mut_object_extend<T: key>(&mut Context, ObjectID): &mut Object<T>`             | true |Extension method for developers, the module where `T` located can get any `&mut Object<T>` through ObjectID|
 |`context::exist_object<T: key>(&Context, ObjectID): bool`                                       | false |Check if the Object exists through its ObjectID|
+|`object::id<T: key>(&Object<T>): ObjectID`                                                      | false | Get ObjectID|
+|`object::owner<T: key>(&Object<T>): address`                                                    | false | Get `owner` address|
 |`object::borrow<T: key>(&Object<T>): &T`                                                        | false |Borrow read-only reference of `T` through `&Object`|
 |`object::borrow_mut<T: key>(&mut Object<T>): &mut T`                                            | false |Borrow mutable reference of `T`  through `&mut Object`|
 |`object::transfer<T: key+store>(Object<T>,address)`                                             | false |Transfer ownership of `Object<T>` to `address`|
 |`object::transfer_extend<T: key>(Object<T>,address)`                                            | true |Extension method for developers, transfer ownership of `Object<T>` to `address`|
 |`object::to_shared<T: key>(Object<T>)`                                                          | false |Turn `Object<T>` to a `SharedObject`, where anyone can get its `&mut Object<T>`| 
+|`object::is_shared<T: key>(&Object<T>): bool`                                                   | false |Check if `Object<T>` is `SharedObject`|
 |`object::to_frozen<T: key>(Object<T>)`                                                          | false |Turn `Object<T>` to a `FrozenObject`, where no one can get its `&mut Object<T>`| 
+|`object::is_frozen<T: key>(&Object<T>): bool`                                                   | false |Check if `Object<T>` is `FrozenObject`|
 |`object::remove<T: key>(Object<T>): T`                                                          | true |Remove `Object<T>`, and return the `T` within. Only the module where `T` is located can delete`Object<T>`|
 
 In the above functions, if the `#[private_generics<T>]` column is `true`, it indicates that only the module where `T` is located can call the function.

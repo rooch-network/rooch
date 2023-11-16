@@ -2,33 +2,12 @@
 
 import { Callout, FileTree } from 'nextra/components'
 
-Rooch 中的 Object 采用一种箱子（Box）模式的 Object。创建一个 Object 相当于在 Object Storage 空间中创建了一个箱子(`ObjectEntity<T>`)，可以将类型 `T` 的实例封装在箱子中，而返回的 `Object<T>` 是这个箱子的钥匙，`ObjectID` 是这个箱子的地址。
-
-## ObjectEntity 和 Object 的定义
-
-```move
-module moveos_std::object{
-    
-    struct ObjectEntity<T>{
-        id: ObjectID,
-        owner: address,
-        /// A flag to indicate whether the object is shared or frozen
-        flag: u8,
-        value: T,
-    }
-
-    struct Object<phantom T> has key, store {
-        id: ObjectID,
-    }
-}
-```
-
-`ObjectEntity` 没有任何 `ability`，只能被底层的存储接口访问。开发者可以通过 `Object<T>` 访问 `ObjectEntity<T>` 中封装的数据，二者的生命周期也是相同的，开发者只需操作 `Object<T>` 相关的接口，不需要关心 `ObjectEntity<T>`。
+Rooch 中的 Object 是一种箱子（Box）模式的 Object。创建一个 Object 相当于在 Object Storage 空间中创建了一个箱子，可以将类型 `T` 的实例封装在箱子中，`ObjectID` 是这个箱子的地址。
 
 
 ## Object 的所有权
 
-`ObjectEntity` 的 `owner` 字段代表 Object 属于哪个账户地址，通过 `owner` 可以将 Object 分为两种：
+`Object` 的 `owner` 代表 Object 属于哪个账户地址，通过 `owner` 可以将 Object 分为两种：
 
 1. `SystemOwnedObject`: `owner` 为 `0x0` 的 Object。Object 创建后默认为 `SystemOwnedObject`。
 2. `UserOwnedObject`: `owner` 为非 `0x0` 的 Object。Object 被转让给某个用户后，`owner` 会被设置为该用户的地址。
@@ -262,12 +241,16 @@ https://dev-seed.rooch.network
 |`context::borrow_mut_object_shared<T: key>(&mut Context, ObjectID): &mut Object<T>`    | false| 通过 ID 借用共享 `Object<T>` 的可变引用|
 |`context::borrow_mut_object_extend<T: key>(&mut Context, ObjectID): &mut Object<T>`    | true | 给开发者的扩展方法，`T` 所在的模块可以通过 ObjectID 获取任意 `&mut Object<T>`|
 |`context::exist_object<T: key>(&Context, ObjectID): bool`                              | false | 通过 ObjectID 检测 Object 是否存在｜
+|`object::id<T: key>(&Object<T>): ObjectID`                                             | false | 获取 ObjectID|
+|`object::owner<T: key>(&Object<T>): address`                                           | false | 获取拥有者的地址|
 |`object::borrow<T: key>(&Object<T>): &T`                                               | false | `&Object` 借用 `T` 的只读引用|
 |`object::borrow_mut<T: key>(&mut Object<T>): &mut T`                                   | false | 通过 `&mut Object` 借用 `T` 的可变引用|
 |`object::transfer<T: key+store>(Object<T>,address)`                                    | false | 将 `Object<T>` 所有权转移给 `address`|
 |`object::transfer_extend<T: key>(Object<T>,address)`                                   | true  | 给开发者的扩展方法，将 `Object<T>` 所有权转移给 `address`|
 |`object::to_shared<T: key>(Object<T>)`                                                 | false | 将 `Object<T>` 变为 `SharedObject`，任何人都可以直接获取到 `&mut Object<T>` |
+|`object::is_shared<T: key>(&Object<T>): bool`                                          | false | 判断 `Object<T>` 是否为 `SharedObject`|
 |`object::to_frozen<T: key>(Object<T>)`                                                 | false | 将 `Object<T>` 变为 `FrozenObject`，任何人都无法获取到 `&mut Object<T>` |
+|`object::is_frozen<T: key>(&Object<T>): bool`                                          | false | 判断 `Object<T>` 是否为 `FrozenObject`|
 |`object::remove<T: key>(Object<T>): T`                                                 | true  | 删除 `Object<T>`，并返回其中的 `T`，只有 `T` 所在的模块才能删除 `Object<T>`|
 
 以上函数中，如果 `#[private_generics<T>]` 列为 `true`，表明只有 `T` 所在的模块才能调用。
