@@ -1427,6 +1427,19 @@
             "additionalProperties": false
           },
           {
+            "description": "Query by multi chain original address.",
+            "type": "object",
+            "required": [
+              "original_address"
+            ],
+            "properties": {
+              "original_address": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
             "description": "Query by the given transaction hash.",
             "type": "object",
             "required": [

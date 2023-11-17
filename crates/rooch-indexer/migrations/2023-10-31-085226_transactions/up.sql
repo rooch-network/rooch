@@ -18,7 +18,7 @@ CREATE TABLE transactions (
     state_root                          VARCHAR      NOT NULL,
     event_root                          VARCHAR      NOT NULL,
     gas_used                            BIGINT       NOT NULL,
-    tx_execute_status                   VARCHAR      NOT NULL,
+    status                              VARCHAR      NOT NULL,
 
     tx_order_auth_validator_id          BIGINT       NOT NULL,
     tx_order_authenticator_payload      BLOB         NOT NULL,

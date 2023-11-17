@@ -3,7 +3,6 @@
 
 use anyhow::Result;
 use diesel::RunQueryDsl;
-use tracing::info;
 
 use crate::errors::{Context, IndexerError};
 
@@ -43,7 +42,6 @@ impl SqliteIndexerStore {
             .map_err(IndexerError::from)
             .context("Failed to write transactions to SQLiteDB")?;
 
-        info!("Persisted transactions: {:?}", transactions);
         Ok(())
     }
 

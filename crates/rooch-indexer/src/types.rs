@@ -44,7 +44,7 @@ pub struct IndexedTransaction {
     /// the amount of gas used.
     pub gas_used: u64,
     /// the vm status.
-    pub tx_execute_status: String,
+    pub status: String,
     /// The tx order signature,
     pub tx_order_auth_validator_id: u64,
     pub tx_order_authenticator_payload: Vec<u8>,
@@ -62,7 +62,7 @@ impl IndexedTransaction {
         let move_action = MoveAction::from(moveos_tx.action);
         let action_raw = move_action.encode()?;
         let transaction_authenticator_info = transaction.authenticator_info()?;
-        let tx_execute_status = serde_json::to_string(&execution_info.status)?;
+        let status = serde_json::to_string(&execution_info.status)?;
 
         let indexed_transaction = IndexedTransaction {
             tx_hash: transaction.tx_hash(),
@@ -91,7 +91,7 @@ impl IndexedTransaction {
             /// the amount of gas used.
             gas_used: execution_info.gas_used,
             /// the vm status.
-            tx_execute_status,
+            status,
 
             /// The tx order signature,
             tx_order_auth_validator_id: sequence_info.tx_order_signature.auth_validator_id,

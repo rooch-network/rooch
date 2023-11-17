@@ -62,7 +62,7 @@ pub struct StoredTransaction {
     pub gas_used: i64,
     /// The vm status.
     #[diesel(sql_type = diesel::sql_types::Text)]
-    pub tx_execute_status: String,
+    pub status: String,
 
     /// The tx order signature,
     #[diesel(sql_type = diesel::sql_types::BigInt)]
@@ -96,7 +96,7 @@ impl From<IndexedTransaction> for StoredTransaction {
             state_root: format!("{:?}", transaction.state_root),
             event_root: format!("{:?}", transaction.event_root),
             gas_used: transaction.gas_used as i64,
-            tx_execute_status: transaction.tx_execute_status,
+            status: transaction.status,
 
             tx_order_auth_validator_id: transaction.tx_order_auth_validator_id as i64,
             tx_order_authenticator_payload: transaction.tx_order_authenticator_payload,
@@ -122,14 +122,13 @@ impl StoredTransaction {
             tx_accumulator_root: H256::from_str(self.tx_accumulator_root.as_str())?,
         };
 
-        let tx_execute_status: KeptVMStatus =
-            serde_json::from_str(self.tx_execute_status.as_str())?;
+        let status: KeptVMStatus = serde_json::from_str(self.status.as_str())?;
         let execution_info = TransactionExecutionInfo {
             tx_hash: H256::from_str(self.tx_hash.as_str())?,
             state_root: H256::from_str(self.state_root.as_str())?,
             event_root: H256::from_str(self.state_root.as_str())?,
             gas_used: self.gas_used as u64,
-            status: tx_execute_status,
+            status,
         };
         Ok(TransactionWithInfo {
             transaction,
