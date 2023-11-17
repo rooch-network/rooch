@@ -11,11 +11,11 @@ Let's take `AccountStorage` as an example. We want to store a user's resources w
 ```move
 module moveos_std::account_storage{
     #[private_generics(T)]
-    public fun global_borrow<T: key>(ctx: &Context, account: address): &T;
+    public fun borrow_resource<T: key>(ctx: &Context, account: address): &T;
 }
 ```
 
-In the above example, we define a `global_borrow` function with a private generic `T` which can only be used within the module where `T` is defined. Other modules cannot use this function.
+In the above example, we define a `borrow_resource` function with a private generic `T` which can only be used within the module where `T` is defined. Other modules cannot use this function.
 
 ### How it works
 
@@ -32,4 +32,4 @@ TODO: This part of the document needs improvement.
    - [moveos_std::storage_context](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/storage_context.move)
    - [moveos_std::signer](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/signer.move)
    - [rooch_framework::coin](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/coin.move)
-2. [Understanding Private Generics Functions in one article](../blog/read-private-generics-in-one-article.md)
+2. [Understanding Private Generics Functions in one article](../../blog/read-private-generics-in-one-article)

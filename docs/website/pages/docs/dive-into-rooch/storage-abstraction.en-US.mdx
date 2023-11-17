@@ -76,7 +76,7 @@ After analyzing the above solutions, we find that the storage model of a contrac
 
 We believe that providing state proofs through a state tree is an important feature for interoperability between Web3 systems and external systems. Therefore, Rooch's state storage is designed around the state tree.
 
-Rooch's state tree is implemented using a [Sparse Merkle Tree](https://github.com/rooch-network/smt) which is very useful for the state tree due to its two key characteristics:
+Rooch's state tree is implemented using a [Sparse Merkle Tree](https://github.com/rooch-network/rooch/tree/main/moveos/smt) which is very useful for the state tree due to its two key characteristics:
 
 1. Performance is excellent because SMT's intermediate nodes are compressed and optimized.
 2. SMT can simultaneously provide inclusion and no-inclusion proofs, especially useful in Rollup scenarios.
@@ -93,197 +93,37 @@ The first layer of the state tree in Rooch is an SMT with ObjectID as the key an
 
 In Rooch, each Table in Move corresponds to an SMT, and the Table Object mainly stores the root of the SMT. When loading data from a Table, the root of the SMT is first obtained through the Table Object ID, and the SMT is then initialized to obtain the value through the key. Tables can also be fields in Struct, with the serialized Table ID (TableHandle) stored in the Struct. In this way, Rooch's state tree is a hierarchy of nested SMTs.
 
+### The types in Move
 
-### Context
+1. [Context](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/context.md) represents the current transaction and storage context. It currently encapsulates the main methods related to state storage. In the future, when the `AppSpecific Storage` solution is provided, apps can switch the Context to store states in different storage spaces.
+2. [raw_table](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/raw_table.md) provides the lowest level Key-Value storage interface. All contract state changes are ultimately unified as the Key-Value change set of `RawTable`. Each RawTable corresponds to a SMT in the StateDB. The ObjectID of the Global ObjectStore is a special ObjectID with all bytes being `0`.
+3. [type_table](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/type_table.md) is a special type of Table that uses types as Keys and instances of types as Values.
+4. [AccountStorage](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md) is the abstraction of user storage space in Move. It contains two Tables, the Resource Table and the Module Table. This allows direct operation on Resources and Modules in Move, without the need to use global storage instructions.
 
-The Context contains two fields: `TxContext`, which contains information related to the current transaction, and `StorageContext`, which corresponds to the first layer of the state tree.
+#### Object
 
-```move
-module moveos_std::context{
-    struct Context {
-        tx_context: TxContext,
-        storage_context: StorageContext,
-    }
-}
-```
-
-Developers can define the Context parameter in the `entry` method, and the MoveVM will automatically fill in the parameter.
-
-```move
-module example::my_module{
-    public entry fun my_entry_fun(ctx: &mut Context){
-        //function logic
-    }
-}
-```
-
-### RawTable
-
-In Rooch, a RawTable extension has been implemented for Move, which is an extension of the original Table and removes the constraints on Key and Value.
-
-The following are some of the key interfaces provided by RawTable in Move:
-
-```move
-module moveos_std::raw_table{
-    public(friend) fun add<K: copy + drop, V>(table_handle: &ObjectID, key: K, val: V);
-
-    public(friend) fun borrow<K: copy + drop, V>(table_handle: &ObjectID, key: K);
-
-    public(friend) fun borrow_mut<K: copy + drop, V>(table_handle: &ObjectID, key: K): &mut V;
-
-    public(friend) fun remove<K: copy + drop, V>(table_handle: &ObjectID, key: K): V;
-
-    public(friend) fun contains<K: copy + drop, V>(table_handle: &ObjectID, key: K): bool;
-}
-```
-
-TableHandle is the ObjectID of the TableObject. The upper-level data structure of RawTable can directly operate on any type of K, V, like a raw-level KV storage interface. Each RowTable corresponds to a SMT in the StateDB. The ObjectID of the global ObjectStore is a special ObjectID with all bytes set to `0`.
-
-Currently, all methods in RawTable are `friend` methods, and developers cannot directly operate on them. They need to operate through the upper-level data structures that encapsulate RawTable, such as `Table<K,V>`, `TypeTable`, and `StorageContext`.
-
-### Rooch Object
-
-Objects in Rooch adopt a Box mode where they are equivalent to a unique ID box that can encapsulate a type `T` to create an Object.
+In Rooch's Object Storage, the data structure that is stored is `ObjectEntity<T>`, and `Object<T>` is like the handle or key to `ObjectEntity<T>`.
 
 ```move
 module moveos_std::object{
-    struct Object<T: key>{
+    
+    struct ObjectEntity<T>{
         id: ObjectID,
         owner: address,
+        /// A flag to indicate whether the object is shared or frozen
+        flag: u8,
         value: T,
     }
-}
-```
 
-Rooch Objects are also a use case for the [Hot Potato](https://examples.sui.io/patterns/hot-potato.html) pattern in Move. Objects do not have any `ability`, so they cannot be `drop`, `copy`, or `store`, and can only be handled by StorageContext API after creation.
-
-The advantage of this design is that no additional requirements need to be placed on the definition of Move's Struct, nor is additional support of Native methods required, since the concept of Object can be defined directly in Move. StorageContext is a storage space outside of a user's storage space, with a unique global ID as the key, to address situations in which global storage is needed.
-
-### StorageContext
-
-StorageContext provides bottom interfaces related to global storage of Objects. It is implemented based on RawTable and is defined as follows:
-
-```move
-module moveos_std::storage_context{
-    /// Borrow Object from object store with object_id
-    public(friend) fun borrow<T: key>(self: &StorageContext, object_id: ObjectID): &Object<T>;
-
-    /// Borrow mut Object from object store with object_id
-    public(friend) fun borrow_mut<T: key>(self: &mut StorageContext, object_id: ObjectID): &mut Object<T>;
-
-    /// Remove object from object store
-    public(friend) fun remove<T: key>(self: &mut StorageContext, object_id: ObjectID): Object<T>;
-
-    /// Add object to object store
-    public(friend) fun add<T: key>(self: &mut StorageContext, obj: Object<T>);
-
-    public(friend) fun contains(self: &StorageContext, object_id: ObjectID): bool;
-}
-```
-
-### Context
-
-`Context` provides interfaces for developers to handle objects based on `StorageContext`. It is defined as follows:
-
-```move
-module moveos_std::context{
-    #[private_generics(T)]
-    /// Borrow Object from object store with object_id
-    public fun borrow_object<T: key>(self: &Context, object_id: ObjectID): &Object<T>;
-
-    #[private_generics(T)]
-    /// Borrow mut Object from object store with object_id
-    public fun borrow_object_mut<T: key>(self: &mut Context, object_id: ObjectID): &mut Object<T>;
-
-    #[private_generics(T)]
-    /// Remove object from object store
-    public fun remove_object<T: key>(self: &mut Context, object_id: ObjectID): Object<T>;
-
-    #[private_generics(T)]
-    /// Add object to object store
-    public fun add_object<T: key>(self: &mut Context, obj: Object<T>);
-
-    public fun contains_object(self: &Context, object_id: ObjectID): bool;
-}
-```
-
-The above methods are ensured to only be called directly by Modules containing `T` through [private_generics](https://github.com/rooch-network/rooch/issues/64), and the safety model follow to the constraints of the Move global storage instructions.
-
->TBD: Whether to provide a method that allows Owners to directly operate on Objects, similar to Sui's `public_transfer`, needs further research to decide.
-
-### TypeTable
-
-TypeTable is a special type of Table that simulates Move's global storage instructions, with the type as the key and an instance of the type as the value. Implemented based on RawTable, it provides the following API:
-
-```move
-module moveos_std::type_table {
-
-    public fun add<V: key>(table: &mut TypeTable, val: V);
-
-    public fun borrow<V: key>(table: &TypeTable): &V;
-
-    public fun borrow_mut<V: key>(table: &mut TypeTable): &mut V;
-
-    public fun remove<V: key>(table: &mut TypeTable): V;
-
-    public fun contains<V: key>(table: &TypeTable): bool;
-}
-```
-
-### AccountStorage
-
-AccountStorage is an abstraction of a user's storage space in Move, which contains two Tables, the Resource Table and Module Table, allowing Resources and Modules to be directly manipulated in Move without the need for global storage instructions.
-
-It mainly provides the following API:
-
-```move
-module moveos_std::account_storage{
-    
-    struct AccountStorage has key {
-        resources: TypeTable,
-        modules: Table<String, MoveModule>,
+    struct Object<phantom T> has key, store {
+        id: ObjectID,
     }
-
-    #[private_generics(T)]
-    /// Borrow a resource from the account's storage
-    /// This function equates to `borrow_global<T>(address)` instruction in Move
-    public fun global_borrow<T: key>(ctx: &Context, account: address): &T;
-
-    #[private_generics(T)]
-    /// Borrow a mut resource from the account's storage
-    /// This function equates to `borrow_global_mut<T>(address)` instruction in Move
-    public fun global_borrow_mut<T: key>(ctx: &mut Context, account: address): &mut T;
-
-    #[private_generics(T)]
-    /// Move a resource to the account's storage
-    /// This function equates to `move_to<T>(&signer, resource)` instruction in Move
-    public fun global_move_to<T: key>(ctx: &mut Context, account: &signer, resource: T);
-
-    #[private_generics(T)]
-    /// Move a resource from the account's storage
-    /// This function equates to `move_from<T>(address)` instruction in Move
-    public fun global_move_from<T: key>(ctx: &mut Context, account: address): T;
-
-    #[private_generics(T)]
-    /// Check if the account has a resource of the given type
-    /// This function equates to `exists<T>(address)` instruction in Move
-    public fun global_exists<T: key>(ctx: &Context, account: address) : bool;
-
-    /// Check if the account has a module with the given name
-    public fun exists_module(ctx: &Context, account: address, name: String): bool;
-
-    /// Publish modules to the account's storage
-    public fun publish_modules(ctx: &mut Context, account: &signer, modules: vector<MoveModule>);
 }
 ```
 
-The above methods can replace the global storage instructions in Move, so that all storage-related operations in Move are ultimately unified to Operations on Tables. 
+`ObjectEntity` does not have any `ability` and can only be accessed by the underlying storage API. Developers can access the data encapsulated in `ObjectEntity<T>` through `Object<T>`. The lifecycles of the two are the same. Developers only need to work with the `Object<T>` related API and do not need to care about `ObjectEntity<T>`.
 
-At the same time,this approach also solves a reference problem in Move whereby developers cannot return a reference borrowed through the `borrow_global<T>` instruction in their methods, since this reference is created out of thin air and cannot be returned as a method return value. However, if the reference is borrowed through `Context`, then that goal can be achieved, and the lifetime of the reference is bound to the lifetime of `Context`. 
-
-In addition, AccountStorage also provides module-related methods, making it easy to deploy Move contracts in Move and allowing developers to use contracts to define contract deployment rules, such as upgrading the contract through DAO governance.
-
-> TBD: Whether to completely abandon the global storage instructions in Move, or to simultaneously provide both methods of operation, needs further research to decide.
+For information on how to use Object, please refer to the [Object](../developer-guides/object) documentation.
 
 ### Unified State AccessPath API
 

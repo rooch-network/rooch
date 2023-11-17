@@ -16,7 +16,7 @@ Before we create the counter contract program, we can use the CLI command provid
 rooch move new quick_start_counter
 ```
 
-For detailed methods, please refer to [Creating a Rooch Move Contract](./create-rooch-move-contract.en-US.mdx).
+For detailed methods, please refer to [Creating a Rooch Move Contract](./create-rooch-move-contract).
 
 Next, create a `counter.move` file in the `sources` directory to write our contract code.
 
@@ -32,11 +32,11 @@ module quick_start_counter::quick_start_counter {
     }
 
     fun init(ctx: &mut Context, account: &signer) {
-        account_storage::global_move_to(ctx, account, Counter { count_value: 0 });
+        context::move_resource_to(ctx, account, Counter { count_value: 0 });
     }
 
     entry fun increase(ctx: &mut Context) {
-        let counter = account_storage::global_borrow_mut<Counter>(ctx, @quick_start_counter);
+        let counter = context::borrow_mut_resource<Counter>(ctx, @quick_start_counter);
         counter.count_value = counter.count_value + 1;
     }
 }
@@ -88,7 +88,7 @@ We want to record the value of the `Counter` type into Rooch's global storage, s
 
 ```move
 fun init(ctx: &mut Context, account: &signer) {
-    account_storage::global_move_to(ctx, account, Counter { value: 0 })
+    context::move_resource_to(ctx, account, Counter { value: 0 })
 }
 ```
 
@@ -104,16 +104,16 @@ Next, we need to define an incrementing function that will increment the counter
 
 ```move
 entry fun increase(ctx: &mut Context) {
-    let counter = account_storage::global_borrow_mut<Counter>(ctx, @quick_start_counter);
+    let counter = context::borrow_mut_resource<Counter>(ctx, @quick_start_counter);
     counter.count_value = counter.count_value + 1;
 }
 ```
 
 Line 13 is the signature of the `increase` function, which accepts a context parameter.
 
-In line 14, the `global_borrow_mut` instruction of the account storage provided by Rooch is called to obtain a mutable reference of type `Counter`, and the return value of the function is bound to the `counter` variable. By borrowing a mutable reference from `Counter`, we can modify its value.
+In line 14, the `borrow_mut_resource` instruction of the account storage provided by Rooch is called to obtain a mutable reference of type `Counter`, and the return value of the function is bound to the `counter` variable. By borrowing a mutable reference from `Counter`, we can modify its value.
 
-The `global_borrow_mut` function accepts a context parameter and an address parameter to borrow the `Counter` resource. For simplicity, we directly use the address of the published counter module as the borrower.
+The `borrow_mut_resource` function accepts a context parameter and an address parameter to borrow the `Counter` resource. For simplicity, we directly use the address of the published counter module as the borrower.
 
 In line 15, we obtain the field value of the `Counter` structure through member operations and perform an increment operation.
 

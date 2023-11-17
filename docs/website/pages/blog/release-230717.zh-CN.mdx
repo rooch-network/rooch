@@ -43,10 +43,10 @@ Rooch 在 Move 基础上实现了存储抽象，同时提供了 `ObjectStorage` 
 
 | Move 全局存储指令 | AccountStorage 中的方法 |
 | ----------------- | ----------------------- |
-| `move_to<T:key>(&signer,T)` | `account_storage::global_move_to<T:key>(&mut StorageContext,&signer,T)` |
-| `move_from<T:key>(address)` | `account_storage::global_move_from<T:key>(&mut StorageContext,address)` |
-| `borrow_global<T:key>(address)` | `account_storage::global_borrow<T:key>(&mut StorageContext,address)` |
-| `borrow_global_mut<T:key>(address)` | `account_storage::global_borrow_mut<T:key>(&mut StorageContext,address)` |
+| `move_to<T:key>(&signer,T)` | `context::move_resource_to<T:key>(&mut StorageContext,&signer,T)` |
+| `move_from<T:key>(address)` | `context::move_resource_from<T:key>(&mut StorageContext,address)` |
+| `borrow_global<T:key>(address)` | `context::borrow_resource<T:key>(&mut StorageContext,address)` |
+| `borrow_global_mut<T:key>(address)` | `context::borrow_mut_resource<T:key>(&mut StorageContext,address)` |
 
 这样做主要有两个目的：
 
@@ -69,7 +69,7 @@ Rooch 当前支持的接口请参看：[Rooch JSON RPC](/docs/reference/rpc)。
 
 ### Sequencer 以及 Proposer 原型实现 
 
-Sequencer 以及 Proposer 这个版本中只包含了一个原型实现，主要表达了 Rooch 中的交易的执行流程，以及即时确认的特性。关于 Rooch 中的交易执行流程请参看：[交易执行流](../docs/dive-into-rooch/transaction-flow.zh-CN.mdx)。
+Sequencer 以及 Proposer 这个版本中只包含了一个原型实现，主要表达了 Rooch 中的交易的执行流程，以及即时确认的特性。关于 Rooch 中的交易执行流程请参看：[交易执行流](../docs/dive-into-rooch/transaction-flow)。
 
 ### 示例
 
