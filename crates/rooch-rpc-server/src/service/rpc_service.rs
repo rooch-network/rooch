@@ -19,10 +19,11 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::account::Account;
 use rooch_types::address::{MultiChainAddress, RoochAddress};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
+use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::rooch::RoochTransaction;
-use rooch_types::transaction::TypedTransaction;
 use rooch_types::transaction::{TransactionSequenceInfo, TransactionSequenceInfoMapping};
+use rooch_types::transaction::{TransactionWithInfo, TypedTransaction};
 
 /// RpcService is the implementation of the RPC service.
 /// It is the glue between the RPC server(EthAPIServer,RoochApiServer) and the rooch's actors.
@@ -238,6 +239,21 @@ impl RpcService {
 
     pub async fn get_sequencer_order(&self) -> Result<Option<SequencerOrder>> {
         let resp = self.sequencer.get_sequencer_order().await?;
+        Ok(resp)
+    }
+
+    pub async fn query_transactions(
+        &self,
+        filter: TransactionFilter,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<u64>,
+        limit: usize,
+        descending_order: bool,
+    ) -> Result<Vec<TransactionWithInfo>> {
+        let resp = self
+            .indexer
+            .query_transactions(filter, cursor, limit, descending_order)
+            .await?;
         Ok(resp)
     }
 

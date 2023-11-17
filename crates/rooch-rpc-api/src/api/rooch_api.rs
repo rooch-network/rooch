@@ -3,7 +3,7 @@
 
 use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::event_view::EventFilterView;
-use crate::jsonrpc_types::transaction_view::TransactionWithInfoView;
+use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionWithInfoView};
 use crate::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, BalanceInfoPageView,
     BytesView, EventOptions, EventPageView, ExecuteTransactionResponseView, FunctionCallView,
@@ -102,6 +102,17 @@ pub trait RoochAPI {
         cursor: Option<BytesView>,
         limit: Option<StrView<usize>>,
     ) -> RpcResult<BalanceInfoPageView>;
+
+    /// Query the transactions indexer by transaction filter
+    #[method(name = "queryTransactions")]
+    async fn query_transactions(
+        &self,
+        filter: TransactionFilterView,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<StrView<u64>>,
+        limit: Option<StrView<usize>>,
+        descending_order: Option<bool>,
+    ) -> RpcResult<TransactionWithInfoPageView>;
 
     /// Query the events indexer by event filter
     #[method(name = "queryEvents")]

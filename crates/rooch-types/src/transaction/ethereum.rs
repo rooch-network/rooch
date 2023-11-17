@@ -360,6 +360,10 @@ impl AbstractTransaction for EthereumTransaction {
         EthereumAddress(self.0.from).into()
     }
 
+    fn original_address_str(&self) -> String {
+        self.0.from.to_string()
+    }
+
     fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
         let chain_id = self.0.chain_id.ok_or(RoochError::InvalidChainID)?.as_u64();
         let authenticator = Authenticator::new(

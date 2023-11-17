@@ -4,13 +4,14 @@
 use self::{authenticator::Authenticator, ethereum::EthereumTransaction, rooch::RoochTransaction};
 use crate::address::MultiChainAddress;
 use crate::multichain_id::{MultiChainID, ETHER, ROOCH};
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use move_core_types::account_address::AccountAddress;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::{h256::H256, transaction::MoveOSTransaction};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 
 pub mod authenticator;
 pub mod ethereum;
@@ -33,6 +34,18 @@ impl Display for TransactionType {
         match self {
             TransactionType::Rooch => write!(f, "Rooch"),
             TransactionType::Ethereum => write!(f, "Ethereum"),
+        }
+    }
+}
+
+impl FromStr for TransactionType {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Rooch" => Ok(TransactionType::Rooch),
+            "Ethereum" => Ok(TransactionType::Ethereum),
+            s => Err(format_err!("Unknown transaction type: {}", s)),
         }
     }
 }
@@ -77,6 +90,8 @@ pub trait AbstractTransaction {
     fn encode(&self) -> Vec<u8>;
 
     fn sender(&self) -> MultiChainAddress;
+
+    fn original_address_str(&self) -> String;
 
     fn tx_hash(&self) -> H256;
 
@@ -164,6 +179,13 @@ impl AbstractTransaction for TypedTransaction {
         match self {
             TypedTransaction::Rooch(tx) => AbstractTransaction::sender(tx),
             TypedTransaction::Ethereum(tx) => tx.sender(),
+        }
+    }
+
+    fn original_address_str(&self) -> String {
+        match self {
+            TypedTransaction::Rooch(tx) => tx.original_address_str(),
+            TypedTransaction::Ethereum(tx) => tx.original_address_str(),
         }
     }
 

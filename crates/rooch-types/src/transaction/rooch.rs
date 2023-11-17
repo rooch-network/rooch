@@ -205,6 +205,10 @@ impl AbstractTransaction for RoochTransaction {
         self.sender().into()
     }
 
+    fn original_address_str(&self) -> String {
+        self.data.sender.to_string()
+    }
+
     fn multi_chain_id(&self) -> MultiChainID {
         MultiChainID::from(ROOCH)
     }

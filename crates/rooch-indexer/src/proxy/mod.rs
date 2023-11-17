@@ -4,13 +4,15 @@
 use crate::actor::indexer::IndexerActor;
 use crate::actor::messages::{
     IndexerEventsMessage, IndexerTransactionMessage, QueryIndexerEventsMessage,
+    QueryIndexerTransactionsMessage,
 };
 use anyhow::Result;
 use coerce::actor::ActorRef;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
-use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
+use rooch_types::indexer::transaction_filter::TransactionFilter;
+use rooch_types::transaction::{TransactionSequenceInfo, TransactionWithInfo, TypedTransaction};
 
 #[derive(Clone)]
 pub struct IndexerProxy {
@@ -52,6 +54,24 @@ impl IndexerProxy {
                 transaction,
                 sequence_info,
                 moveos_tx,
+            })
+            .await?
+    }
+
+    pub async fn query_transactions(
+        &self,
+        filter: TransactionFilter,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<u64>,
+        limit: usize,
+        descending_order: bool,
+    ) -> Result<Vec<TransactionWithInfo>> {
+        self.actor
+            .send(QueryIndexerTransactionsMessage {
+                filter,
+                cursor,
+                limit,
+                descending_order,
             })
             .await?
     }

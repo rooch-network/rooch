@@ -106,7 +106,31 @@ Feature: Rooch CLI integration tests
     Then assert: "{{$.event[-1].has_next_page}} == false"
     Then stop the server
 
-    @serial
+  @serial
+  Scenario: indexer
+    Given a server for indexer
+    Then cmd: "move publish -p ../../examples/event  --named-addresses rooch_examples=default"
+    Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+    Then cmd: "move run --function default::event_test::emit_event  --args 10u64"
+    Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+    Then cmd: "move run --function default::event_test::emit_event  --args 11u64"
+    Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, null, "1", true']"
+    Then assert: "{{$.rpc[-1].data[0].sequence_info.tx_order}} == 1"
+    Then assert: "{{$.rpc[-1].next_cursor}} == 1"
+    Then assert: "{{$.rpc[-1].has_next_page}} == true"
+    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, "1", "1", true']"
+    Then assert: "{{$.rpc[-1].data[0].sequence_info.tx_order}} == 0"
+    Then assert: "{{$.rpc[-1].next_cursor}} == 0"
+    Then assert: "{{$.rpc[-1].has_next_page}} == false"
+    Then cmd: "rpc request --method rooch_queryEvents --params '[{"tx_order_range":{"from_order":0, "to_order":2}}, null, "10", true']"
+    Then assert: "{{$.rpc[-1].data[0].indexer_event_id.tx_order}} == 1"
+    Then assert: "{{$.rpc[-1].next_cursor.tx_order}} == 0"
+    Then assert: "{{$.rpc[-1].has_next_page}} == false"
+    Then stop the server
+
+  @serial
     Scenario: kv_store example
       Given a server for kv_store
       Then cmd: "move publish -p ../../examples/kv_store  --named-addresses rooch_examples=default"

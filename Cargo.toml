@@ -224,13 +224,6 @@ diesel = { version = "2.1.0", features = [
 diesel-derive-enum = { version = "2.0.1", features = ["sqlite"] }
 diesel_migrations = { version = "2.0.0" }
 tap = "1.0.1"
-backoff = { version = "0.4.0", features = [
-    "futures",
-    "futures-core",
-    "pin-project-lite",
-    "tokio",
-    "tokio_1",
-] }
 dotenvy = "0.15"
 sized-chunks = { version = "0.6" }
 

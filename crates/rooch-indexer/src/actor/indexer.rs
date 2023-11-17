@@ -3,6 +3,7 @@
 
 use crate::actor::messages::{
     IndexerEventsMessage, IndexerTransactionMessage, QueryIndexerEventsMessage,
+    QueryIndexerTransactionsMessage,
 };
 use crate::indexer_reader::IndexerReader;
 use crate::store::traits::IndexerStoreTrait;
@@ -12,6 +13,7 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use rooch_types::indexer::event_filter::IndexerEvent;
+use rooch_types::transaction::TransactionWithInfo;
 
 pub struct IndexerActor {
     indexer_store: IndexerStore,
@@ -45,9 +47,8 @@ impl Handler<IndexerTransactionMessage> for IndexerActor {
 
         let indexed_transaction =
             IndexedTransaction::new(transaction, sequence_info, execution_info, moveos_tx)?;
-        let _transactions = vec![indexed_transaction];
-        //TODO Open after supporting automatic creation of sqlite schema
-        // self.indexer_store.persist_transactions(transactions)?;
+        let transactions = vec![indexed_transaction];
+        self.indexer_store.persist_transactions(transactions)?;
         Ok(())
     }
 }
@@ -75,6 +76,25 @@ impl Handler<IndexerEventsMessage> for IndexerActor {
             .collect();
         self.indexer_store.persist_events(events)?;
         Ok(())
+    }
+}
+
+#[async_trait]
+impl Handler<QueryIndexerTransactionsMessage> for IndexerActor {
+    async fn handle(
+        &mut self,
+        msg: QueryIndexerTransactionsMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<TransactionWithInfo>> {
+        let QueryIndexerTransactionsMessage {
+            filter,
+            cursor,
+            limit,
+            descending_order,
+        } = msg;
+        self.indexer_reader
+            .query_transactions_with_filter(filter, cursor, limit, descending_order)
+            .map_err(|e| anyhow!(format!("Failed to query indexer transactions: {:?}", e)))
     }
 }
 
