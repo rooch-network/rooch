@@ -116,6 +116,14 @@ pub trait EthAPI {
         hash: H256View,
         include_txs: bool,
     ) -> RpcResult<Block<TransactionType>>;
+
+    /// Returns the code at the given contract address.
+    #[method(name = "getCode")]
+    async fn get_code(
+        &self,
+        address: H160View,
+        block_number: Option<StrView<BlockNumber>>,
+    ) -> RpcResult<BytesView>;
 }
 
 #[open_rpc]
