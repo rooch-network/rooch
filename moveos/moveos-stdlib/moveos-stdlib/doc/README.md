@@ -21,6 +21,7 @@ This is the reference documentation of the MoveOS standard library.
 -  [`0x2::display`](display.md#0x2_display)
 -  [`0x2::event`](event.md#0x2_event)
 -  [`0x2::hex`](hex.md#0x2_hex)
+-  [`0x2::json`](json.md#0x2_json)
 -  [`0x2::move_module`](move_module.md#0x2_move_module)
 -  [`0x2::object`](object.md#0x2_object)
 -  [`0x2::object_table`](object_table.md#0x2_object_table)
