@@ -152,8 +152,9 @@ impl FromBytesGasParameters {
     }
 }
 
-/// Rust implementation of Move's `native public(friend) fun from_bytes<T>(vector<u8>): T in bcs module`
-/// Bytes are in BCS (Binary Canonical Serialization) format.
+/// Rust implementation of Move's `native fun native_from_json<T>(json_str: vector<u8>): T` in json module
+/// Input arguments:
+///   - json_str: vector<u8>, string bytes of json object
 #[inline]
 fn native_from_json(
     gas_params: &FromBytesGasParameters,

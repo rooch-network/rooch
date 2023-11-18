@@ -4,8 +4,10 @@
 module moveos_std::json{
 
     #[private_generics(T)]
+    #[data_struct(T)]
     /// Function to deserialize a type T.
     /// Note the `private_generics` ensure only the `T`'s owner module can call this function
+    /// The u128 and u256 types must be json String type instead of Number type
     public fun from_json<T>(json_str: vector<u8>): T {
         native_from_json(json_str)
     }
@@ -16,10 +18,12 @@ module moveos_std::json{
     use std::vector;
 
     #[test_only]
+    #[data_struct]
     struct Inner has copy, drop, store {
         value: u64,
     }
     #[test_only]
+    #[data_struct]
     struct Test has copy, drop, store {
         balance: u128,
         age: u8,
@@ -30,11 +34,9 @@ module moveos_std::json{
     }
 
     #[test]
-    // #[expected_failure]
     fun test_from_json() {
         let json_str = b"{\"balance\": \"170141183460469231731687303715884105728\",\"age\":30,\"inner\":{\"value\":100},\"bytes\":[3,3,2,1],\"inner_array\":[{\"value\":101}],\"account\":\"0x42\"}";
         let obj = from_json<Test>(json_str);
-        // let bytes = bcs::to_bytes(&Person{name: 100u128, age: 30u8});
         
         assert!(obj.balance == 170141183460469231731687303715884105728u128, 1);
         assert!(obj.age == 30u8, 2);
