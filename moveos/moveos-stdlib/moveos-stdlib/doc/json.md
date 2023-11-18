@@ -20,5 +20,5 @@ Function to deserialize a type T.
 Note the <code>private_generics</code> ensure only the <code>T</code>'s owner module can call this function
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="json.md#0x2_json_from_json">from_json</a>&lt;T&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): T
+<pre><code><b>public</b> <b>fun</b> <a href="json.md#0x2_json_from_json">from_json</a>&lt;T&gt;(json_str: <a href="">vector</a>&lt;u8&gt;): T
 </code></pre>

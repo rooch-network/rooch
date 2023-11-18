@@ -5,6 +5,7 @@ use crate::natives::helpers::{make_module_natives, make_native};
 use anyhow::Result;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::account_address::AccountAddress;
+use move_core_types::language_storage::TypeTag;
 use move_core_types::u256::U256;
 use move_core_types::value::MoveStructLayout;
 use move_core_types::vm_status::StatusCode;
@@ -27,6 +28,7 @@ const E_INVALID_JSON_STRING: u64 = 2;
 fn parse_struct_value_from_json(
     layout: &MoveStructLayout,
     json_value: &serde_json::Value,
+    context: &NativeContext,
 ) -> Result<Struct> {
     if let MoveStructLayout::WithTypes { fields, .. } = layout {
         let field_values = fields
@@ -36,7 +38,7 @@ fn parse_struct_value_from_json(
                 let json_field = json_value
                     .get(name)
                     .ok_or_else(|| anyhow::anyhow!("Missing field {}", name))?;
-                parse_move_value_from_json(&field.layout, json_field)
+                parse_move_value_from_json(&field.layout, json_field, context)
             })
             .collect::<Result<Vec<Value>>>()?;
         Ok(Struct::pack(field_values))
@@ -47,6 +49,7 @@ fn parse_struct_value_from_json(
 fn parse_move_value_from_json(
     layout: &MoveTypeLayout,
     json_value: &serde_json::Value,
+    context: &NativeContext,
 ) -> Result<Value> {
     match layout {
         MoveTypeLayout::Bool => {
@@ -71,11 +74,10 @@ fn parse_move_value_from_json(
             Ok(Value::u64(u64_value))
         }
         MoveTypeLayout::U128 => {
-            let u128_str = json_value
+            let u128_value = json_value
                 .as_str()
-                .ok_or_else(|| anyhow::anyhow!("Invalid u128 value"))?;
-            let u128_value = u128::from_str_radix(u128_str, 10)
-                .map_err(|_| anyhow::anyhow!("Invalid u128 value"))?;
+                .ok_or_else(|| anyhow::anyhow!("Invalid u128 value"))?
+                .parse::<u128>()?;
             Ok(Value::u128(u128_value))
         }
         MoveTypeLayout::Address => {
@@ -89,17 +91,17 @@ fn parse_move_value_from_json(
         MoveTypeLayout::Vector(item_layout) => {
             let vec_value = json_value
                 .as_array()
-                .ok_or_else(|| anyhow::anyhow!("Invalid vector value"))?;
-            let _vec = vec_value
+                .ok_or_else(|| anyhow::anyhow!("Invalid vector value"))?
                 .iter()
-                .map(|v| parse_move_value_from_json(item_layout, v))
+                .map(|v| parse_move_value_from_json(item_layout, v, context))
                 .collect::<Result<Vec<_>>>()?;
-            // get type from MoveTypeLayout
-            // pack Vec<Value> to Value
-            todo!()
+            let type_tag: TypeTag = (&**item_layout).try_into()?;
+            let ty = context.load_type(&type_tag)?;
+            let value = Vector::pack(&ty, vec_value)?;
+            Ok(value)
         }
         MoveTypeLayout::Struct(struct_layout) => {
-            let struct_value = parse_struct_value_from_json(struct_layout, json_value)?;
+            let struct_value = parse_struct_value_from_json(struct_layout, json_value, context)?;
             Ok(Value::struct_(struct_value))
         }
         MoveTypeLayout::Signer => {
@@ -198,21 +200,18 @@ fn native_from_json(
 
     // If layout is not MoveTypeLayout::MoveStructLayout, return error
     if let MoveTypeLayout::Struct(struct_layout) = layout {
-        match parse_struct_value_from_json(&struct_layout, &json_obj) {
+        match parse_struct_value_from_json(&struct_layout, &json_obj, context) {
             Ok(val) => Ok(NativeResult::ok(cost, smallvec![Value::struct_(val)])),
-            Err(err) => {
-                println!("parse_struct_value_from_json: {:?}", err);
-                return Ok(NativeResult::err(
-                    cost,
-                    moveos_types::move_std::error::invalid_argument(E_INVALID_JSON_STRING),
-                ));
-            }
+            Err(_) => Ok(NativeResult::err(
+                cost,
+                moveos_types::move_std::error::invalid_argument(E_INVALID_JSON_STRING),
+            )),
         }
     } else {
-        return Ok(NativeResult::err(
+        Ok(NativeResult::err(
             cost,
             moveos_types::move_std::error::invalid_argument(E_TYPE_NOT_MATCH),
-        ));
+        ))
     }
 }
 
