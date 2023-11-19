@@ -67,7 +67,21 @@ cp target/debug/rooch.exe ~/.cargo/bin/
 
 ### macOS
 
-TODO
+Firstly, create a binary file directory
+
+```shell
+mkdir ~/.local/bin/ 
+```
+
+Secondly, add the binary file directory path into `~/.zschrc`
+
+```shell
+export PATH="$PATH:$HOME/.local/bin"
+```
+
+Thirdly, download the binary file `rooch-macos-latest.zip` from [github release page](https://github.com/rooch-network/rooch/releases), unzip the file and move the binary file into `~/.local/bin/`
+
+Fourthly, open a new terminal window and run `rooch` to check if it works
 
 ## Binary install
 

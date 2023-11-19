@@ -65,7 +65,21 @@ cp target/debug/rooch.exe ~/.cargo/bin/
 
 ### macOS
 
-TODO
+首先，创建一个二进制文件目录
+
+```shell
+mkdir ~/.local/bin/ 
+```
+
+第二步，将二进制文件目录添加到 `~/.zschrc` 中
+
+```shell
+export PATH="$PATH:$HOME/.local/bin"
+```
+
+第三步，从 [github release page](https://github.com/rooch-network/rooch/releases) 下载 `rooch-macos-latest.zip`，解压文件并将二进制文件移动到 `~/.local/bin/` 中
+
+最后，打开一个新的终端窗口并运行 `rooch` 检查是否工作
 
 ## 二进制安装
 
