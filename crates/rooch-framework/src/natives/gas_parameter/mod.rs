@@ -10,6 +10,7 @@ mod encoding;
 mod events;
 pub mod gas_member;
 mod hash;
+mod json;
 mod move_module;
 pub mod move_std;
 pub mod native;

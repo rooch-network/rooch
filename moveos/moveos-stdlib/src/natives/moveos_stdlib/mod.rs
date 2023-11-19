@@ -3,6 +3,7 @@
 
 pub mod bcs;
 pub mod event;
+pub mod json;
 pub mod move_module;
 pub mod object;
 pub mod raw_table;
