@@ -41,7 +41,8 @@ cached = { workspace = true }
 dotenvy = { workspace = true }
 coerce = { workspace = true }
 sized-chunks = { workspace = true }
-
+rand = { workspace = true }
+ethers = { workspace = true }
 
 move-core-types = { workspace = true }
 move-bytecode-utils = { workspace = true }
