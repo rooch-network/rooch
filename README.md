@@ -3,7 +3,7 @@
   <br />
   <a href="https://rooch.network"><img alt="Rooch" src="https://rooch.network/logo/rooch_black_combine.svg" width=384></a>
   <br />
-  <h3><a href="https://rooch.network">Rooch</a> is a Modular Fully on-chain Application Container, with <a href="https://github.com/move-language/move)">Move</a> language.</h3>
+  <h3><a href="https://rooch.network">Rooch</a> is a Modular Fully on-chain Application Container, with <a href="https://github.com/move-language/move">Move</a> language.</h3>
   <br />
 </div>
 
