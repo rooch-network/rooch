@@ -257,14 +257,22 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     );
     let aggregate_service = AggregateService::new(rpc_service.clone());
 
-    if let Some(eth_rpc_url) = &opt.eth_rpc_url {
+    let ethereum_relayer_config = opt.ethereum_relayer_config();
+    let bitcoin_relayer_config = opt.bitcoin_relayer_config();
+
+    if ethereum_relayer_config.is_some() || bitcoin_relayer_config.is_some() {
         let relayer_keypair = server_opt.relayer_keypair.unwrap();
         let relayer_account: RoochAddress = (&relayer_keypair.public()).into();
         info!("RPC Server relayer address: {:?}", relayer_account);
-        let relayer = RelayerActor::new(relayer_keypair, eth_rpc_url, rpc_service.clone())
-            .await?
-            .into_actor(Some("Relayer"), &actor_system)
-            .await?;
+        let relayer = RelayerActor::new(
+            relayer_keypair,
+            ethereum_relayer_config,
+            bitcoin_relayer_config,
+            rpc_service.clone(),
+        )
+        .await?
+        .into_actor(Some("Relayer"), &actor_system)
+        .await?;
         let relay_tick_in_seconds: u64 = 5;
         let relayer_timer = Timer::start(
             relayer,

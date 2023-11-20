@@ -82,8 +82,27 @@ pub struct RoochOpt {
     /// The Ethereum RPC URL to connect to for relay L1 block and transaction to L2.
     /// If not set, the relayer service will not start.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long)]
+    #[clap(long, env = "ETH_RPC_URL")]
     pub eth_rpc_url: Option<String>,
+
+    /// The Bitcoin RPC URL to connect to for relay L1 block and transaction to L2.
+    /// If not set, the relayer service will not start.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        long,
+        env = "BITCOIN_RPC_URL",
+        requires = "btc-rpc-username",
+        requires = "btc-rpc-password"
+    )]
+    pub btc_rpc_url: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long, env = "BTC_RPC_USERNAME")]
+    pub btc_rpc_username: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long, env = "BTC_RPC_PASSWORD")]
+    pub btc_rpc_password: Option<String>,
 
     /// The address of the sequencer account
     #[clap(long)]
@@ -114,11 +133,43 @@ impl RoochOpt {
             store: StoreConfig::default(),
             port: None,
             eth_rpc_url: None,
+            btc_rpc_url: None,
+            btc_rpc_username: None,
+            btc_rpc_password: None,
             sequencer_account: None,
             proposer_account: None,
             relayer_account: None,
         }
     }
+
+    pub fn ethereum_relayer_config(&self) -> Option<EthereumRelayerConfig> {
+        self.eth_rpc_url
+            .as_ref()
+            .map(|eth_rpc_url| EthereumRelayerConfig {
+                eth_rpc_url: eth_rpc_url.clone(),
+            })
+    }
+
+    pub fn bitcoin_relayer_config(&self) -> Option<BitcoinRelayerConfig> {
+        self.btc_rpc_url.as_ref()?;
+        Some(BitcoinRelayerConfig {
+            btc_rpc_url: self.btc_rpc_url.clone().unwrap(),
+            btc_rpc_user_name: self.btc_rpc_username.clone().unwrap(),
+            btc_rpc_password: self.btc_rpc_password.clone().unwrap(),
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct EthereumRelayerConfig {
+    pub eth_rpc_url: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct BitcoinRelayerConfig {
+    pub btc_rpc_url: String,
+    pub btc_rpc_user_name: String,
+    pub btc_rpc_password: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -7,11 +7,7 @@ use crate::{
 };
 use anyhow::Result;
 use bech32::{FromBase32, ToBase32};
-use bitcoin::{
-    address::{Address, Payload, WitnessProgram, WitnessVersion},
-    hashes::{hash160, Hash},
-    network::constants::Network,
-};
+use bitcoin::{address::Address, secp256k1::Secp256k1, Network, PrivateKey, Script};
 use ethers::types::H160;
 use fastcrypto::secp256k1::recoverable::Secp256k1RecoverablePublicKey;
 use move_core_types::{
@@ -374,29 +370,22 @@ pub struct BitcoinAddress(pub Address);
 
 impl RoochSupportedAddress for BitcoinAddress {
     fn random() -> Self {
-        // Generate a random public key hash
-        let pubkey_hash = hash160::Hash::from_slice(H160::random().as_bytes()).unwrap();
-        // Create a P2PKH address using the public key hash
-        let p2pkh_address = Address::new(Network::Bitcoin, Payload::PubkeyHash(pubkey_hash.into()));
-        // Create a redeem script from the P2PKH address
-        let redeem_script = p2pkh_address.script_pubkey();
-        // Create a P2SH address using the redeem script
-        let p2sh_address = Address::new(
+        let secp = Secp256k1::new();
+        let p2pkh_address = Address::p2pkh(
+            &PrivateKey::generate(Network::Bitcoin).public_key(&secp),
             Network::Bitcoin,
-            Payload::ScriptHash(redeem_script.script_hash()),
         );
-        // Create a witness program for the SegWit address
-        let witness_program = vec![0x00]
-            .into_iter()
-            .chain(pubkey_hash.as_byte_array().to_vec())
-            .collect::<Vec<u8>>();
-        // Create a SegWit address using the witness program
-        let segwit_address = Address::new(
+        let p2sh_address = Address::p2sh(
+            Script::from_bytes(H160::random().as_bytes()),
             Network::Bitcoin,
-            Payload::WitnessProgram(
-                WitnessProgram::new(WitnessVersion::V1, witness_program.to_vec()).unwrap(),
-            ),
-        );
+        )
+        .unwrap();
+        let segwit_address = Address::p2wpkh(
+            &PrivateKey::generate(Network::Bitcoin).public_key(&secp),
+            Network::Bitcoin,
+        )
+        .unwrap();
+
         // Create an array of addresses bitcoin protocols
         let addresses = [p2pkh_address, p2sh_address, segwit_address];
         // Randomly select one of the addresses

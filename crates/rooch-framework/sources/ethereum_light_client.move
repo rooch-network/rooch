@@ -58,7 +58,6 @@ module rooch_framework::ethereum_light_client{
     }
 
     fun process_block(ctx: &mut Context, block_header_bytes: vector<u8>){
-        //TODO find a way to deserialize the block header, do not use bcs::from_bytes
         let block_header = bcs::from_bytes<BlockHeader>(block_header_bytes);
         //TODO validate the block hash
         //TODO validate the block via ethereum consensus(pos validators)
