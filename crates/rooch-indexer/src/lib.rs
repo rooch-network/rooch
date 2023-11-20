@@ -13,6 +13,7 @@ use crate::store::traits::IndexerStoreTrait;
 use crate::types::{IndexedEvent, IndexedTransaction};
 use crate::utils::create_all_tables_if_not_exists;
 use errors::IndexerError;
+use rooch_config::indexer_config::ROOCH_INDEXER_DB_FILENAME;
 
 pub mod actor;
 pub mod errors;
@@ -21,22 +22,13 @@ pub mod models;
 pub mod proxy;
 pub mod schema;
 pub mod store;
+#[cfg(test)]
+mod tests;
 pub mod types;
 pub mod utils;
 
 pub type SqliteConnectionPool = diesel::r2d2::Pool<ConnectionManager<SqliteConnection>>;
 pub type SqlitePoolConnection = diesel::r2d2::PooledConnection<ConnectionManager<SqliteConnection>>;
-
-/// Returns all endpoints for which we have implemented on the indexer,
-/// some of them are not validated yet.
-/// NOTE: we only use this for integration testing
-// const IMPLEMENTED_METHODS: [&str; 4] = [
-//     "multi_get_transactions",
-//     "multi_get_events",
-//     // indexer apis
-//     "query_transactions",
-//     "query_events",
-// ];
 
 #[derive(Clone)]
 pub struct IndexerStore {
@@ -54,10 +46,15 @@ impl IndexerStore {
 
     pub fn mock_indexer_store() -> Result<Self> {
         let tmpdir = moveos_config::temp_dir();
-        let db_url = tmpdir
-            .path()
+        let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_FILENAME);
+        if !indexer_db.exists() {
+            std::fs::File::create(indexer_db.clone())?;
+        }
+        let db_url = indexer_db
+            .as_path()
             .to_str()
-            .ok_or(anyhow::anyhow!("Invalid indexer db temp dir"))?;
+            .ok_or(anyhow::anyhow!("Invalid mock indexer db dir"))?;
+
         Self::new(db_url)
     }
 
