@@ -18,6 +18,28 @@ diesel::table! {
 }
 
 diesel::table! {
+    global_states (object_id) {
+        object_id -> Text,
+        owner -> Text,
+        flag -> SmallInt,
+        value -> Text,
+        created_at -> BigInt,
+        updated_at -> BigInt,
+    }
+}
+
+diesel::table! {
+    leaf_states (object_id) {
+        object_id -> Text,
+        key_hash -> Text,
+        value -> Text,
+        value_type -> Text,
+        created_at -> BigInt,
+        updated_at -> BigInt,
+    }
+}
+
+diesel::table! {
     transactions (tx_order) {
         tx_order -> BigInt,
         tx_hash -> Text,
@@ -37,11 +59,11 @@ diesel::table! {
         state_root -> Text,
         event_root -> Text,
         gas_used -> BigInt,
-        status -> Text,
+        tx_execute_status -> Text,
         tx_order_auth_validator_id -> BigInt,
         tx_order_authenticator_payload -> Binary,
         created_at -> BigInt,
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(events, transactions,);
+diesel::allow_tables_to_appear_in_same_query!(events, global_states, leaf_states, transactions,);

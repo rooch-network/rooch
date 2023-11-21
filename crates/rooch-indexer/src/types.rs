@@ -4,7 +4,7 @@
 use crate::errors::IndexerError;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::StructTag;
+use move_core_types::language_storage::{StructTag, TypeTag};
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::object::ObjectID;
@@ -149,4 +149,36 @@ impl IndexedEvent {
             created_at: 0,
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct IndexedGlobalState {
+    /// The global state table handle
+    pub object_id: ObjectID,
+    /// The owner of the object
+    pub owner: AccountAddress,
+    /// A flag to indicate whether the object is shared or frozen
+    pub flag: u8,
+    /// The value of the object, json format
+    pub value: String,
+    /// The object created timestamp on chain
+    pub created_at: u64,
+    /// The object updated timestamp on chain
+    pub updated_at: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct IndexedLeafState {
+    /// The leaf state table handle
+    pub object_id: ObjectID,
+    /// The hash of the table key
+    pub key_hash: String,
+    /// The value of the table, json format
+    pub value: String,
+    /// The type tag of the value
+    pub value_type: TypeTag,
+    /// The table item created timestamp on chain
+    pub created_at: u64,
+    /// The table item updated timestamp on chain
+    pub updated_at: u64,
 }
