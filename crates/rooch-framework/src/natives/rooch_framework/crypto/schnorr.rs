@@ -16,7 +16,6 @@ use move_vm_types::{
     pop_arg,
     values::{Value, VectorRef},
 };
-use rust_secp256k1::schnorr::Signature;
 use smallvec::smallvec;
 use std::collections::VecDeque;
 
@@ -48,7 +47,7 @@ pub fn native_verify(
 
     let cost = gas_params.base;
 
-    let Ok(sig) = Signature::from_slice(&signature_bytes_ref) else {
+    let Ok(sign) = SchnorrSignature::from_bytes(&signature_bytes_ref) else {
         return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_SIGNATURE)));
     };
 
@@ -56,7 +55,6 @@ pub fn native_verify(
         return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_PUBKEY)));
     };
 
-    let sign = SchnorrSignature::from(&sig);
     let result = match hash {
         KECCAK256 => public_key
             .verify_with_hash::<Keccak256>(&msg_ref, &sign)

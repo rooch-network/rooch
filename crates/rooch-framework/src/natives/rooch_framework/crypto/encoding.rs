@@ -5,7 +5,6 @@ use crate::natives::helpers::{make_module_natives, make_native};
 use bitcoin::Network;
 use bitcoin::{Address, PublicKey};
 use bitcoin_bech32::{constants::Network as Bech32Network, u5, WitnessProgram};
-use fastcrypto::{secp256k1::Secp256k1PublicKey, traits::ToFromBytes};
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -154,11 +153,9 @@ pub fn native_p2pkh(
     let public_key = pop_arg!(args, VectorRef);
     let public_key_bytes_ref = public_key.as_bytes_ref();
 
-    let Ok(public_key) = <Secp256k1PublicKey as ToFromBytes>::from_bytes(&public_key_bytes_ref) else {
-        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_PUBKEY)));
-    };
-
-    let bitcoin_public_key = PublicKey::new(public_key.pubkey);
+    let Ok(bitcoin_public_key) = PublicKey::from_slice(&public_key_bytes_ref) else {
+            return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_PUBKEY)));
+        };
 
     // Generate the P2PKH address from the bitcoin public key
     let p2pkh_address = Address::p2pkh(&bitcoin_public_key, Network::Bitcoin); // TODO network selection
@@ -193,11 +190,9 @@ pub fn native_p2sh(
     let public_key = pop_arg!(args, VectorRef);
     let public_key_bytes_ref = public_key.as_bytes_ref();
 
-    let Ok(public_key) = <Secp256k1PublicKey as ToFromBytes>::from_bytes(&public_key_bytes_ref) else {
+    let Ok(bitcoin_public_key) = PublicKey::from_slice(&public_key_bytes_ref) else {
         return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_PUBKEY)));
     };
-
-    let bitcoin_public_key = PublicKey::new(public_key.pubkey);
 
     // Create a redeem script (e.g., P2PKH)
     let script_pubkey = Address::p2pkh(&bitcoin_public_key, Network::Bitcoin).script_pubkey(); // TODO network selection

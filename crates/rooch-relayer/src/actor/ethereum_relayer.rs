@@ -6,22 +6,23 @@ use anyhow::Result;
 use async_trait::async_trait;
 use ethers::prelude::*;
 use moveos_types::transaction::FunctionCall;
+use rooch_config::EthereumRelayerConfig;
 use rooch_types::framework::ethereum_light_client::{BlockHeader, EthereumLightClientModule};
-use std::collections::BTreeMap;
+use std::collections::HashSet;
 use tracing::info;
 
 pub struct EthereumRelayer {
     rpc_client: Provider<Http>,
-    processed_blocks: BTreeMap<H256, Block<H256>>,
+    processed_blocks: HashSet<H256>,
 }
 
 impl EthereumRelayer {
-    pub fn new(eth_rpc_url: &str) -> Result<Self> {
-        let rpc_client = Provider::<Http>::try_from(eth_rpc_url)?;
+    pub fn new(config: EthereumRelayerConfig) -> Result<Self> {
+        let rpc_client = Provider::<Http>::try_from(config.eth_rpc_url)?;
         Ok(Self {
             rpc_client,
             //TODO load processed block from Move state
-            processed_blocks: BTreeMap::new(),
+            processed_blocks: HashSet::new(),
         })
     }
 
@@ -35,7 +36,7 @@ impl EthereumRelayer {
                 let block_hash = block
                     .hash
                     .ok_or_else(|| anyhow::format_err!("The block is a pending block"))?;
-                if self.processed_blocks.contains_key(&block_hash) {
+                if self.processed_blocks.contains(&block_hash) {
                     info!("The block {} has already been processed", block_hash);
                     return Ok(None);
                 }
@@ -45,7 +46,7 @@ impl EthereumRelayer {
                     "EthereumRelayer process block, hash: {}, number: {}, timestamp: {}",
                     block_hash, block_header.number, block_header.timestamp
                 );
-                self.processed_blocks.insert(block_hash, block);
+                self.processed_blocks.insert(block_hash);
                 Ok(Some(call))
             }
             None => {
@@ -53,6 +54,7 @@ impl EthereumRelayer {
                 Ok(None)
             }
         }
+        //TODO clean up processed block
     }
 }
 

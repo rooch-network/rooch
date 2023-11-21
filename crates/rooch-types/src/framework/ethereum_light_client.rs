@@ -87,7 +87,7 @@ impl<T> TryFrom<&Block<T>> for BlockHeader {
     }
 }
 
-/// Rust bindings for RoochFramework session_key module
+/// Rust bindings for RoochFramework ethereum_light_client module
 pub struct EthereumLightClientModule<'a> {
     caller: &'a dyn MoveFunctionCaller,
 }

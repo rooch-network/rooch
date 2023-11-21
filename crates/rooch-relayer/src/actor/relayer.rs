@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::bitcoin_relayer::BitcoinRelayer;
 use super::ethereum_relayer::EthereumRelayer;
 use super::messages::RelayTick;
 use crate::{Relayer, TxSubmiter};
@@ -8,6 +9,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::{gas_config::GasConfig, transaction::MoveAction};
+use rooch_config::{BitcoinRelayerConfig, EthereumRelayerConfig};
 use rooch_rpc_api::jsonrpc_types::KeptVMStatusView;
 use rooch_rpc_client::ClientBuilder;
 use rooch_types::{
@@ -30,22 +32,39 @@ impl RelayerActor {
     /// Create a new RelayerActor, use rooch_rpc_client::Client as TxSubmiter
     pub async fn new_for_client(
         relayer_key: RoochKeyPair,
-        eth_rpc_url: &str,
+        ethereum_config: Option<EthereumRelayerConfig>,
+        bitcoin_config: Option<BitcoinRelayerConfig>,
         rooch_rpc_url: &str,
     ) -> Result<Self> {
         let rooch_rpc_client = ClientBuilder::default().build(rooch_rpc_url).await?;
-        Self::new(relayer_key, eth_rpc_url, rooch_rpc_client).await
+        Self::new(
+            relayer_key,
+            ethereum_config,
+            bitcoin_config,
+            rooch_rpc_client,
+        )
+        .await
     }
 
     pub async fn new<T: TxSubmiter + 'static>(
         relayer_key: RoochKeyPair,
-        eth_rpc_url: &str,
+        ethereum_config: Option<EthereumRelayerConfig>,
+        bitcoin_config: Option<BitcoinRelayerConfig>,
         tx_submiter: T,
     ) -> Result<Self> {
         let chain_id = tx_submiter.get_chain_id().await?;
         let relayer_address = relayer_key.public().address();
-        let eth_relayer = EthereumRelayer::new(eth_rpc_url)?;
-        let relayers: Vec<Box<dyn Relayer>> = vec![Box::new(eth_relayer)];
+        let mut relayers: Vec<Box<dyn Relayer>> = vec![];
+        if let Some(ethereum_config) = ethereum_config {
+            let eth_relayer = EthereumRelayer::new(ethereum_config)?;
+            relayers.push(Box::new(eth_relayer));
+        }
+
+        if let Some(bitcoin_config) = bitcoin_config {
+            let bitcoin_relayer = BitcoinRelayer::new(bitcoin_config)?;
+            relayers.push(Box::new(bitcoin_relayer));
+        }
+
         Ok(Self {
             chain_id,
             relayer_address,
