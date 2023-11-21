@@ -1,1 +1,1 @@
-exclude = [ 'dev-seed.rooch.network']
+exclude = [ 'dev-seed.rooch.network', 'localhost']
