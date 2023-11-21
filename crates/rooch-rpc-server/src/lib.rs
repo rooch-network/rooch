@@ -250,7 +250,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
 
     let rpc_service = RpcService::new(
         chain_id_opt.chain_id().id(),
-        executor_proxy,
+        executor_proxy.clone(),
         sequencer_proxy,
         proposer_proxy,
         indexer_proxy,
@@ -265,6 +265,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         let relayer_account: RoochAddress = (&relayer_keypair.public()).into();
         info!("RPC Server relayer address: {:?}", relayer_account);
         let relayer = RelayerActor::new(
+            executor_proxy,
             relayer_keypair,
             ethereum_relayer_config,
             bitcoin_relayer_config,

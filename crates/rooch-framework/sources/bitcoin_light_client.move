@@ -1,19 +1,21 @@
 module rooch_framework::bitcoin_light_client{
 
     use std::error;
+    use std::option::{Self, Option};
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
-    use rooch_framework::timestamp;    
     use moveos_std::bcs;
+    use moveos_std::object::{Self, Object};
+    use rooch_framework::timestamp;    
+    
 
     friend rooch_framework::genesis;
 
     const ErrorBlockNotFound:u64 = 1;
+    const ErrorBlockAlreadyProcessed:u64 = 2;
 
     #[data_struct]
     struct BlockHeader has store, copy, drop {
-        /// The hash of the block header.
-        hash: vector<u8>,
         /// Block version, now repurposed for soft fork signalling.
         version: u32,
         /// Reference to the previous block in the chain.
@@ -28,34 +30,49 @@ module rooch_framework::bitcoin_light_client{
         nonce: u32,
     }
 
-    struct BlockStore has key{
+    struct BitcoinStore has key{
+        latest_block_height: Option<u64>,
         /// block hash -> block header
         blocks: Table<vector<u8>, BlockHeader>,
+        /// block height -> block hash
+        height_to_hash: Table<u64, vector<u8>>,
+        /// block hash -> block height
+        hash_to_height: Table<vector<u8>, u64>,
+        //TODO add utxo store
     }
 
-    public(friend) fun genesis_init(ctx: &mut Context, genesis_account: &signer){
-        let block_store = BlockStore{
+    public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer){
+        let btc_store = BitcoinStore{
+            latest_block_height: option::none(),
             blocks: context::new_table(ctx),
+            height_to_hash: context::new_table(ctx),
+            hash_to_height: context::new_table(ctx),
         };
-        context::move_resource_to(ctx, genesis_account, block_store);
+        let obj = context::new_named_object(ctx, btc_store);
+        object::to_shared(obj);
     }
 
-    fun process_block(ctx: &mut Context, block_header_bytes: vector<u8>){
+    fun process_block(btc_store_obj: &mut Object<BitcoinStore>, block_height: u64, block_hash: vector<u8>, block_header_bytes: vector<u8>):u32{
+        
+        let btc_store = object::borrow_mut(btc_store_obj);
+        //already processed
+        assert!(!table::contains(&btc_store.hash_to_height, block_hash), error::invalid_argument(ErrorBlockAlreadyProcessed));
+
         let block_header = bcs::from_bytes<BlockHeader>(block_header_bytes);
-        validate_block(ctx, &block_header);
+        validate_block(btc_store, block_height, &block_hash, &block_header);
 
-        let block_store = context::borrow_mut_resource<BlockStore>(ctx, @rooch_framework);
-        if(table::contains(&block_store.blocks, block_header.hash)){
-            //TODO handle repeat block hash
-            return
+        if(table::contains(&btc_store.height_to_hash, block_height)){
+            //TODO handle reorg
         };
-        table::add(&mut block_store.blocks, block_header.hash, block_header);
-
-        let timestamp_seconds = (block_header.time as u64);
-        timestamp::try_update_global_time(ctx, timestamp::seconds_to_milliseconds(timestamp_seconds));        
+        let time = block_header.time;
+        table::add(&mut btc_store.height_to_hash, block_height, block_hash);
+        table::add(&mut btc_store.hash_to_height, block_hash, block_height);
+        table::add(&mut btc_store.blocks, block_hash, block_header);
+        btc_store.latest_block_height = option::some(block_height);
+        time 
     }
 
-    fun validate_block(_ctx: &mut Context, _block_header: &BlockHeader){
+    fun validate_block(_btc_store: &BitcoinStore, _block_height: u64, _block_hash: &vector<u8>, _block_header: &BlockHeader){
         //TODO validate the block via bitcoin consensus
         // validate prev block hash
         // validate block hash
@@ -63,14 +80,48 @@ module rooch_framework::bitcoin_light_client{
     }
 
     /// The relay server submit a new Bitcoin block to the light client.
-    public entry fun submit_new_block(ctx: &mut Context, block_header_bytes: vector<u8>){
-        process_block(ctx, block_header_bytes);
+    entry fun submit_new_block(ctx: &mut Context, btc_store_obj: &mut Object<BitcoinStore>, block_height: u64, block_hash: vector<u8>, block_header_bytes: vector<u8>){
+        let time = process_block(btc_store_obj, block_height, block_hash, block_header_bytes);
+
+        let timestamp_seconds = (time as u64);
+        timestamp::try_update_global_time(ctx, timestamp::seconds_to_milliseconds(timestamp_seconds));      
     }
 
     /// Get block via block_hash
-    public fun get_block(ctx: &Context, block_hash: vector<u8>): &BlockHeader{
-        let block_store = context::borrow_resource<BlockStore>(ctx, @rooch_framework);
-        assert!(table::contains(&block_store.blocks, block_hash), error::invalid_argument(ErrorBlockNotFound));
-        table::borrow(&block_store.blocks, block_hash)
+    public fun get_block(btc_store_obj: &Object<BitcoinStore>, block_hash: vector<u8>): Option<BlockHeader>{
+        let btc_store = object::borrow(btc_store_obj);
+        if(table::contains(&btc_store.blocks, block_hash)){
+            option::some(*table::borrow(&btc_store.blocks, block_hash))
+        }else{
+            option::none()
+        }
     }
+
+    public fun get_block_height(btc_store_obj: &Object<BitcoinStore>, block_hash: vector<u8>): Option<u64>{
+        let btc_store = object::borrow(btc_store_obj);
+        if(table::contains(&btc_store.hash_to_height, block_hash)){
+            option::some(*table::borrow(&btc_store.hash_to_height, block_hash))
+        }else{
+            option::none()
+        }
+    }
+
+    /// Get block via block_height
+    public fun get_block_by_height(btc_store_obj: &Object<BitcoinStore>, block_height: u64): Option<BlockHeader>{
+        let btc_store = object::borrow(btc_store_obj);
+        if(table::contains(&btc_store.height_to_hash, block_height)){
+            let block_hash = *table::borrow(&btc_store.height_to_hash, block_height);
+            option::some(*table::borrow(&btc_store.blocks, block_hash))
+        }else{
+            option::none()
+        }
+    }
+
+    /// Get block via block_height
+    public fun get_latest_block_height(btc_store_obj: &Object<BitcoinStore>): Option<u64> {
+        let btc_store = object::borrow(btc_store_obj);
+        btc_store.latest_block_height
+    }
+
+    
 }

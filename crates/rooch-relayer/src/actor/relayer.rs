@@ -10,6 +10,7 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use moveos_types::{gas_config::GasConfig, transaction::MoveAction};
 use rooch_config::{BitcoinRelayerConfig, EthereumRelayerConfig};
+use rooch_executor::proxy::ExecutorProxy;
 use rooch_rpc_api::jsonrpc_types::KeptVMStatusView;
 use rooch_rpc_client::ClientBuilder;
 use rooch_types::{
@@ -31,6 +32,7 @@ pub struct RelayerActor {
 impl RelayerActor {
     /// Create a new RelayerActor, use rooch_rpc_client::Client as TxSubmiter
     pub async fn new_for_client(
+        executor: ExecutorProxy,
         relayer_key: RoochKeyPair,
         ethereum_config: Option<EthereumRelayerConfig>,
         bitcoin_config: Option<BitcoinRelayerConfig>,
@@ -38,6 +40,7 @@ impl RelayerActor {
     ) -> Result<Self> {
         let rooch_rpc_client = ClientBuilder::default().build(rooch_rpc_url).await?;
         Self::new(
+            executor,
             relayer_key,
             ethereum_config,
             bitcoin_config,
@@ -47,6 +50,7 @@ impl RelayerActor {
     }
 
     pub async fn new<T: TxSubmiter + 'static>(
+        executor: ExecutorProxy,
         relayer_key: RoochKeyPair,
         ethereum_config: Option<EthereumRelayerConfig>,
         bitcoin_config: Option<BitcoinRelayerConfig>,
@@ -61,7 +65,7 @@ impl RelayerActor {
         }
 
         if let Some(bitcoin_config) = bitcoin_config {
-            let bitcoin_relayer = BitcoinRelayer::new(bitcoin_config)?;
+            let bitcoin_relayer = BitcoinRelayer::new(bitcoin_config, executor)?;
             relayers.push(Box::new(bitcoin_relayer));
         }
 
@@ -75,59 +79,65 @@ impl RelayerActor {
         })
     }
 
-    async fn tick(&mut self) -> Result<()> {
+    async fn sync(&mut self) -> Result<()> {
         for relayer in &mut self.relayers {
             let relayer_name = relayer.name();
-            match relayer.relay().await {
-                Ok(Some(function_call)) => {
-                    let sequence_number = self
-                        .tx_submiter
-                        .get_sequence_number(self.relayer_address)
-                        .await?;
-                    let action = MoveAction::Function(function_call);
-                    let tx_data = RoochTransactionData::new(
-                        self.relayer_address,
-                        sequence_number,
-                        self.chain_id,
-                        self.max_gas_amount,
-                        action,
-                    );
-                    let tx = tx_data.sign(&self.relayer_key);
-                    let tx_hash = tx.tx_hash();
-                    let result = self.tx_submiter.submit_tx(tx).await?;
-                    match result.execution_info.status {
-                        KeptVMStatusView::Executed => {
-                            info!(
-                                "Relayer {} execute relay tx({}) success",
-                                relayer_name, tx_hash
-                            );
-                        }
-                        _ => {
-                            warn!(
-                                "Relayer {} execute relay tx({}) failed, status: {:?}",
-                                relayer_name, tx_hash, result.execution_info.status
-                            );
+            loop {
+                match relayer.relay().await {
+                    Ok(Some(function_call)) => {
+                        let sequence_number = self
+                            .tx_submiter
+                            .get_sequence_number(self.relayer_address)
+                            .await?;
+                        let action = MoveAction::Function(function_call);
+                        let tx_data = RoochTransactionData::new(
+                            self.relayer_address,
+                            sequence_number,
+                            self.chain_id,
+                            self.max_gas_amount,
+                            action,
+                        );
+                        let tx = tx_data.sign(&self.relayer_key);
+                        let tx_hash = tx.tx_hash();
+                        let result = self.tx_submiter.submit_tx(tx).await?;
+                        match result.execution_info.status {
+                            KeptVMStatusView::Executed => {
+                                info!("Relayer execute relay tx({}) success", tx_hash);
+                            }
+                            _ => {
+                                warn!(
+                                    "Relayer execute relay tx({}) failed, status: {:?}",
+                                    tx_hash, result.execution_info.status
+                                );
+                                break;
+                            }
                         }
                     }
-                }
-                Ok(None) => {
-                    //skip
-                }
-                Err(err) => {
-                    warn!("Relayer {} error: {:?}", relayer_name, err);
+                    Ok(None) => {
+                        //skip
+                        break;
+                    }
+                    Err(err) => {
+                        warn!("Relayer {} error: {:?}", relayer_name, err);
+                        break;
+                    }
                 }
             }
         }
+
         Ok(())
     }
 }
 
-impl Actor for RelayerActor {}
+#[async_trait]
+impl Actor for RelayerActor {
+    async fn started(&mut self, _ctx: &mut ActorContext) {}
+}
 
 #[async_trait]
 impl Handler<RelayTick> for RelayerActor {
     async fn handle(&mut self, _message: RelayTick, _ctx: &mut ActorContext) {
-        if let Err(err) = self.tick().await {
+        if let Err(err) = self.sync().await {
             warn!("Relayer tick task error: {:?}", err);
         }
     }
