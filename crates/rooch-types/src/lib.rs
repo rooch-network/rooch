@@ -13,6 +13,7 @@ pub mod error;
 pub mod framework;
 pub mod function_arg;
 pub mod indexer;
+pub mod into_address;
 pub mod key_struct;
 pub mod multichain_id;
 pub mod sequencer;

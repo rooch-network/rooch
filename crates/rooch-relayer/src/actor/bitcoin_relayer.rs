@@ -4,12 +4,12 @@
 use crate::Relayer;
 use anyhow::Result;
 use async_trait::async_trait;
-use bitcoin::hashes::Hash;
+use bitcoin::Block;
 use bitcoincore_rpc::{bitcoincore_rpc_json::GetBlockHeaderResult, Auth, Client, RpcApi};
 use moveos_types::{module_binding::MoveFunctionCaller, transaction::FunctionCall};
 use rooch_config::BitcoinRelayerConfig;
 use rooch_executor::proxy::ExecutorProxy;
-use rooch_types::framework::bitcoin_light_client::{BitcoinLightClientModule, BlockHeader};
+use rooch_types::framework::bitcoin_light_client::BitcoinLightClientModule;
 use std::cmp::max;
 use tracing::{debug, info};
 
@@ -18,7 +18,13 @@ pub struct BitcoinRelayer {
     rpc_client: Client,
     //TODO if we want make the relayer to an independent process, we need to replace the executor proxy with a rooch rpc client
     move_caller: ExecutorProxy,
-    buffer: Vec<GetBlockHeaderResult>,
+    buffer: Vec<BlockResult>,
+}
+
+#[derive(Debug, Clone)]
+pub struct BlockResult {
+    pub header_info: GetBlockHeaderResult,
+    pub block: Block,
 }
 
 impl BitcoinRelayer {
@@ -44,10 +50,10 @@ impl BitcoinRelayer {
             .as_module_binding::<BitcoinLightClientModule>();
         let latest_block_height_in_rooch = bitcoin_light_client.get_latest_block_height()?;
         let latest_block_hash_in_bitcoin = self.rpc_client.get_best_block_hash()?;
-        let latest_block_header = self
+        let latest_block_header_info = self
             .rpc_client
             .get_block_header_info(&latest_block_hash_in_bitcoin)?;
-        let latest_block_height_in_bitcoin = latest_block_header.height as u64;
+        let latest_block_height_in_bitcoin = latest_block_header_info.height as u64;
         let start_block_height: u64 = match (self.start_block_height, latest_block_height_in_rooch)
         {
             (Some(start_block_height), Some(latest_block_height_in_rooch)) => {
@@ -66,20 +72,26 @@ impl BitcoinRelayer {
             return Ok(());
         }
 
-        let start_block = if start_block_height == latest_block_height_in_bitcoin {
-            latest_block_header
+        let start_block_header_info = if start_block_height == latest_block_height_in_bitcoin {
+            latest_block_header_info
         } else {
             let start_block_hash = self.rpc_client.get_block_hash(start_block_height)?;
             self.rpc_client.get_block_header_info(&start_block_hash)?
         };
 
+        let start_block = self.rpc_client.get_block(&start_block_header_info.hash)?;
+
         let batch_size: usize = 10;
-        let mut next_block_hash = start_block.next_block_hash;
-        self.buffer.push(start_block);
+        let mut next_block_hash = start_block_header_info.next_block_hash;
+        self.buffer.push(BlockResult {
+            header_info: start_block_header_info,
+            block: start_block,
+        });
         while let Some(next_hash) = next_block_hash {
-            let block_result = self.rpc_client.get_block_header_info(&next_hash)?;
-            next_block_hash = block_result.next_block_hash;
-            self.buffer.push(block_result);
+            let header_info = self.rpc_client.get_block_header_info(&next_hash)?;
+            let block = self.rpc_client.get_block(&next_hash)?;
+            next_block_hash = header_info.next_block_hash;
+            self.buffer.push(BlockResult { header_info, block });
             if self.buffer.len() > batch_size {
                 break;
             }
@@ -91,16 +103,16 @@ impl BitcoinRelayer {
         if self.buffer.is_empty() {
             Ok(None)
         } else {
-            let block_header_result = self.buffer.remove(0);
-            let block_height = block_header_result.height;
-            let block_hash = block_header_result.hash;
-            let time = block_header_result.time;
+            let block_result = self.buffer.remove(0);
+            let block_height = block_result.header_info.height;
+            let block_hash = block_result.header_info.hash;
+            let time = block_result.block.header.time;
             info!(
                 "BitcoinRelayer process block, height: {}, hash: {}, time: {}",
                 block_height, block_hash, time
             );
-            debug!("GetBlockHeaderResult: {:?}", block_header_result);
-            let call = block_result_to_call(block_header_result)?;
+            debug!("GetBlockHeaderResult: {:?}", block_result);
+            let call = block_result_to_call(block_result)?;
             Ok(Some(call))
         }
     }
@@ -114,14 +126,9 @@ impl Relayer for BitcoinRelayer {
     }
 }
 
-fn block_result_to_call(block_result: GetBlockHeaderResult) -> Result<FunctionCall> {
-    let block_height = block_result.height;
-    let block_hash = block_result.hash;
-    let block_header = BlockHeader::try_from(block_result)?;
-    let call = BitcoinLightClientModule::create_submit_new_block_call(
-        block_height as u64,
-        block_hash.to_byte_array().to_vec(),
-        &block_header,
-    );
+fn block_result_to_call(block_result: BlockResult) -> Result<FunctionCall> {
+    let block_height = block_result.header_info.height;
+    let call =
+        BitcoinLightClientModule::create_submit_new_block_call(block_height as u64, block_result.block);
     Ok(call)
 }
