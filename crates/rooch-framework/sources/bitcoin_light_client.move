@@ -2,12 +2,13 @@ module rooch_framework::bitcoin_light_client{
 
     use std::error;
     use std::option::{Self, Option};
+    use std::vector;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
     use moveos_std::bcs;
     use moveos_std::object::{Self, Object};
     use rooch_framework::timestamp;
-    use rooch_framework::bitcoin_types::{Self, Block, Header};    
+    use rooch_framework::bitcoin_types::{Self, Block, Header, Transaction, OutPoint, TxOut};    
     
 
     friend rooch_framework::genesis;
@@ -24,7 +25,8 @@ module rooch_framework::bitcoin_light_client{
         height_to_hash: Table<u64, address>,
         /// block hash -> block height
         hash_to_height: Table<address, u64>,
-        //TODO add utxo store
+        /// outpoint -> txout
+        utxo: Table<OutPoint, TxOut>,
     }
 
     public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer){
@@ -33,6 +35,7 @@ module rooch_framework::bitcoin_light_client{
             blocks: context::new_table(ctx),
             height_to_hash: context::new_table(ctx),
             hash_to_height: context::new_table(ctx),
+            utxo: context::new_table(ctx),
         };
         let obj = context::new_named_object(ctx, btc_store);
         object::to_shared(obj);
@@ -46,16 +49,16 @@ module rooch_framework::bitcoin_light_client{
 
         let block = bcs::from_bytes<Block>(block_bytes);
         validate_block(btc_store, block_height, block_hash, &block);
-        
+        progress_txs(btc_store, &block); 
         let block_header = bitcoin_types::header(&block);
 
         if(table::contains(&btc_store.height_to_hash, block_height)){
             //TODO handle reorg
         };
-        let time = bitcoin_types::time(&block_header);
+        let time = bitcoin_types::time(block_header);
         table::add(&mut btc_store.height_to_hash, block_height, block_hash);
         table::add(&mut btc_store.hash_to_height, block_hash, block_height);
-        table::add(&mut btc_store.blocks, block_hash, block_header);
+        table::add(&mut btc_store.blocks, block_hash, *block_header);
         btc_store.latest_block_height = option::some(block_height);
         time 
     }
@@ -65,6 +68,41 @@ module rooch_framework::bitcoin_light_client{
         // validate prev block hash
         // validate block hash
         // validate block nonce
+        //TODO validate txid
+    }
+
+    fun progress_txs(btc_store: &mut BitcoinStore, block:&Block){
+        let txdata = bitcoin_types::txdata(block);
+        let idx = 0;
+        while(idx < vector::length(txdata)){
+            let tx = vector::borrow(txdata, idx);
+            progress_tx(btc_store, tx);
+            idx = idx + 1;
+        }
+    }
+
+    fun progress_tx(btc_store: &mut BitcoinStore, tx: &Transaction){
+        let txinput = bitcoin_types::tx_input(tx);
+        let idx = 0;
+        while(idx < vector::length(txinput)){
+            let txin = vector::borrow(txinput, idx);
+            let outpoint = *bitcoin_types::txin_previous_output(txin);
+            if(table::contains(&btc_store.utxo, outpoint)){
+                table::remove(&mut btc_store.utxo, outpoint);
+            }else{
+                //TODO handle double spend
+            };
+            idx = idx + 1;
+        };
+        let txoutput = bitcoin_types::tx_output(tx);
+        let idx = 0;
+        let txid = bitcoin_types::tx_id(tx);
+        while(idx < vector::length(txoutput)){
+            let txout = *vector::borrow(txoutput, idx);
+            let outpoint = bitcoin_types::new_outpoint(txid, (idx as u32));
+            table::add(&mut btc_store.utxo, outpoint, txout);
+            idx = idx + 1;
+        }
     }
 
     /// The relay server submit a new Bitcoin block to the light client.
@@ -111,5 +149,15 @@ module rooch_framework::bitcoin_light_client{
         btc_store.latest_block_height
     }
 
+    /// Get tx out via txid and vout
+    public fun get_tx_out(btc_store_obj: &Object<BitcoinStore>, txid: address, vout: u32): Option<TxOut>{
+        let outpoint = bitcoin_types::new_outpoint(txid, vout);
+        let btc_store = object::borrow(btc_store_obj);
+        if(table::contains(&btc_store.utxo, outpoint)){
+            option::some(*table::borrow(&btc_store.utxo, outpoint))
+        }else{
+            option::none()
+        }
+    }
     
 }

@@ -116,6 +116,9 @@ impl MoveStructState for Header {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Transaction {
+    /// txid
+    /// The original bitcoin::Transaction do not have txid field, we add it for convenience
+    pub id: AccountAddress,
     /// The protocol version, is currently expected to be 1 or 2 (BIP 68).
     pub version: u32,
     /// Block height or timestamp. Transaction cannot be included in a block until this height/time.
@@ -134,6 +137,7 @@ pub struct Transaction {
 impl From<bitcoin::Transaction> for Transaction {
     fn from(tx: bitcoin::Transaction) -> Self {
         Self {
+            id: tx.txid().into_address(),
             version: tx.version.0 as u32,
             lock_time: tx.lock_time.to_consensus_u32(),
             input: tx.input.into_iter().map(|tx_in| tx_in.into()).collect(),

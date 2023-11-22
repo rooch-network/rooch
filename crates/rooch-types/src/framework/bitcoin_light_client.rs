@@ -1,10 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::bitcoin_types::Header;
+use super::bitcoin_types::{Header, TxOut};
 use crate::{addresses::ROOCH_FRAMEWORK_ADDRESS, into_address::IntoAddress};
 use anyhow::Result;
-use bitcoin::BlockHash;
+use bitcoin::{BlockHash, Txid};
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
@@ -32,6 +32,8 @@ pub struct BitcoinStore {
     pub height_to_hash: ObjectID,
     /// block hash -> block height table id
     pub hash_to_height: ObjectID,
+    /// Outpoint -> TxOut table id
+    pub utxo: ObjectID,
 }
 
 impl BitcoinStore {
@@ -53,6 +55,7 @@ impl MoveStructState for BitcoinStore {
             ObjectID::type_layout(),
             ObjectID::type_layout(),
             ObjectID::type_layout(),
+            ObjectID::type_layout(),
         ])
     }
 }
@@ -69,6 +72,7 @@ impl<'a> BitcoinLightClientModule<'a> {
     pub const GET_BLOCK_HEIGHT_FUNCTION_NAME: &'static IdentStr = ident_str!("get_block_height");
     pub const GET_LATEST_BLOCK_HEIGHT_FUNCTION_NAME: &'static IdentStr =
         ident_str!("get_latest_block_height");
+    pub const GET_TX_OUT_FUNCTION_NAME: &'static IdentStr = ident_str!("get_tx_out");
     pub const SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("submit_new_block");
 
@@ -155,6 +159,29 @@ impl<'a> BitcoinLightClientModule<'a> {
                     .expect("should be a valid MoveOption<u64>")
             })?;
         Ok(height.into())
+    }
+
+    pub fn get_tx_out(&self, tx_id: Txid, vout: u32) -> Result<Option<TxOut>> {
+        let call = Self::create_function_call(
+            Self::GET_TX_OUT_FUNCTION_NAME,
+            vec![],
+            vec![
+                MoveValue::Address(BitcoinStore::object_id().into()),
+                MoveValue::Address(tx_id.into_address()),
+                MoveValue::U32(vout),
+            ],
+        );
+        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
+        let tx_out = self
+            .caller
+            .call_function(&ctx, call)?
+            .into_result()
+            .map(|mut values| {
+                let value = values.pop().expect("should have one return value");
+                bcs::from_bytes::<MoveOption<TxOut>>(&value.value)
+                    .expect("should be a valid MoveOption<TxOut>")
+            })?;
+        Ok(tx_out.into())
     }
 
     pub fn create_submit_new_block_call(block_height: u64, block: bitcoin::Block) -> FunctionCall {

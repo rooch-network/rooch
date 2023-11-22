@@ -128,7 +128,9 @@ impl Relayer for BitcoinRelayer {
 
 fn block_result_to_call(block_result: BlockResult) -> Result<FunctionCall> {
     let block_height = block_result.header_info.height;
-    let call =
-        BitcoinLightClientModule::create_submit_new_block_call(block_height as u64, block_result.block);
+    let call = BitcoinLightClientModule::create_submit_new_block_call(
+        block_height as u64,
+        block_result.block,
+    );
     Ok(call)
 }

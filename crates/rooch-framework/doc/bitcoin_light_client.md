@@ -13,6 +13,7 @@
 -  [Function `get_block_height`](#0x3_bitcoin_light_client_get_block_height)
 -  [Function `get_block_by_height`](#0x3_bitcoin_light_client_get_block_by_height)
 -  [Function `get_latest_block_height`](#0x3_bitcoin_light_client_get_latest_block_height)
+-  [Function `get_tx_out`](#0x3_bitcoin_light_client_get_tx_out)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -127,4 +128,16 @@ Get block via block_height
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_get_latest_block_height">get_latest_block_height</a>(btc_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinStore">bitcoin_light_client::BitcoinStore</a>&gt;): <a href="_Option">option::Option</a>&lt;u64&gt;
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_light_client_get_tx_out"></a>
+
+## Function `get_tx_out`
+
+Get tx out via txid and vout
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_get_tx_out">get_tx_out</a>(btc_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinStore">bitcoin_light_client::BitcoinStore</a>&gt;, txid: <b>address</b>, vout: u32): <a href="_Option">option::Option</a>&lt;<a href="bitcoin_types.md#0x3_bitcoin_types_TxOut">bitcoin_types::TxOut</a>&gt;
 </code></pre>
