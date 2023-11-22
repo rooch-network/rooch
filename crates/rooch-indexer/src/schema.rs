@@ -59,11 +59,16 @@ diesel::table! {
         state_root -> Text,
         event_root -> Text,
         gas_used -> BigInt,
-        tx_execute_status -> Text,
+        status -> Text,
         tx_order_auth_validator_id -> BigInt,
         tx_order_authenticator_payload -> Binary,
         created_at -> BigInt,
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(events, global_states, leaf_states, transactions,);
+diesel::allow_tables_to_appear_in_same_query!(
+    events,
+    global_states,
+    leaf_states,
+    transactions,
+);
