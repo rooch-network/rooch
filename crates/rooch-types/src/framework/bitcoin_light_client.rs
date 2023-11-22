@@ -3,13 +3,20 @@
 
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::Result;
-use bitcoin::{block::Header, hashes::Hash};
+use bitcoin::{block::Header, hashes::Hash, BlockHash};
+use bitcoincore_rpc::bitcoincore_rpc_json::GetBlockHeaderResult;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
-    moveos_std::tx_context::TxContext,
+    move_std::option::MoveOption,
+    moveos_std::{
+        object::{self, ObjectID},
+        tx_context::TxContext,
+    },
+    state::MoveStructType,
+    state::{MoveState, MoveStructState},
     transaction::FunctionCall,
 };
 use serde::{Deserialize, Serialize};
@@ -18,8 +25,6 @@ pub const MODULE_NAME: &IdentStr = ident_str!("bitcoin_light_client");
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct BlockHeader {
-    /// Hash of the block
-    pub hash: Vec<u8>,
     /// Block version, now repurposed for soft fork signalling.
     pub version: u32,
     /// Reference to the previous block in the chain.
@@ -34,17 +39,89 @@ pub struct BlockHeader {
     pub nonce: u32,
 }
 
-impl From<Header> for BlockHeader {
-    fn from(value: Header) -> Self {
-        BlockHeader {
-            hash: value.block_hash().to_byte_array().to_vec(),
-            version: value.version.to_consensus() as u32,
-            prev_blockhash: value.prev_blockhash.to_byte_array().to_vec(),
-            merkle_root: value.merkle_root.to_byte_array().to_vec(),
-            time: value.time,
-            bits: value.bits.to_consensus(),
-            nonce: value.nonce,
+impl BlockHeader {
+    pub fn new(
+        version: u32,
+        prev_blockhash: Vec<u8>,
+        merkle_root: Vec<u8>,
+        time: u32,
+        bits: u32,
+        nonce: u32,
+    ) -> Self {
+        Self {
+            version,
+            prev_blockhash,
+            merkle_root,
+            time,
+            bits,
+            nonce,
         }
+    }
+}
+
+impl From<Header> for BlockHeader {
+    fn from(header: Header) -> Self {
+        Self {
+            version: header.version.to_consensus() as u32,
+            prev_blockhash: header.prev_blockhash.to_byte_array().to_vec(),
+            merkle_root: header.merkle_root.to_byte_array().to_vec(),
+            time: header.time,
+            bits: header.bits.to_consensus(),
+            nonce: header.nonce,
+        }
+    }
+}
+
+impl TryFrom<GetBlockHeaderResult> for BlockHeader {
+    type Error = anyhow::Error;
+    fn try_from(result: GetBlockHeaderResult) -> Result<Self> {
+        let bits = i32::from_str_radix(&result.bits, 16)? as u32;
+        Ok(Self {
+            version: result.version.to_consensus() as u32,
+            prev_blockhash: result
+                .previous_block_hash
+                .unwrap_or(BlockHash::all_zeros())
+                .to_byte_array()
+                .to_vec(),
+            merkle_root: result.merkle_root.to_byte_array().to_vec(),
+            time: result.time as u32,
+            bits,
+            nonce: result.nonce,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BitcoinStore {
+    pub latest_block_height: MoveOption<u64>,
+    /// block hash -> block header table id
+    pub blocks: ObjectID,
+    /// block height -> block hash table id
+    pub height_to_hash: ObjectID,
+    /// block hash -> block height table id
+    pub hash_to_height: ObjectID,
+}
+
+impl BitcoinStore {
+    pub fn object_id() -> ObjectID {
+        object::named_object_id(&Self::struct_tag())
+    }
+}
+
+impl MoveStructType for BitcoinStore {
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("BitcoinStore");
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+}
+
+impl MoveStructState for BitcoinStore {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            MoveOption::<u64>::type_layout(),
+            ObjectID::type_layout(),
+            ObjectID::type_layout(),
+            ObjectID::type_layout(),
+        ])
     }
 }
 
@@ -55,14 +132,22 @@ pub struct BitcoinLightClientModule<'a> {
 
 impl<'a> BitcoinLightClientModule<'a> {
     pub const GET_BLOCK_FUNCTION_NAME: &'static IdentStr = ident_str!("get_block");
+    pub const GET_BLOCK_BY_HEIGHT_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("get_block_by_height");
+    pub const GET_BLOCK_HEIGHT_FUNCTION_NAME: &'static IdentStr = ident_str!("get_block_height");
+    pub const GET_LATEST_BLOCK_HEIGHT_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("get_latest_block_height");
     pub const SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("submit_new_block");
 
-    pub fn get_block(&self, block_hash: Vec<u8>) -> Result<BlockHeader> {
-        let call = FunctionCall::new(
-            Self::function_id(Self::GET_BLOCK_FUNCTION_NAME),
+    pub fn get_block(&self, block_hash: Vec<u8>) -> Result<Option<BlockHeader>> {
+        let call = Self::create_function_call(
+            Self::GET_BLOCK_FUNCTION_NAME,
             vec![],
-            vec![MoveValue::vector_u8(block_hash).simple_serialize().unwrap()],
+            vec![
+                MoveValue::Address(BitcoinStore::object_id().into()),
+                MoveValue::vector_u8(block_hash),
+            ],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
         let block_header =
@@ -71,19 +156,91 @@ impl<'a> BitcoinLightClientModule<'a> {
                 .into_result()
                 .map(|mut values| {
                     let value = values.pop().expect("should have one return value");
-                    bcs::from_bytes::<BlockHeader>(&value.value)
-                        .expect("should be a valid BlockHeader")
+                    bcs::from_bytes::<MoveOption<BlockHeader>>(&value.value)
+                        .expect("should be a valid MoveOption<BlockHeader>")
                 })?;
-        Ok(block_header)
+        Ok(block_header.into())
     }
 
-    pub fn create_submit_new_block_call(block_header: &BlockHeader) -> FunctionCall {
+    pub fn get_block_by_height(&self, block_height: u64) -> Result<Option<BlockHeader>> {
+        let call = Self::create_function_call(
+            Self::GET_BLOCK_BY_HEIGHT_FUNCTION_NAME,
+            vec![],
+            vec![
+                MoveValue::Address(BitcoinStore::object_id().into()),
+                MoveValue::U64(block_height),
+            ],
+        );
+        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
+        let block_header =
+            self.caller
+                .call_function(&ctx, call)?
+                .into_result()
+                .map(|mut values| {
+                    let value = values.pop().expect("should have one return value");
+                    bcs::from_bytes::<MoveOption<BlockHeader>>(&value.value)
+                        .expect("should be a valid MoveOption<BlockHeader>")
+                })?;
+        Ok(block_header.into())
+    }
+
+    pub fn get_block_height(&self, block_hash: Vec<u8>) -> Result<Option<u64>> {
+        let call = Self::create_function_call(
+            Self::GET_BLOCK_HEIGHT_FUNCTION_NAME,
+            vec![],
+            vec![
+                MoveValue::Address(BitcoinStore::object_id().into()),
+                MoveValue::vector_u8(block_hash),
+            ],
+        );
+        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
+        let height = self
+            .caller
+            .call_function(&ctx, call)?
+            .into_result()
+            .map(|mut values| {
+                let value = values.pop().expect("should have one return value");
+                bcs::from_bytes::<MoveOption<u64>>(&value.value)
+                    .expect("should be a valid MoveOption<u64>")
+            })?;
+        Ok(height.into())
+    }
+
+    pub fn get_latest_block_height(&self) -> Result<Option<u64>> {
+        let call = Self::create_function_call(
+            Self::GET_LATEST_BLOCK_HEIGHT_FUNCTION_NAME,
+            vec![],
+            vec![MoveValue::Address(BitcoinStore::object_id().into())],
+        );
+        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
+        let height = self
+            .caller
+            .call_function(&ctx, call)?
+            .into_result()
+            .map(|mut values| {
+                let value = values.pop().expect("should have one return value");
+                bcs::from_bytes::<MoveOption<u64>>(&value.value)
+                    .expect("should be a valid MoveOption<u64>")
+            })?;
+        Ok(height.into())
+    }
+
+    pub fn create_submit_new_block_call(
+        block_height: u64,
+        block_hash: Vec<u8>,
+        block_header: &BlockHeader,
+    ) -> FunctionCall {
         Self::create_function_call(
             Self::SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME,
             vec![],
-            vec![MoveValue::vector_u8(
-                bcs::to_bytes(&block_header).expect("Serialize BlockHeader should success."),
-            )],
+            vec![
+                MoveValue::Address(BitcoinStore::object_id().into()),
+                MoveValue::U64(block_height),
+                MoveValue::vector_u8(block_hash),
+                MoveValue::vector_u8(
+                    bcs::to_bytes(&block_header).expect("Serialize BlockHeader should success."),
+                ),
+            ],
         )
     }
 }

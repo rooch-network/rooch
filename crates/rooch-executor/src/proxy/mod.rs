@@ -16,9 +16,11 @@ use anyhow::Result;
 use coerce::actor::ActorRef;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
-use moveos_types::function_return_value::AnnotatedFunctionResult;
+use moveos_types::function_return_value::{AnnotatedFunctionResult, FunctionResult};
 use moveos_types::h256::H256;
+use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::event::{Event, EventID};
+use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
@@ -29,6 +31,7 @@ use moveos_types::{
 };
 use rooch_types::address::MultiChainAddress;
 use rooch_types::transaction::AbstractTransaction;
+use tokio::runtime::Handle;
 
 #[derive(Clone)]
 pub struct ExecutorProxy {
@@ -159,5 +162,20 @@ impl ExecutorProxy {
         self.actor
             .send(GetTxExecutionInfosByHashMessage { tx_hashes })
             .await?
+    }
+}
+
+impl MoveFunctionCaller for ExecutorProxy {
+    fn call_function(
+        &self,
+        _ctx: &TxContext,
+        function_call: FunctionCall,
+    ) -> Result<FunctionResult> {
+        let executor = self.clone();
+        let function_result = tokio::task::block_in_place(|| {
+            Handle::current()
+                .block_on(async move { executor.execute_view_function(function_call).await })
+        })?;
+        function_result.try_into()
     }
 }

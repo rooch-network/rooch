@@ -6,13 +6,10 @@ use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
-use moveos_types::function_return_value::FunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::PlaceholderStruct;
-use moveos_types::transaction::FunctionCall;
 use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
 use rooch_rpc_api::jsonrpc_types::CoinInfoView;
 use rooch_types::framework::account_coin_store::AccountCoinStoreModule;
@@ -20,7 +17,6 @@ use rooch_types::framework::coin::{CoinInfo, CoinModule};
 use rooch_types::framework::coin_store::CoinStore;
 use rooch_types::transaction::{TransactionSequenceInfoMapping, TransactionWithInfo};
 use std::collections::HashMap;
-use tokio::runtime::Handle;
 
 /// AggregateService is aggregate RPC service and MoveFunctionCaller.
 #[derive(Clone)]
@@ -122,7 +118,10 @@ impl AggregateService {
         cursor: Option<Vec<u8>>,
         limit: usize,
     ) -> Result<Vec<(Option<Vec<u8>>, BalanceInfoView)>> {
-        let account_coin_store_module = self.as_module_binding::<AccountCoinStoreModule>();
+        let account_coin_store_module = self
+            .rpc_service
+            .executor
+            .as_module_binding::<AccountCoinStoreModule>();
         let coin_stores_handle_opt = account_coin_store_module.coin_stores_handle(account_addr)?;
 
         match coin_stores_handle_opt {
@@ -243,20 +242,5 @@ impl AggregateService {
                 }
             })
             .collect::<Result<Vec<_>>>()
-    }
-}
-
-impl MoveFunctionCaller for AggregateService {
-    fn call_function(
-        &self,
-        _ctx: &TxContext,
-        function_call: FunctionCall,
-    ) -> Result<FunctionResult> {
-        let rpc_service = self.rpc_service.clone();
-        let function_result = tokio::task::block_in_place(|| {
-            Handle::current()
-                .block_on(async move { rpc_service.execute_view_function(function_call).await })
-        })?;
-        function_result.try_into()
     }
 }

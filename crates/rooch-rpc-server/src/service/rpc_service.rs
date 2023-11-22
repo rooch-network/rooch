@@ -30,11 +30,11 @@ use rooch_types::transaction::{TransactionWithInfo, TypedTransaction};
 /// The RpcService encapsulates the logic of the functions, and the RPC server handle the response format.
 #[derive(Clone)]
 pub struct RpcService {
-    chain_id: u64,
-    executor: ExecutorProxy,
-    sequencer: SequencerProxy,
-    proposer: ProposerProxy,
-    indexer: IndexerProxy,
+    pub(crate) chain_id: u64,
+    pub(crate) executor: ExecutorProxy,
+    pub(crate) sequencer: SequencerProxy,
+    pub(crate) proposer: ProposerProxy,
+    pub(crate) indexer: IndexerProxy,
 }
 
 impl RpcService {
