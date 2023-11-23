@@ -5,7 +5,6 @@
 
 
 
--  [Struct `BlockHeader`](#0x3_bitcoin_light_client_BlockHeader)
 -  [Resource `BitcoinStore`](#0x3_bitcoin_light_client_BitcoinStore)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_bitcoin_light_client_genesis_init)
@@ -14,6 +13,7 @@
 -  [Function `get_block_height`](#0x3_bitcoin_light_client_get_block_height)
 -  [Function `get_block_by_height`](#0x3_bitcoin_light_client_get_block_by_height)
 -  [Function `get_latest_block_height`](#0x3_bitcoin_light_client_get_latest_block_height)
+-  [Function `get_tx_out`](#0x3_bitcoin_light_client_get_tx_out)
 
 
 <pre><code><b>use</b> <a href="">0x1::error</a>;
@@ -22,18 +22,8 @@
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::table</a>;
+<b>use</b> <a href="bitcoin_types.md#0x3_bitcoin_types">0x3::bitcoin_types</a>;
 <b>use</b> <a href="timestamp.md#0x3_timestamp">0x3::timestamp</a>;
-</code></pre>
-
-
-
-<a name="0x3_bitcoin_light_client_BlockHeader"></a>
-
-## Struct `BlockHeader`
-
-
-
-<pre><code><b>struct</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BlockHeader">BlockHeader</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -90,7 +80,7 @@
 The relay server submit a new Bitcoin block to the light client.
 
 
-<pre><code>entry <b>fun</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_submit_new_block">submit_new_block</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, btc_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinStore">bitcoin_light_client::BitcoinStore</a>&gt;, block_height: u64, block_hash: <a href="">vector</a>&lt;u8&gt;, block_header_bytes: <a href="">vector</a>&lt;u8&gt;)
+<pre><code>entry <b>fun</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_submit_new_block">submit_new_block</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, btc_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinStore">bitcoin_light_client::BitcoinStore</a>&gt;, block_height: u64, block_hash: <b>address</b>, block_bytes: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -102,7 +92,7 @@ The relay server submit a new Bitcoin block to the light client.
 Get block via block_hash
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_get_block">get_block</a>(btc_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinStore">bitcoin_light_client::BitcoinStore</a>&gt;, block_hash: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BlockHeader">bitcoin_light_client::BlockHeader</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_get_block">get_block</a>(btc_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinStore">bitcoin_light_client::BitcoinStore</a>&gt;, block_hash: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="bitcoin_types.md#0x3_bitcoin_types_Header">bitcoin_types::Header</a>&gt;
 </code></pre>
 
 
@@ -113,7 +103,7 @@ Get block via block_hash
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_get_block_height">get_block_height</a>(btc_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinStore">bitcoin_light_client::BitcoinStore</a>&gt;, block_hash: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;u64&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_get_block_height">get_block_height</a>(btc_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinStore">bitcoin_light_client::BitcoinStore</a>&gt;, block_hash: <b>address</b>): <a href="_Option">option::Option</a>&lt;u64&gt;
 </code></pre>
 
 
@@ -125,7 +115,7 @@ Get block via block_hash
 Get block via block_height
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_get_block_by_height">get_block_by_height</a>(btc_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinStore">bitcoin_light_client::BitcoinStore</a>&gt;, block_height: u64): <a href="_Option">option::Option</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BlockHeader">bitcoin_light_client::BlockHeader</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_get_block_by_height">get_block_by_height</a>(btc_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinStore">bitcoin_light_client::BitcoinStore</a>&gt;, block_height: u64): <a href="_Option">option::Option</a>&lt;<a href="bitcoin_types.md#0x3_bitcoin_types_Header">bitcoin_types::Header</a>&gt;
 </code></pre>
 
 
@@ -138,4 +128,16 @@ Get block via block_height
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_get_latest_block_height">get_latest_block_height</a>(btc_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinStore">bitcoin_light_client::BitcoinStore</a>&gt;): <a href="_Option">option::Option</a>&lt;u64&gt;
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_light_client_get_tx_out"></a>
+
+## Function `get_tx_out`
+
+Get tx out via txid and vout
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_get_tx_out">get_tx_out</a>(btc_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinStore">bitcoin_light_client::BitcoinStore</a>&gt;, txid: <b>address</b>, vout: u32): <a href="_Option">option::Option</a>&lt;<a href="bitcoin_types.md#0x3_bitcoin_types_TxOut">bitcoin_types::TxOut</a>&gt;
 </code></pre>
