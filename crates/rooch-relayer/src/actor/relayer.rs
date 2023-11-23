@@ -72,7 +72,7 @@ impl RelayerActor {
         Ok(Self {
             chain_id,
             relayer_address,
-            max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT,
+            max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT * 100,
             relayer_key,
             relayers,
             tx_submiter: Box::new(tx_submiter),
