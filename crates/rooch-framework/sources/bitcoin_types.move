@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_framework::bitcoin_types{
 
     const LOCK_TIME_THRESHOLD: u32 = 500_000_000;
