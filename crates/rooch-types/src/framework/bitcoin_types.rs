@@ -201,7 +201,7 @@ impl From<bitcoin::OutPoint> for OutPoint {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct ScriptBuf{
+pub struct ScriptBuf {
     pub bytes: Vec<u8>,
 }
 
