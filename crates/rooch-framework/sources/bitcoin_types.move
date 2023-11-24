@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_framework::bitcoin_types{
+    use rooch_framework::bitcoin_script_buf::{ScriptBuf};
 
     const LOCK_TIME_THRESHOLD: u32 = 500_000_000;
 
@@ -167,18 +168,18 @@ module rooch_framework::bitcoin_types{
         /// The value of the output, in satoshis.
         value: u64,
         /// The script which must be satisfied for the output to be spent.
-        script_pubkey: vector<u8>,
+        script_pubkey: ScriptBuf,
     }
 
     public fun txout_value(self: &TxOut) : u64 {
         self.value
     }
 
-    public fun txout_script_pubkey(self: &TxOut) : &vector<u8> {
+    public fun txout_script_pubkey(self: &TxOut) : &ScriptBuf {
         &self.script_pubkey
     }
 
-    public fun unpack_txout(self: TxOut) : (u64, vector<u8>) {
+    public fun unpack_txout(self: TxOut) : (u64, ScriptBuf) {
         (self.value, self.script_pubkey)
     }      
 }

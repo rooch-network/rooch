@@ -22,6 +22,8 @@
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::table</a>;
+<b>use</b> <a href="bitcoin_address.md#0x3_bitcoin_address">0x3::bitcoin_address</a>;
+<b>use</b> <a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf">0x3::bitcoin_script_buf</a>;
 <b>use</b> <a href="bitcoin_types.md#0x3_bitcoin_types">0x3::bitcoin_types</a>;
 <b>use</b> <a href="timestamp.md#0x3_timestamp">0x3::timestamp</a>;
 </code></pre>

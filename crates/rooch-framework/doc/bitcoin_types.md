@@ -38,7 +38,8 @@
 -  [Function `unpack_txout`](#0x3_bitcoin_types_unpack_txout)
 
 
-<pre><code></code></pre>
+<pre><code><b>use</b> <a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf">0x3::bitcoin_script_buf</a>;
+</code></pre>
 
 
 
@@ -370,7 +371,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_types.md#0x3_bitcoin_types_txout_script_pubkey">txout_script_pubkey</a>(self: &<a href="bitcoin_types.md#0x3_bitcoin_types_TxOut">bitcoin_types::TxOut</a>): &<a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_types.md#0x3_bitcoin_types_txout_script_pubkey">txout_script_pubkey</a>(self: &<a href="bitcoin_types.md#0x3_bitcoin_types_TxOut">bitcoin_types::TxOut</a>): &<a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf_ScriptBuf">bitcoin_script_buf::ScriptBuf</a>
 </code></pre>
 
 
@@ -381,5 +382,5 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_types.md#0x3_bitcoin_types_unpack_txout">unpack_txout</a>(self: <a href="bitcoin_types.md#0x3_bitcoin_types_TxOut">bitcoin_types::TxOut</a>): (u64, <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_types.md#0x3_bitcoin_types_unpack_txout">unpack_txout</a>(self: <a href="bitcoin_types.md#0x3_bitcoin_types_TxOut">bitcoin_types::TxOut</a>): (u64, <a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf_ScriptBuf">bitcoin_script_buf::ScriptBuf</a>)
 </code></pre>

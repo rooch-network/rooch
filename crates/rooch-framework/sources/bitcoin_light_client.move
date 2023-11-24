@@ -11,6 +11,7 @@ module rooch_framework::bitcoin_light_client{
     use moveos_std::bcs;
     use moveos_std::object::{Self, Object};
     use rooch_framework::timestamp;
+    use rooch_framework::bitcoin_address::{Self, BTCAddress};
     use rooch_framework::bitcoin_types::{Self, Block, Header, Transaction, OutPoint, TxOut};    
     
 
@@ -30,6 +31,8 @@ module rooch_framework::bitcoin_light_client{
         hash_to_height: Table<address, u64>,
         /// outpoint -> txout
         utxo: Table<OutPoint, TxOut>,
+        /// BTC balance
+        balance: Table<BTCAddress, u64>,
     }
 
     public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer){
@@ -39,6 +42,7 @@ module rooch_framework::bitcoin_light_client{
             height_to_hash: context::new_table(ctx),
             hash_to_height: context::new_table(ctx),
             utxo: context::new_table(ctx),
+            balance: context::new_table(ctx),
         };
         let obj = context::new_named_object(ctx, btc_store);
         object::to_shared(obj);
@@ -90,11 +94,7 @@ module rooch_framework::bitcoin_light_client{
         while(idx < vector::length(txinput)){
             let txin = vector::borrow(txinput, idx);
             let outpoint = *bitcoin_types::txin_previous_output(txin);
-            if(table::contains(&btc_store.utxo, outpoint)){
-                table::remove(&mut btc_store.utxo, outpoint);
-            }else{
-                //TODO handle double spend
-            };
+            remove_utxo(btc_store, outpoint); 
             idx = idx + 1;
         };
         let txoutput = bitcoin_types::tx_output(tx);
@@ -103,10 +103,41 @@ module rooch_framework::bitcoin_light_client{
         while(idx < vector::length(txoutput)){
             let txout = *vector::borrow(txoutput, idx);
             let outpoint = bitcoin_types::new_outpoint(txid, (idx as u32));
-            table::add(&mut btc_store.utxo, outpoint, txout);
+            add_utxo(btc_store, outpoint, txout);
             idx = idx + 1;
         }
     }
+
+    fun remove_utxo(btc_store: &mut BitcoinStore, outpoint: OutPoint){
+        if(table::contains(&btc_store.utxo, outpoint)){
+            let txout = table::remove(&mut btc_store.utxo, outpoint);
+            let script_pubkey = bitcoin_types::txout_script_pubkey(&txout);
+            //TODO should we record the address of the utxo?
+            let address_opt = bitcoin_address::from_script(script_pubkey);
+            if(option::is_some(&address_opt)){
+                let address = option::extract(&mut address_opt);
+                let balance = table::borrow_mut_with_default(&mut btc_store.balance, address, 0);
+                if (*balance > bitcoin_types::txout_value(&txout)){
+                    *balance = *balance - bitcoin_types::txout_value(&txout);
+                }
+            }
+        }else{
+            //TODO handle double spend
+        };
+        
+    }
+
+    fun add_utxo(btc_store: &mut BitcoinStore, outpoint: OutPoint, txout: TxOut){
+        table::add(&mut btc_store.utxo, outpoint, txout);
+        let script_pubkey = bitcoin_types::txout_script_pubkey(&txout);
+        let address_opt = bitcoin_address::from_script(script_pubkey);
+        if(option::is_some(&address_opt)){
+            let address = option::extract(&mut address_opt);
+            let balance = table::borrow_mut_with_default(&mut btc_store.balance, address, 0);
+            *balance = *balance + bitcoin_types::txout_value(&txout);
+        }
+    }
+
 
     /// The relay server submit a new Bitcoin block to the light client.
     entry fun submit_new_block(ctx: &mut Context, btc_store_obj: &mut Object<BitcoinStore>, block_height: u64, block_hash: address, block_bytes: vector<u8>){

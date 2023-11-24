@@ -156,6 +156,26 @@ module moveos_std::table {
     }
 
     #[test(sender = @0x42)]
+    fun test_borrow_mut_with_default(sender: address) {
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let uid = object::new_uid_for_test(&mut tx_context);
+        let t = new<u64, u8>(uid);
+        let key: u64 = 100;
+        {
+            let value = borrow_mut_with_default(&mut t, key, 0);
+            assert!(*value == 0, 1000);
+        };
+        assert!(contains(&t, key), 1001);
+        assert!(*borrow(&t, key) == 0, 1002);
+        {
+            let value = borrow_mut_with_default(&mut t, key, 0);
+            *value = *value + 1;
+        };
+        assert!(*borrow(&t, key) == 1, 1003);
+        drop_unchecked(t);
+    }
+
+    #[test(sender = @0x42)]
     fun test_all(sender: address) {
         let tx_context = moveos_std::tx_context::new_test_context(sender);
         let uid = object::new_uid_for_test(&mut tx_context);

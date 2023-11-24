@@ -201,18 +201,31 @@ impl From<bitcoin::OutPoint> for OutPoint {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ScriptBuf{
+    pub bytes: Vec<u8>,
+}
+
+impl From<bitcoin::ScriptBuf> for ScriptBuf {
+    fn from(script: bitcoin::ScriptBuf) -> Self {
+        Self {
+            bytes: script.into_bytes(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct TxOut {
     /// The value of the output, in satoshis.
     pub value: u64,
     /// The script which must be satisfied for the output to be spent.
-    pub script_pubkey: Vec<u8>,
+    pub script_pubkey: ScriptBuf,
 }
 
 impl From<bitcoin::TxOut> for TxOut {
     fn from(tx_out: bitcoin::TxOut) -> Self {
         Self {
             value: tx_out.value.to_sat(),
-            script_pubkey: tx_out.script_pubkey.into_bytes(),
+            script_pubkey: tx_out.script_pubkey.into(),
         }
     }
 }
