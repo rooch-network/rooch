@@ -4,15 +4,15 @@ The State Channel, or Payment Channel, represented by the Lightning Network, is 
 
 However, current state channels are built on Layer1, the costs of Gas and time to create a channel is high and cannot be directly used in P2P networks.
 
-Rooch provides secure and instant transaction confirmation and low transaction costs, allowing nodes in a P2P network to create a network connection and upgrade it to a state channel, thus enabling [high-frequency streaming payment](./01-streaming-payment.md) in P2P networks.
+Rooch provides secure and instant transaction confirmation and low transaction costs, allowing nodes in a P2P network to create a network connection and upgrade it to a state channel, thus enabling high-frequency streaming payment in P2P networks.
 
-Also, Rooch supports [smart contracts in state channel](./02-channel-contract.md) through the features of Move, simplifying the design of game and DApp protocols on P2P networks.
+Also, Rooch supports smart contracts in state channel through the features of Move, simplifying the design of game and DApp protocols on P2P networks.
 
 ![p2p](/docs/rooch-p2p.svg)
 
 ## Representation of a state channel
 
-Each state channel is actually an RST maintained at the execution level by the participants of the channel, so it can also use the [state migration](../06-state-scaling.md) pattern to migrate state from the execution layer to the state channel.
+Each state channel is actually an RST maintained at the execution level by the participants of the channel, so it can also use the state migration pattern to migrate state from the execution layer to the state channel.
 
 :::note
 
@@ -38,8 +38,8 @@ Closing the channel can be done in three scenarios.
 2. Passive closure by waiting for a timeout, where the state tree root is settled with the last common confirmation of the participants. The timeout duration can be set by agreement between the participants when opening the channel.
 3. One participant frauds, and the other participant can use [fraud-proofs] (../02-fraud-proofs.md) to initiate an arbitration request at the Rooch execution layer for settlement by the arbitration contract.
 
-- [streaming-payment](01-streaming-payment.md)
-- [state channel contract](02-channel-contract.md)
+- streaming-payment
+- state channel contract
 
 ## Streaming Payment
 
@@ -55,7 +55,7 @@ The current state channel solutions all only enable payments through the state c
 
 We believe that Web3 applications will be implemented as protocols over P2P, and running generic smart contracts on state channels will simplify the design of protocols at the P2P network layer, such as billing protocols and exchange protocols.
 
-Thanks to Move's state model, we can execute application contracts deployed in Layer1 or Rooch execution layers directly on the state channel, see [Cross-Layer Invocation](../07-move-on-rooch/01-cross-layer-interoperability.md).
+Thanks to Move's state model, we can execute application contracts deployed in Layer1 or Rooch execution layers directly on the state channel, see Cross-Layer Invocation.
 
 For example, if there is a game written in Move, two users can create a dedicated state channel for this game and play on the state channel. The state of the game is actually only stored in the state channel, and when the game is over, both players clear out and the state of the game is discarded (or backed up in the user's device, of course), while the game's smart contract is still in Layer1 or the Rooch execution layer.
 
