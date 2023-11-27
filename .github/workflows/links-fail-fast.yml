@@ -14,4 +14,4 @@ jobs:
         uses: lycheeverse/lychee-action@v1.8.0
         with:
           fail: true
-          args: .github/link-checker/lychee.toml
+          args: --config ../link-checker/lychee.toml
