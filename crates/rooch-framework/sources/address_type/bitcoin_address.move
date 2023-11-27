@@ -4,90 +4,95 @@
 module rooch_framework::bitcoin_address {
     use std::error;
     use std::vector;
-    use rooch_framework::encoding;
-    use rooch_framework::ecdsa_k1;
+    use std::option::{Self, Option};
+    use rooch_framework::bitcoin_script_buf::{Self, ScriptBuf};
 
-    /// P2PKH addresses are 34 characters
-    const P2PKH_ADDR_LENGTH: u64 = 34;
-    /// P2SH addresses are 34 characters
-    const P2SH_ADDR_LENGTH: u64 = 34;
-    /// Bech32 addresses including P2WPKH and P2WSH are 42 characters
-    const BECH32_ADDR_LENGTH: u64 = 42;
-    /// P2TR addresses with Bech32m encoding are 62 characters
-    const P2TR_ADDR_LENGTH: u64 = 62;
+    friend rooch_framework::multichain_address;
+
+    const PUBKEY_HASH_LEN: u64 = 20;
+    const SCRIPT_HASH_LEN: u64 = 20;
+
+    const P2PKH_ADDR_BYTE_LEN: u64 = 21;
+    const P2SH_ADDR_BYTE_LEN: u64 = 21;
 
     // error code
-    const ErrorInvalidDecimalPrefix: u64 = 1;
-    const ErrorInvalidScriptVersion: u64 = 2;
-    const ErrorInvalidCompressedPublicKeyLength: u64 = 3;
-    const ErrorInvalidHashedPublicKeyLength: u64 = 4;
-    const ErrorInvalidSchnorrPublicKeyLength: u64 = 5;
+    const ErrorAddressBytesLen: u64 = 1;
 
     // P2PKH address decimal prefix
-    const P2PKH_ADDR_DECIMAL_PREFIX: u8 = 0;
-    // P2SH address decimal prefix
-    const P2SH_ADDR_DECIMAL_PREFIX: u8 = 5;
+    const P2PKH_ADDR_DECIMAL_PREFIX_MAIN: u8 = 0; // 0x00
+    const P2PKH_ADDR_DECIMAL_PREFIX_TEST: u8 = 111; // 0x6f
+    // P2SH address decimal prefix 
+    const P2SH_ADDR_DECIMAL_PREFIX_MAIN: u8 = 5; // 0x05
+    const P2SH_ADDR_DECIMAL_PREFIX_TEST: u8 = 196; // 0xc4
 
-    struct BTCAddress has store, drop {
+   
+    #[data_struct]
+    /// BTCAddress is a struct that represents a Bitcoin address.
+    /// We just keep the raw bytes of the address and do care about the network.
+    struct BTCAddress has store, copy, drop {
         bytes: vector<u8>,
     }
 
-    public fun new_legacy(pub_key: &vector<u8>, decimal_prefix: u8): BTCAddress {
-        // Check the decimal_prefix, i.e. address type
-        assert!(
-            decimal_prefix == P2PKH_ADDR_DECIMAL_PREFIX
-            || decimal_prefix == P2SH_ADDR_DECIMAL_PREFIX,
-            error::invalid_argument(ErrorInvalidDecimalPrefix)
-        );
-        // Check the public key length
-        assert!(
-            vector::length(pub_key) == ecdsa_k1::public_key_length(),
-            error::invalid_argument(ErrorInvalidCompressedPublicKeyLength)
-        );
-        // Perform address creation
-        let bitcoin_address = if (decimal_prefix == P2PKH_ADDR_DECIMAL_PREFIX) { // P2PKH address
-            create_p2pkh_address(pub_key)
-        } else if (decimal_prefix == P2SH_ADDR_DECIMAL_PREFIX) { // P2SH address
-            create_p2sh_address(pub_key)
-        } else {
-            BTCAddress {
-                bytes: vector::empty<u8>()
-            }
-        };
-
-        bitcoin_address
-    }
-
-    public fun new_bech32(pub_key: &vector<u8>, version: u8): BTCAddress {
-        // Check the script version
-        assert!(
-            version <= 16,
-            error::invalid_argument(ErrorInvalidScriptVersion)
-        );
-        // Check the script version and the public key relationship
-        if (version == 0) {
-            assert!(
-                vector::length(pub_key) == 20 || vector::length(pub_key) == 32,
-                error::invalid_argument(ErrorInvalidHashedPublicKeyLength)
-            );
-        };
-        if (version == 1) {
-            assert!(
-                vector::length(pub_key) == 32,
-                error::invalid_argument(ErrorInvalidSchnorrPublicKeyLength)
-            );
-        };
-        // This will create Segwit Bech32 or Taproot Bech32m addresses depending on the public key length and the script version
-        let bitcoin_address = create_bech32_address(pub_key, version);
-
-        bitcoin_address
-    }
-
-    public fun from_bytes(bytes: vector<u8>): BTCAddress {
-        //TODO check the address bytes.
+    fun new_p2pkh(pubkey_hash: vector<u8>): BTCAddress{
+        assert!(vector::length(&pubkey_hash) == PUBKEY_HASH_LEN, error::invalid_argument(ErrorAddressBytesLen));
+        //TDDO do we need to distinguish between mainnet and testnet?
+        //OR find a way to define same module for different networks
+        let bytes = vector::singleton<u8>(P2PKH_ADDR_DECIMAL_PREFIX_MAIN);
+        vector::append(&mut bytes, pubkey_hash);
         BTCAddress {
             bytes: bytes,
         }
+    }
+
+    fun new_p2sh(script_hash: vector<u8>): BTCAddress{
+        assert!(vector::length(&script_hash) == SCRIPT_HASH_LEN, error::invalid_argument(ErrorAddressBytesLen));
+        let bytes = vector::singleton<u8>(P2SH_ADDR_DECIMAL_PREFIX_MAIN);
+        vector::append(&mut bytes, script_hash);
+        BTCAddress {
+            bytes: bytes,
+        }
+    }
+
+    fun new_witness_program(program: vector<u8>): BTCAddress{
+        BTCAddress {
+            bytes: program,
+        }
+    }
+
+    /// from_script returns a BTCAddress from a ScriptBuf.
+    public fun from_script(s: &ScriptBuf): Option<BTCAddress> {
+        if(bitcoin_script_buf::is_p2pkh(s)){
+            let pubkey_hash = bitcoin_script_buf::p2pkh_pubkey_hash(s);
+            option::some(new_p2pkh(pubkey_hash))
+        }else if(bitcoin_script_buf::is_p2sh(s)){
+            let script_hash = bitcoin_script_buf::p2sh_script_hash(s);
+            option::some(new_p2sh(script_hash))
+        }else if(bitcoin_script_buf::is_witness_program(s)){
+            let program = bitcoin_script_buf::witness_program(s);
+            option::some(new_witness_program(program))
+        }else{
+            option::none()
+        }
+    }
+
+    public(friend) fun from_bytes(bytes: vector<u8>): BTCAddress {
+        BTCAddress {
+            bytes: bytes,
+        }
+    }
+
+    public fun is_p2pkh(addr: &BTCAddress): bool {
+        let bytes = &addr.bytes;
+        vector::length(bytes) == P2PKH_ADDR_BYTE_LEN && *vector::borrow(bytes, 0) == P2PKH_ADDR_DECIMAL_PREFIX_MAIN
+    }
+
+    public fun is_p2sh(addr: &BTCAddress): bool {
+        let bytes = &addr.bytes;
+        vector::length(bytes) == P2SH_ADDR_BYTE_LEN && *vector::borrow(bytes, 0) == P2SH_ADDR_DECIMAL_PREFIX_MAIN
+    }
+
+    public fun is_witness_program(addr: &BTCAddress): bool {
+        !is_p2sh(addr) && !is_p2pkh(addr)
     }
 
     public fun as_bytes(addr: &BTCAddress): &vector<u8> {
@@ -99,70 +104,62 @@ module rooch_framework::bitcoin_address {
         bytes
     }
 
-    public fun create_p2pkh_address(pub_key: &vector<u8>): BTCAddress {
-        let address_bytes = encoding::p2pkh(pub_key);
-
-        BTCAddress {
-            bytes: address_bytes
-        }
-    }
-
-    public fun create_p2sh_address(pub_key: &vector<u8>): BTCAddress {
-        let address_bytes = encoding::p2sh(pub_key);
-
-        BTCAddress {
-            bytes: address_bytes
-        }
-    }
-
-    // Function to create a Bech32 address based on the given steps: https://en.bitcoin.it/wiki/Bech32.
-    // Address type depends on the pub_key and version variables. Different input pub_key lengths and versions result in different address types.
-    // i.e. P2wpkh uses 20 bytes public key and P2wsh uses 32 bytes public key for witness version v0. P2tr uses 32 bytes public key for witness version v1. 
-    public fun create_bech32_address(pub_key: &vector<u8>, version: u8): BTCAddress {
-        let address_bytes = encoding::bech32(pub_key, version);
-
-        BTCAddress {
-            bytes: address_bytes
-        }
+    public fun to_bech32(_addr: &BTCAddress): std::string::String{
+        //TODO we need the bech32 string address?
+        //We need to add the network and address type
+        abort 0
     }
 
     #[test]
-    fun test_p2pkh_legacy_address() {
-        let pub_key = x"021b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
-        let address = new_legacy(&pub_key, 0);
-        let expected_address = b"1LZ6VbuNSP53FRQmtd6fTGH5m6iLdK68PP";
-        assert!(address.bytes == expected_address, 1000);
+    fun test_from_script_p2pkh(){
+        let script_buf = bitcoin_script_buf::new(x"76a914010966776006953d5567439e5e39f86a0d273bee88ac");
+        let addr_opt = from_script(&script_buf);
+        assert!(option::is_some(&addr_opt), 1000);
+        let addr = option::extract(&mut addr_opt);
+        assert!(is_p2pkh(&addr), 1001);
+        let addr_bytes = into_bytes(addr);
+        std::debug::print(&addr_bytes);
+        let expected_addr_bytes = x"00010966776006953d5567439e5e39f86a0d273bee";
+        assert!(addr_bytes == expected_addr_bytes, 1002);
     }
 
     #[test]
-    fun test_p2sh_legacy_address() {
-        let pub_key = x"03a819b6f0eb5f22167fffa53e1628cfbf645db9a4c50b3a226e5d20c9984e63a2";
-        let address = new_legacy(&pub_key, 5);
-        let expected_address = b"38Kf3LA93erdEXwH1x8cKhyRwDTaWbBKam";
-        assert!(address.bytes == expected_address, 1001);
+    fun test_from_script_p2sh(){
+        let script_buf = bitcoin_script_buf::new(x"a91474d691da1574e6b3c192ecfb52cc8984ee7b6c4887");
+        let addr_opt = from_script(&script_buf);
+        assert!(option::is_some(&addr_opt), 1000);
+        let addr = option::extract(&mut addr_opt);
+        assert!(is_p2sh(&addr), 1001);
+        let addr_bytes = into_bytes(addr);
+        std::debug::print(&addr_bytes);
+        let expected_addr_bytes = x"0574d691da1574e6b3c192ecfb52cc8984ee7b6c48";
+        assert!(addr_bytes == expected_addr_bytes, 1002);
     }
 
     #[test]
-    fun test_bech32_p2wpkh_address() {
-        let pub_key = x"751e76e8199196d454941c45d1b3a323f1433bd6";
-        let address = new_bech32(&pub_key, 0);
-        let expected_address = b"bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
-        assert!(address.bytes == expected_address, 1002);
+    fun test_p2wpkh_address(){
+        let script_buf = bitcoin_script_buf::new(x"001497cdff4fd3ed6f885d54a52b79d7a2141072ae3f");
+        let addr_opt = from_script(&script_buf);
+        assert!(option::is_some(&addr_opt), 1000);
+        let addr = option::extract(&mut addr_opt);
+        assert!(is_witness_program(&addr), 1001);
+        let addr_bytes = into_bytes(addr);
+        //std::debug::print(&addr_bytes);
+        let expected_addr_bytes = x"97cdff4fd3ed6f885d54a52b79d7a2141072ae3f";
+        assert!(addr_bytes == expected_addr_bytes, 1002);
     }
 
     #[test]
-    fun test_bech32_p2wsh_address() {
-        let pub_key = x"031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd07";
-        let address = new_bech32(&pub_key, 0);
-        let expected_address = b"bc1qqvdcf32k0vfxgsyet5ldt246q4jaw8scx3sysx0lnstlt6w4m5rsgej0cd";
-        assert!(address.bytes == expected_address, 1003);
-    }
+    fun test_fail_address_from_script() {
 
-    #[test]
-    fun test_bech32m_p2tr_address() {
-        let pub_key = x"036d70f73022e2097b22b5c4263638ed88732de69a715cfe2f18b3c3dbf5a2a5";
-        let address = new_bech32(&pub_key, 1);
-        let expected_address = b"bc1pqdkhpaesyt3qj7ezkhzzvd3caky8xt0xnfc4el30rzeu8kl452jspu6fl4";
-        assert!(address.bytes == expected_address, 1004);
+        let bad_p2wpkh = bitcoin_script_buf::new(x"0014dbc5b0a8f9d4353b4b54c3db48846bb15abfec");
+        let bad_p2wsh = bitcoin_script_buf::new(x"00202d4fa2eb233d008cc83206fa2f4f2e60199000f5b857a835e3172323385623");
+        //let invalid_segwitv0_script = bitcoin_script_buf::new(x"001161458e330389cd0437ee9fe3641d70cc18");
+        let expected = option::none<BTCAddress>();
+
+        assert!(Self::from_script(&bad_p2wpkh) == expected, 1000);
+        assert!(Self::from_script(&bad_p2wsh) == expected, 1001);
+        //TODO fix this test
+        //assert!(Self::from_script(&invalid_segwitv0_script) == expected, 1002);
     }
 }

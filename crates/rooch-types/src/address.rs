@@ -528,4 +528,21 @@ mod test {
             assert_eq!(address, deserialized);
         }
     }
+
+    #[test]
+    pub fn test_from_script() {
+        let bytes = hex::decode("001497cdff4fd3ed6f885d54a52b79d7a2141072ae3f").unwrap();
+        let script = Script::from_bytes(bytes.as_slice());
+        let address = Address::from_script(script, Network::Signet).unwrap();
+        //println!("{:?}", address.address_type());
+        assert_eq!(
+            address.address_type().unwrap(),
+            bitcoin::AddressType::P2wpkh
+        );
+        //println!("{}", address_str);
+        assert_eq!(
+            address.to_string(),
+            "tb1qjlxl7n7na4hcsh25554hn4azzsg89t3ljdldnj"
+        )
+    }
 }
