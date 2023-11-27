@@ -117,8 +117,11 @@ module rooch_framework::bitcoin_light_client{
             if(option::is_some(&address_opt)){
                 let address = option::extract(&mut address_opt);
                 let balance = table::borrow_mut_with_default(&mut btc_store.balance, address, 0);
-                if (*balance > bitcoin_types::txout_value(&txout)){
+                if (*balance >= bitcoin_types::txout_value(&txout)){
                     *balance = *balance - bitcoin_types::txout_value(&txout);
+                }else{
+                    //if we sync the block from genesis, this should not happen
+                    //TODO emit a event as a warning
                 }
             }
         }else{
