@@ -51,6 +51,7 @@ move-resource-viewer = { workspace = true }
 
 moveos-config = { workspace = true }
 moveos-types = { workspace = true }
+moveos-store = { workspace = true }
 
 rooch-types = { workspace = true }
 rooch-config = { workspace = true }

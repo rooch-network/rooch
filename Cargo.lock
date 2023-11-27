@@ -7324,6 +7324,7 @@ dependencies = [
  "move-core-types",
  "move-resource-viewer",
  "moveos-config",
+ "moveos-store",
  "moveos-types",
  "once_cell",
  "parking_lot 0.12.1",

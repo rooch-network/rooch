@@ -78,6 +78,9 @@ impl RpcService {
 
         // Last save indexer
         self.indexer
+            .indexer_states(output.state_changeset.clone())
+            .await?;
+        self.indexer
             .indexer_transaction(
                 tx.clone(),
                 sequence_info.clone(),

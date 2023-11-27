@@ -159,8 +159,12 @@ pub struct IndexedGlobalState {
     pub owner: AccountAddress,
     /// A flag to indicate whether the object is shared or frozen
     pub flag: u8,
+    /// The key type tag of the table
+    pub key_type: TypeTag,
     /// The value of the object, json format
     pub value: String,
+    /// The table length
+    pub size: u64,
     /// The object created timestamp on chain
     pub created_at: u64,
     /// The object updated timestamp on chain

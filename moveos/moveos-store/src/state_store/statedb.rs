@@ -31,6 +31,7 @@ use std::collections::BTreeMap;
 
 use crate::state_store::NodeDBStore;
 
+#[derive(Clone)]
 pub struct TreeTable<NS> {
     smt: SMTree<Vec<u8>, State, NS>,
 }
@@ -119,6 +120,7 @@ where
 }
 
 /// StateDB provide state storage and state proof
+#[derive(Clone)]
 pub struct StateDBStore {
     pub node_store: NodeDBStore,
     global_table: TreeTable<NodeDBStore>,

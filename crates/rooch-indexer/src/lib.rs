@@ -10,7 +10,7 @@ use diesel::sqlite::SqliteConnection;
 
 use crate::store::sqlite_store::SqliteIndexerStore;
 use crate::store::traits::IndexerStoreTrait;
-use crate::types::{IndexedEvent, IndexedTransaction};
+use crate::types::{IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTransaction};
 use crate::utils::create_all_tables_if_not_exists;
 use errors::IndexerError;
 use rooch_config::indexer_config::ROOCH_INDEXER_DB_FILENAME;
@@ -80,6 +80,30 @@ pub fn new_sqlite_connection_pool(db_url: &str) -> Result<SqliteConnectionPool, 
 }
 
 impl IndexerStoreTrait for IndexerStore {
+    fn persist_global_states(&self, states: Vec<IndexedGlobalState>) -> Result<(), IndexerError> {
+        self.sqlite_store.persist_global_states(states)
+    }
+
+    fn update_global_states(&self, states: Vec<IndexedGlobalState>) -> Result<(), IndexerError> {
+        self.sqlite_store.update_global_states(states)
+    }
+
+    fn delete_global_states(&self, states: Vec<IndexedGlobalState>) -> Result<(), IndexerError> {
+        self.sqlite_store.delete_global_states(states)
+    }
+
+    fn persist_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError> {
+        self.sqlite_store.persist_leaf_states(states)
+    }
+
+    fn update_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError> {
+        self.sqlite_store.update_leaf_states(states)
+    }
+
+    fn delete_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError> {
+        self.sqlite_store.delete_leaf_states(states)
+    }
+
     fn persist_transactions(
         &self,
         transactions: Vec<IndexedTransaction>,

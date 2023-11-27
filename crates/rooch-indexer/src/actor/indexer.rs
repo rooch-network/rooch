@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    IndexerEventsMessage, IndexerTransactionMessage, QueryIndexerEventsMessage,
-    QueryIndexerTransactionsMessage,
+    IndexerEventsMessage, IndexerStatesMessage, IndexerTransactionMessage,
+    QueryIndexerEventsMessage, QueryIndexerTransactionsMessage,
 };
 use crate::indexer_reader::IndexerReader;
 use crate::store::traits::IndexerStoreTrait;
@@ -12,24 +12,122 @@ use crate::IndexerStore;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use moveos_store::MoveOSStore;
+// use moveos_types::moveos_std::context;
+use moveos_types::state_resolver::MoveOSResolverProxy;
 use rooch_types::indexer::event_filter::IndexerEvent;
 use rooch_types::transaction::TransactionWithInfo;
 
 pub struct IndexerActor {
     indexer_store: IndexerStore,
     indexer_reader: IndexerReader,
+    moveos_store: MoveOSResolverProxy<MoveOSStore>,
 }
 
 impl IndexerActor {
-    pub fn new(indexer_store: IndexerStore, indexer_reader: IndexerReader) -> Result<Self> {
+    pub fn new(
+        indexer_store: IndexerStore,
+        indexer_reader: IndexerReader,
+        moveos_store: MoveOSStore,
+    ) -> Result<Self> {
         Ok(Self {
             indexer_store,
             indexer_reader,
+            moveos_store: MoveOSResolverProxy(moveos_store),
         })
     }
 }
 
 impl Actor for IndexerActor {}
+
+#[async_trait]
+impl Handler<IndexerStatesMessage> for IndexerActor {
+    async fn handle(&mut self, msg: IndexerStatesMessage, _ctx: &mut ActorContext) -> Result<()> {
+        let IndexerStatesMessage { state_change_set } = msg;
+
+        // let indexed_transaction =
+        //     IndexedTransaction::new(transaction, sequence_info, execution_info, moveos_tx)?;
+        //
+        // updates: BTreeMap<K, Option<V>>,
+
+        // #[derive(Default, Clone, Debug)]
+        // pub struct StateChangeSet {
+        //     pub new_tables: BTreeMap<ObjectID, TableTypeInfo>,
+        //     pub removed_tables: BTreeSet<ObjectID>,
+        //     pub changes: BTreeMap<ObjectID, TableChange>,
+        // }
+
+        // for (table_handle, table_change) in state_change_set.changes {
+        //     // handle global object
+        //     if table_handle == context::GLOBAL_OBJECT_STORAGE_HANDLE {
+        //         self.global_table
+        //             .put_changes(table_change.entries.into_iter())?;
+        //         // TODO: do we need to update the size of global table?
+        //     } else {
+        //         let (mut object, table) = self.get_as_table_or_create(table_handle)?;
+        //         let new_state_root = table.put_changes(table_change.entries.into_iter())?;
+        //         object.value.state_root = AccountAddress::new(new_state_root.into());
+        //         let curr_table_size: i64 = object.value.size as i64;
+        //         let updated_table_size = curr_table_size + table_change.size_increment;
+        //         debug_assert!(updated_table_size >= 0);
+        //         object.value.size = updated_table_size as u64;
+        //         changed_objects.put(table_handle.to_bytes(), object.into());
+        //     }
+        // }
+
+        // for (table_handle, table_change) in state_change_set.changes {
+        //     // handle global object
+        //     if table_handle == context::GLOBAL_OBJECT_STORAGE_HANDLE {
+        //         self.global_table
+        //             .put_changes(table_change.entries.into_iter())?;
+        //         // TODO: do we need to update the size of global table?
+        //     } else {
+        //         let (mut object, table) = self.get_as_table_or_create(table_handle)?;
+        //         let new_state_root = table.put_changes(table_change.entries.into_iter())?;
+        //         object.value.state_root = AccountAddress::new(new_state_root.into());
+        //         let curr_table_size: i64 = object.value.size as i64;
+        //         let updated_table_size = curr_table_size + table_change.size_increment;
+        //         debug_assert!(updated_table_size >= 0);
+        //         object.value.size = updated_table_size as u64;
+        //         changed_objects.put(table_handle.to_bytes(), object.into());
+        //     }
+        // }
+
+        // for table_handle in state_change_set.removed_tables {
+        //     changed_objects.remove(table_handle.to_bytes());
+        // }
+        //
+        // self.global_table.puts(changed_objects)
+        //
+        // pub fn put_resources(&self, modules: BTreeMap<StructTag, Op<Vec<u8>>>) -> Result<H256> {
+        //     self.put_changes(modules.into_iter().map(|(k, v)| {
+        //         (
+        //             resource_tag_to_key(&k),
+        //             v.map(|v| State::new(v, TypeTag::Struct(Box::new(k)))),
+        //         )
+        //     }))
+        //
+        //     let mut update_set = UpdateSet::new();
+        //     for (key, op) in changes {
+        //         match op {
+        //             Op::Modify(value) => {
+        //                 update_set.put(key, value);
+        //             }
+        //             Op::Delete => {
+        //                 update_set.remove(key);
+        //             }
+        //             Op::New(value) => {
+        //                 update_set.put(key, value);
+        //             }
+        //         }
+        //     }
+        //     self.puts(update_set)
+
+        // let transactions = vec![indexed_transaction];
+        // self.indexer_store.persist_global_states(global_states)?;
+        Ok(())
+    }
+}
 
 #[async_trait]
 impl Handler<IndexerTransactionMessage> for IndexerActor {

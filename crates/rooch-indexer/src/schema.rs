@@ -22,7 +22,9 @@ diesel::table! {
         object_id -> Text,
         owner -> Text,
         flag -> SmallInt,
+        key_type -> Text,
         value -> Text,
+        size -> BigInt,
         created_at -> BigInt,
         updated_at -> BigInt,
     }
@@ -66,9 +68,4 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(
-    events,
-    global_states,
-    leaf_states,
-    transactions,
-);
+diesel::allow_tables_to_appear_in_same_query!(events, global_states, leaf_states, transactions,);
