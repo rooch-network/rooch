@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::binding_test;
 use bitcoin::consensus::Decodable;
 use hex::FromHex;
