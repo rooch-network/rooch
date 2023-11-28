@@ -88,8 +88,8 @@ impl IndexerStoreTrait for IndexerStore {
         self.sqlite_store.update_global_states(states)
     }
 
-    fn delete_global_states(&self, states: Vec<IndexedGlobalState>) -> Result<(), IndexerError> {
-        self.sqlite_store.delete_global_states(states)
+    fn remove_global_states(&self, states: Vec<IndexedGlobalState>) -> Result<(), IndexerError> {
+        self.sqlite_store.remove_global_states(states)
     }
 
     fn persist_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError> {
@@ -100,8 +100,8 @@ impl IndexerStoreTrait for IndexerStore {
         self.sqlite_store.update_leaf_states(states)
     }
 
-    fn delete_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError> {
-        self.sqlite_store.delete_leaf_states(states)
+    fn remove_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError> {
+        self.sqlite_store.remove_leaf_states(states)
     }
 
     fn persist_transactions(

@@ -55,3 +55,4 @@ moveos-store = { workspace = true }
 
 rooch-types = { workspace = true }
 rooch-config = { workspace = true }
+rooch-rpc-api = { workspace = true }

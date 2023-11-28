@@ -13,7 +13,7 @@ use std::str::FromStr;
 #[derive(Clone, Debug, Queryable, Insertable)]
 #[diesel(table_name = global_states)]
 pub struct StoredGlobalState {
-    /// The global state table handle
+    /// The global state key
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub object_id: String,
     /// The owner of the object
@@ -45,8 +45,8 @@ impl From<IndexedGlobalState> for StoredGlobalState {
             object_id: state.object_id.to_string(),
             owner: state.owner.to_hex_literal(),
             flag: state.flag as i16,
-            key_type: state.key_type.to_canonical_string(),
             value: state.value,
+            key_type: state.key_type,
             size: state.size as i64,
             created_at: state.created_at as i64,
             updated_at: state.updated_at as i64,
@@ -58,14 +58,14 @@ impl StoredGlobalState {
     pub fn try_into_indexer_global_state(&self) -> Result<IndexedGlobalState, anyhow::Error> {
         let object_id = ObjectID::from_str(self.object_id.as_str())?;
         let owner = AccountAddress::from_hex_literal(self.owner.as_str())?;
-        let key_type = TypeTag::from_str(self.key_type.as_str())?;
+        // let key_type = TypeTag::from_str(self.key_type.as_str())?;
 
         let state = IndexedGlobalState {
             object_id,
             owner,
             flag: self.flag as u8,
-            key_type,
             value: self.value.clone(),
+            key_type: self.key_type.clone(),
             size: self.size as u64,
             created_at: self.created_at as u64,
             updated_at: self.updated_at as u64,

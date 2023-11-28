@@ -69,7 +69,7 @@ impl SqliteIndexerStore {
         Ok(())
     }
 
-    pub fn delete_global_states(
+    pub fn remove_global_states(
         &self,
         states: Vec<IndexedGlobalState>,
     ) -> Result<(), IndexerError> {
@@ -132,7 +132,7 @@ impl SqliteIndexerStore {
         Ok(())
     }
 
-    pub fn delete_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError> {
+    pub fn remove_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError> {
         if states.is_empty() {
             return Ok(());
         }

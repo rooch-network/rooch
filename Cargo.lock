@@ -7331,6 +7331,7 @@ dependencies = [
  "rand 0.8.5",
  "regex",
  "rooch-config",
+ "rooch-rpc-api",
  "rooch-types",
  "serde 1.0.188",
  "serde_bytes",

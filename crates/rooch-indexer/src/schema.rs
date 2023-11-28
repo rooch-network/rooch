@@ -22,8 +22,8 @@ diesel::table! {
         object_id -> Text,
         owner -> Text,
         flag -> SmallInt,
-        key_type -> Text,
         value -> Text,
+        key_type -> Text,
         size -> BigInt,
         created_at -> BigInt,
         updated_at -> BigInt,
@@ -31,7 +31,7 @@ diesel::table! {
 }
 
 diesel::table! {
-    leaf_states (object_id) {
+    leaf_states (object_id, key_hash) {
         object_id -> Text,
         key_hash -> Text,
         value -> Text,

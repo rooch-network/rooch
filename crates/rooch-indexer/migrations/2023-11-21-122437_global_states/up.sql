@@ -4,6 +4,7 @@ CREATE TABLE global_states
     owner              VARCHAR        NOT NULL,
     flag               SMALLINT       NOT NULL,
     value              VARCHAR        NOT NULL,
+    key_type           VARCHAR        NOT NULL,
     size               BIGINT         NOT NULL,
     created_at         BIGINT         NOT NULL,
     updated_at         BIGINT         NOT NULL

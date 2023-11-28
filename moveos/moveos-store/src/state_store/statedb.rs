@@ -149,7 +149,10 @@ impl StateDBStore {
         self.global_table.list(cursor, limit)
     }
 
-    fn get_as_object<T: MoveStructState>(&self, id: ObjectID) -> Result<Option<ObjectEntity<T>>> {
+    pub fn get_as_object<T: MoveStructState>(
+        &self,
+        id: ObjectID,
+    ) -> Result<Option<ObjectEntity<T>>> {
         self.get(id)?
             .map(|state| state.as_object::<T>())
             .transpose()

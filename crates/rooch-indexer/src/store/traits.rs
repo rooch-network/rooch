@@ -9,13 +9,13 @@ pub trait IndexerStoreTrait: Send + Sync {
 
     fn update_global_states(&self, states: Vec<IndexedGlobalState>) -> Result<(), IndexerError>;
 
-    fn delete_global_states(&self, states: Vec<IndexedGlobalState>) -> Result<(), IndexerError>;
+    fn remove_global_states(&self, states: Vec<IndexedGlobalState>) -> Result<(), IndexerError>;
 
     fn persist_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError>;
 
     fn update_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError>;
 
-    fn delete_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError>;
+    fn remove_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError>;
 
     fn persist_transactions(
         &self,

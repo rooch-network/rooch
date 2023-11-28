@@ -36,6 +36,15 @@ impl MoveStructType for TableInfo {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("TableInfo");
+
+    fn struct_tag() -> move_core_types::language_storage::StructTag {
+        move_core_types::language_storage::StructTag {
+            address: Self::ADDRESS,
+            module: Self::MODULE_NAME.to_owned(),
+            name: Self::STRUCT_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
 }
 
 impl MoveStructState for TableInfo {
