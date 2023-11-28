@@ -1,5 +1,2 @@
-#exclude = [ 'dev-seed.rooch.network', 'localhost', '127.0.0.1', 'https://twitter.com/RoochNetwork', 'conduct@rooch.network' ]
-exclude = ['conduct@rooch.network']
-
-#exclude_path = [ './crates', './dashboard', './docker', './examples', './fixtures', './kube', './moveos', './scripts', './sdk' ]
-#exclude_path = ['./crates', './moveos']
+exclude_path = ["crates", "moveos", "examples", "sdk"]
+exclude = [ 'dev-seed.rooch.network', 'localhost', '127.0.0.1', 'https://twitter.com/RoochNetwork', 'conduct@rooch.network' ]
