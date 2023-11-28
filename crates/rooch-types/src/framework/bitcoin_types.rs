@@ -3,7 +3,7 @@
 
 use crate::{addresses::ROOCH_FRAMEWORK_ADDRESS, into_address::IntoAddress};
 use anyhow::Result;
-use bitcoin::{consensus::Encodable, hashes::Hash, BlockHash};
+use bitcoin::{hashes::Hash, BlockHash};
 use bitcoincore_rpc::bitcoincore_rpc_json::GetBlockHeaderResult;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::state::{MoveState, MoveStructState, MoveStructType};
@@ -146,6 +146,24 @@ impl From<bitcoin::Transaction> for Transaction {
     }
 }
 
+impl MoveStructType for Transaction {
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Transaction");
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+}
+
+impl MoveStructState for Transaction {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            AccountAddress::type_layout(),
+            u32::type_layout(),
+            u32::type_layout(),
+            Vec::<TxIn>::type_layout(),
+            Vec::<TxOut>::type_layout(),
+        ])
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct TxIn {
     /// The reference to the previous output that is being used as an input.
@@ -163,22 +181,60 @@ pub struct TxIn {
     /// Encodable/Decodable, as it is (de)serialized at the end of the full
     /// Transaction. It *is* (de)serialized with the rest of the TxIn in other
     /// (de)serialization routines.
-    pub witness: Vec<u8>,
+    /// We store the decoded witness data here for convenience.
+    pub witness: Witness,
 }
 
 impl From<bitcoin::TxIn> for TxIn {
     fn from(tx_in: bitcoin::TxIn) -> Self {
-        let mut witness = vec![];
-        tx_in
-            .witness
-            .consensus_encode(&mut witness)
-            .expect("encode witness to byte array should success");
         Self {
             previous_output: tx_in.previous_output.into(),
             script_sig: tx_in.script_sig.into_bytes(),
             sequence: tx_in.sequence.0,
-            witness,
+            witness: tx_in.witness.into(),
         }
+    }
+}
+
+impl MoveStructType for TxIn {
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("TxIn");
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+}
+
+impl MoveStructState for TxIn {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            OutPoint::type_layout(),
+            Vec::<u8>::type_layout(),
+            u32::type_layout(),
+            Witness::type_layout(),
+        ])
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct Witness {
+    pub witness: Vec<Vec<u8>>,
+}
+
+impl From<bitcoin::Witness> for Witness {
+    fn from(witness: bitcoin::Witness) -> Self {
+        Self {
+            witness: witness.to_vec(),
+        }
+    }
+}
+
+impl MoveStructType for Witness {
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Witness");
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+}
+
+impl MoveStructState for Witness {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![Vec::<Vec<u8>>::type_layout()])
     }
 }
 
@@ -200,6 +256,21 @@ impl From<bitcoin::OutPoint> for OutPoint {
     }
 }
 
+impl MoveStructType for OutPoint {
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("OutPoint");
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+}
+
+impl MoveStructState for OutPoint {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            AccountAddress::type_layout(),
+            u32::type_layout(),
+        ])
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ScriptBuf {
     pub bytes: Vec<u8>,
@@ -210,6 +281,18 @@ impl From<bitcoin::ScriptBuf> for ScriptBuf {
         Self {
             bytes: script.into_bytes(),
         }
+    }
+}
+
+impl MoveStructType for ScriptBuf {
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("ScriptBuf");
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+}
+
+impl MoveStructState for ScriptBuf {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![Vec::<u8>::type_layout()])
     }
 }
 
@@ -227,6 +310,21 @@ impl From<bitcoin::TxOut> for TxOut {
             value: tx_out.value.to_sat(),
             script_pubkey: tx_out.script_pubkey.into(),
         }
+    }
+}
+
+impl MoveStructType for TxOut {
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("TxOut");
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+}
+
+impl MoveStructState for TxOut {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            u64::type_layout(),
+            ScriptBuf::type_layout(),
+        ])
     }
 }
 
