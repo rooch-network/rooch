@@ -360,6 +360,15 @@ pub struct RawData {
 }
 
 impl RawObject {
+    pub fn new_raw_object(id: ObjectID, value: RawData) -> RawObject {
+        Self {
+            id,
+            owner: AccountAddress::ZERO,
+            flag: 0u8,
+            value,
+        }
+    }
+
     pub fn from_bytes(bytes: &[u8], struct_tag: StructTag) -> Result<Self> {
         ensure!(
             bytes.len() > ObjectID::LENGTH + AccountAddress::LENGTH,

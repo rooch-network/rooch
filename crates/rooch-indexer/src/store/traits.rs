@@ -19,6 +19,11 @@ pub trait IndexerStoreTrait: Send + Sync {
 
     fn delete_leaf_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError>;
 
+    fn delete_leaf_states_by_table_handle(
+        &self,
+        table_handles: Vec<String>,
+    ) -> Result<(), IndexerError>;
+
     fn persist_transactions(
         &self,
         transactions: Vec<IndexedTransaction>,

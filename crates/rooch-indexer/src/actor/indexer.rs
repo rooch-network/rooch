@@ -75,6 +75,10 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         let mut update_leaf_states = vec![];
         let mut remove_leaf_states = vec![];
 
+        // When remove table handle, first delete table handle from global states,
+        // then delete all states which belongs to the table_handle from leaf states
+        let mut remove_leaf_states_by_table_handle = vec![];
+
         for (table_handle, table_change) in state_change_set.changes {
             // handle global object
             if table_handle == context::GLOBAL_OBJECT_STORAGE_HANDLE {
@@ -182,11 +186,10 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
             }
         }
 
-        // TODO both remove global states table and leaf states talbe
-        // for table_handle in state_change_set.removed_tables {
-        //     changed_objects.remove(table_handle.to_bytes());
-        // }
-        //
+        for table_handle in state_change_set.removed_tables {
+            remove_global_states.push(table_handle.to_string());
+            remove_leaf_states_by_table_handle.push(table_handle.to_string());
+        }
 
         //Merge new global states and update global states
         new_global_states.append(&mut update_global_states);
@@ -200,6 +203,8 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         self.indexer_store
             .persist_or_update_leaf_states(new_leaf_states)?;
         self.indexer_store.delete_leaf_states(remove_leaf_states)?;
+        self.indexer_store
+            .delete_leaf_states_by_table_handle(remove_leaf_states_by_table_handle)?;
         Ok(())
     }
 }

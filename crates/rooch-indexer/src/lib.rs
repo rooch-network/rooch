@@ -102,6 +102,14 @@ impl IndexerStoreTrait for IndexerStore {
         self.sqlite_store.delete_leaf_states(state_pks)
     }
 
+    fn delete_leaf_states_by_table_handle(
+        &self,
+        table_handles: Vec<String>,
+    ) -> Result<(), IndexerError> {
+        self.sqlite_store
+            .delete_leaf_states_by_table_handle(table_handles)
+    }
+
     fn persist_transactions(
         &self,
         transactions: Vec<IndexedTransaction>,

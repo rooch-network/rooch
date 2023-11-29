@@ -90,7 +90,7 @@ impl SqliteIndexerStore {
             global_states::table.filter(global_states::object_id.eq_any(state_pks.as_slice())),
         )
         .execute(&mut connection)
-        .map_err(IndexerError::from)
+        .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
         .context("Failed to delete global states to SQLiteDB")?;
 
         Ok(())
@@ -157,8 +157,27 @@ impl SqliteIndexerStore {
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
         diesel::delete(leaf_states::table.filter(leaf_states::id.eq_any(state_pks.as_slice())))
             .execute(&mut connection)
-            .map_err(IndexerError::from)
+            .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
             .context("Failed to delete leaf states to SQLiteDB")?;
+
+        Ok(())
+    }
+
+    pub fn delete_leaf_states_by_table_handle(
+        &self,
+        table_handles: Vec<String>,
+    ) -> Result<(), IndexerError> {
+        if table_handles.is_empty() {
+            return Ok(());
+        }
+
+        let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
+        diesel::delete(
+            leaf_states::table.filter(leaf_states::object_id.eq_any(table_handles.as_slice())),
+        )
+        .execute(&mut connection)
+        .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
+        .context("Failed to delete leaf states by table handles to SQLiteDB")?;
 
         Ok(())
     }
@@ -180,7 +199,7 @@ impl SqliteIndexerStore {
         diesel::insert_into(transactions::table)
             .values(transactions.as_slice())
             .execute(&mut connection)
-            .map_err(IndexerError::from)
+            .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
             .context("Failed to write transactions to SQLiteDB")?;
 
         Ok(())
@@ -200,7 +219,7 @@ impl SqliteIndexerStore {
         diesel::insert_into(events::table)
             .values(events.as_slice())
             .execute(&mut connection)
-            .map_err(IndexerError::from)
+            .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
             .context("Failed to write events to SQLiteDB")?;
 
         Ok(())
