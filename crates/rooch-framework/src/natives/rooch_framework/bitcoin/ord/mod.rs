@@ -126,7 +126,6 @@ pub fn from_transaction(transaction: &bitcoin::Transaction) -> Vec<Inscription> 
     transaction
         .input
         .iter()
-        .map(|tx_in| from_witness(&tx_in.witness))
-        .flatten()
+        .flat_map(|tx_in| from_witness(&tx_in.witness))
         .collect::<Vec<_>>()
 }
