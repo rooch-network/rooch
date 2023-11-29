@@ -1,0 +1,14 @@
+[package]
+name = "quick_start_object_counter"
+version = "0.0.1"
+
+[dependencies]
+MoveStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "moveos/moveos-stdlib/move-stdlib", rev = "main" }
+MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "moveos/moveos-stdlib/moveos-stdlib", rev = "main" }
+RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "crates/rooch-framework", rev = "main" }
+
+[addresses]
+quick_start_object_counter =  "0x9fd886140ae373a85101d2c7a5f2eda077ca9a05c3b1c221594ff4473a702c83"
+std =  "0x1"
+moveos_std =  "0x2"
+rooch_framework =  "0x3"
