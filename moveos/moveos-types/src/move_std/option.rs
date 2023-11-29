@@ -20,6 +20,12 @@ pub struct MoveOption<E> {
     pub vec: Vec<E>,
 }
 
+impl<E> Default for MoveOption<E> {
+    fn default() -> Self {
+        Self::none()
+    }
+}
+
 impl<E> MoveOption<E> {
     pub fn some(e: E) -> Self {
         Self { vec: vec![e] }

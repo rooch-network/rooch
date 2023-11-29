@@ -138,19 +138,22 @@ pub trait MoveState: MoveType + DeserializeOwned + Serialize {
         let value = self.to_bytes();
         State::new(value, Self::type_tag())
     }
+
+    /// Convert the MoveState to MoveValue
     fn to_move_value(&self) -> MoveValue {
         let blob = self.to_bytes();
         MoveValue::simple_deserialize(&blob, &Self::type_layout())
-            .expect("Deserialize the MoveValue from MoveState should success")
+            .expect("Deserialize the MoveValue from MoveState bytes should success")
     }
 
+    /// Convert the MoveState to MoveRuntime Value
     fn to_runtime_value(&self) -> Value {
         let blob = self.to_bytes();
         Value::simple_deserialize(&blob, &Self::type_layout())
-            .expect("Deserialize the Move Runtime Value from MoveState should success")
+            .expect("Deserialize the Move Runtime Value from MoveState bytes should success")
     }
 
-    /// Deserialize the MoveState from MoveRuntime Value
+    /// Convert the MoveState from MoveRuntime Value
     fn from_runtime_value(value: Value) -> Result<Self>
     where
         Self: Sized,
@@ -159,7 +162,7 @@ pub trait MoveState: MoveType + DeserializeOwned + Serialize {
             .simple_serialize(&Self::type_layout())
             .ok_or_else(|| {
                 anyhow::anyhow!(
-                    "Serialize the MoveState from Value error: {:?}",
+                    "Serilaize the MoveState to bytes error: {:?}",
                     Self::type_tag()
                 )
             })?;

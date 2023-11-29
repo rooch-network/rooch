@@ -22,6 +22,7 @@ pub mod ethereum_validator;
 pub mod gas_coin;
 pub mod genesis;
 pub mod native_validator;
+pub mod ord;
 pub mod session_key;
 pub mod timestamp;
 pub mod transaction_validator;

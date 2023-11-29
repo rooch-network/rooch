@@ -114,6 +114,7 @@ bitcoin = { version = "0.31.0", features = ["rand-std"] }
 bitcoincore-rpc = "0.18.0"
 bip32 = "0.4.0"
 byteorder = "1.4.3"
+brotli = "3.4.0"
 clap = { version = "3.2.23", features = ["derive", "env"] }
 chrono = "0.4.23"
 coerce = "0.8"
@@ -189,6 +190,7 @@ rocksdb = { version = "0.21.0", features = ["snappy", "lz4", "zstd", "zlib", "mu
 prometheus = "0.13.3"
 coarsetime = "0.1.22"
 hyper = { version = "0.14.12", features = ["full"] }
+http = "0.2.6"
 num_enum = "0.5.7"
 libc = "^0.2"
 nostr = "0.22"

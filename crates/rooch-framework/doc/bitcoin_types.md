@@ -9,6 +9,7 @@
 -  [Struct `Header`](#0x3_bitcoin_types_Header)
 -  [Struct `Transaction`](#0x3_bitcoin_types_Transaction)
 -  [Struct `TxIn`](#0x3_bitcoin_types_TxIn)
+-  [Struct `Witness`](#0x3_bitcoin_types_Witness)
 -  [Struct `OutPoint`](#0x3_bitcoin_types_OutPoint)
 -  [Struct `TxOut`](#0x3_bitcoin_types_TxOut)
 -  [Constants](#@Constants_0)
@@ -29,6 +30,9 @@
 -  [Function `txin_script_sig`](#0x3_bitcoin_types_txin_script_sig)
 -  [Function `txin_sequence`](#0x3_bitcoin_types_txin_sequence)
 -  [Function `txin_witness`](#0x3_bitcoin_types_txin_witness)
+-  [Function `witness_nth`](#0x3_bitcoin_types_witness_nth)
+-  [Function `witness_len`](#0x3_bitcoin_types_witness_len)
+-  [Function `witness_tapscript`](#0x3_bitcoin_types_witness_tapscript)
 -  [Function `new_outpoint`](#0x3_bitcoin_types_new_outpoint)
 -  [Function `outpoint_txid`](#0x3_bitcoin_types_outpoint_txid)
 -  [Function `outpoint_vout`](#0x3_bitcoin_types_outpoint_vout)
@@ -38,7 +42,8 @@
 -  [Function `unpack_txout`](#0x3_bitcoin_types_unpack_txout)
 
 
-<pre><code><b>use</b> <a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf">0x3::bitcoin_script_buf</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf">0x3::bitcoin_script_buf</a>;
 </code></pre>
 
 
@@ -87,6 +92,17 @@
 
 
 
+<a name="0x3_bitcoin_types_Witness"></a>
+
+## Struct `Witness`
+
+
+
+<pre><code><b>struct</b> <a href="bitcoin_types.md#0x3_bitcoin_types_Witness">Witness</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
 <a name="0x3_bitcoin_types_OutPoint"></a>
 
 ## Struct `OutPoint`
@@ -119,6 +135,15 @@
 
 
 <pre><code><b>const</b> <a href="bitcoin_types.md#0x3_bitcoin_types_LOCK_TIME_THRESHOLD">LOCK_TIME_THRESHOLD</a>: u32 = 500000000;
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_types_TAPROOT_ANNEX_PREFIX"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin_types.md#0x3_bitcoin_types_TAPROOT_ANNEX_PREFIX">TAPROOT_ANNEX_PREFIX</a>: u8 = 80;
 </code></pre>
 
 
@@ -305,7 +330,46 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_types.md#0x3_bitcoin_types_txin_witness">txin_witness</a>(self: &<a href="bitcoin_types.md#0x3_bitcoin_types_TxIn">bitcoin_types::TxIn</a>): &<a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_types.md#0x3_bitcoin_types_txin_witness">txin_witness</a>(self: &<a href="bitcoin_types.md#0x3_bitcoin_types_TxIn">bitcoin_types::TxIn</a>): &<a href="bitcoin_types.md#0x3_bitcoin_types_Witness">bitcoin_types::Witness</a>
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_types_witness_nth"></a>
+
+## Function `witness_nth`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_types.md#0x3_bitcoin_types_witness_nth">witness_nth</a>(self: &<a href="bitcoin_types.md#0x3_bitcoin_types_Witness">bitcoin_types::Witness</a>, nth: u64): &<a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_types_witness_len"></a>
+
+## Function `witness_len`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_types.md#0x3_bitcoin_types_witness_len">witness_len</a>(self: &<a href="bitcoin_types.md#0x3_bitcoin_types_Witness">bitcoin_types::Witness</a>): u64
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_types_witness_tapscript"></a>
+
+## Function `witness_tapscript`
+
+Get Tapscript following BIP341 rules regarding accounting for an annex.
+
+This does not guarantee that this represents a P2TR [<code><a href="bitcoin_types.md#0x3_bitcoin_types_Witness">Witness</a></code>]. It
+merely gets the second to last or third to last element depending on
+the first byte of the last element being equal to 0x50. See
+bitcoin_script::is_v1_p2tr to check whether this is actually a Taproot witness.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_types.md#0x3_bitcoin_types_witness_tapscript">witness_tapscript</a>(self: &<a href="bitcoin_types.md#0x3_bitcoin_types_Witness">bitcoin_types::Witness</a>): <a href="_Option">option::Option</a>&lt;<a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf_ScriptBuf">bitcoin_script_buf::ScriptBuf</a>&gt;
 </code></pre>
 
 

@@ -1,0 +1,132 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
+#[allow(dead_code)]
+pub mod envelope;
+#[allow(dead_code)]
+pub mod inscription;
+#[allow(dead_code)]
+pub mod inscription_id;
+pub mod media;
+#[cfg(test)]
+#[allow(dead_code)]
+pub(crate) mod test;
+
+use anyhow::Result;
+use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_core_types::gas_algebra::InternalGas;
+use move_core_types::vm_status::StatusCode;
+use move_vm_runtime::native_functions::NativeContext;
+use move_vm_runtime::native_functions::NativeFunction;
+use move_vm_types::{
+    loaded_data::runtime_types::Type,
+    natives::function::NativeResult,
+    pop_arg,
+    values::{StructRef, Value, Vector},
+};
+use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
+use moveos_types::state::{MoveState, MoveType};
+use rooch_types::framework::bitcoin_types::Witness;
+use smallvec::smallvec;
+use std::collections::VecDeque;
+use {envelope::ParsedEnvelope, envelope::RawEnvelope, inscription::Inscription};
+
+#[derive(Debug, Clone)]
+pub struct FromWitnessGasParameters {
+    pub base: InternalGas,
+}
+
+impl FromWitnessGasParameters {
+    pub fn zeros() -> Self {
+        Self { base: 0.into() }
+    }
+}
+
+/// Rust implementation of parse Inscription from witness
+#[inline]
+pub(crate) fn native_from_witness(
+    gas_params: &FromWitnessGasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert_eq!(ty_args.len(), 0);
+    debug_assert_eq!(args.len(), 1);
+
+    let cost = gas_params.base;
+
+    // TODO(gas): charge gas
+    let witness_ref = pop_arg!(args, StructRef);
+    let wintness_value = witness_ref.read_ref()?;
+    let witness = Witness::from_runtime_value(wintness_value).map_err(|e| {
+        PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+            .with_message(format!("Failed to parse witness: {}", e))
+    })?;
+    let bitcoin_witness = bitcoin::Witness::from_slice(witness.witness.as_slice());
+    let inscriptions = from_witness(&bitcoin_witness).map_err(|e| {
+        PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+            .with_message(format!("Failed to parse inscription: {}", e))
+    })?;
+    let inscription_vm_type = context
+        .load_type(&rooch_types::framework::ord::Inscription::type_tag())
+        .map_err(|e| e.to_partial())?;
+    let val = Vector::pack(
+        &inscription_vm_type,
+        inscriptions
+            .into_iter()
+            .map(|i| Into::<rooch_types::framework::ord::Inscription>::into(i).to_runtime_value())
+            .collect::<Vec<_>>(),
+    )?;
+
+    Ok(NativeResult::ok(cost, smallvec![val]))
+}
+
+#[derive(Debug, Clone)]
+pub struct GasParameters {
+    pub from_witness: FromWitnessGasParameters,
+}
+
+impl GasParameters {
+    pub fn zeros() -> Self {
+        Self {
+            from_witness: FromWitnessGasParameters::zeros(),
+        }
+    }
+}
+
+pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
+    let natives = [(
+        "from_witness",
+        make_native(gas_params.from_witness, native_from_witness),
+    )];
+
+    make_module_natives(natives)
+}
+
+pub fn from_witness(witness: &bitcoin::Witness) -> Result<Vec<Inscription>> {
+    let inscriptions = witness
+        .tapscript()
+        .map(|script| {
+            Ok::<Vec<inscription::Inscription>, anyhow::Error>(
+                RawEnvelope::from_tapscript(script, 0usize)?
+                    .into_iter()
+                    .map(ParsedEnvelope::from)
+                    .map(|e| e.payload)
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .transpose()?
+        .unwrap_or_default();
+    Ok(inscriptions)
+}
+
+pub fn from_transaction(transaction: &bitcoin::Transaction) -> Result<Vec<Inscription>> {
+    Ok(transaction
+        .input
+        .iter()
+        .map(|tx_in| from_witness(&tx_in.witness))
+        .collect::<Result<Vec<_>>>()?
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>())
+}
