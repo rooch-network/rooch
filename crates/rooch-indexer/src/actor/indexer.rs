@@ -67,12 +67,6 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
     async fn handle(&mut self, msg: IndexerStatesMessage, _ctx: &mut ActorContext) -> Result<()> {
         let IndexerStatesMessage { state_change_set } = msg;
 
-        // pub struct StateChangeSet {
-        //     pub new_tables: BTreeMap<ObjectID, TableTypeInfo>,
-        //     pub removed_tables: BTreeSet<ObjectID>,
-        //     pub changes: BTreeMap<ObjectID, TableChange>,
-        // }
-
         let mut new_global_states = vec![];
         let mut update_global_states = vec![];
         let mut remove_global_states = vec![];
@@ -93,11 +87,9 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                                 let object = value.cast::<ObjectEntity<TableInfo>>()?;
                                 let obj_value_json = serde_json::to_string(&object.value)?;
 
-                                //TODO don't need set key_type when update
-                                let state = IndexedGlobalState::new_from_table_object(
+                                let state = IndexedGlobalState::new_from_table_object_update(
                                     object,
                                     obj_value_json,
-                                    "".to_string(),
                                 );
                                 update_global_states.push(state);
                             } else if value.is_object() {
@@ -114,7 +106,7 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                         }
                         Op::Delete => {
                             let table_handle = ObjectID::from_bytes(key.as_slice())?;
-                            remove_global_states.push(table_handle);
+                            remove_global_states.push(table_handle.to_string());
                         }
                         Op::New(value) => {
                             // table object
@@ -150,14 +142,11 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                     }
                 }
             } else {
+                // TODO update table size if ObjectID is table hanlde
                 // let object = self.moveos_store.0.get_state_store().get_as_object::<TableInfo>(table_handle)?;
-                // let new_state_root = table.put_changes(table_change.entries.into_iter())?;
-                // object.value.state_root = AccountAddress::new(new_state_root.into());
-                // let curr_table_size: i64 = object.value.size as i64;
-                // let updated_table_size = curr_table_size + table_change.size_increment;
-                // debug_assert!(updated_table_size >= 0);
-                // object.value.size = updated_table_size as u64;
-                // changed_objects.put(table_handle.to_bytes(), object.into());
+
+                // TODO Since table creation may be lazy, create global table if the table does not exist
+                // let (mut object, table) = self.get_as_table_or_create(table_handle)?;
 
                 for (key, op) in table_change.entries.into_iter() {
                     match op {
@@ -174,7 +163,8 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                         }
                         Op::Delete => {
                             let key_hash = format!("0x{}", hex::encode(key.as_slice()));
-                            remove_leaf_states.push((table_handle, key_hash));
+                            let id = format!("{}{}", table_handle, key_hash);
+                            remove_leaf_states.push(id);
                         }
                         Op::New(value) => {
                             let key_hash = format!("0x{}", hex::encode(key.as_slice()));
@@ -192,20 +182,24 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
             }
         }
 
+        // TODO both remove global states table and leaf states talbe
         // for table_handle in state_change_set.removed_tables {
         //     changed_objects.remove(table_handle.to_bytes());
         // }
         //
 
+        //Merge new global states and update global states
+        new_global_states.append(&mut update_global_states);
         self.indexer_store
-            .persist_global_states(new_global_states)?;
+            .persist_or_update_global_states(new_global_states)?;
         self.indexer_store
-            .update_global_states(update_global_states)?;
-        // self.indexer_store.delete_global_states(remove_global_states)?;
+            .delete_global_states(remove_global_states)?;
 
-        self.indexer_store.persist_leaf_states(new_leaf_states)?;
-        self.indexer_store.update_leaf_states(update_leaf_states)?;
-        // self.indexer_store.delete_leaf_states(remove_leaf_states)?;
+        //Merge new leaf states and update leaf states
+        new_leaf_states.append(&mut update_leaf_states);
+        self.indexer_store
+            .persist_or_update_leaf_states(new_leaf_states)?;
+        self.indexer_store.delete_leaf_states(remove_leaf_states)?;
         Ok(())
     }
 }

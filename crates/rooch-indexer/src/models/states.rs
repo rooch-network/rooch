@@ -10,7 +10,7 @@ use move_core_types::language_storage::TypeTag;
 use moveos_types::moveos_std::object::ObjectID;
 use std::str::FromStr;
 
-#[derive(Clone, Debug, Queryable, Insertable)]
+#[derive(Clone, Debug, Queryable, Insertable, AsChangeset)]
 #[diesel(table_name = global_states)]
 pub struct StoredGlobalState {
     /// The global state key
@@ -74,9 +74,11 @@ impl StoredGlobalState {
     }
 }
 
-#[derive(Clone, Debug, Queryable, Insertable)]
+#[derive(Clone, Debug, Queryable, Insertable, Identifiable, AsChangeset)]
 #[diesel(table_name = leaf_states)]
 pub struct StoredLeafState {
+    /// A primary key represents composite key of (object_id, key_hash)
+    pub id: String,
     /// The leaf state table handle
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub object_id: String,
@@ -99,7 +101,9 @@ pub struct StoredLeafState {
 
 impl From<IndexedLeafState> for StoredLeafState {
     fn from(state: IndexedLeafState) -> Self {
+        let id = format!("{}{}", state.object_id, state.key_hash);
         Self {
+            id,
             object_id: state.object_id.to_string(),
             key_hash: state.key_hash,
             value: state.value,
@@ -116,6 +120,7 @@ impl StoredLeafState {
         let value_type = TypeTag::from_str(self.value_type.as_str())?;
 
         let state = IndexedLeafState {
+            id: self.id.clone(),
             object_id,
             key_hash: self.key_hash.clone(),
             value: self.value.clone(),

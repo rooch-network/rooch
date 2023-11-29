@@ -31,7 +31,8 @@ diesel::table! {
 }
 
 diesel::table! {
-    leaf_states (object_id, key_hash) {
+    leaf_states (id) {
+        id -> Text,
         object_id -> Text,
         key_hash -> Text,
         value -> Text,

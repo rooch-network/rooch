@@ -80,28 +80,26 @@ pub fn new_sqlite_connection_pool(db_url: &str) -> Result<SqliteConnectionPool, 
 }
 
 impl IndexerStoreTrait for IndexerStore {
-    fn persist_global_states(&self, states: Vec<IndexedGlobalState>) -> Result<(), IndexerError> {
-        self.sqlite_store.persist_global_states(states)
+    fn persist_or_update_global_states(
+        &self,
+        states: Vec<IndexedGlobalState>,
+    ) -> Result<(), IndexerError> {
+        self.sqlite_store.persist_or_update_global_states(states)
     }
 
-    fn update_global_states(&self, states: Vec<IndexedGlobalState>) -> Result<(), IndexerError> {
-        self.sqlite_store.update_global_states(states)
+    fn delete_global_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
+        self.sqlite_store.delete_global_states(state_pks)
     }
 
-    fn remove_global_states(&self, states: Vec<IndexedGlobalState>) -> Result<(), IndexerError> {
-        self.sqlite_store.remove_global_states(states)
+    fn persist_or_update_leaf_states(
+        &self,
+        states: Vec<IndexedLeafState>,
+    ) -> Result<(), IndexerError> {
+        self.sqlite_store.persist_or_update_leaf_states(states)
     }
 
-    fn persist_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError> {
-        self.sqlite_store.persist_leaf_states(states)
-    }
-
-    fn update_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError> {
-        self.sqlite_store.update_leaf_states(states)
-    }
-
-    fn remove_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError> {
-        self.sqlite_store.remove_leaf_states(states)
+    fn delete_leaf_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
+        self.sqlite_store.delete_leaf_states(state_pks)
     }
 
     fn persist_transactions(

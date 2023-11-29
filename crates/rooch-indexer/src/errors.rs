@@ -31,7 +31,7 @@ pub enum IndexerError {
     #[error("Indexer failed to reset SQLiteDB with error: `{0}`")]
     SQLiteResetError(String),
 
-    #[error("Indexer failed to commit changes to SQLiteDB with error: `{0}`")]
+    #[error("Indexer failed to write SQLiteDB with error: `{0}`")]
     SQLiteWriteError(String),
 
     #[error(transparent)]

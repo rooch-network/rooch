@@ -212,10 +212,21 @@ impl IndexedGlobalState {
             updated_at: 0,
         }
     }
+
+    pub fn new_from_table_object_update(
+        table_object: ObjectEntity<TableInfo>,
+        table_object_value_json: String,
+    ) -> Self {
+        // No need to update key_type when update global state
+        Self::new_from_table_object(table_object, table_object_value_json, "".to_string())
+    }
 }
 
 #[derive(Debug, Clone)]
 pub struct IndexedLeafState {
+    /// A primary key represents composite key of (object_id, key_hash)
+    // Diesel doesn't support eq_any for tuples due to unable to use index, so use an extra primary key instead of composite key
+    pub id: String,
     /// The leaf state table handle
     pub object_id: ObjectID,
     /// The hash of the table key
@@ -237,7 +248,10 @@ impl IndexedLeafState {
         state_value_json: String,
         value_type: TypeTag,
     ) -> Self {
+        let id = format!("{}{}", object_id, key_hash);
+
         IndexedLeafState {
+            id,
             object_id,
             key_hash,
             value: state_value_json,

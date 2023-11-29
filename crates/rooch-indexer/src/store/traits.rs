@@ -5,17 +5,19 @@ use crate::errors::IndexerError;
 use crate::types::{IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTransaction};
 
 pub trait IndexerStoreTrait: Send + Sync {
-    fn persist_global_states(&self, states: Vec<IndexedGlobalState>) -> Result<(), IndexerError>;
+    fn persist_or_update_global_states(
+        &self,
+        states: Vec<IndexedGlobalState>,
+    ) -> Result<(), IndexerError>;
 
-    fn update_global_states(&self, states: Vec<IndexedGlobalState>) -> Result<(), IndexerError>;
+    fn delete_global_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError>;
 
-    fn remove_global_states(&self, states: Vec<IndexedGlobalState>) -> Result<(), IndexerError>;
+    fn persist_or_update_leaf_states(
+        &self,
+        states: Vec<IndexedLeafState>,
+    ) -> Result<(), IndexerError>;
 
-    fn persist_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError>;
-
-    fn update_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError>;
-
-    fn remove_leaf_states(&self, states: Vec<IndexedLeafState>) -> Result<(), IndexerError>;
+    fn delete_leaf_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError>;
 
     fn persist_transactions(
         &self,
