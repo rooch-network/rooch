@@ -130,13 +130,13 @@ Feature: Rooch CLI integration tests
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
     # The sync states
-    Then cmd: "rpc request --method rooch_syncStates --params '[null, "1", false']"
+    Then cmd: "rpc request --method rooch_syncStates --params '[null, "2", false']"
     Then assert: "{{$.rpc[-1].data[0].tx_order}} == 1"
     Then assert: "{{$.rpc[-1].next_cursor}} == 1"
     Then assert: "{{$.rpc[-1].has_next_page}} == true"
     Then cmd: "rpc request --method rooch_syncStates --params '["1", "1", false']"
-    Then assert: "{{$.rpc[-1].data[0].tx_order}} == 0"
-    Then assert: "{{$.rpc[-1].next_cursor}} == 0"
+    Then assert: "{{$.rpc[-1].data[0].tx_order}} == 2"
+    Then assert: "{{$.rpc[-1].next_cursor}} == 2"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
     Then stop the server
