@@ -274,7 +274,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         .await?
         .into_actor(Some("Relayer"), &actor_system)
         .await?;
-        let relay_tick_in_seconds: u64 = 5;
+        let relay_tick_in_seconds: u64 = 1;
         let relayer_timer = Timer::start(
             relayer,
             Duration::from_secs(relay_tick_in_seconds),
