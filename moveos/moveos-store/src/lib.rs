@@ -67,6 +67,7 @@ impl StoreMeta {
     }
 }
 
+#[derive(Clone)]
 pub struct MoveOSDB {
     pub node_store: NodeDBStore,
     pub event_store: EventDBStore,
@@ -103,6 +104,7 @@ impl MoveOSDB {
     }
 }
 
+#[derive(Clone)]
 pub struct MoveOSStore {
     pub statedb: StateDBStore,
     pub moveosdb: MoveOSDB,

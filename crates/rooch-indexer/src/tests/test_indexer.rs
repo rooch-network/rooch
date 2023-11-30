@@ -3,22 +3,27 @@
 
 use crate::indexer_reader::IndexerReader;
 use crate::store::traits::IndexerStoreTrait;
-use crate::types::{IndexedEvent, IndexedTransaction};
+use crate::types::{IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTransaction};
 use crate::IndexerStore;
 use anyhow::Result;
 use ethers::types::{Bytes, U256};
 use move_core_types::account_address::AccountAddress;
+use move_core_types::effects::Op;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
 use moveos_types::move_types::{random_identity, random_struct_tag, random_type_tag, FunctionId};
+use moveos_types::moveos_std::context;
 use moveos_types::moveos_std::event::{Event, EventID};
-use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::object::{NamedTableID, ObjectEntity, ObjectID, RawData};
+use moveos_types::moveos_std::raw_table::TableInfo;
 use moveos_types::moveos_std::tx_context::TxContext;
+use moveos_types::state::{State, StateChangeSet, TableChange, TableTypeInfo};
 use moveos_types::transaction::{
     FunctionCall, MoveAction, ScriptCall, TransactionExecutionInfo, VerifiedMoveAction,
     VerifiedMoveOSTransaction,
 };
+use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use rooch_config::indexer_config::ROOCH_INDEXER_DB_FILENAME;
 use rooch_types::address::{RoochAddress, RoochSupportedAddress};
@@ -31,6 +36,19 @@ use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
 
 fn random_bytes() -> Vec<u8> {
     H256::random().0.to_vec()
+}
+
+pub fn random_string() -> String {
+    let mut rng = thread_rng();
+    let len = rng.gen_range(1..=100);
+
+    if len == 0 {
+        "".to_string()
+    } else {
+        let mut string = "a".to_string();
+        (1..len).for_each(|_| string.push(char::from(rng.sample(Alphanumeric))));
+        string
+    }
 }
 
 fn random_typed_transaction() -> TypedTransaction {
@@ -214,6 +232,164 @@ fn random_event() -> Event {
     }
 }
 
+#[allow(unused)]
+fn random_table_change() -> TableChange {
+    let mut table_change = TableChange::default();
+
+    let mut rng = thread_rng();
+    for _n in 0..rng.gen_range(1..=10) {
+        table_change.entries.insert(
+            random_bytes(),
+            Op::New(State::new(random_bytes(), random_type_tag())),
+        );
+    }
+    table_change
+}
+
+#[allow(unused)]
+fn random_state_change_set() -> StateChangeSet {
+    let mut state_change_set = StateChangeSet::default();
+
+    // generate new tables
+    let mut rng = thread_rng();
+    for _n in 0..rng.gen_range(1..=5) {
+        let handle = ObjectID::from(AccountAddress::random());
+        state_change_set
+            .new_tables
+            .insert(handle, TableTypeInfo::new(random_type_tag()));
+    }
+
+    // generate remove tables
+    for _n in 0..rng.gen_range(1..=5) {
+        let handle = ObjectID::from(AccountAddress::random());
+        state_change_set.removed_tables.insert(handle);
+    }
+
+    // generate change tables
+    for _n in 0..rng.gen_range(1..=5) {
+        let handle = ObjectID::from(AccountAddress::random());
+        state_change_set
+            .changes
+            .insert(handle, random_table_change());
+    }
+
+    // generate modules change tables
+    for _n in 0..rng.gen_range(1..=5) {
+        let handle = NamedTableID::Module(AccountAddress::random()).to_object_id();
+        state_change_set
+            .changes
+            .insert(handle, random_table_change());
+    }
+
+    // generate resources change tables
+    for _n in 0..rng.gen_range(1..=10) {
+        let handle = NamedTableID::Resource(AccountAddress::random()).to_object_id();
+        state_change_set
+            .changes
+            .insert(handle, random_table_change());
+    }
+
+    // generate global table
+    state_change_set
+        .changes
+        .insert(context::GLOBAL_OBJECT_STORAGE_HANDLE, random_table_change());
+
+    state_change_set
+}
+
+fn random_table_object() -> ObjectEntity<TableInfo> {
+    let table_info = TableInfo::new(AccountAddress::random());
+
+    ObjectEntity::new_table_object(ObjectID::from(AccountAddress::random()), table_info)
+}
+
+fn random_raw_object() -> ObjectEntity<RawData> {
+    let raw_data = RawData {
+        struct_tag: random_struct_tag(),
+        value: random_bytes(),
+    };
+
+    ObjectEntity::new_raw_object(ObjectID::from(AccountAddress::random()), raw_data)
+}
+
+fn random_update_global_states() -> Vec<IndexedGlobalState> {
+    let mut update_global_states = vec![];
+
+    let mut rng = thread_rng();
+    for _n in 0..rng.gen_range(1..=10) {
+        let state = IndexedGlobalState::new_from_table_object_update(
+            random_table_object(),
+            random_string(),
+        );
+        update_global_states.push(state);
+    }
+
+    for _n in 0..rng.gen_range(1..=10) {
+        let state = IndexedGlobalState::new_from_raw_object(random_raw_object(), random_string());
+        update_global_states.push(state);
+    }
+
+    update_global_states
+}
+
+fn random_new_global_states() -> Vec<IndexedGlobalState> {
+    let mut new_global_states = vec![];
+
+    let mut rng = thread_rng();
+    for _n in 0..rng.gen_range(1..=10) {
+        let state = IndexedGlobalState::new_from_table_object(
+            random_table_object(),
+            random_string(),
+            random_struct_tag().to_canonical_string(),
+        );
+
+        new_global_states.push(state);
+    }
+
+    new_global_states
+}
+
+fn random_remove_global_states() -> Vec<String> {
+    let mut remove_global_states = vec![];
+
+    let mut rng = thread_rng();
+    for _n in 0..rng.gen_range(1..=10) {
+        let table_handle = ObjectID::from(AccountAddress::random());
+        remove_global_states.push(table_handle.to_string());
+    }
+
+    remove_global_states
+}
+
+fn random_leaf_states() -> Vec<IndexedLeafState> {
+    let mut leaf_states = vec![];
+
+    let mut rng = thread_rng();
+    for _n in 0..rng.gen_range(1..=10) {
+        let state = IndexedLeafState::new(
+            ObjectID::from(AccountAddress::random()),
+            H256::random().to_string(),
+            random_string(),
+            random_type_tag(),
+        );
+        leaf_states.push(state);
+    }
+
+    leaf_states
+}
+
+fn random_remove_leaf_states() -> Vec<String> {
+    let mut remove_leaf_states = vec![];
+
+    let mut rng = thread_rng();
+    for _n in 0..rng.gen_range(1..=10) {
+        let table_handle = ObjectID::from(AccountAddress::random());
+        remove_leaf_states.push(table_handle.to_string());
+    }
+
+    remove_leaf_states
+}
+
 #[test]
 fn test_transaction_store() -> Result<()> {
     let tmpdir = moveos_config::temp_dir();
@@ -311,5 +487,40 @@ fn test_event_store() -> Result<()> {
     let filter = EventFilter::Sender(random_moveos_tx.ctx.sender);
     let query_events = indexer_reader.query_events_with_filter(filter, None, 1, true)?;
     assert_eq!(query_events.len(), 1);
+    Ok(())
+}
+
+#[test]
+fn test_state_store() -> Result<()> {
+    let tmpdir = moveos_config::temp_dir();
+    let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_FILENAME);
+    if !indexer_db.exists() {
+        std::fs::File::create(indexer_db.clone())?;
+    }
+    let indexer_db_url = indexer_db
+        .as_path()
+        .to_str()
+        .ok_or(anyhow::anyhow!("Invalid mock indexer db dir"))?;
+    let indexer_store = IndexerStore::new(indexer_db_url)?;
+    indexer_store.create_all_tables_if_not_exists()?;
+
+    let mut new_global_states = random_new_global_states();
+    let mut update_global_states = random_update_global_states();
+    let remove_global_states = random_remove_global_states();
+
+    let mut new_leaf_states = random_leaf_states();
+    let mut update_leaf_states = random_leaf_states();
+    let remove_leaf_states = random_remove_leaf_states();
+
+    //Merge new global states and update global states
+    new_global_states.append(&mut update_global_states);
+    indexer_store.persist_or_update_global_states(new_global_states)?;
+    indexer_store.delete_global_states(remove_global_states)?;
+
+    //Merge new leaf states and update leaf states
+    new_leaf_states.append(&mut update_leaf_states);
+    indexer_store.persist_or_update_leaf_states(new_leaf_states)?;
+    indexer_store.delete_leaf_states(remove_leaf_states)?;
+
     Ok(())
 }

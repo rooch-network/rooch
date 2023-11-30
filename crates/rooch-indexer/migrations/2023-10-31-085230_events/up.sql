@@ -11,7 +11,6 @@ CREATE TABLE events
     sender             VARCHAR      NOT NULL,
     created_at         BIGINT       NOT NULL,
     -- Constraints
-    -- PRIMARY KEY (event_handle_id, event_seq)
     PRIMARY KEY (tx_order, event_index),
     UNIQUE (event_handle_id, event_seq)
 );

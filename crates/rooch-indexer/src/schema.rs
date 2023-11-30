@@ -18,6 +18,31 @@ diesel::table! {
 }
 
 diesel::table! {
+    global_states (object_id) {
+        object_id -> Text,
+        owner -> Text,
+        flag -> SmallInt,
+        value -> Text,
+        key_type -> Text,
+        size -> BigInt,
+        created_at -> BigInt,
+        updated_at -> BigInt,
+    }
+}
+
+diesel::table! {
+    leaf_states (id) {
+        id -> Text,
+        object_id -> Text,
+        key_hash -> Text,
+        value -> Text,
+        value_type -> Text,
+        created_at -> BigInt,
+        updated_at -> BigInt,
+    }
+}
+
+diesel::table! {
     transactions (tx_order) {
         tx_order -> BigInt,
         tx_hash -> Text,
@@ -44,4 +69,4 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(events, transactions,);
+diesel::allow_tables_to_appear_in_same_query!(events, global_states, leaf_states, transactions,);

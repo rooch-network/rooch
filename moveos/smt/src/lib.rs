@@ -80,9 +80,10 @@ impl NodeStore for InMemoryNodeStore {
 }
 
 /// Sparse Merkle Tree
+#[derive(Clone)]
 pub struct SMTree<K, V, NS> {
     node_store: NS,
-    root_hash: RwLock<H256>,
+    root_hash: Arc<RwLock<H256>>,
     key: PhantomData<K>,
     value: PhantomData<V>,
 }
@@ -98,7 +99,7 @@ where
         let state_root_hash = root_hash.unwrap_or(*SPARSE_MERKLE_PLACEHOLDER_HASH);
         SMTree {
             node_store,
-            root_hash: RwLock::new(state_root_hash),
+            root_hash: Arc::new(RwLock::new(state_root_hash)),
             key: PhantomData,
             value: PhantomData,
         }

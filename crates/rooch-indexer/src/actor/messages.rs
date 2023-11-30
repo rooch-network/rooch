@@ -4,6 +4,7 @@
 use anyhow::Result;
 use coerce::actor::message::Message;
 use moveos_types::moveos_std::event::Event;
+use moveos_types::state::StateChangeSet;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::transaction_filter::TransactionFilter;
@@ -33,6 +34,17 @@ pub struct IndexerEventsMessage {
 }
 
 impl Message for IndexerEventsMessage {
+    type Result = Result<()>;
+}
+
+/// Indexer State write Message
+// #[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
+pub struct IndexerStatesMessage {
+    pub state_change_set: StateChangeSet,
+}
+
+impl Message for IndexerStatesMessage {
     type Result = Result<()>;
 }
 

@@ -3,12 +3,13 @@
 
 use crate::actor::indexer::IndexerActor;
 use crate::actor::messages::{
-    IndexerEventsMessage, IndexerTransactionMessage, QueryIndexerEventsMessage,
-    QueryIndexerTransactionsMessage,
+    IndexerEventsMessage, IndexerStatesMessage, IndexerTransactionMessage,
+    QueryIndexerEventsMessage, QueryIndexerTransactionsMessage,
 };
 use anyhow::Result;
 use coerce::actor::ActorRef;
 use moveos_types::moveos_std::event::Event;
+use moveos_types::state::StateChangeSet;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::transaction_filter::TransactionFilter;
@@ -22,6 +23,12 @@ pub struct IndexerProxy {
 impl IndexerProxy {
     pub fn new(actor: ActorRef<IndexerActor>) -> Self {
         Self { actor }
+    }
+
+    pub async fn indexer_states(&self, state_change_set: StateChangeSet) -> Result<()> {
+        self.actor
+            .send(IndexerStatesMessage { state_change_set })
+            .await?
     }
 
     pub async fn indexer_transaction(
