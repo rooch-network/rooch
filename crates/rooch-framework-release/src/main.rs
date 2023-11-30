@@ -19,11 +19,7 @@ use std::path::PathBuf;
     author = "The Rooch Core Contributors"
 )]
 struct StdlibOpts {
-    /// print debug log
-    #[clap(long)]
-    debug: bool,
-
-    /// Version number for compiled stdlib, starting from 1.
+    /// Version number for compiled stdlib, starting from 1 and increasing continuously.
     #[clap(short = 'v', long, value_name = "VERSION")]
     version: Option<u64>,
 
@@ -35,9 +31,12 @@ struct StdlibOpts {
 fn main() {
     let opts: StdlibOpts = StdlibOpts::parse();
 
-    let curr_stdlib = build_stdlib().unwrap();
     let version = StdlibVersion::new(opts.version.unwrap_or(0));
     let pre_version = if let Some(version_num) = opts.version {
+        assert!(
+            version_num > 0,
+            "The version number must start from 1 and increase continuously"
+        );
         if version_num > 1 {
             Some(StdlibVersion::new(version_num - 1))
         } else {
@@ -53,6 +52,7 @@ fn main() {
         }
     };
 
+    let curr_stdlib = build_stdlib().unwrap();
     // check compatibility
     if let Some(pre_version) = pre_version {
         if !opts.no_check_compatibility {
@@ -71,17 +71,15 @@ fn main() {
 
 /// Check whether the new stdlib is compatible with the old stdlib
 fn assert_stdlib_compatibility(curr_stdlib: &Stdlib, prev_stdlib: &Stdlib) {
-    let new_modules = curr_stdlib
+    let new_modules_map = curr_stdlib
         .all_modules()
-        .expect("Extract modules from new stdlib failed");
-    let old_modules = prev_stdlib
-        .all_modules()
-        .expect("Extract modules from old stdlib failed");
-    let new_modules_map = new_modules
+        .expect("Extract modules from new stdlib failed")
         .into_iter()
         .map(|module| (module.self_id(), module))
         .collect::<HashMap<_, _>>();
-    let old_modules_map = old_modules
+    let old_modules_map = prev_stdlib
+        .all_modules()
+        .expect("Extract modules from old stdlib failed")
         .into_iter()
         .map(|module| (module.self_id(), module))
         .collect::<HashMap<_, _>>();
@@ -172,7 +170,8 @@ fn current_max_version() -> u64 {
 fn stdlib_output_file(version_str: &str) -> PathBuf {
     let version_dir = release_dir().join(version_str);
     if !version_dir.exists() {
-        std::fs::create_dir(&version_dir).expect(&format!("Create dir {:?} failed", version_dir));
+        std::fs::create_dir_all(&version_dir)
+            .expect(&format!("Create dir {:?} failed", version_dir));
     }
     version_dir.join("stdlib")
 }

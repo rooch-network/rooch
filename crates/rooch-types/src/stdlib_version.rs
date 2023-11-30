@@ -8,8 +8,9 @@ use std::fmt::Formatter;
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[derive(Clone, Copy, Default, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub enum StdlibVersion {
+    #[default]
     Latest,
     Version(VersionNumber),
 }
@@ -65,12 +66,6 @@ impl Ord for StdlibVersion {
                 self_v.cmp(other_v)
             }
         }
-    }
-}
-
-impl Default for StdlibVersion {
-    fn default() -> Self {
-        StdlibVersion::Latest
     }
 }
 
