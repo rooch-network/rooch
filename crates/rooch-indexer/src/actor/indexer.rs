@@ -3,11 +3,13 @@
 
 use crate::actor::messages::{
     IndexerEventsMessage, IndexerStatesMessage, IndexerTransactionMessage,
-    QueryIndexerEventsMessage, QueryIndexerTransactionsMessage,
+    QueryIndexerEventsMessage, QueryIndexerTransactionsMessage, SyncIndexerStatesMessage,
 };
 use crate::indexer_reader::IndexerReader;
 use crate::store::traits::IndexerStoreTrait;
-use crate::types::{IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTransaction};
+use crate::types::{
+    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedStateChangeSet, IndexedTransaction,
+};
 use crate::IndexerStore;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
@@ -22,6 +24,7 @@ use moveos_types::state::State;
 use moveos_types::state_resolver::MoveOSResolverProxy;
 use rooch_rpc_api::jsonrpc_types::{AnnotatedMoveStructView, AnnotatedMoveValueView};
 use rooch_types::indexer::event_filter::IndexerEvent;
+use rooch_types::indexer::state::IndexerStateChangeSet;
 use rooch_types::transaction::TransactionWithInfo;
 
 pub struct IndexerActor {
@@ -65,7 +68,10 @@ impl Actor for IndexerActor {}
 #[async_trait]
 impl Handler<IndexerStatesMessage> for IndexerActor {
     async fn handle(&mut self, msg: IndexerStatesMessage, _ctx: &mut ActorContext) -> Result<()> {
-        let IndexerStatesMessage { state_change_set } = msg;
+        let IndexerStatesMessage {
+            tx_order,
+            state_change_set,
+        } = msg;
 
         let mut new_global_states = vec![];
         let mut update_global_states = vec![];
@@ -79,7 +85,7 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         // then delete all states which belongs to the table_handle from leaf states
         let mut remove_leaf_states_by_table_handle = vec![];
 
-        for (table_handle, table_change) in state_change_set.changes {
+        for (table_handle, table_change) in state_change_set.changes.clone() {
             // handle global object
             if table_handle == context::GLOBAL_OBJECT_STORAGE_HANDLE {
                 for (key, op) in table_change.entries.into_iter() {
@@ -186,7 +192,7 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
             }
         }
 
-        for table_handle in state_change_set.removed_tables {
+        for table_handle in state_change_set.removed_tables.clone() {
             remove_global_states.push(table_handle.to_string());
             remove_leaf_states_by_table_handle.push(table_handle.to_string());
         }
@@ -205,6 +211,12 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         self.indexer_store.delete_leaf_states(remove_leaf_states)?;
         self.indexer_store
             .delete_leaf_states_by_table_handle(remove_leaf_states_by_table_handle)?;
+
+        // Store state change set for state sync
+        let indexed_state_change_set = IndexedStateChangeSet::new(tx_order, state_change_set)?;
+        let indexed_state_change_sets = vec![indexed_state_change_set];
+        self.indexer_store
+            .persist_state_change_sets(indexed_state_change_sets)?;
         Ok(())
     }
 }
@@ -292,5 +304,28 @@ impl Handler<QueryIndexerEventsMessage> for IndexerActor {
         self.indexer_reader
             .query_events_with_filter(filter, cursor, limit, descending_order)
             .map_err(|e| anyhow!(format!("Failed to query indexer events: {:?}", e)))
+    }
+}
+
+#[async_trait]
+impl Handler<SyncIndexerStatesMessage> for IndexerActor {
+    async fn handle(
+        &mut self,
+        msg: SyncIndexerStatesMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<IndexerStateChangeSet>> {
+        let SyncIndexerStatesMessage {
+            cursor,
+            limit,
+            descending_order,
+        } = msg;
+        self.indexer_reader
+            .sync_states(cursor, limit, descending_order)
+            .map_err(|e| {
+                anyhow!(format!(
+                    "Failed to query indexer state change sets: {:?}",
+                    e
+                ))
+            })
     }
 }

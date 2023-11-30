@@ -3,11 +3,14 @@
 
 use crate::schema::global_states;
 use crate::schema::leaf_states;
-use crate::types::{IndexedGlobalState, IndexedLeafState};
+use crate::schema::state_change_sets;
+use crate::types::{IndexedGlobalState, IndexedLeafState, IndexedStateChangeSet};
 use diesel::prelude::*;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::TypeTag;
 use moveos_types::moveos_std::object::ObjectID;
+use rooch_rpc_api::jsonrpc_types::StateChangeSetView;
+use rooch_types::indexer::state::IndexerStateChangeSet;
 use std::str::FromStr;
 
 #[derive(Clone, Debug, Queryable, Insertable, AsChangeset)]
@@ -77,14 +80,15 @@ impl StoredGlobalState {
 #[derive(Clone, Debug, Queryable, Insertable, Identifiable, AsChangeset)]
 #[diesel(table_name = leaf_states)]
 pub struct StoredLeafState {
-    /// A primary key represents composite key of (object_id, key_hash)
+    /// A primary key represents composite key of (object_id, key_str)
+    #[diesel(sql_type = diesel::sql_types::Text)]
     pub id: String,
     /// The leaf state table handle
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub object_id: String,
-    /// The hash of the table key
+    /// The hex of the table key
     #[diesel(sql_type = diesel::sql_types::Text)]
-    pub key_hash: String,
+    pub key_str: String,
     /// The value of the table, json format
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub value: String,
@@ -101,11 +105,11 @@ pub struct StoredLeafState {
 
 impl From<IndexedLeafState> for StoredLeafState {
     fn from(state: IndexedLeafState) -> Self {
-        let id = format!("{}{}", state.object_id, state.key_hash);
+        let id = format!("{}{}", state.object_id, state.key_str);
         Self {
             id,
             object_id: state.object_id.to_string(),
-            key_hash: state.key_hash,
+            key_str: state.key_str,
             value: state.value,
             value_type: state.value_type.to_canonical_string(),
             created_at: state.created_at as i64,
@@ -122,12 +126,52 @@ impl StoredLeafState {
         let state = IndexedLeafState {
             id: self.id.clone(),
             object_id,
-            key_hash: self.key_hash.clone(),
+            key_str: self.key_str.clone(),
             value: self.value.clone(),
             value_type,
             created_at: self.created_at as u64,
             updated_at: self.updated_at as u64,
         };
         Ok(state)
+    }
+}
+
+#[derive(Clone, Debug, Queryable, Insertable, QueryableByName)]
+#[diesel(table_name = state_change_sets)]
+pub struct StoredStateChangeSet {
+    /// The tx order of this transaction which produce the state change set
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub tx_order: i64,
+    /// The state change set, json format
+    #[diesel(sql_type = diesel::sql_types::Text)]
+    pub state_change_set: String,
+    /// The tx executed timestamp on chain
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub created_at: i64,
+}
+
+impl From<IndexedStateChangeSet> for StoredStateChangeSet {
+    fn from(state_change_set: IndexedStateChangeSet) -> Self {
+        Self {
+            tx_order: state_change_set.tx_order as i64,
+            state_change_set: state_change_set.state_change_set,
+            created_at: state_change_set.created_at as i64,
+        }
+    }
+}
+
+impl StoredStateChangeSet {
+    pub fn try_into_indexer_state_change_set(
+        &self,
+    ) -> Result<IndexerStateChangeSet, anyhow::Error> {
+        let state_change_set: StateChangeSetView =
+            serde_json::from_str(self.state_change_set.as_str())?;
+
+        let indexer_state_change_set = IndexerStateChangeSet {
+            tx_order: self.tx_order as u64,
+            state_change_set: state_change_set.into(),
+            created_at: self.created_at as u64,
+        };
+        Ok(indexer_state_change_set)
     }
 }

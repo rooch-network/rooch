@@ -13,8 +13,10 @@ use diesel::{
 use std::ops::DerefMut;
 
 use crate::models::events::StoredEvent;
-use crate::schema::{events, transactions};
+use crate::models::states::StoredStateChangeSet;
+use crate::schema::{events, state_change_sets, transactions};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
+use rooch_types::indexer::state::IndexerStateChangeSet;
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::transaction::TransactionWithInfo;
 
@@ -293,6 +295,66 @@ impl IndexerReader {
             .collect::<Result<Vec<_>>>()
             .map_err(|e| {
                 IndexerError::SQLiteReadError(format!("Cast indexer events failed: {:?}", e))
+            })?;
+
+        Ok(result)
+    }
+
+    pub fn sync_states(
+        &self,
+        cursor: Option<u64>,
+        limit: usize,
+        descending_order: bool,
+    ) -> IndexerResult<Vec<IndexerStateChangeSet>> {
+        let tx_order = if let Some(cursor) = cursor {
+            cursor as i64
+        } else if descending_order {
+            let max_tx_order: i64 = self.inner_indexer_reader.run_query(|conn| {
+                state_change_sets::dsl::state_change_sets
+                    .select(state_change_sets::tx_order)
+                    .order_by(state_change_sets::tx_order.desc())
+                    .first::<i64>(conn)
+            })?;
+            max_tx_order + 1
+        } else {
+            -1
+        };
+
+        let where_clause = if descending_order {
+            format!(" ({TX_ORDER_STR} < {})", tx_order)
+        } else {
+            format!(" ({TX_ORDER_STR} > {})", tx_order)
+        };
+        let order_clause = if descending_order {
+            format!("{TX_ORDER_STR} DESC")
+        } else {
+            format!("{TX_ORDER_STR} ASC")
+        };
+
+        let query = format!(
+            "
+                SELECT * FROM state_change_sets \
+                WHERE {} \
+                ORDER BY {} \
+                LIMIT {}
+            ",
+            where_clause, order_clause, limit,
+        );
+
+        tracing::debug!("sync states: {}", query);
+        let stored_state_change_sets = self
+            .inner_indexer_reader
+            .run_query(|conn| diesel::sql_query(query).load::<StoredStateChangeSet>(conn))?;
+
+        let result = stored_state_change_sets
+            .into_iter()
+            .map(|t| t.try_into_indexer_state_change_set())
+            .collect::<Result<Vec<_>>>()
+            .map_err(|e| {
+                IndexerError::SQLiteReadError(format!(
+                    "Cast indexer state change sets failed: {:?}",
+                    e
+                ))
             })?;
 
         Ok(result)
