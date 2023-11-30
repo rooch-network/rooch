@@ -3,6 +3,7 @@
 
 use crate::natives::helpers::{make_module_natives, make_native};
 use anyhow::Result;
+use log::debug;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::TypeTag;
@@ -17,31 +18,99 @@ use move_vm_types::{
     pop_arg,
     values::{Struct, Value, Vector},
 };
+use moveos_types::addresses::MOVE_STD_ADDRESS;
+use moveos_types::move_std::string::MoveString;
+use moveos_types::moveos_std::simple_map::{Element, SimpleMap};
+use moveos_types::state::{MoveStructType, MoveType};
 use serde_json;
 use smallvec::smallvec;
 use std::collections::VecDeque;
 use std::str::FromStr;
 
+//TODO define more error code for convenience debug
 const E_TYPE_NOT_MATCH: u64 = 1;
 const E_INVALID_JSON_STRING: u64 = 2;
+
+fn json_obj_to_key_value_pairs(json_obj: &serde_json::Value) -> Result<Vec<(String, String)>> {
+    if let serde_json::Value::Object(obj) = json_obj {
+        let mut key_value_pairs = Vec::new();
+        for (key, value) in obj.iter() {
+            let key = key.to_string();
+            let value = match value {
+                serde_json::Value::String(s) => s.to_string(),
+                serde_json::Value::Number(n) => n.to_string(),
+                serde_json::Value::Bool(b) => b.to_string(),
+                serde_json::Value::Null => "null".to_string(),
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "Invalid json object, value of key {} is not string",
+                        key
+                    ))
+                }
+            };
+            key_value_pairs.push((key, value));
+        }
+        Ok(key_value_pairs)
+    } else {
+        Err(anyhow::anyhow!("Invalid json object"))
+    }
+}
 
 fn parse_struct_value_from_json(
     layout: &MoveStructLayout,
     json_value: &serde_json::Value,
     context: &NativeContext,
 ) -> Result<Struct> {
-    if let MoveStructLayout::WithTypes { fields, .. } = layout {
-        let field_values = fields
-            .iter()
-            .map(|field| -> Result<Value> {
-                let name = field.name.as_str();
-                let json_field = json_value
-                    .get(name)
-                    .ok_or_else(|| anyhow::anyhow!("Missing field {}", name))?;
-                parse_move_value_from_json(&field.layout, json_field, context)
-            })
-            .collect::<Result<Vec<Value>>>()?;
-        Ok(Struct::pack(field_values))
+    if let MoveStructLayout::WithTypes {
+        type_: struct_type,
+        fields,
+    } = layout
+    {
+        if struct_type.is_std_string(&MOVE_STD_ADDRESS) {
+            let str_value = json_value
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("Invalid string value"))?;
+            Ok(Struct::pack(vec![Value::vector_u8(
+                str_value.as_bytes().to_vec(),
+            )]))
+        } else if struct_type.is_ascii_string(&MOVE_STD_ADDRESS) {
+            let str_value = json_value
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("Invalid ascii string value"))?;
+            if !str_value.is_ascii() {
+                return Err(anyhow::anyhow!("Invalid ascii string value"));
+            }
+            Ok(Struct::pack(vec![Value::vector_u8(
+                str_value.as_bytes().to_vec(),
+            )]))
+        } else if struct_type == &SimpleMap::<MoveString, MoveString>::struct_tag() {
+            let key_value_pairs = json_obj_to_key_value_pairs(json_value)?;
+            let mut key_values = Vec::new();
+            for (key, value) in key_value_pairs {
+                key_values.push(Value::struct_(Struct::pack(vec![
+                    Value::struct_(Struct::pack(vec![Value::vector_u8(
+                        key.as_bytes().to_vec(),
+                    )])),
+                    Value::struct_(Struct::pack(vec![Value::vector_u8(
+                        value.as_bytes().to_vec(),
+                    )])),
+                ])));
+            }
+            let element_type = context.load_type(&Element::<MoveString, MoveString>::type_tag())?;
+            Ok(Struct::pack(vec![Vector::pack(&element_type, key_values)?]))
+        } else {
+            let field_values = fields
+                .iter()
+                .map(|field| -> Result<Value> {
+                    let name = field.name.as_str();
+                    let json_field = json_value.get(name).ok_or_else(|| {
+                        anyhow::anyhow!("type: {}, Missing field {}", struct_type, name)
+                    })?;
+                    parse_move_value_from_json(&field.layout, json_field, context)
+                })
+                .collect::<Result<Vec<Value>>>()?;
+            Ok(Struct::pack(field_values))
+        }
     } else {
         Err(anyhow::anyhow!("Invalid MoveStructLayout"))
     }
@@ -104,14 +173,7 @@ fn parse_move_value_from_json(
             let struct_value = parse_struct_value_from_json(struct_layout, json_value, context)?;
             Ok(Value::struct_(struct_value))
         }
-        MoveTypeLayout::Signer => {
-            let addr_str = json_value
-                .as_str()
-                .ok_or_else(|| anyhow::anyhow!("Invalid address value"))?;
-            let addr = AccountAddress::from_hex_literal(addr_str)
-                .map_err(|_| anyhow::anyhow!("Invalid address value"))?;
-            Ok(Value::signer(addr))
-        }
+        MoveTypeLayout::Signer => Err(anyhow::anyhow!("Do not support Signer type")),
         MoveTypeLayout::U16 => {
             let u64_value = json_value
                 .as_u64()
@@ -191,7 +253,8 @@ fn native_from_json(
     };
     let json_obj: serde_json::Value = match serde_json::from_str(json_str) {
         Ok(obj) => obj,
-        Err(_) => {
+        Err(e) => {
+            debug!("Failed to parse json object: {:?}", e);
             return Ok(NativeResult::err(
                 cost,
                 moveos_types::move_std::error::invalid_argument(E_INVALID_JSON_STRING),
@@ -203,10 +266,13 @@ fn native_from_json(
     if let MoveTypeLayout::Struct(struct_layout) = layout {
         match parse_struct_value_from_json(&struct_layout, &json_obj, context) {
             Ok(val) => Ok(NativeResult::ok(cost, smallvec![Value::struct_(val)])),
-            Err(_) => Ok(NativeResult::err(
-                cost,
-                moveos_types::move_std::error::invalid_argument(E_INVALID_JSON_STRING),
-            )),
+            Err(e) => {
+                debug!("Failed to parse struct_value: {:?}", e);
+                Ok(NativeResult::err(
+                    cost,
+                    moveos_types::move_std::error::invalid_argument(E_INVALID_JSON_STRING),
+                ))
+            }
         }
     } else {
         Ok(NativeResult::err(
