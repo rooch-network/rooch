@@ -388,6 +388,37 @@
           "$ref": "#/components/schemas/primitive_types::H256"
         }
       }
+    },
+    {
+      "name": "rooch_syncStates",
+      "description": "Sync state change sets from indexer",
+      "params": [
+        {
+          "name": "cursor",
+          "schema": {
+            "$ref": "#/components/schemas/u64"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "$ref": "#/components/schemas/usize"
+          }
+        },
+        {
+          "name": "descending_order",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "IndexerStateChangeSetPageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_IndexerStateChangeSetView_and_uint64"
+        }
+      }
     }
   ],
   "components": {
@@ -856,6 +887,29 @@
           }
         }
       },
+      "IndexerStateChangeSetView": {
+        "type": "object",
+        "required": [
+          "created_at",
+          "state_change_set",
+          "tx_order"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "state_change_set": {
+            "$ref": "#/components/schemas/StateChangeSetView"
+          },
+          "tx_order": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      },
       "KeptVMStatusView": {
         "oneOf": [
           {
@@ -1198,6 +1252,33 @@
           }
         }
       },
+      "PageView_for_IndexerStateChangeSetView_and_uint64": {
+        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
+        "type": "object",
+        "required": [
+          "data",
+          "has_next_page"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndexerStateChangeSetView"
+            }
+          },
+          "has_next_page": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      },
       "PageView_for_StateView_and_alloc::vec::Vec<u8>": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
@@ -1360,7 +1441,8 @@
       "TableChangeView": {
         "type": "object",
         "required": [
-          "entries"
+          "entries",
+          "size_increment"
         ],
         "properties": {
           "entries": {
@@ -1368,6 +1450,10 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/OpView_for_StateView"
             }
+          },
+          "size_increment": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },

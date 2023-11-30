@@ -7,10 +7,12 @@ use diesel::{ExpressionMethods, RunQueryDsl};
 
 use crate::errors::{Context, IndexerError};
 use crate::models::events::StoredEvent;
-use crate::models::states::{StoredGlobalState, StoredLeafState};
+use crate::models::states::{StoredGlobalState, StoredLeafState, StoredStateChangeSet};
 use crate::models::transactions::StoredTransaction;
-use crate::schema::{events, global_states, leaf_states, transactions};
-use crate::types::{IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTransaction};
+use crate::schema::{events, global_states, leaf_states, state_change_sets, transactions};
+use crate::types::{
+    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedStateChangeSet, IndexedTransaction,
+};
 use crate::{get_sqlite_pool_connection, SqliteConnectionPool};
 
 #[derive(Clone)]
@@ -69,7 +71,7 @@ impl SqliteIndexerStore {
             values_clause
         );
 
-        println!("Upsert global states Executing Query: {}", query);
+        tracing::debug!("Upsert global states Executing Query: {}", query);
         // Execute the raw SQL query
         diesel::sql_query(query)
             .execute(&mut connection)
@@ -118,7 +120,7 @@ impl SqliteIndexerStore {
                     "(\'{}\', \'{}\', \'{}\', \'{}\', \'{}\', {}, {})",
                     state.id,
                     state.object_id,
-                    state.key_hash,
+                    state.key_str,
                     state.value,
                     state.value_type,
                     state.created_at,
@@ -129,7 +131,7 @@ impl SqliteIndexerStore {
             .join(",");
         let query = format!(
             "
-                INSERT INTO leaf_states (id, object_id, key_hash, value, value_type, created_at, updated_at) \
+                INSERT INTO leaf_states (id, object_id, key_str, value, value_type, created_at, updated_at) \
                 VALUES {} \
                 ON CONFLICT (id) DO UPDATE SET \
                 value = excluded.value, \
@@ -139,7 +141,7 @@ impl SqliteIndexerStore {
             values_clause
         );
 
-        println!("Upsert leaf states Executing Query: {}", query);
+        tracing::debug!("Upsert leaf states Executing Query: {}", query);
         // Execute the raw SQL query
         diesel::sql_query(query)
             .execute(&mut connection)
@@ -178,6 +180,29 @@ impl SqliteIndexerStore {
         .execute(&mut connection)
         .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
         .context("Failed to delete leaf states by table handles to SQLiteDB")?;
+
+        Ok(())
+    }
+
+    pub fn persist_state_change_sets(
+        &self,
+        state_change_sets: Vec<IndexedStateChangeSet>,
+    ) -> Result<(), IndexerError> {
+        if state_change_sets.is_empty() {
+            return Ok(());
+        }
+
+        let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
+        let state_change_sets = state_change_sets
+            .into_iter()
+            .map(StoredStateChangeSet::from)
+            .collect::<Vec<_>>();
+
+        diesel::insert_into(state_change_sets::table)
+            .values(state_change_sets.as_slice())
+            .execute(&mut connection)
+            .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
+            .context("Failed to write state change sets to SQLiteDB")?;
 
         Ok(())
     }

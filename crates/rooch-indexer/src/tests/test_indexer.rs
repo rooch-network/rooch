@@ -3,7 +3,9 @@
 
 use crate::indexer_reader::IndexerReader;
 use crate::store::traits::IndexerStoreTrait;
-use crate::types::{IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTransaction};
+use crate::types::{
+    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedStateChangeSet, IndexedTransaction,
+};
 use crate::IndexerStore;
 use anyhow::Result;
 use ethers::types::{Bytes, U256};
@@ -232,7 +234,6 @@ fn random_event() -> Event {
     }
 }
 
-#[allow(unused)]
 fn random_table_change() -> TableChange {
     let mut table_change = TableChange::default();
 
@@ -246,7 +247,6 @@ fn random_table_change() -> TableChange {
     table_change
 }
 
-#[allow(unused)]
 fn random_state_change_set() -> StateChangeSet {
     let mut state_change_set = StateChangeSet::default();
 
@@ -503,6 +503,7 @@ fn test_state_store() -> Result<()> {
         .ok_or(anyhow::anyhow!("Invalid mock indexer db dir"))?;
     let indexer_store = IndexerStore::new(indexer_db_url)?;
     indexer_store.create_all_tables_if_not_exists()?;
+    let indexer_reader = IndexerReader::new(indexer_db_url)?;
 
     let mut new_global_states = random_new_global_states();
     let mut update_global_states = random_update_global_states();
@@ -521,6 +522,16 @@ fn test_state_store() -> Result<()> {
     new_leaf_states.append(&mut update_leaf_states);
     indexer_store.persist_or_update_leaf_states(new_leaf_states)?;
     indexer_store.delete_leaf_states(remove_leaf_states)?;
+
+    let state_change_set0 = random_state_change_set();
+    let state_change_set1 = random_state_change_set();
+    let indexed_state_change_set0 = IndexedStateChangeSet::new(0, state_change_set0)?;
+    let indexed_state_change_set1 = IndexedStateChangeSet::new(1, state_change_set1)?;
+    let indexed_state_change_sets = vec![indexed_state_change_set0, indexed_state_change_set1];
+    indexer_store.persist_state_change_sets(indexed_state_change_sets)?;
+
+    let sync_states = indexer_reader.sync_states(None, 2, false)?;
+    assert_eq!(sync_states.len(), 2);
 
     Ok(())
 }

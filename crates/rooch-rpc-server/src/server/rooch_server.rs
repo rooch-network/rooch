@@ -11,7 +11,8 @@ use moveos_types::h256::H256;
 use rooch_rpc_api::jsonrpc_types::event_view::{EventFilterView, EventView, IndexerEventView};
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
-    account_view::BalanceInfoView, IndexerEventPageView, StateOptions,
+    account_view::BalanceInfoView, IndexerEventPageView, IndexerStateChangeSetPageView,
+    IndexerStateChangeSetView, StateOptions,
 };
 use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
@@ -401,6 +402,39 @@ impl RoochAPIServer for RoochServer {
             .map_or(cursor, |e| Some(e.indexer_event_id));
 
         Ok(IndexerEventPageView {
+            data,
+            next_cursor,
+            has_next_page,
+        })
+    }
+
+    async fn sync_states(
+        &self,
+        cursor: Option<StrView<u64>>,
+        limit: Option<StrView<usize>>,
+        descending_order: Option<bool>,
+    ) -> RpcResult<IndexerStateChangeSetPageView> {
+        let limit_of = min(
+            limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
+            MAX_RESULT_LIMIT_USIZE,
+        );
+        let cursor = cursor.map(|v| v.0);
+        // Sync from asc by default
+        let descending_order = descending_order.unwrap_or(false);
+
+        let mut data = self
+            .rpc_service
+            .sync_states(cursor, limit_of + 1, descending_order)
+            .await?
+            .into_iter()
+            .map(IndexerStateChangeSetView::from)
+            .collect::<Vec<_>>();
+
+        let has_next_page = data.len() > limit_of;
+        data.truncate(limit_of);
+        let next_cursor = data.last().cloned().map_or(cursor, |t| Some(t.tx_order));
+
+        Ok(IndexerStateChangeSetPageView {
             data,
             next_cursor,
             has_next_page,

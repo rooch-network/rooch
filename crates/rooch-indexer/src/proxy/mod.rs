@@ -4,7 +4,7 @@
 use crate::actor::indexer::IndexerActor;
 use crate::actor::messages::{
     IndexerEventsMessage, IndexerStatesMessage, IndexerTransactionMessage,
-    QueryIndexerEventsMessage, QueryIndexerTransactionsMessage,
+    QueryIndexerEventsMessage, QueryIndexerTransactionsMessage, SyncIndexerStatesMessage,
 };
 use anyhow::Result;
 use coerce::actor::ActorRef;
@@ -12,6 +12,7 @@ use moveos_types::moveos_std::event::Event;
 use moveos_types::state::StateChangeSet;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
+use rooch_types::indexer::state::IndexerStateChangeSet;
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::transaction::{TransactionSequenceInfo, TransactionWithInfo, TypedTransaction};
 
@@ -25,9 +26,16 @@ impl IndexerProxy {
         Self { actor }
     }
 
-    pub async fn indexer_states(&self, state_change_set: StateChangeSet) -> Result<()> {
+    pub async fn indexer_states(
+        &self,
+        tx_order: u64,
+        state_change_set: StateChangeSet,
+    ) -> Result<()> {
         self.actor
-            .send(IndexerStatesMessage { state_change_set })
+            .send(IndexerStatesMessage {
+                tx_order,
+                state_change_set,
+            })
             .await?
     }
 
@@ -94,6 +102,22 @@ impl IndexerProxy {
         self.actor
             .send(QueryIndexerEventsMessage {
                 filter,
+                cursor,
+                limit,
+                descending_order,
+            })
+            .await?
+    }
+
+    pub async fn sync_states(
+        &self,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<u64>,
+        limit: usize,
+        descending_order: bool,
+    ) -> Result<Vec<IndexerStateChangeSet>> {
+        self.actor
+            .send(SyncIndexerStatesMessage {
                 cursor,
                 limit,
                 descending_order,

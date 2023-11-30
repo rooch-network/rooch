@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS state_change_sets;

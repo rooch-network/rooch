@@ -2,12 +2,12 @@ CREATE TABLE leaf_states
 (
     id                 VARCHAR        NOT NULL      PRIMARY KEY,
     object_id          VARCHAR        NOT NULL,
-    key_hash           VARCHAR        NOT NULL,
+    key_str            VARCHAR        NOT NULL,
     value              VARCHAR        NOT NULL,
     value_type         VARCHAR        NOT NULL,
     created_at         BIGINT         NOT NULL,
     updated_at         BIGINT         NOT NULL,
-    UNIQUE (object_id, key_hash)
+    UNIQUE (object_id, key_str)
 );
 
 CREATE INDEX idx_leaf_states_object_id ON leaf_states (object_id);
