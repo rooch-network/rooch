@@ -24,7 +24,7 @@ module moveos_std::json{
     #[data_struct(T)]
     /// Function to deserialize a type T.
     /// If the json string is invalid, it will return None
-    public fun from_json_opt<T: copy >(json_str: vector<u8>): Option<T> {
+    public fun from_json_option<T: copy >(json_str: vector<u8>): Option<T> {
         native_from_json(json_str)
     }
 
@@ -113,7 +113,7 @@ module moveos_std::json{
     #[test]
     fun test_invalid_json_from_json(){
         let invalid_json = b"abcd";
-        let obj = from_json_opt<Test>(invalid_json);
+        let obj = from_json_option<Test>(invalid_json);
         assert!(option::is_none(&obj), 1);
     }
 }

@@ -7,7 +7,7 @@
 
 -  [Constants](#@Constants_0)
 -  [Function `from_json`](#0x2_json_from_json)
--  [Function `from_json_opt`](#0x2_json_from_json_opt)
+-  [Function `from_json_option`](#0x2_json_from_json_option)
 -  [Function `to_map`](#0x2_json_to_map)
 
 
@@ -56,15 +56,15 @@ The u128 and u256 types must be json String type instead of Number type
 
 
 
-<a name="0x2_json_from_json_opt"></a>
+<a name="0x2_json_from_json_option"></a>
 
-## Function `from_json_opt`
+## Function `from_json_option`
 
 Function to deserialize a type T.
 If the json string is invalid, it will return None
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="json.md#0x2_json_from_json_opt">from_json_opt</a>&lt;T: <b>copy</b>&gt;(json_str: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="json.md#0x2_json_from_json_option">from_json_option</a>&lt;T: <b>copy</b>&gt;(json_str: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;T&gt;
 </code></pre>
 
 
