@@ -510,6 +510,7 @@ impl StateChangeSet {
         table_change.entries.insert(key, op);
     }
 }
+
 /// A change of a single table.
 #[derive(Default, Clone, Debug)]
 pub struct TableChange {
@@ -532,5 +533,57 @@ impl StateSet {
         v: UpdateSet<Vec<u8>, State>,
     ) -> Option<UpdateSet<Vec<u8>, State>> {
         self.state_sets.insert(k, v)
+    }
+}
+
+/// A change set of a single table.
+/// Consistent with the StateChangeSet format. Use for state sync.
+#[derive(Default, Clone, Debug)]
+pub struct TableChangeSet {
+    pub new_tables: BTreeMap<ObjectID, TableTypeInfo>,
+    pub removed_tables: BTreeSet<ObjectID>,
+    pub changes: BTreeMap<ObjectID, TableChange>,
+}
+
+impl TableChangeSet {
+    pub fn get_or_insert_table_change(&mut self, object_id: ObjectID) -> &mut TableChange {
+        match self.changes.entry(object_id) {
+            btree_map::Entry::Occupied(entry) => entry.into_mut(),
+            btree_map::Entry::Vacant(entry) => entry.insert(TableChange::default()),
+        }
+    }
+
+    pub fn add_op(&mut self, handle: ObjectID, key: Vec<u8>, op: Op<State>) {
+        let table_change = self.get_or_insert_table_change(handle);
+        table_change.entries.insert(key, op);
+    }
+}
+
+#[derive(Default, Clone, Debug)]
+pub struct SplitStateChangeSet {
+    pub table_change_sets: BTreeMap<ObjectID, TableChangeSet>,
+}
+
+impl SplitStateChangeSet {
+    pub fn get_or_insert_table_change_set(&mut self, object_id: ObjectID) -> &mut TableChangeSet {
+        match self.table_change_sets.entry(object_id) {
+            btree_map::Entry::Occupied(entry) => entry.into_mut(),
+            btree_map::Entry::Vacant(entry) => entry.insert(TableChangeSet::default()),
+        }
+    }
+
+    pub fn add_new_table(&mut self, table_handle: ObjectID, table_info: TableTypeInfo) {
+        let table_change_set = self.get_or_insert_table_change_set(table_handle);
+        table_change_set.new_tables.insert(table_handle, table_info);
+    }
+
+    pub fn add_table_change(&mut self, table_handle: ObjectID, table_change: TableChange) {
+        let table_change_set = self.get_or_insert_table_change_set(table_handle);
+        table_change_set.changes.insert(table_handle, table_change);
+    }
+
+    pub fn add_remove_table(&mut self, table_handle: ObjectID) {
+        let table_change_set = self.get_or_insert_table_change_set(table_handle);
+        table_change_set.removed_tables.insert(table_handle);
     }
 }

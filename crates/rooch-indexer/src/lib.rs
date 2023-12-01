@@ -11,7 +11,7 @@ use diesel::sqlite::SqliteConnection;
 use crate::store::sqlite_store::SqliteIndexerStore;
 use crate::store::traits::IndexerStoreTrait;
 use crate::types::{
-    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedStateChangeSet, IndexedTransaction,
+    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTableChangeSet, IndexedTransaction,
 };
 use crate::utils::create_all_tables_if_not_exists;
 use errors::IndexerError;
@@ -112,12 +112,12 @@ impl IndexerStoreTrait for IndexerStore {
             .delete_leaf_states_by_table_handle(table_handles)
     }
 
-    fn persist_state_change_sets(
+    fn persist_table_change_sets(
         &self,
-        state_change_sets: Vec<IndexedStateChangeSet>,
+        table_change_sets: Vec<IndexedTableChangeSet>,
     ) -> Result<(), IndexerError> {
         self.sqlite_store
-            .persist_state_change_sets(state_change_sets)
+            .persist_table_change_sets(table_change_sets)
     }
 
     fn persist_transactions(

@@ -3,11 +3,12 @@
 
 use super::{AnnotatedMoveValueView, BytesView, StrView, TypeTagView};
 use move_core_types::effects::Op;
+use moveos_types::state::TableChangeSet;
 use moveos_types::{
     moveos_std::object::ObjectID,
     state::{AnnotatedState, State, StateChangeSet, TableChange, TableTypeInfo},
 };
-use rooch_types::indexer::state::IndexerStateChangeSet;
+use rooch_types::indexer::state::{IndexerStateChangeSet, IndexerTableChangeSet, StateFilter};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -184,6 +185,85 @@ impl From<IndexerStateChangeSet> for IndexerStateChangeSetView {
             tx_order: state_change_set.tx_order,
             state_change_set: state_change_set.state_change_set.into(),
             created_at: state_change_set.created_at,
+        }
+    }
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct TableChangeSetView {
+    pub new_tables: BTreeMap<ObjectID, TableTypeInfoView>,
+    pub removed_tables: BTreeSet<ObjectID>,
+    pub changes: BTreeMap<ObjectID, TableChangeView>,
+}
+
+impl From<TableChangeSet> for TableChangeSetView {
+    fn from(table_change_set: TableChangeSet) -> Self {
+        Self {
+            new_tables: table_change_set
+                .new_tables
+                .into_iter()
+                .map(|(k, v)| (k, v.into()))
+                .collect(),
+            removed_tables: table_change_set.removed_tables,
+            changes: table_change_set
+                .changes
+                .into_iter()
+                .map(|(k, v)| (k, v.into()))
+                .collect(),
+        }
+    }
+}
+
+impl From<TableChangeSetView> for TableChangeSet {
+    fn from(table_change_set: TableChangeSetView) -> Self {
+        Self {
+            new_tables: table_change_set
+                .new_tables
+                .into_iter()
+                .map(|(k, v)| (k, v.into()))
+                .collect(),
+            removed_tables: table_change_set.removed_tables,
+            changes: table_change_set
+                .changes
+                .into_iter()
+                .map(|(k, v)| (k, v.into()))
+                .collect(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct IndexerTableChangeSetView {
+    pub tx_order: u64,
+    pub table_handle_index: u64,
+    pub table_handle: ObjectID,
+    pub table_change_set: TableChangeSetView,
+    pub created_at: u64,
+}
+
+impl From<IndexerTableChangeSet> for IndexerTableChangeSetView {
+    fn from(table_change_set: IndexerTableChangeSet) -> Self {
+        IndexerTableChangeSetView {
+            tx_order: table_change_set.tx_order,
+            table_handle_index: table_change_set.table_handle_index,
+            table_handle: table_change_set.table_handle,
+            table_change_set: table_change_set.table_change_set.into(),
+            created_at: table_change_set.created_at,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum StateFilterView {
+    /// Query by table handle.
+    TableHandle(ObjectID),
+}
+
+impl From<StateFilterView> for StateFilter {
+    fn from(state_filter: StateFilterView) -> Self {
+        match state_filter {
+            StateFilterView::TableHandle(table_handle) => Self::TableHandle(table_handle),
         }
     }
 }

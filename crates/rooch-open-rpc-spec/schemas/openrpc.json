@@ -394,9 +394,15 @@
       "description": "Sync state change sets from indexer",
       "params": [
         {
+          "name": "filter",
+          "schema": {
+            "$ref": "#/components/schemas/StateFilterView"
+          }
+        },
+        {
           "name": "cursor",
           "schema": {
-            "$ref": "#/components/schemas/u64"
+            "$ref": "#/components/schemas/IndexerStateID"
           }
         },
         {
@@ -413,10 +419,10 @@
         }
       ],
       "result": {
-        "name": "IndexerStateChangeSetPageView",
+        "name": "IndexerTableChangeSetPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_IndexerStateChangeSetView_and_uint64"
+          "$ref": "#/components/schemas/PageView_for_IndexerTableChangeSetView_and_IndexerStateID"
         }
       }
     }
@@ -887,11 +893,32 @@
           }
         }
       },
-      "IndexerStateChangeSetView": {
+      "IndexerStateID": {
+        "type": "object",
+        "required": [
+          "table_handle_index",
+          "tx_order"
+        ],
+        "properties": {
+          "table_handle_index": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "tx_order": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      },
+      "IndexerTableChangeSetView": {
         "type": "object",
         "required": [
           "created_at",
-          "state_change_set",
+          "table_change_set",
+          "table_handle",
+          "table_handle_index",
           "tx_order"
         ],
         "properties": {
@@ -900,8 +927,16 @@
             "format": "uint64",
             "minimum": 0.0
           },
-          "state_change_set": {
-            "$ref": "#/components/schemas/StateChangeSetView"
+          "table_change_set": {
+            "$ref": "#/components/schemas/TableChangeSetView"
+          },
+          "table_handle": {
+            "$ref": "#/components/schemas/ObjectID"
+          },
+          "table_handle_index": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
           },
           "tx_order": {
             "type": "integer",
@@ -1252,7 +1287,7 @@
           }
         }
       },
-      "PageView_for_IndexerStateChangeSetView_and_uint64": {
+      "PageView_for_IndexerTableChangeSetView_and_IndexerStateID": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -1263,19 +1298,21 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/IndexerStateChangeSetView"
+              "$ref": "#/components/schemas/IndexerTableChangeSetView"
             }
           },
           "has_next_page": {
             "type": "boolean"
           },
           "next_cursor": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "uint64",
-            "minimum": 0.0
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IndexerStateID"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -1403,6 +1440,23 @@
           }
         }
       },
+      "StateFilterView": {
+        "oneOf": [
+          {
+            "description": "Query by table handle.",
+            "type": "object",
+            "required": [
+              "table_handle"
+            ],
+            "properties": {
+              "table_handle": {
+                "$ref": "#/components/schemas/ObjectID"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
       "StateOptions": {
         "type": "object",
         "properties": {
@@ -1435,6 +1489,35 @@
           },
           "value_type": {
             "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+          }
+        }
+      },
+      "TableChangeSetView": {
+        "type": "object",
+        "required": [
+          "changes",
+          "new_tables",
+          "removed_tables"
+        ],
+        "properties": {
+          "changes": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TableChangeView"
+            }
+          },
+          "new_tables": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TableTypeInfoView"
+            }
+          },
+          "removed_tables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ObjectID"
+            },
+            "uniqueItems": true
           }
         }
       },

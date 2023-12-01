@@ -34,7 +34,7 @@ diesel::table! {
     leaf_states (id) {
         id -> Text,
         object_id -> Text,
-        key_str -> Text,
+        key_hex -> Text,
         value -> Text,
         value_type -> Text,
         created_at -> BigInt,
@@ -43,9 +43,11 @@ diesel::table! {
 }
 
 diesel::table! {
-    state_change_sets (tx_order) {
+    table_change_sets (tx_order, table_handle_index) {
         tx_order -> BigInt,
-        state_change_set -> Text,
+        table_handle_index -> BigInt,
+        table_handle -> Text,
+        table_change_set -> Text,
         created_at -> BigInt,
     }
 }
@@ -81,6 +83,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     events,
     global_states,
     leaf_states,
-    state_change_sets,
+    table_change_sets,
     transactions,
 );

@@ -11,8 +11,8 @@ use moveos_types::h256::H256;
 use rooch_rpc_api::jsonrpc_types::event_view::{EventFilterView, EventView, IndexerEventView};
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
-    account_view::BalanceInfoView, IndexerEventPageView, IndexerStateChangeSetPageView,
-    IndexerStateChangeSetView, StateOptions,
+    account_view::BalanceInfoView, IndexerEventPageView, IndexerTableChangeSetPageView,
+    IndexerTableChangeSetView, StateFilterView, StateOptions,
 };
 use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
@@ -30,6 +30,7 @@ use rooch_rpc_api::{
     jsonrpc_types::BytesView,
 };
 use rooch_types::indexer::event_filter::IndexerEventID;
+use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::{AbstractTransaction, TypedTransaction};
 use std::cmp::min;
@@ -410,31 +411,40 @@ impl RoochAPIServer for RoochServer {
 
     async fn sync_states(
         &self,
-        cursor: Option<StrView<u64>>,
+        filter: Option<StateFilterView>,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
         descending_order: Option<bool>,
-    ) -> RpcResult<IndexerStateChangeSetPageView> {
+    ) -> RpcResult<IndexerTableChangeSetPageView> {
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
-        let cursor = cursor.map(|v| v.0);
+        // let cursor = cursor.map(|v| v.0);
         // Sync from asc by default
         let descending_order = descending_order.unwrap_or(false);
 
         let mut data = self
             .rpc_service
-            .sync_states(cursor, limit_of + 1, descending_order)
+            .sync_states(
+                filter.map(Into::into),
+                cursor,
+                limit_of + 1,
+                descending_order,
+            )
             .await?
             .into_iter()
-            .map(IndexerStateChangeSetView::from)
+            .map(IndexerTableChangeSetView::from)
             .collect::<Vec<_>>();
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
-        let next_cursor = data.last().cloned().map_or(cursor, |t| Some(t.tx_order));
+        let next_cursor = data.last().cloned().map_or(cursor, |t| {
+            Some(IndexerStateID::new(t.tx_order, t.table_handle_index))
+        });
 
-        Ok(IndexerStateChangeSetPageView {
+        Ok(IndexerTableChangeSetPageView {
             data,
             next_cursor,
             has_next_page,
