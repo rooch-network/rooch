@@ -48,6 +48,20 @@ module moveos_std::simple_map {
         &vector::borrow(&map.data, idx).value
     }
 
+    public fun borrow_with_default<Key: store, Value: store>(
+        map: &SimpleMap<Key, Value>,
+        key: &Key,
+        default: &Value,
+    ): &Value {
+        let maybe_idx = find(map, key);
+        if (option::is_none(&maybe_idx)) {
+            default
+        } else {
+            let idx = option::extract(&mut maybe_idx);
+            &vector::borrow(&map.data, idx).value
+        }
+    }
+
     public fun borrow_mut<Key: store, Value: store>(
         map: &mut SimpleMap<Key, Value>,
         key: &Key,
