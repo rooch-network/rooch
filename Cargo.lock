@@ -7150,6 +7150,7 @@ dependencies = [
  "termcolor",
  "tokio",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

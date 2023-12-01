@@ -2,20 +2,34 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module moveos_std::json{
+    
+    use std::string::String;
+    use moveos_std::simple_map::SimpleMap;
 
-    #[private_generics(T)]
+    const ErrorTypeNotMatch: u64 = 1;
+    const ErrorInvalidJSONString: u64 = 2;
+
     #[data_struct(T)]
     /// Function to deserialize a type T.
-    /// Note the `private_generics` ensure only the `T`'s owner module can call this function
     /// The u128 and u256 types must be json String type instead of Number type
     public fun from_json<T>(json_str: vector<u8>): T {
         native_from_json(json_str)
+    }
+
+    /// Parse a json object string to a SimpleMap
+    /// If the field type is primitive type, it will be parsed to String, otherwise it will abort.
+    public fun to_map(json_str: vector<u8>): SimpleMap<String,String>{
+        native_from_json<SimpleMap<String,String>>(json_str)
     }
 
     native fun native_from_json<T>(json_str: vector<u8>): T;
 
     #[test_only]
     use std::vector;
+    #[test_only]
+    use moveos_std::simple_map;
+    #[test_only]
+    use std::string;
 
     #[test_only]
     #[data_struct]
@@ -26,6 +40,8 @@ module moveos_std::json{
     #[data_struct]
     struct Test has copy, drop, store {
         balance: u128,
+        ascii_string: std::ascii::String,
+        utf8_string: std::string::String,
         age: u8,
         inner: Inner,
         bytes: vector<u8>, 
@@ -35,7 +51,7 @@ module moveos_std::json{
 
     #[test]
     fun test_from_json() {
-        let json_str = b"{\"balance\": \"170141183460469231731687303715884105728\",\"age\":30,\"inner\":{\"value\":100},\"bytes\":[3,3,2,1],\"inner_array\":[{\"value\":101}],\"account\":\"0x42\"}";
+        let json_str = b"{\"balance\": \"170141183460469231731687303715884105728\",\"ascii_string\":\"rooch.network\",\"utf8_string\":\"rooch.network\",\"age\":30,\"inner\":{\"value\":100},\"bytes\":[3,3,2,1],\"inner_array\":[{\"value\":101}],\"account\":\"0x42\"}";
         let obj = from_json<Test>(json_str);
         
         assert!(obj.balance == 170141183460469231731687303715884105728u128, 1);
@@ -55,5 +71,17 @@ module moveos_std::json{
 
         // check account
         assert!(obj.account == @0x42, 11);
+    }
+
+    #[test]
+    fun test_to_map(){
+        let json_str = b"{\"balance\": \"170141183460469231731687303715884105728\",\"string\":\"rooch.network\",\"age\":30,\"bool_value\": true, \"null_value\": null, \"account\":\"0x42\"}";
+        let map = to_map(json_str);
+        assert!(simple_map::borrow(&map, &string::utf8(b"balance")) == &string::utf8(b"170141183460469231731687303715884105728"), 1);
+        assert!(simple_map::borrow(&map, &string::utf8(b"string")) == &string::utf8(b"rooch.network"), 2);
+        assert!(simple_map::borrow(&map, &string::utf8(b"age")) == &string::utf8(b"30"), 4);
+        assert!(simple_map::borrow(&map, &string::utf8(b"bool_value")) == &string::utf8(b"true"), 5);
+        assert!(simple_map::borrow(&map, &string::utf8(b"null_value")) == &string::utf8(b"null"), 6);
+        assert!(simple_map::borrow(&map, &string::utf8(b"account")) == &string::utf8(b"0x42"), 7);
     }
 }
