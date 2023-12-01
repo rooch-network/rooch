@@ -5,6 +5,7 @@ use crate::binding_test;
 use bitcoin::consensus::{deserialize, Decodable};
 use bitcoin::Block;
 use hex::FromHex;
+use moveos_types::state::MoveState;
 use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
@@ -25,8 +26,9 @@ fn test_from_transaction() {
         rooch_framework::natives::rooch_framework::bitcoin::ord::from_transaction(&btc_tx);
     //print!("{:?}", inscriptions);
     let ord_module = binding_test.as_module_bundle::<rooch_types::framework::ord::OrdModule>();
-
-    let inscriptions_from_move = ord_module.from_transaction(&btc_tx.into()).unwrap();
+    let move_btc_tx: rooch_types::framework::bitcoin_types::Transaction = btc_tx.into();
+    //println!("tx_hex: {}", hex::encode(move_btc_tx.to_bytes()));
+    let inscriptions_from_move = ord_module.from_transaction(&move_btc_tx).unwrap();
     assert_eq!(inscriptions.len(), inscriptions_from_move.len());
     for (inscription, inscription_from_move) in inscriptions.into_iter().zip(inscriptions_from_move)
     {

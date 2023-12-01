@@ -9,7 +9,9 @@ use bitcoincore_rpc::{bitcoincore_rpc_json::GetBlockHeaderResult, Auth, Client, 
 use moveos_types::{module_binding::MoveFunctionCaller, transaction::FunctionCall};
 use rooch_config::BitcoinRelayerConfig;
 use rooch_executor::proxy::ExecutorProxy;
-use rooch_types::framework::{bitcoin_light_client::BitcoinLightClientModule, ord::OrdModule};
+use rooch_types::framework::{
+    bitcoin_light_client::BitcoinLightClientModule, brc20::BRC20Module, ord::OrdModule,
+};
 use std::cmp::max;
 use tracing::{debug, info};
 
@@ -160,6 +162,21 @@ impl BitcoinRelayer {
             Ok(None)
         }
     }
+
+    fn check_brc20_progress(&self) -> Result<Option<FunctionCall>> {
+        let brc20_module = self.move_caller.as_module_binding::<BRC20Module>();
+        let remaining_inscription_count = brc20_module.remaining_inscription_count()?;
+        if remaining_inscription_count > 0 {
+            let call = BRC20Module::create_progress_brc20_ops_call(self.tx_batch_size);
+            info!(
+                "BitcoinRelayer process brc20, remaining inscription count: {}",
+                remaining_inscription_count
+            );
+            Ok(Some(call))
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 #[async_trait]
@@ -173,6 +190,9 @@ impl Relayer for BitcoinRelayer {
             return Ok(Some(call));
         }
         if let Some(call) = self.check_inscription_progress()? {
+            return Ok(Some(call));
+        }
+        if let Some(call) = self.check_brc20_progress()? {
             return Ok(Some(call));
         }
         Ok(None)
