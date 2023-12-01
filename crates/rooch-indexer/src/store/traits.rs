@@ -3,7 +3,7 @@
 
 use crate::errors::IndexerError;
 use crate::types::{
-    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedStateChangeSet, IndexedTransaction,
+    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTableChangeSet, IndexedTransaction,
 };
 
 pub trait IndexerStoreTrait: Send + Sync {
@@ -26,9 +26,9 @@ pub trait IndexerStoreTrait: Send + Sync {
         table_handles: Vec<String>,
     ) -> Result<(), IndexerError>;
 
-    fn persist_state_change_sets(
+    fn persist_table_change_sets(
         &self,
-        state_change_sets: Vec<IndexedStateChangeSet>,
+        table_change_sets: Vec<IndexedTableChangeSet>,
     ) -> Result<(), IndexerError>;
 
     fn persist_transactions(

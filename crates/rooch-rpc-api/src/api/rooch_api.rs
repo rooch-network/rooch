@@ -7,13 +7,14 @@ use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionW
 use crate::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, BalanceInfoPageView,
     BytesView, EventOptions, EventPageView, ExecuteTransactionResponseView, FunctionCallView,
-    H256View, IndexerEventPageView, IndexerStateChangeSetPageView, StateOptions, StateView,
-    StatesPageView, StrView, StructTagView, TransactionWithInfoPageView,
+    H256View, IndexerEventPageView, IndexerTableChangeSetPageView, StateFilterView, StateOptions,
+    StateView, StatesPageView, StrView, StructTagView, TransactionWithInfoPageView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use rooch_open_rpc_macros::open_rpc;
 use rooch_types::indexer::event_filter::IndexerEventID;
+use rooch_types::indexer::state::IndexerStateID;
 
 #[open_rpc(namespace = "rooch")]
 #[rpc(server, client, namespace = "rooch")]
@@ -129,9 +130,10 @@ pub trait RoochAPI {
     #[method(name = "syncStates")]
     async fn sync_states(
         &self,
+        filter: Option<StateFilterView>,
         // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<StrView<u64>>,
+        cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
         descending_order: Option<bool>,
-    ) -> RpcResult<IndexerStateChangeSetPageView>;
+    ) -> RpcResult<IndexerTableChangeSetPageView>;
 }

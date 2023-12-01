@@ -8,7 +8,7 @@ use crate::actor::messages::{
 use crate::indexer_reader::IndexerReader;
 use crate::store::traits::IndexerStoreTrait;
 use crate::types::{
-    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedStateChangeSet, IndexedTransaction,
+    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTableChangeSet, IndexedTransaction,
 };
 use crate::IndexerStore;
 use anyhow::{anyhow, Result};
@@ -20,11 +20,11 @@ use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::context;
 use moveos_types::moveos_std::object::{ObjectEntity, ObjectID, RawObject};
 use moveos_types::moveos_std::raw_table::TableInfo;
-use moveos_types::state::State;
+use moveos_types::state::{SplitStateChangeSet, State};
 use moveos_types::state_resolver::MoveOSResolverProxy;
 use rooch_rpc_api::jsonrpc_types::{AnnotatedMoveStructView, AnnotatedMoveValueView};
 use rooch_types::indexer::event_filter::IndexerEvent;
-use rooch_types::indexer::state::IndexerStateChangeSet;
+use rooch_types::indexer::state::IndexerTableChangeSet;
 use rooch_types::transaction::TransactionWithInfo;
 
 pub struct IndexerActor {
@@ -212,11 +212,30 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         self.indexer_store
             .delete_leaf_states_by_table_handle(remove_leaf_states_by_table_handle)?;
 
-        // Store state change set for state sync
-        let indexed_state_change_set = IndexedStateChangeSet::new(tx_order, state_change_set)?;
-        let indexed_state_change_sets = vec![indexed_state_change_set];
+        // Store table change set for state sync
+        let mut split_state_change_set = SplitStateChangeSet::default();
+        for (table_handle, table_info) in state_change_set.new_tables {
+            split_state_change_set.add_new_table(table_handle, table_info);
+        }
+        for (table_handle, table_change) in state_change_set.changes.clone() {
+            split_state_change_set.add_table_change(table_handle, table_change);
+        }
+        for table_handle in state_change_set.removed_tables {
+            split_state_change_set.add_remove_table(table_handle);
+        }
+
+        let mut indexed_table_change_sets = vec![];
+        for (index, item) in split_state_change_set
+            .table_change_sets
+            .into_iter()
+            .enumerate()
+        {
+            let table_change_set =
+                IndexedTableChangeSet::new(tx_order, index as u64, item.0, item.1)?;
+            indexed_table_change_sets.push(table_change_set);
+        }
         self.indexer_store
-            .persist_state_change_sets(indexed_state_change_sets)?;
+            .persist_table_change_sets(indexed_table_change_sets)?;
         Ok(())
     }
 }
@@ -313,14 +332,15 @@ impl Handler<SyncIndexerStatesMessage> for IndexerActor {
         &mut self,
         msg: SyncIndexerStatesMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<IndexerStateChangeSet>> {
+    ) -> Result<Vec<IndexerTableChangeSet>> {
         let SyncIndexerStatesMessage {
+            filter,
             cursor,
             limit,
             descending_order,
         } = msg;
         self.indexer_reader
-            .sync_states(cursor, limit, descending_order)
+            .sync_states(filter, cursor, limit, descending_order)
             .map_err(|e| {
                 anyhow!(format!(
                     "Failed to query indexer state change sets: {:?}",

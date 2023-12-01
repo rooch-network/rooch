@@ -7,11 +7,11 @@ use diesel::{ExpressionMethods, RunQueryDsl};
 
 use crate::errors::{Context, IndexerError};
 use crate::models::events::StoredEvent;
-use crate::models::states::{StoredGlobalState, StoredLeafState, StoredStateChangeSet};
+use crate::models::states::{StoredGlobalState, StoredLeafState, StoredTableChangeSet};
 use crate::models::transactions::StoredTransaction;
-use crate::schema::{events, global_states, leaf_states, state_change_sets, transactions};
+use crate::schema::{events, global_states, leaf_states, table_change_sets, transactions};
 use crate::types::{
-    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedStateChangeSet, IndexedTransaction,
+    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTableChangeSet, IndexedTransaction,
 };
 use crate::{get_sqlite_pool_connection, SqliteConnectionPool};
 
@@ -120,7 +120,7 @@ impl SqliteIndexerStore {
                     "(\'{}\', \'{}\', \'{}\', \'{}\', \'{}\', {}, {})",
                     state.id,
                     state.object_id,
-                    state.key_str,
+                    state.key_hex,
                     state.value,
                     state.value_type,
                     state.created_at,
@@ -131,7 +131,7 @@ impl SqliteIndexerStore {
             .join(",");
         let query = format!(
             "
-                INSERT INTO leaf_states (id, object_id, key_str, value, value_type, created_at, updated_at) \
+                INSERT INTO leaf_states (id, object_id, key_hex, value, value_type, created_at, updated_at) \
                 VALUES {} \
                 ON CONFLICT (id) DO UPDATE SET \
                 value = excluded.value, \
@@ -184,25 +184,25 @@ impl SqliteIndexerStore {
         Ok(())
     }
 
-    pub fn persist_state_change_sets(
+    pub fn persist_table_change_sets(
         &self,
-        state_change_sets: Vec<IndexedStateChangeSet>,
+        table_change_sets: Vec<IndexedTableChangeSet>,
     ) -> Result<(), IndexerError> {
-        if state_change_sets.is_empty() {
+        if table_change_sets.is_empty() {
             return Ok(());
         }
 
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
-        let state_change_sets = state_change_sets
+        let table_change_sets = table_change_sets
             .into_iter()
-            .map(StoredStateChangeSet::from)
+            .map(StoredTableChangeSet::from)
             .collect::<Vec<_>>();
 
-        diesel::insert_into(state_change_sets::table)
-            .values(state_change_sets.as_slice())
+        diesel::insert_into(table_change_sets::table)
+            .values(table_change_sets.as_slice())
             .execute(&mut connection)
             .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
-            .context("Failed to write state change sets to SQLiteDB")?;
+            .context("Failed to write table change sets to SQLiteDB")?;
 
         Ok(())
     }

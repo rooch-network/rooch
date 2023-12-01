@@ -9,9 +9,9 @@ use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::object::{ObjectEntity, ObjectID, RawObject};
 use moveos_types::moveos_std::raw_table::TableInfo;
-use moveos_types::state::StateChangeSet;
+use moveos_types::state::TableChangeSet;
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
-use rooch_rpc_api::jsonrpc_types::StateChangeSetView;
+use rooch_rpc_api::jsonrpc_types::TableChangeSetView;
 use rooch_types::multichain_id::MultiChainID;
 use rooch_types::transaction::{
     AbstractTransaction, TransactionSequenceInfo, TransactionType, TypedTransaction,
@@ -226,13 +226,13 @@ impl IndexedGlobalState {
 
 #[derive(Debug, Clone)]
 pub struct IndexedLeafState {
-    /// A primary key represents composite key of (object_id, key_str)
+    /// A primary key represents composite key of (object_id, key_hex)
     // Diesel doesn't support eq_any for tuples due to unable to use index, so use an extra primary key instead of composite key
     pub id: String,
     /// The leaf state table handle
     pub object_id: ObjectID,
     /// The hex of the table key
-    pub key_str: String,
+    pub key_hex: String,
     /// The value of the table, json format
     pub value: String,
     /// The type tag of the value
@@ -246,16 +246,16 @@ pub struct IndexedLeafState {
 impl IndexedLeafState {
     pub fn new(
         object_id: ObjectID,
-        key_str: String,
+        key_hex: String,
         state_value_json: String,
         value_type: TypeTag,
     ) -> Self {
-        let id = format!("{}{}", object_id, key_str);
+        let id = format!("{}{}", object_id, key_hex);
 
         IndexedLeafState {
             id,
             object_id,
-            key_str,
+            key_hex,
             value: state_value_json,
             value_type,
 
@@ -267,23 +267,34 @@ impl IndexedLeafState {
 }
 
 #[derive(Debug, Clone)]
-pub struct IndexedStateChangeSet {
-    /// The tx order of this transaction which produce the state change set
+pub struct IndexedTableChangeSet {
+    /// The tx order of this transaction which produce the table change set
     pub tx_order: u64,
-    /// The state change set, json format
-    pub state_change_set: String,
+    /// The table handle index in the tx
+    pub table_handle_index: u64,
+    /// The table handle
+    pub table_handle: ObjectID,
+    /// The table change set, json format
+    pub table_change_set: String,
     /// The tx executed timestamp on chain
     pub created_at: u64,
 }
 
-impl IndexedStateChangeSet {
-    pub fn new(tx_order: u64, state_change_set: StateChangeSet) -> Result<Self> {
-        let state_change_set_json =
-            serde_json::to_string(&StateChangeSetView::from(state_change_set))?;
+impl IndexedTableChangeSet {
+    pub fn new(
+        tx_order: u64,
+        table_handle_index: u64,
+        table_handle: ObjectID,
+        table_change_set: TableChangeSet,
+    ) -> Result<Self> {
+        let table_change_set_json =
+            serde_json::to_string(&TableChangeSetView::from(table_change_set))?;
 
-        Ok(IndexedStateChangeSet {
+        Ok(IndexedTableChangeSet {
             tx_order,
-            state_change_set: state_change_set_json,
+            table_handle_index,
+            table_handle,
+            table_change_set: table_change_set_json,
 
             //TODO record transaction timestamp
             created_at: 0,

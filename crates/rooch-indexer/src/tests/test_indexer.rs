@@ -4,7 +4,7 @@
 use crate::indexer_reader::IndexerReader;
 use crate::store::traits::IndexerStoreTrait;
 use crate::types::{
-    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedStateChangeSet, IndexedTransaction,
+    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTableChangeSet, IndexedTransaction,
 };
 use crate::IndexerStore;
 use anyhow::Result;
@@ -20,7 +20,7 @@ use moveos_types::moveos_std::event::{Event, EventID};
 use moveos_types::moveos_std::object::{NamedTableID, ObjectEntity, ObjectID, RawData};
 use moveos_types::moveos_std::raw_table::TableInfo;
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state::{State, StateChangeSet, TableChange, TableTypeInfo};
+use moveos_types::state::{SplitStateChangeSet, State, StateChangeSet, TableChange, TableTypeInfo};
 use moveos_types::transaction::{
     FunctionCall, MoveAction, ScriptCall, TransactionExecutionInfo, VerifiedMoveAction,
     VerifiedMoveOSTransaction,
@@ -523,14 +523,31 @@ fn test_state_store() -> Result<()> {
     indexer_store.persist_or_update_leaf_states(new_leaf_states)?;
     indexer_store.delete_leaf_states(remove_leaf_states)?;
 
-    let state_change_set0 = random_state_change_set();
-    let state_change_set1 = random_state_change_set();
-    let indexed_state_change_set0 = IndexedStateChangeSet::new(0, state_change_set0)?;
-    let indexed_state_change_set1 = IndexedStateChangeSet::new(1, state_change_set1)?;
-    let indexed_state_change_sets = vec![indexed_state_change_set0, indexed_state_change_set1];
-    indexer_store.persist_state_change_sets(indexed_state_change_sets)?;
+    // test state sync
+    let state_change_set = random_state_change_set();
+    let mut split_state_change_set = SplitStateChangeSet::default();
+    for (table_handle, table_info) in state_change_set.new_tables {
+        split_state_change_set.add_new_table(table_handle, table_info);
+    }
+    for (table_handle, table_change) in state_change_set.changes.clone() {
+        split_state_change_set.add_table_change(table_handle, table_change);
+    }
+    for table_handle in state_change_set.removed_tables.clone() {
+        split_state_change_set.add_remove_table(table_handle);
+    }
 
-    let sync_states = indexer_reader.sync_states(None, 2, false)?;
+    let mut indexed_table_change_sets = vec![];
+    for (index, item) in split_state_change_set
+        .table_change_sets
+        .into_iter()
+        .enumerate()
+    {
+        let table_change_set = IndexedTableChangeSet::new(0, index as u64, item.0, item.1)?;
+        indexed_table_change_sets.push(table_change_set);
+    }
+    indexer_store.persist_table_change_sets(indexed_table_change_sets)?;
+
+    let sync_states = indexer_reader.sync_states(None, None, 2, false)?;
     assert_eq!(sync_states.len(), 2);
 
     Ok(())
