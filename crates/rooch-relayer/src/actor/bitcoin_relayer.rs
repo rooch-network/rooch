@@ -58,6 +58,7 @@ impl BitcoinRelayer {
         {
             return Ok(());
         }
+        self.latest_sync_timestamp = chrono::Utc::now().timestamp() as u64;
         let bitcoin_light_client = self
             .move_caller
             .as_module_binding::<BitcoinLightClientModule>();
@@ -108,8 +109,7 @@ impl BitcoinRelayer {
             if self.buffer.len() > batch_size {
                 break;
             }
-        }
-        self.latest_sync_timestamp = chrono::Utc::now().timestamp() as u64;
+        } 
         Ok(())
     }
 

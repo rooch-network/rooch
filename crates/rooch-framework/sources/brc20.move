@@ -116,9 +116,13 @@ module rooch_framework::brc20 {
                 let max_str = simple_map::borrow(&self.json_map,&max_key);
                 let lim_str = simple_map::borrow_with_default(&self.json_map, &string::utf8(b"lim"), &string::utf8(b"0"));
                 let dec_str = simple_map::borrow_with_default(&self.json_map, &string::utf8(b"dec"), &string::utf8(b"18"));
-                let max = string_utils::to_u64(max_str);
-                let lim = string_utils::to_u64(lim_str);
-                let dec = string_utils::to_u64(dec_str);
+                let max_opt = string_utils::to_u64_option(max_str);
+                if(option::is_none(&max_opt)){
+                    return option::none()
+                };
+                let max = option::destroy_some(max_opt);
+                let lim = option::destroy_with_default(string_utils::to_u64_option(lim_str), 0u64);
+                let dec = option::destroy_with_default(string_utils::to_u64_option(dec_str), 18u64);
                 option::some(DeployOp { tick, max, lim, dec })
             } else {
                 option::none()
@@ -155,7 +159,11 @@ module rooch_framework::brc20 {
             if(simple_map::contains_key(&self.json_map, &tick_key) && simple_map::contains_key(&self.json_map,&amt_key)) {
                 let tick = *simple_map::borrow(&self.json_map, &tick_key);
                 let amt_str = simple_map::borrow(&self.json_map,&amt_key);
-                let amt = string_utils::to_u64(amt_str);
+                let amt_opt = string_utils::to_u64_option(amt_str);
+                if(option::is_none(&amt_opt)){
+                    return option::none()
+                };
+                let amt = option::destroy_some(amt_opt);
                 option::some(MintOp { tick, amt })
             } else {
                 option::none()
@@ -203,7 +211,11 @@ module rooch_framework::brc20 {
             if(simple_map::contains_key(&self.json_map, &tick_key) && simple_map::contains_key(&self.json_map,&amt_key)) {
                 let tick = *simple_map::borrow(&self.json_map, &tick_key);
                 let amt_str = simple_map::borrow(&self.json_map,&amt_key);
-                let amt = string_utils::to_u64(amt_str);
+                let amt_opt = string_utils::to_u64_option(amt_str);
+                if(option::is_none(&amt_opt)){
+                    return option::none()
+                };
+                let amt = option::destroy_some(amt_opt);
                 option::some(TransferOp { tick, amt })
             } else {
                 option::none()
@@ -297,7 +309,7 @@ module rooch_framework::brc20 {
         let start_inscription_index = brc20_store.next_inscription_index;
         let max_inscription_count = table_vec::length(ord::inscription_ids(inscription_store_obj));
         if(start_inscription_index < max_inscription_count){
-            max_inscription_count - max_inscription_count
+            max_inscription_count - start_inscription_index
         }else{
             0
         }
