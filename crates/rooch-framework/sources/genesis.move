@@ -19,6 +19,7 @@ module rooch_framework::genesis {
     use rooch_framework::ethereum_light_client;
     use rooch_framework::bitcoin_light_client;
     use rooch_framework::ord;
+    use rooch_framework::brc20;
 
     const ErrorGenesisInit: u64 = 1;
 
@@ -47,6 +48,7 @@ module rooch_framework::genesis {
         ethereum_light_client::genesis_init(ctx, genesis_account);
         bitcoin_light_client::genesis_init(ctx, genesis_account);
         ord::genesis_init(ctx, genesis_account);
+        brc20::genesis_init(ctx, genesis_account);
     }
 
 

@@ -24,6 +24,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::bitcoin_opcode`](bitcoin_opcode.md#0x3_bitcoin_opcode)
 -  [`0x3::bitcoin_script_buf`](bitcoin_script_buf.md#0x3_bitcoin_script_buf)
 -  [`0x3::bitcoin_types`](bitcoin_types.md#0x3_bitcoin_types)
+-  [`0x3::brc20`](brc20.md#0x3_brc20)
 -  [`0x3::builtin_validators`](builtin_validators.md#0x3_builtin_validators)
 -  [`0x3::chain_id`](chain_id.md#0x3_chain_id)
 -  [`0x3::coin`](coin.md#0x3_coin)

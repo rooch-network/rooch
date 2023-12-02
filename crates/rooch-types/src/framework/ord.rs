@@ -83,6 +83,7 @@ impl MoveStructType for InscriptionStore {
 impl MoveStructState for InscriptionStore {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
+            u64::type_layout(),
             ObjectID::type_layout(),
             ObjectID::type_layout(),
         ])

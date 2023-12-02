@@ -30,6 +30,7 @@ This is the reference documentation of the MoveOS standard library.
 -  [`0x2::signer`](signer.md#0x2_signer)
 -  [`0x2::simple_map`](simple_map.md#0x2_simple_map)
 -  [`0x2::storage_context`](storage_context.md#0x2_storage_context)
+-  [`0x2::string_utils`](string_utils.md#0x2_string_utils)
 -  [`0x2::table`](table.md#0x2_table)
 -  [`0x2::table_vec`](table_vec.md#0x2_table_vec)
 -  [`0x2::tx_context`](tx_context.md#0x2_tx_context)
