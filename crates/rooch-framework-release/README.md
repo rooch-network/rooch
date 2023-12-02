@@ -4,7 +4,7 @@ Rooch stdlib include the MoveOS standard library and Rooch framework.
 
 This crate is used to compile the moveos-stdlib and rooch-framework, and then generate the compiled Move bytecode, documentation, and error descriptions for use by the Move Explain tool.
 
-## Compile, check compatibility and save the latest stdlib 
+## Compile, check compatibility with previous version
 
 1. Compile 
 
@@ -12,7 +12,7 @@ This crate is used to compile the moveos-stdlib and rooch-framework, and then ge
 cargo run --package rooch-framework-release --bin rooch-framework-release
 ```
 
-This command will compile the moveos-stdlib and rooch-framework, and then check the compatibility with previous one (if exists), and finally save the new compiled stdlib.
+This command will compile the latest moveos-stdlib and rooch-framework, and then check the compatibility with previous one (if exists).
 
 ## Release a new version
 

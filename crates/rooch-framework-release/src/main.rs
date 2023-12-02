@@ -64,9 +64,13 @@ fn main() {
             assert_stdlib_compatibility(&curr_stdlib, &prev_stdlib);
         }
     }
-    curr_stdlib
-        .save_to_file(stdlib_output_file(&version.as_string()))
-        .unwrap();
+
+    // Only save the stdlib with given version number
+    if version != StdlibVersion::Latest {
+        curr_stdlib
+            .save_to_file(stdlib_output_file(&version.as_string()))
+            .unwrap();
+    }
 }
 
 /// Check whether the new stdlib is compatible with the old stdlib
