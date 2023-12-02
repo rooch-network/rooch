@@ -109,7 +109,7 @@ impl BitcoinRelayer {
             if self.buffer.len() > batch_size {
                 break;
             }
-        } 
+        }
         Ok(())
     }
 
