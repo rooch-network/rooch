@@ -157,6 +157,9 @@ fn check_compiled_module_compat(
 /// Read max version number except `latest` from stdlib release dir
 fn current_max_version() -> u64 {
     let mut max_version = 0;
+    if !release_dir().exists() {
+        return max_version;
+    }
     for entry in release_dir().read_dir().unwrap() {
         let entry = entry.unwrap();
         let dirname = entry.file_name();
