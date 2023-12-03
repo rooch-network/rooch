@@ -23,8 +23,8 @@ pub struct TransactionValidator<'a> {
 
 impl<'a> TransactionValidator<'a> {
     pub const VALIDATE_FUNCTION_NAME: &'static IdentStr = ident_str!("validate");
-    pub const PRE_EXECUTE_FUNCTION_NAME: &IdentStr = ident_str!("pre_execute");
-    pub const POST_EXECUTE_FUNCTION_NAME: &IdentStr = ident_str!("post_execute");
+    pub const PRE_EXECUTE_FUNCTION_NAME: &'static IdentStr = ident_str!("pre_execute");
+    pub const POST_EXECUTE_FUNCTION_NAME: &'static IdentStr = ident_str!("post_execute");
 
     pub fn validate(
         &self,
