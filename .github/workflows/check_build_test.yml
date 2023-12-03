@@ -2,14 +2,14 @@ name: Check-Build-Test
 
 on:
   push:
-    branches: ["main"]
+    branches: ['main']
     paths-ignore:
       - 'docs/**'
       - 'fixtures/**'
       - 'kube/**'
       - '**.md'
   pull_request:
-    branches: ["main"]
+    branches: ['main']
     paths-ignore:
       - 'docs/**'
       - 'fixtures/**'
@@ -68,13 +68,13 @@ jobs:
       - name: Install pnpm dependencies
         run: npm install pnpm -g && pnpm install
       - name: Gen SDK dependencie Code
-        run: pnpm sdk gen
+        run: pnpm rooch-sdk gen
       - name: Lint
         run: pnpm lint
       - name: Build SDK
-        run: pnpm sdk build
+        run: pnpm rooch-sdk build
       - name: Test SDK
-        run: pnpm sdk test
+        run: pnpm rooch-sdk test
       - name: Build Dashboard
         run: pnpm dashboard build
 
@@ -82,5 +82,4 @@ jobs:
         with:
           fail-if-not-clean: true # optional
           push-if-not-clean: false # optional
-          targets: "." #optional
-
+          targets: '.' #optional

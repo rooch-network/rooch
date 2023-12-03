@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // ** Rooch SDK
-import { IAccount } from '@rooch/sdk'
+import { IAccount } from '@roochnetwork/rooch-sdk'
 
 export interface Session {
   account: IAccount | null

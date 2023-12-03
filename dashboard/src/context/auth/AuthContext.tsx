@@ -25,7 +25,7 @@ import { useETH } from 'src/hooks/useETH'
 import { useRooch } from '../../hooks/useRooch'
 
 // ** Rooch SDK
-import { bcsTypes, Ed25519Keypair } from '@rooch/sdk'
+import { bcsTypes, Ed25519Keypair } from '@roochnetwork/rooch-sdk'
 
 // ** Defaults
 const defaultProvider: AuthValuesType = {
