@@ -55,14 +55,18 @@ OPTIONS:
     -V, --version    Print version information
 
 SUBCOMMANDS:
+    abi
     account        Tool for interacting with accounts
+    env            Interface for managing multiple environments
     event          Tool for interacting with event
     help           Print this message or the help of the given subcommand(s)
     init           Tool for init with rooch
     move           CLI frontend for the Move compiler and VM
     object         Get object by object id
     resource       Get account resource by tag
+    rpc
     server         Start Rooch network
+    session-key    Session key Commands
     state          Get states by accessPath
     transaction    Tool for interacting with transaction
 ```
@@ -164,7 +168,7 @@ Then define a function to create a blog:
 ```move
 public fun create_blog(ctx: &mut Context, owner: &signer) {
     let articles = vector::empty();
-    let myblog = MyBlog{
+    let myblog = MyBlog {
         name: string::utf8(b"MyBlog"),
         articles,
     };
@@ -172,10 +176,10 @@ public fun create_blog(ctx: &mut Context, owner: &signer) {
 }
 
 public entry fun set_blog_name(ctx: &mut Context, owner: &signer, blog_name: String) {
-    assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(EDATA_TOO_LONG));
+    assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(ErrorDataTooLong));
     let owner_address = signer::address_of(owner);
     // if blog not exist, create it
-    if(!context::exists_resource<MyBlog>(ctx, owner_address)){
+    if (!context::exists_resource<MyBlog>(ctx, owner_address)) {
         create_blog(ctx, owner);
     };
     let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
@@ -202,7 +206,7 @@ Then, provide a function to query the blog list and a function to add and delete
 module simple_blog::simple_blog {
     use std::error;
     use std::signer;
-    use std::string::{Self,String};
+    use std::string::{Self, String};
     use std::vector;
     use moveos_std::object::{ObjectID, Object};
     use moveos_std::context::{Self, Context};
@@ -225,7 +229,7 @@ module simple_blog::simple_blog {
 
     public fun create_blog(ctx: &mut Context, owner: &signer) {
         let articles = vector::empty();
-        let myblog = MyBlog{
+        let myblog = MyBlog {
             name: string::utf8(b"MyBlog"),
             articles,
         };
@@ -236,7 +240,7 @@ module simple_blog::simple_blog {
         assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(ErrorDataTooLong));
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
-        if(!context::exists_resource<MyBlog>(ctx, owner_address)){
+        if (!context::exists_resource<MyBlog>(ctx, owner_address)) {
             create_blog(ctx, owner);
         };
         let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
@@ -252,7 +256,7 @@ module simple_blog::simple_blog {
     fun add_article_to_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
-        if(!context::exists_resource<MyBlog>(ctx, owner_address)){
+        if (!context::exists_resource<MyBlog>(ctx, owner_address)) {
             create_blog(ctx, owner);
         };
         let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
@@ -277,12 +281,12 @@ module simple_blog::simple_blog {
         simple_article::update_article(article_obj, new_title, new_body);
     }
 
-    fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID){
+    fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
         let owner_address = signer::address_of(owner);
         let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
         let (contains, index) = vector::index_of(&myblog.articles, &article_id);
         assert!(contains, error::not_found(ErrorNotFound));
-        vector::remove(&mut myblog.articles, index); 
+        vector::remove(&mut myblog.articles, index);
     }
 
     public entry fun delete_article(
@@ -291,7 +295,7 @@ module simple_blog::simple_blog {
         article_id: ObjectID,
     ) {
         delete_article_from_myblog(ctx, owner, article_id);
-        let article_obj = context::take_object(ctx, owner, article_id); 
+        let article_obj = context::take_object(ctx, owner, article_id);
         simple_article::delete_article(article_obj);
     }
 }
@@ -460,27 +464,27 @@ Next, we will continue to improve the blog contract and increase the function of
 
 #### 4.3.1 Create blog post contract
 
-We create another `article.move` file in the `sources` directory, which stores the data type of the article and the definition of related events for CRUD operations on the article.
+We create another `simple_article.move` file in the `sources` directory, which stores the data type of the article and the definition of related events for CRUD operations on the article.
 
 Define the article data type, and the article event type:
 
 ```move
-struct Article has key {
+struct Article has key, store {
     version: u64,
     title: String,
     body: String,
 }
 
-struct ArticleCreatedEvent has copy,store {
+struct ArticleCreatedEvent has copy, store, drop {
     id: ObjectID,
 }
 
-struct ArticleUpdatedEvent has copy,store {
+struct ArticleUpdatedEvent has copy, store, drop {
     id: ObjectID,
     version: u64,
 }
 
-struct ArticleDeletedEvent has copy,store {
+struct ArticleDeletedEvent has copy, store, drop {
     id: ObjectID,
     version: u64,
 }
@@ -581,7 +585,7 @@ module simple_blog::simple_article {
 
     use std::error;
     use std::signer;
-    use std::string::String; 
+    use std::string::String;
     use moveos_std::event;
     use moveos_std::object::{ObjectID};
     use moveos_std::object::{Self, Object};
@@ -591,22 +595,22 @@ module simple_blog::simple_article {
     const ErrorNotOwnerAccount: u64 = 2;
 
     //TODO should we allow Article to be transferred?
-    struct Article has key,store {
+    struct Article has key, store {
         version: u64,
         title: String,
         body: String,
     }
 
-    struct ArticleCreatedEvent has copy,store,drop {
+    struct ArticleCreatedEvent has copy, store, drop {
         id: ObjectID,
     }
 
-    struct ArticleUpdatedEvent has copy,store,drop {
+    struct ArticleUpdatedEvent has copy, store, drop {
         id: ObjectID,
         version: u64,
     }
 
-    struct ArticleDeletedEvent has copy,store,drop {
+    struct ArticleDeletedEvent has copy, store, drop {
         id: ObjectID,
         version: u64,
     }
@@ -704,7 +708,6 @@ module simple_blog::simple_article {
     public fun body(article: &Article): String {
         article.body
     }
-    
 }
 ```
 
@@ -716,34 +719,33 @@ module simple_blog::simple_article {
 Next, we integrate the article contract in `simple_blog.move` and provide the entry function:
 
 ```move
-public entry fun create_article(
-    ctx: &mut Context,
-    owner: signer,
-    title: String,
-    body: String,
-) {
-    let article_id = article::create_article(ctx, &owner, title, body);
-    add_article_to_myblog(ctx, &owner, article_id);
-}
+    public entry fun create_article(
+        ctx: &mut Context,
+        owner: signer,
+        title: String,
+        body: String,
+    ) {
+        let article_id = simple_article::create_article(ctx, &owner, title, body);
+        add_article_to_myblog(ctx, &owner, article_id);
+    }
 
-public entry fun update_article(
-    ctx: &mut Context,
-    owner: signer,
-    id: ObjectID,
-    new_title: String,
-    new_body: String,
-) {
-    article::update_article(ctx, &owner, id, new_title, new_body);
-}
+    public entry fun update_article(
+        article_obj: &mut Object<Article>,
+        new_title: String,
+        new_body: String,
+    ) {
+        simple_article::update_article(article_obj, new_title, new_body);
+    }
 
-public entry fun delete_article(
-    ctx: &mut Context,
-    owner: signer,
-    id: ObjectID,
-) {
-    article::delete_article(ctx, &owner, id);
-    delete_article_from_myblog(ctx, &owner, id);
-}
+    public entry fun delete_article(
+        ctx: &mut Context,
+        owner: &signer,
+        article_id: ObjectID,
+    ) {
+        delete_article_from_myblog(ctx, owner, article_id);
+        let article_obj = context::take_object(ctx, owner, article_id);
+        simple_article::delete_article(article_obj);
+    }
 ```
 
 When creating and deleting articles, update the list of articles in the blog at the same time.
