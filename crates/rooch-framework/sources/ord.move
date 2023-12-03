@@ -89,7 +89,7 @@ module rooch_framework::ord {
             option::none()
         }else{
             let content_type = option::destroy_some(*&self.content_type);
-            std::string::try_utf8(content_type)
+            string::try_utf8(content_type)
         }
     }
 

@@ -46,6 +46,12 @@ module simple_blog::simple_blog {
         myblog.name = blog_name;
     }
 
+    /// Get owner's blog's articles
+    public fun get_blog_articles(ctx: &Context, owner_address: address): &vector<ObjectID> {
+        let myblog = context::borrow_resource<MyBlog>(ctx, owner_address);
+        &myblog.articles
+    }
+
     fun add_article_to_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
@@ -54,20 +60,6 @@ module simple_blog::simple_blog {
         };
         let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
         vector::push_back(&mut myblog.articles, article_id);
-    }
-
-    fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID){
-        let owner_address = signer::address_of(owner);
-        let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
-        let (contains, index) = vector::index_of(&myblog.articles, &article_id);
-        assert!(contains, error::not_found(ErrorNotFound));
-        vector::remove(&mut myblog.articles, index); 
-    }
-
-    /// Get owner's blog's articles
-    public fun get_blog_articles(ctx: &Context, owner_address: address): &vector<ObjectID> {
-        let myblog = context::borrow_resource<MyBlog>(ctx, owner_address);
-        &myblog.articles
     }
 
     public entry fun create_article(
@@ -86,6 +78,14 @@ module simple_blog::simple_blog {
         new_body: String,
     ) {
         simple_article::update_article(article_obj, new_title, new_body);
+    }
+
+    fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID){
+        let owner_address = signer::address_of(owner);
+        let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
+        let (contains, index) = vector::index_of(&myblog.articles, &article_id);
+        assert!(contains, error::not_found(ErrorNotFound));
+        vector::remove(&mut myblog.articles, index); 
     }
 
     public entry fun delete_article(

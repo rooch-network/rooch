@@ -144,7 +144,7 @@ In order to facilitate the deployment of other developers, we replace the addres
 
 In this section, I will guide you to write a blog initialization function and run it in Rooch to experience the basic process of `writing -> compiling -> publishing -> calling` the contract.
 
-We create a new `blog.move` file in the `sources` directory and start writing our blog contract.
+We create a new `simple_blog.move` file in the `sources` directory and start writing our blog contract.
 
 #### 4.2.1 Define the structure of the blog
 
@@ -199,16 +199,17 @@ fun init(ctx: &mut Context, owner: &signer) {
 Then, provide a function to query the blog list and a function to add and delete articles. The whole code is as follows:
 
 ```move
-module simple_blog::blog {
+module simple_blog::simple_blog {
     use std::error;
     use std::signer;
     use std::string::{Self,String};
     use std::vector;
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::{ObjectID, Object};
     use moveos_std::context::{Self, Context};
+    use simple_blog::simple_article::{Self, Article};
 
-    const EDATA_TOO_LONG: u64 = 1;
-    const ENOT_FOUND: u64 = 2;
+    const ErrorDataTooLong: u64 = 1;
+    const ErrorNotFound: u64 = 2;
 
     struct MyBlog has key {
         name: String,
@@ -232,7 +233,7 @@ module simple_blog::blog {
     }
 
     public entry fun set_blog_name(ctx: &mut Context, owner: &signer, blog_name: String) {
-        assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(EDATA_TOO_LONG));
+        assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(ErrorDataTooLong));
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
         if(!context::exists_resource<MyBlog>(ctx, owner_address)){
@@ -240,6 +241,12 @@ module simple_blog::blog {
         };
         let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
         myblog.name = blog_name;
+    }
+
+    /// Get owner's blog's articles
+    public fun get_blog_articles(ctx: &Context, owner_address: address): &vector<ObjectID> {
+        let myblog = context::borrow_resource<MyBlog>(ctx, owner_address);
+        &myblog.articles
     }
 
     fun add_article_to_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
@@ -252,27 +259,45 @@ module simple_blog::blog {
         vector::push_back(&mut myblog.articles, article_id);
     }
 
-    fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
+    public entry fun create_article(
+        ctx: &mut Context,
+        owner: signer,
+        title: String,
+        body: String,
+    ) {
+        let article_id = simple_article::create_article(ctx, &owner, title, body);
+        add_article_to_myblog(ctx, &owner, article_id);
+    }
+
+    public entry fun update_article(
+        article_obj: &mut Object<Article>,
+        new_title: String,
+        new_body: String,
+    ) {
+        simple_article::update_article(article_obj, new_title, new_body);
+    }
+
+    fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID){
         let owner_address = signer::address_of(owner);
         let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
         let (contains, index) = vector::index_of(&myblog.articles, &article_id);
-        assert!(contains, error::not_found(ENOT_FOUND));
+        assert!(contains, error::not_found(ErrorNotFound));
         vector::remove(&mut myblog.articles, index); 
     }
 
-    /// Get owner's blog's articles
-    public fun get_blog_articles(ctx: &Context, owner_address: address): vector<ObjectID> {
-        if(!context::exists_resource<MyBlog>(ctx, owner_address)){
-            vector::empty()
-        }else{
-            let myblog = context::borrow_resource<MyBlog>(ctx, owner_address);
-            myblog.articles
-        }
+    public entry fun delete_article(
+        ctx: &mut Context,
+        owner: &signer,
+        article_id: ObjectID,
+    ) {
+        delete_article_from_myblog(ctx, owner, article_id);
+        let article_obj = context::take_object(ctx, owner, article_id); 
+        simple_article::delete_article(article_obj);
     }
 }
 ```
 
-- `module simple_blog::blog` is used to declare which module our contract belongs to. Its syntax is `module address::module_name`, and the logic (function) of the contract is written in curly braces `{}`.
+- `module simple_blog::simple_blog` is used to declare which module our contract belongs to. Its syntax is `module address::module_name`, and the logic (function) of the contract is written in curly braces `{}`.
 - The `use` statement imports the libraries we need to depend on when writing contracts.
 - `const` defines the constants used in the contract, usually used to define some error codes.
 - `fun` is a keyword used to define a function, usually the function of the function is defined here. For safety, such functions are prohibited from being called directly on the command line, and the calling logic needs to be encapsulated in the entry function.
@@ -357,16 +382,16 @@ At this point, our blog contract has been released to the chain, and the blog ha
 rooch state --access-path /resource/{ACCOUNT_ADDRESS}/{RESOURCE_TYPE}
 ```
 
-Among them, `{ACCOUNT_ADDRESS}` is the account address, `{RESOURCE_TYPE}` is the resource type, here is `{MODULE_ADDRESS}::blog::MyBlog`. Here `{ACCOUNT_ADDRESS}` and `{MODULE_ADDRESS}` are the default account addresses of my machine.
+Among them, `{ACCOUNT_ADDRESS}` is the account address, `{RESOURCE_TYPE}` is the resource type, here is `{MODULE_ADDRESS}::simple_blog::MyBlog`. Here `{ACCOUNT_ADDRESS}` and `{MODULE_ADDRESS}` are the default account addresses of my machine.
 
 We can check the value corresponding to the `active_address` key in the `$HOME/.rooch/rooch_config/rooch.yaml` file, which is the default account address of the operation contract.
 
-My address is `0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01`, and I will continue to use this address to demonstrate related operations.
+My address is `0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081`, and I will continue to use this address to demonstrate related operations.
 
 So the command I actually execute here should be:
 
 ```shell
-rooch state --access-path /resource/0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01/0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog
+rooch state --access-path /resource/0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081/0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_blog::MyBlog
 ```
 
 return result:
@@ -376,11 +401,11 @@ return result:
   {
     "state": {
       "value": "0x064d79426c6f6700",
-      "value_type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog"
+      "value_type": "0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_blog::MyBlog"
     },
     "move_value": {
       "abilities": 8,
-      "type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog",
+      "type": "0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_blog::MyBlog",
       "value": {
         "articles": [],
         "name": "MyBlog"
@@ -401,7 +426,7 @@ rooch move run --function {ACCOUNT_ADDRESS}::{MODULE_NAME}::{FUNCTION_NAME} --se
 Run a function with the `rooch move run` command. `--function` Specify the function name, you need to pass a complete function name, that is, `the_address_of_the_published_contract::module_name::function_name`, in order to accurately identify the function that needs to be called. `--sender-account` specifies the address of the account that calls this function, that is, which account is used to call this function, and anyone can call the contract on the chain.
 
 ```shell
-rooch move run --function 0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::set_blog_name --sender-account default --args 'string:Rooch blog'
+rooch move run --function 0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_blog::set_blog_name --sender-account default --args 'string:Rooch blog'
 ```
 
 When this command is executed, a transaction will be sent to the chain, and the content of the transaction is to call the `set_blog_name` function in the blog contract.
@@ -413,11 +438,11 @@ After the execution is successful, run the previous status query command again, 
   {
     "state": {
       "value": "0x0a526f6f636820626c6f6700",
-      "value_type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog"
+      "value_type": "0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_blog::MyBlog"
     },
     "move_value": {
       "abilities": 8,
-      "type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog",
+      "type": "0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_blog::MyBlog",
       "value": {
         "articles": [],
         "name": "Rooch blog"
@@ -465,37 +490,37 @@ The article data structure contains three fields, `version` is used to record th
 
 Define a function to create an article:
 
+
 ```move
-/// Create article
-public fun create_article(
-    ctx: &mut Context,
-    owner: &signer,
-    title: String,
-    body: String,
-): ObjectID {
-    assert!(std::string::length(&title) <= 200, error::invalid_argument(EDATA_TOO_LONG));
-    assert!(std::string::length(&body) <= 2000, error::invalid_argument(EDATA_TOO_LONG));
+    /// Create article
+    public fun create_article(
+        ctx: &mut Context,
+        owner: &signer,
+        title: String,
+        body: String,
+    ): ObjectID {
+        assert!(std::string::length(&title) <= 200, error::invalid_argument(ErrorDataTooLong));
+        assert!(std::string::length(&body) <= 2000, error::invalid_argument(ErrorDataTooLong));
 
-    let article = Article {
-        version: 0,
-        title,
-        body,
-    };
-    let owner_addr = signer::address_of(owner);
-    let article_obj = context::new_object_with_owner(
-        ctx,
-        owner_addr,
-        article,
-    );
-    let id = object::id(&article_obj);
-    context::add_object(ctx, article_obj);
+        let article = Article {
+            version: 0,
+            title,
+            body,
+        };
+        let owner_addr = signer::address_of(owner);
+        let article_obj = context::new_object(
+            ctx,
+            article,
+        );
+        let id = object::id(&article_obj);
 
-    let article_created_event = ArticleCreatedEvent {
-        id,
-    };
-    event::emit_event(ctx, article_created_event);
-    id
-}
+        let article_created_event = ArticleCreatedEvent {
+            id,
+        };
+        event::emit(article_created_event);
+        object::transfer(article_obj, owner_addr);
+        id
+    }
 ```
 
 In this function, first check whether the length of the article title and content exceeds the limit. Then create the article object, add the article object to the object store, and finally send the article creation event and return the ID of the article.
@@ -503,34 +528,27 @@ In this function, first check whether the length of the article title and conten
 Then define the modification function:
 
 ```move
-/// Update article
-public fun update_article(
-    ctx: &mut Context,
-    owner: &signer,
-    id: ObjectID,
-    new_title: String,
-    new_body: String,
-) {
-    assert!(std::string::length(&new_title) <= 200, error::invalid_argument(ErrorDataTooLong));
-    assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(ErrorDataTooLong));
+    /// Update article
+    public fun update_article(
+        article_obj: &mut Object<Article>,
+        new_title: String,
+        new_body: String,
+    ) {
+        assert!(std::string::length(&new_title) <= 200, error::invalid_argument(ErrorDataTooLong));
+        assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(ErrorDataTooLong));
 
-    let article_obj = context::borrow_object_mut<Article>(ctx, id);
-    let owner_address = signer::address_of(owner);
-    
-    // only article owner can update the article 
-    assert!(object::owner(article_obj) == owner_address, error::permission_denied(ErrorNotOwnerAccount));
+        let id = object::id(article_obj);
+        let article = object::borrow_mut(article_obj);
+        article.version = article.version + 1;
+        article.title = new_title;
+        article.body = new_body;
 
-    let article = object::borrow_mut(article_obj);
-    article.version = article.version + 1;
-    article.title = new_title;
-    article.body = new_body;
-
-    let article_update_event = ArticleUpdatedEvent {
-        id,
-        version: article.version,
-    };
-    event::emit(ctx, article_update_event);
-}
+        let article_update_event = ArticleUpdatedEvent {
+            id,
+            version: article.version,
+        };
+        event::emit(article_update_event);
+    }
 ```
 
 In this function, first check whether the length of the new article title and content exceeds the limit. Then get the article object from the object store, check if the caller is the owner of the article, and throw an exception if not. Finally, update the version number, title and content of the article object, and send an article update event.
@@ -538,70 +556,57 @@ In this function, first check whether the length of the new article title and co
 Then define the delete function:
 
 ```move
-/// Delete article
-public fun delete_article(
-    ctx: &mut Context,
-    owner: &signer,
-    id: ObjectID,
-) {
-    let article_obj = context::remove_object<Article>(ctx, id);
-    let owner_address = signer::address_of(owner);
-    
-    // only article owner can delete the article 
-    assert!(object::owner(&article_obj) == owner_address, error::permission_denied(ErrorNotOwnerAccount));
+    /// Delete article
+    public fun delete_article(
+        article_obj: Object<Article>,
+    ) {
+        let id = object::id(&article_obj);
+        let article = object::remove(article_obj);
 
-    let article_deleted_event = ArticleDeletedEvent {
-        id,
-        version: object::borrow(&article_obj).version,
-    };
-    event::emit(ctx, article_deleted_event);
-    drop_article(article_obj);
-}
+        let article_deleted_event = ArticleDeletedEvent {
+            id,
+            version: article.version,
+        };
+        event::emit(article_deleted_event);
+        drop_article(article);
+    }
 ```
 
 In this function, first delete the article object from the object store, check whether the caller is the owner of the article, and throw an exception if not. Finally send the article delete event and destroy the article object.
 
-Finally, we also need to provide a function to query articles by ID for use by other contracts:
-
-```move
-/// get article object by id
-public fun get_article(ctx: &Context, article_id: ObjectID): &Object<Article> {
-    context::borrow_object<Article>(ctx, article_id)
-}
-```
-
 The complete contract code is as follows:
 
 ```move
-module simple_blog::article {
+module simple_blog::simple_article {
 
     use std::error;
     use std::signer;
     use std::string::String; 
     use moveos_std::event;
+    use moveos_std::object::{ObjectID};
     use moveos_std::object::{Self, Object};
-    use moveos_std::object_id::ObjectID;
     use moveos_std::context::{Self, Context};
 
     const ErrorDataTooLong: u64 = 1;
     const ErrorNotOwnerAccount: u64 = 2;
 
-    struct Article has key {
+    //TODO should we allow Article to be transferred?
+    struct Article has key,store {
         version: u64,
         title: String,
         body: String,
     }
 
-    struct ArticleCreatedEvent has copy,store {
+    struct ArticleCreatedEvent has copy,store,drop {
         id: ObjectID,
     }
 
-    struct ArticleUpdatedEvent has copy,store {
+    struct ArticleUpdatedEvent has copy,store,drop {
         id: ObjectID,
         version: u64,
     }
 
-    struct ArticleDeletedEvent has copy,store {
+    struct ArticleDeletedEvent has copy,store,drop {
         id: ObjectID,
         version: u64,
     }
@@ -623,38 +628,30 @@ module simple_blog::article {
             body,
         };
         let owner_addr = signer::address_of(owner);
-        let article_obj = context::new_object_with_owner(
+        let article_obj = context::new_object(
             ctx,
-            owner_addr,
             article,
         );
         let id = object::id(&article_obj);
-        context::add_object(ctx, article_obj);
 
         let article_created_event = ArticleCreatedEvent {
             id,
         };
-        event::emit(ctx, article_created_event);
+        event::emit(article_created_event);
+        object::transfer(article_obj, owner_addr);
         id
     }
 
     /// Update article
     public fun update_article(
-        ctx: &mut Context,
-        owner: &signer,
-        id: ObjectID,
+        article_obj: &mut Object<Article>,
         new_title: String,
         new_body: String,
     ) {
         assert!(std::string::length(&new_title) <= 200, error::invalid_argument(ErrorDataTooLong));
         assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(ErrorDataTooLong));
 
-        let article_obj = context::borrow_object_mut<Article>(ctx, id);
-        let owner_address = signer::address_of(owner);
-        
-        // only article owner can update the article 
-        assert!(object::owner(article_obj) == owner_address, error::permission_denied(ErrorNotOwnerAccount));
-
+        let id = object::id(article_obj);
         let article = object::borrow_mut(article_obj);
         article.version = article.version + 1;
         article.title = new_title;
@@ -664,31 +661,25 @@ module simple_blog::article {
             id,
             version: article.version,
         };
-        event::emit(ctx, article_update_event);
+        event::emit(article_update_event);
     }
 
     /// Delete article
     public fun delete_article(
-        ctx: &mut Context,
-        owner: &signer,
-        id: ObjectID,
+        article_obj: Object<Article>,
     ) {
-        let article_obj = context::remove_object<Article>(ctx, id);
-        let owner_address = signer::address_of(owner);
-        
-        // only article owner can delete the article 
-        assert!(object::owner(&article_obj) == owner_address, error::permission_denied(ErrorNotOwnerAccount));
+        let id = object::id(&article_obj);
+        let article = object::remove(article_obj);
 
         let article_deleted_event = ArticleDeletedEvent {
             id,
-            version: object::borrow(&article_obj).version,
+            version: article.version,
         };
-        event::emit(ctx, article_deleted_event);
-        drop_article(article_obj);
+        event::emit(article_deleted_event);
+        drop_article(article);
     }
 
-    fun drop_article(article_obj: Object<Article>) {
-        let (_id, _owner, article) =  object::unpack(article_obj);
+    fun drop_article(article: Article) {
         let Article {
             version: _version,
             title: _title,
@@ -698,36 +689,31 @@ module simple_blog::article {
 
     /// Read function of article
 
-    /// get article object by id
-    public fun get_article(ctx: &Context, article_id: ObjectID): &Object<Article> {
-        context::borrow_object<Article>(ctx, article_id)
-    }
-
-    /// get article id
-    public fun id(article_obj: &Object<Article>): ObjectID {
-        object::id(article_obj)
-    }
 
     /// get article version
-    public fun version(article_obj: &Object<Article>): u64 {
-        object::borrow(article_obj).version
+    public fun version(article: &Article): u64 {
+        article.version
     }
 
     /// get article title
-    public fun title(article_obj: &Object<Article>): String {
-        object::borrow(article_obj).title
+    public fun title(article: &Article): String {
+        article.title
     }
 
     /// get article body
-    public fun body(article_obj: &Object<Article>): String {
-        object::borrow(article_obj).body
+    public fun body(article: &Article): String {
+        article.body
     }
+    
 }
 ```
 
+> The latest code can be found in the [examples/simple_blog/sources/simple_blog.move](https://github.com/rooch-network/rooch/blob/main/examples/simple_blog/sources/simple_blog.move)
+
+
 #### 4.3.2 Blog Contract Integration Article Contract
 
-Next, we integrate the article contract in `blog.move` and provide the entry function:
+Next, we integrate the article contract in `simple_blog.move` and provide the entry function:
 
 ```move
 public entry fun create_article(
@@ -767,10 +753,10 @@ When creating and deleting articles, update the list of articles in the blog at 
 A test article can be created by submitting a transaction using the Rooch CLI like this:
 
 ```shell
-rooch move run --function 0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::create_article --sender-account default --args 'string:Hello Rooch' "string:Accelerating World's Transition to Decentralization"
+rooch move run --function 0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_blog::create_article --sender-account default --args 'string:Hello Rooch' "string:Accelerating World's Transition to Decentralization"
 ```
 
-`--function` specifies to execute the `create_article` function in the `blog` module published at address `0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01`, that is, create a new blog post. `--sender-account` specifies who should submit this transaction. This function requires us to pass two parameters to it, specified by `--args`, the first is the title of the article, I named it `Hello Rooch`; the second is the content of the article, I wrote the slogan of Rooch: `Accelerating World's Transition to Decentralization`.
+`--function` specifies to execute the `create_article` function in the `simple_blog`module published at address `0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081`, that is, create a new blog post. `--sender-account` specifies who should submit this transaction. This function requires us to pass two parameters to it, specified by `--args`, the first is the title of the article, I named it `Hello Rooch`; the second is the content of the article, I wrote the slogan of Rooch: `Accelerating World's Transition to Decentralization`.
 
 The parameter passed is a string, which needs to be wrapped in quotation marks and specified through `string:`. There are single quotation marks in the content of the second parameter, so use double quotation marks to wrap it, otherwise you must use an escape character (`\`).
 
@@ -787,22 +773,17 @@ curl --location --request POST 'http://localhost:50051' \
  "id":101,
  "jsonrpc":"2.0",
  "method":"rooch_getEventsByEventHandle",
- "params":["0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::ArticleCreatedEvent", null, 1000]
+ "params":["0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_article::ArticleCreatedEvent", null, "1000", {"decode":true}]
 }'
 ```
 
-The returned response content:
-
-```json
-{"jsonrpc":"2.0","result":{"data":[{"event":{"event_id":{"event_handle_id":"0xc48dc675718370db4273a419875967e7c32615f907262d475730d8faf0afca44","event_seq":0},"type_tag":"0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::ArticleCreatedEvent","event_data":"0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41","event_index":0},"sender":"0x0000000000000000000000000000000000000000000000000000000000000000","tx_hash":null,"timestamp_ms":null,"parsed_event_data":{"abilities":13,"type":"0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::ArticleCreatedEvent","value":{"id":"0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41"}}}],"next_cursor":0,"has_next_page":false},"id":101}
-```
-
-Since there are many output contents, you can add a pipeline operation (` | jq '.result.data[0].parsed_event_data.value.id'`) at the end of the above command to quickly filter out the `ObjectID` of the first article.
+Since there are many output contents, you can add a pipeline operation (` | jq '.result.data[0].decoded_event_data.value.id'`) at the end of the above command to quickly filter out the `ObjectID` of the first article.
 
 > Tip: Before using the `jp` command (jq - commandline JSON processor), you may need to install it first.
 
 The command after adding `jp` processing looks like this:
 
+```shell
 ```shell
 curl --location --request POST 'http://localhost:50051' \
 --header 'Content-Type: application/json' \
@@ -810,38 +791,37 @@ curl --location --request POST 'http://localhost:50051' \
  "id":101,
  "jsonrpc":"2.0",
  "method":"rooch_getEventsByEventHandle",
- "params":["0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::ArticleCreatedEvent", null, 1000]
-}' | jq '.result.data[0].parsed_event_data.value.id'
+ "params":["0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_article::ArticleCreatedEvent", null, "1000", {"decode":true}]
+}'|jq '.result.data[0].decoded_event_data.value.id'
 ```
 
 The object ID of the blog that is screened through `jp` is:
 
 ```shell
-"0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41"
+"0x6067b5c1f0a6a9d059ab0e2e4fe5ce12832cc4036aa5ca451611d0dd971192e1"
 ```
 
 Then, you can use the Rooch CLI to query the status of the object, passing `--id` to specify the ID of the article object (replace it with the ObjectID of your article):
 
 ```shell
-rooch state --access-path /object/0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41
+rooch state --access-path /object/0x6067b5c1f0a6a9d059ab0e2e4fe5ce12832cc4036aa5ca451611d0dd971192e1
 ```
 
 ```json
 [
   {
-    "state": {
-      "value": "0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41bbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d0100000000000000000b48656c6c6f20526f6f636833416363656c65726174696e6720576f726c642773205472616e736974696f6e20746f20446563656e7472616c697a6174696f6e",
-      "value_type": "0x2::object::Object<0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::Article>"
-    },
-    "move_value": {
+    "value": "0x6067b5c1f0a6a9d059ab0e2e4fe5ce12832cc4036aa5ca451611d0dd971192e15078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef10810000000000000000000b48656c6c6f20526f6f636831416363656c65726174696e6720576f726c64205472616e736974696f6e20746f20446563656e7472616c697a6174696f6e",
+    "value_type": "0x2::object::ObjectEntity<0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_article::Article>",
+    "decoded_value": {
       "abilities": 0,
-      "type": "0x2::object::Object<0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::Article>",
+      "type": "0x2::object::ObjectEntity<0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_article::Article>",
       "value": {
-        "id": "0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41",
-        "owner": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01",
+        "flag": 0,
+        "id": "0x6067b5c1f0a6a9d059ab0e2e4fe5ce12832cc4036aa5ca451611d0dd971192e1",
+        "owner": "0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081",
         "value": {
-          "abilities": 8,
-          "type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::Article",
+          "abilities": 12,
+          "type": "0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_article::Article",
           "value": {
             "body": "Accelerating World's Transition to Decentralization",
             "title": "Hello Rooch",
@@ -859,23 +839,21 @@ Pay attention to the two key-value pairs `title` and `body` in the output, and y
 We can also use the previous command to query `MyBlog` Resource under the account:
 
 ```shell
-rooch state --access-path /resource/0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01/0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog        
+rooch state --access-path /resource/0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081/0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_blog::MyBlog        
 ```
 ```json
 [
   {
-    "state": {
-      "value": "0x0a526f6f636820626c6f67011f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41",
-      "value_type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog"
-    },
-    "move_value": {
+    "value": "0x064d79426c6f670301f7468be3c592846b2e9e86e3dd86ac3b4cd931128bfbc7e65228b94f5bdd626067b5c1f0a6a9d059ab0e2e4fe5ce12832cc4036aa5ca451611d0dd971192e18f63ed57932e5aff49b76dcf56619da0d06f3272dfd9f9513427712765ce40a7",
+    "value_type": "0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_blog::MyBlog",
+    "decoded_value": {
       "abilities": 8,
-      "type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog",
+      "type": "0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_blog::MyBlog",
       "value": {
         "articles": [
-          "0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41"
+          "0x6067b5c1f0a6a9d059ab0e2e4fe5ce12832cc4036aa5ca451611d0dd971192e1"
         ],
-        "name": "Rooch blog"
+        "name": "MyBlog"
       }
     }
   }
@@ -888,12 +866,12 @@ As you can see, the `articles` field in `MyBlog` stores the object ID of the art
 
 We try to update the content of an article using the `update_article` function.
 
-`--function` specifies to execute the `update` function in the `blog` module published at address `0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01`, that is, to update a blog post. Also need to use `--sender-account` to specify the account that will send this update article transaction. This function requires us to pass three parameters to it, specified by `--args`, the first parameter is the object ID of the article to be modified, and the latter two parameters correspond to the title and body of the article respectively.
+`--function` specifies to execute the `update` function in the `simple_blog`module published at address `0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081`, that is, to update a blog post. Also need to use `--sender-account` to specify the account that will send this update article transaction. This function requires us to pass three parameters to it, specified by `--args`, the first parameter is the object ID of the article to be modified, and the latter two parameters correspond to the title and body of the article respectively.
 
 Change the title of the article to be `Foo` and the body of the article to be `Bar`:
 
 ```shell
-rooch move run --function 0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::update_article --sender-account default --args 'object_id:0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41' 'string:Foo' 'string:Bar'
+rooch move run --function default::simple_blog::update_article --sender-account default --args 'object_id:0x6067b5c1f0a6a9d059ab0e2e4fe5ce12832cc4036aa5ca451611d0dd971192e1' 'string:Foo' 'string:Bar'
 ```
 
 In addition to using the Rooch CLI, you can also query the state of objects by calling JSON RPC:
@@ -904,31 +882,31 @@ curl --location --request POST 'http://127.0.0.1:50051/' \
 --data-raw '{
  "id":101,
  "jsonrpc":"2.0",
- "method":"rooch_getAnnotatedStates",
- "params":["/object/0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41"]
+ "method":"rooch_getStates",
+ "params":["/object/0x6067b5c1f0a6a9d059ab0e2e4fe5ce12832cc4036aa5ca451611d0dd971192e1", {"decode": true}]
 }'
 ```
 
 In the output, it can be observed that the title and body of the article are successfully modified:
 
 ```json
-{"jsonrpc":"2.0","result":[{"state":{"value":"0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41bbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01010000000000000003466f6f03426172","value_type":"0x2::object::Object<0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::Article>"},"move_value":{"abilities":0,"type":"0x2::object::Object<0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::Article>","value":{"id":"0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41","owner":"0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01","value":{"abilities":8,"type":"0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::article::Article","value":{"body":"Bar","title":"Foo","version":"1"}}}}}],"id":101}
+{"jsonrpc":"2.0","result":[{"value":"0x6067b5c1f0a6a9d059ab0e2e4fe5ce12832cc4036aa5ca451611d0dd971192e15078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef108100010000000000000003466f6f03426172","value_type":"0x2::object::ObjectEntity<0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_article::Article>","decoded_value":{"abilities":0,"type":"0x2::object::ObjectEntity<0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_article::Article>","value":{"flag":0,"id":"0x6067b5c1f0a6a9d059ab0e2e4fe5ce12832cc4036aa5ca451611d0dd971192e1","owner":"0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081","value":{"abilities":12,"type":"0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_article::Article","value":{"body":"Bar","title":"Foo","version":"1"}}}}}],"id":101}
 ```
 
 #### 4.3.6 Delete article
 
-A transaction can be submitted like this, calling `blog::delete_article` to delete an article:
+A transaction can be submitted like this, calling `simple_blog::delete_article` to delete an article:
 
 ```shell
-rooch move run --function 0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::delete_article --sender-account default --args 'object_id:0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41'
+rooch move run --function default::simple_blog::delete_article --sender-account default --args 'object_id:0x6067b5c1f0a6a9d059ab0e2e4fe5ce12832cc4036aa5ca451611d0dd971192e1'
 ```
 
-`--function` specifies to execute the `delete_article` function in the `blog` module published at `0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01`, that is, to delete a blog post. Also need to use `--sender-account` to specify the account to send this delete article transaction. This function only needs to pass one parameter to it, which is the object ID corresponding to the article, specified by `--args`.
+`--function` specifies to execute the `delete_article` function in the `simple_blog`module published at `0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081`, that is, to delete a blog post. Also need to use `--sender-account` to specify the account to send this delete article transaction. This function only needs to pass one parameter to it, which is the object ID corresponding to the article, specified by `--args`.
 
 #### 4.3.7 Check whether the article is deleted normally
 
 ```shell
-rooch state --access-path /object/0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc1cf989bfa24073d78a41
+rooch state --access-path /object/0x6067b5c1f0a6a9d059ab0e2e4fe5ce12832cc4036aa5ca451611d0dd971192e1
 
 [
   null
@@ -938,7 +916,7 @@ rooch state --access-path /object/0x1f27bd310f51b09915648d53319e65509dcc7ca42ffc
 As you can see, when querying the object ID of the article, the result returns `null`. The description article has been deleted. Then query `MyBlog` Resource:
 
 ```shell
-rooch state --access-path /resource/0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01/0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog        
+rooch state --access-path /resource/0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081/0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_blog::MyBlog        
 ```
 
 ```json
@@ -946,11 +924,11 @@ rooch state --access-path /resource/0xbbfc33692c7d57839fde9643681fb64c83b377e4c7
   {
     "state": {
       "value": "0x0a526f6f636820626c6f6700",
-      "value_type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog"
+      "value_type": "0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_blog::MyBlog"
     },
     "move_value": {
       "abilities": 8,
-      "type": "0xbbfc33692c7d57839fde9643681fb64c83b377e4c70b1e4b76aa35ff1e410d01::blog::MyBlog",
+      "type": "0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081::simple_blog::MyBlog",
       "value": {
         "articles": [],
         "name": "Rooch blog"
