@@ -1,0 +1,26 @@
+# Start a New Rooch Project
+
+If you want to build a new app or a new website with Rooch, we recommend use rooch-create CLI create project. The CLI provides features that most apps and sites eventually need, including frameworks such as React and Vue (Vue support coming soon). It also encapsulates the relevant framework functionalities.
+
+## Note
+
+Before you begin, make sure to have Node.js installed for local development.
+
+## Create Project
+
+```shell
+npm create @roochnetwork/rooch <name>
+cd <name>
+npm dev
+```
+
+This command sets up a new project named &lt;name&gt;, and you can navigate to it with cd &lt;name&gt;. Then, start the development server with npm dev.
+
+The project comes with a counter example. The Increase method in the counter contract can be invoked either through Rooch SDK calls or by initiating Ethereum transactions through Metamask.
+
+The Rooch context and wallet context are also included, making it easy to connect to wallets, send transactions, manage accounts, and handle chains.
+
+
+## Learn More
+
+Explore the Rooch SDK documentation (here)[https://www.npmjs.com/package/@roochnetwork/rooch-sdk].

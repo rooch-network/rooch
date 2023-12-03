@@ -344,7 +344,7 @@ importers:
         specifier: 4.8.4
         version: 4.8.4
 
-  sdk/typescript/create:
+  sdk/typescript/rooch-create:
     dependencies:
       create-create-app:
         specifier: git+https://github.com/holic/create-create-app#74376c59b48a04aabbe94d9cacfe9cb1cecccd63
@@ -453,6 +453,9 @@ importers:
 
   sdk/typescript/templates/react:
     dependencies:
+      '@roochnetwork/rooch-sdk':
+        specifier: link:../../rooch-sdk
+        version: link:../../rooch-sdk
       next:
         specifier: 14.0.3
         version: 14.0.3(@babel/core@7.23.5)(react-dom@18.2.0)(react@18.2.0)
@@ -469,9 +472,6 @@ importers:
       '@metamask/sdk':
         specifier: ^0.5.6
         version: 0.5.6(@types/react@17.0.67)(react-native@0.71.13)(react@18.2.0)
-      '@roochnetwork/rooch-sdk':
-        specifier: workspace:*
-        version: link:../../rooch-sdk
       '@types/node':
         specifier: 18.15.3
         version: 18.15.3

@@ -24,7 +24,7 @@ create('create-rooch', {
   caveat: ({ answers, packageManager }) =>
     `Done! Play in the rooch with \`cd ${answers.name}\` and \`${packageManager} run dev\``,
   extra: {
-    'mud-version': {
+    'rooch-version': {
       type: 'input',
       describe: 'The version of Rooch packages to use, defaults to latest',
       default: packageJson.version,
