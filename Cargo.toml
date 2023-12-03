@@ -18,6 +18,7 @@ members = [
     "crates/rooch-types",
     "crates/rooch-framework",
     "crates/rooch-framework-tests",
+    "crates/rooch-framework-release",
     "crates/rooch-genesis",
     "crates/rooch-genesis-builder",
     "crates/rooch-integration-test-runner",
