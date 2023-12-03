@@ -11,7 +11,7 @@ import { CreateGenericSlice, GenericState } from 'src/store/generic'
 import { Params } from 'src/store/scan/state/type'
 
 // ** SDK import
-import { StateView } from '@rooch/sdk'
+import { StateView } from '@roochnetwork/rooch-sdk'
 
 // ** Fetch Transaction
 export const fetchData = createAsyncThunk('state/fetchData', async (params: Params) => {

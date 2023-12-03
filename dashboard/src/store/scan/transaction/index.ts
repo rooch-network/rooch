@@ -8,11 +8,11 @@ import { createAsyncThunk, Dispatch, AnyAction } from '@reduxjs/toolkit'
 import { CreateGenericSlice, GenericState } from '../../generic'
 
 // ** sdk import
-import { JsonRpcProvider, TransactionWithInfoPageView } from '@rooch/sdk'
+import { RoochClient, TransactionWithInfoPageView } from '@roochnetwork/rooch-sdk'
 
 interface DataParams {
   dispatch: Dispatch<AnyAction>
-  provider: JsonRpcProvider
+  provider: RoochClient
   cursor: number
   limit: number
 }

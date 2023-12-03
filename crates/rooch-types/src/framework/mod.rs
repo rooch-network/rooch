@@ -13,6 +13,7 @@ pub mod address_mapping;
 pub mod auth_validator;
 pub mod bitcoin_light_client;
 pub mod bitcoin_types;
+pub mod brc20;
 pub mod coin;
 pub mod coin_store;
 pub mod empty;

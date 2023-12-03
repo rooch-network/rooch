@@ -23,11 +23,11 @@ import {
   FuncFilter,
   getErrorCategoryName,
   IAccount,
-  IProvider,
+  IClient,
   ITransactionFilterChain,
   parseRoochErrorSubStatus,
   PrivateKeyAuth,
-} from '@rooch/sdk'
+} from '@roochnetwork/rooch-sdk'
 import { Session } from 'src/context/session/types'
 import { useETH } from '../../hooks/useETH'
 
@@ -49,7 +49,7 @@ const makeSessionAccountStoreKey = (chainId: number, address: string) => {
   return `rooch::${chainId}::dashboard::account::${address}::current-session-key`
 }
 
-const loadSessionAccountFromSessionStorage = (provider: IProvider, roochAddress: string) => {
+const loadSessionAccountFromSessionStorage = (provider: IClient, roochAddress: string) => {
   try {
     // Get from local storage by key
     const secretKey = window.sessionStorage.getItem(
@@ -77,7 +77,7 @@ const loadSessionAccountFromSessionStorage = (provider: IProvider, roochAddress:
   return null
 }
 
-const clearSessionAccountInSessionStorage = (provider: IProvider, roochAddress: string) => {
+const clearSessionAccountInSessionStorage = (provider: IClient, roochAddress: string) => {
   try {
     window.sessionStorage.setItem(
       makeSessionAccountStoreKey(provider.getChainId(), roochAddress),
@@ -223,7 +223,7 @@ const SessionProvider = ({ children }: Props) => {
   }
 
   const requestWalletCreateSessionKey = async (
-    provider: IProvider,
+    provider: IClient,
     account: AccountDataType,
     scope: Array<string>,
     maxInactiveInterval: number,
@@ -257,7 +257,7 @@ const SessionProvider = ({ children }: Props) => {
   }
 
   const requestPrivateCreateSessionKey = async (
-    provider: IProvider,
+    provider: IClient,
     account: IAccount,
     scope: Array<string>,
     maxInactiveInterval: number,
@@ -313,9 +313,6 @@ const SessionProvider = ({ children }: Props) => {
           scope,
           maxInactiveInterval,
         )
-
-        console.log('申请')
-        console.log(sessionAccount)
 
         if (sessionAccount) {
           setSessionAccount(sessionAccount)

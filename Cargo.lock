@@ -7266,6 +7266,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "rooch-framework-release"
+version = "0.1.0"
+dependencies = [
+ "clap 3.2.25",
+ "itertools",
+ "move-binary-format",
+ "moveos-stdlib-builder",
+ "rooch-genesis-builder",
+ "rooch-types",
+]
+
+[[package]]
 name = "rooch-framework-tests"
 version = "0.1.0"
 dependencies = [

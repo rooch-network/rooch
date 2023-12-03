@@ -8,6 +8,7 @@
     "title": "水龙头",
     "display": "hidden"
   },
+  "typescript-sdk": "Typescript-SDK",
   "address-space": "地址空间",
   "library": "库",
   "create-rooch-move-contract": "创建 Rooch Move 合约",

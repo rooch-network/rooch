@@ -71,7 +71,7 @@ impl SqliteIndexerStore {
             values_clause
         );
 
-        tracing::debug!("Upsert global states Executing Query: {}", query);
+        tracing::trace!("Upsert global states Executing Query: {}", query);
         // Execute the raw SQL query
         diesel::sql_query(query)
             .execute(&mut connection)
@@ -141,7 +141,7 @@ impl SqliteIndexerStore {
             values_clause
         );
 
-        tracing::debug!("Upsert leaf states Executing Query: {}", query);
+        tracing::trace!("Upsert leaf states Executing Query: {}", query);
         // Execute the raw SQL query
         diesel::sql_query(query)
             .execute(&mut connection)
