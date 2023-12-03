@@ -78,9 +78,10 @@ impl RpcService {
             .await?;
 
         // Last save indexer
-        self.indexer
-            .indexer_states(sequence_info.tx_order, output.state_changeset.clone())
-            .await?;
+        //TODO Temporarily close state indexer writing and reopen it after the escape character problem is fixed.
+        // self.indexer
+        //     .indexer_states(sequence_info.tx_order, output.state_changeset.clone())
+        //     .await?;
         self.indexer
             .indexer_transaction(
                 tx.clone(),
