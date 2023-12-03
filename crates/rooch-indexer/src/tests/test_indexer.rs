@@ -303,6 +303,7 @@ fn random_table_object() -> ObjectEntity<TableInfo> {
     ObjectEntity::new_table_object(ObjectID::from(AccountAddress::random()), table_info)
 }
 
+#[allow(dead_code)]
 fn random_raw_object() -> ObjectEntity<RawData> {
     let raw_data = RawData {
         struct_tag: random_struct_tag(),
@@ -312,24 +313,20 @@ fn random_raw_object() -> ObjectEntity<RawData> {
     ObjectEntity::new_raw_object(ObjectID::from(AccountAddress::random()), raw_data)
 }
 
-fn random_update_global_states() -> Vec<IndexedGlobalState> {
-    let mut update_global_states = vec![];
-
-    let mut rng = thread_rng();
-    for _n in 0..rng.gen_range(1..=10) {
-        let state = IndexedGlobalState::new_from_table_object_update(
-            random_table_object(),
-            random_string(),
-        );
-        update_global_states.push(state);
-    }
-
-    for _n in 0..rng.gen_range(1..=10) {
-        let state = IndexedGlobalState::new_from_raw_object(random_raw_object(), random_string());
-        update_global_states.push(state);
-    }
-
-    update_global_states
+fn random_update_global_states(states: Vec<IndexedGlobalState>) -> Vec<IndexedGlobalState> {
+    states
+        .into_iter()
+        .map(|item| IndexedGlobalState {
+            object_id: item.object_id,
+            owner: item.owner,
+            flag: item.flag,
+            value: random_string(),
+            key_type: item.key_type,
+            size: item.size + 1,
+            created_at: item.created_at,
+            updated_at: item.updated_at + 1,
+        })
+        .collect()
 }
 
 fn random_new_global_states() -> Vec<IndexedGlobalState> {
@@ -361,7 +358,7 @@ fn random_remove_global_states() -> Vec<String> {
     remove_global_states
 }
 
-fn random_leaf_states() -> Vec<IndexedLeafState> {
+fn random_new_leaf_states() -> Vec<IndexedLeafState> {
     let mut leaf_states = vec![];
 
     let mut rng = thread_rng();
@@ -376,6 +373,21 @@ fn random_leaf_states() -> Vec<IndexedLeafState> {
     }
 
     leaf_states
+}
+
+fn random_update_leaf_states(states: Vec<IndexedLeafState>) -> Vec<IndexedLeafState> {
+    states
+        .into_iter()
+        .map(|item| IndexedLeafState {
+            id: item.id,
+            object_id: item.object_id,
+            key_hex: item.key_hex,
+            value: random_string(),
+            value_type: random_type_tag(),
+            created_at: item.created_at,
+            updated_at: item.updated_at + 1,
+        })
+        .collect()
 }
 
 fn random_remove_leaf_states() -> Vec<String> {
@@ -506,11 +518,11 @@ fn test_state_store() -> Result<()> {
     let indexer_reader = IndexerReader::new(indexer_db_url)?;
 
     let mut new_global_states = random_new_global_states();
-    let mut update_global_states = random_update_global_states();
+    let mut update_global_states = random_update_global_states(new_global_states.clone());
     let remove_global_states = random_remove_global_states();
 
-    let mut new_leaf_states = random_leaf_states();
-    let mut update_leaf_states = random_leaf_states();
+    let mut new_leaf_states = random_new_leaf_states();
+    let mut update_leaf_states = random_update_leaf_states(new_leaf_states.clone());
     let remove_leaf_states = random_remove_leaf_states();
 
     //Merge new global states and update global states
