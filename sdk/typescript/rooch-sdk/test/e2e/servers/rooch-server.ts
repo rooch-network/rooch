@@ -46,7 +46,9 @@ export class RoochServer {
   }
 
   checkReady(cb: (ret: Error | undefined) => void) {
-    const readyRegex = /JSON-RPC HTTP Server start listening/
+    // const readyRegex = /JSON-RPC HTTP Server start listening/
+    // Wait eth relayer ready, TODO: Direct inspection timestamp contract
+    const readyRegex = /EthereumRelayer process block/
     const errorRegex = /[Ee]rror:/
 
     const timer = setTimeout(() => {
