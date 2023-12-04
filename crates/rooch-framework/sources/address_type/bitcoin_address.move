@@ -75,7 +75,7 @@ module rooch_framework::bitcoin_address {
         }
     }
 
-    public(friend) fun from_bytes(bytes: vector<u8>): BTCAddress {
+    public fun from_bytes(bytes: vector<u8>): BTCAddress {
         BTCAddress {
             bytes: bytes,
         }
