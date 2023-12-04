@@ -155,9 +155,8 @@ fn test_session_key_rooch() {
                 }
                 _ => panic!("expect move abort in module"),
             }
-            let (_category, reason) = moveos_types::move_std::error::explain(*code);
             // ErrorFunctionCallBeyondSessionScope = 5
-            assert_eq!(reason, 5, "expect ErrorFunctionCallBeyondSessionScope");
+            assert_eq!(*code, 5, "expect ErrorFunctionCallBeyondSessionScope");
         }
         _ => {
             panic!("Expect move abort")
@@ -191,9 +190,8 @@ fn test_session_key_rooch() {
                 }
                 _ => panic!("expect move abort in module"),
             }
-            let (_category, reason) = moveos_types::move_std::error::explain(*code);
             // ErrorSessionIsExpired = 4
-            assert_eq!(reason, 4, "expect ErrorSessionIsExpired");
+            assert_eq!(*code, 4, "expect ErrorSessionIsExpired");
         }
         _ => {
             panic!("Expect move abort")

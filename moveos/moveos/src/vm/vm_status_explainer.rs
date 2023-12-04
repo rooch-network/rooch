@@ -31,7 +31,6 @@ pub enum VMStatusExplainView {
     /// Indicates an `abort` from inside Move code. Contains the location of the abort and the code
     MoveAbort {
         location: AbortLocation,
-        category_code: u64,
         reason_code: u64,
     },
 
@@ -61,11 +60,9 @@ where
         VMStatus::MoveAbort(location, abort_code) => {
             //TODO find a way to include the description
             //Define a error code description trait, and let caller pass the error description files as argument.
-            let (category_code, reason_code) = moveos_types::move_std::error::explain(*abort_code);
             VMStatusExplainView::MoveAbort {
                 location: location.clone(),
-                category_code,
-                reason_code,
+                reason_code: *abort_code,
             }
         }
         VMStatus::ExecutionFailure {
