@@ -36,7 +36,7 @@ jobs:
           platform: x64
 
       - name: Install SQLite
-        run: choco install sqlite3
+        run: choco install sqlite
         if: matrix.platform == 'windows-latest'
       - name: Find SQLite path
         run: choco list sqlite3 -l -r
