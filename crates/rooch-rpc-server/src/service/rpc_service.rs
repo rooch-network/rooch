@@ -78,21 +78,35 @@ impl RpcService {
             .await?;
 
         // Last save indexer
-        //TODO Temporarily close state indexer writing and reopen it after the escape character problem is fixed.
-        // self.indexer
-        //     .indexer_states(sequence_info.tx_order, output.state_changeset.clone())
-        //     .await?;
-        self.indexer
+        let result = self
+            .indexer
+            .indexer_states(sequence_info.tx_order, output.state_changeset.clone())
+            .await;
+        match result {
+            Ok(_) => {}
+            Err(error) => log::error!("Indexer states error: {}", error),
+        };
+        let result = self
+            .indexer
             .indexer_transaction(
                 tx.clone(),
                 sequence_info.clone(),
                 execution_info.clone(),
                 moveos_tx.clone(),
             )
-            .await?;
-        self.indexer
+            .await;
+        match result {
+            Ok(_) => {}
+            Err(error) => log::error!("Indexer transactions error: {}", error),
+        };
+        let result = self
+            .indexer
             .indexer_events(output.events.clone(), tx, sequence_info.clone(), moveos_tx)
-            .await?;
+            .await;
+        match result {
+            Ok(_) => {}
+            Err(error) => log::error!("Indexer events error: {}", error),
+        };
 
         Ok(ExecuteTransactionResponse {
             sequence_info,
