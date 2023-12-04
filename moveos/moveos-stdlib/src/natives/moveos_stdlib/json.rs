@@ -271,7 +271,7 @@ fn native_from_json(
     } else {
         Ok(NativeResult::err(
             cost,
-            moveos_types::move_std::error::invalid_argument(E_TYPE_NOT_MATCH),
+            E_TYPE_NOT_MATCH,
         ))
     }
 }

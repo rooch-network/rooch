@@ -48,7 +48,7 @@ pub fn native_ecrecover(
     let cost = gas_params.base;
 
     let Ok(sig) = <Secp256k1RecoverableSignature as ToFromBytes>::from_bytes(&signature_ref) else {
-        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_SIGNATURE)));
+        return Ok(NativeResult::err(cost, E_INVALID_SIGNATURE));
     };
 
     let pk = match hash {
@@ -57,7 +57,7 @@ pub fn native_ecrecover(
         _ => {
             return Ok(NativeResult::err(
                 cost,
-                moveos_types::move_std::error::invalid_argument(E_INVALID_HASH_TYPE),
+                E_INVALID_HASH_TYPE,
             ))
         } // We should never reach here
     };
@@ -69,7 +69,7 @@ pub fn native_ecrecover(
         )),
         Err(_) => Ok(NativeResult::err(
             cost,
-            moveos_types::move_std::error::internal(E_FAIL_TO_RECOVER_PUBKEY),
+            E_FAIL_TO_RECOVER_PUBKEY,
         )),
     }
 }
@@ -99,7 +99,7 @@ pub fn native_decompress_pubkey(
         }
         Err(_) => Ok(NativeResult::err(
             cost,
-            moveos_types::move_std::error::invalid_argument(E_INVALID_PUBKEY),
+            E_INVALID_PUBKEY,
         )),
     }
 }
@@ -126,7 +126,7 @@ pub fn native_verify(
     let cost = gas_params.base;
 
     let Ok(sig) = <Secp256k1RecoverableSignature as ToFromBytes>::from_bytes(&signature_bytes_ref) else {
-        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_SIGNATURE)));
+        return Ok(NativeResult::err(cost, E_INVALID_SIGNATURE));
     };
 
     let pk = match hash {

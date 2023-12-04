@@ -24,8 +24,7 @@
 -  [Function `set_module_upgrade_flag`](#0x2_tx_context_set_module_upgrade_flag)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::hash</a>;
+<pre><code><b>use</b> <a href="">0x1::hash</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;

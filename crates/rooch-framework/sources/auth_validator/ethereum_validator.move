@@ -4,7 +4,6 @@
 /// This module implements Ethereum validator with the ECDSA recoverable signature over Secp256k1.
 module rooch_framework::ethereum_validator {
 
-    use std::error;
     use std::vector;
     use std::option::{Self, Option};
     use std::signer;
@@ -34,7 +33,7 @@ module rooch_framework::ethereum_validator {
         // compare newly passed public key with Ethereum public key length to ensure it's compatible
         assert!(
             vector::length(&public_key) == ecdsa_k1_recoverable::public_key_length(),
-            error::invalid_argument(ErrorInvalidPublicKeyLength)
+            ErrorInvalidPublicKeyLength
         );
 
         // User can rotate the authentication key arbitrarily, so we do not need to check the new public key with the account address.

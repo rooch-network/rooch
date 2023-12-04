@@ -12,7 +12,6 @@ module moveos_std::tx_context {
     use std::hash;
     use std::string::String;
     use std::option::{Self, Option};
-    use std::error;
     use moveos_std::bcs;
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::copyable_any::{Self, Any};
@@ -131,20 +130,20 @@ module moveos_std::tx_context {
     /// The meta data is only available when executing or validating a transaction, otherwise abort(eg. readonly function call).
     public(friend) fun tx_meta(self: &TxContext): TxMeta {
         let meta = get<TxMeta>(self);
-        assert!(option::is_some(&meta), error::invalid_state(ErrorInvalidContext));
+        assert!(option::is_some(&meta), ErrorInvalidContext);
         option::extract(&mut meta)
     }
 
     public(friend) fun tx_gas_payment_account(self: &TxContext): address {
         let gas_payment_account = get<GasPaymentAccount>(self);
-        assert!(option::is_some(&gas_payment_account), error::invalid_state(ErrorInvalidContext));
+        assert!(option::is_some(&gas_payment_account), ErrorInvalidContext);
         option::extract(&mut gas_payment_account).account
     }
 
     /// The result is only available in the `post_execute` function.
     public(friend) fun tx_result(self: &TxContext): TxResult {
         let result = get<TxResult>(self);
-        assert!(option::is_some(&result), error::invalid_state(ErrorInvalidContext));
+        assert!(option::is_some(&result), ErrorInvalidContext);
         option::extract(&mut result)
     }
 
@@ -156,7 +155,7 @@ module moveos_std::tx_context {
             //We only need to set the flag if is_upgrade is true.
             if(is_upgrade){
                 let flag = get<ModuleUpgradeFlag>(self);
-                assert!(option::is_some(&flag), error::invalid_state(ErrorInvalidContext));
+                assert!(option::is_some(&flag), ErrorInvalidContext);
                 option::borrow_mut(&mut flag).is_upgrade = true;
             }
         }

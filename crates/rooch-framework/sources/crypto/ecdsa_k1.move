@@ -63,7 +63,7 @@ module rooch_framework::ecdsa_k1 {
     }
 
     #[test]
-    #[expected_failure(location=Self, abort_code = 65537)] // std::error::invalid_argument(ErrorInvalidSignature)
+    #[expected_failure(location=Self, abort_code = 65537)] // ErrorInvalidSignature
     fun test_verify_fails_invalid_sig() {
         let msg = x"00010203";
         let pubkey = x"033e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
@@ -72,7 +72,7 @@ module rooch_framework::ecdsa_k1 {
     }
 
     #[test]
-    #[expected_failure(location=Self, abort_code = 65538)] // std::error::invalid_argument(ErrorInvalidPubKey)
+    #[expected_failure(location=Self, abort_code = 65538)] // ErrorInvalidPubKey
     fun test_verify_fails_invalid_pubkey() {
         let msg = x"00010203";
         let pubkey = x"";

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_framework::bitcoin_address {
-    use std::error;
     use std::vector;
     use std::option::{Self, Option};
     use rooch_framework::bitcoin_script_buf::{Self, ScriptBuf};
@@ -34,7 +33,7 @@ module rooch_framework::bitcoin_address {
     }
 
     fun new_p2pkh(pubkey_hash: vector<u8>): BTCAddress{
-        assert!(vector::length(&pubkey_hash) == PUBKEY_HASH_LEN, error::invalid_argument(ErrorAddressBytesLen));
+        assert!(vector::length(&pubkey_hash) == PUBKEY_HASH_LEN, ErrorAddressBytesLen);
         //TDDO do we need to distinguish between mainnet and testnet?
         //OR find a way to define same module for different networks
         let bytes = vector::singleton<u8>(P2PKH_ADDR_DECIMAL_PREFIX_MAIN);
@@ -45,7 +44,7 @@ module rooch_framework::bitcoin_address {
     }
 
     fun new_p2sh(script_hash: vector<u8>): BTCAddress{
-        assert!(vector::length(&script_hash) == SCRIPT_HASH_LEN, error::invalid_argument(ErrorAddressBytesLen));
+        assert!(vector::length(&script_hash) == SCRIPT_HASH_LEN, ErrorAddressBytesLen);
         let bytes = vector::singleton<u8>(P2SH_ADDR_DECIMAL_PREFIX_MAIN);
         vector::append(&mut bytes, script_hash);
         BTCAddress {

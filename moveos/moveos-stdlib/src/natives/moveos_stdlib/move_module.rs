@@ -135,7 +135,7 @@ fn native_sort_and_verify_modules_inner(
         if *module.self_id().address() != account_address {
             return Ok(NativeResult::err(
                 cost,
-                moveos_types::move_std::error::invalid_argument(E_ADDRESS_NOT_MATCH_WITH_SIGNER),
+                E_ADDRESS_NOT_MATCH_WITH_SIGNER,
             ));
         }
         let result = moveos_verifier::verifier::verify_module(module, module_context.resolver);
@@ -151,7 +151,7 @@ fn native_sort_and_verify_modules_inner(
                 log::info!("module {} verification error: {:?}", module.self_id(), e);
                 return Ok(NativeResult::err(
                     cost,
-                    moveos_types::move_std::error::invalid_argument(E_MODULE_VERIFICATION_ERROR),
+                    E_MODULE_VERIFICATION_ERROR,
                 ));
             }
         }
@@ -255,7 +255,7 @@ fn check_compatibililty_inner(
             Err(_) => {
                 return Ok(NativeResult::err(
                     cost,
-                    moveos_types::move_std::error::invalid_argument(E_MODULE_INCOMPATIBLE),
+                    E_MODULE_INCOMPATIBLE,
                 ))
             }
         }
@@ -293,7 +293,7 @@ where
     if vec_len != old_vec.elem_views().len() {
         return Ok(NativeResult::err(
             cost,
-            moveos_types::move_std::error::invalid_argument(E_LENTH_NOT_MATCH),
+            E_LENTH_NOT_MATCH,
         ));
     };
     let vec_len = vec_len as u64;

@@ -22,8 +22,7 @@ A basic scalable vector library implemented using <code>Table</code>.
 -  [Function `swap_remove`](#0x2_table_vec_swap_remove)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
+<pre><code><b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="table.md#0x2_table">0x2::table</a>;
 </code></pre>
 

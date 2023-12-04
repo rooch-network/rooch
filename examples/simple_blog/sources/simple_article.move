@@ -4,7 +4,6 @@
 /// Name the module to `simple_article` for avoid name conflict with `examples/blog`
 module simple_blog::simple_article {
 
-    use std::error;
     use std::signer;
     use std::string::String;
     use moveos_std::event;
@@ -44,8 +43,8 @@ module simple_blog::simple_article {
         title: String,
         body: String,
     ): ObjectID {
-        assert!(std::string::length(&title) <= 200, error::invalid_argument(ErrorDataTooLong));
-        assert!(std::string::length(&body) <= 2000, error::invalid_argument(ErrorDataTooLong));
+        assert!(std::string::length(&title) <= 200, ErrorDataTooLong);
+        assert!(std::string::length(&body) <= 2000, ErrorDataTooLong);
 
         let article = Article {
             version: 0,
@@ -73,8 +72,8 @@ module simple_blog::simple_article {
         new_title: String,
         new_body: String,
     ) {
-        assert!(std::string::length(&new_title) <= 200, error::invalid_argument(ErrorDataTooLong));
-        assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(ErrorDataTooLong));
+        assert!(std::string::length(&new_title) <= 200, ErrorDataTooLong);
+        assert!(std::string::length(&new_body) <= 2000, ErrorDataTooLong);
 
         let id = object::id(article_obj);
         let article = object::borrow_mut(article_obj);

@@ -3,7 +3,6 @@
 
 module rooch_framework::ethereum_address {
     use std::vector;
-    use std::error;
     use rooch_framework::ecdsa_k1_recoverable;
     use rooch_framework::hash;
 
@@ -24,13 +23,13 @@ module rooch_framework::ethereum_address {
         // A pubkey is a 33-bytes compressed public key
         assert!(
             vector::length(&pub_key) == ecdsa_k1_recoverable::public_key_length(),
-            error::invalid_argument(ErrorMalformedPublicKey)
+            ErrorMalformedPublicKey
         );
         // Decompressing the pubkey to a 65-bytes public key.
         let uncompressed = ecdsa_k1_recoverable::decompress_pubkey(&pub_key);
         assert!(
             vector::length(&uncompressed) == ecdsa_k1_recoverable::uncompressed_public_key_length(),
-            error::internal(ErrorDecompressPublicKey)
+            ErrorDecompressPublicKey
         );
         // Ignore the first byte and take the last 64-bytes of the uncompressed pubkey.
         let uncompressed_64 = vector::empty<u8>();
@@ -58,7 +57,7 @@ module rooch_framework::ethereum_address {
     public fun from_bytes(bytes: vector<u8>): ETHAddress {
         assert!(
             vector::length(&bytes) == ETHEREUM_ADDR_LENGTH,
-            error::invalid_argument(ErrorInvaidAddressBytes)
+            ErrorInvaidAddressBytes
         );
         ETHAddress {
             bytes: bytes,

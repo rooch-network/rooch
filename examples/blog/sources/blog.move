@@ -12,7 +12,6 @@ module rooch_examples::blog {
     use moveos_std::object::Object;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
-    use std::error;
     use std::signer;
     use std::string::String;
     use rooch_examples::article::Article;
@@ -154,7 +153,7 @@ module rooch_examples::blog {
 
 
     public(friend) fun update_version_and_add(ctx: &mut Context, account: &signer, blog: Blog) {
-        assert!(signer::address_of(account) == @rooch_examples, error::invalid_argument(ErrorNotGenesisAccount));
+        assert!(signer::address_of(account) == @rooch_examples, ErrorNotGenesisAccount);
         blog.version = blog.version + 1;
         private_add_blog(ctx, account, blog);
     }
@@ -164,7 +163,7 @@ module rooch_examples::blog {
     }
 
     public(friend) fun add_blog(ctx: &mut Context, account: &signer, blog: Blog) {
-        assert!(signer::address_of(account) == @rooch_examples, error::invalid_argument(ErrorNotGenesisAccount));
+        assert!(signer::address_of(account) == @rooch_examples, ErrorNotGenesisAccount);
         assert!(blog.version == 0, ErrorInappropriateVersion);
         private_add_blog(ctx, account, blog);
     }

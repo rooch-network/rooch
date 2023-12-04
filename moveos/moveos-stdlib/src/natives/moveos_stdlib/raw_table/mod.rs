@@ -482,7 +482,7 @@ fn native_add_box(
         }
         Err(_) => Ok(NativeResult::err(
             cost,
-            moveos_types::move_std::error::already_exists(E_ALREADY_EXISTS),
+            E_ALREADY_EXISTS,
         )),
     }
 }
@@ -534,7 +534,7 @@ fn native_borrow_box(
         Ok(ref_val) => Ok(NativeResult::ok(cost, smallvec![ref_val])),
         Err(_) => Ok(NativeResult::err(
             cost,
-            moveos_types::move_std::error::not_found(E_NOT_FOUND),
+            E_NOT_FOUND,
         )),
     }
 }
@@ -644,7 +644,7 @@ fn native_remove_box(
         }
         Err(_) => Ok(NativeResult::err(
             cost,
-            moveos_types::move_std::error::not_found(E_NOT_FOUND),
+            E_NOT_FOUND,
         )),
     }
 }
@@ -732,7 +732,7 @@ fn native_drop_unchecked_box(
     } else {
         Ok(NativeResult::err(
             gas_params.base,
-            moveos_types::move_std::error::not_found(E_DUPLICATE_OPERATION),
+            E_DUPLICATE_OPERATION,
         ))
     }
 }

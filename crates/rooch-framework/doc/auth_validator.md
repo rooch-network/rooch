@@ -28,7 +28,6 @@ fun post_execute(ctx: &mut Context)
 
 
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
-<b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x2::context</a>;
 </code></pre>

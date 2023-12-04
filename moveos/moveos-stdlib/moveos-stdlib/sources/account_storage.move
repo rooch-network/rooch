@@ -7,7 +7,6 @@ module moveos_std::account_storage {
 
     use std::string::String;
     use std::vector;
-    use std::error;
     use moveos_std::bcs;
     use moveos_std::type_table::{Self, TypeTable};
     use moveos_std::table::{Self, Table};
@@ -56,13 +55,13 @@ module moveos_std::account_storage {
 
     /// Add a resource to the account storage
     fun add_resource_to_account_storage<T: key>(self: &mut AccountStorage, resource: T){
-        assert!(!type_table::contains<T>(&self.resources), error::invalid_argument(ErrorResourceAlreadyExists));
+        assert!(!type_table::contains<T>(&self.resources), ErrorResourceAlreadyExists);
         type_table::add(&mut self.resources, resource);
     }
 
     /// Remove a resource from the account storage
     fun remove_resource_from_account_storage<T: key>(self: &mut AccountStorage): T {
-        assert!(type_table::contains<T>(&self.resources), error::invalid_argument(ErrorResourceNotExists));
+        assert!(type_table::contains<T>(&self.resources), ErrorResourceNotExists);
         type_table::remove<T>(&mut self.resources)
     }
 

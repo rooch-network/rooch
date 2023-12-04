@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_framework::core_addresses {
-    use std::error;
     use std::signer;
 
     /// The address/account did not correspond to the genesis address
@@ -22,7 +21,7 @@ module rooch_framework::core_addresses {
     }
 
     public fun assert_rooch_genesis_address(addr: address) {
-        assert!(is_rooch_genesis_address(addr), error::permission_denied(ErrorNotGenesisAddress))
+        assert!(is_rooch_genesis_address(addr), ErrorNotGenesisAddress)
     }
 
     public fun is_rooch_genesis_address(addr: address): bool {
@@ -34,7 +33,7 @@ module rooch_framework::core_addresses {
     }
 
     public fun assert_rooch_association_address(addr: address) {
-        assert!(is_rooch_association_address(addr), error::permission_denied(ErrorNotAssociationAddress))
+        assert!(is_rooch_association_address(addr), ErrorNotAssociationAddress)
     }
 
     public fun is_rooch_association_address(addr: address): bool {
@@ -44,7 +43,7 @@ module rooch_framework::core_addresses {
     public fun assert_rooch_framework(account: &signer) {
         assert!(
             is_rooch_framework_address(signer::address_of(account)),
-            error::permission_denied(ErrorNotRoochFrameworkAddress),
+            ErrorNotRoochFrameworkAddress,
         )
     }
 
@@ -55,7 +54,7 @@ module rooch_framework::core_addresses {
     public fun assert_framework_reserved(addr: address) {
         assert!(
             is_framework_reserved_address(addr),
-            error::permission_denied(ErrorNotFrameworkReservedAddress),
+            ErrorNotFrameworkReservedAddress,
         )
     }
 
@@ -80,7 +79,7 @@ module rooch_framework::core_addresses {
 
     /// Assert that the signer has the VM reserved address.
     public fun assert_vm(account: &signer) {
-        assert!(is_vm(account), error::permission_denied(ErrorNotVM))
+        assert!(is_vm(account), ErrorNotVM)
     }
 
     /// Return true if `addr` is a reserved address for the VM to call system modules.

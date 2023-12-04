@@ -5,7 +5,6 @@
 /// For more details, please refer to https://rooch.network/docs/developer-guides/object
 module moveos_std::object {
 
-    use std::error;
     use std::hash;
     use std::vector;
     use moveos_std::bcs;
@@ -122,7 +121,7 @@ module moveos_std::object {
     }
 
     fun new_internal<T: key>(id: ObjectID, value: T): ObjectEntity<T> {
-        assert!(!contains_global(id), error::invalid_state(ErrorObjectAlreadyExist));
+        assert!(!contains_global(id), ErrorObjectAlreadyExist);
         let owner = SYSTEM_OWNER_ADDRESS;
         ObjectEntity<T>{id, owner, flag: 0u8, value}
     }
@@ -213,7 +212,7 @@ module moveos_std::object {
     } 
 
     public(friend) fun to_user_owned<T: key>(self: &mut Object<T>, new_owner: address) {
-        assert!(new_owner != SYSTEM_OWNER_ADDRESS, error::invalid_argument(ErrorInvalidOwnerAddress));
+        assert!(new_owner != SYSTEM_OWNER_ADDRESS, ErrorInvalidOwnerAddress);
         let obj_entity = borrow_mut_from_global<T>(self.id);
         obj_entity.owner = new_owner;
     }
@@ -303,7 +302,7 @@ module moveos_std::object {
 
     public(friend) fun borrow_mut_from_global<T: key>(object_id: ObjectID): &mut ObjectEntity<T> {
         let object_entity = raw_table::borrow_mut<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id);
-        assert!(!is_frozen_internal(object_entity), error::permission_denied(ErrorObjectFrozen));
+        assert!(!is_frozen_internal(object_entity), ErrorObjectFrozen);
         object_entity
     }
 

@@ -3,7 +3,6 @@
 
 /// Name the module to `simple_blog` for avoid name conflict with `examples/blog`
 module simple_blog::simple_blog {
-    use std::error;
     use std::signer;
     use std::string::{Self, String};
     use std::vector;
@@ -36,7 +35,7 @@ module simple_blog::simple_blog {
     }
 
     public entry fun set_blog_name(ctx: &mut Context, owner: &signer, blog_name: String) {
-        assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(ErrorDataTooLong));
+        assert!(std::string::length(&blog_name) <= 200, ErrorDataTooLong);
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
         if (!context::exists_resource<MyBlog>(ctx, owner_address)) {
@@ -84,7 +83,7 @@ module simple_blog::simple_blog {
         let owner_address = signer::address_of(owner);
         let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
         let (contains, index) = vector::index_of(&myblog.articles, &article_id);
-        assert!(contains, error::not_found(ErrorNotFound));
+        assert!(contains, ErrorNotFound);
         vector::remove(&mut myblog.articles, index);
     }
 

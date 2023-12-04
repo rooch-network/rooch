@@ -3,7 +3,6 @@
 
 module rooch_framework::bitcoin_light_client{
 
-    use std::error;
     use std::option::{Self, Option};
     use std::vector;
     use moveos_std::context::{Self, Context};
@@ -70,7 +69,7 @@ module rooch_framework::bitcoin_light_client{
         
         let btc_block_store = object::borrow_mut(btc_block_store_obj);
         //already processed
-        assert!(!table::contains(&btc_block_store.hash_to_height, block_hash), error::invalid_argument(ErrorBlockAlreadyProcessed));
+        assert!(!table::contains(&btc_block_store.hash_to_height, block_hash), ErrorBlockAlreadyProcessed);
 
         let block = bcs::from_bytes<Block>(block_bytes);
         validate_block(btc_block_store, block_height, block_hash, &block);
