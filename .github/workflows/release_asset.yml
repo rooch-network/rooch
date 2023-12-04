@@ -12,9 +12,9 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - ubuntu-latest
-          - ubuntu-22.04
-          - macos-latest
+          # - ubuntu-latest
+          # - ubuntu-22.04
+          # - macos-latest
           - windows-latest
     runs-on: ${{matrix.platform}}
     steps:
@@ -34,6 +34,13 @@ jobs:
         if: matrix.platform != 'windows-latest' && matrix.platform != 'macos-latest'
         with:
           platform: x64
+
+      - name: Install sqlite-bundled for windows  #fix https://github.com/rooch-network/rooch/issues/1157
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: diesel_cli --no-default-features --features "sqlite-bundled"
+        if: matrix.platform == 'windows-latest'
 
       - name: build for ${{ matrix.platform }}
         uses: actions-rs/cargo@v1
