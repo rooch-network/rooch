@@ -35,11 +35,12 @@ jobs:
         with:
           platform: x64
 
-      - name: Install SQLite
+      - name: Install SQLite #fix https://github.com/rooch-network/rooch/issues/1157
         run: choco install sqlite
         if: matrix.platform == 'windows-latest'
-      - name: Find SQLite path
-        run: choco list --local-only
+      - name: Set LIB environment variable
+        run: |
+          echo "LIB=$LIB;C:\ProgramData\chocolatey\lib\SQLite\tools" >> $GITHUB_ENV
         if: matrix.platform == 'windows-latest'
 
       - name: build for ${{ matrix.platform }}
