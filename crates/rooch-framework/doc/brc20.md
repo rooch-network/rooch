@@ -253,5 +253,5 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<pre><code>entry <b>fun</b> <a href="brc20.md#0x3_brc20_progress_brc20_ops">progress_brc20_ops</a>(inscription_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x3_ord_InscriptionStore">ord::InscriptionStore</a>&gt;, brc20_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="brc20.md#0x3_brc20_BRC20Store">brc20::BRC20Store</a>&gt;, batch_size: u64)
+<pre><code>entry <b>fun</b> <a href="brc20.md#0x3_brc20_progress_brc20_ops">progress_brc20_ops</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, inscription_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x3_ord_InscriptionStore">ord::InscriptionStore</a>&gt;, brc20_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="brc20.md#0x3_brc20_BRC20Store">brc20::BRC20Store</a>&gt;, batch_size: u64)
 </code></pre>
