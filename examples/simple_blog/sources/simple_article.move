@@ -6,7 +6,7 @@ module simple_blog::simple_article {
 
     use std::error;
     use std::signer;
-    use std::string::String; 
+    use std::string::String;
     use moveos_std::event;
     use moveos_std::object::{ObjectID};
     use moveos_std::object::{Self, Object};
@@ -16,22 +16,22 @@ module simple_blog::simple_article {
     const ErrorNotOwnerAccount: u64 = 2;
 
     //TODO should we allow Article to be transferred?
-    struct Article has key,store {
+    struct Article has key, store {
         version: u64,
         title: String,
         body: String,
     }
 
-    struct ArticleCreatedEvent has copy,store,drop {
+    struct ArticleCreatedEvent has copy, store, drop {
         id: ObjectID,
     }
 
-    struct ArticleUpdatedEvent has copy,store,drop {
+    struct ArticleUpdatedEvent has copy, store, drop {
         id: ObjectID,
         version: u64,
     }
 
-    struct ArticleDeletedEvent has copy,store,drop {
+    struct ArticleDeletedEvent has copy, store, drop {
         id: ObjectID,
         version: u64,
     }
@@ -129,5 +129,4 @@ module simple_blog::simple_article {
     public fun body(article: &Article): String {
         article.body
     }
-    
 }
