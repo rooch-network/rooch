@@ -1,7 +1,5 @@
 module quick_start_object_counter::quick_start_object_counter {
-    use std::debug;
     use std::signer;
-    use moveos_std::object::{Self, ObjectID};
     use moveos_std::context::{Self, Context};
 
     struct ObjectCounter has key, store {
@@ -12,21 +10,20 @@ module quick_start_object_counter::quick_start_object_counter {
         create_counter(ctx, owner);
     }
 
-    public fun create_counter(ctx: &mut Context, owner: &signer): ObjectID {
+    public fun create_counter(ctx: &mut Context, owner: &signer) {
         let counter = ObjectCounter { count_value: 0 };
-        let owner_addr = signer::address_of(owner);
-        let obj = context::new_object(ctx, counter);
-        let id = object::id(&obj);
-        debug::print(&id);
-        object::transfer(obj, owner_addr);
-        id
+        context::move_resource_to(ctx, owner, counter);
     }
 
-    entry public fun increase(ctx: &mut Context, owner: &signer) {
-        let obj_id = create_counter(ctx, owner);
-        let obj = context::borrow_mut_object<ObjectCounter>(ctx, owner, obj_id);
-        let v = object::borrow_mut(obj);
+    public entry fun increase(ctx: &mut Context, owner: &signer) {
+        let owner_addr = signer::address_of(owner);
+        let counter = context::borrow_mut_resource<ObjectCounter>(ctx, owner_addr);
+        counter.count_value = counter.count_value + 1;
+    }
 
-        v.count_value = v.count_value + 1
+    public fun query(ctx: &Context, owner_addr: address): &u64 {
+        // let owner_addr = signer::address_of(owner);
+        let counter = context::borrow_resource<ObjectCounter>(ctx, owner_addr);
+        &counter.count_value
     }
 }
