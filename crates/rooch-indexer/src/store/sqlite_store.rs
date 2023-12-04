@@ -4,6 +4,7 @@
 use anyhow::Result;
 use diesel::QueryDsl;
 use diesel::{ExpressionMethods, RunQueryDsl};
+use tracing::log;
 
 use crate::errors::{Context, IndexerError};
 use crate::models::events::StoredEvent;
@@ -13,6 +14,7 @@ use crate::schema::{events, global_states, leaf_states, table_change_sets, trans
 use crate::types::{
     IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTableChangeSet, IndexedTransaction,
 };
+use crate::utils::escape_sql_string;
 use crate::{get_sqlite_pool_connection, SqliteConnectionPool};
 
 #[derive(Clone)]
@@ -44,12 +46,12 @@ impl SqliteIndexerStore {
             .into_iter()
             .map(|state| {
                 format!(
-                    "(\'{}\', \'{}\', {}, \'{}\', \'{}\', {}, {}, {})",
-                    state.object_id,
-                    state.owner,
+                    "('{}', '{}', {}, '{}', '{}', {}, {}, {})",
+                    escape_sql_string(state.object_id),
+                    escape_sql_string(state.owner),
                     state.flag,
-                    state.value,
-                    state.key_type,
+                    escape_sql_string(state.value),
+                    escape_sql_string(state.key_type),
                     state.size,
                     state.created_at,
                     state.updated_at,
@@ -59,7 +61,7 @@ impl SqliteIndexerStore {
             .join(",");
         let query = format!(
             "
-                INSERT INTO global_states (object_id, owner, flag,value, key_type, size, created_at, updated_at) \
+                INSERT INTO global_states (object_id, owner, flag, value, key_type, size, created_at, updated_at) \
                 VALUES {} \
                 ON CONFLICT (object_id) DO UPDATE SET \
                 owner = excluded.owner, \
@@ -71,11 +73,29 @@ impl SqliteIndexerStore {
             values_clause
         );
 
-        tracing::trace!("Upsert global states Executing Query: {}", query);
+        // // Perform multi-insert with ON CONFLICT update
+        // diesel::insert_into(global_states::table)
+        //     .values(states.as_slice())
+        //     .on_conflict(global_states::object_id)
+        //     .do_update()
+        //     .set((
+        //         global_states::owner.eq(excluded(global_states::owner)),
+        //         global_states::flag.eq(excluded(global_states::flag)),
+        //         global_states::value.eq(excluded(global_states::value)),
+        //         global_states::size.eq(excluded(global_states::size)),
+        //         global_states::updated_at.eq(excluded(global_states::updated_at)),
+        //     ))
+        //     .execute(&mut connection)
+        //     .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
+        //     .context("Failed to write or update global states to SQLiteDB");
+
         // Execute the raw SQL query
-        diesel::sql_query(query)
+        diesel::sql_query(query.clone())
             .execute(&mut connection)
-            .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
+            .map_err(|e| {
+                log::error!("Upsert global states Executing Query error: {}", query);
+                IndexerError::SQLiteWriteError(e.to_string())
+            })
             .context("Failed to write or update global states to SQLiteDB")?;
 
         Ok(())
@@ -117,12 +137,12 @@ impl SqliteIndexerStore {
             .into_iter()
             .map(|state| {
                 format!(
-                    "(\'{}\', \'{}\', \'{}\', \'{}\', \'{}\', {}, {})",
-                    state.id,
-                    state.object_id,
-                    state.key_hex,
-                    state.value,
-                    state.value_type,
+                    "('{}', '{}', '{}', '{}', '{}', {}, {})",
+                    escape_sql_string(state.id),
+                    escape_sql_string(state.object_id),
+                    escape_sql_string(state.key_hex),
+                    escape_sql_string(state.value),
+                    escape_sql_string(state.value_type),
                     state.created_at,
                     state.updated_at,
                 )
@@ -141,11 +161,13 @@ impl SqliteIndexerStore {
             values_clause
         );
 
-        tracing::trace!("Upsert leaf states Executing Query: {}", query);
         // Execute the raw SQL query
-        diesel::sql_query(query)
+        diesel::sql_query(query.clone())
             .execute(&mut connection)
-            .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
+            .map_err(|e| {
+                log::error!("Upsert leaf states Executing Query error: {}", query);
+                IndexerError::SQLiteWriteError(e.to_string())
+            })
             .context("Failed to write or update leaf states to SQLiteDB")?;
 
         Ok(())

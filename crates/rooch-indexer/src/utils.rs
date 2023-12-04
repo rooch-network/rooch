@@ -82,3 +82,8 @@ pub fn drop_all_tables(conn: &mut SqliteConnection) -> Result<(), diesel::result
     info!("Dropped all tables complete.");
     Ok(())
 }
+
+pub fn escape_sql_string(value: String) -> String {
+    // In SQLite, replace single quotes with two single quotes
+    value.replace(['\''], "''")
+}

@@ -43,6 +43,7 @@ coerce = { workspace = true }
 sized-chunks = { workspace = true }
 rand = { workspace = true }
 ethers = { workspace = true }
+log = { workspace = true }
 
 move-core-types = { workspace = true }
 move-bytecode-utils = { workspace = true }
