@@ -39,7 +39,7 @@ jobs:
         run: choco install sqlite
         if: matrix.platform == 'windows-latest'
       - name: Find SQLite path
-        run: choco list sqlite3 -l -r
+        run: choco list --local-only
         if: matrix.platform == 'windows-latest'
 
       - name: build for ${{ matrix.platform }}
