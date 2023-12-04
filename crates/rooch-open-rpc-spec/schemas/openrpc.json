@@ -388,6 +388,43 @@
           "$ref": "#/components/schemas/primitive_types::H256"
         }
       }
+    },
+    {
+      "name": "rooch_syncStates",
+      "description": "Sync state change sets from indexer",
+      "params": [
+        {
+          "name": "filter",
+          "schema": {
+            "$ref": "#/components/schemas/StateFilterView"
+          }
+        },
+        {
+          "name": "cursor",
+          "schema": {
+            "$ref": "#/components/schemas/IndexerStateID"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "$ref": "#/components/schemas/usize"
+          }
+        },
+        {
+          "name": "descending_order",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "IndexerTableChangeSetPageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_IndexerTableChangeSetView_and_IndexerStateID"
+        }
+      }
     }
   ],
   "components": {
@@ -856,6 +893,58 @@
           }
         }
       },
+      "IndexerStateID": {
+        "type": "object",
+        "required": [
+          "table_handle_index",
+          "tx_order"
+        ],
+        "properties": {
+          "table_handle_index": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "tx_order": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      },
+      "IndexerTableChangeSetView": {
+        "type": "object",
+        "required": [
+          "created_at",
+          "table_change_set",
+          "table_handle",
+          "table_handle_index",
+          "tx_order"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "table_change_set": {
+            "$ref": "#/components/schemas/TableChangeSetView"
+          },
+          "table_handle": {
+            "$ref": "#/components/schemas/ObjectID"
+          },
+          "table_handle_index": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "tx_order": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      },
       "KeptVMStatusView": {
         "oneOf": [
           {
@@ -1198,6 +1287,35 @@
           }
         }
       },
+      "PageView_for_IndexerTableChangeSetView_and_IndexerStateID": {
+        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
+        "type": "object",
+        "required": [
+          "data",
+          "has_next_page"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndexerTableChangeSetView"
+            }
+          },
+          "has_next_page": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IndexerStateID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "PageView_for_StateView_and_alloc::vec::Vec<u8>": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
@@ -1322,6 +1440,23 @@
           }
         }
       },
+      "StateFilterView": {
+        "oneOf": [
+          {
+            "description": "Query by table handle.",
+            "type": "object",
+            "required": [
+              "table_handle"
+            ],
+            "properties": {
+              "table_handle": {
+                "$ref": "#/components/schemas/ObjectID"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
       "StateOptions": {
         "type": "object",
         "properties": {
@@ -1357,10 +1492,40 @@
           }
         }
       },
+      "TableChangeSetView": {
+        "type": "object",
+        "required": [
+          "changes",
+          "new_tables",
+          "removed_tables"
+        ],
+        "properties": {
+          "changes": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TableChangeView"
+            }
+          },
+          "new_tables": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TableTypeInfoView"
+            }
+          },
+          "removed_tables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ObjectID"
+            },
+            "uniqueItems": true
+          }
+        }
+      },
       "TableChangeView": {
         "type": "object",
         "required": [
-          "entries"
+          "entries",
+          "size_increment"
         ],
         "properties": {
           "entries": {
@@ -1368,6 +1533,10 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/OpView_for_StateView"
             }
+          },
+          "size_increment": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },

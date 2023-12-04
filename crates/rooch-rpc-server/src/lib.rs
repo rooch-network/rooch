@@ -188,7 +188,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     let is_genesis = moveos_store.statedb.is_genesis();
     let executor = ExecutorActor::new(
         chain_id_opt.genesis_ctx(),
-        moveos_store,
+        moveos_store.clone(),
         rooch_store.clone(),
     )?
     .into_actor(Some("Executor"), &actor_system)
@@ -243,7 +243,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     timers.push(proposer_timer);
 
     // Init indexer
-    let indexer_executor = IndexerActor::new(indexer_store, indexer_reader)?
+    let indexer_executor = IndexerActor::new(indexer_store, indexer_reader, moveos_store)?
         .into_actor(Some("Indexer"), &actor_system)
         .await?;
     let indexer_proxy = IndexerProxy::new(indexer_executor.into());
@@ -274,7 +274,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         .await?
         .into_actor(Some("Relayer"), &actor_system)
         .await?;
-        let relay_tick_in_seconds: u64 = 5;
+        let relay_tick_in_seconds: u64 = 1;
         let relayer_timer = Timer::start(
             relayer,
             Duration::from_secs(relay_tick_in_seconds),

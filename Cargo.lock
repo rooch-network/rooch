@@ -7150,6 +7150,7 @@ dependencies = [
  "termcolor",
  "tokio",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -7261,6 +7262,19 @@ dependencies = [
  "serde_bytes",
  "sha3 0.9.1",
  "smallvec 1.11.0",
+ "tracing",
+]
+
+[[package]]
+name = "rooch-framework-release"
+version = "0.1.0"
+dependencies = [
+ "clap 3.2.25",
+ "itertools",
+ "move-binary-format",
+ "moveos-stdlib-builder",
+ "rooch-genesis-builder",
+ "rooch-types",
 ]
 
 [[package]]
@@ -7409,12 +7423,14 @@ dependencies = [
  "move-core-types",
  "move-resource-viewer",
  "moveos-config",
+ "moveos-store",
  "moveos-types",
  "once_cell",
  "parking_lot 0.12.1",
  "rand 0.8.5",
  "regex",
  "rooch-config",
+ "rooch-rpc-api",
  "rooch-types",
  "serde 1.0.188",
  "serde_bytes",

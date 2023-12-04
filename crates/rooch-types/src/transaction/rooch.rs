@@ -54,7 +54,7 @@ impl RoochTransactionData {
             sender,
             sequence_number,
             chain_id: RoochChainID::LOCAL.chain_id().id(),
-            max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT,
+            max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT * 100,
             action,
         }
     }

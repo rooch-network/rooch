@@ -2,12 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::binding_test;
-use bitcoin::consensus::Decodable;
+use bitcoin::consensus::{deserialize, Decodable};
+use bitcoin::Block;
 use hex::FromHex;
+use moveos_types::state::MoveState;
+use moveos_types::transaction::MoveAction;
+use rooch_key::keystore::account_keystore::AccountKeystore;
+use rooch_key::keystore::memory_keystore::InMemKeystore;
 use rooch_types::framework::ord::Inscription;
+use rooch_types::transaction::rooch::RoochTransactionData;
 
 #[test]
-fn test_ord() {
+fn test_from_transaction() {
     tracing_subscriber::fmt::init();
     let binding_test = binding_test::RustBindingTest::new().unwrap();
 
@@ -17,14 +23,62 @@ fn test_ord() {
     let btc_tx: bitcoin::Transaction =
         Decodable::consensus_decode(&mut btc_tx_bytes.as_slice()).unwrap();
     let inscriptions =
-        rooch_framework::natives::rooch_framework::bitcoin::ord::from_transaction(&btc_tx).unwrap();
+        rooch_framework::natives::rooch_framework::bitcoin::ord::from_transaction(&btc_tx);
     //print!("{:?}", inscriptions);
     let ord_module = binding_test.as_module_bundle::<rooch_types::framework::ord::OrdModule>();
-
-    let inscriptions_from_move = ord_module.from_transaction(&btc_tx.into()).unwrap();
+    let move_btc_tx: rooch_types::framework::bitcoin_types::Transaction = btc_tx.into();
+    //println!("tx_hex: {}", hex::encode(move_btc_tx.to_bytes()));
+    let inscriptions_from_move = ord_module.from_transaction(&move_btc_tx).unwrap();
     assert_eq!(inscriptions.len(), inscriptions_from_move.len());
     for (inscription, inscription_from_move) in inscriptions.into_iter().zip(inscriptions_from_move)
     {
         assert_eq!(Inscription::from(inscription), inscription_from_move);
     }
+}
+
+#[test]
+fn test_ord_module() {
+    tracing_subscriber::fmt::try_init().unwrap();
+    let mut binding_test = binding_test::RustBindingTest::new().unwrap();
+
+    let keystore = InMemKeystore::new_insecure_for_tests(1);
+    let sender = keystore.addresses()[0];
+    let sequence_number = 0;
+
+    let btc_block_hex = include_str!("../blocks/818677.txt");
+    let btc_block_bytes = Vec::<u8>::from_hex(btc_block_hex).unwrap();
+    let height = 818677u64;
+    let block: Block = deserialize(&btc_block_bytes).unwrap();
+    let bitcoin_txdata = block.txdata.clone();
+
+    let inscriptions = bitcoin_txdata
+        .iter()
+        .map(|tx| rooch_framework::natives::rooch_framework::bitcoin::ord::from_transaction(tx))
+        .flatten()
+        .collect::<Vec<_>>();
+    //println!("inscriptions: {:?}", inscriptions.len());
+    let action = MoveAction::Function(rooch_types::framework::bitcoin_light_client::BitcoinLightClientModule::create_submit_new_block_call(height, block.clone()));
+    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
+    let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
+    binding_test.execute(tx).unwrap();
+
+    let ord_module = binding_test.as_module_bundle::<rooch_types::framework::ord::OrdModule>();
+    assert!(ord_module.remaining_tx_count().unwrap() > 0);
+
+    let sequence_number = sequence_number + 1;
+    let tx_data = RoochTransactionData::new_for_test(
+        sender,
+        sequence_number,
+        MoveAction::Function(
+            rooch_types::framework::ord::OrdModule::create_progress_inscriptions_call(
+                bitcoin_txdata.len() as u64,
+            ),
+        ),
+    );
+    let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
+    binding_test.execute(tx).unwrap();
+
+    let ord_module = binding_test.as_module_bundle::<rooch_types::framework::ord::OrdModule>();
+    let total_inscriptions_in_move = ord_module.total_inscriptions().unwrap();
+    assert_eq!(total_inscriptions_in_move, inscriptions.len() as u64);
 }

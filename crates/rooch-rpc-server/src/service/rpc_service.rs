@@ -19,6 +19,7 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::account::Account;
 use rooch_types::address::{MultiChainAddress, RoochAddress};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
+use rooch_types::indexer::state::{IndexerStateID, IndexerTableChangeSet, StateFilter};
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::rooch::RoochTransaction;
@@ -77,6 +78,10 @@ impl RpcService {
             .await?;
 
         // Last save indexer
+        //TODO Temporarily close state indexer writing and reopen it after the escape character problem is fixed.
+        // self.indexer
+        //     .indexer_states(sequence_info.tx_order, output.state_changeset.clone())
+        //     .await?;
         self.indexer
             .indexer_transaction(
                 tx.clone(),
@@ -270,6 +275,21 @@ impl RpcService {
         let resp = self
             .indexer
             .query_events(filter, cursor, limit, descending_order)
+            .await?;
+        Ok(resp)
+    }
+
+    pub async fn sync_states(
+        &self,
+        filter: Option<StateFilter>,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerStateID>,
+        limit: usize,
+        descending_order: bool,
+    ) -> Result<Vec<IndexerTableChangeSet>> {
+        let resp = self
+            .indexer
+            .sync_states(filter, cursor, limit, descending_order)
             .await?;
         Ok(resp)
     }

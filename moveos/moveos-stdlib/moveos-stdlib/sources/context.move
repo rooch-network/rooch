@@ -20,6 +20,7 @@ module moveos_std::context {
     use moveos_std::move_module::{Self, MoveModule};
     use moveos_std::table::{Self, Table};
     use moveos_std::type_table::{Self, TypeTable};
+    use moveos_std::table_vec::{Self, TableVec};
 
     const ErrorObjectOwnerNotMatch: u64 = 1;
     const ErrorObjectNotShared: u64 = 2;
@@ -116,6 +117,11 @@ module moveos_std::context {
     public fun new_type_table(self: &mut Context): TypeTable {
         let uid = fresh_uid(self);
         type_table::new(uid)
+    }
+
+    public fun new_table_vec<V: store>(self: &mut Context): TableVec<V>{
+        let uid = fresh_uid(self);
+        table_vec::new(uid)
     }
 
     // === Account Storage functions ===

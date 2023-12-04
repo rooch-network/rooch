@@ -12,7 +12,6 @@ pub mod media;
 #[allow(dead_code)]
 pub(crate) mod test;
 
-use anyhow::Result;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::InternalGas;
 use move_core_types::vm_status::StatusCode;
@@ -29,6 +28,7 @@ use moveos_types::state::{MoveState, MoveType};
 use rooch_types::framework::bitcoin_types::Witness;
 use smallvec::smallvec;
 use std::collections::VecDeque;
+use tracing::error;
 use {envelope::ParsedEnvelope, envelope::RawEnvelope, inscription::Inscription};
 
 #[derive(Debug, Clone)]
@@ -63,10 +63,7 @@ pub(crate) fn native_from_witness(
             .with_message(format!("Failed to parse witness: {}", e))
     })?;
     let bitcoin_witness = bitcoin::Witness::from_slice(witness.witness.as_slice());
-    let inscriptions = from_witness(&bitcoin_witness).map_err(|e| {
-        PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-            .with_message(format!("Failed to parse inscription: {}", e))
-    })?;
+    let inscriptions = from_witness(&bitcoin_witness);
     let inscription_vm_type = context
         .load_type(&rooch_types::framework::ord::Inscription::type_tag())
         .map_err(|e| e.to_partial())?;
@@ -103,30 +100,32 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
     make_module_natives(natives)
 }
 
-pub fn from_witness(witness: &bitcoin::Witness) -> Result<Vec<Inscription>> {
-    let inscriptions = witness
+pub fn from_witness(witness: &bitcoin::Witness) -> Vec<Inscription> {
+    witness
         .tapscript()
-        .map(|script| {
-            Ok::<Vec<inscription::Inscription>, anyhow::Error>(
-                RawEnvelope::from_tapscript(script, 0usize)?
-                    .into_iter()
-                    .map(ParsedEnvelope::from)
-                    .map(|e| e.payload)
-                    .collect::<Vec<_>>(),
-            )
+        .map(|script| match RawEnvelope::from_tapscript(script, 0usize) {
+            Ok(envelopes) => envelopes
+                .into_iter()
+                .map(ParsedEnvelope::from)
+                .map(|e| e.payload)
+                .collect::<Vec<_>>(),
+            Err(e) => {
+                if tracing::enabled!(tracing::Level::TRACE) {
+                    error!(
+                        "Failed to parse tapscript: {}, witness:\n {:#?}",
+                        e, witness
+                    );
+                }
+                vec![]
+            }
         })
-        .transpose()?
-        .unwrap_or_default();
-    Ok(inscriptions)
+        .unwrap_or_default()
 }
 
-pub fn from_transaction(transaction: &bitcoin::Transaction) -> Result<Vec<Inscription>> {
-    Ok(transaction
+pub fn from_transaction(transaction: &bitcoin::Transaction) -> Vec<Inscription> {
+    transaction
         .input
         .iter()
-        .map(|tx_in| from_witness(&tx_in.witness))
-        .collect::<Result<Vec<_>>>()?
-        .into_iter()
-        .flatten()
-        .collect::<Vec<_>>())
+        .flat_map(|tx_in| from_witness(&tx_in.witness))
+        .collect::<Vec<_>>()
 }

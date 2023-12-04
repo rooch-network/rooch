@@ -9,7 +9,9 @@ use bitcoincore_rpc::{bitcoincore_rpc_json::GetBlockHeaderResult, Auth, Client, 
 use moveos_types::{module_binding::MoveFunctionCaller, transaction::FunctionCall};
 use rooch_config::BitcoinRelayerConfig;
 use rooch_executor::proxy::ExecutorProxy;
-use rooch_types::framework::bitcoin_light_client::BitcoinLightClientModule;
+use rooch_types::framework::{
+    bitcoin_light_client::BitcoinLightClientModule, brc20::BRC20Module, ord::OrdModule,
+};
 use std::cmp::max;
 use tracing::{debug, info};
 
@@ -19,6 +21,9 @@ pub struct BitcoinRelayer {
     //TODO if we want make the relayer to an independent process, we need to replace the executor proxy with a rooch rpc client
     move_caller: ExecutorProxy,
     buffer: Vec<BlockResult>,
+    tx_batch_size: u64,
+    sync_block_interval: u64,
+    latest_sync_timestamp: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -38,6 +43,9 @@ impl BitcoinRelayer {
             rpc_client: rpc,
             move_caller: executor,
             buffer: vec![],
+            tx_batch_size: 1000u64,
+            sync_block_interval: 60u64,
+            latest_sync_timestamp: 0u64,
         })
     }
 
@@ -45,6 +53,12 @@ impl BitcoinRelayer {
         if !self.buffer.is_empty() {
             return Ok(());
         }
+        if self.latest_sync_timestamp + self.sync_block_interval
+            > chrono::Utc::now().timestamp() as u64
+        {
+            return Ok(());
+        }
+        self.latest_sync_timestamp = chrono::Utc::now().timestamp() as u64;
         let bitcoin_light_client = self
             .move_caller
             .as_module_binding::<BitcoinLightClientModule>();
@@ -116,13 +130,72 @@ impl BitcoinRelayer {
             Ok(Some(call))
         }
     }
+
+    fn check_utxo_progress(&self) -> Result<Option<FunctionCall>> {
+        let bitcoin_light_client = self
+            .move_caller
+            .as_module_binding::<BitcoinLightClientModule>();
+        let remaining_tx_count = bitcoin_light_client.remaining_tx_count()?;
+        if remaining_tx_count > 0 {
+            let call = BitcoinLightClientModule::create_progress_utxos_call(self.tx_batch_size);
+            info!(
+                "BitcoinRelayer process utxo, remaining tx count: {}",
+                remaining_tx_count
+            );
+            Ok(Some(call))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn check_inscription_progress(&self) -> Result<Option<FunctionCall>> {
+        let ord_module = self.move_caller.as_module_binding::<OrdModule>();
+        let remaining_tx_count = ord_module.remaining_tx_count()?;
+        if remaining_tx_count > 0 {
+            let call = OrdModule::create_progress_inscriptions_call(self.tx_batch_size);
+            info!(
+                "BitcoinRelayer process inscription, remaining tx count: {}",
+                remaining_tx_count
+            );
+            Ok(Some(call))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn check_brc20_progress(&self) -> Result<Option<FunctionCall>> {
+        let brc20_module = self.move_caller.as_module_binding::<BRC20Module>();
+        let remaining_inscription_count = brc20_module.remaining_inscription_count()?;
+        if remaining_inscription_count > 0 {
+            let call = BRC20Module::create_progress_brc20_ops_call(self.tx_batch_size);
+            info!(
+                "BitcoinRelayer process brc20, remaining inscription count: {}",
+                remaining_inscription_count
+            );
+            Ok(Some(call))
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 #[async_trait]
 impl Relayer for BitcoinRelayer {
     async fn relay(&mut self) -> Result<Option<FunctionCall>> {
         self.sync_block().await?;
-        self.pop_buffer()
+        if let Some(call) = self.pop_buffer()? {
+            return Ok(Some(call));
+        }
+        if let Some(call) = self.check_utxo_progress()? {
+            return Ok(Some(call));
+        }
+        if let Some(call) = self.check_inscription_progress()? {
+            return Ok(Some(call));
+        }
+        if let Some(call) = self.check_brc20_progress()? {
+            return Ok(Some(call));
+        }
+        Ok(None)
     }
 }
 

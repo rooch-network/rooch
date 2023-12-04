@@ -292,6 +292,15 @@ impl ObjectEntity<TableInfo> {
             value,
         }
     }
+
+    pub fn get_table_object_struct_tag() -> StructTag {
+        StructTag {
+            address: Self::ADDRESS,
+            module: Self::MODULE_NAME.to_owned(),
+            name: Self::STRUCT_NAME.to_owned(),
+            type_params: vec![TableInfo::struct_tag().into()],
+        }
+    }
 }
 
 impl ObjectEntity<AccountStorage> {
@@ -315,6 +324,15 @@ where
 
     fn type_params() -> Vec<TypeTag> {
         vec![TypeTag::Struct(Box::new(T::struct_tag()))]
+    }
+
+    fn struct_tag() -> StructTag {
+        StructTag {
+            address: Self::ADDRESS,
+            module: Self::MODULE_NAME.to_owned(),
+            name: Self::STRUCT_NAME.to_owned(),
+            type_params: vec![T::struct_tag().into()],
+        }
     }
 }
 
@@ -342,6 +360,15 @@ pub struct RawData {
 }
 
 impl RawObject {
+    pub fn new_raw_object(id: ObjectID, value: RawData) -> RawObject {
+        Self {
+            id,
+            owner: AccountAddress::ZERO,
+            flag: 0u8,
+            value,
+        }
+    }
+
     pub fn from_bytes(bytes: &[u8], struct_tag: StructTag) -> Result<Self> {
         ensure!(
             bytes.len() > ObjectID::LENGTH + AccountAddress::LENGTH,

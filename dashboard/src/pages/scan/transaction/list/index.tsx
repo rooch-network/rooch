@@ -19,7 +19,7 @@ import { fetchData } from 'src/store/scan/transaction'
 import { useAppDispatch, useAppSelector } from 'src/store'
 
 // ** SDK Imports
-import { TransactionWithInfoView } from '@rooch/sdk'
+import { TransactionWithInfoView } from '@roochnetwork/rooch-sdk'
 
 // ** Utils
 import { formatAddress } from 'src/@core/utils/format'

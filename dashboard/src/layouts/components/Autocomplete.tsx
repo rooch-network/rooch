@@ -33,8 +33,6 @@ import Icon from 'src/@core/components/icon'
 // ** Configs Imports
 import themeConfig from 'src/configs/themeConfig'
 
-import { JsonRpcProvider } from '@rooch/sdk'
-
 export type AppBarSearchType = {
   ty: string
   address: string
@@ -403,9 +401,6 @@ const AutocompleteComponent = ({ hidden, settings }: Props) => {
 
   const searchTnx = async (searchValue: string) => {
     setSearchStatus(SearchStatus.Searching)
-
-    const jp = new JsonRpcProvider()
-    console.log(jp)
 
     // TODO: wait transaction detail page
     // let result = await jp.getTransactionInfosByHash([`${searchValue}`])

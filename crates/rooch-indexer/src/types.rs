@@ -4,11 +4,14 @@
 use crate::errors::IndexerError;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::StructTag;
+use move_core_types::language_storage::{StructTag, TypeTag};
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::Event;
-use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::object::{ObjectEntity, ObjectID, RawObject};
+use moveos_types::moveos_std::raw_table::TableInfo;
+use moveos_types::state::TableChangeSet;
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
+use rooch_rpc_api::jsonrpc_types::TableChangeSetView;
 use rooch_types::multichain_id::MultiChainID;
 use rooch_types::transaction::{
     AbstractTransaction, TransactionSequenceInfo, TransactionType, TypedTransaction,
@@ -148,5 +151,153 @@ impl IndexedEvent {
             //TODO record transaction timestamp
             created_at: 0,
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct IndexedGlobalState {
+    /// The global state key
+    pub object_id: ObjectID,
+    /// The owner of the object
+    pub owner: AccountAddress,
+    /// A flag to indicate whether the object is shared or frozen
+    pub flag: u8,
+    /// The value of the object, json format
+    pub value: String,
+    /// The key type tag of the table
+    pub key_type: String,
+    /// The table length
+    pub size: u64,
+    /// The object created timestamp on chain
+    pub created_at: u64,
+    /// The object updated timestamp on chain
+    pub updated_at: u64,
+}
+
+impl IndexedGlobalState {
+    pub fn new_from_raw_object(raw_object: RawObject, raw_object_value_json: String) -> Self {
+        IndexedGlobalState {
+            object_id: raw_object.id,
+            owner: raw_object.owner,
+            flag: raw_object.flag,
+
+            value: raw_object_value_json,
+            // Maintenance when it is a table handle
+            key_type: "".to_string(),
+            // Maintenance when it is a table handle
+            size: 0,
+
+            //TODO record transaction timestamp
+            created_at: 0,
+            updated_at: 0,
+        }
+    }
+
+    pub fn new_from_table_object(
+        table_object: ObjectEntity<TableInfo>,
+        table_object_value_json: String,
+        key_type: String,
+    ) -> Self {
+        IndexedGlobalState {
+            object_id: table_object.id,
+            owner: table_object.owner,
+            flag: table_object.flag,
+
+            value: table_object_value_json,
+            // Maintenance when it is a table handle
+            key_type,
+            // Maintenance when it is a table handle
+            size: table_object.value.size,
+
+            //TODO record transaction timestamp
+            created_at: 0,
+            updated_at: 0,
+        }
+    }
+
+    pub fn new_from_table_object_update(
+        table_object: ObjectEntity<TableInfo>,
+        table_object_value_json: String,
+    ) -> Self {
+        // No need to update key_type when update global state
+        Self::new_from_table_object(table_object, table_object_value_json, "".to_string())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct IndexedLeafState {
+    /// A primary key represents composite key of (object_id, key_hex)
+    // Diesel doesn't support eq_any for tuples due to unable to use index, so use an extra primary key instead of composite key
+    pub id: String,
+    /// The leaf state table handle
+    pub object_id: ObjectID,
+    /// The hex of the table key
+    pub key_hex: String,
+    /// The value of the table, json format
+    pub value: String,
+    /// The type tag of the value
+    pub value_type: TypeTag,
+    /// The table item created timestamp on chain
+    pub created_at: u64,
+    /// The table item updated timestamp on chain
+    pub updated_at: u64,
+}
+
+impl IndexedLeafState {
+    pub fn new(
+        object_id: ObjectID,
+        key_hex: String,
+        state_value_json: String,
+        value_type: TypeTag,
+    ) -> Self {
+        let id = format!("{}{}", object_id, key_hex);
+
+        IndexedLeafState {
+            id,
+            object_id,
+            key_hex,
+            value: state_value_json,
+            value_type,
+
+            //TODO record transaction timestamp
+            created_at: 0,
+            updated_at: 0,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct IndexedTableChangeSet {
+    /// The tx order of this transaction which produce the table change set
+    pub tx_order: u64,
+    /// The table handle index in the tx
+    pub table_handle_index: u64,
+    /// The table handle
+    pub table_handle: ObjectID,
+    /// The table change set, json format
+    pub table_change_set: String,
+    /// The tx executed timestamp on chain
+    pub created_at: u64,
+}
+
+impl IndexedTableChangeSet {
+    pub fn new(
+        tx_order: u64,
+        table_handle_index: u64,
+        table_handle: ObjectID,
+        table_change_set: TableChangeSet,
+    ) -> Result<Self> {
+        let table_change_set_json =
+            serde_json::to_string(&TableChangeSetView::from(table_change_set))?;
+
+        Ok(IndexedTableChangeSet {
+            tx_order,
+            table_handle_index,
+            table_handle,
+            table_change_set: table_change_set_json,
+
+            //TODO record transaction timestamp
+            created_at: 0,
+        })
     }
 }

@@ -19,6 +19,7 @@ This module provides a solution for unsorted maps, that is it has the properties
 -  [Function `length`](#0x2_simple_map_length)
 -  [Function `create`](#0x2_simple_map_create)
 -  [Function `borrow`](#0x2_simple_map_borrow)
+-  [Function `borrow_with_default`](#0x2_simple_map_borrow_with_default)
 -  [Function `borrow_mut`](#0x2_simple_map_borrow_mut)
 -  [Function `contains_key`](#0x2_simple_map_contains_key)
 -  [Function `destroy_empty`](#0x2_simple_map_destroy_empty)
@@ -113,6 +114,17 @@ Map key is not found
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_borrow">borrow</a>&lt;Key: store, Value: store&gt;(map: &<a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: &Key): &Value
+</code></pre>
+
+
+
+<a name="0x2_simple_map_borrow_with_default"></a>
+
+## Function `borrow_with_default`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_borrow_with_default">borrow_with_default</a>&lt;Key: store, Value: store&gt;(map: &<a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: &Key, default: &Value): &Value
 </code></pre>
 
 

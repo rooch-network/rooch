@@ -12,7 +12,7 @@ import { Button } from '@mui/material'
 import { useRooch } from '../../../hooks/useRooch'
 import { useSession } from '../../../hooks/useSessionAccount'
 import { useEffect, useState } from 'react'
-import { DevChain } from '@rooch/sdk'
+import { DevChain } from '@roochnetwork/rooch-sdk'
 
 const devCounterAddress = '0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35'
 const devCounterModule = `${devCounterAddress}::counter`
