@@ -301,3 +301,134 @@ $ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762
 ```
 
 > Note: The `default` in the command represents the default address in the Rooch configuration. If you want to use another address, you can also directly pass the address starting with `0x`.
+
+## Object-Oriented Programming
+
+Next, we will refactor the counter example to demonstrate object-oriented programming on Rooch.
+
+### Initialize project
+
+Create a Move project named `quick_start_object_counter`:
+
+```shell
+rooch move new quick_start_object_counter
+```
+
+Here is the counter code after refactoring:
+
+```move
+module quick_start_object_counter::quick_start_object_counter {
+    use std::signer;
+    use moveos_std::context::{Self, Context};
+
+    struct ObjectCounter has key, store {
+        count_value: u64
+    }
+
+    fun init(ctx: &mut Context, owner: &signer) {
+        create_counter(ctx, owner);
+    }
+
+    public fun create_counter(ctx: &mut Context, owner: &signer) {
+        let counter = ObjectCounter { count_value: 0 };
+        context::move_resource_to(ctx, owner, counter);
+    }
+
+    public entry fun increase(ctx: &mut Context, owner: &signer) {
+        let owner_addr = signer::address_of(owner);
+        let counter = context::borrow_mut_resource<ObjectCounter>(ctx, owner_addr);
+        counter.count_value = counter.count_value + 1;
+    }
+
+    public fun query(ctx: &Context, owner_addr: address): &u64 {
+        // let owner_addr = signer::address_of(owner);
+        let counter = context::borrow_resource<ObjectCounter>(ctx, owner_addr);
+        &counter.count_value
+    }
+}
+```
+
+### Explain
+
+We separate the logic of initializing the counter from the `init` function. At this time, the `init` function simply calls the function `create_counter` that creates the counter.
+
+In the `increase` function that increments the count value, we first get the caller's address and store it in the `owner_addr` variable, and call `borrow_mut_resource` to get the variable reference of the counter object. When we get the counter object, we can change its internal value. As in the above operation, we increase the count value by `+1`.
+
+In addition, we provide a `query` function to obtain the count value of the counter. We can use the `rooch move view` command to call this function and check the change of the count value.
+
+### Demonstrate
+
+1. Compile and deploy
+
+```shell
+rooch move publish --named-addresses quick_start_object_counter=default
+```
+
+2. Call the `query` function to check the value of the counter. The calling syntax is: `rooch move view --function MODULE_ADDRESS::MODULE_NAME::FUNCTION_NAME --args PARAMETER_LIST`. This function needs to explicitly accept an address parameter and needs to use `address:value` to identify.
+
+```shell
+rooch move view --function default::quick_start_object_counter::query --args address:default
+
+{
+  "vm_status": "Executed",
+  "return_values": [
+    {
+      "value": {
+        "type_tag": "u64",
+        "value": "0x0000000000000000"
+      },
+      "decoded_value": "0"    <= Note here!
+    }
+  ]
+}
+```
+
+As you can see, the counter value has been initialized with `0`. We can also use the `rooch resource` command to check:
+
+```shell
+rooch resource --address default --resource default::quick_start_object_counter::ObjectCounter
+
+{
+  "value": "0x0000000000000000",
+  "value_type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter",
+  "decoded_value": {
+    "abilities": 12,
+    "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter",
+    "value": {
+      "count_value": "0"
+    }
+  }
+}
+```
+
+3. Call the `increase` function to increment the counter:
+
+
+```shell
+rooch move run --function default::quick_start_object_counter::increase
+```
+
+4. Check the counter value again:
+
+```shell
+rooch move view --function default::quick_start_object_counter::query --args address:default
+
+{
+  "vm_status": "Executed",
+  "return_values": [
+    {
+      "value": {
+        "type_tag": "u64",
+        "value": "0x0100000000000000"
+      },
+      "decoded_value": "1"    <= Note here!
+    }
+  ]
+}
+```
+
+As we can see, the counter value has indeed been incremented!
+
+## Summarize
+
+At this point you have learned step by step how to use Rooch to develop, deploy and call smart contracts. In Rooch, the object-oriented programming model is a very important content. To learn more about how to use it, please refer to [Objects](./object.en-US.mdx).
