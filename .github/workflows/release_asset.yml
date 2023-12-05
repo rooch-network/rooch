@@ -35,13 +35,23 @@ jobs:
         with:
           platform: x64
 
-      - name: Install SQLite #fix https://github.com/rooch-network/rooch/issues/1157
-        run: choco install sqlite
+      #fix https://github.com/rooch-network/rooch/issues/1157  with https://github.com/diesel-rs/diesel/blob/master/.github/workflows/ci.yml
+      - name: Install sqlite (Windows)
         if: matrix.platform == 'windows-latest'
-      - name: Set LIB environment variable
+        shell: cmd
         run: |
-          echo "LIB=$LIB;C:\ProgramData\chocolatey\lib\SQLite\tools" >> $GITHUB_ENV
+          choco install sqlite
+          cd /D C:\ProgramData\chocolatey\lib\SQLite\tools
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          lib /machine:x64 /def:sqlite3.def /out:sqlite3.lib
+
+      - name: Set variables for sqlite (Windows)
         if: matrix.platform == 'windows-latest'
+        shell: bash
+        run: |
+          echo "C:\ProgramData\chocolatey\lib\SQLite\tools" >> $GITHUB_PATH
+          echo "SQLITE3_LIB_DIR=C:\ProgramData\chocolatey\lib\SQLite\tools" >> $GITHUB_ENV
+          echo "SQLITE_DATABASE_URL=C:\test.db" >> $GITHUB_ENV
 
       - name: build for ${{ matrix.platform }}
         uses: actions-rs/cargo@v1
