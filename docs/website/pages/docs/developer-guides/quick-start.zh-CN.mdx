@@ -315,43 +315,43 @@ rooch move new quick_start_object_counter
 
 ```move
 module quick_start_object_counter::quick_start_object_counter {
+    use std::debug;
     use std::signer;
+    use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::context::{Self, Context};
 
     struct ObjectCounter has key, store {
         count_value: u64
     }
 
-    fun init(ctx: &mut Context, owner: &signer) {
-        create_counter(ctx, owner);
-    }
-
-    public fun create_counter(ctx: &mut Context, owner: &signer) {
+    fun create_counter(ctx: &mut Context, owner: &signer): ObjectID {
         let counter = ObjectCounter { count_value: 0 };
-        context::move_resource_to(ctx, owner, counter);
-    }
-
-    public entry fun increase(ctx: &mut Context, owner: &signer) {
         let owner_addr = signer::address_of(owner);
-        let counter = context::borrow_mut_resource<ObjectCounter>(ctx, owner_addr);
-        counter.count_value = counter.count_value + 1;
+        let counter_obj = context::new_object(ctx, counter);
+        let counter_obj_id = object::id(&counter_obj);
+        object::transfer(counter_obj, owner_addr);
+        counter_obj_id
     }
 
-    public fun query(ctx: &Context, owner_addr: address): &u64 {
-        // let owner_addr = signer::address_of(owner);
-        let counter = context::borrow_resource<ObjectCounter>(ctx, owner_addr);
-        &counter.count_value
+    fun init(ctx: &mut Context, owner: &signer) {
+        let counter_obj_id = create_counter(ctx, owner);
+        debug::print(&counter_obj_id);
+    }
+
+    public entry fun increase(counter_obj: &mut Object<ObjectCounter>) {
+        let counter = object::borrow_mut(counter_obj);
+        counter.count_value = counter.count_value + 1;
     }
 }
 ```
 
 ### 解释
 
-我们将初始化计数器的逻辑从 `init` 函数中剥离出来，此时的 `init` 函数只是简单调用创建计数器的函数 `create_counter`。
+我们将初始化计数器的逻辑从 `init` 函数中剥离出来，此时的 `init` 函数只是简单调用创建计数器的函数 `create_counter`，并打印计数器对象的 ID。
 
-递增计数值的 `increase` 函数中，我们首先获取调用者的地址，并存放在 `owner_addr` 变量中，并调用 `borrow_mut_resource` 获取计数器对象的可变引用，当我们拿到计数器对象之后就可以对它的内部值进行修改了，如同上边的操作一样，我们通过 `+1` 来实现计数值的递增。
+在 `create_counter` 函数中，首先初始化计数器，获取签名交易的地址，然后创建计数器对象和计数器对象的 ID，再将计数器对象转移到发起交易的地址，最后返回对象 ID。
 
-此外，我们另外提供了一个 `query` 函数用来获取计数器的计数值，我们可以使用 `rooch move view` 命令来调用这个函数并检查计数值的变化。
+递增计数值的 `increase` 函数中，我们调用 `borrow_mut` 获取计数器对象的可变引用，当我们拿到计数器对象之后就可以对它的内部值进行修改了，如同上边的操作一样，我们通过 `+1` 来实现计数值的递增。
 
 ### 演示
 
@@ -361,65 +361,71 @@ module quick_start_object_counter::quick_start_object_counter {
 rooch move publish --named-addresses quick_start_object_counter=default
 ```
 
-2. 调用 `query` 函数，检查计数器的值，调用语法是：`rooch move view --function 模块地址::模块名::函数名 --args 参数列表`，这个函数需要显式接受一个地址参数，需要使用 `address:值` 来标识。
+记下服务端返回的对象 ID：
 
 ```shell
-rooch move view --function default::quick_start_object_counter::query --args address:default
-
-{
-  "vm_status": "Executed",
-  "return_values": [
-    {
-      "value": {
-        "type_tag": "u64",
-        "value": "0x0000000000000000"
-      },
-      "decoded_value": "0"    <= Note here!
-    }
-  ]
-}
+0xf049ae1d92f970ff1b9c397a49bb5f7c7668bfd5cf5b73035c183b574a7daabb
 ```
 
-可以看到，计数器的值已经使用 `0` 进行初始化了，我们也可以使用 `rooch resource` 命令来检查一下：
+2. 使用 `rooch object --id ID` 来查看计数器对象的内容：
 
 ```shell
-rooch resource --address default --resource default::quick_start_object_counter::ObjectCounter
+rooch object --id 0xf049ae1d92f970ff1b9c397a49bb5f7c7668bfd5cf5b73035c183b574a7daabb
 
 {
-  "value": "0x0000000000000000",
-  "value_type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter",
+  "value": "0xf049ae1d92f970ff1b9c397a49bb5f7c7668bfd5cf5b73035c183b574a7daabb94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63000000000000000000",
+  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter>",
   "decoded_value": {
-    "abilities": 12,
-    "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter",
+    "abilities": 0,
+    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter>",
     "value": {
-      "count_value": "0"
+      "flag": 0,
+      "id": "0xf049ae1d92f970ff1b9c397a49bb5f7c7668bfd5cf5b73035c183b574a7daabb",
+      "owner": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63",
+      "value": {
+        "abilities": 12,
+        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter",
+        "value": {
+          "count_value": "0"    <= Note here!
+        }
+      }
     }
   }
 }
 ```
 
+此时，计数器对象的值已经初始化为 `0`。
+
 3. 调用 `increase` 函数，让计数器执行递增操作：
 
 ```shell
-rooch move run --function default::quick_start_object_counter::increase
+rooch move run --function default::quick_start_object_counter::increase --args object_id:0xf049ae1d92f970ff1b9c397a49bb5f7c7668bfd5cf5b73035c183b574a7daabb
 ```
 
 4. 再次检查计数器的值：
 
 ```shell
-rooch move view --function default::quick_start_object_counter::query --args address:default
+rooch object --id 0xf049ae1d92f970ff1b9c397a49bb5f7c7668bfd5cf5b73035c183b574a7daabb
 
 {
-  "vm_status": "Executed",
-  "return_values": [
-    {
+  "value": "0xf049ae1d92f970ff1b9c397a49bb5f7c7668bfd5cf5b73035c183b574a7daabb94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63000100000000000000",
+  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter>",
+  "decoded_value": {
+    "abilities": 0,
+    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter>",
+    "value": {
+      "flag": 0,
+      "id": "0xf049ae1d92f970ff1b9c397a49bb5f7c7668bfd5cf5b73035c183b574a7daabb",
+      "owner": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63",
       "value": {
-        "type_tag": "u64",
-        "value": "0x0100000000000000"
-      },
-      "decoded_value": "1"    <= Note here!
+        "abilities": 12,
+        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter",
+        "value": {
+          "count_value": "1"
+        }
+      }
     }
-  ]
+  }
 }
 ```
 

@@ -8,7 +8,7 @@ module quick_start_object_counter::quick_start_object_counter {
         count_value: u64
     }
 
-    fun create_(ctx: &mut Context, owner: &signer): ObjectID {
+    fun create_counter(ctx: &mut Context, owner: &signer): ObjectID {
         let counter = ObjectCounter { count_value: 0 };
         let owner_addr = signer::address_of(owner);
         let counter_obj = context::new_object(ctx, counter);
@@ -18,16 +18,12 @@ module quick_start_object_counter::quick_start_object_counter {
     }
 
     fun init(ctx: &mut Context, owner: &signer) {
-        let counter_obj_id = create_(ctx, owner);
+        let counter_obj_id = create_counter(ctx, owner);
         debug::print(&counter_obj_id);
     }
 
-    fun increase_(counter_obj: &mut Object<ObjectCounter>) {
+    public entry fun increase(counter_obj: &mut Object<ObjectCounter>) {
         let counter = object::borrow_mut(counter_obj);
         counter.count_value = counter.count_value + 1;
-    }
-
-    public entry fun increase(counter_obj: &mut Object<ObjectCounter>) {
-        increase_(counter_obj);
     }
 }
