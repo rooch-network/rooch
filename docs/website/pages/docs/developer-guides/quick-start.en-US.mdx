@@ -350,11 +350,11 @@ module quick_start_object_counter::quick_start_object_counter {
 
 ### Explain
 
-We separate the logic of initializing the counter from the `init` function. At this time, the `init` function simply calls the function `create_counter` that creates the counter.
+We separate the logic of initializing the counter from the `init` function. At this time, the `init` function simply calls the function `create_counter` that creates the counter and prints the ID of the counter object.
 
-In the `increase` function that increments the count value, we first get the caller's address and store it in the `owner_addr` variable, and call `borrow_mut_resource` to get the variable reference of the counter object. When we get the counter object, we can change its internal value. As in the above operation, we increase the count value by `+1`.
+In the `create_counter` function, first initialize the counter, obtain the address of the signed transaction, then create the counter object and the ID of the counter object, then transfer the counter object to the address where the transaction was initiated, and finally return the object ID.
 
-In addition, we provide a `query` function to obtain the count value of the counter. We can use the `rooch move view` command to call this function and check the change of the count value.
+In the `increase` function that increments the count value, we call `borrow_mut` to obtain the mutable reference of the counter object. After we get the counter object, we can modify its internal value. As in the above operation, we implement counting by `+1` value increment.
 
 ### Demonstrate
 
@@ -364,66 +364,65 @@ In addition, we provide a `query` function to obtain the count value of the coun
 rooch move publish --named-addresses quick_start_object_counter=default
 ```
 
-2. Call the `query` function to check the value of the counter. The calling syntax is: `rooch move view --function MODULE_ADDRESS::MODULE_NAME::FUNCTION_NAME --args PARAMETER_LIST`. This function needs to explicitly accept an address parameter and needs to use `address:value` to identify.
+2. Use `rooch object --id ID` to view the contents of the counter object:
 
 ```shell
-rooch move view --function default::quick_start_object_counter::query --args address:default
+rooch object --id 0xf049ae1d92f970ff1b9c397a49bb5f7c7668bfd5cf5b73035c183b574a7daabb
 
 {
-  "vm_status": "Executed",
-  "return_values": [
-    {
-      "value": {
-        "type_tag": "u64",
-        "value": "0x0000000000000000"
-      },
-      "decoded_value": "0"    <= Note here!
-    }
-  ]
-}
-```
-
-As you can see, the counter value has been initialized with `0`. We can also use the `rooch resource` command to check:
-
-```shell
-rooch resource --address default --resource default::quick_start_object_counter::ObjectCounter
-
-{
-  "value": "0x0000000000000000",
-  "value_type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter",
+  "value": "0xf049ae1d92f970ff1b9c397a49bb5f7c7668bfd5cf5b73035c183b574a7daabb94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63000000000000000000",
+  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter>",
   "decoded_value": {
-    "abilities": 12,
-    "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter",
+    "abilities": 0,
+    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter>",
     "value": {
-      "count_value": "0"
+      "flag": 0,
+      "id": "0xf049ae1d92f970ff1b9c397a49bb5f7c7668bfd5cf5b73035c183b574a7daabb",
+      "owner": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63",
+      "value": {
+        "abilities": 12,
+        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter",
+        "value": {
+          "count_value": "0"    <= Note here!
+        }
+      }
     }
   }
 }
 ```
 
+At this point, the value of the counter object has been initialized to `0`.
+
 3. Call the `increase` function to increment the counter:
 
-
 ```shell
-rooch move run --function default::quick_start_object_counter::increase
+rooch move run --function default::quick_start_object_counter::increase --args object_id:0xf049ae1d92f970ff1b9c397a49bb5f7c7668bfd5cf5b73035c183b574a7daabb
 ```
 
 4. Check the counter value again:
 
 ```shell
-rooch move view --function default::quick_start_object_counter::query --args address:default
+rooch object --id 0xf049ae1d92f970ff1b9c397a49bb5f7c7668bfd5cf5b73035c183b574a7daabb
 
 {
-  "vm_status": "Executed",
-  "return_values": [
-    {
+  "value": "0xf049ae1d92f970ff1b9c397a49bb5f7c7668bfd5cf5b73035c183b574a7daabb94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63000100000000000000",
+  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter>",
+  "decoded_value": {
+    "abilities": 0,
+    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter>",
+    "value": {
+      "flag": 0,
+      "id": "0xf049ae1d92f970ff1b9c397a49bb5f7c7668bfd5cf5b73035c183b574a7daabb",
+      "owner": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63",
       "value": {
-        "type_tag": "u64",
-        "value": "0x0100000000000000"
-      },
-      "decoded_value": "1"    <= Note here!
+        "abilities": 12,
+        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::ObjectCounter",
+        "value": {
+          "count_value": "1"    <= Note here!
+        }
+      }
     }
-  ]
+  }
 }
 ```
 
