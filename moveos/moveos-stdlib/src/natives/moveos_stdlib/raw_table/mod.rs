@@ -480,10 +480,7 @@ fn native_add_box(
             table.size_increment += 1;
             Ok(NativeResult::ok(cost, smallvec![]))
         }
-        Err(_) => Ok(NativeResult::err(
-            cost,
-            E_ALREADY_EXISTS,
-        )),
+        Err(_) => Ok(NativeResult::err(cost, E_ALREADY_EXISTS)),
     }
 }
 
@@ -532,10 +529,7 @@ fn native_borrow_box(
     let value_type = type_to_type_tag(context, &ty_args[1])?;
     match tv.borrow_global(value_type) {
         Ok(ref_val) => Ok(NativeResult::ok(cost, smallvec![ref_val])),
-        Err(_) => Ok(NativeResult::err(
-            cost,
-            E_NOT_FOUND,
-        )),
+        Err(_) => Ok(NativeResult::err(cost, E_NOT_FOUND)),
     }
 }
 
@@ -642,10 +636,7 @@ fn native_remove_box(
             table.size_increment -= 1;
             Ok(NativeResult::ok(cost, smallvec![val]))
         }
-        Err(_) => Ok(NativeResult::err(
-            cost,
-            E_NOT_FOUND,
-        )),
+        Err(_) => Ok(NativeResult::err(cost, E_NOT_FOUND)),
     }
 }
 
@@ -730,10 +721,7 @@ fn native_drop_unchecked_box(
     if table_data.removed_tables.insert(handle) {
         Ok(NativeResult::ok(gas_params.base, smallvec![]))
     } else {
-        Ok(NativeResult::err(
-            gas_params.base,
-            E_DUPLICATE_OPERATION,
-        ))
+        Ok(NativeResult::err(gas_params.base, E_DUPLICATE_OPERATION))
     }
 }
 

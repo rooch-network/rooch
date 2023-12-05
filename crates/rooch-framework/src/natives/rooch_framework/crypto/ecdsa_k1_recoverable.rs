@@ -54,12 +54,7 @@ pub fn native_ecrecover(
     let pk = match hash {
         KECCAK256 => sig.recover_with_hash::<Keccak256>(&msg_ref),
         SHA256 => sig.recover_with_hash::<Sha256>(&msg_ref),
-        _ => {
-            return Ok(NativeResult::err(
-                cost,
-                E_INVALID_HASH_TYPE,
-            ))
-        } // We should never reach here
+        _ => return Ok(NativeResult::err(cost, E_INVALID_HASH_TYPE)), // We should never reach here
     };
 
     match pk {
@@ -67,10 +62,7 @@ pub fn native_ecrecover(
             cost,
             smallvec![Value::vector_u8(pk.as_bytes().to_vec())],
         )),
-        Err(_) => Ok(NativeResult::err(
-            cost,
-            E_FAIL_TO_RECOVER_PUBKEY,
-        )),
+        Err(_) => Ok(NativeResult::err(cost, E_FAIL_TO_RECOVER_PUBKEY)),
     }
 }
 
@@ -97,10 +89,7 @@ pub fn native_decompress_pubkey(
                 smallvec![Value::vector_u8(uncompressed.to_vec())],
             ))
         }
-        Err(_) => Ok(NativeResult::err(
-            cost,
-            E_INVALID_PUBKEY,
-        )),
+        Err(_) => Ok(NativeResult::err(cost, E_INVALID_PUBKEY)),
     }
 }
 
