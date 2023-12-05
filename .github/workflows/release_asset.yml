@@ -37,7 +37,7 @@ jobs:
 
       #fix https://github.com/rooch-network/rooch/issues/1157  with https://github.com/diesel-rs/diesel/blob/master/.github/workflows/ci.yml
       - name: Install sqlite (Windows)
-        if: matrix.platform == 'windows-latest'
+        if: matrix.platform == 'windows-2022'
         shell: cmd
         run: |
           choco install sqlite
@@ -46,7 +46,7 @@ jobs:
           lib /machine:x64 /def:sqlite3.def /out:sqlite3.lib
 
       - name: Set variables for sqlite (Windows)
-        if: matrix.platform == 'windows-latest'
+        if: matrix.platform == 'windows-2022'
         shell: bash
         run: |
           echo "C:\ProgramData\chocolatey\lib\SQLite\tools" >> $GITHUB_PATH
