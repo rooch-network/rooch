@@ -374,3 +374,30 @@ impl From<TypeInfoView> for TypeInfo {
         }
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct ObjectEntityView<T> {
+    pub id: ObjectID,
+    pub owner: AccountAddressView,
+    pub flag: u8,
+    pub value: T,
+}
+
+impl<T> ObjectEntityView<T> {
+    pub fn new(id: ObjectID, owner: AccountAddress, flag: u8, value: T) -> ObjectEntityView<T> {
+        Self {
+            id,
+            owner: owner.into(),
+            flag,
+            value,
+        }
+    }
+}
+
+pub type RawObjectView = ObjectEntityView<RawDataView>;
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct RawDataView {
+    pub struct_tag: StructTagView,
+    pub value: AnnotatedMoveStructView,
+}

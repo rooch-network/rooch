@@ -11,7 +11,7 @@ use diesel::sqlite::SqliteConnection;
 use crate::store::sqlite_store::SqliteIndexerStore;
 use crate::store::traits::IndexerStoreTrait;
 use crate::types::{
-    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTableChangeSet, IndexedTransaction,
+    IndexedEvent, IndexedGlobalState, IndexedTableChangeSet, IndexedTableState, IndexedTransaction,
 };
 use crate::utils::create_all_tables_if_not_exists;
 use errors::IndexerError;
@@ -93,23 +93,23 @@ impl IndexerStoreTrait for IndexerStore {
         self.sqlite_store.delete_global_states(state_pks)
     }
 
-    fn persist_or_update_leaf_states(
+    fn persist_or_update_table_states(
         &self,
-        states: Vec<IndexedLeafState>,
+        states: Vec<IndexedTableState>,
     ) -> Result<(), IndexerError> {
-        self.sqlite_store.persist_or_update_leaf_states(states)
+        self.sqlite_store.persist_or_update_table_states(states)
     }
 
-    fn delete_leaf_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
-        self.sqlite_store.delete_leaf_states(state_pks)
+    fn delete_table_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
+        self.sqlite_store.delete_table_states(state_pks)
     }
 
-    fn delete_leaf_states_by_table_handle(
+    fn delete_table_states_by_table_handle(
         &self,
         table_handles: Vec<String>,
     ) -> Result<(), IndexerError> {
         self.sqlite_store
-            .delete_leaf_states_by_table_handle(table_handles)
+            .delete_table_states_by_table_handle(table_handles)
     }
 
     fn persist_table_change_sets(

@@ -12,7 +12,7 @@ use rooch_rpc_api::jsonrpc_types::event_view::{EventFilterView, EventView, Index
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, IndexerEventPageView, IndexerTableChangeSetPageView,
-    IndexerTableChangeSetView, StateFilterView, StateOptions,
+    IndexerTableChangeSetView, StateOptions, StateSyncFilterView,
 };
 use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
@@ -411,7 +411,7 @@ impl RoochAPIServer for RoochServer {
 
     async fn sync_states(
         &self,
-        filter: Option<StateFilterView>,
+        filter: Option<StateSyncFilterView>,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,

@@ -4,7 +4,7 @@
 use crate::indexer_reader::IndexerReader;
 use crate::store::traits::IndexerStoreTrait;
 use crate::types::{
-    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTableChangeSet, IndexedTransaction,
+    IndexedEvent, IndexedGlobalState, IndexedTableChangeSet, IndexedTableState, IndexedTransaction,
 };
 use crate::IndexerStore;
 use anyhow::Result;
@@ -321,6 +321,7 @@ fn random_update_global_states(states: Vec<IndexedGlobalState>) -> Vec<IndexedGl
             owner: item.owner,
             flag: item.flag,
             value: random_string(),
+            object_type: item.object_type,
             key_type: item.key_type,
             size: item.size + 1,
             created_at: item.created_at,
@@ -338,6 +339,7 @@ fn random_new_global_states() -> Vec<IndexedGlobalState> {
             random_table_object(),
             random_string(),
             random_struct_tag().to_canonical_string(),
+            random_type_tag().to_canonical_string(),
         );
 
         new_global_states.push(state);
@@ -358,29 +360,29 @@ fn random_remove_global_states() -> Vec<String> {
     remove_global_states
 }
 
-fn random_new_leaf_states() -> Vec<IndexedLeafState> {
-    let mut leaf_states = vec![];
+fn random_new_table_states() -> Vec<IndexedTableState> {
+    let mut table_states = vec![];
 
     let mut rng = thread_rng();
     for _n in 0..rng.gen_range(1..=10) {
-        let state = IndexedLeafState::new(
+        let state = IndexedTableState::new(
             ObjectID::from(AccountAddress::random()),
             H256::random().to_string(),
             random_string(),
             random_type_tag(),
         );
-        leaf_states.push(state);
+        table_states.push(state);
     }
 
-    leaf_states
+    table_states
 }
 
-fn random_update_leaf_states(states: Vec<IndexedLeafState>) -> Vec<IndexedLeafState> {
+fn random_update_table_states(states: Vec<IndexedTableState>) -> Vec<IndexedTableState> {
     states
         .into_iter()
-        .map(|item| IndexedLeafState {
+        .map(|item| IndexedTableState {
             id: item.id,
-            object_id: item.object_id,
+            table_handle: item.table_handle,
             key_hex: item.key_hex,
             value: random_string(),
             value_type: random_type_tag(),
@@ -390,16 +392,16 @@ fn random_update_leaf_states(states: Vec<IndexedLeafState>) -> Vec<IndexedLeafSt
         .collect()
 }
 
-fn random_remove_leaf_states() -> Vec<String> {
-    let mut remove_leaf_states = vec![];
+fn random_remove_table_states() -> Vec<String> {
+    let mut remove_table_states = vec![];
 
     let mut rng = thread_rng();
     for _n in 0..rng.gen_range(1..=10) {
         let table_handle = ObjectID::from(AccountAddress::random());
-        remove_leaf_states.push(table_handle.to_string());
+        remove_table_states.push(table_handle.to_string());
     }
 
-    remove_leaf_states
+    remove_table_states
 }
 
 #[test]
@@ -521,19 +523,19 @@ fn test_state_store() -> Result<()> {
     let mut update_global_states = random_update_global_states(new_global_states.clone());
     let remove_global_states = random_remove_global_states();
 
-    let mut new_leaf_states = random_new_leaf_states();
-    let mut update_leaf_states = random_update_leaf_states(new_leaf_states.clone());
-    let remove_leaf_states = random_remove_leaf_states();
+    let mut new_table_states = random_new_table_states();
+    let mut update_table_states = random_update_table_states(new_table_states.clone());
+    let remove_table_states = random_remove_table_states();
 
     //Merge new global states and update global states
     new_global_states.append(&mut update_global_states);
     indexer_store.persist_or_update_global_states(new_global_states)?;
     indexer_store.delete_global_states(remove_global_states)?;
 
-    //Merge new leaf states and update leaf states
-    new_leaf_states.append(&mut update_leaf_states);
-    indexer_store.persist_or_update_leaf_states(new_leaf_states)?;
-    indexer_store.delete_leaf_states(remove_leaf_states)?;
+    //Merge new table states and update table states
+    new_table_states.append(&mut update_table_states);
+    indexer_store.persist_or_update_table_states(new_table_states)?;
+    indexer_store.delete_table_states(remove_table_states)?;
 
     // test state sync
     let state_change_set = random_state_change_set();

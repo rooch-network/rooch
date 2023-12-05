@@ -164,6 +164,8 @@ pub struct IndexedGlobalState {
     pub flag: u8,
     /// The value of the object, json format
     pub value: String,
+    /// The T struct tag of the object
+    pub object_type: String,
     /// The key type tag of the table
     pub key_type: String,
     /// The table length
@@ -175,13 +177,18 @@ pub struct IndexedGlobalState {
 }
 
 impl IndexedGlobalState {
-    pub fn new_from_raw_object(raw_object: RawObject, raw_object_value_json: String) -> Self {
+    pub fn new_from_raw_object(
+        raw_object: RawObject,
+        raw_object_value_json: String,
+        object_type: String,
+    ) -> Self {
         IndexedGlobalState {
             object_id: raw_object.id,
             owner: raw_object.owner,
             flag: raw_object.flag,
 
             value: raw_object_value_json,
+            object_type,
             // Maintenance when it is a table handle
             key_type: "".to_string(),
             // Maintenance when it is a table handle
@@ -196,6 +203,7 @@ impl IndexedGlobalState {
     pub fn new_from_table_object(
         table_object: ObjectEntity<TableInfo>,
         table_object_value_json: String,
+        object_type: String,
         key_type: String,
     ) -> Self {
         IndexedGlobalState {
@@ -204,6 +212,7 @@ impl IndexedGlobalState {
             flag: table_object.flag,
 
             value: table_object_value_json,
+            object_type,
             // Maintenance when it is a table handle
             key_type,
             // Maintenance when it is a table handle
@@ -218,19 +227,25 @@ impl IndexedGlobalState {
     pub fn new_from_table_object_update(
         table_object: ObjectEntity<TableInfo>,
         table_object_value_json: String,
+        object_type: String,
     ) -> Self {
         // No need to update key_type when update global state
-        Self::new_from_table_object(table_object, table_object_value_json, "".to_string())
+        Self::new_from_table_object(
+            table_object,
+            table_object_value_json,
+            object_type,
+            "".to_string(),
+        )
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct IndexedLeafState {
-    /// A primary key represents composite key of (object_id, key_hex)
+pub struct IndexedTableState {
+    /// A primary key represents composite key of (table_handle, key_hex)
     // Diesel doesn't support eq_any for tuples due to unable to use index, so use an extra primary key instead of composite key
     pub id: String,
-    /// The leaf state table handle
-    pub object_id: ObjectID,
+    /// The state table handle
+    pub table_handle: ObjectID,
     /// The hex of the table key
     pub key_hex: String,
     /// The value of the table, json format
@@ -243,18 +258,18 @@ pub struct IndexedLeafState {
     pub updated_at: u64,
 }
 
-impl IndexedLeafState {
+impl IndexedTableState {
     pub fn new(
-        object_id: ObjectID,
+        table_handle: ObjectID,
         key_hex: String,
         state_value_json: String,
         value_type: TypeTag,
     ) -> Self {
-        let id = format!("{}{}", object_id, key_hex);
+        let id = format!("{}{}", table_handle, key_hex);
 
-        IndexedLeafState {
+        IndexedTableState {
             id,
-            object_id,
+            table_handle,
             key_hex,
             value: state_value_json,
             value_type,

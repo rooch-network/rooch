@@ -19,7 +19,7 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::account::Account;
 use rooch_types::address::{MultiChainAddress, RoochAddress};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
-use rooch_types::indexer::state::{IndexerStateID, IndexerTableChangeSet, StateFilter};
+use rooch_types::indexer::state::{IndexerStateID, IndexerTableChangeSet, StateSyncFilter};
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::rooch::RoochTransaction;
@@ -295,7 +295,7 @@ impl RpcService {
 
     pub async fn sync_states(
         &self,
-        filter: Option<StateFilter>,
+        filter: Option<StateSyncFilter>,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: usize,

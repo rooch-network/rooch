@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::schema::global_states;
-use crate::schema::leaf_states;
 use crate::schema::table_change_sets;
-use crate::types::{IndexedGlobalState, IndexedLeafState, IndexedTableChangeSet};
+use crate::schema::table_states;
+use crate::types::{IndexedGlobalState, IndexedTableChangeSet, IndexedTableState};
 use diesel::prelude::*;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::TypeTag;
@@ -25,6 +25,9 @@ pub struct StoredGlobalState {
     /// A flag to indicate whether the object is shared or frozen
     #[diesel(sql_type = diesel::sql_types::SmallInt)]
     pub flag: i16,
+    /// The T struct tag of the object
+    #[diesel(sql_type = diesel::sql_types::Text)]
+    pub object_type: String,
     /// The key type tag of the table
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub key_type: String,
@@ -49,6 +52,7 @@ impl From<IndexedGlobalState> for StoredGlobalState {
             owner: state.owner.to_hex_literal(),
             flag: state.flag as i16,
             value: state.value,
+            object_type: state.object_type,
             key_type: state.key_type,
             size: state.size as i64,
             created_at: state.created_at as i64,
@@ -61,13 +65,13 @@ impl StoredGlobalState {
     pub fn try_into_indexer_global_state(&self) -> Result<IndexedGlobalState, anyhow::Error> {
         let object_id = ObjectID::from_str(self.object_id.as_str())?;
         let owner = AccountAddress::from_hex_literal(self.owner.as_str())?;
-        // let key_type = TypeTag::from_str(self.key_type.as_str())?;
 
         let state = IndexedGlobalState {
             object_id,
             owner,
             flag: self.flag as u8,
             value: self.value.clone(),
+            object_type: self.object_type.clone(),
             key_type: self.key_type.clone(),
             size: self.size as u64,
             created_at: self.created_at as u64,
@@ -78,14 +82,14 @@ impl StoredGlobalState {
 }
 
 #[derive(Clone, Debug, Queryable, Insertable, Identifiable, AsChangeset)]
-#[diesel(table_name = leaf_states)]
-pub struct StoredLeafState {
-    /// A primary key represents composite key of (object_id, key_hex)
+#[diesel(table_name = table_states)]
+pub struct StoredTableState {
+    /// A primary key represents composite key of (table_handle, key_hex)
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub id: String,
-    /// The leaf state table handle
+    /// The state table handle
     #[diesel(sql_type = diesel::sql_types::Text)]
-    pub object_id: String,
+    pub table_handle: String,
     /// The hex of the table key
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub key_hex: String,
@@ -103,12 +107,12 @@ pub struct StoredLeafState {
     pub updated_at: i64,
 }
 
-impl From<IndexedLeafState> for StoredLeafState {
-    fn from(state: IndexedLeafState) -> Self {
-        let id = format!("{}{}", state.object_id, state.key_hex);
+impl From<IndexedTableState> for StoredTableState {
+    fn from(state: IndexedTableState) -> Self {
+        let id = format!("{}{}", state.table_handle, state.key_hex);
         Self {
             id,
-            object_id: state.object_id.to_string(),
+            table_handle: state.table_handle.to_string(),
             key_hex: state.key_hex,
             value: state.value,
             value_type: state.value_type.to_canonical_string(),
@@ -118,14 +122,14 @@ impl From<IndexedLeafState> for StoredLeafState {
     }
 }
 
-impl StoredLeafState {
-    pub fn try_into_indexer_leaf_state(&self) -> Result<IndexedLeafState, anyhow::Error> {
-        let object_id = ObjectID::from_str(self.object_id.as_str())?;
+impl StoredTableState {
+    pub fn try_into_indexer_table_state(&self) -> Result<IndexedTableState, anyhow::Error> {
+        let table_handle = ObjectID::from_str(self.table_handle.as_str())?;
         let value_type = TypeTag::from_str(self.value_type.as_str())?;
 
-        let state = IndexedLeafState {
+        let state = IndexedTableState {
             id: self.id.clone(),
-            object_id,
+            table_handle,
             key_hex: self.key_hex.clone(),
             value: self.value.clone(),
             value_type,

@@ -7,7 +7,7 @@ use moveos_types::moveos_std::event::Event;
 use moveos_types::state::StateChangeSet;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
-use rooch_types::indexer::state::{IndexerStateID, IndexerTableChangeSet, StateFilter};
+use rooch_types::indexer::state::{IndexerStateID, IndexerTableChangeSet, StateSyncFilter};
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::transaction::{TransactionSequenceInfo, TransactionWithInfo, TypedTransaction};
 use serde::{Deserialize, Serialize};
@@ -81,7 +81,7 @@ impl Message for QueryIndexerEventsMessage {
 /// Sync Indexer State change sets Message
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SyncIndexerStatesMessage {
-    pub filter: Option<StateFilter>,
+    pub filter: Option<StateSyncFilter>,
     // exclusive cursor if `Some`, otherwise start from the beginning
     pub cursor: Option<IndexerStateID>,
     pub limit: usize,

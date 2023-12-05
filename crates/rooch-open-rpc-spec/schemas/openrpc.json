@@ -396,7 +396,7 @@
         {
           "name": "filter",
           "schema": {
-            "$ref": "#/components/schemas/StateFilterView"
+            "$ref": "#/components/schemas/StateSyncFilterView"
           }
         },
         {
@@ -1440,7 +1440,7 @@
           }
         }
       },
-      "StateFilterView": {
+      "StateSyncFilterView": {
         "oneOf": [
           {
             "description": "Query by table handle.",

@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS leaf_states;
+DROP TABLE IF EXISTS table_states;

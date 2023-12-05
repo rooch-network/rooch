@@ -16,7 +16,7 @@ use crate::models::events::StoredEvent;
 use crate::models::states::StoredTableChangeSet;
 use crate::schema::{events, table_change_sets, transactions};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
-use rooch_types::indexer::state::{IndexerStateID, IndexerTableChangeSet, StateFilter};
+use rooch_types::indexer::state::{IndexerStateID, IndexerTableChangeSet, StateSyncFilter};
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::transaction::TransactionWithInfo;
 
@@ -305,7 +305,7 @@ impl IndexerReader {
 
     pub fn sync_states(
         &self,
-        filter: Option<StateFilter>,
+        filter: Option<StateSyncFilter>,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: usize,
@@ -337,7 +337,7 @@ impl IndexerReader {
         };
 
         let main_where_clause_opt = filter.map(|f| match f {
-            StateFilter::TableHandle(table_handle) => {
+            StateSyncFilter::TableHandle(table_handle) => {
                 format!("{STATE_TABLE_HANDLE_STR} = \"{}\"", table_handle)
             }
         });

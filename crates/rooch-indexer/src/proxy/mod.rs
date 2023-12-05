@@ -12,7 +12,7 @@ use moveos_types::moveos_std::event::Event;
 use moveos_types::state::StateChangeSet;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
-use rooch_types::indexer::state::{IndexerStateID, IndexerTableChangeSet, StateFilter};
+use rooch_types::indexer::state::{IndexerStateID, IndexerTableChangeSet, StateSyncFilter};
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::transaction::{TransactionSequenceInfo, TransactionWithInfo, TypedTransaction};
 
@@ -111,7 +111,7 @@ impl IndexerProxy {
 
     pub async fn sync_states(
         &self,
-        filter: Option<StateFilter>,
+        filter: Option<StateSyncFilter>,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: usize,

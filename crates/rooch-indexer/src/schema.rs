@@ -23,6 +23,7 @@ diesel::table! {
         owner -> Text,
         flag -> SmallInt,
         value -> Text,
+        object_type -> Text,
         key_type -> Text,
         size -> BigInt,
         created_at -> BigInt,
@@ -31,9 +32,9 @@ diesel::table! {
 }
 
 diesel::table! {
-    leaf_states (id) {
+    table_states (id) {
         id -> Text,
-        object_id -> Text,
+        table_handle -> Text,
         key_hex -> Text,
         value -> Text,
         value_type -> Text,
@@ -82,7 +83,7 @@ diesel::table! {
 diesel::allow_tables_to_appear_in_same_query!(
     events,
     global_states,
-    leaf_states,
+    table_states,
     table_change_sets,
     transactions,
 );

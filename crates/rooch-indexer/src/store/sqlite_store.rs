@@ -8,11 +8,11 @@ use tracing::log;
 
 use crate::errors::{Context, IndexerError};
 use crate::models::events::StoredEvent;
-use crate::models::states::{StoredGlobalState, StoredLeafState, StoredTableChangeSet};
+use crate::models::states::{StoredGlobalState, StoredTableChangeSet, StoredTableState};
 use crate::models::transactions::StoredTransaction;
-use crate::schema::{events, global_states, leaf_states, table_change_sets, transactions};
+use crate::schema::{events, global_states, table_change_sets, table_states, transactions};
 use crate::types::{
-    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTableChangeSet, IndexedTransaction,
+    IndexedEvent, IndexedGlobalState, IndexedTableChangeSet, IndexedTableState, IndexedTransaction,
 };
 use crate::utils::escape_sql_string;
 use crate::{get_sqlite_pool_connection, SqliteConnectionPool};
@@ -51,7 +51,7 @@ impl SqliteIndexerStore {
                     escape_sql_string(state.owner),
                     state.flag,
                     escape_sql_string(state.value),
-                    escape_sql_string(state.key_type),
+                    escape_sql_string(state.object_type),
                     state.size,
                     state.created_at,
                     state.updated_at,
@@ -61,14 +61,14 @@ impl SqliteIndexerStore {
             .join(",");
         let query = format!(
             "
-                INSERT INTO global_states (object_id, owner, flag, value, key_type, size, created_at, updated_at) \
+                INSERT INTO global_states (object_id, owner, flag, value, object_type, size, created_at, updated_at) \
                 VALUES {} \
                 ON CONFLICT (object_id) DO UPDATE SET \
                 owner = excluded.owner, \
                 flag = excluded.flag, \
                 value = excluded.value, \
                 size = excluded.size, \
-                updated_at = excluded.updated_at
+                updated_at = excluded.updated_at;
             ",
             values_clause
         );
@@ -118,9 +118,9 @@ impl SqliteIndexerStore {
         Ok(())
     }
 
-    pub fn persist_or_update_leaf_states(
+    pub fn persist_or_update_table_states(
         &self,
-        states: Vec<IndexedLeafState>,
+        states: Vec<IndexedTableState>,
     ) -> Result<(), IndexerError> {
         if states.is_empty() {
             return Ok(());
@@ -129,7 +129,7 @@ impl SqliteIndexerStore {
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
         let states = states
             .into_iter()
-            .map(StoredLeafState::from)
+            .map(StoredTableState::from)
             .collect::<Vec<_>>();
 
         // Diesel for SQLite don't support batch update yet, so implements batch update directly via raw SQL
@@ -139,7 +139,7 @@ impl SqliteIndexerStore {
                 format!(
                     "('{}', '{}', '{}', '{}', '{}', {}, {})",
                     escape_sql_string(state.id),
-                    escape_sql_string(state.object_id),
+                    escape_sql_string(state.table_handle),
                     escape_sql_string(state.key_hex),
                     escape_sql_string(state.value),
                     escape_sql_string(state.value_type),
@@ -151,12 +151,12 @@ impl SqliteIndexerStore {
             .join(",");
         let query = format!(
             "
-                INSERT INTO leaf_states (id, object_id, key_hex, value, value_type, created_at, updated_at) \
+                INSERT INTO table_states (id, table_handle, key_hex, value, value_type, created_at, updated_at) \
                 VALUES {} \
                 ON CONFLICT (id) DO UPDATE SET \
                 value = excluded.value, \
                 value_type = excluded.value_type, \
-                updated_at = excluded.updated_at
+                updated_at = excluded.updated_at;
             ",
             values_clause
         );
@@ -165,29 +165,29 @@ impl SqliteIndexerStore {
         diesel::sql_query(query.clone())
             .execute(&mut connection)
             .map_err(|e| {
-                log::error!("Upsert leaf states Executing Query error: {}", query);
+                log::error!("Upsert table states Executing Query error: {}", query);
                 IndexerError::SQLiteWriteError(e.to_string())
             })
-            .context("Failed to write or update leaf states to SQLiteDB")?;
+            .context("Failed to write or update table states to SQLiteDB")?;
 
         Ok(())
     }
 
-    pub fn delete_leaf_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
+    pub fn delete_table_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
         if state_pks.is_empty() {
             return Ok(());
         }
 
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
-        diesel::delete(leaf_states::table.filter(leaf_states::id.eq_any(state_pks.as_slice())))
+        diesel::delete(table_states::table.filter(table_states::id.eq_any(state_pks.as_slice())))
             .execute(&mut connection)
             .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
-            .context("Failed to delete leaf states to SQLiteDB")?;
+            .context("Failed to delete table states to SQLiteDB")?;
 
         Ok(())
     }
 
-    pub fn delete_leaf_states_by_table_handle(
+    pub fn delete_table_states_by_table_handle(
         &self,
         table_handles: Vec<String>,
     ) -> Result<(), IndexerError> {
@@ -197,11 +197,11 @@ impl SqliteIndexerStore {
 
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
         diesel::delete(
-            leaf_states::table.filter(leaf_states::object_id.eq_any(table_handles.as_slice())),
+            table_states::table.filter(table_states::table_handle.eq_any(table_handles.as_slice())),
         )
         .execute(&mut connection)
         .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
-        .context("Failed to delete leaf states by table handles to SQLiteDB")?;
+        .context("Failed to delete table states by table handles to SQLiteDB")?;
 
         Ok(())
     }

@@ -8,7 +8,7 @@ use crate::actor::messages::{
 use crate::indexer_reader::IndexerReader;
 use crate::store::traits::IndexerStoreTrait;
 use crate::types::{
-    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTableChangeSet, IndexedTransaction,
+    IndexedEvent, IndexedGlobalState, IndexedTableChangeSet, IndexedTableState, IndexedTransaction,
 };
 use crate::IndexerStore;
 use anyhow::{anyhow, Result};
@@ -22,7 +22,9 @@ use moveos_types::moveos_std::object::{ObjectEntity, ObjectID, RawObject};
 use moveos_types::moveos_std::raw_table::TableInfo;
 use moveos_types::state::{SplitStateChangeSet, State};
 use moveos_types::state_resolver::MoveOSResolverProxy;
-use rooch_rpc_api::jsonrpc_types::{AnnotatedMoveStructView, AnnotatedMoveValueView};
+use rooch_rpc_api::jsonrpc_types::{
+    AnnotatedMoveStructView, AnnotatedMoveValueView, RawDataView, RawObjectView,
+};
 use rooch_types::indexer::event_filter::IndexerEvent;
 use rooch_types::indexer::state::IndexerTableChangeSet;
 use rooch_types::transaction::TransactionWithInfo;
@@ -46,12 +48,22 @@ impl IndexerActor {
         })
     }
 
-    pub fn resolve_raw_object_value_to_json(&self, raw_object: &RawObject) -> Result<String> {
+    pub fn resolve_raw_object_to_json(&self, raw_object: &RawObject) -> Result<String> {
         let obj_value = MoveValueAnnotator::new(&self.moveos_store)
             .view_resource(&raw_object.value.struct_tag, &raw_object.value.value)?;
         let obj_value_view = AnnotatedMoveStructView::from(obj_value);
-        let obj_value_json = serde_json::to_string(&obj_value_view)?;
-        Ok(obj_value_json)
+        let raw_data_view = RawDataView {
+            struct_tag: raw_object.value.struct_tag.clone().into(),
+            value: obj_value_view,
+        };
+        let raw_object_view = RawObjectView::new(
+            raw_object.id,
+            raw_object.owner,
+            raw_object.flag,
+            raw_data_view,
+        );
+        let raw_object_json = serde_json::to_string(&raw_object_view)?;
+        Ok(raw_object_json)
     }
 
     pub fn resolve_state_to_json(&self, state: &State) -> Result<String> {
@@ -77,13 +89,13 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         let mut update_global_states = vec![];
         let mut remove_global_states = vec![];
 
-        let mut new_leaf_states = vec![];
-        let mut update_leaf_states = vec![];
-        let mut remove_leaf_states = vec![];
+        let mut new_table_states = vec![];
+        let mut update_table_states = vec![];
+        let mut remove_table_states = vec![];
 
         // When remove table handle, first delete table handle from global states,
-        // then delete all states which belongs to the table_handle from leaf states
-        let mut remove_leaf_states_by_table_handle = vec![];
+        // then delete all states which belongs to the table_handle from table states
+        let mut remove_table_states_by_table_handle = vec![];
 
         for (table_handle, table_change) in state_change_set.changes.clone() {
             // handle global object
@@ -94,24 +106,41 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                             // table object
                             if value.match_struct_type(&ObjectEntity::get_table_object_struct_tag())
                             {
-                                let object = value.cast::<ObjectEntity<TableInfo>>()?;
-                                let obj_value_json = serde_json::to_string(&object.value)?;
+                                let table_object = value.cast::<ObjectEntity<TableInfo>>()?;
+                                // let obj_value_json = serde_json::to_string(&table_object.value)?;
+
+                                let raw_object = value.as_raw_object()?;
+                                let obj_value_json =
+                                    self.resolve_raw_object_to_json(&raw_object)?;
+                                let object_type =
+                                    raw_object.value.struct_tag.clone().to_canonical_string();
 
                                 let state = IndexedGlobalState::new_from_table_object_update(
-                                    object,
+                                    table_object,
                                     obj_value_json,
+                                    object_type,
                                 );
                                 update_global_states.push(state);
                             } else if value.is_object() {
                                 let raw_object = value.as_raw_object()?;
                                 let obj_value_json =
-                                    self.resolve_raw_object_value_to_json(&raw_object)?;
+                                    self.resolve_raw_object_to_json(&raw_object)?;
+                                let object_type =
+                                    raw_object.value.struct_tag.clone().to_canonical_string();
 
                                 let state = IndexedGlobalState::new_from_raw_object(
                                     raw_object,
                                     obj_value_json,
+                                    object_type,
                                 );
+
                                 update_global_states.push(state);
+                            } else {
+                                log::warn!(
+                                    "Unexpected state type, table handle {:?}, value {:?}",
+                                    table_handle,
+                                    value
+                                );
                             }
                         }
                         Op::Delete => {
@@ -123,9 +152,15 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                             if value.match_struct_type(&ObjectEntity::get_table_object_struct_tag())
                             {
                                 let object = value.cast::<ObjectEntity<TableInfo>>()?;
-                                let obj_value_json = serde_json::to_string(&object.value)?;
+                                // let obj_value_json = serde_json::to_string(&object.value)?;
+                                let raw_object = value.as_raw_object()?;
+                                let obj_value_json =
+                                    self.resolve_raw_object_to_json(&raw_object)?;
+                                let object_type =
+                                    raw_object.value.struct_tag.clone().to_canonical_string();
 
                                 let table_handle = ObjectID::from_bytes(key.as_slice())?;
+                                // TODO handle if key type is None
                                 let key_type = state_change_set
                                     .new_tables
                                     .get(&table_handle)
@@ -134,17 +169,21 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                                 let state = IndexedGlobalState::new_from_table_object(
                                     object,
                                     obj_value_json,
+                                    object_type,
                                     key_type,
                                 );
                                 new_global_states.push(state);
                             } else if value.is_object() {
                                 let raw_object = value.as_raw_object()?;
                                 let obj_value_json =
-                                    self.resolve_raw_object_value_to_json(&raw_object)?;
+                                    self.resolve_raw_object_to_json(&raw_object)?;
+                                let object_type =
+                                    raw_object.value.struct_tag.clone().to_canonical_string();
 
                                 let state = IndexedGlobalState::new_from_raw_object(
                                     raw_object,
                                     obj_value_json,
+                                    object_type,
                                 );
                                 new_global_states.push(state);
                             }
@@ -163,29 +202,29 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                         Op::Modify(value) => {
                             let key_hash = format!("0x{}", hex::encode(key.as_slice()));
                             let state_json = self.resolve_state_to_json(&value)?;
-                            let state = IndexedLeafState::new(
+                            let state = IndexedTableState::new(
                                 table_handle,
                                 key_hash,
                                 state_json,
                                 value.value_type,
                             );
-                            update_leaf_states.push(state);
+                            update_table_states.push(state);
                         }
                         Op::Delete => {
                             let key_hash = format!("0x{}", hex::encode(key.as_slice()));
                             let id = format!("{}{}", table_handle, key_hash);
-                            remove_leaf_states.push(id);
+                            remove_table_states.push(id);
                         }
                         Op::New(value) => {
                             let key_hash = format!("0x{}", hex::encode(key.as_slice()));
                             let state_json = self.resolve_state_to_json(&value)?;
-                            let state = IndexedLeafState::new(
+                            let state = IndexedTableState::new(
                                 table_handle,
                                 key_hash,
                                 state_json,
                                 value.value_type,
                             );
-                            new_leaf_states.push(state);
+                            new_table_states.push(state);
                         }
                     }
                 }
@@ -194,7 +233,7 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
 
         for table_handle in state_change_set.removed_tables.clone() {
             remove_global_states.push(table_handle.to_string());
-            remove_leaf_states_by_table_handle.push(table_handle.to_string());
+            remove_table_states_by_table_handle.push(table_handle.to_string());
         }
 
         //Merge new global states and update global states
@@ -204,13 +243,14 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         self.indexer_store
             .delete_global_states(remove_global_states)?;
 
-        //Merge new leaf states and update leaf states
-        new_leaf_states.append(&mut update_leaf_states);
+        //Merge new table states and update table states
+        new_table_states.append(&mut update_table_states);
         self.indexer_store
-            .persist_or_update_leaf_states(new_leaf_states)?;
-        self.indexer_store.delete_leaf_states(remove_leaf_states)?;
+            .persist_or_update_table_states(new_table_states)?;
         self.indexer_store
-            .delete_leaf_states_by_table_handle(remove_leaf_states_by_table_handle)?;
+            .delete_table_states(remove_table_states)?;
+        self.indexer_store
+            .delete_table_states_by_table_handle(remove_table_states_by_table_handle)?;
 
         // Store table change set for state sync
         let mut split_state_change_set = SplitStateChangeSet::default();

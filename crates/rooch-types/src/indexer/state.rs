@@ -3,6 +3,8 @@
 
 use crate::indexer::Filter;
 use anyhow::Result;
+use move_core_types::account_address::AccountAddress;
+use move_core_types::language_storage::{StructTag, TypeTag};
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::{StateChangeSet, TableChangeSet};
 use schemars::JsonSchema;
@@ -51,22 +53,99 @@ impl IndexerStateID {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum StateFilter {
-    /// Query by table handle.
-    TableHandle(ObjectID),
+#[derive(Clone, Debug)]
+pub struct IndexerGlobalState {
+    pub object_id: ObjectID,
+    pub owner: AccountAddress,
+    pub flag: u8,
+    pub value: String,
+    pub object_type: StructTag,
+    pub key_type: String,
+    pub size: u64,
+    pub created_at: u64,
+    pub updated_at: u64,
 }
 
-impl StateFilter {
-    fn try_matches(&self, item: &IndexerTableChangeSet) -> Result<bool> {
+#[derive(Clone, Debug)]
+pub struct IndexerTableState {
+    pub id: String,
+    pub table_handle: ObjectID,
+    pub key_hex: String,
+    pub value: String,
+    pub value_type: TypeTag,
+    pub created_at: u64,
+    pub updated_at: u64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum GlobalStateFilter {
+    /// Query by object type and owner.
+    ObjectTypeWithOwner((StructTag, AccountAddress)),
+    /// Query by object type.
+    ObjectType(StructTag),
+    /// Query by owner.
+    Owner(AccountAddress),
+    /// Query by object id.
+    ObjectId(ObjectID),
+}
+
+impl GlobalStateFilter {
+    fn try_matches(&self, item: &IndexerGlobalState) -> Result<bool> {
         Ok(match self {
-            StateFilter::TableHandle(table_handle) => table_handle == &item.table_handle,
+            GlobalStateFilter::ObjectTypeWithOwner((object_type, owner)) => {
+                object_type == &item.object_type && owner == &item.owner
+            }
+            GlobalStateFilter::ObjectType(object_type) => object_type == &item.object_type,
+            GlobalStateFilter::Owner(owner) => owner == &item.owner,
+            GlobalStateFilter::ObjectId(object_id) => object_id == &item.object_id,
         })
     }
 }
 
-impl Filter<IndexerTableChangeSet> for StateFilter {
+impl Filter<IndexerGlobalState> for GlobalStateFilter {
+    fn matches(&self, item: &IndexerGlobalState) -> bool {
+        self.try_matches(item).unwrap_or_default()
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TableStateFilter {
+    /// Query by table handle.
+    TableHandle(ObjectID),
+}
+
+impl TableStateFilter {
+    fn try_matches(&self, item: &IndexerTableState) -> Result<bool> {
+        Ok(match self {
+            TableStateFilter::TableHandle(table_handle) => table_handle == &item.table_handle,
+        })
+    }
+}
+
+impl Filter<IndexerTableState> for TableStateFilter {
+    fn matches(&self, item: &IndexerTableState) -> bool {
+        self.try_matches(item).unwrap_or_default()
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum StateSyncFilter {
+    /// Query by table handle.
+    TableHandle(ObjectID),
+}
+
+impl StateSyncFilter {
+    fn try_matches(&self, item: &IndexerTableChangeSet) -> Result<bool> {
+        Ok(match self {
+            StateSyncFilter::TableHandle(table_handle) => table_handle == &item.table_handle,
+        })
+    }
+}
+
+impl Filter<IndexerTableChangeSet> for StateSyncFilter {
     fn matches(&self, item: &IndexerTableChangeSet) -> bool {
         self.try_matches(item).unwrap_or_default()
     }
