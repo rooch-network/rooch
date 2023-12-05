@@ -12,9 +12,9 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - ubuntu-latest
-          - ubuntu-22.04
-          - macos-latest
+          # - ubuntu-latest
+          # - ubuntu-22.04
+          # - macos-latest
           - windows-latest
     runs-on: ${{matrix.platform}}
     steps:
