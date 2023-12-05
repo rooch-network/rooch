@@ -457,7 +457,7 @@ module rooch_examples::rooch_examples {
     }
 
     #[test]
-    #[expected_failure(abort_code = 196615, location = rooch_framework::account)]
+    #[expected_failure(abort_code = 1, location = rooch_framework::account)]
     fun test_init_again() {
         let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
@@ -1081,7 +1081,7 @@ module rooch_examples::rooch_examples {
     }
 
     #[test]
-    #[expected_failure(abort_code = 0x40001, location = std::option)]
+    #[expected_failure(abort_code = 1, location = std::option)]
     fun test_make_decision_salt_hash_is_none() {
         let decision_bytes = bcs::to_bytes(&DECISION_SPLIT);
         let salt = b"saltyyyyyy";
@@ -1115,7 +1115,7 @@ module rooch_examples::rooch_examples {
     }
 
     #[test]
-    #[expected_failure(abort_code = 0x40001, location = std::option)]
+    #[expected_failure(abort_code = 1, location = std::option)]
     fun test_make_decision_decision_hash_is_none() {
         let decision_bytes = bcs::to_bytes(&DECISION_SPLIT);
         let salt = b"saltyyyyyy";

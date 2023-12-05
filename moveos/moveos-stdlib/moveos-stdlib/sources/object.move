@@ -405,7 +405,7 @@ module moveos_std::object {
     }
 
     #[test(sender = @0x42)]
-    #[expected_failure(abort_code = 393218, location = moveos_std::raw_table)]
+    #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
     fun test_borrow_not_exist_failure(sender: signer) {
         let sender_addr = std::signer::address_of(&sender);
         let ctx = moveos_std::tx_context::new_test_context(sender_addr);
@@ -416,7 +416,7 @@ module moveos_std::object {
     }
 
     #[test(sender = @0x42)]
-    #[expected_failure(abort_code = 393218, location = moveos_std::raw_table)]
+    #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
     fun test_double_remove_failure(sender: signer) {
         let sender_addr = std::signer::address_of(&sender);
         let ctx = moveos_std::tx_context::new_test_context(sender_addr);
@@ -430,7 +430,7 @@ module moveos_std::object {
     }
 
     #[test(sender = @0x42)]
-    #[expected_failure(abort_code = 393218, location = moveos_std::raw_table)]
+    #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
     fun test_type_mismatch(sender: signer) {
         let sender_addr = std::signer::address_of(&sender);
         let ctx = moveos_std::tx_context::new_test_context(sender_addr);

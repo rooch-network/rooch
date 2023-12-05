@@ -305,7 +305,7 @@ module moveos_std::move_module {
     }
 
     #[test(account=@0x1314)]
-    #[expected_failure(abort_code = 0x10001, location = Self)]
+    #[expected_failure(abort_code = 1, location = Self)]
     fun test_address_mismatch_failure(account: &signer) {
         let addr = signer::address_of(account);
         // The following is the bytes and hex of the compiled module: example/counter/sources/counter.move

@@ -208,7 +208,7 @@ module moveos_std::account_storage {
     } 
 
     #[test(sender=@0x42)]
-    #[expected_failure(abort_code = 65537, location = Self)]
+    #[expected_failure(abort_code = 1, location = Self)]
     fun test_failure_repeatedly_move_to_account_storage(sender: address){
         let account_storage = create_account_storage(sender);
         move_resource_to(&mut account_storage, Test{
@@ -223,7 +223,7 @@ module moveos_std::account_storage {
     }
 
     #[test(sender=@0x42)]
-    #[expected_failure(abort_code = 65538, location = Self)]
+    #[expected_failure(abort_code = 2, location = Self)]
     fun test_failure_repeatedly_move_from_account_storage(sender: address){
         let account_storage = create_account_storage(sender);
         move_resource_to(&mut account_storage, Test{
@@ -276,7 +276,7 @@ module moveos_std::account_storage {
     }
 
     #[test(sender=@0x42)]
-    #[expected_failure(abort_code = 393218, location = moveos_std::raw_table)]
+    #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
     fun test_failure_borrow_resource_no_exists(sender: address){
         let account_storage = create_account_storage(sender);
         borrow_resource<Test>(&account_storage);
@@ -284,7 +284,7 @@ module moveos_std::account_storage {
     }
 
     #[test(sender=@0x42)]
-    #[expected_failure(abort_code = 393218, location = moveos_std::raw_table)]
+    #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
     fun test_failure_borrow_mut_resource_no_exists(sender: address){
         let account_storage = create_account_storage(sender);
         borrow_mut_resource<Test>(&mut account_storage);
