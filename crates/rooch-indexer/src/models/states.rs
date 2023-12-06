@@ -7,10 +7,10 @@ use crate::schema::table_states;
 use crate::types::{IndexedGlobalState, IndexedTableChangeSet, IndexedTableState};
 use diesel::prelude::*;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::TypeTag;
+use move_core_types::language_storage::{StructTag, TypeTag};
 use moveos_types::moveos_std::object::ObjectID;
 use rooch_rpc_api::jsonrpc_types::TableChangeSetView;
-use rooch_types::indexer::state::IndexerTableChangeSet;
+use rooch_types::indexer::state::{IndexerGlobalState, IndexerTableChangeSet, IndexerTableState};
 use std::str::FromStr;
 
 #[derive(Clone, Debug, Queryable, Insertable, AsChangeset)]
@@ -25,9 +25,9 @@ pub struct StoredGlobalState {
     /// A flag to indicate whether the object is shared or frozen
     #[diesel(sql_type = diesel::sql_types::SmallInt)]
     pub flag: i16,
-    /// The T struct tag of the object
+    /// The T struct tag of the object value
     #[diesel(sql_type = diesel::sql_types::Text)]
-    pub object_type: String,
+    pub value_type: String,
     /// The key type tag of the table
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub key_type: String,
@@ -37,6 +37,12 @@ pub struct StoredGlobalState {
     /// The table length
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub size: i64,
+    /// The tx order of this transaction
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub tx_order: i64,
+    /// The state index in the tx
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub state_index: i64,
     /// The object created timestamp on chain
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub created_at: i64,
@@ -52,9 +58,11 @@ impl From<IndexedGlobalState> for StoredGlobalState {
             owner: state.owner.to_hex_literal(),
             flag: state.flag as i16,
             value: state.value,
-            object_type: state.object_type,
+            value_type: state.value_type,
             key_type: state.key_type,
             size: state.size as i64,
+            tx_order: state.tx_order as i64,
+            state_index: state.state_index as i64,
             created_at: state.created_at as i64,
             updated_at: state.updated_at as i64,
         }
@@ -62,18 +70,21 @@ impl From<IndexedGlobalState> for StoredGlobalState {
 }
 
 impl StoredGlobalState {
-    pub fn try_into_indexer_global_state(&self) -> Result<IndexedGlobalState, anyhow::Error> {
+    pub fn try_into_indexer_global_state(&self) -> Result<IndexerGlobalState, anyhow::Error> {
         let object_id = ObjectID::from_str(self.object_id.as_str())?;
         let owner = AccountAddress::from_hex_literal(self.owner.as_str())?;
+        let value_type = StructTag::from_str(self.value_type.as_str())?;
 
-        let state = IndexedGlobalState {
+        let state = IndexerGlobalState {
             object_id,
             owner,
             flag: self.flag as u8,
             value: self.value.clone(),
-            object_type: self.object_type.clone(),
+            value_type,
             key_type: self.key_type.clone(),
             size: self.size as u64,
+            tx_order: self.tx_order as u64,
+            state_index: self.state_index as u64,
             created_at: self.created_at as u64,
             updated_at: self.updated_at as u64,
         };
@@ -81,12 +92,9 @@ impl StoredGlobalState {
     }
 }
 
-#[derive(Clone, Debug, Queryable, Insertable, Identifiable, AsChangeset)]
+#[derive(Clone, Debug, Queryable, Insertable, AsChangeset)]
 #[diesel(table_name = table_states)]
 pub struct StoredTableState {
-    /// A primary key represents composite key of (table_handle, key_hex)
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    pub id: String,
     /// The state table handle
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub table_handle: String,
@@ -99,6 +107,12 @@ pub struct StoredTableState {
     /// The type tag of the value
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub value_type: String,
+    /// The tx order of this transaction
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub tx_order: i64,
+    /// The state index in the tx
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub state_index: i64,
     /// The table item created timestamp on chain
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub created_at: i64,
@@ -109,13 +123,13 @@ pub struct StoredTableState {
 
 impl From<IndexedTableState> for StoredTableState {
     fn from(state: IndexedTableState) -> Self {
-        let id = format!("{}{}", state.table_handle, state.key_hex);
         Self {
-            id,
             table_handle: state.table_handle.to_string(),
             key_hex: state.key_hex,
             value: state.value,
             value_type: state.value_type.to_canonical_string(),
+            tx_order: state.tx_order as i64,
+            state_index: state.state_index as i64,
             created_at: state.created_at as i64,
             updated_at: state.updated_at as i64,
         }
@@ -123,16 +137,17 @@ impl From<IndexedTableState> for StoredTableState {
 }
 
 impl StoredTableState {
-    pub fn try_into_indexer_table_state(&self) -> Result<IndexedTableState, anyhow::Error> {
+    pub fn try_into_indexer_table_state(&self) -> Result<IndexerTableState, anyhow::Error> {
         let table_handle = ObjectID::from_str(self.table_handle.as_str())?;
         let value_type = TypeTag::from_str(self.value_type.as_str())?;
 
-        let state = IndexedTableState {
-            id: self.id.clone(),
+        let state = IndexerTableState {
             table_handle,
             key_hex: self.key_hex.clone(),
             value: self.value.clone(),
             value_type,
+            tx_order: self.tx_order as u64,
+            state_index: self.state_index as u64,
             created_at: self.created_at as u64,
             updated_at: self.updated_at as u64,
         };
@@ -148,7 +163,7 @@ pub struct StoredTableChangeSet {
     pub tx_order: i64,
     /// The table handle index in the tx
     #[diesel(sql_type = diesel::sql_types::BigInt)]
-    pub table_handle_index: i64,
+    pub state_index: i64,
     /// The table handle
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub table_handle: String,
@@ -164,7 +179,7 @@ impl From<IndexedTableChangeSet> for StoredTableChangeSet {
     fn from(state_change_set: IndexedTableChangeSet) -> Self {
         Self {
             tx_order: state_change_set.tx_order as i64,
-            table_handle_index: state_change_set.table_handle_index as i64,
+            state_index: state_change_set.state_index as i64,
             table_handle: state_change_set.table_handle.to_string(),
             table_change_set: state_change_set.table_change_set,
             created_at: state_change_set.created_at as i64,
@@ -182,7 +197,7 @@ impl StoredTableChangeSet {
 
         let indexer_state_change_set = IndexerTableChangeSet {
             tx_order: self.tx_order as u64,
-            table_handle_index: self.table_handle_index as u64,
+            state_index: self.state_index as u64,
             table_handle,
             table_change_set: table_change_set.into(),
             created_at: self.created_at as u64,

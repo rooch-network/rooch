@@ -321,9 +321,11 @@ fn random_update_global_states(states: Vec<IndexedGlobalState>) -> Vec<IndexedGl
             owner: item.owner,
             flag: item.flag,
             value: random_string(),
-            object_type: item.object_type,
+            value_type: item.value_type,
             key_type: item.key_type,
             size: item.size + 1,
+            tx_order: item.tx_order,
+            state_index: item.state_index,
             created_at: item.created_at,
             updated_at: item.updated_at + 1,
         })
@@ -333,16 +335,20 @@ fn random_update_global_states(states: Vec<IndexedGlobalState>) -> Vec<IndexedGl
 fn random_new_global_states() -> Vec<IndexedGlobalState> {
     let mut new_global_states = vec![];
 
+    let mut state_index = 0u64;
     let mut rng = thread_rng();
-    for _n in 0..rng.gen_range(1..=10) {
+    for n in 0..rng.gen_range(1..=10) {
         let state = IndexedGlobalState::new_from_table_object(
             random_table_object(),
             random_string(),
             random_struct_tag().to_canonical_string(),
             random_type_tag().to_canonical_string(),
+            n as u64,
+            state_index,
         );
 
         new_global_states.push(state);
+        state_index = state_index + 1;
     }
 
     new_global_states
@@ -363,15 +369,19 @@ fn random_remove_global_states() -> Vec<String> {
 fn random_new_table_states() -> Vec<IndexedTableState> {
     let mut table_states = vec![];
 
+    let mut state_index = 0u64;
     let mut rng = thread_rng();
-    for _n in 0..rng.gen_range(1..=10) {
+    for n in 0..rng.gen_range(1..=10) {
         let state = IndexedTableState::new(
             ObjectID::from(AccountAddress::random()),
             H256::random().to_string(),
             random_string(),
             random_type_tag(),
+            n as u64,
+            state_index,
         );
         table_states.push(state);
+        state_index = state_index + 1;
     }
 
     table_states
@@ -381,24 +391,25 @@ fn random_update_table_states(states: Vec<IndexedTableState>) -> Vec<IndexedTabl
     states
         .into_iter()
         .map(|item| IndexedTableState {
-            id: item.id,
             table_handle: item.table_handle,
             key_hex: item.key_hex,
             value: random_string(),
             value_type: random_type_tag(),
+            tx_order: item.tx_order,
+            state_index: item.state_index,
             created_at: item.created_at,
             updated_at: item.updated_at + 1,
         })
         .collect()
 }
 
-fn random_remove_table_states() -> Vec<String> {
+fn random_remove_table_states() -> Vec<(String, String)> {
     let mut remove_table_states = vec![];
 
     let mut rng = thread_rng();
     for _n in 0..rng.gen_range(1..=10) {
         let table_handle = ObjectID::from(AccountAddress::random());
-        remove_table_states.push(table_handle.to_string());
+        remove_table_states.push((table_handle.to_string(), random_string()));
     }
 
     remove_table_states

@@ -100,7 +100,7 @@ impl IndexerStoreTrait for IndexerStore {
         self.sqlite_store.persist_or_update_table_states(states)
     }
 
-    fn delete_table_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
+    fn delete_table_states(&self, state_pks: Vec<(String, String)>) -> Result<(), IndexerError> {
         self.sqlite_store.delete_table_states(state_pks)
     }
 

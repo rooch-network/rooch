@@ -19,7 +19,7 @@ pub trait IndexerStoreTrait: Send + Sync {
         states: Vec<IndexedTableState>,
     ) -> Result<(), IndexerError>;
 
-    fn delete_table_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError>;
+    fn delete_table_states(&self, state_pks: Vec<(String, String)>) -> Result<(), IndexerError>;
 
     fn delete_table_states_by_table_handle(
         &self,

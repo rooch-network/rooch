@@ -332,6 +332,82 @@
       }
     },
     {
+      "name": "rooch_queryGlobalStates",
+      "description": "Query the states indexer by state filter",
+      "params": [
+        {
+          "name": "filter",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/GlobalStateFilterView"
+          }
+        },
+        {
+          "name": "cursor",
+          "schema": {
+            "$ref": "#/components/schemas/IndexerEventID"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "$ref": "#/components/schemas/usize"
+          }
+        },
+        {
+          "name": "descending_order",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "IndexerEventPageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_IndexerEventView_and_IndexerEventID"
+        }
+      }
+    },
+    {
+      "name": "rooch_queryTableStates",
+      "description": "Query the states indexer by state filter",
+      "params": [
+        {
+          "name": "filter",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/TableStateFilterView"
+          }
+        },
+        {
+          "name": "cursor",
+          "schema": {
+            "$ref": "#/components/schemas/IndexerEventID"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "$ref": "#/components/schemas/usize"
+          }
+        },
+        {
+          "name": "descending_order",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "IndexerEventPageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_IndexerEventView_and_IndexerEventID"
+        }
+      }
+    },
+    {
       "name": "rooch_queryTransactions",
       "description": "Query the transactions indexer by transaction filter",
       "params": [
@@ -823,6 +899,72 @@
           }
         }
       },
+      "GlobalStateFilterView": {
+        "oneOf": [
+          {
+            "description": "Query by object type and owner.",
+            "type": "object",
+            "required": [
+              "object_type_with_owner"
+            ],
+            "properties": {
+              "object_type_with_owner": {
+                "type": "array",
+                "items": [
+                  {
+                    "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+                  },
+                  {
+                    "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+                  }
+                ],
+                "maxItems": 2,
+                "minItems": 2
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by object type.",
+            "type": "object",
+            "required": [
+              "object_type"
+            ],
+            "properties": {
+              "object_type": {
+                "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by owner.",
+            "type": "object",
+            "required": [
+              "owner"
+            ],
+            "properties": {
+              "owner": {
+                "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by object id.",
+            "type": "object",
+            "required": [
+              "object_id"
+            ],
+            "properties": {
+              "object_id": {
+                "$ref": "#/components/schemas/ObjectID"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
       "Hex": {
         "description": "Hex string encoding.",
         "type": "string"
@@ -896,11 +1038,11 @@
       "IndexerStateID": {
         "type": "object",
         "required": [
-          "table_handle_index",
+          "state_index",
           "tx_order"
         ],
         "properties": {
-          "table_handle_index": {
+          "state_index": {
             "type": "integer",
             "format": "uint64",
             "minimum": 0.0
@@ -918,7 +1060,7 @@
           "created_at",
           "table_change_set",
           "table_handle",
-          "table_handle_index",
+          "state_index",
           "tx_order"
         ],
         "properties": {
@@ -933,7 +1075,7 @@
           "table_handle": {
             "$ref": "#/components/schemas/ObjectID"
           },
-          "table_handle_index": {
+          "state_index": {
             "type": "integer",
             "format": "uint64",
             "minimum": 0.0
@@ -1440,6 +1582,16 @@
           }
         }
       },
+      "StateOptions": {
+        "type": "object",
+        "properties": {
+          "decode": {
+            "description": "If true, the state is decoded and the decoded value is returned in the response.",
+            "default": false,
+            "type": "boolean"
+          }
+        }
+      },
       "StateSyncFilterView": {
         "oneOf": [
           {
@@ -1456,16 +1608,6 @@
             "additionalProperties": false
           }
         ]
-      },
-      "StateOptions": {
-        "type": "object",
-        "properties": {
-          "decode": {
-            "description": "If true, the state is decoded and the decoded value is returned in the response.",
-            "default": false,
-            "type": "boolean"
-          }
-        }
       },
       "StateView": {
         "type": "object",
@@ -1539,6 +1681,23 @@
             "format": "int64"
           }
         }
+      },
+      "TableStateFilterView": {
+        "oneOf": [
+          {
+            "description": "Query by table handle.",
+            "type": "object",
+            "required": [
+              "table_handle"
+            ],
+            "properties": {
+              "table_handle": {
+                "$ref": "#/components/schemas/ObjectID"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
       },
       "TableTypeInfoView": {
         "type": "object",

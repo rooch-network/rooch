@@ -23,33 +23,36 @@ diesel::table! {
         owner -> Text,
         flag -> SmallInt,
         value -> Text,
-        object_type -> Text,
+        value_type -> Text,
         key_type -> Text,
         size -> BigInt,
+        tx_order -> BigInt,
+        state_index -> BigInt,
         created_at -> BigInt,
         updated_at -> BigInt,
     }
 }
 
 diesel::table! {
-    table_states (id) {
-        id -> Text,
+    table_change_sets (tx_order, state_index) {
+        tx_order -> BigInt,
+        state_index -> BigInt,
+        table_handle -> Text,
+        table_change_set -> Text,
+        created_at -> BigInt,
+    }
+}
+
+diesel::table! {
+    table_states (table_handle, key_hex) {
         table_handle -> Text,
         key_hex -> Text,
         value -> Text,
         value_type -> Text,
+        tx_order -> BigInt,
+        state_index -> BigInt,
         created_at -> BigInt,
         updated_at -> BigInt,
-    }
-}
-
-diesel::table! {
-    table_change_sets (tx_order, table_handle_index) {
-        tx_order -> BigInt,
-        table_handle_index -> BigInt,
-        table_handle -> Text,
-        table_change_set -> Text,
-        created_at -> BigInt,
     }
 }
 
@@ -83,7 +86,7 @@ diesel::table! {
 diesel::allow_tables_to_appear_in_same_query!(
     events,
     global_states,
-    table_states,
     table_change_sets,
+    table_states,
     transactions,
 );

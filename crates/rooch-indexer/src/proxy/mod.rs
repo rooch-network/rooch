@@ -4,7 +4,8 @@
 use crate::actor::indexer::IndexerActor;
 use crate::actor::messages::{
     IndexerEventsMessage, IndexerStatesMessage, IndexerTransactionMessage,
-    QueryIndexerEventsMessage, QueryIndexerTransactionsMessage, SyncIndexerStatesMessage,
+    QueryIndexerEventsMessage, QueryIndexerGlobalStatesMessage, QueryIndexerTableStatesMessage,
+    QueryIndexerTransactionsMessage, SyncIndexerStatesMessage,
 };
 use anyhow::Result;
 use coerce::actor::ActorRef;
@@ -12,7 +13,10 @@ use moveos_types::moveos_std::event::Event;
 use moveos_types::state::StateChangeSet;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
-use rooch_types::indexer::state::{IndexerStateID, IndexerTableChangeSet, StateSyncFilter};
+use rooch_types::indexer::state::{
+    GlobalStateFilter, IndexerGlobalState, IndexerStateID, IndexerTableChangeSet,
+    IndexerTableState, StateSyncFilter, TableStateFilter,
+};
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::transaction::{TransactionSequenceInfo, TransactionWithInfo, TypedTransaction};
 
@@ -101,6 +105,42 @@ impl IndexerProxy {
     ) -> Result<Vec<IndexerEvent>> {
         self.actor
             .send(QueryIndexerEventsMessage {
+                filter,
+                cursor,
+                limit,
+                descending_order,
+            })
+            .await?
+    }
+
+    pub async fn query_global_states(
+        &self,
+        filter: GlobalStateFilter,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerStateID>,
+        limit: usize,
+        descending_order: bool,
+    ) -> Result<Vec<IndexerGlobalState>> {
+        self.actor
+            .send(QueryIndexerGlobalStatesMessage {
+                filter,
+                cursor,
+                limit,
+                descending_order,
+            })
+            .await?
+    }
+
+    pub async fn query_table_states(
+        &self,
+        filter: TableStateFilter,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerStateID>,
+        limit: usize,
+        descending_order: bool,
+    ) -> Result<Vec<IndexerTableState>> {
+        self.actor
+            .send(QueryIndexerTableStatesMessage {
                 filter,
                 cursor,
                 limit,

@@ -132,7 +132,7 @@ Feature: Rooch CLI integration tests
     # Sync states
     Then cmd: "rpc request --method rooch_syncStates --params '[null, null, "2", false]'"
     Then assert: "{{$.rpc[-1].data[0].tx_order}} == 0"
-    Then assert: "{{$.rpc[-1].next_cursor.table_handle_index}} == 1"
+    Then assert: "{{$.rpc[-1].next_cursor.state_index}} == 1"
     Then assert: "{{$.rpc[-1].has_next_page}} == true"
 
     Then stop the server

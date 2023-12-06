@@ -7,7 +7,10 @@ use moveos_types::moveos_std::event::Event;
 use moveos_types::state::StateChangeSet;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
-use rooch_types::indexer::state::{IndexerStateID, IndexerTableChangeSet, StateSyncFilter};
+use rooch_types::indexer::state::{
+    GlobalStateFilter, IndexerGlobalState, IndexerStateID, IndexerTableChangeSet,
+    IndexerTableState, StateSyncFilter, TableStateFilter,
+};
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::transaction::{TransactionSequenceInfo, TransactionWithInfo, TypedTransaction};
 use serde::{Deserialize, Serialize};
@@ -76,6 +79,34 @@ pub struct QueryIndexerEventsMessage {
 
 impl Message for QueryIndexerEventsMessage {
     type Result = Result<Vec<IndexerEvent>>;
+}
+
+/// Query Indexer Global States Message
+#[derive(Debug, Serialize, Deserialize)]
+pub struct QueryIndexerGlobalStatesMessage {
+    pub filter: GlobalStateFilter,
+    // exclusive cursor if `Some`, otherwise start from the beginning
+    pub cursor: Option<IndexerStateID>,
+    pub limit: usize,
+    pub descending_order: bool,
+}
+
+impl Message for QueryIndexerGlobalStatesMessage {
+    type Result = Result<Vec<IndexerGlobalState>>;
+}
+
+/// Query Indexer Table States Message
+#[derive(Debug, Serialize, Deserialize)]
+pub struct QueryIndexerTableStatesMessage {
+    pub filter: TableStateFilter,
+    // exclusive cursor if `Some`, otherwise start from the beginning
+    pub cursor: Option<IndexerStateID>,
+    pub limit: usize,
+    pub descending_order: bool,
+}
+
+impl Message for QueryIndexerTableStatesMessage {
+    type Result = Result<Vec<IndexerTableState>>;
 }
 
 /// Sync Indexer State change sets Message

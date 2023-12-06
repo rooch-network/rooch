@@ -46,13 +46,16 @@ impl SqliteIndexerStore {
             .into_iter()
             .map(|state| {
                 format!(
-                    "('{}', '{}', {}, '{}', '{}', {}, {}, {})",
+                    "('{}', '{}', {}, '{}', '{}', '{}', {}, {}, {}, {}, {})",
                     escape_sql_string(state.object_id),
                     escape_sql_string(state.owner),
                     state.flag,
                     escape_sql_string(state.value),
-                    escape_sql_string(state.object_type),
+                    escape_sql_string(state.value_type),
+                    escape_sql_string(state.key_type),
                     state.size,
+                    state.tx_order,
+                    state.state_index,
                     state.created_at,
                     state.updated_at,
                 )
@@ -61,13 +64,15 @@ impl SqliteIndexerStore {
             .join(",");
         let query = format!(
             "
-                INSERT INTO global_states (object_id, owner, flag, value, object_type, size, created_at, updated_at) \
+                INSERT INTO global_states (object_id, owner, flag, value, value_type, key_type, size, tx_order, state_index, created_at, updated_at) \
                 VALUES {} \
                 ON CONFLICT (object_id) DO UPDATE SET \
                 owner = excluded.owner, \
                 flag = excluded.flag, \
                 value = excluded.value, \
                 size = excluded.size, \
+                tx_order = excluded.tx_order, \
+                state_index = excluded.state_index, \
                 updated_at = excluded.updated_at;
             ",
             values_clause
@@ -137,12 +142,13 @@ impl SqliteIndexerStore {
             .into_iter()
             .map(|state| {
                 format!(
-                    "('{}', '{}', '{}', '{}', '{}', {}, {})",
-                    escape_sql_string(state.id),
+                    "('{}', '{}', '{}', '{}', {}, {}, {}, {})",
                     escape_sql_string(state.table_handle),
                     escape_sql_string(state.key_hex),
                     escape_sql_string(state.value),
                     escape_sql_string(state.value_type),
+                    state.tx_order,
+                    state.state_index,
                     state.created_at,
                     state.updated_at,
                 )
@@ -151,11 +157,13 @@ impl SqliteIndexerStore {
             .join(",");
         let query = format!(
             "
-                INSERT INTO table_states (id, table_handle, key_hex, value, value_type, created_at, updated_at) \
+                INSERT INTO table_states (table_handle, key_hex, value, value_type, tx_order, state_index, created_at, updated_at) \
                 VALUES {} \
                 ON CONFLICT (id) DO UPDATE SET \
                 value = excluded.value, \
                 value_type = excluded.value_type, \
+                tx_order = excluded.tx_order, \
+                state_index = excluded.state_index, \
                 updated_at = excluded.updated_at;
             ",
             values_clause
@@ -173,15 +181,50 @@ impl SqliteIndexerStore {
         Ok(())
     }
 
-    pub fn delete_table_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
+    pub fn delete_table_states(
+        &self,
+        state_pks: Vec<(String, String)>,
+    ) -> Result<(), IndexerError> {
         if state_pks.is_empty() {
             return Ok(());
         }
 
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
-        diesel::delete(table_states::table.filter(table_states::id.eq_any(state_pks.as_slice())))
+        // diesel::delete(table_states::table.filter(table_states::id.eq_any(state_pks.as_slice())))
+        //     .execute(&mut connection)
+        //     .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
+        //     .context("Failed to delete table states to SQLiteDB")?;
+
+        // Diesel for SQLite don't support batch delete on composite primary key yet, so implements batch delete directly via raw SQL
+        let values_clause = state_pks
+            .into_iter()
+            .map(|pk| {
+                format!(
+                    "('{}', '{}')",
+                    escape_sql_string(pk.0),
+                    escape_sql_string(pk.1),
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+
+        // DELETE FROM your_table
+        // WHERE (column1, column2) IN ((value1_1, value1_2), (value2_1, value2_2), ...);
+        let query = format!(
+            "
+                DELETE FROM table_states \
+                WHERE (table_handle, key_hex) in ({});
+            ",
+            values_clause
+        );
+
+        // Execute the raw SQL query
+        diesel::sql_query(query.clone())
             .execute(&mut connection)
-            .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
+            .map_err(|e| {
+                log::error!("Delete table states Executing Query error: {}", query);
+                IndexerError::SQLiteWriteError(e.to_string())
+            })
             .context("Failed to delete table states to SQLiteDB")?;
 
         Ok(())

@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    AccountAddressView, AnnotatedMoveValueView, BytesView, RawObjectView, StrView, StructTagView,
-    TypeTagView,
+    AccountAddressView, AnnotatedMoveStructView, AnnotatedMoveValueView, BytesView, StrView,
+    StructTagView, TypeTagView,
 };
+use anyhow::Result;
 use move_core_types::effects::Op;
 use move_core_types::language_storage::TypeTag;
 use moveos_types::state::TableChangeSet;
@@ -243,7 +244,7 @@ impl From<TableChangeSetView> for TableChangeSet {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct IndexerTableChangeSetView {
     pub tx_order: u64,
-    pub table_handle_index: u64,
+    pub state_index: u64,
     pub table_handle: ObjectID,
     pub table_change_set: TableChangeSetView,
     pub created_at: u64,
@@ -253,7 +254,7 @@ impl From<IndexerTableChangeSet> for IndexerTableChangeSetView {
     fn from(table_change_set: IndexerTableChangeSet) -> Self {
         IndexerTableChangeSetView {
             tx_order: table_change_set.tx_order,
-            table_handle_index: table_change_set.table_handle_index,
+            state_index: table_change_set.state_index,
             table_handle: table_change_set.table_handle,
             table_change_set: table_change_set.table_change_set.into(),
             created_at: table_change_set.created_at,
@@ -281,10 +282,12 @@ pub struct IndexerGlobalStateView {
     pub object_id: ObjectID,
     pub owner: AccountAddressView,
     pub flag: u8,
-    pub value: RawObjectView,
-    pub object_type: StructTagView,
+    pub value: AnnotatedMoveStructView,
+    pub value_type: StructTagView,
     pub key_type: Option<TypeTagView>,
     pub size: u64,
+    pub tx_order: u64,
+    pub state_index: u64,
     pub created_at: u64,
     pub updated_at: u64,
 }
@@ -293,7 +296,7 @@ impl IndexerGlobalStateView {
     pub fn try_new_from_global_state(
         state: IndexerGlobalState,
     ) -> Result<IndexerGlobalStateView, anyhow::Error> {
-        let value: RawObjectView = serde_json::from_str(state.value.as_str())?;
+        let value: AnnotatedMoveStructView = serde_json::from_str(state.value.as_str())?;
         let key_type = if !state.key_type.is_empty() {
             Some(TypeTag::from_str(state.key_type.as_str())?.into())
         } else {
@@ -304,9 +307,11 @@ impl IndexerGlobalStateView {
             owner: state.owner.into(),
             flag: state.flag,
             value,
-            object_type: state.object_type.into(),
+            value_type: state.value_type.into(),
             key_type,
             size: state.size,
+            tx_order: state.tx_order,
+            state_index: state.state_index,
             created_at: state.created_at,
             updated_at: state.updated_at,
         };
@@ -317,10 +322,10 @@ impl IndexerGlobalStateView {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum GlobalStateFilterView {
-    /// Query by object type and owner.
-    ObjectTypeWithOwner((StructTagView, AccountAddressView)),
-    /// Query by object type.
-    ObjectType(StructTagView),
+    /// Query by object value type and owner.
+    ValueTypeWithOwner((StructTagView, AccountAddressView)),
+    /// Query by object value type.
+    ValueType(StructTagView),
     /// Query by owner.
     Owner(AccountAddressView),
     /// Query by object id.
@@ -330,10 +335,10 @@ pub enum GlobalStateFilterView {
 impl From<GlobalStateFilterView> for GlobalStateFilter {
     fn from(state_filter: GlobalStateFilterView) -> Self {
         match state_filter {
-            GlobalStateFilterView::ObjectTypeWithOwner((object_type, owner)) => {
-                Self::ObjectTypeWithOwner((object_type.into(), owner.into()))
+            GlobalStateFilterView::ValueTypeWithOwner((value_type, owner)) => {
+                Self::ValueTypeWithOwner((value_type.into(), owner.into()))
             }
-            GlobalStateFilterView::ObjectType(object_type) => Self::ObjectType(object_type.into()),
+            GlobalStateFilterView::ValueType(value_type) => Self::ValueType(value_type.into()),
             GlobalStateFilterView::Owner(owner) => Self::Owner(owner.into()),
             GlobalStateFilterView::ObjectId(object_id) => Self::ObjectId(object_id),
         }
@@ -342,11 +347,12 @@ impl From<GlobalStateFilterView> for GlobalStateFilter {
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct IndexerTableStateView {
-    pub id: String,
     pub table_handle: ObjectID,
     pub key_hex: String,
     pub value: AnnotatedMoveValueView,
     pub value_type: TypeTagView,
+    pub tx_order: u64,
+    pub state_index: u64,
     pub created_at: u64,
     pub updated_at: u64,
 }
@@ -357,11 +363,12 @@ impl IndexerTableStateView {
     ) -> Result<IndexerTableStateView, anyhow::Error> {
         let value: AnnotatedMoveValueView = serde_json::from_str(state.value.as_str())?;
         let state_view = IndexerTableStateView {
-            id: state.id,
             table_handle: state.table_handle,
             key_hex: state.key_hex,
             value,
             value_type: state.value_type.into(),
+            tx_order: state.tx_order,
+            state_index: state.state_index,
             created_at: state.created_at,
             updated_at: state.updated_at,
         };
