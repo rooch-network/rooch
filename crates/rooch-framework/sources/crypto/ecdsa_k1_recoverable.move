@@ -80,7 +80,7 @@ module rooch_framework::ecdsa_k1_recoverable {
     }
 
     #[test]
-    #[expected_failure(location=Self, abort_code = 1)]  // ErrorFailToRecoverPubKey
+    #[expected_failure(location=Self, abort_code = ErrorFailToRecoverPubKey)]
     fun test_ecrecover_pubkey_fail_to_recover() {
         let msg = x"00";
         let sig = x"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
@@ -88,7 +88,7 @@ module rooch_framework::ecdsa_k1_recoverable {
     }
 
     #[test]
-    #[expected_failure(location=Self, abort_code = 2)] // ErrorInvalidSignature
+    #[expected_failure(location=Self, abort_code = ErrorInvalidSignature)]
     fun test_ecrecover_pubkey_invalid_sig() {
         let msg = b"Hello, world!";
         // incorrect length sig
@@ -97,7 +97,7 @@ module rooch_framework::ecdsa_k1_recoverable {
     }
 
     #[test]
-    #[expected_failure(location=Self, abort_code = 2)] // ErrorInvalidSignature 
+    #[expected_failure(location=Self, abort_code = ErrorInvalidSignature)]
     fun test_verify_fails_invalid_sig() {
         let msg = b"Hello, world!";
         let sig = x"";
@@ -121,7 +121,7 @@ module rooch_framework::ecdsa_k1_recoverable {
     }
 
     #[test]
-    #[expected_failure(location=Self, abort_code = 3)] // ErrorInvalidPubKey 
+    #[expected_failure(location=Self, abort_code = ErrorInvalidPubKey)] 
     fun test_decompress_pubkey_invalid_pubkey() {
         let pubkey = x"013e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
         decompress_pubkey(&pubkey);

@@ -208,7 +208,7 @@ module moveos_std::account_storage {
     } 
 
     #[test(sender=@0x42)]
-    #[expected_failure(abort_code = 1, location = Self)]
+    #[expected_failure(abort_code = ErrorResourceAlreadyExists, location = Self)]
     fun test_failure_repeatedly_move_to_account_storage(sender: address){
         let account_storage = create_account_storage(sender);
         move_resource_to(&mut account_storage, Test{
@@ -223,7 +223,7 @@ module moveos_std::account_storage {
     }
 
     #[test(sender=@0x42)]
-    #[expected_failure(abort_code = 2, location = Self)]
+    #[expected_failure(abort_code = ErrorResourceNotExists, location = Self)]
     fun test_failure_repeatedly_move_from_account_storage(sender: address){
         let account_storage = create_account_storage(sender);
         move_resource_to(&mut account_storage, Test{

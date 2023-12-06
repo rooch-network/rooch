@@ -286,7 +286,7 @@ module rooch_framework::account {
    }
 
    #[test(sender=@0x0)]
-   #[expected_failure(abort_code = 5, location = Self)]
+   #[expected_failure(abort_code = ErrorAccountAlreadyExists, location = Self)]
    fun test_failure_entry_account_creation_reserved(sender: address){
       let ctx = context::new_test_context(sender);
       create_account_entry(&mut ctx, sender);
@@ -295,7 +295,7 @@ module rooch_framework::account {
 
    //TODO figure out why this test should failed
    #[test(sender=@0x42, resource_account=@0xbb6e573f7feb9d8474ac20813fc086cc3100b8b7d49c246b0f4aee8ea19eaef4)]
-   #[expected_failure(abort_code = 6, location = Self)]
+   #[expected_failure(abort_code = ErrorResourceAccountAlreadyUsed, location = Self)]
    fun test_failure_create_resource_account_wrong_sequence_number(sender: address, resource_account: address){
       {
          let ctx = context::new_test_context(resource_account);

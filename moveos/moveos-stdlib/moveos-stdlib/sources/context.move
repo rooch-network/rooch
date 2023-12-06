@@ -410,7 +410,7 @@ module moveos_std::context {
     }
 
     #[test(alice = @0x42, bob = @0x43)]
-    #[expected_failure(abort_code = 1, location = Self)]
+    #[expected_failure(abort_code = ErrorObjectOwnerNotMatch, location = Self)]
     fun test_borrow_mut_object(alice: &signer, bob: &signer){
         let alice_addr = signer::address_of(alice);
         let ctx = new_test_context(alice_addr);

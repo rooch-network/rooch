@@ -42,7 +42,7 @@ module rooch_framework::schnorr {
     ): bool;
 
     #[test]
-    #[expected_failure(location=Self, abort_code = 1)] // ErrorInvalidSignature
+    #[expected_failure(location=Self, abort_code = ErrorInvalidSignature)]
     public fun test_schnorr_invalid_sig() {
       let msg = x"00010203";
       let pk = x"3e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
@@ -62,7 +62,7 @@ module rooch_framework::schnorr {
     }
 
     #[test]
-    #[expected_failure(location=Self, abort_code = 2)] // ErrorInvalidPubKey
+    #[expected_failure(location=Self, abort_code = ErrorInvalidPubKey)]
     public fun test_schnorr_invalid_pubkey() {
         let msg = x"00010203";
         let invalid_pk = x"";

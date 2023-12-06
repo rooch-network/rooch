@@ -579,7 +579,7 @@ module rooch_examples::rooch_examples {
 
 
     #[test]
-    #[expected_failure(abort_code = 8, location = Self)]
+    #[expected_failure(abort_code = ErrorPlayerHasDecisionSubmitted, location = Self)]
     fun test_submit_decision_player_one_has_a_decision_submitted() {
         let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
@@ -906,7 +906,7 @@ module rooch_examples::rooch_examples {
 
 
     #[test]
-    #[expected_failure(abort_code = 7, location = Self)]
+    #[expected_failure(abort_code = ErrorBothPlayersDoNotHaveDecisionsSubmitted, location = Self)]
     fun test_reveal_decision_player_one_does_not_have_a_decision_submitted() {
         let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
@@ -1098,7 +1098,7 @@ module rooch_examples::rooch_examples {
     }
 
     #[test]
-    #[expected_failure(abort_code = 5, location = Self)]
+    #[expected_failure(abort_code = ErrorIncorrectHashValue, location = Self)]
     fun test_make_decision_incorrect_hash_value() {
         let decision_bytes = bcs::to_bytes(&DECISION_SPLIT);
         let salt = b"saltyyyyyy";
