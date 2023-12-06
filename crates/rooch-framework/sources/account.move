@@ -286,7 +286,7 @@ module rooch_framework::account {
    }
 
    #[test(sender=@0x0)]
-   #[expected_failure(abort_code = ErrorAccountAlreadyExists, location = Self)]
+   #[expected_failure(abort_code = ErrorAddressReseved, location = Self)]
    fun test_failure_entry_account_creation_reserved(sender: address){
       let ctx = context::new_test_context(sender);
       create_account_entry(&mut ctx, sender);
