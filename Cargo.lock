@@ -7678,6 +7678,7 @@ name = "rooch-da"
 version = "0.1.0"
 dependencies = [
  "celestia-rpc",
+ "moveos-types",
 ]
 
 [[package]]

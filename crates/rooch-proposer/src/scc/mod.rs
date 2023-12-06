@@ -5,6 +5,8 @@ use crate::actor::messages::TransactionProposeMessage;
 use moveos_types::h256::H256;
 use rooch_types::block::Block;
 use std::collections::BTreeMap;
+use moveos_types::h256;
+use rooch_types::transaction::AbstractTransaction;
 
 /// State Commitment Chain(SCC) is a chain of transaction state root
 /// This SCC is a mirror of the on-chain SCC
@@ -61,6 +63,7 @@ impl StateCommitmentChain {
             .iter()
             .map(|tx| tx.tx_execution_info.state_root)
             .collect();
+
         let batch_size = self.buffer.len() as u64;
         let last_block = self.last_block();
         let (block_number, prev_tx_accumulator_root) = match last_block {
@@ -75,6 +78,26 @@ impl StateCommitmentChain {
                 (block_number, prev_tx_accumulator_root)
             }
         };
+
+        // submit batch to DA server
+        // TODO move batch submit out of proposer
+        let batch: Vec<u8> = self
+            .buffer
+            .iter()
+            .flat_map(|tx| tx.tx.encode())
+            .collect();
+        // regard batch(tx list) as a blob: easy to check integrity
+        let batch_hash = h256::sha3_256_of(&batch);
+
+        // serialize the self.buffer and submit to DA
+        // let mut batch = Vec::new();
+        // for tx in self.buffer.iter() {
+        //     batch.push(tx.tx.encode());
+        // }
+        // batch to bytes
+
+
+
         let new_block = Block::new(
             block_number,
             batch_size,

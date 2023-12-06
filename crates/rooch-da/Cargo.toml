@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 celestia-rpc  = { git = "https://github.com/eigerco/celestia-node-rs.git", branch = "main" }
+
+moveos-types = { workspace = true }

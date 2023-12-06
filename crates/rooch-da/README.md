@@ -132,6 +132,12 @@ Operated by the Rooch Network.
 
 #### As a component of Sequencer: PoC
 
+Using RPC to communicate with light client of DA backend directly:
+
+1. Offload DA details from Sequencer
+2. Scaling independently of Sequencer
+3. Fault isolation
+
 #### Independent from Sequencer
 
 ### Phase 2: Decentralized DA Servers
