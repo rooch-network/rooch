@@ -206,7 +206,7 @@ impl SqliteIndexerStore {
         let query = format!(
             "
                 DELETE FROM table_states \
-                WHERE (table_handle, key_hex) in ({})
+                WHERE (table_handle, key_hex) IN ({})
             ",
             values_clause
         );
