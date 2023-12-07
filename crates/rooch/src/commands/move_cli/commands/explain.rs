@@ -72,7 +72,7 @@ pub fn get_explanation(
 ) -> Option<ErrorDescription> {
     let error_descriptions: ErrorMapping =
         bcs_ext::from_bytes(data).expect("Decode err map failed");
-    error_descriptions.get_explanation(module_id, abort_code)
+    error_descriptions.get_explanation(module_id.to_string().as_str(), abort_code)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]

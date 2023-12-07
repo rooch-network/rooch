@@ -18,8 +18,8 @@ use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::resolver::ModuleResolver;
 use move_core_types::vm_status::StatusCode;
+use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
-use move_vm_types::data_store::{DataStore, TransactionCache};
 use move_vm_types::loaded_data::runtime_types::Type;
 use once_cell::sync::Lazy;
 use std::ops::Deref;
@@ -201,7 +201,7 @@ pub fn verify_entry_function<S>(
     session: &Session<S>,
 ) -> PartialVMResult<()>
 where
-    S: DataStore + TransactionCache,
+    S: TransactionCache,
 {
     if !func.return_.is_empty() {
         return Err(
@@ -287,7 +287,7 @@ fn struct_full_name_from_sid(
 
 fn check_transaction_input_type<S>(ety: &Type, session: &Session<S>) -> bool
 where
-    S: DataStore + TransactionCache,
+    S: TransactionCache,
 {
     use Type::*;
     match ety {
@@ -325,7 +325,7 @@ where
 
 fn is_allowed_reference_types<S>(bt: &Type, session: &Session<S>) -> bool
 where
-    S: DataStore + TransactionCache,
+    S: TransactionCache,
 {
     match bt {
         Type::Struct(sid) | Type::StructInstantiation(sid, _) => {

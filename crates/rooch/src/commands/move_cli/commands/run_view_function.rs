@@ -27,10 +27,7 @@ pub struct RunViewFunction {
     /// Example: `0x1::M::T1 0x1::M::T2 rooch_framework::empty::Empty`
     #[clap(
         long = "type-args",
-        takes_value(true),
-        multiple_values(true),
-        multiple_occurrences(true),
-        parse(try_from_str = ParsedStructType::parse)
+        value_parser=ParsedStructType::parse,
     )]
     pub type_args: Vec<ParsedStructType>,
 
@@ -42,9 +39,6 @@ pub struct RunViewFunction {
     ///     address and uint can be written in short form like `@0x1 1u8 4123u256`.
     #[clap(
         long = "args",
-        takes_value(true),
-        multiple_values(true),
-        multiple_occurrences(true)
     )]
     pub args: Vec<FunctionArg>,
 

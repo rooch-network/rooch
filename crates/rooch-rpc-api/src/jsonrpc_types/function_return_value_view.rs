@@ -42,13 +42,14 @@ impl From<VMStatus> for VMStatusView {
                 function,
                 code_offset,
                 status_code,
+                ..
             } => Self::ExecutionFailure {
                 location: location.into(),
                 function,
                 code_offset,
                 status_code: StrView(status_code as u64),
             },
-            VMStatus::Error(status_code) => Self::Error(StrView(status_code as u64)),
+            VMStatus::Error{status_code, ..} => Self::Error(StrView(status_code as u64)),
         }
     }
 }
@@ -74,11 +75,15 @@ impl TryFrom<VMStatusView> for VMStatus {
                 code_offset,
                 status_code: StatusCode::try_from(status_code.0)
                     .map_err(|e| anyhow::anyhow!("StatusCode convert error:{}", e))?,
+                sub_status: None,
+                message: None,
             }),
-            VMStatusView::Error(status_code) => Ok(VMStatus::Error(
-                StatusCode::try_from(status_code.0)
+            VMStatusView::Error(status_code) => Ok(VMStatus::Error {
+                status_code: StatusCode::try_from(status_code.0)
                     .map_err(|e| anyhow::anyhow!("StatusCode convert error:{}", e))?,
-            )),
+                sub_status: None,
+                message: None,
+            }),
         }
     }
 }

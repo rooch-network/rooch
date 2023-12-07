@@ -14,6 +14,8 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::ops::{Add, Bound};
+use move_binary_format::file_format::CodeOffset;
+use move_core_types::account_address::AccountAddress;
 
 use super::SwitchableGasMeter;
 
@@ -396,8 +398,8 @@ fn get_simple_instruction_stack_change(
     match instr {
         // NB: The `Ret` pops are accounted for in `Call` instructions, so we say `Ret` has no pops.
         Nop | Ret => (0, 0, 0.into(), 0.into()),
-        BrTrue | BrFalse => (1, 0, Type::Bool.size(), 0.into()),
-        Branch => (0, 0, 0.into(), 0.into()),
+        // BrTrue | BrFalse => (1, 0, Type::Bool.size(), 0.into()),
+        // Branch => (0, 0, 0.into(), 0.into()),
         LdU8 => (0, 1, 0.into(), Type::U8.size()),
         LdU16 => (0, 1, 0.into(), Type::U16.size()),
         LdU32 => (0, 1, 0.into(), Type::U32.size()),
@@ -443,6 +445,18 @@ impl GasMeter for MoveOSGasMeter {
     fn charge_simple_instr(&mut self, instr: SimpleInstruction) -> PartialVMResult<()> {
         let (pops, pushes, pop_size, push_size) = get_simple_instruction_stack_change(instr);
         self.charge(1, pushes, pops, push_size.into(), pop_size.into())
+    }
+
+    fn charge_br_true(&mut self, _target_offset: Option<CodeOffset>) -> PartialVMResult<()> {
+        self.charge(1, 0, 0, 0, 0)
+    }
+
+    fn charge_br_false(&mut self, _target_offset: Option<CodeOffset>) -> PartialVMResult<()> {
+        self.charge(1, 0, 0, 0, 0)
+    }
+
+    fn charge_branch(&mut self, _target_offset: CodeOffset) -> PartialVMResult<()> {
+        self.charge(1, 0, 0, 0, 0)
     }
 
     fn charge_pop(&mut self, popped_val: impl ValueView) -> PartialVMResult<()> {
@@ -700,7 +714,10 @@ impl GasMeter for MoveOSGasMeter {
 
     fn charge_load_resource(
         &mut self,
-        _loaded: Option<(NumBytes, impl ValueView)>,
+        _addr: AccountAddress,
+        _ty: impl TypeView,
+        _val: Option<impl ValueView>,
+        _bytes_loaded: NumBytes,
     ) -> PartialVMResult<()> {
         // We don't have resource loading so don't need to account for it.
         Ok(())

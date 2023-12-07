@@ -3,6 +3,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::Error;
 use std::collections::HashMap;
 
 use crate::vm::moveos_vm::MoveOSVM;
@@ -19,6 +20,7 @@ use move_binary_format::{
         TableIndex, TypeSignature, Visibility,
     },
 };
+use move_core_types::metadata::Metadata;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::{IdentStr, Identifier},
@@ -261,14 +263,24 @@ impl RemoteStore {
 }
 
 impl ModuleResolver for RemoteStore {
-    type Error = anyhow::Error;
+    fn get_module_metadata(&self, _module_id: &ModuleId) -> Vec<Metadata> {
+        todo!()
+    }
+
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
         Ok(self.modules.get(module_id).cloned())
     }
 }
 
 impl ResourceResolver for RemoteStore {
-    type Error = anyhow::Error;
+    fn get_resource_with_metadata(
+        &self,
+        _address: &AccountAddress,
+        _typ: &StructTag,
+        _metadata: &[Metadata],
+    ) -> Result<(Option<Vec<u8>>, usize), Error> {
+        todo!()
+    }
 
     fn get_resource(
         &self,

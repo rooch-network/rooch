@@ -26,7 +26,6 @@ use move_vm_runtime::{
     session::{LoadedFunctionInstantiation, SerializedReturnValues, Session},
 };
 use move_vm_types::{
-    data_store::DataStore,
     loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
 };
 
@@ -51,6 +50,7 @@ use moveos_types::{
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 use parking_lot::RwLock;
 use std::{borrow::Borrow, sync::Arc};
+use move_vm_runtime::data_cache::TransactionCache;
 
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
 pub struct MoveOSVM {
@@ -168,7 +168,7 @@ where
         // cache needs to be flushed to work around those bugs.
         // vm.mark_loader_cache_as_invalid();
         vm.flush_loader_cache_if_invalidated();
-        let loader = vm.runtime().loader();
+        let loader = vm.runtime.loader();
         let data_store: MoveosDataCache<'r, 'l, S> =
             MoveosDataCache::new(remote, loader, table_data);
         vm.new_session_with_cache_and_extensions(data_store, extensions)
@@ -584,7 +584,7 @@ where
         self.session.get_type_abilities(ty)
     }
 
-    pub fn get_data_store(&mut self) -> &mut dyn DataStore {
+    pub fn get_data_store(&mut self) -> &mut dyn TransactionCache {
         self.session.get_data_store()
     }
 

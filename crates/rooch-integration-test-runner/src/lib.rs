@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
-use clap::__macro_refs::once_cell::sync::Lazy;
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::term::termcolor::Buffer;
 use move_command_line_common::files::{extension_equals, find_filenames, MOVE_EXTENSION};
@@ -38,6 +37,7 @@ use rooch_genesis::RoochGenesis;
 use rooch_types::function_arg::FunctionArg;
 use std::path::PathBuf;
 use std::{collections::BTreeMap, path::Path};
+use clap::__derive_refs::once_cell::sync::Lazy;
 
 pub struct MoveOSTestRunner<'a> {
     compiled_state: CompiledState<'a>,

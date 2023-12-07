@@ -10,9 +10,7 @@ use move_core_types::{
     vm_status::StatusCode,
 };
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
-use move_vm_types::{
-    data_store::{DataStore, TransactionCache},
-    loaded_data::runtime_types::{StructType, Type},
+use move_vm_types::{loaded_data::runtime_types::{StructType, Type},
 };
 use moveos_types::{
     moveos_std::{
@@ -23,6 +21,7 @@ use moveos_types::{
     state_resolver::MoveOSResolver,
 };
 use std::sync::Arc;
+use move_vm_runtime::data_cache::TransactionCache;
 
 impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
 where
@@ -157,7 +156,7 @@ fn is_signer(t: &Type) -> bool {
 
 pub fn as_struct_no_panic<T>(session: &Session<T>, t: &Type) -> Option<Arc<StructType>>
 where
-    T: DataStore + TransactionCache,
+    T: TransactionCache,
 {
     match t {
         Type::Struct(s) | Type::StructInstantiation(s, _) => session.get_struct_type(*s),
@@ -169,7 +168,7 @@ where
 
 pub fn get_type_tag<T>(session: &Session<T>, t: &Type) -> VMResult<Option<TypeTag>>
 where
-    T: DataStore + TransactionCache,
+    T: TransactionCache,
 {
     match t {
         Type::Struct(_) | Type::StructInstantiation(_, _) => Ok(Some(session.get_type_tag(t)?)),

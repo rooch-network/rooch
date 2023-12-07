@@ -60,7 +60,7 @@ pub static R_OPT_NET_HELP: &str = r#"Chain Network
 #[derive(Clone, Debug, Parser, Default, Serialize, Deserialize)]
 pub struct RoochOpt {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long = "data-dir", short = 'd', parse(from_os_str))]
+    #[clap(long = "data-dir", short = 'd')]
     /// Path to data dir, this dir is base dir, the final data_dir is base_dir/chain_network_name
     pub base_data_dir: Option<PathBuf>,
 
@@ -226,7 +226,8 @@ pub trait ConfigModule: Sized {
     }
 }
 
-#[derive(Debug, Parser, Default, Serialize, Deserialize)]
+// #[derive(Debug, Parser, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct ServerOpt {
     /// Sequencer, proposer and relayer keypair
     pub sequencer_keypair: Option<RoochKeyPair>,

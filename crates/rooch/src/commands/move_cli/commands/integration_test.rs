@@ -40,7 +40,7 @@ pub fn named_addresses() -> BTreeMap<String, NumericalAddress> {
     address_mapping
 }
 
-#[derive(Debug, Eq, PartialEq, Default)]
+#[derive(Debug, Clone, Eq, PartialEq, Default)]
 enum Format {
     #[default]
     Pretty,
@@ -104,7 +104,7 @@ pub struct TestOpts {
     ///   pretty = Print verbose output;
     ///   terse = Display one character per test;
     ///   (json is unsupported, exists for compatibility with the default test harness)
-    #[clap(possible_values = Format::variants(), default_value_t, ignore_case = true)]
+    #[clap(default_value_t, ignore_case = true)]
     format: Format,
 }
 
@@ -133,7 +133,7 @@ pub struct IntegrationTest {
     /// Example: alice=0x1234, bob=default, alice2=alice
     ///
     /// Note: This will fail if there are duplicates in the Move.toml file remove those first.
-    #[clap(long, parse(try_from_str = crate::utils::parse_map), default_value = "")]
+    #[clap(long, value_parser = crate::utils::parse_map::<String, String>, default_value = "")]
     pub(crate) named_addresses: BTreeMap<String, String>,
 }
 
@@ -178,6 +178,10 @@ impl IntegrationTest {
                     scripts: Default::default(),
                 },
                 typing: typing::ast::Program {
+                    modules: UniqueMap::new(),
+                    scripts: Default::default(),
+                },
+                inlining: typing::ast::Program {
                     modules: UniqueMap::new(),
                     scripts: Default::default(),
                 },
@@ -231,6 +235,16 @@ impl IntegrationTest {
                     );
                     pre_compiled_lib.typing.modules = pre_compiled_lib.typing.modules.union_with(
                         &full_program.typing.modules.filter_map(|_k, v| {
+                            if v.is_source_module {
+                                Some(v)
+                            } else {
+                                None
+                            }
+                        }),
+                        |_k, v1, _v2| v1.clone(),
+                    );
+                    pre_compiled_lib.inlining.modules = pre_compiled_lib.inlining.modules.union_with(
+                        &full_program.inlining.modules.filter_map(|_k, v| {
                             if v.is_source_module {
                                 Some(v)
                             } else {

@@ -1055,18 +1055,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3ac9f8b63eca6fd385229b3675f6cc0dc5c8a5c8a54a59d4f52ffd670d87b0c"
 
 [[package]]
-name = "bytecode-interpreter-crypto"
-version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
-dependencies = [
- "anyhow",
- "curve25519-dalek-fiat",
- "ed25519-dalek-fiat",
- "sha2 0.9.9",
- "sha3 0.9.1",
-]
-
-[[package]]
 name = "bytecount"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1682,15 +1670,15 @@ dependencies = [
 
 [[package]]
 name = "crossterm"
-version = "0.21.0"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "486d44227f71a1ef39554c0dc47e44b9f4139927c75043312690c3f476d1d788"
+checksum = "e64e6c0fbe2c17357405f7c758c1ef960fce08bdfb2c03d88d2a18d7e09c4b67"
 dependencies = [
  "bitflags 1.3.2",
- "crossterm_winapi 0.8.0",
+ "crossterm_winapi",
  "libc",
- "mio 0.7.14",
- "parking_lot 0.11.2",
+ "mio",
+ "parking_lot 0.12.1",
  "signal-hook",
  "signal-hook-mio",
  "winapi",
@@ -1698,26 +1686,17 @@ dependencies = [
 
 [[package]]
 name = "crossterm"
-version = "0.22.1"
+version = "0.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c85525306c4291d1b73ce93c8acf9c339f9b213aef6c1d85c3830cbf1c16325c"
+checksum = "a84cda67535339806297f1b331d6dd6320470d2a0fe65381e79ee9e156dd3d13"
 dependencies = [
  "bitflags 1.3.2",
- "crossterm_winapi 0.9.1",
+ "crossterm_winapi",
  "libc",
- "mio 0.7.14",
- "parking_lot 0.11.2",
+ "mio",
+ "parking_lot 0.12.1",
  "signal-hook",
  "signal-hook-mio",
- "winapi",
-]
-
-[[package]]
-name = "crossterm_winapi"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a6966607622438301997d3dac0d2f6e9a90c68bb6bc1785ea98456ab93c0507"
-dependencies = [
  "winapi",
 ]
 
@@ -1837,20 +1816,6 @@ dependencies = [
  "nom_locate",
  "regex",
  "regex-syntax 0.6.29",
-]
-
-[[package]]
-name = "curve25519-dalek-fiat"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44339b9ecede7f72a0d3b012bf9bb5a616dc8bfde23ce544e42da075c87198f0"
-dependencies = [
- "byteorder",
- "digest 0.9.0",
- "fiat-crypto",
- "rand_core 0.6.4",
- "subtle",
- "zeroize",
 ]
 
 [[package]]
@@ -1979,9 +1944,8 @@ checksum = "c2e66c9d817f1720209181c316d28635c050fa304f9c79e47a520882661b7308"
 [[package]]
 name = "datatest-stable"
 version = "0.1.1"
-source = "git+https://github.com/rooch-network/diem-devtools?branch=feature/pub-test-opts#0d1b445a8d7b54885ce42c7fcd7495ce600e8e2d"
 dependencies = [
- "clap 3.2.25",
+ "clap 4.4.1",
  "regex",
  "termcolor",
  "walkdir",
@@ -2337,16 +2301,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ed25519"
-version = "1.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91cff35c70bba8a626e3185d8cd48cc11b5437e1a5bcd15b9b5fa3c64b6dfee7"
-dependencies = [
- "serde 1.0.188",
- "signature 1.6.4",
-]
-
-[[package]]
 name = "ed25519-consensus"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2358,21 +2312,6 @@ dependencies = [
  "serde 1.0.188",
  "sha2 0.9.9",
  "thiserror",
- "zeroize",
-]
-
-[[package]]
-name = "ed25519-dalek-fiat"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97c6ac152eba578c1c53d2cefe8ad02e239e3d6f971b0f1ef3cb54cd66037fa0"
-dependencies = [
- "curve25519-dalek-fiat",
- "ed25519",
- "rand 0.8.5",
- "serde 1.0.188",
- "serde_bytes",
- "sha2 0.9.9",
  "zeroize",
 ]
 
@@ -2945,12 +2884,6 @@ dependencies = [
  "rand_core 0.6.4",
  "subtle",
 ]
-
-[[package]]
-name = "fiat-crypto"
-version = "0.1.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e825f6987101665dea6ec934c09ec6d721de7bc1bf92248e1d5810c8cd636b77"
 
 [[package]]
 name = "fixed-hash"
@@ -4467,35 +4400,14 @@ dependencies = [
 
 [[package]]
 name = "mio"
-version = "0.7.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8067b404fe97c70829f082dec8bcf4f71225d7eaea1d8645349cb76fa06205cc"
-dependencies = [
- "libc",
- "log",
- "miow",
- "ntapi",
- "winapi",
-]
-
-[[package]]
-name = "mio"
 version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "927a765cd3fc26206e66b296465fa9d3e5ab003e651c1b3c060e7956d96b19d2"
 dependencies = [
  "libc",
+ "log",
  "wasi 0.11.0+wasi-snapshot-preview1",
  "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "miow"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9f1c5b025cda876f66ef43a113f91ebc9f4ccef34843000e0adf6ebbab84e21"
-dependencies = [
- "winapi",
 ]
 
 [[package]]
@@ -4513,7 +4425,6 @@ checksum = "1fafa6961cabd9c63bcd77a45d7e3b7f3b552b70417831fb0f56db717e72407e"
 [[package]]
 name = "move-abigen"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4530,9 +4441,10 @@ dependencies = [
 [[package]]
 name = "move-binary-format"
 version = "0.0.3"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
+ "backtrace",
+ "indexmap 1.9.3",
  "move-core-types",
  "once_cell",
  "ref-cast",
@@ -4543,12 +4455,10 @@ dependencies = [
 [[package]]
 name = "move-borrow-graph"
 version = "0.0.1"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 
 [[package]]
 name = "move-bytecode-source-map"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4563,7 +4473,6 @@ dependencies = [
 [[package]]
 name = "move-bytecode-utils"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -4575,7 +4484,6 @@ dependencies = [
 [[package]]
 name = "move-bytecode-verifier"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "fail",
@@ -4583,16 +4491,16 @@ dependencies = [
  "move-borrow-graph",
  "move-core-types",
  "petgraph 0.5.1",
+ "typed-arena",
 ]
 
 [[package]]
 name = "move-bytecode-viewer"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
- "clap 3.2.25",
- "crossterm 0.21.0",
+ "clap 4.4.1",
+ "crossterm 0.26.1",
  "move-binary-format",
  "move-bytecode-source-map",
  "move-command-line-common",
@@ -4605,11 +4513,10 @@ dependencies = [
 [[package]]
 name = "move-cli"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "bcs",
- "clap 3.2.25",
+ "clap 4.4.1",
  "codespan-reporting",
  "colored",
  "difference",
@@ -4637,8 +4544,6 @@ dependencies = [
  "move-vm-test-utils",
  "move-vm-types",
  "once_cell",
- "read-write-set",
- "read-write-set-dynamic",
  "reqwest",
  "serde 1.0.188",
  "serde_json",
@@ -4651,7 +4556,6 @@ dependencies = [
 [[package]]
 name = "move-command-line-common"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "difference",
@@ -4668,11 +4572,10 @@ dependencies = [
 [[package]]
 name = "move-compiler"
 version = "0.0.1"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "bcs",
- "clap 3.2.25",
+ "clap 4.4.1",
  "codespan-reporting",
  "difference",
  "hex",
@@ -4697,7 +4600,6 @@ dependencies = [
 [[package]]
 name = "move-core-types"
 version = "0.0.4"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "arbitrary",
@@ -4719,11 +4621,10 @@ dependencies = [
 [[package]]
 name = "move-coverage"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "bcs",
- "clap 3.2.25",
+ "clap 4.4.1",
  "codespan",
  "colored",
  "move-binary-format",
@@ -4739,10 +4640,9 @@ dependencies = [
 [[package]]
 name = "move-disassembler"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
- "clap 3.2.25",
+ "clap 4.4.1",
  "colored",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -4757,7 +4657,6 @@ dependencies = [
 [[package]]
 name = "move-docgen"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "codespan",
@@ -4765,6 +4664,7 @@ dependencies = [
  "itertools",
  "log",
  "move-compiler",
+ "move-core-types",
  "move-model",
  "num",
  "once_cell",
@@ -4775,7 +4675,6 @@ dependencies = [
 [[package]]
 name = "move-errmapgen"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "bcs",
@@ -4789,11 +4688,10 @@ dependencies = [
 [[package]]
 name = "move-ir-compiler"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "bcs",
- "clap 3.2.25",
+ "clap 4.4.1",
  "move-binary-format",
  "move-bytecode-source-map",
  "move-bytecode-verifier",
@@ -4808,7 +4706,6 @@ dependencies = [
 [[package]]
 name = "move-ir-to-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "codespan-reporting",
@@ -4827,7 +4724,6 @@ dependencies = [
 [[package]]
 name = "move-ir-to-bytecode-syntax"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "hex",
@@ -4840,7 +4736,6 @@ dependencies = [
 [[package]]
 name = "move-ir-types"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "hex",
@@ -4854,7 +4749,6 @@ dependencies = [
 [[package]]
 name = "move-model"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "codespan",
@@ -4875,16 +4769,16 @@ dependencies = [
  "once_cell",
  "regex",
  "serde 1.0.188",
+ "trace",
 ]
 
 [[package]]
 name = "move-package"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "bcs",
- "clap 3.2.25",
+ "clap 4.4.1",
  "colored",
  "dirs-next",
  "itertools",
@@ -4916,12 +4810,11 @@ dependencies = [
 [[package]]
 name = "move-prover"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "async-trait",
  "atty",
- "clap 3.2.25",
+ "clap 4.4.1",
  "codespan",
  "codespan-reporting",
  "futures",
@@ -4953,7 +4846,6 @@ dependencies = [
 [[package]]
 name = "move-prover-boogie-backend"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4980,20 +4872,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "move-read-write-set-types"
-version = "0.0.3"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
-dependencies = [
- "anyhow",
- "move-binary-format",
- "move-core-types",
- "serde 1.0.188",
-]
-
-[[package]]
 name = "move-resource-viewer"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "bcs",
@@ -5008,7 +4888,6 @@ dependencies = [
 [[package]]
 name = "move-stackless-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "codespan",
  "codespan-reporting",
@@ -5024,7 +4903,6 @@ dependencies = [
  "move-core-types",
  "move-ir-to-bytecode",
  "move-model",
- "move-read-write-set-types",
  "num",
  "once_cell",
  "paste",
@@ -5033,27 +4911,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "move-stackless-bytecode-interpreter"
-version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
-dependencies = [
- "anyhow",
- "bytecode-interpreter-crypto",
- "clap 3.2.25",
- "codespan-reporting",
- "itertools",
- "move-binary-format",
- "move-core-types",
- "move-model",
- "move-stackless-bytecode",
- "num",
- "serde 1.0.188",
-]
-
-[[package]]
 name = "move-stdlib"
 version = "0.1.1"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "hex",
@@ -5076,7 +4935,6 @@ dependencies = [
 [[package]]
 name = "move-symbol-pool"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "once_cell",
  "serde 1.0.188",
@@ -5085,7 +4943,6 @@ dependencies = [
 [[package]]
 name = "move-table-extension"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "bcs",
@@ -5102,10 +4959,9 @@ dependencies = [
 [[package]]
 name = "move-transactional-test-runner"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
- "clap 3.2.25",
+ "clap 4.4.1",
  "colored",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -5119,7 +4975,6 @@ dependencies = [
  "move-ir-compiler",
  "move-ir-types",
  "move-resource-viewer",
- "move-stackless-bytecode-interpreter",
  "move-stdlib",
  "move-symbol-pool",
  "move-vm-runtime",
@@ -5134,11 +4989,10 @@ dependencies = [
 [[package]]
 name = "move-unit-test"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "better_any",
- "clap 3.2.25",
+ "clap 4.4.1",
  "codespan-reporting",
  "colored",
  "itertools",
@@ -5150,7 +5004,6 @@ dependencies = [
  "move-ir-types",
  "move-model",
  "move-resource-viewer",
- "move-stackless-bytecode-interpreter",
  "move-stdlib",
  "move-symbol-pool",
  "move-table-extension",
@@ -5165,7 +5018,6 @@ dependencies = [
 [[package]]
 name = "move-vm-runtime"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "better_any",
  "fail",
@@ -5182,7 +5034,6 @@ dependencies = [
 [[package]]
 name = "move-vm-test-utils"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -5196,7 +5047,6 @@ dependencies = [
 [[package]]
 name = "move-vm-types"
 version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
 dependencies = [
  "bcs",
  "move-binary-format",
@@ -5213,7 +5063,7 @@ dependencies = [
  "anyhow",
  "backtrace",
  "bcs",
- "clap 3.2.25",
+ "clap 4.4.1",
  "codespan",
  "codespan-reporting",
  "itertools",
@@ -5269,7 +5119,7 @@ name = "moveos-config"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "clap 3.2.25",
+ "clap 4.4.1",
  "coerce",
  "dirs 4.0.0",
  "once_cell",
@@ -5544,15 +5394,6 @@ dependencies = [
  "serde 1.0.188",
  "serde_json",
  "url",
-]
-
-[[package]]
-name = "ntapi"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c28774a7fd2fbb4f0babd8237ce554b73af68021b5f695a3cebd6c59bac0980f"
-dependencies = [
- "winapi",
 ]
 
 [[package]]
@@ -5838,9 +5679,9 @@ dependencies = [
 
 [[package]]
 name = "os_str_bytes"
-version = "6.5.1"
+version = "6.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d5d9eb14b174ee9aa2ef96dc2b94637a2d4b6e7cb873c7e171f0c20c6cf3eac"
+checksum = "e2355d85b9a3786f481747ced0e0ff2ba35213a1f9bd406ed906554d7af805a1"
 
 [[package]]
 name = "ouroboros"
@@ -6844,33 +6685,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "read-write-set"
-version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
-dependencies = [
- "anyhow",
- "move-binary-format",
- "move-bytecode-utils",
- "move-core-types",
- "move-model",
- "move-read-write-set-types",
- "move-stackless-bytecode",
- "read-write-set-dynamic",
-]
-
-[[package]]
-name = "read-write-set-dynamic"
-version = "0.1.0"
-source = "git+https://github.com/rooch-network/move?rev=f7e7cc8e0521e5325caaae90c9de5de409d291a9#f7e7cc8e0521e5325caaae90c9de5de409d291a9"
-dependencies = [
- "anyhow",
- "move-binary-format",
- "move-bytecode-utils",
- "move-core-types",
- "move-read-write-set-types",
-]
-
-[[package]]
 name = "readonly"
 version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7099,7 +6913,7 @@ dependencies = [
  "async-trait",
  "bcs",
  "bcs-ext",
- "clap 3.2.25",
+ "clap 4.4.1",
  "codespan-reporting",
  "datatest-stable 0.1.1",
  "dirs 4.0.0",
@@ -7157,7 +6971,7 @@ name = "rooch-config"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "clap 3.2.25",
+ "clap 4.4.1",
  "coerce",
  "dirs 4.0.0",
  "dirs-next",
@@ -7190,7 +7004,7 @@ dependencies = [
  "async-trait",
  "bcs",
  "chrono",
- "clap 3.2.25",
+ "clap 4.4.1",
  "coerce",
  "derive_builder",
  "futures",
@@ -7391,7 +7205,7 @@ dependencies = [
  "bcs",
  "cached",
  "chrono",
- "clap 3.2.25",
+ "clap 4.4.1",
  "coerce",
  "diesel",
  "diesel-derive-enum",
@@ -7431,7 +7245,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bcs",
- "clap 3.2.25",
+ "clap 4.4.1",
  "codespan-reporting",
  "datatest-stable 0.1.3",
  "move-binary-format",
@@ -7471,7 +7285,7 @@ dependencies = [
  "argon2",
  "bip32",
  "chacha20poly1305",
- "clap 3.2.25",
+ "clap 4.4.1",
  "derive_more",
  "enum_dispatch",
  "ethers",
@@ -7500,7 +7314,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bcs",
- "clap 3.2.25",
+ "clap 4.4.1",
  "fastcrypto",
  "pretty_assertions",
  "rand 0.8.5",
@@ -7529,7 +7343,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bcs",
- "clap 3.2.25",
+ "clap 4.4.1",
  "fastcrypto",
  "pretty_assertions",
  "rand 0.8.5",
@@ -7550,7 +7364,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bcs",
- "clap 3.2.25",
+ "clap 4.4.1",
  "fastcrypto",
  "pretty_assertions",
  "rand 0.8.5",
@@ -7572,7 +7386,7 @@ dependencies = [
  "async-trait",
  "bcs",
  "chrono",
- "clap 3.2.25",
+ "clap 4.4.1",
  "coerce",
  "derive_builder",
  "futures",
@@ -7606,7 +7420,7 @@ dependencies = [
  "bitcoin 0.31.0",
  "bitcoincore-rpc",
  "chrono",
- "clap 3.2.25",
+ "clap 4.4.1",
  "coerce",
  "derive_builder",
  "ethers",
@@ -7648,7 +7462,7 @@ dependencies = [
  "bigdecimal",
  "bytes",
  "chrono",
- "clap 3.2.25",
+ "clap 4.4.1",
  "coerce",
  "const-hex",
  "derive_builder",
@@ -7687,7 +7501,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bcs",
- "clap 3.2.25",
+ "clap 4.4.1",
  "dirs 4.0.0",
  "ethers",
  "fastcrypto",
@@ -7719,7 +7533,7 @@ dependencies = [
  "async-trait",
  "bcs",
  "chrono",
- "clap 3.2.25",
+ "clap 4.4.1",
  "coerce",
  "derive_builder",
  "ethers",
@@ -7773,7 +7587,7 @@ dependencies = [
  "async-trait",
  "bcs",
  "chrono",
- "clap 3.2.25",
+ "clap 4.4.1",
  "coerce",
  "derive_builder",
  "fastcrypto",
@@ -7831,7 +7645,7 @@ dependencies = [
  "bech32 0.9.1",
  "bitcoin 0.31.0",
  "bitcoincore-rpc",
- "clap 3.2.25",
+ "clap 4.4.1",
  "derive_more",
  "enum_dispatch",
  "ethers",
@@ -8230,7 +8044,7 @@ version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2acea373acb8c21ecb5a23741452acd2593ed44ee3d343e72baaa143bc89d0d5"
 dependencies = [
- "bitcoin_hashes 0.12.0",
+ "bitcoin_hashes 0.13.0",
  "rand 0.8.5",
  "secp256k1-sys 0.9.0",
  "serde 1.0.188",
@@ -8590,7 +8404,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29ad2e15f37ec9a6cc544097b78a1ec90001e9f71b81338ca39f430adaca99af"
 dependencies = [
  "libc",
- "mio 0.7.14",
+ "mio",
  "signal-hook",
 ]
 
@@ -9089,7 +8903,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
- "clap 3.2.25",
+ "clap 4.4.1",
  "cucumber",
  "futures",
  "jpst",
@@ -9274,7 +9088,7 @@ dependencies = [
  "backtrace",
  "bytes",
  "libc",
- "mio 0.8.8",
+ "mio",
  "num_cpus",
  "parking_lot 0.12.1",
  "pin-project-lite",
@@ -9533,6 +9347,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6bc1c9ce2b5135ac7f93c72918fc37feb872bdc6a5533a8b85eb4b86bfdae52"
 
 [[package]]
+name = "trace"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ad0c048e114d19d1140662762bfdb10682f3bc806d8be18af846600214dd9af"
+dependencies = [
+ "proc-macro2 1.0.66",
+ "quote 1.0.33",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "tracing"
 version = "0.1.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9609,13 +9434,13 @@ checksum = "3528ecfd12c466c6f163363caf2d02a71161dd5e1cc6ae7b34207ea2d42d81ed"
 
 [[package]]
 name = "tui"
-version = "0.17.0"
+version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23ed0a32c88b039b73f1b6c5acbd0554bfa5b6be94467375fd947c4de3a02271"
+checksum = "ccdd26cbd674007e649a272da4475fb666d3aa0ad0531da7136db6fab0e5bad1"
 dependencies = [
  "bitflags 1.3.2",
  "cassowary",
- "crossterm 0.22.1",
+ "crossterm 0.25.0",
  "unicode-segmentation",
  "unicode-width",
 ]

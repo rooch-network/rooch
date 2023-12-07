@@ -57,7 +57,7 @@ where
 {
     let vm_status_explain = match &vm_status {
         VMStatus::Executed => VMStatusExplainView::Executed,
-        VMStatus::Error(c) => VMStatusExplainView::Error(format!("{:?}", c)),
+        VMStatus::Error{ status_code, ..} => VMStatusExplainView::Error(format!("{:?}", status_code)),
         VMStatus::MoveAbort(location, abort_code) => {
             //TODO find a way to include the description
             //Define a error code description trait, and let caller pass the error description files as argument.
@@ -72,7 +72,7 @@ where
             status_code,
             location,
             function,
-            code_offset,
+            code_offset, ..
         } => VMStatusExplainView::ExecutionFailure {
             status_code: format!("{:?}", status_code),
             status: (*status_code).into(),

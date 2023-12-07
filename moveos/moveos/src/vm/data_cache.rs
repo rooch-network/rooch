@@ -14,9 +14,7 @@ use move_core_types::{
     value::MoveTypeLayout,
     vm_status::StatusCode,
 };
-use move_vm_types::{
-    data_store::{DataStore, TransactionCache},
-    loaded_data::runtime_types::Type,
+use move_vm_types::{ loaded_data::runtime_types::Type,
     values::{GlobalValue, Reference, Struct, Value},
 };
 use moveos_stdlib::natives::moveos_stdlib::raw_table::{serialize, TableData, TableRuntimeValue};
@@ -31,6 +29,7 @@ use std::collections::{btree_map::BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use move_core_types::language_storage::TypeTag;
+use move_vm_runtime::data_cache::TransactionCache;
 use moveos_types::moveos_std::object::NamedTableID;
 use moveos_types::state::MoveStructType;
 
@@ -89,7 +88,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
     /// published modules.
     ///
     /// Gives all proper guarantees on lifetime of global data as well.
-    fn into_effects(self) -> PartialVMResult<(ChangeSet, Vec<Event>)> {
+    fn into_effects(self, loader: &Loader) -> PartialVMResult<(ChangeSet, Vec<Event>)> {
         let mut change_set = ChangeSet::new();
         // The accounts are just used for initializing account storage.
         // No modules and resources added here.
@@ -104,7 +103,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
 
         let mut events = vec![];
         for (guid, seq_num, ty, ty_layout, val) in self.event_data {
-            let ty_tag = self.loader.type_to_type_tag(&ty)?;
+            let ty_tag = loader.type_to_type_tag(&ty)?;
             let blob = val
                 .simple_serialize(&ty_layout)
                 .ok_or_else(|| PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR))?;
@@ -119,19 +118,17 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
         // No accounts mutated in global operations are disabled.
         self.accounts.len() as u64
     }
-}
 
-// `DataStore` implementation for the `MoveosDataCache`
-impl<'r, 'l, S: MoveOSResolver> DataStore for MoveosDataCache<'r, 'l, S> {
     // Retrieve data from the local cache or loads it from the resolver cache into the local cache.
     // All operations on the global data are based on this API and they all load the data
     // into the cache.
     /// In Rooch, all global operations are disable, so this function is never called.
     fn load_resource(
         &mut self,
+        _loader: &Loader,
         _addr: AccountAddress,
         _ty: &Type,
-    ) -> PartialVMResult<(&mut GlobalValue, Option<Option<NumBytes>>)> {
+    ) -> PartialVMResult<(&mut GlobalValue, Option<NumBytes>)> {
         unreachable!("Global operations are disabled")
     }
 
@@ -246,12 +243,13 @@ impl<'r, 'l, S: MoveOSResolver> DataStore for MoveosDataCache<'r, 'l, S> {
 
     fn emit_event(
         &mut self,
+        loader: &Loader,
         guid: Vec<u8>,
         seq_num: u64,
         ty: Type,
         val: Value,
     ) -> PartialVMResult<()> {
-        let ty_layout = self.loader.type_to_type_layout(&ty)?;
+        let ty_layout = loader.type_to_type_layout(&ty)?;
         self.event_data.push((guid, seq_num, ty, ty_layout, val));
         Ok(())
     }

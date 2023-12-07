@@ -6,10 +6,10 @@ use crate::vm::data_cache::{into_change_set, MoveosDataCache};
 use crate::vm::unit_tests::vm_arguments_tests::{make_script_function, RemoteStore};
 use move_binary_format::file_format::{Signature, SignatureToken};
 use move_vm_runtime::move_vm::MoveVM;
-use move_vm_types::data_store::DataStore;
 use moveos_stdlib::natives::moveos_stdlib::raw_table::TableData;
 use parking_lot::RwLock;
 use std::sync::Arc;
+use move_vm_runtime::data_cache::TransactionCache;
 
 #[test]
 fn publish_and_load_module() {

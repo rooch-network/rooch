@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use clap::ArgEnum;
+use clap::clap_derive::ValueEnum;
 use clap::Parser;
 use rooch_open_rpc::Project;
 use rooch_rpc_api::api::rooch_api::RoochAPIOpenRpc;
@@ -29,7 +29,7 @@ pub fn rooch_rpc_doc(version: &str) -> Project {
     )
 }
 
-#[derive(Debug, Parser, Clone, Copy, ArgEnum)]
+#[derive(Debug, Parser, Clone, Copy, ValueEnum)]
 enum Action {
     Print,
     Test,

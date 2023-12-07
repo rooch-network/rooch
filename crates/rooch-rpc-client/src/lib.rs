@@ -17,6 +17,7 @@ use moveos_types::{
 use rooch_client::RoochRpcClient;
 use std::sync::Arc;
 use std::time::Duration;
+use move_core_types::metadata::Metadata;
 
 pub mod client_config;
 pub mod eth_client;
@@ -110,8 +111,11 @@ impl MoveFunctionCaller for Client {
 }
 
 impl ModuleResolver for &Client {
-    type Error = anyhow::Error;
-    fn get_module(&self, id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
+    fn get_module_metadata(&self, _module_id: &ModuleId) -> Vec<Metadata> {
+        todo!()
+    }
+
+    fn get_module(&self, id: &ModuleId) -> Result<Option<Vec<u8>>> {
         futures::executor::block_on(async {
             let mut states = self
                 .rooch
