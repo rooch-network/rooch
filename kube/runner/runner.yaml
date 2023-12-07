@@ -7,7 +7,7 @@ spec:
     spec:
       nodeSelector:
         cloud.google.com/gke-nodepool: ci-pool
-      image: summerwind/actions-runner:v2.283.3-ubuntu-20.04-b01e193
+      image: summerwind/actions-runner:v2.311.0-ubuntu-22.04-8e48463
       repository: rooch-network/rooch
       ephemeral: true
       tolerations:
@@ -19,7 +19,7 @@ spec:
       resources:
         requests:
           cpu: "15.0"
-          memory: "64Gi"
+          memory: "52Gi"
       # If set to false, there are no privileged container and you cannot use docker.
       dockerEnabled: true
       # If set to true, runner pod container only 1 container that's expected to be able to run docker, too.
