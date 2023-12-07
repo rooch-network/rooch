@@ -1,12 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::actor::messages::TransactionProposeMessage;
+use std::collections::BTreeMap;
+
+use moveos_types::h256;
 use moveos_types::h256::H256;
 use rooch_types::block::Block;
-use std::collections::BTreeMap;
-use moveos_types::h256;
 use rooch_types::transaction::AbstractTransaction;
+
+use crate::actor::messages::TransactionProposeMessage;
 
 /// State Commitment Chain(SCC) is a chain of transaction state root
 /// This SCC is a mirror of the on-chain SCC
@@ -89,13 +91,7 @@ impl StateCommitmentChain {
         // regard batch(tx list) as a blob: easy to check integrity
         let batch_hash = h256::sha3_256_of(&batch);
 
-        // serialize the self.buffer and submit to DA
-        // let mut batch = Vec::new();
-        // for tx in self.buffer.iter() {
-        //     batch.push(tx.tx.encode());
-        // }
-        // batch to bytes
-
+        // TODO use da Batcher to submit batch
 
 
         let new_block = Block::new(

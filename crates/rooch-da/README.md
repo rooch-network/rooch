@@ -80,8 +80,8 @@ we require the DA server to maintain flexibility and low cost in its implementat
 Rooch Network accomplishes our objectives by treating the transaction sequence as a stream and flexibly dividing it into segments:
 
 1. Each network has its own stream.
-2. Several batch form an extent for better compression ratio.
-3. Every extent, once compressed, will be partitioned into numerous segments to comply with the block size restrictions of the DA backend. 
+2. Several batch form an chunk for better compression ratio.
+3. Every chunk, once compressed, will be partitioned into numerous segments to comply with the block size restrictions of the DA backend. 
 Simultaneously, this approach aids in augmenting parallelism.
 
 ### Get

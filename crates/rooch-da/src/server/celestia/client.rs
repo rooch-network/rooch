@@ -1,8 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-mod server;
-mod batcher;
-pub mod messages;
-pub mod client;
-
+pub struct Client {
+    // TODO
+}

@@ -7677,8 +7677,12 @@ dependencies = [
 name = "rooch-da"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "bcs",
  "celestia-rpc",
+ "celestia-types",
  "moveos-types",
+ "serde 1.0.188",
 ]
 
 [[package]]
