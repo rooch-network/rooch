@@ -1,4 +1,4 @@
-FROM ubuntu:bionic AS builder
+FROM ubuntu:jammy AS builder
 
 RUN set -eux; \
     apt-get update; \
