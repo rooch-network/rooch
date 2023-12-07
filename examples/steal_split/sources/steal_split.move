@@ -457,7 +457,7 @@ module rooch_examples::rooch_examples {
     }
 
     #[test]
-    #[expected_failure(abort_code = 1, location = rooch_framework::account)]
+    #[expected_failure(abort_code = 7, location = rooch_framework::account)]
     fun test_init_again() {
         let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
