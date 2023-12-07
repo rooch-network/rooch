@@ -6,12 +6,13 @@ use crate::store::traits::IndexerStoreTrait;
 use crate::types::{
     IndexedEvent, IndexedGlobalState, IndexedTableChangeSet, IndexedTableState, IndexedTransaction,
 };
+use crate::utils::format_struct_tag;
 use crate::IndexerStore;
 use anyhow::Result;
 use ethers::types::{Bytes, U256};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
-use move_core_types::language_storage::ModuleId;
+use move_core_types::language_storage::{ModuleId, StructTag};
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
 use moveos_types::move_types::{random_identity, random_struct_tag, random_type_tag, FunctionId};
@@ -20,7 +21,9 @@ use moveos_types::moveos_std::event::{Event, EventID};
 use moveos_types::moveos_std::object::{NamedTableID, ObjectEntity, ObjectID, RawData};
 use moveos_types::moveos_std::raw_table::TableInfo;
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state::{SplitStateChangeSet, State, StateChangeSet, TableChange, TableTypeInfo};
+use moveos_types::state::{
+    MoveStructType, SplitStateChangeSet, State, StateChangeSet, TableChange, TableTypeInfo,
+};
 use moveos_types::transaction::{
     FunctionCall, MoveAction, ScriptCall, TransactionExecutionInfo, VerifiedMoveAction,
     VerifiedMoveOSTransaction,
@@ -29,12 +32,16 @@ use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use rooch_config::indexer_config::ROOCH_INDEXER_DB_FILENAME;
 use rooch_types::address::{RoochAddress, RoochSupportedAddress};
+use rooch_types::framework::coin::CoinInfo;
+use rooch_types::framework::gas_coin::GasCoin;
 use rooch_types::indexer::event_filter::EventFilter;
+use rooch_types::indexer::state::{GlobalStateFilter, TableStateFilter};
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::transaction::authenticator::Authenticator;
 use rooch_types::transaction::ethereum::EthereumTransaction;
 use rooch_types::transaction::rooch::{RoochTransaction, RoochTransactionData};
 use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
+use std::str::FromStr;
 
 fn random_bytes() -> Vec<u8> {
     H256::random().0.to_vec()
@@ -321,7 +328,7 @@ fn random_update_global_states(states: Vec<IndexedGlobalState>) -> Vec<IndexedGl
             owner: item.owner,
             flag: item.flag,
             value: random_string(),
-            value_type: item.value_type,
+            object_type: item.object_type,
             key_type: item.key_type,
             size: item.size + 1,
             tx_order: item.tx_order,
@@ -547,6 +554,20 @@ fn test_state_store() -> Result<()> {
     new_table_states.append(&mut update_table_states);
     indexer_store.persist_or_update_table_states(new_table_states)?;
     indexer_store.delete_table_states(remove_table_states)?;
+
+    let coin_info_type =
+        StructTag::from_str(format_struct_tag(CoinInfo::<GasCoin>::struct_tag()).as_str())?;
+    // println!("")
+    let filter = GlobalStateFilter::ObjectType(coin_info_type);
+    let query_global_states =
+        indexer_reader.query_global_states_with_filter(filter, None, 1, true)?;
+    assert_eq!(query_global_states.len(), 0);
+
+    let talbe_handle = ObjectID::from_str("0x0")?;
+    let filter = TableStateFilter::TableHandle(talbe_handle);
+    let query_table_states =
+        indexer_reader.query_table_states_with_filter(filter, None, 1, true)?;
+    assert_eq!(query_table_states.len(), 0);
 
     // test state sync
     let state_change_set = random_state_change_set();

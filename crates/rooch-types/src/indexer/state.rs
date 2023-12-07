@@ -59,7 +59,7 @@ pub struct IndexerGlobalState {
     pub owner: AccountAddress,
     pub flag: u8,
     pub value: String,
-    pub value_type: StructTag,
+    pub object_type: StructTag,
     pub key_type: String,
     pub size: u64,
     pub tx_order: u64,
@@ -83,10 +83,13 @@ pub struct IndexerTableState {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum GlobalStateFilter {
-    /// Query by object value type and owner.
-    ValueTypeWithOwner((StructTag, AccountAddress)),
-    /// Query by object value type.
-    ValueType(StructTag),
+    /// Query by object type and owner.
+    ObjectTypeWithOwner {
+        object_type: StructTag,
+        owner: AccountAddress,
+    },
+    /// Query by object type.
+    ObjectType(StructTag),
     /// Query by owner.
     Owner(AccountAddress),
     /// Query by object id.
@@ -96,10 +99,10 @@ pub enum GlobalStateFilter {
 impl GlobalStateFilter {
     fn try_matches(&self, item: &IndexerGlobalState) -> Result<bool> {
         Ok(match self {
-            GlobalStateFilter::ValueTypeWithOwner((value_type, owner)) => {
-                value_type == &item.value_type && owner == &item.owner
+            GlobalStateFilter::ObjectTypeWithOwner { object_type, owner } => {
+                object_type == &item.object_type && owner == &item.owner
             }
-            GlobalStateFilter::ValueType(value_type) => value_type == &item.value_type,
+            GlobalStateFilter::ObjectType(object_type) => object_type == &item.object_type,
             GlobalStateFilter::Owner(owner) => owner == &item.owner,
             GlobalStateFilter::ObjectId(object_id) => object_id == &item.object_id,
         })

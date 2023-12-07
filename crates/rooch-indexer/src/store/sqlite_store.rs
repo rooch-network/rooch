@@ -51,7 +51,7 @@ impl SqliteIndexerStore {
                     escape_sql_string(state.owner),
                     state.flag,
                     escape_sql_string(state.value),
-                    escape_sql_string(state.value_type),
+                    escape_sql_string(state.object_type),
                     escape_sql_string(state.key_type),
                     state.size,
                     state.tx_order,
@@ -64,7 +64,7 @@ impl SqliteIndexerStore {
             .join(",");
         let query = format!(
             "
-                INSERT INTO global_states (object_id, owner, flag, value, value_type, key_type, size, tx_order, state_index, created_at, updated_at) \
+                INSERT INTO global_states (object_id, owner, flag, value, object_type, key_type, size, tx_order, state_index, created_at, updated_at) \
                 VALUES {} \
                 ON CONFLICT (object_id) DO UPDATE SET \
                 owner = excluded.owner, \
@@ -73,7 +73,7 @@ impl SqliteIndexerStore {
                 size = excluded.size, \
                 tx_order = excluded.tx_order, \
                 state_index = excluded.state_index, \
-                updated_at = excluded.updated_at;
+                updated_at = excluded.updated_at
             ",
             values_clause
         );
@@ -159,12 +159,12 @@ impl SqliteIndexerStore {
             "
                 INSERT INTO table_states (table_handle, key_hex, value, value_type, tx_order, state_index, created_at, updated_at) \
                 VALUES {} \
-                ON CONFLICT (id) DO UPDATE SET \
+                ON CONFLICT (table_handle, key_hex) DO UPDATE SET \
                 value = excluded.value, \
                 value_type = excluded.value_type, \
                 tx_order = excluded.tx_order, \
                 state_index = excluded.state_index, \
-                updated_at = excluded.updated_at;
+                updated_at = excluded.updated_at
             ",
             values_clause
         );
@@ -190,11 +190,6 @@ impl SqliteIndexerStore {
         }
 
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
-        // diesel::delete(table_states::table.filter(table_states::id.eq_any(state_pks.as_slice())))
-        //     .execute(&mut connection)
-        //     .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
-        //     .context("Failed to delete table states to SQLiteDB")?;
-
         // Diesel for SQLite don't support batch delete on composite primary key yet, so implements batch delete directly via raw SQL
         let values_clause = state_pks
             .into_iter()
@@ -208,12 +203,10 @@ impl SqliteIndexerStore {
             .collect::<Vec<_>>()
             .join(",");
 
-        // DELETE FROM your_table
-        // WHERE (column1, column2) IN ((value1_1, value1_2), (value2_1, value2_2), ...);
         let query = format!(
             "
                 DELETE FROM table_states \
-                WHERE (table_handle, key_hex) in ({});
+                WHERE (table_handle, key_hex) in ({})
             ",
             values_clause
         );

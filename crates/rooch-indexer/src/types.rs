@@ -165,7 +165,7 @@ pub struct IndexedGlobalState {
     /// The value of the object, json format
     pub value: String,
     /// The T struct tag of the object value
-    pub value_type: String,
+    pub object_type: String,
     /// The key type tag of the table
     pub key_type: String,
     /// The table length
@@ -184,7 +184,7 @@ impl IndexedGlobalState {
     pub fn new_from_raw_object(
         raw_object: RawObject,
         raw_object_value_json: String,
-        value_type: String,
+        object_type: String,
         tx_order: u64,
         state_index: u64,
     ) -> Self {
@@ -194,7 +194,7 @@ impl IndexedGlobalState {
             flag: raw_object.flag,
 
             value: raw_object_value_json,
-            value_type,
+            object_type,
             // Maintenance when it is a table handle
             key_type: "".to_string(),
             // Maintenance when it is a table handle
@@ -211,7 +211,7 @@ impl IndexedGlobalState {
     pub fn new_from_table_object(
         table_object: ObjectEntity<TableInfo>,
         table_object_value_json: String,
-        value_type: String,
+        object_type: String,
         key_type: String,
         tx_order: u64,
         state_index: u64,
@@ -222,7 +222,7 @@ impl IndexedGlobalState {
             flag: table_object.flag,
 
             value: table_object_value_json,
-            value_type,
+            object_type,
             // Maintenance when it is a table handle
             key_type,
             // Maintenance when it is a table handle
@@ -234,24 +234,6 @@ impl IndexedGlobalState {
             created_at: 0,
             updated_at: 0,
         }
-    }
-
-    pub fn new_from_table_object_update(
-        table_object: ObjectEntity<TableInfo>,
-        table_object_value_json: String,
-        value_type: String,
-        tx_order: u64,
-        state_index: u64,
-    ) -> Self {
-        // No need to update key_type when update global state
-        Self::new_from_table_object(
-            table_object,
-            table_object_value_json,
-            value_type,
-            "".to_string(),
-            tx_order,
-            state_index,
-        )
     }
 }
 

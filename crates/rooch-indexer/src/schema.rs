@@ -23,7 +23,7 @@ diesel::table! {
         owner -> Text,
         flag -> SmallInt,
         value -> Text,
-        value_type -> Text,
+        object_type -> Text,
         key_type -> Text,
         size -> BigInt,
         tx_order -> BigInt,

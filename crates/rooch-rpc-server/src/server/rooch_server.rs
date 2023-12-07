@@ -431,7 +431,7 @@ impl RoochAPIServer for RoochServer {
             .query_global_states(filter.into(), cursor, limit_of + 1, descending_order)
             .await?
             .into_iter()
-            .map(|state| IndexerGlobalStateView::try_new_from_global_state(state))
+            .map(IndexerGlobalStateView::try_new_from_global_state)
             .collect::<Result<Vec<_>>>()?;
 
         let has_next_page = data.len() > limit_of;
@@ -466,7 +466,7 @@ impl RoochAPIServer for RoochServer {
             .query_table_states(filter.into(), cursor, limit_of + 1, descending_order)
             .await?
             .into_iter()
-            .map(|state| IndexerTableStateView::try_new_from_table_state(state))
+            .map(IndexerTableStateView::try_new_from_table_state)
             .collect::<Result<Vec<_>>>()?;
 
         let has_next_page = data.len() > limit_of;

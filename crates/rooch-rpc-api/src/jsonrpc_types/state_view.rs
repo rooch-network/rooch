@@ -283,7 +283,7 @@ pub struct IndexerGlobalStateView {
     pub owner: AccountAddressView,
     pub flag: u8,
     pub value: AnnotatedMoveStructView,
-    pub value_type: StructTagView,
+    pub object_type: StructTagView,
     pub key_type: Option<TypeTagView>,
     pub size: u64,
     pub tx_order: u64,
@@ -307,7 +307,7 @@ impl IndexerGlobalStateView {
             owner: state.owner.into(),
             flag: state.flag,
             value,
-            value_type: state.value_type.into(),
+            object_type: state.object_type.into(),
             key_type,
             size: state.size,
             tx_order: state.tx_order,
@@ -323,9 +323,12 @@ impl IndexerGlobalStateView {
 #[serde(rename_all = "snake_case")]
 pub enum GlobalStateFilterView {
     /// Query by object value type and owner.
-    ValueTypeWithOwner((StructTagView, AccountAddressView)),
+    ObjectTypeWithOwner {
+        object_type: StructTagView,
+        owner: AccountAddressView,
+    },
     /// Query by object value type.
-    ValueType(StructTagView),
+    ObjectType(StructTagView),
     /// Query by owner.
     Owner(AccountAddressView),
     /// Query by object id.
@@ -335,10 +338,13 @@ pub enum GlobalStateFilterView {
 impl From<GlobalStateFilterView> for GlobalStateFilter {
     fn from(state_filter: GlobalStateFilterView) -> Self {
         match state_filter {
-            GlobalStateFilterView::ValueTypeWithOwner((value_type, owner)) => {
-                Self::ValueTypeWithOwner((value_type.into(), owner.into()))
+            GlobalStateFilterView::ObjectTypeWithOwner { object_type, owner } => {
+                Self::ObjectTypeWithOwner {
+                    object_type: object_type.into(),
+                    owner: owner.into(),
+                }
             }
-            GlobalStateFilterView::ValueType(value_type) => Self::ValueType(value_type.into()),
+            GlobalStateFilterView::ObjectType(object_type) => Self::ObjectType(object_type.into()),
             GlobalStateFilterView::Owner(owner) => Self::Owner(owner.into()),
             GlobalStateFilterView::ObjectId(object_id) => Self::ObjectId(object_id),
         }

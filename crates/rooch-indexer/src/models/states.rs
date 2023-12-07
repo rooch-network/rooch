@@ -13,7 +13,7 @@ use rooch_rpc_api::jsonrpc_types::TableChangeSetView;
 use rooch_types::indexer::state::{IndexerGlobalState, IndexerTableChangeSet, IndexerTableState};
 use std::str::FromStr;
 
-#[derive(Clone, Debug, Queryable, Insertable, AsChangeset)]
+#[derive(Queryable, QueryableByName, Insertable, Debug, Clone)]
 #[diesel(table_name = global_states)]
 pub struct StoredGlobalState {
     /// The global state key
@@ -27,7 +27,7 @@ pub struct StoredGlobalState {
     pub flag: i16,
     /// The T struct tag of the object value
     #[diesel(sql_type = diesel::sql_types::Text)]
-    pub value_type: String,
+    pub object_type: String,
     /// The key type tag of the table
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub key_type: String,
@@ -58,7 +58,7 @@ impl From<IndexedGlobalState> for StoredGlobalState {
             owner: state.owner.to_hex_literal(),
             flag: state.flag as i16,
             value: state.value,
-            value_type: state.value_type,
+            object_type: state.object_type,
             key_type: state.key_type,
             size: state.size as i64,
             tx_order: state.tx_order as i64,
@@ -73,14 +73,14 @@ impl StoredGlobalState {
     pub fn try_into_indexer_global_state(&self) -> Result<IndexerGlobalState, anyhow::Error> {
         let object_id = ObjectID::from_str(self.object_id.as_str())?;
         let owner = AccountAddress::from_hex_literal(self.owner.as_str())?;
-        let value_type = StructTag::from_str(self.value_type.as_str())?;
+        let object_type = StructTag::from_str(self.object_type.as_str())?;
 
         let state = IndexerGlobalState {
             object_id,
             owner,
             flag: self.flag as u8,
             value: self.value.clone(),
-            value_type,
+            object_type,
             key_type: self.key_type.clone(),
             size: self.size as u64,
             tx_order: self.tx_order as u64,
@@ -92,7 +92,7 @@ impl StoredGlobalState {
     }
 }
 
-#[derive(Clone, Debug, Queryable, Insertable, AsChangeset)]
+#[derive(Queryable, QueryableByName, Insertable, Debug, Clone)]
 #[diesel(table_name = table_states)]
 pub struct StoredTableState {
     /// The state table handle
@@ -127,7 +127,7 @@ impl From<IndexedTableState> for StoredTableState {
             table_handle: state.table_handle.to_string(),
             key_hex: state.key_hex,
             value: state.value,
-            value_type: state.value_type.to_canonical_string(),
+            value_type: state.value_type.to_string(),
             tx_order: state.tx_order as i64,
             state_index: state.state_index as i64,
             created_at: state.created_at as i64,

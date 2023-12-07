@@ -4,7 +4,7 @@ CREATE TABLE global_states
     owner              VARCHAR        NOT NULL,
     flag               SMALLINT       NOT NULL,
     value              VARCHAR        NOT NULL,
-    value_type         VARCHAR        NOT NULL,
+    object_type        VARCHAR        NOT NULL,
     key_type           VARCHAR        NOT NULL,
     size               BIGINT         NOT NULL,
     tx_order           BIGINT         NOT NULL,
@@ -15,5 +15,5 @@ CREATE TABLE global_states
 );
 
 CREATE INDEX idx_global_states_owner ON global_states (owner);
-CREATE INDEX idx_global_states_value_type_and_owner ON global_states (value_type, owner);
+CREATE INDEX idx_global_states_object_type_and_owner ON global_states (object_type, owner);
 CREATE INDEX idx_global_states_created_at ON global_states (created_at);

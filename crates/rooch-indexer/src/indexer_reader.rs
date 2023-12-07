@@ -14,7 +14,9 @@ use std::ops::DerefMut;
 use crate::models::events::StoredEvent;
 use crate::models::states::{StoredGlobalState, StoredTableChangeSet, StoredTableState};
 use crate::models::transactions::StoredTransaction;
-use crate::schema::{events, global_states, table_change_sets, table_states, transactions};
+use crate::schema::global_states;
+use crate::schema::{events, table_change_sets, table_states, transactions};
+use crate::utils::format_struct_tag;
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
     GlobalStateFilter, IndexerGlobalState, IndexerStateID, IndexerTableChangeSet,
@@ -38,7 +40,7 @@ pub const EVENT_TYPE_STR: &str = "event_type";
 
 pub const STATE_TABLE_HANDLE_STR: &str = "table_handle";
 pub const STATE_INDEX_STR: &str = "state_index";
-pub const STATE_VALUE_TYPE_STR: &str = "value_type";
+pub const STATE_OBJECT_TYPE_STR: &str = "object_type";
 pub const STATE_OWNER_STR: &str = "owner";
 
 #[derive(Clone)]
@@ -339,23 +341,23 @@ impl IndexerReader {
         };
 
         let main_where_clause = match filter {
-            GlobalStateFilter::ValueTypeWithOwner((value_type, owner)) => {
-                let value_type_str = format!("0x{}", value_type.to_canonical_string());
+            GlobalStateFilter::ObjectTypeWithOwner { object_type, owner } => {
+                let object_type_str = format_struct_tag(object_type);
                 format!(
-                    "{STATE_VALUE_TYPE_STR} = \"{}\" AND {STATE_OWNER_STR} = \"{}\"",
-                    value_type_str,
+                    "{STATE_OBJECT_TYPE_STR} = \"{}\" AND {STATE_OWNER_STR} = \"{}\"",
+                    object_type_str,
                     owner.to_hex_literal()
                 )
             }
-            GlobalStateFilter::ValueType(value_type) => {
-                let value_type_str = format!("0x{}", value_type.to_canonical_string());
-                format!("{STATE_VALUE_TYPE_STR} = \"{}\"", value_type_str)
+            GlobalStateFilter::ObjectType(object_type) => {
+                let object_type_str = format_struct_tag(object_type);
+                format!("{STATE_OBJECT_TYPE_STR} = \"{}\"", object_type_str)
             }
             GlobalStateFilter::Owner(owner) => {
                 format!("{STATE_OWNER_STR} = \"{}\"", owner.to_hex_literal())
             }
             GlobalStateFilter::ObjectId(object_id) => {
-                format!("{OBJECT_ID_STR} = \"{}\"", object_id.to_string())
+                format!("{OBJECT_ID_STR} = \"{}\"", object_id)
             }
         };
 
@@ -433,10 +435,7 @@ impl IndexerReader {
 
         let main_where_clause = match filter {
             TableStateFilter::TableHandle(table_handle) => {
-                format!(
-                    "{STATE_TABLE_HANDLE_STR} = \"{}\"",
-                    table_handle.to_string()
-                )
+                format!("{STATE_TABLE_HANDLE_STR} = \"{}\"", table_handle)
             }
         };
 
