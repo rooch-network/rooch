@@ -51,7 +51,10 @@ WORKDIR /rooch
 COPY ./ .
 RUN cargo build --release
 
-FROM ubuntu:bionic
+FROM ubuntu:jammy
+RUN set -eux; \
+    wget "http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.20_amd64.deb"; \
+    DEBIAN_FRONTEND=noninteractive dpkg -i libssl1.1_1.1.1f-1ubuntu2.20_amd64.deb;
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
