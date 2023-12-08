@@ -6,7 +6,8 @@ use crate::jsonrpc_types::event_view::{EventView, IndexerEventView};
 use crate::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use crate::jsonrpc_types::{
     move_types::{MoveActionTypeView, MoveActionView},
-    BytesView, IndexerTableChangeSetView, StateView, StrView, StructTagView,
+    BytesView, IndexerGlobalStateView, IndexerTableChangeSetView, IndexerTableStateView, StateView,
+    StrView, StructTagView,
 };
 use move_core_types::u256::U256;
 use rooch_types::framework::coin::CoinInfo;
@@ -23,6 +24,9 @@ pub type StatesPageView = PageView<StateView, BytesView>;
 pub type BalanceInfoPageView = PageView<BalanceInfoView, BytesView>;
 pub type IndexerEventPageView = PageView<IndexerEventView, IndexerEventID>;
 pub type IndexerTableChangeSetPageView = PageView<IndexerTableChangeSetView, IndexerStateID>;
+
+pub type IndexerGlobalStatePageView = PageView<IndexerGlobalStateView, IndexerStateID>;
+pub type IndexerTableStatePageView = PageView<IndexerTableStateView, IndexerStateID>;
 
 /// `next_cursor` points to the last item in the page;
 /// Reading with `next_cursor` will start from the next item after `next_cursor` if

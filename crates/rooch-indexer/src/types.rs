@@ -164,10 +164,16 @@ pub struct IndexedGlobalState {
     pub flag: u8,
     /// The value of the object, json format
     pub value: String,
+    /// The T struct tag of the object value
+    pub object_type: String,
     /// The key type tag of the table
     pub key_type: String,
     /// The table length
     pub size: u64,
+    /// The tx order of this transaction
+    pub tx_order: u64,
+    /// The state index in the tx
+    pub state_index: u64,
     /// The object created timestamp on chain
     pub created_at: u64,
     /// The object updated timestamp on chain
@@ -175,17 +181,26 @@ pub struct IndexedGlobalState {
 }
 
 impl IndexedGlobalState {
-    pub fn new_from_raw_object(raw_object: RawObject, raw_object_value_json: String) -> Self {
+    pub fn new_from_raw_object(
+        raw_object: RawObject,
+        raw_object_value_json: String,
+        object_type: String,
+        tx_order: u64,
+        state_index: u64,
+    ) -> Self {
         IndexedGlobalState {
             object_id: raw_object.id,
             owner: raw_object.owner,
             flag: raw_object.flag,
 
             value: raw_object_value_json,
+            object_type,
             // Maintenance when it is a table handle
             key_type: "".to_string(),
             // Maintenance when it is a table handle
             size: 0,
+            tx_order,
+            state_index,
 
             //TODO record transaction timestamp
             created_at: 0,
@@ -196,7 +211,10 @@ impl IndexedGlobalState {
     pub fn new_from_table_object(
         table_object: ObjectEntity<TableInfo>,
         table_object_value_json: String,
+        object_type: String,
         key_type: String,
+        tx_order: u64,
+        state_index: u64,
     ) -> Self {
         IndexedGlobalState {
             object_id: table_object.id,
@@ -204,60 +222,57 @@ impl IndexedGlobalState {
             flag: table_object.flag,
 
             value: table_object_value_json,
+            object_type,
             // Maintenance when it is a table handle
             key_type,
             // Maintenance when it is a table handle
             size: table_object.value.size,
+            tx_order,
+            state_index,
 
             //TODO record transaction timestamp
             created_at: 0,
             updated_at: 0,
         }
     }
-
-    pub fn new_from_table_object_update(
-        table_object: ObjectEntity<TableInfo>,
-        table_object_value_json: String,
-    ) -> Self {
-        // No need to update key_type when update global state
-        Self::new_from_table_object(table_object, table_object_value_json, "".to_string())
-    }
 }
 
 #[derive(Debug, Clone)]
-pub struct IndexedLeafState {
-    /// A primary key represents composite key of (object_id, key_hex)
-    // Diesel doesn't support eq_any for tuples due to unable to use index, so use an extra primary key instead of composite key
-    pub id: String,
-    /// The leaf state table handle
-    pub object_id: ObjectID,
+pub struct IndexedTableState {
+    /// The state table handle
+    pub table_handle: ObjectID,
     /// The hex of the table key
     pub key_hex: String,
     /// The value of the table, json format
     pub value: String,
     /// The type tag of the value
     pub value_type: TypeTag,
+    /// The tx order of this transaction
+    pub tx_order: u64,
+    /// The state index in the tx
+    pub state_index: u64,
     /// The table item created timestamp on chain
     pub created_at: u64,
     /// The table item updated timestamp on chain
     pub updated_at: u64,
 }
 
-impl IndexedLeafState {
+impl IndexedTableState {
     pub fn new(
-        object_id: ObjectID,
+        table_handle: ObjectID,
         key_hex: String,
         state_value_json: String,
         value_type: TypeTag,
+        tx_order: u64,
+        state_index: u64,
     ) -> Self {
-        let id = format!("{}{}", object_id, key_hex);
-
-        IndexedLeafState {
-            id,
-            object_id,
+        IndexedTableState {
+            table_handle,
             key_hex,
             value: state_value_json,
             value_type,
+            tx_order,
+            state_index,
 
             //TODO record transaction timestamp
             created_at: 0,
@@ -271,7 +286,7 @@ pub struct IndexedTableChangeSet {
     /// The tx order of this transaction which produce the table change set
     pub tx_order: u64,
     /// The table handle index in the tx
-    pub table_handle_index: u64,
+    pub state_index: u64,
     /// The table handle
     pub table_handle: ObjectID,
     /// The table change set, json format
@@ -283,7 +298,7 @@ pub struct IndexedTableChangeSet {
 impl IndexedTableChangeSet {
     pub fn new(
         tx_order: u64,
-        table_handle_index: u64,
+        state_index: u64,
         table_handle: ObjectID,
         table_change_set: TableChangeSet,
     ) -> Result<Self> {
@@ -292,7 +307,7 @@ impl IndexedTableChangeSet {
 
         Ok(IndexedTableChangeSet {
             tx_order,
-            table_handle_index,
+            state_index,
             table_handle,
             table_change_set: table_change_set_json,
 

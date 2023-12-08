@@ -3,7 +3,7 @@
 
 use crate::errors::IndexerError;
 use crate::types::{
-    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTableChangeSet, IndexedTransaction,
+    IndexedEvent, IndexedGlobalState, IndexedTableChangeSet, IndexedTableState, IndexedTransaction,
 };
 
 pub trait IndexerStoreTrait: Send + Sync {
@@ -14,14 +14,14 @@ pub trait IndexerStoreTrait: Send + Sync {
 
     fn delete_global_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError>;
 
-    fn persist_or_update_leaf_states(
+    fn persist_or_update_table_states(
         &self,
-        states: Vec<IndexedLeafState>,
+        states: Vec<IndexedTableState>,
     ) -> Result<(), IndexerError>;
 
-    fn delete_leaf_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError>;
+    fn delete_table_states(&self, state_pks: Vec<(String, String)>) -> Result<(), IndexerError>;
 
-    fn delete_leaf_states_by_table_handle(
+    fn delete_table_states_by_table_handle(
         &self,
         table_handles: Vec<String>,
     ) -> Result<(), IndexerError>;

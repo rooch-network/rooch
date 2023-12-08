@@ -4,14 +4,15 @@
 use crate::indexer_reader::IndexerReader;
 use crate::store::traits::IndexerStoreTrait;
 use crate::types::{
-    IndexedEvent, IndexedGlobalState, IndexedLeafState, IndexedTableChangeSet, IndexedTransaction,
+    IndexedEvent, IndexedGlobalState, IndexedTableChangeSet, IndexedTableState, IndexedTransaction,
 };
+use crate::utils::format_struct_tag;
 use crate::IndexerStore;
 use anyhow::Result;
 use ethers::types::{Bytes, U256};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
-use move_core_types::language_storage::ModuleId;
+use move_core_types::language_storage::{ModuleId, StructTag};
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
 use moveos_types::move_types::{random_identity, random_struct_tag, random_type_tag, FunctionId};
@@ -20,7 +21,9 @@ use moveos_types::moveos_std::event::{Event, EventID};
 use moveos_types::moveos_std::object::{NamedTableID, ObjectEntity, ObjectID, RawData};
 use moveos_types::moveos_std::raw_table::TableInfo;
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state::{SplitStateChangeSet, State, StateChangeSet, TableChange, TableTypeInfo};
+use moveos_types::state::{
+    MoveStructType, SplitStateChangeSet, State, StateChangeSet, TableChange, TableTypeInfo,
+};
 use moveos_types::transaction::{
     FunctionCall, MoveAction, ScriptCall, TransactionExecutionInfo, VerifiedMoveAction,
     VerifiedMoveOSTransaction,
@@ -29,12 +32,16 @@ use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use rooch_config::indexer_config::ROOCH_INDEXER_DB_FILENAME;
 use rooch_types::address::{RoochAddress, RoochSupportedAddress};
+use rooch_types::framework::coin::CoinInfo;
+use rooch_types::framework::gas_coin::GasCoin;
 use rooch_types::indexer::event_filter::EventFilter;
+use rooch_types::indexer::state::{GlobalStateFilter, TableStateFilter};
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::transaction::authenticator::Authenticator;
 use rooch_types::transaction::ethereum::EthereumTransaction;
 use rooch_types::transaction::rooch::{RoochTransaction, RoochTransactionData};
 use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
+use std::str::FromStr;
 
 fn random_bytes() -> Vec<u8> {
     H256::random().0.to_vec()
@@ -321,8 +328,11 @@ fn random_update_global_states(states: Vec<IndexedGlobalState>) -> Vec<IndexedGl
             owner: item.owner,
             flag: item.flag,
             value: random_string(),
+            object_type: item.object_type,
             key_type: item.key_type,
             size: item.size + 1,
+            tx_order: item.tx_order,
+            state_index: item.state_index,
             created_at: item.created_at,
             updated_at: item.updated_at + 1,
         })
@@ -332,15 +342,20 @@ fn random_update_global_states(states: Vec<IndexedGlobalState>) -> Vec<IndexedGl
 fn random_new_global_states() -> Vec<IndexedGlobalState> {
     let mut new_global_states = vec![];
 
+    let mut state_index = 0u64;
     let mut rng = thread_rng();
-    for _n in 0..rng.gen_range(1..=10) {
+    for n in 0..rng.gen_range(1..=10) {
         let state = IndexedGlobalState::new_from_table_object(
             random_table_object(),
             random_string(),
             random_struct_tag().to_canonical_string(),
+            random_type_tag().to_canonical_string(),
+            n as u64,
+            state_index,
         );
 
         new_global_states.push(state);
+        state_index = state_index + 1;
     }
 
     new_global_states
@@ -358,48 +373,53 @@ fn random_remove_global_states() -> Vec<String> {
     remove_global_states
 }
 
-fn random_new_leaf_states() -> Vec<IndexedLeafState> {
-    let mut leaf_states = vec![];
+fn random_new_table_states() -> Vec<IndexedTableState> {
+    let mut table_states = vec![];
 
+    let mut state_index = 0u64;
     let mut rng = thread_rng();
-    for _n in 0..rng.gen_range(1..=10) {
-        let state = IndexedLeafState::new(
+    for n in 0..rng.gen_range(1..=10) {
+        let state = IndexedTableState::new(
             ObjectID::from(AccountAddress::random()),
             H256::random().to_string(),
             random_string(),
             random_type_tag(),
+            n as u64,
+            state_index,
         );
-        leaf_states.push(state);
+        table_states.push(state);
+        state_index = state_index + 1;
     }
 
-    leaf_states
+    table_states
 }
 
-fn random_update_leaf_states(states: Vec<IndexedLeafState>) -> Vec<IndexedLeafState> {
+fn random_update_table_states(states: Vec<IndexedTableState>) -> Vec<IndexedTableState> {
     states
         .into_iter()
-        .map(|item| IndexedLeafState {
-            id: item.id,
-            object_id: item.object_id,
+        .map(|item| IndexedTableState {
+            table_handle: item.table_handle,
             key_hex: item.key_hex,
             value: random_string(),
             value_type: random_type_tag(),
+            tx_order: item.tx_order,
+            state_index: item.state_index,
             created_at: item.created_at,
             updated_at: item.updated_at + 1,
         })
         .collect()
 }
 
-fn random_remove_leaf_states() -> Vec<String> {
-    let mut remove_leaf_states = vec![];
+fn random_remove_table_states() -> Vec<(String, String)> {
+    let mut remove_table_states = vec![];
 
     let mut rng = thread_rng();
     for _n in 0..rng.gen_range(1..=10) {
         let table_handle = ObjectID::from(AccountAddress::random());
-        remove_leaf_states.push(table_handle.to_string());
+        remove_table_states.push((table_handle.to_string(), random_string()));
     }
 
-    remove_leaf_states
+    remove_table_states
 }
 
 #[test]
@@ -521,19 +541,33 @@ fn test_state_store() -> Result<()> {
     let mut update_global_states = random_update_global_states(new_global_states.clone());
     let remove_global_states = random_remove_global_states();
 
-    let mut new_leaf_states = random_new_leaf_states();
-    let mut update_leaf_states = random_update_leaf_states(new_leaf_states.clone());
-    let remove_leaf_states = random_remove_leaf_states();
+    let mut new_table_states = random_new_table_states();
+    let mut update_table_states = random_update_table_states(new_table_states.clone());
+    let remove_table_states = random_remove_table_states();
 
     //Merge new global states and update global states
     new_global_states.append(&mut update_global_states);
     indexer_store.persist_or_update_global_states(new_global_states)?;
     indexer_store.delete_global_states(remove_global_states)?;
 
-    //Merge new leaf states and update leaf states
-    new_leaf_states.append(&mut update_leaf_states);
-    indexer_store.persist_or_update_leaf_states(new_leaf_states)?;
-    indexer_store.delete_leaf_states(remove_leaf_states)?;
+    //Merge new table states and update table states
+    new_table_states.append(&mut update_table_states);
+    indexer_store.persist_or_update_table_states(new_table_states)?;
+    indexer_store.delete_table_states(remove_table_states)?;
+
+    let coin_info_type =
+        StructTag::from_str(format_struct_tag(CoinInfo::<GasCoin>::struct_tag()).as_str())?;
+    // println!("")
+    let filter = GlobalStateFilter::ObjectType(coin_info_type);
+    let query_global_states =
+        indexer_reader.query_global_states_with_filter(filter, None, 1, true)?;
+    assert_eq!(query_global_states.len(), 0);
+
+    let talbe_handle = ObjectID::from_str("0x0")?;
+    let filter = TableStateFilter::TableHandle(talbe_handle);
+    let query_table_states =
+        indexer_reader.query_table_states_with_filter(filter, None, 1, true)?;
+    assert_eq!(query_table_states.len(), 0);
 
     // test state sync
     let state_change_set = random_state_change_set();
