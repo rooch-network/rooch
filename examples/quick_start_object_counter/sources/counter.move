@@ -1,28 +1,44 @@
 module quick_start_object_counter::quick_start_object_counter {
-    use std::debug;
     use std::signer;
+    use moveos_std::event;
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::context::{Self, Context};
 
-    struct ObjectCounter has key, store {
+    struct Counter has key, store {
         count_value: u64
     }
 
-    fun create_counter(ctx: &mut Context, owner: &signer): ObjectID {
-        let counter = ObjectCounter { count_value: 0 };
+    struct NamedCounterCreatedEvent has drop {
+        id: ObjectID
+    }
+
+    struct UserCounterCreatedEvent {
+        id: ObjectID
+    }
+
+    fun init(ctx: &mut Context, owner: &signer) {
+        create_shared(ctx);
+        create_user(ctx, owner);
+    }
+
+    fun create_shared(ctx: &mut Context) {
+        let counter = Counter { count_value: 0 };
+        let counter_obj = context::new_named_object(ctx, counter);
+        object::to_shared(counter_obj);
+    }
+
+    fun create_user(ctx: &mut Context, owner: &signer): ObjectID {
+        let counter = Counter { count_value: 0 };
         let owner_addr = signer::address_of(owner);
         let counter_obj = context::new_object(ctx, counter);
         let counter_obj_id = object::id(&counter_obj);
         object::transfer(counter_obj, owner_addr);
+        let named_counter_created_event = NamedCounterCreatedEvent { id: counter_obj_id };
+        event::emit(named_counter_created_event);
         counter_obj_id
     }
 
-    fun init(ctx: &mut Context, owner: &signer) {
-        let counter_obj_id = create_counter(ctx, owner);
-        debug::print(&counter_obj_id);
-    }
-
-    public entry fun increase(counter_obj: &mut Object<ObjectCounter>) {
+    public entry fun increase(counter_obj: &mut Object<Counter>) {
         let counter = object::borrow_mut(counter_obj);
         counter.count_value = counter.count_value + 1;
     }
