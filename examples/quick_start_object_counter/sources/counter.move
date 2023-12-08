@@ -8,10 +8,6 @@ module quick_start_object_counter::quick_start_object_counter {
         count_value: u64
     }
 
-    struct NamedCounterCreatedEvent has drop {
-        id: ObjectID
-    }
-
     struct UserCounterCreatedEvent {
         id: ObjectID
     }
@@ -33,8 +29,8 @@ module quick_start_object_counter::quick_start_object_counter {
         let counter_obj = context::new_object(ctx, counter);
         let counter_obj_id = object::id(&counter_obj);
         object::transfer(counter_obj, owner_addr);
-        let named_counter_created_event = NamedCounterCreatedEvent { id: counter_obj_id };
-        event::emit(named_counter_created_event);
+        let user_counter_created_event = UserCounterCreatedEvent { id: counter_obj_id };
+        event::emit(user_counter_created_event);
         counter_obj_id
     }
 
