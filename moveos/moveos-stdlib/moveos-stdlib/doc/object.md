@@ -53,8 +53,7 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `contains_global`](#0x2_object_contains_global)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::hash</a>;
+<pre><code><b>use</b> <a href="">0x1::hash</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="address.md#0x2_address">0x2::address</a>;

@@ -269,10 +269,7 @@ fn native_from_json(
         };
         Ok(NativeResult::ok(cost, smallvec![Value::struct_(result)]))
     } else {
-        Ok(NativeResult::err(
-            cost,
-            moveos_types::move_std::error::invalid_argument(E_TYPE_NOT_MATCH),
-        ))
+        Ok(NativeResult::err(cost, E_TYPE_NOT_MATCH))
     }
 }
 

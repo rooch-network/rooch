@@ -13,7 +13,6 @@ module rooch_examples::article {
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
     use rooch_examples::comment::{Self, Comment};
-    use std::error;
     use std::option;
     use std::signer;
     use std::string::String;
@@ -37,7 +36,7 @@ module rooch_examples::article {
     }
 
     public fun initialize(ctx: &mut Context, account: &signer) {
-        assert!(signer::address_of(account) == @rooch_examples, error::invalid_argument(ErrorNotGenesisAccount));
+        assert!(signer::address_of(account) == @rooch_examples, ErrorNotGenesisAccount);
         let _ = ctx;
         let _ = account;
     }

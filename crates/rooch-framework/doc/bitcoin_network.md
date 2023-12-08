@@ -17,8 +17,7 @@
 -  [Function `network_magic`](#0x3_bitcoin_network_network_magic)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::string</a>;
+<pre><code><b>use</b> <a href="">0x1::string</a>;
 </code></pre>
 
 

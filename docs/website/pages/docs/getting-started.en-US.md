@@ -176,7 +176,7 @@ public fun create_blog(ctx: &mut Context, owner: &signer) {
 }
 
 public entry fun set_blog_name(ctx: &mut Context, owner: &signer, blog_name: String) {
-    assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(ErrorDataTooLong));
+    assert!(std::string::length(&blog_name) <= 200, ErrorDataTooLong);
     let owner_address = signer::address_of(owner);
     // if blog not exist, create it
     if (!context::exists_resource<MyBlog>(ctx, owner_address)) {
@@ -204,7 +204,6 @@ Then, provide a function to query the blog list and a function to add and delete
 
 ```move
 module simple_blog::simple_blog {
-    use std::error;
     use std::signer;
     use std::string::{Self, String};
     use std::vector;
@@ -237,7 +236,7 @@ module simple_blog::simple_blog {
     }
 
     public entry fun set_blog_name(ctx: &mut Context, owner: &signer, blog_name: String) {
-        assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(ErrorDataTooLong));
+        assert!(std::string::length(&blog_name) <= 200, ErrorDataTooLong);
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
         if (!context::exists_resource<MyBlog>(ctx, owner_address)) {
@@ -285,7 +284,7 @@ module simple_blog::simple_blog {
         let owner_address = signer::address_of(owner);
         let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
         let (contains, index) = vector::index_of(&myblog.articles, &article_id);
-        assert!(contains, error::not_found(ErrorNotFound));
+        assert!(contains, ErrorNotFound);
         vector::remove(&mut myblog.articles, index);
     }
 
@@ -503,8 +502,8 @@ Define a function to create an article:
         title: String,
         body: String,
     ): ObjectID {
-        assert!(std::string::length(&title) <= 200, error::invalid_argument(ErrorDataTooLong));
-        assert!(std::string::length(&body) <= 2000, error::invalid_argument(ErrorDataTooLong));
+        assert!(std::string::length(&title) <= 200, ErrorDataTooLong);
+        assert!(std::string::length(&body) <= 2000, ErrorDataTooLong);
 
         let article = Article {
             version: 0,
@@ -538,8 +537,8 @@ Then define the modification function:
         new_title: String,
         new_body: String,
     ) {
-        assert!(std::string::length(&new_title) <= 200, error::invalid_argument(ErrorDataTooLong));
-        assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(ErrorDataTooLong));
+        assert!(std::string::length(&new_title) <= 200, ErrorDataTooLong);
+        assert!(std::string::length(&new_body) <= 2000, ErrorDataTooLong);
 
         let id = object::id(article_obj);
         let article = object::borrow_mut(article_obj);
@@ -583,7 +582,6 @@ The complete contract code is as follows:
 ```move
 module simple_blog::simple_article {
 
-    use std::error;
     use std::signer;
     use std::string::String;
     use moveos_std::event;
@@ -623,8 +621,8 @@ module simple_blog::simple_article {
         title: String,
         body: String,
     ): ObjectID {
-        assert!(std::string::length(&title) <= 200, error::invalid_argument(ErrorDataTooLong));
-        assert!(std::string::length(&body) <= 2000, error::invalid_argument(ErrorDataTooLong));
+        assert!(std::string::length(&title) <= 200, ErrorDataTooLong);
+        assert!(std::string::length(&body) <= 2000, ErrorDataTooLong);
 
         let article = Article {
             version: 0,
@@ -652,8 +650,8 @@ module simple_blog::simple_article {
         new_title: String,
         new_body: String,
     ) {
-        assert!(std::string::length(&new_title) <= 200, error::invalid_argument(ErrorDataTooLong));
-        assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(ErrorDataTooLong));
+        assert!(std::string::length(&new_title) <= 200, ErrorDataTooLong);
+        assert!(std::string::length(&new_body) <= 2000, ErrorDataTooLong);
 
         let id = object::id(article_obj);
         let article = object::borrow_mut(article_obj);

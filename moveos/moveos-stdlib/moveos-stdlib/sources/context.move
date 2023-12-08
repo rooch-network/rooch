@@ -7,7 +7,6 @@
 module moveos_std::context {
 
     use std::option::Option;
-    use std::error;
     use std::string::String;
     use std::vector;
     use moveos_std::storage_context::{StorageContext};
@@ -263,7 +262,7 @@ module moveos_std::context {
     public fun borrow_mut_object<T: key>(self: &mut Context, owner: &signer, object_id: ObjectID): &mut Object<T> {
         let owner_address = signer::address_of(owner);
         let obj = borrow_mut_object_internal<T>(self, object_id);
-        assert!(object::owner(obj) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
+        assert!(object::owner(obj) == owner_address, ErrorObjectOwnerNotMatch);
         obj
     }
 
@@ -273,8 +272,8 @@ module moveos_std::context {
     public fun take_object<T: key + store>(_self: &mut Context, owner: &signer, object_id: ObjectID): Object<T> {
         let owner_address = signer::address_of(owner);
         let object_entity = object::borrow_mut_from_global<T>(object_id);
-        assert!(object::owner_internal(object_entity) == owner_address, error::permission_denied(ErrorObjectOwnerNotMatch));
-        assert!(!object::is_bound_internal(object_entity), error::permission_denied(ErrorObjectIsBound));
+        assert!(object::owner_internal(object_entity) == owner_address, ErrorObjectOwnerNotMatch);
+        assert!(!object::is_bound_internal(object_entity), ErrorObjectIsBound);
         object::to_system_owned_internal(object_entity);
         object::mut_entity_as_object(object_entity)
     }
@@ -284,8 +283,8 @@ module moveos_std::context {
     /// This function is for developer to extend, Only the module of `T` can take out the `UserOwnedObject` with object_id.
     public fun take_object_extend<T: key>(_self: &mut Context, object_id: ObjectID): Object<T> {
         let object_entity = object::borrow_mut_from_global<T>(object_id);
-        assert!(object::is_user_owned_internal(object_entity), error::permission_denied(ErrorObjectOwnerNotMatch));
-        assert!(!object::is_bound_internal(object_entity), error::permission_denied(ErrorObjectIsBound));
+        assert!(object::is_user_owned_internal(object_entity), ErrorObjectOwnerNotMatch);
+        assert!(!object::is_bound_internal(object_entity), ErrorObjectIsBound);
         object::to_system_owned_internal(object_entity);
         object::mut_entity_as_object(object_entity)
     }
@@ -293,7 +292,7 @@ module moveos_std::context {
     /// Borrow mut Shared Object by object_id
     public fun borrow_mut_object_shared<T: key>(self: &mut Context, object_id: ObjectID): &mut Object<T> {
         let obj = borrow_mut_object_internal<T>(self, object_id);
-        assert!(object::is_shared(obj), error::permission_denied(ErrorObjectNotShared));
+        assert!(object::is_shared(obj), ErrorObjectNotShared);
         obj
     }
 
@@ -411,7 +410,7 @@ module moveos_std::context {
     }
 
     #[test(alice = @0x42, bob = @0x43)]
-    #[expected_failure(abort_code = 327681, location = Self)]
+    #[expected_failure(abort_code = ErrorObjectOwnerNotMatch, location = Self)]
     fun test_borrow_mut_object(alice: &signer, bob: &signer){
         let alice_addr = signer::address_of(alice);
         let ctx = new_test_context(alice_addr);
@@ -451,7 +450,7 @@ module moveos_std::context {
 
 
     #[test(alice = @0x42)]
-    #[expected_failure(abort_code = 327682, location =  moveos_std::object)]
+    #[expected_failure(abort_code = 2, location =  moveos_std::object)]
     fun test_frozen_object_by_extend(alice: &signer){
         let alice_addr = signer::address_of(alice);
         let ctx = new_test_context(alice_addr);

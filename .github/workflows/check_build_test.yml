@@ -2,14 +2,14 @@ name: Check-Build-Test
 
 on:
   push:
-    branches: ['main']
+    branches: ["main"]
     paths-ignore:
       - "docs/**"
       - "fixtures/**"
       - "kube/**"
       - "**.md"
   pull_request:
-    branches: ['main']
+    branches: ["main"]
     paths-ignore:
       - "docs/**"
       - "fixtures/**"
@@ -84,4 +84,4 @@ jobs:
         with:
           fail-if-not-clean: true # optional
           push-if-not-clean: false # optional
-          targets: '.' #optional
+          targets: "." #optional

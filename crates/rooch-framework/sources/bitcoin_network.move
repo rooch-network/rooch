@@ -1,5 +1,4 @@
 module rooch_framework::bitcoin_network{
-    use std::error;
     use std::string::{Self, String};
 
     const ErrorUnknownNetwork: u64 = 1;
@@ -43,7 +42,7 @@ module rooch_framework::bitcoin_network{
         } else if (string::bytes(network) == &b"regtest") {
             NETWORK_REGTEST
         } else {
-            abort error::invalid_argument(ErrorUnknownNetwork)
+            abort ErrorUnknownNetwork
         }
     }
 
@@ -57,7 +56,7 @@ module rooch_framework::bitcoin_network{
         } else if (network == NETWORK_REGTEST) {
             string::utf8(b"regtest")
         } else {
-            abort error::invalid_argument(ErrorUnknownNetwork)
+            abort ErrorUnknownNetwork
         }
     }
 
@@ -71,7 +70,7 @@ module rooch_framework::bitcoin_network{
         } else if (network == NETWORK_REGTEST) {
             string::utf8(b"bcrt")
         } else {
-            abort error::invalid_argument(ErrorUnknownNetwork)
+            abort ErrorUnknownNetwork
         }
     }
    
@@ -85,7 +84,7 @@ module rooch_framework::bitcoin_network{
         } else if (network == NETWORK_REGTEST) {
             x"fabfb5da"
         } else {
-            abort error::invalid_argument(ErrorUnknownNetwork)
+            abort ErrorUnknownNetwork
         }
     }
 }

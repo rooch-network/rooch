@@ -3,7 +3,6 @@
 
 module rooch_framework::ethereum_light_client{
 
-    use std::error;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
     use rooch_framework::ethereum_address::ETHAddress;
@@ -81,7 +80,7 @@ module rooch_framework::ethereum_light_client{
     /// Get block via block_number
     public fun get_block(ctx: &Context, block_number: u64): &BlockHeader{
         let block_store = context::borrow_resource<BlockStore>(ctx, @rooch_framework);
-        assert!(table::contains(&block_store.blocks, block_number), error::invalid_argument(ErrorBlockNotFound));
+        assert!(table::contains(&block_store.blocks, block_number), ErrorBlockNotFound);
         table::borrow(&block_store.blocks, block_number)
     }
 }

@@ -32,8 +32,7 @@
 -  [Function `replace_u256_constant`](#0x2_move_module_replace_u256_constant)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::string</a>;
+<pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 </code></pre>
 

@@ -31,8 +31,7 @@ This module provides a solution for unsorted maps, that is it has the properties
 -  [Function `remove`](#0x2_simple_map_remove)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 </code></pre>
 

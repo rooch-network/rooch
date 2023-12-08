@@ -7,7 +7,6 @@
 
 /// A basic scalable vector library implemented using `Table`.
 module moveos_std::table_vec {
-    use std::error;
     use moveos_std::object::{UID};
     use moveos_std::table::{Self, Table};
 
@@ -46,7 +45,7 @@ module moveos_std::table_vec {
     /// Acquire an immutable reference to the `i`th element of the TableVec `t`.
     /// Aborts if `i` is out of bounds.
     public fun borrow<Element: store>(t: &TableVec<Element>, i: u64): &Element {
-        assert!(length(t) > i, error::invalid_argument(ErrorIndexOutOfBound));
+        assert!(length(t) > i, ErrorIndexOutOfBound);
         table::borrow(&t.contents, i)
     }
 
@@ -59,7 +58,7 @@ module moveos_std::table_vec {
     /// Return a mutable reference to the `i`th element in the TableVec `t`.
     /// Aborts if `i` is out of bounds.
     public fun borrow_mut<Element: store>(t: &mut TableVec<Element>, i: u64): &mut Element {
-        assert!(length(t) > i, error::invalid_argument(ErrorIndexOutOfBound));
+        assert!(length(t) > i, ErrorIndexOutOfBound);
         table::borrow_mut(&mut t.contents, i)
     }
 
@@ -67,14 +66,14 @@ module moveos_std::table_vec {
     /// Aborts if `t` is empty.
     public fun pop_back<Element: store>(t: &mut TableVec<Element>): Element {
         let length = length(t);
-        assert!(length > 0, error::invalid_argument(ErrorIndexOutOfBound));
+        assert!(length > 0, ErrorIndexOutOfBound);
         table::remove(&mut t.contents, length - 1)
     }
 
     /// Destroy the TableVec `t`.
     /// Aborts if `t` is not empty.
     public fun destroy_empty<Element: store>(t: TableVec<Element>) {
-        assert!(length(&t) == 0, error::invalid_state(ErrorTableNonEmpty));
+        assert!(length(&t) == 0, ErrorTableNonEmpty);
         let TableVec { contents } = t;
         table::destroy_empty(contents);
     }
@@ -89,8 +88,8 @@ module moveos_std::table_vec {
     /// Swaps the elements at the `i`th and `j`th indices in the TableVec `t`.
     /// Aborts if `i` or `j` is out of bounds.
     public fun swap<Element: store>(t: &mut TableVec<Element>, i: u64, j: u64) {
-        assert!(length(t) > i, error::invalid_argument(ErrorIndexOutOfBound));
-        assert!(length(t) > j, error::invalid_argument(ErrorIndexOutOfBound));
+        assert!(length(t) > i, ErrorIndexOutOfBound);
+        assert!(length(t) > j, ErrorIndexOutOfBound);
         if (i == j) { return };
         let element_i = table::remove(&mut t.contents, i);
         let element_j = table::remove(&mut t.contents, j);
@@ -102,7 +101,7 @@ module moveos_std::table_vec {
     /// This is O(1), but does not preserve ordering of elements in the TableVec.
     /// Aborts if `i` is out of bounds.
     public fun swap_remove<Element: store>(t: &mut TableVec<Element>, i: u64): Element {
-        assert!(length(t) > i, error::invalid_argument(ErrorIndexOutOfBound));
+        assert!(length(t) > i, ErrorIndexOutOfBound);
         let last_idx = length(t) - 1;
         swap(t, i, last_idx);
         pop_back(t)

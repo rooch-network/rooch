@@ -3,7 +3,6 @@
 
 module rooch_framework::multichain_address {
     
-    use std::error;
     use rooch_framework::ethereum_address::{Self, ETHAddress};
     use rooch_framework::bitcoin_address::{Self, BTCAddress};
 
@@ -71,17 +70,17 @@ module rooch_framework::multichain_address {
     }
 
     public fun into_rooch_address(maddress: MultiChainAddress) : address {
-        assert!(maddress.multichain_id == MULTICHAIN_ID_ROOCH, error::invalid_argument(ErrorMultiChainIDMismatch));
+        assert!(maddress.multichain_id == MULTICHAIN_ID_ROOCH, ErrorMultiChainIDMismatch);
         moveos_std::bcs::to_address(maddress.raw_address)
     }
 
     public fun into_eth_address(maddress: MultiChainAddress) : ETHAddress {
-        assert!(maddress.multichain_id == MULTICHAIN_ID_ETHER, error::invalid_argument(ErrorMultiChainIDMismatch));
+        assert!(maddress.multichain_id == MULTICHAIN_ID_ETHER, ErrorMultiChainIDMismatch);
         ethereum_address::from_bytes(maddress.raw_address)
     }
 
     public fun into_bitcoin_address(maddress: MultiChainAddress) : BTCAddress {
-        assert!(maddress.multichain_id == MULTICHAIN_ID_BITCOIN, error::invalid_argument(ErrorMultiChainIDMismatch));
+        assert!(maddress.multichain_id == MULTICHAIN_ID_BITCOIN, ErrorMultiChainIDMismatch);
         bitcoin_address::from_bytes(maddress.raw_address)
     }
 }

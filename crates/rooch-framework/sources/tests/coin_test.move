@@ -74,7 +74,7 @@ module rooch_framework::coin_test{
     }
 
     #[test]
-    #[expected_failure(abort_code = 524290, location = rooch_framework::coin)]
+    #[expected_failure(abort_code = 2, location = rooch_framework::coin)]
     public fun fail_register() {
         let source_ctx = rooch_framework::genesis::init_for_test();
 
@@ -97,7 +97,7 @@ module rooch_framework::coin_test{
     }
 
     #[test]
-    #[expected_failure(abort_code = 65540, location = rooch_framework::coin)]
+    #[expected_failure(abort_code = 4, location = rooch_framework::coin)]
     public fun test_destroy_non_zero(
     ) {
         let source_ctx = rooch_framework::genesis::init_for_test();

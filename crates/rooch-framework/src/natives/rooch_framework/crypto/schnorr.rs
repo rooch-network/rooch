@@ -48,11 +48,11 @@ pub fn native_verify(
     let cost = gas_params.base;
 
     let Ok(sign) = SchnorrSignature::from_bytes(&signature_bytes_ref) else {
-        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_SIGNATURE)));
+        return Ok(NativeResult::err(cost, E_INVALID_SIGNATURE));
     };
 
     let Ok(public_key) = <SchnorrPublicKey as ToFromBytes>::from_bytes(&public_key_bytes_ref) else {
-        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_PUBKEY)));
+        return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
     };
 
     let result = match hash {

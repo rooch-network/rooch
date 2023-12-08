@@ -50,8 +50,7 @@ and let developers customize the storage
 -  [Function `exists_object`](#0x2_context_exists_object)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="account_storage.md#0x2_account_storage">0x2::account_storage</a>;
 <b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;

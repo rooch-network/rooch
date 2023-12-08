@@ -96,7 +96,7 @@ module rooch_framework::coin_store_test{
     }
 
     #[test(account = @0x42)]
-    #[expected_failure(abort_code = 327682, location = rooch_framework::coin_store)]
+    #[expected_failure(abort_code = 2, location = rooch_framework::coin_store)]
     fun test_withdraw_from_account_frozen(account: signer) {
         let ctx = rooch_framework::genesis::init_for_test();
         let account_addr = signer::address_of(&account);
@@ -112,7 +112,7 @@ module rooch_framework::coin_store_test{
     }
 
     #[test(account = @0x42)]
-    #[expected_failure(abort_code = 327682, location = rooch_framework::coin_store)]
+    #[expected_failure(abort_code = 2, location = rooch_framework::coin_store)]
     fun test_deposit_to_account_frozen(account: signer) {
         let ctx = rooch_framework::genesis::init_for_test();
         let account_addr = signer::address_of(&account);
