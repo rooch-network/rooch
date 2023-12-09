@@ -8,7 +8,7 @@ module quick_start_object_counter::quick_start_object_counter {
         count_value: u64
     }
 
-    struct UserCounterCreatedEvent {
+    struct UserCounterCreatedEvent has drop {
         id: ObjectID
     }
 
@@ -24,7 +24,7 @@ module quick_start_object_counter::quick_start_object_counter {
     }
 
     fun create_user(ctx: &mut Context, owner: &signer): ObjectID {
-        let counter = Counter { count_value: 0 };
+        let counter = Counter { count_value: 123 };
         let owner_addr = signer::address_of(owner);
         let counter_obj = context::new_object(ctx, counter);
         let counter_obj_id = object::id(&counter_obj);
