@@ -29,6 +29,16 @@ import {
 } from '../utils'
 import { IClient } from './interface'
 
+export const ROOCH_CLIENT_BRAND = Symbol.for('@roochnetwork/rooch-sdk')
+
+export function isRoochClient(client: unknown): client is RoochClient {
+  return (
+    typeof client === 'object' &&
+    client !== null &&
+    (client as { [ROOCH_CLIENT_BRAND]: unknown })[ROOCH_CLIENT_BRAND] === true
+  )
+}
+
 /**
  * Configuration options for the JsonRpcProvider. If the value of a field is not provided,
  * value in `DEFAULT_OPTIONS` for that field will be used

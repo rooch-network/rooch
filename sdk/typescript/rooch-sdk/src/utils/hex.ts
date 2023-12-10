@@ -1,9 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import { Buffer } from 'buffer'
 
 export function toHexString(byteArray: Iterable<number>): string {
-  return `0x${Buffer.from(new Uint8Array(byteArray)).toString('hex')}`
+  const hexArray = Array.from(byteArray).map((byte) => {
+    const roundedByte = Math.floor(byte)
+    return (roundedByte < 0 ? 256 + roundedByte : roundedByte).toString(16).padStart(2, '0')
+  })
+  return `0x${hexArray.join('')}`
 }
 
 export function fromHexString(hex: string, padding?: number): Uint8Array {
@@ -15,8 +18,13 @@ export function fromHexString(hex: string, padding?: number): Uint8Array {
     hexWithoutPrefix = `0${hexWithoutPrefix}`
   }
 
-  const buf = Buffer.from(hexWithoutPrefix, 'hex')
-  return new Uint8Array(buf)
+  const byteArray = new Uint8Array(hexWithoutPrefix.length / 2)
+
+  for (let i = 0; i < hexWithoutPrefix.length; i += 2) {
+    byteArray[i / 2] = parseInt(hexWithoutPrefix.substring(i, i + 2), 16)
+  }
+
+  return byteArray
 }
 
 /**

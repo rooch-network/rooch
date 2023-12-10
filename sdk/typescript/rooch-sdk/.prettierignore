@@ -3,7 +3,9 @@
 
 # ignore generated files
 dist/
+build/
 tools/generator
 pnpm-lock.yaml
-src/generated
+src/generated/*
 package.json
+
