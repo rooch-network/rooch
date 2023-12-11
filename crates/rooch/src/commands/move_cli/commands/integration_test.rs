@@ -243,16 +243,17 @@ impl IntegrationTest {
                         }),
                         |_k, v1, _v2| v1.clone(),
                     );
-                    pre_compiled_lib.inlining.modules = pre_compiled_lib.inlining.modules.union_with(
-                        &full_program.inlining.modules.filter_map(|_k, v| {
-                            if v.is_source_module {
-                                Some(v)
-                            } else {
-                                None
-                            }
-                        }),
-                        |_k, v1, _v2| v1.clone(),
-                    );
+                    pre_compiled_lib.inlining.modules =
+                        pre_compiled_lib.inlining.modules.union_with(
+                            &full_program.inlining.modules.filter_map(|_k, v| {
+                                if v.is_source_module {
+                                    Some(v)
+                                } else {
+                                    None
+                                }
+                            }),
+                            |_k, v1, _v2| v1.clone(),
+                        );
                     pre_compiled_lib.hlir.modules = pre_compiled_lib.hlir.modules.union_with(
                         &full_program.hlir.modules.filter_map(|_k, v| {
                             if v.is_source_module {

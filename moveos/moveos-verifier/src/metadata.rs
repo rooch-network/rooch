@@ -346,7 +346,9 @@ impl<'a> ExtendedChecker<'a> {
 impl<'a> ExtendedChecker<'a> {
     fn check_init_module(&mut self, module: &ModuleEnv) {
         for ref fun in module.get_functions() {
-            if fun.get_identifier().unwrap().as_ident_str() != INIT_FN_NAME_IDENTIFIER.as_ident_str() {
+            if fun.get_identifier().unwrap().as_ident_str()
+                != INIT_FN_NAME_IDENTIFIER.as_ident_str()
+            {
                 continue;
             }
 
@@ -679,8 +681,10 @@ impl<'a> ExtendedChecker<'a> {
                                             if let Some(gas_function) =
                                                 get_module_env_function(module, &gas_function_name)
                                             {
-                                                let current_module =
-                                                    module.self_address().expect_numerical().to_hex_literal();
+                                                let current_module = module
+                                                    .self_address()
+                                                    .expect_numerical()
+                                                    .to_hex_literal();
                                                 let current_module_name = fenv
                                                     .symbol_pool()
                                                     .string(fenv.module_env.get_name().name())
@@ -692,8 +696,11 @@ impl<'a> ExtendedChecker<'a> {
                                                     gas_function_name
                                                 );
 
-                                                let current_module =
-                                                    fenv.module_env.self_address().expect_numerical().to_hex_literal();
+                                                let current_module = fenv
+                                                    .module_env
+                                                    .self_address()
+                                                    .expect_numerical()
+                                                    .to_hex_literal();
                                                 let current_module_name = fenv
                                                     .symbol_pool()
                                                     .string(fenv.module_env.get_name().name())
@@ -754,8 +761,11 @@ impl<'a> ExtendedChecker<'a> {
                                                 self.env.error(&fenv.get_loc(), format!("Gas function {:?} is not found in current module.", gas_function_name).as_str());
                                             }
 
-                                            let current_module =
-                                                fenv.module_env.self_address().expect_numerical().to_hex_literal();
+                                            let current_module = fenv
+                                                .module_env
+                                                .self_address()
+                                                .expect_numerical()
+                                                .to_hex_literal();
                                             let current_module_name = fenv
                                                 .symbol_pool()
                                                 .string(fenv.module_env.get_name().name())
@@ -1060,7 +1070,10 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
                         })
                         .collect::<Vec<_>>();
 
-                    let module_address = module_env.self_address().expect_numerical().to_hex_literal();
+                    let module_address = module_env
+                        .self_address()
+                        .expect_numerical()
+                        .to_hex_literal();
                     let module_name = extended_checker
                         .env
                         .symbol_pool()

@@ -4,8 +4,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use clap::ValueEnum;
 use clap::Parser;
+use clap::ValueEnum;
 use pretty_assertions::assert_str_eq;
 use std::fs::File;
 use std::io::Write;

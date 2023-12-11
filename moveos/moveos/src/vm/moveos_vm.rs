@@ -25,10 +25,9 @@ use move_vm_runtime::{
     native_functions::NativeFunction,
     session::{LoadedFunctionInstantiation, SerializedReturnValues, Session},
 };
-use move_vm_types::{
-    loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
-};
+use move_vm_types::loaded_data::runtime_types::{CachedStructIndex, StructType, Type};
 
+use move_vm_runtime::data_cache::TransactionCache;
 use moveos_stdlib::natives::moveos_stdlib::{
     event::NativeEventContext,
     move_module::NativeModuleContext,
@@ -50,7 +49,6 @@ use moveos_types::{
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 use parking_lot::RwLock;
 use std::{borrow::Borrow, sync::Arc};
-use move_vm_runtime::data_cache::TransactionCache;
 
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
 pub struct MoveOSVM {

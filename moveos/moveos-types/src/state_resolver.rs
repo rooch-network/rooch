@@ -59,7 +59,7 @@ where
         &self,
         address: &AccountAddress,
         tag: &StructTag,
-        _metadata: &[Metadata]
+        _metadata: &[Metadata],
     ) -> Result<(Option<Vec<u8>>, usize), Error> {
         let resource_table_id = NamedTableID::Resource(*address).to_object_id();
 

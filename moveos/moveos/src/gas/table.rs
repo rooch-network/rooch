@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_binary_format::file_format::CodeOffset;
+use move_core_types::account_address::AccountAddress;
 use move_core_types::gas_algebra::{
     AbstractMemorySize, GasQuantity, InternalGas, NumArgs, NumBytes,
 };
@@ -14,8 +16,6 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::ops::{Add, Bound};
-use move_binary_format::file_format::CodeOffset;
-use move_core_types::account_address::AccountAddress;
 
 use super::SwitchableGasMeter;
 

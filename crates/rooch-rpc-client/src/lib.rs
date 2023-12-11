@@ -6,6 +6,7 @@ use eth_client::EthRpcClient;
 use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use move_core_types::language_storage::ModuleId;
+use move_core_types::metadata::Metadata;
 use move_core_types::resolver::ModuleResolver;
 use moveos_types::access_path::AccessPath;
 use moveos_types::moveos_std::move_module::MoveModule;
@@ -17,7 +18,6 @@ use moveos_types::{
 use rooch_client::RoochRpcClient;
 use std::sync::Arc;
 use std::time::Duration;
-use move_core_types::metadata::Metadata;
 
 pub mod client_config;
 pub mod eth_client;

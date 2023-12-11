@@ -9,9 +9,9 @@ use move_core_types::{
     value::MoveValue,
     vm_status::StatusCode,
 };
+use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
-use move_vm_types::{loaded_data::runtime_types::{StructType, Type},
-};
+use move_vm_types::loaded_data::runtime_types::{StructType, Type};
 use moveos_types::{
     moveos_std::{
         context::Context,
@@ -21,7 +21,6 @@ use moveos_types::{
     state_resolver::MoveOSResolver,
 };
 use std::sync::Arc;
-use move_vm_runtime::data_cache::TransactionCache;
 
 impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
 where

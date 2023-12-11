@@ -14,7 +14,8 @@ use move_core_types::{
     value::MoveTypeLayout,
     vm_status::StatusCode,
 };
-use move_vm_types::{ loaded_data::runtime_types::Type,
+use move_vm_types::{
+    loaded_data::runtime_types::Type,
     values::{GlobalValue, Reference, Struct, Value},
 };
 use moveos_stdlib::natives::moveos_stdlib::raw_table::{serialize, TableData, TableRuntimeValue};

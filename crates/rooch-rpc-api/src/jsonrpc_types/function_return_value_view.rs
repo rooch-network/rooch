@@ -49,7 +49,7 @@ impl From<VMStatus> for VMStatusView {
                 code_offset,
                 status_code: StrView(status_code as u64),
             },
-            VMStatus::Error{status_code, ..} => Self::Error(StrView(status_code as u64)),
+            VMStatus::Error { status_code, .. } => Self::Error(StrView(status_code as u64)),
         }
     }
 }
