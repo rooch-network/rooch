@@ -267,7 +267,7 @@ impl ModuleResolver for RemoteStore {
         todo!()
     }
 
-    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
+    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Error> {
         Ok(self.modules.get(module_id).cloned())
     }
 }
@@ -280,14 +280,6 @@ impl ResourceResolver for RemoteStore {
         _metadata: &[Metadata],
     ) -> Result<(Option<Vec<u8>>, usize), Error> {
         todo!()
-    }
-
-    fn get_resource(
-        &self,
-        _address: &AccountAddress,
-        _tag: &StructTag,
-    ) -> Result<Option<Vec<u8>>, Self::Error> {
-        Ok(None)
     }
 }
 
