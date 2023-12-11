@@ -301,7 +301,7 @@ $ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762
 
 ## 面向对象的存储模型
 
-上面我们使用了账户的**资源存储模型**来简单地实现和使用计数器。接下来我们将介绍另一种存储模型——对象存储模型。
+上面我们使用了账户的**资源存储模型**来简单地实现和使用计数器。接下来我们将介绍另一种存储模型——**对象存储模型**。
 
 我们将重构计数器这个例子，并在 Rooch 的 `dev` 网络进行演示。
 
@@ -326,7 +326,7 @@ module quick_start_object_counter::quick_start_object_counter {
         count_value: u64
     }
 
-    struct UserCounterCreatedEvent {
+    struct UserCounterCreatedEvent has drop {
         id: ObjectID
     }
 
@@ -342,7 +342,7 @@ module quick_start_object_counter::quick_start_object_counter {
     }
 
     fun create_user(ctx: &mut Context, owner: &signer): ObjectID {
-        let counter = Counter { count_value: 0 };
+        let counter = Counter { count_value: 123 };
         let owner_addr = signer::address_of(owner);
         let counter_obj = context::new_object(ctx, counter);
         let counter_obj_id = object::id(&counter_obj);
