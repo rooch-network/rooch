@@ -4,7 +4,6 @@
 /// This module implements the native validator.
 module rooch_framework::native_validator {
 
-    use std::error;
     use std::vector;
     use std::option;
     use std::signer;
@@ -34,7 +33,7 @@ module rooch_framework::native_validator {
         // compare newly passed public key with Rooch public key length to ensure it's compatible
         assert!(
             vector::length(&public_key) == ed25519::public_key_length(),
-            error::invalid_argument(ErrorInvalidPublicKeyLength)
+            ErrorInvalidPublicKeyLength
         );
 
         // User can rotate the authentication key arbitrarily, so we do not need to check the new public key with the account address.

@@ -24,7 +24,6 @@ This module implements Ethereum validator with the ECDSA recoverable signature o
 
 
 <pre><code><b>use</b> <a href="">0x1::debug</a>;
-<b>use</b> <a href="">0x1::error</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x2::context</a>;

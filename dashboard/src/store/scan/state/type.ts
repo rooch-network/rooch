@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { AnyAction, Dispatch } from '@reduxjs/toolkit'
-import { JsonRpcProvider } from '@rooch/sdk'
+import { RoochClient } from '@roochnetwork/rooch-sdk'
 
 export interface Params {
   dispatch: Dispatch<AnyAction>
-  provider: JsonRpcProvider
+  provider: RoochClient
   accessPath: string
 }

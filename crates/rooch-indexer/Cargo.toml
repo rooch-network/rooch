@@ -43,6 +43,7 @@ coerce = { workspace = true }
 sized-chunks = { workspace = true }
 rand = { workspace = true }
 ethers = { workspace = true }
+log = { workspace = true }
 
 move-core-types = { workspace = true }
 move-bytecode-utils = { workspace = true }
@@ -51,6 +52,8 @@ move-resource-viewer = { workspace = true }
 
 moveos-config = { workspace = true }
 moveos-types = { workspace = true }
+moveos-store = { workspace = true }
 
 rooch-types = { workspace = true }
 rooch-config = { workspace = true }
+rooch-rpc-api = { workspace = true }

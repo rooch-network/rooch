@@ -3,7 +3,6 @@
 
 module rooch_framework::genesis {
 
-    use std::error;
     use std::option;
     use moveos_std::context::{Self, Context};
     use rooch_framework::account;
@@ -18,6 +17,8 @@ module rooch_framework::genesis {
     use rooch_framework::address_mapping;
     use rooch_framework::ethereum_light_client;
     use rooch_framework::bitcoin_light_client;
+    use rooch_framework::ord;
+    use rooch_framework::brc20;
 
     const ErrorGenesisInit: u64 = 1;
 
@@ -32,7 +33,7 @@ module rooch_framework::genesis {
         //TODO genesis account should be a resource account?
         let genesis_account = &account::create_account(ctx, @rooch_framework);
         let genesis_context_option = context::get<GenesisContext>(ctx);
-        assert!(option::is_some(&genesis_context_option), error::invalid_argument(ErrorGenesisInit));
+        assert!(option::is_some(&genesis_context_option), ErrorGenesisInit);
         let genesis_context = option::extract(&mut genesis_context_option);
         chain_id::genesis_init(ctx, genesis_account, genesis_context.chain_id);
         auth_validator_registry::genesis_init(ctx, genesis_account);
@@ -45,6 +46,8 @@ module rooch_framework::genesis {
         address_mapping::genesis_init(ctx, genesis_account);
         ethereum_light_client::genesis_init(ctx, genesis_account);
         bitcoin_light_client::genesis_init(ctx, genesis_account);
+        ord::genesis_init(ctx, genesis_account);
+        brc20::genesis_init(ctx, genesis_account);
     }
 
 

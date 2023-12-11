@@ -20,8 +20,7 @@ Migrated from the account module for simplyfying the account module.
 -  [Function `install_auth_validator_entry`](#0x3_account_authentication_install_auth_validator_entry)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::context</a>;

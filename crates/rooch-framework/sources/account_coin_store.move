@@ -4,7 +4,6 @@
 module rooch_framework::account_coin_store {
 
     use std::string;
-    use std::error;
     use std::option;
     use std::option::Option;
     use moveos_std::object::ObjectID;
@@ -263,7 +262,7 @@ module rooch_framework::account_coin_store {
     fun deposit_internal<CoinType: key>(ctx: &mut Context, addr: address, coin: Coin<CoinType>) {
         assert!(
             is_accept_coin<CoinType>(ctx, addr),
-            error::not_found(ErrorAccountNotAcceptCoin),
+            ErrorAccountNotAcceptCoin,
         ); 
         let coin_store = create_or_borrow_mut_account_coin_store<CoinType>(ctx, addr);
         coin_store::deposit_internal<CoinType>(coin_store, coin)

@@ -7,13 +7,16 @@ use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionW
 use crate::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, BalanceInfoPageView,
     BytesView, EventOptions, EventPageView, ExecuteTransactionResponseView, FunctionCallView,
-    H256View, IndexerEventPageView, StateOptions, StateView, StatesPageView, StrView,
-    StructTagView, TransactionWithInfoPageView,
+    GlobalStateFilterView, H256View, IndexerEventPageView, IndexerGlobalStatePageView,
+    IndexerTableChangeSetPageView, IndexerTableStatePageView, StateOptions, StateSyncFilterView,
+    StateView, StatesPageView, StrView, StructTagView, TableStateFilterView,
+    TransactionWithInfoPageView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use rooch_open_rpc_macros::open_rpc;
 use rooch_types::indexer::event_filter::IndexerEventID;
+use rooch_types::indexer::state::IndexerStateID;
 
 #[open_rpc(namespace = "rooch")]
 #[rpc(server, client, namespace = "rooch")]
@@ -124,4 +127,37 @@ pub trait RoochAPI {
         limit: Option<StrView<usize>>,
         descending_order: Option<bool>,
     ) -> RpcResult<IndexerEventPageView>;
+
+    /// Query the global states indexer by state filter
+    #[method(name = "queryGlobalStates")]
+    async fn query_global_states(
+        &self,
+        filter: GlobalStateFilterView,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerStateID>,
+        limit: Option<StrView<usize>>,
+        descending_order: Option<bool>,
+    ) -> RpcResult<IndexerGlobalStatePageView>;
+
+    /// Query the table states indexer by state filter
+    #[method(name = "queryTableStates")]
+    async fn query_table_states(
+        &self,
+        filter: TableStateFilterView,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerStateID>,
+        limit: Option<StrView<usize>>,
+        descending_order: Option<bool>,
+    ) -> RpcResult<IndexerTableStatePageView>;
+
+    /// Sync state change sets from indexer
+    #[method(name = "syncStates")]
+    async fn sync_states(
+        &self,
+        filter: Option<StateSyncFilterView>,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerStateID>,
+        limit: Option<StrView<usize>>,
+        descending_order: Option<bool>,
+    ) -> RpcResult<IndexerTableChangeSetPageView>;
 }

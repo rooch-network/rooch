@@ -24,8 +24,7 @@
 -  [Function `genesis_address`](#0x3_core_addresses_genesis_address)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::signer</a>;
+<pre><code><b>use</b> <a href="">0x1::signer</a>;
 </code></pre>
 
 

@@ -240,7 +240,7 @@ https://dev-seed.rooch.network
 |`context::borrow_mut_object<T: key>(&mut Context, &signer, ObjectID): &mut Object<T>`  | false| owner(&signer) 通过 ID 借用 `Object<T>` 的可变引用|
 |`context::borrow_mut_object_shared<T: key>(&mut Context, ObjectID): &mut Object<T>`    | false| 通过 ID 借用共享 `Object<T>` 的可变引用|
 |`context::borrow_mut_object_extend<T: key>(&mut Context, ObjectID): &mut Object<T>`    | true | 给开发者的扩展方法，`T` 所在的模块可以通过 ObjectID 获取任意 `&mut Object<T>`|
-|`context::exist_object<T: key>(&Context, ObjectID): bool`                              | false | 通过 ObjectID 检测 Object 是否存在｜
+|`context::exist_object<T: key>(&Context, ObjectID): bool`                              | false | 通过 ObjectID 检测 Object 是否存在|
 |`object::id<T: key>(&Object<T>): ObjectID`                                             | false | 获取 ObjectID|
 |`object::owner<T: key>(&Object<T>): address`                                           | false | 获取拥有者的地址|
 |`object::borrow<T: key>(&Object<T>): &T`                                               | false | `&Object` 借用 `T` 的只读引用|
@@ -268,7 +268,7 @@ Rooch 中的 Object 是在 Move 中定义的类型。
 #### Aptos Object 
 
 * Aptos Object 底层是一种特殊的账户，该账户的 `address` 即 `ObjectID`。
-* `Object<T>` 代表对 Object 的引用，可以 `copy`,`drop`，而 Rooch 中 `Object<T>` 只有一个实例，不可以 `copy`,`drop`。
+* `Object<T>` 代表对 Object 的引用，可以 `copy`，`drop`，而 Rooch 中 `Object<T>` 只有一个实例，不可以 `copy`，`drop`。
 * Aptos Object 通过 `DeleteRef`，`ExtendRef`，`TransferRef` 来表达对 Object 不同的操作权限，而 Rooch Object 通过只读引用，可变引用以及实例来区分不同的权限。
 
 <Callout>
@@ -283,6 +283,6 @@ TODO: This part of this document needs to be improved
 4. [Rooch Context Source code](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/context.move)
 5. [Sui Object](https://docs.sui.io/learn/objects)
 6. [Aptos Object](https://aptos.dev/standards/aptos-object/)
-7. [StorageAbstraction](../dive-into-rooch/storage-abstraction)
+7. [StorageAbstraction](../dive-into-rooch/storage-abstraction.zh-CN.mdx)
 7. [Hot Potato](https://examples.sui.io/patterns/hot-potato.html)
 

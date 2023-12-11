@@ -41,6 +41,16 @@ Error if the signature is invalid.
 
 
 
+<a name="0x3_schnorr_SHA256"></a>
+
+Hash function name that are valid for verify.
+
+
+<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_SHA256">SHA256</a>: u8 = 1;
+</code></pre>
+
+
+
 <a name="0x3_schnorr_SCHNORR_PUBKEY_LENGTH"></a>
 
 constant codes
@@ -56,16 +66,6 @@ constant codes
 
 
 <pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_SCHNORR_SIG_LENGTH">SCHNORR_SIG_LENGTH</a>: u64 = 64;
-</code></pre>
-
-
-
-<a name="0x3_schnorr_SHA256"></a>
-
-Hash function name that are valid for verify.
-
-
-<pre><code><b>const</b> <a href="schnorr.md#0x3_schnorr_SHA256">SHA256</a>: u8 = 1;
 </code></pre>
 
 

@@ -3,9 +3,8 @@
 
 /// Name the module to `simple_blog` for avoid name conflict with `examples/blog`
 module simple_blog::simple_blog {
-    use std::error;
     use std::signer;
-    use std::string::{Self,String};
+    use std::string::{Self, String};
     use std::vector;
     use moveos_std::object::{ObjectID, Object};
     use moveos_std::context::{Self, Context};
@@ -28,7 +27,7 @@ module simple_blog::simple_blog {
 
     public fun create_blog(ctx: &mut Context, owner: &signer) {
         let articles = vector::empty();
-        let myblog = MyBlog{
+        let myblog = MyBlog {
             name: string::utf8(b"MyBlog"),
             articles,
         };
@@ -36,38 +35,30 @@ module simple_blog::simple_blog {
     }
 
     public entry fun set_blog_name(ctx: &mut Context, owner: &signer, blog_name: String) {
-        assert!(std::string::length(&blog_name) <= 200, error::invalid_argument(ErrorDataTooLong));
+        assert!(std::string::length(&blog_name) <= 200, ErrorDataTooLong);
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
-        if(!context::exists_resource<MyBlog>(ctx, owner_address)){
+        if (!context::exists_resource<MyBlog>(ctx, owner_address)) {
             create_blog(ctx, owner);
         };
         let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
         myblog.name = blog_name;
     }
 
-    fun add_article_to_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
-        let owner_address = signer::address_of(owner);
-        // if blog not exist, create it
-        if(!context::exists_resource<MyBlog>(ctx, owner_address)){
-            create_blog(ctx, owner);
-        };
-        let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
-        vector::push_back(&mut myblog.articles, article_id);
-    }
-
-    fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID){
-        let owner_address = signer::address_of(owner);
-        let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
-        let (contains, index) = vector::index_of(&myblog.articles, &article_id);
-        assert!(contains, error::not_found(ErrorNotFound));
-        vector::remove(&mut myblog.articles, index); 
-    }
-
     /// Get owner's blog's articles
     public fun get_blog_articles(ctx: &Context, owner_address: address): &vector<ObjectID> {
         let myblog = context::borrow_resource<MyBlog>(ctx, owner_address);
         &myblog.articles
+    }
+
+    fun add_article_to_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
+        let owner_address = signer::address_of(owner);
+        // if blog not exist, create it
+        if (!context::exists_resource<MyBlog>(ctx, owner_address)) {
+            create_blog(ctx, owner);
+        };
+        let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
+        vector::push_back(&mut myblog.articles, article_id);
     }
 
     public entry fun create_article(
@@ -88,13 +79,21 @@ module simple_blog::simple_blog {
         simple_article::update_article(article_obj, new_title, new_body);
     }
 
+    fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
+        let owner_address = signer::address_of(owner);
+        let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
+        let (contains, index) = vector::index_of(&myblog.articles, &article_id);
+        assert!(contains, ErrorNotFound);
+        vector::remove(&mut myblog.articles, index);
+    }
+
     public entry fun delete_article(
         ctx: &mut Context,
         owner: &signer,
         article_id: ObjectID,
     ) {
         delete_article_from_myblog(ctx, owner, article_id);
-        let article_obj = context::take_object(ctx, owner, article_id); 
+        let article_obj = context::take_object(ctx, owner, article_id);
         simple_article::delete_article(article_obj);
     }
 }

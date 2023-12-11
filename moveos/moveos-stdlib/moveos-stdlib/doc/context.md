@@ -26,6 +26,7 @@ and let developers customize the storage
 -  [Function `tx_result`](#0x2_context_tx_result)
 -  [Function `new_table`](#0x2_context_new_table)
 -  [Function `new_type_table`](#0x2_context_new_type_table)
+-  [Function `new_table_vec`](#0x2_context_new_table_vec)
 -  [Function `borrow_resource`](#0x2_context_borrow_resource)
 -  [Function `borrow_mut_resource`](#0x2_context_borrow_mut_resource)
 -  [Function `move_resource_to`](#0x2_context_move_resource_to)
@@ -49,8 +50,7 @@ and let developers customize the storage
 -  [Function `exists_object`](#0x2_context_exists_object)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="account_storage.md#0x2_account_storage">0x2::account_storage</a>;
 <b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;
@@ -58,6 +58,7 @@ and let developers customize the storage
 <b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
 <b>use</b> <a href="storage_context.md#0x2_storage_context">0x2::storage_context</a>;
 <b>use</b> <a href="table.md#0x2_table">0x2::table</a>;
+<b>use</b> <a href="table_vec.md#0x2_table_vec">0x2::table_vec</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 <b>use</b> <a href="tx_meta.md#0x2_tx_meta">0x2::tx_meta</a>;
 <b>use</b> <a href="tx_result.md#0x2_tx_result">0x2::tx_result</a>;
@@ -298,6 +299,17 @@ Get a value from the context map
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_type_table">new_type_table</a>(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>
+</code></pre>
+
+
+
+<a name="0x2_context_new_table_vec"></a>
+
+## Function `new_table_vec`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_table_vec">new_table_vec</a>&lt;V: store&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): <a href="table_vec.md#0x2_table_vec_TableVec">table_vec::TableVec</a>&lt;V&gt;
 </code></pre>
 
 

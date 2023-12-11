@@ -13,8 +13,7 @@
 -  [Function `into_bytes`](#0x3_ethereum_address_into_bytes)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable">0x3::ecdsa_k1_recoverable</a>;
+<pre><code><b>use</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable">0x3::ecdsa_k1_recoverable</a>;
 <b>use</b> <a href="hash.md#0x3_hash">0x3::hash</a>;
 </code></pre>
 

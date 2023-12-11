@@ -24,8 +24,7 @@
 -  [Function `get_signer_capability_address`](#0x3_account_get_signer_capability_address)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::hash</a>;
+<pre><code><b>use</b> <a href="">0x1::hash</a>;
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;

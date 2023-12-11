@@ -332,6 +332,82 @@
       }
     },
     {
+      "name": "rooch_queryGlobalStates",
+      "description": "Query the global states indexer by state filter",
+      "params": [
+        {
+          "name": "filter",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/GlobalStateFilterView"
+          }
+        },
+        {
+          "name": "cursor",
+          "schema": {
+            "$ref": "#/components/schemas/IndexerStateID"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "$ref": "#/components/schemas/usize"
+          }
+        },
+        {
+          "name": "descending_order",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "IndexerGlobalStatePageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_IndexerGlobalStateView_and_IndexerStateID"
+        }
+      }
+    },
+    {
+      "name": "rooch_queryTableStates",
+      "description": "Query the table states indexer by state filter",
+      "params": [
+        {
+          "name": "filter",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/TableStateFilterView"
+          }
+        },
+        {
+          "name": "cursor",
+          "schema": {
+            "$ref": "#/components/schemas/IndexerStateID"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "$ref": "#/components/schemas/usize"
+          }
+        },
+        {
+          "name": "descending_order",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "IndexerTableStatePageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_IndexerTableStateView_and_IndexerStateID"
+        }
+      }
+    },
+    {
       "name": "rooch_queryTransactions",
       "description": "Query the transactions indexer by transaction filter",
       "params": [
@@ -386,6 +462,43 @@
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/primitive_types::H256"
+        }
+      }
+    },
+    {
+      "name": "rooch_syncStates",
+      "description": "Sync state change sets from indexer",
+      "params": [
+        {
+          "name": "filter",
+          "schema": {
+            "$ref": "#/components/schemas/StateSyncFilterView"
+          }
+        },
+        {
+          "name": "cursor",
+          "schema": {
+            "$ref": "#/components/schemas/IndexerStateID"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "$ref": "#/components/schemas/usize"
+          }
+        },
+        {
+          "name": "descending_order",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "IndexerTableChangeSetPageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_IndexerTableChangeSetView_and_IndexerStateID"
         }
       }
     }
@@ -786,6 +899,74 @@
           }
         }
       },
+      "GlobalStateFilterView": {
+        "oneOf": [
+          {
+            "description": "Query by object value type and owner.",
+            "type": "object",
+            "required": [
+              "object_type_with_owner"
+            ],
+            "properties": {
+              "object_type_with_owner": {
+                "type": "object",
+                "required": [
+                  "object_type",
+                  "owner"
+                ],
+                "properties": {
+                  "object_type": {
+                    "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+                  },
+                  "owner": {
+                    "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by object value type.",
+            "type": "object",
+            "required": [
+              "object_type"
+            ],
+            "properties": {
+              "object_type": {
+                "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by owner.",
+            "type": "object",
+            "required": [
+              "owner"
+            ],
+            "properties": {
+              "owner": {
+                "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by object id.",
+            "type": "object",
+            "required": [
+              "object_id"
+            ],
+            "properties": {
+              "object_id": {
+                "$ref": "#/components/schemas/ObjectID"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
       "Hex": {
         "description": "Hex string encoding.",
         "type": "string"
@@ -853,6 +1034,174 @@
           },
           "tx_hash": {
             "$ref": "#/components/schemas/primitive_types::H256"
+          }
+        }
+      },
+      "IndexerGlobalStateView": {
+        "type": "object",
+        "required": [
+          "created_at",
+          "flag",
+          "object_id",
+          "object_type",
+          "owner",
+          "size",
+          "state_index",
+          "tx_order",
+          "updated_at",
+          "value"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "flag": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          },
+          "key_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "object_id": {
+            "$ref": "#/components/schemas/ObjectID"
+          },
+          "object_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+          },
+          "size": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "state_index": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "tx_order": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "value": {
+            "$ref": "#/components/schemas/AnnotatedMoveStructView"
+          }
+        }
+      },
+      "IndexerStateID": {
+        "type": "object",
+        "required": [
+          "state_index",
+          "tx_order"
+        ],
+        "properties": {
+          "state_index": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "tx_order": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      },
+      "IndexerTableChangeSetView": {
+        "type": "object",
+        "required": [
+          "created_at",
+          "state_index",
+          "table_change_set",
+          "table_handle",
+          "tx_order"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "state_index": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "table_change_set": {
+            "$ref": "#/components/schemas/TableChangeSetView"
+          },
+          "table_handle": {
+            "$ref": "#/components/schemas/ObjectID"
+          },
+          "tx_order": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        }
+      },
+      "IndexerTableStateView": {
+        "type": "object",
+        "required": [
+          "created_at",
+          "key_hex",
+          "state_index",
+          "table_handle",
+          "tx_order",
+          "updated_at",
+          "value",
+          "value_type"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "key_hex": {
+            "type": "string"
+          },
+          "state_index": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "table_handle": {
+            "$ref": "#/components/schemas/ObjectID"
+          },
+          "tx_order": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "value": {
+            "$ref": "#/components/schemas/AnnotatedMoveValueView"
+          },
+          "value_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
           }
         }
       },
@@ -1198,6 +1547,93 @@
           }
         }
       },
+      "PageView_for_IndexerGlobalStateView_and_IndexerStateID": {
+        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
+        "type": "object",
+        "required": [
+          "data",
+          "has_next_page"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndexerGlobalStateView"
+            }
+          },
+          "has_next_page": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IndexerStateID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "PageView_for_IndexerTableChangeSetView_and_IndexerStateID": {
+        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
+        "type": "object",
+        "required": [
+          "data",
+          "has_next_page"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndexerTableChangeSetView"
+            }
+          },
+          "has_next_page": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IndexerStateID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "PageView_for_IndexerTableStateView_and_IndexerStateID": {
+        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
+        "type": "object",
+        "required": [
+          "data",
+          "has_next_page"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndexerTableStateView"
+            }
+          },
+          "has_next_page": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IndexerStateID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "PageView_for_StateView_and_alloc::vec::Vec<u8>": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
@@ -1332,6 +1768,23 @@
           }
         }
       },
+      "StateSyncFilterView": {
+        "oneOf": [
+          {
+            "description": "Query by table handle.",
+            "type": "object",
+            "required": [
+              "table_handle"
+            ],
+            "properties": {
+              "table_handle": {
+                "$ref": "#/components/schemas/ObjectID"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
       "StateView": {
         "type": "object",
         "required": [
@@ -1357,10 +1810,40 @@
           }
         }
       },
+      "TableChangeSetView": {
+        "type": "object",
+        "required": [
+          "changes",
+          "new_tables",
+          "removed_tables"
+        ],
+        "properties": {
+          "changes": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TableChangeView"
+            }
+          },
+          "new_tables": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TableTypeInfoView"
+            }
+          },
+          "removed_tables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ObjectID"
+            },
+            "uniqueItems": true
+          }
+        }
+      },
       "TableChangeView": {
         "type": "object",
         "required": [
-          "entries"
+          "entries",
+          "size_increment"
         ],
         "properties": {
           "entries": {
@@ -1368,8 +1851,29 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/OpView_for_StateView"
             }
+          },
+          "size_increment": {
+            "type": "integer",
+            "format": "int64"
           }
         }
+      },
+      "TableStateFilterView": {
+        "oneOf": [
+          {
+            "description": "Query by table handle.",
+            "type": "object",
+            "required": [
+              "table_handle"
+            ],
+            "properties": {
+              "table_handle": {
+                "$ref": "#/components/schemas/ObjectID"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
       },
       "TableTypeInfoView": {
         "type": "object",

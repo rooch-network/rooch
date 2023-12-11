@@ -5,7 +5,6 @@
 
 module moveos_std::copyable_any {
     
-    use std::error;
     use std::string::String;
     use moveos_std::type_info;
     use moveos_std::bcs;
@@ -30,7 +29,7 @@ module moveos_std::copyable_any {
 
     /// Unpack a value from the `Any` representation. This aborts if the value has not the expected type `T`.
     public fun unpack<T>(x: Any): T {
-        assert!(type_info::type_name<T>() == x.type_name, error::invalid_argument(ErrorTypeMismatch));
+        assert!(type_info::type_name<T>() == x.type_name, ErrorTypeMismatch);
         bcs::native_from_bytes<T>(x.data)
     }
 

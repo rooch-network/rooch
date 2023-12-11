@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_framework::account {
-   use std::error;
    use std::hash;
    use std::vector;
    use std::signer;
@@ -70,13 +69,13 @@ module rooch_framework::account {
    public(friend) fun create_account(ctx: &mut Context, new_address: address): signer {
       assert!(
          new_address != @vm_reserved,
-         error::invalid_argument(ErrorAddressReseved)
+         ErrorAddressReseved
       );
 
       // Make sure the Account is not already created.
       assert!(
          !context::exists_resource<Account>(ctx, new_address),
-         error::already_exists(ErrorAccountAlreadyExists)
+         ErrorAccountAlreadyExists
       ); 
 
       let new_account = create_account_unchecked(ctx, new_address); 
@@ -109,7 +108,7 @@ module rooch_framework::account {
              addr == @0x8 ||
              addr == @0x9 ||
              addr == @0xa,
-         error::permission_denied(ErrorNotValidFrameworkReservedAddress),
+         ErrorNotValidFrameworkReservedAddress,
       );
       let signer = create_account_unchecked(ctx, addr);
       let signer_cap = SignerCapability { addr };
@@ -141,7 +140,7 @@ module rooch_framework::account {
 
       assert!(
          (account.sequence_number as u128) < MAX_U64,
-         error::out_of_range(ErrorSequenceNumberTooBig)
+         ErrorSequenceNumberTooBig
       );
 
       account.sequence_number = tx_sequence_number + 1;
@@ -175,10 +174,10 @@ module rooch_framework::account {
       let source_addr = signer::address_of(source);
       let seed = generate_seed_bytes(ctx, &source_addr);
       let resource_addr = create_resource_address(&source_addr, seed);
-      assert!(!is_resource_account(ctx, resource_addr), error::invalid_state(ErrorAccountIsAlreadyResourceAccount));
+      assert!(!is_resource_account(ctx, resource_addr), ErrorAccountIsAlreadyResourceAccount);
       let resource_signer = if (exists_at(ctx, resource_addr)) {
          let account = context::borrow_resource<Account>(ctx, resource_addr);
-         assert!(account.sequence_number == 0, error::invalid_state(ErrorResourceAccountAlreadyUsed));
+         assert!(account.sequence_number == 0, ErrorResourceAccountAlreadyUsed);
          create_signer(resource_addr)
       } else {
          create_account_unchecked(ctx, resource_addr)
@@ -287,7 +286,7 @@ module rooch_framework::account {
    }
 
    #[test(sender=@0x0)]
-   #[expected_failure(abort_code = 0x10005, location = Self)]
+   #[expected_failure(abort_code = ErrorAddressReseved, location = Self)]
    fun test_failure_entry_account_creation_reserved(sender: address){
       let ctx = context::new_test_context(sender);
       create_account_entry(&mut ctx, sender);
@@ -296,7 +295,7 @@ module rooch_framework::account {
 
    //TODO figure out why this test should failed
    #[test(sender=@0x42, resource_account=@0xbb6e573f7feb9d8474ac20813fc086cc3100b8b7d49c246b0f4aee8ea19eaef4)]
-   #[expected_failure(abort_code = 196614, location = Self)]
+   #[expected_failure(abort_code = ErrorResourceAccountAlreadyUsed, location = Self)]
    fun test_failure_create_resource_account_wrong_sequence_number(sender: address, resource_account: address){
       {
          let ctx = context::new_test_context(resource_account);

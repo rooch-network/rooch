@@ -1,6 +1,13 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module rooch_framework::bitcoin_types{
+    use std::vector;
+    use std::option::{Self, Option};
+    use rooch_framework::bitcoin_script_buf::{Self, ScriptBuf};
 
     const LOCK_TIME_THRESHOLD: u32 = 500_000_000;
+    const TAPROOT_ANNEX_PREFIX: u8 = 0x50;
 
     #[data_struct]
     struct Block has store, copy, drop {
@@ -115,7 +122,7 @@ module rooch_framework::bitcoin_types{
         /// Encodable/Decodable, as it is (de)serialized at the end of the full
         /// Transaction. It *is* (de)serialized with the rest of the TxIn in other
         /// (de)serialization routines.
-        witness: vector<u8>,
+        witness: Witness,
     }
 
     public fun txin_previous_output(self: &TxIn) : &OutPoint {
@@ -130,8 +137,45 @@ module rooch_framework::bitcoin_types{
         self.sequence
     }
 
-    public fun txin_witness(self: &TxIn) : &vector<u8> {
+    public fun txin_witness(self: &TxIn) : &Witness {
         &self.witness
+    }
+
+     #[data_struct]
+    struct Witness has store, copy, drop {
+        witness: vector<vector<u8>>,
+    }
+
+    public fun witness_nth(self: &Witness, nth: u64) : &vector<u8> {
+        vector::borrow(&self.witness, nth)
+    }
+
+    public fun witness_len(self: &Witness) : u64 {
+        vector::length(&self.witness)
+    }
+
+    /// Get Tapscript following BIP341 rules regarding accounting for an annex.
+    ///
+    /// This does not guarantee that this represents a P2TR [`Witness`]. It
+    /// merely gets the second to last or third to last element depending on
+    /// the first byte of the last element being equal to 0x50. See
+    /// bitcoin_script::is_v1_p2tr to check whether this is actually a Taproot witness.
+    public fun witness_tapscript(self: &Witness) : Option<ScriptBuf> {
+        let len = vector::length(&self.witness);
+        let script_pos_from_last = 2;
+        let script_buf = option::none<ScriptBuf>();
+        let idx = 0;
+        while(idx < len) {
+            let elem = vector::borrow(&self.witness, idx);
+            if (idx == len - 1 && len >= 2 && vector::length(elem)>0 && *vector::borrow(elem,0) == TAPROOT_ANNEX_PREFIX) {
+                script_pos_from_last = 3;
+            };
+            if (len >= script_pos_from_last && idx == len - script_pos_from_last) {
+                option::fill(&mut script_buf, bitcoin_script_buf::new(*elem));
+            };
+            idx = idx + 1;
+        };
+        script_buf
     }
 
     #[data_struct]
@@ -164,18 +208,18 @@ module rooch_framework::bitcoin_types{
         /// The value of the output, in satoshis.
         value: u64,
         /// The script which must be satisfied for the output to be spent.
-        script_pubkey: vector<u8>,
+        script_pubkey: ScriptBuf,
     }
 
     public fun txout_value(self: &TxOut) : u64 {
         self.value
     }
 
-    public fun txout_script_pubkey(self: &TxOut) : &vector<u8> {
+    public fun txout_script_pubkey(self: &TxOut) : &ScriptBuf {
         &self.script_pubkey
     }
 
-    public fun unpack_txout(self: TxOut) : (u64, vector<u8>) {
+    public fun unpack_txout(self: TxOut) : (u64, ScriptBuf) {
         (self.value, self.script_pubkey)
     }      
 }

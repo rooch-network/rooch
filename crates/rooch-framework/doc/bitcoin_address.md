@@ -7,19 +7,20 @@
 
 -  [Struct `BTCAddress`](#0x3_bitcoin_address_BTCAddress)
 -  [Constants](#@Constants_0)
--  [Function `new_legacy`](#0x3_bitcoin_address_new_legacy)
--  [Function `new_bech32`](#0x3_bitcoin_address_new_bech32)
+-  [Function `from_script`](#0x3_bitcoin_address_from_script)
 -  [Function `from_bytes`](#0x3_bitcoin_address_from_bytes)
+-  [Function `is_p2pkh`](#0x3_bitcoin_address_is_p2pkh)
+-  [Function `is_p2sh`](#0x3_bitcoin_address_is_p2sh)
+-  [Function `is_witness_program`](#0x3_bitcoin_address_is_witness_program)
 -  [Function `as_bytes`](#0x3_bitcoin_address_as_bytes)
 -  [Function `into_bytes`](#0x3_bitcoin_address_into_bytes)
--  [Function `create_p2pkh_address`](#0x3_bitcoin_address_create_p2pkh_address)
--  [Function `create_p2sh_address`](#0x3_bitcoin_address_create_p2sh_address)
--  [Function `create_bech32_address`](#0x3_bitcoin_address_create_bech32_address)
+-  [Function `to_bech32`](#0x3_bitcoin_address_to_bech32)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1">0x3::ecdsa_k1</a>;
-<b>use</b> <a href="encoding.md#0x3_encoding">0x3::encoding</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x1::vector</a>;
+<b>use</b> <a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf">0x3::bitcoin_script_buf</a>;
 </code></pre>
 
 
@@ -28,9 +29,11 @@
 
 ## Struct `BTCAddress`
 
+BTCAddress is a struct that represents a Bitcoin address.
+We just keep the raw bytes of the address and do care about the network.
 
 
-<pre><code><b>struct</b> <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -40,127 +43,95 @@
 ## Constants
 
 
-<a name="0x3_bitcoin_address_ErrorInvalidScriptVersion"></a>
+<a name="0x3_bitcoin_address_ErrorAddressBytesLen"></a>
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidScriptVersion">ErrorInvalidScriptVersion</a>: u64 = 2;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorAddressBytesLen">ErrorAddressBytesLen</a>: u64 = 1;
 </code></pre>
 
 
 
-<a name="0x3_bitcoin_address_BECH32_ADDR_LENGTH"></a>
-
-Bech32 addresses including P2WPKH and P2WSH are 42 characters
+<a name="0x3_bitcoin_address_P2PKH_ADDR_BYTE_LEN"></a>
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_BECH32_ADDR_LENGTH">BECH32_ADDR_LENGTH</a>: u64 = 42;
+
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_P2PKH_ADDR_BYTE_LEN">P2PKH_ADDR_BYTE_LEN</a>: u64 = 21;
 </code></pre>
 
 
 
-<a name="0x3_bitcoin_address_ErrorInvalidCompressedPublicKeyLength"></a>
+<a name="0x3_bitcoin_address_P2PKH_ADDR_DECIMAL_PREFIX_MAIN"></a>
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidCompressedPublicKeyLength">ErrorInvalidCompressedPublicKeyLength</a>: u64 = 3;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_P2PKH_ADDR_DECIMAL_PREFIX_MAIN">P2PKH_ADDR_DECIMAL_PREFIX_MAIN</a>: u8 = 0;
 </code></pre>
 
 
 
-<a name="0x3_bitcoin_address_ErrorInvalidDecimalPrefix"></a>
+<a name="0x3_bitcoin_address_P2PKH_ADDR_DECIMAL_PREFIX_TEST"></a>
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidDecimalPrefix">ErrorInvalidDecimalPrefix</a>: u64 = 1;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_P2PKH_ADDR_DECIMAL_PREFIX_TEST">P2PKH_ADDR_DECIMAL_PREFIX_TEST</a>: u8 = 111;
 </code></pre>
 
 
 
-<a name="0x3_bitcoin_address_ErrorInvalidHashedPublicKeyLength"></a>
+<a name="0x3_bitcoin_address_P2SH_ADDR_BYTE_LEN"></a>
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidHashedPublicKeyLength">ErrorInvalidHashedPublicKeyLength</a>: u64 = 4;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_P2SH_ADDR_BYTE_LEN">P2SH_ADDR_BYTE_LEN</a>: u64 = 21;
 </code></pre>
 
 
 
-<a name="0x3_bitcoin_address_ErrorInvalidSchnorrPublicKeyLength"></a>
+<a name="0x3_bitcoin_address_P2SH_ADDR_DECIMAL_PREFIX_MAIN"></a>
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_ErrorInvalidSchnorrPublicKeyLength">ErrorInvalidSchnorrPublicKeyLength</a>: u64 = 5;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_P2SH_ADDR_DECIMAL_PREFIX_MAIN">P2SH_ADDR_DECIMAL_PREFIX_MAIN</a>: u8 = 5;
 </code></pre>
 
 
 
-<a name="0x3_bitcoin_address_P2PKH_ADDR_DECIMAL_PREFIX"></a>
+<a name="0x3_bitcoin_address_P2SH_ADDR_DECIMAL_PREFIX_TEST"></a>
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_P2PKH_ADDR_DECIMAL_PREFIX">P2PKH_ADDR_DECIMAL_PREFIX</a>: u8 = 0;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_P2SH_ADDR_DECIMAL_PREFIX_TEST">P2SH_ADDR_DECIMAL_PREFIX_TEST</a>: u8 = 196;
 </code></pre>
 
 
 
-<a name="0x3_bitcoin_address_P2PKH_ADDR_LENGTH"></a>
-
-P2PKH addresses are 34 characters
+<a name="0x3_bitcoin_address_PUBKEY_HASH_LEN"></a>
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_P2PKH_ADDR_LENGTH">P2PKH_ADDR_LENGTH</a>: u64 = 34;
+
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_PUBKEY_HASH_LEN">PUBKEY_HASH_LEN</a>: u64 = 20;
 </code></pre>
 
 
 
-<a name="0x3_bitcoin_address_P2SH_ADDR_DECIMAL_PREFIX"></a>
+<a name="0x3_bitcoin_address_SCRIPT_HASH_LEN"></a>
 
 
 
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_P2SH_ADDR_DECIMAL_PREFIX">P2SH_ADDR_DECIMAL_PREFIX</a>: u8 = 5;
+<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_SCRIPT_HASH_LEN">SCRIPT_HASH_LEN</a>: u64 = 20;
 </code></pre>
 
 
 
-<a name="0x3_bitcoin_address_P2SH_ADDR_LENGTH"></a>
+<a name="0x3_bitcoin_address_from_script"></a>
 
-P2SH addresses are 34 characters
+## Function `from_script`
 
-
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_P2SH_ADDR_LENGTH">P2SH_ADDR_LENGTH</a>: u64 = 34;
-</code></pre>
+from_script returns a BTCAddress from a ScriptBuf.
 
 
-
-<a name="0x3_bitcoin_address_P2TR_ADDR_LENGTH"></a>
-
-P2TR addresses with Bech32m encoding are 62 characters
-
-
-<pre><code><b>const</b> <a href="bitcoin_address.md#0x3_bitcoin_address_P2TR_ADDR_LENGTH">P2TR_ADDR_LENGTH</a>: u64 = 62;
-</code></pre>
-
-
-
-<a name="0x3_bitcoin_address_new_legacy"></a>
-
-## Function `new_legacy`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_legacy">new_legacy</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;, decimal_prefix: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
-</code></pre>
-
-
-
-<a name="0x3_bitcoin_address_new_bech32"></a>
-
-## Function `new_bech32`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_bech32">new_bech32</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_from_script">from_script</a>(s: &<a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf_ScriptBuf">bitcoin_script_buf::ScriptBuf</a>): <a href="_Option">option::Option</a>&lt;<a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>&gt;
 </code></pre>
 
 
@@ -172,6 +143,39 @@ P2TR addresses with Bech32m encoding are 62 characters
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_from_bytes">from_bytes</a>(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_is_p2pkh"></a>
+
+## Function `is_p2pkh`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_is_p2pkh">is_p2pkh</a>(addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>): bool
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_is_p2sh"></a>
+
+## Function `is_p2sh`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_is_p2sh">is_p2sh</a>(addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>): bool
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_is_witness_program"></a>
+
+## Function `is_witness_program`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_is_witness_program">is_witness_program</a>(addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>): bool
 </code></pre>
 
 
@@ -198,33 +202,11 @@ P2TR addresses with Bech32m encoding are 62 characters
 
 
 
-<a name="0x3_bitcoin_address_create_p2pkh_address"></a>
+<a name="0x3_bitcoin_address_to_bech32"></a>
 
-## Function `create_p2pkh_address`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2pkh_address">create_p2pkh_address</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
-</code></pre>
+## Function `to_bech32`
 
 
 
-<a name="0x3_bitcoin_address_create_p2sh_address"></a>
-
-## Function `create_p2sh_address`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_p2sh_address">create_p2sh_address</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
-</code></pre>
-
-
-
-<a name="0x3_bitcoin_address_create_bech32_address"></a>
-
-## Function `create_bech32_address`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_create_bech32_address">create_bech32_address</a>(pub_key: &<a href="">vector</a>&lt;u8&gt;, version: u8): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_to_bech32">to_bech32</a>(_addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>): <a href="_String">string::String</a>
 </code></pre>

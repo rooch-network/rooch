@@ -12,15 +12,15 @@ import {
   IAccount,
   IPage,
   ISessionKey,
-  JsonRpcProvider,
+  RoochClient,
   StatePageView,
   parseRoochErrorSubStatus,
   getErrorCategoryName,
-} from '@rooch/sdk'
+} from '@roochnetwork/rooch-sdk'
 
 interface DataParams {
   dispatch: Dispatch<AnyAction>
-  provider: JsonRpcProvider
+  provider: RoochClient
   account_address: string
   cursor: Uint8Array | null
   limit: number
@@ -78,7 +78,6 @@ export const fetchData = createAsyncThunk('state/fetchData', async (params: Data
   const { account_address, cursor, limit } = params
 
   try {
-    console.log(account_address)
     const accessPath = `/resource/${account_address}/0x3::session_key::SessionKeys`
     const stateResult = await params.provider.getStates(accessPath)
 

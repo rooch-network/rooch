@@ -1,0 +1,66 @@
+---
+title: Rooch 周报 2023-11-24
+description: "重构 Rooch 代码，让合约开发的接口保持稳定，新增索引服务的一些功能，探索 Bitcoin 上接入实现，完善文档，修复一些小问题"
+author: geometryolife
+category: Rooch Weekly
+date: 2023/11/24
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch 的开发进展
+
+### 新特性
+
+- **Implement transaction indexer (#1121)** (2023-11-09) @Bai Chuan
+- **Implements event indexer write (#1123)** (2023-11-10) @Bai Chuan
+- **skip module init when upgrading module through MoveAction::ModuleBundle (#1133)** (2023-11-13) @0xPause
+- **[rpc] The event RPC treat cursor None as -1 (#1153)** (2023-11-16) @jolestar
+- **add `getCode` eth rpc server method (#1155)** (2023-11-17) @Rahman
+- **Implements  indexer transaction RPC (#1154)** (2023-11-17) @Bai Chuan
+- **Parse json to move struct (#1158)** (2023-11-19) @0xPause
+- **[Bitcoin] PoC implementation of bitcoin relayer (#1169)** (2023-11-22) @jolestar
+- **[bitcoin] Bitcoin relayer improvement (#1171)** (2023-11-22) @jolestar
+- **[bitcoin] Define bitcoin transaction types and progress transaction (#1172)** (2023-11-23) @jolestar
+
+### 重大重构
+
+- **[event] Refactor event, make Event API stateless (#1108)** (2023-11-06) @jolestar
+- **[MoveosStd] Refactor AccountStorage (#1114)** (2023-11-08) @jolestar
+- **[Framework] refactor Timestamp to object (#1120)** (2023-11-08) @jolestar
+- **[CLI] Refactor CLI FunctionArg parser  (#1125)** (2023-11-10) @jolestar
+- **make from_bytes is decorated by data_struct. (#1131)** (2023-11-12) @stevenlaw123
+- **[Framework] Make ChainID and AddressMapping to singleton Object (#1130)** (2023-11-13) @jolestar
+- **[Framework] Refactor CoinInfo & CoinStore & Account CoinStore (#1138)** (2023-11-14) @jolestar
+- **Make tx order type from u128 to u64 (#1148)** (2023-11-15) @Bai Chuan
+- **Refactor event filter and Implements indexer event RPC (#1136)** (2023-11-16) @Bai Chuan
+- **[moveos_std] Rename singleton_object to named_object (#1146)** (2023-11-16) @jolestar
+
+### 改进和修复
+
+- **fix: remove empty file (#1113)** (2023-11-06) @Joe Chen
+- **add weekly 2023-11-06 (#1115)** (2023-11-06) @Joe Chen
+- **fixing the address parsing in integration test (#1106)** (2023-11-07) @stevenlaw123
+- **Compiling and checking the structure and functions annotated with data_struct. (#1085)** (2023-11-10) @stevenlaw123
+- **fixup docker build failed due to missing sqlite lib (#1127)** (2023-11-10) @Bai Chuan
+- **add libsqlite3-dev in the runtime (#1129)** (2023-11-11) @yourmoonlight
+- **[Framework] Resolve CoinStore transfer issue (#1144)** (2023-11-14) @jolestar
+- **fix: update the variable name of `timestamp_test.move` (#1145)** (2023-11-15) @Joe Chen
+- **docs: add timestamp and relayer introduction article (#1122)** (2023-11-15) @Joe Chen
+- **[Documents]new object documents (#1149)** (2023-11-17) @jolestar
+- **[Documents] Update MacOS rooch binary file install guide #1165 (#1166)** (2023-11-20) @10xhunter
+- **add indexer test cases (#1167)** (2023-11-20) @Bai Chuan
+- **docs: update README.md (#1168)** (2023-11-21) @Joe Chen
+
+### Rooch 社区开发会议
+
+- 讨论 Rooch 使用的 Move 分支，如何维护、请求和贡献上游仓库
+- 讨论 Object 风格，包括是否引入 `UserSingleton`、`CoinInfo<T> Singleton Object`、`CoinStore<T>  User Singlenton`
+- 讨论文档相关问题
+- 讨论 Bitcoin 钱包，如何接入及其 JSON 数据如何提取等
+- 讨论 Social login 的加密验证
+- 讨论私有泛型调用自己模块的问题，参见 [#1147](https://github.com/rooch-network/rooch/issues/1147)
+- 讨论和分享 Object 文档，讨论 Object 暴露给合约开发者的形式
+- 分享 Bitcoin 的接入实现，对接入实现方案的讨论，Bitcoin rollup 实现的验证总结

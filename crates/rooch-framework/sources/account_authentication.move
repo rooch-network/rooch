@@ -5,7 +5,6 @@
 /// Migrated from the account module for simplyfying the account module.
 module rooch_framework::account_authentication {
    
-   use std::error;
    use std::option::{Self, Option};
    use std::signer;
    use std::vector;
@@ -73,11 +72,11 @@ module rooch_framework::account_authentication {
       
       assert!(
          vector::length(&new_auth_key) <= MAX_AUTHENTICATION_KEY_LENGTH,
-         error::invalid_argument(ErrorMalformedAuthenticationKey)
+         ErrorMalformedAuthenticationKey
       );
       assert!(
          context::exists_resource<AuthenticationKeys>(ctx, account_addr),
-         error::not_found(ErrorAuthenticationKeysResourceNotFound)
+         ErrorAuthenticationKeysResourceNotFound
       );
 
       let authentication_keys = context::borrow_mut_resource<AuthenticationKeys>(ctx, account_addr);
@@ -97,12 +96,12 @@ module rooch_framework::account_authentication {
    public fun remove_authentication_key<ValidatorType>(ctx: &mut Context, account_addr: address): AuthenticationKey<ValidatorType> {
       assert!(
          context::exists_resource<AuthenticationKeys>(ctx, account_addr),
-         error::not_found(ErrorAuthenticationKeysResourceNotFound)
+         ErrorAuthenticationKeysResourceNotFound
       );
       let authentication_keys = context::borrow_mut_resource<AuthenticationKeys>(ctx, account_addr);
       assert!(
          type_table::contains<AuthenticationKey<ValidatorType>>(&authentication_keys.authentication_keys),
-         error::not_found(ErrorAuthenticationKeyNotFound)
+         ErrorAuthenticationKeyNotFound
       );
    
       let removed_authentication_key = type_table::remove<AuthenticationKey<ValidatorType>>(&mut authentication_keys.authentication_keys);
@@ -127,7 +126,7 @@ module rooch_framework::account_authentication {
 
       assert!(
          !is_auth_validator_installed(ctx, account_addr, validator_id),
-         error::already_exists(ErrorAuthValidatorAlreadyInstalled));
+         ErrorAuthValidatorAlreadyInstalled);
 
       
       if(!context::exists_resource<InstalledAuthValidator>(ctx, account_addr)){

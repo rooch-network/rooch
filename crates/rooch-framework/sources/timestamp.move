@@ -8,7 +8,6 @@
 /// * TickTransaction: update the timestamp via the time offset in the TickTransaction(TODO)
 module rooch_framework::timestamp {
    
-    use std::error;
     use moveos_std::object;
     use moveos_std::context::{Self, Context};
 
@@ -37,7 +36,7 @@ module rooch_framework::timestamp {
     public(friend) fun update_global_time(ctx: &mut Context, timestamp_milliseconds: u64) {
         let current_timestamp = timestamp_mut(ctx); 
         let now = current_timestamp.milliseconds;
-        assert!(now < timestamp_milliseconds, error::invalid_argument(ErrorInvalidTimestamp));
+        assert!(now < timestamp_milliseconds, ErrorInvalidTimestamp);
         current_timestamp.milliseconds = timestamp_milliseconds;
     }
 
@@ -111,7 +110,7 @@ module rooch_framework::timestamp {
     /// Fast forwards the clock by the given number of seconds, but only if the chain is in local mode.
     //TODO find a better way to do this, maybe some module that is only available in local chain?
     public entry fun fast_forward_seconds_for_local(ctx: &mut Context, timestamp_seconds: u64) {
-        assert!(rooch_framework::chain_id::is_local(ctx), error::invalid_argument(ErrorInvalidTimestamp));
+        assert!(rooch_framework::chain_id::is_local(ctx), ErrorInvalidTimestamp);
         fast_forward_seconds(ctx, timestamp_seconds);
     }
 }

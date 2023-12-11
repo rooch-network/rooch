@@ -24,8 +24,7 @@
 -  [Function `into_bitcoin_address`](#0x3_multichain_address_into_bitcoin_address)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x2::bcs</a>;
+<pre><code><b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="bitcoin_address.md#0x3_bitcoin_address">0x3::bitcoin_address</a>;
 <b>use</b> <a href="ethereum_address.md#0x3_ethereum_address">0x3::ethereum_address</a>;
 </code></pre>

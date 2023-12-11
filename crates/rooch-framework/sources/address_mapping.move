@@ -5,7 +5,6 @@ module rooch_framework::address_mapping{
     
     use std::option::{Self, Option};
     use std::signer;
-    use std::error;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
     use moveos_std::object::{Self, Object};
@@ -105,7 +104,7 @@ module rooch_framework::address_mapping{
         if(multichain_address::is_rooch_address(&maddress)){
             assert!(
                 multichain_address::into_rooch_address(maddress) == rooch_address, 
-                error::invalid_argument(ErrorMultiChainAddressInvalid)
+                ErrorMultiChainAddressInvalid
             );
         };
         let obj = Self::borrow_mut(ctx);

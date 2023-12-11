@@ -4,9 +4,8 @@
 /// Name the module to `simple_article` for avoid name conflict with `examples/blog`
 module simple_blog::simple_article {
 
-    use std::error;
     use std::signer;
-    use std::string::String; 
+    use std::string::String;
     use moveos_std::event;
     use moveos_std::object::{ObjectID};
     use moveos_std::object::{Self, Object};
@@ -16,22 +15,22 @@ module simple_blog::simple_article {
     const ErrorNotOwnerAccount: u64 = 2;
 
     //TODO should we allow Article to be transferred?
-    struct Article has key,store {
+    struct Article has key, store {
         version: u64,
         title: String,
         body: String,
     }
 
-    struct ArticleCreatedEvent has copy,store,drop {
+    struct ArticleCreatedEvent has copy, store, drop {
         id: ObjectID,
     }
 
-    struct ArticleUpdatedEvent has copy,store,drop {
+    struct ArticleUpdatedEvent has copy, store, drop {
         id: ObjectID,
         version: u64,
     }
 
-    struct ArticleDeletedEvent has copy,store,drop {
+    struct ArticleDeletedEvent has copy, store, drop {
         id: ObjectID,
         version: u64,
     }
@@ -44,8 +43,8 @@ module simple_blog::simple_article {
         title: String,
         body: String,
     ): ObjectID {
-        assert!(std::string::length(&title) <= 200, error::invalid_argument(ErrorDataTooLong));
-        assert!(std::string::length(&body) <= 2000, error::invalid_argument(ErrorDataTooLong));
+        assert!(std::string::length(&title) <= 200, ErrorDataTooLong);
+        assert!(std::string::length(&body) <= 2000, ErrorDataTooLong);
 
         let article = Article {
             version: 0,
@@ -73,8 +72,8 @@ module simple_blog::simple_article {
         new_title: String,
         new_body: String,
     ) {
-        assert!(std::string::length(&new_title) <= 200, error::invalid_argument(ErrorDataTooLong));
-        assert!(std::string::length(&new_body) <= 2000, error::invalid_argument(ErrorDataTooLong));
+        assert!(std::string::length(&new_title) <= 200, ErrorDataTooLong);
+        assert!(std::string::length(&new_body) <= 2000, ErrorDataTooLong);
 
         let id = object::id(article_obj);
         let article = object::borrow_mut(article_obj);
@@ -129,5 +128,4 @@ module simple_blog::simple_article {
     public fun body(article: &Article): String {
         article.body
     }
-    
 }

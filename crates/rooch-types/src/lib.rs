@@ -17,4 +17,5 @@ pub mod into_address;
 pub mod key_struct;
 pub mod multichain_id;
 pub mod sequencer;
+pub mod stdlib_version;
 pub mod transaction;

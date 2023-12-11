@@ -963,9 +963,9 @@ dependencies = [
 
 [[package]]
 name = "brotli"
-version = "3.3.4"
+version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1a0b1dbcc8ae29329621f8d4f0d835787c1c38bb1401979b49d13b0b305ff68"
+checksum = "516074a47ef4bce09577a3b379392300159ce5b1ba2e501ff1c819950066100f"
 dependencies = [
  "alloc-no-stdlib",
  "alloc-stdlib",
@@ -974,9 +974,9 @@ dependencies = [
 
 [[package]]
 name = "brotli-decompressor"
-version = "2.3.4"
+version = "2.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b6561fd3f895a11e8f72af2cb7d22e08366bebc2b6b57f7744c4bda27034744"
+checksum = "4e2e4afe60d7dd600fdd3de8d0f08c2b7ec039712e3b6137ff98b7004e82de4f"
 dependencies = [
  "alloc-no-stdlib",
  "alloc-stdlib",
@@ -6998,6 +6998,7 @@ dependencies = [
  "termcolor",
  "tokio",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -7079,9 +7080,11 @@ dependencies = [
  "better_any",
  "bitcoin 0.31.0",
  "bitcoin-bech32",
+ "brotli",
  "bs58 0.5.0",
  "fastcrypto",
  "hex",
+ "http",
  "linked-hash-map",
  "move-binary-format",
  "move-bytecode-utils",
@@ -7107,6 +7110,19 @@ dependencies = [
  "serde_bytes",
  "sha3 0.9.1",
  "smallvec 1.11.0",
+ "tracing",
+]
+
+[[package]]
+name = "rooch-framework-release"
+version = "0.1.0"
+dependencies = [
+ "clap 3.2.25",
+ "itertools",
+ "move-binary-format",
+ "moveos-stdlib-builder",
+ "rooch-genesis-builder",
+ "rooch-types",
 ]
 
 [[package]]
@@ -7250,17 +7266,20 @@ dependencies = [
  "futures",
  "hex",
  "itertools",
+ "log",
  "move-binary-format",
  "move-bytecode-utils",
  "move-core-types",
  "move-resource-viewer",
  "moveos-config",
+ "moveos-store",
  "moveos-types",
  "once_cell",
  "parking_lot 0.12.1",
  "rand 0.8.5",
  "regex",
  "rooch-config",
+ "rooch-rpc-api",
  "rooch-types",
  "serde 1.0.188",
  "serde_bytes",

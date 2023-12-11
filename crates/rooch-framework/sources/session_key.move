@@ -4,7 +4,6 @@
 module rooch_framework::session_key {
     use std::vector;
     use std::option::{Self, Option};
-    use std::error;
     use std::signer;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
@@ -102,9 +101,9 @@ module rooch_framework::session_key {
 
     public fun create_session_key(ctx: &mut Context, sender: &signer, authentication_key: vector<u8>, scopes: vector<SessionScope>, max_inactive_interval: u64) {
         //Can not create new session key by the other session key
-        assert!(!auth_validator::is_validate_via_session_key(ctx), error::permission_denied(ErrorSessionKeyCreatePermissionDenied));
+        assert!(!auth_validator::is_validate_via_session_key(ctx), ErrorSessionKeyCreatePermissionDenied);
         let sender_addr = signer::address_of(sender);
-        assert!(!exists_session_key(ctx, sender_addr, authentication_key), error::already_exists(ErrorSessionKeyAlreadyExists));
+        assert!(!exists_session_key(ctx, sender_addr, authentication_key), ErrorSessionKeyAlreadyExists);
         let now_seconds = timestamp::now_seconds(ctx);
         let session_key = SessionKey {
             authentication_key: authentication_key,
@@ -141,7 +140,7 @@ module rooch_framework::session_key {
         assert!(
             vector::length<address>(&scope_module_addresses) == vector::length<std::ascii::String>(&scope_module_names) &&
             vector::length<std::ascii::String>(&scope_module_names) == vector::length<std::ascii::String>(&scope_function_names),
-            error::invalid_argument(ErrorSessionScopePartLengthNotMatch)
+            ErrorSessionScopePartLengthNotMatch
         );
         
         let idx = 0;
@@ -184,9 +183,9 @@ module rooch_framework::session_key {
             return option::none()
         };
         let session_key = option::extract(&mut session_key_option);
-        assert!(!is_expired(ctx, &session_key), error::permission_denied(ErrorSessionIsExpired));
+        assert!(!is_expired(ctx, &session_key), ErrorSessionIsExpired);
         
-        assert!(in_session_scope(ctx, &session_key), error::permission_denied(ErrorFunctionCallBeyondSessionScope));
+        assert!(in_session_scope(ctx, &session_key), ErrorFunctionCallBeyondSessionScope);
 
         native_validator::validate_signature(&authenticator_payload, &context::tx_hash(ctx));
         option::some(auth_key)
@@ -235,9 +234,9 @@ module rooch_framework::session_key {
     public(friend) fun active_session_key(ctx: &mut Context, authentication_key: vector<u8>) {
         let sender_addr = context::sender(ctx);
         let now_seconds = timestamp::now_seconds(ctx);
-        assert!(context::exists_resource<SessionKeys>(ctx, sender_addr), error::not_found(ErrorSessionKeyIsInvalid));
+        assert!(context::exists_resource<SessionKeys>(ctx, sender_addr), ErrorSessionKeyIsInvalid);
         let session_keys = context::borrow_mut_resource<SessionKeys>(ctx, sender_addr);
-        assert!(table::contains(&session_keys.keys, authentication_key), error::not_found(ErrorSessionKeyIsInvalid));
+        assert!(table::contains(&session_keys.keys, authentication_key), ErrorSessionKeyIsInvalid);
         let session_key = table::borrow_mut(&mut session_keys.keys, authentication_key);
         session_key.last_active_time = now_seconds;
     }
@@ -249,9 +248,9 @@ module rooch_framework::session_key {
 
     public fun remove_session_key(ctx: &mut Context, sender: &signer, authentication_key: vector<u8>) {
         let sender_addr = signer::address_of(sender);
-        assert!(context::exists_resource<SessionKeys>(ctx, sender_addr), error::not_found(ErrorSessionKeyIsInvalid));
+        assert!(context::exists_resource<SessionKeys>(ctx, sender_addr), ErrorSessionKeyIsInvalid);
         let session_keys = context::borrow_mut_resource<SessionKeys>(ctx, sender_addr);
-        assert!(table::contains(&session_keys.keys, authentication_key), error::not_found(ErrorSessionKeyIsInvalid));
+        assert!(table::contains(&session_keys.keys, authentication_key), ErrorSessionKeyIsInvalid);
         table::remove(&mut session_keys.keys, authentication_key);
     }
 

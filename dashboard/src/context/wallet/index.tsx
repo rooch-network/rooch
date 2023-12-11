@@ -11,7 +11,7 @@ import detectEthereumProvider from '@metamask/detect-provider'
 import { ETHValueType } from 'src/context/wallet/types'
 
 // ** SDK
-import { ChainInfo, DevChain } from '@rooch/sdk'
+import { ChainInfo, DevChain } from '@roochnetwork/rooch-sdk'
 
 // ** Hooks
 import { useRooch } from 'src/hooks/useRooch'

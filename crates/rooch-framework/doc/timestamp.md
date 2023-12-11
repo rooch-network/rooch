@@ -24,8 +24,7 @@ It interacts with the other modules in the following ways:
 -  [Function `fast_forward_seconds_for_local`](#0x3_timestamp_fast_forward_seconds_for_local)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x2::context</a>;
+<pre><code><b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="chain_id.md#0x3_chain_id">0x3::chain_id</a>;
 </code></pre>

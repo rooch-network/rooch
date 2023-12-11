@@ -102,7 +102,7 @@ module rooch_framework::account_coin_store_test{
     }
 
     #[test(source1 = @0x33, source2 = @0x66)]
-    #[expected_failure(abort_code = 393217, location = rooch_framework::account_coin_store)]
+    #[expected_failure(abort_code = 1, location = rooch_framework::account_coin_store)]
     fun test_deposit_coin_after_turnoff_auto_accept_coin_flag_should_fail(source1: signer, source2: signer,) {
         let ctx = rooch_framework::genesis::init_for_test();
 
@@ -163,7 +163,7 @@ module rooch_framework::account_coin_store_test{
     }
 
     #[test(source = @rooch_framework, destination = @0x55)]
-    #[expected_failure(abort_code = 393218, location = moveos_std::raw_table)]
+    #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
     fun test_fail_transfer(
         source: signer,
         destination: signer,
