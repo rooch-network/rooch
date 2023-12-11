@@ -163,7 +163,8 @@ max authentication key length
 This function is used to rotate a resource account's authentication key, only the module which define the <code>ValidatorType</code> can call this function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key">rotate_authentication_key</a>&lt;ValidatorType&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, account_addr: <b>address</b>, new_auth_key: <a href="">vector</a>&lt;u8&gt;)
+<pre><code>#[private_generics(#[ValidatorType])]
+<b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key">rotate_authentication_key</a>&lt;ValidatorType&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, account_addr: <b>address</b>, new_auth_key: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -175,7 +176,8 @@ This function is used to rotate a resource account's authentication key, only th
 This function is used to remove a resource account's authentication key, only the module which define the <code>ValidatorType</code> can call this function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key">remove_authentication_key</a>&lt;ValidatorType&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, account_addr: <b>address</b>): <a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">account_authentication::AuthenticationKey</a>&lt;ValidatorType&gt;
+<pre><code>#[private_generics(#[ValidatorType])]
+<b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key">remove_authentication_key</a>&lt;ValidatorType&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, account_addr: <b>address</b>): <a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">account_authentication::AuthenticationKey</a>&lt;ValidatorType&gt;
 </code></pre>
 
 

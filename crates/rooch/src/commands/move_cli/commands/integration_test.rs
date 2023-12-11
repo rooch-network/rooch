@@ -58,12 +58,6 @@ impl Display for Format {
     }
 }
 
-impl Format {
-    fn variants() -> Vec<&'static str> {
-        vec!["pretty", "terse"]
-    }
-}
-
 impl FromStr for Format {
     type Err = String;
 

@@ -48,7 +48,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="bitcoin_types.md#0x3_bitcoin_types_Block">Block</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code>#[data_struct]
+<b>struct</b> <a href="bitcoin_types.md#0x3_bitcoin_types_Block">Block</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -59,7 +60,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="bitcoin_types.md#0x3_bitcoin_types_Header">Header</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code>#[data_struct]
+<b>struct</b> <a href="bitcoin_types.md#0x3_bitcoin_types_Header">Header</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -70,7 +72,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="bitcoin_types.md#0x3_bitcoin_types_Transaction">Transaction</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code>#[data_struct]
+<b>struct</b> <a href="bitcoin_types.md#0x3_bitcoin_types_Transaction">Transaction</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -81,7 +84,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="bitcoin_types.md#0x3_bitcoin_types_TxIn">TxIn</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code>#[data_struct]
+<b>struct</b> <a href="bitcoin_types.md#0x3_bitcoin_types_TxIn">TxIn</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -92,7 +96,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="bitcoin_types.md#0x3_bitcoin_types_OutPoint">OutPoint</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code>#[data_struct]
+<b>struct</b> <a href="bitcoin_types.md#0x3_bitcoin_types_OutPoint">OutPoint</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -103,7 +108,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="bitcoin_types.md#0x3_bitcoin_types_TxOut">TxOut</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code>#[data_struct]
+<b>struct</b> <a href="bitcoin_types.md#0x3_bitcoin_types_TxOut">TxOut</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 

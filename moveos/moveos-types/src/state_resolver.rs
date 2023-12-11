@@ -81,7 +81,7 @@ where
         match result {
             Ok(opt) => {
                 if let Some(data) = opt {
-                    Ok((Some(data.clone()), 0))
+                    Ok((Some(data), 0))
                 } else {
                     Ok((None, 0))
                 }
