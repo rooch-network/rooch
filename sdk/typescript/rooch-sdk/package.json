@@ -28,8 +28,8 @@
     "lint": "pnpm eslint:check && pnpm prettier:check",
     "lint:fix": "pnpm eslint:fix && pnpm prettier:fix",
     "gen": "rm -rf ./src/generated && pnpm run gen:types && pnpm run gen:client",
-    "gen:types": "node ./tools/serdegen/rooch_types_gen.js -o ./src/generated/runtime",
-    "gen:client": "node ./tools/generator/main.js -o ./src/generated/client"
+    "gen:types": "node tools/serdegen/rooch_types_gen.mjs -o ./src/generated/runtime",
+    "gen:client": "node tools/generator/main.mjs -o ./src/generated/client"
   },
   "repository": {
     "type": "git",

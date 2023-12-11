@@ -1,8 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
 import { Command } from 'commander'
-import { sh } from './shell.js'
-import { createTempFile, deleteTempFile, replaceFile } from './utils.js'
+import { sh } from './shell.mjs'
+import { createTempFile, deleteTempFile, replaceFile } from './utils.mjs'
 
 const main = async (opts) => {
   const tmpFile = await createTempFile('rooch_types.yml')

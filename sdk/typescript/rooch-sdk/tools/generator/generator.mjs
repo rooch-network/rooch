@@ -6,8 +6,8 @@ import { fileURLToPath } from 'url';
 import path, { dirname } from 'path';
 import ejs from "ejs";
 import prettier from 'prettier';
-import { getType } from "./utils.js";
-import { getMappingFunc } from "./mapping.js";
+import { getType } from "./utils.mjs";
+import { getMappingFunc } from "./mapping.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
