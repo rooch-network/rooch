@@ -51,7 +51,8 @@ Function to deserialize a type T.
 The u128 and u256 types must be json String type instead of Number type
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="json.md#0x2_json_from_json">from_json</a>&lt;T: <b>copy</b>&gt;(json_str: <a href="">vector</a>&lt;u8&gt;): T
+<pre><code>#[data_struct(#[T])]
+<b>public</b> <b>fun</b> <a href="json.md#0x2_json_from_json">from_json</a>&lt;T: <b>copy</b>&gt;(json_str: <a href="">vector</a>&lt;u8&gt;): T
 </code></pre>
 
 
@@ -64,7 +65,8 @@ Function to deserialize a type T.
 If the json string is invalid, it will return None
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="json.md#0x2_json_from_json_option">from_json_option</a>&lt;T: <b>copy</b>&gt;(json_str: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;T&gt;
+<pre><code>#[data_struct(#[T])]
+<b>public</b> <b>fun</b> <a href="json.md#0x2_json_from_json_option">from_json_option</a>&lt;T: <b>copy</b>&gt;(json_str: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;T&gt;
 </code></pre>
 
 
@@ -79,5 +81,4 @@ If the field type is primitive type, it will be parsed to String, array or objec
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="json.md#0x2_json_to_map">to_map</a>(json_str: <a href="">vector</a>&lt;u8&gt;): <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="_String">string::String</a>&gt;
-
 </code></pre>

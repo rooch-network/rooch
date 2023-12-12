@@ -7117,7 +7117,7 @@ dependencies = [
 name = "rooch-framework-release"
 version = "0.1.0"
 dependencies = [
- "clap 3.2.25",
+ "clap 4.4.1",
  "itertools",
  "move-binary-format",
  "moveos-stdlib-builder",
@@ -7321,6 +7321,7 @@ dependencies = [
  "moveos-store",
  "moveos-types",
  "moveos-verifier",
+ "once_cell",
  "regex",
  "rooch-framework",
  "rooch-genesis",

@@ -102,7 +102,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="bitcoin_types.md#0x3_bitcoin_types_Witness">Witness</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code>#[data_struct]
+<b>struct</b> <a href="bitcoin_types.md#0x3_bitcoin_types_Witness">Witness</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
