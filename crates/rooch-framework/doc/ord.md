@@ -6,26 +6,24 @@
 
 
 -  [Struct `InscriptionId`](#0x3_ord_InscriptionId)
--  [Struct `Inscription`](#0x3_ord_Inscription)
--  [Resource `InscriptionStore`](#0x3_ord_InscriptionStore)
--  [Function `genesis_init`](#0x3_ord_genesis_init)
--  [Function `from_transaction`](#0x3_ord_from_transaction)
--  [Function `from_transaction_bytes`](#0x3_ord_from_transaction_bytes)
+-  [Resource `Inscription`](#0x3_ord_Inscription)
+-  [Struct `InscriptionRecord`](#0x3_ord_InscriptionRecord)
+-  [Struct `InvalidInscriptionEvent`](#0x3_ord_InvalidInscriptionEvent)
+-  [Struct `MultiInscriptionEvent`](#0x3_ord_MultiInscriptionEvent)
+-  [Function `spend_utxo`](#0x3_ord_spend_utxo)
+-  [Function `progress_transaction`](#0x3_ord_progress_transaction)
+-  [Function `txid`](#0x3_ord_txid)
+-  [Function `index`](#0x3_ord_index)
 -  [Function `body`](#0x3_ord_body)
 -  [Function `content_encoding`](#0x3_ord_content_encoding)
 -  [Function `content_type`](#0x3_ord_content_type)
--  [Function `duplicate_field`](#0x3_ord_duplicate_field)
--  [Function `incomplete_field`](#0x3_ord_incomplete_field)
 -  [Function `metadata`](#0x3_ord_metadata)
 -  [Function `metaprotocol`](#0x3_ord_metaprotocol)
 -  [Function `parent`](#0x3_ord_parent)
 -  [Function `pointer`](#0x3_ord_pointer)
--  [Function `unrecognized_even_field`](#0x3_ord_unrecognized_even_field)
--  [Function `total_inscriptions`](#0x3_ord_total_inscriptions)
--  [Function `inscription_ids`](#0x3_ord_inscription_ids)
--  [Function `inscriptions`](#0x3_ord_inscriptions)
--  [Function `remaining_tx_count`](#0x3_ord_remaining_tx_count)
--  [Function `progress_inscriptions`](#0x3_ord_progress_inscriptions)
+-  [Function `unpack_record`](#0x3_ord_unpack_record)
+-  [Function `from_transaction`](#0x3_ord_from_transaction)
+-  [Function `from_transaction_bytes`](#0x3_ord_from_transaction_bytes)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -33,11 +31,10 @@
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
+<b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::table</a>;
-<b>use</b> <a href="">0x2::table_vec</a>;
-<b>use</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client">0x3::bitcoin_light_client</a>;
 <b>use</b> <a href="bitcoin_types.md#0x3_bitcoin_types">0x3::bitcoin_types</a>;
+<b>use</b> <a href="utxo.md#0x3_utxo">0x3::utxo</a>;
 </code></pre>
 
 
@@ -55,55 +52,88 @@
 
 <a name="0x3_ord_Inscription"></a>
 
-## Struct `Inscription`
+## Resource `Inscription`
 
 
 
-<pre><code><b>struct</b> <a href="ord.md#0x3_ord_Inscription">Inscription</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="ord.md#0x3_ord_Inscription">Inscription</a> <b>has</b> key
 </code></pre>
 
 
 
-<a name="0x3_ord_InscriptionStore"></a>
+<a name="0x3_ord_InscriptionRecord"></a>
 
-## Resource `InscriptionStore`
+## Struct `InscriptionRecord`
 
 
 
-<pre><code><b>struct</b> <a href="ord.md#0x3_ord_InscriptionStore">InscriptionStore</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="ord.md#0x3_ord_InscriptionRecord">InscriptionRecord</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
 
-<a name="0x3_ord_genesis_init"></a>
+<a name="0x3_ord_InvalidInscriptionEvent"></a>
 
-## Function `genesis_init`
+## Struct `InvalidInscriptionEvent`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x3_ord_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _genesis_account: &<a href="">signer</a>)
+<pre><code><b>struct</b> <a href="ord.md#0x3_ord_InvalidInscriptionEvent">InvalidInscriptionEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
 
-<a name="0x3_ord_from_transaction"></a>
+<a name="0x3_ord_MultiInscriptionEvent"></a>
 
-## Function `from_transaction`
+## Struct `MultiInscriptionEvent`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_from_transaction">from_transaction</a>(transaction: &<a href="bitcoin_types.md#0x3_bitcoin_types_Transaction">bitcoin_types::Transaction</a>): <a href="">vector</a>&lt;<a href="ord.md#0x3_ord_Inscription">ord::Inscription</a>&gt;
+<pre><code><b>struct</b> <a href="ord.md#0x3_ord_MultiInscriptionEvent">MultiInscriptionEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
 
-<a name="0x3_ord_from_transaction_bytes"></a>
+<a name="0x3_ord_spend_utxo"></a>
 
-## Function `from_transaction_bytes`
+## Function `spend_utxo`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_from_transaction_bytes">from_transaction_bytes</a>(transaction_bytes: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;<a href="ord.md#0x3_ord_Inscription">ord::Inscription</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_spend_utxo">spend_utxo</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, utxo_obj: &<a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x3_utxo_UTXO">utxo::UTXO</a>&gt;, tx: &<a href="bitcoin_types.md#0x3_bitcoin_types_Transaction">bitcoin_types::Transaction</a>): <a href="_Option">option::Option</a>&lt;<a href="utxo.md#0x3_utxo_SealOut">utxo::SealOut</a>&gt;
+</code></pre>
+
+
+
+<a name="0x3_ord_progress_transaction"></a>
+
+## Function `progress_transaction`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_progress_transaction">progress_transaction</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, tx: &<a href="bitcoin_types.md#0x3_bitcoin_types_Transaction">bitcoin_types::Transaction</a>): <a href="">vector</a>&lt;<a href="utxo.md#0x3_utxo_SealOut">utxo::SealOut</a>&gt;
+</code></pre>
+
+
+
+<a name="0x3_ord_txid"></a>
+
+## Function `txid`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_txid">txid</a>(self: &<a href="ord.md#0x3_ord_Inscription">ord::Inscription</a>): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x3_ord_index"></a>
+
+## Function `index`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_index">index</a>(self: &<a href="ord.md#0x3_ord_Inscription">ord::Inscription</a>): u32
 </code></pre>
 
 
@@ -141,28 +171,6 @@
 
 
 
-<a name="0x3_ord_duplicate_field"></a>
-
-## Function `duplicate_field`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_duplicate_field">duplicate_field</a>(self: &<a href="ord.md#0x3_ord_Inscription">ord::Inscription</a>): bool
-</code></pre>
-
-
-
-<a name="0x3_ord_incomplete_field"></a>
-
-## Function `incomplete_field`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_incomplete_field">incomplete_field</a>(self: &<a href="ord.md#0x3_ord_Inscription">ord::Inscription</a>): bool
-</code></pre>
-
-
-
 <a name="0x3_ord_metadata"></a>
 
 ## Function `metadata`
@@ -191,7 +199,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_parent">parent</a>(self: &<a href="ord.md#0x3_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_parent">parent</a>(self: &<a href="ord.md#0x3_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
 </code></pre>
 
 
@@ -207,66 +215,33 @@
 
 
 
-<a name="0x3_ord_unrecognized_even_field"></a>
+<a name="0x3_ord_unpack_record"></a>
 
-## Function `unrecognized_even_field`
+## Function `unpack_record`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_unrecognized_even_field">unrecognized_even_field</a>(self: &<a href="ord.md#0x3_ord_Inscription">ord::Inscription</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_unpack_record">unpack_record</a>(record: <a href="ord.md#0x3_ord_InscriptionRecord">ord::InscriptionRecord</a>): (<a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
 </code></pre>
 
 
 
-<a name="0x3_ord_total_inscriptions"></a>
+<a name="0x3_ord_from_transaction"></a>
 
-## Function `total_inscriptions`
+## Function `from_transaction`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_total_inscriptions">total_inscriptions</a>(inscription_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x3_ord_InscriptionStore">ord::InscriptionStore</a>&gt;): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_from_transaction">from_transaction</a>(tx: &<a href="bitcoin_types.md#0x3_bitcoin_types_Transaction">bitcoin_types::Transaction</a>): <a href="">vector</a>&lt;<a href="ord.md#0x3_ord_InscriptionRecord">ord::InscriptionRecord</a>&gt;
 </code></pre>
 
 
 
-<a name="0x3_ord_inscription_ids"></a>
+<a name="0x3_ord_from_transaction_bytes"></a>
 
-## Function `inscription_ids`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_inscription_ids">inscription_ids</a>(inscription_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x3_ord_InscriptionStore">ord::InscriptionStore</a>&gt;): &<a href="_TableVec">table_vec::TableVec</a>&lt;<a href="ord.md#0x3_ord_InscriptionId">ord::InscriptionId</a>&gt;
-</code></pre>
+## Function `from_transaction_bytes`
 
 
 
-<a name="0x3_ord_inscriptions"></a>
-
-## Function `inscriptions`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_inscriptions">inscriptions</a>(inscription_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x3_ord_InscriptionStore">ord::InscriptionStore</a>&gt;): &<a href="_Table">table::Table</a>&lt;<a href="ord.md#0x3_ord_InscriptionId">ord::InscriptionId</a>, <a href="ord.md#0x3_ord_Inscription">ord::Inscription</a>&gt;
-</code></pre>
-
-
-
-<a name="0x3_ord_remaining_tx_count"></a>
-
-## Function `remaining_tx_count`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_remaining_tx_count">remaining_tx_count</a>(btc_block_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinBlockStore">bitcoin_light_client::BitcoinBlockStore</a>&gt;, inscription_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x3_ord_InscriptionStore">ord::InscriptionStore</a>&gt;): u64
-</code></pre>
-
-
-
-<a name="0x3_ord_progress_inscriptions"></a>
-
-## Function `progress_inscriptions`
-
-
-
-<pre><code>entry <b>fun</b> <a href="ord.md#0x3_ord_progress_inscriptions">progress_inscriptions</a>(btc_block_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinBlockStore">bitcoin_light_client::BitcoinBlockStore</a>&gt;, inscription_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x3_ord_InscriptionStore">ord::InscriptionStore</a>&gt;, batch_size: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_from_transaction_bytes">from_transaction_bytes</a>(transaction_bytes: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;<a href="ord.md#0x3_ord_InscriptionRecord">ord::InscriptionRecord</a>&gt;
 </code></pre>

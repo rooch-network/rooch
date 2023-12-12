@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::ord::InscriptionStore;
+use super::bitcoin_types::Transaction;
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::Result;
 use move_core_types::{
@@ -9,12 +9,13 @@ use move_core_types::{
 };
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
+    move_std::string::MoveString,
     moveos_std::{
         object::{self, ObjectID},
+        simple_map::SimpleMap,
         tx_context::TxContext,
     },
     state::{MoveState, MoveStructState, MoveStructType},
-    transaction::FunctionCall,
 };
 use serde::{Deserialize, Serialize};
 
@@ -26,8 +27,6 @@ pub struct BRC20Store {
     pub next_inscription_index: u64,
     /// The coins id
     pub coins: ObjectID,
-    /// The balance id
-    pub balance: ObjectID,
 }
 
 impl BRC20Store {
@@ -47,7 +46,25 @@ impl MoveStructState for BRC20Store {
         move_core_types::value::MoveStructLayout::new(vec![
             u64::type_layout(),
             ObjectID::type_layout(),
-            ObjectID::type_layout(),
+        ])
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Op {
+    pub json_map: SimpleMap<MoveString, MoveString>,
+}
+
+impl MoveStructType for Op {
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Op");
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+}
+
+impl MoveStructState for Op {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            SimpleMap::<MoveString, MoveString>::type_layout(),
         ])
     }
 }
@@ -58,42 +75,25 @@ pub struct BRC20Module<'a> {
 }
 
 impl<'a> BRC20Module<'a> {
-    pub const REMAINING_INSCRIPTION_COUNT_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("remaining_inscription_count");
-    pub const PROGRESS_BRC20_OPS_ENTRY_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("progress_brc20_ops");
+    pub const FROM_TRANSACTION_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("from_transaction_bytes");
 
-    pub fn remaining_inscription_count(&self) -> Result<u64> {
+    pub fn from_transaction(&self, tx: &Transaction) -> Result<Vec<Op>> {
         let call = Self::create_function_call(
-            Self::REMAINING_INSCRIPTION_COUNT_FUNCTION_NAME,
+            Self::FROM_TRANSACTION_FUNCTION_NAME,
             vec![],
-            vec![
-                MoveValue::Address(InscriptionStore::object_id().into()),
-                MoveValue::Address(BRC20Store::object_id().into()),
-            ],
+            vec![MoveValue::vector_u8(tx.to_bytes())],
         );
-        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
-        let remaining_count =
-            self.caller
-                .call_function(&ctx, call)?
-                .into_result()
-                .map(|mut values| {
-                    let value = values.pop().expect("should have one return value");
-                    bcs::from_bytes::<u64>(&value.value).expect("should be a valid bool")
-                })?;
-        Ok(remaining_count)
-    }
-
-    pub fn create_progress_brc20_ops_call(batch_size: u64) -> FunctionCall {
-        Self::create_function_call(
-            Self::PROGRESS_BRC20_OPS_ENTRY_FUNCTION_NAME,
-            vec![],
-            vec![
-                MoveValue::Address(InscriptionStore::object_id().into()),
-                MoveValue::Address(BRC20Store::object_id().into()),
-                MoveValue::U64(batch_size),
-            ],
-        )
+        let ctx = TxContext::new_readonly_ctx(AccountAddress::ONE);
+        let ops = self
+            .caller
+            .call_function(&ctx, call)?
+            .into_result()
+            .map(|mut values| {
+                let value = values.pop().expect("should have one return value");
+                bcs::from_bytes::<Vec<Op>>(&value.value).expect("should be a valid Vec<Op>")
+            })?;
+        Ok(ops)
     }
 }
 

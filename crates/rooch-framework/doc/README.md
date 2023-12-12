@@ -51,6 +51,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::transaction_fee`](transaction_fee.md#0x3_transaction_fee)
 -  [`0x3::transaction_validator`](transaction_validator.md#0x3_transaction_validator)
 -  [`0x3::transfer`](transfer.md#0x3_transfer)
+-  [`0x3::utxo`](utxo.md#0x3_utxo)
 
 
 

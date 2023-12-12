@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod bitcoin_light_client_test;
+mod brc20_test;
 mod empty_tests;
 mod ethereum_light_client_test;
 mod ethereum_validator_tests;

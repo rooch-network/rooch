@@ -5,20 +5,30 @@ module rooch_framework::bitcoin_light_client{
 
     use std::option::{Self, Option};
     use std::vector;
+    use std::string::{Self, String};
+    use moveos_std::type_info;
+    use moveos_std::event;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
     use moveos_std::bcs;
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::table_vec::{Self, TableVec};
+    use moveos_std::simple_map;
     use rooch_framework::timestamp;
-    use rooch_framework::bitcoin_address::{Self, BTCAddress};
-    use rooch_framework::bitcoin_types::{Self, Block, Header, Transaction, OutPoint, TxOut};    
+    use rooch_framework::bitcoin_types::{Self, Block, Header, Transaction, OutPoint};    
+    use rooch_framework::ord::{Self, Inscription};
+    use rooch_framework::utxo::{Self, UTXOSeal};
     
 
     friend rooch_framework::genesis;
 
     const ErrorBlockNotFound:u64 = 1;
     const ErrorBlockAlreadyProcessed:u64 = 2;
+
+    struct TxProgressErrorLogEvent has copy, drop{
+        txid: address,
+        message: String,
+    }
 
     
     struct BitcoinBlockStore has key{
@@ -39,9 +49,7 @@ module rooch_framework::bitcoin_light_client{
         /// The next tx index to be processed
         next_tx_index: u64,
         /// outpoint -> txout
-        utxo: Table<OutPoint, TxOut>,
-        /// BTC balance
-        balance: Table<BTCAddress, u64>,
+        utxo: Table<OutPoint, ObjectID>,
     }
 
     public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer){
@@ -59,7 +67,6 @@ module rooch_framework::bitcoin_light_client{
         let btc_utxo_store = BitcoinUTXOStore{
             next_tx_index: 0,
             utxo: context::new_table(ctx),
-            balance: context::new_table(ctx),
         };
         let obj = context::new_named_object(ctx, btc_utxo_store);
         object::to_shared(obj);
@@ -111,56 +118,67 @@ module rooch_framework::bitcoin_light_client{
         table_vec::push_back(&mut btc_block_store.tx_ids, txid);
     }
 
-    fun progress_utxo(btc_utxo_store: &mut BitcoinUTXOStore, tx: &Transaction){
+    fun progress_utxo(ctx: &mut Context, btc_utxo_store: &mut BitcoinUTXOStore, tx: &Transaction){
+        let txid = bitcoin_types::tx_id(tx);
         let txinput = bitcoin_types::tx_input(tx);
         let idx = 0;
+        let output_seals = simple_map::create<u64, UTXOSeal>();
         while(idx < vector::length(txinput)){
             let txin = vector::borrow(txinput, idx);
             let outpoint = *bitcoin_types::txin_previous_output(txin);
-            remove_utxo(btc_utxo_store, outpoint); 
+            if(table::contains(&btc_utxo_store.utxo, outpoint)){
+                let object_id = table::remove(&mut btc_utxo_store.utxo, outpoint);
+                let utxo_obj = utxo::take(ctx, object_id);
+                let seal_out_opt = ord::spend_utxo(ctx, &utxo_obj, tx);
+                if(option::is_some(&seal_out_opt)){
+                    let seal_out = option::destroy_some(seal_out_opt);
+                    let (output_index, object_id) = utxo::unpack_seal_out(seal_out);
+                    let utxo_seal = utxo::new_utxo_seal(type_info::type_name<Inscription>(), object_id);
+                    let (old_key_opt, _value_opt) = simple_map::upsert(&mut output_seals, output_index, utxo_seal);
+                    if(option::is_some(&old_key_opt)){
+                        event::emit(TxProgressErrorLogEvent{txid: txid, message: string::utf8(b"repeated output seal")});
+                    };
+                };
+                utxo::remove(utxo_obj);
+            }else{
+                //We allow the utxo not exists in the utxo store, because we may not sync the block from genesis
+            };
+
             idx = idx + 1;
+        };
+        //If a utxo is spend seal assets, it should not seal new assets
+        //TODO confirm this
+        if(simple_map::length(&output_seals) == 0){
+            let ord_seals = ord::progress_transaction(ctx, tx);
+            let idx = 0;
+            let protocol = type_info::type_name<Inscription>();
+            while(idx < vector::length(&ord_seals)){
+                let seal_out = vector::pop_back(&mut ord_seals);
+                let (output_index, object_id) = utxo::unpack_seal_out(seal_out);
+                let utxo_seal = utxo::new_utxo_seal(protocol, object_id);
+                simple_map::add(&mut output_seals, output_index, utxo_seal);
+                idx = idx + 1;
+            };
         };
         let txoutput = bitcoin_types::tx_output(tx);
         let idx = 0;
-        let txid = bitcoin_types::tx_id(tx);
-        while(idx < vector::length(txoutput)){
-            let txout = *vector::borrow(txoutput, idx);
-            let outpoint = bitcoin_types::new_outpoint(txid, (idx as u32));
-            add_utxo(btc_utxo_store, outpoint, txout);
-            idx = idx + 1;
-        }
-    }
-
-    fun remove_utxo(btc_utxo_store: &mut BitcoinUTXOStore, outpoint: OutPoint){
-        if(table::contains(&btc_utxo_store.utxo, outpoint)){
-            let txout = table::remove(&mut btc_utxo_store.utxo, outpoint);
-            let script_pubkey = bitcoin_types::txout_script_pubkey(&txout);
-            //TODO should we record the address of the utxo?
-            let address_opt = bitcoin_address::from_script(script_pubkey);
-            if(option::is_some(&address_opt)){
-                let address = option::extract(&mut address_opt);
-                let balance = table::borrow_mut_with_default(&mut btc_utxo_store.balance, address, 0);
-                if (*balance >= bitcoin_types::txout_value(&txout)){
-                    *balance = *balance - bitcoin_types::txout_value(&txout);
-                }else{
-                    //if we sync the block from genesis, this should not happen
-                    //TODO emit a event as a warning
-                }
-            }
-        }else{
-            //TODO handle double spend
-        };
         
-    }
-
-    fun add_utxo(btc_utxo_store: &mut BitcoinUTXOStore, outpoint: OutPoint, txout: TxOut){
-        table::add(&mut btc_utxo_store.utxo, outpoint, txout);
-        let script_pubkey = bitcoin_types::txout_script_pubkey(&txout);
-        let address_opt = bitcoin_address::from_script(script_pubkey);
-        if(option::is_some(&address_opt)){
-            let address = option::extract(&mut address_opt);
-            let balance = table::borrow_mut_with_default(&mut btc_utxo_store.balance, address, 0);
-            *balance = *balance + bitcoin_types::txout_value(&txout);
+        while(idx < vector::length(txoutput)){
+            let txout = vector::borrow(txoutput, idx);
+            let vout = (idx as u32);
+            let outpoint = bitcoin_types::new_outpoint(txid, vout);
+            let value = bitcoin_types::txout_value(txout);
+            let utxo_obj = utxo::new(ctx, txid, vout, value);
+            let utxo = object::borrow_mut(&mut utxo_obj);
+            if(simple_map::contains_key(&output_seals, &idx)){
+                let (_, utxo_seal) = simple_map::remove(&mut output_seals, &idx);
+                utxo::add_seal(utxo, utxo_seal);
+            };
+            let object_id = object::id(&utxo_obj);
+            table::add(&mut btc_utxo_store.utxo, outpoint, object_id);
+            let owner_address = bitcoin_types::txout_object_address(txout);
+            utxo::transfer(utxo_obj, owner_address); 
+            idx = idx + 1;
         }
     }
 
@@ -185,7 +203,7 @@ module rooch_framework::bitcoin_light_client{
         }
     }
     
-    entry fun progress_utxos(btc_block_store_obj: &Object<BitcoinBlockStore>, btc_utxo_store_obj: &mut Object<BitcoinUTXOStore>, batch_size: u64){
+    entry fun progress_utxos(ctx: &mut Context, btc_block_store_obj: &Object<BitcoinBlockStore>, btc_utxo_store_obj: &mut Object<BitcoinUTXOStore>, batch_size: u64){
         let btc_block_store = object::borrow(btc_block_store_obj);
         let btc_utxo_store = object::borrow_mut(btc_utxo_store_obj);
         let start_tx_index = btc_utxo_store.next_tx_index;
@@ -198,7 +216,7 @@ module rooch_framework::bitcoin_light_client{
         while(progressed_tx_count < batch_size && progress_tx_index < max_tx_count){
             let txid = *table_vec::borrow(&btc_block_store.tx_ids, progress_tx_index);
             let tx = table::borrow(&btc_block_store.txs, txid);
-            progress_utxo(btc_utxo_store, tx);
+            progress_utxo(ctx, btc_utxo_store, tx);
             progressed_tx_count = progressed_tx_count + 1;
             progress_tx_index = progress_tx_index + 1;
         };
@@ -260,8 +278,8 @@ module rooch_framework::bitcoin_light_client{
         btc_block_store.latest_block_height
     }
 
-    /// Get tx out via txid and vout
-    public fun get_tx_out(btc_utxo_store_obj: &Object<BitcoinUTXOStore>, txid: address, vout: u32): Option<TxOut>{
+    /// Get UTXO via txid and vout
+    public fun get_utxo(btc_utxo_store_obj: &Object<BitcoinUTXOStore>, txid: address, vout: u32): Option<ObjectID>{
         let outpoint = bitcoin_types::new_outpoint(txid, vout);
         let btc_utxo_store = object::borrow(btc_utxo_store_obj);
         if(table::contains(&btc_utxo_store.utxo, outpoint)){

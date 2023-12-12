@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{bitcoin_light_client::BitcoinBlockStore, bitcoin_types::Transaction};
+use super::bitcoin_types::Transaction;
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::Result;
 use move_core_types::{
@@ -15,14 +15,13 @@ use moveos_types::{
         tx_context::TxContext,
     },
     state::{MoveState, MoveStructState, MoveStructType},
-    transaction::FunctionCall,
 };
 use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("ord");
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Default)]
-pub struct Inscription {
+pub struct InscriptionRecord {
     pub body: MoveOption<Vec<u8>>,
     pub content_encoding: MoveOption<Vec<u8>>,
     pub content_type: MoveOption<Vec<u8>>,
@@ -35,13 +34,13 @@ pub struct Inscription {
     pub unrecognized_even_field: bool,
 }
 
-impl MoveStructType for Inscription {
+impl MoveStructType for InscriptionRecord {
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("ord");
-    const STRUCT_NAME: &'static IdentStr = ident_str!("Inscription");
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("InscriptionRecord");
 }
 
-impl MoveStructState for Inscription {
+impl MoveStructState for InscriptionRecord {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
             MoveOption::<Vec<u8>>::type_layout(),
@@ -98,14 +97,8 @@ pub struct OrdModule<'a> {
 impl<'a> OrdModule<'a> {
     pub const FROM_TRANSACTION_FUNCTION_NAME: &'static IdentStr =
         ident_str!("from_transaction_bytes");
-    pub const REMAINING_TX_COUNT_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("remaining_tx_count");
-    pub const TOTAL_INSCRIPTIONS_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("total_inscriptions");
-    pub const PROGRESS_INSCRIPTIONS_ENTRY_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("progress_inscriptions");
 
-    pub fn from_transaction(&self, tx: &Transaction) -> Result<Vec<Inscription>> {
+    pub fn from_transaction(&self, tx: &Transaction) -> Result<Vec<InscriptionRecord>> {
         let call = Self::create_function_call(
             Self::FROM_TRANSACTION_FUNCTION_NAME,
             vec![],
@@ -118,61 +111,10 @@ impl<'a> OrdModule<'a> {
                 .into_result()
                 .map(|mut values| {
                     let value = values.pop().expect("should have one return value");
-                    bcs::from_bytes::<Vec<Inscription>>(&value.value)
+                    bcs::from_bytes::<Vec<InscriptionRecord>>(&value.value)
                         .expect("should be a valid Vec<Inscription>")
                 })?;
         Ok(inscription_key)
-    }
-
-    pub fn total_inscriptions(&self) -> Result<u64> {
-        let call = Self::create_function_call(
-            Self::TOTAL_INSCRIPTIONS_FUNCTION_NAME,
-            vec![],
-            vec![MoveValue::Address(InscriptionStore::object_id().into())],
-        );
-        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
-        let total_inscriptions =
-            self.caller
-                .call_function(&ctx, call)?
-                .into_result()
-                .map(|mut values| {
-                    let value = values.pop().expect("should have one return value");
-                    bcs::from_bytes::<u64>(&value.value).expect("should be a valid u64")
-                })?;
-        Ok(total_inscriptions)
-    }
-
-    pub fn remaining_tx_count(&self) -> Result<u64> {
-        let call = Self::create_function_call(
-            Self::REMAINING_TX_COUNT_FUNCTION_NAME,
-            vec![],
-            vec![
-                MoveValue::Address(BitcoinBlockStore::object_id().into()),
-                MoveValue::Address(InscriptionStore::object_id().into()),
-            ],
-        );
-        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
-        let remaining_count =
-            self.caller
-                .call_function(&ctx, call)?
-                .into_result()
-                .map(|mut values| {
-                    let value = values.pop().expect("should have one return value");
-                    bcs::from_bytes::<u64>(&value.value).expect("should be a valid bool")
-                })?;
-        Ok(remaining_count)
-    }
-
-    pub fn create_progress_inscriptions_call(batch_size: u64) -> FunctionCall {
-        Self::create_function_call(
-            Self::PROGRESS_INSCRIPTIONS_ENTRY_FUNCTION_NAME,
-            vec![],
-            vec![
-                MoveValue::Address(BitcoinBlockStore::object_id().into()),
-                MoveValue::Address(InscriptionStore::object_id().into()),
-                MoveValue::U64(batch_size),
-            ],
-        )
     }
 }
 

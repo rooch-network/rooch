@@ -17,6 +17,7 @@ This module provides a solution for unsorted maps, that is it has the properties
 -  [Struct `Element`](#0x2_simple_map_Element)
 -  [Constants](#@Constants_0)
 -  [Function `length`](#0x2_simple_map_length)
+-  [Function `new`](#0x2_simple_map_new)
 -  [Function `create`](#0x2_simple_map_create)
 -  [Function `borrow`](#0x2_simple_map_borrow)
 -  [Function `borrow_with_default`](#0x2_simple_map_borrow_with_default)
@@ -95,10 +96,24 @@ Map key is not found
 
 
 
+<a name="0x2_simple_map_new"></a>
+
+## Function `new`
+
+Create an empty SimpleMap.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_new">new</a>&lt;Key: store, Value: store&gt;(): <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;
+</code></pre>
+
+
+
 <a name="0x2_simple_map_create"></a>
 
 ## Function `create`
 
+Create an empty SimpleMap.
+This function is deprecated, use <code>new</code> instead.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_create">create</a>&lt;Key: store, Value: store&gt;(): <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;

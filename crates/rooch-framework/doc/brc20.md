@@ -20,21 +20,21 @@
 -  [Function `is_transfer`](#0x3_brc20_is_transfer)
 -  [Function `as_transfer`](#0x3_brc20_as_transfer)
 -  [Function `from_inscription`](#0x3_brc20_from_inscription)
--  [Function `remaining_inscription_count`](#0x3_brc20_remaining_inscription_count)
--  [Function `progress_brc20_ops`](#0x3_brc20_progress_brc20_ops)
+-  [Function `from_transaction_bytes`](#0x3_brc20_from_transaction_bytes)
 
 
 <pre><code><b>use</b> <a href="">0x1::debug</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::string_utils</a>;
 <b>use</b> <a href="">0x2::table</a>;
-<b>use</b> <a href="">0x2::table_vec</a>;
 <b>use</b> <a href="bitcoin_address.md#0x3_bitcoin_address">0x3::bitcoin_address</a>;
+<b>use</b> <a href="bitcoin_types.md#0x3_bitcoin_types">0x3::bitcoin_types</a>;
 <b>use</b> <a href="ord.md#0x3_ord">0x3::ord</a>;
 </code></pre>
 
@@ -231,27 +231,16 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x3_brc20_from_inscription">from_inscription</a>(inscription: &<a href="ord.md#0x3_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;<a href="brc20.md#0x3_brc20_Op">brc20::Op</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x3_brc20_from_inscription">from_inscription</a>(inscription_body: <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;): <a href="_Option">option::Option</a>&lt;<a href="brc20.md#0x3_brc20_Op">brc20::Op</a>&gt;
 </code></pre>
 
 
 
-<a name="0x3_brc20_remaining_inscription_count"></a>
+<a name="0x3_brc20_from_transaction_bytes"></a>
 
-## Function `remaining_inscription_count`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x3_brc20_remaining_inscription_count">remaining_inscription_count</a>(inscription_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x3_ord_InscriptionStore">ord::InscriptionStore</a>&gt;, brc20_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="brc20.md#0x3_brc20_BRC20Store">brc20::BRC20Store</a>&gt;): u64
-</code></pre>
+## Function `from_transaction_bytes`
 
 
 
-<a name="0x3_brc20_progress_brc20_ops"></a>
-
-## Function `progress_brc20_ops`
-
-
-
-<pre><code>entry <b>fun</b> <a href="brc20.md#0x3_brc20_progress_brc20_ops">progress_brc20_ops</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, inscription_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x3_ord_InscriptionStore">ord::InscriptionStore</a>&gt;, brc20_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="brc20.md#0x3_brc20_BRC20Store">brc20::BRC20Store</a>&gt;, batch_size: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x3_brc20_from_transaction_bytes">from_transaction_bytes</a>(transaction_bytes: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;<a href="brc20.md#0x3_brc20_Op">brc20::Op</a>&gt;
 </code></pre>

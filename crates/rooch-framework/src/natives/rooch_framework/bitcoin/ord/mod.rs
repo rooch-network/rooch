@@ -65,13 +65,15 @@ pub(crate) fn native_from_witness(
     let bitcoin_witness = bitcoin::Witness::from_slice(witness.witness.as_slice());
     let inscriptions = from_witness(&bitcoin_witness);
     let inscription_vm_type = context
-        .load_type(&rooch_types::framework::ord::Inscription::type_tag())
+        .load_type(&rooch_types::framework::ord::InscriptionRecord::type_tag())
         .map_err(|e| e.to_partial())?;
     let val = Vector::pack(
         &inscription_vm_type,
         inscriptions
             .into_iter()
-            .map(|i| Into::<rooch_types::framework::ord::Inscription>::into(i).to_runtime_value())
+            .map(|i| {
+                Into::<rooch_types::framework::ord::InscriptionRecord>::into(i).to_runtime_value()
+            })
             .collect::<Vec<_>>(),
     )?;
 

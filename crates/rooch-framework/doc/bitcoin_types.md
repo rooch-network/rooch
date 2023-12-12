@@ -39,11 +39,15 @@
 -  [Function `unpack_outpoint`](#0x3_bitcoin_types_unpack_outpoint)
 -  [Function `txout_value`](#0x3_bitcoin_types_txout_value)
 -  [Function `txout_script_pubkey`](#0x3_bitcoin_types_txout_script_pubkey)
+-  [Function `txout_address`](#0x3_bitcoin_types_txout_address)
+-  [Function `txout_object_address`](#0x3_bitcoin_types_txout_object_address)
 -  [Function `unpack_txout`](#0x3_bitcoin_types_unpack_txout)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="bitcoin_address.md#0x3_bitcoin_address">0x3::bitcoin_address</a>;
 <b>use</b> <a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf">0x3::bitcoin_script_buf</a>;
+<b>use</b> <a href="multichain_address.md#0x3_multichain_address">0x3::multichain_address</a>;
 </code></pre>
 
 
@@ -443,6 +447,28 @@ bitcoin_script::is_v1_p2tr to check whether this is actually a Taproot witness.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin_types.md#0x3_bitcoin_types_txout_script_pubkey">txout_script_pubkey</a>(self: &<a href="bitcoin_types.md#0x3_bitcoin_types_TxOut">bitcoin_types::TxOut</a>): &<a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf_ScriptBuf">bitcoin_script_buf::ScriptBuf</a>
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_types_txout_address"></a>
+
+## Function `txout_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_types.md#0x3_bitcoin_types_txout_address">txout_address</a>(self: &<a href="bitcoin_types.md#0x3_bitcoin_types_TxOut">bitcoin_types::TxOut</a>): <a href="_Option">option::Option</a>&lt;<a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>&gt;
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_types_txout_object_address"></a>
+
+## Function `txout_object_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_types.md#0x3_bitcoin_types_txout_object_address">txout_object_address</a>(self: &<a href="bitcoin_types.md#0x3_bitcoin_types_TxOut">bitcoin_types::TxOut</a>): <b>address</b>
 </code></pre>
 
 

@@ -16,13 +16,11 @@
 <b>use</b> <a href="address_mapping.md#0x3_address_mapping">0x3::address_mapping</a>;
 <b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;
 <b>use</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client">0x3::bitcoin_light_client</a>;
-<b>use</b> <a href="brc20.md#0x3_brc20">0x3::brc20</a>;
 <b>use</b> <a href="builtin_validators.md#0x3_builtin_validators">0x3::builtin_validators</a>;
 <b>use</b> <a href="chain_id.md#0x3_chain_id">0x3::chain_id</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client">0x3::ethereum_light_client</a>;
 <b>use</b> <a href="gas_coin.md#0x3_gas_coin">0x3::gas_coin</a>;
-<b>use</b> <a href="ord.md#0x3_ord">0x3::ord</a>;
 <b>use</b> <a href="timestamp.md#0x3_timestamp">0x3::timestamp</a>;
 <b>use</b> <a href="transaction_fee.md#0x3_transaction_fee">0x3::transaction_fee</a>;
 </code></pre>
