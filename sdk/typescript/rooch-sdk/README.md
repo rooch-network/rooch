@@ -7,7 +7,7 @@ WARNING: Note that we are still iterating on the RPC and SDK API before TestNet,
 ## Installation
 
 ```shell
-npm i @roochnetwork/sdk
+npm i @roochnetwork/rooch-sdk
 ```
 
 ## Connecting to Rooch Network
@@ -20,7 +20,7 @@ The JsonRpcProvider class provides a connection to the JSON-RPC Server and shoul
 For local development, you can run cargo run server start to start a local network. Refer to this guide for more information.
 
 ```typescript
-import { JsonRpcProvider, DevChain } from '@rooch/sdk'
+import { JsonRpcProvider, DevChain } from '@roochnetwork/rooch-sdk'
 
 // create a provider connected to devnet
 const provider = new JsonRpcProvider(DevChain)
@@ -32,7 +32,7 @@ await provider.getTransactionsByOrder(0, 10)
 You can also construct your own in custom connections, with the URL for your own network
 
 ```typescript
-import { JsonRpcProvider, Chain } from '@rooch/sdk'
+import { JsonRpcProvider, Chain } from '@roochnetwork/rooch-sdk'
 
 // Definition custom chian
 export const CustomChain = new Chain(CUSTOM_CHAIN_ID, 'CUSTOM_CHAIN_NAME', {
@@ -50,7 +50,7 @@ await provider.getTransactionsByOrder(0, 10)
 Rooch Account
 
 ```typescript
-import { JsonRpcProvider, DevChain, Account, Ed25519Keypair } from '@rooch/sdk'
+import { JsonRpcProvider, DevChain, Account, Ed25519Keypair } from '@roochnetwork/rooch-sdk'
 const provider = new JsonRpcProvider(DevChain)
 const pk = Ed25519Keypair.generate()
 const authorizer = new PrivateKeyAuth(pk)
@@ -61,7 +61,7 @@ const keypairAccount = Account(provider, account.roochAddress, authorizer)
 Session Account
 
 ```typescript
-import { JsonRpcProvider, DevChain, Account, Ed25519Keypair } from '@rooch/sdk'
+import { JsonRpcProvider, DevChain, Account, Ed25519Keypair } from '@roochnetwork/rooch-sdk'
 const provider = new JsonRpcProvider(DevChain)
 const pk = Ed25519Keypair.generate()
 const authorizer = new PrivateKeyAuth(pk)
@@ -76,7 +76,7 @@ const sessionAccount = new Account(provider, account.roochAddress, authorizer).c
 ### Move Call
 
 ```typescript
-import { JsonRpcProvider, DevChain, Account, Ed25519Keypair } from '@rooch/sdk'
+import { JsonRpcProvider, DevChain, Account, Ed25519Keypair } from '@roochnetwork/rooch-sdk'
 const provider = new JsonRpcProvider(DevChain)
 const pk = Ed25519Keypair.generate()
 const authorizer = new PrivateKeyAuth(pk)
@@ -98,7 +98,7 @@ const result = keypairAccount.runFunction(
 ### Move view
 
 ```typescript
-import { JsonRpcProvider, DevChain } from '@rooch/sdk'
+import { JsonRpcProvider, DevChain } from '@roochnetwork/rooch-sdk'
 const provider = new JsonRpcProvider(DevChain)
 
 const result = provider.executeViewFunction(
@@ -111,7 +111,7 @@ const result = provider.executeViewFunction(
 ### Get Transactions By Hash
 
 ```typescript
-import { JsonRpcProvider, DevChain } from '@rooch/sdk'
+import { JsonRpcProvider, DevChain } from '@roochnetwork/rooch-sdk'
 const provider = new JsonRpcProvider(DevChain)
 
 const allTransaction = provider.getTransactionsByHash([
@@ -122,7 +122,7 @@ const allTransaction = provider.getTransactionsByHash([
 ### listTransactions
 
 ```typescript
-import { JsonRpcProvider, DevChain } from '@rooch/sdk'
+import { JsonRpcProvider, DevChain } from '@roochnetwork/rooch-sdk'
 const provider = new JsonRpcProvider(DevChain)
 
 const allTransaction = provider.getTransactionsByHash([
@@ -135,7 +135,7 @@ const allTransaction = provider.getTransactionsByHash([
 Refer to [this storage guide](https://rooch.network/zh-CN/docs/dive-into-rooch/storage-abstraction) for more information.
 
 ```typescript
-import { JsonRpcProvider, DevChain } from '@rooch/sdk'
+import { JsonRpcProvider, DevChain } from '@roochnetwork/rooch-sdk'
 const provider = new JsonRpcProvider(DevChain)
 
 const state = provider.getStates('object/0x1')
@@ -146,7 +146,7 @@ const state = provider.getStates('object/0x1')
 Refer to [this storage guide](https://rooch.network/zh-CN/docs/dive-into-rooch/storage-abstraction) for more information.
 
 ```typescript
-import { JsonRpcProvider, DevChain } from '@rooch/sdk'
+import { JsonRpcProvider, DevChain } from '@roochnetwork/rooch-sdk'
 const provider = new JsonRpcProvider(DevChain)
 
 const states = provider.listStates('object/0x1', null, 10)
