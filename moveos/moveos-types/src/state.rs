@@ -553,17 +553,6 @@ pub struct TableStateSet {
     pub table_state_sets: BTreeMap<ObjectID, TableState>,
 }
 
-impl TableStateSet {
-    // pub fn insert(
-    //     &mut self,
-    //     k: ObjectID,
-    //     v: BTreeMap<Vec<u8>, State>,
-    //     key_type: TypeTag,
-    // ) -> Option<UpdateSet<Vec<u8>, State>> {
-    //     self.table_state_sets.insert(k, v)
-    // }
-}
-
 /// A change set of a single table.
 /// Consistent with the StateChangeSet format. Use for state sync.
 #[derive(Default, Clone, Debug)]

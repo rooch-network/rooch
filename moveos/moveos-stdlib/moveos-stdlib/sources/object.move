@@ -150,7 +150,7 @@ module moveos_std::object {
     }
 
     /// Directly drop the Object
-    public(friend) fun drop<T: key>(self: Object<T>) {
+    fun drop<T: key>(self: Object<T>) {
         let Object{id:_} = self;
     }
 
