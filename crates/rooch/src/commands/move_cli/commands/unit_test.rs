@@ -27,6 +27,7 @@ use termcolor::Buffer;
 use crate::cli_types::WalletContextOptions;
 
 #[derive(Parser)]
+#[group(skip)]
 pub struct Test {
     #[clap(flatten)]
     pub test: test::Test,
