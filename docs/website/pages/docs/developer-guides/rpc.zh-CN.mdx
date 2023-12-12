@@ -67,3 +67,81 @@ curl --location 'https://dev-seed.rooch.network/' --header 'Content-Type: applic
 当调用成功后，可以看到右侧提示成功响应了，并在下方返回了相应的响应信息，跟 `curl` 命令返回的信息是一样的：
 
 ![](/docs/web-rpc-ok.png)
+
+### rooch_listStates
+
+按 `access_path` 列出状态 如果 `StateOptions.decode` 为 `true`，则对状态进行解码并在响应中返回解码后的值。
+
+```shell
+curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"rooch_listStates","params":["/resource/0x3", null, null, {"decode":true}],"id":1}' https://dev-seed.rooch.network:443 | jq
+```
+
+- `--data` 是我们主要填写的 JSON 内容，协议版本必须是 `2.0` 。
+- `method` 填写要调用的 RPC 方法。
+- `params` 填写调用 RPC 方法的参数列表，通过我们提供的 RPC 站点可以看到 `access_path` 是必须的，`cursor`、`limit`、`state_option` 是可选的。
+- `id` 是客户端和服务端通信时关联的标识信息，当客户端使用任意的 ID 进行请求时，服务端也必须使用相同的值来标识返回的响应信息，使用任意的整数即可。
+
+为了方便阅读，我们使用 `jq` 命令来格式化返回的 JSON 数据。
+
+响应：
+
+```shell
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  1423  100  1252  100   171   3537    483 --:--:-- --:--:-- --:--:--  4031
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "data": [
+      {
+        "value": "0x0300000000000000",
+        "value_type": "0x3::account::Account",
+        "decoded_value": {
+          "abilities": 12,
+          "type": "0x3::account::Account",
+          "value": {
+            "sequence_number": "3"
+          }
+        }
+      },
+      {
+        "value": "0xa77372914626778ea3cf80a251016ac603f588d54cce495b309e8b7c496876e7",
+        "value_type": "0x3::account_authentication::AuthenticationKeys",
+        "decoded_value": {
+          "abilities": 8,
+          "type": "0x3::account_authentication::AuthenticationKeys",
+          "value": {
+            "authentication_keys": {
+              "abilities": 4,
+              "type": "0x2::type_table::TypeTable",
+              "value": {
+                "handle": "0xa77372914626778ea3cf80a251016ac603f588d54cce495b309e8b7c496876e7"
+              }
+            }
+          }
+        }
+      },
+      {
+        "value": "0x362b4ea80aa2e877fe09b92d4b0a9e93e4f30be5d178570860bb4a53fd561c19",
+        "value_type": "0x3::account_coin_store::CoinStores",
+        "decoded_value": {
+          "abilities": 8,
+          "type": "0x3::account_coin_store::CoinStores",
+          "value": {
+            "coin_stores": {
+              "abilities": 4,
+              "type": "0x2::table::Table<0x1::string::String, 0x2::object::ObjectID>",
+              "value": {
+                "handle": "0x362b4ea80aa2e877fe09b92d4b0a9e93e4f30be5d178570860bb4a53fd561c19"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "next_cursor": "0x60303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e745f636f696e5f73746f72653a3a436f696e53746f726573",
+    "has_next_page": false
+  },
+  "id": 1
+}
+```
