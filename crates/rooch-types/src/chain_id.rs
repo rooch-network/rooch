@@ -1,8 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::address::RoochAddress;
 use crate::framework::genesis::GenesisContext;
 use anyhow::{bail, format_err, Result};
+use move_core_types::account_address::AccountAddress;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -195,28 +197,29 @@ impl BuiltinChainID {
         ]
     }
 
-    pub fn genesis_ctx(&self) -> GenesisContext {
+    pub fn genesis_ctx(&self, sequencer: RoochAddress) -> GenesisContext {
         let chain_id = self.chain_id().id;
+        let sequencer_account = AccountAddress::from(sequencer);
         match self {
             BuiltinChainID::Local => {
                 //Local timestamp from 0, developer can manually set the timestamp
                 let timestamp = 0;
-                GenesisContext::new(chain_id, timestamp)
+                GenesisContext::new(chain_id, timestamp, sequencer_account)
             }
             BuiltinChainID::Dev => {
                 //Dev network start from Ethereum block height 9685149, timestamp: 1694571540
                 let timestamp = std::time::Duration::from_secs(1694571540).as_micros() as u64;
-                GenesisContext::new(chain_id, timestamp)
+                GenesisContext::new(chain_id, timestamp, sequencer_account)
             }
             BuiltinChainID::Test => {
                 //Test network start from Ethereum block height 9685149, timestamp: 1694571540
                 let timestamp = std::time::Duration::from_secs(1694571540).as_micros() as u64;
-                GenesisContext::new(chain_id, timestamp)
+                GenesisContext::new(chain_id, timestamp, sequencer_account)
             }
             BuiltinChainID::Main => {
                 //TODO config main network genesis timestamp
                 let timestamp = 0;
-                GenesisContext::new(chain_id, timestamp)
+                GenesisContext::new(chain_id, timestamp, sequencer_account)
             }
         }
     }
@@ -251,10 +254,11 @@ impl CustomChainID {
         self.chain_name.as_str()
     }
 
-    pub fn genesis_ctx(&self) -> GenesisContext {
+    pub fn genesis_ctx(&self, sequencer: RoochAddress) -> GenesisContext {
         //TODO support custom chain genesis timestamp
         let timestamp = 0;
-        GenesisContext::new(self.chain_id.id, timestamp)
+        let sequencer_account = AccountAddress::from(sequencer);
+        GenesisContext::new(self.chain_id.id, timestamp, sequencer_account)
     }
 }
 
@@ -373,10 +377,10 @@ impl RoochChainID {
         }
     }
 
-    pub fn genesis_ctx(&self) -> GenesisContext {
+    pub fn genesis_ctx(&self, sequencer: RoochAddress) -> GenesisContext {
         match self {
-            Self::Builtin(b) => b.genesis_ctx(),
-            Self::Custom(c) => c.genesis_ctx(),
+            Self::Builtin(b) => b.genesis_ctx(sequencer),
+            Self::Custom(c) => c.genesis_ctx(sequencer),
         }
     }
 
