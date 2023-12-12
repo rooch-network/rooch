@@ -19,6 +19,7 @@ module moveos_std::object {
     friend moveos_std::table;
     friend moveos_std::type_table;
     friend moveos_std::object_table;
+    friend moveos_std::genesis;
 
     const ErrorObjectAlreadyExist: u64 = 1;
     const ErrorObjectFrozen: u64 = 2;
@@ -149,7 +150,7 @@ module moveos_std::object {
     }
 
     /// Directly drop the Object
-    fun drop<T: key>(self: Object<T>) {
+    public(friend) fun drop<T: key>(self: Object<T>) {
         let Object{id:_} = self;
     }
 

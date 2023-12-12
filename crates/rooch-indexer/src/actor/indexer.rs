@@ -162,10 +162,9 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                             // table object
                             if value.match_struct_type(&ObjectEntity::get_table_object_struct_tag())
                             {
-                                // No need to update key_type when update global state
                                 let state = self.new_global_state_from_table_object(
                                     value,
-                                    "".to_string(),
+                                    table_change.key_type.to_string(),
                                     tx_order,
                                     state_index_generator,
                                 )?;
@@ -194,12 +193,8 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                             // table object
                             if value.match_struct_type(&ObjectEntity::get_table_object_struct_tag())
                             {
-                                let table_handle = ObjectID::from_bytes(key.as_slice())?;
-                                // TODO handle if key type is None
-                                let key_type = state_change_set
-                                    .new_tables
-                                    .get(&table_handle)
-                                    .map_or("".to_string(), |t| t.key_type.to_string());
+                                let _table_handle = ObjectID::from_bytes(key.as_slice())?;
+                                let key_type = table_change.key_type.to_string();
                                 let state = self.new_global_state_from_table_object(
                                     value,
                                     key_type,
@@ -223,9 +218,6 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
             } else {
                 // TODO update table size if ObjectID is table hanlde
                 // let object = self.moveos_store.0.get_state_store().get_as_object::<TableInfo>(table_handle)?;
-
-                // TODO Since table creation may be lazy, create global table if the table does not exist
-                // let (mut object, table) = self.get_as_table_or_create(table_handle)?;
 
                 for (key, op) in table_change.entries.into_iter() {
                     match op {

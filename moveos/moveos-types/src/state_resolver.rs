@@ -44,6 +44,9 @@ pub trait StateResolver {
     fn resolve_object_state(&self, object: &ObjectID) -> Result<Option<State>, anyhow::Error> {
         self.resolve_table_item(&GLOBAL_OBJECT_STORAGE_HANDLE, &object.to_bytes())
     }
+
+    // get state root from global state tree
+    fn resolve_state_root(&self) -> Result<AccountAddress, anyhow::Error>;
 }
 
 /// A proxy type for proxy the StateResolver to MoveResolver
@@ -116,6 +119,10 @@ where
         limit: usize,
     ) -> Result<Vec<StateKV>, anyhow::Error> {
         self.0.list_table_items(handle, cursor, limit)
+    }
+
+    fn resolve_state_root(&self) -> Result<AccountAddress, anyhow::Error> {
+        self.0.resolve_state_root()
     }
 }
 

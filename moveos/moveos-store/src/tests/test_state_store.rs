@@ -55,7 +55,7 @@ fn random_change_set() -> ChangeSet {
 }
 
 fn random_table_change() -> TableChange {
-    let mut table_change = TableChange::default();
+    let mut table_change = TableChange::new(random_type_tag());
 
     let mut rng = thread_rng();
     for _n in 0..rng.gen_range(1..=10) {
@@ -125,7 +125,7 @@ fn test_statedb() {
 
     let mut table_change_set = StateChangeSet::default();
     let table_handle = ObjectID::ONE;
-    let mut table_change = TableChange::default();
+    let mut table_change = TableChange::new(random_type_tag());
     let key = MoveString::from_str("test_key").unwrap();
     let value = MoveString::from_str("test_value").unwrap();
 

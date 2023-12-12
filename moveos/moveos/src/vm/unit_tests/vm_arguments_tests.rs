@@ -296,6 +296,10 @@ impl StateResolver for RemoteStore {
     ) -> anyhow::Result<Vec<StateKV>, anyhow::Error> {
         todo!()
     }
+
+    fn resolve_state_root(&self) -> Result<AccountAddress, anyhow::Error> {
+        todo!()
+    }
 }
 
 fn combine_signers_and_args(

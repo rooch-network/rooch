@@ -135,6 +135,7 @@ impl From<OpView<StateView>> for Op<State> {
 pub struct TableChangeView {
     pub entries: BTreeMap<BytesView, OpView<StateView>>,
     pub size_increment: i64,
+    pub key_type: TypeTagView,
 }
 
 impl From<TableChange> for TableChangeView {
@@ -146,6 +147,7 @@ impl From<TableChange> for TableChangeView {
                 .map(|(k, v)| (k.into(), v.into()))
                 .collect(),
             size_increment: table_change.size_increment,
+            key_type: table_change.key_type.into(),
         }
     }
 }
@@ -159,6 +161,7 @@ impl From<TableChangeView> for TableChange {
                 .map(|(k, v)| (k.into(), v.into()))
                 .collect(),
             size_increment: table_change.size_increment,
+            key_type: table_change.key_type.into(),
         }
     }
 }

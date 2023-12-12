@@ -242,7 +242,7 @@ fn random_event() -> Event {
 }
 
 fn random_table_change() -> TableChange {
-    let mut table_change = TableChange::default();
+    let mut table_change = TableChange::new(random_type_tag());
 
     let mut rng = thread_rng();
     for _n in 0..rng.gen_range(1..=10) {
@@ -304,10 +304,13 @@ fn random_state_change_set() -> StateChangeSet {
     state_change_set
 }
 
-fn random_table_object() -> ObjectEntity<TableInfo> {
-    let table_info = TableInfo::new(AccountAddress::random());
+fn random_table_object() -> Result<ObjectEntity<TableInfo>> {
+    let table_info = TableInfo::new(AccountAddress::random(), random_type_tag())?;
 
-    ObjectEntity::new_table_object(ObjectID::from(AccountAddress::random()), table_info)
+    Ok(ObjectEntity::new_table_object(
+        ObjectID::from(AccountAddress::random()),
+        table_info,
+    ))
 }
 
 #[allow(dead_code)]
@@ -339,14 +342,14 @@ fn random_update_global_states(states: Vec<IndexedGlobalState>) -> Vec<IndexedGl
         .collect()
 }
 
-fn random_new_global_states() -> Vec<IndexedGlobalState> {
+fn random_new_global_states() -> Result<Vec<IndexedGlobalState>> {
     let mut new_global_states = vec![];
 
     let mut state_index = 0u64;
     let mut rng = thread_rng();
     for n in 0..rng.gen_range(1..=10) {
         let state = IndexedGlobalState::new_from_table_object(
-            random_table_object(),
+            random_table_object()?,
             random_string(),
             random_struct_tag().to_canonical_string(),
             random_type_tag().to_canonical_string(),
@@ -358,7 +361,7 @@ fn random_new_global_states() -> Vec<IndexedGlobalState> {
         state_index = state_index + 1;
     }
 
-    new_global_states
+    Ok(new_global_states)
 }
 
 fn random_remove_global_states() -> Vec<String> {
@@ -537,7 +540,7 @@ fn test_state_store() -> Result<()> {
     indexer_store.create_all_tables_if_not_exists()?;
     let indexer_reader = IndexerReader::new(indexer_db_url)?;
 
-    let mut new_global_states = random_new_global_states();
+    let mut new_global_states = random_new_global_states()?;
     let mut update_global_states = random_update_global_states(new_global_states.clone());
     let remove_global_states = random_remove_global_states();
 

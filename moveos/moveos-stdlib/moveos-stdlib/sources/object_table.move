@@ -15,6 +15,10 @@ module moveos_std::object_table {
     /// Create a new Table.
     public fun new<T: key>(ctx: &mut Context): ObjectTable<T> {
         let handle = object::address_to_object_id(context::fresh_address(ctx));
+        let table_info = raw_table::new_table<ObjectID>(object::object_id_to_table_handle(handle));
+        let obj = object::new_with_id(handle, table_info);
+        object::transfer(obj, @moveos_std);
+
         ObjectTable {
             handle,
         }

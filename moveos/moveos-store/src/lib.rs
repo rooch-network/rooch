@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
+use move_core_types::account_address::AccountAddress;
 use moveos_types::genesis_info::GenesisInfo;
 use once_cell::sync::Lazy;
 use raw_store::{ColumnFamilyName, StoreInstance};
@@ -300,5 +301,9 @@ impl StateResolver for MoveOSStore {
         limit: usize,
     ) -> std::result::Result<Vec<(Vec<u8>, State)>, Error> {
         self.statedb.list_table_items(handle, cursor, limit)
+    }
+
+    fn resolve_state_root(&self) -> Result<AccountAddress, Error> {
+        self.statedb.resolve_state_root()
     }
 }

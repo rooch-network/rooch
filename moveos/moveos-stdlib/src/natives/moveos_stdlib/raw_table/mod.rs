@@ -53,6 +53,7 @@ const E_ALREADY_EXISTS: u64 = 1;
 const E_NOT_FOUND: u64 = 2;
 const E_DUPLICATE_OPERATION: u64 = 3;
 const _E_NOT_EMPTY: u64 = 4; // This is not used, just used to keep consistent with raw_table.move
+const _E_TABLE_ALREADY_EXISTS: u64 = 5;
 
 // ===========================================================================================
 // Private Data Structures and Constants
@@ -182,6 +183,7 @@ impl TableRuntimeValue {
 pub struct Table {
     handle: ObjectID,
     key_layout: MoveTypeLayout,
+    key_type: TypeTag,
     content: BTreeMap<Vec<u8>, TableRuntimeValue>,
     size_increment: i64,
 }
@@ -209,12 +211,14 @@ impl TableData {
         handle: ObjectID,
         key_ty: &Type,
     ) -> PartialVMResult<&mut Table> {
-        Ok(match self.tables.entry(handle) {
+        match self.tables.entry(handle) {
             Entry::Vacant(e) => {
                 let key_layout = type_to_type_layout(context, key_ty)?;
+                let key_type = type_to_type_tag(context, key_ty)?;
                 let table = Table {
                     handle,
                     key_layout,
+                    key_type,
                     content: Default::default(),
                     size_increment: 0,
                 };
@@ -222,15 +226,48 @@ impl TableData {
                     let key_type = type_to_type_tag(context, key_ty)?;
                     log::trace!("[RawTable] creating table {} with key {}", handle, key_type);
                 }
-                e.insert(table)
+                Ok(e.insert(table))
             }
-            Entry::Occupied(e) => e.into_mut(),
-        })
+            Entry::Occupied(e) => Ok(e.into_mut()),
+        }
     }
 
-    pub fn get_or_create_table_with_key_layout(
+    // /// Creates a new table in the TableData. This initializes information about
+    // /// the table, like the type layout for keys and values.
+    // fn create_table(
+    //     &mut self,
+    //     context: &NativeContext,
+    //     handle: ObjectID,
+    //     key_ty: &Type,
+    // ) -> PartialVMResult<&mut Table> {
+    //     match self.tables.entry(handle) {
+    //         Entry::Vacant(e) => {
+    //             let key_layout = type_to_type_layout(context, key_ty)?;
+    //             let table = Table {
+    //                 handle,
+    //                 key_layout,
+    //                 content: Default::default(),
+    //                 size_increment: 0,
+    //             };
+    //             if log::log_enabled!(log::Level::Trace) {
+    //                 let key_type = type_to_type_tag(context, key_ty)?;
+    //                 log::trace!("[RawTable] creating table {} with key {}", handle, key_type);
+    //             }
+    //             Ok(e.insert(table))
+    //         }
+    //         Entry::Occupied(_e) => Err(partial_extension_error(format!(
+    //             "Table already exists, table handle:{:?}",
+    //             handle
+    //         ))),
+    //     }
+    // }
+
+    /// Gets or creates a new table in the TableData.
+    /// For system accounts (0x1, 0x2, 0x3...), executing the genesis publish transaction will trigger the table create operation.
+    pub fn get_or_create_table_with_key_type_and_key_layout(
         &mut self,
         handle: ObjectID,
+        key_type: TypeTag,
         key_layout: MoveTypeLayout,
     ) -> PartialVMResult<&mut Table> {
         Ok(match self.tables.entry(handle) {
@@ -238,12 +275,20 @@ impl TableData {
                 let table = Table {
                     handle,
                     key_layout,
+                    key_type,
                     content: Default::default(),
                     size_increment: 0,
                 };
                 e.insert(table)
             }
             Entry::Occupied(e) => e.into_mut(),
+        })
+    }
+
+    /// Borrow a mut table in the TableData.
+    pub fn borrow_mut_table(&mut self, handle: &ObjectID) -> PartialVMResult<&mut Table> {
+        self.tables.get_mut(handle).ok_or_else(|| {
+            partial_extension_error(format!("Table not found, table handle:{:?}", handle))
         })
     }
 
@@ -357,16 +402,18 @@ impl Table {
     ) -> (
         ObjectID,
         MoveTypeLayout,
+        TypeTag,
         BTreeMap<Vec<u8>, TableRuntimeValue>,
         i64,
     ) {
         let Table {
             handle,
             key_layout,
+            key_type,
             content,
             size_increment,
         } = self;
-        (handle, key_layout, content, size_increment)
+        (handle, key_layout, key_type, content, size_increment)
     }
 
     pub fn key_layout(&self) -> &MoveTypeLayout {
@@ -379,7 +426,12 @@ impl Table {
 
 /// Returns all natives for tables.
 pub fn table_natives(table_addr: AccountAddress, gas_params: GasParameters) -> NativeFunctionTable {
-    let natives: [(&str, &str, NativeFunction); 7] = [
+    let natives: [(&str, &str, NativeFunction); 8] = [
+        (
+            "raw_table",
+            "new_table",
+            make_native_new_table(gas_params.common.clone(), gas_params.new_table),
+        ),
         (
             "raw_table",
             "add_box",
@@ -439,6 +491,69 @@ impl CommonGasParameters {
 }
 
 #[derive(Debug, Clone)]
+pub struct NewTableGasParameters {
+    pub base: InternalGas,
+    pub per_byte_in_str: InternalGasPerByte,
+}
+
+// native fun new<K: copy + drop>(table_handle: TableHandle): TableInfo;
+fn native_new_table(
+    _common_gas_params: &CommonGasParameters,
+    gas_params: &NewTableGasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    //0 K Type
+    assert_eq!(ty_args.len(), 1);
+    assert_eq!(args.len(), 1);
+
+    let table_context = context.extensions().get::<NativeTableContext>();
+    let mut table_data = table_context.table_data.write();
+
+    let handle = get_table_handle(&mut args)?;
+
+    let mut cost = gas_params.base;
+
+    let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
+
+    // Table SMT root
+    let state_root = table_context.resolver.resolve_state_root().map_err(|err| {
+        partial_extension_error(format!("remote table resolver state root failure: {}", err))
+    })?;
+
+    let key_type = type_to_type_tag(context, &ty_args[0])?;
+    let key_type_name = key_type.to_canonical_string();
+    // make a std::string::String
+    let key_type_string_val = Value::struct_(Struct::pack(vec![Value::vector_u8(
+        key_type_name.as_bytes().to_vec(),
+    )]));
+    cost += gas_params.per_byte_in_str * NumBytes::new(key_type_name.len() as u64);
+
+    // Represent table info
+    let table_info_value = Struct::pack(vec![
+        Value::address(state_root),
+        Value::u64(table.size_increment as u64),
+        key_type_string_val,
+    ]);
+    Ok(NativeResult::ok(
+        cost,
+        smallvec![Value::struct_(table_info_value)],
+    ))
+}
+
+pub fn make_native_new_table(
+    common_gas_params: CommonGasParameters,
+    gas_params: NewTableGasParameters,
+) -> NativeFunction {
+    Arc::new(
+        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
+            native_new_table(&common_gas_params, &gas_params, context, ty_args, args)
+        },
+    )
+}
+
+#[derive(Debug, Clone)]
 pub struct AddBoxGasParameters {
     pub base: InternalGas,
     pub per_byte_serialized: InternalGasPerByte,
@@ -466,6 +581,7 @@ fn native_add_box(
 
     let mut cost = gas_params.base;
 
+    // let table = table_data.borrow_mut_table(&handle)?;
     let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
 
     let key_bytes = serialize(&table.key_layout, &key)?;
@@ -517,6 +633,7 @@ fn native_borrow_box(
     let key = args.pop_back().unwrap();
     let handle = get_table_handle(&mut args)?;
 
+    // let table = table_data.borrow_mut_table(&handle)?;
     let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
 
     let mut cost = gas_params.base;
@@ -566,6 +683,7 @@ fn native_contains_box(
     let key = args.pop_back().unwrap();
     let handle = get_table_handle(&mut args)?;
 
+    // let table = table_data.borrow_mut_table(&handle)?;
     let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
 
     let mut cost = gas_params.base;
@@ -622,6 +740,7 @@ fn native_remove_box(
     let key = args.pop_back().unwrap();
     let handle = get_table_handle(&mut args)?;
 
+    // let table = table_data.borrow_mut_table(&handle)?;
     let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
 
     let mut cost = gas_params.base;
@@ -736,6 +855,7 @@ pub fn make_native_drop_unchecked_box(gas_params: DropUncheckedBoxGasParameters)
 #[derive(Debug, Clone)]
 pub struct GasParameters {
     pub common: CommonGasParameters,
+    pub new_table: NewTableGasParameters,
     pub add_box: AddBoxGasParameters,
     pub borrow_box: BorrowBoxGasParameters,
     pub contains_box: ContainsBoxGasParameters,
@@ -751,6 +871,10 @@ impl GasParameters {
                 load_base: 0.into(),
                 load_per_byte: 0.into(),
                 load_failure: 0.into(),
+            },
+            new_table: NewTableGasParameters {
+                base: 0.into(),
+                per_byte_in_str: 0.into(),
             },
             add_box: AddBoxGasParameters {
                 base: 0.into(),

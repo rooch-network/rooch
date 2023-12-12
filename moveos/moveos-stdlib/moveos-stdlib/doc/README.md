@@ -20,6 +20,7 @@ This is the reference documentation of the MoveOS standard library.
 -  [`0x2::copyable_any`](copyable_any.md#0x2_copyable_any)
 -  [`0x2::display`](display.md#0x2_display)
 -  [`0x2::event`](event.md#0x2_event)
+-  [`0x2::genesis`](genesis.md#0x2_genesis)
 -  [`0x2::hex`](hex.md#0x2_hex)
 -  [`0x2::json`](json.md#0x2_json)
 -  [`0x2::move_module`](move_module.md#0x2_move_module)
