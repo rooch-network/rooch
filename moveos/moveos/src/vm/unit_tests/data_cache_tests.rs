@@ -24,6 +24,7 @@ fn publish_and_load_module() {
     let remote_view = RemoteStore::new();
     let loader = move_vm.runtime().loader();
     let table_data = Arc::new(RwLock::new(TableData::default()));
+
     let mut data_cache = MoveosDataCache::new(&remote_view, loader, table_data.clone());
 
     // check

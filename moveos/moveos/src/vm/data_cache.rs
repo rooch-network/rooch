@@ -183,13 +183,13 @@ impl<'r, 'l, S: MoveOSResolver> DataStore for MoveosDataCache<'r, 'l, S> {
 
         // Key type: std::string::String
         // value type: moveos_std::moveos_std::move_module::MoveModule
-        let (_, value_type) = Self::module_table_typetag();
+        let (key_type, value_type) = Self::module_table_typetag();
 
         let key_layout = MoveTypeLayout::Struct(MoveString::struct_layout());
         let mut table_data = self.table_data.write();
         // TODO: check or ensure the module table exists.
         let table = table_data
-            .get_or_create_table_with_key_layout(table_handle, key_layout)
+            .get_or_create_table_with_key_type_and_key_layout(table_handle, key_type, key_layout)
             .map_err(|e| e.finish(Location::Module(module_id.clone())))?;
 
         let key_bytes = self.module_key_bytes(module_id)?;
@@ -270,7 +270,7 @@ pub fn into_change_set(table_data: Arc<RwLock<TableData>>) -> PartialVMResult<St
     let (new_tables, removed_tables, tables) = data.into_inner();
     let mut changes = BTreeMap::new();
     for (handle, table) in tables {
-        let (_, _, content, size_increment) = table.into_inner();
+        let (_, _, key_type, content, size_increment) = table.into_inner();
         let mut entries = BTreeMap::new();
         for (key, table_value) in content {
             let (value_layout, value_type, op) = match table_value.into_effect() {
@@ -309,6 +309,7 @@ pub fn into_change_set(table_data: Arc<RwLock<TableData>>) -> PartialVMResult<St
                 TableChange {
                     entries,
                     size_increment,
+                    key_type,
                 },
             );
         } else {

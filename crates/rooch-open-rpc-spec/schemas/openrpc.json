@@ -1843,6 +1843,7 @@
         "type": "object",
         "required": [
           "entries",
+          "key_type",
           "size_increment"
         ],
         "properties": {
@@ -1851,6 +1852,9 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/OpView_for_StateView"
             }
+          },
+          "key_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
           },
           "size_increment": {
             "type": "integer",

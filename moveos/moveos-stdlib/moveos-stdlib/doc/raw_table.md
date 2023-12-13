@@ -25,9 +25,11 @@ This type table is for internal global storage, so all functions are friend.
 -  [Function `drop_unchecked`](#0x2_raw_table_drop_unchecked)
 -  [Function `destroy_empty`](#0x2_raw_table_destroy_empty)
 -  [Function `new_table_handle`](#0x2_raw_table_new_table_handle)
+-  [Function `new_table`](#0x2_raw_table_new_table)
 
 
-<pre><code></code></pre>
+<pre><code><b>use</b> <a href="">0x1::string</a>;
+</code></pre>
 
 
 
@@ -35,9 +37,10 @@ This type table is for internal global storage, so all functions are friend.
 
 ## Resource `TableInfo`
 
+Information about a specific table info type. Stored in the global Object storage.
 
 
-<pre><code><b>struct</b> <a href="raw_table.md#0x2_raw_table_TableInfo">TableInfo</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="raw_table.md#0x2_raw_table_TableInfo">TableInfo</a> <b>has</b> store, key
 </code></pre>
 
 
@@ -110,6 +113,16 @@ Can not found the key in the table
 
 
 <pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_ErrorNotFound">ErrorNotFound</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x2_raw_table_ErrorTableAlreadyExists"></a>
+
+The table already exists
+
+
+<pre><code><b>const</b> <a href="raw_table.md#0x2_raw_table_ErrorTableAlreadyExists">ErrorTableAlreadyExists</a>: u64 = 5;
 </code></pre>
 
 
@@ -273,4 +286,16 @@ Destroy a table. Aborts if the table is not empty
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_new_table_handle">new_table_handle</a>(id: <b>address</b>): <a href="raw_table.md#0x2_raw_table_TableHandle">raw_table::TableHandle</a>
+</code></pre>
+
+
+
+<a name="0x2_raw_table_new_table"></a>
+
+## Function `new_table`
+
+New a table. Aborts if the table exists.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_new_table">new_table</a>&lt;K: <b>copy</b>, drop&gt;(table_handle: <a href="raw_table.md#0x2_raw_table_TableHandle">raw_table::TableHandle</a>): <a href="raw_table.md#0x2_raw_table_TableInfo">raw_table::TableInfo</a>
 </code></pre>

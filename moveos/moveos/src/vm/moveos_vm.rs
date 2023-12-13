@@ -285,12 +285,14 @@ where
                     .collect();
                 //TODO check the compatiblity
                 let compat_config = Compatibility::full_check();
+
                 self.session.publish_module_bundle_with_compat_config(
                     module_bundle,
                     sender,
                     &mut self.gas_meter,
                     compat_config,
                 )?;
+                //TODO Execute genenis init first
                 self.execute_init_modules(modules_with_init)
             }
         };
