@@ -157,3 +157,48 @@ curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","metho
 - `data` 使用一个列表存放，这个 RPC 方法返回的具体内容。
 - `next_cursor` 这是一个分页的游标，它指向页面的最后一项。通信的过程中，返回的响应数据如果比较大，不能够一次传递完，就要进行分页。下一次请求时，就会自动带上这个值，让响应程序知道下一次该从哪个位置读取。
 - `has_next_page` 如果数据比较多，要进行分页，这个值就为 `true`，否则为 `false`。
+
+### rooch_getEventsByEventHandle
+
+通过事件句柄 ID 获取事件。
+
+请求：
+
+```shell
+[joe@mx quick_start_object_counter]$ curl --location --request POST 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data-raw '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_getEventsByEventHandle",                                                                                                                       "params":["0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::UserCounterCreatedEvent", null, "1000", {"decode":true}]
+}'
+```
+
+响应：
+
+```shell
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "data": [
+      {
+        "event_id": {
+          "event_handle_id": "0x3c8af60a5e71022d3ec7f3581c87e9eb81a7e4e94e0706d8107db64c3905b68e",
+          "event_seq": 0
+        },
+        "event_type": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::UserCounterCreatedEvent",
+        "event_data": "0xbfc363a0afb2515ada06376ca4366f14c08b3d1021f23996bedd9109241aebd4",
+        "event_index": 3,
+        "decoded_event_data": {
+          "abilities": 2,
+          "type": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::UserCounterCreatedEvent",
+          "value": {
+            "id": "0xbfc363a0afb2515ada06376ca4366f14c08b3d1021f23996bedd9109241aebd4"
+          }
+        }
+      }
+    ],
+    "next_cursor": 0,
+    "has_next_page": false
+  },
+  "id": 101
+}
+```
