@@ -250,6 +250,7 @@ impl AggregateService {
         &self,
         table_handles: Vec<ObjectID>,
     ) -> Result<HashMap<ObjectID, Option<TableInfo>>> {
+        // Global table 0x0 table's key type is always ObjectID.
         let access_path = AccessPath::objects(table_handles.clone());
         self.rpc_service
             .get_states(access_path)
@@ -319,7 +320,7 @@ impl AggregateService {
 
         let (table_handle, _keys) = access_path.into_table_query();
         let table_infos = self.get_table_infos(vec![table_handle]).await?;
-        // For now, global table 0x0 has no key type yet.
+
         let key_type_opt = table_infos
             .get(&table_handle)
             .cloned()
