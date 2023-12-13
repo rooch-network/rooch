@@ -7164,7 +7164,9 @@ dependencies = [
  "clap 4.4.1",
  "itertools",
  "move-binary-format",
+ "move-core-types",
  "moveos-stdlib-builder",
+ "moveos-types",
  "rooch-genesis-builder",
  "rooch-types",
 ]

@@ -14,11 +14,12 @@ use moveos_types::h256::H256;
 use moveos_types::transaction::MoveAction;
 use once_cell::sync::Lazy;
 use rooch_framework::natives::gas_parameter::gas_member::InitialGasSchedule;
-use rooch_types::chain_id::RoochChainID;
 use rooch_types::error::GenesisError;
 use rooch_types::framework::genesis::GenesisContext;
 use rooch_types::transaction::rooch::RoochTransaction;
+use rooch_types::{address::RoochAddress, chain_id::RoochChainID};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use std::{
     fs::File,
     io::Write,
@@ -26,10 +27,15 @@ use std::{
 };
 
 pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
+    // TODO: Setup sequencer for local genesis.
+    let mock_sequencer = RoochAddress::from_str("0x0").expect("parse sequencer address failed");
     // genesis for integration test, we need to build the stdlib every time for `private_generic` check
     // see moveos/moveos-verifier/src/metadata.rs#L27-L30
-    RoochGenesis::build_with_option(RoochChainID::LOCAL.genesis_ctx(), BuildOption::Fresh)
-        .expect("build rooch genesis failed")
+    RoochGenesis::build_with_option(
+        RoochChainID::LOCAL.genesis_ctx(mock_sequencer),
+        BuildOption::Fresh,
+    )
+    .expect("build rooch genesis failed")
 });
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -267,12 +273,13 @@ mod tests {
     use moveos::moveos::MoveOS;
     use moveos_store::MoveOSStore;
     use rooch_framework::natives::all_natives;
-    use rooch_types::chain_id::RoochChainID;
+    use rooch_types::{address::RoochAddress, chain_id::RoochChainID};
 
     #[test]
     fn test_genesis_init() {
+        let sequencer = RoochAddress::random();
         let genesis = super::RoochGenesis::build_with_option(
-            RoochChainID::LOCAL.genesis_ctx(),
+            RoochChainID::LOCAL.genesis_ctx(sequencer),
             crate::BuildOption::Fresh,
         )
         .expect("build rooch framework failed");

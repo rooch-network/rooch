@@ -6,9 +6,14 @@ use itertools::Itertools;
 use move_binary_format::{
     compatibility::Compatibility, errors::PartialVMResult, normalized::Module, CompiledModule,
 };
+use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use moveos_stdlib_builder::Stdlib;
+use moveos_types::{
+    addresses::ROOCH_FRAMEWORK_ADDRESS, move_types::FunctionId, transaction::MoveAction,
+};
 use rooch_genesis_builder::build_stdlib;
 use rooch_types::stdlib_version::StdlibVersion;
+use rooch_types::transaction::rooch::RoochTransaction;
 use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
@@ -26,6 +31,16 @@ struct StdlibOpts {
     /// don't check compatibility between the old and new standard library
     #[clap(short = 'n', long)]
     no_check_compatibility: bool,
+
+    /// Publish compiled stdlib onchain
+    #[clap(long, requires = "version")]
+    publish: bool,
+
+    #[clap(flatten)]
+    context_options: WalletContextOptions,
+
+    #[clap(flatten)]
+    tx_options: TransactionOptions,
 }
 
 fn main() {
@@ -70,6 +85,61 @@ fn main() {
         curr_stdlib
             .save_to_file(stdlib_output_file(&version.as_string()))
             .unwrap();
+    }
+
+    if opts.publish {
+        let bundles = curr_stdlib
+            .flattened_module_bundles()
+            .expect("get bundles failed");
+        let args = bcs::to_bytes(&bundles).unwrap();
+        let action = MoveAction::new_function_call(
+            FunctionId::new(
+                ModuleId::new(
+                    ROOCH_FRAMEWORK_ADDRESS,
+                    Identifier::new("upgrade".to_owned()).unwrap(),
+                ),
+                Identifier::new("upgrade_entry".to_owned()).unwrap(),
+            ),
+            vec![],
+            vec![args],
+        );
+
+        // Build context and handle errors
+        let context = opts
+            .context_options
+            .build()
+            .expect("Building context failed.");
+
+        // Handle transaction with or without authenticator
+        match opts.tx_options.authenticator {
+            Some(authenticator) => {
+                let tx_data = context.build_tx_data(sender, action).await?;
+                let tx = RoochTransaction::new(tx_data, authenticator.into());
+                context.execute(tx).await?
+            }
+            None => {
+                if context.keystore.get_if_password_is_empty() {
+                    context.sign_and_execute(sender, action, None).await?
+                } else {
+                    let password =
+                        prompt_password("Enter the password to publish:").unwrap_or_default();
+                    let is_verified = verify_password(
+                        Some(password.clone()),
+                        context.keystore.get_password_hash(),
+                    )?;
+
+                    if !is_verified {
+                        return Err(RoochError::InvalidPasswordError(
+                            "Password is invalid".to_owned(),
+                        ));
+                    }
+
+                    context
+                        .sign_and_execute(sender, action, Some(password))
+                        .await?
+                }
+            }
+        }
     }
 }
 
