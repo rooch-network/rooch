@@ -82,20 +82,6 @@ impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
         let key = module_name_to_key(module_id.name());
         Ok(key)
     }
-
-    // /// Ensure module table exists.
-    // pub(crate) fn ensure_module_table(&self, module_id: &ModuleId) -> VMResult<()> {
-    //     let mut table_data = self.table_data.write();
-    //     let sender = module_id.address();
-    //     let table_handle = NamedTableID::Module(*sender).to_object_id();
-    //     if !table_data.exist_table(&table_handle) {
-    //         let key_layout = MoveTypeLayout::Struct(MoveString::struct_layout());
-    //         let _table = table_data
-    //             .create_table_with_key_layout(table_handle, key_layout)
-    //             .map_err(|e| e.finish(Location::Module(module_id.clone())))?;
-    //     }
-    //     Ok(())
-    // }
 }
 
 impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> {

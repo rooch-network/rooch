@@ -25,7 +25,6 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `borrow`](#0x2_object_borrow)
 -  [Function `borrow_mut`](#0x2_object_borrow_mut)
 -  [Function `remove`](#0x2_object_remove)
--  [Function `drop`](#0x2_object_drop)
 -  [Function `to_shared`](#0x2_object_to_shared)
 -  [Function `is_shared`](#0x2_object_is_shared)
 -  [Function `to_frozen`](#0x2_object_to_frozen)
@@ -340,18 +339,6 @@ This function is only can be called by the module of <code>T</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_remove">remove</a>&lt;T: key&gt;(self: <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): T
-</code></pre>
-
-
-
-<a name="0x2_object_drop"></a>
-
-## Function `drop`
-
-Directly drop the Object
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_drop">drop</a>&lt;T: key&gt;(self: <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;)
 </code></pre>
 
 

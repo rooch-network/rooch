@@ -15,7 +15,6 @@ module moveos_std::account_storage {
     use moveos_std::move_module::{Self, MoveModule};
 
     friend moveos_std::context;
-    friend moveos_std::genesis;
 
     /// The resource with the given type already exists
     const ErrorResourceAlreadyExists: u64 = 1;

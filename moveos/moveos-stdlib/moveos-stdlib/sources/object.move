@@ -19,7 +19,6 @@ module moveos_std::object {
     friend moveos_std::table;
     friend moveos_std::type_table;
     friend moveos_std::object_table;
-    friend moveos_std::genesis;
 
     const ErrorObjectAlreadyExist: u64 = 1;
     const ErrorObjectFrozen: u64 = 2;

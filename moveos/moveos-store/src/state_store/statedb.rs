@@ -331,11 +331,6 @@ impl StateDBStore {
         }
     }
 
-    pub fn resolve_state_root(&self) -> Result<AccountAddress, Error> {
-        let table = TreeTable::new(self.node_store.clone());
-        Ok(AccountAddress::new(table.state_root().into()))
-    }
-
     // rebuild statedb via TableStateSet from dump
     pub fn apply(&self, table_state_set: TableStateSet) -> Result<H256> {
         let mut state_root = H256::zero();
@@ -370,7 +365,6 @@ impl StateDBStore {
     pub fn dump(&self) -> Result<TableStateSet> {
         let global_states = self.global_table.dump()?;
         let mut table_state_set = TableStateSet::default();
-        // let mut golbal_update_set = UpdateSet::new();
         let mut golbal_table_state = TableState::default();
         for (key, state) in global_states.into_iter() {
             // If the state is an Object, and the T's struct_tag of Object<T> is Table
@@ -384,11 +378,8 @@ impl StateDBStore {
                         continue;
                     };
                     let (table_info, table_store) = result.unwrap();
-                    // let states = result.unwrap().1.dump()?;
                     let states = table_store.dump()?;
-                    // let mut update_set = UpdateSet::new();
                     for (inner_key, inner_state) in states.into_iter() {
-                        // update_set.put(inner_key, inner_state);
                         table_state.entries.put(inner_key, inner_state);
                     }
                     table_state.key_type = Some(table_info.value.key_type_tag()?);
@@ -424,9 +415,5 @@ impl StateResolver for StateDBStore {
         limit: usize,
     ) -> std::result::Result<Vec<StateKV>, Error> {
         self.resolve_list_state(handle, cursor, limit)
-    }
-
-    fn resolve_state_root(&self) -> Result<AccountAddress, Error> {
-        self.resolve_state_root()
     }
 }

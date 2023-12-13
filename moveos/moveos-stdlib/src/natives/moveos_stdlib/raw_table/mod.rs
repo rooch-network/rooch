@@ -33,6 +33,7 @@ use moveos_types::{
 };
 use parking_lot::RwLock;
 use smallvec::smallvec;
+use smt::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use std::{
     collections::{btree_map::Entry, BTreeMap, BTreeSet, VecDeque},
     sync::Arc,
@@ -232,36 +233,6 @@ impl TableData {
         }
     }
 
-    // /// Creates a new table in the TableData. This initializes information about
-    // /// the table, like the type layout for keys and values.
-    // fn create_table(
-    //     &mut self,
-    //     context: &NativeContext,
-    //     handle: ObjectID,
-    //     key_ty: &Type,
-    // ) -> PartialVMResult<&mut Table> {
-    //     match self.tables.entry(handle) {
-    //         Entry::Vacant(e) => {
-    //             let key_layout = type_to_type_layout(context, key_ty)?;
-    //             let table = Table {
-    //                 handle,
-    //                 key_layout,
-    //                 content: Default::default(),
-    //                 size_increment: 0,
-    //             };
-    //             if log::log_enabled!(log::Level::Trace) {
-    //                 let key_type = type_to_type_tag(context, key_ty)?;
-    //                 log::trace!("[RawTable] creating table {} with key {}", handle, key_type);
-    //             }
-    //             Ok(e.insert(table))
-    //         }
-    //         Entry::Occupied(_e) => Err(partial_extension_error(format!(
-    //             "Table already exists, table handle:{:?}",
-    //             handle
-    //         ))),
-    //     }
-    // }
-
     /// Gets or creates a new table in the TableData.
     /// For system accounts (0x1, 0x2, 0x3...), executing the genesis publish transaction will trigger the table create operation.
     pub fn get_or_create_table_with_key_type_and_key_layout(
@@ -282,13 +253,6 @@ impl TableData {
                 e.insert(table)
             }
             Entry::Occupied(e) => e.into_mut(),
-        })
-    }
-
-    /// Borrow a mut table in the TableData.
-    pub fn borrow_mut_table(&mut self, handle: &ObjectID) -> PartialVMResult<&mut Table> {
-        self.tables.get_mut(handle).ok_or_else(|| {
-            partial_extension_error(format!("Table not found, table handle:{:?}", handle))
         })
     }
 
@@ -511,16 +475,9 @@ fn native_new_table(
     let table_context = context.extensions().get::<NativeTableContext>();
     let mut table_data = table_context.table_data.write();
 
-    let handle = get_table_handle(&mut args)?;
-
     let mut cost = gas_params.base;
-
+    let handle = get_table_handle(&mut args)?;
     let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
-
-    // Table SMT root
-    let state_root = table_context.resolver.resolve_state_root().map_err(|err| {
-        partial_extension_error(format!("remote table resolver state root failure: {}", err))
-    })?;
 
     let key_type = type_to_type_tag(context, &ty_args[0])?;
     let key_type_name = key_type.to_canonical_string();
@@ -530,6 +487,8 @@ fn native_new_table(
     )]));
     cost += gas_params.per_byte_in_str * NumBytes::new(key_type_name.len() as u64);
 
+    // New table's state_root should be the place holder hash.
+    let state_root = AccountAddress::new((*SPARSE_MERKLE_PLACEHOLDER_HASH).into());
     // Represent table info
     let table_info_value = Struct::pack(vec![
         Value::address(state_root),

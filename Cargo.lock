@@ -5315,6 +5315,7 @@ dependencies = [
  "serde_json",
  "sha3 0.9.1",
  "smallvec 1.11.0",
+ "smt",
 ]
 
 [[package]]

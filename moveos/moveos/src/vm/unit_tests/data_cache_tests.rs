@@ -26,7 +26,6 @@ fn publish_and_load_module() {
     let table_data = Arc::new(RwLock::new(TableData::default()));
 
     let mut data_cache = MoveosDataCache::new(&remote_view, loader, table_data.clone());
-    // let _ = data_cache.ensure_module_table(&module_id);
 
     // check
     assert!(!data_cache.exists_module(&module_id).unwrap());
