@@ -5,13 +5,14 @@
 
 import { RoochProvider } from '@/context/rooch'
 import { ETHProvider } from '@/context/wallet'
-import Counter from '@/pages/counter'
+import { useEffect } from 'react'
+// import Counter from '@/pages/counter'
 
 export default function Home() {
   return (
     <RoochProvider>
       <ETHProvider>
-        <Counter />
+        <div>haha</div>
       </ETHProvider>
     </RoochProvider>
   )

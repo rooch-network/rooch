@@ -18,3 +18,4 @@ tsconfig.json
 dist
 generated
 generator
+templates

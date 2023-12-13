@@ -3,7 +3,7 @@
 
 import { mnemonicToSeedSync as bip39MnemonicToSeedSync } from '@scure/bip39'
 
-import { toHexString } from '..'
+import { toHexString } from '../hex'
 
 /**
  * Parse and validate a path that is compliant to SLIP-0010 in form

@@ -1,7 +1,7 @@
 {
   "name": "@roochnetwork/rooch-sdk",
   "author": "Rooch.network <opensource@rooch.network>",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Rooch SDK",
   "license": "Apache-2.0",
   "engines": {
@@ -9,11 +9,9 @@
   },
   "packageManager": "pnpm@8.6.6",
   "scripts": {
-    "dev": "vite",
-    "build": "pnpm build:clean && pnpm _build:node",
-    "build:clean": "rm -rf dist",
-    "_build:browser": "tsup --platform browser --format iife --global-name roochSDK --minify",
-    "_build:node": "tsup --format cjs,esm --dts",
+    "clean": "rimraf tsconfig.tsbuildinfo rimraf dist",
+    "build": "pnpm build:package",
+    "build:package": "build-package",
     "doc": "typedoc",
     "vitest": "vitest",
     "test": "pnpm test:unit && pnpm test:e2e",
@@ -21,6 +19,8 @@
     "test:e2e": "vitest run e2e",
     "test:e2e-debug": "vitest run e2e/debug.test.ts",
     "prepublishOnly": "pnpm build",
+    "size": "size-limit",
+    "analyze": "size-limit --why",
     "eslint:check": "eslint --max-warnings=0 .",
     "eslint:fix": "pnpm eslint:check --fix",
     "prettier:check": "prettier -c --ignore-unknown .",
@@ -28,8 +28,8 @@
     "lint": "pnpm eslint:check && pnpm prettier:check",
     "lint:fix": "pnpm eslint:fix && pnpm prettier:fix",
     "gen": "rm -rf ./src/generated && pnpm run gen:types && pnpm run gen:client",
-    "gen:types": "node ./tools/serdegen/rooch_types_gen.js -o ./src/generated/runtime",
-    "gen:client": "node ./tools/generator/main.js -o ./src/generated/client"
+    "gen:types": "node tools/serdegen/rooch_types_gen.mjs -o ./src/generated/runtime",
+    "gen:client": "node tools/generator/main.mjs -o ./src/generated/client"
   },
   "repository": {
     "type": "git",
@@ -40,19 +40,13 @@
     "url": "https://github.com/rooch-network/rooch/issues"
   },
   "files": ["dist", "src"],
-  "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.cjs",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
-    }
-  },
+  "type": "commonjs",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/cjs/index.d.ts",
   "keywords": ["Rooch", "Rooch Network", "Move"],
   "devDependencies": {
+    "@roochnetwork/build-scripts": "workspace:*",
     "@iarna/toml": "^2.2.5",
     "@size-limit/preset-small-lib": "^8.2.4",
     "@types/isomorphic-fetch": "^0.0.36",
@@ -66,8 +60,6 @@
     "typedoc": "^0.24.1",
     "typescript": "^5.0.4",
     "vite": "^4.2.3",
-    "vite-plugin-dts": "^3.3.1",
-    "vite-plugin-node-polyfills": "^0.9.0",
     "vitest": "^0.34.1",
     "wait-on": "^7.0.1",
     "ejs": "^3.1.9",

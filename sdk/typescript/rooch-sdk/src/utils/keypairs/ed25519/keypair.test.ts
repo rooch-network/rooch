@@ -3,7 +3,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { Ed25519Keypair } from './keypair'
-import { fromB64 } from '../../../types/bcs'
+import { fromB64 } from '../../b64'
 import nacl from 'tweetnacl'
 import { fromHexString, toHexString } from '../../hex'
 

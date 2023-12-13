@@ -3,14 +3,14 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { DevChain } from '../constants'
-import { IProvider } from '../provider'
+import { IClient } from '../client'
 import { Ed25519Keypair } from '../utils/keypairs'
 import { Account } from './account'
 import { PrivateKeyAuth } from '../auth'
 
 describe('account', () => {
   it('should create Account ok ', async () => {
-    const mockProvider: IProvider = {
+    const mockProvider: IClient = {
       getChainId: vi.fn().mockImplementation(() => {
         return DevChain.id
       }),
@@ -31,7 +31,7 @@ describe('account', () => {
 
   describe('#runFunction', () => {
     it('should execute call function ok', async () => {
-      const mockProvider: IProvider = {
+      const mockProvider: IClient = {
         getChainId: vi.fn().mockImplementation(() => {
           return DevChain.id
         }),
