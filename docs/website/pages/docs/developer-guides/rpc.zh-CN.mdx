@@ -202,3 +202,147 @@ curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","metho
   "id": 101
 }
 ```
+
+### rooch_getBalances
+
+请求：
+
+```shell
+curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_getBalances",
+ "params":["0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",null, "5"]
+}'
+```
+
+响应：
+
+```shell
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "data": [
+      {
+        "coin_type": "0x3::gas_coin::GasCoin",
+        "name": "Rooch Gas Coin",
+        "symbol": "RGC",
+        "decimals": 18,
+        "supply": "600000000000000000000",
+        "balance": "99999999999997204086"
+      }
+    ],
+    "next_cursor": "0x53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e",
+    "has_next_page": false
+  },
+  "id": 101
+}
+```
+
+### rooch_getStates
+
+通过 `access_path` 获取状态 如果 `StateOptions.decode` 为 `true`，则对状态进行解码，并在响应中返回解码后的值。
+
+请求：
+
+```shell
+[joe@mx quick_start_object_counter]$ curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"rooch_getStates","params":["/object/0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::Counter", {"decode":true}],"id":1}' https://dev-seed.rooch.network:443
+```
+
+响应：
+
+```shell
+{
+  "jsonrpc": "2.0",
+  "result": [
+    {
+      "value": "0xc98ad59f7c47f496df769a78119bc4d56a50ff19aa207ad8dcf89ae79fc1c6890000000000000000000000000000000000000000000000000000000000000000010000000000000000",
+      "value_type": "0x2::object::ObjectEntity<0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::Counter>",
+      "decoded_value": {
+        "abilities": 0,
+        "type": "0x2::object::ObjectEntity<0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::Counter>",
+        "value": {
+          "flag": 1,
+          "id": "0xc98ad59f7c47f496df769a78119bc4d56a50ff19aa207ad8dcf89ae79fc1c689",
+          "owner": "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "value": {
+            "abilities": 12,
+            "type": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::Counter",
+            "value": {
+              "count_value": "0"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "id": 1
+}
+```
+
+<++>
+请求：
+
+```shell
+<++>
+```
+
+响应：
+
+```shell
+<++>
+```
+
+<++>
+请求：
+
+```shell
+<++>
+```
+
+响应：
+
+```shell
+<++>
+```
+
+<++>
+请求：
+
+```shell
+<++>
+```
+
+响应：
+
+```shell
+<++>
+```
+
+<++>
+请求：
+
+```shell
+<++>
+```
+
+响应：
+
+```shell
+<++>
+```
+
+<++>
+请求：
+
+```shell
+<++>
+```
+
+响应：
+
+```shell
+<++>
+```
+
+<++>
