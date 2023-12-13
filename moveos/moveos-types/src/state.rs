@@ -28,6 +28,21 @@ pub struct State {
     pub value_type: TypeTag,
 }
 
+/// `KeyState` is represent key state
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub struct KeyState {
+    /// the bytes of key state
+    pub key: Vec<u8>,
+    /// the type of key state
+    pub key_type: Option<TypeTag>,
+}
+
+impl KeyState {
+    pub fn new(key: Vec<u8>, key_type: Option<TypeTag>) -> Self {
+        Self { key, key_type }
+    }
+}
+
 //TODO find a better place for MoveType, MoveState and MoveStructState
 /// The rust representation of a Move value
 pub trait MoveType {
@@ -469,6 +484,18 @@ impl AnnotatedState {
             }
             _ => bail!("Expect MoveStruct but found {:?}", self.decoded_value),
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AnnotatedKeyState {
+    pub state: KeyState,
+    pub decoded_key: Option<AnnotatedMoveValue>,
+}
+
+impl AnnotatedKeyState {
+    pub fn new(state: KeyState, decoded_key: Option<AnnotatedMoveValue>) -> Self {
+        Self { state, decoded_key }
     }
 }
 

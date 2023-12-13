@@ -8,7 +8,8 @@ use super::{
 use anyhow::Result;
 use move_core_types::effects::Op;
 use move_core_types::language_storage::TypeTag;
-use moveos_types::state::TableChangeSet;
+use moveos_types::state::{AnnotatedKeyState, KeyState, TableChangeSet};
+use moveos_types::state_resolver::KeyStateKV;
 use moveos_types::{
     moveos_std::object::ObjectID,
     state::{AnnotatedState, State, StateChangeSet, TableChange, TableTypeInfo},
@@ -57,6 +58,64 @@ impl From<StateView> for State {
         }
     }
 }
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+pub struct KeyStateView {
+    pub key: BytesView,
+    pub key_type: Option<TypeTagView>,
+    pub decoded_key: Option<AnnotatedMoveValueView>,
+}
+
+impl From<KeyState> for KeyStateView {
+    fn from(state: KeyState) -> Self {
+        Self {
+            key: StrView(state.key),
+            key_type: state.key_type.map(Into::into),
+            decoded_key: None,
+        }
+    }
+}
+
+impl From<AnnotatedKeyState> for KeyStateView {
+    fn from(state: AnnotatedKeyState) -> Self {
+        Self {
+            key: StrView(state.state.key),
+            key_type: state.state.key_type.map(Into::into),
+            decoded_key: state.decoded_key.map(Into::into),
+        }
+    }
+}
+
+impl From<KeyStateView> for KeyState {
+    fn from(state: KeyStateView) -> Self {
+        Self {
+            key: state.key.0,
+            key_type: state.key_type.map(Into::into),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+pub struct KeyStateKVView {
+    pub key_state: KeyStateView,
+    pub state: StateView,
+}
+
+impl From<KeyStateKV> for KeyStateKVView {
+    fn from(state: KeyStateKV) -> Self {
+        Self {
+            key_state: state.0.into(),
+            state: state.1.into(),
+        }
+    }
+}
+
+impl KeyStateKVView {
+    pub fn new(key_state: KeyStateView, state: StateView) -> Self {
+        Self { key_state, state }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TableTypeInfoView {
     pub key_type: TypeTagView,

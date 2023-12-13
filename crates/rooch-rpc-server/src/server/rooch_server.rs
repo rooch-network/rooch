@@ -14,8 +14,8 @@ use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, GlobalStateFilterView, IndexerEventPageView,
     IndexerGlobalStatePageView, IndexerGlobalStateView, IndexerTableChangeSetPageView,
-    IndexerTableChangeSetView, IndexerTableStatePageView, IndexerTableStateView, StateOptions,
-    StateSyncFilterView, TableStateFilterView,
+    IndexerTableChangeSetView, IndexerTableStatePageView, IndexerTableStateView, KeyStateKVView,
+    KeyStateView, StateOptions, StateSyncFilterView, TableStateFilterView,
 };
 use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
@@ -133,31 +133,34 @@ impl RoochAPIServer for RoochServer {
             MAX_RESULT_LIMIT_USIZE,
         );
         let cursor_of = cursor.clone().map(|v| v.0);
-        let mut data: Vec<(Vec<u8>, StateView)> = if state_option.decode {
-            self.rpc_service
+        let mut data: Vec<KeyStateKVView> = if state_option.decode {
+            self.aggregate_service
                 .list_annotated_states(access_path.into(), cursor_of, limit_of + 1)
                 .await?
                 .into_iter()
-                .map(|(key, state)| (key, StateView::from(state)))
+                .map(|(key_state, state)| {
+                    KeyStateKVView::new(KeyStateView::from(key_state), StateView::from(state))
+                })
                 .collect::<Vec<_>>()
         } else {
-            self.rpc_service
+            self.aggregate_service
                 .list_states(access_path.into(), cursor_of, limit_of + 1)
                 .await?
                 .into_iter()
-                .map(|(key, state)| (key, StateView::from(state)))
+                .map(|(key_state, state)| {
+                    KeyStateKVView::new(KeyStateView::from(key_state), StateView::from(state))
+                })
                 .collect::<Vec<_>>()
         };
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
-        let next_cursor = data
-            .last()
-            .map_or(cursor, |(key, _state)| Some(StrView(key.clone())));
-        let result = data.into_iter().map(|(_key, state)| state).collect();
+        let next_cursor = data.last().map_or(cursor, |key_state_kv| {
+            Some(key_state_kv.key_state.key.clone())
+        });
 
         Ok(StatesPageView {
-            data: result,
+            data,
             next_cursor,
             has_next_page,
         })

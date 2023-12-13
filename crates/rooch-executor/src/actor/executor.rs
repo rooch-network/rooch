@@ -4,7 +4,8 @@
 use super::messages::{
     AnnotatedStatesMessage, ExecuteTransactionMessage, ExecuteTransactionResult,
     ExecuteViewFunctionMessage, GetAnnotatedEventsByEventHandleMessage,
-    GetEventsByEventHandleMessage, ResolveMessage, StatesMessage, ValidateTransactionMessage,
+    GetAnnotatedStatesByStateMessage, GetEventsByEventHandleMessage, ResolveMessage, StatesMessage,
+    ValidateTransactionMessage,
 };
 use crate::actor::messages::{
     GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
@@ -674,5 +675,26 @@ impl Handler<GetTxExecutionInfosByHashMessage> for ExecutorActor {
         self.moveos
             .transaction_store()
             .multi_get_tx_execution_infos(tx_hashes)
+    }
+}
+
+#[async_trait]
+impl Handler<GetAnnotatedStatesByStateMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: GetAnnotatedStatesByStateMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<Vec<AnnotatedState>> {
+        let GetAnnotatedStatesByStateMessage { states } = msg;
+        let resolver = self.moveos.moveos_resolver();
+
+        states
+            .into_iter()
+            .map(|state| {
+                let annotate_state = MoveValueAnnotator::new(resolver)
+                    .view_value(&state.value_type, &state.value)?;
+                Ok(AnnotatedState::new(state, annotate_state))
+            })
+            .collect::<Result<Vec<_>>>()
     }
 }

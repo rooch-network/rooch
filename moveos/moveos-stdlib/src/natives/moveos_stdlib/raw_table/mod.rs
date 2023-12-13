@@ -460,7 +460,6 @@ pub struct NewTableGasParameters {
     pub per_byte_in_str: InternalGasPerByte,
 }
 
-// native fun new<K: copy + drop>(table_handle: TableHandle): TableInfo;
 fn native_new_table(
     _common_gas_params: &CommonGasParameters,
     gas_params: &NewTableGasParameters,
