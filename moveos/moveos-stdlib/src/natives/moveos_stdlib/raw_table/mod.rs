@@ -479,7 +479,7 @@ fn native_new_table(
     let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
 
     let key_type = type_to_type_tag(context, &ty_args[0])?;
-    let key_type_name = key_type.to_canonical_string();
+    let key_type_name = key_type.to_string();
     // make a std::string::String
     let key_type_string_val = Value::struct_(Struct::pack(vec![Value::vector_u8(
         key_type_name.as_bytes().to_vec(),
