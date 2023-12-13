@@ -43,13 +43,13 @@ pub struct Publish {
     /// Example: alice=0x1234, bob=default, alice2=alice
     ///
     /// Note: This will fail if there are duplicates in the Move.toml file remove those first.
-    #[clap(long, parse(try_from_str = crate::utils::parse_map), default_value = "")]
+    #[clap(long, value_parser=crate::utils::parse_map::<String, String>, default_value = "")]
     pub(crate) named_addresses: BTreeMap<String, String>,
 
     /// Whether publish modules by `MoveAction::ModuleBundle`?
     /// If not set, publish moduels through Move entry function
     /// `moveos_std::context::publish_modules_entry`
-    #[clap(long, parse(from_flag))]
+    #[clap(long)]
     pub by_move_action: bool,
 }
 

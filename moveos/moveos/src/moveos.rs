@@ -87,6 +87,9 @@ impl Clone for MoveOSConfig {
                 verifier: self.vm_config.verifier.clone(),
                 max_binary_format_version: self.vm_config.max_binary_format_version,
                 paranoid_type_checks: self.vm_config.paranoid_type_checks,
+                enable_invariant_violation_check_in_swap_loc: false,
+                type_size_limit: false,
+                max_value_nest_depth: None,
             },
         }
     }

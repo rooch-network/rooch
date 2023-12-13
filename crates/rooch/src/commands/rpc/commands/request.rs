@@ -32,7 +32,14 @@ impl CommandAction<serde_json::Value> for RequestCommand {
         let params = match self.params {
             Some(serde_json::Value::Array(array)) => array,
             Some(value) => {
-                vec![value]
+                let s = value.as_str().unwrap();
+                let ret = serde_json::from_str(s);
+                match ret {
+                    Ok(value) => value,
+                    Err(_) => {
+                        vec![serde_json::value::Value::String(s.to_string())]
+                    }
+                }
             }
             None => vec![],
         };

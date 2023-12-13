@@ -27,7 +27,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf_ScriptBuf">ScriptBuf</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code>#[data_struct]
+<b>struct</b> <a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf_ScriptBuf">ScriptBuf</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 

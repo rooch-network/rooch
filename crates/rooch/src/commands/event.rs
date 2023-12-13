@@ -33,7 +33,7 @@ pub enum EventSubCommand {
 pub struct GetEventsByEventHandle {
     /// Struct name as `ADDRESS::MODULE_NAME::STRUCT_NAME<TypeParam1?, TypeParam2?>`
     /// Example: `0x123::event_test::WithdrawEvent --cursor 0 --limit 1`
-    #[clap(short = 't',long = "event-handle-type", parse(try_from_str = ParsedStructType::parse))]
+    #[clap(short = 't',long = "event-handle-type", value_parser=ParsedStructType::parse)]
     event_handle_type: ParsedStructType,
     /// start position
     #[clap(long)]

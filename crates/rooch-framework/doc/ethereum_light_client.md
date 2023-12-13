@@ -28,7 +28,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_BlockHeader">BlockHeader</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code>#[data_struct]
+<b>struct</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_BlockHeader">BlockHeader</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 

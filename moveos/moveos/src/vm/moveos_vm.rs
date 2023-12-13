@@ -25,11 +25,9 @@ use move_vm_runtime::{
     native_functions::NativeFunction,
     session::{LoadedFunctionInstantiation, SerializedReturnValues, Session},
 };
-use move_vm_types::{
-    data_store::DataStore,
-    loaded_data::runtime_types::{CachedStructIndex, StructType, Type},
-};
+use move_vm_types::loaded_data::runtime_types::{CachedStructIndex, StructType, Type};
 
+use move_vm_runtime::data_cache::TransactionCache;
 use moveos_stdlib::natives::moveos_stdlib::{
     event::NativeEventContext,
     move_module::NativeModuleContext,
@@ -168,7 +166,7 @@ where
         // cache needs to be flushed to work around those bugs.
         // vm.mark_loader_cache_as_invalid();
         vm.flush_loader_cache_if_invalidated();
-        let loader = vm.runtime().loader();
+        let loader = vm.runtime.loader();
         let data_store: MoveosDataCache<'r, 'l, S> =
             MoveosDataCache::new(remote, loader, table_data);
         vm.new_session_with_cache_and_extensions(data_store, extensions)
@@ -586,7 +584,7 @@ where
         self.session.get_type_abilities(ty)
     }
 
-    pub fn get_data_store(&mut self) -> &mut dyn DataStore {
+    pub fn get_data_store(&mut self) -> &mut dyn TransactionCache {
         self.session.get_data_store()
     }
 

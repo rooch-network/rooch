@@ -4,13 +4,13 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use clap::ArgEnum;
 use clap::Parser;
+use clap::ValueEnum;
 use pretty_assertions::assert_str_eq;
 use std::fs::File;
 use std::io::Write;
 
-#[derive(Debug, Parser, Clone, Copy, ArgEnum)]
+#[derive(Debug, Parser, Clone, Copy, ValueEnum)]
 enum Action {
     Print,
     Test,
@@ -20,7 +20,7 @@ enum Action {
 #[derive(Debug, Parser)]
 #[clap(name = "Rooch Open RPC Spec", about = "Generate rooch open rpc spec")]
 struct Options {
-    #[clap(arg_enum, default_value = "Record", ignore_case = true)]
+    #[clap(value_enum, default_value = "Record", ignore_case = true)]
     action: Action,
 }
 

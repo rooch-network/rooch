@@ -33,7 +33,8 @@ BTCAddress is a struct that represents a Bitcoin address.
 We just keep the raw bytes of the address and do care about the network.
 
 
-<pre><code><b>struct</b> <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code>#[data_struct]
+<b>struct</b> <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
