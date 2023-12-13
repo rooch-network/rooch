@@ -116,7 +116,8 @@ Create an empty SimpleMap.
 This function is deprecated, use <code>new</code> instead.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_create">create</a>&lt;Key: store, Value: store&gt;(): <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;
+<pre><code>#[deprecated]
+<b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_create">create</a>&lt;Key: store, Value: store&gt;(): <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;
 </code></pre>
 
 

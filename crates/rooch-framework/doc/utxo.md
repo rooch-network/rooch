@@ -123,7 +123,8 @@ Get the UTXO's vout
 Seal the UTXO with a protocol, the T is the protocol object
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x3_utxo_seal">seal</a>&lt;T&gt;(<a href="utxo.md#0x3_utxo">utxo</a>: &<b>mut</b> <a href="utxo.md#0x3_utxo_UTXO">utxo::UTXO</a>, seal_obj: &<a href="_Object">object::Object</a>&lt;T&gt;)
+<pre><code>#[private_generics(#[T])]
+<b>public</b> <b>fun</b> <a href="utxo.md#0x3_utxo_seal">seal</a>&lt;T&gt;(<a href="utxo.md#0x3_utxo">utxo</a>: &<b>mut</b> <a href="utxo.md#0x3_utxo_UTXO">utxo::UTXO</a>, seal_obj: &<a href="_Object">object::Object</a>&lt;T&gt;)
 </code></pre>
 
 
