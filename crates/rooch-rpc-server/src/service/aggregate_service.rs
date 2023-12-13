@@ -9,7 +9,9 @@ use moveos_types::access_path::AccessPath;
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::state::PlaceholderStruct;
+use moveos_types::moveos_std::raw_table::TableInfo;
+use moveos_types::state::{AnnotatedKeyState, KeyState, PlaceholderStruct, State};
+use moveos_types::state_resolver::{AnnotatedKeyStateKV, KeyStateKV};
 use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
 use rooch_rpc_api::jsonrpc_types::CoinInfoView;
 use rooch_types::framework::account_coin_store::AccountCoinStoreModule;
@@ -242,5 +244,119 @@ impl AggregateService {
                 }
             })
             .collect::<Result<Vec<_>>>()
+    }
+
+    pub async fn get_table_infos(
+        &self,
+        table_handles: Vec<ObjectID>,
+    ) -> Result<HashMap<ObjectID, Option<TableInfo>>> {
+        // Global table 0x0 table's key type is always ObjectID.
+        let access_path = AccessPath::objects(table_handles.clone());
+        self.rpc_service
+            .get_states(access_path)
+            .await?
+            .into_iter()
+            .zip(table_handles)
+            .map(|(state_opt, table_handle)| {
+                Ok((
+                    table_handle,
+                    state_opt
+                        .map(|state| {
+                            Ok::<TableInfo, anyhow::Error>(
+                                state.as_object_uncheck::<TableInfo>()?.value,
+                            )
+                        })
+                        .transpose()?,
+                ))
+            })
+            .collect::<Result<HashMap<_, _>>>()
+    }
+
+    pub async fn list_states(
+        &self,
+        access_path: AccessPath,
+        cursor: Option<Vec<u8>>,
+        limit: usize,
+    ) -> Result<Vec<KeyStateKV>> {
+        let states = self
+            .rpc_service
+            .list_states(access_path.clone(), cursor, limit)
+            .await?;
+
+        let (table_handle, _keys) = access_path.into_table_query();
+        let table_infos = self.get_table_infos(vec![table_handle]).await?;
+        // For now, global table 0x0 has no key type yet.
+        let key_type_opt = table_infos
+            .get(&table_handle)
+            .cloned()
+            .flatten()
+            .map(|v| v.key_type_tag())
+            .transpose()?;
+
+        Ok(states
+            .into_iter()
+            .map(|(key, state)| {
+                (
+                    KeyState {
+                        key,
+                        key_type: key_type_opt.as_ref().cloned(),
+                    },
+                    state,
+                )
+            })
+            .collect())
+    }
+
+    pub async fn list_annotated_states(
+        &self,
+        access_path: AccessPath,
+        cursor: Option<Vec<u8>>,
+        limit: usize,
+    ) -> Result<Vec<AnnotatedKeyStateKV>> {
+        let states = self
+            .rpc_service
+            .list_annotated_states(access_path.clone(), cursor, limit)
+            .await?;
+
+        let (table_handle, _keys) = access_path.into_table_query();
+        let table_infos = self.get_table_infos(vec![table_handle]).await?;
+
+        let key_type_opt = table_infos
+            .get(&table_handle)
+            .cloned()
+            .flatten()
+            .map(|v| v.key_type_tag())
+            .transpose()?;
+
+        Ok(match key_type_opt {
+            Some(key_type) => {
+                let key_states = states
+                    .iter()
+                    .map(|(key, _state)| State::new(key.clone(), key_type.clone()))
+                    .collect();
+                let anotated_key_states = self
+                    .rpc_service
+                    .get_annotated_states_by_state(key_states)
+                    .await?;
+                states
+                    .into_iter()
+                    .zip(anotated_key_states)
+                    .map(|((_key, state), key_state)| {
+                        let key_state = AnnotatedKeyState::new(
+                            KeyState::new(key_state.state.value, Some(key_state.state.value_type)),
+                            Some(key_state.decoded_value),
+                        );
+                        (key_state, state)
+                    })
+                    .collect()
+            }
+            None => states
+                .into_iter()
+                .map(|(key, state)| {
+                    let key_state = AnnotatedKeyState::new(KeyState::new(key, None), None);
+                    (key_state, state)
+                })
+                .collect(),
+        })
     }
 }

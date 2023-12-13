@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    GetEventsByEventHandleMessage, GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage,
-    ListAnnotatedStatesMessage, ListStatesMessage,
+    GetAnnotatedStatesByStateMessage, GetEventsByEventHandleMessage, GetEventsByEventIDsMessage,
+    GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage, ListStatesMessage,
 };
 use crate::actor::{
     executor::ExecutorActor,
@@ -161,6 +161,15 @@ impl ExecutorProxy {
     ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
         self.actor
             .send(GetTxExecutionInfosByHashMessage { tx_hashes })
+            .await?
+    }
+
+    pub async fn get_annotated_states_by_state(
+        &self,
+        states: Vec<State>,
+    ) -> Result<Vec<AnnotatedState>> {
+        self.actor
+            .send(GetAnnotatedStatesByStateMessage { states })
             .await?
     }
 }

@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::state::{AnnotatedKeyState, KeyState};
 use crate::{
     access_path::AccessPath,
     moveos_std::move_module::MoveModule,
@@ -21,6 +22,9 @@ pub const GLOBAL_OBJECT_STORAGE_HANDLE: ObjectID = ObjectID::ZERO;
 
 pub type StateKV = (Vec<u8>, State);
 pub type AnnotatedStateKV = (Vec<u8>, AnnotatedState);
+
+pub type KeyStateKV = (KeyState, State);
+pub type AnnotatedKeyStateKV = (AnnotatedKeyState, AnnotatedState);
 
 /// A global state resolver which needs to be provided by the environment.
 /// This allows to lookup data in remote storage.

@@ -289,7 +289,7 @@
         "name": "StatesPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_StateView_and_alloc::vec::Vec<u8>"
+          "$ref": "#/components/schemas/PageView_for_KeyStateKVView_and_alloc::vec::Vec<u8>"
         }
       }
     },
@@ -1303,6 +1303,52 @@
           }
         ]
       },
+      "KeyStateKVView": {
+        "type": "object",
+        "required": [
+          "key_state",
+          "state"
+        ],
+        "properties": {
+          "key_state": {
+            "$ref": "#/components/schemas/KeyStateView"
+          },
+          "state": {
+            "$ref": "#/components/schemas/StateView"
+          }
+        }
+      },
+      "KeyStateView": {
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "properties": {
+          "decoded_key": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnnotatedMoveValueView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "key": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "key_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "MoveActionTypeView": {
         "type": "string",
         "enum": [
@@ -1634,7 +1680,7 @@
           }
         }
       },
-      "PageView_for_StateView_and_alloc::vec::Vec<u8>": {
+      "PageView_for_KeyStateKVView_and_alloc::vec::Vec<u8>": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -1645,7 +1691,7 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/StateView"
+              "$ref": "#/components/schemas/KeyStateKVView"
             }
           },
           "has_next_page": {
