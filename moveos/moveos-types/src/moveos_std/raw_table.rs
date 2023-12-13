@@ -43,8 +43,8 @@ impl TableInfo {
     }
 
     pub fn key_type_tag(&self) -> Result<TypeTag> {
-        let key_type_str = format!("0x{}", self.key_type);
-        key_type_str.parse::<TypeTag>().map_err(|_e| {
+        let key_type_str = self.key_type.to_string();
+        TypeTag::from_str(key_type_str.as_str()).map_err(|_e| {
             anyhow::anyhow!(
                 "key type in TableInfo should be valid TypeTag: {}",
                 key_type_str
