@@ -5,6 +5,7 @@
 
 
 
+-  [Struct `TxProgressErrorLogEvent`](#0x3_bitcoin_light_client_TxProgressErrorLogEvent)
 -  [Resource `BitcoinBlockStore`](#0x3_bitcoin_light_client_BitcoinBlockStore)
 -  [Resource `BitcoinUTXOStore`](#0x3_bitcoin_light_client_BitcoinUTXOStore)
 -  [Constants](#@Constants_0)
@@ -19,19 +20,34 @@
 -  [Function `get_block_height`](#0x3_bitcoin_light_client_get_block_height)
 -  [Function `get_block_by_height`](#0x3_bitcoin_light_client_get_block_by_height)
 -  [Function `get_latest_block_height`](#0x3_bitcoin_light_client_get_latest_block_height)
--  [Function `get_tx_out`](#0x3_bitcoin_light_client_get_tx_out)
+-  [Function `get_utxo`](#0x3_bitcoin_light_client_get_utxo)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
+<b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::table_vec</a>;
-<b>use</b> <a href="bitcoin_address.md#0x3_bitcoin_address">0x3::bitcoin_address</a>;
-<b>use</b> <a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf">0x3::bitcoin_script_buf</a>;
+<b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="bitcoin_types.md#0x3_bitcoin_types">0x3::bitcoin_types</a>;
+<b>use</b> <a href="ord.md#0x3_ord">0x3::ord</a>;
 <b>use</b> <a href="timestamp.md#0x3_timestamp">0x3::timestamp</a>;
+<b>use</b> <a href="utxo.md#0x3_utxo">0x3::utxo</a>;
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_light_client_TxProgressErrorLogEvent"></a>
+
+## Struct `TxProgressErrorLogEvent`
+
+
+
+<pre><code><b>struct</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_TxProgressErrorLogEvent">TxProgressErrorLogEvent</a> <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 
@@ -121,7 +137,7 @@ The relay server submit a new Bitcoin block to the light client.
 
 
 
-<pre><code>entry <b>fun</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_progress_utxos">progress_utxos</a>(btc_block_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinBlockStore">bitcoin_light_client::BitcoinBlockStore</a>&gt;, btc_utxo_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinUTXOStore">bitcoin_light_client::BitcoinUTXOStore</a>&gt;, batch_size: u64)
+<pre><code>entry <b>fun</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_progress_utxos">progress_utxos</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, btc_block_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinBlockStore">bitcoin_light_client::BitcoinBlockStore</a>&gt;, btc_utxo_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinUTXOStore">bitcoin_light_client::BitcoinUTXOStore</a>&gt;, batch_size: u64)
 </code></pre>
 
 
@@ -206,12 +222,12 @@ Get block via block_height
 
 
 
-<a name="0x3_bitcoin_light_client_get_tx_out"></a>
+<a name="0x3_bitcoin_light_client_get_utxo"></a>
 
-## Function `get_tx_out`
+## Function `get_utxo`
 
-Get tx out via txid and vout
+Get UTXO via txid and vout
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_get_tx_out">get_tx_out</a>(btc_utxo_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinUTXOStore">bitcoin_light_client::BitcoinUTXOStore</a>&gt;, txid: <b>address</b>, vout: u32): <a href="_Option">option::Option</a>&lt;<a href="bitcoin_types.md#0x3_bitcoin_types_TxOut">bitcoin_types::TxOut</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_light_client.md#0x3_bitcoin_light_client_get_utxo">get_utxo</a>(btc_utxo_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="bitcoin_light_client.md#0x3_bitcoin_light_client_BitcoinUTXOStore">bitcoin_light_client::BitcoinUTXOStore</a>&gt;, txid: <b>address</b>, vout: u32): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
 </code></pre>

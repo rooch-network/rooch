@@ -2,20 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_framework::brc20 {
-    //use std::vector;
     use std::option::{Self, Option};
     use std::string::{Self, String};
+    use std::vector;
+    use moveos_std::bcs;
     use moveos_std::json;
     use moveos_std::context::{Self, Context};
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object;
     use moveos_std::table::{Self, Table};
-    use moveos_std::table_vec;
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::string_utils;
     use rooch_framework::bitcoin_address::{BTCAddress};
-    use rooch_framework::ord::{Self, Inscription, InscriptionStore};
-    // use rooch_framework::bitcoin_types::{Self, Witness, Transaction};
-    // use rooch_framework::bitcoin_light_client::{Self, BitcoinBlockStore};
+    use rooch_framework::ord;
+    use rooch_framework::bitcoin_types::{Transaction};
 
     friend rooch_framework::genesis;
 
@@ -243,12 +242,16 @@ module rooch_framework::brc20 {
         }
     }
 
-    public fun from_inscription(inscription: &Inscription) : Option<Op> {
-        let body_opt = ord::body(inscription);
-        if (option::is_none(&body_opt)) {
+    public fun from_inscription(inscription_body: Option<vector<u8>>) : Option<Op> {
+        if (option::is_none(&inscription_body)) {
             return option::none()
         };
-        let body = option::destroy_some(body_opt);
+        //TODO should we check the content type?
+        //let content_type = ord::content_type(inscription);
+        // if(content_type != string::utf8(b"text/plain;charset=utf-8")){
+        //     return option::none()
+        // };
+        let body = option::destroy_some(inscription_body);
         let json_map = json::to_map(body);
         if(simple_map::length(&json_map) == 0){
             return option::none()
@@ -256,12 +259,31 @@ module rooch_framework::brc20 {
         option::some(Op { json_map })
     }
 
-    fun progress_op(ctx: &mut Context, brc20_store: &mut BRC20Store, op: Op) {
+    public fun from_transaction_bytes(transaction_bytes: vector<u8>) : vector<Op> {
+        let transaction = bcs::from_bytes<Transaction>(transaction_bytes);
+        let inscription_records = ord::from_transaction(&transaction);
+        let idx = 0;
+        let op_vector = vector::empty();
+        while(idx < vector::length(&inscription_records)){
+            let inscription_record = *vector::borrow(&inscription_records, idx);
+            let (body, _content_encoding, _content_type, _metadata, _metaprotocol, _parent, _pointer) = ord::unpack_record(inscription_record);
+            let op_opt = from_inscription(body);
+            if(option::is_some(&op_opt)){
+                let op = option::destroy_some(op_opt);
+                vector::push_back(&mut op_vector, op);
+            };
+            idx = idx + 1;
+        };
+        op_vector
+    }
+
+    fun progress_op(ctx: &mut Context, brc20_store: &mut BRC20Store, _tx: Transaction, op: Op) {
         if(!is_brc20(&op)){
             std::debug::print(&string::utf8(b"not brc20 op"));
             std::debug::print(&op);
             return
         };
+        
         if(is_deploy(&op)){
             let deploy_op_opt = as_deploy(&op);
             if(option::is_none(&deploy_op_opt)){
@@ -301,42 +323,6 @@ module rooch_framework::brc20 {
             std::debug::print(&op);
             return
         }
-    }
-
-    public fun remaining_inscription_count(inscription_store_obj: &Object<InscriptionStore>, brc20_store_obj: &Object<BRC20Store>): u64{
-        let brc20_store = object::borrow(brc20_store_obj);
-        let start_inscription_index = brc20_store.next_inscription_index;
-        let max_inscription_count = table_vec::length(ord::inscription_ids(inscription_store_obj));
-        if(start_inscription_index < max_inscription_count){
-            max_inscription_count - start_inscription_index
-        }else{
-            0
-        }
-    }
-
-    entry fun progress_brc20_ops(ctx: &mut Context, inscription_store_obj: &Object<InscriptionStore>, brc20_store_obj: &mut Object<BRC20Store>, batch_size: u64){
-        let brc20_store = object::borrow_mut(brc20_store_obj);
-        let inscription_ids = ord::inscription_ids(inscription_store_obj);
-        let inscriptions = ord::inscriptions(inscription_store_obj);
-        let start_inscription_index = brc20_store.next_inscription_index;
-        let max_inscription_count = table_vec::length(inscription_ids);
-        if(start_inscription_index >= max_inscription_count){
-            return
-        };
-        let progressed_inscription_count = 0;
-        let progress_inscription_index = start_inscription_index;
-        while(progressed_inscription_count < batch_size && progress_inscription_index < max_inscription_count){
-            let inscription_id = *table_vec::borrow(inscription_ids, progress_inscription_index);
-            let inscription = table::borrow(inscriptions, inscription_id);
-            let op_opt = from_inscription(inscription);
-            if(option::is_some(&op_opt)){
-                let op = option::destroy_some(op_opt);
-                progress_op(ctx, brc20_store, op);
-            };
-            progressed_inscription_count = progressed_inscription_count + 1;
-            progress_inscription_index = progress_inscription_index + 1;
-        };
-        brc20_store.next_inscription_index = progress_inscription_index;
     }
 
     #[test_only]

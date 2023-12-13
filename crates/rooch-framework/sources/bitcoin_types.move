@@ -4,7 +4,9 @@
 module rooch_framework::bitcoin_types{
     use std::vector;
     use std::option::{Self, Option};
+    use rooch_framework::bitcoin_address::{Self, BTCAddress};
     use rooch_framework::bitcoin_script_buf::{Self, ScriptBuf};
+    use rooch_framework::multichain_address;
 
     const LOCK_TIME_THRESHOLD: u32 = 500_000_000;
     const TAPROOT_ANNEX_PREFIX: u8 = 0x50;
@@ -219,7 +221,22 @@ module rooch_framework::bitcoin_types{
         &self.script_pubkey
     }
 
+    public fun txout_address(self: &TxOut) : Option<BTCAddress> {
+        bitcoin_address::from_script(&self.script_pubkey)
+    }
+
+    public fun txout_object_address(self: &TxOut) : address {
+        let btc_address_opt = txout_address(self);
+        if (option::is_none(&btc_address_opt)) {
+            @rooch_framework
+        }else{
+            let btc_address = option::destroy_some(btc_address_opt);
+            multichain_address::mapping_to_rooch_address(multichain_address::from_bitcoin(btc_address))
+        }
+    }
+
     public fun unpack_txout(self: TxOut) : (u64, ScriptBuf) {
         (self.value, self.script_pubkey)
     }      
+
 }

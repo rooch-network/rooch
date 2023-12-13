@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::bitcoin_types::{Header, TxOut};
+use super::bitcoin_types::Header;
 use crate::{addresses::ROOCH_FRAMEWORK_ADDRESS, into_address::IntoAddress};
 use anyhow::Result;
 use bitcoin::{BlockHash, Txid};
@@ -98,7 +98,7 @@ impl<'a> BitcoinLightClientModule<'a> {
     pub const GET_BLOCK_HEIGHT_FUNCTION_NAME: &'static IdentStr = ident_str!("get_block_height");
     pub const GET_LATEST_BLOCK_HEIGHT_FUNCTION_NAME: &'static IdentStr =
         ident_str!("get_latest_block_height");
-    pub const GET_TX_OUT_FUNCTION_NAME: &'static IdentStr = ident_str!("get_tx_out");
+    pub const GET_UTXO_FUNCTION_NAME: &'static IdentStr = ident_str!("get_utxo");
     pub const REMAINING_TX_COUNT_FUNCTION_NAME: &'static IdentStr =
         ident_str!("remaining_tx_count");
     pub const SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME: &'static IdentStr =
@@ -190,9 +190,9 @@ impl<'a> BitcoinLightClientModule<'a> {
         Ok(height.into())
     }
 
-    pub fn get_tx_out(&self, tx_id: Txid, vout: u32) -> Result<Option<TxOut>> {
+    pub fn get_utxo(&self, tx_id: Txid, vout: u32) -> Result<Option<ObjectID>> {
         let call = Self::create_function_call(
-            Self::GET_TX_OUT_FUNCTION_NAME,
+            Self::GET_UTXO_FUNCTION_NAME,
             vec![],
             vec![
                 MoveValue::Address(BitcoinUTXOStore::object_id().into()),
@@ -207,8 +207,8 @@ impl<'a> BitcoinLightClientModule<'a> {
             .into_result()
             .map(|mut values| {
                 let value = values.pop().expect("should have one return value");
-                bcs::from_bytes::<MoveOption<TxOut>>(&value.value)
-                    .expect("should be a valid MoveOption<TxOut>")
+                bcs::from_bytes::<MoveOption<ObjectID>>(&value.value)
+                    .expect("should be a valid MoveOption<ObjectID>")
             })?;
         Ok(tx_out.into())
     }

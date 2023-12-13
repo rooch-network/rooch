@@ -22,11 +22,13 @@
 -  [Function `into_rooch_address`](#0x3_multichain_address_into_rooch_address)
 -  [Function `into_eth_address`](#0x3_multichain_address_into_eth_address)
 -  [Function `into_bitcoin_address`](#0x3_multichain_address_into_bitcoin_address)
+-  [Function `mapping_to_rooch_address`](#0x3_multichain_address_mapping_to_rooch_address)
 
 
 <pre><code><b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="bitcoin_address.md#0x3_bitcoin_address">0x3::bitcoin_address</a>;
 <b>use</b> <a href="ethereum_address.md#0x3_ethereum_address">0x3::ethereum_address</a>;
+<b>use</b> <a href="hash.md#0x3_hash">0x3::hash</a>;
 </code></pre>
 
 
@@ -253,4 +255,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_into_bitcoin_address">into_bitcoin_address</a>(maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
+</code></pre>
+
+
+
+<a name="0x3_multichain_address_mapping_to_rooch_address"></a>
+
+## Function `mapping_to_rooch_address`
+
+Mapping from MultiChainAddress to rooch address
+If the MultiChainAddress is not rooch address, it will generate a new rooch address based on the MultiChainAddress
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_mapping_to_rooch_address">mapping_to_rooch_address</a>(maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): <b>address</b>
 </code></pre>

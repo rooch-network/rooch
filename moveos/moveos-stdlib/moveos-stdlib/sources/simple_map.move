@@ -31,10 +31,18 @@ module moveos_std::simple_map {
         vector::length(&map.data)
     }
 
-    public fun create<Key: store, Value: store>(): SimpleMap<Key, Value> {
+    /// Create an empty SimpleMap.
+    public fun new<Key: store, Value: store>(): SimpleMap<Key, Value> {
         SimpleMap {
             data: vector::empty(),
         }
+    } 
+
+    #[deprecated]
+    /// Create an empty SimpleMap.
+    /// This function is deprecated, use `new` instead.
+    public fun create<Key: store, Value: store>(): SimpleMap<Key, Value> {
+        new()
     }
 
     public fun borrow<Key: store, Value: store>(
