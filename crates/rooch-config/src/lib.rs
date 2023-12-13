@@ -97,11 +97,11 @@ pub struct RoochOpt {
     pub btc_rpc_url: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long, env = "BTC_RPC_USERNAME")]
+    #[clap(long, id = "btc-rpc-username", env = "BTC_RPC_USERNAME")]
     pub btc_rpc_username: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long, env = "BTC_RPC_PASSWORD")]
+    #[clap(long, id = "btc-rpc-password", env = "BTC_RPC_PASSWORD")]
     pub btc_rpc_password: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
