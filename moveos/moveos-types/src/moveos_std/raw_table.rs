@@ -30,7 +30,7 @@ pub struct TableInfo {
 
 impl TableInfo {
     pub fn new(state_root: AccountAddress, key_type: TypeTag) -> Result<Self> {
-        let key_type_str = MoveString::from_str(key_type.to_canonical_string().as_str())?;
+        let key_type_str = MoveString::from_str(key_type.to_string().as_str())?;
         Ok(TableInfo {
             state_root,
             size: 0u64,
