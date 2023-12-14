@@ -4,7 +4,7 @@
 module rooch_framework::multichain_address {
     
     use rooch_framework::ethereum_address::{Self, ETHAddress};
-    use rooch_framework::bitcoin_address::{Self, BTCAddress};
+    use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
     use rooch_framework::hash::{blake2b256};
 
     const ErrorMultiChainIDMismatch: u64 = 1;
@@ -43,7 +43,7 @@ module rooch_framework::multichain_address {
         }
     }
 
-    public fun from_bitcoin(bitcoin_address: BTCAddress): MultiChainAddress {
+    public fun from_bitcoin(bitcoin_address: BitcoinAddress): MultiChainAddress {
         MultiChainAddress {
             multichain_id: MULTICHAIN_ID_BITCOIN,
             raw_address: bitcoin_address::into_bytes(bitcoin_address),
@@ -80,7 +80,7 @@ module rooch_framework::multichain_address {
         ethereum_address::from_bytes(maddress.raw_address)
     }
 
-    public fun into_bitcoin_address(maddress: MultiChainAddress) : BTCAddress {
+    public fun into_bitcoin_address(maddress: MultiChainAddress) : BitcoinAddress {
         assert!(maddress.multichain_id == MULTICHAIN_ID_BITCOIN, ErrorMultiChainIDMismatch);
         bitcoin_address::from_bytes(maddress.raw_address)
     }

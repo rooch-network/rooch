@@ -166,7 +166,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_from_bitcoin">from_bitcoin</a>(<a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a>: <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>): <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_from_bitcoin">from_bitcoin</a>(<a href="bitcoin_address.md#0x3_bitcoin_address">bitcoin_address</a>: <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>): <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>
 </code></pre>
 
 
@@ -254,7 +254,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_into_bitcoin_address">into_bitcoin_address</a>(maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_into_bitcoin_address">into_bitcoin_address</a>(maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
 </code></pre>
 
 
