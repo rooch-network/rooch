@@ -102,7 +102,7 @@ module moveos_std::type_info {
         //assert!(type_name<TypeInfo>() == string::utf8(b"0x1::type_info::TypeInfo"), 9);
         assert!(type_name<TypeInfo>() == string::utf8(b"0000000000000000000000000000000000000000000000000000000000000002::type_info::TypeInfo"), 9);
 
-        assert!(type_name<TestMultiGenerics<u8, u64, vector<u8>>>() == string::utf8(b"0000000000000000000000000000000000000000000000000000000000000002::type_info::TestMultiGenerics<u8u64vector<u8>>"), 10);
+        assert!(type_name<TestMultiGenerics<u8, u64, vector<u8>>>() == string::utf8(b"0000000000000000000000000000000000000000000000000000000000000002::type_info::TestMultiGenerics<u8,u64,vector<u8>>"), 10);
         
         // assert!(type_name<
         //     Table<
