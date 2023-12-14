@@ -271,6 +271,9 @@ impl<'a> ExtendedChecker<'a> {
             // Inspect the bytecode of every function, and if an instruction is CallGeneric,
             // verify that it calls a function with the private_generics attribute as detected earlier.
             // Then, ensure that the generic parameters of the CallGeneric instruction are valid.
+            if fun.is_inline() {
+                continue;
+            }
             for (offset, instr) in fun.get_bytecode().unwrap().iter().enumerate() {
                 if let Bytecode::CallGeneric(finst_idx) = instr {
                     let FunctionInstantiation {
@@ -346,6 +349,9 @@ impl<'a> ExtendedChecker<'a> {
 impl<'a> ExtendedChecker<'a> {
     fn check_init_module(&mut self, module: &ModuleEnv) {
         for ref fun in module.get_functions() {
+            if fun.is_inline() {
+                continue;
+            }
             if fun.get_identifier().unwrap().as_ident_str()
                 != INIT_FN_NAME_IDENTIFIER.as_ident_str()
             {
@@ -518,6 +524,9 @@ pub fn is_allowed_input_struct(name: String, is_ref: bool) -> bool {
 impl<'a> ExtendedChecker<'a> {
     fn check_global_storage_access(&mut self, module: &ModuleEnv) {
         for ref fun in module.get_functions() {
+            if fun.is_inline() {
+                continue;
+            }
             let mut invalid_bytecode = vec![];
             for instr in fun.get_bytecode().unwrap() {
                 match instr {
@@ -1118,6 +1127,9 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
     module_metadata.data_struct_func_map = data_struct_func_map;
 
     for ref fun in module_env.get_functions() {
+        if fun.is_inline() {
+            continue;
+        }
         for (_offset, instr) in fun.get_bytecode().unwrap().iter().enumerate() {
             if let Bytecode::CallGeneric(finst_idx) = instr {
                 let FunctionInstantiation {
