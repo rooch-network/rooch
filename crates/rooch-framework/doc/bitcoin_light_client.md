@@ -25,11 +25,11 @@
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
-<b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::simple_map</a>;
+<b>use</b> <a href="">0x2::simple_multimap</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::table_vec</a>;
 <b>use</b> <a href="">0x2::type_info</a>;

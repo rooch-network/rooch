@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_framework::utxo{
-    use std::option::{Self, Option};
+    use std::vector;
     use std::string::String;
     use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, Object, ObjectID};
-    use moveos_std::simple_map::{Self, SimpleMap};
+    use moveos_std::simple_multimap::{Self, SimpleMultiMap};
     use moveos_std::type_info;
 
     friend rooch_framework::bitcoin_light_client;
@@ -20,7 +20,7 @@ module rooch_framework::utxo{
         /// The value of the UTXO
         value: u64,
         /// Protocol seals
-        seals: SimpleMap<String, ObjectID>
+        seals: SimpleMultiMap<String, ObjectID>
     }
 
     struct UTXOSeal has store, copy, drop {
@@ -38,7 +38,7 @@ module rooch_framework::utxo{
             txid: txid,
             vout: vout,
             value: value,
-            seals: simple_map::create(),
+            seals: simple_multimap::new(),
         };
         //TODO support custom object id, and use Hash(txid + vout) as object id
         context::new_object(ctx, utxo)
@@ -64,26 +64,30 @@ module rooch_framework::utxo{
     public fun seal<T>(utxo: &mut UTXO, seal_obj: &Object<T>){
         let protocol = type_info::type_name<T>();
         let object_id = object::id(seal_obj);
-        simple_map::add(&mut utxo.seals, protocol, object_id);
+        let utxo_seal = UTXOSeal{
+            protocol: protocol,
+            object_id: object_id,
+        };
+        add_seal(utxo, utxo_seal);
     }
 
     public fun has_seal<T>(utxo: &UTXO) : bool {
         let protocol = type_info::type_name<T>();
-        simple_map::contains_key(&utxo.seals, &protocol)
+        simple_multimap::contains_key(&utxo.seals, &protocol)
     }
 
-    public fun get_seal<T>(utxo: &UTXO) : Option<ObjectID> {
+    public fun get_seals<T>(utxo: &UTXO) : vector<ObjectID> {
         let protocol = type_info::type_name<T>();
-        if(simple_map::contains_key(&utxo.seals, &protocol)){
-            option::some(*simple_map::borrow(&utxo.seals, &protocol))
+        if(simple_multimap::contains_key(&utxo.seals, &protocol)){
+            *simple_multimap::borrow(&utxo.seals, &protocol)
         }else{
-            option::none()
+            vector::empty()
         }
     }
 
     public(friend) fun add_seal(utxo: &mut UTXO, utxo_seal: UTXOSeal){
         let UTXOSeal{protocol, object_id} = utxo_seal;
-        simple_map::add(&mut utxo.seals, protocol, object_id);
+        simple_multimap::add(&mut utxo.seals, protocol, object_id);
     }
 
     // === Object<UTXO> ===    
@@ -96,7 +100,7 @@ module rooch_framework::utxo{
         context::take_object_extend<UTXO>(ctx, object_id)
     }
 
-    public(friend) fun remove(utxo_obj: Object<UTXO>): SimpleMap<String, ObjectID>{
+    public(friend) fun remove(utxo_obj: Object<UTXO>): SimpleMultiMap<String, ObjectID>{
         let utxo = object::remove(utxo_obj);
         let UTXO{txid:_, vout:_, value:_, seals} = utxo;
         seals

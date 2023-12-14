@@ -5,15 +5,15 @@ module rooch_framework::bitcoin_light_client{
 
     use std::option::{Self, Option};
     use std::vector;
-    use std::string::{Self, String};
+    use std::string::{String};
     use moveos_std::type_info;
-    use moveos_std::event;
+    //use moveos_std::event;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
     use moveos_std::bcs;
     use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::table_vec::{Self, TableVec};
-    use moveos_std::simple_map;
+    use moveos_std::simple_multimap;
     use rooch_framework::timestamp;
     use rooch_framework::bitcoin_types::{Self, Block, Header, Transaction, OutPoint};    
     use rooch_framework::ord::{Self, Inscription};
@@ -122,21 +122,24 @@ module rooch_framework::bitcoin_light_client{
         let txid = bitcoin_types::tx_id(tx);
         let txinput = bitcoin_types::tx_input(tx);
         let idx = 0;
-        let output_seals = simple_map::create<u64, UTXOSeal>();
+        let output_seals = simple_multimap::new<u64, UTXOSeal>();
         while(idx < vector::length(txinput)){
             let txin = vector::borrow(txinput, idx);
             let outpoint = *bitcoin_types::txin_previous_output(txin);
             if(table::contains(&btc_utxo_store.utxo, outpoint)){
                 let object_id = table::remove(&mut btc_utxo_store.utxo, outpoint);
                 let utxo_obj = utxo::take(ctx, object_id);
-                let seal_out_opt = ord::spend_utxo(ctx, &utxo_obj, tx);
-                if(option::is_some(&seal_out_opt)){
-                    let seal_out = option::destroy_some(seal_out_opt);
-                    let (output_index, object_id) = utxo::unpack_seal_out(seal_out);
-                    let utxo_seal = utxo::new_utxo_seal(type_info::type_name<Inscription>(), object_id);
-                    let (old_key_opt, _value_opt) = simple_map::upsert(&mut output_seals, output_index, utxo_seal);
-                    if(option::is_some(&old_key_opt)){
-                        event::emit(TxProgressErrorLogEvent{txid: txid, message: string::utf8(b"repeated output seal")});
+                let seal_outs = ord::spend_utxo(ctx, &utxo_obj, tx);
+                if(!vector::is_empty(&seal_outs)){
+                    let protocol = type_info::type_name<Inscription>();
+                    let j = 0;
+                    let seal_outs_len = vector::length(&seal_outs);
+                    while(j < seal_outs_len){
+                        let seal_out = vector::pop_back(&mut seal_outs);
+                        let (output_index, object_id) = utxo::unpack_seal_out(seal_out);
+                        let utxo_seal = utxo::new_utxo_seal(protocol, object_id);
+                        simple_multimap::add(&mut output_seals, output_index, utxo_seal);
+                        j = j + 1;
                     };
                 };
                 utxo::remove(utxo_obj);
@@ -148,7 +151,7 @@ module rooch_framework::bitcoin_light_client{
         };
         //If a utxo is spend seal assets, it should not seal new assets
         //TODO confirm this
-        if(simple_map::length(&output_seals) == 0){
+        if(simple_multimap::length(&output_seals) == 0){
             let ord_seals = ord::progress_transaction(ctx, tx);
             let idx = 0;
             let protocol = type_info::type_name<Inscription>();
@@ -156,7 +159,7 @@ module rooch_framework::bitcoin_light_client{
                 let seal_out = vector::pop_back(&mut ord_seals);
                 let (output_index, object_id) = utxo::unpack_seal_out(seal_out);
                 let utxo_seal = utxo::new_utxo_seal(protocol, object_id);
-                simple_map::add(&mut output_seals, output_index, utxo_seal);
+                simple_multimap::add(&mut output_seals, output_index, utxo_seal);
                 idx = idx + 1;
             };
         };
@@ -170,9 +173,15 @@ module rooch_framework::bitcoin_light_client{
             let value = bitcoin_types::txout_value(txout);
             let utxo_obj = utxo::new(ctx, txid, vout, value);
             let utxo = object::borrow_mut(&mut utxo_obj);
-            if(simple_map::contains_key(&output_seals, &idx)){
-                let (_, utxo_seal) = simple_map::remove(&mut output_seals, &idx);
-                utxo::add_seal(utxo, utxo_seal);
+            if(simple_multimap::contains_key(&output_seals, &idx)){
+                let utxo_seals = *simple_multimap::borrow(&output_seals, &idx);
+                let j = 0;
+                let utxo_seals_len = vector::length(&utxo_seals);
+                while(j < utxo_seals_len){
+                    let utxo_seal = vector::pop_back(&mut utxo_seals);
+                    utxo::add_seal(utxo, utxo_seal);
+                    j = j + 1;
+                };
             };
             let object_id = object::id(&utxo_obj);
             table::add(&mut btc_utxo_store.utxo, outpoint, object_id);

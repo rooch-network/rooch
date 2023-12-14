@@ -14,7 +14,7 @@
 -  [Function `vout`](#0x3_utxo_vout)
 -  [Function `seal`](#0x3_utxo_seal)
 -  [Function `has_seal`](#0x3_utxo_has_seal)
--  [Function `get_seal`](#0x3_utxo_get_seal)
+-  [Function `get_seals`](#0x3_utxo_get_seals)
 -  [Function `add_seal`](#0x3_utxo_add_seal)
 -  [Function `transfer`](#0x3_utxo_transfer)
 -  [Function `take`](#0x3_utxo_take)
@@ -25,11 +25,10 @@
 -  [Function `unpack_seal_out`](#0x3_utxo_unpack_seal_out)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x1::string</a>;
+<pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::simple_map</a>;
+<b>use</b> <a href="">0x2::simple_multimap</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 </code></pre>
 
@@ -140,13 +139,13 @@ Seal the UTXO with a protocol, the T is the protocol object
 
 
 
-<a name="0x3_utxo_get_seal"></a>
+<a name="0x3_utxo_get_seals"></a>
 
-## Function `get_seal`
+## Function `get_seals`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x3_utxo_get_seal">get_seal</a>&lt;T&gt;(<a href="utxo.md#0x3_utxo">utxo</a>: &<a href="utxo.md#0x3_utxo_UTXO">utxo::UTXO</a>): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x3_utxo_get_seals">get_seals</a>&lt;T&gt;(<a href="utxo.md#0x3_utxo">utxo</a>: &<a href="utxo.md#0x3_utxo_UTXO">utxo::UTXO</a>): <a href="">vector</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
 </code></pre>
 
 
@@ -190,7 +189,7 @@ Seal the UTXO with a protocol, the T is the protocol object
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x3_utxo_remove">remove</a>(utxo_obj: <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x3_utxo_UTXO">utxo::UTXO</a>&gt;): <a href="_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="_ObjectID">object::ObjectID</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x3_utxo_remove">remove</a>(utxo_obj: <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x3_utxo_UTXO">utxo::UTXO</a>&gt;): <a href="_SimpleMultiMap">simple_multimap::SimpleMultiMap</a>&lt;<a href="_String">string::String</a>, <a href="_ObjectID">object::ObjectID</a>&gt;
 </code></pre>
 
 
