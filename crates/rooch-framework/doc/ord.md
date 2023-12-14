@@ -9,7 +9,6 @@
 -  [Resource `Inscription`](#0x3_ord_Inscription)
 -  [Struct `InscriptionRecord`](#0x3_ord_InscriptionRecord)
 -  [Struct `InvalidInscriptionEvent`](#0x3_ord_InvalidInscriptionEvent)
--  [Struct `MultiInscriptionEvent`](#0x3_ord_MultiInscriptionEvent)
 -  [Function `spend_utxo`](#0x3_ord_spend_utxo)
 -  [Function `progress_transaction`](#0x3_ord_progress_transaction)
 -  [Function `txid`](#0x3_ord_txid)
@@ -83,24 +82,13 @@
 
 
 
-<a name="0x3_ord_MultiInscriptionEvent"></a>
-
-## Struct `MultiInscriptionEvent`
-
-
-
-<pre><code><b>struct</b> <a href="ord.md#0x3_ord_MultiInscriptionEvent">MultiInscriptionEvent</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
 <a name="0x3_ord_spend_utxo"></a>
 
 ## Function `spend_utxo`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_spend_utxo">spend_utxo</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, utxo_obj: &<a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x3_utxo_UTXO">utxo::UTXO</a>&gt;, tx: &<a href="bitcoin_types.md#0x3_bitcoin_types_Transaction">bitcoin_types::Transaction</a>): <a href="_Option">option::Option</a>&lt;<a href="utxo.md#0x3_utxo_SealOut">utxo::SealOut</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x3_ord_spend_utxo">spend_utxo</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, utxo_obj: &<a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x3_utxo_UTXO">utxo::UTXO</a>&gt;, tx: &<a href="bitcoin_types.md#0x3_bitcoin_types_Transaction">bitcoin_types::Transaction</a>): <a href="">vector</a>&lt;<a href="utxo.md#0x3_utxo_SealOut">utxo::SealOut</a>&gt;
 </code></pre>
 
 

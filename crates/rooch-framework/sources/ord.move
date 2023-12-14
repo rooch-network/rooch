@@ -50,11 +50,6 @@ module rooch_framework::ord {
         record: InscriptionRecord,
     }
 
-    struct MultiInscriptionEvent has store, copy, drop {
-        txid: address,
-        inscription_records: vector<InscriptionRecord>,
-    }
-
     // ==== Inscription ==== //
 
     fun new_inscription(txid: address, index:u32, record: InscriptionRecord): Inscription {
@@ -72,21 +67,28 @@ module rooch_framework::ord {
         }
     }
 
-    public fun spend_utxo(ctx: &mut Context, utxo_obj: &Object<UTXO>, tx: &Transaction): Option<SealOut>{
+    public fun spend_utxo(ctx: &mut Context, utxo_obj: &Object<UTXO>, tx: &Transaction): vector<SealOut>{
         let utxo = object::borrow(utxo_obj);
-        let seal_opt = utxo::get_seal<Inscription>(utxo);
-        if(option::is_none(&seal_opt)){
-            return option::none()
+        let seal_object_ids = utxo::get_seals<Inscription>(utxo);
+        let seal_outs = vector::empty();
+        if(vector::is_empty(&seal_object_ids)){
+            return seal_outs
         };
-        let seal_object_id = option::destroy_some(seal_opt);
-        let inscription_obj = context::take_object_extend<Inscription>(ctx, seal_object_id); 
         let outputs = bitcoin_types::tx_output(tx);
         //TODO we should track the Inscription via SatPoint, but now we just use the first output for simplicity.
         let output_index = 0;
         let first_output = vector::borrow(outputs, output_index);
         let address = bitcoin_types::txout_object_address(first_output);
-        object::transfer_extend(inscription_obj, address);
-        option::some(utxo::new_seal_out(output_index, seal_object_id))
+        let j = 0;
+        let objects_len = vector::length(&seal_object_ids);
+        while(j < objects_len){
+            let seal_object_id = *vector::borrow(&mut seal_object_ids, j);
+            let inscription_obj = context::take_object_extend<Inscription>(ctx, seal_object_id); 
+            object::transfer_extend(inscription_obj, address);
+            vector::push_back(&mut seal_outs, utxo::new_seal_out(output_index, seal_object_id));
+            j = j + 1;
+        };
+        seal_outs
     }
 
     public fun progress_transaction(ctx: &mut Context, tx: &Transaction): vector<SealOut>{
@@ -95,40 +97,35 @@ module rooch_framework::ord {
 
         let inscription_records = from_transaction(tx);
         let inscription_records_len = vector::length(&inscription_records);
+        if(inscription_records_len == 0){
+            return output_seals
+        };
+
         let tx_outputs = bitcoin_types::tx_output(tx);
         let output_len = vector::length(tx_outputs);
-
-        if(inscription_records_len != output_len && output_len != 1){
-            event::emit(MultiInscriptionEvent{
-                    txid: tx_id,
-                    inscription_records: inscription_records,
-            });
-        };
 
         // ord has three mode for Inscribe:   SameSat,SeparateOutputs,SharedOutput,
         //https://github.com/ordinals/ord/blob/master/src/subcommand/wallet/inscribe/batch.rs#L533
         //TODO handle SameSat
-        let is_separate_outputs = inscription_records_len == output_len;
-        if(inscription_records_len > 0){
-            let idx = 0;
-            while(idx < inscription_records_len){
-                let inscription_record = *vector::borrow(&mut inscription_records, idx);
-                
-                let inscription = new_inscription(tx_id, (idx as u32), inscription_record);
-                //TODO custom Inscription ID?
-                let inscription_obj = context::new_object(ctx, inscription);
-                let object_id = object::id(&inscription_obj);
-                let output_index = if(is_separate_outputs){
-                    idx
-                }else{
-                    0  
-                };
-                let output = vector::borrow(tx_outputs, output_index);
-                let address = bitcoin_types::txout_object_address(output);
-                object::transfer_extend(inscription_obj, address);
-                vector::push_back(&mut output_seals, utxo::new_seal_out(output_index, object_id));
-                idx = idx + 1;
+        let is_separate_outputs = output_len > inscription_records_len;
+        let idx = 0;
+        while(idx < inscription_records_len){
+            let inscription_record = *vector::borrow(&mut inscription_records, idx);
+            
+            let inscription = new_inscription(tx_id, (idx as u32), inscription_record);
+            //TODO custom Inscription ID?
+            let inscription_obj = context::new_object(ctx, inscription);
+            let object_id = object::id(&inscription_obj);
+            let output_index = if(is_separate_outputs){
+                idx
+            }else{
+                0  
             };
+            let output = vector::borrow(tx_outputs, output_index);
+            let address = bitcoin_types::txout_object_address(output);
+            object::transfer_extend(inscription_obj, address);
+            vector::push_back(&mut output_seals, utxo::new_seal_out(output_index, object_id));
+            idx = idx + 1;
         };
         output_seals
     }
