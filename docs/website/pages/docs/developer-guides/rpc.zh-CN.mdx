@@ -793,3 +793,68 @@ curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: app
   "id": 101
 }
 ```
+
+### rooch_executeViewFunction
+
+执行只读函数，调用该函数不会改变应用的状态。
+
+请求：
+
+```shell
+curl --location --header 'Content-Type: application/json' --data '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_executeViewFunction",
+ "params":[{"function_id":"0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::init", "ty_args":[], "args":[]}]
+}' https://dev-seed.rooch.network:443 | jq
+```
+
+响应：
+
+```shell
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "vm_status": {
+      "MoveAbort": {
+        "location": "0000000000000000000000000000000000000000000000000000000000000002::object",
+        "abort_code": "1"
+      }
+    },
+    "return_values": null
+  },
+  "id": 101
+}
+```
+
+<++>
+
+<++>
+请求：
+
+```shell
+<++>
+```
+
+响应：
+
+```shell
+<++>
+```
+
+<++>
+
+<++>
+请求：
+
+```shell
+<++>
+```
+
+响应：
+
+```shell
+<++>
+```
+
+<++>
