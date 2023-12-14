@@ -34,7 +34,7 @@ curl --location 'https://dev-seed.rooch.network/' --header 'Content-Type: applic
 
 `--header` 指定的是请求的头部信息，比如指定 JSON 格式的数据类型等。
 
-`--date` 指定的就是我们要请求 RPC 接口中的**方法名**和**参数**等信息，这里要以 JSON 的数据格式来填写。
+`--data` 指定的就是我们要请求 RPC 接口中的**方法名**和**参数**等信息，这里要以 JSON 的数据格式来填写。
 
 ```shell
 {"jsonrpc":"2.0","result":"20230103","id":0}
@@ -205,6 +205,8 @@ curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","metho
 
 ### rooch_getBalances
 
+通过 `AccountAddress` 获取账户余额。
+
 请求：
 
 ```shell
@@ -234,6 +236,38 @@ curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: app
     ],
     "next_cursor": "0x53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e",
     "has_next_page": false
+  },
+  "id": 101
+}
+```
+
+### rooch_getBalance
+
+通过 `AccountAddress` 和 `CoinType` 获取账户余额。
+
+请求：
+
+```shell
+curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_getBalance",
+ "params":["0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069", "0x3::gas_coin::GasCoin"]
+}' | jq
+```
+
+响应：
+
+```shell
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "coin_type": "0x3::gas_coin::GasCoin",
+    "name": "Rooch Gas Coin",
+    "symbol": "RGC",
+    "decimals": 18,
+    "supply": "300000000000000000000",
+    "balance": "99999999999996463576"
   },
   "id": 101
 }
@@ -281,17 +315,6 @@ curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: app
 ```
 
 <++>
-请求：
-
-```shell
-<++>
-```
-
-响应：
-
-```shell
-<++>
-```
 
 <++>
 请求：
