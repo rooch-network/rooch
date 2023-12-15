@@ -947,36 +947,67 @@ curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: app
 }
 ```
 
-<++>
+### rooch_queryTransactions
 
-<++>
+通过交易过滤器查询交易索引器。
+
 请求：
 
 ```shell
-<++>
+curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_queryTransactions",
+ "params":[{"tx_hashes":["0x09ddacbcc565e8d2f7544f4dded01ba54b80d43a6df1995bf6b0d55a6d5b78a4"]}, null, "5", true]
+}' | jq
 ```
 
 响应：
 
 ```shell
-<++>
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "data": [
+      {
+        "transaction": {
+          "transaction_type": "rooch",
+          "sequence_number": 2,
+          "sender": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+          "action_type": "functioncall",
+          "action": {
+            "function_call": {
+              "function_id": "d9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::increase",
+              "ty_args": [],
+              "args": [
+                "0xbfc363a0afb2515ada06376ca4366f14c08b3d1021f23996bedd9109241aebd4"
+              ]
+            }
+          },
+          "raw": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a0300690200000000000000d7af34010000000000e1f5050000000001d9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a0300691a717569636b5f73746172745f6f626a6563745f636f756e74657208696e637265617365000120bfc363a0afb2515ada06376ca4366f14c08b3d1021f23996bedd9109241aebd4000000000000000061009e4f47e14a1b1e3f8bbd51bada6af1a76df543879aa5a920d142bc4e9dabc5027045ef855e5b8b2c547acc93644eb073143c2f3ba982a5e4e1031c6bc27d460eb538115d45ef7ceaff0f4918d23c5c84f0b35fa1791b4fc86b1391e84b40fdde"
+        },
+        "sequence_info": {
+          "tx_order": "933",
+          "tx_order_signature": {
+            "auth_validator_id": "0",
+            "payload": "0x0080461bbf41a5607c99a087222bedaf73b33d1f19e861aa9afe900d7e8826d10150b532d49062e87d71d166609a887df23ac3d44c2d8065bbd4ff4830d473530bca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
+          },
+          "tx_accumulator_root": "0xf41d37b7e0f58b483e14ecc35b42ab9bce765aa715608b1ca5f2116b83fa34cc"
+        },
+        "execution_info": {
+          "tx_hash": "0x09ddacbcc565e8d2f7544f4dded01ba54b80d43a6df1995bf6b0d55a6d5b78a4",
+          "state_root": "0x45ae059f9f9b104168f9127b5b48276155b21a61423e80b9ac499211f5f4274f",
+          "event_root": "0x45ae059f9f9b104168f9127b5b48276155b21a61423e80b9ac499211f5f4274f",
+          "gas_used": 15305,
+          "status": {
+            "type": "executed"
+          }
+        }
+      }
+    ],
+    "next_cursor": 933,
+    "has_next_page": false
+  },
+  "id": 101
+}
 ```
-
-<++>
-
-<++>
-
-<++>
-请求：
-
-```shell
-<++>
-```
-
-响应：
-
-```shell
-<++>
-```
-
-<++>
