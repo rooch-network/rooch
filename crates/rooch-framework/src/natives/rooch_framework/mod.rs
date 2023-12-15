@@ -4,5 +4,4 @@
 pub mod account;
 //TODO remove bcs;
 pub mod bcs;
-pub mod bitcoin;
 pub mod crypto;

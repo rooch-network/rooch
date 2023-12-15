@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pub const MUL: u64 = 1;
 
+#[macro_export]
 macro_rules! expand_get_impl_for_native_gas_params {
     ($params: ident $(.$field: ident)+, $map: ident, $prefix: literal, optional $key: literal) => {
         if let Some(val) = $map.get(&format!("{}.{}", $prefix, $key)) {
@@ -16,6 +17,7 @@ macro_rules! expand_get_impl_for_native_gas_params {
     };
 }
 
+#[macro_export]
 macro_rules! expand_get_for_native_gas_params {
     (test_only $(.$field: ident)+, $(optional $($dummy: ident)?)? $key: literal, $initial_val: expr, $param_ty: ty, $package_name: literal, $params: ident, $gas_schedule: ident) => {
         // TODO(Gas): this is a hack to work-around issue
@@ -40,6 +42,7 @@ macro_rules! expand_get_for_native_gas_params {
     }
 }
 
+#[macro_export]
 macro_rules! expand_set_for_native_gas_params {
     (test_only $(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr, $param_ty: ty, $package_name: literal, $params: ident) => {
         {
@@ -60,6 +63,7 @@ macro_rules! expand_set_for_native_gas_params {
     };
 }
 
+#[macro_export]
 macro_rules! expand_kv_for_native_gas_params {
     (test_only $(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr, $self: ident) => {
         #[cfg(feature = "testing")]
@@ -92,33 +96,34 @@ macro_rules! extract_path_for_native_gas_params {
     };
 }
 
+#[macro_export]
 macro_rules! define_gas_parameters_for_natives {
     ($param_ty: ty, $package_name: literal, [$([$($t: tt)*]),* $(,)?] $(, allow_unmapped = $allow_unmapped: expr)?) => {
-        impl crate::natives::gas_parameter::gas_member::FromOnChainGasSchedule for $param_ty {
+        impl $crate::natives::gas_parameter::gas_member::FromOnChainGasSchedule for $param_ty {
             fn from_on_chain_gas_schedule(gas_schedule: &std::collections::BTreeMap<String, u64>) -> Option<Self> {
                 let mut params = <$param_ty>::zeros();
 
                 $(
-                    crate::natives::gas_parameter::native::expand_get_for_native_gas_params!($($t)*, $param_ty, $package_name, params, gas_schedule);
+                    $crate::natives::gas_parameter::native::expand_get_for_native_gas_params!($($t)*, $param_ty, $package_name, params, gas_schedule);
                 )*
 
                 Some(params)
             }
         }
 
-        impl crate::natives::gas_parameter::gas_member::ToOnChainGasSchedule for $param_ty {
+        impl $crate::natives::gas_parameter::gas_member::ToOnChainGasSchedule for $param_ty {
             fn to_on_chain_gas_schedule(&self) -> Vec<(String, u64)> {
-                [$(crate::natives::gas_parameter::native::expand_kv_for_native_gas_params!($($t)*, self)),*]
+                [$($crate::natives::gas_parameter::native::expand_kv_for_native_gas_params!($($t)*, self)),*]
                     .into_iter().map(|(key, val)| (format!("{}.{}", $package_name, key), val)).collect()
             }
         }
 
-        impl crate::natives::gas_parameter::gas_member::InitialGasSchedule for $param_ty {
+        impl $crate::natives::gas_parameter::gas_member::InitialGasSchedule for $param_ty {
             fn initial() -> Self {
                 let mut params = <$param_ty>::zeros();
 
                 $(
-                    crate::natives::gas_parameter::native::expand_set_for_native_gas_params!($($t)*, $param_ty, $package_name, params);
+                    $crate::natives::gas_parameter::native::expand_set_for_native_gas_params!($($t)*, $param_ty, $package_name, params);
                 )*
 
                 params
@@ -145,8 +150,8 @@ pub(crate) use extract_key_for_native_gas_params;
 #[cfg(test)]
 pub(crate) use extract_path_for_native_gas_params;
 
-pub(crate) use define_gas_parameters_for_natives;
-pub(crate) use expand_get_for_native_gas_params;
-pub(crate) use expand_get_impl_for_native_gas_params;
-pub(crate) use expand_kv_for_native_gas_params;
-pub(crate) use expand_set_for_native_gas_params;
+pub use define_gas_parameters_for_natives;
+pub use expand_get_for_native_gas_params;
+pub use expand_get_impl_for_native_gas_params;
+pub use expand_kv_for_native_gas_params;
+pub use expand_set_for_native_gas_params;

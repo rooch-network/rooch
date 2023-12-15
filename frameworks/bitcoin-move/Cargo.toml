@@ -55,3 +55,4 @@ moveos-stdlib-builder = { workspace = true }
 moveos = { workspace = true }
 
 rooch-types = { workspace = true }
+rooch-framework ={ workspace = true }

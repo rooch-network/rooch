@@ -46,7 +46,8 @@ pub struct RoochGenesis {
     pub config_for_test: MoveOSConfig,
     //TODO we need to add gas parameters to the GenesisPackage
     //How to serialize the gas parameters?
-    pub gas_params: rooch_framework::natives::GasParameters,
+    pub rooch_framework_gas_params: rooch_framework::natives::GasParameters,
+    pub bitcoin_move_gas_params: bitcoin_move::natives::GasParameters,
     pub genesis_package: GenesisPackage,
 }
 
@@ -69,13 +70,15 @@ impl RoochGenesis {
             vm_config: VMConfig::default(),
         };
 
-        let gas_params = rooch_framework::natives::GasParameters::zeros();
+        let rooch_framework_gas_params = rooch_framework::natives::GasParameters::zeros();
+        let bitcoin_move_gas_params = bitcoin_move::natives::GasParameters::zeros();
         let genesis_package = GenesisPackage::build(genesis_ctx, option)?;
 
         Ok(RoochGenesis {
             config,
             config_for_test,
-            gas_params,
+            rooch_framework_gas_params,
+            bitcoin_move_gas_params,
             genesis_package,
         })
     }
@@ -93,7 +96,12 @@ impl RoochGenesis {
     }
 
     pub fn all_natives(&self) -> Vec<(AccountAddress, Identifier, Identifier, NativeFunction)> {
-        rooch_framework::natives::all_natives(self.gas_params.clone())
+        let mut rooch_framework_native_tables =
+            rooch_framework::natives::all_natives(self.rooch_framework_gas_params.clone());
+        let bitcoin_move_native_table =
+            bitcoin_move::natives::all_natives(self.bitcoin_move_gas_params.clone());
+        rooch_framework_native_tables.extend(bitcoin_move_native_table);
+        rooch_framework_native_tables
     }
 
     pub fn genesis_package_hash(&self) -> H256 {
@@ -272,7 +280,7 @@ mod tests {
         let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
         let mut moveos = MoveOS::new(
             moveos_store,
-            all_natives(genesis.gas_params),
+            all_natives(genesis.rooch_framework_gas_params),
             genesis.config,
             vec![],
             vec![],

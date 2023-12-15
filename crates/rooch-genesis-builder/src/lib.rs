@@ -53,8 +53,7 @@ static STDLIB_BUILD_CONFIGS: Lazy<Vec<StdlibBuildConfig>> = Lazy::new(|| {
         StdlibBuildConfig {
             path: bitcoin_move_path.clone(),
             error_prefix: "Error".to_string(),
-            error_code_map_output_file: generated_dir
-                .join("bitcoin_move_error_description.errmap"),
+            error_code_map_output_file: generated_dir.join("bitcoin_move_error_description.errmap"),
             document_template: bitcoin_move_path.join("doc_template/README.md"),
             document_output_directory: bitcoin_move_path.join("doc"),
             build_config: BuildConfig::default(),
