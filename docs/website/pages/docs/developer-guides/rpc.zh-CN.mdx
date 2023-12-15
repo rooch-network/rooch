@@ -827,6 +827,126 @@ curl --location --header 'Content-Type: application/json' --data '{
 }
 ```
 
+### rooch_queryGlobalStates
+
+通过状态过滤器查询全局状态索引器。
+
+过滤器可以有 4 种方式设置：
+
+- `object_type` + `owner`
+- `object_type`
+- `owner`
+- `object_id`
+
+下面演示使用 `owner` 来查询。
+
+请求：
+
+```shell
+curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_queryGlobalStates",
+ "params":[{"owner":"0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069"}, null, "5", false]
+}' | jq
+```
+
+响应：
+
+```shell
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "data": [
+      {
+        "object_id": "0x3b7fcb00060dc80466da1185345b80f896a327100a7911f2fe480b29b22d59f8",
+        "owner": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "flag": 0,
+        "value": {
+          "abilities": 8,
+          "type": "0x3::coin_store::CoinStore<0x3::gas_coin::GasCoin>",
+          "value": {
+            "balance": {
+              "abilities": 4,
+              "type": "0x3::coin_store::Balance",
+              "value": {
+                "value": "99999999999997204086"
+              }
+            },
+            "coin_type": "0000000000000000000000000000000000000000000000000000000000000003::gas_coin::GasCoin",
+            "frozen": false
+          }
+        },
+        "object_type": "0x3::coin_store::CoinStore",
+        "key_type": null,
+        "size": 0,
+        "tx_order": 423,
+        "state_index": 2,
+        "created_at": 0,
+        "updated_at": 0
+      },
+      {
+        "object_id": "0xbfc363a0afb2515ada06376ca4366f14c08b3d1021f23996bedd9109241aebd4",
+        "owner": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "flag": 0,
+        "value": {
+          "abilities": 12,
+          "type": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::Counter",
+          "value": {
+            "count_value": "123"
+          }
+        },
+        "object_type": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::Counter",
+        "key_type": null,
+        "size": 0,
+        "tx_order": 423,
+        "state_index": 3,
+        "created_at": 0,
+        "updated_at": 0
+      },
+      {
+        "object_id": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "owner": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "flag": 0,
+        "value": {
+          "abilities": 8,
+          "type": "0x2::account_storage::AccountStorage",
+          "value": {
+            "modules": {
+              "abilities": 4,
+              "type": "0x2::table::Table<0x1::string::String, 0x2::move_module::MoveModule>",
+              "value": {
+                "handle": "0xc8f877a25f28d6060b5b8f34e83f86aa69308c4bfffc5a124130e4c2e980cd54"
+              }
+            },
+            "resources": {
+              "abilities": 4,
+              "type": "0x2::type_table::TypeTable",
+              "value": {
+                "handle": "0x1b46cf25c0aedc8a4249e312dbd4cec5e37009014bffdd193e748cf37f5eb278"
+              }
+            }
+          }
+        },
+        "object_type": "0x2::account_storage::AccountStorage",
+        "key_type": null,
+        "size": 0,
+        "tx_order": 423,
+        "state_index": 8,
+        "created_at": 0,
+        "updated_at": 0
+      }
+    ],
+    "next_cursor": {
+      "tx_order": 423,
+      "state_index": 8
+    },
+    "has_next_page": false
+  },
+  "id": 101
+}
+```
+
 <++>
 
 <++>
@@ -841,6 +961,8 @@ curl --location --header 'Content-Type: application/json' --data '{
 ```shell
 <++>
 ```
+
+<++>
 
 <++>
 
