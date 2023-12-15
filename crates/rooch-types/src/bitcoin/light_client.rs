@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::bitcoin_types::Header;
-use crate::{addresses::ROOCH_FRAMEWORK_ADDRESS, into_address::IntoAddress};
+use super::types::Header;
+use crate::{addresses::BITCOIN_MOVE_ADDRESS, into_address::IntoAddress};
 use anyhow::Result;
 use bitcoin::{BlockHash, Txid};
 use move_core_types::{
@@ -21,7 +21,7 @@ use moveos_types::{
 };
 use serde::{Deserialize, Serialize};
 
-pub const MODULE_NAME: &IdentStr = ident_str!("bitcoin_light_client");
+pub const MODULE_NAME: &IdentStr = ident_str!("light_client");
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BitcoinBlockStore {
@@ -43,7 +43,7 @@ impl BitcoinBlockStore {
 impl MoveStructType for BitcoinBlockStore {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("BitcoinBlockStore");
-    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
 }
 
 impl MoveStructState for BitcoinBlockStore {
@@ -74,7 +74,7 @@ impl BitcoinUTXOStore {
 impl MoveStructType for BitcoinUTXOStore {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("BitcoinUTXOStore");
-    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
 }
 
 impl MoveStructState for BitcoinUTXOStore {
@@ -236,7 +236,7 @@ impl<'a> BitcoinLightClientModule<'a> {
 
     pub fn create_submit_new_block_call(block_height: u64, block: bitcoin::Block) -> FunctionCall {
         let block_hash = block.block_hash();
-        let block = crate::framework::bitcoin_types::Block::from(block);
+        let block = crate::bitcoin::types::Block::from(block);
         Self::create_function_call(
             Self::SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME,
             vec![],
@@ -266,7 +266,7 @@ impl<'a> BitcoinLightClientModule<'a> {
 
 impl<'a> ModuleBinding<'a> for BitcoinLightClientModule<'a> {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const MODULE_ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
 
     fn new(caller: &'a impl MoveFunctionCaller) -> Self
     where

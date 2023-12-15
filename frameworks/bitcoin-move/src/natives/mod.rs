@@ -8,8 +8,8 @@ use rooch_framework::natives::gas_parameter::gas_member::InitialGasSchedule;
 use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
 use std::collections::BTreeMap;
 
-pub mod ord;
 mod gas_parameter;
+pub mod ord;
 
 #[derive(Debug, Clone)]
 pub struct GasParameters {

@@ -234,7 +234,7 @@ module bitcoin_move::types{
 
     public fun txout_object_address(self: &TxOut) : address {
         if (bitcoin_address::is_empty(&self.recipient_address)) {
-            @rooch_framework
+            @bitcoin_move
         }else{
             multichain_address::mapping_to_rooch_address(multichain_address::from_bitcoin(self.recipient_address))
         }

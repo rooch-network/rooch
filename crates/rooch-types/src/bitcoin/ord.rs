@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::bitcoin_types::Transaction;
-use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
+use super::types::Transaction;
+use crate::addresses::BITCOIN_MOVE_ADDRESS;
 use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
@@ -35,7 +35,7 @@ pub struct InscriptionRecord {
 }
 
 impl MoveStructType for InscriptionRecord {
-    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("InscriptionRecord");
 }
@@ -76,7 +76,7 @@ impl InscriptionStore {
 impl MoveStructType for InscriptionStore {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("InscriptionStore");
-    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
 }
 
 impl MoveStructState for InscriptionStore {
@@ -120,7 +120,7 @@ impl<'a> OrdModule<'a> {
 
 impl<'a> ModuleBinding<'a> for OrdModule<'a> {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const MODULE_ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
 
     fn new(caller: &'a impl MoveFunctionCaller) -> Self
     where

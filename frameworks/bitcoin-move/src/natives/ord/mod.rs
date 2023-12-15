@@ -25,7 +25,7 @@ use move_vm_types::{
 };
 use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
 use moveos_types::state::{MoveState, MoveType};
-use rooch_types::framework::bitcoin_types::Witness;
+use rooch_types::bitcoin::types::Witness;
 use smallvec::smallvec;
 use std::collections::VecDeque;
 use tracing::error;
@@ -65,14 +65,14 @@ pub(crate) fn native_from_witness(
     let bitcoin_witness = bitcoin::Witness::from_slice(witness.witness.as_slice());
     let inscriptions = from_witness(&bitcoin_witness);
     let inscription_vm_type = context
-        .load_type(&rooch_types::framework::ord::InscriptionRecord::type_tag())
+        .load_type(&rooch_types::bitcoin::ord::InscriptionRecord::type_tag())
         .map_err(|e| e.to_partial())?;
     let val = Vector::pack(
         &inscription_vm_type,
         inscriptions
             .into_iter()
             .map(|i| {
-                Into::<rooch_types::framework::ord::InscriptionRecord>::into(i).to_runtime_value()
+                Into::<rooch_types::bitcoin::ord::InscriptionRecord>::into(i).to_runtime_value()
             })
             .collect::<Vec<_>>(),
     )?;

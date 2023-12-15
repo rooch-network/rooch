@@ -33,9 +33,9 @@ pub struct Inscription {
     pub unrecognized_even_field: bool,
 }
 
-impl From<Inscription> for rooch_types::framework::ord::InscriptionRecord {
+impl From<Inscription> for rooch_types::bitcoin::ord::InscriptionRecord {
     fn from(val: Inscription) -> Self {
-        rooch_types::framework::ord::InscriptionRecord {
+        rooch_types::bitcoin::ord::InscriptionRecord {
             body: val.body.into(),
             content_encoding: val.content_encoding.into(),
             content_type: val.content_type.into(),

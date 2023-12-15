@@ -1,9 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    address::BitcoinAddress, addresses::ROOCH_FRAMEWORK_ADDRESS, into_address::IntoAddress,
-};
+use crate::{address::BitcoinAddress, addresses::BITCOIN_MOVE_ADDRESS, into_address::IntoAddress};
 use anyhow::Result;
 use bitcoin::{hashes::Hash, BlockHash};
 use bitcoincore_rpc::bitcoincore_rpc_json::GetBlockHeaderResult;
@@ -11,7 +9,7 @@ use move_core_types::{account_address::AccountAddress, ident_str, identifier::Id
 use moveos_types::state::{MoveState, MoveStructState, MoveStructType};
 use serde::{Deserialize, Serialize};
 
-pub const MODULE_NAME: &IdentStr = ident_str!("bitcoin_types");
+pub const MODULE_NAME: &IdentStr = ident_str!("types");
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Block {
@@ -100,7 +98,7 @@ impl TryFrom<GetBlockHeaderResult> for Header {
 impl MoveStructType for Header {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("Header");
-    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
 }
 
 impl MoveStructState for Header {
@@ -151,7 +149,7 @@ impl From<bitcoin::Transaction> for Transaction {
 impl MoveStructType for Transaction {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("Transaction");
-    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
 }
 
 impl MoveStructState for Transaction {
@@ -201,7 +199,7 @@ impl From<bitcoin::TxIn> for TxIn {
 impl MoveStructType for TxIn {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("TxIn");
-    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
 }
 
 impl MoveStructState for TxIn {
@@ -231,7 +229,7 @@ impl From<bitcoin::Witness> for Witness {
 impl MoveStructType for Witness {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("Witness");
-    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
 }
 
 impl MoveStructState for Witness {
@@ -261,7 +259,7 @@ impl From<bitcoin::OutPoint> for OutPoint {
 impl MoveStructType for OutPoint {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("OutPoint");
-    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
 }
 
 impl MoveStructState for OutPoint {
@@ -289,7 +287,7 @@ impl From<bitcoin::ScriptBuf> for ScriptBuf {
 impl MoveStructType for ScriptBuf {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("ScriptBuf");
-    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
 }
 
 impl MoveStructState for ScriptBuf {
@@ -325,7 +323,7 @@ impl From<bitcoin::TxOut> for TxOut {
 impl MoveStructType for TxOut {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("TxOut");
-    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
 }
 
 impl MoveStructState for TxOut {
