@@ -9,9 +9,6 @@
 -  [Function `assert_rooch_genesis`](#0x3_core_addresses_assert_rooch_genesis)
 -  [Function `assert_rooch_genesis_address`](#0x3_core_addresses_assert_rooch_genesis_address)
 -  [Function `is_rooch_genesis_address`](#0x3_core_addresses_is_rooch_genesis_address)
--  [Function `assert_rooch_association`](#0x3_core_addresses_assert_rooch_association)
--  [Function `assert_rooch_association_address`](#0x3_core_addresses_assert_rooch_association_address)
--  [Function `is_rooch_association_address`](#0x3_core_addresses_is_rooch_association_address)
 -  [Function `assert_rooch_framework`](#0x3_core_addresses_assert_rooch_framework)
 -  [Function `assert_framework_reserved_address`](#0x3_core_addresses_assert_framework_reserved_address)
 -  [Function `assert_framework_reserved`](#0x3_core_addresses_assert_framework_reserved)
@@ -113,39 +110,6 @@ The operation can only be performed by the VM
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_is_rooch_genesis_address">is_rooch_genesis_address</a>(addr: <b>address</b>): bool
-</code></pre>
-
-
-
-<a name="0x3_core_addresses_assert_rooch_association"></a>
-
-## Function `assert_rooch_association`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_association">assert_rooch_association</a>(<a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
-</code></pre>
-
-
-
-<a name="0x3_core_addresses_assert_rooch_association_address"></a>
-
-## Function `assert_rooch_association_address`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_assert_rooch_association_address">assert_rooch_association_address</a>(addr: <b>address</b>)
-</code></pre>
-
-
-
-<a name="0x3_core_addresses_is_rooch_association_address"></a>
-
-## Function `is_rooch_association_address`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="core_addresses.md#0x3_core_addresses_is_rooch_association_address">is_rooch_association_address</a>(addr: <b>address</b>): bool
 </code></pre>
 
 

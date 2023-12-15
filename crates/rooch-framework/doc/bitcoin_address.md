@@ -7,7 +7,9 @@
 
 -  [Struct `BitcoinAddress`](#0x3_bitcoin_address_BitcoinAddress)
 -  [Constants](#@Constants_0)
--  [Function `from_script`](#0x3_bitcoin_address_from_script)
+-  [Function `new_p2pkh`](#0x3_bitcoin_address_new_p2pkh)
+-  [Function `new_p2sh`](#0x3_bitcoin_address_new_p2sh)
+-  [Function `new_witness_program`](#0x3_bitcoin_address_new_witness_program)
 -  [Function `from_bytes`](#0x3_bitcoin_address_from_bytes)
 -  [Function `is_p2pkh`](#0x3_bitcoin_address_is_p2pkh)
 -  [Function `is_p2sh`](#0x3_bitcoin_address_is_p2sh)
@@ -18,10 +20,8 @@
 -  [Function `to_bech32`](#0x3_bitcoin_address_to_bech32)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x1::string</a>;
+<pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf">0x3::bitcoin_script_buf</a>;
 </code></pre>
 
 
@@ -126,14 +126,35 @@ We just keep the raw bytes of the address and do care about the network.
 
 
 
-<a name="0x3_bitcoin_address_from_script"></a>
+<a name="0x3_bitcoin_address_new_p2pkh"></a>
 
-## Function `from_script`
-
-from_script returns a BitcoinAddress from a ScriptBuf.
+## Function `new_p2pkh`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_from_script">from_script</a>(s: &<a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf_ScriptBuf">bitcoin_script_buf::ScriptBuf</a>): <a href="_Option">option::Option</a>&lt;<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>&gt;
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_p2pkh">new_p2pkh</a>(pubkey_hash: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_new_p2sh"></a>
+
+## Function `new_p2sh`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_p2sh">new_p2sh</a>(script_hash: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_new_witness_program"></a>
+
+## Function `new_witness_program`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_new_witness_program">new_witness_program</a>(program: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
 </code></pre>
 
 

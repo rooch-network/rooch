@@ -791,6 +791,48 @@ dependencies = [
 ]
 
 [[package]]
+name = "bitcoin-move"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "better_any",
+ "bitcoin 0.31.0",
+ "bitcoin-bech32",
+ "brotli",
+ "bs58 0.5.0",
+ "fastcrypto",
+ "hex",
+ "http",
+ "linked-hash-map",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-bytecode-verifier",
+ "move-command-line-common",
+ "move-core-types",
+ "move-package",
+ "move-prover",
+ "move-stdlib",
+ "move-unit-test",
+ "move-vm-runtime",
+ "move-vm-test-utils",
+ "move-vm-types",
+ "moveos",
+ "moveos-stdlib",
+ "moveos-stdlib-builder",
+ "moveos-types",
+ "moveos-verifier",
+ "once_cell",
+ "rooch-types",
+ "secp256k1 0.28.0",
+ "serde 1.0.193",
+ "serde_bytes",
+ "sha3 0.9.1",
+ "smallvec 1.11.0",
+ "tracing",
+]
+
+[[package]]
 name = "bitcoin-private"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
