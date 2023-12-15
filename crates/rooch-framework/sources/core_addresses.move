@@ -28,18 +28,6 @@ module rooch_framework::core_addresses {
         addr == genesis_address()
     }
 
-    public fun assert_rooch_association(account: &signer) {
-        assert_rooch_association_address(signer::address_of(account))
-    }
-
-    public fun assert_rooch_association_address(addr: address) {
-        assert!(is_rooch_association_address(addr), ErrorNotAssociationAddress)
-    }
-
-    public fun is_rooch_association_address(addr: address): bool {
-        addr == @rooch_association
-    }
-
     public fun assert_rooch_framework(account: &signer) {
         assert!(
             is_rooch_framework_address(signer::address_of(account)),

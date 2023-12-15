@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module rooch_framework::brc20 {
+module bitcoin_move::brc20 {
     use std::option::{Self, Option};
     use std::string::{Self, String};
     use std::vector;
@@ -13,10 +13,8 @@ module rooch_framework::brc20 {
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::string_utils;
     use rooch_framework::bitcoin_address::{BitcoinAddress};
-    use rooch_framework::ord;
-    use rooch_framework::bitcoin_types::{Transaction};
-
-    friend rooch_framework::genesis;
+    use bitcoin_move::ord;
+    use bitcoin_move::types::{Transaction};
 
     //TODO should we register the BRC20 as a CoinInfo?
     struct BRC20CoinInfo has store{

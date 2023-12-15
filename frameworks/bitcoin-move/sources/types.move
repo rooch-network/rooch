@@ -1,11 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module rooch_framework::bitcoin_types{
+module bitcoin_move::types{
     use std::vector;
     use std::option::{Self, Option};
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
-    use rooch_framework::bitcoin_script_buf::{Self, ScriptBuf};
+    use bitcoin_move::bitcoin_script_buf::{Self, ScriptBuf};
     use rooch_framework::multichain_address;
 
     const LOCK_TIME_THRESHOLD: u32 = 500_000_000;

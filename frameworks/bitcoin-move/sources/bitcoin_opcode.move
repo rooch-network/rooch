@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// https://github.com/rust-bitcoin/rust-bitcoin/blob/71d92bdbb91693b7882f8cd4a7e874b4e6f9eb48/bitcoin/src/blockdata/opcodes.rs#L81
-module rooch_framework::bitcoin_opcode{
+module bitcoin_move::bitcoin_opcode{
 
         
     /// Push an empty array onto the stack.

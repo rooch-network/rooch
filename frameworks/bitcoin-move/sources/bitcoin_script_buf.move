@@ -1,6 +1,8 @@
-module rooch_framework::bitcoin_script_buf{
+module bitcoin_move::bitcoin_script_buf{
     use std::vector;
-    use rooch_framework::bitcoin_opcode;
+    use std::option::{Self, Option};
+    use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
+    use bitcoin_move::bitcoin_opcode;
 
     #[data_struct]
     struct ScriptBuf has store, copy, drop {
@@ -60,6 +62,23 @@ module rooch_framework::bitcoin_script_buf{
     /// Get the witness program from a witness program script.
     public fun witness_program(self: &ScriptBuf): vector<u8>{
         sub_vector(&self.bytes, 2, vector::length(&self.bytes))
+    }
+
+     /// try to get a BitcoinAddress from a ScriptBuf.
+    public fun get_address(s: &ScriptBuf): Option<BitcoinAddress> {
+         //TODO sync the implementation from rust.
+        if(is_p2pkh(s)){
+            let pubkey_hash = p2pkh_pubkey_hash(s);
+            option::some(bitcoin_address::new_p2pkh(pubkey_hash))
+        }else if(is_p2sh(s)){
+            let script_hash = p2sh_script_hash(s);
+            option::some(bitcoin_address::new_p2sh(script_hash))
+        }else if(is_witness_program(s)){
+            let program = witness_program(s);
+            option::some(bitcoin_address::new_witness_program(program))
+        }else{
+            option::none()
+        }
     }
 
     //TODO put this function in a more general module

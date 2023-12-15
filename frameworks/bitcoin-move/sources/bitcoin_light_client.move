@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module rooch_framework::bitcoin_light_client{
+module bitcoin_move::bitcoin_light_client{
 
     use std::option::{Self, Option};
     use std::vector;
@@ -14,13 +14,14 @@ module rooch_framework::bitcoin_light_client{
     use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::table_vec::{Self, TableVec};
     use moveos_std::simple_multimap;
+    use moveos_std::signer;
     use rooch_framework::timestamp;
-    use rooch_framework::bitcoin_types::{Self, Block, Header, Transaction, OutPoint};    
-    use rooch_framework::ord::{Self, Inscription};
-    use rooch_framework::utxo::{Self, UTXOSeal};
+    use bitcoin_move::types::{Self, Block, Header, Transaction, OutPoint};    
+    use bitcoin_move::ord::{Self, Inscription};
+    use bitcoin_move::utxo::{Self, UTXOSeal};
     
 
-    friend rooch_framework::genesis;
+    friend bitcoin_move::genesis;
 
     const ErrorBlockNotFound:u64 = 1;
     const ErrorBlockAlreadyProcessed:u64 = 2;
@@ -81,12 +82,12 @@ module rooch_framework::bitcoin_light_client{
         let block = bcs::from_bytes<Block>(block_bytes);
         validate_block(btc_block_store, block_height, block_hash, &block);
         progress_txs(btc_block_store, &block); 
-        let block_header = bitcoin_types::header(&block);
+        let block_header = types::header(&block);
 
         if(table::contains(&btc_block_store.height_to_hash, block_height)){
             //TODO handle reorg
         };
-        let time = bitcoin_types::time(block_header);
+        let time = types::time(block_header);
         table::add(&mut btc_block_store.height_to_hash, block_height, block_hash);
         table::add(&mut btc_block_store.hash_to_height, block_hash, block_height);
         table::add(&mut btc_block_store.blocks, block_hash, *block_header);
@@ -103,7 +104,7 @@ module rooch_framework::bitcoin_light_client{
     }
 
     fun progress_txs(btc_block_store: &mut BitcoinBlockStore, block:&Block){
-        let txdata = bitcoin_types::txdata(block);
+        let txdata = types::txdata(block);
         let idx = 0;
         while(idx < vector::length(txdata)){
             let tx = vector::borrow(txdata, idx);
@@ -113,19 +114,19 @@ module rooch_framework::bitcoin_light_client{
     }
 
     fun progress_tx(btc_block_store: &mut BitcoinBlockStore, tx: &Transaction){
-        let txid = bitcoin_types::tx_id(tx);
+        let txid = types::tx_id(tx);
         table::add(&mut btc_block_store.txs, txid, *tx);
         table_vec::push_back(&mut btc_block_store.tx_ids, txid);
     }
 
     fun progress_utxo(ctx: &mut Context, btc_utxo_store: &mut BitcoinUTXOStore, tx: &Transaction){
-        let txid = bitcoin_types::tx_id(tx);
-        let txinput = bitcoin_types::tx_input(tx);
+        let txid = types::tx_id(tx);
+        let txinput = types::tx_input(tx);
         let idx = 0;
         let output_seals = simple_multimap::new<u64, UTXOSeal>();
         while(idx < vector::length(txinput)){
             let txin = vector::borrow(txinput, idx);
-            let outpoint = *bitcoin_types::txin_previous_output(txin);
+            let outpoint = *types::txin_previous_output(txin);
             if(table::contains(&btc_utxo_store.utxo, outpoint)){
                 let object_id = table::remove(&mut btc_utxo_store.utxo, outpoint);
                 let utxo_obj = utxo::take(ctx, object_id);
@@ -163,14 +164,14 @@ module rooch_framework::bitcoin_light_client{
                 idx = idx + 1;
             };
         };
-        let txoutput = bitcoin_types::tx_output(tx);
+        let txoutput = types::tx_output(tx);
         let idx = 0;
         
         while(idx < vector::length(txoutput)){
             let txout = vector::borrow(txoutput, idx);
             let vout = (idx as u32);
-            let outpoint = bitcoin_types::new_outpoint(txid, vout);
-            let value = bitcoin_types::txout_value(txout);
+            let outpoint = types::new_outpoint(txid, vout);
+            let value = types::txout_value(txout);
             let utxo_obj = utxo::new(ctx, txid, vout, value);
             let utxo = object::borrow_mut(&mut utxo_obj);
             if(simple_multimap::contains_key(&output_seals, &idx)){
@@ -185,7 +186,7 @@ module rooch_framework::bitcoin_light_client{
             };
             let object_id = object::id(&utxo_obj);
             table::add(&mut btc_utxo_store.utxo, outpoint, object_id);
-            let owner_address = bitcoin_types::txout_object_address(txout);
+            let owner_address = types::txout_object_address(txout);
             utxo::transfer(utxo_obj, owner_address); 
             idx = idx + 1;
         }
@@ -197,7 +198,8 @@ module rooch_framework::bitcoin_light_client{
         let time = process_block(btc_block_store_obj, block_height, block_hash, block_bytes);
 
         let timestamp_seconds = (time as u64);
-        timestamp::try_update_global_time(ctx, timestamp::seconds_to_milliseconds(timestamp_seconds));      
+        let module_signer = signer::module_signer<BitcoinBlockStore>();
+        timestamp::try_update_global_time(ctx, &module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));      
     }
 
     public fun remaining_tx_count(btc_block_store_obj: &Object<BitcoinBlockStore>, btc_utxo_store_obj: &Object<BitcoinUTXOStore>): u64{
@@ -289,7 +291,7 @@ module rooch_framework::bitcoin_light_client{
 
     /// Get UTXO via txid and vout
     public fun get_utxo(btc_utxo_store_obj: &Object<BitcoinUTXOStore>, txid: address, vout: u32): Option<ObjectID>{
-        let outpoint = bitcoin_types::new_outpoint(txid, vout);
+        let outpoint = types::new_outpoint(txid, vout);
         let btc_utxo_store = object::borrow(btc_utxo_store_obj);
         if(table::contains(&btc_utxo_store.utxo, outpoint)){
             option::some(*table::borrow(&btc_utxo_store.utxo, outpoint))

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module rooch_framework::ord {
+module bitcoin_move::ord {
     use std::vector;
     use std::option::{Self, Option};
     use std::string::{Self, String};
@@ -9,10 +9,8 @@ module rooch_framework::ord {
     use moveos_std::event;
     use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, ObjectID, Object};
-    use rooch_framework::bitcoin_types::{Self, Witness, Transaction};
-    use rooch_framework::utxo::{Self, UTXO, SealOut};
-
-    friend rooch_framework::genesis;
+    use bitcoin_move::types::{Self, Witness, Transaction};
+    use bitcoin_move::utxo::{Self, UTXO, SealOut};
 
     struct InscriptionId has store, copy, drop {
         txid: address,
@@ -74,11 +72,11 @@ module rooch_framework::ord {
         if(vector::is_empty(&seal_object_ids)){
             return seal_outs
         };
-        let outputs = bitcoin_types::tx_output(tx);
+        let outputs = types::tx_output(tx);
         //TODO we should track the Inscription via SatPoint, but now we just use the first output for simplicity.
         let output_index = 0;
         let first_output = vector::borrow(outputs, output_index);
-        let address = bitcoin_types::txout_object_address(first_output);
+        let address = types::txout_object_address(first_output);
         let j = 0;
         let objects_len = vector::length(&seal_object_ids);
         while(j < objects_len){
@@ -92,7 +90,7 @@ module rooch_framework::ord {
     }
 
     public fun progress_transaction(ctx: &mut Context, tx: &Transaction): vector<SealOut>{
-        let tx_id = bitcoin_types::tx_id(tx);
+        let tx_id = types::tx_id(tx);
         let output_seals = vector::empty();
 
         let inscription_records = from_transaction(tx);
@@ -101,7 +99,7 @@ module rooch_framework::ord {
             return output_seals
         };
 
-        let tx_outputs = bitcoin_types::tx_output(tx);
+        let tx_outputs = types::tx_output(tx);
         let output_len = vector::length(tx_outputs);
 
         // ord has three mode for Inscribe:   SameSat,SeparateOutputs,SharedOutput,
@@ -122,7 +120,7 @@ module rooch_framework::ord {
                 0  
             };
             let output = vector::borrow(tx_outputs, output_index);
-            let address = bitcoin_types::txout_object_address(output);
+            let address = types::txout_object_address(output);
             object::transfer_extend(inscription_obj, address);
             vector::push_back(&mut output_seals, utxo::new_seal_out(output_index, object_id));
             idx = idx + 1;
@@ -225,14 +223,14 @@ module rooch_framework::ord {
     }
 
     public fun from_transaction(tx: &Transaction): vector<InscriptionRecord>{
-        let tx_id = bitcoin_types::tx_id(tx);
+        let tx_id = types::tx_id(tx);
         let inscription_records = vector::empty();
-        let inputs = bitcoin_types::tx_input(tx);
+        let inputs = types::tx_input(tx);
         let len = vector::length(inputs);
         let idx = 0;
         while(idx < len){
             let input = vector::borrow(inputs, idx);
-            let witness = bitcoin_types::txin_witness(input);
+            let witness = types::txin_witness(input);
             let inscription_records_from_witness = validate_inscription_records(tx_id, idx, from_witness(witness));
             if(vector::length(&inscription_records_from_witness) > 0){
                 vector::append(&mut inscription_records, inscription_records_from_witness);

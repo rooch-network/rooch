@@ -3,8 +3,6 @@
 
 module rooch_framework::bitcoin_address {
     use std::vector;
-    use std::option::{Self, Option};
-    use rooch_framework::bitcoin_script_buf::{Self, ScriptBuf};
 
     friend rooch_framework::multichain_address;
 
@@ -32,10 +30,9 @@ module rooch_framework::bitcoin_address {
         bytes: vector<u8>,
     }
 
-    fun new_p2pkh(pubkey_hash: vector<u8>): BitcoinAddress{
+    public fun new_p2pkh(pubkey_hash: vector<u8>): BitcoinAddress{
         assert!(vector::length(&pubkey_hash) == PUBKEY_HASH_LEN, ErrorAddressBytesLen);
-        //TDDO do we need to distinguish between mainnet and testnet?
-        //OR find a way to define same module for different networks
+        //we do not distinguish between mainnet and testnet in Move
         let bytes = vector::singleton<u8>(P2PKH_ADDR_DECIMAL_PREFIX_MAIN);
         vector::append(&mut bytes, pubkey_hash);
         BitcoinAddress {
@@ -43,7 +40,7 @@ module rooch_framework::bitcoin_address {
         }
     }
 
-    fun new_p2sh(script_hash: vector<u8>): BitcoinAddress{
+    public fun new_p2sh(script_hash: vector<u8>): BitcoinAddress{
         assert!(vector::length(&script_hash) == SCRIPT_HASH_LEN, ErrorAddressBytesLen);
         let bytes = vector::singleton<u8>(P2SH_ADDR_DECIMAL_PREFIX_MAIN);
         vector::append(&mut bytes, script_hash);
@@ -52,25 +49,9 @@ module rooch_framework::bitcoin_address {
         }
     }
 
-    fun new_witness_program(program: vector<u8>): BitcoinAddress{
+    public fun new_witness_program(program: vector<u8>): BitcoinAddress{
         BitcoinAddress {
             bytes: program,
-        }
-    }
-
-    /// from_script returns a BitcoinAddress from a ScriptBuf.
-    public fun from_script(s: &ScriptBuf): Option<BitcoinAddress> {
-        if(bitcoin_script_buf::is_p2pkh(s)){
-            let pubkey_hash = bitcoin_script_buf::p2pkh_pubkey_hash(s);
-            option::some(new_p2pkh(pubkey_hash))
-        }else if(bitcoin_script_buf::is_p2sh(s)){
-            let script_hash = bitcoin_script_buf::p2sh_script_hash(s);
-            option::some(new_p2sh(script_hash))
-        }else if(bitcoin_script_buf::is_witness_program(s)){
-            let program = bitcoin_script_buf::witness_program(s);
-            option::some(new_witness_program(program))
-        }else{
-            option::none()
         }
     }
 

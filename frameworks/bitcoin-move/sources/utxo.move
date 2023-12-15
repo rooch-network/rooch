@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module rooch_framework::utxo{
+module bitcoin_move::utxo{
     use std::vector;
     use std::string::String;
     use moveos_std::context::{Self, Context};
@@ -9,7 +9,7 @@ module rooch_framework::utxo{
     use moveos_std::simple_multimap::{Self, SimpleMultiMap};
     use moveos_std::type_info;
 
-    friend rooch_framework::bitcoin_light_client;
+    friend bitcoin_move::bitcoin_light_client;
 
     /// The UTXO Object
     struct UTXO has key {
