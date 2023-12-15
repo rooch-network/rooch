@@ -250,24 +250,4 @@ module rooch_framework::ord {
     native fun from_witness(witness: &Witness): vector<InscriptionRecord>;
 
 
-
-    #[test]
-    fun test_inscription(){
-        let tx_bytes = x"3d33603763560b82824746834918f6e309b051416a288e06a671185f00443ca0020000000000000001361cc743a923abc1db73f4fed4d0778cc8ccc092cb20f1c66cada177818e55b20000000000fdffffff03401500c4f407f66ec47c92e1daf34c46f2b52837819119b696e343385b6dba27682dd89f9e4d18354ce0f4a4200ddab8420457392702e1e0b6d51803d25d2bf2647f2016c3a3f18eb4efd24274941ba02c899d151b0473a1bad3512423cbe1b0648ea9ac0063036f7264010118746578742f706c61696e3b636861727365743d7574662d3800397b2270223a226272632d3230222c226f70223a227472616e73666572222c227469636b223a226f726469222c22616d74223a2231303030227d6821c102a58d972468a33a79350cf24cb991f28adbbe3e64e88ded5f58f558fff2b673022202000000000000225120e5053d2151d14399a3a4825740e14deae6f984e990e0a6872df065a6dad7009c6e04000000000000160014ad45c620bd9b6688c5a7a23e515402d39d02b552";
-        let tx = bcs::from_bytes<Transaction>(tx_bytes);
-        let tx_id = bitcoin_types::tx_id(&tx);
-        let inscription_records = from_transaction(&tx);
-        let inscription_records_len = vector::length(&inscription_records);
-        std::debug::print(&inscription_records);
-        assert!(inscription_records_len == 1, 1);
-        let inscription_record = vector::remove(&mut inscription_records, 0);
-        let inscription = new_inscription(tx_id, 0, inscription_record);
-        let body = string::utf8(option::destroy_some(Self::body(&inscription)));
-        std::debug::print(&body);
-        assert!(body == string::utf8(b"{\"p\":\"brc-20\",\"op\":\"transfer\",\"tick\":\"ordi\",\"amt\":\"1000\"}"), 1);
-        let content_type = std::option::destroy_some(Self::content_type(&inscription));
-        std::debug::print(&content_type);
-        assert!(content_type == string::utf8(b"text/plain;charset=utf-8"), 2);
-        drop(inscription);
-    }
 }

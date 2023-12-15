@@ -39,7 +39,7 @@ fn decode_ops(btx_tx_hex: &str) -> Vec<Op> {
 
 #[test]
 fn test_from_transaction() {
-    tracing_subscriber::fmt::init();
+    let _ = tracing_subscriber::fmt::try_init();
 
     //inscribe mint
     //https://ordinals.com/inscription/24f2585e667e345c7b72a4969b4c70eb0e2106727d876217497c6cf86a8a354ci0
