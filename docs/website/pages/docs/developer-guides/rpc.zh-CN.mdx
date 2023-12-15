@@ -70,7 +70,7 @@ curl --location 'https://dev-seed.rooch.network/' --header 'Content-Type: applic
 
 ### rooch_listStates
 
-按 `access_path` 列出状态 如果 `StateOptions.decode` 为 `true`，则对状态进行解码并在响应中返回解码后的值。
+按 `access_path` 列出状态。如果 `StateOptions.decode` 为 `true`，则对状态进行解码并在响应中返回解码后的值。
 
 ```shell
 curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"rooch_listStates","params":["/resource/0x3", null, null, {"decode":true}],"id":1}' https://dev-seed.rooch.network:443 | jq
@@ -86,9 +86,6 @@ curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","metho
 响应：
 
 ```shell
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100  1423  100  1252  100   171   3537    483 --:--:-- --:--:-- --:--:--  4031
 {
   "jsonrpc": "2.0",
   "result": {
@@ -315,7 +312,6 @@ curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: app
 ```
 
 ### rooch_getTransactionsByHash
-
 
 请求：
 
