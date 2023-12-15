@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module bitcoin_move::genesis{
     use moveos_std::context::Context;
     use moveos_std::signer;

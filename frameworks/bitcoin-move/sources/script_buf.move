@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module bitcoin_move::script_buf{
     use std::vector;
     use std::option::{Self, Option};
