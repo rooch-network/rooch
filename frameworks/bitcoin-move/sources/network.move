@@ -1,4 +1,4 @@
-module bitcoin_move::bitcoin_network{
+module bitcoin_move::network{
     use std::string::{Self, String};
 
     const ErrorUnknownNetwork: u64 = 1;

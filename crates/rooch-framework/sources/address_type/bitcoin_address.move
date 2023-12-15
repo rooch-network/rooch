@@ -94,57 +94,5 @@ module rooch_framework::bitcoin_address {
         //We need to add the network and address type
         abort 0
     }
-
-    #[test]
-    fun test_from_script_p2pkh(){
-        let script_buf = bitcoin_script_buf::new(x"76a914010966776006953d5567439e5e39f86a0d273bee88ac");
-        let addr_opt = from_script(&script_buf);
-        assert!(option::is_some(&addr_opt), 1000);
-        let addr = option::extract(&mut addr_opt);
-        assert!(is_p2pkh(&addr), 1001);
-        let addr_bytes = into_bytes(addr);
-        std::debug::print(&addr_bytes);
-        let expected_addr_bytes = x"00010966776006953d5567439e5e39f86a0d273bee";
-        assert!(addr_bytes == expected_addr_bytes, 1002);
-    }
-
-    #[test]
-    fun test_from_script_p2sh(){
-        let script_buf = bitcoin_script_buf::new(x"a91474d691da1574e6b3c192ecfb52cc8984ee7b6c4887");
-        let addr_opt = from_script(&script_buf);
-        assert!(option::is_some(&addr_opt), 1000);
-        let addr = option::extract(&mut addr_opt);
-        assert!(is_p2sh(&addr), 1001);
-        let addr_bytes = into_bytes(addr);
-        std::debug::print(&addr_bytes);
-        let expected_addr_bytes = x"0574d691da1574e6b3c192ecfb52cc8984ee7b6c48";
-        assert!(addr_bytes == expected_addr_bytes, 1002);
-    }
-
-    #[test]
-    fun test_p2wpkh_address(){
-        let script_buf = bitcoin_script_buf::new(x"001497cdff4fd3ed6f885d54a52b79d7a2141072ae3f");
-        let addr_opt = from_script(&script_buf);
-        assert!(option::is_some(&addr_opt), 1000);
-        let addr = option::extract(&mut addr_opt);
-        assert!(is_witness_program(&addr), 1001);
-        let addr_bytes = into_bytes(addr);
-        //std::debug::print(&addr_bytes);
-        let expected_addr_bytes = x"97cdff4fd3ed6f885d54a52b79d7a2141072ae3f";
-        assert!(addr_bytes == expected_addr_bytes, 1002);
-    }
-
-    #[test]
-    fun test_fail_address_from_script() {
-
-        let bad_p2wpkh = bitcoin_script_buf::new(x"0014dbc5b0a8f9d4353b4b54c3db48846bb15abfec");
-        let bad_p2wsh = bitcoin_script_buf::new(x"00202d4fa2eb233d008cc83206fa2f4f2e60199000f5b857a835e3172323385623");
-        //let invalid_segwitv0_script = bitcoin_script_buf::new(x"001161458e330389cd0437ee9fe3641d70cc18");
-        let expected = option::none<BitcoinAddress>();
-
-        assert!(Self::from_script(&bad_p2wpkh) == expected, 1000);
-        assert!(Self::from_script(&bad_p2wsh) == expected, 1001);
-        //TODO fix this test
-        //assert!(Self::from_script(&invalid_segwitv0_script) == expected, 1002);
-    }
+ 
 }

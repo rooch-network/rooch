@@ -9,7 +9,7 @@ module bitcoin_move::utxo{
     use moveos_std::simple_multimap::{Self, SimpleMultiMap};
     use moveos_std::type_info;
 
-    friend bitcoin_move::bitcoin_light_client;
+    friend bitcoin_move::light_client;
 
     /// The UTXO Object
     struct UTXO has key {

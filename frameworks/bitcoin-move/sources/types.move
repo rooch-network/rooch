@@ -5,7 +5,7 @@ module bitcoin_move::types{
     use std::vector;
     use std::option::{Self, Option};
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
-    use bitcoin_move::bitcoin_script_buf::{Self, ScriptBuf};
+    use bitcoin_move::script_buf::{Self, ScriptBuf};
     use rooch_framework::multichain_address;
 
     const LOCK_TIME_THRESHOLD: u32 = 500_000_000;
@@ -173,7 +173,7 @@ module bitcoin_move::types{
                 script_pos_from_last = 3;
             };
             if (len >= script_pos_from_last && idx == len - script_pos_from_last) {
-                option::fill(&mut script_buf, bitcoin_script_buf::new(*elem));
+                option::fill(&mut script_buf, script_buf::new(*elem));
             };
             idx = idx + 1;
         };
