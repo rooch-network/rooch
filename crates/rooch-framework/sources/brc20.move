@@ -12,7 +12,7 @@ module rooch_framework::brc20 {
     use moveos_std::table::{Self, Table};
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::string_utils;
-    use rooch_framework::bitcoin_address::{BTCAddress};
+    use rooch_framework::bitcoin_address::{BitcoinAddress};
     use rooch_framework::ord;
     use rooch_framework::bitcoin_types::{Transaction};
 
@@ -25,7 +25,7 @@ module rooch_framework::brc20 {
         lim: u256,
         dec: u64,
         supply: u256,
-        balance: Table<BTCAddress, u256>,
+        balance: Table<BitcoinAddress, u256>,
     } 
 
     struct BRC20Store has key {
@@ -165,7 +165,7 @@ module rooch_framework::brc20 {
         }
     }
 
-    fun execute_mint(brc20_store: &mut BRC20Store, mint: MintOp, sender: BTCAddress): bool{
+    fun execute_mint(brc20_store: &mut BRC20Store, mint: MintOp, sender: BitcoinAddress): bool{
         if(!table::contains(&brc20_store.coins, mint.tick)){
             std::debug::print(&string::utf8(b"brc20 does not exist"));
             return false
@@ -216,7 +216,7 @@ module rooch_framework::brc20 {
         }
     }
 
-    fun execute_transfer(brc20_store: &mut BRC20Store, transfer: TransferOp, sender: BTCAddress, receiver: BTCAddress): bool{
+    fun execute_transfer(brc20_store: &mut BRC20Store, transfer: TransferOp, sender: BitcoinAddress, receiver: BitcoinAddress): bool{
         if(!table::contains(&brc20_store.coins, transfer.tick)){
             std::debug::print(&string::utf8(b"brc20 does not exist"));
             return false

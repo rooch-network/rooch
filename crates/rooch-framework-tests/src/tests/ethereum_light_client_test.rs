@@ -11,7 +11,7 @@ use rooch_types::transaction::rooch::RoochTransactionData;
 
 #[test]
 fn test_submit_block() {
-    tracing_subscriber::fmt::init();
+    let _ = tracing_subscriber::fmt::try_init();
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 
     let keystore = InMemKeystore::new_insecure_for_tests(1);

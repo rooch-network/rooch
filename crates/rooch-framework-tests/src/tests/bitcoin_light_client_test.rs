@@ -13,7 +13,7 @@ use rooch_types::transaction::rooch::RoochTransactionData;
 
 #[test]
 fn test_submit_block() {
-    tracing_subscriber::fmt::try_init().unwrap();
+    let _ = tracing_subscriber::fmt::try_init();
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 
     let keystore = InMemKeystore::new_insecure_for_tests(1);
@@ -98,7 +98,7 @@ fn test_submit_block() {
 
 #[test]
 fn test_utxo_progress() {
-    tracing_subscriber::fmt::try_init().unwrap();
+    let _ = tracing_subscriber::fmt::try_init();
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 
     let keystore = InMemKeystore::new_insecure_for_tests(1);

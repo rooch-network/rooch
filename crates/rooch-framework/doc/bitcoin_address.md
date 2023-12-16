@@ -5,13 +5,14 @@
 
 
 
--  [Struct `BTCAddress`](#0x3_bitcoin_address_BTCAddress)
+-  [Struct `BitcoinAddress`](#0x3_bitcoin_address_BitcoinAddress)
 -  [Constants](#@Constants_0)
 -  [Function `from_script`](#0x3_bitcoin_address_from_script)
 -  [Function `from_bytes`](#0x3_bitcoin_address_from_bytes)
 -  [Function `is_p2pkh`](#0x3_bitcoin_address_is_p2pkh)
 -  [Function `is_p2sh`](#0x3_bitcoin_address_is_p2sh)
 -  [Function `is_witness_program`](#0x3_bitcoin_address_is_witness_program)
+-  [Function `is_empty`](#0x3_bitcoin_address_is_empty)
 -  [Function `as_bytes`](#0x3_bitcoin_address_as_bytes)
 -  [Function `into_bytes`](#0x3_bitcoin_address_into_bytes)
 -  [Function `to_bech32`](#0x3_bitcoin_address_to_bech32)
@@ -25,16 +26,16 @@
 
 
 
-<a name="0x3_bitcoin_address_BTCAddress"></a>
+<a name="0x3_bitcoin_address_BitcoinAddress"></a>
 
-## Struct `BTCAddress`
+## Struct `BitcoinAddress`
 
-BTCAddress is a struct that represents a Bitcoin address.
+BitcoinAddress is a struct that represents a Bitcoin address.
 We just keep the raw bytes of the address and do care about the network.
 
 
 <pre><code>#[data_struct]
-<b>struct</b> <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">BTCAddress</a> <b>has</b> <b>copy</b>, drop, store
+<b>struct</b> <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">BitcoinAddress</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -129,10 +130,10 @@ We just keep the raw bytes of the address and do care about the network.
 
 ## Function `from_script`
 
-from_script returns a BTCAddress from a ScriptBuf.
+from_script returns a BitcoinAddress from a ScriptBuf.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_from_script">from_script</a>(s: &<a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf_ScriptBuf">bitcoin_script_buf::ScriptBuf</a>): <a href="_Option">option::Option</a>&lt;<a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_from_script">from_script</a>(s: &<a href="bitcoin_script_buf.md#0x3_bitcoin_script_buf_ScriptBuf">bitcoin_script_buf::ScriptBuf</a>): <a href="_Option">option::Option</a>&lt;<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>&gt;
 </code></pre>
 
 
@@ -143,7 +144,7 @@ from_script returns a BTCAddress from a ScriptBuf.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_from_bytes">from_bytes</a>(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_from_bytes">from_bytes</a>(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>
 </code></pre>
 
 
@@ -154,7 +155,7 @@ from_script returns a BTCAddress from a ScriptBuf.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_is_p2pkh">is_p2pkh</a>(addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_is_p2pkh">is_p2pkh</a>(addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>): bool
 </code></pre>
 
 
@@ -165,7 +166,7 @@ from_script returns a BTCAddress from a ScriptBuf.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_is_p2sh">is_p2sh</a>(addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_is_p2sh">is_p2sh</a>(addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>): bool
 </code></pre>
 
 
@@ -176,7 +177,19 @@ from_script returns a BTCAddress from a ScriptBuf.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_is_witness_program">is_witness_program</a>(addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_is_witness_program">is_witness_program</a>(addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>): bool
+</code></pre>
+
+
+
+<a name="0x3_bitcoin_address_is_empty"></a>
+
+## Function `is_empty`
+
+Empty address is a special address that is used to if we parse address failed from script.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_is_empty">is_empty</a>(addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>): bool
 </code></pre>
 
 
@@ -187,7 +200,7 @@ from_script returns a BTCAddress from a ScriptBuf.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_as_bytes">as_bytes</a>(addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>): &<a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_as_bytes">as_bytes</a>(addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>): &<a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -198,7 +211,7 @@ from_script returns a BTCAddress from a ScriptBuf.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_into_bytes">into_bytes</a>(addr: <a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_into_bytes">into_bytes</a>(addr: <a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -209,5 +222,5 @@ from_script returns a BTCAddress from a ScriptBuf.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_to_bech32">to_bech32</a>(_addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BTCAddress">bitcoin_address::BTCAddress</a>): <a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin_address.md#0x3_bitcoin_address_to_bech32">to_bech32</a>(_addr: &<a href="bitcoin_address.md#0x3_bitcoin_address_BitcoinAddress">bitcoin_address::BitcoinAddress</a>): <a href="_String">string::String</a>
 </code></pre>

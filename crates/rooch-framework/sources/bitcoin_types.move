@@ -4,7 +4,7 @@
 module rooch_framework::bitcoin_types{
     use std::vector;
     use std::option::{Self, Option};
-    use rooch_framework::bitcoin_address::{Self, BTCAddress};
+    use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
     use rooch_framework::bitcoin_script_buf::{Self, ScriptBuf};
     use rooch_framework::multichain_address;
 
@@ -211,6 +211,9 @@ module rooch_framework::bitcoin_types{
         value: u64,
         /// The script which must be satisfied for the output to be spent.
         script_pubkey: ScriptBuf,
+        /// The address of the output, if known. Otherwise, the Address bytes will be empty.
+        /// We can not use Option<BitcoinAddress> here, because Option is not a #[data_struct]
+        recipient_address: BitcoinAddress,
     }
 
     public fun txout_value(self: &TxOut) : u64 {
@@ -221,17 +224,19 @@ module rooch_framework::bitcoin_types{
         &self.script_pubkey
     }
 
-    public fun txout_address(self: &TxOut) : Option<BTCAddress> {
-        bitcoin_address::from_script(&self.script_pubkey)
+    public fun txout_address(self: &TxOut) : Option<BitcoinAddress> {
+        if (bitcoin_address::is_empty(&self.recipient_address)) {
+            option::none()
+        }else{
+            option::some(self.recipient_address)
+        }
     }
 
     public fun txout_object_address(self: &TxOut) : address {
-        let btc_address_opt = txout_address(self);
-        if (option::is_none(&btc_address_opt)) {
+        if (bitcoin_address::is_empty(&self.recipient_address)) {
             @rooch_framework
         }else{
-            let btc_address = option::destroy_some(btc_address_opt);
-            multichain_address::mapping_to_rooch_address(multichain_address::from_bitcoin(btc_address))
+            multichain_address::mapping_to_rooch_address(multichain_address::from_bitcoin(self.recipient_address))
         }
     }
 

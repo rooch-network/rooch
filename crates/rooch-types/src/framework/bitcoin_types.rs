@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{addresses::ROOCH_FRAMEWORK_ADDRESS, into_address::IntoAddress};
+use crate::{
+    address::BitcoinAddress, addresses::ROOCH_FRAMEWORK_ADDRESS, into_address::IntoAddress,
+};
 use anyhow::Result;
 use bitcoin::{hashes::Hash, BlockHash};
 use bitcoincore_rpc::bitcoincore_rpc_json::GetBlockHeaderResult;
@@ -302,13 +304,20 @@ pub struct TxOut {
     pub value: u64,
     /// The script which must be satisfied for the output to be spent.
     pub script_pubkey: ScriptBuf,
+    /// The address of the recipient
+    /// We decode this from script_pubkey for convenience
+    pub recipient_address: BitcoinAddress,
 }
 
 impl From<bitcoin::TxOut> for TxOut {
     fn from(tx_out: bitcoin::TxOut) -> Self {
+        let address_opt = bitcoin::address::Payload::from_script(&tx_out.script_pubkey).ok();
         Self {
             value: tx_out.value.to_sat(),
             script_pubkey: tx_out.script_pubkey.into(),
+            recipient_address: address_opt
+                .map(|address| address.into())
+                .unwrap_or_default(),
         }
     }
 }
@@ -324,6 +333,7 @@ impl MoveStructState for TxOut {
         move_core_types::value::MoveStructLayout::new(vec![
             u64::type_layout(),
             ScriptBuf::type_layout(),
+            BitcoinAddress::type_layout(),
         ])
     }
 }
