@@ -124,8 +124,9 @@ pub struct RoochOpt {
     #[clap(long)]
     pub relayer_account: Option<String>,
 
-    #[clap(flatten)]
-    pub da: DAConfig,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long)]
+    pub da: Option<DAConfig>,
 }
 
 impl std::fmt::Display for RoochOpt {

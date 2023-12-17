@@ -24,16 +24,31 @@ pub struct DAConfig {
 #[serde(deny_unknown_fields)]
 pub struct DAServerCelestiaConfig {
     // TODO add from env
-    // TODO add segment size limit (2MB at start)   
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "celestia-namespace", long, help = "DA backend celestia namespace")]
+    #[clap(name = "namespace", long, help = "celestia namespace")]
     pub namespace: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "celestia-conn", long, help = "DA backend celestia node connection")]
+    #[clap(name = "conn", long, help = "celestia node connection")]
     pub conn_str: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "celestia-auth-token", long, help = "DA backend celestia node auth token")]
+    #[clap(name = "auth-token", long, help = "celestia node auth token")]
     pub auth_token: Option<String>,
+    // for celestia:
+    // support for up to 8 MB blocks, starting with 2MB at genesis and upgradeable through onchain governance.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(name = "max-segment-size", long, help = "max segment size, striking a balance between throughput and the constraints on blob size.")]
+    pub max_segment_size: Option<u64>,
+}
+
+impl Default for DAServerCelestiaConfig {
+    fn default() -> Self {
+        Self {
+            namespace: None,
+            conn_str: None,
+            auth_token: None,
+            max_segment_size: Some(1 * 1024 * 1024),
+        }
+    }
 }
 
 impl FromStr for DAServerType {
