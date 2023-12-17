@@ -7,7 +7,7 @@ spec:
     spec:
       nodeSelector:
         cloud.google.com/gke-nodepool: ci-pool
-      image: summerwind/actions-runner-dind:v2.299.1-ubuntu-20.04-acbce4b
+      image: nada9527/actions-runner-dind:v2.311.0-ubuntu-22.04-8e48463
       repository: rooch-network/rooch
       ephemeral: true
       tolerations:
