@@ -16,11 +16,11 @@ pub enum DAServerType {
 #[serde(deny_unknown_fields)]
 pub struct DAConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "da-server", long, help = "specifies the type of DA server to be used. 'celestia' with corresponding Celestia server configuration, 'xxx' with corresponding xxx server configuration, etc.")]
-    pub da_server: Option<DAServerType>,
+    #[clap(name = "internal-da-server", long, help = "specifies the type of internal DA server to be used. 'celestia' with corresponding Celestia server configuration, 'xxx' with corresponding xxx server configuration, etc.")]
+    pub internal_da_server: Option<DAServerType>,
 }
 
-#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 pub struct DAServerCelestiaConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -47,6 +47,15 @@ impl Default for DAServerCelestiaConfig {
             auth_token: None,
             max_segment_size: Some(1 * 1024 * 1024),
         }
+    }
+}
+
+impl FromStr for DAConfig {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let deserialized = serde_json::from_str(s)?;
+        Ok(deserialized)
     }
 }
 
