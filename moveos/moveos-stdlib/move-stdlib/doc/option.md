@@ -10,6 +10,7 @@ This module defines the Option type and its methods to represent and handle an o
 -  [Constants](#@Constants_0)
 -  [Function `none`](#0x1_option_none)
 -  [Function `some`](#0x1_option_some)
+-  [Function `from_vec`](#0x1_option_from_vec)
 -  [Function `is_none`](#0x1_option_is_none)
 -  [Function `is_some`](#0x1_option_is_some)
 -  [Function `contains`](#0x1_option_contains)
@@ -25,6 +26,15 @@ This module defines the Option type and its methods to represent and handle an o
 -  [Function `destroy_some`](#0x1_option_destroy_some)
 -  [Function `destroy_none`](#0x1_option_destroy_none)
 -  [Function `to_vec`](#0x1_option_to_vec)
+-  [Function `for_each`](#0x1_option_for_each)
+-  [Function `for_each_ref`](#0x1_option_for_each_ref)
+-  [Function `for_each_mut`](#0x1_option_for_each_mut)
+-  [Function `fold`](#0x1_option_fold)
+-  [Function `map`](#0x1_option_map)
+-  [Function `map_ref`](#0x1_option_map_ref)
+-  [Function `filter`](#0x1_option_filter)
+-  [Function `any`](#0x1_option_any)
+-  [Function `destroy`](#0x1_option_destroy)
 -  [Module Specification](#@Module_Specification_1)
 
 
@@ -57,7 +67,7 @@ The <code><a href="option.md#0x1_option_Option">Option</a></code> is in an inval
 The <code><a href="option.md#0x1_option_Option">Option</a></code> is <code>Some</code> while it should be <code>None</code>.
 
 
-<pre><code><b>const</b> <a href="option.md#0x1_option_EOPTION_IS_SET">EOPTION_IS_SET</a>: u64 = 0;
+<pre><code><b>const</b> <a href="option.md#0x1_option_EOPTION_IS_SET">EOPTION_IS_SET</a>: u64 = 262144;
 </code></pre>
 
 
@@ -68,7 +78,17 @@ The <code><a href="option.md#0x1_option_Option">Option</a></code> is in an inval
 The <code><a href="option.md#0x1_option_Option">Option</a></code> is <code>None</code> while it should be <code>Some</code>.
 
 
-<pre><code><b>const</b> <a href="option.md#0x1_option_EOPTION_NOT_SET">EOPTION_NOT_SET</a>: u64 = 1;
+<pre><code><b>const</b> <a href="option.md#0x1_option_EOPTION_NOT_SET">EOPTION_NOT_SET</a>: u64 = 262145;
+</code></pre>
+
+
+
+<a name="0x1_option_EOPTION_VEC_TOO_LONG"></a>
+
+Cannot construct an option from a vector with 2 or more elements.
+
+
+<pre><code><b>const</b> <a href="option.md#0x1_option_EOPTION_VEC_TOO_LONG">EOPTION_VEC_TOO_LONG</a>: u64 = 262146;
 </code></pre>
 
 
@@ -93,6 +113,17 @@ Return an <code><a href="option.md#0x1_option_Option">Option</a></code> containi
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="option.md#0x1_option_some">some</a>&lt;Element&gt;(e: Element): <a href="option.md#0x1_option_Option">option::Option</a>&lt;Element&gt;
+</code></pre>
+
+
+
+<a name="0x1_option_from_vec"></a>
+
+## Function `from_vec`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="option.md#0x1_option_from_vec">from_vec</a>&lt;Element&gt;(vec: <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;): <a href="option.md#0x1_option_Option">option::Option</a>&lt;Element&gt;
 </code></pre>
 
 
@@ -286,6 +317,114 @@ and an empty vector otherwise
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="option.md#0x1_option_to_vec">to_vec</a>&lt;Element&gt;(t: <a href="option.md#0x1_option_Option">option::Option</a>&lt;Element&gt;): <a href="vector.md#0x1_vector">vector</a>&lt;Element&gt;
+</code></pre>
+
+
+
+<a name="0x1_option_for_each"></a>
+
+## Function `for_each`
+
+Apply the function to the optional element, consuming it. Does nothing if no value present.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="option.md#0x1_option_for_each">for_each</a>&lt;Element&gt;(o: <a href="option.md#0x1_option_Option">option::Option</a>&lt;Element&gt;, f: |Element|())
+</code></pre>
+
+
+
+<a name="0x1_option_for_each_ref"></a>
+
+## Function `for_each_ref`
+
+Apply the function to the optional element reference. Does nothing if no value present.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="option.md#0x1_option_for_each_ref">for_each_ref</a>&lt;Element&gt;(o: &<a href="option.md#0x1_option_Option">option::Option</a>&lt;Element&gt;, f: |&Element|())
+</code></pre>
+
+
+
+<a name="0x1_option_for_each_mut"></a>
+
+## Function `for_each_mut`
+
+Apply the function to the optional element reference. Does nothing if no value present.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="option.md#0x1_option_for_each_mut">for_each_mut</a>&lt;Element&gt;(o: &<b>mut</b> <a href="option.md#0x1_option_Option">option::Option</a>&lt;Element&gt;, f: |&<b>mut</b> Element|())
+</code></pre>
+
+
+
+<a name="0x1_option_fold"></a>
+
+## Function `fold`
+
+Folds the function over the optional element.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="option.md#0x1_option_fold">fold</a>&lt;Accumulator, Element&gt;(o: <a href="option.md#0x1_option_Option">option::Option</a>&lt;Element&gt;, init: Accumulator, f: |(Accumulator, Element)|Accumulator): Accumulator
+</code></pre>
+
+
+
+<a name="0x1_option_map"></a>
+
+## Function `map`
+
+Maps the content of an option.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="option.md#0x1_option_map">map</a>&lt;Element, OtherElement&gt;(o: <a href="option.md#0x1_option_Option">option::Option</a>&lt;Element&gt;, f: |Element|OtherElement): <a href="option.md#0x1_option_Option">option::Option</a>&lt;OtherElement&gt;
+</code></pre>
+
+
+
+<a name="0x1_option_map_ref"></a>
+
+## Function `map_ref`
+
+Maps the content of an option without destroying the original option.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="option.md#0x1_option_map_ref">map_ref</a>&lt;Element, OtherElement&gt;(o: &<a href="option.md#0x1_option_Option">option::Option</a>&lt;Element&gt;, f: |&Element|OtherElement): <a href="option.md#0x1_option_Option">option::Option</a>&lt;OtherElement&gt;
+</code></pre>
+
+
+
+<a name="0x1_option_filter"></a>
+
+## Function `filter`
+
+Filters the content of an option
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="option.md#0x1_option_filter">filter</a>&lt;Element: drop&gt;(o: <a href="option.md#0x1_option_Option">option::Option</a>&lt;Element&gt;, f: |&Element|bool): <a href="option.md#0x1_option_Option">option::Option</a>&lt;Element&gt;
+</code></pre>
+
+
+
+<a name="0x1_option_any"></a>
+
+## Function `any`
+
+Returns true if the option contains an element which satisfies predicate.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="option.md#0x1_option_any">any</a>&lt;Element&gt;(o: &<a href="option.md#0x1_option_Option">option::Option</a>&lt;Element&gt;, p: |&Element|bool): bool
+</code></pre>
+
+
+
+<a name="0x1_option_destroy"></a>
+
+## Function `destroy`
+
+Utility function to destroy an option that is not droppable.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="option.md#0x1_option_destroy">destroy</a>&lt;Element&gt;(o: <a href="option.md#0x1_option_Option">option::Option</a>&lt;Element&gt;, d: |Element|())
 </code></pre>
 
 
