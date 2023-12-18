@@ -3,6 +3,7 @@
 
 pub mod build;
 pub mod explain;
+pub mod framework;
 pub mod integration_test;
 pub mod new;
 pub mod publish;
