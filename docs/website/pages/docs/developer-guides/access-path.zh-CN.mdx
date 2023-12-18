@@ -1,0 +1,22 @@
+# Access path
+
+Rooch 的数据存放在 StateDB 里，当我们跟链交互时，不同的调用请求会对应着对应的读写请求。
+
+在这些操作中要准确地对某些数据进行增删查改，就必须传递数据的正确存放路径。访问路径（Access Path）就指定要访问对应数据的方式。
+
+Rooch 中有 4 类不同的数据，因此设置了 4 个不同的路径前缀用来标识访问路径。
+
+- 对象：`/object/对象ID1 [, 对象 ID2 ... 对象 IDn]`
+- 资源：`/resource/账户地址/资源类型1 [, 资源类型2 ... 资源类型n]`
+- 模块：`/module/账户地址/模块类型1 [, 模块类型2 ... 模块类型n]`
+- 表：`/table/table_handle/key1 [, key2, keyn]`
+
+## 在 RPC 请求中使用访问路径
+
+```shell
+curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"rooch_listStates","params":["/resource/0x3", null, null, {"decode":true}],"id":1}' https://dev-seed.rooch.network:443 | jq
+```
+
+可以看到在 RPC 请求的参数列表中，我们使用了 `/resource/0x地址` 这个前缀来访问 `0x3` 这个地址的所有资源。
+
+更多使用示例，请参考 [Rooch JSON-RPC](./rpc.zh-CN.mdx)。
