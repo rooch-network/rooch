@@ -276,7 +276,7 @@ mod tests {
             crate::BuildOption::Fresh,
         )
         .expect("build rooch framework failed");
-        assert_eq!(genesis.genesis_package.genesis_txs.len(), 3);
+        assert_eq!(genesis.genesis_package.genesis_txs.len(), 4);
         let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
         let mut moveos = MoveOS::new(
             moveos_store,
