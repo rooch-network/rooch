@@ -6,10 +6,16 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", branch = "main" }
-celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", branch = "main" }
+celestia-rpc = { workspace = true }
+celestia-types = { workspace = true }
 
 moveos-types = { workspace = true }
 anyhow = { workspace = true }
 serde = { workspace = true }
 bcs = { workspace = true }
+log = { workspace = true }
+coerce = { workspace = true }
+async-trait = { workspace = true }
+
+rooch-config = { workspace = true }
+serde_yaml = { workspace = true }

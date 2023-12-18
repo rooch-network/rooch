@@ -21,7 +21,7 @@ pub mod config;
 pub mod indexer_config;
 pub mod server_config;
 pub mod store_config;
-mod da_config;
+pub mod da_config;
 
 pub const ROOCH_DIR: &str = ".rooch";
 pub const ROOCH_CONFIR_DIR: &str = "rooch_config";
@@ -154,7 +154,7 @@ impl RoochOpt {
             sequencer_account: None,
             proposer_account: None,
             relayer_account: None,
-            da: DAConfig::default(),
+            da: None,
         }
     }
 

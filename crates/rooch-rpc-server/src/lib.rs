@@ -1,32 +1,39 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::server::eth_server::{EthNetServer, EthServer};
-use crate::server::rooch_server::RoochServer;
-use crate::service::aggregate_service::AggregateService;
-use crate::service::rpc_logger::RpcLogger;
-use crate::service::rpc_service::RpcService;
+use std::env;
+use std::fmt::Debug;
+use std::net::SocketAddr;
+use std::sync::Arc;
+use std::time::Duration;
+
 use anyhow::{Error, Result};
+use coerce::actor::{IntoActor, system::ActorSystem};
 use coerce::actor::scheduler::timer::Timer;
-use coerce::actor::{system::ActorSystem, IntoActor};
 use hyper::header::HeaderValue;
 use hyper::Method;
-use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
+use jsonrpsee::server::ServerBuilder;
+use serde_json::json;
+use tower_http::cors::{AllowOrigin, CorsLayer};
+use tower_http::trace::TraceLayer;
+use tracing::info;
+
 use moveos_store::{MoveOSDB, MoveOSStore};
 use raw_store::errors::RawStoreError;
 use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
+use rooch_config::{BaseConfig, RoochOpt, ServerOpt};
+use rooch_config::da_config::{DAConfig, DAServerType};
 use rooch_config::indexer_config::IndexerConfig;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::store_config::StoreConfig;
-use rooch_config::{BaseConfig, RoochOpt, ServerOpt};
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::indexer_reader::IndexerReader;
-use rooch_indexer::proxy::IndexerProxy;
 use rooch_indexer::IndexerStore;
+use rooch_indexer::proxy::IndexerProxy;
 use rooch_key::key_derive::{generate_new_key_pair, retrieve_key_pair};
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
@@ -40,15 +47,12 @@ use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{GenesisError, RoochError};
-use serde_json::json;
-use std::env;
-use std::fmt::Debug;
-use std::net::SocketAddr;
-use std::sync::Arc;
-use std::time::Duration;
-use tower_http::cors::{AllowOrigin, CorsLayer};
-use tower_http::trace::TraceLayer;
-use tracing::info;
+
+use crate::server::eth_server::{EthNetServer, EthServer};
+use crate::server::rooch_server::RoochServer;
+use crate::service::aggregate_service::AggregateService;
+use crate::service::rpc_logger::RpcLogger;
+use crate::service::rpc_service::RpcService;
 
 pub mod server;
 pub mod service;
@@ -184,6 +188,9 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     indexer_config.merge_with_opt_with_init(opt, Arc::new(base_config), true)?;
     let (indexer_store, indexer_reader) = init_indexer(&indexer_config)?;
 
+    // init DA
+    let mut da_config = DAConfig::default();
+
     // Init executor
     let is_genesis = moveos_store.statedb.is_genesis();
     let executor = ExecutorActor::new(
@@ -191,8 +198,8 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         moveos_store,
         rooch_store.clone(),
     )?
-    .into_actor(Some("Executor"), &actor_system)
-    .await?;
+        .into_actor(Some("Executor"), &actor_system)
+        .await?;
     let executor_proxy = ExecutorProxy::new(executor.into());
 
     // Check for key pairs
@@ -271,9 +278,9 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
             bitcoin_relayer_config,
             rpc_service.clone(),
         )
-        .await?
-        .into_actor(Some("Relayer"), &actor_system)
-        .await?;
+            .await?
+            .into_actor(Some("Relayer"), &actor_system)
+            .await?;
         let relay_tick_in_seconds: u64 = 5;
         let relayer_timer = Timer::start(
             relayer,
@@ -397,4 +404,23 @@ fn init_indexer(indexer_config: &IndexerConfig) -> Result<(IndexerStore, Indexer
     let indexer_reader = IndexerReader::new(indexer_db_url)?;
 
     Ok((indexer_store, indexer_reader))
+}
+
+fn init_da(da_config: &DAConfig) -> Result<()> {
+    match da_config.internal_da_server {
+        Some(DAServerType::Celestia(celestia_config)) => {
+            let namespace = celestia_config.namespace.unwrap_or_default();
+            let conn = celestia_config.conn.unwrap_or_default();
+            let auth_token = celestia_config.auth_token.unwrap_or_default();
+            let max_segment_size = celestia_config.max_segment_size.unwrap_or_default();
+            info!(
+                "DA server type: celestia, namespace: {}, conn: {}, auth_token: {}, max_segment_size: {}",
+                namespace, conn, auth_token, max_segment_size
+            );
+        }
+        _ => {
+            info!("DA server type: none");
+        }
+    }
+    Ok(())
 }

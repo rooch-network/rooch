@@ -1027,6 +1027,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "blockstore"
+version = "0.1.0"
+source = "git+https://github.com/eigerco/celestia-node-rs.git?rev=129272e8d926b4c7badf27a26dea915323dd6489#129272e8d926b4c7badf27a26dea915323dd6489"
+dependencies = [
+ "async-trait",
+ "cid",
+ "dashmap",
+ "multihash",
+ "thiserror",
+]
+
+[[package]]
 name = "blst"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1283,7 +1295,7 @@ dependencies = [
 [[package]]
 name = "celestia-proto"
 version = "0.1.0"
-source = "git+https://github.com/eigerco/celestia-node-rs.git?branch=main#439f06dae6755568ea812907363d6bab0661ac49"
+source = "git+https://github.com/eigerco/celestia-node-rs.git?rev=129272e8d926b4c7badf27a26dea915323dd6489#129272e8d926b4c7badf27a26dea915323dd6489"
 dependencies = [
  "anyhow",
  "prost 0.12.3",
@@ -1296,7 +1308,7 @@ dependencies = [
 [[package]]
 name = "celestia-rpc"
 version = "0.1.0"
-source = "git+https://github.com/eigerco/celestia-node-rs.git?branch=main#439f06dae6755568ea812907363d6bab0661ac49"
+source = "git+https://github.com/eigerco/celestia-node-rs.git?rev=129272e8d926b4c7badf27a26dea915323dd6489#129272e8d926b4c7badf27a26dea915323dd6489"
 dependencies = [
  "async-trait",
  "celestia-types",
@@ -1310,10 +1322,11 @@ dependencies = [
 [[package]]
 name = "celestia-types"
 version = "0.1.0"
-source = "git+https://github.com/eigerco/celestia-node-rs.git?branch=main#439f06dae6755568ea812907363d6bab0661ac49"
+source = "git+https://github.com/eigerco/celestia-node-rs.git?rev=129272e8d926b4c7badf27a26dea915323dd6489#129272e8d926b4c7badf27a26dea915323dd6489"
 dependencies = [
  "base64 0.21.3",
  "bech32 0.9.1",
+ "blockstore",
  "bytes",
  "celestia-proto",
  "cid",
@@ -1321,6 +1334,7 @@ dependencies = [
  "enum_dispatch",
  "libp2p-identity",
  "multiaddr",
+ "multihash",
  "nmt-rs",
  "ruint",
  "serde 1.0.188",
@@ -1416,15 +1430,14 @@ checksum = "8d02796e4586c6c41aeb68eae9bfb4558a522c35f1430c14b40136c3706e09e4"
 
 [[package]]
 name = "cid"
-version = "0.10.1"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd94671561e36e4e7de75f753f577edafb0e7c05d6e4547229fdf7938fbcd2c3"
+checksum = "472ac98592f38dfd48f188d5713a328422ed22fa39eb52b8bca495370134762a"
 dependencies = [
  "core2",
  "multibase",
- "multihash 0.18.1",
- "serde 1.0.188",
- "unsigned-varint",
+ "multihash",
+ "unsigned-varint 0.8.0",
 ]
 
 [[package]]
@@ -2129,9 +2142,9 @@ dependencies = [
 
 [[package]]
 name = "dashmap"
-version = "5.5.1"
+version = "5.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "edd72493923899c6f10c641bdbdeddc7183d6396641d99c1a0d1597f37f92e28"
+checksum = "978747c1d849a7d2ee5e8adc0159961c48fb7e5db2f06af6723b80123bb53856"
 dependencies = [
  "cfg-if",
  "hashbrown 0.14.0",
@@ -4574,7 +4587,7 @@ checksum = "999ec70441b2fb35355076726a6bc466c932e9bdc66f6a11c6c0aa17c7ab9be0"
 dependencies = [
  "bs58 0.5.0",
  "hkdf",
- "multihash 0.19.1",
+ "multihash",
  "quick-protobuf",
  "sha2 0.10.8",
  "thiserror",
@@ -5797,11 +5810,11 @@ dependencies = [
  "data-encoding",
  "libp2p-identity",
  "multibase",
- "multihash 0.19.1",
+ "multihash",
  "percent-encoding",
  "serde 1.0.188",
  "static_assertions",
- "unsigned-varint",
+ "unsigned-varint 0.7.2",
  "url",
 ]
 
@@ -5818,37 +5831,12 @@ dependencies = [
 
 [[package]]
 name = "multihash"
-version = "0.18.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfd8a792c1694c6da4f68db0a9d707c72bd260994da179e6030a5dcee00bb815"
-dependencies = [
- "core2",
- "multihash-derive",
- "unsigned-varint",
-]
-
-[[package]]
-name = "multihash"
 version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "076d548d76a0e2a0d4ab471d0b1c36c577786dfc4471242035d97a12a735c492"
 dependencies = [
  "core2",
- "unsigned-varint",
-]
-
-[[package]]
-name = "multihash-derive"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc076939022111618a5026d3be019fd8b366e76314538ff9a1b59ffbcbf98bcd"
-dependencies = [
- "proc-macro-crate",
- "proc-macro-error",
- "proc-macro2 1.0.66",
- "quote 1.0.33",
- "syn 1.0.109",
- "synstructure",
+ "unsigned-varint 0.7.2",
 ]
 
 [[package]]
@@ -7678,11 +7666,16 @@ name = "rooch-da"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "bcs",
  "celestia-rpc",
  "celestia-types",
+ "coerce",
+ "log",
  "moveos-types",
+ "rooch-config",
  "serde 1.0.188",
+ "serde_yaml 0.9.25",
 ]
 
 [[package]]
@@ -9563,18 +9556,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2047c6ded9c721764247e62cd3b03c09ffc529b2ba5b10ec482ae507a4a70160"
 
 [[package]]
-name = "synstructure"
-version = "0.12.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f36bdaa60a83aca3921b5259d5400cbf5e90fc51931376a9bd4a0eb79aa7210f"
-dependencies = [
- "proc-macro2 1.0.66",
- "quote 1.0.33",
- "syn 1.0.109",
- "unicode-xid 0.2.4",
-]
-
-[[package]]
 name = "synthez"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10481,6 +10462,12 @@ name = "unsigned-varint"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6889a77d49f1f013504cec6bf97a2c730394adedaeb1deb5ea08949a50541105"
+
+[[package]]
+name = "unsigned-varint"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb066959b24b5196ae73cb057f45598450d2c5f71460e98c49b738086eff9c06"
 
 [[package]]
 name = "untrusted"

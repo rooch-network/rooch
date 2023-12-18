@@ -9,18 +9,18 @@ use celestia_types::nmt::Namespace;
 
 use crate::server::segment::Segment;
 
-struct Backend {
+pub struct Backend {
     namespace: Namespace,
     client: Client,
 }
 
 impl Backend {
-    async fn new(namespace: Namespace, conn_str: &str, auth_token: &str) -> Self {
+    pub async fn new(namespace: Namespace, conn_str: &str, auth_token: &str) -> Self {
         let celestia_client = Client::new(conn_str, Option::from(auth_token)).await.unwrap();
         Self { namespace, client: celestia_client }
     }
-    
-    async fn submit(&self, segment: Segment) -> Result<()> {
+
+    pub async fn submit(&self, segment: Segment) -> Result<()> {
         let data = bcs::to_bytes(&segment).unwrap();
         let blob = Blob::new(self.namespace, data).unwrap();
 
@@ -30,8 +30,8 @@ impl Backend {
             Err(e) => {
                 log::warn!(
                     "failed to submit segment to celestia node, chunk: {}, segment: {}, commitment: {:?}, error:{:?}",
-                    segment.chunk_id,
-                    segment.segment_id,
+                    segment.id.chunk_id,
+                    segment.id.segment_id,
                     blob.commitment,
                     e,
                 );

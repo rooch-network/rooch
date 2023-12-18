@@ -1,7 +1,5 @@
 use serde::Serialize;
 
-use crate::server::chunk::ChunkID;
-
 #[derive(Serialize)]
 pub struct Segment {
     pub id: SegmentID,
@@ -11,6 +9,7 @@ pub struct Segment {
 
 #[derive(Serialize)]
 pub struct SegmentID {
-    pub chunk_id: ChunkID,
+    // chunk id represents the sequential order of extents within a stream, commencing from 0 and incrementing successively.
+    pub chunk_id: u128,
     pub segment_id: u64,
 }
