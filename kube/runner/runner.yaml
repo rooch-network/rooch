@@ -7,7 +7,7 @@ spec:
     spec:
       nodeSelector:
         cloud.google.com/gke-nodepool: ci-pool
-      image: summerwind/actions-runner:v2.311.0-ubuntu-22.04-8e48463
+      image: nada9527/actions-runner-dind:v2.311.0-ubuntu-22.04-8e48463
       repository: rooch-network/rooch
       ephemeral: true
       tolerations:
@@ -24,7 +24,7 @@ spec:
       dockerEnabled: true
       # If set to true, runner pod container only 1 container that's expected to be able to run docker, too.
       # image summerwind/actions-runner-dind or custom one should be used with true -value
-      dockerdWithinRunnerContainer: false
+      dockerdWithinRunnerContainer: true
 
 ---
 apiVersion: actions.summerwind.dev/v1alpha1
@@ -45,5 +45,5 @@ spec:
       checkRun:
         types: ["created"]
         status: "queued"
-    amount: 1
+    amount: 2
     duration: "2m"
