@@ -9,7 +9,7 @@ use bitcoincore_rpc::{bitcoincore_rpc_json::GetBlockHeaderResult, Auth, Client, 
 use moveos_types::{module_binding::MoveFunctionCaller, transaction::FunctionCall};
 use rooch_config::BitcoinRelayerConfig;
 use rooch_executor::proxy::ExecutorProxy;
-use rooch_types::framework::bitcoin_light_client::BitcoinLightClientModule;
+use rooch_types::bitcoin::light_client::BitcoinLightClientModule;
 use std::cmp::max;
 use tracing::{debug, info};
 

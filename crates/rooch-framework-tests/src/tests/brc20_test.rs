@@ -4,7 +4,7 @@
 use crate::binding_test;
 use bitcoin::consensus::Decodable;
 use hex::FromHex;
-use rooch_types::framework::brc20::Op;
+use rooch_types::bitcoin::brc20::Op;
 use tracing::debug;
 
 fn decode_ops(btx_tx_hex: &str) -> Vec<Op> {
@@ -23,15 +23,13 @@ fn decode_ops(btx_tx_hex: &str) -> Vec<Op> {
             output.script_pubkey.p2wpkh_script_code()
         );
     }
-    let inscriptions =
-        rooch_framework::natives::rooch_framework::bitcoin::ord::from_transaction(&btc_tx);
+    let inscriptions = bitcoin_move::natives::ord::from_transaction(&btc_tx);
     for (i, inscription) in inscriptions.iter().enumerate() {
         debug!("{}. inscription: {:?}", i, inscription);
     }
     let binding_test = binding_test::RustBindingTest::new().unwrap();
-    let brc20_module =
-        binding_test.as_module_bundle::<rooch_types::framework::brc20::BRC20Module>();
-    let move_btc_tx: rooch_types::framework::bitcoin_types::Transaction = btc_tx.into();
+    let brc20_module = binding_test.as_module_bundle::<rooch_types::bitcoin::brc20::BRC20Module>();
+    let move_btc_tx: rooch_types::bitcoin::types::Transaction = btc_tx.into();
     let ops_from_move = brc20_module.from_transaction(&move_btc_tx).unwrap();
     debug!("ops_from_move: {:?}", ops_from_move);
     ops_from_move

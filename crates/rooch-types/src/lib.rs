@@ -5,6 +5,7 @@ pub mod account;
 pub mod address;
 pub mod addresses;
 pub mod authentication_key;
+pub mod bitcoin;
 pub mod block;
 pub mod chain_id;
 pub mod coin_type;

@@ -26,7 +26,9 @@ It interacts with the other modules in the following ways:
 
 <pre><code><b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="chain_id.md#0x3_chain_id">0x3::chain_id</a>;
+<b>use</b> <a href="core_addresses.md#0x3_core_addresses">0x3::core_addresses</a>;
 </code></pre>
 
 
@@ -46,6 +48,15 @@ A object holding the current Unix time in milliseconds
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x3_timestamp_ErrorNotGenesisAddress"></a>
+
+
+
+<pre><code><b>const</b> <a href="timestamp.md#0x3_timestamp_ErrorNotGenesisAddress">ErrorNotGenesisAddress</a>: u64 = 2;
+</code></pre>
+
 
 
 <a name="0x3_timestamp_ErrorInvalidTimestamp"></a>
@@ -96,9 +107,10 @@ Updates the global clock time, if the new time is smaller than the current time,
 ## Function `try_update_global_time`
 
 Tries to update the global clock time, if the new time is smaller than the current time, ignores the update, and returns false.
+Only the framework genesis account can update the global clock time.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x3_timestamp_try_update_global_time">try_update_global_time</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, timestamp_milliseconds: u64): bool
+<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x3_timestamp_try_update_global_time">try_update_global_time</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, genesis_account: &<a href="">signer</a>, timestamp_milliseconds: u64): bool
 </code></pre>
 
 

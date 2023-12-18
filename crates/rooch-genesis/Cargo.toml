@@ -50,6 +50,7 @@ moveos-store = { workspace = true }
 rooch-framework = { workspace = true }
 rooch-types = { workspace = true }
 rooch-genesis-builder = { workspace = true }
+bitcoin-move = { workspace = true }
 
 [build-dependencies]
 rooch-genesis-builder = { workspace = true }

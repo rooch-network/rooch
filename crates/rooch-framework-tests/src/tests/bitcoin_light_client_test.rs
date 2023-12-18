@@ -8,7 +8,7 @@ use hex::FromHex;
 use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
-use rooch_types::framework::bitcoin_types::Header;
+use rooch_types::bitcoin::types::Header;
 use rooch_types::transaction::rooch::RoochTransactionData;
 
 #[test]
@@ -28,13 +28,19 @@ fn test_submit_block() {
     let block_hash = block.header.block_hash();
     let block_header: Header = block.header.into();
 
-    let action = MoveAction::Function(rooch_types::framework::bitcoin_light_client::BitcoinLightClientModule::create_submit_new_block_call(height, block.clone()));
+    let action = MoveAction::Function(
+        rooch_types::bitcoin::light_client::BitcoinLightClientModule::create_submit_new_block_call(
+            height,
+            block.clone(),
+        ),
+    );
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
     binding_test.execute(tx).unwrap();
 
-    let bitcoin_light_client_module =
-        binding_test.as_module_bundle::<rooch_types::framework::bitcoin_light_client::BitcoinLightClientModule>();
+    let bitcoin_light_client_module = binding_test
+        .as_module_bundle::<rooch_types::bitcoin::light_client::BitcoinLightClientModule>(
+    );
     assert_eq!(
         bitcoin_light_client_module
             .get_block(block_hash)
@@ -61,12 +67,13 @@ fn test_submit_block() {
 
     assert!(bitcoin_light_client_module.remaining_tx_count().unwrap() > 0);
     let sequence_number = sequence_number + 1;
-    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, MoveAction::Function(rooch_types::framework::bitcoin_light_client::BitcoinLightClientModule::create_progress_utxos_call(bitcoin_txdata.len() as u64)));
+    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, MoveAction::Function(rooch_types::bitcoin::light_client::BitcoinLightClientModule::create_progress_utxos_call(bitcoin_txdata.len() as u64)));
     let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
     binding_test.execute(tx).unwrap();
 
-    let bitcoin_light_client_module =
-        binding_test.as_module_bundle::<rooch_types::framework::bitcoin_light_client::BitcoinLightClientModule>();
+    let bitcoin_light_client_module = binding_test
+        .as_module_bundle::<rooch_types::bitcoin::light_client::BitcoinLightClientModule>(
+    );
 
     for tx in bitcoin_txdata {
         for (index, _tx_out) in tx.output.iter().enumerate() {
@@ -113,16 +120,22 @@ fn test_utxo_progress() {
     //let bitcoin_txdata = block.txdata.clone();
     // let inscriptions = bitcoin_txdata
     //     .iter()
-    //     .map(|tx| rooch_framework::natives::rooch_framework::bitcoin::ord::from_transaction(tx))
+    //     .map(|tx| bitcoin_move::natives::ord::from_transaction(tx))
     //     .flatten()
     //     .collect::<Vec<_>>();
-    let action = MoveAction::Function(rooch_types::framework::bitcoin_light_client::BitcoinLightClientModule::create_submit_new_block_call(height, block.clone()));
+    let action = MoveAction::Function(
+        rooch_types::bitcoin::light_client::BitcoinLightClientModule::create_submit_new_block_call(
+            height,
+            block.clone(),
+        ),
+    );
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
     binding_test.execute(tx).unwrap();
 
-    let bitcoin_light_client_module =
-        binding_test.as_module_bundle::<rooch_types::framework::bitcoin_light_client::BitcoinLightClientModule>();
+    let bitcoin_light_client_module = binding_test
+        .as_module_bundle::<rooch_types::bitcoin::light_client::BitcoinLightClientModule>(
+    );
     assert!(bitcoin_light_client_module.remaining_tx_count().unwrap() > 0);
     let mut remaining_tx_count = bitcoin_light_client_module.remaining_tx_count().unwrap();
     while remaining_tx_count > 0 {
@@ -131,7 +144,7 @@ fn test_utxo_progress() {
         sender,
         sequence_number,
         MoveAction::Function(
-            rooch_types::framework::bitcoin_light_client::BitcoinLightClientModule::create_progress_utxos_call(
+            rooch_types::bitcoin::light_client::BitcoinLightClientModule::create_progress_utxos_call(
                 1000,
             ),
         ),
@@ -139,7 +152,8 @@ fn test_utxo_progress() {
         let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
         binding_test.execute(tx).unwrap();
         let bitcoin_light_client_module =
-        binding_test.as_module_bundle::<rooch_types::framework::bitcoin_light_client::BitcoinLightClientModule>();
+            binding_test
+                .as_module_bundle::<rooch_types::bitcoin::light_client::BitcoinLightClientModule>();
         remaining_tx_count = bitcoin_light_client_module.remaining_tx_count().unwrap();
     }
 
