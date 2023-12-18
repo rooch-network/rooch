@@ -27,6 +27,7 @@ use move_vm_types::{
     values::{Struct, Value, Vector, VectorRef},
 };
 use moveos_stdlib_builder::dependency_order::sort_by_dependency_order;
+use moveos_types::addresses::{MOVEOS_STD_ADDRESS, MOVE_STD_ADDRESS};
 use smallvec::smallvec;
 use std::collections::{BTreeSet, HashMap, VecDeque};
 use std::hash::Hash;
@@ -37,6 +38,14 @@ const E_ADDRESS_NOT_MATCH_WITH_SIGNER: u64 = 1;
 const E_MODULE_VERIFICATION_ERROR: u64 = 2;
 const E_MODULE_INCOMPATIBLE: u64 = 3;
 const E_LENTH_NOT_MATCH: u64 = 4;
+
+// Define reversed addresses here
+// TODO: a better way to import the rooch framework address `0x3`
+static REVERSED_ADDRESSES: [AccountAddress; 3] = [MOVE_STD_ADDRESS, MOVEOS_STD_ADDRESS, {
+    let mut addr = [0u8; AccountAddress::LENGTH];
+    addr[AccountAddress::LENGTH - 1] = 3u8;
+    AccountAddress::new(addr)
+}];
 
 /// The native module context.
 #[derive(Tid)]
@@ -132,7 +141,9 @@ fn native_sort_and_verify_modules_inner(
     let mut module_names = vec![];
     let mut init_identifier = vec![];
     for module in &compiled_modules {
-        if *module.self_id().address() != account_address {
+        let module_address = *module.self_id().address();
+
+        if !REVERSED_ADDRESSES.contains(&module_address) && module_address != account_address {
             return Ok(NativeResult::err(cost, E_ADDRESS_NOT_MATCH_WITH_SIGNER));
         }
         let result = moveos_verifier::verifier::verify_module(module, module_context.resolver);

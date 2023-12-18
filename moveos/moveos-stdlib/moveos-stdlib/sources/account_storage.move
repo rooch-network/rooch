@@ -129,7 +129,7 @@ module moveos_std::account_storage {
         let upgrade_flag = false;
         while (i < len) {
             let name = vector::pop_back(&mut module_names);
-            let m = pop_module_by_name(&mut modules, name);   
+            let m = pop_module_by_name(&mut modules, name);
 
             // The module already exists, which means we are upgrading the module
             if (table::contains(&self.modules, name)) {

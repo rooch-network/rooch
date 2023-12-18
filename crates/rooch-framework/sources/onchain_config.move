@@ -7,6 +7,7 @@ module rooch_framework::onchain_config {
     use moveos_std::object;
 
     friend rooch_framework::upgrade;
+    friend rooch_framework::genesis;
 
     /// OnchainConfig is framework configurations stored on chain.
     struct OnchainConfig has key {

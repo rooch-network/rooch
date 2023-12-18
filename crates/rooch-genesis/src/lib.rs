@@ -27,7 +27,9 @@ use std::{
 };
 
 pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
-    // TODO: Setup sequencer for local genesis.
+    // TODO: For now, ROOCH_LOCAL_GENESIS in only used in integration-test.
+    // There is no need to upgrade framework, so we set sequencer to 0x0.
+    // Setup sequencer for local genesis if there is only demands.
     let mock_sequencer = RoochAddress::from_str("0x0").expect("parse sequencer address failed");
     // genesis for integration test, we need to build the stdlib every time for `private_generic` check
     // see moveos/moveos-verifier/src/metadata.rs#L27-L30

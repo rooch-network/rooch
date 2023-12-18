@@ -23,4 +23,11 @@ module rooch_framework::upgrade {
 
         event::emit<FrameworkUpgradeEvent>(FrameworkUpgradeEvent { version: onchain_config::framework_version(ctx) });
     }
+
+//    struct U8Event has drop, store {
+//         value: u8
+//    }
+//    public entry fun emit_u8(_ctx: &mut Context, value: u8) {
+//       event::emit<U8Event>(U8Event { value });
+//    }
 }

@@ -7017,6 +7017,7 @@ dependencies = [
  "moveos",
  "moveos-common",
  "moveos-stdlib",
+ "moveos-stdlib-builder",
  "moveos-store",
  "moveos-types",
  "moveos-verifier",
@@ -7169,6 +7170,7 @@ dependencies = [
  "moveos-types",
  "rooch-genesis-builder",
  "rooch-types",
+ "rpassword",
 ]
 
 [[package]]
