@@ -4,12 +4,14 @@
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
+
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::state::{AnnotatedState, MoveStructType, State};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
+use rooch_da::proxy::DAProxy;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_proposer::proxy::ProposerProxy;
@@ -21,9 +23,9 @@ use rooch_types::address::{MultiChainAddress, RoochAddress};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::sequencer::SequencerOrder;
-use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::{TransactionSequenceInfo, TransactionSequenceInfoMapping};
 use rooch_types::transaction::{TransactionWithInfo, TypedTransaction};
+use rooch_types::transaction::rooch::RoochTransaction;
 
 /// RpcService is the implementation of the RPC service.
 /// It is the glue between the RPC server(EthAPIServer,RoochApiServer) and the rooch's actors.
@@ -35,6 +37,7 @@ pub struct RpcService {
     pub(crate) sequencer: SequencerProxy,
     pub(crate) proposer: ProposerProxy,
     pub(crate) indexer: IndexerProxy,
+    pub(crate) da: DAProxy,
 }
 
 impl RpcService {
@@ -44,6 +47,7 @@ impl RpcService {
         sequencer: SequencerProxy,
         proposer: ProposerProxy,
         indexer: IndexerProxy,
+        da: DAProxy,
     ) -> Self {
         Self {
             chain_id,
@@ -51,6 +55,7 @@ impl RpcService {
             sequencer,
             proposer,
             indexer,
+            da,
         }
     }
 }

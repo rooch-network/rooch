@@ -1,3 +1,3 @@
 mod backend;
-mod actor;
-mod proxy;
+pub mod actor;
+pub mod proxy;

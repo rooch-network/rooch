@@ -9,10 +9,10 @@ pub trait DAServerProxy {
     fn put_batch(&self, request: PutBatchMessage) -> Result<PutBatchResult>;
 }
 
-// NopDAServerProxy is a no-op implementation of DAServerProxy
-pub struct NopDAServerProxy;
+// DAServerNopProxy is a no-op implementation of DAServerProxy
+pub struct DAServerNopProxy;
 
-impl DAServerProxy for NopDAServerProxy {
+impl DAServerProxy for DAServerNopProxy {
     fn put_batch(&self, _request: PutBatchMessage) -> Result<PutBatchResult> {
         Ok(PutBatchResult::default())
     }

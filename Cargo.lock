@@ -8237,6 +8237,7 @@ dependencies = [
  "rand 0.8.5",
  "raw-store",
  "rooch-config",
+ "rooch-da",
  "rooch-executor",
  "rooch-indexer",
  "rooch-key",

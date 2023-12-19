@@ -38,7 +38,13 @@ impl DAServerCelestiaActor {
     }
 
     pub fn pub_batch(&self, batch: PutBatchMessage) -> Result<PutBatchResult> {
-        // TODO using chunk builder to make segments
+        // TODO using chunk builder to make segments:
+        // 1. persist batch into buffer then return ok
+        // 2. collect batch for better compression ratio
+        // 3. split chunk into segments
+        // 4. submit segments to celestia node
+        // 5. record segment id in order
+        // 6. clean up batch buffer
         let segs = batch.batch.data.chunks(self.max_segment_size);
         let total = segs.len();
 
@@ -55,6 +61,8 @@ impl DAServerCelestiaActor {
         }).collect::<Vec<_>>();
 
         for segment in segments {
+            // TODO record ok segment in order
+            // TODO segment indexer trait (local file, db, etc)
             self.backend.submit(segment)?;
         }
         Ok(PutBatchResult::default())

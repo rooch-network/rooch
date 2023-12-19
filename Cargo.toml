@@ -99,6 +99,7 @@ rooch-open-rpc-spec-builder = { path = "crates/rooch-open-rpc-spec-builder" }
 rooch-open-rpc-macros = { path = "crates/rooch-open-rpc-macros" }
 rooch-store = { path = "crates/rooch-store" }
 rooch-indexer = { path = "crates/rooch-indexer" }
+rooch-da = { path = "crates/rooch-da" }
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.

@@ -28,6 +28,11 @@ use rooch_config::da_config::{DAConfig, DAServerType};
 use rooch_config::indexer_config::IndexerConfig;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::store_config::StoreConfig;
+use rooch_da::actor::da::DAActor;
+use rooch_da::proxy::DAProxy;
+use rooch_da::server::celestia::actor::server::DAServerCelestiaActor;
+use rooch_da::server::celestia::proxy::DAServerCelestiaProxy;
+use rooch_da::server::serverproxy::{DAServerNopProxy, DAServerProxy};
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::actor::indexer::IndexerActor;
@@ -249,6 +254,25 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     );
     timers.push(proposer_timer);
 
+    // Init DA
+    let internal_da_server_config = da_config.internal_da_server.clone();
+    let da_server_proxy: dyn DAServerProxy = match internal_da_server_config {
+        Some(DAServerType::Celestia(celestia_config)) => {
+            let da_server = DAServerCelestiaActor::new(&celestia_config)?
+                .into_actor(Some("DAServerCelestia"), &actor_system)
+                .await?;
+            DAServerCelestiaProxy::new(da_server.into())
+        }
+        _ => {
+            DAServerNopProxy::new()
+        }
+    };
+
+    let servers: Vec<Box<dyn DAServerProxy>> = vec![
+        Box::new(da_server_proxy),
+    ];
+    let da_proxy = DAProxy::new(DAActor::new(servers).into());
+
     // Init indexer
     let indexer_executor = IndexerActor::new(indexer_store, indexer_reader)?
         .into_actor(Some("Indexer"), &actor_system)
@@ -261,6 +285,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         sequencer_proxy,
         proposer_proxy,
         indexer_proxy,
+        da_proxy,
     );
     let aggregate_service = AggregateService::new(rpc_service.clone());
 
@@ -404,23 +429,4 @@ fn init_indexer(indexer_config: &IndexerConfig) -> Result<(IndexerStore, Indexer
     let indexer_reader = IndexerReader::new(indexer_db_url)?;
 
     Ok((indexer_store, indexer_reader))
-}
-
-fn init_da(da_config: &DAConfig) -> Result<()> {
-    match da_config.internal_da_server {
-        Some(DAServerType::Celestia(celestia_config)) => {
-            let namespace = celestia_config.namespace.unwrap_or_default();
-            let conn = celestia_config.conn.unwrap_or_default();
-            let auth_token = celestia_config.auth_token.unwrap_or_default();
-            let max_segment_size = celestia_config.max_segment_size.unwrap_or_default();
-            info!(
-                "DA server type: celestia, namespace: {}, conn: {}, auth_token: {}, max_segment_size: {}",
-                namespace, conn, auth_token, max_segment_size
-            );
-        }
-        _ => {
-            info!("DA server type: none");
-        }
-    }
-    Ok(())
 }
