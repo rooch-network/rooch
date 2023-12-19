@@ -1,0 +1,42 @@
+# 单元测试
+
+在 Move 中，编写单元测试跟编写正常的代码基本一样，区别只是在测试代码的上方使用下面的标注：
+
+- `#[test]`
+- `#[test_only]`
+- `#[expected_failure]`
+
+第一条标注将函数标记为测试。第二条标注将模块或模块成员（导入语句、函数或结构体）标记为仅用于测试。第三条标注预期测试失败的代码。
+
+这些注释可以放置在具有任何可见性的函数上。每当一个模块或模块成员被注释为 `#[test_only]` 或 `#[test]` 时，它不会包含在编译的字节码中，除非它被编译用于测试。
+
+使用 `#[test]` 和 `#[expected_failure]` 标注时，可以带参数或不带参数。
+
+没有参数的 `#[test]` 标注只能放在没有参数的函数上。
+
+```move
+#[test] // OK
+fun this_is_a_test() { ... }
+
+#[test] // Will fail to compile since the test takes an argument
+fun this_is_not_correct(arg: signer) { ... }
+```
+
+测试也可以标注为 `#[expected_failure]`。这个标注标志着测试应该会引发错误。可以通过使用 `#[expected_failure(abort_code = code)]` 对其进行注释来确保测试使用特定的中止代码中止，如果它随后因不同的中止代码或非中止错误而失败，则测试将失败。只有具有 `#[test]` 标注的函数也可以标注为 `#[expected_failure]`。
+
+```move
+#[test]
+#[expected_failure]
+public fun this_test_will_abort_and_pass() { abort 1 }
+
+#[test]
+#[expected_failure]
+public fun test_will_error_and_pass() { 1/0; }
+
+#[test]
+#[expected_failure(abort_code = 0)]
+public fun test_will_error_and_fail() { 1/0; }
+
+#[test, expected_failure] // Can have multiple in one attribute. This test will pass.
+public fun this_other_test_will_abort_and_pass() { abort 1 }
+```
