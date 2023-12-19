@@ -236,24 +236,6 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
-    // Init proposer
-    let proposer_keypair = server_opt.proposer_keypair.unwrap();
-    let proposer_account: RoochAddress = (&proposer_keypair.public()).into();
-    info!("RPC Server proposer address: {:?}", proposer_account);
-    let proposer = ProposerActor::new(proposer_keypair)
-        .into_actor(Some("Proposer"), &actor_system)
-        .await?;
-    let proposer_proxy = ProposerProxy::new(proposer.clone().into());
-    //TODO load from config
-    let block_propose_duration_in_seconds: u64 = 5;
-    let mut timers = vec![];
-    let proposer_timer = Timer::start(
-        proposer,
-        Duration::from_secs(block_propose_duration_in_seconds),
-        ProposeBlock {},
-    );
-    timers.push(proposer_timer);
-
     // Init DA
     let internal_da_server_config = da_config.internal_da_server.clone();
     let da_server_proxy: dyn DAServerProxy = match internal_da_server_config {
@@ -273,6 +255,24 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     ];
     let da_proxy = DAProxy::new(DAActor::new(servers).into());
 
+    // Init proposer
+    let proposer_keypair = server_opt.proposer_keypair.unwrap();
+    let proposer_account: RoochAddress = (&proposer_keypair.public()).into();
+    info!("RPC Server proposer address: {:?}", proposer_account);
+    let proposer = ProposerActor::new(proposer_keypair, da_proxy)   // TODO move da_proxy out of proposer
+        .into_actor(Some("Proposer"), &actor_system)
+        .await?;
+    let proposer_proxy = ProposerProxy::new(proposer.clone().into());
+    //TODO load from config
+    let block_propose_duration_in_seconds: u64 = 5;
+    let mut timers = vec![];
+    let proposer_timer = Timer::start(
+        proposer,
+        Duration::from_secs(block_propose_duration_in_seconds),
+        ProposeBlock {},
+    );
+    timers.push(proposer_timer);
+
     // Init indexer
     let indexer_executor = IndexerActor::new(indexer_store, indexer_reader)?
         .into_actor(Some("Indexer"), &actor_system)
@@ -285,7 +285,6 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         sequencer_proxy,
         proposer_proxy,
         indexer_proxy,
-        da_proxy,
     );
     let aggregate_service = AggregateService::new(rpc_service.clone());
 

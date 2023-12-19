@@ -37,7 +37,6 @@ pub struct RpcService {
     pub(crate) sequencer: SequencerProxy,
     pub(crate) proposer: ProposerProxy,
     pub(crate) indexer: IndexerProxy,
-    pub(crate) da: DAProxy,
 }
 
 impl RpcService {
@@ -55,7 +54,6 @@ impl RpcService {
             sequencer,
             proposer,
             indexer,
-            da,
         }
     }
 }

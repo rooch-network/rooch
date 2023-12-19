@@ -5,6 +5,8 @@ use std::collections::BTreeMap;
 
 use moveos_types::h256;
 use moveos_types::h256::H256;
+use rooch_da::messages::{Batch, BatchMeta};
+use rooch_da::proxy::DAProxy;
 use rooch_types::block::Block;
 use rooch_types::transaction::AbstractTransaction;
 
@@ -16,6 +18,7 @@ pub struct StateCommitmentChain {
     //TODO save to the storage
     blocks: BTreeMap<u128, Block>,
     buffer: Vec<TransactionProposeMessage>,
+    da: DAProxy,
 }
 
 impl Default for StateCommitmentChain {
@@ -26,10 +29,11 @@ impl Default for StateCommitmentChain {
 
 impl StateCommitmentChain {
     /// Create a new SCC
-    pub fn new() -> Self {
+    pub fn new(da_proxy: DAProxy) -> Self {
         Self {
             blocks: BTreeMap::new(),
             buffer: Vec::new(),
+            da: da_proxy,
         }
     }
 
@@ -53,7 +57,7 @@ impl StateCommitmentChain {
     }
 
     /// Trigger the proposer to propose a new block
-    pub fn propose_block(&mut self) -> Option<&Block> {
+    pub async fn propose_block(&mut self) -> Option<&Block> {
         if self.buffer.is_empty() {
             return None;
         }
@@ -83,16 +87,21 @@ impl StateCommitmentChain {
 
         // submit batch to DA server
         // TODO move batch submit out of proposer
-        let batch: Vec<u8> = self
+        let batch_data: Vec<u8> = self
             .buffer
             .iter()
             .flat_map(|tx| tx.tx.encode())
             .collect();
         // regard batch(tx list) as a blob: easy to check integrity
-        let batch_hash = h256::sha3_256_of(&batch);
-
-        // TODO use da Batcher to submit batch
-
+        let batch_hash = h256::sha3_256_of(&batch_data);
+        let _ = self.da.submit_batch(Batch {
+            meta: BatchMeta {
+                block_number,
+                batch_hash,
+                signature: vec![],
+            },
+            data: batch_data,
+        }).await;
 
         let new_block = Block::new(
             block_number,

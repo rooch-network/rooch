@@ -8080,6 +8080,7 @@ dependencies = [
  "moveos",
  "moveos-store",
  "moveos-types",
+ "rooch-da",
  "rooch-types",
  "schemars",
  "serde 1.0.188",
