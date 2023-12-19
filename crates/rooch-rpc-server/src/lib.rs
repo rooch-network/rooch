@@ -8,12 +8,12 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Error, Result};
-use coerce::actor::{IntoActor, system::ActorSystem};
 use coerce::actor::scheduler::timer::Timer;
+use coerce::actor::{system::ActorSystem, IntoActor};
 use hyper::header::HeaderValue;
 use hyper::Method;
-use jsonrpsee::RpcModule;
 use jsonrpsee::server::ServerBuilder;
+use jsonrpsee::RpcModule;
 use serde_json::json;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
@@ -23,11 +23,11 @@ use moveos_store::{MoveOSDB, MoveOSStore};
 use raw_store::errors::RawStoreError;
 use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
-use rooch_config::{BaseConfig, RoochOpt, ServerOpt};
 use rooch_config::da_config::{DAConfig, DAServerType};
 use rooch_config::indexer_config::IndexerConfig;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::store_config::StoreConfig;
+use rooch_config::{BaseConfig, RoochOpt, ServerOpt};
 use rooch_da::actor::da::DAActor;
 use rooch_da::proxy::DAProxy;
 use rooch_da::server::celestia::actor::server::DAServerCelestiaActor;
@@ -37,8 +37,8 @@ use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::indexer_reader::IndexerReader;
-use rooch_indexer::IndexerStore;
 use rooch_indexer::proxy::IndexerProxy;
+use rooch_indexer::IndexerStore;
 use rooch_key::key_derive::{generate_new_key_pair, retrieve_key_pair};
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
@@ -203,8 +203,8 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         moveos_store.clone(),
         rooch_store.clone(),
     )?
-        .into_actor(Some("Executor"), &actor_system)
-        .await?;
+    .into_actor(Some("Executor"), &actor_system)
+    .await?;
     let executor_proxy = ExecutorProxy::new(executor.into());
 
     // Check for key pairs
@@ -245,21 +245,17 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
                 .await?;
             DAServerCelestiaProxy::new(da_server.into())
         }
-        _ => {
-            DAServerNopProxy::new()
-        }
+        _ => DAServerNopProxy::new(),
     };
 
-    let servers: Vec<Box<dyn DAServerProxy>> = vec![
-        Box::new(da_server_proxy),
-    ];
+    let servers: Vec<Box<dyn DAServerProxy>> = vec![Box::new(da_server_proxy)];
     let da_proxy = DAProxy::new(DAActor::new(servers).into());
 
     // Init proposer
     let proposer_keypair = server_opt.proposer_keypair.unwrap();
     let proposer_account: RoochAddress = (&proposer_keypair.public()).into();
     info!("RPC Server proposer address: {:?}", proposer_account);
-    let proposer = ProposerActor::new(proposer_keypair, da_proxy)   // TODO move da_proxy out of proposer
+    let proposer = ProposerActor::new(proposer_keypair, da_proxy) // TODO move da_proxy out of proposer
         .into_actor(Some("Proposer"), &actor_system)
         .await?;
     let proposer_proxy = ProposerProxy::new(proposer.clone().into());

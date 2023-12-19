@@ -1292,7 +1292,7 @@ checksum = "e7daec1a2a2129eeba1644b220b4647ec537b0b5d4bfd6876fcc5a540056b592"
 dependencies = [
  "camino",
  "cargo-platform",
- "semver",
+ "semver 1.0.18",
  "serde 1.0.193",
  "serde_json",
  "thiserror",
@@ -1332,7 +1332,7 @@ dependencies = [
  "prost 0.12.3",
  "prost-build",
  "prost-types",
- "serde 1.0.188",
+ "serde 1.0.193",
  "tendermint-proto",
 ]
 
@@ -1345,7 +1345,7 @@ dependencies = [
  "celestia-types",
  "http",
  "jsonrpsee 0.20.3",
- "serde 1.0.188",
+ "serde 1.0.193",
  "thiserror",
  "tracing",
 ]
@@ -1368,7 +1368,7 @@ dependencies = [
  "multihash",
  "nmt-rs",
  "ruint",
- "serde 1.0.188",
+ "serde 1.0.193",
  "serde_repr",
  "sha2 0.10.8",
  "tendermint",
@@ -1647,7 +1647,7 @@ dependencies = [
  "hmac",
  "k256 0.13.1",
  "serde 1.0.193",
-  "sha2 0.10.8",
+ "sha2 0.10.8",
  "thiserror",
 ]
 
@@ -2894,7 +2894,7 @@ checksum = "4aab5af432b3fe5b7756b60df5c9ddeb85a13414575ad8a9acd707c24f0a77a5"
 dependencies = [
  "ethers-core",
  "reqwest",
- "semver",
+ "semver 1.0.18",
  "serde 1.0.193",
  "serde_json",
  "thiserror",
@@ -3003,7 +3003,7 @@ dependencies = [
  "path-slash",
  "rayon",
  "regex",
- "semver",
+ "semver 1.0.18",
  "serde 1.0.193",
  "serde_json",
  "solang-parser",
@@ -4264,7 +4264,7 @@ dependencies = [
  "hyper",
  "jsonrpsee-types 0.20.3",
  "rustc-hash",
- "serde 1.0.188",
+ "serde 1.0.193",
  "serde_json",
  "thiserror",
  "tokio",
@@ -4301,7 +4301,7 @@ dependencies = [
  "hyper-rustls",
  "jsonrpsee-core 0.20.3",
  "jsonrpsee-types 0.20.3",
- "serde 1.0.188",
+ "serde 1.0.193",
  "serde_json",
  "thiserror",
  "tokio",
@@ -4346,8 +4346,8 @@ dependencies = [
  "futures-util",
  "http",
  "hyper",
- "jsonrpsee-core",
- "jsonrpsee-types",
+ "jsonrpsee-core 0.16.3",
+ "jsonrpsee-types 0.16.3",
  "serde 1.0.193",
  "serde_json",
  "soketto",
@@ -4380,7 +4380,7 @@ checksum = "5be0be325642e850ed0bdff426674d2e66b2b7117c9be23a7caef68a2902b7d9"
 dependencies = [
  "anyhow",
  "beef",
- "serde 1.0.188",
+ "serde 1.0.193",
  "serde_json",
  "thiserror",
  "tracing",
@@ -5740,7 +5740,7 @@ dependencies = [
  "multibase",
  "multihash",
  "percent-encoding",
- "serde 1.0.188",
+ "serde 1.0.193",
  "static_assertions",
  "unsigned-varint 0.7.2",
  "url",
@@ -7567,7 +7567,7 @@ dependencies = [
  "log",
  "moveos-types",
  "rooch-config",
- "serde 1.0.188",
+ "serde 1.0.193",
  "serde_yaml 0.9.25",
 ]
 
@@ -8337,7 +8337,7 @@ dependencies = [
  "rand 0.8.5",
  "rlp",
  "ruint-macro",
- "serde 1.0.188",
+ "serde 1.0.193",
  "valuable",
  "zeroize",
 ]
@@ -9208,7 +9208,7 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "74212e6bbe9a4352329b2f68ba3130c15a3f26fe88ff22dbdc6cdd58fa85e99c"
 dependencies = [
- "serde 1.0.188",
+ "serde 1.0.193",
 ]
 
 [[package]]
@@ -9423,7 +9423,7 @@ dependencies = [
  "hex",
  "once_cell",
  "reqwest",
- "semver",
+ "semver 1.0.18",
  "serde 1.0.193",
  "serde_json",
  "sha2 0.10.8",
@@ -9530,7 +9530,7 @@ source = "git+https://github.com/eigerco/celestia-tendermint-rs.git?rev=bbe7de8#
 dependencies = [
  "bytes",
  "digest 0.10.7",
- "ed25519 2.2.3",
+ "ed25519",
  "ed25519-consensus",
  "flex-error",
  "futures",
@@ -9538,7 +9538,7 @@ dependencies = [
  "once_cell",
  "prost 0.12.3",
  "prost-types",
- "serde 1.0.188",
+ "serde 1.0.193",
  "serde_bytes",
  "serde_json",
  "serde_repr",
@@ -9562,7 +9562,7 @@ dependencies = [
  "num-traits 0.2.16",
  "prost 0.12.3",
  "prost-types",
- "serde 1.0.188",
+ "serde 1.0.193",
  "serde_bytes",
  "subtle-encoding",
  "time 0.3.28",

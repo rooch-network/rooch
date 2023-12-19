@@ -27,9 +27,9 @@ use rooch_types::indexer::state::{
 };
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::sequencer::SequencerOrder;
+use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::{TransactionSequenceInfo, TransactionSequenceInfoMapping};
 use rooch_types::transaction::{TransactionWithInfo, TypedTransaction};
-use rooch_types::transaction::rooch::RoochTransaction;
 
 /// RpcService is the implementation of the RPC service.
 /// It is the glue between the RPC server(EthAPIServer,RoochApiServer) and the rooch's actors.

@@ -49,16 +49,19 @@ impl DAServerCelestiaActor {
         let total = segs.len();
 
         let chunk_id = batch.batch.meta.block_number;
-        let segments = segs.enumerate().map(|(i, data)| {
-            Segment {
-                id: SegmentID {
-                    chunk_id,
-                    segment_id: i as u64,
-                },
-                is_last: i == total - 1,    // extra info overhead is much smaller than max_block_size - max_segment_size
-                data: data.to_vec(),
-            }
-        }).collect::<Vec<_>>();
+        let segments = segs
+            .enumerate()
+            .map(|(i, data)| {
+                Segment {
+                    id: SegmentID {
+                        chunk_id,
+                        segment_id: i as u64,
+                    },
+                    is_last: i == total - 1, // extra info overhead is much smaller than max_block_size - max_segment_size
+                    data: data.to_vec(),
+                }
+            })
+            .collect::<Vec<_>>();
 
         for segment in segments {
             // TODO record ok segment in order

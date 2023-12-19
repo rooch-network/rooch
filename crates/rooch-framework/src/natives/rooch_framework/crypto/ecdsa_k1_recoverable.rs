@@ -114,7 +114,8 @@ pub fn native_verify(
 
     let cost = gas_params.base;
 
-    let Ok(sig) = <Secp256k1RecoverableSignature as ToFromBytes>::from_bytes(&signature_bytes_ref) else {
+    let Ok(sig) = <Secp256k1RecoverableSignature as ToFromBytes>::from_bytes(&signature_bytes_ref)
+    else {
         return Ok(NativeResult::err(cost, E_INVALID_SIGNATURE));
     };
 

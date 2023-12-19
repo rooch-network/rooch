@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use async_trait::async_trait;
-use coerce::actor::{Actor, context::ActorContext, message::Handler};
+use coerce::actor::{context::ActorContext, message::Handler, Actor};
 
 use rooch_da::proxy::DAProxy;
 use rooch_types::crypto::RoochKeyPair;

@@ -16,13 +16,7 @@ impl DAProxy {
         Self { actor }
     }
 
-    pub async fn submit_batch(
-        &self,
-        batch: Batch,
-    ) -> anyhow::Result<()> {
-        self
-            .actor
-            .send(batch)
-            .await?
+    pub async fn submit_batch(&self, batch: Batch) -> anyhow::Result<()> {
+        self.actor.send(batch).await?
     }
 }

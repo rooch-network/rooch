@@ -30,7 +30,6 @@ impl Message for Batch {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PutBatchMessage {
     pub batch: Batch,
-
     // TODO add put policy
 }
 

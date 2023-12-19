@@ -3,9 +3,9 @@
 
 use anyhow::Result;
 use celestia_rpc::{BlobClient, Client};
-use celestia_types::{Blob, Commitment};
 use celestia_types::blob::SubmitOptions;
 use celestia_types::nmt::Namespace;
+use celestia_types::{Blob, Commitment};
 
 use crate::server::segment::{Segment, SegmentID};
 
@@ -23,8 +23,13 @@ pub struct SubmitBackendResult {
 
 impl Backend {
     pub async fn new(namespace: Namespace, conn_str: &str, auth_token: &str) -> Self {
-        let celestia_client = Client::new(conn_str, Option::from(auth_token)).await.unwrap();
-        Self { namespace, client: celestia_client }
+        let celestia_client = Client::new(conn_str, Option::from(auth_token))
+            .await
+            .unwrap();
+        Self {
+            namespace,
+            client: celestia_client,
+        }
     }
 
     // TODO return segment id, height, commitment
@@ -34,7 +39,11 @@ impl Backend {
 
         // TODO tx manager
         // TODO backoff retry
-        return match self.client.blob_submit(&[blob.clone()], SubmitOptions::default()).await {
+        return match self
+            .client
+            .blob_submit(&[blob.clone()], SubmitOptions::default())
+            .await
+        {
             Ok(_) => Ok(()),
             Err(e) => {
                 log::warn!(

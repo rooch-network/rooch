@@ -1,16 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{fmt::Debug, path::Path, path::PathBuf};
 use std::fs::create_dir_all;
 use std::sync::Arc;
+use std::{fmt::Debug, path::Path, path::PathBuf};
 
 use anyhow::Result;
 use clap::Parser;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use moveos_config::{DataDirPath, temp_dir};
+use moveos_config::{temp_dir, DataDirPath};
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::crypto::RoochKeyPair;
 
@@ -18,10 +18,10 @@ use crate::da_config::DAConfig;
 use crate::store_config::StoreConfig;
 
 pub mod config;
+pub mod da_config;
 pub mod indexer_config;
 pub mod server_config;
 pub mod store_config;
-pub mod da_config;
 
 pub const ROOCH_DIR: &str = ".rooch";
 pub const ROOCH_CONFIR_DIR: &str = "rooch_config";
@@ -94,10 +94,10 @@ pub struct RoochOpt {
     /// If not set, the relayer service will not start.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(
-    long,
-    env = "BITCOIN_RPC_URL",
-    requires = "btc-rpc-username",
-    requires = "btc-rpc-password"
+        long,
+        env = "BITCOIN_RPC_URL",
+        requires = "btc-rpc-username",
+        requires = "btc-rpc-password"
     )]
     pub btc_rpc_url: Option<String>,
 

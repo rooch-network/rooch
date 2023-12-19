@@ -87,21 +87,20 @@ impl StateCommitmentChain {
 
         // submit batch to DA server
         // TODO move batch submit out of proposer
-        let batch_data: Vec<u8> = self
-            .buffer
-            .iter()
-            .flat_map(|tx| tx.tx.encode())
-            .collect();
+        let batch_data: Vec<u8> = self.buffer.iter().flat_map(|tx| tx.tx.encode()).collect();
         // regard batch(tx list) as a blob: easy to check integrity
         let batch_hash = h256::sha3_256_of(&batch_data);
-        let _ = self.da.submit_batch(Batch {
-            meta: BatchMeta {
-                block_number,
-                batch_hash,
-                signature: vec![],
-            },
-            data: batch_data,
-        }).await;
+        let _ = self
+            .da
+            .submit_batch(Batch {
+                meta: BatchMeta {
+                    block_number,
+                    batch_hash,
+                    signature: vec![],
+                },
+                data: batch_data,
+            })
+            .await;
 
         let new_block = Block::new(
             block_number,

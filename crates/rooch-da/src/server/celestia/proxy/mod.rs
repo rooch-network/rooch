@@ -16,13 +16,7 @@ impl DAServerCelestiaProxy {
         Self { actor }
     }
 
-    pub async fn submit_batch(
-        &self,
-        msg: PutBatchMessage,
-    ) -> anyhow::Result<PutBatchResult> {
-        self
-            .actor
-            .send(msg)
-            .await?
+    pub async fn submit_batch(&self, msg: PutBatchMessage) -> anyhow::Result<PutBatchResult> {
+        self.actor.send(msg).await?
     }
 }

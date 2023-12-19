@@ -38,8 +38,7 @@ pub fn native_base58(
 
     let encoded_address_bytes = pop_arg!(args, VectorRef);
 
-    let Ok(bs58_raw_bytes) = bs58::decode(encoded_address_bytes.as_bytes_ref().to_vec())
-        .into_vec()
+    let Ok(bs58_raw_bytes) = bs58::decode(encoded_address_bytes.as_bytes_ref().to_vec()).into_vec()
     else {
         return Ok(NativeResult::err(cost, E_DECODE_FAILED));
     };
@@ -73,9 +72,10 @@ pub fn native_base58check(
     let version_byte = pop_arg!(args, u8);
     let encoded_address_bytes = pop_arg!(args, VectorRef);
 
-    let Ok(bs58_raw_bytes_without_checksum) = bs58::decode(encoded_address_bytes.as_bytes_ref().to_vec())
-        .with_check(Some(version_byte))
-        .into_vec()
+    let Ok(bs58_raw_bytes_without_checksum) =
+        bs58::decode(encoded_address_bytes.as_bytes_ref().to_vec())
+            .with_check(Some(version_byte))
+            .into_vec()
     else {
         return Ok(NativeResult::err(cost, E_DECODE_FAILED));
     };
