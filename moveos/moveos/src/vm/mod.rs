@@ -5,6 +5,7 @@
 pub mod dependency_order {
     pub use moveos_stdlib_builder::dependency_order::*;
 }
+#[allow(dead_code)]
 pub mod data_cache;
 pub mod moveos_vm;
 pub mod tx_argument_resolver;

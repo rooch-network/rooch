@@ -41,7 +41,7 @@ pub fn native_base58(
     let Ok(bs58_raw_bytes) = bs58::decode(encoded_address_bytes.as_bytes_ref().to_vec())
         .into_vec()
     else {
-        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_DECODE_FAILED)));
+        return Ok(NativeResult::err(cost, E_DECODE_FAILED));
     };
 
     Ok(NativeResult::ok(
@@ -77,7 +77,7 @@ pub fn native_base58check(
         .with_check(Some(version_byte))
         .into_vec()
     else {
-        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_DECODE_FAILED)));
+        return Ok(NativeResult::err(cost, E_DECODE_FAILED));
     };
 
     Ok(NativeResult::ok(

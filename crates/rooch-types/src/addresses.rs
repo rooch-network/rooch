@@ -12,10 +12,21 @@ pub const ROOCH_FRAMEWORK_ADDRESS: AccountAddress = {
     AccountAddress::new(addr)
 };
 
-pub static ROOCH_NAMED_ADDRESS_MAPPING: [(&str, &str); 1] = [(
-    ROOCH_FRAMEWORK_ADDRESS_NAME,
-    ROOCH_FRAMEWORK_ADDRESS_LITERAL,
-)];
+pub const BITCOIN_MOVE_ADDRESS_NAME: &str = "bitcoin_move";
+pub const BITCOIN_MOVE_ADDRESS_LITERAL: &str = "0x4";
+pub const BITCOIN_MOVE_ADDRESS: AccountAddress = {
+    let mut addr = [0u8; AccountAddress::LENGTH];
+    addr[AccountAddress::LENGTH - 1] = 4u8;
+    AccountAddress::new(addr)
+};
+
+pub static ROOCH_NAMED_ADDRESS_MAPPING: [(&str, &str); 2] = [
+    (
+        ROOCH_FRAMEWORK_ADDRESS_NAME,
+        ROOCH_FRAMEWORK_ADDRESS_LITERAL,
+    ),
+    (BITCOIN_MOVE_ADDRESS_NAME, BITCOIN_MOVE_ADDRESS_LITERAL),
+];
 
 pub fn rooch_framework_named_addresses() -> BTreeMap<String, AccountAddress> {
     let mut address_mapping = moveos_stdlib::moveos_stdlib_named_addresses();

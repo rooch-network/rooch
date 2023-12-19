@@ -1,4 +1,4 @@
-FROM ubuntu:bionic AS builder
+FROM ubuntu:jammy AS builder
 
 RUN set -eux; \
     apt-get update; \
@@ -33,6 +33,10 @@ RUN set -eux; \
     echo "${RUSTUP_SHA256} *rustup-init" | sha256sum -c -; \
     chmod +x rustup-init
 
+RUN set -eux; \
+    wget "http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.20_amd64.deb"; \
+    DEBIAN_FRONTEND=noninteractive dpkg -i libssl1.1_1.1.1f-1ubuntu2.20_amd64.deb;
+
 ENV RUST_VERSION=1.70.0
 
 RUN set -eux; \
@@ -47,14 +51,19 @@ WORKDIR /rooch
 COPY ./ .
 RUN cargo build --release
 
-FROM ubuntu:bionic
+FROM ubuntu:jammy
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
         ca-certificates \
         libsqlite3-dev \
+        wget \
         libssl-dev; \
     rm -rf /var/lib/apt/lists/*
+
+RUN set -eux; \
+    wget "http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.20_amd64.deb"; \
+    DEBIAN_FRONTEND=noninteractive dpkg -i libssl1.1_1.1.1f-1ubuntu2.20_amd64.deb;
 
 ENV RELEASE_PATH="/rooch/target/release"
 COPY --from=builder $RELEASE_PATH/rooch \

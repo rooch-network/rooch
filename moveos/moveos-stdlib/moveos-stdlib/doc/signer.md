@@ -22,7 +22,8 @@ Returns the signer of the module address of the generic type <code>T</code>.
 This is safe because the generic type <code>T</code> is private, meaning it can only be used within the module that defines it.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="signer.md#0x2_signer_module_signer">module_signer</a>&lt;T&gt;(): <a href="">signer</a>
+<pre><code>#[private_generics(#[T])]
+<b>public</b> <b>fun</b> <a href="signer.md#0x2_signer_module_signer">module_signer</a>&lt;T&gt;(): <a href="">signer</a>
 </code></pre>
 
 

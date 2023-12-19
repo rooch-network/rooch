@@ -10,7 +10,6 @@
 /// 4) The keys are unsorted.
 /// 5) Adds and removals take O(N) time
 module moveos_std::simple_map {
-    use std::error;
     use std::option;
     use std::vector;
 
@@ -32,10 +31,18 @@ module moveos_std::simple_map {
         vector::length(&map.data)
     }
 
-    public fun create<Key: store, Value: store>(): SimpleMap<Key, Value> {
+    /// Create an empty SimpleMap.
+    public fun new<Key: store, Value: store>(): SimpleMap<Key, Value> {
         SimpleMap {
             data: vector::empty(),
         }
+    } 
+
+    #[deprecated]
+    /// Create an empty SimpleMap.
+    /// This function is deprecated, use `new` instead.
+    public fun create<Key: store, Value: store>(): SimpleMap<Key, Value> {
+        new()
     }
 
     public fun borrow<Key: store, Value: store>(
@@ -43,9 +50,23 @@ module moveos_std::simple_map {
         key: &Key,
     ): &Value {
         let maybe_idx = find(map, key);
-        assert!(option::is_some(&maybe_idx), error::invalid_argument(ErrorKeyNotFound));
+        assert!(option::is_some(&maybe_idx), ErrorKeyNotFound);
         let idx = option::extract(&mut maybe_idx);
         &vector::borrow(&map.data, idx).value
+    }
+
+    public fun borrow_with_default<Key: store, Value: store>(
+        map: &SimpleMap<Key, Value>,
+        key: &Key,
+        default: &Value,
+    ): &Value {
+        let maybe_idx = find(map, key);
+        if (option::is_none(&maybe_idx)) {
+            default
+        } else {
+            let idx = option::extract(&mut maybe_idx);
+            &vector::borrow(&map.data, idx).value
+        }
     }
 
     public fun borrow_mut<Key: store, Value: store>(
@@ -53,7 +74,7 @@ module moveos_std::simple_map {
         key: &Key,
     ): &mut Value {
         let maybe_idx = find(map, key);
-        assert!(option::is_some(&maybe_idx), error::invalid_argument(ErrorKeyNotFound));
+        assert!(option::is_some(&maybe_idx), ErrorKeyNotFound);
         let idx = option::extract(&mut maybe_idx);
         &mut vector::borrow_mut(&mut map.data, idx).value
     }
@@ -77,7 +98,7 @@ module moveos_std::simple_map {
         value: Value,
     ) {
         let maybe_idx = find(map, &key);
-        assert!(option::is_none(&maybe_idx), error::invalid_argument(ErrorKeyAlreadyExists));
+        assert!(option::is_none(&maybe_idx), ErrorKeyAlreadyExists);
 
         vector::push_back(&mut map.data, Element { key, value });
     }
@@ -157,7 +178,7 @@ module moveos_std::simple_map {
         key: &Key,
     ): (Key, Value) {
         let maybe_idx = find(map, key);
-        assert!(option::is_some(&maybe_idx), error::invalid_argument(ErrorKeyNotFound));
+        assert!(option::is_some(&maybe_idx), ErrorKeyNotFound);
         let placement = option::extract(&mut maybe_idx);
         let Element { key, value } = vector::swap_remove(&mut map.data, placement);
         (key, value)

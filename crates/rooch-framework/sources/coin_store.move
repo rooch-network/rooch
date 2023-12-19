@@ -4,7 +4,6 @@
 module rooch_framework::coin_store {
 
     use std::string;
-    use std::error;
     use moveos_std::object::{ObjectID};
     use moveos_std::context::{Self, Context};
     use moveos_std::type_info;
@@ -111,7 +110,7 @@ module rooch_framework::coin_store {
         
         let CoinStore{coin_type, balance, frozen} = coin_store;
         // Cannot remove a frozen CoinStore, because if we allow this, the frozen is meaningless
-        assert!(!frozen, error::permission_denied(ErrorCoinStoreIsFrozen));
+        assert!(!frozen, ErrorCoinStoreIsFrozen);
         let Balance{value} = balance;
         let coin = coin::pack<CoinType>(value);
 
@@ -165,7 +164,7 @@ module rooch_framework::coin_store {
     // Because we need to ensure one Account only has one CoinStore for one CoinType
     // If you want tranfer a CoinStore to another account, you can call `coin_store::remove(Object<CoinStore<CoinType>>)` and deposit the Coin<CoinType> to another account.
     public fun transfer<CoinType: key>(_coin_store_obj: Object<CoinStore<CoinType>>, _owner: address){
-        abort error::not_implemented(ErrorCoinStoreTransferNotSupported)
+        abort ErrorCoinStoreTransferNotSupported
     }
 
     #[private_generics(CoinType)]
@@ -229,17 +228,17 @@ module rooch_framework::coin_store {
     }
 
     public(friend) fun borrow_mut_coin_store_internal<CoinType: key>(ctx: &mut Context, object_id: ObjectID): &mut Object<CoinStore<CoinType>>{
-        assert!(context::exists_object<CoinStore<CoinType>>(ctx, object_id), error::invalid_argument(ErrorCoinStoreNotFound));
+        assert!(context::exists_object<CoinStore<CoinType>>(ctx, object_id), ErrorCoinStoreNotFound);
         context::borrow_mut_object_extend<CoinStore<CoinType>>(ctx, object_id)
     }
 
     fun check_coin_store_not_frozen<CoinType: key>(coin_store: &CoinStore<CoinType>) {
-        assert!(!coin_store.frozen,error::permission_denied(ErrorCoinStoreIsFrozen));
+        assert!(!coin_store.frozen,ErrorCoinStoreIsFrozen);
     }
 
     /// Extracts `amount` Coin from the balance of the passed-in `coin_store`
     fun extract_from_balance<CoinType: key>(coin_store: &mut CoinStore<CoinType>, amount: u256): Coin<CoinType> {
-        assert!(coin_store.balance.value >= amount, error::invalid_argument(ErrorInSufficientBalance));
+        assert!(coin_store.balance.value >= amount, ErrorInSufficientBalance);
         coin_store.balance.value = coin_store.balance.value - amount;
         coin::pack<CoinType>(amount)
     }

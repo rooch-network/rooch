@@ -13,8 +13,7 @@ Source from https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framew
 -  [Function `type_name`](#0x2_copyable_any_type_name)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::string</a>;
+<pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
 </code></pre>

@@ -17,6 +17,7 @@ rust-version = { workspace = true }
 anyhow = { workspace = true }
 bcs = { workspace = true }
 better_any = { workspace = true }
+brotli = { workspace = true }
 fastcrypto = { workspace = true }
 linked-hash-map = { workspace = true }
 once_cell = { workspace = true }
@@ -29,6 +30,8 @@ rust_secp256k1 = { workspace = true }
 bitcoin = { workspace = true }
 bitcoin-bech32 = { workspace = true }
 bs58 = { workspace = true, features = ["check"] }
+http = { workspace = true }
+tracing = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }

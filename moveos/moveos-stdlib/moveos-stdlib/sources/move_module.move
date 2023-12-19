@@ -4,7 +4,6 @@
 /// `move_module` provides some basic functions for handle Move module in Move.
 module moveos_std::move_module {
     use std::vector;
-    use std::error;
     use std::string::{Self, String};
 
     friend moveos_std::account_storage;
@@ -109,7 +108,7 @@ module moveos_std::move_module {
     ): vector<MoveModule> {
         assert!(
             vector::length(&old_names) == vector::length(&new_names),
-            error::invalid_argument(ErrorLengthNotMatch)
+            ErrorLengthNotMatch
         );
         let bytes_vec = into_byte_codes_batch(modules);        
         let rebinded_bytes = replace_identifiers(bytes_vec, old_names, new_names);        
@@ -133,7 +132,7 @@ module moveos_std::move_module {
     ): vector<MoveModule> {
         assert!(
             vector::length(&old_strings) == vector::length(&new_strings),
-            error::invalid_argument(ErrorLengthNotMatch)
+            ErrorLengthNotMatch
         );
         let bytes_vec = into_byte_codes_batch(modules);
 
@@ -158,7 +157,7 @@ module moveos_std::move_module {
     ): vector<MoveModule> {
         assert!(
             vector::length(&old_addresses) == vector::length(&new_addresses),
-            error::invalid_argument(ErrorLengthNotMatch)
+            ErrorLengthNotMatch
         );
         let bytes_vec = into_byte_codes_batch(modules);
         let rebinded_bytes = replace_addresses_constant(bytes_vec, old_addresses, new_addresses);
@@ -173,7 +172,7 @@ module moveos_std::move_module {
     ): vector<MoveModule> {
         assert!(
             vector::length(&old_u8s) == vector::length(&new_u8s),
-            error::invalid_argument(ErrorLengthNotMatch)
+            ErrorLengthNotMatch
         );
         let bytes_vec = into_byte_codes_batch(modules);
         let rebinded_bytes = replace_u8_constant(bytes_vec, old_u8s, new_u8s);
@@ -188,7 +187,7 @@ module moveos_std::move_module {
     ): vector<MoveModule> {
         assert!(
             vector::length(&old_u64s) == vector::length(&new_u64s),
-            error::invalid_argument(ErrorLengthNotMatch)
+            ErrorLengthNotMatch
         );
         let bytes_vec = into_byte_codes_batch(modules);
         let rebinded_bytes = replace_u64_constant(bytes_vec, old_u64s, new_u64s);
@@ -203,7 +202,7 @@ module moveos_std::move_module {
     ): vector<MoveModule> {
         assert!(
             vector::length(&old_u256s) == vector::length(&new_u256s),
-            error::invalid_argument(ErrorLengthNotMatch)
+            ErrorLengthNotMatch
         );
         let bytes_vec = into_byte_codes_batch(modules);
         let rebinded_bytes = replace_u256_constant(bytes_vec, old_u256s, new_u256s);
@@ -306,7 +305,7 @@ module moveos_std::move_module {
     }
 
     #[test(account=@0x1314)]
-    #[expected_failure(abort_code = 0x10001, location = Self)]
+    #[expected_failure(abort_code = 1, location = Self)]
     fun test_address_mismatch_failure(account: &signer) {
         let addr = signer::address_of(account);
         // The following is the bytes and hex of the compiled module: example/counter/sources/counter.move

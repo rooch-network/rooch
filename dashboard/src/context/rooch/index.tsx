@@ -5,7 +5,7 @@
 import { createContext, useEffect, useState, ReactNode } from 'react'
 
 // ** SDK
-import { JsonRpcProvider, Chain, AllChain, DevChain } from '@rooch/sdk'
+import { RoochClient, Chain, AllChain, DevChain } from '@roochnetwork/rooch-sdk'
 
 // ** Types
 import { RoochProviderValueType } from 'src/context/rooch/types'
@@ -32,7 +32,7 @@ const RoochContext = createContext(defaultProvider)
 
 const RoochProvider = ({ children }: Props) => {
   // ** States
-  const [provider, setProvider] = useState<JsonRpcProvider | null>(defaultProvider.provider)
+  const [provider, setProvider] = useState<RoochClient | null>(defaultProvider.provider)
 
   const [loading, setLoading] = useState<boolean>(defaultProvider.loading)
 
@@ -62,8 +62,7 @@ const RoochProvider = ({ children }: Props) => {
         chain = DevChain
       }
 
-      console.log('设置 provider')
-      setProvider(new JsonRpcProvider(chain))
+      setProvider(new RoochClient(chain))
     }
 
     init().finally(() => setLoading(false))

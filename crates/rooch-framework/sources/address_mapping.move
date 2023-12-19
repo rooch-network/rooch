@@ -5,11 +5,9 @@ module rooch_framework::address_mapping{
     
     use std::option::{Self, Option};
     use std::signer;
-    use std::error;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
-    use moveos_std::object::{Self, Object};
-    use rooch_framework::hash::{blake2b256};
+    use moveos_std::object::{Self, Object}; 
     use rooch_framework::multichain_address::{Self, MultiChainAddress};
 
     friend rooch_framework::genesis;
@@ -57,7 +55,7 @@ module rooch_framework::address_mapping{
     public fun resolve_or_generate_address(obj: &Object<AddressMapping>, maddress: MultiChainAddress): address {
         let addr = resolve_address(obj, maddress);
         if(option::is_none(&addr)){
-            generate_rooch_address(&maddress)
+            multichain_address::mapping_to_rooch_address(maddress)
         }else{
             option::extract(&mut addr)
         }
@@ -82,11 +80,6 @@ module rooch_framework::address_mapping{
         let am = Self::borrow(ctx);
         Self::resolve_or_generate_address(am, maddress)
     }
-    
-    fun generate_rooch_address(maddress: &MultiChainAddress): address {
-        let hash = blake2b256(multichain_address::raw_address(maddress));
-        moveos_std::bcs::to_address(hash)
-    }
 
     /// Check if a multi-chain address is bound to a rooch address
     public fun exists_mapping(ctx: &Context, maddress: MultiChainAddress): bool {
@@ -105,7 +98,7 @@ module rooch_framework::address_mapping{
         if(multichain_address::is_rooch_address(&maddress)){
             assert!(
                 multichain_address::into_rooch_address(maddress) == rooch_address, 
-                error::invalid_argument(ErrorMultiChainAddressInvalid)
+                ErrorMultiChainAddressInvalid
             );
         };
         let obj = Self::borrow_mut(ctx);

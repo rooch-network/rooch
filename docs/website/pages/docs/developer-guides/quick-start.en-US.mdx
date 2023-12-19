@@ -301,3 +301,316 @@ $ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762
 ```
 
 > Note: The `default` in the command represents the default address in the Rooch configuration. If you want to use another address, you can also directly pass the address starting with `0x`.
+
+## Object-oriented storage model
+
+Above we used the account's **resource storage model** to simply implement and use counter. Next we will introduce another storage model -- the object storage model.
+
+We will refactor the counter example and demonstrate it on Rooch's `dev` network.
+
+### Initialize project
+
+Create a Move project named `quick_start_object_counter`:
+
+```shell
+rooch move new quick_start_object_counter
+```
+
+Here is the counter code after refactoring:
+
+```move
+module quick_start_object_counter::quick_start_object_counter {
+    use std::signer;
+    use moveos_std::event;
+    use moveos_std::object::{Self, ObjectID, Object};
+    use moveos_std::context::{Self, Context};
+
+    struct Counter has key, store {
+        count_value: u64
+    }
+
+    struct UserCounterCreatedEvent {
+        id: ObjectID
+    }
+
+    fun init(ctx: &mut Context, owner: &signer) {
+        create_shared(ctx);
+        create_user(ctx, owner);
+    }
+
+    fun create_shared(ctx: &mut Context) {
+        let counter = Counter { count_value: 0 };
+        let counter_obj = context::new_named_object(ctx, counter);
+        object::to_shared(counter_obj);
+    }
+
+    fun create_user(ctx: &mut Context, owner: &signer): ObjectID {
+        let counter = Counter { count_value: 0 };
+        let owner_addr = signer::address_of(owner);
+        let counter_obj = context::new_object(ctx, counter);
+        let counter_obj_id = object::id(&counter_obj);
+        object::transfer(counter_obj, owner_addr);
+        let user_counter_created_event = UserCounterCreatedEvent { id: counter_obj_id };
+        event::emit(user_counter_created_event);
+        counter_obj_id
+    }
+
+    public entry fun increase(counter_obj: &mut Object<Counter>) {
+        let counter = object::borrow_mut(counter_obj);
+        counter.count_value = counter.count_value + 1;
+    }
+}
+```
+
+### Explain
+
+We will use some libraries provided by Move and MoveOS, and the `signer` module to obtain the address of the signed transaction. The `event` module handles events, which is mainly used to mark events of object creation.
+
+Define two data structures, `Counter` stores the value of the counter, and `UserCounterCreatedEvent` stores the ID of the counter object.
+
+Similarly, we define `init` to call the logical function that creates the counter. You can see that we call two functions: `create_shared` and `create_user` respectively. In this example, we demonstrate the differences and functions of the two types of objects in Rooch's object storage model.
+
+The `create_shared` function encapsulates the logic of creating a **shared counter**. It creates a counter that all users can increment. First construct a counter with an initial value of `0`. Then call the `new_named_object` function to create a named object. This counter is globally unique, so we can query its related properties directly through the type. Finally, we call the `to_shared` function to change the counter object into It is shared so that any account can modify its value.
+
+The `create_user` function encapsulates the logic of creating an ordinary counter. The value of this counter can only be modified by the creator. First, we construct a counter with an initial value of `123`, and then obtain the address of the signed transaction. Use the `new_object` function to create a counter object and get the ID of the counter object. Then, call the `transfer` function to transfer the counter object to the account address that signed the transaction, thus completing the creation of the counter object. In order to get the ID of a counter object on the command line and use it to increment the counter, we need to send a message with the help of an event.
+
+The `increase` entry function encapsulates our logic for incrementing the counter. First, call `borrow_mut` to obtain a mutable reference to the counter from the counter object, and then perform a `+1` operation on the count value.
+
+### Prerequisites
+
+To demonstrate this example, we need to prepare two Rooch accounts.
+
+You can use the `rooch account create` command to create an account, use the `rooch account switch` command to switch accounts, and use the `rooch account list` command to list the currently existing account list.
+
+```shell
+                     Rooch Address (Ed25519)                       |               Public Key (Base64)                | Auth Validator ID | Active Address
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63 |   AP/7lMzNiiFOSk6AWrYlozVau+5dBukK5nLt9ei6DE4N   |        0         |     True
+0xd9ba8633a96c91eea2c180e23e8cca8bb8cfd438764143d7ca4753c3e2b7f5fe |   AIF6/NuwAcH3nSgETrAt51ppZyE3RlSKxe5eWqaBNKNG   |        0         |
+```
+
+Next, I will use these two accounts to demonstrate this example. The address starting with `0x94bfa` is used as the account address for publishing the counter contract, and the account starting with `0xd9ba8` is used as other users to operate the shared counter.
+
+### Demo
+
+1. Compile and deploy
+
+```shell
+rooch move publish --named-addresses quick_start_object_counter=default
+```
+
+2. Get the counter object ID owned by the user:
+
+```shell
+curl --location --request POST 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data-raw '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_getEventsByEventHandle",                                                                                                                       "params":["0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::UserCounterCreatedEvent", null, "1000", {"decode":true}]
+}'|jq '.result.data[0].decoded_event_data.value.id'
+```
+
+Use `curl` to send a request to the Rooch development network to obtain the counter object ID created in the contract just deployed.
+
+> Note: The address in the parameter list must be changed to your own. My default account address is `0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63`.
+
+You can later see in the response information that the counter object ID is `0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2`, which is randomly generated when the counter object is created.
+
+```shell
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   922  100   683  100   239   2831    990 --:--:-- --:--:-- --:--:--  3841
+
+"0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2"
+```
+
+3. Check the two counters we created and initialized separately.
+
+- Shared counter:
+
+The command to view the counter object is `rooch object --id CONTRACT_ADDRESS::MODULE_NAME::TYPE_NAME`. Because named objects are globally unique, we can use the type name to directly obtain the related properties of the shared counter object.
+
+```shell
+[joe@mx quick_start_object_counter]$ rooch object --id 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
+
+{
+  "value": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c3880000000000000000000000000000000000000000000000000000000000000000010000000000000000",
+  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+  "decoded_value": {
+    "abilities": 0,
+    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+    "value": {
+      "flag": 1,
+      "id": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c388",
+      "owner": "0x0000000000000000000000000000000000000000000000000000000000000000",    <= Note here!
+      "value": {
+        "abilities": 12,
+        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter",
+        "value": {
+          "count_value": "0"    <= Note here!
+        }
+      }
+    }
+  }
+}
+```
+
+You can see that the `owner` address of the shared counter is `0x00000000000000000000000000000000000000000000000000000000000000`, which represents an object of `SystemOwnedObject` type, and its count value `count_value` is also initialized to `0`.
+
+- Counters owned by user:
+
+```shell
+[joe@mx quick_start_object_counter]$ rooch object --id 0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2
+
+{
+  "value": "0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c294bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63007b00000000000000",
+  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+  "decoded_value": {
+    "abilities": 0,
+    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+    "value": {
+      "flag": 0,
+      "id": "0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2",
+      "owner": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63",    <= Note here!
+      "value": {
+        "abilities": 12,
+        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter",
+        "value": {
+          "count_value": "123"    <= Note here!
+        }
+      }
+    }
+  }
+}
+```
+You can see that the `owner` address of the counter owned by the user is `0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63`, which represents an object of `UserOwnedObject` type, and its count value `count_value` is also initialized to `123`.
+
+4. Call the `increase` function to increment the counter.
+
+- Shared:
+
+The syntax of the command is: `rooch move run --function CONTRACT_ADDRESS::MODULE-NAME::FUNCTION_NAME --args object:CONTRACT_ADDRESS::MODULE_NAME::TYPE_NAME`:
+
+```shell
+rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::increase --args object:0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
+```
+
+Check:
+
+```shell
+[joe@mx quick_start_object_counter]$ rooch object --id 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
+
+{
+  "value": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c3880000000000000000000000000000000000000000000000000000000000000000010100000000000000",
+  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+  "decoded_value": {
+    "abilities": 0,
+    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+    "value": {
+      "flag": 1,
+      "id": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c388",
+      "owner": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "value": {
+        "abilities": 12,
+        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter",
+        "value": {
+          "count_value": "1"    <= Note here!
+        }
+      }
+    }
+  }
+}
+```
+
+Indeed, as we expected, the count increased!
+
+- User owns:
+
+```shell
+rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::increase --args object:0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2
+```
+
+Check:
+
+```shell
+[joe@mx quick_start_object_counter]$ rooch object --id 0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2
+{
+  "value": "0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c294bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63007c00000000000000",
+  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+  "decoded_value": {
+    "abilities": 0,
+    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+    "value": {
+      "flag": 0,
+      "id": "0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2",
+      "owner": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63",
+      "value": {
+        "abilities": 12,
+        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter",
+        "value": {
+          "count_value": "124"    <= Note here!
+        }
+      }
+    }
+  }
+}
+```
+
+The value of the user-owned counter changed from `123` to `124`.
+
+5. Switch accounts:
+
+```shell
+[joe@mx ~]$ rooch account switch --address 0xd9ba8633a96c91eea2c180e23e8cca8bb8cfd438764143d7ca4753c3e2b7f5fe
+The active account was successfully switched to `0xd9ba8633a96c91eea2c180e23e8cca8bb8cfd438764143d7ca4753c3e2b7f5fe`
+```
+
+6. Increment the counter again.
+
+- Shared:
+
+```shell
+rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::increase --args object:0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
+```
+
+Check:
+
+```shell
+[joe@mx quick_start_object_counter]$ rooch object --id 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
+
+{
+  "value": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c3880000000000000000000000000000000000000000000000000000000000000000010100000000000000",
+  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+  "decoded_value": {
+    "abilities": 0,
+    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+    "value": {
+      "flag": 1,
+      "id": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c388",
+      "owner": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "value": {
+        "abilities": 12,
+        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter",
+        "value": {
+          "count_value": "2"    <= Note here!
+        }
+      }
+    }
+  }
+}
+```
+
+- User owns:
+
+```shell
+[joe@mx quick_start_object_counter]$ rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::increase --args object:0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2
+
+Transaction error: RPC call failed: ErrorObject { code: ServerError(-32000), message: "VMError with status NO_ACCOUNT_ROLE at location UNDEFINED and message Object owner mismatch, object owner:94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63, sender:d9ba8633a96c91eea2c180e23e8cca8bb8cfd438764143d7ca4753c3e2b7f5fe", data: None }
+```
+
+As you can see, when we execute the `increase` function with another account, an error message will be returned, telling us that the owner of the object does not match, that is, other accounts cannot own objects owned by another account.
+
+At this point, I believe you already have a certain understanding of Rooch's object storage. During the development process, you can reasonably use resource storage and object storage solutions according to your needs. In the [`simple_blog` example](../getting-started.zh-CN.md), the two are combined.
+
+## Summarize
+
+At this point you have learned step by step how to use Rooch to develop, deploy and call smart contracts. In Rooch, the object-oriented programming model is a very important content. To learn more about how to use it, please refer to [Objects](./object.zh-CN.mdx).

@@ -18,13 +18,21 @@ module moveos_std::type_table {
     /// Create a new Table.
     public fun new(id: UID): TypeTable {
         let handle = object::uid_to_object_id(id);
-        TypeTable {
-            handle,
-        }
+        internal_new_with_id(handle)
     }
 
     /// Create a new Table with a given handle.
     public(friend) fun new_with_id(handle: ObjectID): TypeTable{
+        internal_new_with_id(handle)
+    }
+
+    fun internal_new_with_id(handle: ObjectID): TypeTable{
+        // The system account deployment contract directly creates the module table in the vm.
+        if (!object::contains_global(handle)) {
+            let table_info = raw_table::new_table<String>(object::object_id_to_table_handle(handle));
+            let obj = object::new_with_id(handle, table_info);
+            object::transfer(obj, @moveos_std);
+        };
         TypeTable {
             handle,
         }

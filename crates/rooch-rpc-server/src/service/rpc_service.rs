@@ -21,6 +21,10 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::account::Account;
 use rooch_types::address::{MultiChainAddress, RoochAddress};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
+use rooch_types::indexer::state::{
+    GlobalStateFilter, IndexerGlobalState, IndexerStateID, IndexerTableChangeSet,
+    IndexerTableState, StateSyncFilter, TableStateFilter,
+};
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::{TransactionSequenceInfo, TransactionSequenceInfoMapping};
@@ -80,17 +84,35 @@ impl RpcService {
             .await?;
 
         // Last save indexer
-        self.indexer
+        let result = self
+            .indexer
+            .indexer_states(sequence_info.tx_order, output.state_changeset.clone())
+            .await;
+        match result {
+            Ok(_) => {}
+            Err(error) => log::error!("Indexer states error: {}", error),
+        };
+        let result = self
+            .indexer
             .indexer_transaction(
                 tx.clone(),
                 sequence_info.clone(),
                 execution_info.clone(),
                 moveos_tx.clone(),
             )
-            .await?;
-        self.indexer
+            .await;
+        match result {
+            Ok(_) => {}
+            Err(error) => log::error!("Indexer transactions error: {}", error),
+        };
+        let result = self
+            .indexer
             .indexer_events(output.events.clone(), tx, sequence_info.clone(), moveos_tx)
-            .await?;
+            .await;
+        match result {
+            Ok(_) => {}
+            Err(error) => log::error!("Indexer events error: {}", error),
+        };
 
         Ok(ExecuteTransactionResponse {
             sequence_info,
@@ -245,6 +267,14 @@ impl RpcService {
         Ok(resp)
     }
 
+    pub async fn get_annotated_states_by_state(
+        &self,
+        states: Vec<State>,
+    ) -> Result<Vec<AnnotatedState>> {
+        let resp = self.executor.get_annotated_states_by_state(states).await?;
+        Ok(resp)
+    }
+
     pub async fn query_transactions(
         &self,
         filter: TransactionFilter,
@@ -273,6 +303,51 @@ impl RpcService {
         let resp = self
             .indexer
             .query_events(filter, cursor, limit, descending_order)
+            .await?;
+        Ok(resp)
+    }
+
+    pub async fn query_global_states(
+        &self,
+        filter: GlobalStateFilter,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerStateID>,
+        limit: usize,
+        descending_order: bool,
+    ) -> Result<Vec<IndexerGlobalState>> {
+        let resp = self
+            .indexer
+            .query_global_states(filter, cursor, limit, descending_order)
+            .await?;
+        Ok(resp)
+    }
+
+    pub async fn query_table_states(
+        &self,
+        filter: TableStateFilter,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerStateID>,
+        limit: usize,
+        descending_order: bool,
+    ) -> Result<Vec<IndexerTableState>> {
+        let resp = self
+            .indexer
+            .query_table_states(filter, cursor, limit, descending_order)
+            .await?;
+        Ok(resp)
+    }
+
+    pub async fn sync_states(
+        &self,
+        filter: Option<StateSyncFilter>,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerStateID>,
+        limit: usize,
+        descending_order: bool,
+    ) -> Result<Vec<IndexerTableChangeSet>> {
+        let resp = self
+            .indexer
+            .sync_states(filter, cursor, limit, descending_order)
             .await?;
         Ok(resp)
     }

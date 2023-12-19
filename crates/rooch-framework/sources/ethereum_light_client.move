@@ -3,12 +3,12 @@
 
 module rooch_framework::ethereum_light_client{
 
-    use std::error;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
-    use rooch_framework::ethereum_address::ETHAddress;
-    use rooch_framework::timestamp;    
     use moveos_std::bcs;
+    use moveos_std::signer;
+    use rooch_framework::ethereum_address::ETHAddress;
+    use rooch_framework::timestamp; 
 
     friend rooch_framework::genesis;
 
@@ -70,7 +70,8 @@ module rooch_framework::ethereum_light_client{
         table::add(&mut block_store.blocks, block_header.number, block_header);
 
         let timestamp_seconds = (block_header.timestamp as u64);
-        timestamp::try_update_global_time(ctx, timestamp::seconds_to_milliseconds(timestamp_seconds));        
+        let module_signer = signer::module_signer<BlockStore>();
+        timestamp::try_update_global_time(ctx, &module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));        
     }
 
     /// The relay server submit a new Ethereum block to the light client.
@@ -81,7 +82,7 @@ module rooch_framework::ethereum_light_client{
     /// Get block via block_number
     public fun get_block(ctx: &Context, block_number: u64): &BlockHeader{
         let block_store = context::borrow_resource<BlockStore>(ctx, @rooch_framework);
-        assert!(table::contains(&block_store.blocks, block_number), error::invalid_argument(ErrorBlockNotFound));
+        assert!(table::contains(&block_store.blocks, block_number), ErrorBlockNotFound);
         table::borrow(&block_store.blocks, block_number)
     }
 }

@@ -4,7 +4,6 @@
 /// This module provides the foundation for typesafe Coins.
 module rooch_framework::coin {
     use std::string;
-    use std::error;
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::context::{Self, Context};
     use moveos_std::event;
@@ -122,7 +121,7 @@ module rooch_framework::coin {
 
     /// A helper function that check the `CoinType` is registered, if not, abort.
     public fun check_coin_info_registered<CoinType: key>(ctx: &Context){
-        assert!(is_registered<CoinType>(ctx), error::not_found(ErrorCoinInfoNotRegistered));
+        assert!(is_registered<CoinType>(ctx), ErrorCoinInfoNotRegistered);
     }
 
     /// Returns `true` if the type `CoinType` is an registered coin.
@@ -168,12 +167,12 @@ module rooch_framework::coin {
     /// so it is impossible to "burn" any non-zero amount of `Coin`. 
     public fun destroy_zero<CoinType: key>(zero_coin: Coin<CoinType>) {
         let Coin { value } = zero_coin;
-        assert!(value == 0, error::invalid_argument(ErrorDestroyOfNonZeroCoin))
+        assert!(value == 0, ErrorDestroyOfNonZeroCoin)
     }
 
     /// Extracts `amount` from the passed-in `coin`, where the original coin is modified in place.
     public fun extract<CoinType: key>(coin: &mut Coin<CoinType>, amount: u256): Coin<CoinType> {
-        assert!(coin.value >= amount, error::invalid_argument(ErrorInSufficientBalance));
+        assert!(coin.value >= amount, ErrorInSufficientBalance);
         coin.value = coin.value - amount;
         Coin { value: amount }
     }
@@ -207,7 +206,7 @@ module rooch_framework::coin {
     /// Borrow the CoinInfo<CoinType>
     public fun coin_info<CoinType: key>(ctx: &Context): &CoinInfo<CoinType> {
         let coin_info_id = coin_info_id<CoinType>();
-        assert!(context::exists_object<CoinInfo<CoinType>>(ctx, coin_info_id), error::not_found(ErrorCoinInfosNotFound));
+        assert!(context::exists_object<CoinInfo<CoinType>>(ctx, coin_info_id), ErrorCoinInfosNotFound);
         let coin_info_obj = context::borrow_object<CoinInfo<CoinType>>(ctx, coin_info_id);
         object::borrow(coin_info_obj)
     }
@@ -228,13 +227,13 @@ module rooch_framework::coin {
     ) : Object<CoinInfo<CoinType>> {
         assert!(
             !is_registered<CoinType>(ctx),
-            error::already_exists(ErrorCoinInfoAlreadyRegistered),
+            ErrorCoinInfoAlreadyRegistered,
         ); 
 
         let coin_type = type_info::type_name<CoinType>();
 
-        assert!(string::length(&name) <= MAX_COIN_NAME_LENGTH, error::invalid_argument(ErrorCoinNameTooLong));
-        assert!(string::length(&symbol) <= MAX_COIN_SYMBOL_LENGTH, error::invalid_argument(ErrorCoinSymbolTooLong));
+        assert!(string::length(&name) <= MAX_COIN_NAME_LENGTH, ErrorCoinNameTooLong);
+        assert!(string::length(&symbol) <= MAX_COIN_SYMBOL_LENGTH, ErrorCoinSymbolTooLong);
 
         let coin_info = CoinInfo<CoinType> {
             coin_type,

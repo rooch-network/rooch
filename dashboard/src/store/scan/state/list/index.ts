@@ -11,7 +11,7 @@ import { CreateGenericSlice, GenericState } from 'src/store/generic'
 import { Params } from 'src/store/scan/state/type'
 
 // ** SDK import
-import { StatePageView } from '@rooch/sdk'
+import { StatePageView } from '@roochnetwork/rooch-sdk'
 
 interface Options extends Params {
   cursor: Uint8Array | null

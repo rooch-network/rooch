@@ -7,7 +7,6 @@
 /// fun pre_execute(ctx: &mut Context)
 /// fun post_execute(ctx: &mut Context)
 module rooch_framework::auth_validator {
-    use std::error;
     use std::option::{Self, Option};
     use moveos_std::context::{Self, Context};
 
@@ -23,11 +22,11 @@ module rooch_framework::auth_validator {
     const ErrorValidateInvalidAuthenticator: u64 = 1002;
 
     public fun error_invalid_account_auth_key(): u64 {
-        error::invalid_argument(ErrorValidateInvalidAccountAuthKey)
+        ErrorValidateInvalidAccountAuthKey
     }
 
     public fun error_invalid_authenticator(): u64 {
-        error::invalid_argument(ErrorValidateInvalidAuthenticator)
+        ErrorValidateInvalidAuthenticator
     }
 
     /// The Authentication Validator
@@ -85,7 +84,7 @@ module rooch_framework::auth_validator {
     /// Get the TxValidateResult from the TxContext, Only can be called after the transaction is validated
     public fun get_validate_result_from_ctx(ctx: &Context): TxValidateResult {
         let validate_result_opt = context::get<TxValidateResult>(ctx);
-        assert!(option::is_some(&validate_result_opt), error::invalid_state(ErrorMustExecuteAfterValidate));
+        assert!(option::is_some(&validate_result_opt), ErrorMustExecuteAfterValidate);
         option::extract(&mut validate_result_opt)
     }
 
@@ -115,7 +114,7 @@ module rooch_framework::auth_validator {
     /// Get the session key from the TxValidateResult in the TxContext
     /// Only can be called after the transaction is validated
     public fun get_session_key_from_ctx(ctx: &Context): vector<u8> {
-        assert!(is_validate_via_session_key(ctx), error::invalid_state(ErrorMustExecuteAfterValidate));
+        assert!(is_validate_via_session_key(ctx), ErrorMustExecuteAfterValidate);
         option::extract(&mut get_session_key_from_ctx_option(ctx))
     }
 }

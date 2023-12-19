@@ -41,14 +41,14 @@ const E_LENTH_NOT_MATCH: u64 = 4;
 /// The native module context.
 #[derive(Tid)]
 pub struct NativeModuleContext<'a> {
-    resolver: &'a dyn ModuleResolver<Error = anyhow::Error>,
+    resolver: &'a dyn ModuleResolver,
     pub init_functions: BTreeSet<ModuleId>,
 }
 
 impl<'a> NativeModuleContext<'a> {
     /// Create a new instance of a native table context. This must be passed in via an
     /// extension into VM session functions.
-    pub fn new(resolver: &'a dyn ModuleResolver<Error = anyhow::Error>) -> Self {
+    pub fn new(resolver: &'a dyn ModuleResolver) -> Self {
         Self {
             resolver,
             init_functions: BTreeSet::new(),
@@ -133,10 +133,7 @@ fn native_sort_and_verify_modules_inner(
     let mut init_identifier = vec![];
     for module in &compiled_modules {
         if *module.self_id().address() != account_address {
-            return Ok(NativeResult::err(
-                cost,
-                moveos_types::move_std::error::invalid_argument(E_ADDRESS_NOT_MATCH_WITH_SIGNER),
-            ));
+            return Ok(NativeResult::err(cost, E_ADDRESS_NOT_MATCH_WITH_SIGNER));
         }
         let result = moveos_verifier::verifier::verify_module(module, module_context.resolver);
         match result {
@@ -149,10 +146,7 @@ fn native_sort_and_verify_modules_inner(
             Err(e) => {
                 //TODO provide a flag to control whether to print debug log.
                 log::info!("module {} verification error: {:?}", module.self_id(), e);
-                return Ok(NativeResult::err(
-                    cost,
-                    moveos_types::move_std::error::invalid_argument(E_MODULE_VERIFICATION_ERROR),
-                ));
+                return Ok(NativeResult::err(cost, E_MODULE_VERIFICATION_ERROR));
             }
         }
     }
@@ -252,12 +246,7 @@ fn check_compatibililty_inner(
 
         match compat.check(&old_m, &new_m) {
             Ok(_) => {}
-            Err(_) => {
-                return Ok(NativeResult::err(
-                    cost,
-                    moveos_types::move_std::error::invalid_argument(E_MODULE_INCOMPATIBLE),
-                ))
-            }
+            Err(_) => return Ok(NativeResult::err(cost, E_MODULE_INCOMPATIBLE)),
         }
     }
     Ok(NativeResult::ok(cost, smallvec![]))
@@ -291,10 +280,7 @@ where
     let old_vec = pop_arg!(args, Vector);
     let vec_len = new_vec.elem_views().len();
     if vec_len != old_vec.elem_views().len() {
-        return Ok(NativeResult::err(
-            cost,
-            moveos_types::move_std::error::invalid_argument(E_LENTH_NOT_MATCH),
-        ));
+        return Ok(NativeResult::err(cost, E_LENTH_NOT_MATCH));
     };
     let vec_len = vec_len as u64;
     let new_values = new_vec.unpack(&element_type, vec_len)?;

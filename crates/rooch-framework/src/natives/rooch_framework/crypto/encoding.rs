@@ -118,7 +118,7 @@ pub fn native_bech32(
         public_key.as_bytes_ref().to_vec(),
         Bech32Network::Bitcoin, // TODO network selection
     ) else {
-        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_SCRIPT_VERSION)));
+        return Ok(NativeResult::err(cost, E_INVALID_SCRIPT_VERSION));
     };
 
     let address = witness_program.to_address();
@@ -154,7 +154,7 @@ pub fn native_p2pkh(
     let public_key_bytes_ref = public_key.as_bytes_ref();
 
     let Ok(bitcoin_public_key) = PublicKey::from_slice(&public_key_bytes_ref) else {
-            return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_PUBKEY)));
+            return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
         };
 
     // Generate the P2PKH address from the bitcoin public key
@@ -191,7 +191,7 @@ pub fn native_p2sh(
     let public_key_bytes_ref = public_key.as_bytes_ref();
 
     let Ok(bitcoin_public_key) = PublicKey::from_slice(&public_key_bytes_ref) else {
-        return Ok(NativeResult::err(cost, moveos_types::move_std::error::invalid_argument(E_INVALID_PUBKEY)));
+        return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
     };
 
     // Create a redeem script (e.g., P2PKH)
@@ -202,7 +202,7 @@ pub fn native_p2sh(
         redeem_script,
         Network::Bitcoin, // TODO network selection
     ) else {
-        return Ok(NativeResult::err(cost, moveos_types::move_std::error::internal(E_EXCESSIVE_SCRIPT_SIZE)));
+        return Ok(NativeResult::err(cost, E_EXCESSIVE_SCRIPT_SIZE));
     };
     let p2sh_address_bytes = p2sh_address.to_string().as_bytes().to_vec();
 

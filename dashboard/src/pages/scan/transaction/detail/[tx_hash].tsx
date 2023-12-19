@@ -20,7 +20,7 @@ import { useRouter } from 'next/router'
 // ** Store
 import { useAppSelector } from 'src/store'
 
-import { TransactionWithInfoView } from '@rooch/sdk'
+import { TransactionWithInfoView } from '@roochnetwork/rooch-sdk'
 
 const MUITableCell = styled(TableCell)<TableCellBaseProps>(({ theme }) => ({
   borderBottom: 0,

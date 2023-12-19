@@ -1,0 +1,36 @@
+{
+	"name": "@roochnetwork/build-scripts",
+	"private": true,
+	"author": "Rooch.network <opensource@rooch.network>",
+	"version": "0.0.0",
+	"description": "Build scripts",
+	"license": "Apache-2.0",
+	"engines": {
+		"node": ">=18.0.0"
+	},
+	"bin": {
+		"build-package": "./src/build-package.ts",
+		"build-rooch-sdk-kit": "./src/build-rooch-sdk-kit.ts"
+	},
+	"scripts": {
+		"prettier:check": "prettier -c --ignore-unknown .",
+		"prettier:fix": "prettier -w --ignore-unknown .",
+		"eslint:check": "eslint --max-warnings=0 .",
+		"eslint:fix": "pnpm run eslint:check --fix",
+		"lint": "pnpm run eslint:check && pnpm run prettier:check",
+		"lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix",
+		"build": "tsc --build"
+	},
+	"devDependencies": {
+		"@types/postcss-prefix-selector": "^1.16.1",
+		"@vanilla-extract/esbuild-plugin": "^2.3.0",
+		"autoprefixer": "^10.4.14",
+		"esbuild": "^0.17.6",
+		"postcss": "^8.4.31",
+		"postcss-prefix-selector": "^1.16.0",
+		"typescript": "^5.1.6"
+	},
+	"dependencies": {
+		"@types/node": "^20.4.2"
+	}
+}

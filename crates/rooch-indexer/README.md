@@ -16,6 +16,7 @@ SQLite uses a single file to store it's data and only requires minimal tools to 
 ```sh
 # an example DATABASE_URL is "~/.rooch/local/roochdb/indexer.sqlite"
 diesel setup --database-url="<DATABASE_URL>"
+diesel migration generate {table_name}
 diesel migration run --database-url="<DATABASE_URL>"
 ```
 

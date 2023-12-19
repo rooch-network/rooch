@@ -15,7 +15,6 @@ use move_core_types::{
     vm_status::StatusCode,
 };
 use move_vm_types::{
-    data_store::{DataStore, TransactionCache},
     loaded_data::runtime_types::Type,
     values::{GlobalValue, Reference, Struct, Value},
 };
@@ -31,6 +30,7 @@ use std::collections::{btree_map::BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use move_core_types::language_storage::TypeTag;
+use move_vm_runtime::data_cache::TransactionCache;
 use moveos_types::moveos_std::object::NamedTableID;
 use moveos_types::state::MoveStructType;
 
@@ -89,7 +89,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
     /// published modules.
     ///
     /// Gives all proper guarantees on lifetime of global data as well.
-    fn into_effects(self) -> PartialVMResult<(ChangeSet, Vec<Event>)> {
+    fn into_effects(self, loader: &Loader) -> PartialVMResult<(ChangeSet, Vec<Event>)> {
         let mut change_set = ChangeSet::new();
         // The accounts are just used for initializing account storage.
         // No modules and resources added here.
@@ -104,7 +104,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
 
         let mut events = vec![];
         for (guid, seq_num, ty, ty_layout, val) in self.event_data {
-            let ty_tag = self.loader.type_to_type_tag(&ty)?;
+            let ty_tag = loader.type_to_type_tag(&ty)?;
             let blob = val
                 .simple_serialize(&ty_layout)
                 .ok_or_else(|| PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR))?;
@@ -119,19 +119,17 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
         // No accounts mutated in global operations are disabled.
         self.accounts.len() as u64
     }
-}
 
-// `DataStore` implementation for the `MoveosDataCache`
-impl<'r, 'l, S: MoveOSResolver> DataStore for MoveosDataCache<'r, 'l, S> {
     // Retrieve data from the local cache or loads it from the resolver cache into the local cache.
     // All operations on the global data are based on this API and they all load the data
     // into the cache.
     /// In Rooch, all global operations are disable, so this function is never called.
     fn load_resource(
         &mut self,
+        _loader: &Loader,
         _addr: AccountAddress,
         _ty: &Type,
-    ) -> PartialVMResult<(&mut GlobalValue, Option<Option<NumBytes>>)> {
+    ) -> PartialVMResult<(&mut GlobalValue, Option<NumBytes>)> {
         unreachable!("Global operations are disabled")
     }
 
@@ -183,13 +181,13 @@ impl<'r, 'l, S: MoveOSResolver> DataStore for MoveosDataCache<'r, 'l, S> {
 
         // Key type: std::string::String
         // value type: moveos_std::moveos_std::move_module::MoveModule
-        let (_, value_type) = Self::module_table_typetag();
+        let (key_type, value_type) = Self::module_table_typetag();
 
         let key_layout = MoveTypeLayout::Struct(MoveString::struct_layout());
         let mut table_data = self.table_data.write();
         // TODO: check or ensure the module table exists.
         let table = table_data
-            .get_or_create_table_with_key_layout(table_handle, key_layout)
+            .get_or_create_table_with_key_type_and_key_layout(table_handle, key_type, key_layout)
             .map_err(|e| e.finish(Location::Module(module_id.clone())))?;
 
         let key_bytes = self.module_key_bytes(module_id)?;
@@ -246,12 +244,13 @@ impl<'r, 'l, S: MoveOSResolver> DataStore for MoveosDataCache<'r, 'l, S> {
 
     fn emit_event(
         &mut self,
+        loader: &Loader,
         guid: Vec<u8>,
         seq_num: u64,
         ty: Type,
         val: Value,
     ) -> PartialVMResult<()> {
-        let ty_layout = self.loader.type_to_type_layout(&ty)?;
+        let ty_layout = loader.type_to_type_layout(&ty)?;
         self.event_data.push((guid, seq_num, ty, ty_layout, val));
         Ok(())
     }
@@ -270,7 +269,7 @@ pub fn into_change_set(table_data: Arc<RwLock<TableData>>) -> PartialVMResult<St
     let (new_tables, removed_tables, tables) = data.into_inner();
     let mut changes = BTreeMap::new();
     for (handle, table) in tables {
-        let (_, _, content, size_increment) = table.into_inner();
+        let (_, _, key_type, content, size_increment) = table.into_inner();
         let mut entries = BTreeMap::new();
         for (key, table_value) in content {
             let (value_layout, value_type, op) = match table_value.into_effect() {
@@ -309,6 +308,7 @@ pub fn into_change_set(table_data: Arc<RwLock<TableData>>) -> PartialVMResult<St
                 TableChange {
                     entries,
                     size_increment,
+                    key_type,
                 },
             );
         } else {

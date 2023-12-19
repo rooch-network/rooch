@@ -3,6 +3,7 @@
 
 use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_service::RpcService;
+use anyhow::Result;
 use jsonrpsee::{
     core::{async_trait, Error as JsonRpcError, RpcResult},
     RpcModule,
@@ -11,7 +12,10 @@ use moveos_types::h256::H256;
 use rooch_rpc_api::jsonrpc_types::event_view::{EventFilterView, EventView, IndexerEventView};
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
-    account_view::BalanceInfoView, IndexerEventPageView, StateOptions,
+    account_view::BalanceInfoView, GlobalStateFilterView, IndexerEventPageView,
+    IndexerGlobalStatePageView, IndexerGlobalStateView, IndexerTableChangeSetPageView,
+    IndexerTableChangeSetView, IndexerTableStatePageView, IndexerTableStateView, KeyStateKVView,
+    KeyStateView, StateOptions, StateSyncFilterView, TableStateFilterView,
 };
 use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
@@ -29,6 +33,7 @@ use rooch_rpc_api::{
     jsonrpc_types::BytesView,
 };
 use rooch_types::indexer::event_filter::IndexerEventID;
+use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::{AbstractTransaction, TypedTransaction};
 use std::cmp::min;
@@ -128,31 +133,34 @@ impl RoochAPIServer for RoochServer {
             MAX_RESULT_LIMIT_USIZE,
         );
         let cursor_of = cursor.clone().map(|v| v.0);
-        let mut data: Vec<(Vec<u8>, StateView)> = if state_option.decode {
-            self.rpc_service
+        let mut data: Vec<KeyStateKVView> = if state_option.decode {
+            self.aggregate_service
                 .list_annotated_states(access_path.into(), cursor_of, limit_of + 1)
                 .await?
                 .into_iter()
-                .map(|(key, state)| (key, StateView::from(state)))
+                .map(|(key_state, state)| {
+                    KeyStateKVView::new(KeyStateView::from(key_state), StateView::from(state))
+                })
                 .collect::<Vec<_>>()
         } else {
-            self.rpc_service
+            self.aggregate_service
                 .list_states(access_path.into(), cursor_of, limit_of + 1)
                 .await?
                 .into_iter()
-                .map(|(key, state)| (key, StateView::from(state)))
+                .map(|(key_state, state)| {
+                    KeyStateKVView::new(KeyStateView::from(key_state), StateView::from(state))
+                })
                 .collect::<Vec<_>>()
         };
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
-        let next_cursor = data
-            .last()
-            .map_or(cursor, |(key, _state)| Some(StrView(key.clone())));
-        let result = data.into_iter().map(|(_key, state)| state).collect();
+        let next_cursor = data.last().map_or(cursor, |key_state_kv| {
+            Some(key_state_kv.key_state.key.clone())
+        });
 
         Ok(StatesPageView {
-            data: result,
+            data,
             next_cursor,
             has_next_page,
         })
@@ -401,6 +409,117 @@ impl RoochAPIServer for RoochServer {
             .map_or(cursor, |e| Some(e.indexer_event_id));
 
         Ok(IndexerEventPageView {
+            data,
+            next_cursor,
+            has_next_page,
+        })
+    }
+
+    async fn query_global_states(
+        &self,
+        filter: GlobalStateFilterView,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerStateID>,
+        limit: Option<StrView<usize>>,
+        descending_order: Option<bool>,
+    ) -> RpcResult<IndexerGlobalStatePageView> {
+        let limit_of = min(
+            limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
+            MAX_RESULT_LIMIT_USIZE,
+        );
+        let descending_order = descending_order.unwrap_or(true);
+
+        let mut data = self
+            .rpc_service
+            .query_global_states(filter.into(), cursor, limit_of + 1, descending_order)
+            .await?
+            .into_iter()
+            .map(IndexerGlobalStateView::try_new_from_global_state)
+            .collect::<Result<Vec<_>>>()?;
+
+        let has_next_page = data.len() > limit_of;
+        data.truncate(limit_of);
+        let next_cursor = data.last().cloned().map_or(cursor, |t| {
+            Some(IndexerStateID::new(t.tx_order, t.state_index))
+        });
+
+        Ok(IndexerGlobalStatePageView {
+            data,
+            next_cursor,
+            has_next_page,
+        })
+    }
+
+    async fn query_table_states(
+        &self,
+        filter: TableStateFilterView,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerStateID>,
+        limit: Option<StrView<usize>>,
+        descending_order: Option<bool>,
+    ) -> RpcResult<IndexerTableStatePageView> {
+        let limit_of = min(
+            limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
+            MAX_RESULT_LIMIT_USIZE,
+        );
+        let descending_order = descending_order.unwrap_or(true);
+
+        let mut data = self
+            .rpc_service
+            .query_table_states(filter.into(), cursor, limit_of + 1, descending_order)
+            .await?
+            .into_iter()
+            .map(IndexerTableStateView::try_new_from_table_state)
+            .collect::<Result<Vec<_>>>()?;
+
+        let has_next_page = data.len() > limit_of;
+        data.truncate(limit_of);
+        let next_cursor = data.last().cloned().map_or(cursor, |t| {
+            Some(IndexerStateID::new(t.tx_order, t.state_index))
+        });
+
+        Ok(IndexerTableStatePageView {
+            data,
+            next_cursor,
+            has_next_page,
+        })
+    }
+
+    async fn sync_states(
+        &self,
+        filter: Option<StateSyncFilterView>,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerStateID>,
+        limit: Option<StrView<usize>>,
+        descending_order: Option<bool>,
+    ) -> RpcResult<IndexerTableChangeSetPageView> {
+        let limit_of = min(
+            limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
+            MAX_RESULT_LIMIT_USIZE,
+        );
+        // Sync from asc by default
+        let descending_order = descending_order.unwrap_or(false);
+
+        let mut data = self
+            .rpc_service
+            .sync_states(
+                filter.map(Into::into),
+                cursor,
+                limit_of + 1,
+                descending_order,
+            )
+            .await?
+            .into_iter()
+            .map(IndexerTableChangeSetView::from)
+            .collect::<Vec<_>>();
+
+        let has_next_page = data.len() > limit_of;
+        data.truncate(limit_of);
+        let next_cursor = data.last().cloned().map_or(cursor, |t| {
+            Some(IndexerStateID::new(t.tx_order, t.state_index))
+        });
+
+        Ok(IndexerTableChangeSetPageView {
             data,
             next_cursor,
             has_next_page,

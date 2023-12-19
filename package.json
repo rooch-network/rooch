@@ -1,43 +1,45 @@
 {
-    "name": "rooch-monorepo",
-    "private": true,
-    "license": "Apache-2.0",
-    "scripts": {
-        "preinstall": "npx only-allow pnpm",
-        "dashboard": "pnpm --filter ./dashboard",
-        "sdk": "pnpm --filter ./sdk/typescript",
-        "changeset-version": "pnpm changeset version && pnpm sdk codegen:version",
-        "prettier:check": "prettier -c --ignore-unknown .",
-        "prettier:fix": "prettier -w --ignore-unknown .",
-        "prettier:fix:watch": "onchange '**' -i -f add -f change -j 5 -- prettier -w --ignore-unknown {{file}}",
-        "eslint:check": "eslint --max-warnings=0 .",
-        "eslint:fix": "pnpm run eslint:check --fix",
-        "lint": "pnpm run eslint:check && pnpm run prettier:check",
-        "lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix"
-    },
-    "engines": {
-        "pnpm": ">=8.6.6",
-        "node": ">=18.0.0"
-    },
-    "devDependencies": {
-        "@typescript-eslint/eslint-plugin": "^5.60.1",
-        "@typescript-eslint/parser": "^5.60.1",
-        "eslint": "^8.43.0",
-        "eslint-config-prettier": "^8.8.0",
-        "eslint-config-react-app": "^7.0.1",
-        "eslint-import-resolver-typescript": "^3.5.5",
-        "eslint-plugin-header": "^3.1.1",
-        "eslint-plugin-import": "^2.27.5",
-        "eslint-plugin-prettier": "^4.2.1",
-        "eslint-plugin-require-extensions": "^0.1.3",
-        "eslint-plugin-tsdoc": "^0.2.17",
-        "eslint-plugin-unused-imports": "^2.0.0",
-        "prettier": "^2.8.7",
-        "typescript": "^5.0.4",
-        
-        "eslint-config-next": "13.2.4",
-        "eslint-import-resolver-alias": "1.1.2"
-    }
-
+  "name": "rooch-monorepo",
+  "private": true,
+  "license": "Apache-2.0",
+  "scripts": {
+    "preinstall": "npx only-allow pnpm",
+    "dashboard": "pnpm --filter ./dashboard",
+    "rooch-create": "pnpm --filter ./sdk/typescript/rooch-create/",
+    "rooch-sdk": "pnpm --filter ./sdk/typescript/rooch-sdk/",
+    "rooch-sdk-kit": "pnpm --filter ./sdk/typescript/rooch-sdk-kit/",
+    "rooch-state": "pnpm --filter ./sdk/typescript/rooch-sdk/",
+    "rooch-game": "pnpm --filter ./sdk/typescript/rooch-game/",
+    "changeset-version": "pnpm changeset version && pnpm sdk codegen:version",
+    "prettier:check": "prettier -c --ignore-unknown .",
+    "prettier:fix": "prettier -w --ignore-unknown .",
+    "prettier:fix:watch": "onchange '**' -i -f add -f change -j 5 -- prettier -w --ignore-unknown {{file}}",
+    "eslint:check": "eslint --max-warnings=0 .",
+    "eslint:fix": "pnpm run eslint:check --fix",
+    "lint": "pnpm run eslint:check && pnpm run prettier:check",
+    "lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix"
+  },
+  "engines": {
+    "pnpm": ">=8.6.6",
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.60.1",
+    "@typescript-eslint/parser": "^5.60.1",
+    "eslint": "^8.43.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-config-react-app": "^7.0.1",
+    "eslint-import-resolver-typescript": "^3.5.5",
+    "eslint-plugin-header": "^3.1.1",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-require-extensions": "^0.1.3",
+    "eslint-plugin-tsdoc": "^0.2.17",
+    "eslint-plugin-unused-imports": "^2.0.0",
+    "prettier": "^2.8.7",
+    "typescript": "^5.0.4",
+    "rimraf": "^3.0.2",
+    "eslint-config-next": "13.2.4",
+    "eslint-import-resolver-alias": "1.1.2"
+  }
 }
-

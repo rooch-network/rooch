@@ -54,6 +54,8 @@ rooch-key = { workspace = true }
 rooch-executor = { workspace = true }
 rooch-store = { workspace = true }
 
+bitcoin-move ={ workspace = true  }
+
 [dev-dependencies]
 rooch-integration-test-runner = { workspace = true }
 datatest-stable = { workspace = true }

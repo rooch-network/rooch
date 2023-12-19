@@ -87,6 +87,9 @@ impl Clone for MoveOSConfig {
                 verifier: self.vm_config.verifier.clone(),
                 max_binary_format_version: self.vm_config.max_binary_format_version,
                 paranoid_type_checks: self.vm_config.paranoid_type_checks,
+                enable_invariant_violation_check_in_swap_loc: false,
+                type_size_limit: false,
+                max_value_nest_depth: None,
             },
         }
     }
@@ -498,7 +501,10 @@ impl MoveOS {
             Err(discard_status) => {
                 //This should not happen, if it happens, it means that the VM or verifer has a bug
                 let backtrace = Backtrace::new();
-                panic!("Discard status: {:?}\n{:?}", discard_status, backtrace);
+                panic!(
+                    "Discard status: {:?}, execute_result: {:?} \n{:?}",
+                    discard_status, execute_result, backtrace
+                );
             }
         };
         Ok(status)

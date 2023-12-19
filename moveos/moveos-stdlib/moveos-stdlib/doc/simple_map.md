@@ -17,8 +17,10 @@ This module provides a solution for unsorted maps, that is it has the properties
 -  [Struct `Element`](#0x2_simple_map_Element)
 -  [Constants](#@Constants_0)
 -  [Function `length`](#0x2_simple_map_length)
+-  [Function `new`](#0x2_simple_map_new)
 -  [Function `create`](#0x2_simple_map_create)
 -  [Function `borrow`](#0x2_simple_map_borrow)
+-  [Function `borrow_with_default`](#0x2_simple_map_borrow_with_default)
 -  [Function `borrow_mut`](#0x2_simple_map_borrow_mut)
 -  [Function `contains_key`](#0x2_simple_map_contains_key)
 -  [Function `destroy_empty`](#0x2_simple_map_destroy_empty)
@@ -30,8 +32,7 @@ This module provides a solution for unsorted maps, that is it has the properties
 -  [Function `remove`](#0x2_simple_map_remove)
 
 
-<pre><code><b>use</b> <a href="">0x1::error</a>;
-<b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 </code></pre>
 
@@ -95,13 +96,28 @@ Map key is not found
 
 
 
+<a name="0x2_simple_map_new"></a>
+
+## Function `new`
+
+Create an empty SimpleMap.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_new">new</a>&lt;Key: store, Value: store&gt;(): <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;
+</code></pre>
+
+
+
 <a name="0x2_simple_map_create"></a>
 
 ## Function `create`
 
+Create an empty SimpleMap.
+This function is deprecated, use <code>new</code> instead.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_create">create</a>&lt;Key: store, Value: store&gt;(): <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;
+<pre><code>#[deprecated]
+<b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_create">create</a>&lt;Key: store, Value: store&gt;(): <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;
 </code></pre>
 
 
@@ -113,6 +129,17 @@ Map key is not found
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_borrow">borrow</a>&lt;Key: store, Value: store&gt;(map: &<a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: &Key): &Value
+</code></pre>
+
+
+
+<a name="0x2_simple_map_borrow_with_default"></a>
+
+## Function `borrow_with_default`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_borrow_with_default">borrow_with_default</a>&lt;Key: store, Value: store&gt;(map: &<a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;, key: &Key, default: &Value): &Value
 </code></pre>
 
 

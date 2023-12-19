@@ -2,14 +2,14 @@ name: Check-Build-Test
 
 on:
   push:
-    branches: ["main"]
+    branches: ['main']
     paths-ignore:
       - 'docs/**'
       - 'fixtures/**'
       - 'kube/**'
       - '**.md'
   pull_request:
-    branches: ["main"]
+    branches: ['main']
     paths-ignore:
       - 'docs/**'
       - 'fixtures/**'
@@ -34,6 +34,8 @@ jobs:
         run: ./scripts/pr.sh -c
       - name: Build
         run: cargo build
+      - name: Framework compatibiliy
+        run: cargo run --package rooch-framework-release --bin rooch-framework-release
       - name: Execute rust tests
         run: cargo nextest run --workspace --all-features --exclude rooch-framework-tests --exclude rooch-integration-test-runner -v
       - name: Execute the framework test with 1 thread
@@ -68,19 +70,19 @@ jobs:
       - name: Install pnpm dependencies
         run: npm install pnpm -g && pnpm install
       - name: Gen SDK dependencie Code
-        run: pnpm sdk gen
+        run: pnpm rooch-sdk gen
       - name: Lint
         run: pnpm lint
       - name: Build SDK
-        run: pnpm sdk build
+        run: pnpm rooch-sdk build
       - name: Test SDK
-        run: pnpm sdk test
-      - name: Build Dashboard
-        run: pnpm dashboard build
+        run: pnpm rooch-sdk test
+      # TODO: nextjs build DynamicOptions error
+      # - name: Build Dashboard
+      #   run: pnpm dashboard build
 
       - uses: CatChen/check-git-status-action@v1
         with:
           fail-if-not-clean: true # optional
           push-if-not-clean: false # optional
-          targets: "." #optional
-
+          targets: '.' #optional

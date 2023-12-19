@@ -3,7 +3,6 @@
 
 module coins::private_coin {
 
-    use std::error;
     use std::string;
     use moveos_std::signer;
     use moveos_std::context::{Self, Context};
@@ -48,7 +47,7 @@ module coins::private_coin {
     /// This function shows how to use `coin::transfer_extend` to define a custom transfer logic
     /// This transfer function limits the amount of transfer to 10000, and take 1% of the amount as fee
     public entry fun transfer(ctx: &mut Context, from: &signer, to_addr: address, amount: u256) {
-        assert!(amount <= 10000u256, error::invalid_argument(ErrorTransferAmountTooLarge));
+        assert!(amount <= 10000u256, ErrorTransferAmountTooLarge);
         let from_addr = signer::address_of(from);
         let fee_amount = amount / 100u256;
         if (fee_amount > 0u256) {

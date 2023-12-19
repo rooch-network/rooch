@@ -7,9 +7,9 @@ Feature: Rooch CLI integration tests
     @serial
     Scenario: ethereum rpc test
       Given a server for ethereum_rpc_test
-      Then cmd: "rpc request --method eth_getBalance --params \"0x1111111111111111111111111111111111111111\""
+      Then cmd: "rpc request --method eth_getBalance --params 0x1111111111111111111111111111111111111111"
       Then assert: "{{$.rpc[-1]}} == 0x56bc75e2d63100000"
-      Then cmd: "rpc request --method eth_feeHistory --params [\"0x5\",\"0x6524cad7\",[10,20,30]]"
+      Then cmd: "rpc request --method eth_feeHistory --params '["0x5", "0x6524cad7", [10,20,30]]'"
       Then assert: "'{{$.rpc[-1]}}' contains baseFeePerGas"
       Then cmd: "rpc request --method net_version"
       Then assert: "'{{$.rpc[-1]}}' == '20230104'"
@@ -116,18 +116,33 @@ Feature: Rooch CLI integration tests
     Then cmd: "move run --function default::event_test::emit_event  --args 11u64"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
-    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, null, "1", true']"
+    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, null, "1", true]'"
     Then assert: "{{$.rpc[-1].data[0].sequence_info.tx_order}} == 1"
     Then assert: "{{$.rpc[-1].next_cursor}} == 1"
     Then assert: "{{$.rpc[-1].has_next_page}} == true"
-    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, "1", "1", true']"
+    Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, "1", "1", true]'"
     Then assert: "{{$.rpc[-1].data[0].sequence_info.tx_order}} == 0"
     Then assert: "{{$.rpc[-1].next_cursor}} == 0"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
-    Then cmd: "rpc request --method rooch_queryEvents --params '[{"tx_order_range":{"from_order":0, "to_order":2}}, null, "10", true']"
+    Then cmd: "rpc request --method rooch_queryEvents --params '[{"tx_order_range":{"from_order":0, "to_order":2}}, null, "10", true]'"
     Then assert: "{{$.rpc[-1].data[0].indexer_event_id.tx_order}} == 1"
     Then assert: "{{$.rpc[-1].next_cursor.tx_order}} == 0"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
+
+    # Sync states
+    Then cmd: "rpc request --method rooch_queryGlobalStates --params '[{"object_type":"0x3::coin::CoinInfo"}, null, "10", true]'"
+    Then assert: "{{$.rpc[-1].data[0].tx_order}} == 0"
+    Then assert: "{{$.rpc[-1].data[0].object_type}} == 0x3::coin::CoinInfo"
+    Then assert: "{{$.rpc[-1].has_next_page}} == false"
+
+    Then cmd: "rpc request --method rooch_queryTableStates --params '[{"table_handle":"0x0"}, null, "10", true]'"
+    Then assert: "{{$.rpc[-1].has_next_page}} == false"
+
+    Then cmd: "rpc request --method rooch_syncStates --params '[null, null, "2", false]'"
+    Then assert: "{{$.rpc[-1].data[0].tx_order}} == 0"
+    Then assert: "{{$.rpc[-1].next_cursor.state_index}} == 1"
+    Then assert: "{{$.rpc[-1].has_next_page}} == true"
+
     Then stop the server
 
   @serial
@@ -135,7 +150,7 @@ Feature: Rooch CLI integration tests
       Given a server for kv_store
       Then cmd: "move publish -p ../../examples/kv_store  --named-addresses rooch_examples=default"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::kv_store::add_value --args string:key1 string:value1"
+      Then cmd: "move run --function default::kv_store::add_value --args string:key1 --args string:value1"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move view --function default::kv_store::get_value --args string:key1"
       Then assert: "{{$.move[-1].vm_status}} == Executed"
@@ -172,7 +187,7 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::entry_function::emit_vec_object_id --args "vector<address>:0x1324,0x41234,0x1234" "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" "
+      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132" "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       Then cmd: "move run --function default::entry_function::emit_object --args "object:default::entry_function::TestStruct" "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
@@ -199,11 +214,11 @@ Feature: Rooch CLI integration tests
       # The entry_function_arguments example
       Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default --by-move-action"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" "
+      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132" "
       Then assert: "'{{$.move[-1]}}' contains FUNCTION_RESOLUTION_FAILURE"
       Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default --by-move-action"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      #Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" "
+      #Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132" "
       #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       # check compatibility
       Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default --by-move-action"
@@ -229,11 +244,11 @@ Feature: Rooch CLI integration tests
       # The entry_function_arguments example
       Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" "
+      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132" "
       Then assert: "'{{$.move[-1]}}' contains FUNCTION_RESOLUTION_FAILURE"
       Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 "vector<object_id>:0x2342,0x3132" "
+      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132" "
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # check compatibility

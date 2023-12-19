@@ -28,7 +28,7 @@ pub trait CommandAction<T: Serialize + Send>: Sized + Send {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AuthenticatorOptions {
     pub auth_validator_id: u64,
     pub payload: Vec<u8>,
@@ -70,7 +70,7 @@ impl From<AuthenticatorOptions> for Authenticator {
 #[derive(Debug, Parser)]
 pub struct TransactionOptions {
     /// Sender account address.
-    #[clap(long, alias = "sender-account", parse(try_from_str = ParsedAddress::parse), default_value = "default")]
+    #[clap(long, alias = "sender-account", value_parser=ParsedAddress::parse, default_value = "default")]
     pub(crate) sender: ParsedAddress,
 
     /// Custom the transaction's authenticator

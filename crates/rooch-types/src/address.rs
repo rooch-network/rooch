@@ -52,11 +52,11 @@ pub struct MultiChainAddress {
 }
 
 impl MultiChainAddress {
-    pub(crate) fn new(multichain_id: RoochMultiChainID, raw_address: Vec<u8>) -> Result<Self> {
-        Ok(Self {
+    pub(crate) fn new(multichain_id: RoochMultiChainID, raw_address: Vec<u8>) -> Self {
+        Self {
             multichain_id,
             raw_address,
-        })
+        }
     }
 
     pub fn is_rooch_address(&self) -> bool {
@@ -132,12 +132,11 @@ impl<'de> Deserialize<'de> for MultiChainAddress {
             #[serde(rename = "MultiChainAddress")]
             struct Value(u64, Vec<u8>);
             let value = Value::deserialize(deserializer)?;
-            Self::new(
+            Ok(Self::new(
                 RoochMultiChainID::try_from(MultiChainID::from(value.0))
                     .map_err(serde::de::Error::custom)?,
                 value.1,
-            )
-            .map_err(serde::de::Error::custom)
+            ))
         }
     }
 }
@@ -198,7 +197,6 @@ impl From<RoochAddress> for AccountAddress {
 impl From<RoochAddress> for MultiChainAddress {
     fn from(address: RoochAddress) -> Self {
         Self::new(RoochMultiChainID::Rooch, address.0.as_bytes().to_vec())
-            .expect("RoochAddress to MultiChainAddress should success")
     }
 }
 
@@ -308,7 +306,6 @@ impl RoochSupportedAddress for EthereumAddress {
 impl From<EthereumAddress> for MultiChainAddress {
     fn from(address: EthereumAddress) -> Self {
         Self::new(RoochMultiChainID::Ether, address.0.as_bytes().to_vec())
-            .expect("EthereumAddress to MultiChainAddress should success")
     }
 }
 
@@ -365,8 +362,65 @@ impl From<H160> for EthereumAddress {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct BitcoinAddress(pub Address);
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct BitcoinAddress {
+    bytes: Vec<u8>,
+}
+
+impl Default for BitcoinAddress {
+    fn default() -> Self {
+        Self::new(vec![])
+    }
+}
+
+impl BitcoinAddress {
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Self { bytes }
+    }
+
+    pub fn new_p2pkh(pubkey_hash: &bitcoin::PubkeyHash) -> Self {
+        let mut bytes = [0; 21];
+        //we always use mainnet prefix, do not distinguish testnet and mainnet in Move contract
+        bytes[0] = bitcoin::constants::PUBKEY_ADDRESS_PREFIX_MAIN;
+        bytes[1..].copy_from_slice(&pubkey_hash[..]);
+        Self {
+            bytes: bytes.to_vec(),
+        }
+    }
+
+    pub fn new_p2sh(script_hash: &bitcoin::ScriptHash) -> Self {
+        let mut bytes = [0; 21];
+        //we always use mainnet prefix, do not distinguish testnet and mainnet in Move contract
+        bytes[0] = bitcoin::constants::SCRIPT_ADDRESS_PREFIX_MAIN;
+        bytes[1..].copy_from_slice(&script_hash[..]);
+        Self {
+            bytes: bytes.to_vec(),
+        }
+    }
+
+    pub fn new_witness_program(witness_program: &bitcoin::WitnessProgram) -> Self {
+        let mut bytes = vec![witness_program.version().to_num()];
+        bytes.extend_from_slice(witness_program.program().as_bytes());
+        Self { bytes }
+    }
+
+    /// The empty address is used to if we parse the address failed from the script
+    pub fn is_empty(&self) -> bool {
+        self.bytes.is_empty()
+    }
+}
+
+impl MoveStructType for BitcoinAddress {
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = ident_str!("bitcoin_address");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("BitcoinAddress");
+}
+
+impl MoveStructState for BitcoinAddress {
+    fn struct_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8))])
+    }
+}
 
 impl RoochSupportedAddress for BitcoinAddress {
     fn random() -> Self {
@@ -392,17 +446,38 @@ impl RoochSupportedAddress for BitcoinAddress {
         let mut rng = thread_rng();
         let selected_address = addresses.choose(&mut rng).unwrap().clone();
         // Return the randomly selected Bitcoin address
-        BitcoinAddress(selected_address)
+        selected_address.into()
+    }
+}
+
+impl From<bitcoin::Address> for BitcoinAddress {
+    fn from(address: bitcoin::Address) -> Self {
+        address.payload().into()
+    }
+}
+
+impl From<&bitcoin::address::Payload> for BitcoinAddress {
+    fn from(payload: &bitcoin::address::Payload) -> Self {
+        match payload {
+            bitcoin::address::Payload::PubkeyHash(pubkey_hash) => Self::new_p2pkh(pubkey_hash),
+            bitcoin::address::Payload::ScriptHash(bytes) => Self::new_p2sh(bytes),
+            bitcoin::address::Payload::WitnessProgram(program) => {
+                Self::new_witness_program(program)
+            }
+            _ => BitcoinAddress::default(),
+        }
+    }
+}
+
+impl From<bitcoin::address::Payload> for BitcoinAddress {
+    fn from(payload: bitcoin::address::Payload) -> Self {
+        Self::from(&payload)
     }
 }
 
 impl From<BitcoinAddress> for MultiChainAddress {
     fn from(address: BitcoinAddress) -> Self {
-        Self::new(
-            RoochMultiChainID::Bitcoin,
-            address.0.to_string().into_bytes(),
-        )
-        .expect("BitcoinAddress to MultiChainAddress should succeed")
+        Self::new(RoochMultiChainID::Bitcoin, address.bytes)
     }
 }
 
@@ -416,11 +491,7 @@ impl TryFrom<MultiChainAddress> for BitcoinAddress {
                 value.multichain_id
             ));
         }
-
-        let addr = Address::from_str(&String::from_utf8(value.raw_address)?)
-            .map_err(|e| anyhow::anyhow!("invalid bitcoin address: {}", e))?;
-
-        Ok(Self(addr.require_network(bitcoin::Network::Bitcoin)?))
+        Ok(Self::new(value.raw_address))
     }
 }
 
@@ -437,7 +508,6 @@ impl RoochSupportedAddress for NostrAddress {
 impl From<NostrAddress> for MultiChainAddress {
     fn from(address: NostrAddress) -> Self {
         Self::new(RoochMultiChainID::Nostr, address.0.serialize().to_vec())
-            .expect("NostrAddress to MultiChainAddress should succeed")
     }
 }
 

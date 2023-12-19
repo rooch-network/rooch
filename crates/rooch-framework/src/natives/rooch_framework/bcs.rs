@@ -51,10 +51,7 @@ fn native_from_bytes(
     let val = match Value::simple_deserialize(&bytes, &layout) {
         Some(val) => val,
         None => {
-            return Ok(NativeResult::err(
-                cost,
-                moveos_types::move_std::error::invalid_argument(E_TYPE_NOT_MATCH),
-            ));
+            return Ok(NativeResult::err(cost, E_TYPE_NOT_MATCH));
         }
     };
     // TODO(gas): charge gas for deserialization

@@ -1,4 +1,9 @@
 packages:
-    - 'dashboard/**'
-    - 'sdk/**'
-    - 'docs/**'
+  - 'dashboard/**'
+  # TODO: sdk/** There is a compilation conflict with dashboard
+  - 'sdk/typescript/build-scripts'
+  - 'sdk/typescript/rooch-sdk'
+  - 'sdk/typescript/rooch-sdk-kit'
+  - 'sdk/typescript/templates/**'
+  - 'sdk/typescript/rooch-create'
+  - 'docs/**'

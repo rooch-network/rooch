@@ -72,13 +72,11 @@ pub fn get_explanation(
 ) -> Option<ErrorDescription> {
     let error_descriptions: ErrorMapping =
         bcs_ext::from_bytes(data).expect("Decode err map failed");
-    error_descriptions.get_explanation(module_id, abort_code)
+    error_descriptions.get_explanation(module_id.to_string().as_str(), abort_code)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
 pub struct MoveAbortExplain {
-    pub category_code: u64,
-    pub category_name: Option<String>,
     pub reason_code: u64,
     pub reason_name: Option<String>,
     pub code_description: Option<String>,
@@ -86,12 +84,6 @@ pub struct MoveAbortExplain {
 
 impl std::fmt::Display for MoveAbortExplain {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Category Code: {}", self.category_code)?;
-        writeln!(
-            f,
-            "Category Name: {}",
-            self.category_name.clone().unwrap_or("Unknown".to_string())
-        )?;
         writeln!(f, "Reason Code: {}", self.reason_code)?;
         writeln!(
             f,
@@ -114,24 +106,18 @@ pub fn explain_move_abort(
     abort_code: u64,
     data: &[u8],
 ) -> MoveAbortExplain {
-    let (category, reason_code) = moveos_types::move_std::error::explain(abort_code);
-
     let err_description = match abort_location {
-        AbortLocation::Module(module_id) => get_explanation(&module_id, reason_code, data),
+        AbortLocation::Module(module_id) => get_explanation(&module_id, abort_code, data),
         AbortLocation::Script => None,
     };
     match err_description {
         Some(description) => MoveAbortExplain {
-            category_code: category,
-            category_name: moveos_types::move_std::error::explain_category(category),
-            reason_code,
+            reason_code: abort_code,
             reason_name: Some(description.code_name),
             code_description: Some(description.code_description),
         },
         None => MoveAbortExplain {
-            category_code: category,
-            category_name: moveos_types::move_std::error::explain_category(category),
-            reason_code,
+            reason_code: abort_code,
             reason_name: None,
             code_description: None,
         },

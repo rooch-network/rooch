@@ -11,6 +11,7 @@ use moveos_types::transaction::MoveAction;
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
+use rooch_types::function_arg::parse_function_arg;
 use rooch_types::{
     address::RoochAddress,
     error::{RoochError, RoochResult},
@@ -32,10 +33,7 @@ pub struct RunFunction {
     /// Example: `0x1::M::T1 0x1::M::T2 rooch_framework::empty::Empty`
     #[clap(
         long = "type-args",
-        takes_value(true),
-        multiple_values(true),
-        multiple_occurrences(true),
-        parse(try_from_str = ParsedStructType::parse)
+        value_parser=ParsedStructType::parse,
     )]
     pub type_args: Vec<ParsedStructType>,
 
@@ -45,12 +43,7 @@ pub struct RunFunction {
     ///
     /// Example: `address:0x1 bool:true u8:0 u256:1234 'vector<u32>:a,b,c,d'`
     ///     address and uint can be written in short form like `@0x1 1u8 4123u256`.
-    #[clap(
-        long = "args",
-        takes_value(true),
-        multiple_values(true),
-        multiple_occurrences(true)
-    )]
+    #[clap(long = "args", value_parser=parse_function_arg)]
     pub args: Vec<FunctionArg>,
 
     /// RPC client options.
