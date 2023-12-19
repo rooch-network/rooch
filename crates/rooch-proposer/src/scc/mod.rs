@@ -21,12 +21,6 @@ pub struct StateCommitmentChain {
     da: DAProxy,
 }
 
-impl Default for StateCommitmentChain {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl StateCommitmentChain {
     /// Create a new SCC
     pub fn new(da_proxy: DAProxy) -> Self {

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use moveos_types::h256::H256;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BatchMeta {
     // each batch maps to a L2 block
     pub block_number: u128,
@@ -17,7 +17,7 @@ pub struct BatchMeta {
     pub signature: Vec<u8>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Batch {
     pub meta: BatchMeta,
     pub data: Vec<u8>,
@@ -37,7 +37,7 @@ impl Message for PutBatchMessage {
     type Result = anyhow::Result<PutBatchResult>;
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct PutBatchResult {
     // TODO checksum algorithm
     // checksum of the batch data:

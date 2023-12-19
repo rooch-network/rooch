@@ -5,27 +5,51 @@ use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::context::ActorContext;
 use coerce::actor::message::Handler;
+use coerce::actor::Actor;
 
-use crate::messages::Batch;
+use crate::messages::{Batch, PutBatchMessage};
 use crate::server::serverproxy::DAServerProxy;
+use std::sync::{Arc, Mutex, RwLock};
 
 // TODO tx buffer for building batch
 pub struct DAActor {
-    servers: Vec<Box<dyn DAServerProxy>>,
+    servers: Arc<RwLock<Vec<Arc<dyn DAServerProxy + Send + Sync>>>>,
 }
 
+impl Actor for DAActor {}
+
 impl DAActor {
-    pub fn new(servers: Vec<Box<dyn DAServerProxy>>) -> Self {
-        Self { servers }
+    pub fn new(servers: Vec<Arc<dyn DAServerProxy + Send + Sync>>) -> Self {
+        Self {
+            servers: Arc::new(RwLock::new(servers)),
+        }
     }
 
-    pub fn submit_batch(&self, batch: Batch) -> Result<()> {
+    pub async fn submit_batch(&self, batch: Batch) -> Result<()> {
         // TODO calc checksum
         // TODO richer policy for multi servers
-        for server in self.servers.iter() {
-            // TODO verify checksum
-            // TODO retry policy & log
-            server.put_batch(batch.clone())?;
+        // TODO verify checksum
+        // TODO retry policy & log
+
+        let servers = self.servers.read().unwrap().to_vec();
+
+        let futures: Vec<_> = servers
+            .iter()
+            .map(|server| {
+                let server = Arc::clone(server);
+                let batch = batch.clone();
+                async move {
+                    server
+                        .put_batch(PutBatchMessage {
+                            batch: batch.clone(),
+                        })
+                        .await
+                }
+            })
+            .collect();
+
+        for future in futures {
+            future.await?;
         }
         Ok(())
     }
@@ -34,6 +58,6 @@ impl DAActor {
 #[async_trait]
 impl Handler<Batch> for DAActor {
     async fn handle(&mut self, msg: Batch, _ctx: &mut ActorContext) -> Result<()> {
-        self.submit_batch(msg)
+        self.submit_batch(msg).await
     }
 }

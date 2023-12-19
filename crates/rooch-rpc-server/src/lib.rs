@@ -238,18 +238,23 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
 
     // Init DA
     let internal_da_server_config = da_config.internal_da_server.clone();
-    let da_server_proxy: dyn DAServerProxy = match internal_da_server_config {
+    let da_server_proxy: Arc<dyn DAServerProxy + Send + Sync> = match internal_da_server_config {
         Some(DAServerType::Celestia(celestia_config)) => {
-            let da_server = DAServerCelestiaActor::new(&celestia_config)?
+            let da_server = DAServerCelestiaActor::new(&celestia_config)
+                .await
                 .into_actor(Some("DAServerCelestia"), &actor_system)
                 .await?;
-            DAServerCelestiaProxy::new(da_server.into())
+            Arc::new(DAServerCelestiaProxy::new(da_server.clone().into()))
         }
-        _ => DAServerNopProxy::new(),
+        _ => Arc::new(DAServerNopProxy {}),
     };
-
-    let servers: Vec<Box<dyn DAServerProxy>> = vec![Box::new(da_server_proxy)];
-    let da_proxy = DAProxy::new(DAActor::new(servers).into());
+    let servers: Vec<Arc<dyn DAServerProxy + Send + Sync>> = vec![da_server_proxy];
+    let da_proxy = DAProxy::new(
+        DAActor::new(servers)
+            .into_actor(Some("DAProxy"), &actor_system)
+            .await?
+            .into(),
+    );
 
     // Init proposer
     let proposer_keypair = server_opt.proposer_keypair.unwrap();
