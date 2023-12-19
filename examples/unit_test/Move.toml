@@ -1,0 +1,20 @@
+[package]
+name = "unit_test"
+version = "0.0.1"
+
+[dependencies]
+#MoveStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "moveos/moveos-stdlib/move-stdlib", rev = "main" }
+#MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "moveos/moveos-stdlib/moveos-stdlib", rev = "main" }
+#RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "crates/rooch-framework", rev = "main" }
+MoveStdlib = { local = "../../moveos/moveos-stdlib/move-stdlib" }
+MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
+RoochFramework = { local = "../../crates/rooch-framework" }
+
+[addresses]
+unit_test = "_"
+std = "0x1"
+moveos_std = "0x2"
+rooch_framework = "0x3"
+
+[dev-addresses]
+unit_test = "0x42"
