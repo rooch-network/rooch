@@ -50,7 +50,6 @@ impl RpcService {
         sequencer: SequencerProxy,
         proposer: ProposerProxy,
         indexer: IndexerProxy,
-        da: DAProxy,
     ) -> Self {
         Self {
             chain_id,
