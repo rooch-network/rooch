@@ -964,6 +964,33 @@
               }
             },
             "additionalProperties": false
+          },
+          {
+            "description": "Query by multi chain address",
+            "type": "object",
+            "required": [
+              "multi_chain_address"
+            ],
+            "properties": {
+              "multi_chain_address": {
+                "type": "object",
+                "required": [
+                  "multichain_id",
+                  "raw_address"
+                ],
+                "properties": {
+                  "multichain_id": {
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  },
+                  "raw_address": {
+                    "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
           }
         ]
       },

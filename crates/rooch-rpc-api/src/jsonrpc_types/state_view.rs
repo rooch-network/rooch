@@ -6,6 +6,7 @@ use super::{
     StructTagView, TypeTagView,
 };
 use anyhow::Result;
+use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
 use move_core_types::language_storage::TypeTag;
 use moveos_types::state::{AnnotatedKeyState, KeyState, TableChangeSet};
@@ -395,20 +396,34 @@ pub enum GlobalStateFilterView {
     Owner(AccountAddressView),
     /// Query by object id.
     ObjectId(ObjectID),
+    /// Query by multi chain address
+    MultiChainAddress {
+        multichain_id: u64,
+        raw_address: BytesView,
+    },
 }
 
-impl From<GlobalStateFilterView> for GlobalStateFilter {
-    fn from(state_filter: GlobalStateFilterView) -> Self {
+impl GlobalStateFilterView {
+    pub fn into_global_state_filter(
+        state_filter: GlobalStateFilterView,
+        resolve_address: AccountAddress,
+    ) -> GlobalStateFilter {
         match state_filter {
             GlobalStateFilterView::ObjectTypeWithOwner { object_type, owner } => {
-                Self::ObjectTypeWithOwner {
+                GlobalStateFilter::ObjectTypeWithOwner {
                     object_type: object_type.into(),
                     owner: owner.into(),
                 }
             }
-            GlobalStateFilterView::ObjectType(object_type) => Self::ObjectType(object_type.into()),
-            GlobalStateFilterView::Owner(owner) => Self::Owner(owner.into()),
-            GlobalStateFilterView::ObjectId(object_id) => Self::ObjectId(object_id),
+            GlobalStateFilterView::ObjectType(object_type) => {
+                GlobalStateFilter::ObjectType(object_type.into())
+            }
+            GlobalStateFilterView::Owner(owner) => GlobalStateFilter::Owner(owner.into()),
+            GlobalStateFilterView::ObjectId(object_id) => GlobalStateFilter::ObjectId(object_id),
+            GlobalStateFilterView::MultiChainAddress {
+                multichain_id: _,
+                raw_address: _,
+            } => GlobalStateFilter::Owner(resolve_address),
         }
     }
 }

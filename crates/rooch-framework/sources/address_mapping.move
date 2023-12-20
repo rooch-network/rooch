@@ -5,10 +5,12 @@ module rooch_framework::address_mapping{
     
     use std::option::{Self, Option};
     use std::signer;
+    use std::vector;
+    use moveos_std::bcs;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
     use moveos_std::object::{Self, Object}; 
-    use rooch_framework::multichain_address::{Self, MultiChainAddress};
+    use rooch_framework::multichain_address::{Self, MultiChainAddress, multichain_id_rooch};
 
     friend rooch_framework::genesis;
     friend rooch_framework::transaction_validator;
@@ -18,12 +20,15 @@ module rooch_framework::address_mapping{
 
     struct AddressMapping has key{
         mapping: Table<MultiChainAddress, address>,
+        reverse_mapping: Table<address, vector<MultiChainAddress>>,
     }
 
     public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer) {
         let mapping = context::new_table<MultiChainAddress, address>(ctx);
+        let reverse_mapping = context::new_table<address, vector<MultiChainAddress>>(ctx);
         let obj = context::new_named_object(ctx, AddressMapping{
             mapping,
+            reverse_mapping
         });
         object::transfer_extend(obj, @rooch_framework);
     }
@@ -58,6 +63,41 @@ module rooch_framework::address_mapping{
             multichain_address::mapping_to_rooch_address(maddress)
         }else{
             option::extract(&mut addr)
+        }
+    }
+
+    /// Return the first multi chain address for the rooch address
+    public fun resolve_multi_chain_address(obj: &Object<AddressMapping>, rooch_address: address): Option<MultiChainAddress> {
+        let am = object::borrow(obj);
+        if(table::contains(&am.reverse_mapping, rooch_address)){
+            let maddresses = table::borrow(&am.reverse_mapping, rooch_address);
+            if (!vector::is_empty(maddresses)) {
+                option::some(*vector::borrow(maddresses, 0))
+            } else {
+                option::none()
+            }
+        }else{
+            option::none()
+        }
+    }
+
+    /// Return the first multi chain address for the rooch address with the same multichain id
+    public fun resolve_multi_chain_address_with_multichain_id(obj: &Object<AddressMapping>, rooch_address: address, multichain_id: u64): Option<MultiChainAddress> {
+        let am = object::borrow(obj);
+        if (multichain_id == multichain_address::multichain_id_rooch()) {
+            let raw_address = bcs::to_bytes(&rooch_address);
+            return option::some(multichain_address::new(multichain_id, raw_address))
+        };
+        if(table::contains(&am.reverse_mapping, rooch_address)){
+            let maddresses = table::borrow(&am.reverse_mapping, rooch_address);
+            let (exist, first_index) = vector::find(maddresses, |v| multichain_address::multichain_id(v) == multichain_id);
+            if (exist) {
+                option::some(*vector::borrow(maddresses, first_index))
+            } else {
+                option::none()
+            }
+        }else{
+            option::none()
         }
     }
 
@@ -104,7 +144,9 @@ module rooch_framework::address_mapping{
         let obj = Self::borrow_mut(ctx);
         let am = object::borrow_mut(obj);
         table::add(&mut am.mapping, maddress, rooch_address);
-        //TODO matienance the reverse mapping rooch_address -> vector<MultiChainAddress>
+        // maintenance the reverse mapping rooch_address -> vector<MultiChainAddress>
+        let maddresses = table::borrow_mut_with_default(&mut am.reverse_mapping, rooch_address, vector[]);
+        vector::push_back(maddresses, maddress);
     }
    
 }

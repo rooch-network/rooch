@@ -11,6 +11,8 @@
 -  [Function `borrow`](#0x3_address_mapping_borrow)
 -  [Function `resolve_address`](#0x3_address_mapping_resolve_address)
 -  [Function `resolve_or_generate_address`](#0x3_address_mapping_resolve_or_generate_address)
+-  [Function `resolve_multi_chain_address`](#0x3_address_mapping_resolve_multi_chain_address)
+-  [Function `resolve_multi_chain_address_with_multichain_id`](#0x3_address_mapping_resolve_multi_chain_address_with_multichain_id)
 -  [Function `exists_mapping_address`](#0x3_address_mapping_exists_mapping_address)
 -  [Function `resolve`](#0x3_address_mapping_resolve)
 -  [Function `resolve_or_generate`](#0x3_address_mapping_resolve_or_generate)
@@ -21,6 +23,8 @@
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::signer</a>;
+<b>use</b> <a href="">0x1::vector</a>;
+<b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::table</a>;
@@ -95,6 +99,30 @@ Borrow the address mapping object
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_or_generate_address">resolve_or_generate_address</a>(obj: &<a href="_Object">object::Object</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">address_mapping::AddressMapping</a>&gt;, maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_resolve_multi_chain_address"></a>
+
+## Function `resolve_multi_chain_address`
+
+Return the first multi chain address for the rooch address
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_multi_chain_address">resolve_multi_chain_address</a>(obj: &<a href="_Object">object::Object</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">address_mapping::AddressMapping</a>&gt;, rooch_address: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>&gt;
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_resolve_multi_chain_address_with_multichain_id"></a>
+
+## Function `resolve_multi_chain_address_with_multichain_id`
+
+Return the first multi chain address for the rooch address with the same multichain id
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_multi_chain_address_with_multichain_id">resolve_multi_chain_address_with_multichain_id</a>(obj: &<a href="_Object">object::Object</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">address_mapping::AddressMapping</a>&gt;, rooch_address: <b>address</b>, multichain_id: u64): <a href="_Option">option::Option</a>&lt;<a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>&gt;
 </code></pre>
 
 
