@@ -276,16 +276,4 @@ impl Stdlib {
         }
         Ok(bundles)
     }
-
-    pub fn flattened_module_bundles(&self) -> Result<Vec<Vec<u8>>> {
-        let mut bundles = vec![];
-        for package in &self.packages {
-            for module in package.modules()? {
-                let mut binary = vec![];
-                module.serialize(&mut binary)?;
-                bundles.push(binary);
-            }
-        }
-        Ok(bundles)
-    }
 }

@@ -12,10 +12,12 @@ use rpassword::prompt_password;
 
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use moveos_stdlib_builder::Stdlib;
+use moveos_types::addresses::{MOVEOS_STD_ADDRESS, MOVE_STD_ADDRESS};
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use rooch_types::error::{RoochError, RoochResult};
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -44,10 +46,16 @@ impl CommandAction<ExecuteTransactionResponseView> for Framework {
             .expect("Building context failed.");
 
         let stdlib = Stdlib::load_from_file(package_path)?;
-        let bundles = stdlib
-            .flattened_module_bundles()
-            .expect("get bundles failed");
-        let args = bcs::to_bytes(&bundles).unwrap();
+        let bundles_map: HashMap<_, _> = stdlib
+            .module_bundles()
+            .expect("get bundles failed")
+            .into_iter()
+            .collect();
+        let args = vec![
+            bcs::to_bytes(bundles_map.get(&MOVE_STD_ADDRESS).unwrap()).unwrap(),
+            bcs::to_bytes(bundles_map.get(&MOVEOS_STD_ADDRESS).unwrap()).unwrap(),
+            bcs::to_bytes(bundles_map.get(&ROOCH_FRAMEWORK_ADDRESS).unwrap()).unwrap(),
+        ];
         let action = MoveAction::new_function_call(
             FunctionId::new(
                 ModuleId::new(
@@ -57,7 +65,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Framework {
                 Identifier::new("upgrade_entry".to_owned()).unwrap(),
             ),
             vec![],
-            vec![args],
+            args,
         );
 
         // Build context and handle errors

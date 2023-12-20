@@ -13,6 +13,7 @@ module rooch_framework::account {
    friend rooch_framework::transaction_validator;
    friend rooch_framework::transfer;
    friend rooch_framework::genesis;
+   friend rooch_framework::upgrade;
 
    /// Resource representing an account.
    struct Account has key, store {
@@ -164,7 +165,7 @@ module rooch_framework::account {
    }
 
 
-   native fun create_signer(addr: address): signer;
+   native public(friend) fun create_signer(addr: address): signer;
 
 
    /// A resource account is used to manage resources independent of an account managed by a user.
