@@ -56,7 +56,7 @@ export class Account implements IAccount {
     const result = new Array<ISessionKey>()
 
     for (const state of data.data as any) {
-      const moveValue = state?.decoded_value as any
+      const moveValue = state?.state.decoded_value as any
 
       if (moveValue) {
         const val = moveValue.value

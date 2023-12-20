@@ -27,6 +27,7 @@ use termcolor::Buffer;
 use crate::cli_types::WalletContextOptions;
 
 #[derive(Parser)]
+#[group(skip)]
 pub struct Test {
     #[clap(flatten)]
     pub test: test::Test,
@@ -36,7 +37,7 @@ pub struct Test {
     /// Example: alice=0x1234, bob=0x5678
     ///
     /// Note: This will fail if there are duplicates in the Move.toml file remove those first.
-    #[clap(long, parse(try_from_str = crate::utils::parse_map), default_value = "")]
+    #[clap(long, value_parser=crate::utils::parse_map::<String, String>, default_value = "")]
     pub(crate) named_addresses: BTreeMap<String, String>,
 
     #[clap(flatten)]

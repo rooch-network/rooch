@@ -1,0 +1,15 @@
+[package]
+name = "BitcoinMove"
+version = "0.0.1"
+
+[addresses]
+vm_reserved = "0x0"
+std = "0x1"
+moveos_std = "0x2"
+rooch_framework = "0x3"
+bitcoin_move = "0x4"
+
+[dependencies]
+MoveStdlib = { local = "../../moveos/moveos-stdlib/move-stdlib" }
+MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
+RoochFramework = { local = "../../crates/rooch-framework" }

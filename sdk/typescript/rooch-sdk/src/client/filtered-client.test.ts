@@ -26,7 +26,7 @@ const mockFilter: ITransactionFilter = {
 }
 
 const mockProvider: IClient = {
-  sendRawTransaction: vi.fn((playload) => Promise.resolve('mockTransactionId')),
+  sendRawTransaction: vi.fn(() => Promise.resolve('mockTransactionId')),
 
   getRpcApiVersion: function (): Promise<string | undefined> {
     throw new Error('Function not implemented.')
@@ -39,9 +39,11 @@ const mockProvider: IClient = {
     tyArgs?: TypeTag[] | undefined,
     args?: Arg[] | undefined,
   ): Promise<AnnotatedFunctionResultView> {
+    console.log(funcId, tyArgs, args)
     throw new Error('Function not implemented.')
   },
   getStates: function (accessPath: string): Promise<StateView | null[]> {
+    console.log(accessPath)
     throw new Error('Function not implemented.')
   },
   listStates: function (
@@ -49,6 +51,7 @@ const mockProvider: IClient = {
     cursor: Uint8Array | null,
     limit: number,
   ): Promise<StatePageView> {
+    console.log(access_path, cursor, limit)
     throw new Error('Function not implemented.')
   },
 }

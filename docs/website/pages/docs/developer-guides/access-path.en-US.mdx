@@ -1,0 +1,23 @@
+# Access path
+
+Access path
+Rooch's data is stored in StateDB. When we interact with the chain, different call requests will correspond to corresponding read and write requests.
+
+In order to accurately add, delete, check and modify certain data in these operations, the correct storage path of the data must be passed. Access Path specifies how to access the corresponding data.
+
+There are 4 different types of data in Rooch, so 4 different path prefixes are set to identify the access path.
+
+- `Object`: `/object/ObjectID1 [, ObjectID2 ... ObjectIDn]`
+- `Resource`: `/resource/Account_Address/Resource_Type1 [, Resource_Type2 ... Resource_Typen]`
+- `Module`: `/module/Account_Address/Module_Type1 [, Module_Type2 ... Module_Typen]`
+- `Table`: `/table/Table_Handle/key1 [, key2 ... keyn]`
+
+## Using access paths in RPC requests
+
+```shell
+curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"rooch_listStates","params":["/resource/0x3", null, null, {"decode":true}],"id":1}' https://dev-seed.rooch.network:443 | jq
+```
+
+You can see that in the parameter list of the RPC request, we use the `/resource/0xaddress` prefix to access all resources at the `0x3` address.
+
+For more usage examples, please refer to [Rooch JSON-RPC](./rpc.en-US.mdx).

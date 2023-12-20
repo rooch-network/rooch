@@ -7,6 +7,7 @@
     "dashboard": "pnpm --filter ./dashboard",
     "rooch-create": "pnpm --filter ./sdk/typescript/rooch-create/",
     "rooch-sdk": "pnpm --filter ./sdk/typescript/rooch-sdk/",
+    "rooch-sdk-kit": "pnpm --filter ./sdk/typescript/rooch-sdk-kit/",
     "rooch-state": "pnpm --filter ./sdk/typescript/rooch-sdk/",
     "rooch-game": "pnpm --filter ./sdk/typescript/rooch-game/",
     "changeset-version": "pnpm changeset version && pnpm sdk codegen:version",

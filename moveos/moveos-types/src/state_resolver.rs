@@ -1,13 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::state::{AnnotatedKeyState, KeyState};
 use crate::{
     access_path::AccessPath,
     moveos_std::move_module::MoveModule,
     moveos_std::object::{AnnotatedObject, NamedTableID, ObjectID},
     state::{AnnotatedState, State},
 };
-use anyhow::{ensure, Result};
+use anyhow::{ensure, Error, Result};
+use move_core_types::metadata::Metadata;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::IdentStr,
@@ -20,6 +22,9 @@ pub const GLOBAL_OBJECT_STORAGE_HANDLE: ObjectID = ObjectID::ZERO;
 
 pub type StateKV = (Vec<u8>, State);
 pub type AnnotatedStateKV = (Vec<u8>, AnnotatedState);
+
+pub type KeyStateKV = (KeyState, State);
+pub type AnnotatedKeyStateKV = (AnnotatedKeyState, AnnotatedState);
 
 /// A global state resolver which needs to be provided by the environment.
 /// This allows to lookup data in remote storage.
@@ -54,17 +59,17 @@ impl<R> ResourceResolver for MoveOSResolverProxy<R>
 where
     R: StateResolver,
 {
-    type Error = anyhow::Error;
-
-    fn get_resource(
+    fn get_resource_with_metadata(
         &self,
         address: &AccountAddress,
         tag: &StructTag,
-    ) -> Result<Option<Vec<u8>>, Self::Error> {
+        _metadata: &[Metadata],
+    ) -> Result<(Option<Vec<u8>>, usize), Error> {
         let resource_table_id = NamedTableID::Resource(*address).to_object_id();
 
         let key = resource_tag_to_key(tag);
-        self.0
+        let result = self
+            .0
             .resolve_table_item(&resource_table_id, &key)?
             .map(|s| {
                 ensure!(
@@ -75,7 +80,18 @@ where
                 );
                 Ok(s.value)
             })
-            .transpose()
+            .transpose();
+
+        match result {
+            Ok(opt) => {
+                if let Some(data) = opt {
+                    Ok((Some(data), 0))
+                } else {
+                    Ok((None, 0))
+                }
+            }
+            Err(err) => Err(err),
+        }
     }
 }
 
@@ -83,9 +99,11 @@ impl<R> ModuleResolver for MoveOSResolverProxy<R>
 where
     R: StateResolver,
 {
-    type Error = anyhow::Error;
+    fn get_module_metadata(&self, _module_id: &ModuleId) -> Vec<Metadata> {
+        vec![]
+    }
 
-    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
+    fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Error> {
         let module_table_id = NamedTableID::Module(*module_id.address()).to_object_id();
         let key = module_name_to_key(module_id.name());
         //We wrap the modules byte codes to `MoveModule` type when store the module.
@@ -119,9 +137,9 @@ where
     }
 }
 
-pub trait MoveOSResolver: MoveResolver<Err = anyhow::Error> + StateResolver {}
+pub trait MoveOSResolver: MoveResolver + StateResolver {}
 
-impl<T> MoveOSResolver for T where T: MoveResolver<Err = anyhow::Error> + StateResolver {}
+impl<T> MoveOSResolver for T where T: MoveResolver + StateResolver {}
 
 //TODO define a ResourceKey trait to unify the resource key type, and auto impl it for ObjectID and StructTag.
 pub fn resource_tag_to_key(tag: &StructTag) -> Vec<u8> {

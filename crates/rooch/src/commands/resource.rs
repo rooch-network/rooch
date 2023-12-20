@@ -14,12 +14,12 @@ use rooch_types::error::RoochResult;
 /// Get account resource by tag
 pub struct ResourceCommand {
     /// Account address where the resource stored.
-    #[clap(long, parse(try_from_str = ParsedAddress::parse))]
+    #[clap(long, value_parser=ParsedAddress::parse)]
     pub address: ParsedAddress,
 
     /// Struct name as `<ADDRESS>::<MODULE_ID>::<STRUCT_NAME><TypeParam1?, TypeParam2?>`
     /// Example: `0x123::counter::Counter`, `0x123::counter::Box<0x123::counter::Counter>`
-    #[clap(long = "resource", parse(try_from_str = ParsedStructType::parse))]
+    #[clap(long = "resource", value_parser=ParsedStructType::parse)]
     pub resource: ParsedStructType,
 
     #[clap(flatten)]

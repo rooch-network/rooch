@@ -259,7 +259,6 @@ pub fn build_model(
         fetch_deps_only: false,
         skip_fetch_latest_git_deps: true,
         bytecode_version: Some(BYTECODE_VERSION),
-        lock_file: None,
     };
     build_config.move_model_for_package(
         package_path,
@@ -287,7 +286,6 @@ pub fn build_model_with_test_attr(
         fetch_deps_only: false,
         skip_fetch_latest_git_deps: true,
         bytecode_version: Some(BYTECODE_VERSION),
-        lock_file: None,
     };
     let resolved_graph =
         build_config.resolution_graph_for_package(package_path, &mut std::io::stdout())?;

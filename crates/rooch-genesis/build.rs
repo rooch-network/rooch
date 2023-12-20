@@ -56,6 +56,22 @@ fn main() {
                 .join("sources")
                 .display()
         );
+
+        println!(
+            "cargo:rerun-if-changed={}",
+            root_dir
+                .join("frameworks/bitcoin-move")
+                .join("Move.toml")
+                .display()
+        );
+
+        println!(
+            "cargo:rerun-if-changed={}",
+            root_dir
+                .join("frameworks/bitcoin-move")
+                .join("sources")
+                .display()
+        );
         rooch_genesis_builder::build_and_save_stdlib().expect("Build stdlib failed")
     }
 }

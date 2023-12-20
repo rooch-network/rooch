@@ -41,14 +41,14 @@ const E_LENTH_NOT_MATCH: u64 = 4;
 /// The native module context.
 #[derive(Tid)]
 pub struct NativeModuleContext<'a> {
-    resolver: &'a dyn ModuleResolver<Error = anyhow::Error>,
+    resolver: &'a dyn ModuleResolver,
     pub init_functions: BTreeSet<ModuleId>,
 }
 
 impl<'a> NativeModuleContext<'a> {
     /// Create a new instance of a native table context. This must be passed in via an
     /// extension into VM session functions.
-    pub fn new(resolver: &'a dyn ModuleResolver<Error = anyhow::Error>) -> Self {
+    pub fn new(resolver: &'a dyn ModuleResolver) -> Self {
         Self {
             resolver,
             init_functions: BTreeSet::new(),

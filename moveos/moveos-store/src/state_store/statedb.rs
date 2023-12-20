@@ -8,7 +8,9 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{StructTag, TypeTag},
 };
-use moveos_types::state::StateSet;
+use moveos_types::move_std::ascii::MoveAsciiString;
+use moveos_types::move_std::string::MoveString;
+use moveos_types::state::{TableState, TableStateSet};
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
     h256::H256,
@@ -180,8 +182,13 @@ impl StateDBStore {
         let account_storage = self
             .get_as_account_storage(account)?
             .unwrap_or_else(|| ObjectEntity::new_account_storage_object(account));
-        self.get_as_table_or_create(account_storage.value.resources)?;
-        self.get_as_table_or_create(account_storage.value.modules)?;
+
+        // Resource table key type tag: std::ascii::String
+        let resource_key_type = TypeTag::Struct(Box::new(MoveAsciiString::struct_tag()));
+        self.get_as_table_or_create(account_storage.value.resources, resource_key_type)?;
+        // Module table key type tag: std::string::String
+        let module_key_type = TypeTag::Struct(Box::new(MoveString::struct_tag()));
+        self.get_as_table_or_create(account_storage.value.modules, module_key_type)?;
         Ok(account_storage)
     }
 
@@ -208,9 +215,10 @@ impl StateDBStore {
     fn get_as_table_or_create(
         &self,
         id: ObjectID,
+        key_type: TypeTag,
     ) -> Result<(ObjectEntity<TableInfo>, TreeTable<NodeDBStore>)> {
         Ok(self.get_as_table(id)?.unwrap_or_else(|| {
-            self.create_table(id)
+            self.create_table(id, key_type)
                 .expect("create_table should succ when get_as_table_or_create")
         }))
     }
@@ -218,9 +226,10 @@ impl StateDBStore {
     fn create_table(
         &self,
         id: ObjectID,
+        key_type: TypeTag,
     ) -> Result<(ObjectEntity<TableInfo>, TreeTable<NodeDBStore>)> {
         let table = TreeTable::new(self.node_store.clone());
-        let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()));
+        let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()), key_type)?;
         let object = ObjectEntity::new_table_object(id, table_info);
         Ok((object, table))
     }
@@ -268,7 +277,8 @@ impl StateDBStore {
                     .put_changes(table_change.entries.into_iter())?;
                 // TODO: do we need to update the size of global table?
             } else {
-                let (mut object, table) = self.get_as_table_or_create(table_handle)?;
+                let (mut object, table) =
+                    self.get_as_table_or_create(table_handle, table_change.key_type)?;
                 let new_state_root = table.put_changes(table_change.entries.into_iter())?;
                 object.value.state_root = AccountAddress::new(new_state_root.into());
                 let curr_table_size: i64 = object.value.size as i64;
@@ -321,16 +331,19 @@ impl StateDBStore {
         }
     }
 
-    // rebuild statedb via StateSet from dump
-    pub fn apply(&self, state_set: StateSet) -> Result<H256> {
+    // rebuild statedb via TableStateSet from dump
+    pub fn apply(&self, table_state_set: TableStateSet) -> Result<H256> {
         let mut state_root = H256::zero();
-        for (k, v) in state_set.state_sets.into_iter() {
+        for (k, v) in table_state_set.table_state_sets.into_iter() {
             if k == state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
-                state_root = self.global_table.puts(v)?
+                state_root = self.global_table.puts(v.entries)?
             } else {
                 // must force create table
-                let (_, table_store) = self.create_table(k)?;
-                state_root = table_store.puts(v)?
+                let key_type = v
+                    .key_type
+                    .ok_or(anyhow::anyhow!("Invalid key type when statedb apply"))?;
+                let (_, table_store) = self.create_table(k, key_type)?;
+                state_root = table_store.puts(v.entries)?
             }
         }
         Ok(state_root)
@@ -349,36 +362,40 @@ impl StateDBStore {
     // }
 
     // dump all states
-    pub fn dump(&self) -> Result<StateSet> {
+    pub fn dump(&self) -> Result<TableStateSet> {
         let global_states = self.global_table.dump()?;
-        let mut state_set = StateSet::default();
-        let mut golbal_update_set = UpdateSet::new();
+        let mut table_state_set = TableStateSet::default();
+        let mut golbal_table_state = TableState::default();
         for (key, state) in global_states.into_iter() {
             // If the state is an Object, and the T's struct_tag of Object<T> is Table
             let struct_tag = state.get_object_struct_tag();
             if let Some(struct_tag) = struct_tag {
                 if raw_table::TableInfo::struct_tag_match(&struct_tag) {
+                    let mut table_state = TableState::default();
                     let table_handle = ObjectID::from_bytes(key.as_slice())?;
                     let result = self.get_as_table(table_handle)?;
                     if result.is_none() {
                         continue;
+                    };
+                    let (table_info, table_store) = result.unwrap();
+                    let states = table_store.dump()?;
+                    for (inner_key, inner_state) in states.into_iter() {
+                        table_state.entries.put(inner_key, inner_state);
                     }
-                    let table_states = result.unwrap().1.dump()?;
-                    let mut update_set = UpdateSet::new();
-                    for (inner_key, inner_state) in table_states.into_iter() {
-                        update_set.put(inner_key, inner_state);
-                    }
-                    state_set.state_sets.insert(table_handle, update_set);
+                    table_state.key_type = Some(table_info.value.key_type_tag()?);
+                    table_state_set
+                        .table_state_sets
+                        .insert(table_handle, table_state);
                 }
             }
 
-            golbal_update_set.put(key, state);
+            golbal_table_state.entries.put(key, state);
         }
-        state_set
-            .state_sets
-            .insert(context::GLOBAL_OBJECT_STORAGE_HANDLE, golbal_update_set);
+        table_state_set
+            .table_state_sets
+            .insert(context::GLOBAL_OBJECT_STORAGE_HANDLE, golbal_table_state);
 
-        Ok(state_set)
+        Ok(table_state_set)
     }
 }
 

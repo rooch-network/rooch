@@ -15,13 +15,13 @@ use rooch_types::error::RoochResult;
 /// Show account balance, only the accounts managed by the current node are supported
 #[derive(Debug, Parser)]
 pub struct BalanceCommand {
-    #[clap(short = 'a', long = "address", parse(try_from_str = ParsedAddress::parse), default_value = "default")]
+    #[clap(short = 'a', long = "address", value_parser=ParsedAddress::parse, default_value = "default")]
     /// The account's address to show balance, if absent, show the default active account.
     address: ParsedAddress,
 
     /// Struct name as `<ADDRESS>::<MODULE_ID>::<STRUCT_NAME><TypeParam>`
     /// Example: `0x3::gas_coin::GasCoin`, `0x123::Coin::Box<0x123::coin_box::FCoin>`
-    #[clap(long, parse(try_from_str = ParsedStructType::parse))]
+    #[clap(long, value_parser=ParsedStructType::parse)]
     coin_type: Option<ParsedStructType>,
 
     #[clap(flatten)]

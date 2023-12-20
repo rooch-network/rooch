@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
-use clap::__macro_refs::once_cell::sync::Lazy;
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::term::termcolor::Buffer;
 use move_command_line_common::files::{extension_equals, find_filenames, MOVE_EXTENSION};
@@ -33,6 +32,7 @@ use moveos_types::{
 };
 use moveos_verifier::build::build_model;
 use moveos_verifier::metadata::run_extended_checks;
+use once_cell::sync::Lazy;
 use regex::Regex;
 use rooch_genesis::RoochGenesis;
 use rooch_types::function_arg::FunctionArg;

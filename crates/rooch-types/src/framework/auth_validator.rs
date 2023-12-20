@@ -7,7 +7,7 @@ use super::transaction_validator::TransactionValidator;
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use crate::error::RoochError;
 use anyhow::{ensure, Result};
-use clap::ArgEnum;
+use clap::ValueEnum;
 use move_core_types::value::MoveValue;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, language_storage::ModuleId,
@@ -34,7 +34,7 @@ use strum_macros::{Display, EnumString};
     EnumString,
     PartialEq,
     Eq,
-    ArgEnum,
+    ValueEnum,
     Display,
     Ord,
     PartialOrd,

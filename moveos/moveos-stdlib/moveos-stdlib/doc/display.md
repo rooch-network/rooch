@@ -46,7 +46,8 @@ Create or borrow_mut Display object for resource <code>T</code>
 Only the module of <code>T</code> can call this function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_resource_display">resource_display</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;
+<pre><code>#[private_generics(#[T])]
+<b>public</b> <b>fun</b> <a href="display.md#0x2_display_resource_display">resource_display</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;
 </code></pre>
 
 
@@ -59,7 +60,8 @@ Create or borrow_mut Display object for <code>Object&lt;T&gt;</code>
 Only the module of <code>T</code> can call this function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="display.md#0x2_display_object_display">object_display</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;&gt;&gt;
+<pre><code>#[private_generics(#[T])]
+<b>public</b> <b>fun</b> <a href="display.md#0x2_display_object_display">object_display</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;&gt;&gt;
 </code></pre>
 
 

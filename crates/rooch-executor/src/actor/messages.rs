@@ -142,3 +142,12 @@ pub struct GetTxExecutionInfosByHashMessage {
 impl Message for GetTxExecutionInfosByHashMessage {
     type Result = Result<Vec<Option<TransactionExecutionInfo>>>;
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetAnnotatedStatesByStateMessage {
+    pub states: Vec<State>,
+}
+
+impl Message for GetAnnotatedStatesByStateMessage {
+    type Result = Result<Vec<AnnotatedState>>;
+}

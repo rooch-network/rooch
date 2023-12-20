@@ -15,6 +15,7 @@
 
 <pre><code><b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
+<b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="ethereum_address.md#0x3_ethereum_address">0x3::ethereum_address</a>;
 <b>use</b> <a href="timestamp.md#0x3_timestamp">0x3::timestamp</a>;
@@ -28,7 +29,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_BlockHeader">BlockHeader</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code>#[data_struct]
+<b>struct</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_BlockHeader">BlockHeader</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 

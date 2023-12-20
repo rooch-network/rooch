@@ -50,6 +50,7 @@ moveos-verifier = { workspace = true }
 rooch-types ={ workspace = true }
 rooch-framework = { workspace = true }
 rooch-genesis = { workspace = true }
+once_cell = { workspace = true }
 
 [dev-dependencies]
 datatest-stable = { workspace = true }

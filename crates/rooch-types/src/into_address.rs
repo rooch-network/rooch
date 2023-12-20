@@ -62,3 +62,24 @@ impl IntoAddress for H256 {
         AccountAddress::new(self.0)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use bitcoin::hashes::Hash;
+    use move_core_types::account_address::AccountAddress;
+
+    #[test]
+    fn test_txid_into_address() {
+        let addr = AccountAddress::from_hex_literal(
+            "0x7fff0feff7702d30165d3c31582fdd3870b1fec34f6cfcb77203b85ecb2cd569",
+        )
+        .unwrap();
+        let txid = bitcoin::Txid::from_byte_array(addr.into());
+        //println!("{}", txid);
+        //The txid hex string use reverse order
+        assert_eq!(
+            "69d52ccb5eb80372b7fc6c4fc3feb17038dd2f58313c5d16302d70f7ef0fff7f",
+            txid.to_string()
+        );
+    }
+}

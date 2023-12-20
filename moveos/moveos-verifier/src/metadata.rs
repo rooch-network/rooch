@@ -18,8 +18,8 @@ use move_core_types::metadata::Metadata;
 use move_core_types::vm_status::StatusCode;
 use move_model::ast::{Attribute, AttributeValue};
 use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv, StructEnv};
-use move_model::ty::PrimitiveType;
 use move_model::ty::Type;
+use move_model::ty::{PrimitiveType, ReferenceKind};
 use moveos_types::moveos_std::context::Context;
 use moveos_types::state::MoveStructType;
 use once_cell::sync::Lazy;
@@ -156,7 +156,13 @@ impl<'a> ExtendedChecker<'a> {
         let mut type_name_indices: BTreeMap<String, Vec<usize>> = BTreeMap::new();
         let mut func_loc_map = BTreeMap::new();
 
-        let compiled_module = module.get_verified_module();
+        let compiled_module = match module.get_verified_module() {
+            None => {
+                return;
+            }
+            Some(module) => module,
+        };
+
         let view = BinaryIndexedView::Module(compiled_module);
 
         // Check every function and if a function has the private_generics attribute,
@@ -165,7 +171,7 @@ impl<'a> ExtendedChecker<'a> {
         for ref fun in module.get_functions() {
             if self.has_attribute(fun, PRIVATE_GENERICS_ATTRIBUTE) {
                 let mut func_type_params_name_list = vec![];
-                let type_params = fun.get_named_type_parameters();
+                let type_params = fun.get_type_parameters();
                 for t in type_params {
                     let type_name = self.env.symbol_pool().string(t.0).as_str().to_string();
                     func_type_params_name_list.push(type_name);
@@ -237,7 +243,8 @@ impl<'a> ExtendedChecker<'a> {
                             })
                             .collect::<Vec<_>>();
 
-                        let module_address = module.self_address().to_hex_literal();
+                        let module_address =
+                            module.self_address().expect_numerical().to_hex_literal();
                         let module_name = self
                             .env
                             .symbol_pool()
@@ -270,7 +277,12 @@ impl<'a> ExtendedChecker<'a> {
             // Inspect the bytecode of every function, and if an instruction is CallGeneric,
             // verify that it calls a function with the private_generics attribute as detected earlier.
             // Then, ensure that the generic parameters of the CallGeneric instruction are valid.
-            for (offset, instr) in fun.get_bytecode().iter().enumerate() {
+            if fun.is_inline() {
+                // The fun.get_bytecode() will only be None when the function is an inline function.
+                // So we need to skip inline functions.
+                continue;
+            }
+            for (offset, instr) in fun.get_bytecode().unwrap().iter().enumerate() {
                 if let Bytecode::CallGeneric(finst_idx) = instr {
                     let FunctionInstantiation {
                         handle,
@@ -299,12 +311,25 @@ impl<'a> ExtendedChecker<'a> {
                     };
 
                     if let Some(private_generics_types_indices) = private_generics_types {
+                        let byte_loc = fun
+                            .get_bytecode_loc(offset as u16)
+                            .unwrap_or_else(|| Loc::default());
+
                         for generic_type_index in private_generics_types_indices {
-                            let type_arg = type_arguments.get(generic_type_index).unwrap();
+                            let type_arg = match type_arguments.get(generic_type_index) {
+                                None => {
+                                    self.env.error(
+                                        &byte_loc,
+                                        format!(
+                                            "the function {:?} does not have enough type parameters.", full_path_func_name
+                                        ).as_str(),
+                                    );
+                                    return;
+                                }
+                                Some(sig_token) => sig_token,
+                            };
                             let (defined_in_current_module, struct_name) =
                                 is_defined_or_allowed_in_current_module(&view, type_arg);
-
-                            let byte_loc = fun.get_bytecode_loc(offset as u16);
 
                             if !defined_in_current_module {
                                 self.env.error(
@@ -345,7 +370,14 @@ impl<'a> ExtendedChecker<'a> {
 impl<'a> ExtendedChecker<'a> {
     fn check_init_module(&mut self, module: &ModuleEnv) {
         for ref fun in module.get_functions() {
-            if fun.get_identifier().as_ident_str() != INIT_FN_NAME_IDENTIFIER.as_ident_str() {
+            if fun.is_inline() {
+                // The fun.get_identifier() will only be None when the function is an inline function.
+                // So we need to skip inline functions.
+                continue;
+            }
+            if fun.get_identifier().unwrap().as_ident_str()
+                != INIT_FN_NAME_IDENTIFIER.as_ident_str()
+            {
                 continue;
             }
 
@@ -375,13 +407,14 @@ impl<'a> ExtendedChecker<'a> {
             }
             for ty in arg_tys {
                 match ty {
-                    Type::Reference(true, bt) => {
+                    Type::Reference(ReferenceKind::Mutable, bt) => {
                         let struct_tag = bt.clone().into_struct_tag(self.env);
                         if struct_tag.is_none() {
                             self.env.error(
                                 &fun.get_loc(),
                                 "module init function should input a reference structure"
-                            )
+                            );
+                            return;
                         }
 
                         if !check_storage_context_struct_tag(struct_tag.unwrap().to_canonical_string()){
@@ -391,7 +424,7 @@ impl<'a> ExtendedChecker<'a> {
                             )
                         }
                     }
-                    Type::Reference(false, bt) => {
+                    Type::Reference(ReferenceKind::Immutable, bt) => {
                         if bt.as_ref() == &Type::Primitive(PrimitiveType::Signer) {
                         } else {
                             self.env.error(
@@ -458,13 +491,13 @@ impl<'a> ExtendedChecker<'a> {
             {
                 // Specific struct types are allowed
             }
-            Reference(false, bt)
+            Reference(ReferenceKind::Immutable, bt)
                 if matches!(bt.as_ref(), Primitive(PrimitiveType::Signer))
                     || self.is_allowed_reference_types(bt) =>
             {
                 // Immutable Reference to signer and specific types is allowed
             }
-            Reference(true, bt) if self.is_allowed_reference_types(bt) => {
+            Reference(ReferenceKind::Mutable, bt) if self.is_allowed_reference_types(bt) => {
                 // Mutable references to specific types is allowed
             }
             _ => {
@@ -515,8 +548,13 @@ pub fn is_allowed_input_struct(name: String, is_ref: bool) -> bool {
 impl<'a> ExtendedChecker<'a> {
     fn check_global_storage_access(&mut self, module: &ModuleEnv) {
         for ref fun in module.get_functions() {
+            if fun.is_inline() {
+                // The fun.get_bytecode() will only be None when the function is an inline function.
+                // So we need to skip inline functions.
+                continue;
+            }
             let mut invalid_bytecode = vec![];
-            for instr in fun.get_bytecode().iter() {
+            for instr in fun.get_bytecode().unwrap() {
                 match instr {
                     Bytecode::MoveFrom(_)
                     | Bytecode::MoveFromGeneric(_)
@@ -678,8 +716,10 @@ impl<'a> ExtendedChecker<'a> {
                                             if let Some(gas_function) =
                                                 get_module_env_function(module, &gas_function_name)
                                             {
-                                                let current_module =
-                                                    module.self_address().to_hex_literal();
+                                                let current_module = module
+                                                    .self_address()
+                                                    .expect_numerical()
+                                                    .to_hex_literal();
                                                 let current_module_name = fenv
                                                     .symbol_pool()
                                                     .string(fenv.module_env.get_name().name())
@@ -691,8 +731,11 @@ impl<'a> ExtendedChecker<'a> {
                                                     gas_function_name
                                                 );
 
-                                                let current_module =
-                                                    fenv.module_env.self_address().to_hex_literal();
+                                                let current_module = fenv
+                                                    .module_env
+                                                    .self_address()
+                                                    .expect_numerical()
+                                                    .to_hex_literal();
                                                 let current_module_name = fenv
                                                     .symbol_pool()
                                                     .string(fenv.module_env.get_name().name())
@@ -753,8 +796,11 @@ impl<'a> ExtendedChecker<'a> {
                                                 self.env.error(&fenv.get_loc(), format!("Gas function {:?} is not found in current module.", gas_function_name).as_str());
                                             }
 
-                                            let current_module =
-                                                fenv.module_env.self_address().to_hex_literal();
+                                            let current_module = fenv
+                                                .module_env
+                                                .self_address()
+                                                .expect_numerical()
+                                                .to_hex_literal();
                                             let current_module_name = fenv
                                                 .symbol_pool()
                                                 .string(fenv.module_env.get_name().name())
@@ -802,10 +848,16 @@ impl<'a> ExtendedChecker<'a> {
                                    module.symbol_pool().string(fenv.get_name())).as_str());
                 }
 
-                let module_metadata = self
-                    .output
-                    .entry(module.get_verified_module().self_id())
-                    .or_default();
+                let verified_module = match module.get_verified_module() {
+                    None => {
+                        self.env
+                            .error(&fenv.get_loc(), "The verified module was not found.");
+                        return;
+                    }
+                    Some(module) => module,
+                };
+
+                let module_metadata = self.output.entry(verified_module.self_id()).or_default();
                 module_metadata.gas_free_function_map = gas_free_function_map;
             }
         }
@@ -837,10 +889,16 @@ impl<'a> ExtendedChecker<'a> {
             }
         }
 
-        let module_metadata = self
-            .output
-            .entry(module_env.get_verified_module().self_id())
-            .or_default();
+        let verified_module = match module_env.get_verified_module() {
+            None => {
+                self.env
+                    .error(&module_env.get_loc(), "The verified module was not found.");
+                return;
+            }
+            Some(module) => module,
+        };
+
+        let module_metadata = self.output.entry(verified_module.self_id()).or_default();
 
         let data_struct_map = unsafe {
             let result: BTreeMap<String, bool> = GLOBAL_DATA_STRUCT
@@ -969,13 +1027,22 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
     let mut type_name_indices: BTreeMap<String, Vec<usize>> = BTreeMap::new();
     let mut func_loc_map = BTreeMap::new();
 
-    let compiled_module = module_env.get_verified_module();
+    let compiled_module = match module_env.get_verified_module() {
+        None => {
+            module_env
+                .env
+                .error(&module_env.get_loc(), "The verified module was not found.");
+            return;
+        }
+        Some(module) => module,
+    };
+
     let view = BinaryIndexedView::Module(compiled_module);
 
     for ref fun in module_env.get_functions() {
         if extended_checker.has_attribute(fun, DATA_STRUCT_ATTRIBUTE) {
             let mut func_type_params_name_list = vec![];
-            let type_params = fun.get_named_type_parameters();
+            let type_params = fun.get_type_parameters();
 
             for t in type_params {
                 let type_name = extended_checker
@@ -1059,7 +1126,10 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
                         })
                         .collect::<Vec<_>>();
 
-                    let module_address = module_env.self_address().to_hex_literal();
+                    let module_address = module_env
+                        .self_address()
+                        .expect_numerical()
+                        .to_hex_literal();
                     let module_name = extended_checker
                         .env
                         .symbol_pool()
@@ -1088,9 +1158,19 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
         }
     }
 
+    let compiled_module = match module_env.get_verified_module() {
+        None => {
+            module_env
+                .env
+                .error(&module_env.get_loc(), "The verified module was not found.");
+            return;
+        }
+        Some(module) => module,
+    };
+
     let module_metadata = extended_checker
         .output
-        .entry(module_env.get_verified_module().self_id())
+        .entry(compiled_module.self_id())
         .or_default();
 
     let data_struct_func_map = unsafe {
@@ -1104,7 +1184,12 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
     module_metadata.data_struct_func_map = data_struct_func_map;
 
     for ref fun in module_env.get_functions() {
-        for (_offset, instr) in fun.get_bytecode().iter().enumerate() {
+        if fun.is_inline() {
+            // The fun.get_bytecode() will only be None when the function is an inline function.
+            // So we need to skip inline functions.
+            continue;
+        }
+        for (_offset, instr) in fun.get_bytecode().unwrap().iter().enumerate() {
             if let Bytecode::CallGeneric(finst_idx) = instr {
                 let FunctionInstantiation {
                     handle,
@@ -1136,7 +1221,13 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
 
                 if let Some(data_struct_func_indicies) = data_struct_func_types {
                     for generic_type_index in data_struct_func_indicies {
-                        let type_arg = type_arguments.get(generic_type_index).unwrap();
+                        let type_arg = match type_arguments.get(generic_type_index) {
+                            None => {
+                                extended_checker.env.error(&fun.get_loc(), "");
+                                return;
+                            }
+                            Some(v) => v,
+                        };
 
                         let (is_allowed_struct_type, error_message) =
                             check_func_data_struct(&view, fun, type_arg);
@@ -1201,6 +1292,8 @@ fn check_func_data_struct(
         SignatureToken::U128 => (true, "".to_string()),
         SignatureToken::U256 => (true, "".to_string()),
         _ => {
+            // Only when the view is a Script, will view.self_id() return None.
+            // However, in our case, we are dealing with a CompiledModule, so it won't be None here.
             let module_id = view.self_id().unwrap().to_string();
             (false, format!("The type argument of #[data_struct] for function {} in the module {} is not allowed.",
             func_name, module_id))
@@ -1223,7 +1316,12 @@ fn get_module_env_function<'a>(
 
 fn check_gas_validate_function(fenv: &FunctionEnv, global_env: &GlobalEnv) -> (bool, String) {
     let params_types = fenv.get_parameter_types();
-    let return_types = fenv.get_return_types();
+    let return_type_count = fenv.get_return_count();
+    let mut return_types = vec![];
+    for i in 0..return_type_count {
+        return_types.push(fenv.get_result_type_at(i));
+    }
+
     if params_types.is_empty() {
         return (false, "parameter length is less than 1".to_string());
     }
@@ -1231,6 +1329,7 @@ fn check_gas_validate_function(fenv: &FunctionEnv, global_env: &GlobalEnv) -> (b
         return (false, "return value length is less than 1".to_string());
     }
 
+    // Length of the params_types array has already been checked above, so unwrap directly here.
     let storage_ctx_type = params_types.get(0).unwrap();
     let parameter_checking_result = match storage_ctx_type {
         Type::Struct(module_id, struct_id, _) => {
@@ -1260,6 +1359,7 @@ fn check_gas_validate_function(fenv: &FunctionEnv, global_env: &GlobalEnv) -> (b
         return parameter_checking_result;
     }
 
+    // Length of the return_types array has already been checked above, so unwrap directly here.
     let first_return_type = return_types.get(0).unwrap();
     match first_return_type {
         Type::Primitive(PrimitiveType::Bool) => (true, "".to_string()),
@@ -1269,7 +1369,12 @@ fn check_gas_validate_function(fenv: &FunctionEnv, global_env: &GlobalEnv) -> (b
 
 fn check_gas_charge_post_function(fenv: &FunctionEnv, global_env: &GlobalEnv) -> (bool, String) {
     let params_types = fenv.get_parameter_types();
-    let return_types = fenv.get_return_types();
+    let return_type_count = fenv.get_return_count();
+    let mut return_types = vec![];
+    for i in 0..return_type_count {
+        return_types.push(fenv.get_result_type_at(i));
+    }
+
     if params_types.len() < 2 {
         return (false, "Length of parameters is less than 2.".to_string());
     }
@@ -1277,6 +1382,7 @@ fn check_gas_charge_post_function(fenv: &FunctionEnv, global_env: &GlobalEnv) ->
         return (false, "Length of return values is less than 1.".to_string());
     }
 
+    // Length of the params_types array has already been checked above, so unwrap directly here.
     let storage_ctx_type = params_types.get(0).unwrap();
     match storage_ctx_type {
         Type::Struct(module_id, struct_id, _) => {
@@ -1300,6 +1406,7 @@ fn check_gas_charge_post_function(fenv: &FunctionEnv, global_env: &GlobalEnv) ->
         ),
     }
 
+    // Length of the params_types array has already been checked above, so unwrap directly here.
     let gas_used_type = params_types.get(1).unwrap();
     let second_parameter_checking_result = match *gas_used_type {
         Type::Primitive(PrimitiveType::U256) => (true, "".to_string()),
@@ -1313,6 +1420,7 @@ fn check_gas_charge_post_function(fenv: &FunctionEnv, global_env: &GlobalEnv) ->
         return second_parameter_checking_result;
     }
 
+    // Length of the return_types array has already been checked above, so unwrap directly here.
     let first_return_type = return_types.get(0).unwrap();
     match first_return_type {
         Type::Primitive(PrimitiveType::Bool) => (true, "".to_string()),

@@ -362,6 +362,41 @@ impl FromStr for FunctionArg {
     }
 }
 
+pub fn parse_function_arg(s: &str) -> Result<FunctionArg, RoochError> {
+    // Splits on the first colon, returning at most `2` elements
+    // This is required to support args that contain a colon
+    let parts: Vec<_> = s.splitn(2, ':').collect();
+    let (ty, arg) = if parts.len() == 1 {
+        // parse address @0x123 and unsigned integer 123u8
+        if s.starts_with('@') {
+            (FunctionArgType::Address, s.trim_start_matches('@'))
+        } else {
+            let u = s.splitn(2, 'u').collect::<Vec<_>>();
+            if u.len() != 2 {
+                return Err(RoochError::CommandArgumentError(
+                    "Arguments must be pairs of <type>:<arg> e.g. bool:true".to_owned(),
+                ));
+            } else {
+                let ty_str = String::from("u") + u[1];
+                let ty = FunctionArgType::from_str(&ty_str)?;
+                let arg = u[0];
+                (ty, arg)
+            }
+        }
+    } else if parts.len() == 2 {
+        let ty = FunctionArgType::from_str(parts[0])?;
+        let arg = parts[1];
+        (ty, arg)
+    } else {
+        return Err(RoochError::CommandArgumentError(
+            "Arguments must be pairs of <type>:<arg> e.g. bool:true".to_owned(),
+        ));
+    };
+    let arg = ty.parse_arg(arg)?;
+
+    Ok(arg)
+}
+
 impl ParsableValue for FunctionArg {
     type ConcreteValue = MoveValue;
 

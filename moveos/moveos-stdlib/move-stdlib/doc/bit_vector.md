@@ -14,6 +14,7 @@
 -  [Function `is_index_set`](#0x1_bit_vector_is_index_set)
 -  [Function `length`](#0x1_bit_vector_length)
 -  [Function `longest_set_sequence_starting_at`](#0x1_bit_vector_longest_set_sequence_starting_at)
+-  [Function `shift_left_for_verification_only`](#0x1_bit_vector_shift_left_for_verification_only)
 
 
 <pre><code></code></pre>
@@ -158,4 +159,16 @@ sequence, then <code>0</code> is returned.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_longest_set_sequence_starting_at">longest_set_sequence_starting_at</a>(bitvector: &<a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>, start_index: u64): u64
+</code></pre>
+
+
+
+<a name="0x1_bit_vector_shift_left_for_verification_only"></a>
+
+## Function `shift_left_for_verification_only`
+
+
+
+<pre><code>#[verify_only]
+<b>public</b> <b>fun</b> <a href="bit_vector.md#0x1_bit_vector_shift_left_for_verification_only">shift_left_for_verification_only</a>(bitvector: &<b>mut</b> <a href="bit_vector.md#0x1_bit_vector_BitVector">bit_vector::BitVector</a>, amount: u64)
 </code></pre>

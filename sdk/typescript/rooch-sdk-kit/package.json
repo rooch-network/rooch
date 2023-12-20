@@ -1,0 +1,82 @@
+{
+  "name": "@roochnetwork/rooch-sdk-kit",
+  "author": "Rooch.network <opensource@rooch.network>",
+  "version": "0.0.1",
+  "description": "Rooch SDK Kit",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "pnpm@8.6.6",
+  "scripts": {
+    "build": "build-rooch-sdk-kit",
+    "build:clean": "rimraf dist",
+    "test": "pnpm test:typecheck && pnpm vitest",
+    "test:typecheck": "tsc -b ./test",
+    "prepublishOnly": "pnpm build",
+    "size": "size-limit",
+    "analyze": "size-limit --why",
+    "prettier:check": "prettier -c --ignore-unknown .",
+    "prettier:fix": "prettier -w --ignore-unknown .",
+    "eslint:check": "eslint --max-warnings=0 .",
+    "eslint:fix": "pnpm run eslint:check --fix",
+    "lint": "pnpm run eslint:check && pnpm run prettier:check",
+    "lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rooch-network/rooch.git"
+  },
+  "homepage": "https://github.com/rooch-network/rooch",
+  "bugs": {
+    "url": "https://github.com/rooch-network/rooch/issues"
+  },
+  "size-limit": [
+    {
+      "path": "dist/esm/index.js",
+      "limit": "100 KB"
+    },
+    {
+      "path": "dist/cjs/index.js",
+      "limit": "100 KB"
+    }
+  ],
+  "files": ["dist", "src"],
+  "type": "commonjs",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/cjs/index.d.ts",
+  "keywords": ["Rooch", "Rooch Network", "Move"],
+  "devDependencies": {
+    "@roochnetwork/build-scripts": "workspace:*",
+    "@size-limit/preset-small-lib": "^8.2.6",
+    "@tanstack/react-query": "^5.0.0",
+    "@testing-library/dom": "^9.3.1",
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/user-event": "^14.4.3",
+    "@types/react": "^18.2.15",
+    "@types/testing-library__jest-dom": "^5.14.9",
+    "@vanilla-extract/esbuild-plugin": "^2.3.0",
+    "@vanilla-extract/vite-plugin": "^3.9.0",
+    "typescript": "^5.1.6",
+    "jsdom": "^23.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tsx": "^3.12.7",
+    "size-limit": "^8.2.6",
+    "vite": "^4.4.4",
+    "vitest": "^0.33.0",
+    "@metamask/sdk": "^0.14.1",
+    "@metamask/detect-provider": "^2.0.0"
+  },
+  "dependencies": {
+    "@roochnetwork/rooch-sdk": "workspace:*",
+    "clsx": "^2.0.0",
+    "zustand": "^4.4.1"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

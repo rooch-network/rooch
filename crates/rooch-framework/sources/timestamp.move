@@ -10,10 +10,11 @@ module rooch_framework::timestamp {
    
     use moveos_std::object;
     use moveos_std::context::{Self, Context};
+    use moveos_std::signer;
+    use rooch_framework::core_addresses;
 
     friend rooch_framework::genesis;
     friend rooch_framework::ethereum_light_client;
-    friend rooch_framework::bitcoin_light_client;
 
     /// A object holding the current Unix time in milliseconds
     struct Timestamp has key {
@@ -25,6 +26,7 @@ module rooch_framework::timestamp {
 
     /// An invalid timestamp was provided
     const ErrorInvalidTimestamp: u64 = 1;
+    const ErrorNotGenesisAddress: u64 = 2;
 
     public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer, initial_time_milliseconds: u64) {
         let timestamp = Timestamp { milliseconds: initial_time_milliseconds };
@@ -41,7 +43,11 @@ module rooch_framework::timestamp {
     }
 
     /// Tries to update the global clock time, if the new time is smaller than the current time, ignores the update, and returns false.
-    public(friend) fun try_update_global_time(ctx: &mut Context, timestamp_milliseconds: u64) : bool {
+    /// Only the framework genesis account can update the global clock time.
+    public fun try_update_global_time(ctx: &mut Context, genesis_account: &signer, timestamp_milliseconds: u64) : bool {
+        let genesis_address = signer::address_of(genesis_account);
+        assert!(core_addresses::is_framework_reserved_address(genesis_address), ErrorNotGenesisAddress);
+
         let current_timestamp = timestamp_mut(ctx); 
         let now = current_timestamp.milliseconds;
         if(now < timestamp_milliseconds) {

@@ -28,6 +28,21 @@ pub struct State {
     pub value_type: TypeTag,
 }
 
+/// `KeyState` is represent key state
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub struct KeyState {
+    /// the bytes of key state
+    pub key: Vec<u8>,
+    /// the type of key state
+    pub key_type: Option<TypeTag>,
+}
+
+impl KeyState {
+    pub fn new(key: Vec<u8>, key_type: Option<TypeTag>) -> Self {
+        Self { key, key_type }
+    }
+}
+
 //TODO find a better place for MoveType, MoveState and MoveStructState
 /// The rust representation of a Move value
 pub trait MoveType {
@@ -472,6 +487,18 @@ impl AnnotatedState {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct AnnotatedKeyState {
+    pub state: KeyState,
+    pub decoded_key: Option<AnnotatedMoveValue>,
+}
+
+impl AnnotatedKeyState {
+    pub fn new(state: KeyState, decoded_key: Option<AnnotatedMoveValue>) -> Self {
+        Self { state, decoded_key }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TableTypeInfo {
     pub key_type: TypeTag,
@@ -498,42 +525,59 @@ pub struct StateChangeSet {
 }
 
 impl StateChangeSet {
-    pub fn get_or_insert_table_change(&mut self, object_id: ObjectID) -> &mut TableChange {
+    pub fn get_or_insert_table_change(
+        &mut self,
+        object_id: ObjectID,
+        key_type: TypeTag,
+    ) -> &mut TableChange {
         match self.changes.entry(object_id) {
             btree_map::Entry::Occupied(entry) => entry.into_mut(),
-            btree_map::Entry::Vacant(entry) => entry.insert(TableChange::default()),
+            btree_map::Entry::Vacant(entry) => entry.insert(TableChange::new(key_type)),
         }
     }
 
-    pub fn add_op(&mut self, handle: ObjectID, key: Vec<u8>, op: Op<State>) {
-        let table_change = self.get_or_insert_table_change(handle);
+    pub fn add_op(&mut self, handle: ObjectID, key_type: TypeTag, key: Vec<u8>, op: Op<State>) {
+        let table_change = self.get_or_insert_table_change(handle, key_type);
         table_change.entries.insert(key, op);
     }
 }
 
 /// A change of a single table.
-#[derive(Default, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct TableChange {
-    //TODO should we keep the key's type here?
     pub entries: BTreeMap<Vec<u8>, Op<State>>,
     /// The size increment of the table, may be negtive which means more deleting than inserting.
     pub size_increment: i64,
+    /// the key's type tag
+    pub key_type: TypeTag,
 }
 
-/// StateSet is represent state dump result. Not include events and other stores
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct StateSet {
-    pub state_sets: BTreeMap<ObjectID, UpdateSet<Vec<u8>, State>>,
-}
-
-impl StateSet {
-    pub fn insert(
-        &mut self,
-        k: ObjectID,
-        v: UpdateSet<Vec<u8>, State>,
-    ) -> Option<UpdateSet<Vec<u8>, State>> {
-        self.state_sets.insert(k, v)
+impl TableChange {
+    pub fn new(
+        // k: ObjectID,
+        key_type: TypeTag,
+    ) -> Self {
+        Self {
+            entries: BTreeMap::new(),
+            size_increment: 0,
+            key_type,
+        }
     }
+}
+
+/// A change of a single table.
+#[derive(Default, Clone, Debug, Eq, PartialEq)]
+pub struct TableState {
+    pub entries: UpdateSet<Vec<u8>, State>,
+    /// the key's type tag
+    pub key_type: Option<TypeTag>,
+}
+
+/// TableStateSet is represent state dump result. Not include events and other stores
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct TableStateSet {
+    // pub table_state_sets: BTreeMap<ObjectID, UpdateSet<Vec<u8>, State>>,
+    pub table_state_sets: BTreeMap<ObjectID, TableState>,
 }
 
 /// A change set of a single table.
@@ -546,15 +590,19 @@ pub struct TableChangeSet {
 }
 
 impl TableChangeSet {
-    pub fn get_or_insert_table_change(&mut self, object_id: ObjectID) -> &mut TableChange {
+    pub fn get_or_insert_table_change(
+        &mut self,
+        object_id: ObjectID,
+        key_type: TypeTag,
+    ) -> &mut TableChange {
         match self.changes.entry(object_id) {
             btree_map::Entry::Occupied(entry) => entry.into_mut(),
-            btree_map::Entry::Vacant(entry) => entry.insert(TableChange::default()),
+            btree_map::Entry::Vacant(entry) => entry.insert(TableChange::new(key_type)),
         }
     }
 
-    pub fn add_op(&mut self, handle: ObjectID, key: Vec<u8>, op: Op<State>) {
-        let table_change = self.get_or_insert_table_change(handle);
+    pub fn add_op(&mut self, key_type: TypeTag, handle: ObjectID, key: Vec<u8>, op: Op<State>) {
+        let table_change = self.get_or_insert_table_change(handle, key_type);
         table_change.entries.insert(key, op);
     }
 }

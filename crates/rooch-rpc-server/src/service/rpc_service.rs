@@ -264,6 +264,14 @@ impl RpcService {
         Ok(resp)
     }
 
+    pub async fn get_annotated_states_by_state(
+        &self,
+        states: Vec<State>,
+    ) -> Result<Vec<AnnotatedState>> {
+        let resp = self.executor.get_annotated_states_by_state(states).await?;
+        Ok(resp)
+    }
+
     pub async fn query_transactions(
         &self,
         filter: TransactionFilter,

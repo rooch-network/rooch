@@ -18,6 +18,7 @@ The <code><a href="string.md#0x1_string">string</a></code> module defines the <c
 -  [Function `insert`](#0x1_string_insert)
 -  [Function `sub_string`](#0x1_string_sub_string)
 -  [Function `index_of`](#0x1_string_index_of)
+-  [Function `internal_check_utf8`](#0x1_string_internal_check_utf8)
 
 
 <pre><code><b>use</b> <a href="option.md#0x1_option">0x1::option</a>;
@@ -182,4 +183,15 @@ Computes the index of the first occurrence of a string. Returns <code><a href="s
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="string.md#0x1_string_index_of">index_of</a>(s: &<a href="string.md#0x1_string_String">string::String</a>, r: &<a href="string.md#0x1_string_String">string::String</a>): u64
+</code></pre>
+
+
+
+<a name="0x1_string_internal_check_utf8"></a>
+
+## Function `internal_check_utf8`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="string.md#0x1_string_internal_check_utf8">internal_check_utf8</a>(v: &<a href="vector.md#0x1_vector">vector</a>&lt;u8&gt;): bool
 </code></pre>
