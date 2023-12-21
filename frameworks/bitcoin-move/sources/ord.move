@@ -12,7 +12,7 @@ module bitcoin_move::ord {
     use bitcoin_move::types::{Self, Witness, Transaction};
     use bitcoin_move::utxo::{Self, UTXO, SealOut};
 
-    struct InscriptionId has store, copy, drop {
+    struct InscriptionID has store, copy, drop {
         txid: address,
         index: u32,
     }
@@ -50,8 +50,8 @@ module bitcoin_move::ord {
 
     // ==== Inscription ==== //
 
-    fun new_inscription(txid: address, index:u32, record: InscriptionRecord): Inscription {
-        Inscription{
+    fun new_inscription(ctx: &mut Context, txid: address, index:u32, record: InscriptionRecord): Object<Inscription> {
+        let inscription = Inscription{
             txid: txid,
             index: index,
             body: record.body,
@@ -62,7 +62,30 @@ module bitcoin_move::ord {
              //TODO handle parent
             parent: option::none(),
             pointer: record.pointer,
-        }
+        };
+        let id = InscriptionID{
+            txid: txid,
+            index: index,
+        };
+        context::new_custom_object(ctx, id, inscription)
+    }
+
+    public fun exists_inscription(ctx: &Context, txid: address, index: u32): bool{
+        let id = InscriptionID{
+            txid: txid,
+            index: index,
+        };
+        let object_id = object::custom_object_id<InscriptionID,Inscription>(id);
+        context::exists_object<Inscription>(ctx, object_id)
+    }
+
+    public fun borrow_inscription(ctx: &Context, txid: address, index: u32): &Object<Inscription>{
+        let id = InscriptionID{
+            txid: txid,
+            index: index,
+        };
+        let object_id = object::custom_object_id<InscriptionID,Inscription>(id);
+        context::borrow_object(ctx, object_id)
     }
 
     public fun spend_utxo(ctx: &mut Context, utxo_obj: &Object<UTXO>, tx: &Transaction): vector<SealOut>{
@@ -110,9 +133,7 @@ module bitcoin_move::ord {
         while(idx < inscription_records_len){
             let inscription_record = *vector::borrow(&mut inscription_records, idx);
             
-            let inscription = new_inscription(tx_id, (idx as u32), inscription_record);
-            //TODO custom Inscription ID?
-            let inscription_obj = context::new_object(ctx, inscription);
+            let inscription_obj = new_inscription(ctx, tx_id, (idx as u32), inscription_record);
             let object_id = object::id(&inscription_obj);
             let output_index = if(is_separate_outputs){
                 idx

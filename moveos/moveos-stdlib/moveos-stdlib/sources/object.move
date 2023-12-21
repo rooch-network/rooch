@@ -107,6 +107,16 @@ module moveos_std::object {
         )
     }
 
+    public fun custom_object_id<ID: drop, T>(id: ID): ObjectID {
+        let bytes = bcs::to_bytes(&id);
+        vector::append(&mut bytes, *std::string::bytes(&type_info::type_name<T>()));
+        address_to_object_id(
+            address::from_bytes(
+                hash::sha3_256(bytes)
+            )
+        )
+    }
+
     #[private_generics(T)]
     /// Create a new Object, Add the Object to the global object storage and return the Object
     /// Note: the default owner is the SystemOwned Object, the caller should explicitly transfer the Object to the owner.

@@ -20,6 +20,7 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `object_id_to_table_handle`](#0x2_object_object_id_to_table_handle)
 -  [Function `named_object_id`](#0x2_object_named_object_id)
 -  [Function `account_named_object_id`](#0x2_object_account_named_object_id)
+-  [Function `custom_object_id`](#0x2_object_custom_object_id)
 -  [Function `new`](#0x2_object_new)
 -  [Function `new_with_id`](#0x2_object_new_with_id)
 -  [Function `borrow`](#0x2_object_borrow)
@@ -278,6 +279,17 @@ Generate a new ObjectID from an address
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_account_named_object_id">account_named_object_id</a>&lt;T&gt;(account: <b>address</b>): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+</code></pre>
+
+
+
+<a name="0x2_object_custom_object_id"></a>
+
+## Function `custom_object_id`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_custom_object_id">custom_object_id</a>&lt;ID: drop, T&gt;(id: ID): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 

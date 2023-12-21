@@ -11,6 +11,14 @@ module bitcoin_move::utxo{
 
     friend bitcoin_move::light_client;
 
+    /// The transaction output ID
+    struct OutputID has store, copy, drop {
+        /// The txid of the UTXO
+        txid: address,
+        /// The vout of the UTXO
+        vout: u32,
+    }
+
     /// The UTXO Object
     struct UTXO has key {
         /// The txid of the UTXO
@@ -34,14 +42,24 @@ module bitcoin_move::utxo{
     }
 
     public(friend) fun new(ctx: &mut Context, txid: address, vout: u32, value: u64) : Object<UTXO> {
+        let id = OutputID{
+            txid: txid,
+            vout: vout,
+        };
         let utxo = UTXO{
             txid: txid,
             vout: vout,
             value: value,
             seals: simple_multimap::new(),
         };
-        //TODO support custom object id, and use Hash(txid + vout) as object id
-        context::new_object(ctx, utxo)
+        context::new_custom_object(ctx, id, utxo)
+    }
+
+    public fun new_id(txid: address, vout: u32) : OutputID {
+        OutputID{
+            txid: txid,
+            vout: vout,
+        }
     }
 
     /// Get the UTXO's value
@@ -57,6 +75,25 @@ module bitcoin_move::utxo{
     /// Get the UTXO's vout
     public fun vout(utxo: &UTXO): u32 {
         utxo.vout
+    }
+
+
+    public fun exists_utxo(ctx: &Context, txid: address, vout: u32): bool{
+        let id = OutputID{
+            txid: txid,
+            vout: vout,
+        };
+        let object_id = object::custom_object_id<OutputID,UTXO>(id);
+        context::exists_object<UTXO>(ctx, object_id)
+    }
+
+    public fun borrow_utxo(ctx: &Context, txid: address, vout: u32): &Object<UTXO>{
+        let id = OutputID{
+            txid: txid,
+            vout: vout,
+        };
+        let object_id = object::custom_object_id<OutputID,UTXO>(id);
+        context::borrow_object(ctx, object_id)
     }
 
      #[private_generics(T)]
