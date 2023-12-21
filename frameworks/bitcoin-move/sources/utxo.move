@@ -168,4 +168,14 @@ module bitcoin_move::utxo{
         let SealOut{output_index, object_id} = seal_out;
         (output_index, object_id)
     }
+
+    #[test]
+    fun test_id(){
+        let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let vout = 0;
+        let id = new_id(txid, vout);
+        let object_id = object::custom_object_id<OutputID,UTXO>(id);
+        //std::debug::print(&object_id);
+        assert!(std::bcs::to_bytes(&object_id) == x"b8fc937bf3c15abe49c95fa6906aff29087149f542b48db0cf25dce671a68a63", 1);
+    }
 }

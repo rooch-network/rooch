@@ -498,6 +498,13 @@ pub fn account_named_object_id(account: AccountAddress, struct_tag: &StructTag) 
     AccountAddress::new(struct_tag_hash.0).into()
 }
 
+pub fn custom_object_id<ID: Serialize>(id: ID, struct_tag: &StructTag) -> ObjectID {
+    let mut buffer = bcs::to_bytes(&id).expect("ID to bcs should success");
+    buffer.extend_from_slice(struct_tag.to_canonical_string().as_bytes());
+    let struct_tag_hash = h256::sha3_256_of(&buffer);
+    AccountAddress::new(struct_tag_hash.0).into()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -520,25 +527,25 @@ mod tests {
 
     #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
     struct TestStruct {
-        v: u8,
+        count: u64,
     }
 
     impl MoveStructType for TestStruct {
         const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-        const MODULE_NAME: &'static IdentStr = ident_str!("test");
+        const MODULE_NAME: &'static IdentStr = ident_str!("object");
         const STRUCT_NAME: &'static IdentStr = ident_str!("TestStruct");
     }
 
     impl MoveStructState for TestStruct {
         fn struct_layout() -> MoveStructLayout {
-            MoveStructLayout::new(vec![MoveTypeLayout::U8])
+            MoveStructLayout::new(vec![MoveTypeLayout::U64])
         }
     }
 
     #[test]
     fn test_object_serialize() {
         //let struct_type = TestStruct::struct_tag();
-        let object_value = TestStruct { v: 1 };
+        let object_value = TestStruct { count: 1 };
         let object_id = ObjectID::new(crate::h256::H256::random().into());
         let object = ObjectEntity::new(object_id, AccountAddress::random(), 0u8, object_value);
 
@@ -627,5 +634,25 @@ mod tests {
         )
         .unwrap();
         assert_eq!(coin_store_object_id, object_id,);
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    struct TestStructID {
+        id: u64,
+    }
+
+    #[test]
+    fn test_custom_object_id() {
+        let id = TestStructID { id: 1 };
+        let custom_object_id = custom_object_id(id, &TestStruct::struct_tag());
+        //println!("custom_object_id: {:?}", custom_object_id);
+        //Ensure the generated object id is same as the object id in object.move
+        assert_eq!(
+            custom_object_id,
+            ObjectID::from_str(
+                "0xaa825038ae811f5c94d20175699d808eae4c624fa85c81faad45de1145284e06"
+            )
+            .unwrap()
+        );
     }
 }

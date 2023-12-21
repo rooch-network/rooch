@@ -166,8 +166,8 @@ module bitcoin_move::light_client{
         };
         let txoutput = types::tx_output(tx);
         let idx = 0;
-        
-        while(idx < vector::length(txoutput)){
+        let txoutput_len = vector::length(txoutput); 
+        while(idx < txoutput_len){
             let txout = vector::borrow(txoutput, idx);
             let vout = (idx as u32);
             let outpoint = types::new_outpoint(txid, vout);
