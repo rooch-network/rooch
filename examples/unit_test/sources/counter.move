@@ -23,11 +23,14 @@ module unit_test::unit_test {
         let account_addr = signer::address_of(account);
         let ctx = context::new_test_context(account_addr);
         context::move_resource_to(&mut ctx, account, Counter { count_value: 0 });
+
         let counter = context::borrow_resource<Counter>(&ctx, account_addr);
-        assert!(counter.count_value == 0, 999);
+        assert!(counter.count_value == 2, 999);
+
         increase(&mut ctx, account);
-        let counter = context::borrow_mut_resource<Counter>(&mut ctx, account_addr);
+        let counter = context::borrow_resource<Counter>(&ctx, account_addr);
         assert!(counter.count_value == 1, 1000);
+
         drop_test_context(ctx);
     }
 
