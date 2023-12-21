@@ -25,7 +25,7 @@ const CounterPage = () => {
   const [fetch, setFetch] = useState(true)
   const [loading, setLoading] = useState(false)
   const active = () => {
-    return rooch.getActiveChina() === DevChain
+    return rooch.getActiveChain() === DevChain
   }
 
   useEffect(() => {
