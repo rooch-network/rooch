@@ -33,14 +33,4 @@ module unit_test::unit_test {
 
         drop_test_context(ctx);
     }
-
-    // #[test(account = @0x42)]
-    // fun test_increase(account: &signer) {
-    //     let account_addr = signer::address_of(account);
-    //     let ctx = context::new_test_context(account_addr);
-    //     increase(&mut ctx, account);
-    //     let counter = context::borrow_mut_resource<Counter>(&mut ctx, account_addr);
-    //     assert!(counter.count_value == 1, 1000);
-    //     drop_test_context(ctx);
-    // }
 }
