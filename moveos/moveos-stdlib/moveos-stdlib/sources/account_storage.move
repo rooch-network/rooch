@@ -127,7 +127,7 @@ module moveos_std::account_storage {
         let (module_names, module_names_with_init_fn, indices) = move_module::sort_and_verify_modules(&modules, account_address);
         
         let upgrade_flag = false;
-                while (i < len) {
+        while (i < len) {
             let name = vector::pop_back(&mut module_names);
             let index = vector::pop_back(&mut indices);
             let m = vector::borrow(&modules, index);

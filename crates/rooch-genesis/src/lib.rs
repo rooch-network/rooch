@@ -14,7 +14,6 @@ use moveos_types::h256::H256;
 use moveos_types::transaction::MoveAction;
 use once_cell::sync::Lazy;
 use rooch_framework::natives::gas_parameter::gas_member::InitialGasSchedule;
-use rooch_types::address::RoochSupportedAddress;
 use rooch_types::error::GenesisError;
 use rooch_types::framework::genesis::GenesisContext;
 use rooch_types::transaction::rooch::RoochTransaction;
@@ -276,6 +275,7 @@ mod tests {
     use moveos::moveos::MoveOS;
     use moveos_store::MoveOSStore;
     use rooch_framework::natives::all_natives;
+    use rooch_types::address::RoochSupportedAddress;
     use rooch_types::{address::RoochAddress, chain_id::RoochChainID};
 
     #[test]
