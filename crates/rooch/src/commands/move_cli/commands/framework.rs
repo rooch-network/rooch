@@ -23,7 +23,7 @@ use std::path::PathBuf;
 #[derive(Parser)]
 pub struct Framework {
     /// Path to a package which the command should be run with respect to.
-    #[clap(long = "path", short = 'p', global = true, parse(from_os_str))]
+    #[clap(long = "path", short = 'p', global = true, value_parser)]
     pub package_path: Option<PathBuf>,
 
     #[clap(flatten)]

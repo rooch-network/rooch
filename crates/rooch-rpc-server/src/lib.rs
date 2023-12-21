@@ -210,7 +210,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     // Init executor
     let is_genesis = moveos_store.statedb.is_genesis();
     let executor = ExecutorActor::new(
-        chain_id_opt.genesis_ctx(sequencer_account.clone()),
+        chain_id_opt.genesis_ctx(sequencer_account),
         moveos_store.clone(),
         rooch_store.clone(),
     )?

@@ -127,11 +127,7 @@ impl CommandAction<String> for MoveCli {
                 .await
                 .map(|_| "Success".to_owned())
                 .map_err(RoochError::from),
-            MoveCommand::Framework(c) => c
-                .execute()
-                .await
-                .map(|_| "Success".to_owned())
-                .map_err(RoochError::from),
+            MoveCommand::Framework(c) => c.execute_serialized().await,
         }
     }
 }

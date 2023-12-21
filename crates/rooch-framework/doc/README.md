@@ -39,7 +39,6 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::multichain_address`](multichain_address.md#0x3_multichain_address)
 -  [`0x3::native_validator`](native_validator.md#0x3_native_validator)
 -  [`0x3::onchain_config`](onchain_config.md#0x3_onchain_config)
--  [`0x3::ord`](ord.md#0x3_ord)
 -  [`0x3::schnorr`](schnorr.md#0x3_schnorr)
 -  [`0x3::session_key`](session_key.md#0x3_session_key)
 -  [`0x3::timestamp`](timestamp.md#0x3_timestamp)
