@@ -1,6 +1,8 @@
 module unit_test::unit_test {
     use moveos_std::signer;
     use moveos_std::context::{Self, Context};
+    #[test_only]
+    use moveos_std::context::drop_test_context;
 
     struct Counter has key {
         count_value: u64
@@ -17,15 +19,25 @@ module unit_test::unit_test {
     }
 
     #[test(account = @0x42)]
-    fun test_init(account: &signer) {
+    fun test_counter(account: &signer) {
         let account_addr = signer::address_of(account);
-        let tx_context = &mut context::new_test_context(account_addr);
-        context::move_resource_to(tx_context, account, Counter { count_value: 0});
+        let ctx = context::new_test_context(account_addr);
+        context::move_resource_to(&mut ctx, account, Counter { count_value: 0 });
+        let counter = context::borrow_resource<Counter>(&ctx, account_addr);
+        assert!(counter.count_value == 0, 999);
+        increase(&mut ctx, account);
+        let counter = context::borrow_mut_resource<Counter>(&mut ctx, account_addr);
+        assert!(counter.count_value == 1, 1000);
+        drop_test_context(ctx);
     }
-}
 
-// #[test_only]
-// module unit_test::unit_test2 {
-//     #[test]
-//     fun test() {}
-// }
+    // #[test(account = @0x42)]
+    // fun test_increase(account: &signer) {
+    //     let account_addr = signer::address_of(account);
+    //     let ctx = context::new_test_context(account_addr);
+    //     increase(&mut ctx, account);
+    //     let counter = context::borrow_mut_resource<Counter>(&mut ctx, account_addr);
+    //     assert!(counter.count_value == 1, 1000);
+    //     drop_test_context(ctx);
+    // }
+}
