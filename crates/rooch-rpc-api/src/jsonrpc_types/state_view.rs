@@ -399,7 +399,7 @@ pub enum GlobalStateFilterView {
     /// Query by multi chain address
     MultiChainAddress {
         multichain_id: u64,
-        raw_address: BytesView,
+        address: String,
     },
 }
 
@@ -422,7 +422,7 @@ impl GlobalStateFilterView {
             GlobalStateFilterView::ObjectId(object_id) => GlobalStateFilter::ObjectId(object_id),
             GlobalStateFilterView::MultiChainAddress {
                 multichain_id: _,
-                raw_address: _,
+                address: _,
             } => GlobalStateFilter::Owner(resolve_address),
         }
     }

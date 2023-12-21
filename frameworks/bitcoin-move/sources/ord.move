@@ -86,6 +86,7 @@ module bitcoin_move::ord {
             vector::push_back(&mut seal_outs, utxo::new_seal_out(output_index, seal_object_id));
             j = j + 1;
         };
+        //TODO how to auto bind bitcoin reverse address mapping without signer?
         seal_outs
     }
 
@@ -122,6 +123,7 @@ module bitcoin_move::ord {
             let output = vector::borrow(tx_outputs, output_index);
             let address = types::txout_object_address(output);
             object::transfer_extend(inscription_obj, address);
+            //TODO how to auto bind bitcoin reverse address mapping without signer?
             vector::push_back(&mut output_seals, utxo::new_seal_out(output_index, object_id));
             idx = idx + 1;
         };

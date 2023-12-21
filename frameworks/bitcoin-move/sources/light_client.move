@@ -3,7 +3,9 @@
 
 module bitcoin_move::light_client{
 
+    use std::debug;
     use std::option::{Self, Option};
+    use std::string;
     use std::vector;
     use std::string::{String};
     use moveos_std::type_info;
@@ -187,7 +189,11 @@ module bitcoin_move::light_client{
             let object_id = object::id(&utxo_obj);
             table::add(&mut btc_utxo_store.utxo, outpoint, object_id);
             let owner_address = types::txout_object_address(txout);
-            utxo::transfer(utxo_obj, owner_address); 
+            debug::print(&string::utf8(b"utxo address mapping"));
+            debug::print(&types::txout_address(txout));
+            debug::print(&owner_address);
+            utxo::transfer(utxo_obj, owner_address);
+            //TODO how to auto bind bitcoin reverse address mapping without signer?
             idx = idx + 1;
         }
     }

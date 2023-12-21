@@ -5,9 +5,11 @@ use crate::{
     addresses::ROOCH_FRAMEWORK_ADDRESS,
     multichain_id::{MultiChainID, RoochMultiChainID},
 };
-use anyhow::Result;
+use anyhow::{bail, Result};
 use bech32::{FromBase32, ToBase32};
-use bitcoin::{address::Address, secp256k1::Secp256k1, Network, PrivateKey, Script};
+use bitcoin::address::NetworkUnchecked;
+use bitcoin::hex::DisplayHex;
+use bitcoin::{address::Address, base58, secp256k1::Secp256k1, Network, PrivateKey, Script};
 use ethers::types::H160;
 use fastcrypto::secp256k1::recoverable::Secp256k1RecoverablePublicKey;
 use move_core_types::{
@@ -56,6 +58,32 @@ impl MultiChainAddress {
         Self {
             multichain_id,
             raw_address,
+        }
+    }
+
+    pub fn try_from_str_with_multichain_id(
+        multichain_id: u64,
+        str: &str,
+    ) -> Result<Self, anyhow::Error> {
+        let multichain_id = RoochMultiChainID::try_from(multichain_id)?;
+        match multichain_id {
+            RoochMultiChainID::Bitcoin => {
+                let address = BitcoinAddress::from_str(str)?;
+                Ok(Self::new(multichain_id, address.bytes))
+            }
+            RoochMultiChainID::Ether => {
+                let address = EthereumAddress::from_str(str)?;
+                Ok(Self::new(multichain_id, address.0.as_bytes().to_vec()))
+            }
+            RoochMultiChainID::Sui => {
+                let address = RoochAddress::from_str(str)?;
+                Ok(Self::new(multichain_id, address.0.as_bytes().to_vec()))
+            }
+            RoochMultiChainID::Nostr => {
+                let address = NostrAddress::from_str(str)?;
+                Ok(Self::new(multichain_id, address.0.serialize().to_vec()))
+            }
+            RoochMultiChainID::Rooch => bail!("Not implements!"),
         }
     }
 
@@ -367,6 +395,14 @@ pub struct BitcoinAddress {
     bytes: Vec<u8>,
 }
 
+impl fmt::Display for BitcoinAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Write the Bitcoin address as a hexadecimal string
+        // write!(f, "{}", self.to_address())
+        base58::encode_check_to_fmt(f, &self.bytes)
+    }
+}
+
 impl Default for BitcoinAddress {
     fn default() -> Self {
         Self::new(vec![])
@@ -408,6 +444,16 @@ impl BitcoinAddress {
     pub fn is_empty(&self) -> bool {
         self.bytes.is_empty()
     }
+
+    // /// Convert bytes to base58 bitcoin address
+    // pub fn to_address(&self) -> String {
+    //     let mut address_data = self.bytes.clone();
+    //     let sha256_hash =
+    //         h256::sha3_256_of(h256::sha3_256_of(&address_data.as_slice()).0.as_slice()).0;
+    //     let mut checksum = sha256_hash[..4].to_vec();
+    //     address_data.append(&mut checksum);
+    //     bs58::encode(address_data).into_vec().to_lower_hex_string()
+    // }
 }
 
 impl MoveStructType for BitcoinAddress {
@@ -447,6 +493,15 @@ impl RoochSupportedAddress for BitcoinAddress {
         let selected_address = addresses.choose(&mut rng).unwrap().clone();
         // Return the randomly selected Bitcoin address
         selected_address.into()
+    }
+}
+
+impl FromStr for BitcoinAddress {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let address = Address::from_str(s)?.assume_checked();
+        Ok(Self::from(address))
     }
 }
 
@@ -523,6 +578,15 @@ impl TryFrom<MultiChainAddress> for NostrAddress {
         }
         let addr = XOnlyPublicKey::from_slice(&value.raw_address)?;
         Ok(Self(addr))
+    }
+}
+
+impl FromStr for NostrAddress {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let address = XOnlyPublicKey::from_str(s)?;
+        Ok(Self(address))
     }
 }
 
@@ -614,5 +678,31 @@ mod test {
             address.to_string(),
             "tb1qjlxl7n7na4hcsh25554hn4azzsg89t3ljdldnj"
         )
+    }
+
+    #[test]
+    pub fn test_bitcoin_address() -> Result<()> {
+        let bytes =
+            hex::decode("0145966003624094dae2deeb30815eedd38f96c45c3fdb1261f5d697fc4137e0de")
+                .unwrap();
+        let bitcoin_address = BitcoinAddress {
+            bytes: bytes.clone(),
+        };
+        let address_str = bitcoin_address.to_string().to_lowercase();
+        let maddress = MultiChainAddress::new(RoochMultiChainID::Bitcoin, bytes);
+        println!("Bitcoin address {} ", address_str.clone());
+
+        // let address_str = "tb1qjlxl7n7na4hcsh25554hn4azzsg89t3ljdldnj".to_string();
+        let address_str = "1pqhhq0nss5katemj025lpyygxcwhq846jqy7wnh0f".to_string();
+        let new_maddress = MultiChainAddress::try_from_str_with_multichain_id(
+            RoochMultiChainID::Bitcoin.into(),
+            address_str.as_str(),
+        )?;
+        // assert_eq!(maddress, new_maddress);
+        // assert_eq!(
+        //     address_str.to_string(),
+        //     "tb1qjlxl7n7na4hcsh25554hn4azzsg89t3ljdldnj"
+        // )
+        Ok(())
     }
 }

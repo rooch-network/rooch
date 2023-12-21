@@ -23,7 +23,8 @@
 -  [Function `get_utxo`](#0x4_light_client_get_utxo)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::debug</a>;
+<b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
@@ -34,6 +35,7 @@
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::table_vec</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
+<b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="">0x3::timestamp</a>;
 <b>use</b> <a href="ord.md#0x4_ord">0x4::ord</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;

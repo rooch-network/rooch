@@ -36,7 +36,6 @@ use rooch_rpc_api::{
 use rooch_types::address::MultiChainAddress;
 use rooch_types::indexer::event_filter::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
-use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::{AbstractTransaction, TypedTransaction};
 use std::cmp::min;
@@ -436,12 +435,12 @@ impl RoochAPIServer for RoochServer {
         let resolve_address = match filter.clone() {
             GlobalStateFilterView::MultiChainAddress {
                 multichain_id,
-                raw_address,
+                address,
             } => {
-                let multi_chain_address = MultiChainAddress {
-                    multichain_id: RoochMultiChainID::try_from(multichain_id)?,
-                    raw_address: raw_address.0,
-                };
+                let multi_chain_address = MultiChainAddress::try_from_str_with_multichain_id(
+                    multichain_id,
+                    address.as_str(),
+                )?;
                 self.rpc_service
                     .resolve_address(multi_chain_address)
                     .await?

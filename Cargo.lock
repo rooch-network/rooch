@@ -7745,6 +7745,7 @@ dependencies = [
  "bech32 0.9.1",
  "bitcoin 0.31.0",
  "bitcoincore-rpc",
+ "bs58 0.5.0",
  "clap 4.4.1",
  "derive_more",
  "enum_dispatch",
