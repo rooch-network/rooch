@@ -33,8 +33,8 @@ const defaultProvider: ETHValueType = {
   activeAccount: null,
   sendTransaction: async () => Promise.resolve(),
   waitTxConfirmed: async () => Promise.resolve(),
-  switchChina: async () => Promise.resolve(),
-  addChina: async () => Promise.resolve(),
+  switchChain: async () => Promise.resolve(),
+  addChain: async () => Promise.resolve(),
   connect: async () => Promise.resolve(),
   disconnect: () => null,
 }
@@ -71,11 +71,11 @@ const ETHProvider = ({ children }: Props) => {
     const refreshAccounts = (newAccounts: any) => {
       updateWallet(rooch, roochAddressMap, newAccounts)
     }
-    const refreshChina = (chainId: any) => {
+    const refreshChain = (chainId: any) => {
       setChainId(chainId)
 
       // TODO: handle switch to unknown chain ?
-      rooch.switchByChinaId(chainId)
+      rooch.switchByChainId(chainId)
     }
 
     const updateWallet = async (
@@ -136,12 +136,12 @@ const ETHProvider = ({ children }: Props) => {
 
       if (provider) {
         const chainId = await window.ethereum?.request({ method: 'eth_chainId' })
-        refreshChina(chainId)
+        refreshChain(chainId)
 
         const accounts = await window.ethereum?.request({ method: 'eth_accounts' })
         refreshAccounts(accounts)
 
-        window.ethereum?.on('chainChanged', refreshChina)
+        window.ethereum?.on('chainChanged', refreshChain)
         window.ethereum?.on('accountsChanged', refreshAccounts)
       }
     }
@@ -151,18 +151,18 @@ const ETHProvider = ({ children }: Props) => {
     })
 
     return () => {
-      window.ethereum?.removeListener('chainChanged', refreshChina)
+      window.ethereum?.removeListener('chainChanged', refreshChain)
       window.ethereum?.removeListener('accountsChanged', refreshAccounts)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rooch])
 
   const connect = async (targetChain?: ChainInfo) => {
-    let connectChain = targetChain ?? rooch.getActiveChina().info
+    let connectChain = targetChain ?? rooch.getActiveChain().info
 
     if (chainId !== connectChain.chainId) {
       try {
-        await switchChina(connectChain)
+        await switchChain(connectChain)
       } catch (e: any) {
         console.log('connect error', e.toString())
 
@@ -179,7 +179,7 @@ const ETHProvider = ({ children }: Props) => {
       })
   }
 
-  const switchChina = async (chain: ChainInfo) => {
+  const switchChain = async (chain: ChainInfo) => {
     try {
       await window.ethereum?.request({
         method: 'wallet_switchEthereumChain',
@@ -187,7 +187,7 @@ const ETHProvider = ({ children }: Props) => {
       })
     } catch (e: any) {
       if (e.code === 4902) {
-        await addChina(chain)
+        await addChain(chain)
       } else {
         // unknown error
         console.log(e)
@@ -198,7 +198,7 @@ const ETHProvider = ({ children }: Props) => {
     setChainId(chain.chainId)
   }
 
-  const addChina = async (chain: ChainInfo) => {
+  const addChain = async (chain: ChainInfo) => {
     return window.ethereum
       ?.request({
         method: 'wallet_addEthereumChain',
@@ -216,10 +216,10 @@ const ETHProvider = ({ children }: Props) => {
   }
 
   const sendTransaction = async (params: unknown[]) => {
-    const curChain = rooch.getActiveChina()
+    const curChain = rooch.getActiveChain()
 
     if (String(curChain.id) !== chainId) {
-      await switchChina(curChain.info)
+      await switchChain(curChain.info)
     }
 
     return await window.ethereum?.request({
@@ -254,8 +254,8 @@ const ETHProvider = ({ children }: Props) => {
     isConnect: hasProvider ? window.ethereum?.isConnected() : false,
     sendTransaction,
     waitTxConfirmed,
-    addChina,
-    switchChina,
+    addChain,
+    switchChain,
     connect,
     disconnect,
   } as ETHValueType
