@@ -45,7 +45,6 @@ const main = async (opts) => {
   } finally {
     await deleteTempFile(tmpFile)
 
-    console.log('开始option')
     // Using the Optimize class
     const optimizer = new Optimize(outputDir)
     await optimizer.optimizeRuntimeImports()
