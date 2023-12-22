@@ -184,17 +184,6 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     indexer_config.merge_with_opt_with_init(opt, Arc::new(base_config), true)?;
     let (indexer_store, indexer_reader) = init_indexer(&indexer_config)?;
 
-    // Init executor
-    let is_genesis = moveos_store.statedb.is_genesis();
-    let executor = ExecutorActor::new(
-        chain_id_opt.genesis_ctx(),
-        moveos_store.clone(),
-        rooch_store.clone(),
-    )?
-    .into_actor(Some("Executor"), &actor_system)
-    .await?;
-    let executor_proxy = ExecutorProxy::new(executor.into());
-
     // Check for key pairs
     if server_opt.sequencer_keypair.is_none()
         || server_opt.proposer_keypair.is_none()
@@ -215,9 +204,21 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         }
     }
 
-    // Init sequencer
     let sequencer_keypair = server_opt.sequencer_keypair.unwrap();
     let sequencer_account: RoochAddress = (&sequencer_keypair.public()).into();
+
+    // Init executor
+    let is_genesis = moveos_store.statedb.is_genesis();
+    let executor = ExecutorActor::new(
+        chain_id_opt.genesis_ctx(sequencer_account),
+        moveos_store.clone(),
+        rooch_store.clone(),
+    )?
+    .into_actor(Some("Executor"), &actor_system)
+    .await?;
+    let executor_proxy = ExecutorProxy::new(executor.into());
+
+    // Init sequencer
     info!("RPC Server sequencer address: {:?}", sequencer_account);
     let sequencer = SequencerActor::new(sequencer_keypair, rooch_store, is_genesis)?
         .into_actor(Some("Sequencer"), &actor_system)

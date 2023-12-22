@@ -106,35 +106,23 @@ module moveos_std::account_storage {
         exists_module_at_account_storage(self, name) 
     }
 
-    fun pop_module_by_name(modules: &mut vector<MoveModule>, name: String): MoveModule {
-        let i = 0;
-        let len = vector::length(modules);
-        while (i < len) {
-            let m = vector::borrow(modules, i);
-            if (move_module::module_name(m) == name) {
-                return vector::remove(modules, i)
-            };
-            i = i + 1;
-        };
-        abort(0x0) // unreachable.
-    }
-
     /// Publish modules to the account's storage
     /// Return true if the modules are upgraded
     public(friend) fun publish_modules(self: &mut AccountStorage, account_address: address, modules: vector<MoveModule>) : bool {        
         let i = 0;
         let len = vector::length(&modules);
-        let (module_names, module_names_with_init_fn) = move_module::sort_and_verify_modules(&modules, account_address);
+        let (module_names, module_names_with_init_fn, indices) = move_module::sort_and_verify_modules(&modules, account_address);
         
         let upgrade_flag = false;
         while (i < len) {
             let name = vector::pop_back(&mut module_names);
-            let m = pop_module_by_name(&mut modules, name);   
+            let index = vector::pop_back(&mut indices);
+            let m = vector::borrow(&modules, index);
 
             // The module already exists, which means we are upgrading the module
             if (table::contains(&self.modules, name)) {
                 let old_m = table::remove(&mut self.modules, name);
-                move_module::check_comatibility(&m, &old_m);
+                move_module::check_comatibility(m, &old_m);
                 upgrade_flag = true;
             } else {
                 // request init function invoking
@@ -142,7 +130,7 @@ module moveos_std::account_storage {
                     move_module::request_init_functions(vector::singleton(copy name), account_address);
                 }
             };
-            table::add(&mut self.modules, name, m);
+            table::add(&mut self.modules, name, *m);
             i = i + 1;
         };
         upgrade_flag 

@@ -13,6 +13,8 @@ pub struct GenesisContext {
     pub chain_id: u64,
     /// The timestamp of the genesis, in microseconds
     pub timestamp: u64,
+    /// Sequencer account
+    pub sequencer: AccountAddress,
 }
 
 impl MoveStructType for GenesisContext {
@@ -26,15 +28,17 @@ impl MoveStructState for GenesisContext {
         move_core_types::value::MoveStructLayout::new(vec![
             move_core_types::value::MoveTypeLayout::U64,
             move_core_types::value::MoveTypeLayout::U64,
+            move_core_types::value::MoveTypeLayout::Address,
         ])
     }
 }
 
 impl GenesisContext {
-    pub fn new(chain_id: u64, timestamp: u64) -> Self {
+    pub fn new(chain_id: u64, timestamp: u64, sequencer: AccountAddress) -> Self {
         Self {
             chain_id,
             timestamp,
+            sequencer,
         }
     }
 }
