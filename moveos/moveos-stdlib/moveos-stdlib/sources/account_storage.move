@@ -106,19 +106,6 @@ module moveos_std::account_storage {
         exists_module_at_account_storage(self, name) 
     }
 
-    fun pop_module_by_name(modules: &mut vector<MoveModule>, name: String): MoveModule {
-        let i = 0;
-        let len = vector::length(modules);
-        while (i < len) {
-            let m = vector::borrow(modules, i);
-            if (move_module::module_name(m) == name) {
-                return vector::remove(modules, i)
-            };
-            i = i + 1;
-        };
-        abort(0x0) // unreachable.
-    }
-
     /// Publish modules to the account's storage
     /// Return true if the modules are upgraded
     public(friend) fun publish_modules(self: &mut AccountStorage, account_address: address, modules: vector<MoveModule>) : bool {        

@@ -15,13 +15,13 @@ use moveos_stdlib_builder::Stdlib;
 use moveos_types::addresses::{MOVEOS_STD_ADDRESS, MOVE_STD_ADDRESS};
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
 use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
+use rooch_types::addresses::{BITCOIN_MOVE_ADDRESS, ROOCH_FRAMEWORK_ADDRESS};
 use rooch_types::error::{RoochError, RoochResult};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
 #[derive(Parser)]
-pub struct Framework {
+pub struct FrameworkUpgrade {
     /// Path to a package which the command should be run with respect to.
     #[clap(long = "path", short = 'p', global = true, value_parser)]
     pub package_path: Option<PathBuf>,
@@ -33,7 +33,7 @@ pub struct Framework {
     tx_options: TransactionOptions,
 }
 #[async_trait]
-impl CommandAction<ExecuteTransactionResponseView> for Framework {
+impl CommandAction<ExecuteTransactionResponseView> for FrameworkUpgrade {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
         // Clone variables for later use
         let package_path = self
@@ -55,6 +55,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Framework {
             bcs::to_bytes(bundles_map.get(&MOVE_STD_ADDRESS).unwrap()).unwrap(),
             bcs::to_bytes(bundles_map.get(&MOVEOS_STD_ADDRESS).unwrap()).unwrap(),
             bcs::to_bytes(bundles_map.get(&ROOCH_FRAMEWORK_ADDRESS).unwrap()).unwrap(),
+            bcs::to_bytes(bundles_map.get(&BITCOIN_MOVE_ADDRESS).unwrap()).unwrap(),
         ];
         let action = MoveAction::new_function_call(
             FunctionId::new(

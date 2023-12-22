@@ -36,11 +36,47 @@ Event for framework upgrades
 ## Constants
 
 
+<a name="0x3_upgrade_BitcoinMoveAccount"></a>
+
+
+
+<pre><code><b>const</b> <a href="upgrade.md#0x3_upgrade_BitcoinMoveAccount">BitcoinMoveAccount</a>: <b>address</b> = 0x4;
+</code></pre>
+
+
+
 <a name="0x3_upgrade_ErrorNotSequencer"></a>
 
 
 
 <pre><code><b>const</b> <a href="upgrade.md#0x3_upgrade_ErrorNotSequencer">ErrorNotSequencer</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_upgrade_MoveStdAccount"></a>
+
+
+
+<pre><code><b>const</b> <a href="upgrade.md#0x3_upgrade_MoveStdAccount">MoveStdAccount</a>: <b>address</b> = 0x1;
+</code></pre>
+
+
+
+<a name="0x3_upgrade_MoveosStdAccount"></a>
+
+
+
+<pre><code><b>const</b> <a href="upgrade.md#0x3_upgrade_MoveosStdAccount">MoveosStdAccount</a>: <b>address</b> = 0x2;
+</code></pre>
+
+
+
+<a name="0x3_upgrade_RoochFrameworkAccount"></a>
+
+
+
+<pre><code><b>const</b> <a href="upgrade.md#0x3_upgrade_RoochFrameworkAccount">RoochFrameworkAccount</a>: <b>address</b> = 0x3;
 </code></pre>
 
 
@@ -51,5 +87,5 @@ Event for framework upgrades
 
 
 
-<pre><code>entry <b>fun</b> <a href="upgrade.md#0x3_upgrade_upgrade_entry">upgrade_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, move_std_bundles: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, moveos_std_bundles: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, rooch_framework_bundles: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
+<pre><code>entry <b>fun</b> <a href="upgrade.md#0x3_upgrade_upgrade_entry">upgrade_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, move_std_bundles: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, moveos_std_bundles: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, rooch_framework_bundles: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, bitcoin_move_bundles: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
 </code></pre>
