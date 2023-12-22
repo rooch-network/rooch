@@ -25,7 +25,8 @@ module unit_test::unit_test {
         context::move_resource_to(&mut ctx, account, Counter { count_value: 0 });
 
         let counter = context::borrow_resource<Counter>(&ctx, account_addr);
-        assert!(counter.count_value == 2, 999);
+        assert!(counter.count_value == 0, 999);
+        // assert!(counter.count_value == 2, 999);
 
         increase(&mut ctx, account);
         let counter = context::borrow_resource<Counter>(&ctx, account_addr);
