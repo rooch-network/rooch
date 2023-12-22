@@ -117,10 +117,10 @@ impl<'a> ModuleBinding<'a> for UTXOModule<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
     use super::*;
     use move_core_types::account_address::AccountAddress;
     use moveos_types::moveos_std::object;
+    use std::str::FromStr;
 
     #[test]
     fn test_id() {
