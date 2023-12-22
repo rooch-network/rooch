@@ -22,6 +22,10 @@ impl RustBindingTest {
         Ok(Self { executor })
     }
 
+    pub fn executor(&self) -> &ExecutorActor {
+        &self.executor
+    }
+
     pub fn as_module_bundle<'a, M: ModuleBinding<'a>>(&'a self) -> M {
         self.executor.moveos().as_module_binding::<M>()
     }

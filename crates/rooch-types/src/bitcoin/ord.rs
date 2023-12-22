@@ -89,7 +89,7 @@ impl MoveStructState for InscriptionStore {
     }
 }
 
-/// Rust bindings for RoochFramework ord module
+/// Rust bindings for BitcoinMove ord module
 pub struct OrdModule<'a> {
     caller: &'a dyn MoveFunctionCaller,
 }
