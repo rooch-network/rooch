@@ -37,6 +37,14 @@ impl std::fmt::Display for MoveString {
     }
 }
 
+impl From<String> for MoveString {
+    fn from(s: String) -> Self {
+        MoveString {
+            bytes: s.into_bytes(),
+        }
+    }
+}
+
 impl FromStr for MoveString {
     type Err = anyhow::Error;
 

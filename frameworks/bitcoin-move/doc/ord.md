@@ -156,7 +156,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_body">body</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_body">body</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -167,7 +167,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_content_encoding">content_encoding</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_content_encoding">content_encoding</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
@@ -189,7 +189,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_metadata">metadata</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_metadata">metadata</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -200,7 +200,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_metaprotocol">metaprotocol</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_metaprotocol">metaprotocol</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
 
 
@@ -222,7 +222,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_pointer">pointer</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_pointer">pointer</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;u64&gt;
 </code></pre>
 
 
@@ -233,7 +233,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_unpack_record">unpack_record</a>(record: <a href="ord.md#0x4_ord_InscriptionRecord">ord::InscriptionRecord</a>): (<a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_unpack_record">unpack_record</a>(record: <a href="ord.md#0x4_ord_InscriptionRecord">ord::InscriptionRecord</a>): (<a href="">vector</a>&lt;u8&gt;, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, <a href="">vector</a>&lt;u8&gt;, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;, <a href="_Option">option::Option</a>&lt;<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>&gt;, <a href="_Option">option::Option</a>&lt;u64&gt;)
 </code></pre>
 
 
