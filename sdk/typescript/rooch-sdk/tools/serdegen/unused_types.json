@@ -1,0 +1,21 @@
+{
+  "unusedImports": [
+    "BcsSerializer",
+    "BcsDeserializer",
+    "Optional",
+    "Tuple",
+    "unit",
+    "bool",
+    "int8",
+    "int16",
+    "int32",
+    "int64",
+    "int128",
+    "uint16",
+    "uint32",
+    "uint128",
+    "float32",
+    "float64",
+    "char"
+  ]
+}
