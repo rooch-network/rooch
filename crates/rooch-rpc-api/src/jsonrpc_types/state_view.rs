@@ -397,10 +397,7 @@ pub enum GlobalStateFilterView {
     /// Query by object id.
     ObjectId(ObjectID),
     /// Query by multi chain address
-    MultiChainAddress {
-        multichain_id: u64,
-        address: String,
-    },
+    MultiChainAddress { multichain_id: u64, address: String },
 }
 
 impl GlobalStateFilterView {
