@@ -4,6 +4,7 @@
 import { Command } from 'commander'
 import { sh } from './shell.mjs'
 import { createTempFile, deleteTempFile, replaceFile } from './utils.mjs'
+import { Optimize } from './optimize.mjs'
 
 const main = async (opts) => {
   const tmpFile = await createTempFile('rooch_types.yml')
@@ -43,6 +44,13 @@ const main = async (opts) => {
     )
   } finally {
     await deleteTempFile(tmpFile)
+
+    // Using the Optimize class
+    const optimizer = new Optimize(outputDir)
+    await optimizer.optimizeRuntimeImports()
+
+    // Assuming you have a 'config.json' that specifies unused imports
+    optimizer.cleanRoochTypesImports('./tools/serdegen/unused_types.json')
   }
 }
 

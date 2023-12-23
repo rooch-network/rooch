@@ -77,9 +77,8 @@ jobs:
         run: pnpm rooch-sdk build
       - name: Test SDK
         run: pnpm rooch-sdk test
-      # TODO: nextjs build DynamicOptions error
-      # - name: Build Dashboard
-      #   run: pnpm dashboard build
+      - name: Build Dashboard
+        run: pnpm dashboard build
 
       - uses: CatChen/check-git-status-action@v1
         with:
