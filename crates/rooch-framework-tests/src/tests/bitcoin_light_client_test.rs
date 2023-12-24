@@ -14,6 +14,7 @@ use moveos_types::state_resolver::StateReader;
 use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
+use rooch_types::bitcoin::ord::{Inscription, InscriptionID};
 use rooch_types::bitcoin::types::Header;
 use rooch_types::bitcoin::utxo::{OutputID, UTXO};
 use rooch_types::into_address::IntoAddress;
@@ -95,6 +96,8 @@ fn test_submit_block() {
 }
 
 //we temporarily ignore this test because it takes too long time
+//to run this test, use command:
+//RUST_LOG=debug cargo test --release --package rooch-framework-tests --lib -- --include-ignored tests::bitcoin_light_client_test::test_utxo_progress
 #[ignore]
 #[test]
 fn test_utxo_progress() {
@@ -109,13 +112,7 @@ fn test_utxo_progress() {
     let btc_block_bytes = Vec::<u8>::from_hex(btc_block_hex).unwrap();
     let height = 818677u64;
     let block: Block = deserialize(&btc_block_bytes).unwrap();
-    //TODO check the inscriptions objects
-    //let bitcoin_txdata = block.txdata.clone();
-    // let inscriptions = bitcoin_txdata
-    //     .iter()
-    //     .map(|tx| bitcoin_move::natives::ord::from_transaction(tx))
-    //     .flatten()
-    //     .collect::<Vec<_>>();
+
     let action = MoveAction::Function(
         rooch_types::bitcoin::light_client::BitcoinLightClientModule::create_submit_new_block_call(
             height,
@@ -154,7 +151,7 @@ fn test_utxo_progress() {
 
 fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTest) {
     let mut utxo_set = HashMap::<OutPoint, TxOut>::new();
-    for tx in txs {
+    for tx in txs.as_slice() {
         for (index, tx_out) in tx.output.iter().enumerate() {
             let vout = index as u32;
             let out_point = OutPoint::new(tx.txid(), vout);
@@ -164,6 +161,7 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
             utxo_set.remove(&tx_in.previous_output);
         }
     }
+
     let bitcoin_light_client_module = binding_test
         .as_module_bundle::<rooch_types::bitcoin::light_client::BitcoinLightClientModule>(
     );
@@ -209,5 +207,46 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
         assert_eq!(utxo_object.value.txid, txid.into_address());
         assert_eq!(utxo_object.value.vout, vout);
         assert_eq!(utxo_object.value.value, tx_out.value.to_sat());
+    }
+
+    let inscriptions = txs
+        .iter()
+        .map(|tx| {
+            let txid = tx.txid();
+            bitcoin_move::natives::ord::from_transaction(tx)
+                .into_iter()
+                .enumerate()
+                .map(move |(idx, i)| ((txid.clone(), idx, i)))
+        })
+        .flatten()
+        .collect::<Vec<_>>();
+    for (txid, index, inscription) in inscriptions {
+        let txid_address = txid.into_address();
+        let index = index as u32;
+        debug!(
+            "check inscription: txid: {}, index: {}",
+            txid_address, index
+        );
+        let inscription_id = InscriptionID::new(txid_address, index);
+        let object_id = object::custom_object_id(&inscription_id, &Inscription::struct_tag());
+        let inscription_state = moveos_resolver
+            .get_states(AccessPath::object(object_id))
+            .unwrap()
+            .pop()
+            .unwrap();
+        assert!(
+            inscription_state.is_some(),
+            "Can not find inscription: txid: {}, index: {}",
+            txid_address,
+            index
+        );
+        let inscription_state = inscription_state.unwrap();
+        let inscription_object = inscription_state.as_object::<Inscription>().unwrap();
+        assert_eq!(inscription_object.value.txid, txid.into_address());
+        assert_eq!(inscription_object.value.index, index);
+        assert_eq!(
+            inscription_object.value.body,
+            inscription.body.unwrap_or_default()
+        );
     }
 }

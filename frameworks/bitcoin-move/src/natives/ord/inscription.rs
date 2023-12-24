@@ -3,6 +3,7 @@
 // Code from https://github.com/ordinals/ord/
 
 use bitcoin::{hashes::Hash, Txid, Witness};
+use moveos_types::move_std::string::MoveString;
 use {
     super::envelope,
     super::inscription_id::InscriptionId,
@@ -35,16 +36,30 @@ pub struct Inscription {
 
 impl From<Inscription> for rooch_types::bitcoin::ord::InscriptionRecord {
     fn from(val: Inscription) -> Self {
+        let content_encoding = val
+            .content_encoding()
+            .and_then(|v| v.to_str().ok().map(|s| MoveString::from(s.to_owned())))
+            .into();
+        let content_type = val
+            .content_type()
+            .map(|s| MoveString::from(s.to_owned()))
+            .into();
+        let metaprotocol = val
+            .metaprotocol()
+            .map(|s| MoveString::from(s.to_owned()))
+            .into();
+        let parent = val.parent().map(Into::into).into();
+        let pointer = val.pointer().into();
         rooch_types::bitcoin::ord::InscriptionRecord {
-            body: val.body.into(),
-            content_encoding: val.content_encoding.into(),
-            content_type: val.content_type.into(),
+            body: val.body.unwrap_or_default(),
+            content_encoding,
+            content_type,
             duplicate_field: val.duplicate_field,
             incomplete_field: val.incomplete_field,
-            metadata: val.metadata.into(),
-            metaprotocol: val.metaprotocol.into(),
-            parent: val.parent.into(),
-            pointer: val.pointer.into(),
+            metadata: val.metadata.unwrap_or_default(),
+            metaprotocol,
+            parent,
+            pointer,
             unrecognized_even_field: val.unrecognized_even_field,
         }
     }

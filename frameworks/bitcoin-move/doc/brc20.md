@@ -26,6 +26,7 @@
 <pre><code><b>use</b> <a href="">0x1::debug</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::json</a>;
@@ -231,7 +232,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_from_inscription">from_inscription</a>(inscription_body: <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;): <a href="_Option">option::Option</a>&lt;<a href="brc20.md#0x4_brc20_Op">brc20::Op</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_from_inscription">from_inscription</a>(inscription_body: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;<a href="brc20.md#0x4_brc20_Op">brc20::Op</a>&gt;
 </code></pre>
 
 
