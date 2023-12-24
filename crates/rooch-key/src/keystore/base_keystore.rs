@@ -1,10 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::key_derive::{decrypt_key, generate_new_key_pair, retrieve_key_pair};
-use crate::keystore::account_keystore::AccountKeystore;
+use std::collections::BTreeMap;
+
 use anyhow::anyhow;
 use fastcrypto::encoding::{Base64, Encoding};
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
     address::RoochAddress,
@@ -17,9 +20,9 @@ use rooch_types::{
         rooch::{RoochTransaction, RoochTransactionData},
     },
 };
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
-use std::collections::BTreeMap;
+
+use crate::key_derive::{decrypt_key, generate_new_key_pair, retrieve_key_pair};
+use crate::keystore::account_keystore::AccountKeystore;
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 #[serde_as]
@@ -178,10 +181,7 @@ impl AccountKeystore for BaseKeyStore {
         let kp: RoochKeyPair =
             retrieve_key_pair(&result.key_pair_data.private_key_encryption, password)?;
         let authentication_key = kp.public().authentication_key();
-        let inner_map = self
-            .session_keys
-            .entry(*address)
-            .or_insert_with(BTreeMap::new);
+        let inner_map = self.session_keys.entry(*address).or_default();
         inner_map.insert(
             authentication_key.clone(),
             result.key_pair_data.private_key_encryption,
