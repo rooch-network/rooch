@@ -51,7 +51,8 @@ pub fn native_verify(
         return Ok(NativeResult::err(cost, E_INVALID_SIGNATURE));
     };
 
-    let Ok(public_key) = <SchnorrPublicKey as ToFromBytes>::from_bytes(&public_key_bytes_ref) else {
+    let Ok(public_key) = <SchnorrPublicKey as ToFromBytes>::from_bytes(&public_key_bytes_ref)
+    else {
         return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
     };
 
