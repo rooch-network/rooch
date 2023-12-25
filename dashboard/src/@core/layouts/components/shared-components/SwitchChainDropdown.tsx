@@ -70,7 +70,7 @@ const SwitchChainDropdown = (props: Props) => {
 
   // ** States
   const [anchorEl, setAnchorEl] = useState<Element | null>(null)
-  const [chain, setChain] = useState<Chain>(rooch.getActiveChina())
+  const [chain, setChain] = useState<Chain>(rooch.getActiveChain())
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -88,10 +88,10 @@ const SwitchChainDropdown = (props: Props) => {
 
   const handleSwitchChain = async (chain: Chain) => {
     if (eth.isConnect) {
-      await eth.switchChina(chain.info)
+      await eth.switchChain(chain.info)
     }
 
-    await rooch.switchChina(chain)
+    await rooch.switchChain(chain)
 
     setChain(chain)
     window.location.reload()
@@ -118,7 +118,7 @@ const SwitchChainDropdown = (props: Props) => {
       return
     }
 
-    if (rooch.getAllChina().find((v) => v.id === data.chainId && v.url === data.rpc)) {
+    if (rooch.getAllChain().find((v) => v.id === data.chainId && v.url === data.rpc)) {
       toast.error('The chain already exists', {
         duration: 1000,
       })
@@ -133,10 +133,10 @@ const SwitchChainDropdown = (props: Props) => {
 
     try {
       if (eth.isConnect) {
-        await eth.addChina(chain.info)
+        await eth.addChain(chain.info)
       }
 
-      await rooch.addChina(chain)
+      await rooch.addChain(chain)
     } catch (e) {
       setLoading(false)
     }
@@ -160,7 +160,7 @@ const SwitchChainDropdown = (props: Props) => {
           anchorOrigin={{ vertical: 'bottom', horizontal: direction === 'ltr' ? 'right' : 'left' }}
           transformOrigin={{ vertical: 'top', horizontal: direction === 'ltr' ? 'right' : 'left' }}
         >
-          {rooch.getAllChina().map((v) => (
+          {rooch.getAllChain().map((v) => (
             <MenuItem
               key={v.id}
               onClick={() => handleSwitchChain(v)}

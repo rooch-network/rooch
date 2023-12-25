@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
+
 use clap::Parser;
 use codespan_reporting::diagnostic::Severity;
 use move_cli::base::test;
@@ -9,6 +11,10 @@ use move_command_line_common::parser::NumberFormat;
 use move_package::BuildConfig;
 use move_unit_test::extensions::set_extension_hook;
 use move_vm_runtime::native_extensions::NativeContextExtensions;
+use once_cell::sync::Lazy;
+use parking_lot::RwLock;
+use termcolor::Buffer;
+
 use moveos_stdlib::natives::moveos_stdlib::{
     event::NativeEventContext,
     move_module::NativeModuleContext,
@@ -18,11 +24,7 @@ use moveos_store::MoveOSStore;
 use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_verifier::build::build_model_with_test_attr;
 use moveos_verifier::metadata::run_extended_checks;
-use once_cell::sync::Lazy;
-use parking_lot::RwLock;
 use rooch_framework::natives::{all_natives, GasParameters};
-use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
-use termcolor::Buffer;
 
 use crate::cli_types::WalletContextOptions;
 
@@ -37,7 +39,7 @@ pub struct Test {
     /// Example: alice=0x1234, bob=0x5678
     ///
     /// Note: This will fail if there are duplicates in the Move.toml file remove those first.
-    #[clap(long, value_parser=crate::utils::parse_map::<String, String>, default_value = "")]
+    #[clap(long, value_parser = crate::utils::parse_map::< String, String >, default_value = "")]
     pub(crate) named_addresses: BTreeMap<String, String>,
 
     #[clap(flatten)]
@@ -106,6 +108,7 @@ static MOVEOSSTORE: Lazy<Box<MoveOSResolverProxy<MoveOSStore>>> = Lazy::new(|| {
     ))
 });
 
+#[allow(clippy::arc_with_non_send_sync)]
 fn new_moveos_natives_runtime(ext: &mut NativeContextExtensions) {
     let statedb = Lazy::force(&MOVEOSSTORE).as_ref();
     let table_data = Arc::new(RwLock::new(TableData::default()));

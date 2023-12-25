@@ -20,12 +20,12 @@ type Props = {
 const defaultProvider: RoochProviderValueType = {
   provider: null,
   loading: true,
-  switchChina: async () => Promise.resolve(),
-  switchByChinaId: async () => Promise.resolve(),
-  addChina: async () => Promise.resolve(),
-  deleteChina: async () => Promise.resolve(),
-  getAllChina: () => [],
-  getActiveChina: () => DevChain,
+  switchChain: async () => Promise.resolve(),
+  switchByChainId: async () => Promise.resolve(),
+  addChain: async () => Promise.resolve(),
+  deleteChain: async () => Promise.resolve(),
+  getAllChain: () => [],
+  getActiveChain: () => DevChain,
 }
 
 const RoochContext = createContext(defaultProvider)
@@ -104,13 +104,13 @@ const RoochProvider = ({ children }: Props) => {
     window.localStorage.setItem(authConfig.chains, JSON.stringify(chains))
   }
 
-  const getAllChina = () => {
+  const getAllChain = () => {
     return getCustomChains().concat(AllChain)
   }
 
-  const addChina = async (chain: Chain) => {
+  const addChain = async (chain: Chain) => {
     try {
-      await switchChina(chain)
+      await switchChain(chain)
     } catch (e) {
       return
     }
@@ -118,13 +118,13 @@ const RoochProvider = ({ children }: Props) => {
     saveCustomChain(chain)
   }
 
-  const switchChina = async (chain: Chain) => {
+  const switchChain = async (chain: Chain) => {
     provider?.switchChain(chain)
     window.localStorage.setItem(authConfig.activeChain, chain.info.chainId)
   }
 
-  const switchByChinaId = async (chainId: string) => {
-    const chain = getAllChina().find((v) => v.info.chainId === chainId)
+  const switchByChainId = async (chainId: string) => {
+    const chain = getAllChain().find((v) => v.info.chainId === chainId)
 
     if (!chain || !provider) {
       return
@@ -134,33 +134,33 @@ const RoochProvider = ({ children }: Props) => {
       return
     }
 
-    await switchChina(chain)
+    await switchChain(chain)
     window.location.reload()
   }
 
-  const deleteChina = async (chain: Chain) => {
+  const deleteChain = async (chain: Chain) => {
     deleteCustomChain(chain)
 
     // TODO: remove wallet chain
   }
 
-  const getActiveChina = () => {
-    const activeChinaID = parseInt(
+  const getActiveChain = () => {
+    const activeChainID = parseInt(
       window.localStorage.getItem(authConfig.activeChain) ?? DevChain.id.toString(),
     )
 
-    return getAllChina().find((v) => activeChinaID === v.id) ?? DevChain
+    return getAllChain().find((v) => activeChainID === v.id) ?? DevChain
   }
 
   const values = {
     provider,
     loading,
-    addChina,
-    switchChina,
-    switchByChinaId,
-    deleteChina,
-    getAllChina,
-    getActiveChina,
+    addChain,
+    switchChain,
+    switchByChainId,
+    deleteChain,
+    getAllChain,
+    getActiveChain,
   }
 
   return <RoochContext.Provider value={values}> {children} </RoochContext.Provider>

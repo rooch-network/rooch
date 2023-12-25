@@ -69,7 +69,7 @@ impl MoveStructState for Op {
     }
 }
 
-/// Rust bindings for RoochFramework brc20 module
+/// Rust bindings for BitcoinMove brc20 module
 pub struct BRC20Module<'a> {
     caller: &'a dyn MoveFunctionCaller,
 }

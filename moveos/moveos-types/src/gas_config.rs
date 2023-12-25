@@ -7,5 +7,5 @@ pub struct GasConfig {
 }
 
 impl GasConfig {
-    pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 100000000u64;
+    pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 1000000000u64;
 }

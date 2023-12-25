@@ -240,8 +240,8 @@ module bitcoin_move::brc20 {
         }
     }
 
-    public fun from_inscription(inscription_body: Option<vector<u8>>) : Option<Op> {
-        if (option::is_none(&inscription_body)) {
+    public fun from_inscription(inscription_body: vector<u8>) : Option<Op> {
+        if (vector::is_empty(&inscription_body)) {
             return option::none()
         };
         //TODO should we check the content type?
@@ -249,8 +249,7 @@ module bitcoin_move::brc20 {
         // if(content_type != string::utf8(b"text/plain;charset=utf-8")){
         //     return option::none()
         // };
-        let body = option::destroy_some(inscription_body);
-        let json_map = json::to_map(body);
+        let json_map = json::to_map(inscription_body);
         if(simple_map::length(&json_map) == 0){
             return option::none()
         };

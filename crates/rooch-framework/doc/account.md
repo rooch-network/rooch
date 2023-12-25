@@ -18,6 +18,7 @@
 -  [Function `signer_address`](#0x3_account_signer_address)
 -  [Function `is_resource_account`](#0x3_account_is_resource_account)
 -  [Function `exists_at`](#0x3_account_exists_at)
+-  [Function `create_signer`](#0x3_account_create_signer)
 -  [Function `create_resource_account`](#0x3_account_create_resource_account)
 -  [Function `create_resource_address`](#0x3_account_create_resource_address)
 -  [Function `create_signer_with_capability`](#0x3_account_create_signer_with_capability)
@@ -289,6 +290,17 @@ Return the current sequence number at <code>addr</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_exists_at">exists_at</a>(ctx: &<a href="_Context">context::Context</a>, addr: <b>address</b>): bool
+</code></pre>
+
+
+
+<a name="0x3_account_create_signer"></a>
+
+## Function `create_signer`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_signer">create_signer</a>(addr: <b>address</b>): <a href="">signer</a>
 </code></pre>
 
 

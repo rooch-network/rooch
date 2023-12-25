@@ -4,7 +4,7 @@
 module bitcoin_move::ord {
     use std::vector;
     use std::option::{Self, Option};
-    use std::string::{Self, String};
+    use std::string::String;
     use moveos_std::bcs;
     use moveos_std::event;
     use moveos_std::context::{Self, Context};
@@ -12,7 +12,7 @@ module bitcoin_move::ord {
     use bitcoin_move::types::{Self, Witness, Transaction};
     use bitcoin_move::utxo::{Self, UTXO, SealOut};
 
-    struct InscriptionId has store, copy, drop {
+    struct InscriptionID has store, copy, drop {
         txid: address,
         index: u32,
     }
@@ -20,25 +20,25 @@ module bitcoin_move::ord {
     struct Inscription has key{
         txid: address,
         index: u32,
-        body: Option<vector<u8>>,
-        content_encoding: Option<vector<u8>>,
-        content_type: Option<vector<u8>>,
-        metadata: Option<vector<u8>>,
-        metaprotocol: Option<vector<u8>>,
+        body: vector<u8>,
+        content_encoding: Option<String>,
+        content_type: Option<String>,
+        metadata: vector<u8>,
+        metaprotocol: Option<String>,
         parent: Option<ObjectID>,
-        pointer: Option<vector<u8>>,
+        pointer: Option<u64>,
     }
 
     struct InscriptionRecord has store, copy, drop {
-        body: Option<vector<u8>>,
-        content_encoding: Option<vector<u8>>,
-        content_type: Option<vector<u8>>,
+        body: vector<u8>,
+        content_encoding: Option<String>,
+        content_type: Option<String>,
         duplicate_field: bool,
         incomplete_field: bool,
-        metadata: Option<vector<u8>>,
-        metaprotocol: Option<vector<u8>>,
-        parent: Option<vector<u8>>,
-        pointer: Option<vector<u8>>,
+        metadata: vector<u8>,
+        metaprotocol: Option<String>,
+        parent: Option<InscriptionID>,
+        pointer: Option<u64>,
         unrecognized_even_field: bool,
     }
 
@@ -50,8 +50,9 @@ module bitcoin_move::ord {
 
     // ==== Inscription ==== //
 
-    fun new_inscription(txid: address, index:u32, record: InscriptionRecord): Inscription {
-        Inscription{
+    fun new_inscription(ctx: &mut Context, txid: address, index:u32, record: InscriptionRecord): Object<Inscription> {
+        let parent = option::map(record.parent, |e| object::custom_object_id<InscriptionID,Inscription>(e));
+        let inscription = Inscription{
             txid: txid,
             index: index,
             body: record.body,
@@ -59,10 +60,32 @@ module bitcoin_move::ord {
             content_type: record.content_type,
             metadata: record.metadata,
             metaprotocol: record.metaprotocol,
-             //TODO handle parent
-            parent: option::none(),
+            parent: parent,
             pointer: record.pointer,
-        }
+        };
+        let id = InscriptionID{
+            txid: txid,
+            index: index,
+        };
+        context::new_custom_object(ctx, id, inscription)
+    }
+
+    public fun exists_inscription(ctx: &Context, txid: address, index: u32): bool{
+        let id = InscriptionID{
+            txid: txid,
+            index: index,
+        };
+        let object_id = object::custom_object_id<InscriptionID,Inscription>(id);
+        context::exists_object<Inscription>(ctx, object_id)
+    }
+
+    public fun borrow_inscription(ctx: &Context, txid: address, index: u32): &Object<Inscription>{
+        let id = InscriptionID{
+            txid: txid,
+            index: index,
+        };
+        let object_id = object::custom_object_id<InscriptionID,Inscription>(id);
+        context::borrow_object(ctx, object_id)
     }
 
     public fun spend_utxo(ctx: &mut Context, utxo_obj: &Object<UTXO>, tx: &Transaction): vector<SealOut>{
@@ -110,9 +133,7 @@ module bitcoin_move::ord {
         while(idx < inscription_records_len){
             let inscription_record = *vector::borrow(&mut inscription_records, idx);
             
-            let inscription = new_inscription(tx_id, (idx as u32), inscription_record);
-            //TODO custom Inscription ID?
-            let inscription_obj = context::new_object(ctx, inscription);
+            let inscription_obj = new_inscription(ctx, tx_id, (idx as u32), inscription_record);
             let object_id = object::id(&inscription_obj);
             let output_index = if(is_separate_outputs){
                 idx
@@ -156,28 +177,23 @@ module bitcoin_move::ord {
         self.index
     }
 
-    public fun body(self: &Inscription): Option<vector<u8>>{
+    public fun body(self: &Inscription): vector<u8>{
         self.body
     }
 
-    public fun content_encoding(self: &Inscription): Option<vector<u8>>{
+    public fun content_encoding(self: &Inscription): Option<String>{
         self.content_encoding
     }
 
     public fun content_type(self: &Inscription): Option<String>{
-        if(option::is_none(&self.content_type)){
-            option::none()
-        }else{
-            let content_type = option::destroy_some(*&self.content_type);
-            string::try_utf8(content_type)
-        }
+        self.content_type
     }
 
-    public fun metadata(self: &Inscription): Option<vector<u8>>{
+    public fun metadata(self: &Inscription): vector<u8>{
         self.metadata
     }
 
-    public fun metaprotocol(self: &Inscription): Option<vector<u8>>{
+    public fun metaprotocol(self: &Inscription): Option<String>{
         self.metaprotocol
     }
 
@@ -185,7 +201,7 @@ module bitcoin_move::ord {
         self.parent
     }
 
-    public fun pointer(self: &Inscription): Option<vector<u8>>{
+    public fun pointer(self: &Inscription): Option<u64>{
         self.pointer
     }
 
@@ -206,7 +222,7 @@ module bitcoin_move::ord {
     // ==== InscriptionRecord ==== //
 
     public fun unpack_record(record: InscriptionRecord): 
-    (Option<vector<u8>>, Option<vector<u8>>, Option<vector<u8>>, Option<vector<u8>>, Option<vector<u8>>, Option<vector<u8>>, Option<vector<u8>>){
+    (vector<u8>, Option<String>, Option<String>, vector<u8>, Option<String>, Option<InscriptionID>, Option<u64>){
         let InscriptionRecord{
             body: body,
             content_encoding: content_encoding,
