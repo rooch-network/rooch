@@ -19,6 +19,12 @@ use move_vm_types::{
 use smallvec::smallvec;
 use std::collections::VecDeque;
 
+use rust_secp256k1::ecdsa::Signature as RS;
+use rust_secp256k1::Message;
+use rust_secp256k1::PublicKey;
+use core::str::FromStr;
+use rust_secp256k1::ecdsa::RecoverableSignature as RS1;
+
 pub const E_FAIL_TO_RECOVER_PUBKEY: u64 = 1;
 pub const E_INVALID_SIGNATURE: u64 = 2;
 pub const E_INVALID_PUBKEY: u64 = 3;
@@ -39,13 +45,12 @@ pub fn native_ecrecover(
     let hash = pop_arg!(args, u8);
     let msg = pop_arg!(args, VectorRef);
     let signature = pop_arg!(args, VectorRef);
-
     let msg_ref = msg.as_bytes_ref();
     let signature_ref = signature.as_bytes_ref();
 
     // TODO(Gas): Charge the arg size dependent costs
-
     let cost = gas_params.base;
+
 
     let Ok(sig) = <Secp256k1RecoverableSignature as ToFromBytes>::from_bytes(&signature_ref) else {
         return Ok(NativeResult::err(cost, E_INVALID_SIGNATURE));
@@ -113,6 +118,9 @@ pub fn native_verify(
     // TODO(Gas): Charge the arg size dependent costs
 
     let cost = gas_params.base;
+
+    println!("sign {:x?}", &signature_bytes_ref.to_owned());
+    println!("msg {:x?}", &msg_ref.to_owned());
 
     let Ok(sig) = <Secp256k1RecoverableSignature as ToFromBytes>::from_bytes(&signature_bytes_ref) else {
         return Ok(NativeResult::err(cost, E_INVALID_SIGNATURE));

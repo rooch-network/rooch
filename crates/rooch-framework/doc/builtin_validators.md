@@ -12,6 +12,7 @@
 
 <pre><code><b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;
+<b>use</b> <a href="bitcoin_validator.md#0x3_bitcoin_validator">0x3::bitcoin_validator</a>;
 <b>use</b> <a href="ethereum_validator.md#0x3_ethereum_validator">0x3::ethereum_validator</a>;
 <b>use</b> <a href="native_validator.md#0x3_native_validator">0x3::native_validator</a>;
 </code></pre>

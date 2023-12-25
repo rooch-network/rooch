@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// This module implements Ethereum validator with the ECDSA recoverable signature over Secp256k1.
-module rooch_framework::ethereum_validator {
+module rooch_framework::bitcoin_validator {
 
     use std::vector;
     use std::option::{Self, Option};
@@ -14,15 +14,15 @@ module rooch_framework::ethereum_validator {
     use rooch_framework::ethereum_address::{Self, ETHAddress};
 
     /// there defines auth validator id for each blockchain
-    const ETHEREUM_AUTH_VALIDATOR_ID: u64 = 1;
+    const BITCOIN_AUTH_VALIDATOR_ID: u64 = 2;
 
     // error code
     const ErrorInvalidPublicKeyLength: u64 = 1;
 
-    struct EthereumValidator has store, drop {}
+    struct BitcoinValidator has store, drop {}
 
     public fun auth_validator_id(): u64 {
-        ETHEREUM_AUTH_VALIDATOR_ID
+        BITCOIN_AUTH_VALIDATOR_ID
     }
 
     public entry fun rotate_authentication_key_entry(
@@ -43,16 +43,16 @@ module rooch_framework::ethereum_validator {
     }
 
     fun rotate_authentication_key(ctx: &mut Context, account_addr: address, authentication_key: vector<u8>) {
-        account_authentication::rotate_authentication_key<EthereumValidator>(ctx, account_addr, authentication_key);
+        account_authentication::rotate_authentication_key<BitcoinValidator>(ctx, account_addr, authentication_key);
     }
 
     public entry fun remove_authentication_key_entry(ctx: &mut Context, account: &signer) {
-        account_authentication::remove_authentication_key<EthereumValidator>(ctx, signer::address_of(account));
+        account_authentication::remove_authentication_key<BitcoinValidator>(ctx, signer::address_of(account));
     }
 
     public fun get_public_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
         let public_key = vector::empty<u8>();
-        let i = ecdsa_k1_recoverable::signature_length();
+        let i = ecdsa_k1_recoverable::signature_length() ;
         let public_key_position = ecdsa_k1_recoverable::signature_length() + ecdsa_k1_recoverable::public_key_length();
         while (i < public_key_position) {
             let value = vector::borrow(authenticator_payload, i);
@@ -95,7 +95,7 @@ module rooch_framework::ethereum_validator {
 
     /// Get the authentication key option of the given account.
     public fun get_authentication_key_option_from_account(ctx: &Context, addr: address): Option<vector<u8>> {
-        account_authentication::get_authentication_key<EthereumValidator>(ctx, addr)
+        account_authentication::get_authentication_key<BitcoinValidator>(ctx, addr)
     }
 
     /// The authentication key exists in account or not.
@@ -110,9 +110,11 @@ module rooch_framework::ethereum_validator {
 
     /// Only validate the authenticator's signature.
     public fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>) {
+        std::debug::print(tx_hash);
         assert!(
             ecdsa_k1_recoverable::verify(
                 &get_signature_from_authenticator_payload(authenticator_payload),
+                // &get_public_key_from_authenticator_payload(authenticator_payload),
                 tx_hash,
                 1
             ),
@@ -141,6 +143,7 @@ module rooch_framework::ethereum_validator {
         }
     }
 
+    // todo: how to convert publick to address and test
     // this test ensures that the Ethereum public_key_to_address function is compatible with the one in the rust code
     #[test]
     fun test_public_key_to_address() {

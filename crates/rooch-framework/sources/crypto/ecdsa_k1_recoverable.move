@@ -70,12 +70,12 @@ module rooch_framework::ecdsa_k1_recoverable {
     #[test]
     fun test_ecrecover_pubkey() {
         // test case generated against https://github.com/MystenLabs/fastcrypto/blob/f9e64dc028040f863a53a6a88072bda71abd9946/fastcrypto/src/tests/secp256k1_recoverable_tests.rs
-        let msg = b"Hello, world!";
+        let msg = x"464f6fa8230c6afc84101588b17aeb2202d564cce74e013c1961b43b3b76edbb";
 
         // recover with keccak256 hash
-        let sig = x"7e4237ebfbc36613e166bfc5f6229360a9c1949242da97ca04867e4de57b2df30c8340bcb320328cf46d71bda51fcb519e3ce53b348eec62de852e350edbd88600";
-        let pubkey_bytes = x"02337cca2171fdbfcfd657fa59881f46269f1e590b5ffab6023686c7ad2ecc2c1c";
-        let pubkey = ecrecover(&sig, &msg, KECCAK256);
+        let sig = x"1b578cdcbad161fd6b7a4c7478b85e2da3e441c862379dcb1da97e977e21dd0fea5c409f5b36aa1545568595e3b56c8b5234b389a4778e434a7abdee9a7717d5a5";
+        let pubkey_bytes = x"02bc92081a440ade7ca7d5608be7e83711a274498ab18cddb130d8d7ab3a233d12";
+        let pubkey = ecrecover(&sig, &msg, 1);
         assert!(pubkey == pubkey_bytes, 0);
     }
 
@@ -106,9 +106,12 @@ module rooch_framework::ecdsa_k1_recoverable {
 
     #[test]
     fun test_verify_success() {
-        let msg = b"Hello, world!";
-        let sig = x"7e4237ebfbc36613e166bfc5f6229360a9c1949242da97ca04867e4de57b2df30c8340bcb320328cf46d71bda51fcb519e3ce53b348eec62de852e350edbd88600";
-        let result = verify(&sig, &msg, KECCAK256);
+        let msg = b"bb00ee5910f43801849b1e06bdbfcf236378f1bcc5ebbe993b6df1fc794aa8bb";
+        let sig = x"25d450f191f6d844bf5760c5c7b94bc67acc88be76398129d7f43abdef32dc7f7f1a65b7d65991347650f3dd3fa3b3a7f9892a0608521cbcf811ded433b31f8b";
+        let result = verify(&sig, &msg, 1);
+
+        std::debug::print(&result);
+
         assert!(result, 0)
     }
 
