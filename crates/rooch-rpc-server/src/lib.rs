@@ -1,11 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::server::eth_server::{EthNetServer, EthServer};
-use crate::server::rooch_server::RoochServer;
-use crate::service::aggregate_service::AggregateService;
-use crate::service::rpc_logger::RpcLogger;
-use crate::service::rpc_service::RpcService;
+use std::env;
+use std::fmt::Debug;
+use std::net::SocketAddr;
+use std::sync::Arc;
+use std::time::Duration;
+
 use anyhow::{Error, Result};
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
@@ -13,6 +14,11 @@ use hyper::header::HeaderValue;
 use hyper::Method;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
+use serde_json::json;
+use tower_http::cors::{AllowOrigin, CorsLayer};
+use tower_http::trace::TraceLayer;
+use tracing::info;
+
 use moveos_store::{MoveOSDB, MoveOSStore};
 use raw_store::errors::RawStoreError;
 use raw_store::rocks::RocksDB;
@@ -40,15 +46,12 @@ use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{GenesisError, RoochError};
-use serde_json::json;
-use std::env;
-use std::fmt::Debug;
-use std::net::SocketAddr;
-use std::sync::Arc;
-use std::time::Duration;
-use tower_http::cors::{AllowOrigin, CorsLayer};
-use tower_http::trace::TraceLayer;
-use tracing::info;
+
+use crate::server::eth_server::{EthNetServer, EthServer};
+use crate::server::rooch_server::RoochServer;
+use crate::service::aggregate_service::AggregateService;
+use crate::service::rpc_logger::RpcLogger;
+use crate::service::rpc_service::RpcService;
 
 pub mod server;
 pub mod service;

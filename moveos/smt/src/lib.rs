@@ -1,30 +1,31 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
-use jellyfish_merkle::hash::SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE;
-use jellyfish_merkle::{
-    iterator::JellyfishMerkleIterator,
-    node_type::{Node, NodeKey},
-    JellyfishMerkleTree, TreeReader,
-};
-use parking_lot::RwLock;
-use primitive_types::H256;
 use std::{
     collections::{BTreeMap, HashMap},
     marker::PhantomData,
     sync::Arc,
 };
 
+use anyhow::Result;
+use parking_lot::RwLock;
+use primitive_types::H256;
+
+use jellyfish_merkle::hash::SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE;
+pub use jellyfish_merkle::{hash::SPARSE_MERKLE_PLACEHOLDER_HASH, proof::SparseMerkleProof};
+use jellyfish_merkle::{
+    iterator::JellyfishMerkleIterator,
+    node_type::{Node, NodeKey},
+    JellyfishMerkleTree, TreeReader,
+};
+pub use smt_object::{DecodeToObject, EncodeToObject, Key, SMTObject, Value};
+pub use update_set::UpdateSet;
+
 pub(crate) mod jellyfish_merkle;
 mod smt_object;
 #[cfg(test)]
 pub(crate) mod tests;
 mod update_set;
-
-pub use jellyfish_merkle::{hash::SPARSE_MERKLE_PLACEHOLDER_HASH, proof::SparseMerkleProof};
-pub use smt_object::{DecodeToObject, EncodeToObject, Key, SMTObject, Value};
-pub use update_set::UpdateSet;
 
 /// Store the tree nodes
 pub trait NodeStore {
@@ -74,7 +75,7 @@ impl NodeStore for InMemoryNodeStore {
     }
 
     fn write_nodes(&self, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
-        self.inner.write().extend(nodes.into_iter());
+        self.inner.write().extend(nodes);
         Ok(())
     }
 }
