@@ -24,6 +24,7 @@ This module provides a solution for unsorted maps, that is it has the properties
 -  [Function `borrow_mut`](#0x2_simple_map_borrow_mut)
 -  [Function `contains_key`](#0x2_simple_map_contains_key)
 -  [Function `destroy_empty`](#0x2_simple_map_destroy_empty)
+-  [Function `drop`](#0x2_simple_map_drop)
 -  [Function `add`](#0x2_simple_map_add)
 -  [Function `upsert`](#0x2_simple_map_upsert)
 -  [Function `keys`](#0x2_simple_map_keys)
@@ -44,7 +45,7 @@ This module provides a solution for unsorted maps, that is it has the properties
 
 
 
-<pre><code><b>struct</b> <a href="simple_map.md#0x2_simple_map_SimpleMap">SimpleMap</a>&lt;Key, Value&gt; <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="simple_map.md#0x2_simple_map_SimpleMap">SimpleMap</a>&lt;Key, Value&gt; <b>has</b> store
 </code></pre>
 
 
@@ -55,7 +56,7 @@ This module provides a solution for unsorted maps, that is it has the properties
 
 
 
-<pre><code><b>struct</b> <a href="simple_map.md#0x2_simple_map_Element">Element</a>&lt;Key, Value&gt; <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="simple_map.md#0x2_simple_map_Element">Element</a>&lt;Key, Value&gt; <b>has</b> store
 </code></pre>
 
 
@@ -173,6 +174,18 @@ This function is deprecated, use <code>new</code> instead.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_destroy_empty">destroy_empty</a>&lt;Key: store, Value: store&gt;(map: <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;)
+</code></pre>
+
+
+
+<a name="0x2_simple_map_drop"></a>
+
+## Function `drop`
+
+Drop all keys and values in the map. This requires keys and values to be dropable.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_drop">drop</a>&lt;Key: <b>copy</b>, drop, Value: drop&gt;(map: <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;)
 </code></pre>
 
 

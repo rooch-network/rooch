@@ -118,7 +118,7 @@ module moveos_std::type_table {
         assert!(!contains<TestType>(&table), 5);
 
         drop_unchecked(table);
-        
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
@@ -141,7 +141,7 @@ module moveos_std::type_table {
         add<TestType>(&mut table, t);
 
         drop_unchecked(table);
-        
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
@@ -153,7 +153,7 @@ module moveos_std::type_table {
         let _ = borrow<TestType>(&table).val;
 
         drop_unchecked(table);
-        
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
@@ -166,7 +166,7 @@ module moveos_std::type_table {
         t.val = 1;
 
         drop_unchecked(table);
-        
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
@@ -178,7 +178,7 @@ module moveos_std::type_table {
         let TestType { val: _} = remove<TestType>(&mut table);
 
         drop_unchecked(table);
-        
+        moveos_std::tx_context::drop(tx_context); 
     }
 
     #[test(sender = @0x42)]
@@ -193,6 +193,6 @@ module moveos_std::type_table {
         add<TestType>(&mut table, t);
 
         destroy_empty(table);
-        
+        moveos_std::tx_context::drop(tx_context);
     }
 }

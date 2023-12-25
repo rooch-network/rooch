@@ -37,7 +37,7 @@ module moveos_std::tx_context {
     /// Information about the transaction currently being executed.
     /// This cannot be constructed by a transaction--it is a privileged object created by
     /// the VM, stored in a `Context` and passed in to the entrypoint of the transaction as `&mut Context`.
-    struct TxContext has drop {
+    struct TxContext {
         /// The address of the user that signed the current transaction
         sender: address,
         /// Sequence number of this transaction corresponding to sender's account.
@@ -162,6 +162,18 @@ module moveos_std::tx_context {
         
     }
 
+    public fun drop(self: TxContext){
+        let TxContext {
+            sender: _,
+            sequence_number: _,
+            max_gas_amount: _,
+            tx_hash: _,
+            ids_created: _,
+            map,
+        } = self;
+        simple_map::drop(map);
+    }
+
     #[test_only]
     /// Create a TxContext for unit test
     public fun new_test_context(sender: address): TxContext {
@@ -189,10 +201,11 @@ module moveos_std::tx_context {
 
     #[test(sender=@0x42)]
     fun test_context(sender: address) {
-        let ctx = new_test_context(sender);
+        let tx_context = new_test_context(sender);
         let value = TestValue{value: 42};
-        add(&mut ctx, value);
-        let value2 = get<TestValue>(&ctx);
+        add(&mut tx_context, value);
+        let value2 = get<TestValue>(&tx_context);
         assert!(value == option::extract(&mut value2), 1000);
+        moveos_std::tx_context::drop(tx_context);
     }
 }
