@@ -166,9 +166,9 @@ impl<'a> ExtendedChecker<'a> {
         // The private_generics information of the function is looked up from `GLOBAL_PRIVATE_GENERICS`.
         let type_name_indices = get_type_name_indices(self.env, module, &mut func_loc_map);
         // #TODO: Ensure that the length of the private_generics type list is either none or full，but not partly.
-        if type_name_indices.is_empty() {
-            return;
-        }
+        //if type_name_indices.is_empty() {
+        //    return;
+        //}
 
         // Inspect the bytecode of every function, and if an instruction is CallGeneric,
         // verify that it calls a function with the private_generics attribute as detected earlier.
