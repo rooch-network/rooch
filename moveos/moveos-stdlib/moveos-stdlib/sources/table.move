@@ -146,6 +146,7 @@ module moveos_std::table {
         assert!(*borrow(&t, key) == 23, error_code);
 
         drop_unchecked(t);
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
@@ -161,6 +162,7 @@ module moveos_std::table {
         assert!(*borrow_with_default(&t, key, &12) == 1, error_code);
 
         drop_unchecked(t);
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
@@ -181,6 +183,7 @@ module moveos_std::table {
         };
         assert!(*borrow(&t, key) == 1, 1003);
         drop_unchecked(t);
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
@@ -198,6 +201,7 @@ module moveos_std::table {
         remove(&mut t, key);
         assert!(!contains(&t, key), error_code);
         drop_unchecked(t);
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
@@ -211,7 +215,7 @@ module moveos_std::table {
         add(&mut t, key, 2);
 
         drop_unchecked(t);
-        
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
@@ -224,7 +228,7 @@ module moveos_std::table {
         let _ = borrow(&mut t, key);
 
         drop_unchecked(t);
-        
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
@@ -237,7 +241,7 @@ module moveos_std::table {
         let _ = borrow_mut(&mut t, key);
 
         drop_unchecked(t);
-        
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
@@ -250,7 +254,7 @@ module moveos_std::table {
         remove(&mut t, key);
 
         drop_unchecked(t);
-        
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
@@ -283,7 +287,7 @@ module moveos_std::table {
         
         drop_unchecked(t3); // No need to drop t2 as t2 shares same handle with t3
         drop_unchecked(t1);
-        
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
@@ -296,7 +300,7 @@ module moveos_std::table {
         add(&mut t, key, 1);
 
         destroy_empty(t);
-        
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
@@ -320,7 +324,7 @@ module moveos_std::table {
         assert!(*borrow(&t2, t2_key) == 32u32, 1);
 
         drop_unchecked(t2);
-        
+        moveos_std::tx_context::drop(tx_context);
     }
 
 

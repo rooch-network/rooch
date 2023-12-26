@@ -88,9 +88,9 @@ module bitcoin_move::ord {
         context::borrow_object(ctx, object_id)
     }
 
-    public fun spend_utxo(ctx: &mut Context, utxo_obj: &Object<UTXO>, tx: &Transaction): vector<SealOut>{
-        let utxo = object::borrow(utxo_obj);
-        let seal_object_ids = utxo::get_seals<Inscription>(utxo);
+    public fun spend_utxo(ctx: &mut Context, utxo_obj: &mut Object<UTXO>, tx: &Transaction): vector<SealOut>{
+        let utxo = object::borrow_mut(utxo_obj);
+        let seal_object_ids = utxo::remove_seals<Inscription>(utxo);
         let seal_outs = vector::empty();
         if(vector::is_empty(&seal_object_ids)){
             return seal_outs

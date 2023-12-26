@@ -41,7 +41,7 @@ module bitcoin_move::brc20 {
     }
 
     /// The brc20 operation
-    struct Op has store, copy, drop {
+    struct Op has store {
         json_map: SimpleMap<String, String>,
     }
 
@@ -94,6 +94,11 @@ module bitcoin_move::brc20 {
         amt: String,
     }
 
+    public fun drop_op(op: Op){
+        let Op{json_map} = op;
+        simple_map::drop(json_map);
+    }
+
     public fun is_brc20(self: &Op) : bool {
         let protocol_key = string::utf8(b"p");
         simple_map::contains_key(&self.json_map, &protocol_key) && simple_map::borrow(&self.json_map, &protocol_key) == &string::utf8(b"brc-20")
@@ -104,8 +109,8 @@ module bitcoin_move::brc20 {
         simple_map::contains_key(&self.json_map, &op_key) && simple_map::borrow(&self.json_map, &op_key) == &string::utf8(b"deploy")
     }
 
-    public fun as_deploy(self: &Op) : Option<DeployOp> {
-        if (is_brc20(self) && is_deploy(self)) {
+    public fun as_deploy(self: Op) : Option<DeployOp> {
+        let deploy_op = if (is_brc20(&self) && is_deploy(&self)) {
             let tick_key = string::utf8(b"tick");
             let max_key = string::utf8(b"max");
             if(simple_map::contains_key(&self.json_map, &tick_key) && simple_map::contains_key(&self.json_map,&max_key)) {
@@ -119,7 +124,9 @@ module bitcoin_move::brc20 {
             }
         } else {
             option::none()
-        }
+        };
+        drop_op(self);
+        deploy_op
     }
 
     fun execute_deploy(ctx: &mut Context, brc20_store: &mut BRC20Store, deploy: DeployOp): bool{
@@ -147,8 +154,8 @@ module bitcoin_move::brc20 {
         simple_map::contains_key(&self.json_map, &op_key) && simple_map::borrow(&self.json_map, &op_key) == &string::utf8(b"mint")
     }
 
-    public fun as_mint(self: &Op) : Option<MintOp> {
-        if (is_brc20(self) && is_mint(self)) {
+    public fun as_mint(self: Op) : Option<MintOp> {
+        let mint_op = if (is_brc20(&self) && is_mint(&self)) {
             let tick_key = string::utf8(b"tick");
             let amt_key = string::utf8(b"amt");
             if(simple_map::contains_key(&self.json_map, &tick_key) && simple_map::contains_key(&self.json_map,&amt_key)) {
@@ -160,7 +167,9 @@ module bitcoin_move::brc20 {
             }
         } else {
             option::none()
-        }
+        };
+        drop_op(self);
+        mint_op
     }
 
     fun execute_mint(brc20_store: &mut BRC20Store, mint: MintOp, sender: BitcoinAddress): bool{
@@ -198,8 +207,8 @@ module bitcoin_move::brc20 {
         simple_map::contains_key(&self.json_map, &op_key) && simple_map::borrow(&self.json_map, &op_key) == &string::utf8(b"transfer")
     }
 
-    public fun as_transfer(self: &Op) : Option<TransferOp> {
-        if (is_brc20(self) && is_transfer(self)) {
+    public fun as_transfer(self: Op) : Option<TransferOp> {
+        let transfer_op = if (is_brc20(&self) && is_transfer(&self)) {
             let tick_key = string::utf8(b"tick");
             let amt_key = string::utf8(b"amt");
             if(simple_map::contains_key(&self.json_map, &tick_key) && simple_map::contains_key(&self.json_map,&amt_key)) {
@@ -211,7 +220,9 @@ module bitcoin_move::brc20 {
             }
         } else {
             option::none()
-        }
+        };
+        drop_op(self);
+        transfer_op
     }
 
     fun execute_transfer(brc20_store: &mut BRC20Store, transfer: TransferOp, sender: BitcoinAddress, receiver: BitcoinAddress): bool{
@@ -251,6 +262,7 @@ module bitcoin_move::brc20 {
         // };
         let json_map = json::to_map(inscription_body);
         if(simple_map::length(&json_map) == 0){
+            simple_map::destroy_empty(json_map);
             return option::none()
         };
         option::some(Op { json_map })
@@ -268,6 +280,8 @@ module bitcoin_move::brc20 {
             if(option::is_some(&op_opt)){
                 let op = option::destroy_some(op_opt);
                 vector::push_back(&mut op_vector, op);
+            }else{
+                option::destroy_none(op_opt);
             };
             idx = idx + 1;
         };
@@ -278,38 +292,39 @@ module bitcoin_move::brc20 {
         if(!is_brc20(&op)){
             std::debug::print(&string::utf8(b"not brc20 op"));
             std::debug::print(&op);
+            drop_op(op);
             return
         };
         
         if(is_deploy(&op)){
-            let deploy_op_opt = as_deploy(&op);
+            let deploy_op_opt = as_deploy(op);
             if(option::is_none(&deploy_op_opt)){
-                std::debug::print(&string::utf8(b"invalid deploy op"));
-                std::debug::print(&op);
+                //std::debug::print(&string::utf8(b"invalid deploy op"));
+                //std::debug::print(&op);
                 return
             };
             let deploy_op = option::destroy_some(deploy_op_opt);
             let result = execute_deploy(ctx, brc20_store, deploy_op);
             if(!result){
-                std::debug::print(&string::utf8(b"failed to execute deploy op"));
-                std::debug::print(&op);
+                //std::debug::print(&string::utf8(b"failed to execute deploy op"));
+                //std::debug::print(&op);
                 return
             };
         }else if(is_mint(&op)){
-            let mint_op_opt = as_mint(&op);
+            let mint_op_opt = as_mint(op);
             if(option::is_none(&mint_op_opt)){
-                std::debug::print(&string::utf8(b"invalid mint op"));
-                std::debug::print(&op);
+                //std::debug::print(&string::utf8(b"invalid mint op"));
+                //std::debug::print(&op);
                 return
             };
             let mint_op = option::destroy_some(mint_op_opt);
             //TODO get sender from inscription and handle mint_op
             std::debug::print(&mint_op);
         }else if(is_transfer(&op)){
-            let transfer_op_opt = as_transfer(&op);
+            let transfer_op_opt = as_transfer(op);
             if(option::is_none(&transfer_op_opt)){
-                std::debug::print(&string::utf8(b"invalid transfer op"));
-                std::debug::print(&op);
+                //std::debug::print(&string::utf8(b"invalid transfer op"));
+                //std::debug::print(&op);
                 return
             };
             let transfer_op = option::destroy_some(transfer_op_opt);
@@ -318,6 +333,7 @@ module bitcoin_move::brc20 {
         }else{
             std::debug::print(&string::utf8(b"unknown brc20 op"));
             std::debug::print(&op);
+            drop_op(op);
             return
         }
     }
@@ -334,7 +350,7 @@ module bitcoin_move::brc20 {
         let op = Op { json_map: json::to_map(deploy_op_json) };
         assert!(is_brc20(&op), 1);
         assert!(is_deploy(&op), 2);
-        let deploy_op_opt = as_deploy(&op);
+        let deploy_op_opt = as_deploy(op);
         assert!(option::is_some(&deploy_op_opt), 3);
         let deploy_op = option::destroy_some(deploy_op_opt);
         assert!(deploy_op.tick == string::utf8(b"ordi"), 4);
@@ -349,7 +365,7 @@ module bitcoin_move::brc20 {
         let op = Op { json_map: json::to_map(mint_op_json) };
         assert!(is_brc20(&op), 1);
         assert!(is_mint(&op), 2);
-        let mint_op_opt = as_mint(&op);
+        let mint_op_opt = as_mint(op);
         assert!(option::is_some(&mint_op_opt), 3);
         let mint_op = option::destroy_some(mint_op_opt);
         assert!(mint_op.tick == string::utf8(b"ordi"), 4);
@@ -362,7 +378,7 @@ module bitcoin_move::brc20 {
         let op = Op { json_map: json::to_map(transfer_op_json) };
         assert!(is_brc20(&op), 1);
         assert!(is_transfer(&op), 2);
-        let transfer_op_opt = as_transfer(&op);
+        let transfer_op_opt = as_transfer(op);
         assert!(option::is_some(&transfer_op_opt), 3);
         let transfer_op = option::destroy_some(transfer_op_opt);
         assert!(transfer_op.tick == string::utf8(b"ordi"), 4);
@@ -378,18 +394,18 @@ module bitcoin_move::brc20 {
         };
         let deploy_op_json = b"{\"p\":\"brc-20\",\"op\":\"deploy\",\"tick\":\"ordi\",\"max\":\"21000000\",\"lim\":\"1000\"}";
         let op = Op { json_map: json::to_map(deploy_op_json) };
-        let deploy_op = option::destroy_some(as_deploy(&op));
+        let deploy_op = option::destroy_some(as_deploy(op));
         assert!(execute_deploy(&mut ctx, &mut brc20_store, deploy_op), 1);
 
         let mint_op_json = b"{\"p\":\"brc-20\",\"op\":\"mint\",\"tick\":\"ordi\",\"amt\":\"1000\"}";
         let op = Op { json_map: json::to_map(mint_op_json) };
-        let mint_op = option::destroy_some(as_mint(&op));
+        let mint_op = option::destroy_some(as_mint(op));
         let btc_address1 = rooch_framework::bitcoin_address::from_bytes(x"01");
         assert!(execute_mint(&mut brc20_store, mint_op, btc_address1), 2);
         
         let transfer_op_json = b"{\"p\":\"brc-20\",\"op\":\"transfer\",\"tick\":\"ordi\",\"amt\":\"1000\"}";
         let op = Op { json_map: json::to_map(transfer_op_json) };
-        let transfer_op = option::destroy_some(as_transfer(&op));
+        let transfer_op = option::destroy_some(as_transfer(op));
         let btc_address2 = rooch_framework::bitcoin_address::from_bytes(x"02");
         assert!(execute_transfer(&mut brc20_store, transfer_op, btc_address1, btc_address2), 3);
         

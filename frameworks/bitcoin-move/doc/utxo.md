@@ -19,6 +19,7 @@
 -  [Function `seal`](#0x4_utxo_seal)
 -  [Function `has_seal`](#0x4_utxo_has_seal)
 -  [Function `get_seals`](#0x4_utxo_get_seals)
+-  [Function `remove_seals`](#0x4_utxo_remove_seals)
 -  [Function `add_seal`](#0x4_utxo_add_seal)
 -  [Function `transfer`](#0x4_utxo_transfer)
 -  [Function `take`](#0x4_utxo_take)
@@ -195,6 +196,17 @@ Seal the UTXO with a protocol, the T is the protocol object
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_get_seals">get_seals</a>&lt;T&gt;(<a href="utxo.md#0x4_utxo">utxo</a>: &<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>): <a href="">vector</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_utxo_remove_seals"></a>
+
+## Function `remove_seals`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_remove_seals">remove_seals</a>&lt;T&gt;(<a href="utxo.md#0x4_utxo">utxo</a>: &<b>mut</b> <a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>): <a href="">vector</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
 </code></pre>
 
 
