@@ -6,11 +6,12 @@ module rooch_framework::address_mapping{
     use std::option::{Self, Option};
     use std::signer;
     use std::vector;
+    use rooch_framework::core_addresses::assert_framework_reserved_address;
     use moveos_std::bcs;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
-    use moveos_std::object::{Self, Object}; 
-    use rooch_framework::multichain_address::{Self, MultiChainAddress, multichain_id_rooch};
+    use moveos_std::object::{Self, Object, ObjectID};
+    use rooch_framework::multichain_address::{Self, MultiChainAddress};
 
     friend rooch_framework::genesis;
     friend rooch_framework::transaction_validator;
@@ -31,6 +32,14 @@ module rooch_framework::address_mapping{
             reverse_mapping
         });
         object::transfer_extend(obj, @rooch_framework);
+    }
+
+    /// Return AddressMapping table handle, including mapping and reverse_mapping table handle
+    public fun address_mapping_handle(ctx: &Context): (ObjectID, ObjectID, ObjectID) {
+        let object_id = object::named_object_id<AddressMapping>();
+        let address_mapping_obj = context::borrow_object<AddressMapping>(ctx, object_id);
+        let address_mapping = object::borrow<AddressMapping>(address_mapping_obj);
+        (object_id, *table::handle(&address_mapping.mapping), *table::handle(&address_mapping.reverse_mapping))
     }
 
     /// Borrow the address mapping object
@@ -67,7 +76,7 @@ module rooch_framework::address_mapping{
     }
 
     /// Return the first multi chain address for the rooch address
-    public fun resolve_multi_chain_address(obj: &Object<AddressMapping>, rooch_address: address): Option<MultiChainAddress> {
+    public fun reverse_resolve_address(obj: &Object<AddressMapping>, rooch_address: address): Option<MultiChainAddress> {
         let am = object::borrow(obj);
         if(table::contains(&am.reverse_mapping, rooch_address)){
             let maddresses = table::borrow(&am.reverse_mapping, rooch_address);
@@ -82,7 +91,7 @@ module rooch_framework::address_mapping{
     }
 
     /// Return the first multi chain address for the rooch address with the same multichain id
-    public fun resolve_multi_chain_address_with_multichain_id(obj: &Object<AddressMapping>, rooch_address: address, multichain_id: u64): Option<MultiChainAddress> {
+    public fun reverse_resolve_address_with_multichain_id(obj: &Object<AddressMapping>, rooch_address: address, multichain_id: u64): Option<MultiChainAddress> {
         let am = object::borrow(obj);
         if (multichain_id == multichain_address::multichain_id_rooch()) {
             let raw_address = bcs::to_bytes(&rooch_address);
@@ -131,7 +140,14 @@ module rooch_framework::address_mapping{
     /// The caller need to ensure the relationship between the multi-chain address and the rooch address
     public fun bind(ctx: &mut Context, sender: &signer, maddress: MultiChainAddress) {
         bind_no_check(ctx, signer::address_of(sender), maddress);
-    } 
+    }
+
+    /// Bind a multi-chain address to the rooch address
+    /// Called by system
+    public fun bind_by_system(ctx: &mut Context, system: &signer, rooch_address: address, maddress: MultiChainAddress) {
+        assert_framework_reserved_address(system);
+        bind_no_check(ctx, rooch_address, maddress);
+    }
 
     /// Bind a rooch address to a multi-chain address
     public(friend) fun bind_no_check(ctx: &mut Context, rooch_address: address, maddress: MultiChainAddress) {

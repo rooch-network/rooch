@@ -7,3 +7,4 @@ pub mod brc20;
 pub mod light_client;
 pub mod ord;
 pub mod types;
+pub mod utxo;

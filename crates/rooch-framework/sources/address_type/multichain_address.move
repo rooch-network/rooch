@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_framework::multichain_address {
-    
+
     use rooch_framework::ethereum_address::{Self, ETHAddress};
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
     use rooch_framework::hash::{blake2b256};

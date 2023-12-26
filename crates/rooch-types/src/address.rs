@@ -22,6 +22,7 @@ use move_core_types::{
 };
 #[cfg(any(test, feature = "fuzzing"))]
 use moveos_types::h256;
+use moveos_types::state::MoveState;
 use moveos_types::{
     h256::H256,
     state::{MoveStructState, MoveStructType},
@@ -198,7 +199,7 @@ impl MoveStructType for MultiChainAddress {
 impl MoveStructState for MultiChainAddress {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![
-            MoveTypeLayout::U32,
+            RoochMultiChainID::type_layout(),
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
         ])
     }

@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::server::btc_server::BtcServer;
 use crate::server::eth_server::{EthNetServer, EthServer};
 use crate::server::rooch_server::RoochServer;
 use crate::service::aggregate_service::AggregateService;
@@ -321,6 +322,10 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     rpc_module_builder.register_module(EthNetServer::new(chain_id_opt.chain_id()))?;
     rpc_module_builder.register_module(EthServer::new(
         chain_id_opt.chain_id(),
+        rpc_service.clone(),
+        aggregate_service.clone(),
+    ))?;
+    rpc_module_builder.register_module(BtcServer::new(
         rpc_service.clone(),
         aggregate_service.clone(),
     ))?;

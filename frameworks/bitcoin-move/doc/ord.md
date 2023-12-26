@@ -23,6 +23,7 @@
 -  [Function `unpack_record`](#0x4_ord_unpack_record)
 -  [Function `from_transaction`](#0x4_ord_from_transaction)
 -  [Function `from_transaction_bytes`](#0x4_ord_from_transaction_bytes)
+-  [Function `bind_multichain_address`](#0x4_ord_bind_multichain_address)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -32,6 +33,10 @@
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::signer</a>;
+<b>use</b> <a href="">0x3::address_mapping</a>;
+<b>use</b> <a href="">0x3::bitcoin_address</a>;
+<b>use</b> <a href="">0x3::multichain_address</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 <b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
 </code></pre>
@@ -232,4 +237,15 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_from_transaction_bytes">from_transaction_bytes</a>(transaction_bytes: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_InscriptionRecord">ord::InscriptionRecord</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_bind_multichain_address"></a>
+
+## Function `bind_multichain_address`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_bind_multichain_address">bind_multichain_address</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, rooch_address: <b>address</b>, bitcoin_address_opt: <a href="_Option">option::Option</a>&lt;<a href="_BitcoinAddress">bitcoin_address::BitcoinAddress</a>&gt;)
 </code></pre>

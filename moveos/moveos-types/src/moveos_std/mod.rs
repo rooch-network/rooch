@@ -12,6 +12,7 @@ pub mod move_module;
 pub mod object;
 pub mod raw_table;
 pub mod simple_map;
+pub mod simple_multimap;
 pub mod tx_context;
 pub mod tx_meta;
 pub mod tx_result;
