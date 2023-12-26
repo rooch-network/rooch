@@ -45,6 +45,17 @@ module moveos_std::simple_map {
         new()
     }
 
+    public fun clone<Key: store+copy, Value: store+copy>(map: &SimpleMap<Key,Value>): SimpleMap<Key, Value>{
+        let data = vector::empty();
+        vector::for_each_ref(&map.data, |e|{ 
+            let elem :&Element<Key, Value> = e;
+            vector::push_back(&mut data, Element{key: elem.key, value: elem.value});
+         });
+        SimpleMap{
+            data
+        }
+    }
+
     public fun borrow<Key: store, Value: store>(
         map: &SimpleMap<Key, Value>,
         key: &Key,
@@ -309,5 +320,18 @@ module moveos_std::simple_map {
         assert!(borrow(&map, &1) == &4, 9);
 
         drop(map);
+    }
+
+    #[test]
+    public fun test_clone(){
+        let map = create<u64, u64>();
+        add(&mut map, 1, 1);
+        add(&mut map, 2, 2);
+        let map2 = clone(&map);
+        assert!(length(&map2) == 2, 0);
+        assert!(contains_key(&map2, &1), 1);
+        assert!(contains_key(&map2, &2), 2);
+        drop(map);
+        drop(map2);
     }
 }
