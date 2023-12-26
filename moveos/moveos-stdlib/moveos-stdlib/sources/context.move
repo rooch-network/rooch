@@ -292,14 +292,15 @@ module moveos_std::context {
     }
 
     #[private_generics(T)]
-    /// Take out the UserOwnedObject by `object_id`
+    /// Take out the UserOwnedObject by `object_id`, return the owner and Object
     /// This function is for developer to extend, Only the module of `T` can take out the `UserOwnedObject` with object_id.
-    public fun take_object_extend<T: key>(_self: &mut Context, object_id: ObjectID): Object<T> {
+    public fun take_object_extend<T: key>(_self: &mut Context, object_id: ObjectID): (address, Object<T>) {
         let object_entity = object::borrow_mut_from_global<T>(object_id);
         assert!(object::is_user_owned_internal(object_entity), ErrorObjectOwnerNotMatch);
         assert!(!object::is_bound_internal(object_entity), ErrorObjectIsBound);
+        let owner = object::owner_internal(object_entity);
         object::to_system_owned_internal(object_entity);
-        object::mut_entity_as_object(object_entity)
+        (owner, object::mut_entity_as_object(object_entity))
     }
 
     /// Borrow mut Shared Object by object_id
