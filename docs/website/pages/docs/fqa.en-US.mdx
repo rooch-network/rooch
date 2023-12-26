@@ -1,54 +1,54 @@
-# FQA
+# FAQ
 
 ## Session key
 
-### Session key 是什么？
+### What is Session key?
 
-Rooch 的 Session key 是一个方便用户跟链交互的一种临时密钥。
+Rooch's Session key is a temporary key that facilitates user interaction with the chain.
 
 ### Session key 有什么用？
 
-当使用 Rooch Dashboard 跟应用交互时，每个会自动生成一个 Session Key。它有过期时间，如果长时间没有交互操作，就会失效。
+When using Rooch Dashboard to interact with applications, each will automatically generate a Session Key. It has an expiration time and will become invalid if there is no interaction for a long time.
 
-Session Key 的作用是为了简化钱包跟 DApp 的交互过程，第一次交互时生成了 Session key，后续操作只要 Session key 没有过期，那么 DApp 就不需要再次调用钱包进行签名了。
+The purpose of the Session Key is to simplify the interaction process between the wallet and the DApp. The Session key is generated during the first interaction. As long as the Session key has not expired in subsequent operations, the DApp does not need to call the wallet again for signing.
 
-更详细的使用介绍，请参考 [Dashboard](./user-guides/dashboard.zh-CN.mdx)。
+For more detailed usage introduction, please refer to [Dashboard](./user-guides/dashboard.en-US.mdx).
 
 ## Object
 
-### Rooch 中的 Object 是什么？
+### What is Object in Rooch?
 
-Object 是一种存储方式，它跟资源存储不同，详细的介绍可以参考 [quick start](./developer-guides/quick-start.zh-CN.mdx)。这篇教程详细介绍了两种存储方式的区别。
+Object is a storage method, which is different from resource storage. For detailed introduction, please refer to [quick start](./developer-guides/quick-start.en-US.mdx). This tutorial details the differences between the two storage methods.
 
-### 如何查找对象 ID
+### How to find the object ID
 
-目前可以通过 Event 来把对象 ID 封装成事件，在执行某些创建对象的操作时可以加入发出事件的逻辑，这样就可以通过 JSON-RPC 来获取对象 ID，详细方法可以参考 [quick start](./developer-guides/quick-start.zh-CN.mdx)。
+Currently, the object ID can be encapsulated into an event through Event. When performing certain operations to create an object, the logic of emitting events can be added, so that the object ID can be obtained through JSON-RPC. For detailed methods, please refer to [quick start](./developer-guides/quick-start.en-US.mdx).
 
-### 什么是 named object？
+### What is a named object?
 
-命名对象是为了方便开发者获取对象的一种简便方法，命名对象必须全局唯一。
+Named objects are a convenient way for developers to obtain objects. Named objects must be globally unique.
 
-比如 `0x2::object::ObjectEntity<0x3::timestamp::Timestamp>` 这个类型，在这个地址上是唯一的。
+For example, the type `0x2::object::ObjectEntity<0x3::timestamp::Timestamp>` is unique at this address.
 
-一般情况下我们创建了某个对象，需要获取对象 ID 才能对它进行后续操作，但是使用 named object 就可以直接在参数里传递类型，而不是 ID。
+Normally when we create an object, we need to obtain the object ID to perform subsequent operations on it. However, using named object allows us to directly pass the type in the parameter instead of the ID.
 
-### 调用函数时，对象要怎么传递？
+### How to pass objects when calling functions?
 
 - `object:object_id`
 - `typename`
 
-在 `--args` 后面按照上面两种格式传递即可，详细的使用可以参考 [quick start](./developer-guides/quick-start.zh-CN.mdx)。
+Just pass it in the above two formats after `--args`. For detailed usage, please refer to [quick start](./developer-guides/quick-start.en-US.mdx).
 
 ## Ability
 
-### `Coin<T>` 的 `T` 一定要有 `store` 能力吗？
+### Does `T` of `Coin<T>` have to have store ability?
 
-`Coin<T>` 的 `T` 是否需要带 `T`，由开发者决定。
+Whether the `T` of `Coin<T>` needs to contain `T` is decided by the developer.
 
 ## Network
 
-### Rooch 有哪些网络？
+### What networks does Rooch have?
 
-目前已经启动了 `dev` 开发网络，即将发布 `test` 测试网。
+The `dev` development network has been launched and the `test` network will be released soon.
 
-当前可用的 Rooch RPC 节点地址：`https://dev-seed.rooch.network:443/`。
+Currently available Rooch RPC node address: `https://dev-seed.rooch.network:443/`.
