@@ -33,18 +33,23 @@ impl Backend {
     }
 
     // TODO return segment id, height, commitment
-    pub async fn submit(&self, segment: Segment) -> Result<()> {
+    pub async fn submit(&self, segment: Segment) -> Result<SubmitBackendResult> {
         let data = bcs::to_bytes(&segment).unwrap();
         let blob = Blob::new(self.namespace, data).unwrap();
 
         // TODO tx manager
         // TODO backoff retry
-        return match self
+        match self
             .client
             .blob_submit(&[blob.clone()], SubmitOptions::default())
             .await
         {
-            Ok(_) => Ok(()),
+            Ok(height) => Ok(SubmitBackendResult {
+                segment_id: segment.id,
+                namespace: self.namespace,
+                height,
+                commitment: blob.commitment,
+            }),
             Err(e) => {
                 log::warn!(
                     "failed to submit segment to celestia node, chunk: {}, segment: {}, commitment: {:?}, error:{:?}",
@@ -55,6 +60,6 @@ impl Backend {
                 );
                 Err(e.into())
             }
-        };
+        }
     }
 }

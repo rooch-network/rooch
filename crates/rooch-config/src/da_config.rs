@@ -21,6 +21,7 @@ pub struct DAConfig {
         long,
         help = "specifies the type of internal DA server to be used. 'celestia' with corresponding Celestia server configuration, 'xxx' with corresponding xxx server configuration, etc."
     )]
+    // TODO multi servers
     pub internal_da_server: Option<DAServerType>,
 }
 
@@ -69,7 +70,7 @@ impl Default for DAServerCelestiaConfig {
             namespace: None,
             conn: None,
             auth_token: None,
-            max_segment_size: Some(1 * 1024 * 1024),
+            max_segment_size: Some(1024 * 1024),
         }
     }
 }

@@ -11,7 +11,6 @@ use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::state::{AnnotatedState, MoveStructType, State};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
-use rooch_da::proxy::DAProxy;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_proposer::proxy::ProposerProxy;

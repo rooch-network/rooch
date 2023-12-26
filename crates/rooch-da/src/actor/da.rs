@@ -9,7 +9,7 @@ use coerce::actor::Actor;
 
 use crate::messages::{Batch, PutBatchMessage};
 use crate::server::serverproxy::DAServerProxy;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, RwLock};
 
 // TODO tx buffer for building batch
 pub struct DAActor {
