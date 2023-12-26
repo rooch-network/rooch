@@ -1,10 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::actor::messages::TransactionProposeMessage;
-use moveos_types::h256::H256;
-use rooch_types::block::Block;
 use std::collections::BTreeMap;
+
+use moveos_types::h256;
+use moveos_types::h256::H256;
+use rooch_da::messages::{Batch, BatchMeta};
+use rooch_da::proxy::DAProxy;
+use rooch_types::block::Block;
+use rooch_types::transaction::AbstractTransaction;
+
+use crate::actor::messages::TransactionProposeMessage;
 
 /// State Commitment Chain(SCC) is a chain of transaction state root
 /// This SCC is a mirror of the on-chain SCC
@@ -12,20 +18,16 @@ pub struct StateCommitmentChain {
     //TODO save to the storage
     blocks: BTreeMap<u128, Block>,
     buffer: Vec<TransactionProposeMessage>,
-}
-
-impl Default for StateCommitmentChain {
-    fn default() -> Self {
-        Self::new()
-    }
+    da: DAProxy,
 }
 
 impl StateCommitmentChain {
     /// Create a new SCC
-    pub fn new() -> Self {
+    pub fn new(da_proxy: DAProxy) -> Self {
         Self {
             blocks: BTreeMap::new(),
             buffer: Vec::new(),
+            da: da_proxy,
         }
     }
 
@@ -49,7 +51,7 @@ impl StateCommitmentChain {
     }
 
     /// Trigger the proposer to propose a new block
-    pub fn propose_block(&mut self) -> Option<&Block> {
+    pub async fn propose_block(&mut self) -> Option<&Block> {
         if self.buffer.is_empty() {
             return None;
         }
@@ -61,6 +63,7 @@ impl StateCommitmentChain {
             .iter()
             .map(|tx| tx.tx_execution_info.state_root)
             .collect();
+
         let batch_size = self.buffer.len() as u64;
         let last_block = self.last_block();
         let (block_number, prev_tx_accumulator_root) = match last_block {
@@ -75,6 +78,24 @@ impl StateCommitmentChain {
                 (block_number, prev_tx_accumulator_root)
             }
         };
+
+        // submit batch to DA server
+        // TODO move batch submit out of proposer
+        let batch_data: Vec<u8> = self.buffer.iter().flat_map(|tx| tx.tx.encode()).collect();
+        // regard batch(tx list) as a blob: easy to check integrity
+        let batch_hash = h256::sha3_256_of(&batch_data);
+        let _ = self
+            .da
+            .submit_batch(Batch {
+                meta: BatchMeta {
+                    block_number,
+                    batch_hash,
+                    signature: vec![],
+                },
+                data: batch_data,
+            })
+            .await;
+
         let new_block = Block::new(
             block_number,
             batch_size,

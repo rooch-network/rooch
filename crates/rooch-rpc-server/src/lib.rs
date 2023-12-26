@@ -23,10 +23,17 @@ use moveos_store::{MoveOSDB, MoveOSStore};
 use raw_store::errors::RawStoreError;
 use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
+use rooch_config::da_config::{DAConfig, DAServerType};
 use rooch_config::indexer_config::IndexerConfig;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::store_config::StoreConfig;
 use rooch_config::{BaseConfig, RoochOpt, ServerOpt};
+use rooch_da::actor::da::DAActor;
+use rooch_da::proxy::DAProxy;
+use rooch_da::server::celestia::actor::server::DAServerCelestiaActor;
+use rooch_da::server::celestia::proxy::DAServerCelestiaProxy;
+use rooch_da::server::serverproxy::DAServerNopProxy;
+use rooch_da::server::serverproxy::DAServerProxy;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::actor::indexer::IndexerActor;
@@ -228,11 +235,32 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
+    // Init DA
+    let da_config = DAConfig::default(); // TODO use opt
+    let internal_da_server_config = da_config.internal_da_server.clone();
+    let da_server_proxy: Arc<dyn DAServerProxy + Send + Sync> = match internal_da_server_config {
+        Some(DAServerType::Celestia(celestia_config)) => {
+            let da_server = DAServerCelestiaActor::new(&celestia_config)
+                .await
+                .into_actor(Some("DAServerCelestia"), &actor_system)
+                .await?;
+            Arc::new(DAServerCelestiaProxy::new(da_server.clone().into()))
+        }
+        _ => Arc::new(DAServerNopProxy {}),
+    };
+    let servers: Vec<Arc<dyn DAServerProxy + Send + Sync>> = vec![da_server_proxy];
+    let da_proxy = DAProxy::new(
+        DAActor::new(servers)
+            .into_actor(Some("DAProxy"), &actor_system)
+            .await?
+            .into(),
+    );
+
     // Init proposer
     let proposer_keypair = server_opt.proposer_keypair.unwrap();
     let proposer_account: RoochAddress = (&proposer_keypair.public()).into();
     info!("RPC Server proposer address: {:?}", proposer_account);
-    let proposer = ProposerActor::new(proposer_keypair)
+    let proposer = ProposerActor::new(proposer_keypair, da_proxy)
         .into_actor(Some("Proposer"), &actor_system)
         .await?;
     let proposer_proxy = ProposerProxy::new(proposer.clone().into());
