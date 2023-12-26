@@ -10,7 +10,7 @@ use itertools::Itertools;
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::{Location, PartialVMError, VMResult};
 use move_binary_format::file_format::{
-    Ability, Bytecode, FunctionInstantiation, SignatureToken, Visibility,
+    Ability, Bytecode, FunctionHandleIndex, FunctionInstantiation, SignatureToken, Visibility,
 };
 use move_binary_format::CompiledModule;
 use move_core_types::language_storage::ModuleId;
@@ -151,9 +151,6 @@ impl<'a> ExtendedChecker<'a> {
 
 impl<'a> ExtendedChecker<'a> {
     fn check_private_generics_functions(&mut self, module: &ModuleEnv) {
-        // The `type_name_indices` is used to save the private_generics information of the found function to the metadata of the module.
-        // The private_generics information of the function is looked up from `GLOBAL_PRIVATE_GENERICS`.
-        let mut type_name_indices: BTreeMap<String, Vec<usize>> = BTreeMap::new();
         let mut func_loc_map = BTreeMap::new();
 
         let compiled_module = match module.get_verified_module() {
@@ -165,187 +162,19 @@ impl<'a> ExtendedChecker<'a> {
 
         let view = BinaryIndexedView::Module(compiled_module);
 
-        // Check every function and if a function has the private_generics attribute,
-        // ensure that the function name and the types defined in the private_generics attribute match,
-        // for example: #[private_generics(T1, T2)].
-        for ref fun in module.get_functions() {
-            if self.has_attribute(fun, PRIVATE_GENERICS_ATTRIBUTE) {
-                let mut func_type_params_name_list = vec![];
-                let type_params = fun.get_type_parameters();
-                for t in type_params {
-                    let type_name = self.env.symbol_pool().string(t.0).as_str().to_string();
-                    func_type_params_name_list.push(type_name);
-                }
-
-                if func_type_params_name_list.is_empty() {
-                    self.env
-                        .error(&fun.get_loc(), "Function do not has type parameter.");
-                }
-
-                let attributes = fun.get_attributes();
-
-                for attr in attributes {
-                    if let Attribute::Apply(_, _, types) = attr {
-                        if types.is_empty() {
-                            self.env.error(
-                                &fun.get_loc(),
-                                "A type name is needed for private generics.",
-                            );
-                        }
-
-                        let mut attribute_type_index = vec![];
-                        let mut attribute_type_names = vec![];
-                        for (idx, type_name) in func_type_params_name_list.iter().enumerate() {
-                            let _ = types
-                                .iter()
-                                .map(|attr| {
-                                    if let Attribute::Apply(_, name, _) = attr {
-                                        let attribute_type_name = self
-                                            .env
-                                            .symbol_pool()
-                                            .string(*name)
-                                            .as_str()
-                                            .to_string();
-
-                                        if attribute_type_name == type_name.as_str() {
-                                            attribute_type_index.push(idx);
-                                            attribute_type_names.push(attribute_type_name);
-                                        }
-                                    }
-                                })
-                                .collect::<Vec<_>>();
-                        }
-
-                        let _ = types
-                            .iter()
-                            .map(|attr| {
-                                if let Attribute::Apply(_, name, _) = attr {
-                                    let attribute_type_name =
-                                        self.env.symbol_pool().string(*name).as_str().to_string();
-                                    if !attribute_type_names.contains(&attribute_type_name) {
-                                        let func_name = self
-                                            .env
-                                            .symbol_pool()
-                                            .string(fun.get_name())
-                                            .as_str()
-                                            .to_string();
-
-                                        self.env.error(
-                                            &fun.get_loc(),
-                                            format!(
-                                                "type name {:?} not defined in function {:?}",
-                                                attribute_type_name, func_name
-                                            )
-                                            .as_str(),
-                                        );
-                                    }
-                                }
-                            })
-                            .collect::<Vec<_>>();
-
-                        let module_address =
-                            module.self_address().expect_numerical().to_hex_literal();
-                        let module_name = self
-                            .env
-                            .symbol_pool()
-                            .string(module.get_name().name())
-                            .as_str()
-                            .to_string();
-                        let func_name = self
-                            .env
-                            .symbol_pool()
-                            .string(fun.get_name())
-                            .as_str()
-                            .to_string();
-                        let full_path_func_name =
-                            format!("{}::{}::{}", module_address, module_name, func_name);
-                        type_name_indices
-                            .insert(full_path_func_name.clone(), attribute_type_index.clone());
-
-                        unsafe {
-                            GLOBAL_PRIVATE_GENERICS
-                                .insert(full_path_func_name, attribute_type_index.clone());
-                        }
-
-                        func_loc_map.insert(func_name, fun.get_loc());
-                    }
-                }
-            }
+        // The `type_name_indices` is used to save the private_generics information of the found function to the metadata of the module.
+        // The private_generics information of the function is looked up from `GLOBAL_PRIVATE_GENERICS`.
+        let type_name_indices = get_type_name_indices(self.env, module, &mut func_loc_map);
+        // #TODO: Ensure that the length of the private_generics type list is either none or full，but not partly.
+        if type_name_indices.is_empty() {
+            return;
         }
 
-        for ref fun in module.get_functions() {
-            // Inspect the bytecode of every function, and if an instruction is CallGeneric,
-            // verify that it calls a function with the private_generics attribute as detected earlier.
-            // Then, ensure that the generic parameters of the CallGeneric instruction are valid.
-            if fun.is_inline() {
-                // The fun.get_bytecode() will only be None when the function is an inline function.
-                // So we need to skip inline functions.
-                continue;
-            }
-            for (offset, instr) in fun.get_bytecode().unwrap().iter().enumerate() {
-                if let Bytecode::CallGeneric(finst_idx) = instr {
-                    let FunctionInstantiation {
-                        handle,
-                        type_parameters,
-                    } = view.function_instantiation_at(*finst_idx);
-
-                    let fhandle = view.function_handle_at(*handle);
-                    let module_handle = view.module_handle_at(fhandle.module);
-
-                    let module_address = view
-                        .address_identifier_at(module_handle.address)
-                        .to_hex_literal();
-                    let module_name = view.identifier_at(module_handle.name);
-                    let func_name = view.identifier_at(fhandle.name).to_string();
-
-                    let full_path_func_name =
-                        format!("{}::{}::{}", module_address, module_name, func_name);
-
-                    let type_arguments = &view.signature_at(*type_parameters).0;
-                    let private_generics_types = {
-                        unsafe {
-                            GLOBAL_PRIVATE_GENERICS
-                                .get(full_path_func_name.as_str())
-                                .map(|list| list.clone())
-                        }
-                    };
-
-                    if let Some(private_generics_types_indices) = private_generics_types {
-                        let byte_loc = fun
-                            .get_bytecode_loc(offset as u16)
-                            .unwrap_or_else(|| Loc::default());
-
-                        for generic_type_index in private_generics_types_indices {
-                            let type_arg = match type_arguments.get(generic_type_index) {
-                                None => {
-                                    self.env.error(
-                                        &byte_loc,
-                                        format!(
-                                            "the function {:?} does not have enough type parameters.", full_path_func_name
-                                        ).as_str(),
-                                    );
-                                    return;
-                                }
-                                Some(sig_token) => sig_token,
-                            };
-                            let (defined_in_current_module, struct_name) =
-                                is_defined_or_allowed_in_current_module(&view, type_arg);
-
-                            if !defined_in_current_module {
-                                self.env.error(
-                                    &byte_loc,
-                                    format!(
-                                        "resource type {:?} in function {:?} not defined in current module or not allowed",
-                                        struct_name, full_path_func_name
-                                    )
-                                        .as_str(),
-                                );
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // Inspect the bytecode of every function, and if an instruction is CallGeneric,
+        // verify that it calls a function with the private_generics attribute as detected earlier.
+        // Then, ensure that the generic parameters of the CallGeneric instruction are valid.
+        // #TODO: Ensure that every generic function call is fully checked.
+        check_call_generics(self.env, module, view);
 
         for (private_generics_func_name, types_list) in type_name_indices {
             let type_params_idicies = self
@@ -362,6 +191,201 @@ impl<'a> ExtendedChecker<'a> {
                 .collect::<Vec<_>>();
         }
     }
+}
+
+fn get_type_name_indices(
+    global_env: &GlobalEnv,
+    module: &ModuleEnv,
+    func_loc_map: &mut BTreeMap<String, Loc>,
+) -> BTreeMap<String, Vec<usize>> {
+    let mut type_name_indices = BTreeMap::new();
+
+    // Check every function and if a function has the private_generics attribute,
+    // ensure that the function name and the types defined in the private_generics attribute match,
+    // for example: #[private_generics(T1, T2)].
+    for ref fun in module.get_functions() {
+        let full_func_name = build_full_func_name(fun, module, global_env);
+
+        if has_attribute(global_env, fun, PRIVATE_GENERICS_ATTRIBUTE) {
+            let mut func_type_params_name_list = vec![];
+
+            let type_params = fun.get_type_parameters();
+            for t in type_params {
+                let type_name = global_env.symbol_pool().string(t.0).as_str().to_string();
+                func_type_params_name_list.push(type_name);
+            }
+
+            if func_type_params_name_list.is_empty() {
+                global_env.error(&fun.get_loc(), "Function do not has type parameter.");
+            }
+
+            let attributes = fun.get_attributes();
+
+            for attr in attributes {
+                if let Attribute::Apply(_, _, types) = attr {
+                    if types.is_empty() {
+                        global_env.error(
+                            &fun.get_loc(),
+                            "A type name is needed for private generics.",
+                        );
+                    }
+
+                    let mut attribute_type_index = vec![];
+                    let mut attribute_type_names = vec![];
+                    for (idx, type_name) in func_type_params_name_list.iter().enumerate() {
+                        let _ = types
+                            .iter()
+                            .map(|attr| {
+                                if let Attribute::Apply(_, name, _) = attr {
+                                    let attribute_type_name =
+                                        global_env.symbol_pool().string(*name).as_str().to_string();
+
+                                    if attribute_type_name == type_name.as_str() {
+                                        attribute_type_index.push(idx);
+                                        attribute_type_names.push(attribute_type_name);
+                                    }
+                                }
+                            })
+                            .collect::<Vec<_>>();
+                    }
+
+                    let _ = types
+                        .iter()
+                        .map(|attr| {
+                            if let Attribute::Apply(_, name, _) = attr {
+                                let attribute_type_name =
+                                    global_env.symbol_pool().string(*name).as_str().to_string();
+
+                                if !attribute_type_names.contains(&attribute_type_name) {
+                                    global_env.error(
+                                        &fun.get_loc(),
+                                        format!(
+                                            "type name {:?} not defined in function {:?}",
+                                            attribute_type_name, full_func_name
+                                        )
+                                        .as_str(),
+                                    );
+                                }
+                            }
+                        })
+                        .collect::<Vec<_>>();
+
+                    type_name_indices.insert(full_func_name.clone(), attribute_type_index.clone());
+
+                    unsafe {
+                        GLOBAL_PRIVATE_GENERICS
+                            .insert(full_func_name.clone(), attribute_type_index.clone());
+                    }
+
+                    func_loc_map.insert(full_func_name.clone(), fun.get_loc());
+                }
+            }
+        }
+    }
+
+    type_name_indices
+}
+
+fn build_full_func_name(fun: &FunctionEnv, module: &ModuleEnv, global_env: &GlobalEnv) -> String {
+    let module_address = module.self_address().expect_numerical().to_hex_literal();
+    let module_name = global_env
+        .symbol_pool()
+        .string(module.get_name().name())
+        .as_str()
+        .to_string();
+    let func_name = global_env
+        .symbol_pool()
+        .string(fun.get_name())
+        .as_str()
+        .to_string();
+
+    format!("{}::{}::{}", module_address, module_name, func_name)
+}
+
+fn check_call_generics(global_env: &GlobalEnv, module: &ModuleEnv, view: BinaryIndexedView) {
+    for ref fun in module.get_functions() {
+        if fun.is_inline() {
+            // The fun.get_bytecode() will only be None when the function is an inline function.
+            // So we need to skip inline functions.
+            continue;
+        }
+
+        for (offset, instr) in fun.get_bytecode().unwrap().iter().enumerate() {
+            if let Bytecode::CallGeneric(finst_idx) = instr {
+                let FunctionInstantiation {
+                    handle: fhandle_index,
+                    type_parameters,
+                } = view.function_instantiation_at(*finst_idx);
+
+                let full_path_func_name = get_func_name_for_fhandle(fhandle_index, &view);
+
+                let func_type_arguments = &view.signature_at(*type_parameters).0;
+                let private_generics_types = {
+                    unsafe {
+                        GLOBAL_PRIVATE_GENERICS
+                            .get(full_path_func_name.as_str())
+                            .map(|list| list.clone())
+                    }
+                };
+
+                // if the called function have the private_generics information.
+                if let Some(private_generics_types_list) = private_generics_types {
+                    let byte_loc = fun
+                        .get_bytecode_loc(offset as u16)
+                        .unwrap_or_else(|| Loc::default());
+
+                    // We iterate over the type index from the private_generics information list
+                    // and query the type index in the function's type arguments.
+                    for generic_type_index in private_generics_types_list {
+                        let type_arg = match func_type_arguments.get(generic_type_index) {
+                            None => {
+                                global_env.error(
+                                    &byte_loc,
+                                    format!(
+                                        "the function {:?} does not have enough type parameters.",
+                                        full_path_func_name
+                                    )
+                                    .as_str(),
+                                );
+                                return;
+                            }
+                            Some(sig_token) => sig_token,
+                        };
+
+                        // Report an error if the type is not defined in the current module or is not allowed.
+                        let (defined_in_current_module, struct_name) =
+                            is_defined_or_allowed_in_current_module(&view, type_arg);
+
+                        if !defined_in_current_module {
+                            global_env.error(
+                                &byte_loc,
+                                format!(
+                                    "resource type {:?} in function {:?} not defined in current module or not allowed",
+                                    struct_name, full_path_func_name
+                                ).as_str(),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn get_func_name_for_fhandle(
+    fhandle_index: &FunctionHandleIndex,
+    view: &BinaryIndexedView,
+) -> String {
+    let fhandle = view.function_handle_at(*fhandle_index);
+    let module_handle = view.module_handle_at(fhandle.module);
+
+    let module_address = view
+        .address_identifier_at(module_handle.address)
+        .to_hex_literal();
+    let module_name = view.identifier_at(module_handle.name);
+    let func_name = view.identifier_at(fhandle.name).to_string();
+
+    format!("{}::{}::{}", module_address, module_name, func_name)
 }
 
 // ----------------------------------------------------------------------------------
@@ -660,7 +684,7 @@ impl<'a> ExtendedChecker<'a> {
 impl<'a> ExtendedChecker<'a> {
     fn check_gas_free_function(&mut self, module: &ModuleEnv) {
         for fenv in module.get_functions() {
-            if self.has_attribute(&fenv, GAS_FREE_ATTRIBUTE) {
+            if has_attribute(self.env, &fenv, GAS_FREE_ATTRIBUTE) {
                 let attributes = fenv.get_attributes();
                 let mut attribute_gas_validate_found = false;
                 let mut attribute_gas_charge_post_found = false;
@@ -1040,7 +1064,7 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
     let view = BinaryIndexedView::Module(compiled_module);
 
     for ref fun in module_env.get_functions() {
-        if extended_checker.has_attribute(fun, DATA_STRUCT_ATTRIBUTE) {
+        if has_attribute(extended_checker.env, fun, DATA_STRUCT_ATTRIBUTE) {
             let mut func_type_params_name_list = vec![];
             let type_params = fun.get_type_parameters();
 
@@ -1431,16 +1455,14 @@ fn check_gas_charge_post_function(fenv: &FunctionEnv, global_env: &GlobalEnv) ->
 // ----------------------------------------------------------------------------------
 // Helpers
 
-impl<'a> ExtendedChecker<'a> {
-    fn has_attribute(&self, fun: &FunctionEnv, attr_name: &str) -> bool {
-        fun.get_attributes().iter().any(|attr| {
-            if let Attribute::Apply(_, name, _) = attr {
-                self.env.symbol_pool().string(*name).as_str() == attr_name
-            } else {
-                false
-            }
-        })
-    }
+fn has_attribute(global_env: &GlobalEnv, fun: &FunctionEnv, attr_name: &str) -> bool {
+    fun.get_attributes().iter().any(|attr| {
+        if let Attribute::Apply(_, name, _) = attr {
+            global_env.symbol_pool().string(*name).as_str() == attr_name
+        } else {
+            false
+        }
+    })
 }
 
 pub fn check_storage_context_struct_tag(struct_full_name: String) -> bool {

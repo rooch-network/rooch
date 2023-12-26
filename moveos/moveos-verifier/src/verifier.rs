@@ -417,17 +417,7 @@ where
                                 type_parameters,
                             } = view.function_instantiation_at(finst_idx);
 
-                            let fhandle = view.function_handle_at(*handle);
-                            let module_handle = view.module_handle_at(fhandle.module);
-
-                            let module_address = view
-                                .address_identifier_at(module_handle.address)
-                                .to_hex_literal();
-                            let module_name = view.identifier_at(module_handle.name);
-                            let func_name = view.identifier_at(fhandle.name).to_string();
-
-                            let full_path_func_name =
-                                format!("{}::{}::{}", module_address, module_name, func_name);
+                            let full_path_func_name = build_full_function_name(handle, view);
 
                             let type_arguments = &view.signature_at(*type_parameters).0;
                             let private_generics_types =
@@ -476,6 +466,19 @@ where
     }
 
     Ok(true)
+}
+
+fn build_full_function_name(fhandle_idx: &FunctionHandleIndex, view: BinaryIndexedView) -> String {
+    let fhandle = view.function_handle_at(*fhandle_idx);
+    let module_handle = view.module_handle_at(fhandle.module);
+
+    let module_address = view
+        .address_identifier_at(module_handle.address)
+        .to_hex_literal();
+    let module_name = view.identifier_at(module_handle.name);
+    let func_name = view.identifier_at(fhandle.name).to_string();
+
+    format!("{}::{}::{}", module_address, module_name, func_name)
 }
 
 pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
