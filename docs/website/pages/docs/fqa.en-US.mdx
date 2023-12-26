@@ -1,0 +1,54 @@
+# FQA
+
+## Session key
+
+### Session key 是什么？
+
+Rooch 的 Session key 是一个方便用户跟链交互的一种临时密钥。
+
+### Session key 有什么用？
+
+当使用 Rooch Dashboard 跟应用交互时，每个会自动生成一个 Session Key。它有过期时间，如果长时间没有交互操作，就会失效。
+
+Session Key 的作用是为了简化钱包跟 DApp 的交互过程，第一次交互时生成了 Session key，后续操作只要 Session key 没有过期，那么 DApp 就不需要再次调用钱包进行签名了。
+
+更详细的使用介绍，请参考 [Dashboard](./user-guides/dashboard.zh-CN.mdx)。
+
+## Object
+
+### Rooch 中的 Object 是什么？
+
+Object 是一种存储方式，它跟资源存储不同，详细的介绍可以参考 [quick start](./developer-guides/quick-start.zh-CN.mdx)。这篇教程详细介绍了两种存储方式的区别。
+
+### 如何查找对象 ID
+
+目前可以通过 Event 来把对象 ID 封装成事件，在执行某些创建对象的操作时可以加入发出事件的逻辑，这样就可以通过 JSON-RPC 来获取对象 ID，详细方法可以参考 [quick start](./developer-guides/quick-start.zh-CN.mdx)。
+
+### 什么是 named object？
+
+命名对象是为了方便开发者获取对象的一种简便方法，命名对象必须全局唯一。
+
+比如 `0x2::object::ObjectEntity<0x3::timestamp::Timestamp>` 这个类型，在这个地址上是唯一的。
+
+一般情况下我们创建了某个对象，需要获取对象 ID 才能对它进行后续操作，但是使用 named object 就可以直接在参数里传递类型，而不是 ID。
+
+### 调用函数时，对象要怎么传递？
+
+- `object:object_id`
+- `typename`
+
+在 `--args` 后面按照上面两种格式传递即可，详细的使用可以参考 [quick start](./developer-guides/quick-start.zh-CN.mdx)。
+
+## Ability
+
+### `Coin<T>` 的 `T` 一定要有 `store` 能力吗？
+
+`Coin<T>` 的 `T` 是否需要带 `T`，由开发者决定。
+
+## Network
+
+### Rooch 有哪些网络？
+
+目前已经启动了 `dev` 开发网络，即将发布 `test` 测试网。
+
+当前可用的 Rooch RPC 节点地址：`https://dev-seed.rooch.network:443/`。
