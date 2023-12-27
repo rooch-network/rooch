@@ -10,18 +10,13 @@ module moveos_std::simple_multimap {
     /// Map key is not found
     const ErrorKeyNotFound: u64 = 1;
 
-    struct SimpleMultiMap<Key, Value> has copy, drop, store {
+    struct SimpleMultiMap<Key, Value> has store {
         data: vector<Element<Key, Value>>,
     }
 
-    struct Element<Key, Value> has copy, drop, store {
+    struct Element<Key, Value> has store {
         key: Key,
         value: vector<Value>,
-    }
-
-
-    public fun length<Key: store, Value: store>(map: &SimpleMultiMap<Key, Value>): u64 {
-        vector::length(&map.data)
     }
 
     /// Create an empty SimpleMultiMap.
@@ -29,6 +24,15 @@ module moveos_std::simple_multimap {
         SimpleMultiMap {
             data: vector::empty(),
         }
+    }
+
+    
+    public fun length<Key: store, Value: store>(map: &SimpleMultiMap<Key, Value>): u64 {
+        vector::length(&map.data)
+    }
+
+    public fun is_empty<Key: store, Value: store>(map: &SimpleMultiMap<Key, Value>): bool {
+        vector::is_empty(&map.data)
     } 
 
     public fun borrow<Key: store, Value: store>(
@@ -101,6 +105,14 @@ module moveos_std::simple_multimap {
     public fun destroy_empty<Key: store, Value: store>(map: SimpleMultiMap<Key, Value>) {
         let SimpleMultiMap { data } = map;
         vector::destroy_empty(data);
+    }
+
+    /// Drop all keys and values in the map. This requires keys and values to be dropable.
+    public fun drop<Key: copy + drop, Value: drop>(map: SimpleMultiMap<Key, Value>) {
+        let SimpleMultiMap { data } = map;
+        vector::for_each(data, |e| {
+            let Element { key:_, value:_ } = e;
+        });
     }
 
     public fun add<Key: store + drop, Value: store>(
@@ -227,6 +239,7 @@ module moveos_std::simple_multimap {
         remove(&mut map, &3);
         assert!(length(&map) == 0, 12);
         assert!(!contains_key(&map, &3), 13);
+        drop(map);
     }
 
     #[test]
@@ -237,6 +250,7 @@ module moveos_std::simple_multimap {
         add(&mut map, 3, 1);
 
         assert!(keys(&map) == vector[2, 3], 1);
+        drop(map);
     }
 
     #[test]
@@ -249,6 +263,7 @@ module moveos_std::simple_multimap {
         let values = values(&map);
         assert!(vector::length(&values) == 3, 1);
         assert!(values == vector[1,2,3], 2);
+        drop(map);
     }
 
     #[test]

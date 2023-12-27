@@ -101,6 +101,7 @@ rooch-open-rpc-spec-builder = { path = "crates/rooch-open-rpc-spec-builder" }
 rooch-open-rpc-macros = { path = "crates/rooch-open-rpc-macros" }
 rooch-store = { path = "crates/rooch-store" }
 rooch-indexer = { path = "crates/rooch-indexer" }
+rooch-da = { path = "crates/rooch-da" }
 
 # frameworks
 bitcoin-move = { path = "frameworks/bitcoin-move" }
@@ -233,6 +234,10 @@ diesel_migrations = { version = "2.0.0" }
 tap = "1.0.1"
 dotenvy = "0.15"
 sized-chunks = { version = "0.6" }
+dashmap = "5.5.3"
+
+celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
+celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

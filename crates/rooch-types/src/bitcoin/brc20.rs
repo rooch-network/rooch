@@ -1,15 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::types::Transaction;
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
 use anyhow::Result;
 use move_core_types::{
-    account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
+    account_address::AccountAddress, ident_str, identifier::IdentStr, u256::U256, value::MoveValue,
 };
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
-    move_std::string::MoveString,
+    move_std::{option::MoveOption, string::MoveString},
     moveos_std::{
         object::{self, ObjectID},
         simple_map::SimpleMap,
@@ -22,10 +21,16 @@ use serde::{Deserialize, Serialize};
 pub const MODULE_NAME: &IdentStr = ident_str!("brc20");
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BRC20CoinInfo {
+    pub tick: MoveString,
+    pub max: U256,
+    pub lim: U256,
+    pub dec: u64,
+    pub supply: U256,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BRC20Store {
-    /// The latest inscription index has been processed
-    pub next_inscription_index: u64,
-    /// The coins id
     pub coins: ObjectID,
 }
 
@@ -43,10 +48,7 @@ impl MoveStructType for BRC20Store {
 
 impl MoveStructState for BRC20Store {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
-        move_core_types::value::MoveStructLayout::new(vec![
-            u64::type_layout(),
-            ObjectID::type_layout(),
-        ])
+        move_core_types::value::MoveStructLayout::new(vec![ObjectID::type_layout()])
     }
 }
 
@@ -75,25 +77,51 @@ pub struct BRC20Module<'a> {
 }
 
 impl<'a> BRC20Module<'a> {
-    pub const FROM_TRANSACTION_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("from_transaction_bytes");
+    pub const GET_TICK_INFO_FUNCTION_NAME: &'static IdentStr = ident_str!("get_tick_info");
+    pub const GET_BALANCE_FUNCTION_NAME: &'static IdentStr = ident_str!("get_balance");
 
-    pub fn from_transaction(&self, tx: &Transaction) -> Result<Vec<Op>> {
+    pub fn get_tick_info(&self, tick: String) -> Result<Option<BRC20CoinInfo>> {
         let call = Self::create_function_call(
-            Self::FROM_TRANSACTION_FUNCTION_NAME,
+            Self::GET_TICK_INFO_FUNCTION_NAME,
             vec![],
-            vec![MoveValue::vector_u8(tx.to_bytes())],
+            vec![
+                MoveValue::Address(BRC20Store::object_id().into()),
+                MoveValue::vector_u8(MoveString::from(tick).to_bytes()),
+            ],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ONE);
-        let ops = self
+        let result = self
             .caller
             .call_function(&ctx, call)?
             .into_result()
             .map(|mut values| {
                 let value = values.pop().expect("should have one return value");
-                bcs::from_bytes::<Vec<Op>>(&value.value).expect("should be a valid Vec<Op>")
+                bcs::from_bytes::<MoveOption<BRC20CoinInfo>>(&value.value)
+                    .expect("should be a valid MoveOption<BRC20CoinInfo>")
             })?;
-        Ok(ops)
+        Ok(result.into())
+    }
+
+    pub fn get_balance(&self, tick: String, addr: AccountAddress) -> Result<U256> {
+        let call = Self::create_function_call(
+            Self::GET_BALANCE_FUNCTION_NAME,
+            vec![],
+            vec![
+                MoveValue::Address(BRC20Store::object_id().into()),
+                MoveValue::vector_u8(MoveString::from(tick).to_bytes()),
+                MoveValue::Address(addr),
+            ],
+        );
+        let ctx = TxContext::new_readonly_ctx(AccountAddress::ONE);
+        let result = self
+            .caller
+            .call_function(&ctx, call)?
+            .into_result()
+            .map(|mut values| {
+                let value = values.pop().expect("should have one return value");
+                bcs::from_bytes::<U256>(&value.value).expect("should be a valid u256")
+            })?;
+        Ok(result)
     }
 }
 

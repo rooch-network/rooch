@@ -567,12 +567,12 @@ Note: When the Object is taken out, the Object will auto become <code>SystemOwne
 
 ## Function `take_object_extend`
 
-Take out the UserOwnedObject by <code>object_id</code>
+Take out the UserOwnedObject by <code>object_id</code>, return the owner and Object
 This function is for developer to extend, Only the module of <code>T</code> can take out the <code>UserOwnedObject</code> with object_id.
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="context.md#0x2_context_take_object_extend">take_object_extend</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<b>public</b> <b>fun</b> <a href="context.md#0x2_context_take_object_extend">take_object_extend</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): (<b>address</b>, <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;)
 </code></pre>
 
 

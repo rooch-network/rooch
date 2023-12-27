@@ -169,8 +169,8 @@ impl Inscription {
         }
 
         let Some(content_type) = self.content_type() else {
-      return Media::Unknown;
-    };
+            return Media::Unknown;
+        };
 
         content_type.parse().unwrap_or(Media::Unknown)
     }
@@ -275,20 +275,20 @@ impl Inscription {
 
     pub(crate) fn hidden(&self) -> bool {
         let Some(content_type) = self.content_type() else {
-      return false;
-    };
+            return false;
+        };
 
         if content_type != "text/plain" && content_type != "text/plain;charset=utf-8" {
             return false;
         }
 
         let Some(body) = &self.body else {
-      return false;
-    };
+            return false;
+        };
 
         let Ok(text) = str::from_utf8(body) else {
-      return false;
-    };
+            return false;
+        };
 
         let trimmed = text.trim();
 

@@ -129,8 +129,8 @@ module bitcoin_move::light_client{
             let outpoint = *types::txin_previous_output(txin);
             if(table::contains(&btc_utxo_store.utxo, outpoint)){
                 let object_id = table::remove(&mut btc_utxo_store.utxo, outpoint);
-                let utxo_obj = utxo::take(ctx, object_id);
-                let seal_outs = ord::spend_utxo(ctx, &utxo_obj, tx);
+                let (_owner, utxo_obj) = utxo::take(ctx, object_id);
+                let seal_outs = ord::spend_utxo(ctx, &mut utxo_obj, tx);
                 if(!vector::is_empty(&seal_outs)){
                     let protocol = type_info::type_name<Inscription>();
                     let j = 0;
@@ -143,7 +143,9 @@ module bitcoin_move::light_client{
                         j = j + 1;
                     };
                 };
-                utxo::remove(utxo_obj);
+                let seals = utxo::remove(utxo_obj);
+                //The seals should be empty after utxo is spent
+                simple_multimap::destroy_empty(seals);
             }else{
                 //We allow the utxo not exists in the utxo store, because we may not sync the block from genesis
             };
@@ -175,11 +177,11 @@ module bitcoin_move::light_client{
             let utxo_obj = utxo::new(ctx, txid, vout, value);
             let utxo = object::borrow_mut(&mut utxo_obj);
             if(simple_multimap::contains_key(&output_seals, &idx)){
-                let utxo_seals = *simple_multimap::borrow(&output_seals, &idx);
+                let utxo_seals = simple_multimap::borrow_mut(&mut output_seals, &idx);
                 let j = 0;
-                let utxo_seals_len = vector::length(&utxo_seals);
+                let utxo_seals_len = vector::length(utxo_seals);
                 while(j < utxo_seals_len){
-                    let utxo_seal = vector::pop_back(&mut utxo_seals);
+                    let utxo_seal = vector::pop_back(utxo_seals);
                     utxo::add_seal(utxo, utxo_seal);
                     j = j + 1;
                 };
@@ -189,7 +191,8 @@ module bitcoin_move::light_client{
             let owner_address = types::txout_object_address(txout);
             utxo::transfer(utxo_obj, owner_address); 
             idx = idx + 1;
-        }
+        };
+        simple_multimap::drop(output_seals);
     }
 
 
