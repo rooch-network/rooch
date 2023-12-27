@@ -19,6 +19,7 @@ This module provides a solution for unsorted maps, that is it has the properties
 -  [Function `length`](#0x2_simple_map_length)
 -  [Function `new`](#0x2_simple_map_new)
 -  [Function `create`](#0x2_simple_map_create)
+-  [Function `clone`](#0x2_simple_map_clone)
 -  [Function `borrow`](#0x2_simple_map_borrow)
 -  [Function `borrow_with_default`](#0x2_simple_map_borrow_with_default)
 -  [Function `borrow_mut`](#0x2_simple_map_borrow_mut)
@@ -119,6 +120,17 @@ This function is deprecated, use <code>new</code> instead.
 
 <pre><code>#[deprecated]
 <b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_create">create</a>&lt;Key: store, Value: store&gt;(): <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;
+</code></pre>
+
+
+
+<a name="0x2_simple_map_clone"></a>
+
+## Function `clone`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="simple_map.md#0x2_simple_map_clone">clone</a>&lt;Key: <b>copy</b>, store, Value: <b>copy</b>, store&gt;(map: &<a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;): <a href="simple_map.md#0x2_simple_map_SimpleMap">simple_map::SimpleMap</a>&lt;Key, Value&gt;
 </code></pre>
 
 

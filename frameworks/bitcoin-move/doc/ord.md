@@ -9,6 +9,8 @@
 -  [Resource `Inscription`](#0x4_ord_Inscription)
 -  [Struct `InscriptionRecord`](#0x4_ord_InscriptionRecord)
 -  [Struct `InvalidInscriptionEvent`](#0x4_ord_InvalidInscriptionEvent)
+-  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
+-  [Function `genesis_init`](#0x4_ord_genesis_init)
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
 -  [Function `borrow_inscription`](#0x4_ord_borrow_inscription)
 -  [Function `spend_utxo`](#0x4_ord_spend_utxo)
@@ -34,11 +36,15 @@
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::event</a>;
+<b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::signer</a>;
+<b>use</b> <a href="">0x2::simple_map</a>;
+<b>use</b> <a href="">0x2::table_vec</a>;
 <b>use</b> <a href="">0x3::address_mapping</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="">0x3::multichain_address</a>;
+<b>use</b> <a href="brc20.md#0x4_brc20">0x4::brc20</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 <b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
 </code></pre>
@@ -85,6 +91,28 @@
 
 
 <pre><code><b>struct</b> <a href="ord.md#0x4_ord_InvalidInscriptionEvent">InvalidInscriptionEvent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_ord_InscriptionStore"></a>
+
+## Resource `InscriptionStore`
+
+
+
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionStore">InscriptionStore</a> <b>has</b> key
+</code></pre>
+
+
+
+<a name="0x4_ord_genesis_init"></a>
+
+## Function `genesis_init`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _genesis_account: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -249,7 +277,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_from_transaction">from_transaction</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_InscriptionRecord">ord::InscriptionRecord</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_from_transaction">from_transaction</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;
 </code></pre>
 
 
@@ -260,7 +288,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_from_transaction_bytes">from_transaction_bytes</a>(transaction_bytes: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_InscriptionRecord">ord::InscriptionRecord</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_from_transaction_bytes">from_transaction_bytes</a>(transaction_bytes: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;
 </code></pre>
 
 

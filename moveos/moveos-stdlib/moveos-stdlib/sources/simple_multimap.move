@@ -19,16 +19,20 @@ module moveos_std::simple_multimap {
         value: vector<Value>,
     }
 
-
-    public fun length<Key: store, Value: store>(map: &SimpleMultiMap<Key, Value>): u64 {
-        vector::length(&map.data)
-    }
-
     /// Create an empty SimpleMultiMap.
     public fun new<Key: store, Value: store>(): SimpleMultiMap<Key, Value> {
         SimpleMultiMap {
             data: vector::empty(),
         }
+    }
+
+    
+    public fun length<Key: store, Value: store>(map: &SimpleMultiMap<Key, Value>): u64 {
+        vector::length(&map.data)
+    }
+
+    public fun is_empty<Key: store, Value: store>(map: &SimpleMultiMap<Key, Value>): bool {
+        vector::is_empty(&map.data)
     } 
 
     public fun borrow<Key: store, Value: store>(
