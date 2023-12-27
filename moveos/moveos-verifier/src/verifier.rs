@@ -392,7 +392,7 @@ where
                         .finish(Location::Module(module.self_id())));
                 }
 
-                let module_address = parts_vec.get(0).unwrap();
+                let module_address = parts_vec.first();
                 let module_name = parts_vec.get(1).unwrap();
 
                 let current_module_address = module.address().to_hex_literal();

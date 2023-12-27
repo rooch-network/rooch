@@ -230,7 +230,7 @@ fn verify_the_type_name_lists(
 
             for attr in attributes {
                 if let Attribute::Apply(_, _, types) = attr {
-                    if types.len() > 0 {
+                    if !types.is_empty() {
                         total_type_name_map.insert(full_func_name.clone(), types.len() as u32);
                     }
                 }
