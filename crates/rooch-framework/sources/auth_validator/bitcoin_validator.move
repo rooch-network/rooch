@@ -83,6 +83,7 @@ module rooch_framework::bitcoin_validator {
         ethereum_address::into_bytes(addr)
     }
 
+    // TODO: remove this, fontend convert
     public fun public_key_to_address(public_key: vector<u8>): ETHAddress {
         ethereum_address::new(public_key)
     }
@@ -114,9 +115,8 @@ module rooch_framework::bitcoin_validator {
         assert!(
             ecdsa_k1_recoverable::verify(
                 &get_signature_from_authenticator_payload(authenticator_payload),
-                // &get_public_key_from_authenticator_payload(authenticator_payload),
                 tx_hash,
-                1
+                ecdsa_k1_recoverable::sha256()
             ),
             auth_validator::error_invalid_authenticator()
         );

@@ -3,9 +3,13 @@
 
 export class WalletAccount {
   private readonly address: string
+  private readonly publicKey?: string
+  private readonly compressedPublicKey?: string
 
-  public constructor(address: string) {
+  public constructor(address: string, publicKey?: string, compressedPublicKey?: string) {
     this.address = address
+    this.publicKey = publicKey
+    this.compressedPublicKey = compressedPublicKey
   }
 
   /**
@@ -13,5 +17,13 @@ export class WalletAccount {
    */
   public getAddress(): string {
     return this.address
+  }
+
+  public getInfo() {
+    return {
+      address: this.address,
+      publicKey: this.publicKey,
+      compressedPublicKey: this.compressedPublicKey,
+    }
   }
 }

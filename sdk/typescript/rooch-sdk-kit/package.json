@@ -73,7 +73,9 @@
   "dependencies": {
     "@roochnetwork/rooch-sdk": "workspace:*",
     "clsx": "^2.0.0",
-    "zustand": "^4.4.1"
+    "zustand": "^4.4.1",
+    "@noble/hashes": "^1.3.0",
+    "buffer": "6.0.0"
   },
   "publishConfig": {
     "access": "public",

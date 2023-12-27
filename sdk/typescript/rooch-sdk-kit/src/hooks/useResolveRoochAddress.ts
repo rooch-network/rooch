@@ -5,6 +5,7 @@ import type { UseQueryOptions, UseQueryResult } from '@tanstack/react-query'
 
 import { useRoochClientQuery } from './useRoochClientQuery'
 
+// TODO: support bitcoin address convert
 export function useResolveRoochAddress(
   address: string,
   options?: Omit<UseQueryOptions<string, Error, string | null, unknown[]>, 'queryFn' | 'queryKey'>,

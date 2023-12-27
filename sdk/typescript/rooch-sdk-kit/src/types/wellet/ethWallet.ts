@@ -2,22 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ChainInfo } from '@roochnetwork/rooch-sdk'
+import { BaseWallet } from './baseWallet'
 
-export class ETHWallet {
+// TODO: https://metamask.github.io/test-dapp/#personalSign or eth_sign
+export abstract class ETHWallet extends BaseWallet {
   async addChain(chain: ChainInfo) {
-    return window.ethereum
-      ?.request({
-        method: 'wallet_addEthereumChain',
-        params: [chain],
-      })
-      .then((v) => {
-        console.log(v)
-      })
+    await this.getTarget().request({
+      method: 'wallet_addEthereumChain',
+      params: [chain],
+    })
   }
 
   async switchChain(chain: ChainInfo, { defaultAdd = true }: { defaultAdd?: boolean } = {}) {
     try {
-      await window.ethereum?.request({
+      await this.getTarget().request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: chain.chainId }],
       })
