@@ -34,6 +34,7 @@ module moveos_std::json{
     public fun to_map(json_str: vector<u8>): SimpleMap<String,String>{
         let opt_result = native_from_json<SimpleMap<String,String>>(json_str);
         if(option::is_none(&opt_result)){
+            option::destroy_none(opt_result);
             return simple_map::create()
         };
         option::destroy_some(opt_result)
@@ -101,6 +102,7 @@ module moveos_std::json{
         assert!(simple_map::borrow(&map, &string::utf8(b"inner")) == &string::utf8(b"{\"value\":100}"), 8);
         assert!(simple_map::borrow(&map, &string::utf8(b"bytes")) == &string::utf8(b"[3,3,2,1]"), 9);
         assert!(simple_map::borrow(&map, &string::utf8(b"inner_array")) == &string::utf8(b"[{\"value\":101}]"), 10);
+        simple_map::drop(map);
     }
 
     #[test]
@@ -108,6 +110,7 @@ module moveos_std::json{
         let invalid_json = b"abcd";
         let map = to_map(invalid_json);
         assert!(simple_map::length(&map) == 0, 1);
+        simple_map::drop(map);
     }
 
     #[test]

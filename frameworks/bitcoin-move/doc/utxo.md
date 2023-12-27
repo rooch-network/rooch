@@ -5,16 +5,21 @@
 
 
 
+-  [Struct `OutputID`](#0x4_utxo_OutputID)
 -  [Resource `UTXO`](#0x4_utxo_UTXO)
 -  [Struct `UTXOSeal`](#0x4_utxo_UTXOSeal)
 -  [Struct `SealOut`](#0x4_utxo_SealOut)
 -  [Function `new`](#0x4_utxo_new)
+-  [Function `new_id`](#0x4_utxo_new_id)
 -  [Function `value`](#0x4_utxo_value)
 -  [Function `txid`](#0x4_utxo_txid)
 -  [Function `vout`](#0x4_utxo_vout)
+-  [Function `exists_utxo`](#0x4_utxo_exists_utxo)
+-  [Function `borrow_utxo`](#0x4_utxo_borrow_utxo)
 -  [Function `seal`](#0x4_utxo_seal)
 -  [Function `has_seal`](#0x4_utxo_has_seal)
 -  [Function `get_seals`](#0x4_utxo_get_seals)
+-  [Function `remove_seals`](#0x4_utxo_remove_seals)
 -  [Function `add_seal`](#0x4_utxo_add_seal)
 -  [Function `transfer`](#0x4_utxo_transfer)
 -  [Function `take`](#0x4_utxo_take)
@@ -30,6 +35,18 @@
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_multimap</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
+</code></pre>
+
+
+
+<a name="0x4_utxo_OutputID"></a>
+
+## Struct `OutputID`
+
+The transaction output ID
+
+
+<pre><code><b>struct</b> <a href="utxo.md#0x4_utxo_OutputID">OutputID</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -79,6 +96,17 @@ The UTXO Object
 
 
 
+<a name="0x4_utxo_new_id"></a>
+
+## Function `new_id`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_new_id">new_id</a>(txid: <b>address</b>, vout: u32): <a href="utxo.md#0x4_utxo_OutputID">utxo::OutputID</a>
+</code></pre>
+
+
+
 <a name="0x4_utxo_value"></a>
 
 ## Function `value`
@@ -115,6 +143,28 @@ Get the UTXO's vout
 
 
 
+<a name="0x4_utxo_exists_utxo"></a>
+
+## Function `exists_utxo`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_exists_utxo">exists_utxo</a>(ctx: &<a href="_Context">context::Context</a>, txid: <b>address</b>, vout: u32): bool
+</code></pre>
+
+
+
+<a name="0x4_utxo_borrow_utxo"></a>
+
+## Function `borrow_utxo`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_borrow_utxo">borrow_utxo</a>(ctx: &<a href="_Context">context::Context</a>, txid: <b>address</b>, vout: u32): &<a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;
+</code></pre>
+
+
+
 <a name="0x4_utxo_seal"></a>
 
 ## Function `seal`
@@ -146,6 +196,17 @@ Seal the UTXO with a protocol, the T is the protocol object
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_get_seals">get_seals</a>&lt;T&gt;(<a href="utxo.md#0x4_utxo">utxo</a>: &<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>): <a href="">vector</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_utxo_remove_seals"></a>
+
+## Function `remove_seals`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_remove_seals">remove_seals</a>&lt;T&gt;(<a href="utxo.md#0x4_utxo">utxo</a>: &<b>mut</b> <a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>): <a href="">vector</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
 </code></pre>
 
 

@@ -72,7 +72,6 @@ where
     Value: MoveState,
 {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-
     const MODULE_NAME: &'static IdentStr = ident_str!("simple_multimap");
     const STRUCT_NAME: &'static IdentStr = ident_str!("SimpleMultiMap");
 

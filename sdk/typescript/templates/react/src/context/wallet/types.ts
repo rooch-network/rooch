@@ -14,10 +14,10 @@ export type ETHValueType = {
   accounts: Map<string, AccountDataType>
   activeAccount: AccountDataType | null
   isConnect: boolean
-  connect: (china?: ChainInfo) => Promise<void>
+  connect: (chain?: ChainInfo) => Promise<void>
   sendTransaction: (params: any[]) => Promise<any>
   waitTxConfirmed: (txHash: string) => Promise<any>
   disconnect: () => void
-  switchChina: (chain: ChainInfo) => Promise<void>
-  addChina: (params: ChainInfo) => Promise<void>
+  switchChain: (chain: ChainInfo) => Promise<void>
+  addChain: (params: ChainInfo) => Promise<void>
 }

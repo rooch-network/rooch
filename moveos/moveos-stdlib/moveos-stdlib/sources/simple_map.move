@@ -18,11 +18,11 @@ module moveos_std::simple_map {
     /// Map key is not found
     const ErrorKeyNotFound: u64 = 2;
 
-    struct SimpleMap<Key, Value> has copy, drop, store {
+    struct SimpleMap<Key, Value> has store {
         data: vector<Element<Key, Value>>,
     }
 
-    struct Element<Key, Value> has copy, drop, store {
+    struct Element<Key, Value> has store {
         key: Key,
         value: Value,
     }
@@ -90,6 +90,14 @@ module moveos_std::simple_map {
     public fun destroy_empty<Key: store, Value: store>(map: SimpleMap<Key, Value>) {
         let SimpleMap { data } = map;
         vector::destroy_empty(data);
+    }
+
+    /// Drop all keys and values in the map. This requires keys and values to be dropable.
+    public fun drop<Key: copy + drop, Value: drop>(map: SimpleMap<Key, Value>) {
+        let SimpleMap { data } = map;
+        vector::for_each(data, |e| {
+            let Element { key:_, value:_ } = e;
+        });
     }
 
     public fun add<Key: store, Value: store>(
@@ -241,6 +249,7 @@ module moveos_std::simple_map {
         add(&mut map, 3, 1);
 
         assert!(keys(&map) == vector[2, 3], 0);
+        drop(map);
     }
 
     #[test]
@@ -251,6 +260,7 @@ module moveos_std::simple_map {
         add(&mut map, 3, 2);
 
         assert!(values(&map) == vector[1, 2], 0);
+        drop(map);
     }
 
     #[test]
@@ -297,5 +307,7 @@ module moveos_std::simple_map {
         assert!(length(&map) == 3, 7);
         assert!(contains_key(&map, &1), 8);
         assert!(borrow(&map, &1) == &4, 9);
+
+        drop(map);
     }
 }

@@ -86,7 +86,7 @@ impl MoveStructState for BitcoinUTXOStore {
     }
 }
 
-/// Rust bindings for RoochFramework bitcoin_light_client module
+/// Rust bindings for BitcoinMove light_client module
 pub struct BitcoinLightClientModule<'a> {
     caller: &'a dyn MoveFunctionCaller,
 }

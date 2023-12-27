@@ -9,7 +9,7 @@ use move_core_types::{
 };
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
-    move_std::option::MoveOption,
+    move_std::{option::MoveOption, string::MoveString},
     moveos_std::{
         object::{self, ObjectID},
         tx_context::TxContext,
@@ -20,17 +20,79 @@ use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("ord");
 
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq)]
+pub struct InscriptionID {
+    pub txid: AccountAddress,
+    pub index: u32,
+}
+
+impl InscriptionID {
+    pub fn new(txid: AccountAddress, index: u32) -> Self {
+        Self { txid, index }
+    }
+}
+
+impl MoveStructType for InscriptionID {
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("InscriptionID");
+}
+
+impl MoveStructState for InscriptionID {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            AccountAddress::type_layout(),
+            u32::type_layout(),
+        ])
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq)]
+pub struct Inscription {
+    pub txid: AccountAddress,
+    pub index: u32,
+    pub body: Vec<u8>,
+    pub content_encoding: MoveOption<MoveString>,
+    pub content_type: MoveOption<MoveString>,
+    pub metadata: Vec<u8>,
+    pub metaprotocol: MoveOption<MoveString>,
+    pub parent: MoveOption<ObjectID>,
+    pub pointer: MoveOption<u64>,
+}
+
+impl MoveStructType for Inscription {
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Inscription");
+}
+
+impl MoveStructState for Inscription {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            AccountAddress::type_layout(),
+            u32::type_layout(),
+            Vec::<u8>::type_layout(),
+            MoveOption::<MoveString>::type_layout(),
+            MoveOption::<MoveString>::type_layout(),
+            Vec::<u8>::type_layout(),
+            MoveOption::<MoveString>::type_layout(),
+            MoveOption::<ObjectID>::type_layout(),
+            MoveOption::<u64>::type_layout(),
+        ])
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Default)]
 pub struct InscriptionRecord {
-    pub body: MoveOption<Vec<u8>>,
-    pub content_encoding: MoveOption<Vec<u8>>,
-    pub content_type: MoveOption<Vec<u8>>,
+    pub body: Vec<u8>,
+    pub content_encoding: MoveOption<MoveString>,
+    pub content_type: MoveOption<MoveString>,
     pub duplicate_field: bool,
     pub incomplete_field: bool,
-    pub metadata: MoveOption<Vec<u8>>,
-    pub metaprotocol: MoveOption<Vec<u8>>,
-    pub parent: MoveOption<Vec<u8>>,
-    pub pointer: MoveOption<Vec<u8>>,
+    pub metadata: Vec<u8>,
+    pub metaprotocol: MoveOption<MoveString>,
+    pub parent: MoveOption<InscriptionID>,
+    pub pointer: MoveOption<u64>,
     pub unrecognized_even_field: bool,
 }
 
@@ -43,15 +105,15 @@ impl MoveStructType for InscriptionRecord {
 impl MoveStructState for InscriptionRecord {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
-            MoveOption::<Vec<u8>>::type_layout(),
-            MoveOption::<Vec<u8>>::type_layout(),
-            MoveOption::<Vec<u8>>::type_layout(),
+            Vec::<u8>::type_layout(),
+            MoveOption::<MoveString>::type_layout(),
+            MoveOption::<MoveString>::type_layout(),
             bool::type_layout(),
             bool::type_layout(),
-            MoveOption::<Vec<u8>>::type_layout(),
-            MoveOption::<Vec<u8>>::type_layout(),
-            MoveOption::<Vec<u8>>::type_layout(),
-            MoveOption::<Vec<u8>>::type_layout(),
+            Vec::<u8>::type_layout(),
+            MoveOption::<MoveString>::type_layout(),
+            MoveOption::<InscriptionID>::type_layout(),
+            MoveOption::<u64>::type_layout(),
             bool::type_layout(),
         ])
     }
@@ -89,7 +151,7 @@ impl MoveStructState for InscriptionStore {
     }
 }
 
-/// Rust bindings for RoochFramework ord module
+/// Rust bindings for BitcoinMove ord module
 pub struct OrdModule<'a> {
     caller: &'a dyn MoveFunctionCaller,
 }

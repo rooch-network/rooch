@@ -91,10 +91,11 @@ fn native_module_name_inner(
  * native fun sort_and_verify_modules_inner(
  *      modules: &vector<vector<u8>>,
  *      account_address: address
- * ): (vector<String>, vector<String>);
+ * ): (vector<String>, vector<String>, vector<u64>);
  * Return
  *  The first vector is the module names of all the modules.
  *  The second vector is the module names of the modules with init function.
+ *  The third vector is the indices in input modules of each sorted modules.
  **************************************************************************************************/
 
 #[derive(Clone, Debug)]
@@ -117,13 +118,25 @@ fn native_sort_and_verify_modules_inner(
         cost += gas_params.per_byte * NumBytes::new(byte_codes.len() as u64);
         bundle.push(byte_codes);
     }
-    let compiled_modules = bundle
-        .iter()
+    let unordered_compiled_modules = bundle
+        .iter_mut()
         .map(|b| CompiledModule::deserialize(b))
         .collect::<PartialVMResult<Vec<CompiledModule>>>()?;
-    let compiled_modules = sort_by_dependency_order(&compiled_modules).map_err(|e| {
+
+    let compiled_modules = sort_by_dependency_order(&unordered_compiled_modules).map_err(|e| {
         PartialVMError::new(StatusCode::CYCLIC_MODULE_DEPENDENCY).with_message(e.to_string())
     })?;
+
+    let indices: Vec<u64> = compiled_modules
+        .iter()
+        .map(|x| {
+            unordered_compiled_modules
+                .iter()
+                .position(|y| y == x)
+                .expect("should have an index") as u64
+        })
+        .collect();
+
     // move verifier
     context.verify_module_bundle_for_publication(&compiled_modules)?;
 
@@ -132,7 +145,9 @@ fn native_sort_and_verify_modules_inner(
     let mut module_names = vec![];
     let mut init_identifier = vec![];
     for module in &compiled_modules {
-        if *module.self_id().address() != account_address {
+        let module_address = *module.self_id().address();
+
+        if module_address != account_address {
             return Ok(NativeResult::err(cost, E_ADDRESS_NOT_MATCH_WITH_SIGNER));
         }
         let result = moveos_verifier::verifier::verify_module(module, module_context.resolver);
@@ -171,9 +186,10 @@ fn native_sort_and_verify_modules_inner(
         })
         .collect();
     let init_module_names = Vector::pack(&Type::Struct(CachedStructIndex(0)), init_module_names)?;
+    let sorted_indices = Value::vector_u64(indices);
     Ok(NativeResult::ok(
         cost,
-        smallvec![module_names, init_module_names],
+        smallvec![module_names, init_module_names, sorted_indices],
     ))
 }
 

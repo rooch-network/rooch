@@ -11,6 +11,14 @@ module bitcoin_move::utxo{
 
     friend bitcoin_move::light_client;
 
+    /// The transaction output ID
+    struct OutputID has store, copy, drop {
+        /// The txid of the UTXO
+        txid: address,
+        /// The vout of the UTXO
+        vout: u32,
+    }
+
     /// The UTXO Object
     struct UTXO has key {
         /// The txid of the UTXO
@@ -34,14 +42,24 @@ module bitcoin_move::utxo{
     }
 
     public(friend) fun new(ctx: &mut Context, txid: address, vout: u32, value: u64) : Object<UTXO> {
+        let id = OutputID{
+            txid: txid,
+            vout: vout,
+        };
         let utxo = UTXO{
             txid: txid,
             vout: vout,
             value: value,
             seals: simple_multimap::new(),
         };
-        //TODO support custom object id, and use Hash(txid + vout) as object id
-        context::new_object(ctx, utxo)
+        context::new_custom_object(ctx, id, utxo)
+    }
+
+    public fun new_id(txid: address, vout: u32) : OutputID {
+        OutputID{
+            txid: txid,
+            vout: vout,
+        }
     }
 
     /// Get the UTXO's value
@@ -57,6 +75,25 @@ module bitcoin_move::utxo{
     /// Get the UTXO's vout
     public fun vout(utxo: &UTXO): u32 {
         utxo.vout
+    }
+
+
+    public fun exists_utxo(ctx: &Context, txid: address, vout: u32): bool{
+        let id = OutputID{
+            txid: txid,
+            vout: vout,
+        };
+        let object_id = object::custom_object_id<OutputID,UTXO>(id);
+        context::exists_object<UTXO>(ctx, object_id)
+    }
+
+    public fun borrow_utxo(ctx: &Context, txid: address, vout: u32): &Object<UTXO>{
+        let id = OutputID{
+            txid: txid,
+            vout: vout,
+        };
+        let object_id = object::custom_object_id<OutputID,UTXO>(id);
+        context::borrow_object(ctx, object_id)
     }
 
      #[private_generics(T)]
@@ -80,6 +117,16 @@ module bitcoin_move::utxo{
         let protocol = type_info::type_name<T>();
         if(simple_multimap::contains_key(&utxo.seals, &protocol)){
             *simple_multimap::borrow(&utxo.seals, &protocol)
+        }else{
+            vector::empty()
+        }
+    }
+
+    public fun remove_seals<T>(utxo: &mut UTXO): vector<ObjectID> {
+        let protocol = type_info::type_name<T>();
+        if(simple_multimap::contains_key(&utxo.seals, &protocol)){
+            let(_k, value) = simple_multimap::remove(&mut utxo.seals, &protocol);
+            value
         }else{
             vector::empty()
         }
@@ -130,5 +177,15 @@ module bitcoin_move::utxo{
     public fun unpack_seal_out(seal_out: SealOut) : (u64, ObjectID) {
         let SealOut{output_index, object_id} = seal_out;
         (output_index, object_id)
+    }
+
+    #[test]
+    fun test_id(){
+        let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let vout = 0;
+        let id = new_id(txid, vout);
+        let object_id = object::custom_object_id<OutputID,UTXO>(id);
+        //std::debug::print(&object_id);
+        assert!(std::bcs::to_bytes(&object_id) == x"b8fc937bf3c15abe49c95fa6906aff29087149f542b48db0cf25dce671a68a63", 1);
     }
 }

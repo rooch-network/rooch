@@ -366,18 +366,9 @@ impl AggregateService {
     }
 
     pub async fn pack_uxtos(&self, states: Vec<IndexerGlobalState>) -> Result<Vec<UTXOState>> {
-        let table_handles = states
-            .iter()
-            .map(|m| m.object_id)
-            .collect::<Vec<_>>();
-        let owners = states
-            .iter()
-            .map(|m| m.owner)
-            .collect::<Vec<_>>();
-        let owner_keys = states
-            .iter()
-            .map(|m| m.owner.to_vec())
-            .collect::<Vec<_>>();
+        let table_handles = states.iter().map(|m| m.object_id).collect::<Vec<_>>();
+        let owners = states.iter().map(|m| m.owner).collect::<Vec<_>>();
+        let owner_keys = states.iter().map(|m| m.owner.to_vec()).collect::<Vec<_>>();
 
         // Global table 0x0 table's key type is always ObjectID.
         let access_path = AccessPath::objects(table_handles.clone());

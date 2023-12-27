@@ -12,6 +12,7 @@
 -  [Struct `MintOp`](#0x4_brc20_MintOp)
 -  [Struct `TransferOp`](#0x4_brc20_TransferOp)
 -  [Function `genesis_init`](#0x4_brc20_genesis_init)
+-  [Function `drop_op`](#0x4_brc20_drop_op)
 -  [Function `is_brc20`](#0x4_brc20_is_brc20)
 -  [Function `is_deploy`](#0x4_brc20_is_deploy)
 -  [Function `as_deploy`](#0x4_brc20_as_deploy)
@@ -26,6 +27,7 @@
 <pre><code><b>use</b> <a href="">0x1::debug</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::json</a>;
@@ -69,7 +71,7 @@
 The brc20 operation
 
 
-<pre><code><b>struct</b> <a href="brc20.md#0x4_brc20_Op">Op</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="brc20.md#0x4_brc20_Op">Op</a> <b>has</b> store
 </code></pre>
 
 
@@ -148,6 +150,17 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
+<a name="0x4_brc20_drop_op"></a>
+
+## Function `drop_op`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_drop_op">drop_op</a>(op: <a href="brc20.md#0x4_brc20_Op">brc20::Op</a>)
+</code></pre>
+
+
+
 <a name="0x4_brc20_is_brc20"></a>
 
 ## Function `is_brc20`
@@ -176,7 +189,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_as_deploy">as_deploy</a>(self: &<a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): <a href="_Option">option::Option</a>&lt;<a href="brc20.md#0x4_brc20_DeployOp">brc20::DeployOp</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_as_deploy">as_deploy</a>(self: <a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): <a href="_Option">option::Option</a>&lt;<a href="brc20.md#0x4_brc20_DeployOp">brc20::DeployOp</a>&gt;
 </code></pre>
 
 
@@ -198,7 +211,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_as_mint">as_mint</a>(self: &<a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): <a href="_Option">option::Option</a>&lt;<a href="brc20.md#0x4_brc20_MintOp">brc20::MintOp</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_as_mint">as_mint</a>(self: <a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): <a href="_Option">option::Option</a>&lt;<a href="brc20.md#0x4_brc20_MintOp">brc20::MintOp</a>&gt;
 </code></pre>
 
 
@@ -220,7 +233,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_as_transfer">as_transfer</a>(self: &<a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): <a href="_Option">option::Option</a>&lt;<a href="brc20.md#0x4_brc20_TransferOp">brc20::TransferOp</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_as_transfer">as_transfer</a>(self: <a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): <a href="_Option">option::Option</a>&lt;<a href="brc20.md#0x4_brc20_TransferOp">brc20::TransferOp</a>&gt;
 </code></pre>
 
 
@@ -231,7 +244,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_from_inscription">from_inscription</a>(inscription_body: <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;): <a href="_Option">option::Option</a>&lt;<a href="brc20.md#0x4_brc20_Op">brc20::Op</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_from_inscription">from_inscription</a>(inscription_body: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;<a href="brc20.md#0x4_brc20_Op">brc20::Op</a>&gt;
 </code></pre>
 
 

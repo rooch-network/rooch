@@ -3,6 +3,7 @@
 // Code from https://github.com/ordinals/ord/
 
 use bitcoin::{hashes::Hash, Txid};
+use rooch_types::into_address::IntoAddress;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Display, Formatter},
@@ -21,6 +22,12 @@ impl Default for InscriptionId {
             txid: Txid::all_zeros(),
             index: 0,
         }
+    }
+}
+
+impl From<InscriptionId> for rooch_types::bitcoin::ord::InscriptionID {
+    fn from(inscription_id: InscriptionId) -> Self {
+        Self::new(inscription_id.txid.into_address(), inscription_id.index)
     }
 }
 

@@ -1,17 +1,21 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::vm::data_cache::{into_change_set, MoveosDataCache};
-#[cfg(test)]
-use crate::vm::unit_tests::vm_arguments_tests::{make_script_function, RemoteStore};
+use std::sync::Arc;
+
 use move_binary_format::file_format::{Signature, SignatureToken};
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::move_vm::MoveVM;
-use moveos_stdlib::natives::moveos_stdlib::raw_table::TableData;
 use parking_lot::RwLock;
-use std::sync::Arc;
+
+use moveos_stdlib::natives::moveos_stdlib::raw_table::TableData;
+
+use crate::vm::data_cache::{into_change_set, MoveosDataCache};
+#[cfg(test)]
+use crate::vm::unit_tests::vm_arguments_tests::{make_script_function, RemoteStore};
 
 #[test]
+#[allow(clippy::arc_with_non_send_sync)]
 fn publish_and_load_module() {
     let signature = Signature(vec![SignatureToken::U8]);
     let (module, _) = make_script_function(signature);

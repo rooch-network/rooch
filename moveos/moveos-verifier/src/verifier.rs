@@ -435,7 +435,18 @@ where
 
                             if let Some(private_generics_types_indices) = private_generics_types {
                                 for generic_type_index in private_generics_types_indices {
-                                    let type_arg = type_arguments.get(*generic_type_index).unwrap();
+                                    let type_arg = match type_arguments.get(*generic_type_index) {
+                                        None => {
+                                            return generate_vm_error(
+                                                StatusCode::RESOURCE_DOES_NOT_EXIST,
+                                                format!("the function {} does not have enough type arguments.", full_path_func_name),
+                                                None,
+                                                module,
+                                            );
+                                        }
+                                        Some(v) => v,
+                                    };
+
                                     let (defined_in_current_module, struct_name) =
                                         is_defined_or_allowed_in_current_module(&view, type_arg);
 
@@ -505,7 +516,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                     return generate_vm_error(
                         StatusCode::RESOURCE_DOES_NOT_EXIST,
                         err_msg,
-                        func_handle_index,
+                        Some(func_handle_index),
                         module,
                     );
                 }
@@ -525,7 +536,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                     return generate_vm_error(
                         StatusCode::RESOURCE_DOES_NOT_EXIST,
                         err_msg,
-                        func_handle_index,
+                        Some(func_handle_index),
                         module,
                     );
                 }
@@ -548,7 +559,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                     return generate_vm_error(
                         StatusCode::RESOURCE_DOES_NOT_EXIST,
                         err_msg,
-                        func_handle_index,
+                        Some(func_handle_index),
                         module,
                     );
                 }
@@ -564,7 +575,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                     return generate_vm_error(
                         StatusCode::TOO_MANY_PARAMETERS,
                         err_msg,
-                        func_handle_index,
+                        Some(func_handle_index),
                         module,
                     );
                 }
@@ -581,7 +592,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                     return generate_vm_error(
                         StatusCode::TYPE_MISMATCH,
                         err_msg,
-                        func_handle_index,
+                        Some(func_handle_index),
                         module,
                     );
                 }
@@ -602,7 +613,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                     return generate_vm_error(
                         StatusCode::RESOURCE_DOES_NOT_EXIST,
                         err_msg,
-                        func_handle_index,
+                        Some(func_handle_index),
                         module,
                     );
                 }
@@ -625,7 +636,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                     return generate_vm_error(
                         StatusCode::RESOURCE_DOES_NOT_EXIST,
                         err_msg,
-                        func_handle_index,
+                        Some(func_handle_index),
                         module,
                     );
                 }
@@ -641,7 +652,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                     return generate_vm_error(
                         StatusCode::TOO_MANY_PARAMETERS,
                         err_msg,
-                        func_handle_index,
+                        Some(func_handle_index),
                         module,
                     );
                 }
@@ -659,7 +670,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                     return generate_vm_error(
                         StatusCode::TYPE_MISMATCH,
                         err_msg,
-                        func_handle_index,
+                        Some(func_handle_index),
                         module,
                     );
                 }
@@ -749,7 +760,18 @@ where
 
                             if let Some(data_struct_types_indices) = data_struct_func_types {
                                 for generic_type_index in data_struct_types_indices {
-                                    let type_arg = type_arguments.get(*generic_type_index).unwrap();
+                                    let type_arg = match type_arguments.get(*generic_type_index) {
+                                        None => {
+                                            return generate_vm_error(
+                                                StatusCode::RESOURCE_DOES_NOT_EXIST,
+                                                format!("the function {} does not have enough type arguments.", full_path_func_name),
+                                                None,
+                                                caller_module,
+                                            );
+                                        }
+                                        Some(v) => v,
+                                    };
+
                                     match type_arg {
                                         SignatureToken::Struct(struct_handle_idx) => {
                                             let struct_handle =
@@ -770,7 +792,7 @@ where
                                                 return generate_vm_error(
                                                     StatusCode::TYPE_MISMATCH,
                                                     error_msg,
-                                                    *fhandle_idx,
+                                                    Some(*fhandle_idx),
                                                     caller_module,
                                                 );
                                             }
@@ -781,7 +803,7 @@ where
                                             return generate_vm_error(
                                                 StatusCode::TYPE_MISMATCH,
                                                 error_msg,
-                                                *fhandle_idx,
+                                                Some(*fhandle_idx),
                                                 caller_module,
                                             );
                                         }
@@ -815,12 +837,13 @@ fn generate_full_module_name(
 pub fn generate_vm_error(
     status_code: StatusCode,
     error_msg: String,
-    fhandle: FunctionHandleIndex,
+    fhandle: Option<FunctionHandleIndex>,
     module: &CompiledModule,
 ) -> VMResult<bool> {
-    Err(PartialVMError::new(status_code)
-        .with_message(error_msg)
-        .at_code_offset(FunctionDefinitionIndex::new(fhandle.0), 0_u16)
+    let err_incomplete = PartialVMError::new(status_code).with_message(error_msg);
+    let fdef_idx = fhandle.unwrap_or_else(|| FunctionHandleIndex::new(0));
+    Err(err_incomplete
+        .at_code_offset(FunctionDefinitionIndex::new(fdef_idx.0), 0_u16)
         .finish(Location::Module(module.self_id())))
 }
 
@@ -849,7 +872,7 @@ fn check_gas_validate_function(
     func_signature: &Signature,
     return_signature: &Signature,
 ) -> bool {
-    // let mut parameter_check_result = false;
+    // Content of the func_signature array has already been checked above, so unwrap directly here.
     let first_parameter = func_signature.0.get(0).unwrap();
 
     let check_struct_type = |struct_handle_idx: &StructHandleIndex| -> bool {
@@ -878,6 +901,7 @@ fn check_gas_validate_function(
         return false;
     }
 
+    // Content of the return_signature array has already been checked above, so unwrap directly here.
     let first_return_signature = return_signature.0.get(0).unwrap();
     matches!(first_return_signature, SignatureToken::Bool)
 }
@@ -887,6 +911,7 @@ fn check_gas_charge_post_function(
     func_signature: &Signature,
     return_signature: &Signature,
 ) -> bool {
+    // Content of the func_signature array has already been checked above, so unwrap directly here.
     let first_parameter = func_signature.0.get(0).unwrap();
 
     let check_struct_type = |struct_handle_idx: &StructHandleIndex| -> bool {
@@ -913,6 +938,7 @@ fn check_gas_charge_post_function(
         return first_checking_result;
     }
 
+    // Content of the func_signature array has already been checked above, so unwrap directly here.
     let second_parameter = func_signature.0.get(1).unwrap();
     let second_checking_result = matches!(second_parameter, SignatureToken::U128);
 
@@ -924,6 +950,7 @@ fn check_gas_charge_post_function(
         return false;
     }
 
+    // Content of the return_signature array has already been checked above, so unwrap directly here.
     let first_return_signature = return_signature.0.get(0).unwrap();
     matches!(first_return_signature, SignatureToken::Bool)
 }
@@ -948,12 +975,15 @@ where
     let module_address = view.address_identifier_at(module_handle.address);
     let module_name = view.identifier_at(module_handle.name);
     let module_id = ModuleId::new(*module_address, Identifier::from(module_name));
-    let module_bytes_opt = db.get_module(&module_id).unwrap();
-
-    if let Some(module_bytes) = module_bytes_opt {
-        return CompiledModule::deserialize(module_bytes.as_slice()).ok();
+    match db.get_module(&module_id) {
+        Err(_) => None,
+        Ok(value) => match value {
+            None => None,
+            Some(bytes) => {
+                return CompiledModule::deserialize(bytes.as_slice()).ok();
+            }
+        },
     }
-    None
 }
 
 pub fn verify_global_storage_access(module: &CompiledModule) -> VMResult<bool> {

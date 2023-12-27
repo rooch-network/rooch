@@ -107,6 +107,13 @@ module moveos_std::object {
         )
     }
 
+    public fun custom_object_id<ID: drop, T>(id: ID): ObjectID {
+        let bytes = bcs::to_bytes(&id);
+        vector::append(&mut bytes, *std::string::bytes(&type_info::type_name<T>()));
+        let hash = hash::sha3_256(bytes);
+        address_to_object_id(address::from_bytes(hash))
+    }
+
     #[private_generics(T)]
     /// Create a new Object, Add the Object to the global object storage and return the Object
     /// Note: the default owner is the SystemOwned Object, the caller should explicitly transfer the Object to the owner.
@@ -360,12 +367,13 @@ module moveos_std::object {
 
         let test_obj = remove(obj);
         let TestStruct{count: _count} = test_obj;
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
     fun test_shared(sender: address){
-        let ctx = moveos_std::tx_context::new_test_context(sender);
-        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut ctx));
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut tx_context));
         let obj_enitty = new_internal(object_id, TestStruct { count: 1 });
         assert!(!is_shared_internal(&obj_enitty), 1000);
         assert!(!is_frozen_internal(&obj_enitty), 1001);
@@ -373,12 +381,13 @@ module moveos_std::object {
         assert!(is_shared_internal(&obj_enitty), 1002);
         assert!(!is_frozen_internal(&obj_enitty), 1003);
         add_to_global(obj_enitty);
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
     fun test_frozen(sender: address){
-        let ctx = moveos_std::tx_context::new_test_context(sender);
-        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut ctx));
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut tx_context));
         let obj_enitty = new_internal(object_id, TestStruct { count: 1 });
         assert!(!is_shared_internal(&obj_enitty), 1000);
         assert!(!is_frozen_internal(&obj_enitty), 1001);
@@ -386,14 +395,15 @@ module moveos_std::object {
         assert!(!is_shared_internal(&obj_enitty), 1002);
         assert!(is_frozen_internal(&obj_enitty), 1003);
         add_to_global(obj_enitty);
+        moveos_std::tx_context::drop(tx_context);
     }
 
     // An object can not be shared and frozen at the same time
     // This test just ensure the flag can be set at the same time
     #[test(sender = @0x42)]
     fun test_all_flag(sender: address){
-        let ctx = moveos_std::tx_context::new_test_context(sender);
-        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut ctx));
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut tx_context));
         let obj_enitty = new_internal(object_id, TestStruct { count: 1 });
         assert!(!is_shared_internal(&obj_enitty), 1000);
         assert!(!is_frozen_internal(&obj_enitty), 1001);
@@ -402,39 +412,42 @@ module moveos_std::object {
         assert!(is_shared_internal(&obj_enitty), 1002);
         assert!(is_frozen_internal(&obj_enitty), 1003);
         add_to_global(obj_enitty);
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
     #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
     fun test_borrow_not_exist_failure(sender: signer) {
         let sender_addr = std::signer::address_of(&sender);
-        let ctx = moveos_std::tx_context::new_test_context(sender_addr);
-        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut ctx));
+        let tx_context = moveos_std::tx_context::new_test_context(sender_addr);
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut tx_context));
         let obj = new_with_id(object_id, TestStruct { count: 1 });
         let TestStruct { count : _ } = remove(obj); 
         let _obj_ref = borrow_from_global<TestStruct>(object_id);
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
     #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
     fun test_double_remove_failure(sender: signer) {
         let sender_addr = std::signer::address_of(&sender);
-        let ctx = moveos_std::tx_context::new_test_context(sender_addr);
-        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut ctx));
+        let tx_context = moveos_std::tx_context::new_test_context(sender_addr);
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut tx_context));
         let object = new_with_id(object_id, TestStruct { count: 1 });
         
         let ObjectEntity{ id:_,owner:_,flag:_, value:test_struct1} = remove_from_global<TestStruct>(object_id);
         let test_struct2 = remove(object);
         let TestStruct { count : _ } = test_struct1;
         let TestStruct { count : _ } = test_struct2;
+        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender = @0x42)]
     #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
     fun test_type_mismatch(sender: signer) {
         let sender_addr = std::signer::address_of(&sender);
-        let ctx = moveos_std::tx_context::new_test_context(sender_addr);
-        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut ctx));
+        let tx_context = moveos_std::tx_context::new_test_context(sender_addr);
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut tx_context));
         let obj = new_with_id(object_id, TestStruct { count: 1 });
         {
             let test_struct_ref = borrow(&obj);
@@ -445,5 +458,19 @@ module moveos_std::object {
             assert!(test_struct2_object_entity.value.count == 1, 1002);
         };
         drop(obj);
+        moveos_std::tx_context::drop(tx_context);
+    }
+
+    struct TestStructID has store, copy, drop{
+        id: u64,
+    }
+
+    #[test]
+    fun test_custom_object_id(){
+        let id = TestStructID{id: 1};
+        let object_id = custom_object_id<TestStructID, TestStruct>(id);
+        //std::debug::print(&object_id);
+        //ensure the object_id is the same as the object_id generated by the object.rs
+        assert!(object_id.id == @0xaa825038ae811f5c94d20175699d808eae4c624fa85c81faad45de1145284e06, 1);
     }
 }

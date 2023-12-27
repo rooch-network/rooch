@@ -4,8 +4,9 @@
 use async_trait::async_trait;
 use clap::{Parser, Subcommand};
 use commands::{
-    build::Build, integration_test::IntegrationTest, new::New, publish::Publish,
-    run_function::RunFunction, run_view_function::RunViewFunction, unit_test::Test,
+    build::Build, framework_upgrade::FrameworkUpgrade, integration_test::IntegrationTest, new::New,
+    publish::Publish, run_function::RunFunction, run_view_function::RunViewFunction,
+    unit_test::Test,
 };
 use move_cli::{
     base::{
@@ -46,6 +47,7 @@ pub enum MoveCommand {
     View(RunViewFunction),
     IntegrationTest(IntegrationTest),
     Explain(Explain),
+    FrameworkUpgrade(FrameworkUpgrade),
 }
 
 #[async_trait]
@@ -125,6 +127,7 @@ impl CommandAction<String> for MoveCli {
                 .await
                 .map(|_| "Success".to_owned())
                 .map_err(RoochError::from),
+            MoveCommand::FrameworkUpgrade(c) => c.execute_serialized().await,
         }
     }
 }

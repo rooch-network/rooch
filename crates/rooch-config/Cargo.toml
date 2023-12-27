@@ -15,11 +15,11 @@ jsonrpsee = { workspace = true }
 thiserror = { workspace = true }
 tonic = { workspace = true }
 coerce = { workspace = true }
-dirs  = { workspace = true }
-once_cell  = { workspace = true }
-clap  = { workspace = true }
+dirs = { workspace = true }
+once_cell = { workspace = true }
+clap = { workspace = true }
 dirs-next = { workspace = true }
-schemars = {workspace = true }
+schemars = { workspace = true }
 proptest = { optional = true, workspace = true }
 proptest-derive = { optional = true, workspace = true }
 
