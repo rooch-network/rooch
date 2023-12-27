@@ -11,7 +11,7 @@ pub type BitcoinAddressView = StrView<BitcoinAddress>;
 impl std::fmt::Display for BitcoinAddressView {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         //The Display Bitcoin address as a hexadecimal string
-        write!(f, "{:?}", self.0)
+        write!(f, "{}", self.0)
     }
 }
 

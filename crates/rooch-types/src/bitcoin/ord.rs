@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::types::Transaction;
+use crate::address::BitcoinAddress;
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
+use crate::indexer::state::IndexerGlobalState;
 use anyhow::Result;
+use move_core_types::language_storage::StructTag;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
@@ -189,5 +192,40 @@ impl<'a> ModuleBinding<'a> for OrdModule<'a> {
         Self: Sized,
     {
         Self { caller }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct InscriptionState {
+    pub object_id: ObjectID,
+    pub owner: AccountAddress,
+    pub owner_bitcoin_address: Option<BitcoinAddress>,
+    pub flag: u8,
+    pub value: Inscription,
+    pub object_type: StructTag,
+    pub tx_order: u64,
+    pub state_index: u64,
+    pub created_at: u64,
+    pub updated_at: u64,
+}
+
+impl InscriptionState {
+    pub fn new_from_global_state(
+        state: IndexerGlobalState,
+        inscription: Inscription,
+        owner_bitcoin_address: Option<BitcoinAddress>,
+    ) -> Self {
+        Self {
+            object_id: state.object_id,
+            owner: state.owner,
+            owner_bitcoin_address,
+            flag: state.flag,
+            value: inscription,
+            object_type: state.object_type,
+            tx_order: state.tx_order,
+            state_index: state.state_index,
+            created_at: state.created_at,
+            updated_at: state.updated_at,
+        }
     }
 }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::account_view::BalanceInfoView;
+use crate::jsonrpc_types::btc::ord::InscriptionStateView;
 use crate::jsonrpc_types::btc::utxo::UTXOStateView;
 use crate::jsonrpc_types::event_view::{EventView, IndexerEventView};
 use crate::jsonrpc_types::transaction_view::TransactionWithInfoView;
@@ -30,6 +31,7 @@ pub type IndexerGlobalStatePageView = PageView<IndexerGlobalStateView, IndexerSt
 pub type IndexerTableStatePageView = PageView<IndexerTableStateView, IndexerStateID>;
 
 pub type UTXOPageView = PageView<UTXOStateView, IndexerStateID>;
+pub type InscriptionPageView = PageView<InscriptionStateView, IndexerStateID>;
 
 /// `next_cursor` points to the last item in the page;
 /// Reading with `next_cursor` will start from the next item after `next_cursor` if

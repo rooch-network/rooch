@@ -4,6 +4,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use moveos_types::move_std::string::MoveString;
 use schemars::gen::SchemaGenerator;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
 use schemars::JsonSchema;
@@ -226,5 +227,32 @@ impl std::fmt::Display for H256View {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         //The H256 should display fully hex string with `0x` prefix
         write!(f, "{:#x}", self.0)
+    }
+}
+
+//
+// // pub type H256View = StrView<ethers::types::H256>;
+pub type MoveStringView = StrView<MoveString>;
+
+impl FromStr for MoveStringView {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(StrView(MoveString::from_str(s)?))
+        // Ok(Self(MoveString::from_str(
+        //     s.strip_prefix("0x").unwrap_or(s),
+        // )?))
+    }
+}
+
+impl From<MoveStringView> for MoveString {
+    fn from(value: MoveStringView) -> Self {
+        value.0
+    }
+}
+
+impl std::fmt::Display for MoveStringView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+        // write!(f, "0x{}", hex::encode(&self.0))
     }
 }

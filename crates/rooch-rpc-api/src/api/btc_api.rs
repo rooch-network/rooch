@@ -1,8 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::jsonrpc_types::btc::ord::InscriptionFilterView;
 use crate::jsonrpc_types::btc::utxo::UTXOFilterView;
-use crate::jsonrpc_types::{StrView, UTXOPageView};
+use crate::jsonrpc_types::{InscriptionPageView, StrView, UTXOPageView};
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use rooch_open_rpc_macros::open_rpc;
@@ -22,4 +23,15 @@ pub trait BtcAPI {
         limit: Option<StrView<usize>>,
         descending_order: Option<bool>,
     ) -> RpcResult<UTXOPageView>;
+
+    /// Query the Inscription via global index by Inscription filter
+    #[method(name = "queryInscriptions")]
+    async fn query_inscriptions(
+        &self,
+        filter: Option<InscriptionFilterView>,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerStateID>,
+        limit: Option<StrView<usize>>,
+        descending_order: Option<bool>,
+    ) -> RpcResult<InscriptionPageView>;
 }
