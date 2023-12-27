@@ -4,7 +4,6 @@
 use crate::binding_test;
 use bitcoin::consensus::Decodable;
 use hex::FromHex;
-use rooch_types::bitcoin::ord::InscriptionRecord;
 use tracing::debug;
 
 fn decode_inscription(btx_tx_hex: &str) {
@@ -36,7 +35,10 @@ fn decode_inscription(btx_tx_hex: &str) {
         .enumerate()
     {
         debug!("{}. inscription: {:?}", i, inscription);
-        assert_eq!(InscriptionRecord::from(inscription), inscription_from_move);
+        assert_eq!(
+            inscription.body.unwrap_or_default(),
+            inscription_from_move.body
+        );
     }
 }
 

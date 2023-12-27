@@ -129,7 +129,7 @@ module bitcoin_move::light_client{
             let outpoint = *types::txin_previous_output(txin);
             if(table::contains(&btc_utxo_store.utxo, outpoint)){
                 let object_id = table::remove(&mut btc_utxo_store.utxo, outpoint);
-                let utxo_obj = utxo::take(ctx, object_id);
+                let (_owner, utxo_obj) = utxo::take(ctx, object_id);
                 let seal_outs = ord::spend_utxo(ctx, &mut utxo_obj, tx);
                 if(!vector::is_empty(&seal_outs)){
                     let protocol = type_info::type_name<Inscription>();
@@ -192,7 +192,7 @@ module bitcoin_move::light_client{
             utxo::transfer(utxo_obj, owner_address); 
             idx = idx + 1;
         };
-        simple_multimap::destroy_empty(output_seals);
+        simple_multimap::drop(output_seals);
     }
 
 

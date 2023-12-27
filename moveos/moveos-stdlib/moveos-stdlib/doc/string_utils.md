@@ -16,6 +16,8 @@
 -  [Function `parse_u256`](#0x2_string_utils_parse_u256)
 -  [Function `parse_decimal_option`](#0x2_string_utils_parse_decimal_option)
 -  [Function `parse_decimal`](#0x2_string_utils_parse_decimal)
+-  [Function `to_lower_case`](#0x2_string_utils_to_lower_case)
+-  [Function `to_upper_case`](#0x2_string_utils_to_upper_case)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -144,4 +146,26 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_parse_decimal">parse_decimal</a>(s: &<a href="_String">string::String</a>, decimal: u64): u256
+</code></pre>
+
+
+
+<a name="0x2_string_utils_to_lower_case"></a>
+
+## Function `to_lower_case`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_to_lower_case">to_lower_case</a>(s: &<a href="_String">string::String</a>): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x2_string_utils_to_upper_case"></a>
+
+## Function `to_upper_case`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="string_utils.md#0x2_string_utils_to_upper_case">to_upper_case</a>(s: &<a href="_String">string::String</a>): <a href="_String">string::String</a>
 </code></pre>

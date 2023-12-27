@@ -4,13 +4,19 @@
 module bitcoin_move::ord {
     use std::vector;
     use std::option::{Self, Option};
-    use std::string::String;
+    use std::string::{Self, String};
     use moveos_std::bcs;
     use moveos_std::event;
     use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, ObjectID, Object};
+    use moveos_std::simple_map::{Self, SimpleMap};
+    use moveos_std::json;
+    use moveos_std::table_vec::{Self, TableVec};
     use bitcoin_move::types::{Self, Witness, Transaction};
     use bitcoin_move::utxo::{Self, UTXO, SealOut};
+    use bitcoin_move::brc20;
+
+    friend bitcoin_move::genesis;
 
     struct InscriptionID has store, copy, drop {
         txid: address,
@@ -20,6 +26,8 @@ module bitcoin_move::ord {
     struct Inscription has key{
         txid: address,
         index: u32,
+        /// Transaction input index
+        input: u32,
         body: vector<u8>,
         content_encoding: Option<String>,
         content_type: Option<String>,
@@ -27,6 +35,9 @@ module bitcoin_move::ord {
         metaprotocol: Option<String>,
         parent: Option<ObjectID>,
         pointer: Option<u64>,
+        /// If the Inscription body is a JSON object, this field contains the parsed JSON object as a map.
+        /// Otherwise, this field is empty map
+        json_body: SimpleMap<String,String>,
     }
 
     struct InscriptionRecord has store, copy, drop {
@@ -48,13 +59,28 @@ module bitcoin_move::ord {
         record: InscriptionRecord,
     }
 
+    struct InscriptionStore has key{
+        inscriptions: TableVec<InscriptionID>,
+    }
+
+    public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer){
+        let inscriptions = context::new_table_vec<InscriptionID>(ctx);
+        let store = InscriptionStore{
+            inscriptions: inscriptions,
+        };
+        let store_obj = context::new_named_object(ctx, store);
+        object::to_shared(store_obj);
+    }
+
     // ==== Inscription ==== //
 
-    fun new_inscription(ctx: &mut Context, txid: address, index:u32, record: InscriptionRecord): Object<Inscription> {
+    fun record_to_inscription(txid: address, index: u32, input: u32, record: InscriptionRecord): Inscription{
         let parent = option::map(record.parent, |e| object::custom_object_id<InscriptionID,Inscription>(e));
-        let inscription = Inscription{
+        let json_body = parse_json_body(&record);
+        Inscription{
             txid: txid,
             index: index,
+            input: input,
             body: record.body,
             content_encoding: record.content_encoding,
             content_type: record.content_type,
@@ -62,12 +88,31 @@ module bitcoin_move::ord {
             metaprotocol: record.metaprotocol,
             parent: parent,
             pointer: record.pointer,
-        };
+            json_body: json_body,
+        }
+    }
+
+    fun create_obj(ctx: &mut Context, inscription: Inscription): Object<Inscription> {
         let id = InscriptionID{
-            txid: txid,
-            index: index,
+            txid: inscription.txid,
+            index: inscription.index,
         };
+        let store_obj_id = object::named_object_id<InscriptionStore>();
+        let store_obj = context::borrow_mut_object_shared<InscriptionStore>(ctx, store_obj_id);
+        let store = object::borrow_mut(store_obj);
+        table_vec::push_back(&mut store.inscriptions, id);
         context::new_custom_object(ctx, id, inscription)
+    }
+    
+    fun parse_json_body(record: &InscriptionRecord) : SimpleMap<String,String> {
+        if (vector::is_empty(&record.body) || option::is_none(&record.content_type)) {
+            return simple_map::new()
+        };
+        let content_type = option::destroy_some(record.content_type);
+        if(content_type != string::utf8(b"text/plain;charset=utf-8") || content_type != string::utf8(b"text/plain") || content_type != string::utf8(b"application/json")){
+            return simple_map::new()
+        };
+        json::to_map(record.body)
     }
 
     public fun exists_inscription(ctx: &Context, txid: address, index: u32): bool{
@@ -99,13 +144,19 @@ module bitcoin_move::ord {
         //TODO we should track the Inscription via SatPoint, but now we just use the first output for simplicity.
         let output_index = 0;
         let first_output = vector::borrow(outputs, output_index);
-        let address = types::txout_object_address(first_output);
+        let to_address = types::txout_object_address(first_output);
         let j = 0;
         let objects_len = vector::length(&seal_object_ids);
         while(j < objects_len){
             let seal_object_id = *vector::borrow(&mut seal_object_ids, j);
-            let inscription_obj = context::take_object_extend<Inscription>(ctx, seal_object_id); 
-            object::transfer_extend(inscription_obj, address);
+            let (origin_owner, inscription_obj) = context::take_object_extend<Inscription>(ctx, seal_object_id);
+            let inscription = object::borrow(&inscription_obj); 
+            if(brc20::is_brc20(&inscription.json_body)){
+                let op = brc20::new_op(origin_owner, to_address, simple_map::clone(&inscription.json_body));
+                brc20::progress_utxo_op(ctx, op);
+                //TODO record the execution result
+            };
+            object::transfer_extend(inscription_obj, to_address);
             vector::push_back(&mut seal_outs, utxo::new_seal_out(output_index, seal_object_id));
             j = j + 1;
         };
@@ -113,12 +164,12 @@ module bitcoin_move::ord {
     }
 
     public fun progress_transaction(ctx: &mut Context, tx: &Transaction): vector<SealOut>{
-        let tx_id = types::tx_id(tx);
         let output_seals = vector::empty();
 
-        let inscription_records = from_transaction(tx);
-        let inscription_records_len = vector::length(&inscription_records);
-        if(inscription_records_len == 0){
+        let inscriptions = from_transaction(tx);
+        let inscriptions_len = vector::length(&inscriptions);
+        if(inscriptions_len == 0){
+            vector::destroy_empty(inscriptions);
             return output_seals
         };
 
@@ -128,25 +179,41 @@ module bitcoin_move::ord {
         // ord has three mode for Inscribe:   SameSat,SeparateOutputs,SharedOutput,
         //https://github.com/ordinals/ord/blob/master/src/subcommand/wallet/inscribe/batch.rs#L533
         //TODO handle SameSat
-        let is_separate_outputs = output_len > inscription_records_len;
+        let is_separate_outputs = output_len > inscriptions_len;
         let idx = 0;
-        while(idx < inscription_records_len){
-            let inscription_record = *vector::borrow(&mut inscription_records, idx);
-            
-            let inscription_obj = new_inscription(ctx, tx_id, (idx as u32), inscription_record);
-            let object_id = object::id(&inscription_obj);
+        //reverse inscriptions and pop from the end
+        vector::reverse(&mut inscriptions);
+        while(idx < inscriptions_len){
             let output_index = if(is_separate_outputs){
                 idx
             }else{
                 0  
             };
+
             let output = vector::borrow(tx_outputs, output_index);
-            let address = types::txout_object_address(output);
-            object::transfer_extend(inscription_obj, address);
+            let to_address = types::txout_object_address(output);
+
+            let inscription = vector::pop_back(&mut inscriptions);
+            //Because the previous output of inscription input is a witness program address, so we simply use the output address as the from address.
+            let from = to_address;
+            progress_inscribe_protocol(ctx, from, to_address, &inscription);
+            let inscription_obj = create_obj(ctx, inscription);
+            let object_id = object::id(&inscription_obj);            
+           
+            object::transfer_extend(inscription_obj, to_address);
             vector::push_back(&mut output_seals, utxo::new_seal_out(output_index, object_id));
             idx = idx + 1;
         };
+        vector::destroy_empty(inscriptions);
         output_seals
+    }
+
+    fun progress_inscribe_protocol(ctx: &mut Context, from: address, to: address, inscription: &Inscription){
+        if (brc20::is_brc20(&inscription.json_body)){
+            let op = brc20::new_op(from, to, simple_map::clone(&inscription.json_body));
+            brc20::progress_inscribe_op(ctx, op);
+            //TODO record the execution result
+        };
     }
 
     fun validate_inscription_records(tx_id: address, input_index: u64, record: vector<InscriptionRecord>): vector<InscriptionRecord>{
@@ -209,6 +276,7 @@ module bitcoin_move::ord {
         let Inscription{
             txid: _,
             index: _,
+            input: _,
             body: _,
             content_encoding: _,
             content_type: _,
@@ -216,7 +284,9 @@ module bitcoin_move::ord {
             metaprotocol: _,
             parent: _,
             pointer: _,
+            json_body,
         } = self;
+        simple_map::drop(json_body);
     }
 
     // ==== InscriptionRecord ==== //
@@ -238,25 +308,30 @@ module bitcoin_move::ord {
         (body, content_encoding, content_type, metadata, metaprotocol, parent, pointer)
     }
 
-    public fun from_transaction(tx: &Transaction): vector<InscriptionRecord>{
+    public fun from_transaction(tx: &Transaction): vector<Inscription>{
         let tx_id = types::tx_id(tx);
-        let inscription_records = vector::empty();
+        let inscriptions = vector::empty();
         let inputs = types::tx_input(tx);
         let len = vector::length(inputs);
-        let idx = 0;
-        while(idx < len){
-            let input = vector::borrow(inputs, idx);
+        let input_idx = 0;
+        let index_counter = 0;
+        while(input_idx < len){
+            let input = vector::borrow(inputs, input_idx);
             let witness = types::txin_witness(input);
-            let inscription_records_from_witness = validate_inscription_records(tx_id, idx, from_witness(witness));
-            if(vector::length(&inscription_records_from_witness) > 0){
-                vector::append(&mut inscription_records, inscription_records_from_witness);
+            let inscription_records_from_witness = from_witness(witness);
+            if(!vector::is_empty(&inscription_records_from_witness)){
+                vector::for_each(inscription_records_from_witness,|record|{
+                    let inscription = record_to_inscription(tx_id, (index_counter as u32), (input_idx as u32), record);
+                    vector::push_back(&mut inscriptions, inscription);
+                    index_counter = index_counter + 1;
+                })
             };
-            idx = idx + 1;
+            input_idx = input_idx + 1;
         };
-        inscription_records
+        inscriptions
     }
 
-    public fun from_transaction_bytes(transaction_bytes: vector<u8>): vector<InscriptionRecord>{
+    public fun from_transaction_bytes(transaction_bytes: vector<u8>): vector<Inscription>{
         let transaction = bcs::from_bytes<Transaction>(transaction_bytes);
         from_transaction(&transaction)
     }

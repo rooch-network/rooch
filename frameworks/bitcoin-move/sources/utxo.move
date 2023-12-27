@@ -143,7 +143,7 @@ module bitcoin_move::utxo{
         object::transfer_extend(utxo_obj, to);
     }
 
-    public(friend) fun take(ctx: &mut Context, object_id: ObjectID): Object<UTXO>{
+    public(friend) fun take(ctx: &mut Context, object_id: ObjectID): (address, Object<UTXO>){
         context::take_object_extend<UTXO>(ctx, object_id)
     }
 
