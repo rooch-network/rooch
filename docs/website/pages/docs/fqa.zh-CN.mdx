@@ -26,7 +26,7 @@ Object 是一种存储方式，它跟资源存储不同，详细的介绍可以�
 
 ### 什么是 named object？
 
-命名对象是为了方便开发者获取对象的一种简便方法，命名对象必须全局唯一。
+命名对象生成 ID 的方式不一样，命名对象根据类型生成 ID，普通对象的 ID 跟交易哈希有关。使用命名对象方便开发者获取对象，命名对象必须全局唯一。
 
 比如 `0x2::object::ObjectEntity<0x3::timestamp::Timestamp>` 这个类型，在这个地址上是唯一的。
 
@@ -35,7 +35,7 @@ Object 是一种存储方式，它跟资源存储不同，详细的介绍可以�
 ### 调用函数时，对象要怎么传递？
 
 - `object:object_id`
-- `typename`
+- `object:typename`
 
 在 `--args` 后面按照上面两种格式传递即可，详细的使用可以参考 [quick start](./developer-guides/quick-start.zh-CN.mdx)。
 
@@ -43,7 +43,7 @@ Object 是一种存储方式，它跟资源存储不同，详细的介绍可以�
 
 ### `Coin<T>` 的 `T` 一定要有 `store` 能力吗？
 
-`Coin<T>` 的 `T` 是否需要带 `T`，由开发者决定。
+`Coin<T>` 的 `T` 是否需要带 `store` 能力，由开发者决定。
 
 ## Network
 

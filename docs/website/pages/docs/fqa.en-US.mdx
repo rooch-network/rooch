@@ -26,7 +26,7 @@ Currently, the object ID can be encapsulated into an event through Event. When p
 
 ### What is a named object?
 
-Named objects are a convenient way for developers to obtain objects. Named objects must be globally unique.
+The way named objects generate IDs is different. Named objects generate IDs based on their types, while the IDs of normal objects are related to transaction hash. Using named objects facilitates developers to obtain objects, and named objects must be globally unique.
 
 For example, the type `0x2::object::ObjectEntity<0x3::timestamp::Timestamp>` is unique at this address.
 
@@ -35,7 +35,7 @@ Normally when we create an object, we need to obtain the object ID to perform su
 ### How to pass objects when calling functions?
 
 - `object:object_id`
-- `typename`
+- `object:typename`
 
 Just pass it in the above two formats after `--args`. For detailed usage, please refer to [quick start](./developer-guides/quick-start.en-US.mdx).
 
@@ -43,7 +43,7 @@ Just pass it in the above two formats after `--args`. For detailed usage, please
 
 ### Does `T` of `Coin<T>` have to have store ability?
 
-Whether the `T` of `Coin<T>` needs to contain `T` is decided by the developer.
+Whether the `T` of `Coin<T>` needs to contain `store` ability is decided by the developer.
 
 ## Network
 
