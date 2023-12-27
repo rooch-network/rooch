@@ -86,7 +86,11 @@ module moveos_std::simple_multimap {
         } else {
             let idx = option::extract(&mut maybe_idx);
             let element = vector::borrow(&map.data, idx);
-            vector::borrow(&element.value, 0)
+            if(vector::is_empty(&element.value)){
+                default
+            } else {
+                vector::borrow(&element.value, 0)
+            }
         }
     }
 

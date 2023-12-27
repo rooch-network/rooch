@@ -14,6 +14,8 @@ use move_core_types::{
 };
 use serde::{Deserialize, Serialize};
 
+pub const MODULE_NAME: &IdentStr = ident_str!("simple_multimap");
+
 /// `SimpleMultiMap` is represented `moveos_std::simple_multimap::SimpleMultiMap` in Move.
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct SimpleMultiMap<Key, Value> {
@@ -45,7 +47,7 @@ where
     Value: MoveState,
 {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("simple_multimap");
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("Element");
 
     fn type_params() -> Vec<TypeTag> {
@@ -72,7 +74,7 @@ where
     Value: MoveState,
 {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("simple_multimap");
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("SimpleMultiMap");
 
     fn type_params() -> Vec<TypeTag> {

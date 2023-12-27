@@ -97,17 +97,17 @@ impl RelayerActor {
                             self.max_gas_amount,
                             action,
                         );
-                        let tx = tx_data.sign(&self.relayer_key);
+                        let tx = tx_data.clone().sign(&self.relayer_key);
                         let tx_hash = tx.tx_hash();
                         let result = self.tx_submiter.submit_tx(tx).await?;
                         match result.execution_info.status {
                             KeptVMStatusView::Executed => {
-                                info!("Relayer execute relay tx({}) success", tx_hash);
+                                info!("Relayer execute relay tx({:?}) success", tx_hash);
                             }
                             _ => {
                                 warn!(
-                                    "Relayer execute relay tx({}) failed, status: {:?}",
-                                    tx_hash, result.execution_info.status
+                                    "Relayer execute relay tx({:?}) failed, tx_data: {:?},  status: {:?}",
+                                    tx_hash, tx_data, result.execution_info.status
                                 );
                                 break;
                             }
