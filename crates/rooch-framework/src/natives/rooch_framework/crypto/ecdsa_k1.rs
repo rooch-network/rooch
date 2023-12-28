@@ -44,11 +44,6 @@ pub fn native_verify(
     let public_key_bytes_ref = public_key_bytes.as_bytes_ref();
     let signature_bytes_ref = signature_bytes.as_bytes_ref();
 
-    println!("sign {:x?}", &signature_bytes_ref.to_owned());
-    println!("pub {:x?}", &public_key_bytes_ref.to_owned());
-    println!("msg {:x?}", &msg_ref.to_owned());
-    println!("hash {:?}", &hash);
-
     // TODO(Gas): Charge the arg size dependent costs
 
     let cost = gas_params.base;

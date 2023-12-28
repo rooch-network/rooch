@@ -114,7 +114,7 @@ module rooch_framework::ethereum_validator {
             ecdsa_k1_recoverable::verify(
                 &get_signature_from_authenticator_payload(authenticator_payload),
                 tx_hash,
-                1
+                ecdsa_k1_recoverable::keccak256()
             ),
             auth_validator::error_invalid_authenticator()
         );
