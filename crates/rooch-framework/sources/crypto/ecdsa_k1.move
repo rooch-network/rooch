@@ -55,11 +55,9 @@ module rooch_framework::ecdsa_k1 {
 
     #[test]
     fun test_verify_success() {
-        let msg = x"197267f99443b2d2d1fb27e2ab7ee48f31099803de1562c20a7398246cd8a6c7";
-        
-        let pubkey = x"02bc92081a440ade7ca7d5608be7e83711a274498ab18cddb130d8d7ab3a2331";
-        let sig = x"1c4e6b721e1351c3a310261482f1209e85eb10f38a799676309a3fefc335ba28ce64dca191a49457060708e53420f6ba60b7c9b2415e3d7be6567d80acbdb38db7";
-                    
+        let msg = x"00010203";
+        let pubkey = x"033e99a541db69bd32040dfe5037fbf5210dafa8151a71e21c5204b05d95ce0a62";
+        let sig = x"416a21d50b3c838328d4f03213f8ef0c3776389a972ba1ecd37b56243734eba208ea6aaa6fc076ad7accd71d355f693a6fe54fe69b3c168eace9803827bc9046";
         let result = verify(&sig, &pubkey, &msg, SHA256);
         assert!(result, 0);
     }
@@ -72,7 +70,7 @@ module rooch_framework::ecdsa_k1 {
         let sig = x"";
         verify(&sig, &pubkey, &msg, SHA256);
     }
-    
+
     #[test]
     #[expected_failure(location=Self, abort_code = ErrorInvalidPubKey)]
     fun test_verify_fails_invalid_pubkey() {
