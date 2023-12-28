@@ -531,6 +531,30 @@ mod test {
 
     use super::*;
 
+    fn test_bitcoin_str_address_2_multi_chain_address_roundtrip(address_str: &str) {
+        println!("str {:?}", address_str);
+        let address = bitcoin::Address::from_str(address_str)
+            .unwrap()
+            .require_network(bitcoin::Network::Bitcoin)
+            .unwrap();
+        println!("{:?}", address);
+        let bitcoinAddress = BitcoinAddress::from(address);
+        println!("{:?}", bitcoinAddress);
+        let multiChainAddress = MultiChainAddress::from(bitcoinAddress);
+        println!("{:?}", multiChainAddress);
+        println!("{}", multiChainAddress);
+
+        let m1 = MultiChainAddress::from_str("bitcoin1pqrawtj0v3gpl4qqkkcavjdequnj9nswvqu40gx7m");
+        println!("{:?}", m1)
+    }
+    #[test]
+    fn test_sdk_multi_chain_address() {
+        let js_generate_multi_chain_address = "";
+        let addressStr = "bc1qltjunmy2q0agq94k8tynwg8yu3vurnq8h7yc7p";
+
+        test_bitcoin_str_address_2_multi_chain_address_roundtrip(addressStr)
+    }
+
     fn test_rooch_supported_address_roundtrip<T>()
     where
         T: RoochSupportedAddress + Clone + std::fmt::Debug + PartialEq + Eq + std::hash::Hash,

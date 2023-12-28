@@ -19,6 +19,10 @@ export class WalletAccount {
     return this.address
   }
 
+  // public toMultiChainAddress(): string {
+  //
+  // }
+
   public getInfo() {
     return {
       address: this.address,

@@ -68,7 +68,8 @@
     "vite": "^4.4.4",
     "vitest": "^0.33.0",
     "@metamask/sdk": "^0.14.1",
-    "@metamask/detect-provider": "^2.0.0"
+    "@metamask/detect-provider": "^2.0.0",
+    "bitcoinjs-lib": "6.1.5"
   },
   "dependencies": {
     "@roochnetwork/rooch-sdk": "workspace:*",

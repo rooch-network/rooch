@@ -45,7 +45,6 @@ pub fn native_ecrecover(
     // TODO(Gas): Charge the arg size dependent costs
     let cost = gas_params.base;
 
-
     let Ok(sig) = <Secp256k1RecoverableSignature as ToFromBytes>::from_bytes(&signature_ref) else {
         return Ok(NativeResult::err(cost, E_INVALID_SIGNATURE));
     };
