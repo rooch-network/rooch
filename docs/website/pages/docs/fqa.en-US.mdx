@@ -1,0 +1,54 @@
+# FAQ
+
+## Session key
+
+### What is Session key?
+
+Rooch's Session key is a temporary key that facilitates user interaction with the chain.
+
+### Session key 有什么用？
+
+When using Rooch Dashboard to interact with applications, each will automatically generate a Session Key. It has an expiration time and will become invalid if there is no interaction for a long time.
+
+The purpose of the Session Key is to simplify the interaction process between the wallet and the DApp. The Session key is generated during the first interaction. As long as the Session key has not expired in subsequent operations, the DApp does not need to call the wallet again for signing.
+
+For more detailed usage introduction, please refer to [Dashboard](./user-guides/dashboard.en-US.mdx).
+
+## Object
+
+### What is Object in Rooch?
+
+Object is a storage method, which is different from resource storage. For detailed introduction, please refer to [quick start](./developer-guides/quick-start.en-US.mdx). This tutorial details the differences between the two storage methods.
+
+### How to find the object ID
+
+Currently, the object ID can be encapsulated into an event through Event. When performing certain operations to create an object, the logic of emitting events can be added, so that the object ID can be obtained through JSON-RPC. For detailed methods, please refer to [quick start](./developer-guides/quick-start.en-US.mdx).
+
+### What is a named object?
+
+The way named objects generate IDs is different. Named objects generate IDs based on their types, while the IDs of normal objects are related to transaction hash. Using named objects facilitates developers to obtain objects, and named objects must be globally unique.
+
+For example, the type `0x2::object::ObjectEntity<0x3::timestamp::Timestamp>` is unique at this address.
+
+Normally when we create an object, we need to obtain the object ID to perform subsequent operations on it. However, using named object allows us to directly pass the type in the parameter instead of the ID.
+
+### How to pass objects when calling functions?
+
+- `object:object_id`
+- `object:typename`
+
+Just pass it in the above two formats after `--args`. For detailed usage, please refer to [quick start](./developer-guides/quick-start.en-US.mdx).
+
+## Ability
+
+### Does `T` of `Coin<T>` have to have store ability?
+
+Whether the `T` of `Coin<T>` needs to contain `store` ability is decided by the developer.
+
+## Network
+
+### What networks does Rooch have?
+
+The `dev` development network has been launched and the `test` network will be released soon.
+
+Currently available Rooch RPC node address: `https://dev-seed.rooch.network:443/`.
