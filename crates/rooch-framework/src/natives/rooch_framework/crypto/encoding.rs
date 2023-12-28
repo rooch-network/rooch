@@ -154,8 +154,8 @@ pub fn native_p2pkh(
     let public_key_bytes_ref = public_key.as_bytes_ref();
 
     let Ok(bitcoin_public_key) = PublicKey::from_slice(&public_key_bytes_ref) else {
-            return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
-        };
+        return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
+    };
 
     // Generate the P2PKH address from the bitcoin public key
     let p2pkh_address = Address::p2pkh(&bitcoin_public_key, Network::Bitcoin); // TODO network selection

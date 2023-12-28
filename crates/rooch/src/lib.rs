@@ -21,6 +21,7 @@ pub struct RoochCli {
     pub cmd: Command,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(clap::Parser)]
 pub enum Command {
     Account(Account),

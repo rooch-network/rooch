@@ -1,8 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::ethereum_address::ETHAddress;
-use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::Result;
 use ethers::types::Block;
 use move_core_types::{
@@ -12,12 +10,17 @@ use move_core_types::{
     u256::{U256, U256_NUM_BYTES},
     value::MoveValue,
 };
+use serde::{Deserialize, Serialize};
+
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     moveos_std::tx_context::TxContext,
     transaction::FunctionCall,
 };
-use serde::{Deserialize, Serialize};
+
+use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
+
+use super::ethereum_address::ETHAddress;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("ethereum_light_client");
 
@@ -72,7 +75,7 @@ impl<T> TryFrom<&Block<T>> for BlockHeader {
             state_root: value.state_root.as_bytes().to_vec(),
             transactions_root: value.transactions_root.as_bytes().to_vec(),
             receipts_root: value.receipts_root.as_bytes().to_vec(),
-            logs_bloom: value.logs_bloom.map(|b| b.0.to_vec()).unwrap_or(vec![]),
+            logs_bloom: value.logs_bloom.map(|b| b.0.to_vec()).unwrap_or_default(),
             difficulty: eth_u256_to_move_u256(&value.difficulty),
             number: value
                 .number

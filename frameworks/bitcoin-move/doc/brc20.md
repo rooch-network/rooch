@@ -6,37 +6,31 @@
 
 
 -  [Struct `BRC20CoinInfo`](#0x4_brc20_BRC20CoinInfo)
+-  [Struct `BRC20Balance`](#0x4_brc20_BRC20Balance)
 -  [Resource `BRC20Store`](#0x4_brc20_BRC20Store)
 -  [Struct `Op`](#0x4_brc20_Op)
 -  [Struct `DeployOp`](#0x4_brc20_DeployOp)
 -  [Struct `MintOp`](#0x4_brc20_MintOp)
 -  [Struct `TransferOp`](#0x4_brc20_TransferOp)
 -  [Function `genesis_init`](#0x4_brc20_genesis_init)
+-  [Function `new_op`](#0x4_brc20_new_op)
+-  [Function `clone_op`](#0x4_brc20_clone_op)
+-  [Function `drop_op`](#0x4_brc20_drop_op)
 -  [Function `is_brc20`](#0x4_brc20_is_brc20)
--  [Function `is_deploy`](#0x4_brc20_is_deploy)
--  [Function `as_deploy`](#0x4_brc20_as_deploy)
--  [Function `is_mint`](#0x4_brc20_is_mint)
--  [Function `as_mint`](#0x4_brc20_as_mint)
--  [Function `is_transfer`](#0x4_brc20_is_transfer)
--  [Function `as_transfer`](#0x4_brc20_as_transfer)
--  [Function `from_inscription`](#0x4_brc20_from_inscription)
--  [Function `from_transaction_bytes`](#0x4_brc20_from_transaction_bytes)
+-  [Function `progress_utxo_op`](#0x4_brc20_progress_utxo_op)
+-  [Function `progress_inscribe_op`](#0x4_brc20_progress_inscribe_op)
+-  [Function `get_tick_info`](#0x4_brc20_get_tick_info)
+-  [Function `get_balance`](#0x4_brc20_get_balance)
 
 
 <pre><code><b>use</b> <a href="">0x1::debug</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
-<b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::string_utils</a>;
 <b>use</b> <a href="">0x2::table</a>;
-<b>use</b> <a href="">0x3::bitcoin_address</a>;
-<b>use</b> <a href="ord.md#0x4_ord">0x4::ord</a>;
-<b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 </code></pre>
 
 
@@ -47,7 +41,18 @@
 
 
 
-<pre><code><b>struct</b> <a href="brc20.md#0x4_brc20_BRC20CoinInfo">BRC20CoinInfo</a> <b>has</b> store
+<pre><code><b>struct</b> <a href="brc20.md#0x4_brc20_BRC20CoinInfo">BRC20CoinInfo</a> <b>has</b> <b>copy</b>, store
+</code></pre>
+
+
+
+<a name="0x4_brc20_BRC20Balance"></a>
+
+## Struct `BRC20Balance`
+
+
+
+<pre><code><b>struct</b> <a href="brc20.md#0x4_brc20_BRC20Balance">BRC20Balance</a> <b>has</b> store
 </code></pre>
 
 
@@ -70,7 +75,7 @@
 The brc20 operation
 
 
-<pre><code><b>struct</b> <a href="brc20.md#0x4_brc20_Op">Op</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="brc20.md#0x4_brc20_Op">Op</a> <b>has</b> store
 </code></pre>
 
 
@@ -129,6 +134,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 "p": "brc-20",
 "op": "transfer",
 "tick": "ordi",
+"to": "",
 "amt": "100"
 }
 
@@ -149,99 +155,88 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
+<a name="0x4_brc20_new_op"></a>
+
+## Function `new_op`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="brc20.md#0x4_brc20_new_op">new_op</a>(from: <b>address</b>, <b>to</b>: <b>address</b>, json_map: <a href="_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="_String">string::String</a>&gt;): <a href="brc20.md#0x4_brc20_Op">brc20::Op</a>
+</code></pre>
+
+
+
+<a name="0x4_brc20_clone_op"></a>
+
+## Function `clone_op`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_clone_op">clone_op</a>(self: &<a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): <a href="brc20.md#0x4_brc20_Op">brc20::Op</a>
+</code></pre>
+
+
+
+<a name="0x4_brc20_drop_op"></a>
+
+## Function `drop_op`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_drop_op">drop_op</a>(op: <a href="brc20.md#0x4_brc20_Op">brc20::Op</a>)
+</code></pre>
+
+
+
 <a name="0x4_brc20_is_brc20"></a>
 
 ## Function `is_brc20`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_is_brc20">is_brc20</a>(self: &<a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_is_brc20">is_brc20</a>(json_map: &<a href="_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="_String">string::String</a>&gt;): bool
 </code></pre>
 
 
 
-<a name="0x4_brc20_is_deploy"></a>
+<a name="0x4_brc20_progress_utxo_op"></a>
 
-## Function `is_deploy`
+## Function `progress_utxo_op`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_is_deploy">is_deploy</a>(self: &<a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): bool
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="brc20.md#0x4_brc20_progress_utxo_op">progress_utxo_op</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, op: <a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): bool
 </code></pre>
 
 
 
-<a name="0x4_brc20_as_deploy"></a>
+<a name="0x4_brc20_progress_inscribe_op"></a>
 
-## Function `as_deploy`
+## Function `progress_inscribe_op`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_as_deploy">as_deploy</a>(self: &<a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): <a href="_Option">option::Option</a>&lt;<a href="brc20.md#0x4_brc20_DeployOp">brc20::DeployOp</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="brc20.md#0x4_brc20_progress_inscribe_op">progress_inscribe_op</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, op: <a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): bool
 </code></pre>
 
 
 
-<a name="0x4_brc20_is_mint"></a>
+<a name="0x4_brc20_get_tick_info"></a>
 
-## Function `is_mint`
+## Function `get_tick_info`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_is_mint">is_mint</a>(self: &<a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_get_tick_info">get_tick_info</a>(brc20_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="brc20.md#0x4_brc20_BRC20Store">brc20::BRC20Store</a>&gt;, tick: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="brc20.md#0x4_brc20_BRC20CoinInfo">brc20::BRC20CoinInfo</a>&gt;
 </code></pre>
 
 
 
-<a name="0x4_brc20_as_mint"></a>
+<a name="0x4_brc20_get_balance"></a>
 
-## Function `as_mint`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_as_mint">as_mint</a>(self: &<a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): <a href="_Option">option::Option</a>&lt;<a href="brc20.md#0x4_brc20_MintOp">brc20::MintOp</a>&gt;
-</code></pre>
+## Function `get_balance`
 
 
 
-<a name="0x4_brc20_is_transfer"></a>
-
-## Function `is_transfer`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_is_transfer">is_transfer</a>(self: &<a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): bool
-</code></pre>
-
-
-
-<a name="0x4_brc20_as_transfer"></a>
-
-## Function `as_transfer`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_as_transfer">as_transfer</a>(self: &<a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): <a href="_Option">option::Option</a>&lt;<a href="brc20.md#0x4_brc20_TransferOp">brc20::TransferOp</a>&gt;
-</code></pre>
-
-
-
-<a name="0x4_brc20_from_inscription"></a>
-
-## Function `from_inscription`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_from_inscription">from_inscription</a>(inscription_body: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;<a href="brc20.md#0x4_brc20_Op">brc20::Op</a>&gt;
-</code></pre>
-
-
-
-<a name="0x4_brc20_from_transaction_bytes"></a>
-
-## Function `from_transaction_bytes`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_from_transaction_bytes">from_transaction_bytes</a>(transaction_bytes: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;<a href="brc20.md#0x4_brc20_Op">brc20::Op</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="brc20.md#0x4_brc20_get_balance">get_balance</a>(brc20_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="brc20.md#0x4_brc20_BRC20Store">brc20::BRC20Store</a>&gt;, tick: &<a href="_String">string::String</a>, <b>address</b>: <b>address</b>): u256
 </code></pre>

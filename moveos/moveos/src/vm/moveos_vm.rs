@@ -1,10 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::data_cache::{into_change_set, MoveosDataCache};
-use crate::gas::table::initial_cost_schedule;
-use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
-use crate::vm::tx_argument_resolver;
+use std::{borrow::Borrow, sync::Arc};
+
 use move_binary_format::{
     compatibility::Compatibility,
     errors::{Location, PartialVMError, VMError, VMResult},
@@ -18,6 +16,7 @@ use move_core_types::{
     value::MoveTypeLayout,
     vm_status::{KeptVMStatus, StatusCode},
 };
+use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::{
     config::VMConfig,
     move_vm::MoveVM,
@@ -26,8 +25,8 @@ use move_vm_runtime::{
     session::{LoadedFunctionInstantiation, SerializedReturnValues, Session},
 };
 use move_vm_types::loaded_data::runtime_types::{CachedStructIndex, StructType, Type};
+use parking_lot::RwLock;
 
-use move_vm_runtime::data_cache::TransactionCache;
 use moveos_stdlib::natives::moveos_stdlib::{
     event::NativeEventContext,
     move_module::NativeModuleContext,
@@ -47,8 +46,12 @@ use moveos_types::{
     transaction::{FunctionCall, MoveAction, VerifiedMoveAction},
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
-use parking_lot::RwLock;
-use std::{borrow::Borrow, sync::Arc};
+
+use crate::gas::table::initial_cost_schedule;
+use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
+use crate::vm::tx_argument_resolver;
+
+use super::data_cache::{into_change_set, MoveosDataCache};
 
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
 pub struct MoveOSVM {
@@ -110,6 +113,7 @@ pub struct MoveOSSession<'r, 'l, S, G> {
     pub(crate) read_only: bool,
 }
 
+#[allow(clippy::arc_with_non_send_sync)]
 impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
 where
     S: MoveOSResolver,

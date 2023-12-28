@@ -51,7 +51,8 @@ pub fn native_verify(
         return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
     };
 
-    let Ok(public_key) = <Ed25519PublicKey as ToFromBytes>::from_bytes(&public_key_bytes_ref) else {
+    let Ok(public_key) = <Ed25519PublicKey as ToFromBytes>::from_bytes(&public_key_bytes_ref)
+    else {
         return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
     };
 

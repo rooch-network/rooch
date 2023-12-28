@@ -122,6 +122,16 @@ module bitcoin_move::utxo{
         }
     }
 
+    public fun remove_seals<T>(utxo: &mut UTXO): vector<ObjectID> {
+        let protocol = type_info::type_name<T>();
+        if(simple_multimap::contains_key(&utxo.seals, &protocol)){
+            let(_k, value) = simple_multimap::remove(&mut utxo.seals, &protocol);
+            value
+        }else{
+            vector::empty()
+        }
+    }
+
     public(friend) fun add_seal(utxo: &mut UTXO, utxo_seal: UTXOSeal){
         let UTXOSeal{protocol, object_id} = utxo_seal;
         simple_multimap::add(&mut utxo.seals, protocol, object_id);
@@ -133,7 +143,7 @@ module bitcoin_move::utxo{
         object::transfer_extend(utxo_obj, to);
     }
 
-    public(friend) fun take(ctx: &mut Context, object_id: ObjectID): Object<UTXO>{
+    public(friend) fun take(ctx: &mut Context, object_id: ObjectID): (address, Object<UTXO>){
         context::take_object_extend<UTXO>(ctx, object_id)
     }
 

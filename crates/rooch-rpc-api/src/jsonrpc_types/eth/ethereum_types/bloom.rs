@@ -10,14 +10,15 @@
 // except according to those terms.
 
 use fixed_hash::construct_fixed_hash;
+use schemars::JsonSchema;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
 #[cfg(feature = "codec")]
 use impl_codec::impl_fixed_hash_codec;
 #[cfg(feature = "rlp")]
 use impl_rlp::impl_fixed_hash_rlp;
 #[cfg(feature = "serialize")]
 use impl_serde::impl_fixed_hash_serde;
-use schemars::JsonSchema;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 // 3 according to yellowpaper
 // const BLOOM_BITS: u32 = 3;

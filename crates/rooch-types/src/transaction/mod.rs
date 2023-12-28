@@ -136,6 +136,14 @@ impl AbstractTransaction for TypedTransaction {
         }
     }
 
+    fn decode(bytes: &[u8]) -> Result<Self>
+    where
+        Self: std::marker::Sized,
+    {
+        let raw = bcs::from_bytes::<RawTransaction>(bytes)?;
+        Self::try_from(raw)
+    }
+
     fn encode(&self) -> Vec<u8> {
         match self {
             TypedTransaction::Rooch(tx) => tx.encode(),
@@ -143,12 +151,18 @@ impl AbstractTransaction for TypedTransaction {
         }
     }
 
-    fn decode(bytes: &[u8]) -> Result<Self>
-    where
-        Self: std::marker::Sized,
-    {
-        let raw = bcs::from_bytes::<RawTransaction>(bytes)?;
-        Self::try_from(raw)
+    fn sender(&self) -> MultiChainAddress {
+        match self {
+            TypedTransaction::Rooch(tx) => AbstractTransaction::sender(tx),
+            TypedTransaction::Ethereum(tx) => tx.sender(),
+        }
+    }
+
+    fn original_address_str(&self) -> String {
+        match self {
+            TypedTransaction::Rooch(tx) => tx.original_address_str(),
+            TypedTransaction::Ethereum(tx) => tx.original_address_str(),
+        }
     }
 
     fn tx_hash(&self) -> H256 {
@@ -172,20 +186,6 @@ impl AbstractTransaction for TypedTransaction {
         match self {
             TypedTransaction::Rooch(tx) => tx.construct_moveos_transaction(resolved_sender),
             TypedTransaction::Ethereum(tx) => tx.construct_moveos_transaction(resolved_sender),
-        }
-    }
-
-    fn sender(&self) -> MultiChainAddress {
-        match self {
-            TypedTransaction::Rooch(tx) => AbstractTransaction::sender(tx),
-            TypedTransaction::Ethereum(tx) => tx.sender(),
-        }
-    }
-
-    fn original_address_str(&self) -> String {
-        match self {
-            TypedTransaction::Rooch(tx) => tx.original_address_str(),
-            TypedTransaction::Ethereum(tx) => tx.original_address_str(),
         }
     }
 

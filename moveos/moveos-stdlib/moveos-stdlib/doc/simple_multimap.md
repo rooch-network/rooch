@@ -9,8 +9,9 @@ A simple map that stores key/value pairs in a vector, and support multi values f
 -  [Struct `SimpleMultiMap`](#0x2_simple_multimap_SimpleMultiMap)
 -  [Struct `Element`](#0x2_simple_multimap_Element)
 -  [Constants](#@Constants_0)
--  [Function `length`](#0x2_simple_multimap_length)
 -  [Function `new`](#0x2_simple_multimap_new)
+-  [Function `length`](#0x2_simple_multimap_length)
+-  [Function `is_empty`](#0x2_simple_multimap_is_empty)
 -  [Function `borrow`](#0x2_simple_multimap_borrow)
 -  [Function `borrow_mut`](#0x2_simple_multimap_borrow_mut)
 -  [Function `borrow_first`](#0x2_simple_multimap_borrow_first)
@@ -18,6 +19,7 @@ A simple map that stores key/value pairs in a vector, and support multi values f
 -  [Function `borrow_first_with_default`](#0x2_simple_multimap_borrow_first_with_default)
 -  [Function `contains_key`](#0x2_simple_multimap_contains_key)
 -  [Function `destroy_empty`](#0x2_simple_multimap_destroy_empty)
+-  [Function `drop`](#0x2_simple_multimap_drop)
 -  [Function `add`](#0x2_simple_multimap_add)
 -  [Function `keys`](#0x2_simple_multimap_keys)
 -  [Function `values`](#0x2_simple_multimap_values)
@@ -37,7 +39,7 @@ A simple map that stores key/value pairs in a vector, and support multi values f
 
 
 
-<pre><code><b>struct</b> <a href="simple_multimap.md#0x2_simple_multimap_SimpleMultiMap">SimpleMultiMap</a>&lt;Key, Value&gt; <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="simple_multimap.md#0x2_simple_multimap_SimpleMultiMap">SimpleMultiMap</a>&lt;Key, Value&gt; <b>has</b> store
 </code></pre>
 
 
@@ -48,7 +50,7 @@ A simple map that stores key/value pairs in a vector, and support multi values f
 
 
 
-<pre><code><b>struct</b> <a href="simple_multimap.md#0x2_simple_multimap_Element">Element</a>&lt;Key, Value&gt; <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="simple_multimap.md#0x2_simple_multimap_Element">Element</a>&lt;Key, Value&gt; <b>has</b> store
 </code></pre>
 
 
@@ -68,6 +70,18 @@ Map key is not found
 
 
 
+<a name="0x2_simple_multimap_new"></a>
+
+## Function `new`
+
+Create an empty SimpleMultiMap.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="simple_multimap.md#0x2_simple_multimap_new">new</a>&lt;Key: store, Value: store&gt;(): <a href="simple_multimap.md#0x2_simple_multimap_SimpleMultiMap">simple_multimap::SimpleMultiMap</a>&lt;Key, Value&gt;
+</code></pre>
+
+
+
 <a name="0x2_simple_multimap_length"></a>
 
 ## Function `length`
@@ -79,14 +93,13 @@ Map key is not found
 
 
 
-<a name="0x2_simple_multimap_new"></a>
+<a name="0x2_simple_multimap_is_empty"></a>
 
-## Function `new`
-
-Create an empty SimpleMultiMap.
+## Function `is_empty`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="simple_multimap.md#0x2_simple_multimap_new">new</a>&lt;Key: store, Value: store&gt;(): <a href="simple_multimap.md#0x2_simple_multimap_SimpleMultiMap">simple_multimap::SimpleMultiMap</a>&lt;Key, Value&gt;
+
+<pre><code><b>public</b> <b>fun</b> <a href="simple_multimap.md#0x2_simple_multimap_is_empty">is_empty</a>&lt;Key: store, Value: store&gt;(map: &<a href="simple_multimap.md#0x2_simple_multimap_SimpleMultiMap">simple_multimap::SimpleMultiMap</a>&lt;Key, Value&gt;): bool
 </code></pre>
 
 
@@ -164,6 +177,18 @@ Create an empty SimpleMultiMap.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="simple_multimap.md#0x2_simple_multimap_destroy_empty">destroy_empty</a>&lt;Key: store, Value: store&gt;(map: <a href="simple_multimap.md#0x2_simple_multimap_SimpleMultiMap">simple_multimap::SimpleMultiMap</a>&lt;Key, Value&gt;)
+</code></pre>
+
+
+
+<a name="0x2_simple_multimap_drop"></a>
+
+## Function `drop`
+
+Drop all keys and values in the map. This requires keys and values to be dropable.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="simple_multimap.md#0x2_simple_multimap_drop">drop</a>&lt;Key: <b>copy</b>, drop, Value: drop&gt;(map: <a href="simple_multimap.md#0x2_simple_multimap_SimpleMultiMap">simple_multimap::SimpleMultiMap</a>&lt;Key, Value&gt;)
 </code></pre>
 
 

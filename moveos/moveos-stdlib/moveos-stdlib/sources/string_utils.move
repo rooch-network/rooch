@@ -142,6 +142,46 @@ module moveos_std::string_utils {
         option::destroy_some(result)
     }
 
+    public fun to_lower_case(s: &String): String {
+        let bytes = string::bytes(s);
+        let result = vector<u8>[];
+        vector::for_each_ref(bytes, |c| {
+            if (*c >= 65 && *c <= 90) {
+                vector::push_back(&mut result, *c + 32);
+            } else {
+                vector::push_back(&mut result, *c);
+            };
+        });
+        string::utf8(result)
+    }
+
+    public fun to_upper_case(s: &String): String {
+        let bytes = string::bytes(s);
+        let result = vector<u8>[];
+        vector::for_each_ref(bytes, |c| {
+            if (*c >= 97 && *c <= 122) {
+                vector::push_back(&mut result, *c - 32);
+            } else {
+                vector::push_back(&mut result, *c);
+            };
+        });
+        string::utf8(result)
+    }
+    
+    #[test]
+    fun test_to_lower_case() {
+        let s = string::utf8(b"ABc");
+        let result = to_lower_case(&s);
+        assert!(result == string::utf8(b"abc"), 1);
+    }
+
+    #[test]
+    fun test_to_upper_case() {
+        let s = string::utf8(b"Abc");
+        let result = to_upper_case(&s);
+        assert!(result == string::utf8(b"ABC"), 1);
+    }
+
     #[test]
     fun test_parse_u8_option(){
         let s = string::utf8(b"123");

@@ -22,6 +22,7 @@
 -  [Function `tx_gas_payment_account`](#0x2_tx_context_tx_gas_payment_account)
 -  [Function `tx_result`](#0x2_tx_context_tx_result)
 -  [Function `set_module_upgrade_flag`](#0x2_tx_context_set_module_upgrade_flag)
+-  [Function `drop`](#0x2_tx_context_drop)
 
 
 <pre><code><b>use</b> <a href="">0x1::hash</a>;
@@ -59,7 +60,7 @@ This cannot be constructed by a transaction--it is a privileged object created b
 the VM, stored in a <code>Context</code> and passed in to the entrypoint of the transaction as <code>&<b>mut</b> Context</code>.
 
 
-<pre><code><b>struct</b> <a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a> <b>has</b> drop
+<pre><code><b>struct</b> <a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>
 </code></pre>
 
 
@@ -240,4 +241,15 @@ The result is only available in the <code>post_execute</code> function.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context_set_module_upgrade_flag">set_module_upgrade_flag</a>(self: &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>, is_upgrade: bool)
+</code></pre>
+
+
+
+<a name="0x2_tx_context_drop"></a>
+
+## Function `drop`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_drop">drop</a>(self: <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>

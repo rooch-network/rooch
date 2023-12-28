@@ -12,6 +12,7 @@ use moveos_types::{
     move_std::{option::MoveOption, string::MoveString},
     moveos_std::{
         object::{self, ObjectID},
+        simple_map::SimpleMap,
         tx_context::TxContext,
     },
     state::{MoveState, MoveStructState, MoveStructType},
@@ -51,6 +52,7 @@ impl MoveStructState for InscriptionID {
 pub struct Inscription {
     pub txid: AccountAddress,
     pub index: u32,
+    pub input: u32,
     pub body: Vec<u8>,
     pub content_encoding: MoveOption<MoveString>,
     pub content_type: MoveOption<MoveString>,
@@ -58,6 +60,7 @@ pub struct Inscription {
     pub metaprotocol: MoveOption<MoveString>,
     pub parent: MoveOption<ObjectID>,
     pub pointer: MoveOption<u64>,
+    pub json_body: SimpleMap<MoveString, MoveString>,
 }
 
 impl MoveStructType for Inscription {
@@ -71,6 +74,7 @@ impl MoveStructState for Inscription {
         move_core_types::value::MoveStructLayout::new(vec![
             AccountAddress::type_layout(),
             u32::type_layout(),
+            u32::type_layout(),
             Vec::<u8>::type_layout(),
             MoveOption::<MoveString>::type_layout(),
             MoveOption::<MoveString>::type_layout(),
@@ -78,6 +82,7 @@ impl MoveStructState for Inscription {
             MoveOption::<MoveString>::type_layout(),
             MoveOption::<ObjectID>::type_layout(),
             MoveOption::<u64>::type_layout(),
+            SimpleMap::<MoveString, MoveString>::type_layout(),
         ])
     }
 }
@@ -160,23 +165,23 @@ impl<'a> OrdModule<'a> {
     pub const FROM_TRANSACTION_FUNCTION_NAME: &'static IdentStr =
         ident_str!("from_transaction_bytes");
 
-    pub fn from_transaction(&self, tx: &Transaction) -> Result<Vec<InscriptionRecord>> {
+    pub fn from_transaction(&self, tx: &Transaction) -> Result<Vec<Inscription>> {
         let call = Self::create_function_call(
             Self::FROM_TRANSACTION_FUNCTION_NAME,
             vec![],
             vec![MoveValue::vector_u8(tx.to_bytes())],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ONE);
-        let inscription_key =
+        let inscriptions =
             self.caller
                 .call_function(&ctx, call)?
                 .into_result()
                 .map(|mut values| {
                     let value = values.pop().expect("should have one return value");
-                    bcs::from_bytes::<Vec<InscriptionRecord>>(&value.value)
+                    bcs::from_bytes::<Vec<Inscription>>(&value.value)
                         .expect("should be a valid Vec<Inscription>")
                 })?;
-        Ok(inscription_key)
+        Ok(inscriptions)
     }
 }
 
