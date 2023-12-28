@@ -8,6 +8,7 @@ use jsonrpsee::{
     core::{async_trait, Error as JsonRpcError, RpcResult},
     RpcModule,
 };
+use move_core_types::account_address::AccountAddress;
 use moveos_types::h256::H256;
 use rooch_rpc_api::jsonrpc_types::event_view::{EventFilterView, EventView, IndexerEventView};
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
@@ -32,6 +33,7 @@ use rooch_rpc_api::{
     api::{MAX_RESULT_LIMIT, MAX_RESULT_LIMIT_USIZE},
     jsonrpc_types::BytesView,
 };
+use rooch_types::address::MultiChainAddress;
 use rooch_types::indexer::event_filter::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::rooch::RoochTransaction;
@@ -429,9 +431,27 @@ impl RoochAPIServer for RoochServer {
         );
         let descending_order = descending_order.unwrap_or(true);
 
+        // resolve multichain address
+        let resolve_address = match filter.clone() {
+            GlobalStateFilterView::MultiChainAddress {
+                multichain_id,
+                address,
+            } => {
+                let multi_chain_address = MultiChainAddress::try_from_str_with_multichain_id(
+                    multichain_id,
+                    address.as_str(),
+                )?;
+                self.rpc_service
+                    .resolve_address(multi_chain_address)
+                    .await?
+            }
+            _ => AccountAddress::ZERO,
+        };
+        let global_state_filter =
+            GlobalStateFilterView::into_global_state_filter(filter, resolve_address);
         let mut data = self
             .rpc_service
-            .query_global_states(filter.into(), cursor, limit_of + 1, descending_order)
+            .query_global_states(global_state_filter, cursor, limit_of + 1, descending_order)
             .await?
             .into_iter()
             .map(IndexerGlobalStateView::try_new_from_global_state)

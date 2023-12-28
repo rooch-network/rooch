@@ -5,6 +5,7 @@ use crate::address::{MultiChainAddress, RoochAddress};
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::{Ok, Result};
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::option::MoveOption,
@@ -21,6 +22,8 @@ pub struct AddressMapping<'a> {
 impl<'a> AddressMapping<'a> {
     const RESOLVE_FUNCTION_NAME: &'static IdentStr = ident_str!("resolve");
     const RESOLVE_OR_GENERATE_FUNCTION_NAME: &'static IdentStr = ident_str!("resolve_or_generate");
+    const ADDRESS_MAPPING_HANDLE_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("address_mapping_handle");
 
     pub fn resolve(&self, multichain_address: MultiChainAddress) -> Result<Option<AccountAddress>> {
         if multichain_address.is_rooch_address() {
@@ -71,6 +74,51 @@ impl<'a> AddressMapping<'a> {
                 })?;
             Ok(address)
         }
+    }
+
+    pub fn address_mapping_handle(&self) -> Result<(ObjectID, ObjectID, ObjectID)> {
+        let ctx = TxContext::zero();
+        let call = FunctionCall::new(
+            Self::function_id(Self::ADDRESS_MAPPING_HANDLE_FUNCTION_NAME),
+            vec![],
+            vec![],
+        );
+
+        let (address_mapping_handle, mapping_handle, reverse_mapping_handle) = self
+            .caller
+            .call_function(&ctx, call)?
+            .into_result()
+            .map(|values| {
+                let value0 = values.get(0).ok_or(anyhow::anyhow!(
+                    "Address mapping handle expected return value"
+                ))?;
+                let value1 = values.get(1).ok_or(anyhow::anyhow!(
+                    "Address mapping handle expected return value"
+                ))?;
+                let value2 = values.get(2).ok_or(anyhow::anyhow!(
+                    "Address mapping handle expected return value"
+                ))?;
+                let address_mapping_handle = ObjectID::from_bytes(&value0.value).map_err(|e| {
+                    anyhow::anyhow!("Address mapping handle convert error {}", e.to_string())
+                })?;
+                let mapping_handle = ObjectID::from_bytes(&value1.value).map_err(|e| {
+                    anyhow::anyhow!("Address mapping handle convert error {}", e.to_string())
+                })?;
+                let reverse_mapping_handle = ObjectID::from_bytes(&value2.value).map_err(|e| {
+                    anyhow::anyhow!("Address mapping handle convert error {}", e.to_string())
+                })?;
+                Ok((
+                    address_mapping_handle,
+                    mapping_handle,
+                    reverse_mapping_handle,
+                ))
+            })??;
+
+        Ok((
+            address_mapping_handle,
+            mapping_handle,
+            reverse_mapping_handle,
+        ))
     }
 }
 

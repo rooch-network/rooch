@@ -34,6 +34,13 @@ impl<Key, Value> SimpleMultiMap<Key, Value> {
     }
 }
 
+impl<Key, Value> SimpleMultiMap<Key, Value>
+where
+    Key: MoveState + std::cmp::PartialEq<Key>,
+    Value: MoveState,
+{
+}
+
 impl<Key, Value> MoveStructType for Element<Key, Value>
 where
     Key: MoveState,
@@ -50,8 +57,8 @@ where
 
 impl<Key, Value> MoveStructState for Element<Key, Value>
 where
-    Key: MoveState,
-    Value: MoveState,
+    Key: MoveState + Serialize,
+    Value: MoveState + Serialize,
 {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![
@@ -77,8 +84,8 @@ where
 
 impl<Key, Value> MoveStructState for SimpleMultiMap<Key, Value>
 where
-    Key: MoveState,
-    Value: MoveState,
+    Key: MoveState + Serialize,
+    Value: MoveState + Serialize,
 {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Vector(Box::new(

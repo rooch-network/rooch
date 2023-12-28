@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, format_err, Result};
+use move_core_types::language_storage::TypeTag;
+use move_core_types::value::MoveTypeLayout;
+use moveos_types::state::{MoveState, MoveType};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use schemars::JsonSchema;
@@ -159,6 +162,18 @@ impl TryFrom<MultiChainID> for RoochMultiChainID {
             ROOCH => Self::Rooch,
             id => bail!("{} is not a builtin multichain id", id),
         })
+    }
+}
+
+impl MoveType for RoochMultiChainID {
+    fn type_tag() -> TypeTag {
+        TypeTag::U64
+    }
+}
+
+impl MoveState for RoochMultiChainID {
+    fn type_layout() -> MoveTypeLayout {
+        MoveTypeLayout::U64
     }
 }
 

@@ -5,9 +5,13 @@ use crate::{
     addresses::ROOCH_FRAMEWORK_ADDRESS,
     multichain_id::{MultiChainID, RoochMultiChainID},
 };
-use anyhow::Result;
+use anyhow::{bail, Result};
 use bech32::{FromBase32, ToBase32};
-use bitcoin::{address::Address, secp256k1::Secp256k1, Network, PrivateKey, Script};
+use bitcoin::script::PushBytesBuf;
+use bitcoin::{
+    address::Address, base58, secp256k1::Secp256k1, Network, PrivateKey, Script, WitnessProgram,
+    WitnessVersion,
+};
 use ethers::types::H160;
 use fastcrypto::secp256k1::recoverable::Secp256k1RecoverablePublicKey;
 use move_core_types::{
@@ -18,6 +22,7 @@ use move_core_types::{
 };
 #[cfg(any(test, feature = "fuzzing"))]
 use moveos_types::h256;
+use moveos_types::state::MoveState;
 use moveos_types::{
     h256::H256,
     state::{MoveStructState, MoveStructType},
@@ -29,6 +34,7 @@ use proptest::{collection::vec, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use rand::{seq::SliceRandom, thread_rng};
+use serde::ser::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::serde_as;
 use sha3::{Digest, Sha3_256};
@@ -56,6 +62,32 @@ impl MultiChainAddress {
         Self {
             multichain_id,
             raw_address,
+        }
+    }
+
+    pub fn try_from_str_with_multichain_id(
+        multichain_id: u64,
+        str: &str,
+    ) -> Result<Self, anyhow::Error> {
+        let multichain_id = RoochMultiChainID::try_from(multichain_id)?;
+        match multichain_id {
+            RoochMultiChainID::Bitcoin => {
+                let address = BitcoinAddress::from_str(str)?;
+                Ok(Self::new(multichain_id, address.bytes))
+            }
+            RoochMultiChainID::Ether => {
+                let address = EthereumAddress::from_str(str)?;
+                Ok(Self::new(multichain_id, address.0.as_bytes().to_vec()))
+            }
+            RoochMultiChainID::Sui => {
+                let address = RoochAddress::from_str(str)?;
+                Ok(Self::new(multichain_id, address.0.as_bytes().to_vec()))
+            }
+            RoochMultiChainID::Nostr => {
+                let address = NostrAddress::from_str(str)?;
+                Ok(Self::new(multichain_id, address.0.serialize().to_vec()))
+            }
+            RoochMultiChainID::Rooch => bail!("Not implements!"),
         }
     }
 
@@ -167,7 +199,7 @@ impl MoveStructType for MultiChainAddress {
 impl MoveStructState for MultiChainAddress {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![
-            MoveTypeLayout::U32,
+            RoochMultiChainID::type_layout(),
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
         ])
     }
@@ -362,9 +394,114 @@ impl From<H160> for EthereumAddress {
     }
 }
 
+/// The method used to distinguish bitcoin address payload type.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[repr(u8)]
+pub enum BitcoinAddressPayloadType {
+    /// P2PKH address.
+    PubkeyHash = 0,
+    /// P2SH address.
+    ScriptHash = 1,
+    /// Segwit address.
+    WitnessProgram = 2,
+}
+
+impl BitcoinAddressPayloadType {
+    pub fn to_num(self) -> u8 {
+        self as u8
+    }
+}
+
+impl fmt::Display for BitcoinAddressPayloadType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", *self as u8)
+    }
+}
+
+impl FromStr for BitcoinAddressPayloadType {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        let version = s
+            .parse::<u8>()
+            .map_err(|_| anyhow::anyhow!("bitcoin address payload type parse error {} ", s))?;
+        BitcoinAddressPayloadType::try_from(version)
+    }
+}
+
+impl TryFrom<u8> for BitcoinAddressPayloadType {
+    type Error = anyhow::Error;
+
+    fn try_from(no: u8) -> std::result::Result<Self, Self::Error> {
+        Ok(match no {
+            0 => BitcoinAddressPayloadType::PubkeyHash,
+            1 => BitcoinAddressPayloadType::ScriptHash,
+            2 => BitcoinAddressPayloadType::WitnessProgram,
+            _ => {
+                return Err(anyhow::anyhow!(
+                    "bitcoin address payload type is invalid {} ",
+                    no
+                ))
+            }
+        })
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct BitcoinAddress {
     bytes: Vec<u8>,
+}
+
+impl fmt::Display for BitcoinAddress {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Write the Bitcoin address as a hexadecimal string
+        let payload_type = BitcoinAddressPayloadType::try_from(self.bytes[0])
+            .map_err(|e| std::fmt::Error::custom(e.to_string()))?;
+        match payload_type {
+            BitcoinAddressPayloadType::PubkeyHash => {
+                let mut prefixed = [0; 21];
+                prefixed[0] = self.bytes[1];
+                prefixed[1..].copy_from_slice(&self.bytes[2..]);
+                base58::encode_check_to_fmt(fmt, &prefixed[..])
+            }
+            BitcoinAddressPayloadType::ScriptHash => {
+                let mut prefixed = [0; 21];
+                prefixed[0] = self.bytes[1];
+                prefixed[1..].copy_from_slice(&self.bytes[2..]);
+                base58::encode_check_to_fmt(fmt, &prefixed[..])
+            }
+            BitcoinAddressPayloadType::WitnessProgram => {
+                //we always use mainnet prefix, do not distinguish testnet and mainnet in Move contract
+                // Self::Mainnet => bitcoin::bech32::hrp::BC,
+                // Self::Testnets => bitcoin::bech32::hrp::TB,
+                // Self::Regtest => bitcoin::bech32::hrp::BCRT,
+                let hrp = bitcoin::bech32::hrp::BC;
+                let version = WitnessVersion::try_from(self.bytes[1])
+                    .map_err(|e| std::fmt::Error::custom(e.to_string()))?;
+                let buf = PushBytesBuf::try_from(self.bytes[2..].to_vec())
+                    .map_err(|e| std::fmt::Error::custom(e.to_string()))?;
+                let witness_program = WitnessProgram::new(version, buf)
+                    .map_err(|e| std::fmt::Error::custom(e.to_string()))?;
+                let program = witness_program.program().as_ref();
+
+                if fmt.alternate() {
+                    bitcoin::bech32::segwit::encode_upper_to_fmt_unchecked(
+                        fmt,
+                        &hrp,
+                        version.to_fe(),
+                        program,
+                    )
+                } else {
+                    bitcoin::bech32::segwit::encode_lower_to_fmt_unchecked(
+                        fmt,
+                        &hrp,
+                        version.to_fe(),
+                        program,
+                    )
+                }
+            }
+        }
+    }
 }
 
 impl Default for BitcoinAddress {
@@ -379,27 +516,33 @@ impl BitcoinAddress {
     }
 
     pub fn new_p2pkh(pubkey_hash: &bitcoin::PubkeyHash) -> Self {
-        let mut bytes = [0; 21];
+        let mut bytes = [0; 22];
+        bytes[0] = BitcoinAddressPayloadType::PubkeyHash.to_num();
         //we always use mainnet prefix, do not distinguish testnet and mainnet in Move contract
-        bytes[0] = bitcoin::constants::PUBKEY_ADDRESS_PREFIX_MAIN;
-        bytes[1..].copy_from_slice(&pubkey_hash[..]);
+        bytes[1] = bitcoin::constants::PUBKEY_ADDRESS_PREFIX_MAIN;
+        bytes[2..].copy_from_slice(&pubkey_hash[..]);
         Self {
             bytes: bytes.to_vec(),
         }
     }
 
     pub fn new_p2sh(script_hash: &bitcoin::ScriptHash) -> Self {
-        let mut bytes = [0; 21];
+        let mut bytes = [0; 22];
+        bytes[0] = BitcoinAddressPayloadType::ScriptHash.to_num();
         //we always use mainnet prefix, do not distinguish testnet and mainnet in Move contract
-        bytes[0] = bitcoin::constants::SCRIPT_ADDRESS_PREFIX_MAIN;
-        bytes[1..].copy_from_slice(&script_hash[..]);
+        bytes[1] = bitcoin::constants::SCRIPT_ADDRESS_PREFIX_MAIN;
+        bytes[2..].copy_from_slice(&script_hash[..]);
         Self {
             bytes: bytes.to_vec(),
         }
     }
 
     pub fn new_witness_program(witness_program: &bitcoin::WitnessProgram) -> Self {
-        let mut bytes = vec![witness_program.version().to_num()];
+        // First byte is BitcoinAddress Paylaod type
+        let mut bytes = vec![BitcoinAddressPayloadType::WitnessProgram.to_num()];
+        // Secend byte represents Version 0 or PUSHNUM_1-PUSHNUM_16
+        bytes.push(witness_program.version().to_num());
+        // Remain are Program data
         bytes.extend_from_slice(witness_program.program().as_bytes());
         Self { bytes }
     }
@@ -447,6 +590,15 @@ impl RoochSupportedAddress for BitcoinAddress {
         let selected_address = addresses.choose(&mut rng).unwrap().clone();
         // Return the randomly selected Bitcoin address
         selected_address.into()
+    }
+}
+
+impl FromStr for BitcoinAddress {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let address = Address::from_str(s)?.assume_checked();
+        Ok(Self::from(address))
     }
 }
 
@@ -526,10 +678,19 @@ impl TryFrom<MultiChainAddress> for NostrAddress {
     }
 }
 
+impl FromStr for NostrAddress {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let address = XOnlyPublicKey::from_str(s)?;
+        Ok(Self(address))
+    }
+}
+
 #[cfg(test)]
 mod test {
-
     use super::*;
+    use bitcoin::hex::DisplayHex;
 
     fn test_rooch_supported_address_roundtrip<T>()
     where
@@ -603,16 +764,66 @@ mod test {
     pub fn test_from_script() {
         let bytes = hex::decode("001497cdff4fd3ed6f885d54a52b79d7a2141072ae3f").unwrap();
         let script = Script::from_bytes(bytes.as_slice());
-        let address = Address::from_script(script, Network::Signet).unwrap();
+        // let address = Address::from_script(script, Network::Signet).unwrap();
+        let address = Address::from_script(script, Network::Bitcoin).unwrap();
         //println!("{:?}", address.address_type());
         assert_eq!(
             address.address_type().unwrap(),
             bitcoin::AddressType::P2wpkh
         );
-        //println!("{}", address_str);
+        println!("bitcoin address from script {}", address.to_string());
         assert_eq!(
             address.to_string(),
-            "tb1qjlxl7n7na4hcsh25554hn4azzsg89t3ljdldnj"
+            // "tb1qjlxl7n7na4hcsh25554hn4azzsg89t3ljdldnj"
+            "bc1qjlxl7n7na4hcsh25554hn4azzsg89t3lcty7gp"
         )
+    }
+
+    #[test]
+    pub fn test_bitcoin_address() -> Result<()> {
+        let bytes = hex::decode("020097cdff4fd3ed6f885d54a52b79d7a2141072ae3f").unwrap();
+        let bitcoin_address = BitcoinAddress {
+            bytes: bytes.clone(),
+        };
+        let address_str = bitcoin_address.to_string();
+        println!("test_bitcoin_address bitcoin address {} ", address_str);
+        let maddress = MultiChainAddress::new(RoochMultiChainID::Bitcoin, bytes.clone());
+
+        let new_bitcoin_address = BitcoinAddress::from_str(address_str.as_str())?;
+        let new_maddress = MultiChainAddress::try_from_str_with_multichain_id(
+            RoochMultiChainID::Bitcoin.into(),
+            address_str.as_str(),
+        )?;
+
+        assert_eq!(maddress, new_maddress);
+        assert_eq!(bitcoin_address, new_bitcoin_address);
+        assert_eq!(address_str, "bc1qjlxl7n7na4hcsh25554hn4azzsg89t3lcty7gp");
+        Ok(())
+    }
+
+    #[test]
+    pub fn test_convert_bitcoin_address() -> Result<()> {
+        let bytes =
+            hex::decode("020145966003624094dae2deeb30815eedd38f96c45c3fdb1261f5d697fc4137e0de")
+                // hex::decode("020145966003624094dae2deeb30815eedd38f96c45c3fdb1261f5d697fc4137e0de")
+                .unwrap();
+        let bitcoin_address = BitcoinAddress {
+            bytes: bytes.clone(),
+        };
+        let address_str = bitcoin_address.to_string();
+        println!(
+            "test_convert_bitcoin_address bitcoin address {} ",
+            address_str
+        );
+        println!(
+            "test_convert_bitcoin_address raw address bytes {:?} ",
+            bytes
+        );
+        println!(
+            "test_convert_bitcoin_address raw address hex str {} ",
+            bytes.to_lower_hex_string()
+        );
+
+        Ok(())
     }
 }
