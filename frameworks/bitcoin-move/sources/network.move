@@ -29,9 +29,9 @@ module bitcoin_move::network{
     }
 
     /// Bitcoin's regtest network.
-    const NetworkRegtest: u8 = 4;
+    const NETWORK_REGTEST: u8 = 4;
     public fun network_regtest(): u8 {
-        NetworkRegtest
+        NETWORK_REGTEST
     }
 
     public fun is_mainnet(network: u8): bool {
@@ -59,7 +59,7 @@ module bitcoin_move::network{
         } else if (string::bytes(network) == &b"signet") {
             NETWORK_SIGNET
         } else if (string::bytes(network) == &b"regtest") {
-            NetworkRegtest
+            NETWORK_REGTEST
         } else {
             abort ErrorUnknownNetwork
         }
@@ -72,7 +72,7 @@ module bitcoin_move::network{
             string::utf8(b"testnet")
         } else if (network == NETWORK_SIGNET) {
             string::utf8(b"signet")
-        } else if (network == NetworkRegtest) {
+        } else if (network == NETWORK_REGTEST) {
             string::utf8(b"regtest")
         } else {
             abort ErrorUnknownNetwork
@@ -86,7 +86,7 @@ module bitcoin_move::network{
             string::utf8(b"tb")
         } else if (network == NETWORK_SIGNET) {
             string::utf8(b"tb")
-        } else if (network == NetworkRegtest) {
+        } else if (network == NETWORK_REGTEST) {
             string::utf8(b"bcrt")
         } else {
             abort ErrorUnknownNetwork
@@ -100,7 +100,7 @@ module bitcoin_move::network{
             x"0b110907"
         } else if (network == NETWORK_SIGNET) {
             x"0f1e2c3d"
-        } else if (network == NetworkRegtest) {
+        } else if (network == NETWORK_REGTEST) {
             x"fabfb5da"
         } else {
             abort ErrorUnknownNetwork
