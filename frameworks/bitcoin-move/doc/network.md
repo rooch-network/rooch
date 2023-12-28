@@ -52,6 +52,16 @@ Mainnet Bitcoin.
 
 
 
+<a name="0x4_network_NETWORK_REGTEST"></a>
+
+Bitcoin's regtest network.
+
+
+<pre><code><b>const</b> <a href="network.md#0x4_network_NETWORK_REGTEST">NETWORK_REGTEST</a>: u8 = 4;
+</code></pre>
+
+
+
 <a name="0x4_network_NETWORK_SIGNET"></a>
 
 Bitcoin's signet network.
@@ -68,16 +78,6 @@ Bitcoin's testnet network.
 
 
 <pre><code><b>const</b> <a href="network.md#0x4_network_NETWORK_TESTNET">NETWORK_TESTNET</a>: u8 = 2;
-</code></pre>
-
-
-
-<a name="0x4_network_NetworkRegtest"></a>
-
-Bitcoin's regtest network.
-
-
-<pre><code><b>const</b> <a href="network.md#0x4_network_NetworkRegtest">NetworkRegtest</a>: u8 = 4;
 </code></pre>
 
 
