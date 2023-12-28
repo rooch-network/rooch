@@ -51,6 +51,8 @@ use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
+use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
+use rooch_types::bitcoin::network::Network;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{GenesisError, RoochError};
 
@@ -219,8 +221,10 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
 
     // Init executor
     let is_genesis = moveos_store.statedb.is_genesis();
+    let btc_network = opt.btc_network.unwrap_or(Network::default().to_num());
     let executor = ExecutorActor::new(
         chain_id_opt.genesis_ctx(sequencer_account),
+        BitcoinGenesisContext::new(btc_network),
         moveos_store.clone(),
         rooch_store.clone(),
     )?

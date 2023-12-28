@@ -11,13 +11,18 @@
 -  [Function `network_signet`](#0x4_network_network_signet)
 -  [Function `network_regtest`](#0x4_network_network_regtest)
 -  [Function `is_mainnet`](#0x4_network_is_mainnet)
+-  [Function `default_network`](#0x4_network_default_network)
+-  [Function `network`](#0x4_network_network)
 -  [Function `from_str`](#0x4_network_from_str)
 -  [Function `network_name`](#0x4_network_network_name)
 -  [Function `bech32_hrp`](#0x4_network_bech32_hrp)
 -  [Function `network_magic`](#0x4_network_network_magic)
 
 
-<pre><code><b>use</b> <a href="">0x1::string</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x2::context</a>;
+<b>use</b> <a href="genesis.md#0x4_genesis">0x4::genesis</a>;
 </code></pre>
 
 
@@ -47,16 +52,6 @@ Mainnet Bitcoin.
 
 
 
-<a name="0x4_network_NETWORK_REGTEST"></a>
-
-Bitcoin's regtest network.
-
-
-<pre><code><b>const</b> <a href="network.md#0x4_network_NETWORK_REGTEST">NETWORK_REGTEST</a>: u8 = 4;
-</code></pre>
-
-
-
 <a name="0x4_network_NETWORK_SIGNET"></a>
 
 Bitcoin's signet network.
@@ -73,6 +68,16 @@ Bitcoin's testnet network.
 
 
 <pre><code><b>const</b> <a href="network.md#0x4_network_NETWORK_TESTNET">NETWORK_TESTNET</a>: u8 = 2;
+</code></pre>
+
+
+
+<a name="0x4_network_NetworkRegtest"></a>
+
+Bitcoin's regtest network.
+
+
+<pre><code><b>const</b> <a href="network.md#0x4_network_NetworkRegtest">NetworkRegtest</a>: u8 = 4;
 </code></pre>
 
 
@@ -128,6 +133,28 @@ Bitcoin's testnet network.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network_is_mainnet">is_mainnet</a>(<a href="network.md#0x4_network">network</a>: u8): bool
+</code></pre>
+
+
+
+<a name="0x4_network_default_network"></a>
+
+## Function `default_network`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network_default_network">default_network</a>(): u8
+</code></pre>
+
+
+
+<a name="0x4_network_network"></a>
+
+## Function `network`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network">network</a>(ctx: &<a href="_Context">context::Context</a>): u8
 </code></pre>
 
 

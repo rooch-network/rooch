@@ -4,6 +4,7 @@
 use crate::binding_test;
 use bitcoin::consensus::Decodable;
 use hex::FromHex;
+use rooch_types::bitcoin::network::Network;
 use tracing::debug;
 
 fn decode_inscription(btx_tx_hex: &str) {
@@ -26,7 +27,11 @@ fn decode_inscription(btx_tx_hex: &str) {
     let inscriptions = bitcoin_move::natives::ord::from_transaction(&btc_tx);
 
     let ord_module = binding_test.as_module_bundle::<rooch_types::bitcoin::ord::OrdModule>();
-    let move_btc_tx: rooch_types::bitcoin::types::Transaction = btc_tx.into();
+    let move_btc_tx: rooch_types::bitcoin::types::Transaction =
+        rooch_types::bitcoin::types::Transaction::new_from(
+            btc_tx,
+            Network::NetworkBitcoin.to_num(),
+        );
     let inscriptions_from_move = ord_module.from_transaction(&move_btc_tx).unwrap();
 
     for (i, (inscription, inscription_from_move)) in inscriptions

@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module bitcoin_move::network{
+    use std::option;
     use std::string::{Self, String};
+    use bitcoin_move::genesis;
+    use moveos_std::context::Context;
 
     const ErrorUnknownNetwork: u64 = 1;
 
@@ -26,13 +29,26 @@ module bitcoin_move::network{
     }
 
     /// Bitcoin's regtest network.
-    const NETWORK_REGTEST: u8 = 4;
+    const NetworkRegtest: u8 = 4;
     public fun network_regtest(): u8 {
-        NETWORK_REGTEST
+        NetworkRegtest
     }
 
     public fun is_mainnet(network: u8): bool {
         network == NETWORK_BITCOIN
+    }
+
+    public fun default_network() : u8 {
+        Self::network_regtest()
+    }
+
+    public fun network(ctx: &Context) : u8 {
+        let network_opt = genesis::network(ctx);
+        if(option::is_some(&network_opt)){
+            *option::borrow(&network_opt)
+        } else {
+            Self::default_network()
+        }
     }
 
     public fun from_str(network: &String): u8 {
@@ -43,7 +59,7 @@ module bitcoin_move::network{
         } else if (string::bytes(network) == &b"signet") {
             NETWORK_SIGNET
         } else if (string::bytes(network) == &b"regtest") {
-            NETWORK_REGTEST
+            NetworkRegtest
         } else {
             abort ErrorUnknownNetwork
         }
@@ -56,7 +72,7 @@ module bitcoin_move::network{
             string::utf8(b"testnet")
         } else if (network == NETWORK_SIGNET) {
             string::utf8(b"signet")
-        } else if (network == NETWORK_REGTEST) {
+        } else if (network == NetworkRegtest) {
             string::utf8(b"regtest")
         } else {
             abort ErrorUnknownNetwork
@@ -69,8 +85,8 @@ module bitcoin_move::network{
         } else if (network == NETWORK_TESTNET) {
             string::utf8(b"tb")
         } else if (network == NETWORK_SIGNET) {
-            string::utf8(b"sb")
-        } else if (network == NETWORK_REGTEST) {
+            string::utf8(b"tb")
+        } else if (network == NetworkRegtest) {
             string::utf8(b"bcrt")
         } else {
             abort ErrorUnknownNetwork
@@ -84,7 +100,7 @@ module bitcoin_move::network{
             x"0b110907"
         } else if (network == NETWORK_SIGNET) {
             x"0f1e2c3d"
-        } else if (network == NETWORK_REGTEST) {
+        } else if (network == NetworkRegtest) {
             x"fabfb5da"
         } else {
             abort ErrorUnknownNetwork

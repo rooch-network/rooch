@@ -234,9 +234,13 @@ impl<'a> BitcoinLightClientModule<'a> {
         Ok(remaining_count)
     }
 
-    pub fn create_submit_new_block_call(block_height: u64, block: bitcoin::Block) -> FunctionCall {
+    pub fn create_submit_new_block_call(
+        block_height: u64,
+        block: bitcoin::Block,
+        network: u8,
+    ) -> FunctionCall {
         let block_hash = block.block_hash();
-        let block = crate::bitcoin::types::Block::from(block);
+        let block = crate::bitcoin::types::Block::new_from(block, network);
         Self::create_function_call(
             Self::SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME,
             vec![],

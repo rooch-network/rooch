@@ -14,6 +14,8 @@ use moveos_types::h256::H256;
 use moveos_types::transaction::MoveAction;
 use once_cell::sync::Lazy;
 use rooch_framework::natives::gas_parameter::gas_member::InitialGasSchedule;
+use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
+use rooch_types::bitcoin::network::Network;
 use rooch_types::error::GenesisError;
 use rooch_types::framework::genesis::GenesisContext;
 use rooch_types::transaction::rooch::RoochTransaction;
@@ -33,8 +35,10 @@ pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
     let mock_sequencer = RoochAddress::from_str("0x0").expect("parse sequencer address failed");
     // genesis for integration test, we need to build the stdlib every time for `private_generic` check
     // see moveos/moveos-verifier/src/metadata.rs#L27-L30
+    let bitcoin_genesis_ctx = BitcoinGenesisContext::new(Network::NetworkRegtest.to_num());
     RoochGenesis::build_with_option(
         RoochChainID::LOCAL.genesis_ctx(mock_sequencer),
+        bitcoin_genesis_ctx,
         BuildOption::Fresh,
     )
     .expect("build rooch genesis failed")
@@ -44,6 +48,7 @@ pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
 pub struct GenesisPackage {
     pub state_root: H256,
     pub genesis_ctx: GenesisContext,
+    pub bitcoin_genesis_ctx: BitcoinGenesisContext,
     pub genesis_txs: Vec<RoochTransaction>,
 }
 
@@ -65,11 +70,18 @@ pub enum BuildOption {
 }
 
 impl RoochGenesis {
-    pub fn build(genesis_ctx: GenesisContext) -> Result<Self> {
-        Self::build_with_option(genesis_ctx, BuildOption::Release)
+    pub fn build(
+        genesis_ctx: GenesisContext,
+        bitcoin_genesis_ctx: BitcoinGenesisContext,
+    ) -> Result<Self> {
+        Self::build_with_option(genesis_ctx, bitcoin_genesis_ctx, BuildOption::Release)
     }
 
-    pub fn build_with_option(genesis_ctx: GenesisContext, option: BuildOption) -> Result<Self> {
+    pub fn build_with_option(
+        genesis_ctx: GenesisContext,
+        bitcoin_genesis_ctx: BitcoinGenesisContext,
+        option: BuildOption,
+    ) -> Result<Self> {
         let config = MoveOSConfig {
             vm_config: VMConfig::default(),
         };
@@ -80,7 +92,7 @@ impl RoochGenesis {
 
         let rooch_framework_gas_params = rooch_framework::natives::GasParameters::zeros();
         let bitcoin_move_gas_params = bitcoin_move::natives::GasParameters::zeros();
-        let genesis_package = GenesisPackage::build(genesis_ctx, option)?;
+        let genesis_package = GenesisPackage::build(genesis_ctx, bitcoin_genesis_ctx, option)?;
 
         Ok(RoochGenesis {
             config,
@@ -101,6 +113,10 @@ impl RoochGenesis {
 
     pub fn genesis_ctx(&self) -> GenesisContext {
         self.genesis_package.genesis_ctx.clone()
+    }
+
+    pub fn bitcoin_genesis_ctx(&self) -> BitcoinGenesisContext {
+        self.genesis_package.bitcoin_genesis_ctx.clone()
     }
 
     pub fn all_natives(&self) -> Vec<(AccountAddress, Identifier, Identifier, NativeFunction)> {
@@ -162,7 +178,11 @@ impl RoochGenesis {
 static GENESIS_STDLIB_BYTES: &[u8] = include_bytes!("../generated/stdlib");
 
 impl GenesisPackage {
-    fn build(genesis_ctx: GenesisContext, build_option: BuildOption) -> Result<Self> {
+    fn build(
+        genesis_ctx: GenesisContext,
+        bitcoin_genesis_ctx: BitcoinGenesisContext,
+        build_option: BuildOption,
+    ) -> Result<Self> {
         let stdlib = match build_option {
             BuildOption::Fresh => Self::build_stdlib()?,
             BuildOption::Release => Self::load_stdlib()?,
@@ -192,7 +212,11 @@ impl GenesisPackage {
             vec![],
             vec![],
         )?;
-        let genesis_result = moveos.init_genesis(genesis_txs.clone(), genesis_ctx.clone())?;
+        let genesis_result = moveos.init_genesis(
+            genesis_txs.clone(),
+            genesis_ctx.clone(),
+            bitcoin_genesis_ctx.clone(),
+        )?;
         let state_root = genesis_result
             .last()
             .expect("genesis result should not be empty")
@@ -200,6 +224,7 @@ impl GenesisPackage {
         Ok(Self {
             state_root,
             genesis_ctx,
+            bitcoin_genesis_ctx,
             genesis_txs,
         })
     }
@@ -276,13 +301,17 @@ mod tests {
     use moveos_store::MoveOSStore;
     use rooch_framework::natives::all_natives;
     use rooch_types::address::RoochSupportedAddress;
+    use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
+    use rooch_types::bitcoin::network::Network;
     use rooch_types::{address::RoochAddress, chain_id::RoochChainID};
 
     #[test]
     fn test_genesis_init() {
         let sequencer = RoochAddress::random();
+        let bitcoin_genesis_ctx = BitcoinGenesisContext::new(Network::NetworkRegtest.to_num());
         let genesis = super::RoochGenesis::build_with_option(
             RoochChainID::LOCAL.genesis_ctx(sequencer),
+            bitcoin_genesis_ctx,
             crate::BuildOption::Fresh,
         )
         .expect("build rooch framework failed");
@@ -301,6 +330,7 @@ mod tests {
             .init_genesis(
                 genesis.genesis_package.genesis_txs,
                 genesis.genesis_package.genesis_ctx,
+                genesis.genesis_package.bitcoin_genesis_ctx,
             )
             .expect("init genesis failed");
     }

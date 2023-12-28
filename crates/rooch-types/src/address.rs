@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::bitcoin::network;
 use crate::{
     addresses::ROOCH_FRAMEWORK_ADDRESS,
     multichain_id::{MultiChainID, RoochMultiChainID},
@@ -471,14 +472,12 @@ impl fmt::Display for BitcoinAddress {
                 base58::encode_check_to_fmt(fmt, &prefixed[..])
             }
             BitcoinAddressPayloadType::WitnessProgram => {
-                //we always use mainnet prefix, do not distinguish testnet and mainnet in Move contract
-                // Self::Mainnet => bitcoin::bech32::hrp::BC,
-                // Self::Testnets => bitcoin::bech32::hrp::TB,
-                // Self::Regtest => bitcoin::bech32::hrp::BCRT,
-                let hrp = bitcoin::bech32::hrp::BC;
-                let version = WitnessVersion::try_from(self.bytes[1])
+                let hrp = network::Network::try_from(self.bytes[1])
+                    .map_err(|e| std::fmt::Error::custom(e.to_string()))?
+                    .bech32_hrp();
+                let version = WitnessVersion::try_from(self.bytes[2])
                     .map_err(|e| std::fmt::Error::custom(e.to_string()))?;
-                let buf = PushBytesBuf::try_from(self.bytes[2..].to_vec())
+                let buf = PushBytesBuf::try_from(self.bytes[3..].to_vec())
                     .map_err(|e| std::fmt::Error::custom(e.to_string()))?;
                 let witness_program = WitnessProgram::new(version, buf)
                     .map_err(|e| std::fmt::Error::custom(e.to_string()))?;
@@ -515,32 +514,48 @@ impl BitcoinAddress {
         Self { bytes }
     }
 
-    pub fn new_p2pkh(pubkey_hash: &bitcoin::PubkeyHash) -> Self {
+    pub fn get_pubkey_address_prefix(network: u8) -> u8 {
+        if network::Network::NetworkBitcoin.to_num() == network {
+            bitcoin::constants::PUBKEY_ADDRESS_PREFIX_MAIN
+        } else {
+            bitcoin::constants::PUBKEY_ADDRESS_PREFIX_TEST
+        }
+    }
+
+    pub fn get_script_address_prefix(network: u8) -> u8 {
+        if network::Network::NetworkBitcoin.to_num() == network {
+            bitcoin::constants::SCRIPT_ADDRESS_PREFIX_MAIN
+        } else {
+            bitcoin::constants::SCRIPT_ADDRESS_PREFIX_TEST
+        }
+    }
+
+    pub fn new_p2pkh(pubkey_hash: &bitcoin::PubkeyHash, network: u8) -> Self {
         let mut bytes = [0; 22];
         bytes[0] = BitcoinAddressPayloadType::PubkeyHash.to_num();
-        //we always use mainnet prefix, do not distinguish testnet and mainnet in Move contract
-        bytes[1] = bitcoin::constants::PUBKEY_ADDRESS_PREFIX_MAIN;
+        bytes[1] = Self::get_pubkey_address_prefix(network);
         bytes[2..].copy_from_slice(&pubkey_hash[..]);
         Self {
             bytes: bytes.to_vec(),
         }
     }
 
-    pub fn new_p2sh(script_hash: &bitcoin::ScriptHash) -> Self {
+    pub fn new_p2sh(script_hash: &bitcoin::ScriptHash, network: u8) -> Self {
         let mut bytes = [0; 22];
         bytes[0] = BitcoinAddressPayloadType::ScriptHash.to_num();
-        //we always use mainnet prefix, do not distinguish testnet and mainnet in Move contract
-        bytes[1] = bitcoin::constants::SCRIPT_ADDRESS_PREFIX_MAIN;
+        bytes[1] = Self::get_script_address_prefix(network);
         bytes[2..].copy_from_slice(&script_hash[..]);
         Self {
             bytes: bytes.to_vec(),
         }
     }
 
-    pub fn new_witness_program(witness_program: &bitcoin::WitnessProgram) -> Self {
-        // First byte is BitcoinAddress Paylaod type
+    pub fn new_witness_program(witness_program: &bitcoin::WitnessProgram, network: u8) -> Self {
+        // First byte is BitcoinAddress Payload type
         let mut bytes = vec![BitcoinAddressPayloadType::WitnessProgram.to_num()];
-        // Secend byte represents Version 0 or PUSHNUM_1-PUSHNUM_16
+        // Secend byte represents bitcoin network
+        bytes.push(network);
+        // Third byte represents Version 0 or PUSHNUM_1-PUSHNUM_16
         bytes.push(witness_program.version().to_num());
         // Remain are Program data
         bytes.extend_from_slice(witness_program.program().as_bytes());
@@ -567,19 +582,21 @@ impl MoveStructState for BitcoinAddress {
 
 impl RoochSupportedAddress for BitcoinAddress {
     fn random() -> Self {
+        let bitcoin_network = Network::from(network::Network::NetworkRegtest);
+
         let secp = Secp256k1::new();
         let p2pkh_address = Address::p2pkh(
-            &PrivateKey::generate(Network::Bitcoin).public_key(&secp),
-            Network::Bitcoin,
+            &PrivateKey::generate(bitcoin_network).public_key(&secp),
+            bitcoin_network,
         );
         let p2sh_address = Address::p2sh(
             Script::from_bytes(H160::random().as_bytes()),
-            Network::Bitcoin,
+            bitcoin_network,
         )
         .unwrap();
         let segwit_address = Address::p2wpkh(
-            &PrivateKey::generate(Network::Bitcoin).public_key(&secp),
-            Network::Bitcoin,
+            &PrivateKey::generate(bitcoin_network).public_key(&secp),
+            bitcoin_network,
         )
         .unwrap();
 
@@ -604,26 +621,25 @@ impl FromStr for BitcoinAddress {
 
 impl From<bitcoin::Address> for BitcoinAddress {
     fn from(address: bitcoin::Address) -> Self {
-        address.payload().into()
+        BitcoinAddress::new_from(
+            address.payload(),
+            network::Network::from(*address.network()).to_num(),
+        )
     }
 }
 
-impl From<&bitcoin::address::Payload> for BitcoinAddress {
-    fn from(payload: &bitcoin::address::Payload) -> Self {
+impl BitcoinAddress {
+    pub fn new_from(payload: &bitcoin::address::Payload, network: u8) -> Self {
         match payload {
-            bitcoin::address::Payload::PubkeyHash(pubkey_hash) => Self::new_p2pkh(pubkey_hash),
-            bitcoin::address::Payload::ScriptHash(bytes) => Self::new_p2sh(bytes),
+            bitcoin::address::Payload::PubkeyHash(pubkey_hash) => {
+                Self::new_p2pkh(pubkey_hash, network)
+            }
+            bitcoin::address::Payload::ScriptHash(bytes) => Self::new_p2sh(bytes, network),
             bitcoin::address::Payload::WitnessProgram(program) => {
-                Self::new_witness_program(program)
+                Self::new_witness_program(program, network)
             }
             _ => BitcoinAddress::default(),
         }
-    }
-}
-
-impl From<bitcoin::address::Payload> for BitcoinAddress {
-    fn from(payload: bitcoin::address::Payload) -> Self {
-        Self::from(&payload)
     }
 }
 
@@ -781,7 +797,8 @@ mod test {
 
     #[test]
     pub fn test_bitcoin_address() -> Result<()> {
-        let bytes = hex::decode("020097cdff4fd3ed6f885d54a52b79d7a2141072ae3f").unwrap();
+        // bitcoin regtest address
+        let bytes = hex::decode("02040097cdff4fd3ed6f885d54a52b79d7a2141072ae3f").unwrap();
         let bitcoin_address = BitcoinAddress {
             bytes: bytes.clone(),
         };
@@ -797,15 +814,16 @@ mod test {
 
         assert_eq!(maddress, new_maddress);
         assert_eq!(bitcoin_address, new_bitcoin_address);
-        assert_eq!(address_str, "bc1qjlxl7n7na4hcsh25554hn4azzsg89t3lcty7gp");
+        assert_eq!(address_str, "bcrt1qjlxl7n7na4hcsh25554hn4azzsg89t3lsyxqym");
+        // assert_eq!(address_str, "bc1qjlxl7n7na4hcsh25554hn4azzsg89t3lcty7gpz");
         Ok(())
     }
 
     #[test]
     pub fn test_convert_bitcoin_address() -> Result<()> {
+        // bitcoin regtest address
         let bytes =
-            hex::decode("020145966003624094dae2deeb30815eedd38f96c45c3fdb1261f5d697fc4137e0de")
-                // hex::decode("020145966003624094dae2deeb30815eedd38f96c45c3fdb1261f5d697fc4137e0de")
+            hex::decode("02040145966003624094dae2deeb30815eedd38f96c45c3fdb1261f5d697fc4137e0de")
                 .unwrap();
         let bitcoin_address = BitcoinAddress {
             bytes: bytes.clone(),

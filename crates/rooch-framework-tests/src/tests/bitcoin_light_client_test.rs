@@ -14,6 +14,7 @@ use moveos_types::state_resolver::StateReader;
 use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
+use rooch_types::bitcoin::network;
 use rooch_types::bitcoin::ord::{Inscription, InscriptionID};
 use rooch_types::bitcoin::types::Header;
 use rooch_types::bitcoin::utxo::{OutputID, UTXO};
@@ -42,6 +43,7 @@ fn test_submit_block() {
         rooch_types::bitcoin::light_client::BitcoinLightClientModule::create_submit_new_block_call(
             height,
             block.clone(),
+            network::Network::NetworkBitcoin.to_num(),
         ),
     );
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
@@ -117,6 +119,7 @@ fn test_utxo_progress() {
         rooch_types::bitcoin::light_client::BitcoinLightClientModule::create_submit_new_block_call(
             height,
             block.clone(),
+            network::Network::NetworkBitcoin.to_num(),
         ),
     );
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
