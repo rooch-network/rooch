@@ -31,13 +31,17 @@ impl CommandAction<()> for ListCommand {
         };
 
         println!(
-            "{:^66} | {:^48} | {:^16} | {:^12}",
-            "Rooch Address (Ed25519)", "Public Key (Base64)", "Auth Validator ID", "Active Address"
+            "{:^66} | {:^66} | {:^48} | {:^16} | {:^12}",
+            "Rooch Address (Ed25519)",
+            "Multichain Address",
+            "Public Key (Base64)",
+            "Has session key",
+            "Active Address"
         );
         println!("{}", ["-"; 153].join(""));
 
-        for (address, public_key) in context.keystore.get_address_public_keys(password)? {
-            let auth_validator_id = public_key.auth_validator().flag();
+        for account in context.keystore.get_accounts(password)? {
+            let address = account.address;
             let active = if active_address == Some(address) {
                 "True"
             } else {
@@ -45,10 +49,17 @@ impl CommandAction<()> for ListCommand {
             };
 
             println!(
-                "{:^66} | {:^48} | {:^16} | {:^12}",
+                "{:^66} | {:^66} | {:^48} | {:^16} | {:^12}",
                 address,
-                public_key.encode_base64(),
-                auth_validator_id.to_string(),
+                account
+                    .multichain_address
+                    .map(|multichain_address| multichain_address.to_string())
+                    .unwrap_or_default(),
+                account
+                    .public_key
+                    .map(|public_key| public_key.encode_base64())
+                    .unwrap_or_default(),
+                account.has_session_key.to_string(),
                 active
             );
         }

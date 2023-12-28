@@ -27,6 +27,16 @@ impl MoveAsciiString {
         ensure!(bytes.is_ascii(), "string is not ascii");
         Ok(MoveAsciiString { bytes })
     }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+}
+
+impl From<MoveAsciiString> for String {
+    fn from(value: MoveAsciiString) -> Self {
+        String::from_utf8_lossy(value.as_bytes()).to_string()
+    }
 }
 
 impl std::fmt::Display for MoveAsciiString {
