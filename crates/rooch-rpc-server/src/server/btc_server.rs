@@ -56,7 +56,7 @@ impl BtcAPIServer for BtcServer {
         let resolve_address = match filter.clone() {
             Some(UTXOFilterView::Owner(address)) => {
                 let multi_chain_address = MultiChainAddress::try_from_str_with_multichain_id(
-                    RoochMultiChainID::Bitcoin.multichain_id().id(),
+                    RoochMultiChainID::Bitcoin,
                     address.to_string().as_str(),
                 )?;
                 self.rpc_service
@@ -110,7 +110,7 @@ impl BtcAPIServer for BtcServer {
         let resolve_address = match filter.clone() {
             Some(InscriptionFilterView::Owner(address)) => {
                 let multi_chain_address = MultiChainAddress::try_from_str_with_multichain_id(
-                    RoochMultiChainID::Bitcoin.multichain_id().id(),
+                    RoochMultiChainID::Bitcoin,
                     address.to_string().as_str(),
                 )?;
                 self.rpc_service

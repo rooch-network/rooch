@@ -3,11 +3,12 @@
 
 use std::collections::BTreeMap;
 
+use super::types::{AddressMapping, LocalAccount, LocalSessionKey};
+use crate::key_derive::{decrypt_key, generate_new_key_pair, retrieve_key_pair};
+use crate::keystore::account_keystore::AccountKeystore;
 use anyhow::anyhow;
 use fastcrypto::encoding::{Base64, Encoding};
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
-
+use rooch_types::framework::session_key::SessionKey;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
     address::RoochAddress,
@@ -20,19 +21,25 @@ use rooch_types::{
         rooch::{RoochTransaction, RoochTransactionData},
     },
 };
-
-use crate::key_derive::{decrypt_key, generate_new_key_pair, retrieve_key_pair};
-use crate::keystore::account_keystore::AccountKeystore;
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 #[serde_as]
 pub(crate) struct BaseKeyStore {
+    #[serde(default)]
     pub(crate) keys: BTreeMap<RoochAddress, EncryptionData>,
+    #[serde(default)]
     pub(crate) mnemonics: BTreeMap<String, MnemonicData>,
+    #[serde(default)]
     #[serde_as(as = "BTreeMap<DisplayFromStr, BTreeMap<DisplayFromStr, _>>")]
-    pub(crate) session_keys: BTreeMap<RoochAddress, BTreeMap<AuthenticationKey, EncryptionData>>,
+    pub(crate) session_keys: BTreeMap<RoochAddress, BTreeMap<AuthenticationKey, LocalSessionKey>>,
+    #[serde(default)]
     pub(crate) password_hash: Option<String>,
+    #[serde(default)]
     pub(crate) is_password_empty: bool,
+    #[serde(default)]
+    pub(crate) address_mapping: AddressMapping,
 }
 
 impl BaseKeyStore {
@@ -43,11 +50,52 @@ impl BaseKeyStore {
             session_keys: BTreeMap::new(),
             password_hash: None,
             is_password_empty: true,
+            address_mapping: AddressMapping::default(),
         }
     }
 }
 
 impl AccountKeystore for BaseKeyStore {
+    fn get_accounts(&self, password: Option<String>) -> Result<Vec<LocalAccount>, anyhow::Error> {
+        let mut accounts = BTreeMap::new();
+        for (address, encryption) in &self.keys {
+            let keypair: RoochKeyPair = retrieve_key_pair(encryption, password.clone())?;
+            let public_key = keypair.public();
+            let multichain_address = self
+                .address_mapping
+                .rooch_to_multichain
+                .get(address)
+                .cloned();
+            let has_session_key = self.session_keys.get(address).is_some();
+            let local_account = LocalAccount {
+                address: *address,
+                multichain_address,
+                public_key: Some(public_key),
+                has_session_key,
+            };
+            accounts.insert(*address, local_account);
+        }
+        for address in self.session_keys.keys() {
+            if accounts.contains_key(address) {
+                continue;
+            }
+            let multichain_address = self
+                .address_mapping
+                .rooch_to_multichain
+                .get(address)
+                .cloned();
+            let has_session_key = true;
+            let local_account = LocalAccount {
+                address: *address,
+                multichain_address,
+                public_key: None,
+                has_session_key,
+            };
+            accounts.insert(*address, local_account);
+        }
+        Ok(accounts.into_values().collect())
+    }
+
     fn get_key_pair_with_password(
         &self,
         address: &RoochAddress,
@@ -182,11 +230,27 @@ impl AccountKeystore for BaseKeyStore {
             retrieve_key_pair(&result.key_pair_data.private_key_encryption, password)?;
         let authentication_key = kp.public().authentication_key();
         let inner_map = self.session_keys.entry(*address).or_default();
-        inner_map.insert(
-            authentication_key.clone(),
-            result.key_pair_data.private_key_encryption,
-        );
+        let local_session_key = LocalSessionKey {
+            session_key: None,
+            private_key: result.key_pair_data.private_key_encryption,
+        };
+        inner_map.insert(authentication_key.clone(), local_session_key);
         Ok(authentication_key)
+    }
+
+    fn binding_session_key(
+        &mut self,
+        address: RoochAddress,
+        session_key: SessionKey,
+    ) -> Result<(), anyhow::Error> {
+        let inner_map: &mut BTreeMap<AuthenticationKey, LocalSessionKey> =
+            self.session_keys.entry(address).or_default();
+        let authentication_key = session_key.authentication_key();
+        let local_session_key = inner_map.get_mut(&authentication_key).ok_or_else(||{
+            anyhow::Error::new(RoochError::KeyConversionError(format!("Cannot find session key for address:[{address}] and authentication_key:[{authentication_key}]", address = address, authentication_key = authentication_key)))
+        })?;
+        local_session_key.session_key = Some(session_key);
+        Ok(())
     }
 
     fn sign_transaction_via_session_key(
@@ -196,7 +260,7 @@ impl AccountKeystore for BaseKeyStore {
         authentication_key: &AuthenticationKey,
         password: Option<String>,
     ) -> Result<RoochTransaction, anyhow::Error> {
-        let encryption = self
+        let local_session_key = self
             .session_keys
             .get(address)
             .ok_or_else(|| {
@@ -210,9 +274,17 @@ impl AccountKeystore for BaseKeyStore {
                     "Cannot find SessionKey for authentication_key: [{authentication_key}]"
                 ))
             })?;
-
-        let kp: RoochKeyPair =
-            retrieve_key_pair(encryption, password).map_err(signature::Error::from_source)?;
+        //TODO should we check the scope of session key here?
+        // let session_key = local_session_key.session_key.as_ref().ok_or_else(||{
+        //     signature::Error::from_source(
+        //         format!("SessionKey for authentication_key:[{authentication_key}] do not binding to on-chain SessionKey")
+        //     )
+        // })?;
+        // ensure!(session_key.is_scope_match_with_action(&msg.action), signature::Error::from_source(
+        //     format!("SessionKey for authentication_key:[{authentication_key}] scope do not match with transaction")
+        // ));
+        let kp: RoochKeyPair = retrieve_key_pair(&local_session_key.private_key, password)
+            .map_err(signature::Error::from_source)?;
 
         let signature = Signature::new_hashed(msg.hash().as_bytes(), &kp);
 

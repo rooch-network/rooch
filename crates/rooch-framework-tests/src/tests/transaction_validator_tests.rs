@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::binding_test;
 use ethers::types::{Bytes, U256};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
@@ -19,8 +20,6 @@ use rooch_types::{
     framework::session_key::SessionScope,
     transaction::{rooch::RoochTransactionData, AbstractTransaction},
 };
-
-use crate::binding_test;
 
 #[test]
 fn test_validate_rooch() {
@@ -112,6 +111,7 @@ fn test_session_key_rooch() {
     assert_eq!(&session_key.authentication_key, session_auth_key.as_ref());
     assert_eq!(session_key.scopes, vec![session_scope]);
     assert_eq!(session_key.max_inactive_interval, max_inactive_interval);
+    keystore.binding_session_key(sender, session_key).unwrap();
 
     // send transaction via session key
 

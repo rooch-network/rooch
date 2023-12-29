@@ -7,7 +7,6 @@ use crate::{
     multichain_id::{MultiChainID, RoochMultiChainID},
 };
 use anyhow::{bail, Result};
-use bech32::{FromBase32, ToBase32};
 use bitcoin::bech32::segwit::encode_to_fmt_unchecked;
 use bitcoin::script::PushBytesBuf;
 use bitcoin::{
@@ -33,8 +32,6 @@ use nostr::secp256k1::XOnlyPublicKey;
 use nostr::Keys;
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::{collection::vec, prelude::*};
-#[cfg(any(test, feature = "fuzzing"))]
-use proptest_derive::Arbitrary;
 use rand::{seq::SliceRandom, thread_rng};
 use serde::ser::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -52,8 +49,7 @@ pub trait RoochSupportedAddress:
 
 /// Multi chain address representation
 /// The address is distinguished by the multichain id type, multichain id type standard is defined in [slip-0044](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct MultiChainAddress {
     pub multichain_id: RoochMultiChainID,
     pub raw_address: Vec<u8>,
@@ -67,29 +63,28 @@ impl MultiChainAddress {
         }
     }
 
+    /// The str is the chain original address, such as 0x1234.., 1px99y..., 0x1234..
     pub fn try_from_str_with_multichain_id(
-        multichain_id: u64,
+        multichain_id: RoochMultiChainID,
         str: &str,
     ) -> Result<Self, anyhow::Error> {
-        let multichain_id = RoochMultiChainID::try_from(multichain_id)?;
         match multichain_id {
             RoochMultiChainID::Bitcoin => {
                 let address = BitcoinAddress::from_str(str)?;
-                Ok(Self::new(multichain_id, address.bytes))
+                Ok(address.into())
             }
             RoochMultiChainID::Ether => {
                 let address = EthereumAddress::from_str(str)?;
-                Ok(Self::new(multichain_id, address.0.as_bytes().to_vec()))
+                Ok(address.into())
             }
-            RoochMultiChainID::Sui => {
+            RoochMultiChainID::Rooch => {
                 let address = RoochAddress::from_str(str)?;
-                Ok(Self::new(multichain_id, address.0.as_bytes().to_vec()))
+                Ok(address.into())
             }
             RoochMultiChainID::Nostr => {
                 let address = NostrAddress::from_str(str)?;
-                Ok(Self::new(multichain_id, address.0.serialize().to_vec()))
+                Ok(address.into())
             }
-            RoochMultiChainID::Rooch => bail!("Not implements!"),
         }
     }
 
@@ -97,35 +92,25 @@ impl MultiChainAddress {
         self.multichain_id.is_rooch()
     }
 
-    pub fn from_bech32(bech32: &str) -> Result<Self> {
-        let (hrp, data, variant) = bech32::decode(bech32)?;
-        if variant != bech32::Variant::Bech32 {
-            return Err(anyhow::anyhow!("invalid bech32 variant"));
+    pub fn to_original_string(&self) -> String {
+        match self.multichain_id {
+            RoochMultiChainID::Bitcoin => {
+                let address = BitcoinAddress::try_from(self.clone()).unwrap();
+                address.to_string()
+            }
+            RoochMultiChainID::Ether => {
+                let address = EthereumAddress::try_from(self.clone()).unwrap();
+                address.to_string()
+            }
+            RoochMultiChainID::Rooch => {
+                let address = RoochAddress::try_from(self.clone()).unwrap();
+                address.to_string()
+            }
+            RoochMultiChainID::Nostr => {
+                let address = NostrAddress::try_from(self.clone()).unwrap();
+                address.to_string()
+            }
         }
-        let version = data.first().map(|u| u.to_u8());
-        anyhow::ensure!(version.filter(|v| *v == 1u8).is_some(), "expect version 1");
-
-        let multichain_id = RoochMultiChainID::from_str(hrp.as_str())?;
-        let address = Vec::<u8>::from_base32(&data[1..])?;
-        Ok(Self {
-            multichain_id,
-            raw_address: address,
-        })
-    }
-
-    pub fn to_bech32(&self) -> String {
-        let mut data = self.raw_address.to_base32();
-        //A Bech32 string consists of a human-readable part (HRP), a separator (the character '1'), and a data part
-        data.insert(
-            0,
-            bech32::u5::try_from_u8(1).expect("1 to u8 should success"),
-        );
-        bech32::encode(
-            &self.multichain_id.to_string().to_lowercase(),
-            data,
-            bech32::Variant::Bech32,
-        )
-        .expect("bech32 encode should success")
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -139,7 +124,7 @@ impl Serialize for MultiChainAddress {
         S: serde::Serializer,
     {
         if serializer.is_human_readable() {
-            serializer.serialize_str(&self.to_bech32())
+            serializer.serialize_str(&self.to_string())
         } else {
             #[derive(::serde::Serialize)]
             #[serde(rename = "MultiChainAddress")]
@@ -159,8 +144,8 @@ impl<'de> Deserialize<'de> for MultiChainAddress {
         D: serde::Deserializer<'de>,
     {
         if deserializer.is_human_readable() {
-            let bech32 = String::deserialize(deserializer)?;
-            Self::from_bech32(&bech32).map_err(serde::de::Error::custom)
+            let str = String::deserialize(deserializer)?;
+            Self::from_str(&str).map_err(serde::de::Error::custom)
         } else {
             #[derive(::serde::Deserialize)]
             #[serde(rename = "MultiChainAddress")]
@@ -175,12 +160,11 @@ impl<'de> Deserialize<'de> for MultiChainAddress {
     }
 }
 
-//TODO do not use bech32 to represent address
 //Use multichain_id:original_address to represent multichain_id address,
-//eth:0x1234.., btc:1px99y..., roh:0x1234..
+//eth:0x1234.., btc:1px99y..., rooch:0x1234..
 impl std::fmt::Display for MultiChainAddress {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_bech32())
+        write!(f, "{}:{}", self.multichain_id, self.to_original_string())
     }
 }
 
@@ -188,7 +172,12 @@ impl FromStr for MultiChainAddress {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::from_bech32(s)
+        let parts = s.split(':').collect::<Vec<&str>>();
+        if parts.len() != 2 {
+            bail!("invalid multichain address {}", s);
+        }
+        let multichain_id = RoochMultiChainID::from_str(parts[0])?;
+        Self::try_from_str_with_multichain_id(multichain_id, parts[1])
     }
 }
 
@@ -327,7 +316,7 @@ pub struct EthereumAddress(pub H160);
 impl fmt::Display for EthereumAddress {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Write the Ethereum address as a hexadecimal string with a "0x" prefix
-        write!(f, "0x{}", self.0)
+        write!(f, "{:#x}", self.0)
     }
 }
 
@@ -692,23 +681,53 @@ impl FromStr for NostrAddress {
     }
 }
 
+impl fmt::Display for NostrAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
     use bitcoin::hex::DisplayHex;
+    use std::fmt::Debug;
 
     fn test_rooch_supported_address_roundtrip<T>()
     where
-        T: RoochSupportedAddress + Clone + std::fmt::Debug + PartialEq + Eq + std::hash::Hash,
+        T: RoochSupportedAddress
+            + Clone
+            + Debug
+            + PartialEq
+            + Eq
+            + std::hash::Hash
+            + std::fmt::Display
+            + FromStr,
+        <T as std::str::FromStr>::Err: Debug,
     {
         let address = T::random();
         println!("{:?}", address);
+        let address_str = address.to_string();
+        let address_from_str = T::from_str(&address_str).expect("parse address from str failed");
+        assert_eq!(
+            address, address_from_str,
+            "address {} != {}",
+            address, address_from_str
+        );
+
         let multi_chain_address: MultiChainAddress = address.clone().into();
         let address2 = T::try_from(multi_chain_address.clone()).unwrap();
         assert_eq!(address, address2);
         let addr_str = multi_chain_address.to_string();
         println!("{}", addr_str);
-        let address3 = MultiChainAddress::from_str(&addr_str).unwrap();
+        let address3_result = MultiChainAddress::from_str(&addr_str);
+        assert!(
+            address3_result.is_ok(),
+            "parse address {} failed, err:{:?}",
+            addr_str,
+            address3_result.err()
+        );
+        let address3 = address3_result.unwrap();
         assert_eq!(multi_chain_address, address3);
         let address4 = T::try_from(address3).unwrap();
         assert_eq!(address, address4);
@@ -755,14 +774,12 @@ mod test {
             let serialized = serde_json::to_string(&address).unwrap();
             let deserialized: RoochAddress = serde_json::from_str(&serialized).unwrap();
             assert_eq!(address, deserialized);
+            let multi_chain_address: MultiChainAddress = address.clone().into();
+            let multi_chain_address_serialized = serde_json::to_string(&multi_chain_address).unwrap();
+            let multi_chain_address_deserialized: MultiChainAddress = serde_json::from_str(&multi_chain_address_serialized).unwrap();
+            assert_eq!(multi_chain_address, multi_chain_address_deserialized);
         }
 
-        #[test]
-        fn test_multichain_address_serialize_deserialize(address in any::<MultiChainAddress>()) {
-            let serialized = serde_json::to_string(&address).unwrap();
-            let deserialized: MultiChainAddress = serde_json::from_str(&serialized).unwrap();
-            assert_eq!(address, deserialized);
-        }
     }
 
     #[test]
@@ -796,7 +813,7 @@ mod test {
 
         let new_bitcoin_address = BitcoinAddress::from_str(address_str.as_str())?;
         let new_maddress = MultiChainAddress::try_from_str_with_multichain_id(
-            RoochMultiChainID::Bitcoin.into(),
+            RoochMultiChainID::Bitcoin,
             address_str.as_str(),
         )?;
 
