@@ -7,6 +7,8 @@ use moveos_store::MoveOSStore;
 use moveos_types::module_binding::{ModuleBinding, MoveFunctionCaller};
 use rooch_executor::actor::{executor::ExecutorActor, messages::ExecuteTransactionResult};
 use rooch_store::RoochStore;
+use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
+use rooch_types::bitcoin::network::Network;
 use rooch_types::{
     address::{RoochAddress, RoochSupportedAddress},
     chain_id::RoochChainID,
@@ -24,6 +26,7 @@ impl RustBindingTest {
         let sequencer = RoochAddress::random();
         let executor = ExecutorActor::new(
             RoochChainID::LOCAL.genesis_ctx(sequencer),
+            BitcoinGenesisContext::new(Network::default().to_num()),
             moveos_store,
             rooch_store,
         )?;

@@ -20,13 +20,19 @@ use std::cmp::min;
 pub struct BtcServer {
     rpc_service: RpcService,
     aggregate_service: AggregateService,
+    btc_network: u8,
 }
 
 impl BtcServer {
-    pub fn new(rpc_service: RpcService, aggregate_service: AggregateService) -> Self {
+    pub fn new(
+        rpc_service: RpcService,
+        aggregate_service: AggregateService,
+        btc_network: u8,
+    ) -> Self {
         Self {
             rpc_service,
             aggregate_service,
+            btc_network,
         }
     }
 }
@@ -71,7 +77,7 @@ impl BtcAPIServer for BtcServer {
             .pack_uxtos(states)
             .await?
             .into_iter()
-            .map(UTXOStateView::try_new_from_utxo_state)
+            .map(|v| UTXOStateView::try_new_from_utxo_state(v, self.btc_network))
             .collect::<Result<Vec<_>, _>>()?;
 
         let has_next_page = data.len() > limit_of;
