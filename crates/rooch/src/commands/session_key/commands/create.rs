@@ -98,7 +98,9 @@ impl CreateCommand {
                     session_auth_key
                 ))
             })?;
-
+        context
+            .keystore
+            .binding_session_key(sender, session_key.clone())?;
         Ok(session_key)
     }
 }

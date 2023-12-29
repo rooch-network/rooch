@@ -110,7 +110,11 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         .unwrap();
 
         moveos
-            .init_genesis(genesis.genesis_txs(), genesis.genesis_ctx())
+            .init_genesis(
+                genesis.genesis_txs(),
+                genesis.genesis_ctx(),
+                genesis.bitcoin_genesis_ctx(),
+            )
             .unwrap();
 
         let mut named_address_mapping = rooch_framework::rooch_framework_named_addresses()

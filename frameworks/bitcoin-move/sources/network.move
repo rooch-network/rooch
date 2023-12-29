@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module bitcoin_move::network{
+    use std::option;
     use std::string::{Self, String};
+    use bitcoin_move::genesis;
+    use moveos_std::context::Context;
 
     const ErrorUnknownNetwork: u64 = 1;
 
@@ -33,6 +36,19 @@ module bitcoin_move::network{
 
     public fun is_mainnet(network: u8): bool {
         network == NETWORK_BITCOIN
+    }
+
+    public fun default_network() : u8 {
+        Self::network_bitcoin()
+    }
+
+    public fun network(ctx: &Context) : u8 {
+        let network_opt = genesis::network(ctx);
+        if(option::is_some(&network_opt)){
+            *option::borrow(&network_opt)
+        } else {
+            Self::default_network()
+        }
     }
 
     public fun from_str(network: &String): u8 {
@@ -69,7 +85,7 @@ module bitcoin_move::network{
         } else if (network == NETWORK_TESTNET) {
             string::utf8(b"tb")
         } else if (network == NETWORK_SIGNET) {
-            string::utf8(b"sb")
+            string::utf8(b"tb")
         } else if (network == NETWORK_REGTEST) {
             string::utf8(b"bcrt")
         } else {

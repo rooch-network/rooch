@@ -165,10 +165,34 @@ impl<'a> ExtendedChecker<'a> {
         // The `type_name_indices` is used to save the private_generics information of the found function to the metadata of the module.
         // The private_generics information of the function is looked up from `GLOBAL_PRIVATE_GENERICS`.
         let type_name_indices = get_type_name_indices(self.env, module, &mut func_loc_map);
-        // #TODO: Ensure that the length of the private_generics type list is either none or full，but not partly.
-        //if type_name_indices.is_empty() {
-        //    return;
-        //}
+
+        let type_name_lists = verify_the_type_name_lists(self.env, module);
+
+        if type_name_indices.len() != type_name_lists.len() {
+            self.env.error(
+                &module.get_loc(),
+                "some private_generics may not have been handled.",
+            );
+        }
+
+        for (full_func_name, types_size) in type_name_lists.iter() {
+            match type_name_indices.get(full_func_name) {
+                None => {
+                    self.env.error(
+                        &module.get_loc(),
+                        format!("the function {:?} may not exists.", full_func_name).as_str(),
+                    );
+                }
+                Some(type_list) => {
+                    if type_list.len() as u32 != *types_size {
+                        self.env.error(
+                            &module.get_loc(),
+                            "some type name in private_generics may not have been handled",
+                        );
+                    }
+                }
+            }
+        }
 
         // Inspect the bytecode of every function, and if an instruction is CallGeneric,
         // verify that it calls a function with the private_generics attribute as detected earlier.
@@ -191,6 +215,30 @@ impl<'a> ExtendedChecker<'a> {
                 .collect::<Vec<_>>();
         }
     }
+}
+
+fn verify_the_type_name_lists(
+    global_env: &GlobalEnv,
+    module_env: &ModuleEnv,
+) -> BTreeMap<String, u32> {
+    let mut total_type_name_map: BTreeMap<String, u32> = BTreeMap::new();
+
+    for ref fun in module_env.get_functions() {
+        let full_func_name = build_full_func_name(fun, module_env, global_env);
+        if has_attribute(global_env, fun, PRIVATE_GENERICS_ATTRIBUTE) {
+            let attributes = fun.get_attributes();
+
+            for attr in attributes {
+                if let Attribute::Apply(_, _, types) = attr {
+                    if !types.is_empty() {
+                        total_type_name_map.insert(full_func_name.clone(), types.len() as u32);
+                    }
+                }
+            }
+        }
+    }
+
+    total_type_name_map
 }
 
 fn get_type_name_indices(

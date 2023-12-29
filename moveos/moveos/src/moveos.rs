@@ -119,10 +119,15 @@ impl MoveOS {
         })
     }
 
-    pub fn init_genesis<T: Into<MoveOSTransaction>, GT: MoveState + Clone>(
+    pub fn init_genesis<
+        T: Into<MoveOSTransaction>,
+        GT: MoveState + Clone,
+        BGT: MoveState + Clone,
+    >(
         &mut self,
         genesis_txs: Vec<T>,
         genesis_ctx: GT,
+        bitcoin_genesis_ctx: BGT,
     ) -> Result<Vec<(H256, TransactionOutput)>> {
         ensure!(
             self.db.0.get_state_store().is_genesis(),
@@ -130,14 +135,21 @@ impl MoveOS {
         );
         genesis_txs
             .into_iter()
-            .map(|tx| self.verify_and_execute_genesis_tx(tx.into(), genesis_ctx.clone()))
+            .map(|tx| {
+                self.verify_and_execute_genesis_tx(
+                    tx.into(),
+                    genesis_ctx.clone(),
+                    bitcoin_genesis_ctx.clone(),
+                )
+            })
             .collect::<Result<Vec<_>>>()
     }
 
-    fn verify_and_execute_genesis_tx<GT: MoveState>(
+    fn verify_and_execute_genesis_tx<GT: MoveState, BGT: MoveState>(
         &mut self,
         tx: MoveOSTransaction,
         genesis_ctx: GT,
+        bitcoin_genesis_ctx: BGT,
     ) -> Result<(H256, TransactionOutput)> {
         let MoveOSTransaction {
             mut ctx,
@@ -146,6 +158,7 @@ impl MoveOS {
             post_execute_functions: _,
         } = tx;
         ctx.add(genesis_ctx)?;
+        ctx.add(bitcoin_genesis_ctx)?;
         let mut session = self.vm.new_genesis_session(&self.db, ctx);
         let verified_action = session.verify_move_action(action)?;
 

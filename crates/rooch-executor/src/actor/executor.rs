@@ -48,6 +48,7 @@ use moveos_verifier::metadata::load_module_metadata;
 use rooch_genesis::RoochGenesis;
 use rooch_store::RoochStore;
 use rooch_types::address::MultiChainAddress;
+use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::framework::address_mapping::AddressMapping;
 use rooch_types::framework::auth_validator::AuthValidatorCaller;
 use rooch_types::framework::auth_validator::TxValidateResult;
@@ -76,10 +77,12 @@ type ValidateAuthenticatorResult = Result<
 impl ExecutorActor {
     pub fn new(
         genesis_ctx: GenesisContext,
+        bitcoin_genesis_ctx: BitcoinGenesisContext,
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
     ) -> Result<Self> {
-        let genesis: RoochGenesis = rooch_genesis::RoochGenesis::build(genesis_ctx)?;
+        let genesis: RoochGenesis =
+            rooch_genesis::RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
         let moveos = MoveOS::new(
             moveos_store,
             genesis.all_natives(),
@@ -98,9 +101,11 @@ impl ExecutorActor {
 
     fn init_or_check_genesis(mut self) -> Result<Self> {
         if self.moveos.state().is_genesis() {
-            let genesis_result = self
-                .moveos
-                .init_genesis(self.genesis.genesis_txs(), self.genesis.genesis_ctx())?;
+            let genesis_result = self.moveos.init_genesis(
+                self.genesis.genesis_txs(),
+                self.genesis.genesis_ctx(),
+                self.genesis.bitcoin_genesis_ctx(),
+            )?;
             let genesis_state_root = genesis_result
                 .last()
                 .expect("Genesis result must not empty")

@@ -4,7 +4,11 @@
 module bitcoin_move::ord {
     use std::vector;
     use std::option::{Self, Option};
-    use std::string::{Self, String};
+    use std::string;
+    use std::string::String;
+    use rooch_framework::address_mapping;
+    use rooch_framework::multichain_address;
+    use rooch_framework::bitcoin_address::BitcoinAddress;
     use moveos_std::bcs;
     use moveos_std::event;
     use moveos_std::context::{Self, Context};
@@ -17,6 +21,8 @@ module bitcoin_move::ord {
     use bitcoin_move::brc20;
 
     friend bitcoin_move::genesis;
+
+    friend bitcoin_move::light_client;
 
     struct InscriptionID has store, copy, drop {
         txid: address,
@@ -144,6 +150,8 @@ module bitcoin_move::ord {
         //TODO we should track the Inscription via SatPoint, but now we just use the first output for simplicity.
         let output_index = 0;
         let first_output = vector::borrow(outputs, output_index);
+        let address = types::txout_object_address(first_output);
+        let bitcoin_address_opt = types::txout_address(first_output);
         let to_address = types::txout_object_address(first_output);
         let j = 0;
         let objects_len = vector::length(&seal_object_ids);
@@ -160,6 +168,8 @@ module bitcoin_move::ord {
             vector::push_back(&mut seal_outs, utxo::new_seal_out(output_index, seal_object_id));
             j = j + 1;
         };
+        //Auto create address mapping if not exist
+        bind_multichain_address(ctx, address, bitcoin_address_opt);
         seal_outs
     }
 
@@ -192,16 +202,19 @@ module bitcoin_move::ord {
 
             let output = vector::borrow(tx_outputs, output_index);
             let to_address = types::txout_object_address(output);
+            let bitcoin_address_opt = types::txout_address(output);
 
             let inscription = vector::pop_back(&mut inscriptions);
             //Because the previous output of inscription input is a witness program address, so we simply use the output address as the from address.
             let from = to_address;
             progress_inscribe_protocol(ctx, from, to_address, &inscription);
             let inscription_obj = create_obj(ctx, inscription);
-            let object_id = object::id(&inscription_obj);            
-           
+            let object_id = object::id(&inscription_obj);
+
             object::transfer_extend(inscription_obj, to_address);
             vector::push_back(&mut output_seals, utxo::new_seal_out(output_index, object_id));
+            //Auto create address mapping if not exist
+            bind_multichain_address(ctx, to_address, bitcoin_address_opt);
             idx = idx + 1;
         };
         vector::destroy_empty(inscriptions);
@@ -338,5 +351,16 @@ module bitcoin_move::ord {
 
     native fun from_witness(witness: &Witness): vector<InscriptionRecord>;
 
+    public(friend) fun bind_multichain_address(ctx: &mut Context, rooch_address: address, bitcoin_address_opt: Option<BitcoinAddress>) {
+        //Auto create address mapping if not exist
+        if(option::is_some(&bitcoin_address_opt)) {
+            let bitcoin_address = option::extract(&mut bitcoin_address_opt);
+            let maddress = multichain_address::from_bitcoin(bitcoin_address);
+            if (!address_mapping::exists_mapping(ctx, maddress)) {
+                let bitcoin_move_signer = moveos_std::signer::module_signer<Inscription>();
+                address_mapping::bind_by_system(ctx, &bitcoin_move_signer, rooch_address, maddress);
+            };
+        };
+    }
 
 }

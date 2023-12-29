@@ -1,12 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::env;
-use std::fmt::Debug;
-use std::net::SocketAddr;
-use std::sync::Arc;
-use std::time::Duration;
-
+use crate::server::btc_server::BtcServer;
 use anyhow::{Error, Result};
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
@@ -15,6 +10,11 @@ use hyper::Method;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
 use serde_json::json;
+use std::env;
+use std::fmt::Debug;
+use std::net::SocketAddr;
+use std::sync::Arc;
+use std::time::Duration;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::info;
@@ -51,6 +51,8 @@ use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
+use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
+use rooch_types::bitcoin::network::Network;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{GenesisError, RoochError};
 
@@ -219,8 +221,10 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
 
     // Init executor
     let is_genesis = moveos_store.statedb.is_genesis();
+    let btc_network = opt.btc_network.unwrap_or(Network::default().to_num());
     let executor = ExecutorActor::new(
         chain_id_opt.genesis_ctx(sequencer_account),
+        BitcoinGenesisContext::new(btc_network),
         moveos_store.clone(),
         rooch_store.clone(),
     )?
@@ -355,6 +359,11 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         chain_id_opt.chain_id(),
         rpc_service.clone(),
         aggregate_service.clone(),
+    ))?;
+    rpc_module_builder.register_module(BtcServer::new(
+        rpc_service.clone(),
+        aggregate_service.clone(),
+        btc_network,
     ))?;
 
     // let rpc_api = build_rpc_api(rpc_api);

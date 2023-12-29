@@ -247,3 +247,14 @@ pub fn get_first_ty_as_struct_tag(struct_tag: StructTag) -> Result<StructTag> {
         bail!("Invalid struct tag: {:?}", struct_tag)
     }
 }
+
+#[test]
+fn test_type_tag() -> Result<()> {
+    let type_tag_str = "0x5::test::struct";
+    let type_tag_canonical_str =
+        "0000000000000000000000000000000000000000000000000000000000000005::test::struct";
+    let test_type_tag = TypeTag::from_str(type_tag_str)?;
+    assert_eq!(type_tag_str, test_type_tag.to_string());
+    assert_eq!(type_tag_canonical_str, test_type_tag.to_canonical_string());
+    Ok(())
+}
