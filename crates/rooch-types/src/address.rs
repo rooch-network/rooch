@@ -170,7 +170,7 @@ impl FromStr for MultiChainAddress {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts = s.split(":").collect::<Vec<&str>>();
+        let parts = s.split(':').collect::<Vec<&str>>();
         if parts.len() != 2 {
             bail!("invalid multichain address {}", s);
         }
