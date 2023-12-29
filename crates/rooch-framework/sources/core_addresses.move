@@ -89,5 +89,4 @@ module rooch_framework::core_addresses {
     public fun genesis_address(): address {
         @rooch_framework
     }
-
 }

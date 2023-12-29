@@ -23,7 +23,7 @@ module rooch_framework::coin {
     const ErrorCoinInfoAlreadyRegistered: u64 = 2;
 
     /// Not enough coins to extract
-    const ErrorInSufficientBalance: u64 = 3;
+    const ErrorInsufficientBalance: u64 = 3;
 
     /// Cannot destroy non-zero coins
     const ErrorDestroyOfNonZeroCoin: u64 = 4;
@@ -76,7 +76,7 @@ module rooch_framework::coin {
         coin_type: string::String,
         /// Name of the coin.
         name: string::String,
-        /// Symbol of the coin, usually a shorcut version of the name.
+        /// Symbol of the coin, usually a shorter version of the name.
         /// For example, Singapore Dollar is SGD.
         symbol: string::String,
         /// Number of decimals used to get its user representation.
@@ -136,7 +136,7 @@ module rooch_framework::coin {
         coin_info.name
     }
 
-    /// Returns the symbol of the coin, usually a shortcut of the name.
+    /// Returns the symbol of the coin, usually a shorter version of the name.
     public fun symbol<CoinType: key>(coin_info: &CoinInfo<CoinType>): string::String {
         coin_info.symbol
     }
@@ -167,7 +167,7 @@ module rooch_framework::coin {
 
     /// Extracts `amount` from the passed-in `coin`, where the original coin is modified in place.
     public fun extract<CoinType: key>(coin: &mut Coin<CoinType>, amount: u256): Coin<CoinType> {
-        assert!(coin.value >= amount, ErrorInSufficientBalance);
+        assert!(coin.value >= amount, ErrorInsufficientBalance);
         coin.value = coin.value - amount;
         Coin { value: amount }
     }

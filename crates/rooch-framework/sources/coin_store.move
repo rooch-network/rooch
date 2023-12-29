@@ -4,10 +4,9 @@
 module rooch_framework::coin_store {
 
     use std::string;
-    use moveos_std::object::{ObjectID};
+    use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::context::{Self, Context};
     use moveos_std::type_info;
-    use moveos_std::object::{Self, Object};
     use moveos_std::event;
     use rooch_framework::coin::{Self, Coin};
 
@@ -25,7 +24,7 @@ module rooch_framework::coin_store {
     const ErrorCoinTypeAndStoreMismatch: u64 = 3;
 
     /// Not enough balance to withdraw from CoinStore
-    const ErrorInSufficientBalance: u64 = 4;
+    const ErrorInsufficientBalance: u64 = 4;
 
     /// Transfer is not supported for CoinStore
     const ErrorCoinStoreTransferNotSupported: u64 = 5;
@@ -251,7 +250,7 @@ module rooch_framework::coin_store {
 
     /// Extracts `amount` Coin from the balance of the passed-in `coin_store`
     fun extract_from_balance<CoinType: key>(coin_store: &mut CoinStore<CoinType>, amount: u256): Coin<CoinType> {
-        assert!(coin_store.balance.value >= amount, ErrorInSufficientBalance);
+        assert!(coin_store.balance.value >= amount, ErrorInsufficientBalance);
         coin_store.balance.value = coin_store.balance.value - amount;
         coin::pack<CoinType>(amount)
     }
@@ -273,7 +272,7 @@ module rooch_framework::coin_store {
         event::emit(WithdrawEvent {
             coin_store_id: object_id,
             coin_type: coin_store.coin_type,
-            amount: amount,
+            amount,
         });
         coin
     }
