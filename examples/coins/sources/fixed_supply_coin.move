@@ -10,7 +10,7 @@ module coins::fixed_supply_coin {
     use rooch_framework::coin;
     use rooch_framework::coin_store::{Self, CoinStore};
     use rooch_framework::account_coin_store;
-    
+
 
     struct FSC has key, store {}
 
