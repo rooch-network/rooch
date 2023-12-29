@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use super::types::{AddressMapping, LocalAccount, LocalSessionKey};
 use crate::key_derive::{decrypt_key, generate_new_key_pair, retrieve_key_pair};
 use crate::keystore::account_keystore::AccountKeystore;
-use anyhow::{anyhow, ensure};
+use anyhow::anyhow;
 use fastcrypto::encoding::{Base64, Encoding};
 use rooch_types::framework::session_key::SessionKey;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
@@ -274,14 +274,15 @@ impl AccountKeystore for BaseKeyStore {
                     "Cannot find SessionKey for authentication_key: [{authentication_key}]"
                 ))
             })?;
-        let session_key = local_session_key.session_key.as_ref().ok_or_else(||{
-            signature::Error::from_source(
-                format!("SessionKey for authentication_key:[{authentication_key}] do not binding to on-chain SessionKey")
-            )
-        })?;
-        ensure!(session_key.is_scope_match_with_action(&msg.action), signature::Error::from_source(
-            format!("SessionKey for authentication_key:[{authentication_key}] scope do not match with transaction")
-        ));
+        //TODO should we check the scope of session key here?
+        // let session_key = local_session_key.session_key.as_ref().ok_or_else(||{
+        //     signature::Error::from_source(
+        //         format!("SessionKey for authentication_key:[{authentication_key}] do not binding to on-chain SessionKey")
+        //     )
+        // })?;
+        // ensure!(session_key.is_scope_match_with_action(&msg.action), signature::Error::from_source(
+        //     format!("SessionKey for authentication_key:[{authentication_key}] scope do not match with transaction")
+        // ));
         let kp: RoochKeyPair = retrieve_key_pair(&local_session_key.private_key, password)
             .map_err(signature::Error::from_source)?;
 
