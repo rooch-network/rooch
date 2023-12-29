@@ -24,17 +24,8 @@ pub struct LocalAccount {
     pub has_session_key: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub struct AddressMapping {
     pub rooch_to_multichain: BTreeMap<RoochAddress, MultiChainAddress>,
     pub multichain_to_rooch: BTreeMap<MultiChainAddress, RoochAddress>,
-}
-
-impl Default for AddressMapping {
-    fn default() -> Self {
-        Self {
-            rooch_to_multichain: BTreeMap::new(),
-            multichain_to_rooch: BTreeMap::new(),
-        }
-    }
 }

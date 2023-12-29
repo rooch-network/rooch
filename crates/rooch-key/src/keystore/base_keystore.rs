@@ -93,7 +93,7 @@ impl AccountKeystore for BaseKeyStore {
             };
             accounts.insert(*address, local_account);
         }
-        Ok(accounts.into_values().into_iter().collect())
+        Ok(accounts.into_values().collect())
     }
 
     fn get_key_pair_with_password(
