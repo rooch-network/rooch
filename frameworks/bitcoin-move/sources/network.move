@@ -39,7 +39,7 @@ module bitcoin_move::network{
     }
 
     public fun default_network() : u8 {
-        Self::network_regtest()
+        Self::network_bitcoin()
     }
 
     public fun network(ctx: &Context) : u8 {

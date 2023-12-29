@@ -80,7 +80,7 @@ impl UTXOView {
 pub struct UTXOStateView {
     pub object_id: ObjectID,
     pub owner: AccountAddressView,
-    pub owner_bitcoin_address: Option<BitcoinAddressView>,
+    pub owner_bitcoin_address: Option<String>,
     pub flag: u8,
     pub value: UTXOView,
     pub object_type: StructTagView,
@@ -91,11 +91,18 @@ pub struct UTXOStateView {
 }
 
 impl UTXOStateView {
-    pub fn try_new_from_utxo_state(utxo: UTXOState) -> Result<UTXOStateView, anyhow::Error> {
+    pub fn try_new_from_utxo_state(
+        utxo: UTXOState,
+        network: u8,
+    ) -> Result<UTXOStateView, anyhow::Error> {
+        let owner_bitcoin_address = match utxo.owner_bitcoin_address {
+            Some(baddress) => Some(baddress.format(network)?),
+            None => None,
+        };
         Ok(UTXOStateView {
             object_id: utxo.object_id,
             owner: utxo.owner.into(),
-            owner_bitcoin_address: utxo.owner_bitcoin_address.map(Into::into),
+            owner_bitcoin_address,
             flag: utxo.flag,
             value: UTXOView::try_new_from_utxo(utxo.value)?,
             object_type: utxo.object_type.into(),

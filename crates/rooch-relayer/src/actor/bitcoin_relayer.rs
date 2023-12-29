@@ -10,7 +10,6 @@ use moveos_types::{module_binding::MoveFunctionCaller, transaction::FunctionCall
 use rooch_config::BitcoinRelayerConfig;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_types::bitcoin::light_client::BitcoinLightClientModule;
-use rooch_types::bitcoin::network::Network;
 use std::cmp::max;
 use tracing::{debug, info};
 
@@ -24,7 +23,6 @@ pub struct BitcoinRelayer {
     sync_block_interval: u64,
     latest_sync_timestamp: u64,
     sync_to_latest: bool,
-    network: u8,
 }
 
 #[derive(Debug, Clone)]
@@ -48,7 +46,6 @@ impl BitcoinRelayer {
             sync_block_interval: 60u64,
             latest_sync_timestamp: 0u64,
             sync_to_latest: false,
-            network: config.btc_network.unwrap_or(Network::default().to_num()),
         })
     }
 
@@ -131,7 +128,7 @@ impl BitcoinRelayer {
                 block_height, block_hash, time
             );
             debug!("GetBlockHeaderResult: {:?}", block_result);
-            let call = block_result_to_call(block_result, self.network)?;
+            let call = block_result_to_call(block_result)?;
             Ok(Some(call))
         }
     }
@@ -168,12 +165,11 @@ impl Relayer for BitcoinRelayer {
     }
 }
 
-fn block_result_to_call(block_result: BlockResult, network: u8) -> Result<FunctionCall> {
+fn block_result_to_call(block_result: BlockResult) -> Result<FunctionCall> {
     let block_height = block_result.header_info.height;
     let call = BitcoinLightClientModule::create_submit_new_block_call(
         block_height as u64,
         block_result.block,
-        network,
     );
     Ok(call)
 }

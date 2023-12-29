@@ -19,15 +19,11 @@ pub struct Block {
     pub txdata: Vec<Transaction>,
 }
 
-impl Block {
-    pub fn new_from(block: bitcoin::Block, network: u8) -> Self {
+impl From<bitcoin::Block> for Block {
+    fn from(block: bitcoin::Block) -> Self {
         Self {
             header: block.header.into(),
-            txdata: block
-                .txdata
-                .into_iter()
-                .map(|tx| Transaction::new_from(tx, network))
-                .collect(),
+            txdata: block.txdata.into_iter().map(|tx| tx.into()).collect(),
         }
     }
 }
@@ -138,18 +134,14 @@ pub struct Transaction {
     pub output: Vec<TxOut>,
 }
 
-impl Transaction {
-    pub fn new_from(tx: bitcoin::Transaction, network: u8) -> Self {
+impl From<bitcoin::Transaction> for Transaction {
+    fn from(tx: bitcoin::Transaction) -> Self {
         Self {
             id: tx.txid().into_address(),
             version: tx.version.0 as u32,
             lock_time: tx.lock_time.to_consensus_u32(),
             input: tx.input.into_iter().map(|tx_in| tx_in.into()).collect(),
-            output: tx
-                .output
-                .into_iter()
-                .map(|tx_out| TxOut::new_from(tx_out, network))
-                .collect(),
+            output: tx.output.into_iter().map(|tx_out| tx_out.into()).collect(),
         }
     }
 }
@@ -315,14 +307,14 @@ pub struct TxOut {
     pub recipient_address: BitcoinAddress,
 }
 
-impl TxOut {
-    pub fn new_from(tx_out: bitcoin::TxOut, network: u8) -> Self {
+impl From<bitcoin::TxOut> for TxOut {
+    fn from(tx_out: bitcoin::TxOut) -> Self {
         let address_opt = bitcoin::address::Payload::from_script(&tx_out.script_pubkey).ok();
         Self {
             value: tx_out.value.to_sat(),
             script_pubkey: tx_out.script_pubkey.into(),
             recipient_address: address_opt
-                .map(|payload| BitcoinAddress::new_from(&payload, network))
+                .map(|address| address.into())
                 .unwrap_or_default(),
         }
     }

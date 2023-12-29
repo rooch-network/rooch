@@ -180,7 +180,6 @@ impl RoochOpt {
             btc_rpc_user_name: self.btc_rpc_username.clone().unwrap(),
             btc_rpc_password: self.btc_rpc_password.clone().unwrap(),
             btc_start_block_height: self.btc_start_block_height,
-            btc_network: self.btc_network,
         })
     }
 }
@@ -196,7 +195,6 @@ pub struct BitcoinRelayerConfig {
     pub btc_rpc_user_name: String,
     pub btc_rpc_password: String,
     pub btc_start_block_height: Option<u64>,
-    pub btc_network: Option<u8>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

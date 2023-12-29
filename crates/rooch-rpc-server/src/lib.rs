@@ -363,6 +363,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     rpc_module_builder.register_module(BtcServer::new(
         rpc_service.clone(),
         aggregate_service.clone(),
+        btc_network,
     ))?;
 
     // let rpc_api = build_rpc_api(rpc_api);
