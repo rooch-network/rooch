@@ -33,11 +33,11 @@ use rooch_rpc_api::{
     api::{MAX_RESULT_LIMIT, MAX_RESULT_LIMIT_USIZE},
     jsonrpc_types::BytesView,
 };
-use rooch_types::address::MultiChainAddress;
 use rooch_types::indexer::event_filter::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::{AbstractTransaction, TypedTransaction};
+use rooch_types::{address::MultiChainAddress, multichain_id::RoochMultiChainID};
 use std::cmp::min;
 use tracing::info;
 
@@ -438,7 +438,7 @@ impl RoochAPIServer for RoochServer {
                 address,
             } => {
                 let multi_chain_address = MultiChainAddress::try_from_str_with_multichain_id(
-                    multichain_id,
+                    RoochMultiChainID::try_from(multichain_id)?,
                     address.as_str(),
                 )?;
                 self.rpc_service

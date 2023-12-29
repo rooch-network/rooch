@@ -37,6 +37,29 @@ impl SessionScope {
             function_name: MoveAsciiString::from_str(function_name).expect("invalid function name"),
         }
     }
+
+    fn is_asterisk(s: &MoveAsciiString) -> bool {
+        s.as_bytes() == b"*"
+    }
+
+    pub fn check_scope_match(&self, function: &FunctionCall) -> bool {
+        if &self.module_address != function.function_id.module_id.address() {
+            return false;
+        }
+        if !Self::is_asterisk(&self.module_name)
+            && self.module_name.to_string().as_str()
+                != function.function_id.module_id.name().as_str()
+        {
+            return false;
+        }
+        if !Self::is_asterisk(&self.function_name)
+            && self.function_name.to_string().as_str()
+                != function.function_id.function_name.as_str()
+        {
+            return false;
+        }
+        true
+    }
 }
 
 impl MoveStructType for SessionScope {
@@ -95,6 +118,36 @@ pub struct SessionKey {
     pub create_time: u64,
     pub last_active_time: u64,
     pub max_inactive_interval: u64,
+}
+
+impl SessionKey {
+    pub fn authentication_key(&self) -> AuthenticationKey {
+        AuthenticationKey::new(self.authentication_key.clone())
+    }
+    pub fn is_expired(&self) -> bool {
+        if self.max_inactive_interval == 0 {
+            return false;
+        }
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("should get system time")
+            .as_secs();
+        now - self.last_active_time > self.max_inactive_interval
+    }
+
+    pub fn is_scope_match(&self, function: &FunctionCall) -> bool {
+        self.scopes
+            .iter()
+            .any(|scope| scope.check_scope_match(function))
+    }
+
+    pub fn is_scope_match_with_action(&self, action: &MoveAction) -> bool {
+        match action {
+            MoveAction::Script(_) => false,
+            MoveAction::ModuleBundle(_) => false,
+            MoveAction::Function(function) => self.is_scope_match(function),
+        }
+    }
 }
 
 impl MoveStructType for SessionKey {
@@ -186,5 +239,142 @@ impl<'a> ModuleBinding<'a> for SessionKeyModule<'a> {
         Self: Sized,
     {
         Self { caller }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::SessionScope;
+    use move_core_types::{account_address::AccountAddress, ident_str, language_storage::ModuleId};
+    use moveos_types::{
+        move_std::ascii::MoveAsciiString, move_types::FunctionId, transaction::FunctionCall,
+    };
+
+    fn do_test_scope_match(scope: &SessionScope, function: &FunctionCall, expect: bool) {
+        assert_eq!(
+            scope.check_scope_match(function),
+            expect,
+            "scope: {:?}, function: {:?}",
+            scope,
+            function
+        );
+    }
+
+    #[test]
+    fn test_scope_match() {
+        let session_scope = SessionScope {
+            module_address: AccountAddress::ONE,
+            module_name: MoveAsciiString::from_str("test").unwrap(),
+            function_name: MoveAsciiString::from_str("test").unwrap(),
+        };
+        let cases = vec![
+            (
+                FunctionCall::new(
+                    FunctionId::new(
+                        ModuleId::new(AccountAddress::ONE, ident_str!("test").to_owned()),
+                        ident_str!("test").to_owned(),
+                    ),
+                    vec![],
+                    vec![],
+                ),
+                true,
+            ),
+            (
+                FunctionCall::new(
+                    FunctionId::new(
+                        ModuleId::new(AccountAddress::TWO, ident_str!("test").to_owned()),
+                        ident_str!("test").to_owned(),
+                    ),
+                    vec![],
+                    vec![],
+                ),
+                false,
+            ),
+            (
+                FunctionCall::new(
+                    FunctionId::new(
+                        ModuleId::new(AccountAddress::ONE, ident_str!("test2").to_owned()),
+                        ident_str!("test").to_owned(),
+                    ),
+                    vec![],
+                    vec![],
+                ),
+                false,
+            ),
+            (
+                FunctionCall::new(
+                    FunctionId::new(
+                        ModuleId::new(AccountAddress::ONE, ident_str!("test").to_owned()),
+                        ident_str!("test2").to_owned(),
+                    ),
+                    vec![],
+                    vec![],
+                ),
+                false,
+            ),
+        ];
+        cases
+            .into_iter()
+            .for_each(|c| do_test_scope_match(&session_scope, &c.0, c.1));
+    }
+
+    #[test]
+    fn test_check_scope_match_asterisk() {
+        let session_scope = SessionScope {
+            module_address: AccountAddress::ONE,
+            module_name: MoveAsciiString::from_str("*").unwrap(),
+            function_name: MoveAsciiString::from_str("*").unwrap(),
+        };
+        let cases = vec![
+            (
+                FunctionCall::new(
+                    FunctionId::new(
+                        ModuleId::new(AccountAddress::ONE, ident_str!("test").to_owned()),
+                        ident_str!("test").to_owned(),
+                    ),
+                    vec![],
+                    vec![],
+                ),
+                true,
+            ),
+            (
+                FunctionCall::new(
+                    FunctionId::new(
+                        ModuleId::new(AccountAddress::TWO, ident_str!("test").to_owned()),
+                        ident_str!("test").to_owned(),
+                    ),
+                    vec![],
+                    vec![],
+                ),
+                false,
+            ),
+            (
+                FunctionCall::new(
+                    FunctionId::new(
+                        ModuleId::new(AccountAddress::ONE, ident_str!("test2").to_owned()),
+                        ident_str!("test").to_owned(),
+                    ),
+                    vec![],
+                    vec![],
+                ),
+                true,
+            ),
+            (
+                FunctionCall::new(
+                    FunctionId::new(
+                        ModuleId::new(AccountAddress::ONE, ident_str!("test").to_owned()),
+                        ident_str!("test2").to_owned(),
+                    ),
+                    vec![],
+                    vec![],
+                ),
+                true,
+            ),
+        ];
+        cases
+            .into_iter()
+            .for_each(|c| do_test_scope_match(&session_scope, &c.0, c.1));
     }
 }

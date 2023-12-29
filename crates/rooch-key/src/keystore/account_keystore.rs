@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::types::LocalAccount;
 use crate::key_derive::{
     derive_address_from_private_key, derive_private_key_from_path, encrypt_key,
     generate_derivation_path, generate_new_key_pair, hash_password,
@@ -9,6 +10,7 @@ use crate::keystore::ImportedMnemonic;
 use bip32::DerivationPath;
 use bip39::{Language, Mnemonic, Seed};
 use fastcrypto::encoding::{Base64, Encoding};
+use rooch_types::framework::session_key::SessionKey;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
     address::RoochAddress,
@@ -21,6 +23,8 @@ use rooch_types::{
 use serde::Serialize;
 
 pub trait AccountKeystore {
+    fn get_accounts(&self, password: Option<String>) -> Result<Vec<LocalAccount>, anyhow::Error>;
+
     fn add_address_encryption_data(
         &mut self,
         address: RoochAddress,
@@ -30,6 +34,7 @@ pub trait AccountKeystore {
         &self,
         password: Option<String>,
     ) -> Result<Vec<(RoochAddress, PublicKey)>, anyhow::Error>;
+
     fn get_public_key(&self, password: Option<String>) -> Result<PublicKey, anyhow::Error>;
     fn get_key_pairs(
         &self,
@@ -195,6 +200,13 @@ pub trait AccountKeystore {
         address: &RoochAddress,
         password: Option<String>,
     ) -> Result<AuthenticationKey, anyhow::Error>;
+
+    /// Binding on-chain SessionKey to LocalSessionKey
+    fn binding_session_key(
+        &mut self,
+        address: RoochAddress,
+        session_key: SessionKey,
+    ) -> Result<(), anyhow::Error>;
 
     fn sign_transaction_via_session_key(
         &self,

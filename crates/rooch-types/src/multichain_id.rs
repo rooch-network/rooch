@@ -98,7 +98,6 @@ impl Into<u64> for MultiChainID {
 pub enum RoochMultiChainID {
     Bitcoin = BITCOIN,
     Ether = ETHER,
-    Sui = SUI,
     Nostr = NOSTR,
     Rooch = ROOCH,
 }
@@ -108,7 +107,6 @@ impl Display for RoochMultiChainID {
         match self {
             RoochMultiChainID::Bitcoin => write!(f, "bitcoin"),
             RoochMultiChainID::Ether => write!(f, "ether"),
-            RoochMultiChainID::Sui => write!(f, "sui"),
             RoochMultiChainID::Nostr => write!(f, "nostr"),
             RoochMultiChainID::Rooch => write!(f, "rooch"),
         }
@@ -128,7 +126,6 @@ impl TryFrom<u64> for RoochMultiChainID {
         match value {
             BITCOIN => Ok(RoochMultiChainID::Bitcoin),
             ETHER => Ok(RoochMultiChainID::Ether),
-            SUI => Ok(RoochMultiChainID::Sui),
             NOSTR => Ok(RoochMultiChainID::Nostr),
             ROOCH => Ok(RoochMultiChainID::Rooch),
             _ => Err(anyhow::anyhow!("multichain id {} is invalid", value)),
@@ -143,7 +140,6 @@ impl FromStr for RoochMultiChainID {
         match s {
             "bitcoin" => Ok(RoochMultiChainID::Bitcoin),
             "ether" => Ok(RoochMultiChainID::Ether),
-            "sui" => Ok(RoochMultiChainID::Sui),
             "nostr" => Ok(RoochMultiChainID::Nostr),
             "rooch" => Ok(RoochMultiChainID::Rooch),
             s => Err(format_err!("Unknown multichain: {}", s)),
@@ -157,7 +153,6 @@ impl TryFrom<MultiChainID> for RoochMultiChainID {
         Ok(match multichain_id.id() {
             BITCOIN => Self::Bitcoin,
             ETHER => Self::Ether,
-            SUI => Self::Sui,
             NOSTR => Self::Nostr,
             ROOCH => Self::Rooch,
             id => bail!("{} is not a builtin multichain id", id),
@@ -194,10 +189,6 @@ impl RoochMultiChainID {
         matches!(self, RoochMultiChainID::Ether)
     }
 
-    pub fn is_sui(self) -> bool {
-        matches!(self, RoochMultiChainID::Sui)
-    }
-
     pub fn is_nostr(self) -> bool {
         matches!(self, RoochMultiChainID::Nostr)
     }
@@ -210,7 +201,6 @@ impl RoochMultiChainID {
         vec![
             RoochMultiChainID::Bitcoin,
             RoochMultiChainID::Ether,
-            RoochMultiChainID::Sui,
             RoochMultiChainID::Nostr,
             RoochMultiChainID::Rooch,
         ]

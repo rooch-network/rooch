@@ -21,6 +21,7 @@ pub mod account_keystore;
 pub mod base_keystore;
 pub mod file_keystore;
 pub mod memory_keystore;
+pub mod types;
 
 pub struct ImportedMnemonic {
     pub address: RoochAddress,
@@ -35,6 +36,16 @@ pub enum Keystore {
 }
 
 impl AccountKeystore for Keystore {
+    fn get_accounts(
+        &self,
+        password: Option<String>,
+    ) -> Result<Vec<types::LocalAccount>, anyhow::Error> {
+        match self {
+            Keystore::File(file_keystore) => file_keystore.get_accounts(password),
+            Keystore::InMem(inmem_keystore) => inmem_keystore.get_accounts(password),
+        }
+    }
+
     fn sign_transaction_via_session_key(
         &self,
         address: &RoochAddress,
@@ -200,6 +211,21 @@ impl AccountKeystore for Keystore {
             Keystore::File(file_keystore) => file_keystore.generate_session_key(address, password),
             Keystore::InMem(inmem_keystore) => {
                 inmem_keystore.generate_session_key(address, password)
+            }
+        }
+    }
+
+    fn binding_session_key(
+        &mut self,
+        address: RoochAddress,
+        session_key: rooch_types::framework::session_key::SessionKey,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            Keystore::File(file_keystore) => {
+                file_keystore.binding_session_key(address, session_key)
+            }
+            Keystore::InMem(inmem_keystore) => {
+                inmem_keystore.binding_session_key(address, session_key)
             }
         }
     }
