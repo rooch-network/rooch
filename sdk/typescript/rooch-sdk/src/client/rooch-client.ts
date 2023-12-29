@@ -4,28 +4,28 @@
 import fetch from 'isomorphic-fetch'
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
-import { Chain, ChainInfo, DevChain } from '../constants/chain'
+import { Chain, ChainInfo, DevChain, RoochMultiChainID } from '../constants'
 import {
-  FunctionId,
-  TypeTag,
-  Arg,
-  Bytes,
   AnnotatedFunctionResultView,
-  TransactionWithInfoPageView,
-  EventPageView,
-  StateView,
-  StatePageView,
-  TransactionWithInfoView,
-  StateOptions,
-  EventOptions,
+  Arg,
   bcsTypes,
+  Bytes,
+  EventOptions,
+  EventPageView,
+  FunctionId,
+  StateOptions,
+  StatePageView,
+  StateView,
+  TransactionWithInfoPageView,
+  TransactionWithInfoView,
+  TypeTag,
 } from '../types'
 import {
-  functionIdToStirng,
-  typeTagToString,
-  encodeArg,
-  toHexString,
   addressToSeqNumber,
+  encodeArg,
+  functionIdToStirng,
+  toHexString,
+  typeTagToString,
 } from '../utils'
 import { IClient } from './interface'
 
@@ -186,13 +186,11 @@ export class RoochClient implements IClient {
   }
 
   // Resolve the rooch address
-  async resoleRoochAddress(ethAddress: string): Promise<string> {
-    const multiChainIDEther = 60
-
-    const ma = new bcsTypes.MultiChainAddress(
-      BigInt(multiChainIDEther),
-      addressToSeqNumber(ethAddress),
-    )
+  async resoleRoochAddress(
+    address: string,
+    multiChainID: RoochMultiChainID = RoochMultiChainID.Ether,
+  ): Promise<string> {
+    const ma = new bcsTypes.MultiChainAddress(BigInt(multiChainID), addressToSeqNumber(address))
 
     const result = await this.executeViewFunction(
       '0x3::address_mapping::resolve_or_generate',

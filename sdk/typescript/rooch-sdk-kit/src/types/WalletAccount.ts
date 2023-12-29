@@ -1,6 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+import { RoochMultiChainID } from '@roochnetwork/rooch-sdk'
+
+import { MultiChainAddress } from './address'
+
+// import { address } from 'bitcoinjs-lib'
+
 export class WalletAccount {
   private readonly address: string
   private readonly publicKey?: string
@@ -19,9 +25,9 @@ export class WalletAccount {
     return this.address
   }
 
-  // public toMultiChainAddress(): string {
-  //
-  // }
+  public toMultiChainAddress(): MultiChainAddress {
+    return new MultiChainAddress(RoochMultiChainID.Bitcoin, this.address)
+  }
 
   public getInfo() {
     return {

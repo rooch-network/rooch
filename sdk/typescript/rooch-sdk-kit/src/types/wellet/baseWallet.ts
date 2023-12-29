@@ -1,31 +1,37 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { ChainInfo, SerializedSignature } from '@roochnetwork/rooch-sdk'
+import { ChainInfo } from '@roochnetwork/rooch-sdk'
 import { sha3_256 } from '@noble/hashes/sha3'
-import { Buffer } from 'buffer'
 import { WalletAccount } from '../WalletAccount'
+import { SerializedSignature } from '@roochnetwork/rooch-sdk'
 
 export abstract class BaseWallet {
-  protected abstract sign(msg: string): Promise<string>
+  protected abstract sign(msg: string, fromAddress: string): Promise<string>
+  protected abstract toSerializedSignature(
+    signature: string,
+    fromAddress: string,
+  ): SerializedSignature
+
+  abstract normalize_recovery_id(recoveryID: number): number
   abstract getTarget(): any
   abstract getScheme(): number
 
   // TODO: What happens if the user rejects the request
   abstract connect(chainInfo: ChainInfo): Promise<WalletAccount[]>
 
-  async signMessage(msg: Uint8Array) {
+  async signMessage(msg: Uint8Array, fromAddress: string) {
     const digest = sha3_256(msg)
-    return await this.signMessageWithHashed(digest)
+    return await this.signMessageWithHashed(digest, fromAddress)
   }
 
-  async signMessageWithHashed(msg: Uint8Array) {
+  async signMessageWithHashed(msg: Uint8Array, fromAddress: string) {
     // TODO: fix with rooch-sdk hexString class
     let hex = Array.from(msg)
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('')
 
-    return this.toSerializedSignature(await this.sign(hex))
+    return this.toSerializedSignature(await this.sign(hex, fromAddress), fromAddress)
   }
 
   async checkInstalled(): Promise<boolean> {
@@ -34,30 +40,5 @@ export abstract class BaseWallet {
     }
 
     return Promise.resolve(this.getTarget() !== undefined)
-  }
-
-  normalize_recovery_id(v: number) {
-    let normalizeV = v - 27 - 4
-
-    if (normalizeV < 0) {
-      normalizeV = normalizeV + 4
-    }
-
-    return normalizeV
-  }
-
-  private toSerializedSignature(signature: string): SerializedSignature {
-    let signBuffer = Buffer.from(signature, 'base64')
-
-    const normalizeSignBuffer = Buffer.concat([
-      signBuffer.subarray(1),
-      Buffer.from([this.normalize_recovery_id(signBuffer[0])]),
-    ])
-
-    // TODO: add address
-    const serializedSignature = new Uint8Array(normalizeSignBuffer.length)
-    serializedSignature.set(normalizeSignBuffer)
-
-    return serializedSignature
   }
 }

@@ -14,7 +14,7 @@ export class Metamask extends ETHWallet {
     return 1
   }
 
-  sign(msg: string): Promise<string> {
+  sign(msg: string, _: string): Promise<string> {
     return this.getTarget().request({
       method: 'eth_sign',
       params: [msg],

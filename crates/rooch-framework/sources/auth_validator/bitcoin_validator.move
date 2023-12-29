@@ -5,9 +5,12 @@
 module rooch_framework::bitcoin_validator {
 
     use std::vector;
+    use rooch_framework::multichain_address::MultiChainAddress;
     use moveos_std::context::{Self, Context};
     use rooch_framework::ecdsa_k1_recoverable;
     use rooch_framework::auth_validator;
+    use rooch_framework::multichain_address;
+    use moveos_std::bcs;
 
     /// there defines auth validator id for each blockchain
     const BITCOIN_AUTH_VALIDATOR_ID: u64 = 2;
@@ -21,6 +24,18 @@ module rooch_framework::bitcoin_validator {
         BITCOIN_AUTH_VALIDATOR_ID
     }
 
+    public fun get_address_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
+        let address = vector::empty<u8>();
+        let i = ecdsa_k1_recoverable::signature_length();
+        let address_position = ecdsa_k1_recoverable::signature_length() + multichain_address::get_length();
+        while (i < address_position) {
+            let value = vector::borrow(authenticator_payload, i);
+            vector::push_back(&mut address, *value);
+            i = i + 1;
+        };
+        address
+    }
+
     public fun get_signature_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
         let sign = vector::empty<u8>();
         let i = 0;
@@ -30,13 +45,11 @@ module rooch_framework::bitcoin_validator {
             vector::push_back(&mut sign, *value);
             i = i + 1;
         };
-        std::debug::print(&sign);
         sign
     }
 
     /// Only validate the authenticator's signature.
     public fun validate_signature(authenticator_payload: &vector<u8>, tx_hash: &vector<u8>) {
-        std::debug::print(tx_hash);
         assert!(
             ecdsa_k1_recoverable::verify(
                 &get_signature_from_authenticator_payload(authenticator_payload),
@@ -47,9 +60,11 @@ module rooch_framework::bitcoin_validator {
         );
     }
 
-    public fun validate(ctx: &Context, authenticator_payload: vector<u8>) {
+    public fun validate(ctx: &Context, authenticator_payload: vector<u8>): MultiChainAddress {
         let tx_hash = context::tx_hash(ctx);
         validate_signature(&authenticator_payload, &tx_hash);
+
+        bcs::from_bytes<MultiChainAddress>(get_address_from_authenticator_payload(&authenticator_payload))
     }
 
     fun pre_execute(
@@ -58,7 +73,5 @@ module rooch_framework::bitcoin_validator {
 
     fun post_execute(
         _ctx: &mut Context,
-    ) {
-        // TODO: need to bind the address mapping here.
-    }
+    ) {}
 }

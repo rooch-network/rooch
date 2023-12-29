@@ -4,7 +4,7 @@
 import {
   useCreateSessionKey,
   useCurrentSessionAccount,
-  useWalletStore
+  useWalletStore,
 } from "@roochnetwork/rooch-sdk-kit";
 import { Button } from "@radix-ui/themes";
 
@@ -45,6 +45,10 @@ export function App() {
               <div style={{ textAlign: "left", marginTop: 10 }}>
                 <div style={{ fontWeight: "bold" }}>Compressed PublicKey: </div>
                 <div style={{ wordWrap: "break-word" }}>{account?.getInfo().compressedPublicKey}</div>
+              </div>
+              <div style={{ textAlign: "left", marginTop: 10 }}>
+                <div style={{ fontWeight: "bold" }}>mul address: </div>
+                <div style={{ wordWrap: "break-word" }}>{account?.toMultiChainAddress().toBech32()}</div>
               </div>
               <div style={{ textAlign: "left", marginTop: 10 }}>
                 <div style={{ fontWeight: "bold" }}>Session Account Address: </div>

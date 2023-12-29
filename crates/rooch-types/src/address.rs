@@ -528,8 +528,8 @@ impl TryFrom<MultiChainAddress> for NostrAddress {
 
 #[cfg(test)]
 mod test {
-
     use super::*;
+    use ethers::abi::ParamType::Bytes;
 
     fn test_bitcoin_str_address_2_multi_chain_address_roundtrip(address_str: &str) {
         println!("str {:?}", address_str);
@@ -538,21 +538,24 @@ mod test {
             .require_network(bitcoin::Network::Bitcoin)
             .unwrap();
         println!("{:?}", address);
-        let bitcoinAddress = BitcoinAddress::from(address);
-        println!("{:?}", bitcoinAddress);
-        let multiChainAddress = MultiChainAddress::from(bitcoinAddress);
-        println!("{:?}", multiChainAddress);
-        println!("{}", multiChainAddress);
+        let bitcoin_address = BitcoinAddress::from(address);
+        println!("{:?}", bitcoin_address);
+        let multi_chain_address = MultiChainAddress::from(bitcoin_address);
+        println!("{:?}", multi_chain_address);
+        println!("{:?}", multi_chain_address.to_bytes());
+        println!("{:?}", multi_chain_address.raw_address)
 
-        let m1 = MultiChainAddress::from_str("bitcoin1pqrawtj0v3gpl4qqkkcavjdequnj9nswvqu40gx7m");
-        println!("{:?}", m1)
+        // let m1 = MultiChainAddress::from_str("bitcoin1pqrawtj0v3gpl4qqkkcavjdequnj9nswvqu40gx7m");
+        //
+        // println!("{:?}", m1);
+        // println!("{:?}", m1.());
     }
     #[test]
     fn test_sdk_multi_chain_address() {
         let js_generate_multi_chain_address = "";
-        let addressStr = "bc1qltjunmy2q0agq94k8tynwg8yu3vurnq8h7yc7p";
+        let address_str = "bc1qltjunmy2q0agq94k8tynwg8yu3vurnq8h7yc7p";
 
-        test_bitcoin_str_address_2_multi_chain_address_roundtrip(addressStr)
+        test_bitcoin_str_address_2_multi_chain_address_roundtrip(address_str)
     }
 
     fn test_rooch_supported_address_roundtrip<T>()

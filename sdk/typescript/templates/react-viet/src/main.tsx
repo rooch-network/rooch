@@ -11,7 +11,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Theme } from "@radix-ui/themes";
 import { LocalChain } from "@roochnetwork/rooch-sdk";
 
-import { App } from "./AppA.tsx";
+import { App } from "./APPA.tsx";
 import { SupportWallet } from "@roochnetwork/rooch-sdk-kit";
 
 const queryClient = new QueryClient();

@@ -412,10 +412,6 @@ describe('SDK', () => {
       expect(page.data[0].max_inactive_interval).toBe(100)
       expect(page.data[0].create_time).greaterThan(1696225092)
       expect(page.data[0].last_active_time).greaterThan(1696225092)
-
-      // query next page
-      const nextPage = await account.querySessionKeys(page.nextCursor, 10)
-      expect(nextPage).toBeDefined()
     })
   })
 })

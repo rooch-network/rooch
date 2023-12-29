@@ -1,15 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { BaseWallet } from './baseWallet'
 import { WalletAccount } from '../WalletAccount'
+import { BitcoinWallet } from './bitcoinWallet'
 
-export class OkxWallet extends BaseWallet {
-  private address?: string
-
-  async sign(msg: string): Promise<string> {
+export class OkxWallet extends BitcoinWallet {
+  async sign(msg: string, fromAddress: string): Promise<string> {
     return this.getTarget().signMessage(msg, {
-      from: this.address,
+      from: fromAddress,
     })
   }
 
@@ -23,7 +21,6 @@ export class OkxWallet extends BaseWallet {
 
   async connect(): Promise<WalletAccount[]> {
     const account = await this.getTarget().connect()
-    this.address = account.address
 
     return [new WalletAccount(account.address, account.publicKey, account.compressedPublicKey)]
   }

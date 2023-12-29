@@ -11,6 +11,7 @@
 -  [Function `multichain_id_ether`](#0x3_multichain_address_multichain_id_ether)
 -  [Function `multichain_id_nostr`](#0x3_multichain_address_multichain_id_nostr)
 -  [Function `multichain_id_rooch`](#0x3_multichain_address_multichain_id_rooch)
+-  [Function `get_length`](#0x3_multichain_address_get_length)
 -  [Function `new`](#0x3_multichain_address_new)
 -  [Function `from_eth`](#0x3_multichain_address_from_eth)
 -  [Function `from_bitcoin`](#0x3_multichain_address_from_bitcoin)
@@ -39,7 +40,8 @@
 
 
 
-<pre><code><b>struct</b> <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">MultiChainAddress</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code>#[data_struct]
+<b>struct</b> <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">MultiChainAddress</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -47,6 +49,15 @@
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x3_multichain_address_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="multichain_address.md#0x3_multichain_address_LENGTH">LENGTH</a>: u64 = 30;
+</code></pre>
+
 
 
 <a name="0x3_multichain_address_ErrorMultiChainIDMismatch"></a>
@@ -134,6 +145,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_multichain_id_rooch">multichain_id_rooch</a>(): u64
+</code></pre>
+
+
+
+<a name="0x3_multichain_address_get_length"></a>
+
+## Function `get_length`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_get_length">get_length</a>(): u64
 </code></pre>
 
 

@@ -69,7 +69,11 @@ export function useCreateSessionKey({
 
       setSessionAccountStatus('creating')
 
-      let acc = new Account(rooch, roochAddress.data!, new WalletAuth(currentWallet.currentWallet))
+      let acc = new Account(
+        rooch,
+        roochAddress.data!,
+        new WalletAuth(currentWallet.currentWallet, currentAccount!.getAddress()),
+      )
 
       // TODO: Standardize error and throw it at the developer
       try {

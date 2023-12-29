@@ -1,11 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { BaseWallet } from './baseWallet'
 import { WalletAccount } from '../WalletAccount'
+import { BitcoinWallet } from './bitcoinWallet'
 
-export class UniSatWallet extends BaseWallet {
-  async sign(msg: string): Promise<string> {
+export class UniSatWallet extends BitcoinWallet {
+  async sign(msg: string, _: string): Promise<string> {
     return this.getTarget().signMessage(msg)
   }
 
