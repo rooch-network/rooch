@@ -15,7 +15,6 @@ module rooch_framework::transaction_validator {
     use rooch_framework::chain_id;
     use rooch_framework::transaction_fee;
     use rooch_framework::gas_coin;
-    use moveos_std::type_info;
 
     const MAX_U64: u128 = 18446744073709551615;
 
