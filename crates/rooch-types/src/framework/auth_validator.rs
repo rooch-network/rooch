@@ -15,7 +15,6 @@ use move_core_types::{
 };
 use moveos_types::function_return_value::DecodedFunctionResult;
 use moveos_types::move_std::option::MoveOption;
-use moveos_types::state::MoveState;
 use moveos_types::transaction::MoveAction;
 use moveos_types::{
     module_binding::MoveFunctionCaller,
@@ -222,16 +221,12 @@ impl<'a> AuthValidatorCaller<'a> {
                 // TODO: all validate must return value ?
                 let value = values.pop();
 
-                Ok(value
-                    .map(|v| bcs::from_bytes::<MultiChainAddress>(&v.value).ok())
-                    .flatten())
-
-                // Ok(match value {
-                //     None => None,
-                //     Some(v) => v.value.map(|v| {
-                //         bcs::from_bytes::<MultiChainAddress>(&v.value).ok()
-                //     }).flatten()
-                // })
+                Ok(
+                    value.and_then(|v| match bcs::from_bytes::<MultiChainAddress>(&v.value) {
+                        Ok(result) => Some(result),
+                        Err(_) => None,
+                    }),
+                )
             })
     }
 

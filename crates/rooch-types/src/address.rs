@@ -183,7 +183,7 @@ impl FromStr for MultiChainAddress {
 
 impl MoveStructType for MultiChainAddress {
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("address_mapping");
+    const MODULE_NAME: &'static IdentStr = ident_str!("multichain_address");
     const STRUCT_NAME: &'static IdentStr = ident_str!("MultiChainAddress");
 }
 
@@ -693,6 +693,27 @@ mod test {
     use bitcoin::hex::DisplayHex;
     use std::fmt::Debug;
 
+    #[test]
+    fn test_sdk_multi_chain_address() {
+        let expect_multi_chain_address_bytes: Vec<u8> = vec![
+            0, 0, 0, 0, 0, 0, 0, 0, 22, 2, 0, 250, 229, 201, 236, 138, 3, 250, 128, 22, 182, 58,
+            201, 55, 32, 228, 228, 89, 193, 204, 7,
+        ];
+
+        let address_str = "bc1qltjunmy2q0agq94k8tynwg8yu3vurnq8h7yc7p";
+
+        let address = bitcoin::Address::from_str(address_str)
+            .unwrap()
+            .require_network(bitcoin::Network::Bitcoin)
+            .unwrap();
+        let bitcoin_address = BitcoinAddress::from(address);
+        let multi_chain_address = MultiChainAddress::from(bitcoin_address);
+
+        assert_eq!(
+            expect_multi_chain_address_bytes,
+            multi_chain_address.to_bytes()
+        )
+    }
 
     fn test_rooch_supported_address_roundtrip<T>()
     where

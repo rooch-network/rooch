@@ -55,7 +55,7 @@
 
 
 
-<pre><code><b>const</b> <a href="multichain_address.md#0x3_multichain_address_LENGTH">LENGTH</a>: u64 = 30;
+<pre><code><b>const</b> <a href="multichain_address.md#0x3_multichain_address_LENGTH">LENGTH</a>: u64 = 31;
 </code></pre>
 
 

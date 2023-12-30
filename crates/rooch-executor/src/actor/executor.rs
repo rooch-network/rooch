@@ -191,25 +191,23 @@ impl ExecutorActor {
             .expect("adding GasPaymentAccount to tx context failed.");
 
         match vm_result {
-            Ok((tx_validate_result, _, pre_execute_functions, post_execute_functions)) => {
+            Ok((
+                tx_validate_result,
+                multi_chain_address,
+                pre_execute_functions,
+                post_execute_functions,
+            )) => {
                 // Add the original multichain address to the context
                 moveos_tx
                     .ctx
-                    .add(multi_chain_address_sender)
+                    .add(multi_chain_address.unwrap_or(multi_chain_address_sender))
                     .expect("add sender to context failed");
+
                 // Add the tx_validate_result to the context
                 moveos_tx
                     .ctx
                     .add(tx_validate_result)
                     .expect("add tx_validate_result failed");
-
-                // How do I modify an existing value
-                // match multi_chain_address {
-                //     None => {}
-                //     Some(multi_chain_address) => {
-                //         moveos_tx.ctx.add(multi_chain_address).expect("add multi_chain_address failed");
-                //     }
-                // }
 
                 moveos_tx.append_pre_execute_functions(pre_execute_functions);
                 moveos_tx.append_post_execute_functions(post_execute_functions);

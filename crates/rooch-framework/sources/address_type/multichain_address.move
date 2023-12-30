@@ -9,7 +9,7 @@ module rooch_framework::multichain_address {
 
     const ErrorMultiChainIDMismatch: u64 = 1;
 
-    const LENGTH: u64 = 30;
+    const LENGTH: u64 = 31;
 
     //The multichain id standard is defined in [slip-0044](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
     //Please keep consistent with rust Symbol

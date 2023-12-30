@@ -15,6 +15,7 @@ module rooch_framework::transaction_validator {
     use rooch_framework::chain_id;
     use rooch_framework::transaction_fee;
     use rooch_framework::gas_coin;
+    use moveos_std::type_info;
 
     const MAX_U64: u128 = 18446744073709551615;
 
@@ -130,11 +131,9 @@ module rooch_framework::transaction_validator {
             let init_gas = 100_000_000_000_000_000_000u256;
             gas_coin::faucet(ctx, sender, init_gas); 
         };
-        std::debug::print(&b"------------------------");
         //the transaction validator will put the multi chain address into the context
         let multichain_address = context::get<MultiChainAddress>(ctx);
         if (option::is_some(&multichain_address)) {
-            std::debug::print(&b"find multichain_address");
             let multichain_address = option::extract(&mut multichain_address);
             //Auto create address mapping if not exist
             if (!address_mapping::exists_mapping(ctx, multichain_address)) {

@@ -19,6 +19,15 @@ enum AddressType {
   p2tr = 'p2tr',
 }
 
+// TODO: Align with rust
+// /// P2PKH address.
+// PubkeyHash = 0,
+//   /// P2SH address.
+//   ScriptHash = 1,
+//   /// Segwit address.
+//   WitnessProgram = 2,
+//
+
 type AddressInfo = {
   bytes: Uint8Array
   bech32: boolean
