@@ -64,8 +64,15 @@ pub struct ExecutorActor {
     rooch_store: RoochStore,
 }
 
-type ValidateAuthenticatorResult =
-    Result<(TxValidateResult, Vec<FunctionCall>, Vec<FunctionCall>), VMStatus>;
+type ValidateAuthenticatorResult = Result<
+    (
+        TxValidateResult,
+        Option<MultiChainAddress>,
+        Vec<FunctionCall>,
+        Vec<FunctionCall>,
+    ),
+    VMStatus,
+>;
 
 impl ExecutorActor {
     pub fn new(
@@ -184,12 +191,18 @@ impl ExecutorActor {
             .expect("adding GasPaymentAccount to tx context failed.");
 
         match vm_result {
-            Ok((tx_validate_result, pre_execute_functions, post_execute_functions)) => {
+            Ok((
+                tx_validate_result,
+                multi_chain_address,
+                pre_execute_functions,
+                post_execute_functions,
+            )) => {
                 // Add the original multichain address to the context
                 moveos_tx
                     .ctx
-                    .add(multi_chain_address_sender)
+                    .add(multi_chain_address.unwrap_or(multi_chain_address_sender))
                     .expect("add sender to context failed");
+
                 // Add the tx_validate_result to the context
                 moveos_tx
                     .ctx
@@ -234,7 +247,7 @@ impl ExecutorActor {
                             .validate(ctx, authenticator.authenticator.payload)?
                             .into_result();
                         match auth_validator_function_result {
-                            Ok(_) => {
+                            Ok(multi_chain_address) => {
                                 // pre_execute_function: AuthValidator
                                 let pre_execute_functions =
                                     vec![auth_validator_caller.pre_execute_function_call()];
@@ -243,6 +256,7 @@ impl ExecutorActor {
                                     vec![auth_validator_caller.post_execute_function_call()];
                                 Ok((
                                     tx_validate_result,
+                                    multi_chain_address,
                                     pre_execute_functions,
                                     post_execute_functions,
                                 ))
@@ -255,6 +269,7 @@ impl ExecutorActor {
                         let post_execute_functions = vec![];
                         Ok((
                             tx_validate_result,
+                            None,
                             pre_execute_functions,
                             post_execute_functions,
                         ))

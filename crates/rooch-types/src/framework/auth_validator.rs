@@ -4,9 +4,10 @@
 use super::ethereum_validator::EthereumValidatorModule;
 use super::native_validator::NativeValidatorModule;
 use super::transaction_validator::TransactionValidator;
+use crate::address::MultiChainAddress;
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use crate::error::RoochError;
-use anyhow::{ensure, Result};
+use anyhow::Result;
 use clap::ValueEnum;
 use move_core_types::value::MoveValue;
 use move_core_types::{
@@ -204,7 +205,11 @@ impl<'a> AuthValidatorCaller<'a> {
         }
     }
 
-    pub fn validate(&self, ctx: &TxContext, payload: Vec<u8>) -> Result<DecodedFunctionResult<()>> {
+    pub fn validate(
+        &self,
+        ctx: &TxContext,
+        payload: Vec<u8>,
+    ) -> Result<DecodedFunctionResult<Option<MultiChainAddress>>> {
         let auth_validator_call = FunctionCall::new(
             self.auth_validator.validator_function_id(),
             vec![],
@@ -212,9 +217,16 @@ impl<'a> AuthValidatorCaller<'a> {
         );
         self.caller
             .call_function(ctx, auth_validator_call)?
-            .decode(|values| {
-                ensure!(values.is_empty(), "should not have return values");
-                Ok(())
+            .decode(|mut values| {
+                // TODO: all validate must return value ?
+                let value = values.pop();
+
+                Ok(
+                    value.and_then(|v| match bcs::from_bytes::<MultiChainAddress>(&v.value) {
+                        Ok(result) => Some(result),
+                        Err(_) => None,
+                    }),
+                )
             })
     }
 

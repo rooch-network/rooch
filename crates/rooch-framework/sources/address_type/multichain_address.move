@@ -9,6 +9,8 @@ module rooch_framework::multichain_address {
 
     const ErrorMultiChainIDMismatch: u64 = 1;
 
+    const LENGTH: u64 = 31;
+
     //The multichain id standard is defined in [slip-0044](https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
     //Please keep consistent with rust Symbol
     const MULTICHAIN_ID_BITCOIN: u64 = 0;
@@ -24,9 +26,14 @@ module rooch_framework::multichain_address {
 
     public fun multichain_id_rooch(): u64 { MULTICHAIN_ID_ROOCH }
 
+    #[data_struct]
     struct MultiChainAddress has copy, store, drop {
         multichain_id: u64,
         raw_address: vector<u8>,
+    }
+
+    public fun get_length(): u64 {
+        return LENGTH
     }
 
     public fun new(multichain_id: u64, raw_address: vector<u8>): MultiChainAddress {
@@ -35,6 +42,10 @@ module rooch_framework::multichain_address {
             raw_address: raw_address,
         }
     }
+
+    // public fun from_bytes(bytes: vector<u8>): MultiChainAddress {
+    //
+    // }
 
     public fun from_eth(eth_address: ETHAddress): MultiChainAddress {
         MultiChainAddress {

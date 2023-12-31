@@ -48,9 +48,11 @@ export class JsonRpcClient extends Client {
     <% if (method.description) { %>// <%= method.description %> <% } %>
     async <%= method.name %>(<%= method.params.map(param=>param.name + ":" + getType(param.schema, schemas, alias)) %>): Promise<<%= getType(method.result.schema, schemas, alias) %>> {
         <% method.params.map(param=>{  %> 
-            <% const paramType = getType(param.schema, schemas, alias) %> 
+            <% const paramType = getType(param.schema, schemas, alias) %>
             <% if (paramType == 'Uint8Array') { %>
-                const <%= param.name + "_hex"%> = <%=param.name%> ? `0x${Buffer.from(<%=param.name%>).toString('hex')}` : null
+                const <%= param.name + "_hex"%> = <%=param.name%> ? `0x${Array.from(<%=param.name%>)
+                .map(byte => byte.toString(16).padStart(2, '0'))
+                .join('')}` : null
             <% } %>
         <% }) %>
 

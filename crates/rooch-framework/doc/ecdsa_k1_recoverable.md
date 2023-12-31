@@ -10,6 +10,7 @@
 -  [Function `uncompressed_public_key_length`](#0x3_ecdsa_k1_recoverable_uncompressed_public_key_length)
 -  [Function `signature_length`](#0x3_ecdsa_k1_recoverable_signature_length)
 -  [Function `keccak256`](#0x3_ecdsa_k1_recoverable_keccak256)
+-  [Function `sha256`](#0x3_ecdsa_k1_recoverable_sha256)
 -  [Function `ecrecover`](#0x3_ecdsa_k1_recoverable_ecrecover)
 -  [Function `decompress_pubkey`](#0x3_ecdsa_k1_recoverable_decompress_pubkey)
 -  [Function `verify`](#0x3_ecdsa_k1_recoverable_verify)
@@ -41,6 +42,15 @@ Error if the signature is invalid.
 
 
 <pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_ErrorInvalidSignature">ErrorInvalidSignature</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_recoverable_SHA256"></a>
+
+
+
+<pre><code><b>const</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_SHA256">SHA256</a>: u8 = 1;
 </code></pre>
 
 
@@ -144,6 +154,17 @@ built-in functions
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_keccak256">keccak256</a>(): u8
+</code></pre>
+
+
+
+<a name="0x3_ecdsa_k1_recoverable_sha256"></a>
+
+## Function `sha256`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable_sha256">sha256</a>(): u8
 </code></pre>
 
 
