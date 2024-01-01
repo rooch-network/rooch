@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {
+  useConnectWallet,
   useCreateSessionKey,
   useCurrentSessionAccount,
-  useWalletStore,
+  useWalletStore
 } from "@roochnetwork/rooch-sdk-kit";
 import { Button } from "@radix-ui/themes";
 
@@ -15,6 +16,7 @@ export function App() {
   const account = useWalletStore((state) => state.currentAccount)
   const connectionStatus = useWalletStore((state) => state.connectionStatus)
   const sessionAccount = useCurrentSessionAccount()
+  const { mutateAsync: connectWallet } = useConnectWallet()
 
   return (
     <div className="App">
@@ -59,7 +61,16 @@ export function App() {
           </div>
         ) : (
           <div>
-            {connectionStatus}
+            {connectionStatus !== 'disconnected' ? connectionStatus :
+              <Button
+              style={{ marginTop: 10 }}
+              onClick={async () => {
+                await connectWallet()
+              }}>
+                Connect Wallet
+              </Button>
+            }
+
           </div>
         )}
     </div>
@@ -69,12 +80,10 @@ export function App() {
     const { mutate: createSessionKey} = useCreateSessionKey()
     return (
       <div title="creating session key" style={{ width: 300, margin: 10 }}>
-        <div style={{ textAlign: "left", marginTop: 10 }}>
-          {/*<div style={{ fontWeight: "bold" }}>session key: {sessionKey.data?.getAddress()}</div>*/}
-        </div>
         <Button
           style={{ marginTop: 10 }}
           onClick={async () => {
+
             createSessionKey(
               {},
               {

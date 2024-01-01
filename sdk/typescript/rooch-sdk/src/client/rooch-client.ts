@@ -4,7 +4,7 @@
 import fetch from 'isomorphic-fetch'
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
-import { Chain, ChainInfo, DevChain, RoochMultiChainID } from '../constants'
+import { Chain, ChainInfo, DevChain } from '../constants'
 import {
   AnnotatedFunctionResultView,
   Arg,
@@ -28,6 +28,7 @@ import {
   typeTagToString,
 } from '../utils'
 import { IClient } from './interface'
+import { ResoleRoochAddressParams } from './types.ts'
 
 export const ROOCH_CLIENT_BRAND = Symbol.for('@roochnetwork/rooch-sdk')
 
@@ -186,11 +187,11 @@ export class RoochClient implements IClient {
   }
 
   // Resolve the rooch address
-  async resoleRoochAddress(
-    address: string,
-    multiChainID: RoochMultiChainID = RoochMultiChainID.Ether,
-  ): Promise<string> {
-    const ma = new bcsTypes.MultiChainAddress(BigInt(multiChainID), addressToSeqNumber(address))
+  async resoleRoochAddress(params: ResoleRoochAddressParams): Promise<string> {
+    const ma = new bcsTypes.MultiChainAddress(
+      BigInt(params.multiChainID),
+      addressToSeqNumber(params.address),
+    )
 
     const result = await this.executeViewFunction(
       '0x3::address_mapping::resolve_or_generate',

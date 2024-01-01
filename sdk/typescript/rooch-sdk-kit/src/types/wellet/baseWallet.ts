@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { ChainInfo } from '@roochnetwork/rooch-sdk'
 import { sha3_256 } from '@noble/hashes/sha3'
 import { WalletAccount } from '../WalletAccount'
 import { SerializedSignature } from '@roochnetwork/rooch-sdk'
@@ -17,8 +16,7 @@ export abstract class BaseWallet {
   abstract getTarget(): any
   abstract getScheme(): number
 
-  // TODO: What happens if the user rejects the request
-  abstract connect(chainInfo: ChainInfo): Promise<WalletAccount[]>
+  abstract connect(): Promise<WalletAccount[]>
 
   async signMessage(msg: Uint8Array, fromAddress: string) {
     const digest = sha3_256(msg)

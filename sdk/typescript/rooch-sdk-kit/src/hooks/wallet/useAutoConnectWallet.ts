@@ -6,14 +6,12 @@ import { useLayoutEffect, useState } from 'react'
 
 import { useWalletStore } from './useWalletStore'
 import { useConnectWallet } from './useConnectWallet'
-import { useRoochClientContext } from '../useRoochClient'
 
 export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
   const { mutateAsync: connectWallet } = useConnectWallet()
   const autoConnectEnabled = useWalletStore((state) => state.autoConnectEnabled)
   const lastConnectedWalletName = useWalletStore((state) => state.lastConnectedWalletName)
   const lastConnectedAccountAddress = useWalletStore((state) => state.lastConnectedAccountAddress)
-  const { chain } = useRoochClientContext()
 
   const [clientOnly, setClientOnly] = useState(false)
 
@@ -36,7 +34,7 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
         return 'disabled'
       }
 
-      await connectWallet(chain.info)
+      await connectWallet()
 
       return 'attempted'
     },

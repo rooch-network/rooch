@@ -20,7 +20,7 @@ export class UniSatWallet extends BitcoinWallet {
   async connect(): Promise<WalletAccount[]> {
     let accounts = await this.getTarget().getAccounts()
 
-    if (!accounts) {
+    if (!accounts || accounts.length === 0) {
       await this.getTarget().requestAccounts()
       return this.connect()
     }
