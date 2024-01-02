@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ETHWallet } from './ethWallet'
-import { ChainInfo } from '@roochnetwork/rooch-sdk'
 import { WalletAccount } from '../WalletAccount'
 
 export class Metamask extends ETHWallet {
@@ -21,17 +20,17 @@ export class Metamask extends ETHWallet {
     })
   }
 
-  async connect(chainInfo: ChainInfo): Promise<WalletAccount[]> {
-    const chainId = (await window.ethereum?.request({ method: 'eth_chainId' })) as string
+  async connect(): Promise<WalletAccount[]> {
+    // const chainId = (await window.ethereum?.request({ method: 'eth_chainId' })) as string
 
-    if (chainId !== chainInfo.chainId) {
-      try {
-        await this.switchChain({ ...chainInfo })
-      } catch (e: any) {
-        console.log('connect error', e.toString())
-        return []
-      }
-    }
+    // if (chainId !== chainInfo.chainId) {
+    //   try {
+    //     await this.switchChain({ ...chainInfo })
+    //   } catch (e: any) {
+    //     console.log('connect error', e.toString())
+    //     return []
+    //   }
+    // }
 
     const accounts: string[] = await this.getTarget()
       .request({

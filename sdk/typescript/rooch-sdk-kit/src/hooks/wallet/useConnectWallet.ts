@@ -3,17 +3,17 @@
 
 import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query'
 import { useMutation } from '@tanstack/react-query'
-import { ChainInfo } from '@roochnetwork/rooch-sdk'
 
 import { useWalletStore } from './useWalletStore'
 import { useCurrentWallet } from './useCurrentWallet'
-import { WalletAccount } from '../../types/WalletAccount'
+import { WalletAccount } from '../../types'
 import { walletMutationKeys } from '../../constants/walletMutationKeys'
 
+type ConnectWalletArgs = void
 type ConnectWalletResult = WalletAccount[]
 
 type UseConnectWalletMutationOptions = Omit<
-  UseMutationOptions<ConnectWalletResult, Error, ChainInfo, unknown>,
+  UseMutationOptions<ConnectWalletResult, Error, ConnectWalletArgs, unknown>,
   'mutationFn'
 >
 
@@ -26,7 +26,7 @@ export function useConnectWallet({
 }: UseConnectWalletMutationOptions = {}): UseMutationResult<
   ConnectWalletResult,
   Error,
-  ChainInfo,
+  ConnectWalletArgs,
   unknown
 > {
   const setWalletConnected = useWalletStore((state) => state.setWalletConnected)
@@ -35,11 +35,11 @@ export function useConnectWallet({
 
   return useMutation({
     mutationKey: walletMutationKeys.connectWallet(mutationKey),
-    mutationFn: async ({ ...connectArgs }) => {
+    mutationFn: async () => {
       try {
         setConnectionStatus('connecting')
 
-        const accounts = await currentWallet.connect(connectArgs)
+        const accounts = await currentWallet.connect()
 
         setWalletConnected(accounts, accounts[0])
 

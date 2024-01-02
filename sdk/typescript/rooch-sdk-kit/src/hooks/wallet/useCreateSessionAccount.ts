@@ -3,7 +3,7 @@
 
 import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query'
 import { useMutation } from '@tanstack/react-query'
-import { Account, IAccount } from '@roochnetwork/rooch-sdk'
+import { Account, IAccount, RoochMultiChainID } from '@roochnetwork/rooch-sdk'
 
 import { useWalletStore } from './useWalletStore'
 import { useRoochClient } from '../useRoochClient'
@@ -42,8 +42,7 @@ export function useCreateSessionKey({
   const rooch = useRoochClient()
   const currentWallet = useCurrentWallet()
   const currentAccount = useWalletStore((state) => state.currentAccount)
-  // TODO: fix this to mutl
-  let roochAddress = useResolveRoochAddress(currentAccount!.getAddress())
+  let roochAddress = useResolveRoochAddress(currentAccount!.getAddress(), RoochMultiChainID.Bitcoin)
   // TODO: save session with account & scope
   const sessionKey = useWalletStore((state) => state.sessionAccount)
   const setSessionAccountStatus = useWalletStore((state) => state.setSessionAccountStatus)
@@ -60,12 +59,10 @@ export function useCreateSessionKey({
       //   throw new WalletNotConnectedError('No wallet is connected.');
       // }
 
-      const signerAccount = currentAccount
-      if (!signerAccount) {
-        // throw new WalletNoAccountSelectedError(
-        //   'No wallet account is selected to sign the personal message with.',
-        // );
-      }
+      // TODO: check currentWallet === signerAccount
+      // throw new WalletNoAccountSelectedError(
+      //   'No wallet account is selected to sign the personal message with.',
+      // );
 
       setSessionAccountStatus('creating')
 
