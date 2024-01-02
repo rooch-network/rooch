@@ -53,7 +53,6 @@ use rooch_types::transaction::AbstractTransaction;
 use rooch_types::transaction::AuthenticatorInfo;
 
 pub struct ReaderExecutorActor {
-    // genesis: RoochGenesis,
     moveos: MoveOS,
     rooch_store: RoochStore,
 }
