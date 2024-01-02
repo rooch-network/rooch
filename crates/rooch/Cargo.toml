@@ -39,6 +39,8 @@ parking_lot = { workspace = true }
 bcs-ext = { workspace = true }
 rpassword = { workspace = true }
 fastcrypto = { workspace = true }
+bitcoin = { workspace = true }
+bitcoincore-rpc = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }

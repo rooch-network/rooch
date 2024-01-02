@@ -7690,6 +7690,8 @@ dependencies = [
  "async-trait",
  "bcs",
  "bcs-ext",
+ "bitcoin 0.31.0",
+ "bitcoincore-rpc",
  "clap 4.4.1",
  "codespan-reporting",
  "datatest-stable 0.1.1",
