@@ -300,8 +300,6 @@ module simple_blog::simple_blog {
 }
 ```
 
-<++>
-
 - `module simple_blog::simple_blog` 用来声明我们的合约属于哪个模块，它的语法是 `module 地址::模块名`，花括号 `{}` 里编写的就是合约的逻辑（功能）。
 - `use` 语句导入我们编写合约时需要依赖的库。
 - `const` 定义合约中使用的常量，通常用来定义一些错误代码。
