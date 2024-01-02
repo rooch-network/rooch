@@ -5,6 +5,7 @@ use anyhow::{bail, Result};
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_store::MoveOSStore;
 use moveos_types::module_binding::{ModuleBinding, MoveFunctionCaller};
+use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::actor::{executor::ExecutorActor, messages::ExecuteTransactionResult};
 use rooch_store::RoochStore;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
@@ -17,6 +18,7 @@ use rooch_types::{
 
 pub struct RustBindingTest {
     executor: ExecutorActor,
+    reader_executor: ReaderExecutorActor,
 }
 
 impl RustBindingTest {
@@ -27,10 +29,15 @@ impl RustBindingTest {
         let executor = ExecutorActor::new(
             RoochChainID::LOCAL.genesis_ctx(sequencer),
             BitcoinGenesisContext::new(Network::default().to_num()),
-            moveos_store,
-            rooch_store,
+            moveos_store.clone(),
+            rooch_store.clone(),
         )?;
-        Ok(Self { executor })
+        let reader_executor =
+            ReaderExecutorActor::new(executor.genesis().clone(), moveos_store, rooch_store)?;
+        Ok(Self {
+            executor,
+            reader_executor,
+        })
     }
 
     pub fn executor(&self) -> &ExecutorActor {
@@ -57,7 +64,7 @@ impl RustBindingTest {
         &mut self,
         tx: T,
     ) -> Result<ExecuteTransactionResult> {
-        let verified_tx = self.executor.validate(tx)?;
+        let verified_tx = self.reader_executor.validate(tx)?;
         self.executor.execute(verified_tx)
     }
 }
