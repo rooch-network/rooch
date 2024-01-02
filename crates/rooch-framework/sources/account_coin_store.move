@@ -6,17 +6,16 @@ module rooch_framework::account_coin_store {
     use std::string;
     use std::option;
     use std::option::Option;
-    use moveos_std::object::ObjectID;
+    use moveos_std::object::{Self, Object, ObjectID};
     use moveos_std::table;
     use moveos_std::table::Table;
     use moveos_std::context::{Self, Context};
     use moveos_std::event;
     use moveos_std::type_info;
     use moveos_std::signer;
-    use moveos_std::object::{Self, Object};
     use rooch_framework::coin::{Coin};
     use rooch_framework::coin_store::{Self, CoinStore};
- 
+
     friend rooch_framework::genesis;
     friend rooch_framework::account;
 
@@ -26,7 +25,7 @@ module rooch_framework::account_coin_store {
 
     /// Account hasn't accept `CoinType`
     const ErrorAccountNotAcceptCoin: u64 = 1;
-    
+
     /// A resource that holds the AutoAcceptCoin config for all accounts.
     /// The main scenario is that the user can actively turn off the AutoAcceptCoin setting to avoid automatically receiving Coin
     struct AutoAcceptCoins has key {
@@ -52,7 +51,7 @@ module rooch_framework::account_coin_store {
         context::move_resource_to(ctx, genesis_account, auto_accepted_coins);
     }
 
-    public(friend) fun init_account_coin_stores(ctx: &mut Context, account: &signer){
+    public(friend) fun init_account_coin_stores(ctx: &mut Context, account: &signer) {
         let coin_stores = CoinStores {
             coin_stores: context::new_table<string::String, ObjectID>(ctx),
         };
@@ -60,10 +59,10 @@ module rooch_framework::account_coin_store {
     }
 
     // Public functions
-    
+
     /// Returns the balance of `addr` for provided `CoinType`.
     public fun balance<CoinType: key>(ctx: &Context, addr: address): u256 {
-        if(exist_account_coin_store<CoinType>(ctx, addr)) {
+        if (exist_account_coin_store<CoinType>(ctx, addr)) {
             let coin_store = borrow_account_coin_store<CoinType>(ctx, addr);
             coin_store::balance(coin_store)
         } else {
@@ -80,10 +79,10 @@ module rooch_framework::account_coin_store {
     /// Return CoinStores table handle for addr
     public fun coin_stores_handle(ctx: &Context, addr: address): Option<ObjectID> {
         if (context::exists_resource<CoinStores>(ctx, addr))
-        {
-            let coin_stores = context::borrow_resource<CoinStores>(ctx, addr);
-            option::some(*table::handle(&coin_stores.coin_stores))
-        } else {
+            {
+                let coin_stores = context::borrow_resource<CoinStores>(ctx, addr);
+                option::some(*table::handle(&coin_stores.coin_stores))
+            } else {
             option::none<ObjectID>()
         }
     }
@@ -115,12 +114,12 @@ module rooch_framework::account_coin_store {
     }
 
     /// Configure whether auto-accept coins.
-    public fun set_auto_accept_coin(ctx: &mut Context, account: &signer, enable: bool)  {
+    public fun set_auto_accept_coin(ctx: &mut Context, account: &signer, enable: bool) {
         let addr = signer::address_of(account);
         let auto_accept_coins = context::borrow_mut_resource<AutoAcceptCoins>(ctx, @rooch_framework);
         table::upsert<address, bool>(&mut auto_accept_coins.auto_accept_coins, addr, enable);
 
-        event::emit<AcceptCoinEvent>(AcceptCoinEvent { enable});
+        event::emit<AcceptCoinEvent>(AcceptCoinEvent { enable });
     }
 
     /// Withdraw specifed `amount` of coin `CoinType` from the signing account.
@@ -131,7 +130,7 @@ module rooch_framework::account_coin_store {
         amount: u256,
     ): Coin<CoinType> {
         let addr = signer::address_of(account);
-        withdraw_internal<CoinType>(ctx, addr, amount) 
+        withdraw_internal<CoinType>(ctx, addr, amount)
     }
 
     /// Deposit the coin into the recipient's account and emit an event.
@@ -175,7 +174,7 @@ module rooch_framework::account_coin_store {
         addr: address,
         amount: u256,
     ): Coin<CoinType> {
-        withdraw_internal<CoinType>(ctx, addr, amount) 
+        withdraw_internal<CoinType>(ctx, addr, amount)
     }
 
     #[private_generics(CoinType)]
@@ -224,19 +223,25 @@ module rooch_framework::account_coin_store {
     // Internal functions
     // 
 
-    fun borrow_account_coin_store<CoinType: key>(ctx: &Context, addr: address): &Object<CoinStore<CoinType>>{
+    fun borrow_account_coin_store<CoinType: key>(ctx: &Context, addr: address): &Object<CoinStore<CoinType>> {
         let account_coin_store_id = account_coin_store_id<CoinType>(addr);
         context::borrow_object<CoinStore<CoinType>>(ctx, account_coin_store_id)
     }
 
-    fun borrow_mut_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address): &mut Object<CoinStore<CoinType>>{
+    fun borrow_mut_account_coin_store<CoinType: key>(
+        ctx: &mut Context,
+        addr: address
+    ): &mut Object<CoinStore<CoinType>> {
         let account_coin_store_id = account_coin_store_id<CoinType>(addr);
         coin_store::borrow_mut_coin_store_internal<CoinType>(ctx, account_coin_store_id)
     }
 
-    fun create_or_borrow_mut_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address): &mut Object<CoinStore<CoinType>>{
+    fun create_or_borrow_mut_account_coin_store<CoinType: key>(
+        ctx: &mut Context,
+        addr: address
+    ): &mut Object<CoinStore<CoinType>> {
         let account_coin_store_id = account_coin_store_id<CoinType>(addr);
-        if(!context::exists_object<CoinStore<CoinType>>(ctx, account_coin_store_id)) {
+        if (!context::exists_object<CoinStore<CoinType>>(ctx, account_coin_store_id)) {
             create_account_coin_store<CoinType>(ctx, addr);
         };
         coin_store::borrow_mut_coin_store_internal<CoinType>(ctx, account_coin_store_id)
@@ -263,7 +268,7 @@ module rooch_framework::account_coin_store {
         assert!(
             is_accept_coin<CoinType>(ctx, addr),
             ErrorAccountNotAcceptCoin,
-        ); 
+        );
         let coin_store = create_or_borrow_mut_account_coin_store<CoinType>(ctx, addr);
         coin_store::deposit_internal<CoinType>(coin_store, coin)
     }
@@ -277,5 +282,4 @@ module rooch_framework::account_coin_store {
         let coin = withdraw_internal<CoinType>(ctx, from, amount);
         deposit_internal(ctx, to, coin);
     }
-
 }
