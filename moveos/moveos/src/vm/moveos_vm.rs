@@ -47,7 +47,7 @@ use moveos_types::{
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 
-use crate::gas::table::initial_cost_schedule;
+use crate::gas::table::{initial_cost_schedule, ClassifiedGasMeter};
 use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
 use crate::vm::tx_argument_resolver;
 
@@ -68,7 +68,11 @@ impl MoveOSVM {
         })
     }
 
-    pub fn new_session<'r, S: MoveOSResolver, G: SwitchableGasMeter>(
+    pub fn new_session<
+        'r,
+        S: MoveOSResolver,
+        G: SwitchableGasMeter + ClassifiedGasMeter + Clone,
+    >(
         &self,
         remote: &'r S,
         ctx: TxContext,
@@ -90,7 +94,11 @@ impl MoveOSVM {
         MoveOSSession::new(&self.inner, remote, ctx, gas_meter, false)
     }
 
-    pub fn new_readonly_session<'r, S: MoveOSResolver, G: SwitchableGasMeter>(
+    pub fn new_readonly_session<
+        'r,
+        S: MoveOSResolver,
+        G: SwitchableGasMeter + ClassifiedGasMeter + Clone,
+    >(
         &self,
         remote: &'r S,
         ctx: TxContext,
@@ -117,7 +125,7 @@ pub struct MoveOSSession<'r, 'l, S, G> {
 impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
 where
     S: MoveOSResolver,
-    G: SwitchableGasMeter,
+    G: SwitchableGasMeter + ClassifiedGasMeter + Clone,
 {
     pub fn new(
         vm: &'l MoveVM,
@@ -451,7 +459,7 @@ where
             session,
             ctx,
             table_data,
-            gas_meter: _,
+            mut gas_meter,
             read_only,
         } = self;
         let (changeset, raw_events, mut extensions) = session.finish_with_extensions()?;
@@ -492,6 +500,8 @@ where
                 Ok(TransactionEvent::new(struct_tag, event_data, i as u64))
             })
             .collect::<VMResult<_>>()?;
+
+        gas_meter.charge_change_set(&changeset);
 
         Ok((
             ctx.tx_context,
