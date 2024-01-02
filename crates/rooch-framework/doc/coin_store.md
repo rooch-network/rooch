@@ -133,12 +133,12 @@ Event emitted when a coin store is removed.
 ## Constants
 
 
-<a name="0x3_coin_store_ErrorInSufficientBalance"></a>
+<a name="0x3_coin_store_ErrorInsufficientBalance"></a>
 
 Not enough balance to withdraw from CoinStore
 
 
-<pre><code><b>const</b> <a href="coin_store.md#0x3_coin_store_ErrorInSufficientBalance">ErrorInSufficientBalance</a>: u64 = 4;
+<pre><code><b>const</b> <a href="coin_store.md#0x3_coin_store_ErrorInsufficientBalance">ErrorInsufficientBalance</a>: u64 = 4;
 </code></pre>
 
 
