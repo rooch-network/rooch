@@ -414,7 +414,8 @@ pub trait ClassifiedGasMeter {
 
 impl ClassifiedGasMeter for MoveOSGasMeter {
     fn charge_execution(&mut self, gas_cost: u64) {
-        *self.execution_gas_used.borrow_mut() = self.execution_gas_used.borrow_mut().add(gas_cost);
+        let new_value = self.execution_gas_used.borrow().add(gas_cost);
+        *self.execution_gas_used.borrow_mut() = new_value;
     }
 
     // fn charge_io_read(&mut self) {}

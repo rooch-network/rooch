@@ -453,6 +453,7 @@ where
         status: KeptVMStatus,
     ) -> VMResult<(TxContext, RawTransactionOutput)> {
         let gas_used = self.query_gas_used();
+        let is_read_only_execution = self.read_only;
         let MoveOSSession {
             vm: _,
             remote: _,
@@ -502,6 +503,11 @@ where
             .collect::<VMResult<_>>()?;
 
         gas_meter.charge_change_set(&changeset);
+        let mut gas_statement = gas_meter.gas_statement();
+        if is_read_only_execution {
+            gas_statement.execution_gas_used = 0;
+            gas_statement.storage_gas_used = 0;
+        }
 
         Ok((
             ctx.tx_context,
