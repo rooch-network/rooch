@@ -7596,6 +7596,7 @@ dependencies = [
  "moveos-store",
  "moveos-types",
  "moveos-verifier",
+ "parking_lot 0.12.1",
  "rooch-config",
  "rooch-framework",
  "rooch-genesis",
