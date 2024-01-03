@@ -1,6 +1,6 @@
 ---
 title: RoochBTC - On-Chain Indexer as Bitcoin L2
-description: ""
+description: "In this post, I’d like to discuss all the possible solutions for building more featureful Bitcoin applications. In addition, we will also propose a new solution that leverages an on-chain indexer to build fully on-chain applications that integrate Bitcoin assets such as Ordinals and BRC20. We will also share some latest updates of Rooch regarding the launch of a Rooch pre-mainnet, the RoochBTC."
 author: haichao
 category: Web3
 date: 2024/01/03
@@ -16,7 +16,7 @@ In this post, I’d like to discuss all the possible solutions for building more
 
 ## Bitcoin L2 Solutions
 
-Although the inscription technique has given Bitcoin a new path for launching novel crypto assets, the Bitcoin blockchain network itself has limitations on building applications based on these assets. The underlying reason is that the Bitcoin script does not support describing complicated logics therefore cannot support more complex application scenarios. In addition, the Bitcoin transaction cost is also a high barrier for users to use any applications built directly using Bitcoin blockchain.
+Although the inscription technique has given Bitcoin a new path for launching novel crypto assets, the Bitcoin blockchain network itself has limitations on building applications based on these assets. The underlying reason is that the Bitcoin script does not support describing complicated logic and, therefore, cannot support more complex application scenarios. In addition, the Bitcoin transaction cost is also a high barrier for users to use any applications built directly using the Bitcoin blockchain.
 
 To address these two issues, we have seen some advanced Bitcoin L2 solutions being brought up. Here I roughly categorize them into 3 types.
 
@@ -32,9 +32,9 @@ The upside of Lightning Network is that it can largely reduce the transaction co
 
 RGB and BitVM were introduced to the community very recently and both have caught a lot of attention due to the fact that they can potentially enable full turing complete smart contract scenarios for Bitcoin. 
 
-The essence of these two solutions is similar to Lightning Network in the way that they also wanna take the transaction load off-chain and let all the users verify the transactions by themselves. But instead of only verifying simple payment transactions, RGB and BitVM provide virtual machine based platform for applications to build more complex logics while making sure the users can still verify the result of a series of complicated transactions.
+The essence of these two solutions is similar to Lightning Network in the way that they also wanna take the transaction load off-chain and let all the users verify the transactions by themselves. But instead of only verifying simple payment transactions, RGB and BitVM provide virtual machine based platforms for applications to build more complex logic while making sure the users can still verify the result of a series of complicated transactions.
 
-With these solutions implemented and getting mature, basically all types of smart contract logic can be supported, which is gonna be a strong benefit to the Bitcoin ecosystem. In addition, the security of all transactions is guaranteed by client verification. No 3rd party is necessary unless it is compromised by the need of improving user experience. 
+With these solutions implemented and getting mature, basically all types of smart contract logic can be supported, which is gonna be a strong benefit to the Bitcoin ecosystem. In addition, the security of all transactions is guaranteed by client verification. No 3rd party is necessary unless it is compromised by the need to improve user experience. 
 
 However, we can still foresee their limitations within its application scenarios, as they still require all the participants to be online and keep signing off transactions to verify the off-chain execution.
 
@@ -42,11 +42,11 @@ However, we can still foresee their limitations within its application scenarios
 
 Sidechain and Rollups are the most intuitive solutions when it comes to scaling Bitcoin. As a user, you can transfer your Bitcoin assets to another platform where all types of application scenarios are possible.
 
-The million-dollar challenge here is how to securely enable asset transfer between Bitcoin and the sidechain. I.e. how to lock and unlock states on Bitcoin in a secured and decentralized way. 
+The million-dollar challenge here is how to securely enable asset transfer between Bitcoin and the sidechain. I.e. how to lock and unlock states on Bitcoin in a secure and decentralized way. 
 
-Bitcoin’s Taproot upgrade has made it easy to sign transactions with multiple private keys by enabling signature aggregation.  A lot of sidechain and rollup solutions have leveraged this feature to build up a “committee” to help their users ramp assets on and off from Bitcoin to their own chain. 
+Bitcoin’s Taproot upgrade has made it easy to sign transactions with multiple private keys by enabling signature aggregation.  A lot of sidechain and rollup solutions have leveraged this feature to build up a “committee” to help their users ramp assets on and off from Bitcoin to their chain. 
 
-The drawback of this type of solution is that the security of the user’s assets will inevitably be compromised. The users will not have direct control over their own assets once they decide to on-ramp them to a sidechain and they will have to trust the committee that locks the assets as well as the security source of the sidechain/rollup.
+The drawback of this type of solution is that the security of the user’s assets will inevitably be compromised. The users will not have direct control over their assets once they decide to on-ramp them to a sidechain and they will have to trust the committee that locks the assets as well as the security source of the sidechain/rollup.
 
 So, by comparison, we can find that no perfect solution is presented today and all solutions need to compromise between security and the application scenarios.
 
@@ -73,7 +73,7 @@ This may seem to be a weird solution to scaling Bitcoin as the solution itself d
 
 Imagine a fully on-chain game where you can treat your Ordis as seeds. You can plant them. You can water them. And after you take care of your Ordi and grow it into a crop, you get to earn some yielding tokens.
 
-Although this is a very simple game, you will still find it hard to be implemented with all the solutions we discussed above. But with Rooch’s on-chain indexer, here’s how you can build such a game easily.
+Although this is a very simple game, you will still find it hard to implement with all the solutions we discussed above. But with Rooch’s on-chain indexer, here’s how you can build such a game easily.
 
 ![](/docs/rooch-btc-4.png)
 
@@ -81,7 +81,7 @@ Although this is a very simple game, you will still find it hard to be implement
 - With the proof of owning an Ordi seed, the user can call application contracts to grow it into a tree NFT, which will automatically be owned by the same account.
 - The NFT can be harvested with contracts to yield profit tokens or be transferred to other accounts.
 
-In this game, the user’s Ordi never leaves the Bitcoin network and is kept in the user’s bitcoin wallet. The game’s logics are fully based on the user’s ownership of Ordi. If the Ordi gets transferred to another account, the game contract can decide whether to transfer the derived assets to that account as well, depending on the game design. For example, in the case of this Ordi farming game, the Tree NFT shall be transferred to the new account as it should follow the seed and all the profit tokens shall be kept in the old account as they are harvested from the tree already.
+In this game, the user’s Ordi never leaves the Bitcoin network and is kept in the user’s Bitcoin wallet. The game’s logics are fully based on the user’s ownership of Ordi. If the Ordi gets transferred to another account, the game contract can decide whether to transfer the derived assets to that account as well, depending on the game design. For example, in the case of this Ordi farming game, the Tree NFT shall be transferred to the new account as it should follow the seed and all the profit tokens shall be kept in the old account as they are harvested from the tree already.
 
 ### Comparing to Existing Solutions
 
@@ -95,9 +95,9 @@ In the case of building it with an on-chain indexer, full game logic can be real
 
 ### Fully On-Chain Game and More
 
-The example above has shown the potential of the application scenarios that can be enabled with the on-chain indexer on Rooch. The essence of this paradigm is to recognize the ownership of Bitcoin assets as the pegs. The application is free to design logics and derive versatile tokens from these pegs. 
+The example above has shown the potential of the application scenarios that can be enabled with the on-chain indexer on Rooch. The essence of this paradigm is to recognize the ownership of Bitcoin assets as the pegs. The application is free to design logic and derive versatile tokens from these pegs. 
 
-We believe this property of on-chain indexer makes this solution particularly suitable for building fully on-chain games or Autonomous World(AW) applications in the Bitcoin ecosystem, where, unlike DeFi, AW applications usually focus on building complicated logic designs and executions for users to earn tokens, or taking token ownerships as proof of entrance, rather than manipulating tokens themselves. 
+We believe this property of the on-chain indexer makes this solution particularly suitable for building fully on-chain games or Autonomous World(AW) applications in the Bitcoin ecosystem, where, unlike DeFi, AW applications usually focus on building complicated logic designs and executions for users to earn tokens, or taking token ownerships as proof of entrance, rather than manipulating tokens themselves. 
 
 We also think that more types of applications are possible and we believe gaming is just the first scenario that can adopt this Bitcoin scaling solution. We would love to work with the community to build out a flourishing Bitcoin ecosystem.
 
