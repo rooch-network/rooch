@@ -1,6 +1,6 @@
 ---
-title: RoochBTC - 作为比特币 L2 的链上索引器
-description: ""
+title: RoochBTC - 用链上索引器实现比特币二层
+description: "在这篇文章中，我想讨论构建更多功能的比特币应用程序的所有可能解决方案。此外，我们还将提出一种新的解决方案，利用链上索引器来构建集成 Ordinals 和 BRC20 等比特币资产的全链上应用程序。我们还将分享 Rooch 关于比特币先行网 RoochBTC 推出的一些最新动态。"
 author: haichao
 category: Web3
 date: 2024/01/03
@@ -16,7 +16,7 @@ import PostHeader from "/components/blog/postHeader";
 
 ## 比特币 L2 解决方案
 
-尽管铭文技术为比特币提供了推出新型加密资产的新途径，但比特币区块链网络本身在构建基于这些资产的应用程序方面存在局限性。根本原因是比特币脚本不支持描述复杂的逻辑，无法支持更复杂的应用场景。此外，比特币交易成本也是用户使用直接使用比特币区块链构建的任何应用程序的一个很高的障碍。
+尽管铭文技术为比特币提供了推出新型加密资产的新途径，但比特币区块链网络本身在构建基于这些资产的应用程序方面存在局限性。根本原因是比特币脚本不支持描述复杂的逻辑，无法支持更复杂的应用场景。此外，比特币网络的交易成本也是用户使用直接使用比特币区块链构建的任何应用程序的一个很高的障碍。
 
 为了解决这两个问题，我们已经看到一些先进的比特币 L2 解决方案被提出。这里我大致将其分为3类。
 
@@ -44,9 +44,9 @@ RGB 和 BitVM 最近被引入社区，并且由于它们有可能为比特币实
 
 这里的百万美元挑战是如何安全地实现比特币和侧链之间的资产转移。如何以安全和去中心化的方式锁定和解锁比特币的状态。
 
-比特币的 Taproot 升级通过启用签名聚合，可以轻松地使用多个私钥签署交易。许多侧链和 rollup 解决方案都利用此功能建立了一个“committee”，以帮助用户将资产从比特币转移到自己的链上。
+比特币的 Taproot 升级通过启用签名聚合，可以轻松地使用多个私钥签署交易。许多侧链和 rollup 解决方案都利用此功能建立了一个“委员会”，以帮助用户将资产从比特币转移到自己的链上。
 
-这种解决方案的缺点是用户的资产安全将不可避免地受到损害。一旦用户决定将自己的资产转移到侧链上，他们将无法直接控制自己的资产，他们必须信任锁定资产的 committee 以及侧链 / rollup 的安全源。
+这种解决方案的缺点是用户的资产安全将不可避免地受到损害。一旦用户决定将自己的资产转移到侧链上，他们将无法直接控制自己的资产，他们必须信任锁定资产的委员会以及侧链或者 rollup 本身的安全性。
 
 所以，通过比较我们可以发现，目前还没有完美的解决方案，所有的解决方案都需要在安全性和应用场景之间进行折衷。
 
@@ -58,7 +58,7 @@ RGB 和 BitVM 最近被引入社区，并且由于它们有可能为比特币实
 
 ![](/docs/rooch-btc-2.png)
 
-- Rooch 可以灵活地定制到任何基础架构中，在这种特定情况下，我们将使用以太坊和外部 DA 来保证安全性。
+- Rooch 可以灵活地定制到任何基础架构中，在这个用例里，我们将使用以太坊和外部 DA 来保证安全性。
 - 在 Rooch 之上，使用智能合约实现了比特币轻客户端，该客户端具有验证比特币区块头的能力。
 - 所有比特币区块头和 UTXO 状态都作为 MoveVM 中的对象同步到 Rooch，其中 UTXO 由轻客户端和所有区块头进行索引和交叉验证。
 - 然后，索引的比特币 UTXO 信息可以在 Rooch 上构建的全链应用程序的智能合约中使用。
@@ -67,7 +67,7 @@ RGB 和 BitVM 最近被引入社区，并且由于它们有可能为比特币实
 
 需要注意的一点是，所有的 UTXO 都没有锁定在比特币网络上，而只有它们的状态信息同步到 Rooch。也就是说，在这种范式中，没有比特币资产可以从比特币转移到 Rooch。只有最新的比特币 UTXO 状态才会实时同步到 Rooch 并保证正确。
 
-这似乎是扩展比特币的一个奇怪的解决方案，因为该解决方案本身无助于以任何方式改变比特币状态。但事实上，我们可以启用很多有用的应用场景。这是一个例子。
+这似乎是扩展比特币的一个奇怪的解决方案，因为该解决方案本身无助于以任何方式改变比特币状态。但事实上，我们可以启用很多有用的应用场景。这里有一个例子。
 
 ![](/docs/rooch-btc-3.png)
 
@@ -91,11 +91,11 @@ RGB 和 BitVM 最近被引入社区，并且由于它们有可能为比特币实
 - 使用 Offchain VM 的 P2P 协议 - 可行但用户体验不佳。由于游戏本质上是所有 Ordi 持有者之间为了增长自己的资产而进行的竞争，因此所有参与者都需要签署彼此的交易，以承认他们的“种植”和“浇水”行为是有效的。
 - 基于多重签名的侧链/Rollup - 完全可行，但需要资产托管。用户必须将其 Ordi 存入第三方托管钱包，该钱包由基于多重签名的 committee 控制，这会导致信任问题。
 
-在使用链上索引器构建的情况下，可以通过无缝的用户体验实现完整的游戏逻辑，并且在整个游戏生命周期中不需要资产托管。
+而如果使用本文提出的基于链上索引器构建的情况下，则可以通过无缝的用户体验实现完整的游戏逻辑，并且在整个游戏生命周期中不需要资产托管。
 
 ### 全链游戏
 
-上面的例子展示了 Rooch 上链上索引器可以实现的应用场景的潜力。这一范式的本质是承认比特币资产的所有权是挂钩的。该应用程序可以自由设计逻辑并从这些挂钩中派生通用代币。
+上面的例子展示了 Rooch 上链上索引器可以实现的应用场景的潜力。这一范式的本质是让应用利用比特币资产的所有权作为锚定，让应用可以自由设计逻辑并从这些锚定资产中派生更通用的代币。
 
 我们相信链上索引器的这一特性使得该解决方案特别适合在比特币生态系统中构建完全链上游戏或自治世界（AW）应用程序，与 DeFi 不同，AW 应用程序通常专注于构建复杂的逻辑设计和执行用户赚取代币，或者以代币所有权作为进入证明，而不是自己操纵代币。
 
@@ -103,16 +103,7 @@ RGB 和 BitVM 最近被引入社区，并且由于它们有可能为比特币实
 
 ## RoochBTC - Rooch 网络的先行网
 
-Rooch is a modular blockchain platform that aims to support fully on-chain applications and provide them with access to all assets on all chains.
-
-Although we are yet ready to launch the full version of mainnet, in the sight of the recent market demand, we have decided to soon launch a pre-mainnet, the **RoochBTC,** in the hope of showing the community what we’ve been working on and get you guys some hands-on experience.
-
-The RoochBTC network will have the full Bitcoin mainnet state indexed on the chain, as well as everything you need for developing a fully on-chain application with Bitcoin assets. This includes SDK, wallet API, documents, and examples.
-
-We will also release demo applications for Bitcoin asset holders to play with and get a taste of the future of Bitcoin fully on-chain applications.
-
-So, stay tuned!
-Rooch是一个模块化区块链平台，旨在支持全链应用程序，并为它们提供对所有链上资产的访问。
+Rooch是一个模块化区块链平台，旨在支持全链应用程序，并为它们提供对所有其他区块链链上的资产的访问。
 
 虽然我们还没有准备好推出完整版主网，但考虑到近期的市场需求，我们决定很快推出先行网 **RoochBTC**，希望向社区展示我们一直在做的事情并为大家提供一些实践经验。
 
