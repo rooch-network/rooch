@@ -99,16 +99,17 @@ module coins::fixed_supply_coin {
     use rooch_framework::coin_store::{Self, CoinStore};
     use rooch_framework::account_coin_store;
 
-
-    struct FSC has key, store {}
-
-    struct Treasury has key {
-        coin_store: Object<CoinStore<FSC>>
-    }
-
     const TOTAL_SUPPLY: u256 = 210_000_000_000u256;
     const DECIMALS: u8 = 1u8;
 
+    // The `FSC` CoinType has `key` and `store` ability.
+    // So `FSC` coin is public.
+    struct FSC has key, store {}
+
+    // construct the `FSC` coin and make it a global object that stored in `Treasury`.
+    struct Treasury has key {
+        coin_store: Object<CoinStore<FSC>>
+    }
 
     fun init(ctx: &mut Context) {
         let coin_info_obj = coin::register_extend<FSC>(
