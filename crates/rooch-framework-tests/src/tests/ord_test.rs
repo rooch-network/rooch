@@ -4,6 +4,7 @@
 use crate::binding_test;
 use bitcoin::consensus::Decodable;
 use hex::FromHex;
+use moveos_types::module_binding::MoveFunctionCaller;
 use tracing::debug;
 
 fn decode_inscription(btx_tx_hex: &str) {
@@ -25,7 +26,7 @@ fn decode_inscription(btx_tx_hex: &str) {
     }
     let inscriptions = bitcoin_move::natives::ord::from_transaction(&btc_tx);
 
-    let ord_module = binding_test.as_module_bundle::<rooch_types::bitcoin::ord::OrdModule>();
+    let ord_module = binding_test.as_module_binding::<rooch_types::bitcoin::ord::OrdModule>();
     let move_btc_tx: rooch_types::bitcoin::types::Transaction =
         rooch_types::bitcoin::types::Transaction::from(btc_tx);
     let inscriptions_from_move = ord_module.from_transaction(&move_btc_tx).unwrap();

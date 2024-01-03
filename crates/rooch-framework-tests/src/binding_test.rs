@@ -4,7 +4,10 @@
 use anyhow::{bail, Result};
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_store::MoveOSStore;
-use moveos_types::module_binding::{ModuleBinding, MoveFunctionCaller};
+use moveos_types::function_return_value::FunctionResult;
+use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::moveos_std::tx_context::TxContext;
+use moveos_types::transaction::FunctionCall;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::actor::{executor::ExecutorActor, messages::ExecuteTransactionResult};
 use rooch_store::RoochStore;
@@ -17,8 +20,8 @@ use rooch_types::{
 };
 
 pub struct RustBindingTest {
-    executor: ExecutorActor,
-    reader_executor: ReaderExecutorActor,
+    pub executor: ExecutorActor,
+    pub reader_executor: ReaderExecutorActor,
 }
 
 impl RustBindingTest {
@@ -32,8 +35,7 @@ impl RustBindingTest {
             moveos_store.clone(),
             rooch_store.clone(),
         )?;
-        let reader_executor =
-            ReaderExecutorActor::new(executor.genesis().clone(), moveos_store, rooch_store)?;
+        let reader_executor = ReaderExecutorActor::new(executor.moveos().clone(), rooch_store)?;
         Ok(Self {
             executor,
             reader_executor,
@@ -42,10 +44,6 @@ impl RustBindingTest {
 
     pub fn executor(&self) -> &ExecutorActor {
         &self.executor
-    }
-
-    pub fn as_module_bundle<'a, M: ModuleBinding<'a>>(&'a self) -> M {
-        self.executor.moveos().as_module_binding::<M>()
     }
 
     //TODO let the module bundle to execute the function
@@ -66,5 +64,20 @@ impl RustBindingTest {
     ) -> Result<ExecuteTransactionResult> {
         let verified_tx = self.reader_executor.validate(tx)?;
         self.executor.execute(verified_tx)
+    }
+}
+
+impl MoveFunctionCaller for RustBindingTest {
+    fn call_function(
+        &self,
+        ctx: &TxContext,
+        function_call: FunctionCall,
+    ) -> Result<FunctionResult> {
+        let result = self
+            .reader_executor
+            .moveos()
+            .read()
+            .execute_readonly_function(ctx, function_call);
+        Ok(result)
     }
 }

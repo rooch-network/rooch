@@ -229,13 +229,9 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         moveos_store.clone(),
         rooch_store.clone(),
     )?;
-    let reader_executor = ReaderExecutorActor::new(
-        executor_actor.genesis().clone(),
-        moveos_store.clone(),
-        rooch_store.clone(),
-    )?
-    .into_actor(Some("ReaderExecutor"), &actor_system)
-    .await?;
+    let reader_executor = ReaderExecutorActor::new(executor_actor.moveos(), rooch_store.clone())?
+        .into_actor(Some("ReaderExecutor"), &actor_system)
+        .await?;
     let executor = executor_actor
         .into_actor(Some("Executor"), &actor_system)
         .await?;
