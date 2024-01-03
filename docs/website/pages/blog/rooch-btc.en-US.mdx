@@ -1,0 +1,114 @@
+---
+title: RoochBTC - On-Chain Indexer as Bitcoin L2
+description: ""
+author: haichao
+category: Web3
+date: 2024/01/03
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+The fairness nature of Bitcoin inscriptions has encouraged the organic growth of a community that believes in the future of decentralization. At Rooch, our mission is to accelerate this process by providing more application scenarios to this community.
+
+In this post, I’d like to discuss all the possible solutions for building more featureful Bitcoin applications. In addition, we will also propose a new solution that leverages an on-chain indexer to build fully on-chain applications that integrate Bitcoin assets such as Ordinals and BRC20. We will also share some latest updates of Rooch regarding the launch of a Rooch pre-mainnet, the RoochBTC.
+
+## Bitcoin L2 Solutions
+
+Although the inscription technique has given Bitcoin a new path for launching novel crypto assets, the Bitcoin blockchain network itself has limitations on building applications based on these assets. The underlying reason is that the Bitcoin script does not support describing complicated logics therefore cannot support more complex application scenarios. In addition, the Bitcoin transaction cost is also a high barrier for users to use any applications built directly using Bitcoin blockchain.
+
+To address these two issues, we have seen some advanced Bitcoin L2 solutions being brought up. Here I roughly categorize them into 3 types.
+
+![](/docs/rooch-btc-1.png)
+
+### Lightning Network
+
+Bitcoin Lightning Network is one of the first and also the most adopted Bitcoin L2 solutions. This solution allows users to construct payment channels between two participants by having them both lock funds on the Bitcoin network and conduct invoice-based off-chain transactions without any limitations. 
+
+The upside of Lightning Network is that it can largely reduce the transaction cost while not compromising the security aspect at all. The whole payment process does not rely on the trust of a 3rd party. The downside is of course the application scenario is quite limited to payment only.
+
+### RGB / BitVM
+
+RGB and BitVM were introduced to the community very recently and both have caught a lot of attention due to the fact that they can potentially enable full turing complete smart contract scenarios for Bitcoin. 
+
+The essence of these two solutions is similar to Lightning Network in the way that they also wanna take the transaction load off-chain and let all the users verify the transactions by themselves. But instead of only verifying simple payment transactions, RGB and BitVM provide virtual machine based platform for applications to build more complex logics while making sure the users can still verify the result of a series of complicated transactions.
+
+With these solutions implemented and getting mature, basically all types of smart contract logic can be supported, which is gonna be a strong benefit to the Bitcoin ecosystem. In addition, the security of all transactions is guaranteed by client verification. No 3rd party is necessary unless it is compromised by the need of improving user experience. 
+
+However, we can still foresee their limitations within its application scenarios, as they still require all the participants to be online and keep signing off transactions to verify the off-chain execution.
+
+### Sidechain / Rollups
+
+Sidechain and Rollups are the most intuitive solutions when it comes to scaling Bitcoin. As a user, you can transfer your Bitcoin assets to another platform where all types of application scenarios are possible.
+
+The million-dollar challenge here is how to securely enable asset transfer between Bitcoin and the sidechain. I.e. how to lock and unlock states on Bitcoin in a secured and decentralized way. 
+
+Bitcoin’s Taproot upgrade has made it easy to sign transactions with multiple private keys by enabling signature aggregation.  A lot of sidechain and rollup solutions have leveraged this feature to build up a “committee” to help their users ramp assets on and off from Bitcoin to their own chain. 
+
+The drawback of this type of solution is that the security of the user’s assets will inevitably be compromised. The users will not have direct control over their own assets once they decide to on-ramp them to a sidechain and they will have to trust the committee that locks the assets as well as the security source of the sidechain/rollup.
+
+So, by comparison, we can find that no perfect solution is presented today and all solutions need to compromise between security and the application scenarios.
+
+## On-Chain Indexer as Bitcoin L2
+
+At Rooch, we would like to propose a new type of solution that leverages an on-chain indexer to scale the Bitcoin ecosystem.
+
+### How it works
+
+![](/docs/rooch-btc-2.png)
+
+- Rooch has the flexibility to be customized into any infra architectures, and in this specific case, we will employ Ethereum and an external DA to guarantee security.
+- On top of Rooch, a Bitcoin light client is implemented using smart contracts, which has the ability to verify Bitcoin block heads.
+- All Bitcoin block heads and UTXO states are synced to Rooch as objects in the MoveVM, where the UTXOs are indexed and cross verified by the light client and all the block heads.
+- The indexed Bitcoin UTXO information can then be used in the smart contracts of the fully on-chain application built on Rooch.
+
+We will also provide interpreter contracts on Rooch for applications to access different inscription information easily, such as Ordinals, BRC20, ARC20, and more.
+
+One thing to be noticed is that all the UTXOs are not locked on the Bitcoin network, whereas only their state information is synced to Rooch. That says, in this paradigm, no Bitcoin assets are portable from Bitcoin to Rooch. Only the latest Bitcoin’s UTXO states are synced to Rooch in real time and are guaranteed to be correct. 
+
+This may seem to be a weird solution to scaling Bitcoin as the solution itself does not help to alter the Bitcoin state in any way. But in fact, we can enable a lot of useful application scenarios. Here’s an example.
+
+![](/docs/rooch-btc-3.png)
+
+Imagine a fully on-chain game where you can treat your Ordis as seeds. You can plant them. You can water them. And after you take care of your Ordi and grow it into a crop, you get to earn some yielding tokens.
+
+Although this is a very simple game, you will still find it hard to be implemented with all the solutions we discussed above. But with Rooch’s on-chain indexer, here’s how you can build such a game easily.
+
+![](/docs/rooch-btc-4.png)
+
+- A Rooch account will be generated for the user once the user connects to the application and provides a signature. In this account, the user’s Ordi will be available for application contracts to read.
+- With the proof of owning an Ordi seed, the user can call application contracts to grow it into a tree NFT, which will automatically be owned by the same account.
+- The NFT can be harvested with contracts to yield profit tokens or be transferred to other accounts.
+
+In this game, the user’s Ordi never leaves the Bitcoin network and is kept in the user’s bitcoin wallet. The game’s logics are fully based on the user’s ownership of Ordi. If the Ordi gets transferred to another account, the game contract can decide whether to transfer the derived assets to that account as well, depending on the game design. For example, in the case of this Ordi farming game, the Tree NFT shall be transferred to the new account as it should follow the seed and all the profit tokens shall be kept in the old account as they are harvested from the tree already.
+
+### Comparing to Existing Solutions
+
+Now let’s see what happens if we adopt other solutions for building the same application:
+
+- Lightning Network - Not feasible. Lightning Network doesn’t provide a smart contract environment for implementing the game mechanic.
+- P2P Protocol with Offchain VM - Feasible but bad user experience. As the game is essentially a competition between all the Ordi holders to grow their own assets, all participants will be required to sign each others’ transactions to recognize their “planting” and “watering” actions are valid.
+- Multisig based Sidechain/Rollup - Fully feasible but requires asset custody. The user will have to deposit their Ordi into a 3rd party custody wallet, controlled by a multisig based committee, which causes trust issues.
+
+In the case of building it with an on-chain indexer, full game logic can be realized with seamless UX, and no asset custody is required during the whole game lifecycle.
+
+### Fully On-Chain Game and More
+
+The example above has shown the potential of the application scenarios that can be enabled with the on-chain indexer on Rooch. The essence of this paradigm is to recognize the ownership of Bitcoin assets as the pegs. The application is free to design logics and derive versatile tokens from these pegs. 
+
+We believe this property of on-chain indexer makes this solution particularly suitable for building fully on-chain games or Autonomous World(AW) applications in the Bitcoin ecosystem, where, unlike DeFi, AW applications usually focus on building complicated logic designs and executions for users to earn tokens, or taking token ownerships as proof of entrance, rather than manipulating tokens themselves. 
+
+We also think that more types of applications are possible and we believe gaming is just the first scenario that can adopt this Bitcoin scaling solution. We would love to work with the community to build out a flourishing Bitcoin ecosystem.
+
+## RoochBTC - A Pre-Mainnet of Rooch Network
+
+Rooch is a modular blockchain platform that aims to support fully on-chain applications and provide them with access to all assets on all chains.
+
+Although we are yet ready to launch the full version of mainnet, in the sight of the recent market demand, we have decided to soon launch a pre-mainnet, the **RoochBTC,** in the hope of showing the community what we’ve been working on and get you guys some hands-on experience.
+
+The RoochBTC network will have the full Bitcoin mainnet state indexed on the chain, as well as everything you need for developing a fully on-chain application with Bitcoin assets. This includes SDK, wallet API, documents, and examples.
+
+We will also release demo applications for Bitcoin asset holders to play with and get a taste of the future of Bitcoin fully on-chain applications.
+
+So, stay tuned!
