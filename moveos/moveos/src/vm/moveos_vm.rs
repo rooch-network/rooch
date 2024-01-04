@@ -542,6 +542,7 @@ where
                 state_changeset,
                 events,
                 gas_used,
+                gas_statement
             },
         ))
     }

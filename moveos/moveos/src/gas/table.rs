@@ -20,6 +20,7 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::ops::{Add, Bound};
 use std::rc::Rc;
+use moveos_types::transaction::GasStatement;
 
 use super::SwitchableGasMeter;
 
@@ -420,13 +421,6 @@ impl MoveOSGasMeter {
     pub fn set_metering(&mut self, enabled: bool) {
         self.charge = enabled;
     }
-}
-
-
-#[derive(Debug, Clone)]
-pub struct GasStatement {
-    pub execution_gas_used: u64,
-    pub storage_gas_used: u64,
 }
 
 pub trait ClassifiedGasMeter {

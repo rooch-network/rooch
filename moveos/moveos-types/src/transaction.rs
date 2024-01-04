@@ -258,6 +258,12 @@ impl MoveOSTransaction {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct GasStatement {
+    pub execution_gas_used: u64,
+    pub storage_gas_used: u64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VerifiedMoveOSTransaction {
     pub ctx: TxContext,
@@ -275,6 +281,7 @@ pub struct RawTransactionOutput {
     pub state_changeset: StateChangeSet,
     pub events: Vec<TransactionEvent>,
     pub gas_used: u64,
+    pub gas_statement: GasStatement,
 }
 
 /// TransactionOutput is the execution result of a MoveOS transaction, and pack TransactionEvent to Event
