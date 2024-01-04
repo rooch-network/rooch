@@ -1,10 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_binary_format::file_format::CodeOffset;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::effects::ChangeSet;
+use move_core_types::effects::Op;
 use move_core_types::gas_algebra::{
     AbstractMemorySize, GasQuantity, InternalGas, NumArgs, NumBytes,
 };
@@ -13,6 +12,8 @@ use move_core_types::vm_status::StatusCode;
 use move_vm_types::gas::{GasMeter, SimpleInstruction};
 use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::views::{TypeView, ValueView};
+use moveos_types::moveos_std::event::TransactionEvent;
+use moveos_types::state::StateChangeSet;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
@@ -37,11 +38,22 @@ pub const STACK_SIZE_TIER_DEFAULT: u64 = 1;
 
 pub static ZERO_COST_SCHEDULE: Lazy<CostTable> = Lazy::new(zero_cost_schedule);
 
+#[derive(Clone, Debug, Default, Serialize, PartialEq, Eq, Deserialize)]
+pub struct ExtraGasParameter {
+    pub io_read_price: u64,
+    pub storage_fee_per_transaction_byte: u64,
+    pub storage_fee_per_event_byte: u64,
+    pub storage_fee_per_op_new_byte: u64,
+    pub storage_fee_per_op_modify_byte: u64,
+    pub storage_fee_per_op_delete: u64,
+}
+
 #[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
 pub struct CostTable {
     pub instruction_tiers: BTreeMap<u64, u64>,
     pub stack_height_tiers: BTreeMap<u64, u64>,
     pub stack_size_tiers: BTreeMap<u64, u64>,
+    pub extra_gas_parameter: ExtraGasParameter,
 }
 
 impl CostTable {
@@ -140,10 +152,20 @@ pub fn initial_cost_schedule() -> CostTable {
     .into_iter()
     .collect();
 
+    let extra_gas_parameter = ExtraGasParameter {
+        io_read_price: 1,
+        storage_fee_per_transaction_byte: 20,
+        storage_fee_per_event_byte: 20,
+        storage_fee_per_op_new_byte: 51,
+        storage_fee_per_op_modify_byte: 30,
+        storage_fee_per_op_delete: 10,
+    };
+
     CostTable {
         instruction_tiers,
         stack_size_tiers,
         stack_height_tiers,
+        extra_gas_parameter,
     }
 }
 
@@ -154,6 +176,7 @@ pub fn zero_cost_schedule() -> CostTable {
         instruction_tiers: zero_tier.clone(),
         stack_size_tiers: zero_tier.clone(),
         stack_height_tiers: zero_tier,
+        extra_gas_parameter: ExtraGasParameter::default(),
     }
 }
 
@@ -399,30 +422,123 @@ impl MoveOSGasMeter {
     }
 }
 
+
+#[derive(Debug, Clone)]
 pub struct GasStatement {
     pub execution_gas_used: u64,
     pub storage_gas_used: u64,
 }
 
 pub trait ClassifiedGasMeter {
-    fn charge_execution(&mut self, gas_cost: u64);
+    fn charge_execution(&mut self, gas_cost: u64) -> PartialVMResult<()>;
     // fn charge_io_read(&mut self);
-    fn charge_io_write(&mut self);
-    fn charge_change_set(&mut self, change_set: &ChangeSet);
+    fn charge_io_write(&mut self, data_size: usize) -> PartialVMResult<()>;
+    fn charge_event(&mut self, events: &[TransactionEvent]) -> PartialVMResult<()>;
+    fn charge_change_set(&mut self, change_set: &StateChangeSet) -> PartialVMResult<()>;
+    fn check_constrains(&self, max_gas_amount: u64) -> PartialVMResult<()>;
     fn gas_statement(&self) -> GasStatement;
 }
 
 impl ClassifiedGasMeter for MoveOSGasMeter {
-    fn charge_execution(&mut self, gas_cost: u64) {
+    fn charge_execution(&mut self, gas_cost: u64) -> PartialVMResult<()> {
+        if !self.charge {
+            return Ok(());
+        }
+
         let new_value = self.execution_gas_used.borrow().add(gas_cost);
         *self.execution_gas_used.borrow_mut() = new_value;
+        Ok(())
     }
 
     // fn charge_io_read(&mut self) {}
 
-    fn charge_io_write(&mut self) {}
+    fn charge_io_write(&mut self, data_size: usize) -> PartialVMResult<()> {
+        if !self.charge {
+            return Ok(());
+        }
 
-    fn charge_change_set(&mut self, _change_set: &ChangeSet) {}
+        let fee = self.cost_table.extra_gas_parameter.io_read_price * (data_size as u64);
+        let new_value = self.storage_gas_used.borrow().add(fee);
+        *self.storage_gas_used.borrow_mut() = new_value;
+        self.deduct_gas(fee)
+    }
+
+    fn charge_event(&mut self, events: &[TransactionEvent]) -> PartialVMResult<()> {
+        if !self.charge {
+            return Ok(());
+        }
+
+        let mut total_event_fee = 0;
+        for event in events {
+            let fee = event.event_data.len() as u64
+                * self
+                    .cost_table
+                    .extra_gas_parameter
+                    .storage_fee_per_event_byte;
+            let new_value = self.storage_gas_used.borrow().add(fee);
+            *self.storage_gas_used.borrow_mut() = new_value;
+            total_event_fee += fee;
+        }
+        self.deduct_gas(total_event_fee)
+    }
+
+    fn charge_change_set(&mut self, change_set: &StateChangeSet) -> PartialVMResult<()> {
+        if !self.charge {
+            return Ok(());
+        }
+
+        let mut total_change_set_fee = 0;
+        for (_, table_change) in change_set.changes.iter() {
+            for (key, op) in table_change.entries.iter() {
+                let fee = {
+                    match op {
+                        Op::Modify(value) => {
+                            (key.len() + value.value.len()) as u64
+                                * self
+                                    .cost_table
+                                    .extra_gas_parameter
+                                    .storage_fee_per_op_modify_byte
+                        }
+                        Op::Delete => {
+                            self.cost_table
+                                .extra_gas_parameter
+                                .storage_fee_per_op_delete
+                        }
+                        Op::New(value) => {
+                            value.value.len() as u64
+                                * self
+                                    .cost_table
+                                    .extra_gas_parameter
+                                    .storage_fee_per_op_new_byte
+                        }
+                    }
+                };
+                let new_value = self.storage_gas_used.borrow().add(fee);
+                *self.storage_gas_used.borrow_mut() = new_value;
+                total_change_set_fee += fee;
+            }
+        }
+        self.deduct_gas(total_change_set_fee)
+    }
+
+    fn check_constrains(&self, max_gas_amount: u64) -> PartialVMResult<()> {
+        let gas_left: u64 = self.balance_internal().into();
+        let gas_used = max_gas_amount.checked_sub(gas_left).unwrap_or_else(
+            || panic!("gas_left({gas_left}) should always be less than or equal to max gas amount({max_gas_amount})")
+        );
+
+        if gas_used == 0 {
+            return Ok(());
+        }
+
+        let execution_gas_used = *self.execution_gas_used.borrow();
+        let storage_gas_used = *self.storage_gas_used.borrow();
+        if gas_used != execution_gas_used + storage_gas_used {
+            return Err(PartialVMError::new(StatusCode::ABORTED)
+                .with_message("Failed to check the constraints of the gas_used.".to_owned()));
+        }
+        Ok(())
+    }
 
     fn gas_statement(&self) -> GasStatement {
         GasStatement {
@@ -490,10 +606,7 @@ impl MoveOSGasMeter {
     ) -> PartialVMResult<()> {
         let charge_result = self.charge(num_instructions, pushes, pops, incr_size, decr_size);
         match charge_result {
-            Ok(gas_cost) => {
-                self.charge_execution(gas_cost);
-                Ok(())
-            }
+            Ok(gas_cost) => self.charge_execution(gas_cost),
             Err(e) => Err(e),
         }
     }
@@ -807,9 +920,13 @@ impl GasMeter for MoveOSGasMeter {
         // Charge for the stack operations. We don't count this as an "instruction" since we
         // already accounted for the `Call` instruction in the
         // `charge_native_function_before_execution` call.
-        self.charge(0, pushes, 0, size_increase.into(), 0)?;
+        //self.charge(0, pushes, 0, size_increase.into(), 0)?;
         // Now charge the gas that the native function told us to charge.
-        self.deduct_gas(amount.into())
+        //self.deduct_gas(amount.into())
+
+        self.charge_execution(amount.into())?;
+        self.deduct_gas(amount.into())?;
+        self.charge_internal_execution(0, pushes, 0, size_increase.into(), 0)
     }
 
     fn charge_native_function_before_execution(

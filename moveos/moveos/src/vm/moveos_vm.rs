@@ -494,7 +494,7 @@ where
             //We do not check the event, we allow read_only session to emit event now.
         }
 
-        let events = raw_events
+        let events: Vec<_> = raw_events
             .into_iter()
             .enumerate()
             .map(|(i, (struct_tag, event_data))| {
@@ -502,7 +502,32 @@ where
             })
             .collect::<VMResult<_>>()?;
 
-        gas_meter.charge_change_set(&changeset);
+        match gas_meter.charge_change_set(&state_changeset) {
+            Ok(_) => {}
+            Err(partial_vm_error) => {
+                return Err(partial_vm_error
+                    .with_message(
+                        "An error occurred during the charging of the change set".to_owned(),
+                    )
+                    .finish(Location::Undefined));
+            }
+        }
+        match gas_meter.charge_event(events.as_slice()) {
+            Ok(_) => {}
+            Err(partial_vm_error) => {
+                return Err(partial_vm_error
+                    .with_message("An error occurred during the charging of the events".to_owned())
+                    .finish(Location::Undefined));
+            }
+        }
+
+        match gas_meter.check_constrains(ctx.tx_context.max_gas_amount) {
+            Ok(_) => {}
+            Err(partial_vm_err) => {
+                return Err(partial_vm_err.finish(Location::Undefined));
+            }
+        };
+
         let mut gas_statement = gas_meter.gas_statement();
         if is_read_only_execution {
             gas_statement.execution_gas_used = 0;
