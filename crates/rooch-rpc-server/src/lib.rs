@@ -35,6 +35,7 @@ use rooch_da::server::celestia::proxy::DAServerCelestiaProxy;
 use rooch_da::server::serverproxy::DAServerNopProxy;
 use rooch_da::server::serverproxy::DAServerProxy;
 use rooch_executor::actor::executor::ExecutorActor;
+use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::indexer_reader::IndexerReader;
@@ -222,15 +223,19 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     // Init executor
     let is_genesis = moveos_store.statedb.is_genesis();
     let btc_network = opt.btc_network.unwrap_or(Network::default().to_num());
-    let executor = ExecutorActor::new(
+    let executor_actor = ExecutorActor::new(
         chain_id_opt.genesis_ctx(sequencer_account),
         BitcoinGenesisContext::new(btc_network),
         moveos_store.clone(),
         rooch_store.clone(),
-    )?
-    .into_actor(Some("Executor"), &actor_system)
-    .await?;
-    let executor_proxy = ExecutorProxy::new(executor.into());
+    )?;
+    let reader_executor = ReaderExecutorActor::new(executor_actor.moveos(), rooch_store.clone())?
+        .into_actor(Some("ReaderExecutor"), &actor_system)
+        .await?;
+    let executor = executor_actor
+        .into_actor(Some("Executor"), &actor_system)
+        .await?;
+    let executor_proxy = ExecutorProxy::new(executor.into(), reader_executor.into());
 
     // Init sequencer
     info!("RPC Server sequencer address: {:?}", sequencer_account);
