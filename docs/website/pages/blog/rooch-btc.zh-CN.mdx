@@ -20,7 +20,15 @@ import PostHeader from "/components/blog/postHeader";
 
 为了解决这两个问题，我们已经看到一些先进的比特币 L2 解决方案被提出。这里我大致将其分为3类。
 
-![](/docs/rooch-btc-1.png)
+import Image from "next/image";
+
+<Image
+  src="/docs/rooch-btc-1.png"
+  alt="rooch-btc-1"
+  width={800}
+  height={800}
+  className="mx-auto my-8"
+/>
 
 ### 闪电网络
 
@@ -56,7 +64,13 @@ RGB 和 BitVM 最近被引入社区，并且由于它们有可能为比特币实
 
 ### 如何工作
 
-![](/docs/rooch-btc-2.png)
+<Image
+  src="/docs/rooch-btc-2.png"
+  alt="rooch-btc-2"
+  width={500}
+  height={500}
+  className="mx-auto my-8"
+/>
 
 - Rooch 可以灵活地定制到任何基础架构中，在这个用例里，我们将使用以太坊和外部 DA 来保证安全性。
 - 在 Rooch 之上，使用智能合约实现了比特币轻客户端，该客户端具有验证比特币区块头的能力。
@@ -69,13 +83,25 @@ RGB 和 BitVM 最近被引入社区，并且由于它们有可能为比特币实
 
 这似乎是扩展比特币的一个奇怪的解决方案，因为该解决方案本身无助于以任何方式改变比特币状态。但事实上，我们可以启用很多有用的应用场景。这里有一个例子。
 
-![](/docs/rooch-btc-3.png)
+<Image
+  src="/docs/rooch-btc-3.png"
+  alt="rooch-btc-3"
+  width={700}
+  height={700}
+  className="mx-auto my-8"
+/>
 
 想象一下一个全链的游戏，您可以将您的 Ordis 视为种子。你可以种植它们。你可以给它们浇水。当你照顾好你的 Ordi 并将其种植成农作物后，你就可以赚取一些收益代币。
 
 虽然这是一个非常简单的游戏，但您仍然会发现使用我们上面讨论的所有解决方案来实现它很困难。但借助 Rooch 的链上索引器，您可以轻松构建这样的游戏。
 
-![](/docs/rooch-btc-4.png)
+<Image
+  src="/docs/rooch-btc-4.png"
+  alt="rooch-btc-4"
+  width={700}
+  height={700}
+  className="mx-auto my-8"
+/>
 
 - 一旦用户连接到应用程序并提供签名，就会为用户生成 Rooch 帐户。在这个账户中，用户的 Ordi 将可供应用合约读取。
 - 有了拥有 Ordi 种子的证明，用户可以调用应用程序合约将其成长为一棵树 NFT，该树将自动归同一帐户所有。

@@ -20,7 +20,16 @@ Although the inscription technique has given Bitcoin a new path for launching no
 
 To address these two issues, we have seen some advanced Bitcoin L2 solutions being brought up. Here I roughly categorize them into 3 types.
 
-![](/docs/rooch-btc-1.png)
+
+import Image from "next/image";
+
+<Image
+  src="/docs/rooch-btc-1.png"
+  alt="rooch-btc-1"
+  width={800}
+  height={800}
+  className="mx-auto my-8"
+/>
 
 ### Lightning Network
 
@@ -56,7 +65,14 @@ At Rooch, we would like to propose a new type of solution that leverages an on-c
 
 ### How it works
 
-![](/docs/rooch-btc-2.png)
+
+<Image
+  src="/docs/rooch-btc-2.png"
+  alt="rooch-btc-2"
+  width={500}
+  height={500}
+  className="mx-auto my-8"
+/>
 
 - Rooch has the flexibility to be customized into any infra architectures, and in this specific case, we will employ Ethereum and an external DA to guarantee security.
 - On top of Rooch, a Bitcoin light client is implemented using smart contracts, which has the ability to verify Bitcoin block heads.
@@ -69,13 +85,26 @@ One thing to be noticed is that all the UTXOs are not locked on the Bitcoin netw
 
 This may seem to be a weird solution to scaling Bitcoin as the solution itself does not help to alter the Bitcoin state in any way. But in fact, we can enable a lot of useful application scenarios. Here’s an example.
 
-![](/docs/rooch-btc-3.png)
+
+<Image
+  src="/docs/rooch-btc-3.png"
+  alt="rooch-btc-3"
+  width={700}
+  height={700}
+  className="mx-auto my-8"
+/>
 
 Imagine a fully on-chain game where you can treat your Ordis as seeds. You can plant them. You can water them. And after you take care of your Ordi and grow it into a crop, you get to earn some yielding tokens.
 
 Although this is a very simple game, you will still find it hard to implement with all the solutions we discussed above. But with Rooch’s on-chain indexer, here’s how you can build such a game easily.
 
-![](/docs/rooch-btc-4.png)
+<Image
+  src="/docs/rooch-btc-4.png"
+  alt="rooch-btc-4"
+  width={800}
+  height={800}
+  className="mx-auto my-8"
+/>
 
 - A Rooch account will be generated for the user once the user connects to the application and provides a signature. In this account, the user’s Ordi will be available for application contracts to read.
 - With the proof of owning an Ordi seed, the user can call application contracts to grow it into a tree NFT, which will automatically be owned by the same account.
