@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
@@ -13,7 +14,7 @@ use crate::binding_test;
 fn test_validate() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();
     let native_validator = binding_test
-        .as_module_bundle::<rooch_types::framework::native_validator::NativeValidatorModule>(
+        .as_module_binding::<rooch_types::framework::native_validator::NativeValidatorModule>(
     );
 
     let keystore = InMemKeystore::new_insecure_for_tests(1);

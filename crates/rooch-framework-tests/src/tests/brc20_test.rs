@@ -26,7 +26,7 @@ fn decode_tx(btx_tx_hex: &str) {
         debug!("{}. inscription: {:?}", i, inscription);
     }
     //let binding_test = binding_test::RustBindingTest::new().unwrap();
-    //let brc20_module = binding_test.as_module_bundle::<rooch_types::bitcoin::brc20::BRC20Module>();
+    //let brc20_module = binding_test.as_module_binding::<rooch_types::bitcoin::brc20::BRC20Module>();
     //let move_btc_tx: rooch_types::bitcoin::types::Transaction = btc_tx.into();
     //let ops_from_move = brc20_module.get_tick_info(&move_btc_tx).unwrap();
     //debug!("ops_from_move: {:?}", ops_from_move);

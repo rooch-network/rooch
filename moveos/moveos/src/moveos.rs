@@ -452,7 +452,7 @@ impl MoveOS {
         self.execute_readonly_function(&tx_context, function_call)
     }
 
-    fn execute_readonly_function(
+    pub fn execute_readonly_function(
         &self,
         tx_context: &TxContext,
         function_call: FunctionCall,
