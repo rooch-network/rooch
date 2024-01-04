@@ -14,13 +14,13 @@ use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::views::{TypeView, ValueView};
 use moveos_types::moveos_std::event::TransactionEvent;
 use moveos_types::state::StateChangeSet;
+use moveos_types::transaction::GasStatement;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::ops::{Add, Bound};
 use std::rc::Rc;
-use moveos_types::transaction::GasStatement;
 
 use super::SwitchableGasMeter;
 
