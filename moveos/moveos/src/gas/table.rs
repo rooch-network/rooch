@@ -426,7 +426,7 @@ impl MoveOSGasMeter {
 pub trait ClassifiedGasMeter {
     fn charge_execution(&mut self, gas_cost: u64) -> PartialVMResult<()>;
     // fn charge_io_read(&mut self);
-    fn charge_io_write(&mut self, data_size: usize) -> PartialVMResult<()>;
+    fn charge_io_write(&mut self, data_size: u64) -> PartialVMResult<()>;
     fn charge_event(&mut self, events: &[TransactionEvent]) -> PartialVMResult<()>;
     fn charge_change_set(&mut self, change_set: &StateChangeSet) -> PartialVMResult<()>;
     fn check_constrains(&self, max_gas_amount: u64) -> PartialVMResult<()>;
@@ -446,12 +446,16 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
 
     // fn charge_io_read(&mut self) {}
 
-    fn charge_io_write(&mut self, data_size: usize) -> PartialVMResult<()> {
+    fn charge_io_write(&mut self, data_size: u64) -> PartialVMResult<()> {
         if !self.charge {
             return Ok(());
         }
 
-        let fee = self.cost_table.extra_gas_parameter.io_read_price * (data_size as u64);
+        let fee = self
+            .cost_table
+            .extra_gas_parameter
+            .storage_fee_per_transaction_byte
+            * data_size;
         let new_value = self.storage_gas_used.borrow().add(fee);
         *self.storage_gas_used.borrow_mut() = new_value;
         self.deduct_gas(fee)
@@ -499,7 +503,7 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
                                 .storage_fee_per_op_delete
                         }
                         Op::New(value) => {
-                            value.value.len() as u64
+                            (key.len() + value.value.len()) as u64
                                 * self
                                     .cost_table
                                     .extra_gas_parameter

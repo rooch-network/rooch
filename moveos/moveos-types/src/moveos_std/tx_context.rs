@@ -31,6 +31,8 @@ pub struct TxContext {
     /// Hash of the current transaction
     /// Use the type `Vec<u8>` is to keep consistency with the `TxContext` type in Move
     pub tx_hash: Vec<u8>,
+    // The data size of this transaction
+    pub tx_size: u64,
     /// Number of `ObjectID`'s generated during execution of the current transaction
     pub ids_created: u64,
     /// A map for storing context data
@@ -56,12 +58,14 @@ impl TxContext {
         sequence_number: u64,
         max_gas_amount: u64,
         tx_hash: H256,
+        tx_size: u64,
     ) -> Self {
         Self {
             sender,
             sequence_number,
             max_gas_amount,
             tx_hash: tx_hash.0.to_vec(),
+            tx_size,
             ids_created: 0,
             map: SimpleMap::create(),
         }
@@ -70,7 +74,13 @@ impl TxContext {
     /// Create a new TxContext with a zero tx_hash for read-only function call cases
     pub fn new_readonly_ctx(sender: AccountAddress) -> Self {
         //TODO define read-only function gas limit
-        Self::new(sender, 0, GasConfig::DEFAULT_MAX_GAS_AMOUNT, H256::zero())
+        Self::new(
+            sender,
+            0,
+            GasConfig::DEFAULT_MAX_GAS_AMOUNT,
+            H256::zero(),
+            0,
+        )
     }
 
     /// Spawn a new TxContext with a new `ids_created` counter and empty map
@@ -80,6 +90,7 @@ impl TxContext {
             sequence_number: self.sequence_number,
             max_gas_amount: self.max_gas_amount,
             tx_hash: self.tx_hash,
+            tx_size: self.tx_size,
             ids_created: 0,
             map: env,
         }
@@ -93,6 +104,7 @@ impl TxContext {
             sequence_number: 0,
             max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT,
             tx_hash: vec![0u8; h256::LENGTH],
+            tx_size: 0,
             ids_created: 0,
             map: SimpleMap::create(),
         }
@@ -126,6 +138,7 @@ impl TxContext {
             0,
             GasConfig::DEFAULT_MAX_GAS_AMOUNT,
             H256::random(),
+            1,
         )
     }
 
@@ -164,6 +177,7 @@ impl MoveStructState for TxContext {
             MoveTypeLayout::U64,
             MoveTypeLayout::U64,
             MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8)),
+            MoveTypeLayout::U64,
             MoveTypeLayout::U64,
             MoveTypeLayout::Struct(SimpleMap::<MoveString, Any>::struct_layout()),
         ])

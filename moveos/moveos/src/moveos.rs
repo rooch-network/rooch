@@ -236,8 +236,8 @@ impl MoveOS {
 
         let cost_table = initial_cost_schedule();
         let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
-        // TODO: we should get the tx size from the TxContext or function argument.
-        gas_meter.charge_io_write(1024)?;
+
+        gas_meter.charge_io_write(ctx.tx_size)?;
 
         let mut session = self.vm.new_session(&self.db, ctx, gas_meter);
 
