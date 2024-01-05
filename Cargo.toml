@@ -39,6 +39,7 @@ members = [
     "crates/rooch-open-rpc-macros",
     "crates/rooch-store",
     "crates/rooch-indexer",
+    "crates/rooch-benchmarks",
     "frameworks/bitcoin-move"
 ]
 
@@ -102,6 +103,7 @@ rooch-open-rpc-macros = { path = "crates/rooch-open-rpc-macros" }
 rooch-store = { path = "crates/rooch-store" }
 rooch-indexer = { path = "crates/rooch-indexer" }
 rooch-da = { path = "crates/rooch-da" }
+rooch-benchmarks = { path = "crates/rooch-benchmarks" }
 
 # frameworks
 bitcoin-move = { path = "frameworks/bitcoin-move" }
@@ -235,6 +237,7 @@ tap = "1.0.1"
 dotenvy = "0.15"
 sized-chunks = { version = "0.6" }
 dashmap = "5.5.3"
+criterion = "0.5.1"
 
 celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
