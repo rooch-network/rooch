@@ -19,7 +19,81 @@
 
 ## 如何使用 Coin
 
+### 使用公有类型的 Coin
+
+这个例子将演示拥有公有类型的 Coin 的用法。
+
+```move
+module coins::fixed_supply_coin {
+
+    use std::string;
+    use moveos_std::signer;
+    use moveos_std::context::{Self, Context};
+    use moveos_std::object::{Self, Object};
+    use rooch_framework::coin;
+    use rooch_framework::coin_store::{Self, CoinStore};
+    use rooch_framework::account_coin_store;
+
+    const TOTAL_SUPPLY: u256 = 210_000_000_000u256;
+    const DECIMALS: u8 = 1u8;
+
+    // The `FSC` CoinType has `key` and `store` ability.
+    // So `FSC` coin is public.
+    struct FSC has key, store {}
+
+    // construct the `FSC` coin and make it a global object that stored in `Treasury`.
+    struct Treasury has key {
+        coin_store: Object<CoinStore<FSC>>
+    }
+
+    fun init(ctx: &mut Context) {
+        let coin_info_obj = coin::register_extend<FSC>(
+            ctx,
+            string::utf8(b"Fixed Supply Coin"),
+            string::utf8(b"FSC"),
+            DECIMALS,
+        );
+        // Mint the total supply of coins, and store it to the treasury
+        let coin = coin::mint_extend<FSC>(&mut coin_info_obj, TOTAL_SUPPLY);
+        // Frozen the CoinInfo object, so that no more coins can be minted
+        object::to_frozen(coin_info_obj);
+        let coin_store_obj = coin_store::create_coin_store<FSC>(ctx);
+        coin_store::deposit(&mut coin_store_obj, coin);
+        let treasury_obj = context::new_named_object(ctx, Treasury { coin_store: coin_store_obj });
+        // Make the treasury object to shared, so anyone can get mutable Treasury object
+        object::to_shared(treasury_obj);
+    }
+
+    /// Provide a faucet to give out coins to users
+    /// In a real world scenario, the coins should be given out in the application business logic.
+    public entry fun faucet(ctx: &mut Context, account: &signer, treasury_obj: &mut Object<Treasury>) {
+        let account_addr = signer::address_of(account);
+        let treasury = object::borrow_mut(treasury_obj);
+        let coin = coin_store::withdraw(&mut treasury.coin_store, 10000);
+        account_coin_store::deposit(ctx, account_addr, coin);
+    }
+}
+```
+
+定义 `TOTAL_SUPPLY` 常量，设定 `FSC` 的总供应量，以及定义 `DECIMALS` 设定精度值。
+
+`FSC` 结构定义的是代币的类型，定义类型时，不需要传递任何字段，只需要控制它所拥有的能力。
+
+`Treasury` 结构定义的是代币的国库，其包含 `CoinStore` 对象，这个对象包含了关于 `FSC` 这种代币的信息：代币名称、代币余额、是否冻结。
+
+`init` 函数里定义了发布 `FSC` 这个代币的一些逻辑：
+
+- 首先通过 `register_extend` 函数来创建 `FSC` 代币的元信息，包括：代币类型、代币名字，代币符号、代币精度、代币总供应量（这个函数默认初始化的值为 `0`）。
+- 接着，使用 `mint_extend` 函数来铸造代币，铸造完成后，就使用 `to_frozen` 函数将 `coin_info_obj` 对象冻结，即冻结了铸币权，不能够再铸造新的代币了。
+- `create_coin_store` 函数为 `FSC` 代币创建 `CoinStore` 对象。
+- `deposit` 函数将刚才铸造好的代币存到 `CoinStore` 的 `Balance` 中。
+- 最后，将 `CoinStore` 对象放到国库里，并将国库对象变成共享对象。
+
+`faucet` 函数包含将国库里的代币分发给账户的逻辑，这个只是用来开发测试。
+
 ### 使用私有类型的 Coin
+
+这个例子介绍私有类型 Coin 的用法。
 
 ```move
 module coins::private_coin {
@@ -86,56 +160,14 @@ module coins::private_coin {
 }
 ```
 
-### 使用公有类型的 Coin
+同样，通过两个结构定义代币的类型和它的国库。`PRC` 是私有类型的代币。
 
-```move
-module coins::fixed_supply_coin {
+`init` 定义了创建 `PRC` 代币的铸造逻辑。
 
-    use std::string;
-    use moveos_std::signer;
-    use moveos_std::context::{Self, Context};
-    use moveos_std::object::{Self, Object};
-    use rooch_framework::coin;
-    use rooch_framework::coin_store::{Self, CoinStore};
-    use rooch_framework::account_coin_store;
+- 同样是注册代币的信息 `CoinInfo`，并将其对象转移到发布这个代币合约的地址上。
+- 使用 `create_coin_store_extend` 创建 `CoinStore` 对象后，再将其存到国库中，因为这是私有的 `Coin` 需要使用具有私有泛型的 `extend` 函数，确保其只能由 `CoinType` 的模块来创建。
+- 最后将国库对象转移到发布代币的地址上。
 
-    const TOTAL_SUPPLY: u256 = 210_000_000_000u256;
-    const DECIMALS: u8 = 1u8;
+定义 `faucet` 函数来铸造代币并将其转移到账户里。
 
-    // The `FSC` CoinType has `key` and `store` ability.
-    // So `FSC` coin is public.
-    struct FSC has key, store {}
-
-    // construct the `FSC` coin and make it a global object that stored in `Treasury`.
-    struct Treasury has key {
-        coin_store: Object<CoinStore<FSC>>
-    }
-
-    fun init(ctx: &mut Context) {
-        let coin_info_obj = coin::register_extend<FSC>(
-            ctx,
-            string::utf8(b"Fixed Supply Coin"),
-            string::utf8(b"FSC"),
-            DECIMALS,
-        );
-        // Mint the total supply of coins, and store it to the treasury
-        let coin = coin::mint_extend<FSC>(&mut coin_info_obj, TOTAL_SUPPLY);
-        // Frozen the CoinInfo object, so that no more coins can be minted
-        object::to_frozen(coin_info_obj);
-        let coin_store_obj = coin_store::create_coin_store<FSC>(ctx);
-        coin_store::deposit(&mut coin_store_obj, coin);
-        let treasury_obj = context::new_named_object(ctx, Treasury { coin_store: coin_store_obj });
-        // Make the treasury object to shared, so anyone can get mutable Treasury object
-        object::to_shared(treasury_obj);
-    }
-
-    /// Provide a faucet to give out coins to users
-    /// In a real world scenario, the coins should be given out in the application business logic.
-    public entry fun faucet(ctx: &mut Context, account: &signer, treasury_obj: &mut Object<Treasury>) {
-        let account_addr = signer::address_of(account);
-        let treasury = object::borrow_mut(treasury_obj);
-        let coin = coin_store::withdraw(&mut treasury.coin_store, 10000);
-        account_coin_store::deposit(ctx, account_addr, coin);
-    }
-}
-```
+`transfer` 函数展示了如何使用 `coin::transfer_extend` 定义自定义转账逻辑，该转账函数限制转账金额为 `10000`，并收取金额的 `1%` 的手续费。
