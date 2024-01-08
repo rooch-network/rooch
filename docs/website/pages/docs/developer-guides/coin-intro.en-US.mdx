@@ -162,6 +162,10 @@ module coins::private_coin {
 
 Likewise, the type of token and its treasury are defined through two structures. `PRC` is a private type of token.
 
+Use the private type `CoinType` to create a token, which allows developers to customize the logic of transfer, withdrawal, and deposit, such as how to customize the transfer fee as demonstrated in the example.
+
+Private type tokens cannot use the general transfer, withdrawl, deposit functions provided in the `account_coin_store` module.
+
 `init` defines the minting logic for creating `PRC` tokens.
 
 - The same is done to register the token information `CoinInfo` and transfer its object to the address where the token contract is issued.
