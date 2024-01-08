@@ -6,8 +6,8 @@
 
 我们主要关注的是 `CoinType`，它可以带有不同的能力，从而能让不同的模块具有不同的操控权限。
 
-- `CoinType` 必须带有 `key` 能力，此时它是私有的，只能在定义 `CoinType` 的模块内操作 `Coin`。
-- 当给 `CoinType` 添加 `store` 能力后，它就变成公有的，此时除了定义 `CoinType` 的模块可以操作外，`coin` 的函数也可以操作。
+- `CoinType` 必须带有 `key` 能力，此时它是**私有的**，只能在定义 `CoinType` 的模块内操作 `Coin`。
+- 当给 `CoinType` 添加 `store` 能力后，它就变成**公有的**，此时除了定义 `CoinType` 的模块可以操作外，`coin` 的函数也可以操作。
 
 定义 `Coin`  时，我们通过 `CoinInfo` 来注册某种 Coin，`CoinInfo` 是一个全局存储的对象，它包含 5 个字段。
 

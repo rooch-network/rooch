@@ -1,1 +1,173 @@
 # Coin Introduction
+
+## How to define Coin
+
+It is defined in Rooch using the `Coin` structure, which is a generic structure. We can pass different `CoinTypes` to it to define different tokens. For example, `Coin<USDT>`, `Coin<USDC>`, etc. can be regarded as a container.
+
+Our main concern is `CoinType`, which can have different abilities, allowing different modules to have different control permissions.
+
+- `CoinType` must have `key` ability. At this time, it is **private** and Coin can only be operated within the module where `CoinType` is defined.
+- When the `store` ability is added to `CoinType`, it becomes **public**. At this time, in addition to the modules that define `CoinType`, `coin` functions can also be operated.
+
+When defining `Coin`, we register a certain Coin through `CoinInfo`. `CoinInfo` is a globally stored object that contains 5 fields.
+
+- `coin_type`: defines the type of Coin.
+- `name`: defines the name of Coin.
+- `symbol`: Defines the symbol of the token.
+- `decimals` defines the precision of the token. Because there are no decimals in Move, we must use precision to convert so that users can see Coin in decimal form.
+- `supply`: Define the total amount of tokens.
+
+## How to use coins
+
+### Use public type Coin
+
+This example will demonstrate the use of having a public type Coin.
+
+```move
+module coins::fixed_supply_coin {
+
+    use std::string;
+    use moveos_std::signer;
+    use moveos_std::context::{Self, Context};
+    use moveos_std::object::{Self, Object};
+    use rooch_framework::coin;
+    use rooch_framework::coin_store::{Self, CoinStore};
+    use rooch_framework::account_coin_store;
+
+    const TOTAL_SUPPLY: u256 = 210_000_000_000u256;
+    const DECIMALS: u8 = 1u8;
+
+    // The `FSC` CoinType has `key` and `store` ability.
+    // So `FSC` coin is public.
+    struct FSC has key, store {}
+
+    // construct the `FSC` coin and make it a global object that stored in `Treasury`.
+    struct Treasury has key {
+        coin_store: Object<CoinStore<FSC>>
+    }
+
+    fun init(ctx: &mut Context) {
+        let coin_info_obj = coin::register_extend<FSC>(
+            ctx,
+            string::utf8(b"Fixed Supply Coin"),
+            string::utf8(b"FSC"),
+            DECIMALS,
+        );
+        // Mint the total supply of coins, and store it to the treasury
+        let coin = coin::mint_extend<FSC>(&mut coin_info_obj, TOTAL_SUPPLY);
+        // Frozen the CoinInfo object, so that no more coins can be minted
+        object::to_frozen(coin_info_obj);
+        let coin_store_obj = coin_store::create_coin_store<FSC>(ctx);
+        coin_store::deposit(&mut coin_store_obj, coin);
+        let treasury_obj = context::new_named_object(ctx, Treasury { coin_store: coin_store_obj });
+        // Make the treasury object to shared, so anyone can get mutable Treasury object
+        object::to_shared(treasury_obj);
+    }
+
+    /// Provide a faucet to give out coins to users
+    /// In a real world scenario, the coins should be given out in the application business logic.
+    public entry fun faucet(ctx: &mut Context, account: &signer, treasury_obj: &mut Object<Treasury>) {
+        let account_addr = signer::address_of(account);
+        let treasury = object::borrow_mut(treasury_obj);
+        let coin = coin_store::withdraw(&mut treasury.coin_store, 10000);
+        account_coin_store::deposit(ctx, account_addr, coin);
+    }
+}
+```
+
+Define the `TOTAL_SUPPLY` constant to set the total supply of `FSC`, and define `DECIMALS` to set the precision value.
+
+The `FSC` structure defines the type of token. When defining the type, you do not need to pass any fields, you only need to control the capabilities it possesses.
+
+The `Treasury` structure defines the treasury of the token, which contains the `CoinStore` object. This object contains information about the `FSC` token: token name, token balance, and whether it is frozen.
+
+The `init` function defines some logic for issuing `FSC` tokens:
+
+- First, create the meta-information of the `FSC` token through the `register_extend` function, including: token type, token name, token symbol, token precision, and total token supply (the default initialization value of this function is `0`).
+- Then, use the `mint_extend` function to mint the token. After the mint is completed, use the `to_frozen` function to freeze the `coin_info_obj` object, which means the minting rights are frozen and the tokens cannot be minted.
+- The `create_coin_store` function creates a `CoinStore` object for the `FSC` token.
+- The `deposit` function deposits the tokens just minted into the `Balance` of `CoinStore`.
+- Finally, put the `CoinStore` object into the treasury and turn the treasury object into a shared object.
+
+The `faucet` function contains the logic of distributing tokens in the treasury to accounts. This function is only used for development and testing.
+
+### Use private type Coin
+
+This example introduces the usage of the private type Coin.
+
+```move
+module coins::private_coin {
+
+    use std::string;
+    use moveos_std::signer;
+    use moveos_std::context::{Self, Context};
+    use moveos_std::object::{Self, Object};
+    use rooch_framework::coin::{Self, Coin, CoinInfo};
+    use rooch_framework::coin_store::{Self, CoinStore};
+    use rooch_framework::account_coin_store;
+
+    const ErrorTransferAmountTooLarge: u64 = 1;
+
+    /// This Coin has no `store` ability, 
+    /// so it can not be operate via `account_coin_store::transfer`, `account_coin_store::deposit` and `account_coin_store::withdraw`
+    struct PRC has key {}
+
+    struct Treasury has key {
+        coin_store: Object<CoinStore<PRC>>
+    }
+
+    fun init(ctx: &mut Context) {
+        let coin_info_obj = coin::register_extend<PRC>(
+            ctx,
+            string::utf8(b"Private Coin"),
+            string::utf8(b"PRC"),
+            1,
+        );
+        object::transfer(coin_info_obj, @coins);
+        let coin_store = coin_store::create_coin_store_extend<PRC>(ctx);
+        let treasury_obj = context::new_named_object(ctx, Treasury { coin_store });
+        object::transfer_extend(treasury_obj, @coins);
+    }
+
+    /// Provide a faucet to give out coins to users
+    /// In a real world scenario, the coins should be given out in the application business logic.
+    public entry fun faucet(ctx: &mut Context, account: &signer) {
+        let account_addr = signer::address_of(account);
+        let coin_signer = signer::module_signer<Treasury>();
+        let coin_info_obj = context::borrow_mut_object<CoinInfo<PRC>>(ctx, &coin_signer, coin::coin_info_id<PRC>());
+        let coin = coin::mint_extend<PRC>(coin_info_obj, 10000);
+        account_coin_store::deposit_extend(ctx, account_addr, coin);
+    }
+
+    /// This function shows how to use `coin::transfer_extend` to define a custom transfer logic
+    /// This transfer function limits the amount of transfer to 10000, and take 1% of the amount as fee
+    public entry fun transfer(ctx: &mut Context, from: &signer, to_addr: address, amount: u256) {
+        assert!(amount <= 10000u256, ErrorTransferAmountTooLarge);
+        let from_addr = signer::address_of(from);
+        let fee_amount = amount / 100u256;
+        if (fee_amount > 0u256) {
+            let fee = account_coin_store::withdraw_extend<PRC>(ctx, from_addr, fee_amount);
+            deposit_to_treaury(ctx, fee);
+        };
+        account_coin_store::transfer_extend<PRC>(ctx, from_addr, to_addr, amount);
+    }
+
+    fun deposit_to_treaury(ctx: &mut Context, coin: Coin<PRC>) {
+        let treasury_object_id = object::named_object_id<Treasury>();
+        let treasury_obj = context::borrow_mut_object_extend<Treasury>(ctx, treasury_object_id);
+        coin_store::deposit_extend(&mut object::borrow_mut(treasury_obj).coin_store, coin);
+    }
+}
+```
+
+Likewise, the type of token and its treasury are defined through two structures. `PRC` is a private type of token.
+
+`init` defines the minting logic for creating `PRC` tokens.
+
+- The same is done to register the token information `CoinInfo` and transfer its object to the address where the token contract is issued.
+- After using `create_coin_store_extend` to create the `CoinStore` object, store it in the treasury. Because this is a private `Coin`, you need to use the `extend` function with private generics to ensure that it can only be created by the module of `CoinType`.
+- Finally, the treasury object is transferred to the address where the token is issued.
+
+Define the `faucet` function to mint tokens and transfer them to the account.
+
+The `transfer` function shows how to use `coin::transfer_extend` to define custom transfer logic. This transfer function limits the transfer amount to `10000` and charges a gas fee of `1%` of the amount.
