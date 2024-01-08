@@ -100,7 +100,10 @@ pub struct UTXOState {
     pub owner: AccountAddress,
     pub owner_bitcoin_address: Option<BitcoinAddress>,
     pub flag: u8,
-    pub value: UTXO,
+    // There is a case when rooch bitcoin relayer synchronizes the bitcoin node data and processes the `process_block`
+    // in the contract, this process takes some time, and the object id in the Global state is deleted, but the ojbect
+    // id in the Indexer is not deleted yet. At this time, utxo is empty.
+    pub value: Option<UTXO>,
     pub object_type: StructTag,
     pub tx_order: u64,
     pub state_index: u64,
@@ -111,7 +114,7 @@ pub struct UTXOState {
 impl UTXOState {
     pub fn new_from_global_state(
         state: IndexerGlobalState,
-        utxo: UTXO,
+        utxo: Option<UTXO>,
         owner_bitcoin_address: Option<BitcoinAddress>,
     ) -> Self {
         Self {
