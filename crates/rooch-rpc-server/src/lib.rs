@@ -38,6 +38,7 @@ use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::actor::indexer::IndexerActor;
+use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
 use rooch_indexer::indexer_reader::IndexerReader;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_indexer::IndexerStore;
@@ -288,10 +289,13 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     timers.push(proposer_timer);
 
     // Init indexer
-    let indexer_executor = IndexerActor::new(indexer_store, indexer_reader, moveos_store)?
+    let indexer_executor = IndexerActor::new(indexer_store, moveos_store)?
         .into_actor(Some("Indexer"), &actor_system)
         .await?;
-    let indexer_proxy = IndexerProxy::new(indexer_executor.into());
+    let indexer_reader_executor = IndexerReaderActor::new(indexer_reader)?
+        .into_actor(Some("IndexerReader"), &actor_system)
+        .await?;
+    let indexer_proxy = IndexerProxy::new(indexer_executor.into(), indexer_reader_executor.into());
 
     let rpc_service = RpcService::new(
         chain_id_opt.chain_id().id(),

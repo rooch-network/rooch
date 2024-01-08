@@ -3,3 +3,4 @@
 
 pub mod indexer;
 pub mod messages;
+pub mod reader_indexer;

@@ -63,7 +63,7 @@ impl RustBindingTest {
         &mut self,
         tx: T,
     ) -> Result<ExecuteTransactionResult> {
-        let verified_tx = self.reader_executor.validate(tx)?;
+        let verified_tx = self.executor.validate(tx)?;
         self.executor.execute(verified_tx)
     }
 }
