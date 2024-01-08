@@ -81,6 +81,11 @@ impl RpcService {
             .propose_transaction(tx.clone(), execution_info.clone(), sequence_info.clone())
             .await?;
 
+        // Sync lastest state root from writer executor to reader executor
+        self.executor
+            .update_state_root(execution_info.state_root)
+            .await?;
+
         // Last save indexer
         let result = self
             .indexer

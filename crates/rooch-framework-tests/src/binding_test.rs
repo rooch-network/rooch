@@ -35,7 +35,8 @@ impl RustBindingTest {
             moveos_store.clone(),
             rooch_store.clone(),
         )?;
-        let reader_executor = ReaderExecutorActor::new(executor.moveos().clone(), rooch_store)?;
+        let reader_executor =
+            ReaderExecutorActor::new(executor.genesis().clone(), moveos_store, rooch_store)?;
         Ok(Self {
             executor,
             reader_executor,
@@ -76,7 +77,6 @@ impl MoveFunctionCaller for RustBindingTest {
         let result = self
             .reader_executor
             .moveos()
-            .read()
             .execute_readonly_function(ctx, function_call);
         Ok(result)
     }

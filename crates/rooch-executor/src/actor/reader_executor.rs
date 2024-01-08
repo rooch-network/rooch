@@ -4,7 +4,7 @@
 use super::messages::{
     AnnotatedStatesMessage, ExecuteViewFunctionMessage, GetAnnotatedEventsByEventHandleMessage,
     GetAnnotatedStatesByStateMessage, GetEventsByEventHandleMessage, ResolveMessage, StatesMessage,
-    ValidateTransactionMessage,
+    UpdateStateRootMessage, ValidateTransactionMessage,
 };
 use crate::actor::messages::{
     GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
@@ -26,6 +26,7 @@ use moveos::gas::table::{initial_cost_schedule, MoveOSGasMeter};
 use moveos::moveos::{GasPaymentAccount, MoveOS};
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_store::transaction_store::TransactionStore;
+use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::module_binding::MoveFunctionCaller;
@@ -40,20 +41,19 @@ use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::transaction::{FunctionCall, MoveAction};
 use moveos_types::transaction::{MoveOSTransaction, TransactionExecutionInfo};
 use moveos_verifier::metadata::load_module_metadata;
-use parking_lot::RwLock;
+use rooch_genesis::RoochGenesis;
 use rooch_store::RoochStore;
 use rooch_types::address::MultiChainAddress;
 use rooch_types::framework::address_mapping::AddressMapping;
 use rooch_types::framework::auth_validator::AuthValidatorCaller;
 use rooch_types::framework::auth_validator::TxValidateResult;
 use rooch_types::framework::transaction_validator::TransactionValidator;
+use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
 use rooch_types::transaction::AbstractTransaction;
 use rooch_types::transaction::AuthenticatorInfo;
-use std::ops::Deref;
-use std::sync::Arc;
 
 pub struct ReaderExecutorActor {
-    moveos: Arc<RwLock<MoveOS>>,
+    moveos: MoveOS,
     rooch_store: RoochStore,
 }
 
@@ -68,7 +68,19 @@ type ValidateAuthenticatorResult = Result<
 >;
 
 impl ReaderExecutorActor {
-    pub fn new(moveos: Arc<RwLock<MoveOS>>, rooch_store: RoochStore) -> Result<Self> {
+    pub fn new(
+        genesis: RoochGenesis,
+        moveos_store: MoveOSStore,
+        rooch_store: RoochStore,
+    ) -> Result<Self> {
+        let moveos = MoveOS::new(
+            moveos_store,
+            genesis.all_natives(),
+            genesis.config.clone(),
+            system_pre_execute_functions(),
+            system_post_execute_functions(),
+        )?;
+
         Ok(Self {
             moveos,
             rooch_store,
@@ -79,9 +91,8 @@ impl ReaderExecutorActor {
         &self,
         multi_chain_address_sender: MultiChainAddress,
     ) -> Result<AccountAddress> {
-        let moveos = self.moveos.read();
         let resolved_sender = {
-            let address_mapping = moveos.as_module_binding::<AddressMapping>();
+            let address_mapping = self.moveos().as_module_binding::<AddressMapping>();
             address_mapping.resolve_or_generate(multi_chain_address_sender)?
         };
 
@@ -134,7 +145,6 @@ impl ReaderExecutorActor {
             })
             .expect("adding GasPaymentAccount to tx context failed.");
 
-        let moveos = self.moveos.read();
         match vm_result {
             Ok((
                 tx_validate_result,
@@ -156,10 +166,10 @@ impl ReaderExecutorActor {
 
                 moveos_tx.append_pre_execute_functions(pre_execute_functions);
                 moveos_tx.append_post_execute_functions(post_execute_functions);
-                Ok(moveos.verify(moveos_tx)?)
+                Ok(self.moveos().verify(moveos_tx)?)
             }
             Err(e) => {
-                let status_view = explain_vm_status(moveos.moveos_resolver(), e.clone())?;
+                let status_view = explain_vm_status(self.moveos.moveos_resolver(), e.clone())?;
                 log::warn!(
                     "transaction validate vm error, tx_hash: {}, error:{:?}",
                     moveos_tx.ctx.tx_hash(),
@@ -176,8 +186,7 @@ impl ReaderExecutorActor {
         ctx: &TxContext,
         authenticator: AuthenticatorInfo,
     ) -> Result<ValidateAuthenticatorResult> {
-        let moveos = self.moveos.read();
-        let tx_validator = moveos.as_module_binding::<TransactionValidator>();
+        let tx_validator = self.moveos().as_module_binding::<TransactionValidator>();
         let tx_validate_function_result = tx_validator
             .validate(ctx, authenticator.clone())?
             .into_result();
@@ -188,7 +197,7 @@ impl ReaderExecutorActor {
                 match auth_validator_option {
                     Some(auth_validator) => {
                         let auth_validator_caller =
-                            AuthValidatorCaller::new(moveos.deref(), auth_validator);
+                            AuthValidatorCaller::new(self.moveos(), auth_validator);
                         let auth_validator_function_result = auth_validator_caller
                             .validate(ctx, authenticator.authenticator.payload)?
                             .into_result();
@@ -234,14 +243,14 @@ impl ReaderExecutorActor {
         let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
         gas_meter.set_metering(false);
 
-        let moveos = self.moveos.read();
-        let verified_moveos_action = moveos.verify(tx.clone())?;
+        let verified_moveos_action = self.moveos().verify(tx.clone())?;
         let verified_action = verified_moveos_action.action;
 
         match verified_action {
             VerifiedMoveAction::Function { call } => {
                 let module_id = &call.function_id.module_id;
-                let loaded_module_bytes_result = moveos.moveos_resolver().get_module(module_id);
+                let loaded_module_bytes_result =
+                    self.moveos().moveos_resolver().get_module(module_id);
                 let loaded_module_bytes = match loaded_module_bytes_result {
                     Ok(loaded_module_bytes_opt) => match loaded_module_bytes_opt {
                         None => {
@@ -309,10 +318,8 @@ impl ReaderExecutorActor {
                                 vec![],
                             );
 
-                            let function_execution_result = self
-                                .moveos
-                                .read()
-                                .execute_view_function(gas_validate_func_call);
+                            let function_execution_result =
+                                self.moveos.execute_view_function(gas_validate_func_call);
 
                             return if function_execution_result.vm_status == VMStatus::Executed {
                                 let return_value = function_execution_result.return_values.unwrap();
@@ -354,8 +361,7 @@ impl ReaderExecutorActor {
         let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
         gas_meter.set_metering(false);
 
-        let moveos = self.moveos.read();
-        let verified_moveos_action = moveos.verify(tx.clone())?;
+        let verified_moveos_action = self.moveos().verify(tx.clone())?;
         let verified_action = verified_moveos_action.action;
 
         match verified_action {
@@ -374,10 +380,8 @@ impl ReaderExecutorActor {
                         .unwrap()],
                 );
 
-                let function_execution_result = self
-                    .moveos
-                    .read()
-                    .execute_view_function(gas_balance_func_call);
+                let function_execution_result =
+                    self.moveos.execute_view_function(gas_balance_func_call);
 
                 if function_execution_result.vm_status == VMStatus::Executed {
                     let return_value = function_execution_result.return_values.unwrap();
@@ -401,8 +405,8 @@ impl ReaderExecutorActor {
         self.rooch_store.clone()
     }
 
-    pub fn moveos(&self) -> Arc<RwLock<MoveOS>> {
-        self.moveos.clone()
+    pub fn moveos(&self) -> &MoveOS {
+        &self.moveos
     }
 }
 
@@ -429,10 +433,9 @@ impl Handler<ExecuteViewFunctionMessage> for ReaderExecutorActor {
         msg: ExecuteViewFunctionMessage,
         _ctx: &mut ActorContext,
     ) -> Result<AnnotatedFunctionResult, anyhow::Error> {
-        let moveos = self.moveos.read();
-        let resoler = moveos.moveos_resolver();
+        let resoler = self.moveos().moveos_resolver();
 
-        let function_result = moveos.execute_view_function(msg.call);
+        let function_result = self.moveos().execute_view_function(msg.call);
         Ok(AnnotatedFunctionResult {
             vm_status: function_result.vm_status,
             return_values: match function_result.return_values {
@@ -472,8 +475,7 @@ impl Handler<StatesMessage> for ReaderExecutorActor {
         msg: StatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<State>>, anyhow::Error> {
-        let moveos = self.moveos.read();
-        let statedb = moveos.moveos_resolver();
+        let statedb = self.moveos().moveos_resolver();
         statedb.get_states(msg.access_path)
     }
 }
@@ -485,8 +487,7 @@ impl Handler<AnnotatedStatesMessage> for ReaderExecutorActor {
         msg: AnnotatedStatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<AnnotatedState>>, anyhow::Error> {
-        let moveos = self.moveos.read();
-        let statedb = moveos.moveos_resolver();
+        let statedb = self.moveos().moveos_resolver();
         statedb.get_annotated_states(msg.access_path)
     }
 }
@@ -498,8 +499,7 @@ impl Handler<ListStatesMessage> for ReaderExecutorActor {
         msg: ListStatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<(Vec<u8>, State)>, anyhow::Error> {
-        let moveos = self.moveos.read();
-        let statedb = moveos.moveos_resolver();
+        let statedb = self.moveos().moveos_resolver();
         statedb.list_states(msg.access_path, msg.cursor, msg.limit)
     }
 }
@@ -511,8 +511,7 @@ impl Handler<ListAnnotatedStatesMessage> for ReaderExecutorActor {
         msg: ListAnnotatedStatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<(Vec<u8>, AnnotatedState)>, anyhow::Error> {
-        let moveos = self.moveos.read();
-        let statedb = moveos.moveos_resolver();
+        let statedb = self.moveos().moveos_resolver();
         statedb.list_annotated_states(msg.access_path, msg.cursor, msg.limit)
     }
 }
@@ -529,9 +528,8 @@ impl Handler<GetAnnotatedEventsByEventHandleMessage> for ReaderExecutorActor {
             cursor,
             limit,
         } = msg;
-        let moveos = self.moveos.read();
-        let event_store = moveos.event_store();
-        let resolver = moveos.moveos_resolver();
+        let event_store = self.moveos().event_store();
+        let resolver = self.moveos().moveos_resolver();
 
         let event_handle_id = EventHandle::derive_event_handle_id(&event_handle_type);
         let events = event_store.get_events_by_event_handle_id(&event_handle_id, cursor, limit)?;
@@ -559,8 +557,7 @@ impl Handler<GetEventsByEventHandleMessage> for ReaderExecutorActor {
             cursor,
             limit,
         } = msg;
-        let moveos = self.moveos.read();
-        let event_store = moveos.event_store();
+        let event_store = self.moveos().event_store();
 
         let event_handle_id = EventHandle::derive_event_handle_id(&event_handle_type);
         event_store.get_events_by_event_handle_id(&event_handle_id, cursor, limit)
@@ -575,9 +572,8 @@ impl Handler<GetEventsByEventIDsMessage> for ReaderExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<AnnotatedEvent>>> {
         let GetEventsByEventIDsMessage { event_ids } = msg;
-        let moveos = self.moveos.read();
-        let event_store = moveos.event_store();
-        let resolver = moveos.moveos_resolver();
+        let event_store = self.moveos().event_store();
+        let resolver = self.moveos().moveos_resolver();
 
         event_store
             .multi_get_events(event_ids)?
@@ -603,7 +599,6 @@ impl Handler<GetTxExecutionInfosByHashMessage> for ReaderExecutorActor {
     ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
         let GetTxExecutionInfosByHashMessage { tx_hashes } = msg;
         self.moveos
-            .read()
             .transaction_store()
             .multi_get_tx_execution_infos(tx_hashes)
     }
@@ -617,8 +612,7 @@ impl Handler<GetAnnotatedStatesByStateMessage> for ReaderExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<Vec<AnnotatedState>> {
         let GetAnnotatedStatesByStateMessage { states } = msg;
-        let moveos = self.moveos.read();
-        let resolver = moveos.moveos_resolver();
+        let resolver = self.moveos().moveos_resolver();
 
         states
             .into_iter()
@@ -628,5 +622,13 @@ impl Handler<GetAnnotatedStatesByStateMessage> for ReaderExecutorActor {
                 Ok(AnnotatedState::new(state, annotate_state))
             })
             .collect::<Result<Vec<_>>>()
+    }
+}
+
+#[async_trait]
+impl Handler<UpdateStateRootMessage> for ReaderExecutorActor {
+    async fn handle(&mut self, msg: UpdateStateRootMessage, _ctx: &mut ActorContext) -> Result<()> {
+        let UpdateStateRootMessage { new_state_root } = msg;
+        self.moveos.update_state_root(new_state_root)
     }
 }

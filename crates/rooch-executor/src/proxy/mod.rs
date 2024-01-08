@@ -4,6 +4,7 @@
 use crate::actor::messages::{
     GetAnnotatedStatesByStateMessage, GetEventsByEventHandleMessage, GetEventsByEventIDsMessage,
     GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage, ListStatesMessage,
+    UpdateStateRootMessage,
 };
 use crate::actor::reader_executor::ReaderExecutorActor;
 use crate::actor::{
@@ -186,6 +187,12 @@ impl ExecutorProxy {
     ) -> Result<Vec<AnnotatedState>> {
         self.reader_actor
             .send(GetAnnotatedStatesByStateMessage { states })
+            .await?
+    }
+
+    pub async fn update_state_root(&self, new_state_root: H256) -> Result<()> {
+        self.reader_actor
+            .send(UpdateStateRootMessage { new_state_root })
             .await?
     }
 }

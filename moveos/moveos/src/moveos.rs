@@ -583,6 +583,12 @@ impl MoveOS {
         let (_ctx, output) = session.finish_with_extensions(kept_status)?;
         Ok(output)
     }
+
+    pub fn update_state_root(&self, new_state_root: H256) -> Result<()> {
+        self.state().update_state_root(new_state_root)?;
+
+        Ok(())
+    }
 }
 
 impl MoveFunctionCaller for MoveOS {

@@ -170,9 +170,7 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
     );
     let utxo_module = binding_test.as_module_binding::<rooch_types::bitcoin::utxo::UTXOModule>();
 
-    let binding = binding_test.executor().moveos();
-    let moveos = binding.read();
-    let moveos_resolver = moveos.moveos_resolver();
+    let moveos_resolver = binding_test.executor().moveos().moveos_resolver();
 
     for (outpoint, tx_out) in utxo_set.into_iter() {
         let txid = outpoint.txid;

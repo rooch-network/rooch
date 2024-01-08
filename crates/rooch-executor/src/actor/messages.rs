@@ -151,3 +151,12 @@ pub struct GetAnnotatedStatesByStateMessage {
 impl Message for GetAnnotatedStatesByStateMessage {
     type Result = Result<Vec<AnnotatedState>>;
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateStateRootMessage {
+    pub new_state_root: H256,
+}
+
+impl Message for UpdateStateRootMessage {
+    type Result = Result<()>;
+}
