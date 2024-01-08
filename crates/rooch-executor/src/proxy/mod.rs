@@ -56,9 +56,7 @@ impl ExecutorProxy {
     where
         T: 'static + AbstractTransaction + Send + Sync,
     {
-        self.reader_actor
-            .send(ValidateTransactionMessage { tx })
-            .await?
+        self.actor.send(ValidateTransactionMessage { tx }).await?
     }
 
     //TODO ensure the execute result
@@ -89,9 +87,7 @@ impl ExecutorProxy {
     }
 
     pub async fn resolve_address(&self, mca: MultiChainAddress) -> Result<AccountAddress> {
-        self.reader_actor
-            .send(ResolveMessage { address: mca })
-            .await?
+        self.actor.send(ResolveMessage { address: mca }).await?
     }
 
     pub async fn get_annotated_states(
