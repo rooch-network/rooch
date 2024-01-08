@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::types::LocalAccount;
 use crate::key_derive::retrieve_key_pair;
 use crate::keystore::account_keystore::AccountKeystore;
 use crate::keystore::base_keystore::BaseKeyStore;
@@ -27,6 +28,10 @@ pub struct FileBasedKeystore {
 }
 
 impl AccountKeystore for FileBasedKeystore {
+    fn get_accounts(&self, password: Option<String>) -> Result<Vec<LocalAccount>, anyhow::Error> {
+        self.keystore.get_accounts(password)
+    }
+
     fn add_address_encryption_data(
         &mut self,
         address: RoochAddress,
@@ -136,6 +141,16 @@ impl AccountKeystore for FileBasedKeystore {
         let auth_key = self.keystore.generate_session_key(address, password)?;
         self.save()?;
         Ok(auth_key)
+    }
+
+    fn binding_session_key(
+        &mut self,
+        address: RoochAddress,
+        session_key: rooch_types::framework::session_key::SessionKey,
+    ) -> Result<(), anyhow::Error> {
+        self.keystore.binding_session_key(address, session_key)?;
+        self.save()?;
+        Ok(())
     }
 
     fn sign_transaction_via_session_key(

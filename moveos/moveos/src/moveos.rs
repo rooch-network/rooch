@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::gas::table::{initial_cost_schedule, MoveOSGasMeter};
+use crate::gas::table::{initial_cost_schedule, ClassifiedGasMeter, MoveOSGasMeter};
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
 use anyhow::{bail, ensure, Result};
 use backtrace::Backtrace;
@@ -119,10 +119,15 @@ impl MoveOS {
         })
     }
 
-    pub fn init_genesis<T: Into<MoveOSTransaction>, GT: MoveState + Clone>(
+    pub fn init_genesis<
+        T: Into<MoveOSTransaction>,
+        GT: MoveState + Clone,
+        BGT: MoveState + Clone,
+    >(
         &mut self,
         genesis_txs: Vec<T>,
         genesis_ctx: GT,
+        bitcoin_genesis_ctx: BGT,
     ) -> Result<Vec<(H256, TransactionOutput)>> {
         ensure!(
             self.db.0.get_state_store().is_genesis(),
@@ -130,14 +135,21 @@ impl MoveOS {
         );
         genesis_txs
             .into_iter()
-            .map(|tx| self.verify_and_execute_genesis_tx(tx.into(), genesis_ctx.clone()))
+            .map(|tx| {
+                self.verify_and_execute_genesis_tx(
+                    tx.into(),
+                    genesis_ctx.clone(),
+                    bitcoin_genesis_ctx.clone(),
+                )
+            })
             .collect::<Result<Vec<_>>>()
     }
 
-    fn verify_and_execute_genesis_tx<GT: MoveState>(
+    fn verify_and_execute_genesis_tx<GT: MoveState, BGT: MoveState>(
         &mut self,
         tx: MoveOSTransaction,
         genesis_ctx: GT,
+        bitcoin_genesis_ctx: BGT,
     ) -> Result<(H256, TransactionOutput)> {
         let MoveOSTransaction {
             mut ctx,
@@ -146,6 +158,7 @@ impl MoveOS {
             post_execute_functions: _,
         } = tx;
         ctx.add(genesis_ctx)?;
+        ctx.add(bitcoin_genesis_ctx)?;
         let mut session = self.vm.new_genesis_session(&self.db, ctx);
         let verified_action = session.verify_move_action(action)?;
 
@@ -233,8 +246,12 @@ impl MoveOS {
         // The variables in TxContext kv store before this executions should not be cleaned,
         // So we keep a backup here, and then insert to the TxContext kv store when session respawed.
         let system_env = ctx.map.clone();
+
         let cost_table = initial_cost_schedule();
-        let gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+
+        gas_meter.charge_io_write(ctx.tx_size)?;
+
         let mut session = self.vm.new_session(&self.db, ctx, gas_meter);
 
         // system pre_execute
@@ -398,6 +415,7 @@ impl MoveOS {
             state_changeset,
             events,
             gas_used: _,
+            gas_statement: _,
         } = output;
         let new_state_root = self
             .db
@@ -439,7 +457,7 @@ impl MoveOS {
         self.execute_readonly_function(&tx_context, function_call)
     }
 
-    fn execute_readonly_function(
+    pub fn execute_readonly_function(
         &self,
         tx_context: &TxContext,
         function_call: FunctionCall,

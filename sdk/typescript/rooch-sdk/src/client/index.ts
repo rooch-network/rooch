@@ -4,3 +4,4 @@
 export * from './interface'
 export * from './rooch-client'
 export * from './filtered-client'
+export * from './types'

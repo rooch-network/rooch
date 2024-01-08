@@ -39,12 +39,10 @@ pub fn native_ecrecover(
     let hash = pop_arg!(args, u8);
     let msg = pop_arg!(args, VectorRef);
     let signature = pop_arg!(args, VectorRef);
-
     let msg_ref = msg.as_bytes_ref();
     let signature_ref = signature.as_bytes_ref();
 
     // TODO(Gas): Charge the arg size dependent costs
-
     let cost = gas_params.base;
 
     let Ok(sig) = <Secp256k1RecoverableSignature as ToFromBytes>::from_bytes(&signature_ref) else {

@@ -3,6 +3,7 @@
 
 use jsonrpsee::RpcModule;
 
+pub mod btc_api;
 pub mod eth_api;
 pub mod rooch_api;
 

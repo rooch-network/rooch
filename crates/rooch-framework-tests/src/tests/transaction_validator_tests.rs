@@ -1,12 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::binding_test;
 use ethers::types::{Bytes, U256};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::value::MoveValue;
 use move_core_types::vm_status::{AbortLocation, VMStatus};
+use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::FunctionId;
 use moveos_types::{module_binding::ModuleBinding, transaction::MoveAction};
 use rooch_key::keystore::account_keystore::AccountKeystore;
@@ -20,13 +22,11 @@ use rooch_types::{
     transaction::{rooch::RoochTransactionData, AbstractTransaction},
 };
 
-use crate::binding_test;
-
 #[test]
 fn test_validate_rooch() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();
     let transaction_validator = binding_test
-        .as_module_bundle::<rooch_types::framework::transaction_validator::TransactionValidator>(
+        .as_module_binding::<rooch_types::framework::transaction_validator::TransactionValidator>(
     );
 
     let keystore = InMemKeystore::new_insecure_for_tests(1);
@@ -49,10 +49,10 @@ fn test_validate_rooch() {
 fn test_validate_ethereum() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();
     let transaction_validator = binding_test
-        .as_module_bundle::<rooch_types::framework::transaction_validator::TransactionValidator>(
+        .as_module_binding::<rooch_types::framework::transaction_validator::TransactionValidator>(
     );
     let address_mapping =
-        binding_test.as_module_bundle::<rooch_types::framework::address_mapping::AddressMapping>();
+        binding_test.as_module_binding::<rooch_types::framework::address_mapping::AddressMapping>();
 
     let keystore = InMemKeystore::new_insecure_for_tests(1);
     let sender = keystore.addresses()[0];
@@ -103,7 +103,7 @@ fn test_session_key_rooch() {
     binding_test.execute(tx).unwrap();
 
     let session_key_module =
-        binding_test.as_module_bundle::<rooch_types::framework::session_key::SessionKeyModule>();
+        binding_test.as_module_binding::<rooch_types::framework::session_key::SessionKeyModule>();
     let session_key_option = session_key_module
         .get_session_key(sender.into(), &session_auth_key)
         .unwrap();
@@ -112,6 +112,7 @@ fn test_session_key_rooch() {
     assert_eq!(&session_key.authentication_key, session_auth_key.as_ref());
     assert_eq!(session_key.scopes, vec![session_scope]);
     assert_eq!(session_key.max_inactive_interval, max_inactive_interval);
+    keystore.binding_session_key(sender, session_key).unwrap();
 
     // send transaction via session key
 

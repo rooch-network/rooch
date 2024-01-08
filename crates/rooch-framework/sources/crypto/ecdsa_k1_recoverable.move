@@ -10,6 +10,8 @@ module rooch_framework::ecdsa_k1_recoverable {
     /// Hash function name that are valid for ecrecover and verify.
     const KECCAK256: u8 = 0;
 
+    const SHA256: u8 = 1;
+
     /// Error if the public key cannot be recovered from the signature.
     const ErrorFailToRecoverPubKey: u64 = 1;
 
@@ -37,6 +39,10 @@ module rooch_framework::ecdsa_k1_recoverable {
 
     public fun keccak256(): u8 {
         KECCAK256
+    }
+
+    public fun sha256(): u8 {
+        SHA256
     }
 
     /// @param signature: A 65-bytes signature in form (r, s, v) that is signed using
@@ -109,6 +115,9 @@ module rooch_framework::ecdsa_k1_recoverable {
         let msg = b"Hello, world!";
         let sig = x"7e4237ebfbc36613e166bfc5f6229360a9c1949242da97ca04867e4de57b2df30c8340bcb320328cf46d71bda51fcb519e3ce53b348eec62de852e350edbd88600";
         let result = verify(&sig, &msg, KECCAK256);
+
+        std::debug::print(&result);
+
         assert!(result, 0)
     }
 

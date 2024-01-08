@@ -17,7 +17,7 @@ module bitcoin_move::light_client{
     use moveos_std::signer;
     use rooch_framework::timestamp;
     use bitcoin_move::types::{Self, Block, Header, Transaction, OutPoint};    
-    use bitcoin_move::ord::{Self, Inscription};
+    use bitcoin_move::ord::{Self, Inscription, bind_multichain_address};
     use bitcoin_move::utxo::{Self, UTXOSeal};
     
 
@@ -189,7 +189,12 @@ module bitcoin_move::light_client{
             let object_id = object::id(&utxo_obj);
             table::add(&mut btc_utxo_store.utxo, outpoint, object_id);
             let owner_address = types::txout_object_address(txout);
-            utxo::transfer(utxo_obj, owner_address); 
+            utxo::transfer(utxo_obj, owner_address);
+
+            //Auto create address mapping if not exist
+            let bitcoin_address_opt = types::txout_address(txout);
+            bind_multichain_address(ctx, owner_address, bitcoin_address_opt);
+
             idx = idx + 1;
         };
         simple_multimap::drop(output_seals);

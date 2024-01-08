@@ -380,6 +380,36 @@ where
 
         Some(metadata) => {
             let mut type_name_indices = metadata.private_generics_indices;
+
+            for (full_func_name, _) in type_name_indices.iter() {
+                let func_name_split = full_func_name.split("::");
+                let parts_vec = func_name_split.collect::<Vec<&str>>();
+                if (parts_vec.len() as u32) < 3 {
+                    return Err(PartialVMError::new(StatusCode::MALFORMED)
+                        .with_message(
+                            "incorrect format of the function name in metadata".to_string(),
+                        )
+                        .finish(Location::Module(module.self_id())));
+                }
+
+                let module_address = parts_vec.first().unwrap();
+                let module_name = parts_vec.get(1).unwrap();
+
+                let current_module_address = module.address().to_hex_literal();
+                let current_module_name = module.name().to_string();
+
+                if *module_address != current_module_address.as_str()
+                    || *module_name != current_module_name.as_str()
+                {
+                    return Err(PartialVMError::new(StatusCode::MALFORMED)
+                        .with_message(
+                            "the information of private_generics is not belongs to this module"
+                                .to_string(),
+                        )
+                        .finish(Location::Module(module.self_id())));
+                }
+            }
+
             let view = BinaryIndexedView::Module(module);
 
             for func in &module.function_defs {

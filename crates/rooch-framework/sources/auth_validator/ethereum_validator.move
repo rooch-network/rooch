@@ -59,6 +59,7 @@ module rooch_framework::ethereum_validator {
             vector::push_back(&mut public_key, *value);
             i = i + 1;
         };
+        std::debug::print(&public_key);
         public_key
     }
 
@@ -71,6 +72,7 @@ module rooch_framework::ethereum_validator {
             vector::push_back(&mut sign, *value);
             i = i + 1;
         };
+        std::debug::print(&sign);
         sign
     }
 
@@ -122,7 +124,7 @@ module rooch_framework::ethereum_validator {
         let tx_hash = context::tx_hash(ctx);
         validate_signature(&authenticator_payload, &tx_hash);
 
-        // TODO compare the auth_key from the payload with the auth_key from the account
+        // TODO compare the auth_key from lsthe payload with the auth_key from the account
     }
 
     fun pre_execute(

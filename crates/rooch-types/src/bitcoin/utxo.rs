@@ -1,16 +1,21 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::address::BitcoinAddress;
+use crate::indexer::state::IndexerGlobalState;
+use move_core_types::language_storage::StructTag;
+
 use anyhow::Result;
 use bitcoin::Txid;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
+use moveos_types::state::MoveStructState;
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::string::MoveString,
     moveos_std::{object::ObjectID, simple_multimap::SimpleMultiMap, tx_context::TxContext},
-    state::{MoveState, MoveStructState, MoveStructType},
+    state::{MoveState, MoveStructType},
 };
 use serde::{Deserialize, Serialize};
 
@@ -46,7 +51,7 @@ impl MoveStructState for OutputID {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct UTXO {
     /// The txid of the UTXO
     pub txid: AccountAddress,
@@ -70,6 +75,57 @@ impl MoveStructState for UTXO {
             u64::type_layout(),
             SimpleMultiMap::<MoveString, ObjectID>::type_layout(),
         ])
+    }
+}
+
+impl UTXO {
+    pub fn new(
+        txid: AccountAddress,
+        vout: u32,
+        value: u64,
+        seals: SimpleMultiMap<MoveString, ObjectID>,
+    ) -> Self {
+        Self {
+            txid,
+            vout,
+            value,
+            seals,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct UTXOState {
+    pub object_id: ObjectID,
+    pub owner: AccountAddress,
+    pub owner_bitcoin_address: Option<BitcoinAddress>,
+    pub flag: u8,
+    pub value: UTXO,
+    pub object_type: StructTag,
+    pub tx_order: u64,
+    pub state_index: u64,
+    pub created_at: u64,
+    pub updated_at: u64,
+}
+
+impl UTXOState {
+    pub fn new_from_global_state(
+        state: IndexerGlobalState,
+        utxo: UTXO,
+        owner_bitcoin_address: Option<BitcoinAddress>,
+    ) -> Self {
+        Self {
+            object_id: state.object_id,
+            owner: state.owner,
+            owner_bitcoin_address,
+            flag: state.flag,
+            value: utxo,
+            object_type: state.object_type,
+            tx_order: state.tx_order,
+            state_index: state.state_index,
+            created_at: state.created_at,
+            updated_at: state.updated_at,
+        }
     }
 }
 

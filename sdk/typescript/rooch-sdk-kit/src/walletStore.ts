@@ -4,11 +4,13 @@
 import { createStore } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { StateStorage } from 'zustand/middleware'
+import { IAccount } from '@roochnetwork/rooch-sdk'
 
 import { WalletAccount } from './types/WalletAccount'
-import { ETHWallet } from './types/ethWallet'
+import { BaseWallet } from './types/wellet/baseWallet'
 
 type WalletConnectionStatus = 'disconnected' | 'connecting' | 'connected'
+type SessionKeyStatus = 'valid' | 'invalid' | 'creating'
 
 export type WalletActions = {
   setAccountSwitched: (selectedAccount: WalletAccount) => void
@@ -19,15 +21,20 @@ export type WalletActions = {
   ) => void
   updateWalletAccounts: (accounts: readonly WalletAccount[]) => void
   setWalletDisconnected: () => void
+  setSessionAccountStatus: (status: SessionKeyStatus) => void
+  setSessionAccount: (session: IAccount) => void
 }
 
 export type WalletStore = ReturnType<typeof createWalletStore>
 
 export type StoreState = {
   autoConnectEnabled: boolean
-  wallet: ETHWallet
+  // TODO: Support multiple accounts ?
+  sessionAccount: IAccount | null
+  sessionAccountStatus: SessionKeyStatus
+  wallet: BaseWallet
+  roochAddress: string
   accounts: readonly WalletAccount[]
-  // currentWallet: WalletWithRequiredFeatures | null;
   currentAccount: WalletAccount | null
   lastConnectedAccountAddress: string | null
   lastConnectedWalletName: string | null
@@ -36,7 +43,7 @@ export type StoreState = {
 
 type WalletConfiguration = {
   autoConnectEnabled: boolean
-  wallet: ETHWallet
+  wallet: BaseWallet
   storage: StateStorage
   storageKey: string
 }
@@ -51,6 +58,9 @@ export function createWalletStore({
     persist(
       (set, get) => ({
         autoConnectEnabled,
+        sessionAccount: null,
+        sessionAccountStatus: 'invalid',
+        roochAddress: '',
         wallet,
         accounts: [],
         currentWallet: null,
@@ -64,7 +74,6 @@ export function createWalletStore({
           }))
         },
         setWalletConnected(connectedAccounts, selectedAccount) {
-          console.log('set connected')
           set(() => ({
             accounts: connectedAccounts,
             currentAccount: selectedAccount,
@@ -96,6 +105,17 @@ export function createWalletStore({
               (currentAccount &&
                 accounts.find((account) => account.getAddress() === currentAccount.getAddress())) ||
               accounts[0],
+          }))
+        },
+        setSessionAccount(sessionAccount) {
+          set(() => ({
+            sessionAccount,
+            sessionKeyStatus: 'valid',
+          }))
+        },
+        setSessionAccountStatus(sessionAccountStatus) {
+          set(() => ({
+            sessionAccountStatus,
           }))
         },
       }),

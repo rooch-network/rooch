@@ -19,6 +19,9 @@ pub mod eth;
 pub mod event_view;
 pub mod transaction_view;
 
+pub mod address;
+pub mod btc;
+
 pub use self::rooch_types::*;
 pub use execute_tx_response::*;
 pub use function_return_value_view::*;

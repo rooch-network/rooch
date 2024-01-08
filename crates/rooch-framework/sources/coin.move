@@ -7,13 +7,13 @@ module rooch_framework::coin {
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::context::{Self, Context};
     use moveos_std::event;
-    use moveos_std::type_info::{Self, type_of};
- 
+    use moveos_std::type_info::Self;
+
     friend rooch_framework::genesis;
     friend rooch_framework::coin_store;
 
     //
-    // Errors.
+    // Errors
     //
 
     /// `CoinType` is not registered as a coin
@@ -23,7 +23,7 @@ module rooch_framework::coin {
     const ErrorCoinInfoAlreadyRegistered: u64 = 2;
 
     /// Not enough coins to extract
-    const ErrorInSufficientBalance: u64 = 3;
+    const ErrorInsufficientBalance: u64 = 3;
 
     /// Cannot destroy non-zero coins
     const ErrorDestroyOfNonZeroCoin: u64 = 4;
@@ -40,7 +40,6 @@ module rooch_framework::coin {
     /// Global CoinInfos should exist
     const ErrorCoinInfosNotFound: u64 = 8;
 
-
     //
     // Constants
     //
@@ -48,7 +47,7 @@ module rooch_framework::coin {
     const MAX_COIN_NAME_LENGTH: u64 = 32;
     const MAX_COIN_SYMBOL_LENGTH: u64 = 10;
 
-    /// Core data structures
+    // Core data structures
 
     /// Main structure representing a coin.
     /// Note the `CoinType` must have `key` ability.
@@ -72,7 +71,7 @@ module rooch_framework::coin {
     /// Information about a specific coin type. Stored in the global Object storage.
     /// CoinInfo<CoinType> is a named Object, the `coin_type` is the unique key.
     struct CoinInfo<phantom CoinType : key> has key, store {
-        /// Type of the coin: `address::my_module::XCoin`, same as `moveos_std::type_info::type_name<CoinType>()`.
+        /// Type of the coin: `address::module_name::CoinStructName`, same as `moveos_std::type_info::type_name<CoinType>()`.
         /// The name and symbol can repeat across different coin types, but the coin type must be unique.
         coin_type: string::String,
         /// Name of the coin.
@@ -92,23 +91,20 @@ module rooch_framework::coin {
     struct MintEvent has drop, store {
         /// The type of coin that was minted
         coin_type: string::String,
-        /// coins added to the system
+        /// coin amount added to the system
         amount: u256,
     }
 
     /// Event emitted when coin burned.
     struct BurnEvent has drop, store {
-         /// The type of coin that was burned
+        /// The type of coin that was burned
         coin_type: string::String,
-        /// coins removed from the system
+        /// coin amount removed from the system
         amount: u256,
     }
 
-    public(friend) fun genesis_init(_ctx: &mut Context, _genesis_account: &signer) {
-        
-    }
+    public(friend) fun genesis_init(_ctx: &mut Context, _genesis_account: &signer) {}
 
-    
     //
     // Public functions
     //
@@ -120,7 +116,7 @@ module rooch_framework::coin {
     }
 
     /// A helper function that check the `CoinType` is registered, if not, abort.
-    public fun check_coin_info_registered<CoinType: key>(ctx: &Context){
+    public fun check_coin_info_registered<CoinType: key>(ctx: &Context) {
         assert!(is_registered<CoinType>(ctx), ErrorCoinInfoNotRegistered);
     }
 
@@ -131,7 +127,7 @@ module rooch_framework::coin {
     }
 
     /// Return the ObjectID of Object<CoinInfo<CoinType>>
-    public fun coin_info_id<CoinType: key>() : ObjectID {
+    public fun coin_info_id<CoinType: key>(): ObjectID {
         object::named_object_id<CoinInfo<CoinType>>()
     }
 
@@ -159,10 +155,9 @@ module rooch_framework::coin {
 
     /// Return true if the type `CoinType1` is same with `CoinType2`
     public fun is_same_coin<CoinType1, CoinType2>(): bool {
-        return type_of<CoinType1>() == type_of<CoinType2>()
+        return type_info::type_of<CoinType1>() == type_info::type_of<CoinType2>()
     }
 
-    
     /// Destroys a zero-value coin. Calls will fail if the `value` in the passed-in `coin` is non-zero
     /// so it is impossible to "burn" any non-zero amount of `Coin`. 
     public fun destroy_zero<CoinType: key>(zero_coin: Coin<CoinType>) {
@@ -172,7 +167,7 @@ module rooch_framework::coin {
 
     /// Extracts `amount` from the passed-in `coin`, where the original coin is modified in place.
     public fun extract<CoinType: key>(coin: &mut Coin<CoinType>, amount: u256): Coin<CoinType> {
-        assert!(coin.value >= amount, ErrorInSufficientBalance);
+        assert!(coin.value >= amount, ErrorInsufficientBalance);
         coin.value = coin.value - amount;
         Coin { value: amount }
     }
@@ -215,7 +210,6 @@ module rooch_framework::coin {
     // Extend functions
     //
 
-
     #[private_generics(CoinType)]
     /// Creates a new Coin with given `CoinType`
     /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
@@ -224,11 +218,11 @@ module rooch_framework::coin {
         name: string::String,
         symbol: string::String,
         decimals: u8,
-    ) : Object<CoinInfo<CoinType>> {
+    ): Object<CoinInfo<CoinType>> {
         assert!(
             !is_registered<CoinType>(ctx),
             ErrorCoinInfoAlreadyRegistered,
-        ); 
+        );
 
         let coin_type = type_info::type_name<CoinType>();
 
@@ -246,13 +240,13 @@ module rooch_framework::coin {
     }
 
     /// Public coin can mint by anyone with the mutable Object<CoinInfo<CoinType>>
-    public fun mint<CoinType: key + store>(coin_info: &mut Object<CoinInfo<CoinType>>, amount: u256) : Coin<CoinType> {
+    public fun mint<CoinType: key + store>(coin_info: &mut Object<CoinInfo<CoinType>>, amount: u256): Coin<CoinType> {
         mint_internal(coin_info, amount)
     }
 
     #[private_generics(CoinType)]
     /// Mint new `Coin`, this function is only called by the `CoinType` module, for the developer to extend custom mint logic
-    public fun mint_extend<CoinType: key>(coin_info: &mut Object<CoinInfo<CoinType>>, amount: u256) : Coin<CoinType> {
+    public fun mint_extend<CoinType: key>(coin_info: &mut Object<CoinInfo<CoinType>>, amount: u256): Coin<CoinType> {
         mint_internal<CoinType>(coin_info, amount)
     }
 
@@ -268,7 +262,7 @@ module rooch_framework::coin {
         coin_info: &mut Object<CoinInfo<CoinType>>,
         coin: Coin<CoinType>,
     ) {
-        burn_internal(coin_info, coin) 
+        burn_internal(coin_info, coin)
     }
 
     //
@@ -276,7 +270,7 @@ module rooch_framework::coin {
     //
 
     fun mint_internal<CoinType: key>(coin_info_obj: &mut Object<CoinInfo<CoinType>>,
-        amount: u256): Coin<CoinType>{
+                                     amount: u256): Coin<CoinType> {
         let coin_info = object::borrow_mut(coin_info_obj);
         coin_info.supply = coin_info.supply + amount;
         let coin_type = type_info::type_name<CoinType>();
@@ -291,7 +285,7 @@ module rooch_framework::coin {
         coin_info_obj: &mut Object<CoinInfo<CoinType>>,
         coin: Coin<CoinType>,
     ) {
-        let coin_info = object::borrow_mut(coin_info_obj); 
+        let coin_info = object::borrow_mut(coin_info_obj);
         let Coin { value: amount } = coin;
 
         let coin_type = type_info::type_name<CoinType>();
@@ -303,13 +297,13 @@ module rooch_framework::coin {
     }
 
     // Unpack the Coin and return the value
-    public(friend) fun unpack<CoinType: key>(coin: Coin<CoinType>) : u256 {
+    public(friend) fun unpack<CoinType: key>(coin: Coin<CoinType>): u256 {
         let Coin { value } = coin;
         value
     }
 
     // Pack the value into Coin
-    public(friend) fun pack<CoinType: key>(value: u256) : Coin<CoinType> {
+    public(friend) fun pack<CoinType: key>(value: u256): Coin<CoinType> {
         Coin<CoinType> {
             value
         }

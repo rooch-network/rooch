@@ -1,12 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::env;
-use std::fmt::Debug;
-use std::net::SocketAddr;
-use std::sync::Arc;
-use std::time::Duration;
-
+use crate::server::btc_server::BtcServer;
 use anyhow::{Error, Result};
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
@@ -15,6 +10,11 @@ use hyper::Method;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
 use serde_json::json;
+use std::env;
+use std::fmt::Debug;
+use std::net::SocketAddr;
+use std::sync::Arc;
+use std::time::Duration;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::info;
@@ -23,7 +23,7 @@ use moveos_store::{MoveOSDB, MoveOSStore};
 use raw_store::errors::RawStoreError;
 use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
-use rooch_config::da_config::{DAConfig, DAServerType};
+use rooch_config::da_config::{DAConfig, InternalDAServerConfigType};
 use rooch_config::indexer_config::IndexerConfig;
 use rooch_config::server_config::ServerConfig;
 use rooch_config::store_config::StoreConfig;
@@ -35,6 +35,7 @@ use rooch_da::server::celestia::proxy::DAServerCelestiaProxy;
 use rooch_da::server::serverproxy::DAServerNopProxy;
 use rooch_da::server::serverproxy::DAServerProxy;
 use rooch_executor::actor::executor::ExecutorActor;
+use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::indexer_reader::IndexerReader;
@@ -51,6 +52,8 @@ use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
+use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
+use rooch_types::bitcoin::network::Network;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{GenesisError, RoochError};
 
@@ -219,14 +222,20 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
 
     // Init executor
     let is_genesis = moveos_store.statedb.is_genesis();
-    let executor = ExecutorActor::new(
+    let btc_network = opt.btc_network.unwrap_or(Network::default().to_num());
+    let executor_actor = ExecutorActor::new(
         chain_id_opt.genesis_ctx(sequencer_account),
+        BitcoinGenesisContext::new(btc_network),
         moveos_store.clone(),
         rooch_store.clone(),
-    )?
-    .into_actor(Some("Executor"), &actor_system)
-    .await?;
-    let executor_proxy = ExecutorProxy::new(executor.into());
+    )?;
+    let reader_executor = ReaderExecutorActor::new(executor_actor.moveos(), rooch_store.clone())?
+        .into_actor(Some("ReaderExecutor"), &actor_system)
+        .await?;
+    let executor = executor_actor
+        .into_actor(Some("Executor"), &actor_system)
+        .await?;
+    let executor_proxy = ExecutorProxy::new(executor.into(), reader_executor.into());
 
     // Init sequencer
     info!("RPC Server sequencer address: {:?}", sequencer_account);
@@ -236,21 +245,28 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init DA
-    let da_config = DAConfig::default(); // TODO use opt
-    let internal_da_server_config = da_config.internal_da_server.clone();
-    let da_server_proxy: Arc<dyn DAServerProxy + Send + Sync> = match internal_da_server_config {
-        Some(DAServerType::Celestia(celestia_config)) => {
-            let da_server = DAServerCelestiaActor::new(&celestia_config)
-                .await
-                .into_actor(Some("DAServerCelestia"), &actor_system)
-                .await?;
-            Arc::new(DAServerCelestiaProxy::new(da_server.clone().into()))
+    let mut da_config = DAConfig::default(); // TODO use opt
+    da_config.merge_with_opt(opt)?;
+
+    let mut da_server_proxies: Vec<Arc<dyn DAServerProxy + Send + Sync>> = Vec::new();
+
+    if let Some(internal_da_server_config) = &da_config.internal_da_server {
+        for server_config_type in &internal_da_server_config.servers {
+            if let InternalDAServerConfigType::Celestia(celestia_config) = server_config_type {
+                let da_server = DAServerCelestiaActor::new(celestia_config)
+                    .await
+                    .into_actor(Some("DAServerCelestia"), &actor_system)
+                    .await?;
+                da_server_proxies.push(Arc::new(DAServerCelestiaProxy::new(
+                    da_server.clone().into(),
+                )));
+            }
         }
-        _ => Arc::new(DAServerNopProxy {}),
-    };
-    let servers: Vec<Arc<dyn DAServerProxy + Send + Sync>> = vec![da_server_proxy];
+    } else {
+        da_server_proxies.push(Arc::new(DAServerNopProxy {}));
+    }
     let da_proxy = DAProxy::new(
-        DAActor::new(servers)
+        DAActor::new(da_server_proxies)
             .into_actor(Some("DAProxy"), &actor_system)
             .await?
             .into(),
@@ -355,6 +371,11 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         chain_id_opt.chain_id(),
         rpc_service.clone(),
         aggregate_service.clone(),
+    ))?;
+    rpc_module_builder.register_module(BtcServer::new(
+        rpc_service.clone(),
+        aggregate_service.clone(),
+        btc_network,
     ))?;
 
     // let rpc_api = build_rpc_api(rpc_api);
