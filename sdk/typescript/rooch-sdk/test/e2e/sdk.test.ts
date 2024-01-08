@@ -92,7 +92,7 @@ describe('SDK', () => {
           },
         ],
         {
-          maxGasAmount: 1000000,
+          maxGasAmount: 2000000,
         },
       )
 
@@ -121,7 +121,7 @@ describe('SDK', () => {
           },
         ],
         {
-          maxGasAmount: 1000000,
+          maxGasAmount: 2000000,
         },
       )
 
@@ -153,7 +153,7 @@ describe('SDK', () => {
           },
         ],
         {
-          maxGasAmount: 1000000,
+          maxGasAmount: 2000000,
         },
       )
 
@@ -216,7 +216,7 @@ describe('SDK', () => {
 
       // run function with sessoin key
       const tx = await sessionAccount.runFunction('0x3::empty::empty', [], [], {
-        maxGasAmount: 100000000,
+        maxGasAmount: 200000000,
       })
 
       expect(tx).toBeDefined()
@@ -250,7 +250,7 @@ describe('SDK', () => {
 
       // run function with sessoin key
       const tx = await sessionAccount.runFunction('0x3::empty::empty', [], [], {
-        maxGasAmount: 100000000,
+        maxGasAmount: 200000000,
       })
 
       expect(tx).toBeDefined()
@@ -335,7 +335,7 @@ describe('SDK', () => {
 
       // run function with sessoin key
       const tx = await sessionAccount.runFunction('0x3::empty::empty', [], [], {
-        maxGasAmount: 100000000,
+        maxGasAmount: 200000000,
       })
 
       expect(tx).toBeDefined()
@@ -360,7 +360,7 @@ describe('SDK', () => {
 
       // run function with sessoin key
       const tx = await sessionAccount.runFunction('0x3::empty::empty', [], [], {
-        maxGasAmount: 100000000,
+        maxGasAmount: 200000000,
       })
 
       expect(tx).toBeDefined()
