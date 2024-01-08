@@ -153,10 +153,11 @@ impl Message for GetAnnotatedStatesByStateMessage {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct UpdateStateRootMessage {
+pub struct RefreshStateMessage {
     pub new_state_root: H256,
+    pub is_upgrade: bool,
 }
 
-impl Message for UpdateStateRootMessage {
+impl Message for RefreshStateMessage {
     type Result = Result<()>;
 }

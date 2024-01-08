@@ -83,7 +83,7 @@ impl RpcService {
 
         // Sync lastest state root from writer executor to reader executor
         self.executor
-            .update_state_root(execution_info.state_root)
+            .refresh_state(execution_info.state_root, output.is_upgrade)
             .await?;
 
         // Last save indexer

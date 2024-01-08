@@ -2105,6 +2105,7 @@
         "required": [
           "events",
           "gas_used",
+          "is_upgrade",
           "status",
           "table_changeset"
         ],
@@ -2119,6 +2120,9 @@
             "type": "integer",
             "format": "uint64",
             "minimum": 0.0
+          },
+          "is_upgrade": {
+            "type": "boolean"
           },
           "status": {
             "$ref": "#/components/schemas/KeptVMStatusView"

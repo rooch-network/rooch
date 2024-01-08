@@ -3,8 +3,8 @@
 
 use super::messages::{
     AnnotatedStatesMessage, ExecuteViewFunctionMessage, GetAnnotatedEventsByEventHandleMessage,
-    GetAnnotatedStatesByStateMessage, GetEventsByEventHandleMessage, ResolveMessage, StatesMessage,
-    UpdateStateRootMessage, ValidateTransactionMessage,
+    GetAnnotatedStatesByStateMessage, GetEventsByEventHandleMessage, RefreshStateMessage,
+    ResolveMessage, StatesMessage, ValidateTransactionMessage,
 };
 use crate::actor::messages::{
     GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
@@ -626,9 +626,12 @@ impl Handler<GetAnnotatedStatesByStateMessage> for ReaderExecutorActor {
 }
 
 #[async_trait]
-impl Handler<UpdateStateRootMessage> for ReaderExecutorActor {
-    async fn handle(&mut self, msg: UpdateStateRootMessage, _ctx: &mut ActorContext) -> Result<()> {
-        let UpdateStateRootMessage { new_state_root } = msg;
-        self.moveos.update_state_root(new_state_root)
+impl Handler<RefreshStateMessage> for ReaderExecutorActor {
+    async fn handle(&mut self, msg: RefreshStateMessage, _ctx: &mut ActorContext) -> Result<()> {
+        let RefreshStateMessage {
+            new_state_root,
+            is_upgrade,
+        } = msg;
+        self.moveos.refresh_state(new_state_root, is_upgrade)
     }
 }

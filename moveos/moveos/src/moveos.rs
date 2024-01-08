@@ -164,7 +164,7 @@ impl MoveOS {
 
         // execute main tx
         let execute_result = session.execute_move_action(verified_action);
-        let status = match vm_status_of_result(execute_result).keep_or_discard() {
+        let status = match vm_status_of_result(execute_result.clone()).keep_or_discard() {
             Ok(status) => status,
             Err(discard_status) => {
                 bail!("Discard status: {:?}", discard_status);
@@ -411,6 +411,7 @@ impl MoveOS {
             state_changeset,
             events,
             gas_used: _,
+            is_upgrade: _,
         } = output;
         let new_state_root = self
             .db
@@ -584,9 +585,12 @@ impl MoveOS {
         Ok(output)
     }
 
-    pub fn update_state_root(&self, new_state_root: H256) -> Result<()> {
+    pub fn refresh_state(&self, new_state_root: H256, is_upgrade: bool) -> Result<()> {
         self.state().update_state_root(new_state_root)?;
 
+        if is_upgrade {
+            self.vm.mark_loader_cache_as_invalid();
+        };
         Ok(())
     }
 }

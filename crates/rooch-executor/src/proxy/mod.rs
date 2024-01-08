@@ -4,7 +4,7 @@
 use crate::actor::messages::{
     GetAnnotatedStatesByStateMessage, GetEventsByEventHandleMessage, GetEventsByEventIDsMessage,
     GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage, ListStatesMessage,
-    UpdateStateRootMessage,
+    RefreshStateMessage,
 };
 use crate::actor::reader_executor::ReaderExecutorActor;
 use crate::actor::{
@@ -190,9 +190,12 @@ impl ExecutorProxy {
             .await?
     }
 
-    pub async fn update_state_root(&self, new_state_root: H256) -> Result<()> {
+    pub async fn refresh_state(&self, new_state_root: H256, is_upgrade: bool) -> Result<()> {
         self.reader_actor
-            .send(UpdateStateRootMessage { new_state_root })
+            .send(RefreshStateMessage {
+                new_state_root,
+                is_upgrade,
+            })
             .await?
     }
 }
