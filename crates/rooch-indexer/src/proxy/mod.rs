@@ -7,6 +7,7 @@ use crate::actor::messages::{
     QueryIndexerEventsMessage, QueryIndexerGlobalStatesMessage, QueryIndexerTableStatesMessage,
     QueryIndexerTransactionsMessage, SyncIndexerStatesMessage,
 };
+use crate::actor::reader_indexer::IndexerReaderActor;
 use anyhow::Result;
 use coerce::actor::ActorRef;
 use moveos_types::moveos_std::event::Event;
@@ -23,11 +24,15 @@ use rooch_types::transaction::{TransactionSequenceInfo, TransactionWithInfo, Typ
 #[derive(Clone)]
 pub struct IndexerProxy {
     pub actor: ActorRef<IndexerActor>,
+    pub reader_actor: ActorRef<IndexerReaderActor>,
 }
 
 impl IndexerProxy {
-    pub fn new(actor: ActorRef<IndexerActor>) -> Self {
-        Self { actor }
+    pub fn new(actor: ActorRef<IndexerActor>, reader_actor: ActorRef<IndexerReaderActor>) -> Self {
+        Self {
+            actor,
+            reader_actor,
+        }
     }
 
     pub async fn indexer_states(
@@ -85,7 +90,7 @@ impl IndexerProxy {
         limit: usize,
         descending_order: bool,
     ) -> Result<Vec<TransactionWithInfo>> {
-        self.actor
+        self.reader_actor
             .send(QueryIndexerTransactionsMessage {
                 filter,
                 cursor,
@@ -103,7 +108,7 @@ impl IndexerProxy {
         limit: usize,
         descending_order: bool,
     ) -> Result<Vec<IndexerEvent>> {
-        self.actor
+        self.reader_actor
             .send(QueryIndexerEventsMessage {
                 filter,
                 cursor,
@@ -121,7 +126,7 @@ impl IndexerProxy {
         limit: usize,
         descending_order: bool,
     ) -> Result<Vec<IndexerGlobalState>> {
-        self.actor
+        self.reader_actor
             .send(QueryIndexerGlobalStatesMessage {
                 filter,
                 cursor,
@@ -139,7 +144,7 @@ impl IndexerProxy {
         limit: usize,
         descending_order: bool,
     ) -> Result<Vec<IndexerTableState>> {
-        self.actor
+        self.reader_actor
             .send(QueryIndexerTableStatesMessage {
                 filter,
                 cursor,
@@ -157,7 +162,7 @@ impl IndexerProxy {
         limit: usize,
         descending_order: bool,
     ) -> Result<Vec<IndexerTableChangeSet>> {
-        self.actor
+        self.reader_actor
             .send(SyncIndexerStatesMessage {
                 filter,
                 cursor,

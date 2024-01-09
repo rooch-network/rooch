@@ -154,11 +154,13 @@ impl RoochTransaction {
 impl From<RoochTransaction> for MoveOSTransaction {
     fn from(tx: RoochTransaction) -> Self {
         let tx_hash = tx.tx_hash();
+        let tx_size = tx.tx_size();
         let tx_ctx = TxContext::new(
             tx.data.sender.into(),
             tx.data.sequence_number,
             tx.data.max_gas_amount,
             tx_hash,
+            tx_size,
         );
         MoveOSTransaction::new(tx_ctx, tx.data.action)
     }
@@ -211,5 +213,9 @@ impl AbstractTransaction for RoochTransaction {
 
     fn multi_chain_id(&self) -> MultiChainID {
         MultiChainID::from(ROOCH)
+    }
+
+    fn tx_size(&self) -> u64 {
+        self.encode().len() as u64
     }
 }

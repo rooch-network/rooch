@@ -204,6 +204,12 @@ where
         Ok(new_state_root)
     }
 
+    pub fn update_state_root(&self, new_state_root: H256) -> Result<()> {
+        *self.root_hash.write() = new_state_root;
+
+        Ok(())
+    }
+
     pub fn is_genesis(&self) -> bool {
         self.root_hash() == *SPARSE_MERKLE_PLACEHOLDER_HASH
     }
