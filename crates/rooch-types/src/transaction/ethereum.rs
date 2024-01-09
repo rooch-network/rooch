@@ -345,6 +345,10 @@ impl AbstractTransaction for EthereumTransaction {
         self.0.hash()
     }
 
+    fn tx_size(&self) -> u64 {
+        self.encode().len() as u64
+    }
+
     fn construct_moveos_transaction(
         self,
         resolved_sender: AccountAddress,
@@ -352,7 +356,13 @@ impl AbstractTransaction for EthereumTransaction {
         let action = self.decode_calldata_to_action()?;
         let sequence_number = self.0.nonce.as_u64();
         let gas = self.0.gas.as_u64();
-        let tx_ctx = TxContext::new(resolved_sender, sequence_number, gas, self.tx_hash());
+        let tx_ctx = TxContext::new(
+            resolved_sender,
+            sequence_number,
+            gas,
+            self.tx_hash(),
+            self.tx_size(),
+        );
         Ok(MoveOSTransaction::new(tx_ctx, action))
     }
 

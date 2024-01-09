@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::gas::table::{initial_cost_schedule, MoveOSGasMeter};
+use crate::gas::table::{initial_cost_schedule, ClassifiedGasMeter, MoveOSGasMeter};
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
 use anyhow::{bail, ensure, Result};
 use backtrace::Backtrace;
@@ -246,8 +246,12 @@ impl MoveOS {
         // The variables in TxContext kv store before this executions should not be cleaned,
         // So we keep a backup here, and then insert to the TxContext kv store when session respawed.
         let system_env = ctx.map.clone();
+
         let cost_table = initial_cost_schedule();
-        let gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+
+        gas_meter.charge_io_write(ctx.tx_size)?;
+
         let mut session = self.vm.new_session(&self.db, ctx, gas_meter);
 
         // system pre_execute
@@ -412,6 +416,7 @@ impl MoveOS {
             events,
             gas_used: _,
             is_upgrade: _,
+            gas_statement: _,
         } = output;
         let new_state_root = self
             .db

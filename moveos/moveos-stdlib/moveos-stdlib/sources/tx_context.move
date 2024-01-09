@@ -46,6 +46,8 @@ module moveos_std::tx_context {
         max_gas_amount: u64,
         /// Hash of the current transaction
         tx_hash: vector<u8>,
+        /// Data size of this transaction
+        tx_size: u64,
         /// Counter recording the number of fresh id's created while executing
         /// this transaction. Always 0 at the start of a transaction
         ids_created: u64,
@@ -168,6 +170,7 @@ module moveos_std::tx_context {
             sequence_number: _,
             max_gas_amount: _,
             tx_hash: _,
+            tx_size: _,
             ids_created: _,
             map,
         } = self;
@@ -189,6 +192,7 @@ module moveos_std::tx_context {
             sequence_number: 0,
             max_gas_amount: 100000000,
             tx_hash,
+            tx_size: 1,
             ids_created: 0,
             map: simple_map::create(),
         }
