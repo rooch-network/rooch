@@ -106,6 +106,10 @@ impl MoveOSVM {
     ) -> MoveOSSession<'r, '_, S, G> {
         MoveOSSession::new(&self.inner, remote, ctx, gas_meter, true)
     }
+
+    pub fn mark_loader_cache_as_invalid(&self) {
+        self.inner.mark_loader_cache_as_invalid()
+    }
 }
 
 /// MoveOSSession is a wrapper of MoveVM session with MoveOS specific features.
@@ -319,11 +323,10 @@ where
                     .with_message(e.to_string())
                     .finish(Location::Undefined)
             })?;
-        if let Some(flag) = module_flag {
-            if flag.is_upgrade {
-                self.vm.mark_loader_cache_as_invalid();
-            }
-        }
+        let is_upgrade = module_flag.map_or(false, |flag| flag.is_upgrade);
+        if is_upgrade {
+            self.vm.mark_loader_cache_as_invalid();
+        };
 
         action_result
     }
@@ -502,6 +505,14 @@ where
             })
             .collect::<VMResult<_>>()?;
 
+        // Check if there are modules upgrading
+        let module_flag = ctx.tx_context.get::<ModuleUpgradeFlag>().map_err(|e| {
+            PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
+                .with_message(e.to_string())
+                .finish(Location::Undefined)
+        })?;
+        let is_upgrade = module_flag.map_or(false, |flag| flag.is_upgrade);
+
         match gas_meter.charge_change_set(&state_changeset) {
             Ok(_) => {}
             Err(partial_vm_error) => {
@@ -542,6 +553,7 @@ where
                 state_changeset,
                 events,
                 gas_used,
+                is_upgrade,
                 gas_statement,
             },
         ))

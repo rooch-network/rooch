@@ -282,6 +282,7 @@ pub struct RawTransactionOutput {
     pub state_changeset: StateChangeSet,
     pub events: Vec<TransactionEvent>,
     pub gas_used: u64,
+    pub is_upgrade: bool,
     pub gas_statement: GasStatement,
 }
 
@@ -294,6 +295,7 @@ pub struct TransactionOutput {
     pub state_changeset: StateChangeSet,
     pub events: Vec<Event>,
     pub gas_used: u64,
+    pub is_upgrade: bool,
 }
 
 impl TransactionOutput {
@@ -317,6 +319,7 @@ impl TransactionOutput {
             state_changeset: transaction_output.state_changeset,
             events,
             gas_used: transaction_output.gas_used,
+            is_upgrade: transaction_output.is_upgrade,
         }
     }
 }

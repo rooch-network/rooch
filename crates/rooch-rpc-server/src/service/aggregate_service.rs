@@ -419,11 +419,7 @@ impl AggregateService {
             .into_iter()
             // .enumerate()
             .map(|state| {
-                let utxo = objects
-                    .get(&state.object_id)
-                    .cloned()
-                    .flatten()
-                    .ok_or(anyhow::anyhow!("UTXO should have value"))?;
+                let utxo = objects.get(&state.object_id).cloned().flatten();
                 let reverse_mapping_opt =
                     reverse_address_mapping.get(&state.owner).cloned().flatten();
                 let reverse_address = reverse_mapping_opt.and_then(|m| {
