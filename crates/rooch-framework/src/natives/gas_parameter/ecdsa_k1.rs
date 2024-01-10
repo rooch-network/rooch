@@ -6,4 +6,5 @@ use crate::natives::rooch_framework::crypto::ecdsa_k1::GasParameters;
 
 crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasParameters, "ecdsa_k1", [
     [.verify.base, "verify.base", (5 + 1) * MUL],
+    [.verify.per_byte, "verify.per_byte", (5 + 1) * MUL],
 ]);

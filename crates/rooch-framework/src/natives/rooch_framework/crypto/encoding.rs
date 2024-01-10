@@ -6,7 +6,7 @@ use bitcoin::Network;
 use bitcoin::{Address, PublicKey};
 use bitcoin_bech32::{constants::Network as Bech32Network, u5, WitnessProgram};
 use move_binary_format::errors::PartialVMResult;
-use move_core_types::gas_algebra::InternalGas;
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type,
@@ -38,11 +38,10 @@ pub fn native_base58(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 1);
 
-    // TODO(Gas): Charge the arg size dependent costs
-
-    let cost = gas_params.base;
-
     let address_bytes = pop_arg!(args, VectorRef);
+
+    let cost = gas_params.base
+        + (gas_params.per_byte * NumBytes::new(address_bytes.as_bytes_ref().len() as u64));
 
     let bs58_bytes = bs58::encode(address_bytes.as_bytes_ref().to_vec()).into_vec();
 
@@ -68,12 +67,11 @@ pub fn native_base58check(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 2);
 
-    // TODO(Gas): Charge the arg size dependent costs
-
-    let cost = gas_params.base;
-
     let version_byte = pop_arg!(args, u8);
     let address_bytes = pop_arg!(args, VectorRef);
+
+    let cost = gas_params.base
+        + (gas_params.per_byte * NumBytes::new(address_bytes.as_bytes_ref().len() as u64));
 
     let bs58_checksum_bytes = bs58::encode(address_bytes.as_bytes_ref().to_vec())
         .with_check_version(version_byte)
@@ -101,12 +99,11 @@ pub fn native_bech32(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 2);
 
-    // TODO(Gas): Charge the arg size dependent costs
-
-    let cost = gas_params.base;
-
     let version = pop_arg!(args, u8);
     let public_key = pop_arg!(args, VectorRef);
+
+    let cost = gas_params.base
+        + (gas_params.per_byte * NumBytes::new(public_key.as_bytes_ref().len() as u64));
 
     // Version 0 for bech32 encoding and 1-16 are for bech32m encoding
     let Ok(version) = u5::try_from_u8(version) else {
@@ -146,12 +143,11 @@ pub fn native_p2pkh(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 1);
 
-    // TODO(Gas): Charge the arg size dependent costs
-
-    let cost = gas_params.base;
-
     let public_key = pop_arg!(args, VectorRef);
     let public_key_bytes_ref = public_key.as_bytes_ref();
+
+    let cost =
+        gas_params.base + (gas_params.per_byte * NumBytes::new(public_key_bytes_ref.len() as u64));
 
     let Ok(bitcoin_public_key) = PublicKey::from_slice(&public_key_bytes_ref) else {
         return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
@@ -183,12 +179,11 @@ pub fn native_p2sh(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 1);
 
-    // TODO(Gas): Charge the arg size dependent costs
-
-    let cost = gas_params.base;
-
     let public_key = pop_arg!(args, VectorRef);
     let public_key_bytes_ref = public_key.as_bytes_ref();
+
+    let cost =
+        gas_params.base + (gas_params.per_byte * NumBytes::new(public_key_bytes_ref.len() as u64));
 
     let Ok(bitcoin_public_key) = PublicKey::from_slice(&public_key_bytes_ref) else {
         return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
@@ -215,11 +210,15 @@ pub fn native_p2sh(
 #[derive(Debug, Clone)]
 pub struct FromBytesGasParameters {
     pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
 }
 
 impl FromBytesGasParameters {
     pub fn zeros() -> Self {
-        Self { base: 0.into() }
+        Self {
+            base: 0.into(),
+            per_byte: 0.into(),
+        }
     }
 }
 

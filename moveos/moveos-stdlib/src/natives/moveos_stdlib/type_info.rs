@@ -7,7 +7,7 @@
 // Source code from https://github.com/aptos-labs/aptos-core/blob/c76c6b0fc3a1b8e21b6ba2f77151ca20ea31ca32/aptos-move/moveos_stdlib/src/natives/type_info.rs#L1
 // TODO use the SafeNativeContext
 
-use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_binary_format::errors::PartialVMResult;
 use move_core_types::{
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
     language_storage::{StructTag, TypeTag},
