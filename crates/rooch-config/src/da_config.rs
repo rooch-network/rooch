@@ -89,7 +89,7 @@ pub struct InternalDAServerConfig {
     #[clap(
         name = "submit-strategy",
         long,
-        help = "specifies the type of internal DA servers to be used. 'celestia' with corresponding Celestia server configuration, 'xxx' with corresponding xxx server configuration, etc."
+        help = "specifies the strategy of internal DA servers to be used. 'all' with all servers, 'quorum' with quorum servers, 'n' with n servers, etc."
     )]
     pub submit_strategy: Option<DAServerSubmitStrategy>,
     #[clap(
