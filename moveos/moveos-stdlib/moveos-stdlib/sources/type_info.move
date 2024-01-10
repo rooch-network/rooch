@@ -14,8 +14,7 @@ module moveos_std::type_info {
     //
     // Error codes
     //
-
-    const ErrorNativeFunctionNotAvailable: u64 = 1;
+    const ErrorTypeMismatch: u64 = 1;
 
     //
     // Structs

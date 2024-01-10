@@ -76,12 +76,7 @@ fn native_module_name_inner(
 
     let module = CompiledModule::deserialize(&byte_codes_ref)?;
     let name = module.self_id().name().to_owned().into_string();
-    let cost = gas_params.base
-        + if gas_params.per_byte_in_str > 0.into() {
-            gas_params.per_byte_in_str * NumBytes::new(name.len() as u64)
-        } else {
-            0.into()
-        };
+    let cost = gas_params.base + gas_params.per_byte_in_str * NumBytes::new(name.len() as u64);
     let output = Struct::pack(vec![Value::vector_u8(name.as_bytes().to_vec())]);
     let output_value = Value::struct_(output);
     Ok(NativeResult::ok(cost, smallvec![output_value]))
@@ -126,7 +121,6 @@ fn native_sort_and_verify_modules_inner(
     let compiled_modules = sort_by_dependency_order(&unordered_compiled_modules).map_err(|e| {
         PartialVMError::new(StatusCode::CYCLIC_MODULE_DEPENDENCY).with_message(e.to_string())
     })?;
-
     let indices: Vec<u64> = compiled_modules
         .iter()
         .map(|x| {
@@ -205,7 +199,7 @@ fn native_sort_and_verify_modules_inner(
 #[derive(Clone, Debug)]
 pub struct RequestInitFunctionsGasParameters {
     pub base: InternalGas,
-    pub per_byte: InternalGasPerByte,
+    pub per_function: InternalGasPerByte,
 }
 
 fn request_init_functions(
@@ -219,7 +213,7 @@ fn request_init_functions(
     let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
     for name_str in pop_arg!(args, Vec<Value>) {
         let name_ident = unpack_string_to_identifier(name_str)?;
-        cost += gas_params.per_byte * NumBytes::new(1u64);
+        cost += gas_params.per_function * NumBytes::new(1u64);
         let module_id = ModuleId::new(account_address, name_ident);
         module_context.init_functions.insert(module_id);
     }
@@ -721,7 +715,7 @@ impl GasParameters {
             },
             request_init_functions: RequestInitFunctionsGasParameters {
                 base: 0.into(),
-                per_byte: 0.into(),
+                per_function: 0.into(),
             },
             check_compatibililty_inner: CheckCompatibilityInnerGasParameters {
                 base: 0.into(),
