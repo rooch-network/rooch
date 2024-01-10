@@ -8,6 +8,7 @@ use bitcoin::consensus::deserialize;
 use bitcoin::{Block, OutPoint, Transaction, TxOut};
 use hex::FromHex;
 use moveos_types::access_path::AccessPath;
+use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::object;
 use moveos_types::state::MoveStructType;
 use moveos_types::state_resolver::StateReader;
@@ -48,8 +49,9 @@ fn test_submit_block() {
     let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
     binding_test.execute(tx).unwrap();
 
+    // let moveos = binding_test.reader_executor.moveos().read();
     let bitcoin_light_client_module = binding_test
-        .as_module_bundle::<rooch_types::bitcoin::light_client::BitcoinLightClientModule>(
+        .as_module_binding::<rooch_types::bitcoin::light_client::BitcoinLightClientModule>(
     );
     assert_eq!(
         bitcoin_light_client_module
@@ -84,7 +86,7 @@ fn test_submit_block() {
     check_utxo(bitcoin_txdata, &binding_test);
 
     let timestamp_module =
-        binding_test.as_module_bundle::<rooch_types::framework::timestamp::TimestampModule>();
+        binding_test.as_module_binding::<rooch_types::framework::timestamp::TimestampModule>();
 
     let now_milliseconds = timestamp_module.now_milliseconds().unwrap();
     let duration = std::time::Duration::from_secs(block_header.time as u64);
@@ -124,7 +126,7 @@ fn test_utxo_progress() {
     binding_test.execute(tx).unwrap();
 
     let bitcoin_light_client_module = binding_test
-        .as_module_bundle::<rooch_types::bitcoin::light_client::BitcoinLightClientModule>(
+        .as_module_binding::<rooch_types::bitcoin::light_client::BitcoinLightClientModule>(
     );
     assert!(bitcoin_light_client_module.remaining_tx_count().unwrap() > 0);
     let mut remaining_tx_count = bitcoin_light_client_module.remaining_tx_count().unwrap();
@@ -143,7 +145,8 @@ fn test_utxo_progress() {
         binding_test.execute(tx).unwrap();
         let bitcoin_light_client_module =
             binding_test
-                .as_module_bundle::<rooch_types::bitcoin::light_client::BitcoinLightClientModule>();
+                .as_module_binding::<rooch_types::bitcoin::light_client::BitcoinLightClientModule>(
+                );
         remaining_tx_count = bitcoin_light_client_module.remaining_tx_count().unwrap();
     }
     check_utxo(block.txdata, &binding_test);
@@ -163,9 +166,10 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
     }
 
     let bitcoin_light_client_module = binding_test
-        .as_module_bundle::<rooch_types::bitcoin::light_client::BitcoinLightClientModule>(
+        .as_module_binding::<rooch_types::bitcoin::light_client::BitcoinLightClientModule>(
     );
-    let utxo_module = binding_test.as_module_bundle::<rooch_types::bitcoin::utxo::UTXOModule>();
+    let utxo_module = binding_test.as_module_binding::<rooch_types::bitcoin::utxo::UTXOModule>();
+
     let moveos_resolver = binding_test.executor().moveos().moveos_resolver();
 
     for (outpoint, tx_out) in utxo_set.into_iter() {

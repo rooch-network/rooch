@@ -3,6 +3,7 @@
 
 use crate::binding_test;
 use ethers::prelude::*;
+use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
@@ -58,7 +59,7 @@ fn test_submit_block() {
     binding_test.execute(tx).unwrap();
 
     let timestamp_module =
-        binding_test.as_module_bundle::<rooch_types::framework::timestamp::TimestampModule>();
+        binding_test.as_module_binding::<rooch_types::framework::timestamp::TimestampModule>();
 
     let now_milliseconds = timestamp_module.now_milliseconds().unwrap();
     let duration = std::time::Duration::from_secs(block_header.timestamp.unchecked_as_u64());

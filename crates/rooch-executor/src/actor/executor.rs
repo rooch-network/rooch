@@ -2,14 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::messages::{
-    AnnotatedStatesMessage, ExecuteTransactionMessage, ExecuteTransactionResult,
-    ExecuteViewFunctionMessage, GetAnnotatedEventsByEventHandleMessage,
-    GetAnnotatedStatesByStateMessage, GetEventsByEventHandleMessage, ResolveMessage, StatesMessage,
-    ValidateTransactionMessage,
-};
-use crate::actor::messages::{
-    GetEventsByEventIDsMessage, GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage,
-    ListStatesMessage,
+    ExecuteTransactionMessage, ExecuteTransactionResult, ResolveMessage, ValidateTransactionMessage,
 };
 use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::Result;
@@ -23,40 +16,32 @@ use move_core_types::language_storage::ModuleId;
 use move_core_types::resolver::ModuleResolver;
 use move_core_types::value::MoveValue;
 use move_core_types::vm_status::{StatusCode, VMStatus};
-use move_resource_viewer::MoveValueAnnotator;
 use moveos::gas::table::{initial_cost_schedule, MoveOSGasMeter};
 use moveos::moveos::{GasPaymentAccount, MoveOS};
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
-use moveos_types::function_return_value::AnnotatedFunctionResult;
-use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::FunctionId;
-use moveos_types::moveos_std::event::EventHandle;
-use moveos_types::moveos_std::event::{AnnotatedEvent, Event};
 use moveos_types::moveos_std::tx_context::TxContext;
-use moveos_types::state::{AnnotatedState, State};
-use moveos_types::state_resolver::{AnnotatedStateReader, StateReader};
+use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
-use moveos_types::transaction::{FunctionCall, MoveAction};
-use moveos_types::transaction::{MoveOSTransaction, TransactionExecutionInfo};
-use moveos_types::transaction::{TransactionOutput, VerifiedMoveAction};
+use moveos_types::transaction::{
+    FunctionCall, MoveAction, MoveOSTransaction, TransactionExecutionInfo, VerifiedMoveAction,
+};
 use moveos_verifier::metadata::load_module_metadata;
 use rooch_genesis::RoochGenesis;
 use rooch_store::RoochStore;
 use rooch_types::address::MultiChainAddress;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::framework::address_mapping::AddressMapping;
-use rooch_types::framework::auth_validator::AuthValidatorCaller;
-use rooch_types::framework::auth_validator::TxValidateResult;
+use rooch_types::framework::auth_validator::{AuthValidatorCaller, TxValidateResult};
 use rooch_types::framework::genesis::GenesisContext;
 use rooch_types::framework::transaction_validator::TransactionValidator;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
-use rooch_types::transaction::AbstractTransaction;
-use rooch_types::transaction::AuthenticatorInfo;
+use rooch_types::transaction::{AbstractTransaction, AuthenticatorInfo};
 
 pub struct ExecutorActor {
     genesis: RoochGenesis,
@@ -100,7 +85,7 @@ impl ExecutorActor {
     }
 
     fn init_or_check_genesis(mut self) -> Result<Self> {
-        if self.moveos.state().is_genesis() {
+        if self.moveos().state().is_genesis() {
             let genesis_result = self.moveos.init_genesis(
                 self.genesis.genesis_txs(),
                 self.genesis.genesis_ctx(),
@@ -125,11 +110,23 @@ impl ExecutorActor {
             );
             let genesis_info =
                 GenesisInfo::new(self.genesis.genesis_package_hash(), genesis_state_root);
-            self.moveos.config_store().save_genesis(genesis_info)?;
+            self.moveos().config_store().save_genesis(genesis_info)?;
         } else {
-            self.genesis.check_genesis(self.moveos.config_store())?;
+            self.genesis.check_genesis(self.moveos().config_store())?;
         }
         Ok(self)
+    }
+
+    pub fn get_rooch_store(&self) -> RoochStore {
+        self.rooch_store.clone()
+    }
+
+    pub fn moveos(&self) -> &MoveOS {
+        &self.moveos
+    }
+
+    pub fn genesis(&self) -> &RoochGenesis {
+        &self.genesis
     }
 
     pub fn resolve_or_generate(
@@ -137,11 +134,49 @@ impl ExecutorActor {
         multi_chain_address_sender: MultiChainAddress,
     ) -> Result<AccountAddress> {
         let resolved_sender = {
-            let address_mapping = self.moveos.as_module_binding::<AddressMapping>();
+            let address_mapping = self.moveos().as_module_binding::<AddressMapping>();
             address_mapping.resolve_or_generate(multi_chain_address_sender)?
         };
 
         Ok(resolved_sender)
+    }
+
+    pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<ExecuteTransactionResult> {
+        let tx_hash = tx.ctx.tx_hash();
+        let (state_root, output) = self.moveos.execute_and_apply(tx)?;
+        self.handle_tx_output(tx_hash, state_root, output)
+    }
+
+    fn handle_tx_output(
+        &mut self,
+        tx_hash: H256,
+        state_root: H256,
+        output: TransactionOutput,
+    ) -> Result<ExecuteTransactionResult> {
+        let event_hashes: Vec<_> = output.events.iter().map(|e| e.hash()).collect();
+        let event_root = InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
+
+        let transaction_info = TransactionExecutionInfo::new(
+            tx_hash,
+            state_root,
+            event_root,
+            output.gas_used,
+            output.status.clone(),
+        );
+        self.moveos()
+            .transaction_store()
+            .save_tx_execution_info(transaction_info.clone())
+            .map_err(|e| {
+                anyhow::anyhow!(
+                    "ExecuteTransactionMessage handler save tx info failed: {:?} {}",
+                    transaction_info,
+                    e
+                )
+            })?;
+        Ok(ExecuteTransactionResult {
+            output,
+            transaction_info,
+        })
     }
 
     pub fn validate<T: AbstractTransaction>(&self, tx: T) -> Result<VerifiedMoveOSTransaction> {
@@ -211,7 +246,7 @@ impl ExecutorActor {
 
                 moveos_tx.append_pre_execute_functions(pre_execute_functions);
                 moveos_tx.append_post_execute_functions(post_execute_functions);
-                Ok(self.moveos.verify(moveos_tx)?)
+                Ok(self.moveos().verify(moveos_tx)?)
             }
             Err(e) => {
                 let status_view = explain_vm_status(self.moveos.moveos_resolver(), e.clone())?;
@@ -231,7 +266,7 @@ impl ExecutorActor {
         ctx: &TxContext,
         authenticator: AuthenticatorInfo,
     ) -> Result<ValidateAuthenticatorResult> {
-        let tx_validator = self.moveos.as_module_binding::<TransactionValidator>();
+        let tx_validator = self.moveos().as_module_binding::<TransactionValidator>();
         let tx_validate_function_result = tx_validator
             .validate(ctx, authenticator.clone())?
             .into_result();
@@ -242,7 +277,7 @@ impl ExecutorActor {
                 match auth_validator_option {
                     Some(auth_validator) => {
                         let auth_validator_caller =
-                            AuthValidatorCaller::new(&self.moveos, auth_validator);
+                            AuthValidatorCaller::new(self.moveos(), auth_validator);
                         let auth_validator_function_result = auth_validator_caller
                             .validate(ctx, authenticator.authenticator.payload)?
                             .into_result();
@@ -364,7 +399,7 @@ impl ExecutorActor {
                             );
 
                             let function_execution_result =
-                                self.moveos().execute_view_function(gas_validate_func_call);
+                                self.moveos.execute_view_function(gas_validate_func_call);
 
                             return if function_execution_result.vm_status == VMStatus::Executed {
                                 let return_value = function_execution_result.return_values.unwrap();
@@ -426,7 +461,7 @@ impl ExecutorActor {
                 );
 
                 let function_execution_result =
-                    self.moveos().execute_view_function(gas_balance_func_call);
+                    self.moveos.execute_view_function(gas_balance_func_call);
 
                 if function_execution_result.vm_status == VMStatus::Executed {
                     let return_value = function_execution_result.return_values.unwrap();
@@ -445,55 +480,20 @@ impl ExecutorActor {
             _ => Ok(0),
         }
     }
-
-    pub fn get_rooch_store(&self) -> RoochStore {
-        self.rooch_store.clone()
-    }
-
-    pub fn moveos(&self) -> &MoveOS {
-        &self.moveos
-    }
-
-    pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<ExecuteTransactionResult> {
-        let tx_hash = tx.ctx.tx_hash();
-        let (state_root, output) = self.moveos.execute_and_apply(tx)?;
-        self.handle_tx_output(tx_hash, state_root, output)
-    }
-
-    fn handle_tx_output(
-        &mut self,
-        tx_hash: H256,
-        state_root: H256,
-        output: TransactionOutput,
-    ) -> Result<ExecuteTransactionResult> {
-        let event_hashes: Vec<_> = output.events.iter().map(|e| e.hash()).collect();
-        let event_root = InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
-
-        let transaction_info = TransactionExecutionInfo::new(
-            tx_hash,
-            state_root,
-            event_root,
-            output.gas_used,
-            output.status.clone(),
-        );
-        self.moveos
-            .transaction_store()
-            .save_tx_execution_info(transaction_info.clone())
-            .map_err(|e| {
-                anyhow::anyhow!(
-                    "ExecuteTransactionMessage handler save tx info failed: {:?} {}",
-                    transaction_info,
-                    e
-                )
-            })?;
-        Ok(ExecuteTransactionResult {
-            output,
-            transaction_info,
-        })
-    }
 }
 
 impl Actor for ExecutorActor {}
+
+#[async_trait]
+impl Handler<ResolveMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: ResolveMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<AccountAddress, anyhow::Error> {
+        self.resolve_or_generate(msg.address)
+    }
+}
 
 #[async_trait]
 impl<T> Handler<ValidateTransactionMessage<T>> for ExecutorActor
@@ -517,204 +517,5 @@ impl Handler<ExecuteTransactionMessage> for ExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResult> {
         self.execute(msg.tx)
-    }
-}
-
-#[async_trait]
-impl Handler<ExecuteViewFunctionMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: ExecuteViewFunctionMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<AnnotatedFunctionResult, anyhow::Error> {
-        let resoler = self.moveos.moveos_resolver();
-
-        let function_result = self.moveos.execute_view_function(msg.call);
-        Ok(AnnotatedFunctionResult {
-            vm_status: function_result.vm_status,
-            return_values: match function_result.return_values {
-                Some(values) => Some(
-                    values
-                        .into_iter()
-                        .map(|v| {
-                            let decoded_value = resoler.view_value(&v.type_tag, &v.value)?;
-                            Ok(AnnotatedFunctionReturnValue {
-                                value: v,
-                                decoded_value,
-                            })
-                        })
-                        .collect::<Result<Vec<AnnotatedFunctionReturnValue>, anyhow::Error>>()?,
-                ),
-                None => None,
-            },
-        })
-    }
-}
-
-#[async_trait]
-impl Handler<ResolveMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: ResolveMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<AccountAddress, anyhow::Error> {
-        self.resolve_or_generate(msg.address)
-    }
-}
-
-#[async_trait]
-impl Handler<StatesMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: StatesMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Vec<Option<State>>, anyhow::Error> {
-        let statedb = self.moveos.moveos_resolver();
-        statedb.get_states(msg.access_path)
-    }
-}
-
-#[async_trait]
-impl Handler<AnnotatedStatesMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: AnnotatedStatesMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Vec<Option<AnnotatedState>>, anyhow::Error> {
-        let statedb = self.moveos.moveos_resolver();
-        statedb.get_annotated_states(msg.access_path)
-    }
-}
-
-#[async_trait]
-impl Handler<ListStatesMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: ListStatesMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Vec<(Vec<u8>, State)>, anyhow::Error> {
-        let statedb = self.moveos.moveos_resolver();
-        statedb.list_states(msg.access_path, msg.cursor, msg.limit)
-    }
-}
-
-#[async_trait]
-impl Handler<ListAnnotatedStatesMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: ListAnnotatedStatesMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Vec<(Vec<u8>, AnnotatedState)>, anyhow::Error> {
-        let statedb = self.moveos.moveos_resolver();
-        statedb.list_annotated_states(msg.access_path, msg.cursor, msg.limit)
-    }
-}
-
-#[async_trait]
-impl Handler<GetAnnotatedEventsByEventHandleMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: GetAnnotatedEventsByEventHandleMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Vec<AnnotatedEvent>> {
-        let GetAnnotatedEventsByEventHandleMessage {
-            event_handle_type,
-            cursor,
-            limit,
-        } = msg;
-        let event_store = self.moveos.event_store();
-        let resolver = self.moveos.moveos_resolver();
-
-        let event_handle_id = EventHandle::derive_event_handle_id(&event_handle_type);
-        let events = event_store.get_events_by_event_handle_id(&event_handle_id, cursor, limit)?;
-
-        events
-            .into_iter()
-            .map(|event| {
-                let event_move_value = MoveValueAnnotator::new(resolver)
-                    .view_resource(&event_handle_type, event.event_data())?;
-                Ok(AnnotatedEvent::new(event, event_move_value))
-            })
-            .collect::<Result<Vec<_>>>()
-    }
-}
-
-#[async_trait]
-impl Handler<GetEventsByEventHandleMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: GetEventsByEventHandleMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Vec<Event>> {
-        let GetEventsByEventHandleMessage {
-            event_handle_type,
-            cursor,
-            limit,
-        } = msg;
-        let event_store = self.moveos.event_store();
-
-        let event_handle_id = EventHandle::derive_event_handle_id(&event_handle_type);
-        event_store.get_events_by_event_handle_id(&event_handle_id, cursor, limit)
-    }
-}
-
-#[async_trait]
-impl Handler<GetEventsByEventIDsMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: GetEventsByEventIDsMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Vec<Option<AnnotatedEvent>>> {
-        let GetEventsByEventIDsMessage { event_ids } = msg;
-        let event_store = self.moveos.event_store();
-        let resolver = self.moveos.moveos_resolver();
-
-        event_store
-            .multi_get_events(event_ids)?
-            .into_iter()
-            .map(|v| match v {
-                Some(event) => {
-                    let event_move_value = MoveValueAnnotator::new(resolver)
-                        .view_resource(event.event_type(), event.event_data())?;
-                    Ok(Some(AnnotatedEvent::new(event, event_move_value)))
-                }
-                None => Ok(None),
-            })
-            .collect::<Result<Vec<_>>>()
-    }
-}
-
-#[async_trait]
-impl Handler<GetTxExecutionInfosByHashMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: GetTxExecutionInfosByHashMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
-        let GetTxExecutionInfosByHashMessage { tx_hashes } = msg;
-        self.moveos
-            .transaction_store()
-            .multi_get_tx_execution_infos(tx_hashes)
-    }
-}
-
-#[async_trait]
-impl Handler<GetAnnotatedStatesByStateMessage> for ExecutorActor {
-    async fn handle(
-        &mut self,
-        msg: GetAnnotatedStatesByStateMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Vec<AnnotatedState>> {
-        let GetAnnotatedStatesByStateMessage { states } = msg;
-        let resolver = self.moveos.moveos_resolver();
-
-        states
-            .into_iter()
-            .map(|state| {
-                let annotate_state = MoveValueAnnotator::new(resolver)
-                    .view_value(&state.value_type, &state.value)?;
-                Ok(AnnotatedState::new(state, annotate_state))
-            })
-            .collect::<Result<Vec<_>>>()
     }
 }

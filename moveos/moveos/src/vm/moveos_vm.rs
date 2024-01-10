@@ -47,7 +47,7 @@ use moveos_types::{
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 
-use crate::gas::table::initial_cost_schedule;
+use crate::gas::table::{initial_cost_schedule, ClassifiedGasMeter};
 use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
 use crate::vm::tx_argument_resolver;
 
@@ -68,7 +68,11 @@ impl MoveOSVM {
         })
     }
 
-    pub fn new_session<'r, S: MoveOSResolver, G: SwitchableGasMeter>(
+    pub fn new_session<
+        'r,
+        S: MoveOSResolver,
+        G: SwitchableGasMeter + ClassifiedGasMeter + Clone,
+    >(
         &self,
         remote: &'r S,
         ctx: TxContext,
@@ -90,13 +94,21 @@ impl MoveOSVM {
         MoveOSSession::new(&self.inner, remote, ctx, gas_meter, false)
     }
 
-    pub fn new_readonly_session<'r, S: MoveOSResolver, G: SwitchableGasMeter>(
+    pub fn new_readonly_session<
+        'r,
+        S: MoveOSResolver,
+        G: SwitchableGasMeter + ClassifiedGasMeter + Clone,
+    >(
         &self,
         remote: &'r S,
         ctx: TxContext,
         gas_meter: G,
     ) -> MoveOSSession<'r, '_, S, G> {
         MoveOSSession::new(&self.inner, remote, ctx, gas_meter, true)
+    }
+
+    pub fn mark_loader_cache_as_invalid(&self) {
+        self.inner.mark_loader_cache_as_invalid()
     }
 }
 
@@ -117,7 +129,7 @@ pub struct MoveOSSession<'r, 'l, S, G> {
 impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
 where
     S: MoveOSResolver,
-    G: SwitchableGasMeter,
+    G: SwitchableGasMeter + ClassifiedGasMeter + Clone,
 {
     pub fn new(
         vm: &'l MoveVM,
@@ -311,11 +323,10 @@ where
                     .with_message(e.to_string())
                     .finish(Location::Undefined)
             })?;
-        if let Some(flag) = module_flag {
-            if flag.is_upgrade {
-                self.vm.mark_loader_cache_as_invalid();
-            }
-        }
+        let is_upgrade = module_flag.map_or(false, |flag| flag.is_upgrade);
+        if is_upgrade {
+            self.vm.mark_loader_cache_as_invalid();
+        };
 
         action_result
     }
@@ -445,13 +456,14 @@ where
         status: KeptVMStatus,
     ) -> VMResult<(TxContext, RawTransactionOutput)> {
         let gas_used = self.query_gas_used();
+        let is_read_only_execution = self.read_only;
         let MoveOSSession {
             vm: _,
             remote: _,
             session,
             ctx,
             table_data,
-            gas_meter: _,
+            mut gas_meter,
             read_only,
         } = self;
         let (changeset, raw_events, mut extensions) = session.finish_with_extensions()?;
@@ -485,13 +497,53 @@ where
             //We do not check the event, we allow read_only session to emit event now.
         }
 
-        let events = raw_events
+        let events: Vec<_> = raw_events
             .into_iter()
             .enumerate()
             .map(|(i, (struct_tag, event_data))| {
                 Ok(TransactionEvent::new(struct_tag, event_data, i as u64))
             })
             .collect::<VMResult<_>>()?;
+
+        // Check if there are modules upgrading
+        let module_flag = ctx.tx_context.get::<ModuleUpgradeFlag>().map_err(|e| {
+            PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
+                .with_message(e.to_string())
+                .finish(Location::Undefined)
+        })?;
+        let is_upgrade = module_flag.map_or(false, |flag| flag.is_upgrade);
+
+        match gas_meter.charge_change_set(&state_changeset) {
+            Ok(_) => {}
+            Err(partial_vm_error) => {
+                return Err(partial_vm_error
+                    .with_message(
+                        "An error occurred during the charging of the change set".to_owned(),
+                    )
+                    .finish(Location::Undefined));
+            }
+        }
+        match gas_meter.charge_event(events.as_slice()) {
+            Ok(_) => {}
+            Err(partial_vm_error) => {
+                return Err(partial_vm_error
+                    .with_message("An error occurred during the charging of the events".to_owned())
+                    .finish(Location::Undefined));
+            }
+        }
+
+        match gas_meter.check_constrains(ctx.tx_context.max_gas_amount) {
+            Ok(_) => {}
+            Err(partial_vm_err) => {
+                return Err(partial_vm_err.finish(Location::Undefined));
+            }
+        };
+
+        let mut gas_statement = gas_meter.gas_statement();
+        if is_read_only_execution {
+            gas_statement.execution_gas_used = 0;
+            gas_statement.storage_gas_used = 0;
+        }
 
         Ok((
             ctx.tx_context,
@@ -501,6 +553,8 @@ where
                 state_changeset,
                 events,
                 gas_used,
+                is_upgrade,
+                gas_statement,
             },
         ))
     }

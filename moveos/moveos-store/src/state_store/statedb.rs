@@ -112,6 +112,11 @@ where
         self.puts(update_set)
     }
 
+    fn update_state_root(&self, new_state_root: H256) -> Result<()> {
+        self.smt.update_state_root(new_state_root)?;
+        Ok(())
+    }
+
     pub fn dump(&self) -> Result<Vec<(Vec<u8>, State)>> {
         self.smt.dump()
     }
@@ -396,6 +401,12 @@ impl StateDBStore {
             .insert(context::GLOBAL_OBJECT_STORAGE_HANDLE, golbal_table_state);
 
         Ok(table_state_set)
+    }
+
+    // update global table state root
+    pub fn update_state_root(&self, new_state_root: H256) -> Result<()> {
+        self.global_table.update_state_root(new_state_root)?;
+        Ok(())
     }
 }
 

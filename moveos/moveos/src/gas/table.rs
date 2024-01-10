@@ -1,9 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_binary_format::file_format::CodeOffset;
 use move_core_types::account_address::AccountAddress;
+use move_core_types::effects::Op;
 use move_core_types::gas_algebra::{
     AbstractMemorySize, GasQuantity, InternalGas, NumArgs, NumBytes,
 };
@@ -12,10 +12,15 @@ use move_core_types::vm_status::StatusCode;
 use move_vm_types::gas::{GasMeter, SimpleInstruction};
 use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::views::{TypeView, ValueView};
+use moveos_types::moveos_std::event::TransactionEvent;
+use moveos_types::state::StateChangeSet;
+use moveos_types::transaction::GasStatement;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::ops::{Add, Bound};
+use std::rc::Rc;
 
 use super::SwitchableGasMeter;
 
@@ -34,11 +39,22 @@ pub const STACK_SIZE_TIER_DEFAULT: u64 = 1;
 
 pub static ZERO_COST_SCHEDULE: Lazy<CostTable> = Lazy::new(zero_cost_schedule);
 
+#[derive(Clone, Debug, Default, Serialize, PartialEq, Eq, Deserialize)]
+pub struct ExtraGasParameter {
+    pub io_read_price: u64,
+    pub storage_fee_per_transaction_byte: u64,
+    pub storage_fee_per_event_byte: u64,
+    pub storage_fee_per_op_new_byte: u64,
+    pub storage_fee_per_op_modify_byte: u64,
+    pub storage_fee_per_op_delete: u64,
+}
+
 #[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
 pub struct CostTable {
     pub instruction_tiers: BTreeMap<u64, u64>,
     pub stack_height_tiers: BTreeMap<u64, u64>,
     pub stack_size_tiers: BTreeMap<u64, u64>,
+    pub extra_gas_parameter: ExtraGasParameter,
 }
 
 impl CostTable {
@@ -137,10 +153,20 @@ pub fn initial_cost_schedule() -> CostTable {
     .into_iter()
     .collect();
 
+    let extra_gas_parameter = ExtraGasParameter {
+        io_read_price: 1,
+        storage_fee_per_transaction_byte: 20,
+        storage_fee_per_event_byte: 20,
+        storage_fee_per_op_new_byte: 51,
+        storage_fee_per_op_modify_byte: 30,
+        storage_fee_per_op_delete: 10,
+    };
+
     CostTable {
         instruction_tiers,
         stack_size_tiers,
         stack_height_tiers,
+        extra_gas_parameter,
     }
 }
 
@@ -151,6 +177,7 @@ pub fn zero_cost_schedule() -> CostTable {
         instruction_tiers: zero_tier.clone(),
         stack_size_tiers: zero_tier.clone(),
         stack_height_tiers: zero_tier,
+        extra_gas_parameter: ExtraGasParameter::default(),
     }
 }
 
@@ -182,12 +209,15 @@ impl GasCost {
 }
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MoveOSGasMeter {
     cost_table: CostTable,
     gas_left: u64,
     //TODO we do not need to use gas_price in gas meter.
     charge: bool,
+
+    execution_gas_used: Rc<RefCell<u64>>,
+    storage_gas_used: Rc<RefCell<u64>>,
 
     // The current height of the operand stack, and the maximal height that it has reached.
     stack_height_high_water_mark: u64,
@@ -226,6 +256,8 @@ impl MoveOSGasMeter {
             gas_left: budget,
             cost_table,
             charge: true,
+            execution_gas_used: Rc::new(RefCell::new(0)),
+            storage_gas_used: Rc::new(RefCell::new(0)),
             stack_height_high_water_mark: 0,
             stack_height_current: 0,
             stack_size_high_water_mark: 0,
@@ -249,6 +281,8 @@ impl MoveOSGasMeter {
             cost_table: ZERO_COST_SCHEDULE.clone(),
             gas_left: 0,
             charge: false,
+            execution_gas_used: Rc::new(RefCell::new(0)),
+            storage_gas_used: Rc::new(RefCell::new(0)),
             stack_height_high_water_mark: 0,
             stack_height_current: 0,
             stack_height_next_tier_start: None,
@@ -341,31 +375,30 @@ impl MoveOSGasMeter {
         pops: u64,
         incr_size: u64,
         _decr_size: u64,
-    ) -> PartialVMResult<()> {
+    ) -> PartialVMResult<u64> {
         self.push_stack(pushes)?;
         self.increase_instruction_count(num_instructions)?;
         self.increase_stack_size(incr_size)?;
 
-        self.deduct_gas(
-            GasCost::new(
-                self.instructions_current_tier_mult
-                    .checked_mul(num_instructions)
-                    .ok_or_else(|| PartialVMError::new(StatusCode::ARITHMETIC_ERROR))?,
-                self.stack_size_current_tier_mult
-                    .checked_mul(incr_size)
-                    .ok_or_else(|| PartialVMError::new(StatusCode::ARITHMETIC_ERROR))?,
-                self.stack_height_current_tier_mult
-                    .checked_mul(pushes)
-                    .ok_or_else(|| PartialVMError::new(StatusCode::ARITHMETIC_ERROR))?,
-            )
-            .total_internal()
-            .into(),
-        )?;
+        let gas_cost = GasCost::new(
+            self.instructions_current_tier_mult
+                .checked_mul(num_instructions)
+                .ok_or_else(|| PartialVMError::new(StatusCode::ARITHMETIC_ERROR))?,
+            self.stack_size_current_tier_mult
+                .checked_mul(incr_size)
+                .ok_or_else(|| PartialVMError::new(StatusCode::ARITHMETIC_ERROR))?,
+            self.stack_height_current_tier_mult
+                .checked_mul(pushes)
+                .ok_or_else(|| PartialVMError::new(StatusCode::ARITHMETIC_ERROR))?,
+        )
+        .total_internal()
+        .into();
+        self.deduct_gas(gas_cost)?;
 
         // self.decrease_stack_size(decr_size);
         self.pop_stack(pops);
 
-        Ok(())
+        Ok(gas_cost)
     }
 
     pub fn deduct_gas(&mut self, amount: u64) -> PartialVMResult<()> {
@@ -387,6 +420,129 @@ impl MoveOSGasMeter {
 
     pub fn set_metering(&mut self, enabled: bool) {
         self.charge = enabled;
+    }
+}
+
+pub trait ClassifiedGasMeter {
+    fn charge_execution(&mut self, gas_cost: u64) -> PartialVMResult<()>;
+    // fn charge_io_read(&mut self);
+    fn charge_io_write(&mut self, data_size: u64) -> PartialVMResult<()>;
+    fn charge_event(&mut self, events: &[TransactionEvent]) -> PartialVMResult<()>;
+    fn charge_change_set(&mut self, change_set: &StateChangeSet) -> PartialVMResult<()>;
+    fn check_constrains(&self, max_gas_amount: u64) -> PartialVMResult<()>;
+    fn gas_statement(&self) -> GasStatement;
+}
+
+impl ClassifiedGasMeter for MoveOSGasMeter {
+    fn charge_execution(&mut self, gas_cost: u64) -> PartialVMResult<()> {
+        if !self.charge {
+            return Ok(());
+        }
+
+        let new_value = self.execution_gas_used.borrow().add(gas_cost);
+        *self.execution_gas_used.borrow_mut() = new_value;
+        Ok(())
+    }
+
+    // fn charge_io_read(&mut self) {}
+
+    fn charge_io_write(&mut self, data_size: u64) -> PartialVMResult<()> {
+        if !self.charge {
+            return Ok(());
+        }
+
+        let fee = self
+            .cost_table
+            .extra_gas_parameter
+            .storage_fee_per_transaction_byte
+            * data_size;
+        let new_value = self.storage_gas_used.borrow().add(fee);
+        *self.storage_gas_used.borrow_mut() = new_value;
+        self.deduct_gas(fee)
+    }
+
+    fn charge_event(&mut self, events: &[TransactionEvent]) -> PartialVMResult<()> {
+        if !self.charge {
+            return Ok(());
+        }
+
+        let mut total_event_fee = 0;
+        for event in events {
+            let fee = event.event_data.len() as u64
+                * self
+                    .cost_table
+                    .extra_gas_parameter
+                    .storage_fee_per_event_byte;
+            let new_value = self.storage_gas_used.borrow().add(fee);
+            *self.storage_gas_used.borrow_mut() = new_value;
+            total_event_fee += fee;
+        }
+        self.deduct_gas(total_event_fee)
+    }
+
+    fn charge_change_set(&mut self, change_set: &StateChangeSet) -> PartialVMResult<()> {
+        if !self.charge {
+            return Ok(());
+        }
+
+        let mut total_change_set_fee = 0;
+        for (_, table_change) in change_set.changes.iter() {
+            for (key, op) in table_change.entries.iter() {
+                let fee = {
+                    match op {
+                        Op::Modify(value) => {
+                            (key.len() + value.value.len()) as u64
+                                * self
+                                    .cost_table
+                                    .extra_gas_parameter
+                                    .storage_fee_per_op_modify_byte
+                        }
+                        Op::Delete => {
+                            self.cost_table
+                                .extra_gas_parameter
+                                .storage_fee_per_op_delete
+                        }
+                        Op::New(value) => {
+                            (key.len() + value.value.len()) as u64
+                                * self
+                                    .cost_table
+                                    .extra_gas_parameter
+                                    .storage_fee_per_op_new_byte
+                        }
+                    }
+                };
+                let new_value = self.storage_gas_used.borrow().add(fee);
+                *self.storage_gas_used.borrow_mut() = new_value;
+                total_change_set_fee += fee;
+            }
+        }
+        self.deduct_gas(total_change_set_fee)
+    }
+
+    fn check_constrains(&self, max_gas_amount: u64) -> PartialVMResult<()> {
+        let gas_left: u64 = self.balance_internal().into();
+        let gas_used = max_gas_amount.checked_sub(gas_left).unwrap_or_else(
+            || panic!("gas_left({gas_left}) should always be less than or equal to max gas amount({max_gas_amount})")
+        );
+
+        if gas_used == 0 {
+            return Ok(());
+        }
+
+        let execution_gas_used = *self.execution_gas_used.borrow();
+        let storage_gas_used = *self.storage_gas_used.borrow();
+        if gas_used != execution_gas_used + storage_gas_used {
+            return Err(PartialVMError::new(StatusCode::ABORTED)
+                .with_message("Failed to check the constraints of the gas_used.".to_owned()));
+        }
+        Ok(())
+    }
+
+    fn gas_statement(&self) -> GasStatement {
+        GasStatement {
+            execution_gas_used: *self.execution_gas_used.borrow(),
+            storage_gas_used: *self.storage_gas_used.borrow(),
+        }
     }
 }
 
@@ -437,6 +593,23 @@ fn get_simple_instruction_stack_change(
     }
 }
 
+impl MoveOSGasMeter {
+    fn charge_internal_execution(
+        &mut self,
+        num_instructions: u64,
+        pushes: u64,
+        pops: u64,
+        incr_size: u64,
+        decr_size: u64,
+    ) -> PartialVMResult<()> {
+        let charge_result = self.charge(num_instructions, pushes, pops, incr_size, decr_size);
+        match charge_result {
+            Ok(gas_cost) => self.charge_execution(gas_cost),
+            Err(e) => Err(e),
+        }
+    }
+}
+
 impl GasMeter for MoveOSGasMeter {
     fn balance_internal(&self) -> InternalGas {
         InternalGas::new(self.gas_left)
@@ -444,23 +617,23 @@ impl GasMeter for MoveOSGasMeter {
 
     fn charge_simple_instr(&mut self, instr: SimpleInstruction) -> PartialVMResult<()> {
         let (pops, pushes, pop_size, push_size) = get_simple_instruction_stack_change(instr);
-        self.charge(1, pushes, pops, push_size.into(), pop_size.into())
+        self.charge_internal_execution(1, pushes, pops, push_size.into(), pop_size.into())
     }
 
     fn charge_br_true(&mut self, _target_offset: Option<CodeOffset>) -> PartialVMResult<()> {
-        self.charge(1, 0, 0, 0, 0)
+        self.charge_internal_execution(1, 0, 0, 0, 0)
     }
 
     fn charge_br_false(&mut self, _target_offset: Option<CodeOffset>) -> PartialVMResult<()> {
-        self.charge(1, 0, 0, 0, 0)
+        self.charge_internal_execution(1, 0, 0, 0, 0)
     }
 
     fn charge_branch(&mut self, _target_offset: CodeOffset) -> PartialVMResult<()> {
-        self.charge(1, 0, 0, 0, 0)
+        self.charge_internal_execution(1, 0, 0, 0, 0)
     }
 
     fn charge_pop(&mut self, popped_val: impl ValueView) -> PartialVMResult<()> {
-        self.charge(1, 0, 1, 0, popped_val.legacy_abstract_memory_size().into())
+        self.charge_internal_execution(1, 0, 1, 0, popped_val.legacy_abstract_memory_size().into())
     }
 
     fn charge_call(
@@ -477,7 +650,7 @@ impl GasMeter for MoveOSGasMeter {
         let stack_reduction_size = args.fold(AbstractMemorySize::new(0), |acc, elem| {
             acc + elem.legacy_abstract_memory_size()
         });
-        self.charge(1, 0, pops, 0, stack_reduction_size.into())
+        self.charge_internal_execution(1, 0, pops, 0, stack_reduction_size.into())
     }
 
     fn charge_call_generic(
@@ -496,12 +669,12 @@ impl GasMeter for MoveOSGasMeter {
         });
         // Charge for the pops, no pushes, and account for the stack size decrease. Also track the
         // `CallGeneric` instruction we must have encountered for this.
-        self.charge(1, 0, pops, 0, stack_reduction_size.into())
+        self.charge_internal_execution(1, 0, pops, 0, stack_reduction_size.into())
     }
 
     fn charge_ld_const(&mut self, size: NumBytes) -> PartialVMResult<()> {
         // Charge for the load from the locals onto the stack.
-        self.charge(1, 1, 0, u64::from(size), 0)
+        self.charge_internal_execution(1, 1, 0, u64::from(size), 0)
     }
 
     fn charge_ld_const_after_deserialization(
@@ -514,21 +687,21 @@ impl GasMeter for MoveOSGasMeter {
 
     fn charge_copy_loc(&mut self, val: impl ValueView) -> PartialVMResult<()> {
         // Charge for the copy of the local onto the stack.
-        self.charge(1, 1, 0, val.legacy_abstract_memory_size().into(), 0)
+        self.charge_internal_execution(1, 1, 0, val.legacy_abstract_memory_size().into(), 0)
     }
 
     fn charge_move_loc(&mut self, val: impl ValueView) -> PartialVMResult<()> {
         // Charge for the move of the local on to the stack. Note that we charge here since we
         // aren't tracking the local size (at least not yet). If we were, this should be a net-zero
         // operation in terms of memory usage.
-        self.charge(1, 1, 0, val.legacy_abstract_memory_size().into(), 0)
+        self.charge_internal_execution(1, 1, 0, val.legacy_abstract_memory_size().into(), 0)
     }
 
     fn charge_store_loc(&mut self, val: impl ValueView) -> PartialVMResult<()> {
         // Charge for the storing of the value on the stack into a local. Note here that if we were
         // also accounting for the size of the locals that this would be a net-zero operation in
         // terms of memory.
-        self.charge(1, 0, 1, 0, val.legacy_abstract_memory_size().into())
+        self.charge_internal_execution(1, 0, 1, 0, val.legacy_abstract_memory_size().into())
     }
 
     fn charge_pack(
@@ -540,7 +713,7 @@ impl GasMeter for MoveOSGasMeter {
         let num_fields = args.len() as u64;
         // The actual amount of memory on the stack is staying the same with the addition of some
         // extra size for the struct, so the size doesn't really change much.
-        self.charge(1, 1, num_fields, STRUCT_SIZE.into(), 0)
+        self.charge_internal_execution(1, 1, num_fields, STRUCT_SIZE.into(), 0)
     }
 
     fn charge_unpack(
@@ -550,14 +723,14 @@ impl GasMeter for MoveOSGasMeter {
     ) -> PartialVMResult<()> {
         // We perform `num_fields` number of pushes.
         let num_fields = args.len() as u64;
-        self.charge(1, num_fields, 1, 0, STRUCT_SIZE.into())
+        self.charge_internal_execution(1, num_fields, 1, 0, STRUCT_SIZE.into())
     }
 
     fn charge_read_ref(&mut self, ref_val: impl ValueView) -> PartialVMResult<()> {
         // We read the the reference so we are decreasing the size of the stack by the size of the
         // reference, and adding to it the size of the value that has been read from that
         // reference.
-        self.charge(
+        self.charge_internal_execution(
             1,
             1,
             1,
@@ -574,7 +747,7 @@ impl GasMeter for MoveOSGasMeter {
         // TODO(tzakian): We should account for this elsewhere as the owner of data the the
         // reference points to won't be on the stack. For now though, we treat it as adding to the
         // stack size.
-        self.charge(
+        self.charge_internal_execution(
             1,
             1,
             2,
@@ -585,7 +758,7 @@ impl GasMeter for MoveOSGasMeter {
 
     fn charge_eq(&mut self, lhs: impl ValueView, rhs: impl ValueView) -> PartialVMResult<()> {
         let size_reduction = lhs.legacy_abstract_memory_size() + rhs.legacy_abstract_memory_size();
-        self.charge(
+        self.charge_internal_execution(
             1,
             1,
             2,
@@ -596,7 +769,7 @@ impl GasMeter for MoveOSGasMeter {
 
     fn charge_neq(&mut self, lhs: impl ValueView, rhs: impl ValueView) -> PartialVMResult<()> {
         let size_reduction = lhs.legacy_abstract_memory_size() + rhs.legacy_abstract_memory_size();
-        self.charge(1, 1, 2, Type::Bool.size().into(), size_reduction.into())
+        self.charge_internal_execution(1, 1, 2, Type::Bool.size().into(), size_reduction.into())
     }
 
     fn charge_borrow_global(
@@ -606,7 +779,7 @@ impl GasMeter for MoveOSGasMeter {
         _ty: impl TypeView,
         _is_success: bool,
     ) -> PartialVMResult<()> {
-        self.charge(1, 1, 1, REFERENCE_SIZE.into(), Type::Address.size().into())
+        self.charge_internal_execution(1, 1, 1, REFERENCE_SIZE.into(), Type::Address.size().into())
     }
 
     fn charge_exists(
@@ -616,7 +789,7 @@ impl GasMeter for MoveOSGasMeter {
         // TODO(Gas): see if we can get rid of this param
         _exists: bool,
     ) -> PartialVMResult<()> {
-        self.charge(
+        self.charge_internal_execution(
             1,
             1,
             1,
@@ -634,7 +807,7 @@ impl GasMeter for MoveOSGasMeter {
         let size = val
             .map(|val| val.legacy_abstract_memory_size())
             .unwrap_or_else(AbstractMemorySize::zero);
-        self.charge(1, 1, 1, size.into(), Type::Address.size().into())
+        self.charge_internal_execution(1, 1, 1, size.into(), Type::Address.size().into())
     }
 
     fn charge_move_to(
@@ -644,7 +817,7 @@ impl GasMeter for MoveOSGasMeter {
         _val: impl ValueView,
         _is_success: bool,
     ) -> PartialVMResult<()> {
-        self.charge(1, 0, 2, 0, Type::Address.size().into())
+        self.charge_internal_execution(1, 0, 2, 0, Type::Address.size().into())
     }
 
     fn charge_vec_pack<'a>(
@@ -656,11 +829,11 @@ impl GasMeter for MoveOSGasMeter {
         let num_args = args.len() as u64;
         // The amount of data on the stack stays constant except we have some extra metadata for
         // the vector to hold the length of the vector.
-        self.charge(1, 1, num_args, VEC_SIZE.into(), 0)
+        self.charge_internal_execution(1, 1, num_args, VEC_SIZE.into(), 0)
     }
 
     fn charge_vec_len(&mut self, _ty: impl TypeView) -> PartialVMResult<()> {
-        self.charge(1, 1, 1, Type::U64.size().into(), REFERENCE_SIZE.into())
+        self.charge_internal_execution(1, 1, 1, Type::U64.size().into(), REFERENCE_SIZE.into())
     }
 
     fn charge_vec_borrow(
@@ -669,7 +842,7 @@ impl GasMeter for MoveOSGasMeter {
         _ty: impl TypeView,
         _is_success: bool,
     ) -> PartialVMResult<()> {
-        self.charge(
+        self.charge_internal_execution(
             1,
             1,
             2,
@@ -684,7 +857,7 @@ impl GasMeter for MoveOSGasMeter {
         _val: impl ValueView,
     ) -> PartialVMResult<()> {
         // The value was already on the stack, so we aren't increasing the number of bytes on the stack.
-        self.charge(1, 0, 2, 0, REFERENCE_SIZE.into())
+        self.charge_internal_execution(1, 0, 2, 0, REFERENCE_SIZE.into())
     }
 
     fn charge_vec_pop_back(
@@ -692,7 +865,7 @@ impl GasMeter for MoveOSGasMeter {
         _ty: impl TypeView,
         _val: Option<impl ValueView>,
     ) -> PartialVMResult<()> {
-        self.charge(1, 1, 1, 0, REFERENCE_SIZE.into())
+        self.charge_internal_execution(1, 1, 1, 0, REFERENCE_SIZE.into())
     }
 
     fn charge_vec_unpack(
@@ -704,12 +877,12 @@ impl GasMeter for MoveOSGasMeter {
         // Charge for the pushes
         let pushes = u64::from(expect_num_elements);
         // The stack size stays pretty much the same modulo the additional vector size
-        self.charge(1, pushes, 1, 0, VEC_SIZE.into())
+        self.charge_internal_execution(1, pushes, 1, 0, VEC_SIZE.into())
     }
 
     fn charge_vec_swap(&mut self, _ty: impl TypeView) -> PartialVMResult<()> {
         let size_decrease = REFERENCE_SIZE + Type::U64.size() + Type::U64.size();
-        self.charge(1, 1, 1, 0, size_decrease.into())
+        self.charge_internal_execution(1, 1, 1, 0, size_decrease.into())
     }
 
     fn charge_load_resource(
@@ -745,9 +918,13 @@ impl GasMeter for MoveOSGasMeter {
         // Charge for the stack operations. We don't count this as an "instruction" since we
         // already accounted for the `Call` instruction in the
         // `charge_native_function_before_execution` call.
-        self.charge(0, pushes, 0, size_increase.into(), 0)?;
+        //self.charge(0, pushes, 0, size_increase.into(), 0)?;
         // Now charge the gas that the native function told us to charge.
-        self.deduct_gas(amount.into())
+        //self.deduct_gas(amount.into())
+
+        self.charge_execution(amount.into())?;
+        self.deduct_gas(amount.into())?;
+        self.charge_internal_execution(0, pushes, 0, size_increase.into(), 0)
     }
 
     fn charge_native_function_before_execution(
@@ -765,7 +942,7 @@ impl GasMeter for MoveOSGasMeter {
         // Track that this is going to be popping from the operand stack. We also increment the
         // instruction count as we need to account for the `Call` bytecode that initiated this
         // native call.
-        self.charge(1, 0, pops, 0, stack_reduction_size.into())
+        self.charge_internal_execution(1, 0, pops, 0, stack_reduction_size.into())
     }
 
     fn charge_drop_frame(

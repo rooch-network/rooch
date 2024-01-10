@@ -103,6 +103,7 @@ pub trait AbstractTransaction {
     ) -> Result<MoveOSTransaction>;
 
     fn multi_chain_id(&self) -> MultiChainID;
+    fn tx_size(&self) -> u64;
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -194,6 +195,10 @@ impl AbstractTransaction for TypedTransaction {
             TypedTransaction::Rooch(_tx) => MultiChainID::from(ROOCH),
             TypedTransaction::Ethereum(_tx) => MultiChainID::from(ETHER),
         }
+    }
+
+    fn tx_size(&self) -> u64 {
+        self.encode().len() as u64
     }
 }
 

@@ -4,7 +4,9 @@
 use crate::actor::messages::{
     GetAnnotatedStatesByStateMessage, GetEventsByEventHandleMessage, GetEventsByEventIDsMessage,
     GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage, ListStatesMessage,
+    RefreshStateMessage,
 };
+use crate::actor::reader_executor::ReaderExecutorActor;
 use crate::actor::{
     executor::ExecutorActor,
     messages::{
@@ -36,11 +38,18 @@ use tokio::runtime::Handle;
 #[derive(Clone)]
 pub struct ExecutorProxy {
     pub actor: ActorRef<ExecutorActor>,
+    pub reader_actor: ActorRef<ReaderExecutorActor>,
 }
 
 impl ExecutorProxy {
-    pub fn new(actor: ActorRef<ExecutorActor>) -> Self {
-        Self { actor }
+    pub fn new(
+        actor: ActorRef<ExecutorActor>,
+        reader_actor: ActorRef<ReaderExecutorActor>,
+    ) -> Self {
+        Self {
+            actor,
+            reader_actor,
+        }
     }
 
     pub async fn validate_transaction<T>(&self, tx: T) -> Result<VerifiedMoveOSTransaction>
@@ -66,11 +75,15 @@ impl ExecutorProxy {
         &self,
         call: FunctionCall,
     ) -> Result<AnnotatedFunctionResult> {
-        self.actor.send(ExecuteViewFunctionMessage { call }).await?
+        self.reader_actor
+            .send(ExecuteViewFunctionMessage { call })
+            .await?
     }
 
     pub async fn get_states(&self, access_path: AccessPath) -> Result<Vec<Option<State>>> {
-        self.actor.send(StatesMessage { access_path }).await?
+        self.reader_actor
+            .send(StatesMessage { access_path })
+            .await?
     }
 
     pub async fn resolve_address(&self, mca: MultiChainAddress) -> Result<AccountAddress> {
@@ -81,7 +94,7 @@ impl ExecutorProxy {
         &self,
         access_path: AccessPath,
     ) -> Result<Vec<Option<AnnotatedState>>> {
-        self.actor
+        self.reader_actor
             .send(AnnotatedStatesMessage { access_path })
             .await?
     }
@@ -92,7 +105,7 @@ impl ExecutorProxy {
         cursor: Option<Vec<u8>>,
         limit: usize,
     ) -> Result<Vec<(Vec<u8>, State)>> {
-        self.actor
+        self.reader_actor
             .send(ListStatesMessage {
                 access_path,
                 cursor,
@@ -107,7 +120,7 @@ impl ExecutorProxy {
         cursor: Option<Vec<u8>>,
         limit: usize,
     ) -> Result<Vec<(Vec<u8>, AnnotatedState)>> {
-        self.actor
+        self.reader_actor
             .send(ListAnnotatedStatesMessage {
                 access_path,
                 cursor,
@@ -122,7 +135,7 @@ impl ExecutorProxy {
         cursor: Option<u64>,
         limit: u64,
     ) -> Result<Vec<AnnotatedEvent>> {
-        self.actor
+        self.reader_actor
             .send(GetAnnotatedEventsByEventHandleMessage {
                 event_handle_type,
                 cursor,
@@ -137,7 +150,7 @@ impl ExecutorProxy {
         cursor: Option<u64>,
         limit: u64,
     ) -> Result<Vec<Event>> {
-        self.actor
+        self.reader_actor
             .send(GetEventsByEventHandleMessage {
                 event_handle_type,
                 cursor,
@@ -150,7 +163,7 @@ impl ExecutorProxy {
         &self,
         event_ids: Vec<EventID>,
     ) -> Result<Vec<Option<AnnotatedEvent>>> {
-        self.actor
+        self.reader_actor
             .send(GetEventsByEventIDsMessage { event_ids })
             .await?
     }
@@ -159,7 +172,7 @@ impl ExecutorProxy {
         &self,
         tx_hashes: Vec<H256>,
     ) -> Result<Vec<Option<TransactionExecutionInfo>>> {
-        self.actor
+        self.reader_actor
             .send(GetTxExecutionInfosByHashMessage { tx_hashes })
             .await?
     }
@@ -168,8 +181,17 @@ impl ExecutorProxy {
         &self,
         states: Vec<State>,
     ) -> Result<Vec<AnnotatedState>> {
-        self.actor
+        self.reader_actor
             .send(GetAnnotatedStatesByStateMessage { states })
+            .await?
+    }
+
+    pub async fn refresh_state(&self, new_state_root: H256, is_upgrade: bool) -> Result<()> {
+        self.reader_actor
+            .send(RefreshStateMessage {
+                new_state_root,
+                is_upgrade,
+            })
             .await?
     }
 }

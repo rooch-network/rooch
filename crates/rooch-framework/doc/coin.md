@@ -50,7 +50,6 @@ This module provides the foundation for typesafe Coins.
 
 ## Struct `Coin`
 
-Core data structures
 Main structure representing a coin.
 Note the <code>CoinType</code> must have <code>key</code> ability.
 if the <code>CoinType</code> has <code>store</code> ability, the <code><a href="coin.md#0x3_coin_Coin">Coin</a></code> is a public coin, the user can operate it directly by coin module's function.
@@ -194,12 +193,12 @@ Cannot destroy non-zero coins
 
 
 
-<a name="0x3_coin_ErrorInSufficientBalance"></a>
+<a name="0x3_coin_ErrorInsufficientBalance"></a>
 
 Not enough coins to extract
 
 
-<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorInSufficientBalance">ErrorInSufficientBalance</a>: u64 = 3;
+<pre><code><b>const</b> <a href="coin.md#0x3_coin_ErrorInsufficientBalance">ErrorInsufficientBalance</a>: u64 = 3;
 </code></pre>
 
 

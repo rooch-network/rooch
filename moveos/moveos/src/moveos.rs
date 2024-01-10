@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::gas::table::{initial_cost_schedule, MoveOSGasMeter};
+use crate::gas::table::{initial_cost_schedule, ClassifiedGasMeter, MoveOSGasMeter};
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
 use anyhow::{bail, ensure, Result};
 use backtrace::Backtrace;
@@ -164,7 +164,7 @@ impl MoveOS {
 
         // execute main tx
         let execute_result = session.execute_move_action(verified_action);
-        let status = match vm_status_of_result(execute_result).keep_or_discard() {
+        let status = match vm_status_of_result(execute_result.clone()).keep_or_discard() {
             Ok(status) => status,
             Err(discard_status) => {
                 bail!("Discard status: {:?}", discard_status);
@@ -246,8 +246,12 @@ impl MoveOS {
         // The variables in TxContext kv store before this executions should not be cleaned,
         // So we keep a backup here, and then insert to the TxContext kv store when session respawed.
         let system_env = ctx.map.clone();
+
         let cost_table = initial_cost_schedule();
-        let gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+
+        gas_meter.charge_io_write(ctx.tx_size)?;
+
         let mut session = self.vm.new_session(&self.db, ctx, gas_meter);
 
         // system pre_execute
@@ -411,6 +415,8 @@ impl MoveOS {
             state_changeset,
             events,
             gas_used: _,
+            is_upgrade: _,
+            gas_statement: _,
         } = output;
         let new_state_root = self
             .db
@@ -452,7 +458,7 @@ impl MoveOS {
         self.execute_readonly_function(&tx_context, function_call)
     }
 
-    fn execute_readonly_function(
+    pub fn execute_readonly_function(
         &self,
         tx_context: &TxContext,
         function_call: FunctionCall,
@@ -582,6 +588,15 @@ impl MoveOS {
 
         let (_ctx, output) = session.finish_with_extensions(kept_status)?;
         Ok(output)
+    }
+
+    pub fn refresh_state(&self, new_state_root: H256, is_upgrade: bool) -> Result<()> {
+        self.state().update_state_root(new_state_root)?;
+
+        if is_upgrade {
+            self.vm.mark_loader_cache_as_invalid();
+        };
+        Ok(())
     }
 }
 

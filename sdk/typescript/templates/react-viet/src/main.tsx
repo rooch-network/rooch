@@ -21,7 +21,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <Theme appearance="dark">
       <QueryClientProvider client={queryClient}>
             <RoochClientProvider defaultChain={ LocalChain }>
-                <WalletProvider wallet={ SupportWallet.UniSat } autoConnect>
+                <WalletProvider wallet={ SupportWallet.Okx } autoConnect>
                   <App/>
                 </WalletProvider>
             </RoochClientProvider>

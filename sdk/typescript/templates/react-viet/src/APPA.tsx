@@ -18,8 +18,6 @@ export function App() {
   const sessionAccount = useCurrentSessionAccount()
   const { mutateAsync: connectWallet } = useConnectWallet()
 
-  console.log(account?.getInfo().publicKey)
-
   return (
     <div className="App">
         <p> Wallet Demo</p>
