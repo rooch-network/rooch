@@ -14,7 +14,7 @@ use bitcoin::{
     WitnessVersion,
 };
 use ethers::types::H160;
-use fastcrypto::secp256k1::recoverable::Secp256k1RecoverablePublicKey;
+use fastcrypto::secp256k1::Secp256k1PublicKey;
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
@@ -195,6 +195,7 @@ impl MoveStructState for MultiChainAddress {
         ])
     }
 }
+
 /// Rooch address type
 #[derive(Copy, Clone, Ord, PartialOrd, PartialEq, Eq, Hash)]
 pub struct RoochAddress(pub H256);
@@ -346,8 +347,8 @@ impl TryFrom<MultiChainAddress> for EthereumAddress {
     }
 }
 
-impl From<Secp256k1RecoverablePublicKey> for EthereumAddress {
-    fn from(value: Secp256k1RecoverablePublicKey) -> Self {
+impl From<Secp256k1PublicKey> for EthereumAddress {
+    fn from(value: Secp256k1PublicKey) -> Self {
         // Take uncompressed public key
         let uncompressed_public_key_bytes = value.pubkey.serialize_uncompressed();
         // Ignore the first byte and take the last 64-bytes of the uncompressed pubkey
@@ -432,7 +433,7 @@ impl TryFrom<u8> for BitcoinAddressPayloadType {
                 return Err(anyhow::anyhow!(
                     "bitcoin address payload type is invalid {} ",
                     no
-                ))
+                ));
             }
         })
     }
@@ -693,15 +694,7 @@ mod test {
     use bitcoin::hex::DisplayHex;
     use std::fmt::Debug;
 
-    #[test]
-    fn test_sdk_multi_chain_address() {
-        let expect_multi_chain_address_bytes: Vec<u8> = vec![
-            0, 0, 0, 0, 0, 0, 0, 0, 22, 2, 0, 250, 229, 201, 236, 138, 3, 250, 128, 22, 182, 58,
-            201, 55, 32, 228, 228, 89, 193, 204, 7,
-        ];
-
-        let address_str = "bc1qltjunmy2q0agq94k8tynwg8yu3vurnq8h7yc7p";
-
+    fn test_sdk_multi_chain_address(address_str: &str, expect_address_bytes: Vec<u8>) {
         let address = bitcoin::Address::from_str(address_str)
             .unwrap()
             .require_network(bitcoin::Network::Bitcoin)
@@ -709,10 +702,45 @@ mod test {
         let bitcoin_address = BitcoinAddress::from(address);
         let multi_chain_address = MultiChainAddress::from(bitcoin_address);
 
-        assert_eq!(
-            expect_multi_chain_address_bytes,
-            multi_chain_address.to_bytes()
-        )
+        let bytes = &multi_chain_address.to_bytes();
+        assert_eq!(expect_address_bytes, multi_chain_address.to_bytes())
+    }
+
+    #[test]
+    fn test_sdk_address() {
+        // native swgwit p2wpkh
+        let p2wpkh_address_str = "bc1pq5ttgyqu5pmfn9aqt09d978mky2fndxr3ed3ntszta75g9q6xrlqlwyl0r";
+        let p22pkh_expect_address_bytes: Vec<u8> = vec![
+            0, 0, 0, 0, 0, 0, 0, 0, 34, 2, 1, 5, 22, 180, 16, 28, 160, 118, 153, 151, 160, 91, 202,
+            210, 248, 251, 177, 20, 153, 180, 195, 142, 91, 25, 174, 2, 95, 125, 68, 20, 26, 48,
+            254,
+        ];
+        test_sdk_multi_chain_address(p2wpkh_address_str, p22pkh_expect_address_bytes);
+
+        // nestd segwit p2sh-p2wpkh
+        let p2sh_address_str = "39fVbRM2TNBdNZPYeAJM7sHCPKczaZL7LV";
+        let p2sh_expect_address_bytes: Vec<u8> = vec![
+            0, 0, 0, 0, 0, 0, 0, 0, 21, 1, 87, 119, 69, 184, 41, 233, 101, 189, 166, 156, 217, 192,
+            62, 9, 151, 234, 162, 97, 49, 192,
+        ];
+        test_sdk_multi_chain_address(p2sh_address_str, p2sh_expect_address_bytes);
+
+        // taproot p2tr
+        let p2tr_address_str = "bc1pq5ttgyqu5pmfn9aqt09d978mky2fndxr3ed3ntszta75g9q6xrlqlwyl0r";
+        let p2tr_expect_address_bytes: Vec<u8> = vec![
+            0, 0, 0, 0, 0, 0, 0, 0, 34, 2, 1, 5, 22, 180, 16, 28, 160, 118, 153, 151, 160, 91, 202,
+            210, 248, 251, 177, 20, 153, 180, 195, 142, 91, 25, 174, 2, 95, 125, 68, 20, 26, 48,
+            254,
+        ];
+        test_sdk_multi_chain_address(p2tr_address_str, p2tr_expect_address_bytes);
+
+        // legacy p2pkh
+        let p2pkh_address_str = "15MJa2Jx2yA5iERwTKENY2WdWF3vnN6KVe";
+        let p2pkh_expect_address_bytes: Vec<u8> = vec![
+            0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 47, 183, 125, 16, 71, 244, 105, 179, 253, 132, 178, 184,
+            60, 5, 68, 57, 97, 253, 162, 187,
+        ];
+        test_sdk_multi_chain_address(p2pkh_address_str, p2pkh_expect_address_bytes);
     }
 
     fn test_rooch_supported_address_roundtrip<T>()

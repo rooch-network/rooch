@@ -21,7 +21,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <Theme appearance="dark">
       <QueryClientProvider client={queryClient}>
             <RoochClientProvider defaultChain={ LocalChain }>
-                <WalletProvider wallet={ SupportWallet.Okx } autoConnect>
+                <WalletProvider wallet={ SupportWallet.UniSat } autoConnect>
                   <App/>
                 </WalletProvider>
             </RoochClientProvider>
@@ -29,3 +29,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </Theme>
   </React.StrictMode>
 );
+
+// rooch jiaoyi
+// rooch scan
+// rooch dashboard

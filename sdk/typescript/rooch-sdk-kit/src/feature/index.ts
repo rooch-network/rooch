@@ -3,8 +3,43 @@
 
 export enum SupportWallet {
   UniSat = 'UniSat',
-  Okx = 'Okx',
+  // Okx = 'Okx',
   ETH = 'ETH',
 }
 
-export const SupportWallets = [SupportWallet.UniSat, SupportWallet.Okx, SupportWallet.ETH]
+export const SupportWallets = [SupportWallet.UniSat, SupportWallet.ETH]
+
+// TODO: multi wallet support
+export class SupportNetWork {
+  static get Bitcoin(): BitcoinWallets {
+    return new BitcoinWallets()
+  }
+
+  static get ETH(): ETHSupportWallet {
+    return new ETHSupportWallet()
+  }
+}
+
+class BitcoinWallets {
+  get Unisat() {
+    console.log('Bitcoin with Unisat wallet support')
+    return this
+  }
+}
+
+class ETHSupportWallet {
+  get Metamask() {
+    console.log('Ethereum with Metamask support')
+    return this
+  }
+
+  get OKX() {
+    console.log('Ethereum with OKX support')
+    return this
+  }
+
+  get Unisat() {
+    console.log('Ethereum with Unisat support')
+    return this
+  }
+}

@@ -3,6 +3,7 @@
 
 import { ETHWallet } from './ethWallet'
 import { WalletAccount } from '../WalletAccount'
+import { SupportWallet } from '../../feature'
 
 export class Metamask extends ETHWallet {
   getTarget(): any {
@@ -13,10 +14,10 @@ export class Metamask extends ETHWallet {
     return 1
   }
 
-  sign(msg: string, _: string): Promise<string> {
-    return this.getTarget().request({
-      method: 'eth_sign',
-      params: [msg],
+  async sign(msg: string, from: string): Promise<string> {
+    return await this.getTarget().request({
+      method: 'personal_sign',
+      params: [msg, from],
     })
   }
 
@@ -40,6 +41,13 @@ export class Metamask extends ETHWallet {
         return accounts
       })
 
-    return accounts.map((v) => new WalletAccount(v))
+    const pk = await this.getTarget().request({
+      method: 'eth_getEncryptionPublicKey',
+      params: [accounts[0]],
+    })
+
+    console.log('address: ', accounts[0], 'pk ', pk)
+
+    return accounts.map((v) => new WalletAccount(v, SupportWallet.ETH))
   }
 }

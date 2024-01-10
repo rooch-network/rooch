@@ -3,6 +3,7 @@
 
 import { WalletAccount } from '../WalletAccount'
 import { BitcoinWallet } from './bitcoinWallet'
+import { SupportWallet } from '../../feature'
 
 export class OkxWallet extends BitcoinWallet {
   async sign(msg: string, fromAddress: string): Promise<string> {
@@ -22,6 +23,13 @@ export class OkxWallet extends BitcoinWallet {
   async connect(): Promise<WalletAccount[]> {
     const account = await this.getTarget().connect()
 
-    return [new WalletAccount(account.address, account.publicKey, account.compressedPublicKey)]
+    return [
+      new WalletAccount(
+        account.address,
+        SupportWallet.ETH,
+        account.publicKey,
+        account.compressedPublicKey,
+      ),
+    ]
   }
 }
