@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export enum SupportWallet {
-  UniSat = 'UniSat',
+  BITCOIN = 'BITCOIN',
   // Okx = 'Okx',
   ETH = 'ETH',
 }
 
-export const SupportWallets = [SupportWallet.UniSat, SupportWallet.ETH]
+export const SupportWallets = [SupportWallet.BITCOIN, SupportWallet.ETH]
 
 // TODO: multi wallet support
 export class SupportNetWork {

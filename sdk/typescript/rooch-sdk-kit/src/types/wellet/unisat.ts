@@ -27,6 +27,6 @@ export class UniSatWallet extends BitcoinWallet {
     }
     let publicKey = await this.getTarget().getPublicKey()
 
-    return [new WalletAccount(accounts[0], SupportWallet.ETH, publicKey)]
+    return [new WalletAccount(accounts[0], SupportWallet.BITCOIN, publicKey)]
   }
 }

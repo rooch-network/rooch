@@ -26,7 +26,7 @@ export class OkxWallet extends BitcoinWallet {
     return [
       new WalletAccount(
         account.address,
-        SupportWallet.ETH,
+        SupportWallet.BITCOIN,
         account.publicKey,
         account.compressedPublicKey,
       ),

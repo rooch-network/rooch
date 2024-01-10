@@ -41,13 +41,6 @@ export class Metamask extends ETHWallet {
         return accounts
       })
 
-    const pk = await this.getTarget().request({
-      method: 'eth_getEncryptionPublicKey',
-      params: [accounts[0]],
-    })
-
-    console.log('address: ', accounts[0], 'pk ', pk)
-
     return accounts.map((v) => new WalletAccount(v, SupportWallet.ETH))
   }
 }
