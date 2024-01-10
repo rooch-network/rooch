@@ -87,7 +87,7 @@ impl FromStr for InternalDAServerConfigType {
 pub struct InternalDAServerConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(
-        name = "servers",
+        name = "submit-strategy",
         long,
         help = "specifies the type of internal DA servers to be used. 'celestia' with corresponding Celestia server configuration, 'xxx' with corresponding xxx server configuration, etc."
     )]
@@ -166,6 +166,14 @@ pub struct DAServerOpenDAConfig {
     help = "specifies the configuration of the storage service. 'gcs' with corresponding GCS server configuration, 's3' with corresponding S3 server configuration, etc."
     )]
     pub config: HashMap<String, String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "max-segment-size",
+        long,
+        help = "max segment size, striking a balance between throughput and the constraints on blob size."
+    )]
+    pub max_segment_size: Option<u64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Parser)]
