@@ -702,7 +702,6 @@ mod test {
         let bitcoin_address = BitcoinAddress::from(address);
         let multi_chain_address = MultiChainAddress::from(bitcoin_address);
 
-        let bytes = &multi_chain_address.to_bytes();
         assert_eq!(expect_address_bytes, multi_chain_address.to_bytes())
     }
 

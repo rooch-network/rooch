@@ -532,7 +532,7 @@ mod tests {
     use ethers::utils::keccak256;
     use fastcrypto::{
         ed25519::{Ed25519KeyPair, Ed25519PrivateKey},
-        secp256k1::recoverable::{Secp256k1RecoverableKeyPair, Secp256k1RecoverablePrivateKey},
+        secp256k1::{Secp256k1PrivateKey, Secp256k1KeyPair},
         traits::{KeyPair, ToFromBytes},
     };
 
@@ -552,8 +552,8 @@ mod tests {
     // this test is to ensure that the ECDSA recoverable algorithm works for Ethereum public key to address
     #[test]
     fn test_ethereum_public_key_to_address() {
-        let private_key = Secp256k1RecoverablePrivateKey::from_bytes(&[1u8; 32]).unwrap(); // use 1u8.
-        let keypair: Secp256k1RecoverableKeyPair = private_key.into();
+        let private_key = Secp256k1PrivateKey::from_bytes(&[1u8; 32]).unwrap(); // use 1u8.
+        let keypair: Secp256k1KeyPair = private_key.into();
         let public_key = keypair.public();
         let uncompressed = public_key.pubkey.serialize_uncompressed();
         let uncompressed_64 = uncompressed[1..65].to_vec();
