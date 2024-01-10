@@ -4,8 +4,10 @@
 use crate::natives::helpers::{make_module_natives, make_native};
 use fastcrypto::{
     hash::{Keccak256, Sha256},
-    secp256k1::{Secp256k1PublicKey, Secp256k1Signature, recoverable::Secp256k1RecoverableSignature},
-    traits::{ToFromBytes, RecoverableSignature},
+    secp256k1::{
+        recoverable::Secp256k1RecoverableSignature, Secp256k1PublicKey, Secp256k1Signature,
+    },
+    traits::{RecoverableSignature, ToFromBytes},
 };
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::InternalGas;
@@ -56,12 +58,10 @@ pub fn native_ecrecover(
     };
 
     match pk {
-        Ok(pk) => {
-            Ok(NativeResult::ok(
-                cost,
-                smallvec![Value::vector_u8(pk.as_bytes().to_vec())],
-            ))
-        },
+        Ok(pk) => Ok(NativeResult::ok(
+            cost,
+            smallvec![Value::vector_u8(pk.as_bytes().to_vec())],
+        )),
         Err(_) => Ok(NativeResult::err(cost, E_FAIL_TO_RECOVER_PUBKEY)),
     }
 }
@@ -158,7 +158,6 @@ pub struct GasParameters {
     pub ecrecover: FromBytesGasParameters,
     pub decompress_pubkey: FromBytesGasParameters,
     pub verify: FromBytesGasParameters,
-
 }
 
 impl GasParameters {
@@ -172,7 +171,6 @@ impl GasParameters {
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-
     let natives = [
         ("verify", make_native(gas_params.verify, native_verify)),
         (
@@ -182,7 +180,8 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         (
             "ecrecover",
             make_native(gas_params.ecrecover, native_ecrecover),
-        ),];
+        ),
+    ];
 
     make_module_natives(natives)
 }

@@ -92,7 +92,7 @@ describe('SDK', () => {
           },
         ],
         {
-          maxGasAmount: 2000000,
+          maxGasAmount: 100000000,
         },
       )
 
@@ -121,7 +121,7 @@ describe('SDK', () => {
           },
         ],
         {
-          maxGasAmount: 2000000,
+          maxGasAmount: 100000000,
         },
       )
 
