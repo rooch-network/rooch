@@ -17,6 +17,8 @@ use rooch_config::da_config::{DAConfig, InternalDAServerConfigType};
 use crate::messages::{Batch, PutBatchMessage};
 use crate::server::celestia::actor::server::DAServerCelestiaActor;
 use crate::server::celestia::proxy::DAServerCelestiaProxy;
+use crate::server::openda::actor::server::DAServerOpenDAActor;
+use crate::server::openda::proxy::DAServerOpenDAProxy;
 use crate::server::serverproxy::DAServerProxy;
 
 // TODO tx buffer for building batch
@@ -51,6 +53,16 @@ impl DAActor {
                     servers.push(Arc::new(DAServerCelestiaProxy::new(
                         da_server.clone().into(),
                     )));
+                }
+                if let InternalDAServerConfigType::OpenDA(openda_config) = server_config_type {
+                    let da_server = DAServerOpenDAActor::new(openda_config)
+                        .await?
+                        .into_actor(
+                            Some(format!("DAServerOpenDA-{}", openda_config.scheme)),
+                            actor_system,
+                        )
+                        .await?;
+                    servers.push(Arc::new(DAServerOpenDAProxy::new(da_server.clone().into())));
                 }
             }
         } else {

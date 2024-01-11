@@ -239,6 +239,8 @@ dashmap = "5.5.3"
 celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 
+opendal = "0.44.1"
+
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES
 move-abigen = { git = "https://github.com/rooch-network/move", rev = "6ab3a7445b89e676b495370e4d21296f61f0c3f4" }
@@ -247,8 +249,8 @@ move-bytecode-verifier = { git = "https://github.com/rooch-network/move", rev = 
 move-bytecode-utils = { git = "https://github.com/rooch-network/move", rev = "6ab3a7445b89e676b495370e4d21296f61f0c3f4" }
 move-cli = { git = "https://github.com/rooch-network/move", rev = "6ab3a7445b89e676b495370e4d21296f61f0c3f4" }
 move-command-line-common = { git = "https://github.com/rooch-network/move", rev = "6ab3a7445b89e676b495370e4d21296f61f0c3f4" }
-move-compiler ={ git = "https://github.com/rooch-network/move", rev = "6ab3a7445b89e676b495370e4d21296f61f0c3f4" }
-move-core-types = { git = "https://github.com/rooch-network/move", rev = "6ab3a7445b89e676b495370e4d21296f61f0c3f4"}
+move-compiler = { git = "https://github.com/rooch-network/move", rev = "6ab3a7445b89e676b495370e4d21296f61f0c3f4" }
+move-core-types = { git = "https://github.com/rooch-network/move", rev = "6ab3a7445b89e676b495370e4d21296f61f0c3f4" }
 move-coverage = { git = "https://github.com/rooch-network/move", rev = "6ab3a7445b89e676b495370e4d21296f61f0c3f4" }
 move-disassembler = { git = "https://github.com/rooch-network/move", rev = "6ab3a7445b89e676b495370e4d21296f61f0c3f4" }
 move-docgen = { git = "https://github.com/rooch-network/move", rev = "6ab3a7445b89e676b495370e4d21296f61f0c3f4" }
@@ -272,7 +274,7 @@ move-vm-test-utils = { git = "https://github.com/rooch-network/move", rev = "6ab
 move-vm-types = { git = "https://github.com/rooch-network/move", rev = "6ab3a7445b89e676b495370e4d21296f61f0c3f4" }
 read-write-set = { git = "https://github.com/rooch-network/move", rev = "6ab3a7445b89e676b495370e4d21296f61f0c3f4" }
 read-write-set-dynamic = { git = "https://github.com/rooch-network/move", rev = "6ab3a7445b89e676b495370e4d21296f61f0c3f4" }
-move-bytecode-source-map  = { git = "https://github.com/rooch-network/move", rev = "6ab3a7445b89e676b495370e4d21296f61f0c3f4" }
+move-bytecode-source-map = { git = "https://github.com/rooch-network/move", rev = "6ab3a7445b89e676b495370e4d21296f61f0c3f4" }
 move-ir-types = { git = "https://github.com/rooch-network/move", rev = "6ab3a7445b89e676b495370e4d21296f61f0c3f4" }# END MOVE DEPENDENCIES
 
 # keep this for convenient debug Move in local repo

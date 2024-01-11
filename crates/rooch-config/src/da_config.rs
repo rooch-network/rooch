@@ -3,6 +3,7 @@
 
 use std::collections::HashMap;
 use std::error::Error;
+use std::fmt::Display;
 use std::str::FromStr;
 
 use clap::Parser;
@@ -147,6 +148,15 @@ pub enum OpenDAScheme {
     // access_key_id
     // secret_access_key
     S3,
+}
+
+impl Display for OpenDAScheme {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OpenDAScheme::GCS => write!(f, "gcs"),
+            OpenDAScheme::S3 => write!(f, "s3"),
+        }
+    }
 }
 
 impl FromStr for OpenDAScheme {
