@@ -90,8 +90,8 @@ impl RoochGenesis {
             vm_config: VMConfig::default(),
         };
 
-        let rooch_framework_gas_params = rooch_framework::natives::GasParameters::zeros();
-        let bitcoin_move_gas_params = bitcoin_move::natives::GasParameters::zeros();
+        let rooch_framework_gas_params = rooch_framework::natives::GasParameters::initial();
+        let bitcoin_move_gas_params = bitcoin_move::natives::GasParameters::initial();
         let genesis_package = GenesisPackage::build(genesis_ctx, bitcoin_genesis_ctx, option)?;
 
         Ok(RoochGenesis {

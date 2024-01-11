@@ -8,4 +8,5 @@ crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasPar
     [.ecrecover.base, "ecrecover.base", (5 + 1) * MUL],
     [.decompress_pubkey.base, "decompress_pubkey.base", (5 + 1) * MUL],
     [.verify.base, "verify.base", (5 + 1) * MUL],
+    [.verify.per_byte, "verify.per_byte", (5 + 1) * MUL],
 ]);

@@ -10,7 +10,7 @@ use fastcrypto::{
     traits::{RecoverableSignature, ToFromBytes},
 };
 use move_binary_format::errors::PartialVMResult;
-use move_core_types::gas_algebra::InternalGas;
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type,
@@ -112,9 +112,10 @@ pub fn native_verify(
     let public_key_bytes_ref = public_key_bytes.as_bytes_ref();
     let signature_bytes_ref = signature_bytes.as_bytes_ref();
 
-    // TODO(Gas): Charge the arg size dependent costs
-
-    let cost = gas_params.base;
+    let cost = gas_params.base
+        + gas_params.per_byte * NumBytes::new(msg_ref.len() as u64)
+        + gas_params.per_byte * NumBytes::new(signature_bytes_ref.len() as u64)
+        + gas_params.per_byte * NumBytes::new(public_key_bytes_ref.len() as u64);
 
     let Ok(sig) = <Secp256k1Signature as ToFromBytes>::from_bytes(&signature_bytes_ref) else {
         return Ok(NativeResult::err(cost, E_INVALID_SIGNATURE));
@@ -141,11 +142,15 @@ pub fn native_verify(
 #[derive(Debug, Clone)]
 pub struct FromBytesGasParameters {
     pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
 }
 
 impl FromBytesGasParameters {
     pub fn zeros() -> Self {
-        Self { base: 0.into() }
+        Self {
+            base: 0.into(),
+            per_byte: 0.into(),
+        }
     }
 }
 

@@ -4,7 +4,7 @@
 use crate::natives::helpers::{make_module_natives, make_native};
 use fastcrypto::hash::{Blake2b256, HashFunction, Keccak256};
 use move_binary_format::errors::PartialVMResult;
-use move_core_types::gas_algebra::InternalGas;
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type,
@@ -16,6 +16,7 @@ use smallvec::smallvec;
 use std::collections::VecDeque;
 
 fn hash<H: HashFunction<DIGEST_SIZE>, const DIGEST_SIZE: usize>(
+    gas_params: &FromBytesGasParameters,
     _: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -25,10 +26,11 @@ fn hash<H: HashFunction<DIGEST_SIZE>, const DIGEST_SIZE: usize>(
 
     let msg = pop_arg!(args, VectorRef);
 
-    // TODO(Gas): Charge the arg size dependent costs
+    let cost =
+        gas_params.base + gas_params.per_byte * NumBytes::new(msg.as_bytes_ref().len() as u64);
 
     Ok(NativeResult::ok(
-        0.into(),
+        cost,
         smallvec![Value::vector_u8(
             H::digest(msg.as_bytes_ref().as_slice()).digest
         )],
@@ -43,12 +45,12 @@ fn hash<H: HashFunction<DIGEST_SIZE>, const DIGEST_SIZE: usize>(
  *              + hash_keccak256_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
  **************************************************************************************************/
 pub fn native_keccak256(
-    _gas_params: &FromBytesGasParameters,
+    gas_params: &FromBytesGasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    hash::<Keccak256, 32>(context, ty_args, args)
+    hash::<Keccak256, 32>(gas_params, context, ty_args, args)
 }
 
 /***************************************************************************************************
@@ -59,12 +61,12 @@ pub fn native_keccak256(
  *              + hash_blake2b256_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
  **************************************************************************************************/
 pub fn native_blake2b256(
-    _gas_params: &FromBytesGasParameters,
+    gas_params: &FromBytesGasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    hash::<Blake2b256, 32>(context, ty_args, args)
+    hash::<Blake2b256, 32>(gas_params, context, ty_args, args)
 }
 
 // /***************************************************************************************************
@@ -86,11 +88,15 @@ pub fn native_blake2b256(
 #[derive(Debug, Clone)]
 pub struct FromBytesGasParameters {
     pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
 }
 
 impl FromBytesGasParameters {
     pub fn zeros() -> Self {
-        Self { base: 0.into() }
+        Self {
+            base: 0.into(),
+            per_byte: 0.into(),
+        }
     }
 }
 
