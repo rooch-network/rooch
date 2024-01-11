@@ -532,7 +532,7 @@ mod tests {
     use ethers::utils::keccak256;
     use fastcrypto::{
         ed25519::{Ed25519KeyPair, Ed25519PrivateKey},
-        secp256k1::{Secp256k1PrivateKey, Secp256k1KeyPair},
+        secp256k1::{Secp256k1KeyPair, Secp256k1PrivateKey},
         traits::{KeyPair, ToFromBytes},
     };
 
