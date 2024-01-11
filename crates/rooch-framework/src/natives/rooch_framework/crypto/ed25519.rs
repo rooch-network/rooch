@@ -16,7 +16,7 @@ use move_vm_types::{
 use crate::natives::helpers::{make_module_natives, make_native};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 
-use move_core_types::gas_algebra::InternalGas;
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use smallvec::smallvec;
 use std::collections::VecDeque;
 
@@ -36,16 +36,17 @@ pub fn native_verify(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 3);
 
-    // TODO(Gas): Charge the arg size dependent costs
-
-    let cost = gas_params.base;
-
     let msg = pop_arg!(args, VectorRef);
     let msg_ref = msg.as_bytes_ref();
     let public_key_bytes = pop_arg!(args, VectorRef);
     let public_key_bytes_ref = public_key_bytes.as_bytes_ref();
     let signature_bytes = pop_arg!(args, VectorRef);
     let signature_bytes_ref = signature_bytes.as_bytes_ref();
+
+    let cost = gas_params.base
+        + gas_params.per_byte * NumBytes::new(msg_ref.len() as u64)
+        + gas_params.per_byte * NumBytes::new(signature_bytes_ref.len() as u64)
+        + gas_params.per_byte * NumBytes::new(public_key_bytes_ref.len() as u64);
 
     let Ok(signature) = <Ed25519Signature as ToFromBytes>::from_bytes(&signature_bytes_ref) else {
         return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
@@ -65,11 +66,15 @@ pub fn native_verify(
 #[derive(Debug, Clone)]
 pub struct FromBytesGasParameters {
     pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
 }
 
 impl FromBytesGasParameters {
     pub fn zeros() -> Self {
-        Self { base: 0.into() }
+        Self {
+            base: 0.into(),
+            per_byte: 0.into(),
+        }
     }
 }
 

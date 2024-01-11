@@ -40,11 +40,11 @@
 ## Constants
 
 
-<a name="0x2_type_info_ErrorNativeFunctionNotAvailable"></a>
+<a name="0x2_type_info_ErrorTypeMismatch"></a>
 
 
 
-<pre><code><b>const</b> <a href="type_info.md#0x2_type_info_ErrorNativeFunctionNotAvailable">ErrorNativeFunctionNotAvailable</a>: u64 = 1;
+<pre><code><b>const</b> <a href="type_info.md#0x2_type_info_ErrorTypeMismatch">ErrorTypeMismatch</a>: u64 = 1;
 </code></pre>
 
 

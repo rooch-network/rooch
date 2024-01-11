@@ -3,7 +3,7 @@
 
 use crate::natives::helpers::{make_module_natives, make_native};
 use move_binary_format::errors::PartialVMResult;
-use move_core_types::gas_algebra::InternalGas;
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type,
@@ -32,14 +32,13 @@ pub fn native_base58(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 1);
 
-    // TODO(Gas): Charge the arg size dependent costs
-
-    let cost = gas_params.base;
+    let mut cost = gas_params.base;
 
     let encoded_address_bytes = pop_arg!(args, VectorRef);
+    let input_bytes = encoded_address_bytes.as_bytes_ref().to_vec();
+    cost += gas_params.per_byte * NumBytes::new(input_bytes.len() as u64);
 
-    let Ok(bs58_raw_bytes) = bs58::decode(encoded_address_bytes.as_bytes_ref().to_vec()).into_vec()
-    else {
+    let Ok(bs58_raw_bytes) = bs58::decode(input_bytes).into_vec() else {
         return Ok(NativeResult::err(cost, E_DECODE_FAILED));
     };
 
@@ -65,17 +64,17 @@ pub fn native_base58check(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 2);
 
-    // TODO(Gas): Charge the arg size dependent costs
-
-    let cost = gas_params.base;
+    let mut cost = gas_params.base;
 
     let version_byte = pop_arg!(args, u8);
     let encoded_address_bytes = pop_arg!(args, VectorRef);
 
-    let Ok(bs58_raw_bytes_without_checksum) =
-        bs58::decode(encoded_address_bytes.as_bytes_ref().to_vec())
-            .with_check(Some(version_byte))
-            .into_vec()
+    let input_bytes = encoded_address_bytes.as_bytes_ref().to_vec();
+    cost += gas_params.per_byte * NumBytes::new(input_bytes.len() as u64);
+
+    let Ok(bs58_raw_bytes_without_checksum) = bs58::decode(input_bytes)
+        .with_check(Some(version_byte))
+        .into_vec()
     else {
         return Ok(NativeResult::err(cost, E_DECODE_FAILED));
     };
@@ -89,11 +88,15 @@ pub fn native_base58check(
 #[derive(Debug, Clone)]
 pub struct FromBytesGasParameters {
     pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
 }
 
 impl FromBytesGasParameters {
     pub fn zeros() -> Self {
-        Self { base: 0.into() }
+        Self {
+            base: 0.into(),
+            per_byte: 0.into(),
+        }
     }
 }
 
