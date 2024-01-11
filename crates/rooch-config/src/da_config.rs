@@ -100,6 +100,34 @@ pub struct InternalDAServerConfig {
     pub servers: Vec<InternalDAServerConfigType>,
 }
 
+impl InternalDAServerConfig {
+    pub fn adjust_submit_strategy(&mut self) {
+        let servers_count = self.servers.len();
+
+        // Set default strategy to All if it's None.
+        let strategy = self
+            .submit_strategy
+            .get_or_insert(DAServerSubmitStrategy::All);
+
+        // If it's a Number, adjust the value to be within [1, n].
+        if let DAServerSubmitStrategy::Number(ref mut num) = strategy {
+            *num = std::cmp::max(1, std::cmp::min(*num, servers_count));
+        }
+    }
+
+    pub fn calculate_submit_threshold(&mut self) -> usize {
+        self.adjust_submit_strategy(); // Make sure submit_strategy is adjusted before calling this function.
+
+        let servers_count = self.servers.len();
+        match self.submit_strategy {
+            Some(DAServerSubmitStrategy::All) => servers_count,
+            Some(DAServerSubmitStrategy::Quorum) => servers_count / 2 + 1,
+            Some(DAServerSubmitStrategy::Number(number)) => number,
+            None => servers_count, // Default to 'All' if submit_strategy is None
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum OpenDAScheme {
@@ -263,5 +291,68 @@ impl DAConfig {
             *self = da_config.clone();
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_adjust_submit_strategy_default_to_all() {
+        let mut config = InternalDAServerConfig {
+            submit_strategy: None,
+            servers: vec![], // Empty for this test
+        };
+        config.adjust_submit_strategy();
+        assert_eq!(config.submit_strategy, Some(DAServerSubmitStrategy::All));
+    }
+
+    #[test]
+    fn test_adjust_submit_strategy_number_too_low() {
+        let mut config = InternalDAServerConfig {
+            submit_strategy: Some(DAServerSubmitStrategy::Number(0)),
+            servers: vec![
+                InternalDAServerConfigType::Celestia(DAServerCelestiaConfig::default()),
+                2,
+            ], // Two servers for this test
+        };
+        config.adjust_submit_strategy();
+        assert_eq!(
+            config.submit_strategy,
+            Some(DAServerSubmitStrategy::Number(1))
+        );
+    }
+
+    #[test]
+    fn test_adjust_submit_strategy_number_too_high() {
+        let mut config = InternalDAServerConfig {
+            submit_strategy: Some(DAServerSubmitStrategy::Number(5)),
+            servers: vec![
+                InternalDAServerConfigType::Celestia(DAServerCelestiaConfig::default());
+                3
+            ], // Three servers for this test
+        };
+        config.adjust_submit_strategy();
+        assert_eq!(
+            config.submit_strategy,
+            Some(DAServerSubmitStrategy::Number(3))
+        );
+    }
+
+    #[test]
+    fn test_adjust_submit_strategy_number_within_range() {
+        let mut config = InternalDAServerConfig {
+            submit_strategy: Some(DAServerSubmitStrategy::Number(2)),
+            servers: vec![
+                InternalDAServerConfigType::Celestia(DAServerCelestiaConfig::default());
+                4
+            ], // Four servers for this test
+        };
+        config.adjust_submit_strategy();
+        assert_eq!(
+            config.submit_strategy,
+            Some(DAServerSubmitStrategy::Number(2))
+        );
     }
 }
