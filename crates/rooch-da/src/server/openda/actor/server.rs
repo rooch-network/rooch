@@ -3,9 +3,9 @@
 
 use anyhow::Result;
 use async_trait::async_trait;
-use coerce::actor::Actor;
 use coerce::actor::context::ActorContext;
 use coerce::actor::message::Handler;
+use coerce::actor::Actor;
 use opendal::{Operator, Scheme};
 
 use rooch_config::da_config::{DAServerOpenDAConfig, OpenDAScheme};
@@ -72,7 +72,7 @@ impl DAServerOpenDAActor {
             // TODO record ok segment in order
             // TODO segment indexer trait (local file, db, etc)
             let data = bcs::to_bytes(&segment).unwrap();
-            self.operator.write(&segment.id.to_string(), data).await?;  // TODO retry logic
+            self.operator.write(&segment.id.to_string(), data).await?; // TODO retry logic
         }
         Ok(PutBatchResult::default())
     }
