@@ -17,6 +17,7 @@ RUN set -eux; \
         g++ \
         cmake \
         libsqlite3-dev \
+        libprotobuf-dev \
         protobuf-compiler; \
     rm -rf /var/lib/apt/lists/*
 
