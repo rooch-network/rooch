@@ -7565,6 +7565,7 @@ dependencies = [
  "celestia-rpc",
  "celestia-types",
  "coerce",
+ "futures",
  "log",
  "moveos-types",
  "rooch-config",

@@ -9,6 +9,8 @@ use coerce::actor::context::ActorContext;
 use coerce::actor::message::Handler;
 use coerce::actor::system::ActorSystem;
 use coerce::actor::{Actor, IntoActor};
+use futures::stream::FuturesUnordered;
+use futures::StreamExt;
 
 use rooch_config::da_config::{DAConfig, InternalDAServerConfigType};
 
@@ -70,26 +72,44 @@ impl DAActor {
         // TODO retry policy & log
 
         let servers = self.internal_servers.servers.read().unwrap().to_vec();
+        let submit_threshold = self.internal_servers.submit_threshold;
 
-        let futures: Vec<_> = servers
-            .iter()
-            .map(|server| {
-                let server = Arc::clone(server);
-                let batch = batch.clone();
-                async move {
-                    server
-                        .put_batch(PutBatchMessage {
-                            batch: batch.clone(),
-                        })
-                        .await
-                }
-            })
-            .collect();
-
-        for future in futures {
-            future.await?;
+        let mut futures_unordered = FuturesUnordered::new();
+        for server in servers {
+            let server = Arc::clone(&server);
+            let batch = batch.clone();
+            futures_unordered.push(async move {
+                server
+                    .put_batch(PutBatchMessage {
+                        batch: batch.clone(),
+                    })
+                    .await
+            });
         }
-        Ok(())
+
+        let mut success_count = 0;
+        while let Some(result) = futures_unordered.next().await {
+            match result {
+                Ok(_) => {
+                    success_count += 1;
+                    if success_count >= submit_threshold {
+                        return Ok(());
+                    }
+                }
+                Err(e) => {
+                    log::warn!("{:?}, fail to submit batch to da server.", e); // TODO add da server name
+                }
+            }
+        }
+
+        if success_count < submit_threshold {
+            Err(anyhow::Error::msg(format!(
+                "not enough successful submissions. exp>= {} act: {}",
+                submit_threshold, success_count
+            )))
+        } else {
+            Ok(())
+        }
     }
 }
 
