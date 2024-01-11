@@ -1,54 +1,29 @@
-// Copyright (c) RoochNetwork
+// Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use rooch_benchmarks::block::BlockBencher;
-// #[allow(deprecated)]
-// use criterion::{criterion_group, criterion_main, Benchmark, Criterion};
-use criterion::{criterion_group, criterion_main, Criterion};
-// #[cfg(target_os = "linux")]
-use pprof::criterion::{Output, PProfProfiler};
+#[macro_use]
+extern crate criterion;
 
-// #[allow(deprecated)]
-// fn block_apply(c: &mut Criterion) {
-//     ::starcoin_logger::init();
-//     for i in &[10u64, 1000] {
-//         c.bench(
-//             "block_apply",
-//             Benchmark::new(format!("block_apply_{:?}", i), move |b| {
-//                 let bencher = BlockBencher::new(Some(*i));
-//                 bencher.bench(b)
-//             })
-//             .sample_size(10),
-//         );
-//     }
-// }
-//
-// #[allow(deprecated)]
-// fn query_block(c: &mut Criterion) {
-//     ::starcoin_logger::init();
-//     for block_num in &[10u64, 1000u64] {
-//         let bencher = BlockBencher::new(Some(*block_num));
-//         bencher.execute();
-//
-//         for i in &[100u64, 1000, 10000] {
-//             let id = format!("query_block_in({:?})_times({:?})", block_num, i,);
-//             let bencher_local = bencher.clone();
-//             c.bench(
-//                 "query_block",
-//                 Benchmark::new(id, move |b| bencher_local.query_bench(b, *i)).sample_size(10),
-//             );
-//         }
-//     }
-// }
-// #[cfg(target_os = "linux")]
-// criterion_group!(
-//     name=rooch_block_benches;
-//     config = Criterion::default()
-//     .with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
-//     targets=block_apply,query_block);
-// #[cfg(not(target_os = "linux"))]
-// criterion_group!(rooch_block_benches, block_apply, query_block);
-// criterion_main!(rooch_block_benches);
+use std::env;
+use std::time::Duration;
+
+use chrono::Utc;
+use criterion::Criterion;
+use prometheus::Registry;
+use tokio::runtime::Runtime;
+
+use sui_indexer::metrics::IndexerMetrics;
+use sui_indexer::models::checkpoints::Checkpoint;
+use sui_indexer::models::transactions::Transaction;
+use sui_indexer::new_pg_connection_pool;
+use sui_indexer::store::{IndexerStore, PgIndexerStore, TemporaryCheckpointStore};
+use sui_indexer::utils::reset_database;
+use sui_json_rpc_types::CheckpointId;
+use sui_types::base_types::{ObjectDigest, ObjectID, SequenceNumber, SuiAddress};
+use sui_types::crypto::AggregateAuthoritySignature;
+use sui_types::digests::TransactionDigest;
+use sui_types::messages_checkpoint::CheckpointDigest;
+use sui_types::transaction::{TransactionData, TEST_ONLY_GAS_UNIT_FOR_TRANSFER};
 
 fn indexer_benchmark(c: &mut Criterion) {
     let pg_host = env::var("POSTGRES_HOST").unwrap_or_else(|_| "localhost".into());
@@ -124,7 +99,7 @@ fn create_transaction(sequence_number: i64) -> Transaction {
         gas_price * TEST_ONLY_GAS_UNIT_FOR_TRANSFER,
         gas_price,
     )
-        .unwrap();
+    .unwrap();
 
     Transaction {
         id: None,
@@ -157,13 +132,3 @@ criterion_group! {
     targets = indexer_benchmark
 }
 criterion_main!(benches);
-
-// #[cfg(target_os = "linux")]
-// criterion_group!(
-//     name=rooch_block_benches;
-//     config = Criterion::default()
-//     .with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
-//     targets=block_apply,query_block);
-// #[cfg(not(target_os = "linux"))]
-// criterion_group!(rooch_block_benches, block_apply, query_block);
-// criterion_main!(rooch_block_benches);

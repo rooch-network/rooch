@@ -37,6 +37,15 @@ log = { workspace = true }
 lazy_static = { workspace = true }
 rpassword = { workspace = true }
 
+
+criterion = { workspace = true }
+pprof = { workspace = true }
+parking_lot = { workspace = true }
+proptest = { workspace = true }
+rand_core = { default-features = false, workspace = true }
+#futures-timer = { workspace = true }
+
+
 move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }
 move-binary-format = { workspace = true }
@@ -49,18 +58,16 @@ moveos-config = { workspace = true }
 
 rooch-config = { workspace = true }
 rooch-types = { workspace = true }
-#rooch-executor = { workspace = true }
-#rooch-sequencer = { workspace = true }
-#rooch-proposer = { workspace = true }
+rooch-executor = { workspace = true }
+rooch-sequencer = { workspace = true }
+rooch-proposer = { workspace = true }
 rooch-key = { workspace = true }
 rooch-store = { workspace = true }
 rooch-rpc-api = { workspace = true }
-
-criterion = { workspace = true }
-parking_lot = { workspace = true }
-proptest = { workspace = true }
-rand_core = { default-features = false, workspace = true }
-#futures-timer = { workspace = true }
+rooch-relayer = { workspace = true }
+rooch-indexer = { workspace = true }
+rooch-da = { workspace = true }
+rooch-rpc-server = { workspace = true }
 
 
 #starcoin-crypto = { package = "starcoin-crypto", workspace = true }
@@ -92,19 +99,23 @@ bench = false
 
 [[bench]]
 harness = false
-name = "bench_storage"
+name = "bench_transaction"
 
-[[bench]]
-harness = false
-name = "bench_chain"
+#[[bench]]
+#harness = false
+#name = "bench_block"
 
-[[bench]]
-harness = false
-name = "bench_state_tree"
+#[[bench]]
+#harness = false
+#name = "bench_storage"
 
-[[bench]]
-harness = false
-name = "bench_vm"
+#[[bench]]
+#harness = false
+#name = "bench_state_tree"
 
-[target."cfg(target_os=\"linux\")".dependencies]
-pprof = { version = "0.13", features = ["flamegraph", "criterion"] }
+#[[bench]]
+#harness = false
+#name = "bench_vm"
+
+#[target."cfg(target_os=\"linux\")".dependencies]
+#pprof = { version = "0.11", features = ["flamegraph", "criterion"] }

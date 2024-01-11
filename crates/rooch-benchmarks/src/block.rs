@@ -1,24 +1,24 @@
-// Copyright (c) The Starcoin Core Contributors
+// Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
 use criterion::{BatchSize, Bencher};
 use parking_lot::RwLock;
 use rand::prelude::*;
-use starcoin_account_api::AccountInfo;
-use starcoin_chain::BlockChain;
-use starcoin_chain::{ChainReader, ChainWriter};
-use starcoin_config::{temp_dir, ChainNetwork, DataDirPath, RocksdbConfig};
-use starcoin_consensus::Consensus;
-use starcoin_genesis::Genesis;
-use starcoin_storage::cache_storage::CacheStorage;
-use starcoin_storage::db_storage::DBStorage;
-use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::Storage;
-use starcoin_vm_types::genesis_config::ConsensusStrategy;
+// use starcoin_account_api::AccountInfo;
+// use starcoin_chain::BlockChain;
+// use starcoin_chain::{ChainReader, ChainWriter};
+// use starcoin_config::{temp_dir, ChainNetwork, DataDirPath, RocksdbConfig};
+// use starcoin_consensus::Consensus;
+// use starcoin_genesis::Genesis;
+// use starcoin_storage::cache_storage::CacheStorage;
+// use starcoin_storage::db_storage::DBStorage;
+// use starcoin_storage::storage::StorageInstance;
+// use starcoin_storage::Storage;
+// use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
 
 /// Benchmarking support for chain.
-pub struct ChainBencher {
+pub struct BlockBencher {
     net: ChainNetwork,
     chain: Arc<RwLock<BlockChain>>,
     block_num: u64,
@@ -26,7 +26,7 @@ pub struct ChainBencher {
     temp_path: DataDirPath,
 }
 
-impl ChainBencher {
+impl BlockBencher {
     pub fn new(num: Option<u64>) -> Self {
         let net = ChainNetwork::new_test();
         let temp_path = temp_dir();
@@ -50,7 +50,7 @@ impl ChainBencher {
             .expect("create block chain should success.");
         let miner_account = AccountInfo::random();
 
-        ChainBencher {
+        BlockBencher {
             net,
             chain: Arc::new(RwLock::new(chain)),
             block_num: num.unwrap_or(100),
@@ -101,7 +101,7 @@ impl ChainBencher {
     }
 }
 
-impl Clone for ChainBencher {
+impl Clone for BlockBencher {
     fn clone(&self) -> Self {
         Self {
             net: self.net.clone(),
