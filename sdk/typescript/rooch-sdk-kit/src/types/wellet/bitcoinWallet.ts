@@ -4,24 +4,42 @@
 import { BaseWallet } from './baseWallet'
 import { RoochMultiChainID, SerializedSignature } from '@roochnetwork/rooch-sdk'
 import { Buffer } from 'buffer'
-import { MultiChainAddress, MultiChainAddressLength } from '../address'
+import { MultiChainAddress } from '../address'
+import { AuthenticatorPayload } from '../AuthenticatorPayload'
+import { WalletAccount } from '../WalletAccount'
+
+const BITCOIN_MAGIC_SIGN_PREFIX = 'Bitcoin Signed Message:\n'
 
 export abstract class BitcoinWallet extends BaseWallet {
-  protected toSerializedSignature(signature: string, fromAddress: string): SerializedSignature {
+  protected toSerializedSignature(
+    _: string,
+    signature: string,
+    signatureInfo: string,
+    walletAccount: WalletAccount,
+  ): SerializedSignature {
     let signBuffer = Buffer.from(signature, 'base64')
 
-    const normalizeSignBuffer = Buffer.concat([
-      signBuffer.subarray(1),
-      Buffer.from([this.normalize_recovery_id(signBuffer[0])]),
-    ])
+    // remove recover id
+    const normalizeSignBuffer = signBuffer.subarray(1)
 
-    let multiAddress = new MultiChainAddress(RoochMultiChainID.Bitcoin, fromAddress)
+    let multiAddress = new MultiChainAddress(RoochMultiChainID.Bitcoin, walletAccount.getAddress())
+    let multiAddressBytes = multiAddress.toBytes()
+    let bitcoinMagicSignPrefixBytes = Array.from(BITCOIN_MAGIC_SIGN_PREFIX, (char) =>
+      char.charCodeAt(0),
+    )
+    let signatureInfoBytes = Array.from(signatureInfo, (char) => char.charCodeAt(0))
+    let publicKey = Buffer.from(walletAccount.getInfo().publicKey!, 'hex')
 
-    const serializedSignature = new Uint8Array(normalizeSignBuffer.length + MultiChainAddressLength)
-    serializedSignature.set(normalizeSignBuffer)
-    serializedSignature.set(multiAddress.toBytes(), normalizeSignBuffer.length)
+    let authPayload = new AuthenticatorPayload(
+      Array.from(normalizeSignBuffer),
+      bitcoinMagicSignPrefixBytes,
+      signatureInfoBytes,
+      Array.from(publicKey),
+      Array.from(multiAddressBytes),
+      [],
+    )
 
-    return serializedSignature
+    return authPayload.toBytes()
   }
   normalize_recovery_id(v: number) {
     let normalizeV = v - 27 - 4

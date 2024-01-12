@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { SupportWallet, SupportWallets } from '../feature'
-import { Metamask, OkxWallet, UniSatWallet } from '../types/wellet'
+import { Metamask, UniSatWallet } from '../types/wellet'
 import { BaseWallet } from '../types/wellet/baseWallet'
 
 export async function getInstalledWallets(filter?: SupportWallet) {
@@ -18,12 +18,12 @@ export async function getInstalledWallets(filter?: SupportWallet) {
       case SupportWallet.ETH:
         wallet = new Metamask()
         break
-      case SupportWallet.UniSat:
+      case SupportWallet.BITCOIN:
         wallet = new UniSatWallet()
         break
-      case SupportWallet.Okx:
-        wallet = new OkxWallet()
-        break
+      // case SupportWallet.Okx:
+      //   wallet = new OkxWallet()
+      //   break
     }
 
     return wallet

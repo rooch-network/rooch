@@ -4,12 +4,17 @@
 import { sha3_256 } from '@noble/hashes/sha3'
 import { WalletAccount } from '../WalletAccount'
 import { SerializedSignature } from '@roochnetwork/rooch-sdk'
+import { Buffer } from 'buffer'
+
+export const RoochSignPrefix = 'Rooch tx hash:\n'
 
 export abstract class BaseWallet {
   protected abstract sign(msg: string, fromAddress: string): Promise<string>
   protected abstract toSerializedSignature(
+    msg: string,
     signature: string,
-    fromAddress: string,
+    signatureInfo: string,
+    walletAccount: WalletAccount,
   ): SerializedSignature
 
   abstract normalize_recovery_id(recoveryID: number): number
@@ -18,18 +23,24 @@ export abstract class BaseWallet {
 
   abstract connect(): Promise<WalletAccount[]>
 
-  async signMessage(msg: Uint8Array, fromAddress: string) {
+  async signMessage(msg: Uint8Array, walletAccount: WalletAccount, msgInfo?: any) {
     const digest = sha3_256(msg)
-    return await this.signMessageWithHashed(digest, fromAddress)
+    return await this.signMessageWithHashed(digest, walletAccount, msgInfo)
   }
 
-  async signMessageWithHashed(msg: Uint8Array, fromAddress: string) {
-    // TODO: fix with rooch-sdk hexString class
-    let hex = Array.from(msg)
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('')
+  async signMessageWithHashed(msgHash: Uint8Array, walletAccount: WalletAccount, msgInfo: any) {
+    let msgHex = Buffer.from(msgHash).toString('hex')
 
-    return this.toSerializedSignature(await this.sign(hex, fromAddress), fromAddress)
+    if (msgInfo.charAt(msgInfo.length - 1) !== '\n') {
+      msgInfo += '\n'
+    }
+
+    msgInfo = msgInfo + RoochSignPrefix
+    let fullMsg = msgInfo + msgHex
+
+    const sign = await this.sign(fullMsg, walletAccount.getAddress())
+
+    return this.toSerializedSignature(msgHex, sign, msgInfo, walletAccount)
   }
 
   async checkInstalled(): Promise<boolean> {

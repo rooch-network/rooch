@@ -13,6 +13,7 @@
 -  [Function `multichain_id_rooch`](#0x3_multichain_address_multichain_id_rooch)
 -  [Function `get_length`](#0x3_multichain_address_get_length)
 -  [Function `new`](#0x3_multichain_address_new)
+-  [Function `from_bytes`](#0x3_multichain_address_from_bytes)
 -  [Function `from_eth`](#0x3_multichain_address_from_eth)
 -  [Function `from_bitcoin`](#0x3_multichain_address_from_bitcoin)
 -  [Function `multichain_id`](#0x3_multichain_address_multichain_id)
@@ -167,6 +168,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_new">new</a>(multichain_id: u64, raw_address: <a href="">vector</a>&lt;u8&gt;): <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>
+</code></pre>
+
+
+
+<a name="0x3_multichain_address_from_bytes"></a>
+
+## Function `from_bytes`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="multichain_address.md#0x3_multichain_address_from_bytes">from_bytes</a>(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>
 </code></pre>
 
 
