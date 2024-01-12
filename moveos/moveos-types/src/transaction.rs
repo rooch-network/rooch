@@ -234,6 +234,7 @@ impl MoveOSTransaction {
             0,
             GasConfig::DEFAULT_MAX_GAS_AMOUNT,
             tx_hash,
+            1,
         );
         Self::new(ctx, sender_and_action.1)
     }
@@ -258,6 +259,12 @@ impl MoveOSTransaction {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct GasStatement {
+    pub execution_gas_used: u64,
+    pub storage_gas_used: u64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VerifiedMoveOSTransaction {
     pub ctx: TxContext,
@@ -275,6 +282,8 @@ pub struct RawTransactionOutput {
     pub state_changeset: StateChangeSet,
     pub events: Vec<TransactionEvent>,
     pub gas_used: u64,
+    pub is_upgrade: bool,
+    pub gas_statement: GasStatement,
 }
 
 /// TransactionOutput is the execution result of a MoveOS transaction, and pack TransactionEvent to Event
@@ -286,6 +295,7 @@ pub struct TransactionOutput {
     pub state_changeset: StateChangeSet,
     pub events: Vec<Event>,
     pub gas_used: u64,
+    pub is_upgrade: bool,
 }
 
 impl TransactionOutput {
@@ -309,6 +319,7 @@ impl TransactionOutput {
             state_changeset: transaction_output.state_changeset,
             events,
             gas_used: transaction_output.gas_used,
+            is_upgrade: transaction_output.is_upgrade,
         }
     }
 }

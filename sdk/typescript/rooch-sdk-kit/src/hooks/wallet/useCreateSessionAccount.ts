@@ -66,18 +66,32 @@ export function useCreateSessionKey({
 
       setSessionAccountStatus('creating')
 
+      let scope = args.scope ?? defaultScope
+      let maxInactiveInterval = args.maxInactiveInterval ?? 1200
+
       let acc = new Account(
         rooch,
         roochAddress.data!,
-        new WalletAuth(currentWallet.currentWallet, currentAccount!.getAddress()),
+        new WalletAuth(
+          currentWallet.currentWallet,
+          currentAccount!,
+          `Welcome to ${window.location.hostname}\nYou will authorize session:\n${
+            'Scope:\n' +
+            scope
+              .filter((v) => !v.startsWith('0x1') && !v.startsWith('0x3'))
+              .map((v) => {
+                console.log(v)
+                return v
+              }) +
+            '\nTimeOut:' +
+            maxInactiveInterval
+          }`,
+        ),
       )
 
       // TODO: Standardize error and throw it at the developer
       try {
-        let sessionKey = await acc.createSessionAccount(
-          args.scope ?? defaultScope,
-          args.maxInactiveInterval ?? 1200,
-        )
+        let sessionKey = await acc.createSessionAccount(scope, maxInactiveInterval)
 
         setSessionAccount(sessionKey)
 

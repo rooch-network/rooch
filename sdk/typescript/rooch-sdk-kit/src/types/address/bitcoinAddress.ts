@@ -3,7 +3,9 @@
 
 import { base58_to_binary } from 'base58-js'
 import { bech32, bech32m } from 'bech32'
-import { sha3_256 } from '@noble/hashes/sha3'
+import { createHash } from 'sha256-uint8array'
+
+const sha256 = (payload: Uint8Array) => createHash().update(payload).digest()
 
 enum Network {
   mainnet = 'mainnet',
@@ -11,22 +13,15 @@ enum Network {
   regtest = 'regtest',
 }
 
+// The method used to distinguish bitcoin address payload type.
+// Ref: BitcoinAddressPayloadType https://github.com/rooch-network/rooch/blob/main/crates/rooch-types/src/address.rs
 enum AddressType {
-  p2pkh = 'p2pkh',
-  p2sh = 'p2sh',
-  p2wpkh = 'p2wpkh',
-  p2wsh = 'p2wsh',
-  p2tr = 'p2tr',
+  p2pkh = 0,
+  p2sh = 1,
+  p2wpkh = 2,
+  p2wsh = 2,
+  p2tr = 2,
 }
-
-// TODO: Align with rust
-// /// P2PKH address.
-// PubkeyHash = 0,
-//   /// P2SH address.
-//   ScriptHash = 1,
-//   /// Segwit address.
-//   WitnessProgram = 2,
-//
 
 type AddressInfo = {
   bytes: Uint8Array
@@ -100,9 +95,11 @@ const parseBech32 = (address: string): AddressInfo => {
     type = AddressType.p2wsh
   }
 
-  let bytes = new Uint8Array(21)
-  bytes.set([0])
-  bytes.set(data, 1)
+  // replace version & add witness version
+  let bytes = new Uint8Array(data.length + 2)
+  bytes.set([type])
+  bytes.set([witnessVersion], 1)
+  bytes.set(data, 2)
 
   return {
     bytes: bytes,
@@ -138,7 +135,7 @@ const getAddressInfo = (address: string): AddressInfo => {
   const checksum = decoded.slice(length - 4, length)
   const body = decoded.slice(0, length - 4)
 
-  const expectedChecksum = sha3_256(sha3_256(body)).slice(0, 4)
+  const expectedChecksum = sha256(sha256(body)).slice(0, 4)
 
   if (checksum.some((value: number, index: number) => value !== expectedChecksum[index])) {
     throw new Error('Invalid address')
@@ -152,8 +149,13 @@ const getAddressInfo = (address: string): AddressInfo => {
 
   const addressType = addressTypes[version]
 
+  // replace version
+  let bytes = new Uint8Array(body.length)
+  bytes.set([addressType.type])
+  bytes.set(body.slice(1), 1)
+
   return {
-    bytes: decoded,
+    bytes: bytes,
     ...addressType,
     address,
     bech32: false,

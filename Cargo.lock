@@ -927,7 +927,6 @@ dependencies = [
  "once_cell",
  "rooch-framework",
  "rooch-types",
- "secp256k1 0.28.0",
  "serde 1.0.193",
  "serde_bytes",
  "sha3 0.9.1",
@@ -3104,8 +3103,8 @@ dependencies = [
 
 [[package]]
 name = "fastcrypto"
-version = "0.1.5"
-source = "git+https://github.com/rooch-network/fastcrypto?rev=aa5f9f308b6598779820db8b673050c10cfcc3c1#aa5f9f308b6598779820db8b673050c10cfcc3c1"
+version = "0.1.7"
+source = "git+https://github.com/rooch-network/fastcrypto?rev=643831ec3b67bdd2b5f998c0bec1b7c91823351f#643831ec3b67bdd2b5f998c0bec1b7c91823351f"
 dependencies = [
  "aes",
  "aes-gcm",
@@ -3142,11 +3141,12 @@ dependencies = [
  "readonly",
  "rfc6979 0.4.0",
  "ripemd",
- "rsa 0.8.2",
+ "rsa",
  "schemars",
  "secp256k1 0.27.0",
  "serde 1.0.193",
  "serde_bytes",
+ "serde_json",
  "serde_with",
  "sha2 0.10.8",
  "sha3 0.10.8",
@@ -3161,7 +3161,7 @@ dependencies = [
 [[package]]
 name = "fastcrypto-derive"
 version = "0.1.3"
-source = "git+https://github.com/rooch-network/fastcrypto?rev=aa5f9f308b6598779820db8b673050c10cfcc3c1#aa5f9f308b6598779820db8b673050c10cfcc3c1"
+source = "git+https://github.com/rooch-network/fastcrypto?rev=643831ec3b67bdd2b5f998c0bec1b7c91823351f#643831ec3b67bdd2b5f998c0bec1b7c91823351f"
 dependencies = [
  "convert_case 0.6.0",
  "proc-macro2 1.0.66",
@@ -7866,7 +7866,6 @@ dependencies = [
  "moveos-verifier",
  "once_cell",
  "rooch-types",
- "secp256k1 0.28.0",
  "serde 1.0.193",
  "serde_bytes",
  "sha3 0.9.1",

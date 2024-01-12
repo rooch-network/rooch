@@ -142,6 +142,7 @@ pub struct TransactionOutputView {
     pub table_changeset: StateChangeSetView,
     pub events: Vec<EventView>,
     pub gas_used: u64,
+    pub is_upgrade: bool,
 }
 
 impl From<TransactionOutput> for TransactionOutputView {
@@ -155,6 +156,7 @@ impl From<TransactionOutput> for TransactionOutputView {
                 .map(|event| event.into())
                 .collect(),
             gas_used: tx_output.gas_used,
+            is_upgrade: tx_output.is_upgrade,
         }
     }
 }

@@ -10,7 +10,7 @@ crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasPar
     [.sort_and_verify_modules_inner.base, "sort_and_verify_modules_inner.base", (5 + 1) * MUL],
     [.sort_and_verify_modules_inner.per_byte, "sort_and_verify_modules_inner.per_byte", (5 + 1) * MUL],
     [.request_init_functions.base, "request_init_functions.base", (5 + 1) * MUL],
-    [.request_init_functions.per_byte, "request_init_functions.per_byte", (5 + 1) * MUL],
+    [.request_init_functions.per_function, "request_init_functions.per_function", (5 + 1) * MUL],
     [.check_compatibililty_inner.base, "check_compatibililty_inner.base", (5 + 1) * MUL],
     [.check_compatibililty_inner.per_byte, "check_compatibililty_inner.per_byte", (5 + 1) * MUL],
     [.replace_address_identifiers.base, "replace_address_identifiers.base", (5 + 1) * MUL],

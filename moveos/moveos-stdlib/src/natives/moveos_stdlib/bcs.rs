@@ -3,7 +3,7 @@
 
 use crate::natives::helpers::{make_module_natives, make_native};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
-use move_core_types::gas_algebra::InternalGas;
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_core_types::vm_status::StatusCode;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
@@ -17,11 +17,15 @@ const E_TYPE_NOT_MATCH: u64 = 1;
 #[derive(Debug, Clone)]
 pub struct FromBytesGasParameters {
     pub base: InternalGas,
+    pub per_byte_deserialize: InternalGasPerByte,
 }
 
 impl FromBytesGasParameters {
     pub fn zeros() -> Self {
-        Self { base: 0.into() }
+        Self {
+            base: 0.into(),
+            per_byte_deserialize: 0.into(),
+        }
     }
 }
 
@@ -37,7 +41,7 @@ fn native_from_bytes(
     debug_assert_eq!(ty_args.len(), 1);
     debug_assert_eq!(args.len(), 1);
 
-    let cost = gas_params.base;
+    let mut cost = gas_params.base;
 
     // TODO(Gas): charge for getting the layout
     let layout = context.type_to_type_layout(&ty_args[0])?.ok_or_else(|| {
@@ -48,13 +52,13 @@ fn native_from_bytes(
     })?;
 
     let bytes = pop_arg!(args, Vec<u8>);
+    cost += gas_params.per_byte_deserialize * NumBytes::new(bytes.len() as u64);
     let val = match Value::simple_deserialize(&bytes, &layout) {
         Some(val) => val,
         None => {
             return Ok(NativeResult::err(cost, E_TYPE_NOT_MATCH));
         }
     };
-    // TODO(gas): charge gas for deserialization
 
     Ok(NativeResult::ok(cost, smallvec![val]))
 }

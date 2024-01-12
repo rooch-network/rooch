@@ -132,7 +132,7 @@ enum_dispatch = "^0.3"
 ethereum-types = "0.14.1"
 ethers = { version = "2.0.7", features = ["legacy"] }
 eyre = "0.6.8"
-fastcrypto = { git = "https://github.com/rooch-network/fastcrypto", rev = "aa5f9f308b6598779820db8b673050c10cfcc3c1" }
+fastcrypto = { git = "https://github.com/rooch-network/fastcrypto", rev = "643831ec3b67bdd2b5f998c0bec1b7c91823351f" }
 futures = "0.3.28"
 hex = "0.4.3"
 rustc-hex = "1.0"
@@ -202,7 +202,6 @@ libc = "^0.2"
 nostr = "0.22"
 serde-reflection = "0.3.6"
 serde-generate = "0.25.1"
-rust_secp256k1 = { version = "0.28.0", package = "secp256k1", features = ["recovery", "rand-std", "global-context"] }
 bcs-ext = { path = "moveos/moveos-commons/bcs_ext" }
 tower = { version = "0.4.12", features = ["full", "util", "timeout", "load-shed", "limit"] }
 tower-http = { version = "0.3.4", features = ["cors", "full", "trace", "set-header", "propagate-header"] }

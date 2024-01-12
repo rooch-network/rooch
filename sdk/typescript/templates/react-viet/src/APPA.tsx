@@ -50,7 +50,7 @@ export function App() {
               </div>
               <div style={{ textAlign: "left", marginTop: 10 }}>
                 <div style={{ fontWeight: "bold" }}>mul address: </div>
-                <div style={{ wordWrap: "break-word" }}>{account?.toMultiChainAddress().toBech32()}</div>
+                <div style={{ wordWrap: "break-word" }}>{account?.toMultiChainAddress()?.toBech32()}</div>
               </div>
               <div style={{ textAlign: "left", marginTop: 10 }}>
                 <div style={{ fontWeight: "bold" }}>Session Account Address: </div>

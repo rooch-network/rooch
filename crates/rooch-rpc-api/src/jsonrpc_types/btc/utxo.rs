@@ -63,7 +63,6 @@ impl UTXOView {
     pub fn try_new_from_utxo(utxo: UTXO) -> Result<UTXOView, anyhow::Error> {
         let bitcoin_txid = Txid::from_byte_array(utxo.txid.into_bytes());
         // reversed bytes of txid
-        // let bitcoin_reverse_bytes = bitcoin_txid.to_byte_array().to_vec().iter().rev().copied().collect();
         let seals_str = serde_json::to_string(&utxo.seals)?;
 
         Ok(UTXOView {
@@ -82,7 +81,7 @@ pub struct UTXOStateView {
     pub owner: AccountAddressView,
     pub owner_bitcoin_address: Option<String>,
     pub flag: u8,
-    pub value: UTXOView,
+    pub value: Option<UTXOView>,
     pub object_type: StructTagView,
     pub tx_order: u64,
     pub state_index: u64,
@@ -99,12 +98,16 @@ impl UTXOStateView {
             Some(baddress) => Some(baddress.format(network)?),
             None => None,
         };
+        let utxo_view = match utxo.value {
+            Some(utxo) => Some(UTXOView::try_new_from_utxo(utxo)?),
+            None => None,
+        };
         Ok(UTXOStateView {
             object_id: utxo.object_id,
             owner: utxo.owner.into(),
             owner_bitcoin_address,
             flag: utxo.flag,
-            value: UTXOView::try_new_from_utxo(utxo.value)?,
+            value: utxo_view,
             object_type: utxo.object_type.into(),
             tx_order: utxo.tx_order,
             state_index: utxo.state_index,
