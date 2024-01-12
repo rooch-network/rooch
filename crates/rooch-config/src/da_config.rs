@@ -323,8 +323,8 @@ mod tests {
         let mut config = InternalDAServerConfig {
             submit_strategy: Some(DAServerSubmitStrategy::Number(0)),
             servers: vec![
-                InternalDAServerConfigType::Celestia(DAServerCelestiaConfig::default()),
-                2,
+                InternalDAServerConfigType::Celestia(DAServerCelestiaConfig::default());
+                2
             ], // Two servers for this test
         };
         config.adjust_submit_strategy();
