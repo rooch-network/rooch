@@ -52,6 +52,15 @@ export function normalizeRoochAddress(value: string, forceAdd0x: boolean = false
   return `0x${address.padStart(ROOCH_ADDRESS_LENGTH, '0')}`
 }
 
+export function canonicalRoochAddress(value: string, forceAdd0x: boolean = false): string {
+  let address = value.toLowerCase()
+  if (!forceAdd0x && address.startsWith('0x')) {
+    address = address.slice(2)
+  }
+
+  return `${address.padStart(ROOCH_ADDRESS_LENGTH, '0')}`
+}
+
 export function typeTagToString(type_tag: TypeTag): string {
   if (typeof type_tag === 'string') {
     return type_tag

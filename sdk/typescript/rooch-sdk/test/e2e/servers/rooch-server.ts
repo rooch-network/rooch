@@ -2,10 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import { spawn, ChildProcess } from 'child_process'
 
+export const DefaultPort = 50051
+
 export class RoochServer {
   private child: ChildProcess | undefined
 
   private ready: boolean = false
+  private port: number = DefaultPort
+
+  constructor(port: number = DefaultPort) {
+    this.port = port
+  }
 
   async start() {
     this.child = spawn('cargo', [
@@ -20,6 +27,8 @@ export class RoochServer {
       'TMP',
       '--eth-rpc-url',
       'https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
+      '--port',
+      `${this.port}`,
     ])
 
     if (this.child) {

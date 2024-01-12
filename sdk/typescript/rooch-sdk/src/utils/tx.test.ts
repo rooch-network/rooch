@@ -9,6 +9,9 @@ import {
   addressToSCS,
   encodeStructTypeTags,
   encodeArg,
+  strcutTagToString,
+  typeTagToString,
+  strcutTagToObjectID,
 } from './tx'
 import { toHexString } from './hex'
 import { TypeTag, StructTag, AccountAddress, Arg } from '../types'
@@ -89,5 +92,118 @@ describe('encodeArg', () => {
     const result = encodeArg(arg)
 
     expect(toHexString(result)).toBe('0x0164')
+  })
+})
+
+describe('strcutTagToString', () => {
+  it('strcutTagToString with no type_params', () => {
+    const structTag: StructTag = {
+      address: '00000000000000000000000000000001',
+      module: 'module1',
+      name: 'name1',
+    }
+
+    const result = strcutTagToString(structTag)
+    expect(result).toBe(
+      '0000000000000000000000000000000000000000000000000000000000000001::module1::name1',
+    )
+  })
+
+  it('strcutTagToString with type_params', () => {
+    const structTag: StructTag = {
+      address: '00000000000000000000000000000001',
+      module: 'module1',
+      name: 'name1',
+      type_params: [
+        'U8',
+        { Vector: 'U64' },
+        {
+          Struct: {
+            address: '0000000000000000000000000000000a',
+            module: 'module2',
+            name: 'name2',
+          },
+        },
+      ],
+    }
+
+    const result = strcutTagToString(structTag)
+    expect(result).toBe(
+      '0000000000000000000000000000000000000000000000000000000000000001::module1::name1<U8,Vector<U64>,000000000000000000000000000000000000000000000000000000000000000a::module2::name2>',
+    )
+  })
+})
+
+describe('typeTagToString', () => {
+  it('typeTagToString with string type', () => {
+    const typeTag: TypeTag = 'U8'
+
+    const result = typeTagToString(typeTag)
+    expect(result).toBe('U8')
+  })
+
+  it('typeTagToString with Vector type', () => {
+    const typeTag: TypeTag = { Vector: 'U64' }
+
+    const result = typeTagToString(typeTag)
+    expect(result).toBe('Vector<U64>')
+  })
+
+  it('typeTagToString with Struct type', () => {
+    const typeTag: TypeTag = {
+      Struct: {
+        address: '0000000000000000000000000000000a',
+        module: 'module2',
+        name: 'name2',
+      },
+    }
+
+    const result = typeTagToString(typeTag)
+    expect(result).toBe(
+      '000000000000000000000000000000000000000000000000000000000000000a::module2::name2',
+    )
+  })
+
+  it('typeTagToString with unknown type', () => {
+    const typeTag: any = { Unknown: 'U64' }
+
+    expect(() => typeTagToString(typeTag)).toThrowError()
+  })
+})
+
+describe('strcutTagToObjectID', () => {
+  it('test_named_object_id', () => {
+    const structTag: StructTag = {
+      address: '0x3',
+      module: 'timestamp',
+      name: 'Timestamp',
+      type_params: [],
+    }
+
+    const timestamp_object_id = strcutTagToObjectID(structTag)
+    const object_id = '0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3'
+    expect(timestamp_object_id).toBe(object_id)
+  })
+
+  it('test_account_named_object_id', () => {
+    const structTag: StructTag = {
+      address: '0x3',
+      module: 'coin_store',
+      name: 'CoinStore',
+      type_params: [
+        {
+          Struct: {
+            address: '0x3',
+            module: 'gas_coin',
+            name: 'GasCoin',
+            type_params: [],
+          },
+        },
+      ],
+    }
+
+    const coin_store_object_id = strcutTagToObjectID(structTag)
+    const object_id = '0xd073508b9582eff4e01078dc2e62489c15bbef91b6a2e568ac8fb33f0cf54daa'
+    expect(coin_store_object_id).toBe(object_id)
   })
 })

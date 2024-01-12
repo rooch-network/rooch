@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { hexlify } from '@ethersproject/bytes'
+import { sha3_256 } from '@noble/hashes/sha3'
 
 import { fromHexString } from './hex'
 import { ROOCH_ADDRESS_LENGTH } from '../constants'
@@ -17,7 +18,7 @@ import {
   BcsSerializer,
   Serializable,
 } from '../types/bcs'
-import { parseFunctionId, normalizeRoochAddress } from './encode'
+import { parseFunctionId, normalizeRoochAddress, canonicalRoochAddress } from './encode'
 
 export function encodeFunctionCall(
   functionId: FunctionId,
@@ -217,7 +218,44 @@ function serializeValue(value: any, type: TypeTag, se: BcsSerializer) {
   } else if ((type as { Struct: StructTag }).Struct) {
     const serializable = value as Serializable
     serializable.serialize(se)
+  } else if (type === 'ObjectID') {
+    const list = addressToListTuple(normalizeRoochAddress(value as string))
+    const accountAddress = new rooch_types.AccountAddress(list)
+    accountAddress.serialize(se)
+  } else if (type === 'Object') {
+    const list = addressToListTuple(normalizeRoochAddress(value as string))
+    const accountAddress = new rooch_types.AccountAddress(list)
+    accountAddress.serialize(se)
   }
+}
+
+export function strcutTagToString(structTag: StructTag): string {
+  let result = `${canonicalRoochAddress(structTag.address)}::${structTag.module}::${structTag.name}`
+
+  if (structTag.type_params) {
+    const typeParams = structTag.type_params.map(typeTagToString).join(',')
+    result += `<${typeParams}>`
+  }
+
+  return result
+}
+
+export function typeTagToString(typeTag: TypeTag): string {
+  if (typeof typeTag === 'string') {
+    return typeTag
+  } else if ('Vector' in typeTag) {
+    return `Vector<${typeTagToString(typeTag.Vector)}>`
+  } else if ('Struct' in typeTag) {
+    return strcutTagToString(typeTag.Struct)
+  } else {
+    throw new Error(`Unknown TypeTag: ${JSON.stringify(typeTag)}`)
+  }
+}
+
+export function strcutTagToObjectID(structTag: StructTag): string {
+  const canonicalString = strcutTagToString(structTag)
+  const hash = sha3_256(canonicalString)
+  return hexlify(hash)
 }
 
 export function encodeArg(arg: Arg): Bytes {

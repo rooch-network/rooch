@@ -12,13 +12,30 @@ import {
   LocalChain,
 } from '../../src'
 import { RoochServer } from './servers/rooch-server'
+import { RoochCli } from './cli/rooch-cli'
 
 describe('SDK', () => {
   let server: RoochServer
+  let cli: RoochCli
+  //let defaultAddress: string
 
   beforeAll(async () => {
+    // start rooch server
     server = new RoochServer()
     await server.start()
+
+    // deploy example app
+    cli = new RoochCli()
+    await cli.execute([
+      'move',
+      'publish',
+      '-p',
+      '../../../examples/entry_function_arguments/',
+      '--named-addresses',
+      'rooch_examples=default',
+    ])
+
+    //defaultAddress = await cli.defaultAccountAddress()
   })
 
   afterAll(async () => {

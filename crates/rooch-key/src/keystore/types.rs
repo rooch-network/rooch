@@ -16,7 +16,7 @@ pub struct LocalSessionKey {
     pub private_key: EncryptionData,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct LocalAccount {
     pub address: RoochAddress,
     pub multichain_address: Option<MultiChainAddress>,

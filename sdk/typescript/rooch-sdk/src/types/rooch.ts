@@ -41,11 +41,15 @@ export type TypeTag =
   | 'Signer'
   | 'Ascii'
   | 'String'
+  | 'Object'
+  | 'ObjectID'
   | { Vector: TypeTag }
   | { Struct: StructTag }
   | 'U16'
   | 'U32'
   | 'U256'
+
+export type ParsedObjectID = AccountAddress | StructTag
 
 export type ArgType =
   | Bool
@@ -58,6 +62,7 @@ export type ArgType =
   | string
   | AccountAddress
   | Serializable
+  | ParsedObjectID
   | ArgType[]
 
 export type Arg = {
