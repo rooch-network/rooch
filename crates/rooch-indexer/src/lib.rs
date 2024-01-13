@@ -49,6 +49,7 @@ impl IndexerStore {
     pub fn mock_db_url() -> Result<String> {
         let tmpdir = moveos_config::temp_dir();
         let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_FILENAME);
+
         if !indexer_db.exists() {
             std::fs::File::create(indexer_db.clone())?;
         }

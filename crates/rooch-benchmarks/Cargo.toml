@@ -17,7 +17,6 @@ ethers = { workspace = true }
 futures = { workspace = true }
 hex = { workspace = true }
 rustc-hex = { workspace = true }
-#jsonrpsee = { workspace = true }
 serde = { workspace = true }
 serde_yaml = { workspace = true }
 serde_json = { workspace = true }
@@ -37,14 +36,12 @@ log = { workspace = true }
 lazy_static = { workspace = true }
 rpassword = { workspace = true }
 
-
 criterion = { workspace = true }
+#criterion-cpu-time = { workspace = true }
 pprof = { workspace = true }
 parking_lot = { workspace = true }
 proptest = { workspace = true }
 rand_core = { default-features = false, workspace = true }
-#futures-timer = { workspace = true }
-
 
 move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }
@@ -69,29 +66,6 @@ rooch-indexer = { workspace = true }
 rooch-da = { workspace = true }
 rooch-rpc-server = { workspace = true }
 
-
-#starcoin-crypto = { package = "starcoin-crypto", workspace = true }
-#forkable-jellyfish-merkle = { workspace = true }
-#futures-timer = { workspace = true }
-#starcoin-logger = { package = "starcoin-logger", workspace = true }
-#starcoin-account-api = { workspace = true }
-#starcoin-accumulator = { package = "starcoin-accumulator", workspace = true }
-#starcoin-chain = { workspace = true }
-#starcoin-config = { workspace = true }
-#starcoin-consensus = { workspace = true }
-#starcoin-executor = { package = "starcoin-executor", workspace = true }
-#starcoin-genesis = { workspace = true }
-#network-api = { workspace = true }
-#starcoin-service-registry = { workspace = true }
-#starcoin-state-store-api = { workspace = true }
-#starcoin-state-tree = { workspace = true }
-#starcoin-storage = { workspace = true }
-#starcoin-transaction-builder = { workspace = true }
-#starcoin-vm-runtime = { workspace = true }
-#starcoin-vm-types = { workspace = true }
-#starcoin-types = { workspace = true }
-#starcoin-executor-benchmark = { workspace = true }
-
 [dev-dependencies]
 
 [lib]
@@ -100,22 +74,3 @@ bench = false
 [[bench]]
 harness = false
 name = "bench_transaction"
-
-#[[bench]]
-#harness = false
-#name = "bench_block"
-
-#[[bench]]
-#harness = false
-#name = "bench_storage"
-
-#[[bench]]
-#harness = false
-#name = "bench_state_tree"
-
-#[[bench]]
-#harness = false
-#name = "bench_vm"
-
-#[target."cfg(target_os=\"linux\")".dependencies]
-#pprof = { version = "0.11", features = ["flamegraph", "criterion"] }
