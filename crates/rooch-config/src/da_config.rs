@@ -179,16 +179,19 @@ fn parse_hashmap(
         .map(|kv| {
             let mut parts = kv.splitn(2, '=');
             match (parts.next(), parts.next()) {
-                (Some(key), Some(value)) if !key.trim().is_empty() => Ok((key.to_string(), value.to_string())),
+                (Some(key), Some(value)) if !key.trim().is_empty() => {
+                    Ok((key.to_string(), value.to_string()))
+                }
                 (Some(""), Some(_)) => Err("key is missing before '='".into()),
-                _ => Err("each key=value pair must be separated by a comma and contain a key".into()),
+                _ => {
+                    Err("each key=value pair must be separated by a comma and contain a key".into())
+                }
             }
         })
         .collect()
 }
 
 // test parse_hashmap
-
 
 // Open DA provides ability to access various storage services
 #[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize, Parser)]
