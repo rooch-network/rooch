@@ -4,11 +4,11 @@
 use crate::cli_types::{CommandAction, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use serde::{Deserialize, Serialize};
-use rooch_key::keystore::types::LocalAccount;
 use rooch_key::keystore::account_keystore::AccountKeystore;
+use rooch_key::keystore::types::LocalAccount;
 use rooch_types::{crypto::EncodeDecodeBase64, error::RoochResult};
 use rpassword::prompt_password;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 /// List all keys by its Rooch address, Base64 encoded public key
@@ -25,7 +25,7 @@ pub struct ListCommand {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AccountView {
     pub local_account: LocalAccount,
-    pub active: bool
+    pub active: bool,
 }
 
 #[async_trait]
@@ -45,15 +45,16 @@ impl CommandAction<()> for ListCommand {
         let accounts: Vec<LocalAccount> = context.keystore.get_accounts(password)?;
 
         if self.json {
-            let accont_views: Vec<AccountView> = accounts.into_iter().map(| account : LocalAccount| {
-                AccountView {
+            let accont_views: Vec<AccountView> = accounts
+                .into_iter()
+                .map(|account: LocalAccount| AccountView {
                     local_account: account.clone(),
-                    active: Some(account.address) == active_address
-                }
-            }).collect();
+                    active: Some(account.address) == active_address,
+                })
+                .collect();
 
             println!("{}", serde_json::to_string_pretty(&accont_views).unwrap());
-            return Ok(())
+            return Ok(());
         }
 
         println!(
