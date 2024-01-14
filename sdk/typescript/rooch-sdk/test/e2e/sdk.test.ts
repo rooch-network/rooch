@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+import { arrayify } from '@ethersproject/bytes'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import {
   RoochClient,
@@ -17,15 +18,16 @@ import { RoochCli } from './cli/rooch-cli'
 describe('SDK', () => {
   let server: RoochServer
   let cli: RoochCli
-  //let defaultAddress: string
+  let defaultAddress: string
 
   beforeAll(async () => {
     // start rooch server
     server = new RoochServer()
     await server.start()
 
-    // deploy example app
     cli = new RoochCli()
+
+    // deploy example entry_function_arguments
     await cli.execute([
       'move',
       'publish',
@@ -35,7 +37,27 @@ describe('SDK', () => {
       'rooch_examples=default',
     ])
 
-    //defaultAddress = await cli.defaultAccountAddress()
+    // deploy example counter
+    await cli.execute([
+      'move',
+      'publish',
+      '-p',
+      '../../../examples/counter/',
+      '--named-addresses',
+      'rooch_examples=default',
+    ])
+
+    // deploy example coins
+    await cli.execute([
+      'move',
+      'publish',
+      '-p',
+      '../../../examples/coins/',
+      '--named-addresses',
+      'coins=default',
+    ])
+
+    defaultAddress = await cli.defaultAccountAddress()
   })
 
   afterAll(async () => {
@@ -143,6 +165,131 @@ describe('SDK', () => {
       )
 
       expect(tx).toBeDefined()
+    })
+
+    it('call function with objectid be ok', async () => {
+      const client = new RoochClient(LocalChain)
+
+      const kp = Ed25519Keypair.deriveKeypair(
+        'nose aspect organ harbor move prepare raven manage lamp consider oil front',
+      )
+      const roochAddress = kp.getPublicKey().toRoochAddress()
+      const authorizer = new PrivateKeyAuth(kp)
+
+      const account = new Account(client, roochAddress, authorizer)
+      expect(account).toBeDefined()
+
+      const tx = await account.runFunction(
+        `${defaultAddress}::entry_function::emit_object_id`,
+        [],
+        [
+          {
+            type: 'ObjectID',
+            value: '0x3134',
+          },
+        ],
+        {
+          maxGasAmount: 2000000,
+        },
+      )
+
+      expect(tx).toBeDefined()
+    })
+
+    it('call function with object be ok', async () => {
+      const client = new RoochClient(LocalChain)
+
+      const kp = Ed25519Keypair.deriveKeypair(
+        'nose aspect organ harbor move prepare raven manage lamp consider oil front',
+      )
+      const roochAddress = kp.getPublicKey().toRoochAddress()
+      const authorizer = new PrivateKeyAuth(kp)
+
+      const account = new Account(client, roochAddress, authorizer)
+      expect(account).toBeDefined()
+
+      const tx = await account.runFunction(
+        `${defaultAddress}::entry_function::emit_object`,
+        [],
+        [
+          {
+            type: 'Object',
+            value: {
+              address: defaultAddress,
+              module: 'entry_function',
+              name: 'TestStruct',
+            },
+          },
+        ],
+        {
+          maxGasAmount: 2000000,
+        },
+      )
+
+      expect(tx).toBeDefined()
+    })
+
+    it('call function with raw be ok', async () => {
+      const client = new RoochClient(LocalChain)
+
+      const kp = Ed25519Keypair.deriveKeypair(
+        'nose aspect organ harbor move prepare raven manage lamp consider oil front',
+      )
+      const roochAddress = kp.getPublicKey().toRoochAddress()
+      const authorizer = new PrivateKeyAuth(kp)
+
+      const account = new Account(client, roochAddress, authorizer)
+      expect(account).toBeDefined()
+
+      const tx = await account.runFunction(
+        `${defaultAddress}::entry_function::emit_vec_u8`,
+        [],
+        [
+          {
+            type: 'Raw',
+            value: arrayify('0xffff'),
+          },
+        ],
+        {
+          maxGasAmount: 2000000,
+        },
+      )
+
+      expect(tx).toBeDefined()
+    })
+
+    it('call fixed_supply_coin::faucet be ok', async () => {
+      const client = new RoochClient(LocalChain)
+
+      const kp = Ed25519Keypair.generate()
+      const roochAddress = kp.getPublicKey().toRoochAddress()
+      const authorizer = new PrivateKeyAuth(kp)
+
+      const account = new Account(client, roochAddress, authorizer)
+      expect(account).toBeDefined()
+
+      const tx = await account.runFunction(
+        `${defaultAddress}::fixed_supply_coin::faucet`,
+        [],
+        [
+          {
+            type: 'Object',
+            value: {
+              address: defaultAddress,
+              module: 'fixed_supply_coin',
+              name: 'Treasury',
+            },
+          },
+        ],
+        {
+          maxGasAmount: 200000000,
+        },
+      )
+
+      expect(tx).toBeDefined()
+
+      const fscBalance = await account.coinBalance(`${defaultAddress}::fixed_supply_coin::FSC`)
+      expect(fscBalance).toBe(BigInt(10000))
     })
   })
 

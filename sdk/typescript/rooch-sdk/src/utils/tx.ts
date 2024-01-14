@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { hexlify } from '@ethersproject/bytes'
-import { sha3_256 } from '@noble/hashes/sha3'
-
 import { fromHexString } from './hex'
 import { ROOCH_ADDRESS_LENGTH } from '../constants'
 import { AccountAddress, FunctionId, TypeTag, StructTag, Arg } from '../types'
@@ -18,7 +16,7 @@ import {
   BcsSerializer,
   Serializable,
 } from '../types/bcs'
-import { parseFunctionId, normalizeRoochAddress, canonicalRoochAddress } from './encode'
+import { parseFunctionId, normalizeRoochAddress, structTagToObjectID } from './encode'
 
 export function encodeFunctionCall(
   functionId: FunctionId,
@@ -104,7 +102,7 @@ export function encodeStructTypeTags(typeArgsString: string[]): TypeTag[] {
   return typeArgsString.map((str) => encodeStructTypeTag(str))
 }
 
-function encodeStructTypeTag(str: string): TypeTag {
+export function encodeStructTypeTag(str: string): TypeTag {
   const arr = str.split('<')
   const arr1 = arr[0].split('::')
   const address = arr1[0]
@@ -223,39 +221,18 @@ function serializeValue(value: any, type: TypeTag, se: BcsSerializer) {
     const accountAddress = new rooch_types.AccountAddress(list)
     accountAddress.serialize(se)
   } else if (type === 'Object') {
-    const list = addressToListTuple(normalizeRoochAddress(value as string))
+    const objectId = structTagToObjectID(value as StructTag)
+    const list = addressToListTuple(normalizeRoochAddress(objectId))
     const accountAddress = new rooch_types.AccountAddress(list)
     accountAddress.serialize(se)
+  } else if (type === 'Raw') {
+    const vectorValues = value as Uint8Array
+    se.serializeLen(vectorValues.length)
+
+    for (let item of vectorValues) {
+      se.serializeU8(item)
+    }
   }
-}
-
-export function strcutTagToString(structTag: StructTag): string {
-  let result = `${canonicalRoochAddress(structTag.address)}::${structTag.module}::${structTag.name}`
-
-  if (structTag.type_params) {
-    const typeParams = structTag.type_params.map(typeTagToString).join(',')
-    result += `<${typeParams}>`
-  }
-
-  return result
-}
-
-export function typeTagToString(typeTag: TypeTag): string {
-  if (typeof typeTag === 'string') {
-    return typeTag
-  } else if ('Vector' in typeTag) {
-    return `Vector<${typeTagToString(typeTag.Vector)}>`
-  } else if ('Struct' in typeTag) {
-    return strcutTagToString(typeTag.Struct)
-  } else {
-    throw new Error(`Unknown TypeTag: ${JSON.stringify(typeTag)}`)
-  }
-}
-
-export function strcutTagToObjectID(structTag: StructTag): string {
-  const canonicalString = strcutTagToString(structTag)
-  const hash = sha3_256(canonicalString)
-  return hexlify(hash)
 }
 
 export function encodeArg(arg: Arg): Bytes {

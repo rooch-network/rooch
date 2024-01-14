@@ -43,6 +43,7 @@ export type TypeTag =
   | 'String'
   | 'Object'
   | 'ObjectID'
+  | 'Raw'
   | { Vector: TypeTag }
   | { Struct: StructTag }
   | 'U16'
@@ -60,6 +61,7 @@ export type ArgType =
   | U128
   | U256
   | string
+  | Uint8Array
   | AccountAddress
   | Serializable
   | ParsedObjectID

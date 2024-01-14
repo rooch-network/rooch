@@ -7,6 +7,7 @@ export const DefaultPort = 50051
 export class RoochServer {
   private child: ChildProcess | undefined
 
+  private debug: boolean = false
   private ready: boolean = false
   private port: number = DefaultPort
 
@@ -33,11 +34,15 @@ export class RoochServer {
 
     if (this.child) {
       this.child.stdout?.on('data', (data) => {
-        process.stdout.write(`${data}`)
+        if (this.debug) {
+          process.stdout.write(`${data}`)
+        }
       })
 
       this.child.stderr?.on('data', (data) => {
-        process.stderr.write(`${data}`)
+        if (this.debug) {
+          process.stdout.write(`${data}`)
+        }
       })
 
       this.child.on('close', (code) => {

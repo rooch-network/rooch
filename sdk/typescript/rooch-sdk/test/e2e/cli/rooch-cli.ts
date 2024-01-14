@@ -3,6 +3,7 @@
 import { spawn, ChildProcess } from 'child_process'
 
 export class RoochCli {
+  private debug: boolean = false
   private child: ChildProcess | undefined
 
   async execute(args: Array<string>): Promise<any> {
@@ -14,12 +15,18 @@ export class RoochCli {
       if (this.child) {
         this.child.stdout?.on('data', (data) => {
           output += data
-          process.stdout.write(data)
+
+          if (this.debug) {
+            process.stdout.write(`${data}`)
+          }
         })
 
         this.child.stderr?.on('data', (data) => {
           errorMsg += data
-          process.stderr.write(`${data}`)
+
+          if (this.debug) {
+            process.stderr.write(`${data}`)
+          }
         })
 
         this.child.on('close', (code) => {
