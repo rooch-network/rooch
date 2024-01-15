@@ -46,7 +46,7 @@ impl BindingCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let multichain_address = MultiChainAddress::try_from_str_with_multichain_id(
             self.l1_chain,
-            &self.l1_address.as_str(),
+            self.l1_address.as_str(),
         )?;
         let wallet_context = self.context_options.build()?;
         let sender = wallet_context.resolve_address(self.tx_options.sender)?;
