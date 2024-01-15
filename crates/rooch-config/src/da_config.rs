@@ -44,7 +44,7 @@ impl FromStr for DAServerSubmitStrategy {
                 if let Ok(n) = s.parse::<usize>() {
                     Ok(DAServerSubmitStrategy::Number(n))
                 } else {
-                    Err(format!("Invalid value: {}", s))
+                    Err(format!("invalid da server submit strategy: {}", s))
                 }
             }
         }
@@ -68,11 +68,11 @@ impl FromStr for InternalDAServerConfigType {
             if let Some(celestia) = obj.get("celestia") {
                 let celestia_config: DAServerCelestiaConfig =
                     serde_json::from_value(celestia.clone())
-                        .map_err(|_| format!("Invalid Celestia config: {}", celestia))?;
+                        .map_err(|_| format!("invalid celestia config: {}", celestia))?;
                 Ok(InternalDAServerConfigType::Celestia(celestia_config))
-            } else if let Some(openda) = obj.get("openda") {
+            } else if let Some(openda) = obj.get("open-da") {
                 let openda_config: DAServerOpenDAConfig = serde_json::from_value(openda.clone())
-                    .map_err(|_| format!("Invalid OpenDA config: {}", openda))?;
+                    .map_err(|_| format!("invalid open-da config: {}", openda))?;
                 Ok(InternalDAServerConfigType::OpenDA(openda_config))
             } else {
                 Err(format!("Invalid value: {}", s))
@@ -90,7 +90,7 @@ pub struct InternalDAServerConfig {
     #[clap(
         name = "submit-strategy",
         long,
-        help = "specifies the strategy of internal DA servers to be used. 'all' with all servers, 'quorum' with quorum servers, 'n' with n servers, etc."
+        help = "specifies the submission strategy of internal DA servers to be used. 'all' with all servers, 'quorum' with quorum servers, 'n' with n servers, etc."
     )]
     pub submit_strategy: Option<DAServerSubmitStrategy>,
     #[clap(
@@ -166,7 +166,7 @@ impl FromStr for OpenDAScheme {
         match s.to_lowercase().as_str() {
             "gcs" => Ok(OpenDAScheme::GCS),
             "s3" => Ok(OpenDAScheme::S3),
-            _ => Err("open-da no match"),
+            _ => Err("open-da scheme no match"),
         }
     }
 }
@@ -175,15 +175,23 @@ fn parse_hashmap(
     s: &str,
 ) -> Result<HashMap<String, String>, Box<dyn Error + Send + Sync + 'static>> {
     s.split(',')
+        .filter(|kv| !kv.is_empty())
         .map(|kv| {
             let mut parts = kv.splitn(2, '=');
             match (parts.next(), parts.next()) {
-                (Some(key), Some(value)) => Ok((key.to_string(), value.to_string())),
-                _ => Err("Each key=value pair must be separated by a comma".into()),
+                (Some(key), Some(value)) if !key.trim().is_empty() => {
+                    Ok((key.to_string(), value.to_string()))
+                }
+                (Some(""), Some(_)) => Err("key is missing before '='".into()),
+                _ => {
+                    Err("each key=value pair must be separated by a comma and contain a key".into())
+                }
             }
         })
         .collect()
 }
+
+// test parse_hashmap
 
 // Open DA provides ability to access various storage services
 #[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize, Parser)]
@@ -364,5 +372,63 @@ mod tests {
             config.submit_strategy,
             Some(DAServerSubmitStrategy::Number(2))
         );
+    }
+
+    #[test]
+    fn test_parse_hashmap_ok() {
+        let input = "key1=VALUE1,key2=value2";
+        let output = parse_hashmap(input).unwrap();
+
+        let mut expected = HashMap::new();
+        expected.insert("key1".to_string(), "VALUE1".to_string());
+        expected.insert("key2".to_string(), "value2".to_string());
+
+        assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn test_parse_hashmap_empty_value() {
+        let input = "key1=,key2=value2";
+        let output = parse_hashmap(input).unwrap();
+
+        let mut expected = HashMap::new();
+        expected.insert("key1".to_string(), "".to_string());
+        expected.insert("key2".to_string(), "value2".to_string());
+
+        assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn test_parse_hashmap_empty_string() {
+        let input = "";
+        let output = parse_hashmap(input).unwrap();
+
+        let expected = HashMap::new();
+
+        assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn test_parse_hashmap_missing_value() {
+        let input = "key1,key2=value2";
+        let output = parse_hashmap(input);
+
+        assert!(output.is_err());
+    }
+
+    #[test]
+    fn test_parse_hashmap_missing_key() {
+        let input = "=value1,key2=value2";
+        let output = parse_hashmap(input);
+
+        assert!(output.is_err());
+    }
+
+    #[test]
+    fn test_parse_hashmap_no_equals_sign() {
+        let input = "key1value1,key2=value2";
+        let output = parse_hashmap(input);
+
+        assert!(output.is_err());
     }
 }
