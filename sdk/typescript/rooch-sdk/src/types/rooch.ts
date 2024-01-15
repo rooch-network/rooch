@@ -35,8 +35,11 @@ export interface StructTag {
 export type TypeTag =
   | 'Bool'
   | 'U8'
+  | 'U16'
+  | 'U32'
   | 'U64'
   | 'U128'
+  | 'U256'
   | 'Address'
   | 'Signer'
   | 'Ascii'
@@ -46,9 +49,6 @@ export type TypeTag =
   | 'Raw'
   | { Vector: TypeTag }
   | { Struct: StructTag }
-  | 'U16'
-  | 'U32'
-  | 'U256'
 
 export type ParsedObjectID = AccountAddress | StructTag
 
