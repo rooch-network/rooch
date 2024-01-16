@@ -86,4 +86,16 @@ export interface IAccount {
    * @param authKey the auth key
    */
   isSessionKeyExpired(authKey: AccountAddress): Promise<boolean>
+
+  /**
+   * Get the gas coin balance
+   */
+  gasCoinBalance(): Promise<bigint>
+
+  /**
+   * Query coin balance
+   *
+   * @param coinType string coin type
+   */
+  coinBalance(coinType: string): Promise<bigint>
 }

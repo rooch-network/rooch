@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest'
 
 describe('SDK', () => {
   describe('#debug', () => {
-    it('Remove session key should be ok', async () => {
+    it('Test', async () => {
       expect(true).toBeTruthy()
     })
   })
