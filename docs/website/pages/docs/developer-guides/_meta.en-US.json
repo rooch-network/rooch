@@ -1,20 +1,27 @@
 {
+  "quick-start": "Quick start",
   "installation": "Installation",
   "cli": "CLI",
-  "quick-start": "Quick start",
+  "create-rooch-move-contract": "Create Rooch Move contract",
   "connect-devnet": "Connect to devnet",
   "run-local-testnet": "Run a local testnet",
   "faucet": {
     "title": "Faucet",
     "display": "hidden"
   },
+  "typescript-sdk": "Typescript SDK",
   "address-space": "Address space",
   "library": "Library",
-  "create-rooch-move-contract": "Create Rooch Move contract",
+  "access-path": "Access path",
+  "timestamp": "Timestamp",
   "object": "Object",
+  "coin-intro": "Coin introduction",
+  "private-generics": "Private generics",
+  "unit-test": "Unit test",
   "interactive-ethereum": {
     "title": "Interactive with Ethereum",
     "display": "hidden"
   },
-  "rpc": "RPC"
+  "rpc": "RPC",
+  "move-on-rooch": "Move on Rooch"
 }
