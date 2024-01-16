@@ -12,7 +12,7 @@
 -  [Function `genesis_init`](#0x4_light_client_genesis_init)
 -  [Function `submit_new_block`](#0x4_light_client_submit_new_block)
 -  [Function `remaining_tx_count`](#0x4_light_client_remaining_tx_count)
--  [Function `progress_utxos`](#0x4_light_client_progress_utxos)
+-  [Function `process_utxos`](#0x4_light_client_process_utxos)
 -  [Function `txs`](#0x4_light_client_txs)
 -  [Function `tx_ids`](#0x4_light_client_tx_ids)
 -  [Function `get_tx`](#0x4_light_client_get_tx)
@@ -133,13 +133,13 @@ The relay server submit a new Bitcoin block to the light client.
 
 
 
-<a name="0x4_light_client_progress_utxos"></a>
+<a name="0x4_light_client_process_utxos"></a>
 
-## Function `progress_utxos`
+## Function `process_utxos`
 
 
 
-<pre><code>entry <b>fun</b> <a href="light_client.md#0x4_light_client_progress_utxos">progress_utxos</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, btc_block_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinBlockStore">light_client::BitcoinBlockStore</a>&gt;, btc_utxo_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinUTXOStore">light_client::BitcoinUTXOStore</a>&gt;, batch_size: u64)
+<pre><code>entry <b>fun</b> <a href="light_client.md#0x4_light_client_process_utxos">process_utxos</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, btc_block_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinBlockStore">light_client::BitcoinBlockStore</a>&gt;, btc_utxo_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinUTXOStore">light_client::BitcoinUTXOStore</a>&gt;, batch_size: u64)
 </code></pre>
 
 
