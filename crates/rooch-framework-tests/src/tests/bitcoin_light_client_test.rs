@@ -79,7 +79,15 @@ fn test_submit_block() {
 
     assert!(bitcoin_light_client_module.remaining_tx_count().unwrap() > 0);
     let sequence_number = sequence_number + 1;
-    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, MoveAction::Function(rooch_types::bitcoin::light_client::BitcoinLightClientModule::create_process_utxos_call(bitcoin_txdata.len() as u64)));
+    let tx_data = RoochTransactionData::new_for_test(
+        sender,
+        sequence_number,
+        MoveAction::Function(
+            rooch_types::bitcoin::light_client::BitcoinLightClientModule::create_process_utxos_call(
+                bitcoin_txdata.len() as u64,
+            ),
+        ),
+    );
     let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
     binding_test.execute(tx).unwrap();
 
