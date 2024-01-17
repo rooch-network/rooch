@@ -65,6 +65,7 @@ rooch-relayer = { workspace = true }
 rooch-indexer = { workspace = true }
 rooch-da = { workspace = true }
 rooch-rpc-server = { workspace = true }
+rooch-test-transaction-builder = { workspace = true }
 
 [dev-dependencies]
 

@@ -40,6 +40,7 @@ members = [
     "crates/rooch-store",
     "crates/rooch-indexer",
     "crates/rooch-benchmarks",
+    "crates/rooch-test-transaction-builder",
     "frameworks/bitcoin-move"
 ]
 
@@ -104,6 +105,7 @@ rooch-store = { path = "crates/rooch-store" }
 rooch-indexer = { path = "crates/rooch-indexer" }
 rooch-da = { path = "crates/rooch-da" }
 rooch-benchmarks = { path = "crates/rooch-benchmarks" }
+rooch-test-transaction-builder = { path = "crates/rooch-test-transaction-builder" }
 
 # frameworks
 bitcoin-move = { path = "frameworks/bitcoin-move" }

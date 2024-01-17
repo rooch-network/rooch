@@ -7815,6 +7815,7 @@ dependencies = [
  "rooch-rpc-server",
  "rooch-sequencer",
  "rooch-store",
+ "rooch-test-transaction-builder",
  "rooch-types",
  "rpassword",
  "rustc-hex 1.0.0",
@@ -8541,6 +8542,42 @@ dependencies = [
  "serde 1.0.193",
  "serde_bytes",
  "smt",
+]
+
+[[package]]
+name = "rooch-test-transaction-builder"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "fastcrypto",
+ "log",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-compiler",
+ "move-core-types",
+ "move-coverage",
+ "move-package",
+ "move-resource-viewer",
+ "moveos",
+ "moveos-config",
+ "moveos-stdlib",
+ "moveos-stdlib-builder",
+ "moveos-store",
+ "moveos-types",
+ "moveos-verifier",
+ "once_cell",
+ "raw-store",
+ "rooch-config",
+ "rooch-framework",
+ "rooch-genesis",
+ "rooch-genesis-builder",
+ "rooch-key",
+ "rooch-rpc-client",
+ "rooch-types",
+ "serde 1.0.193",
+ "serde_json",
+ "serde_yaml 0.9.25",
 ]
 
 [[package]]

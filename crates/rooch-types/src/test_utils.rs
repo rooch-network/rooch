@@ -19,7 +19,6 @@ use moveos_types::moveos_std::raw_table::TableInfo;
 use moveos_types::state::{State, StateChangeSet, TableChange, TableTypeInfo};
 use moveos_types::transaction::{FunctionCall, MoveAction, ScriptCall, VerifiedMoveAction};
 use rand::distributions::Alphanumeric;
-use rand::prelude::ThreadRng;
 use rand::{distributions, thread_rng, Rng};
 
 pub enum MoveActionType {
@@ -43,18 +42,25 @@ impl MoveActionType {
 
 /// Returns n random bytes with fixed size.
 pub fn random_bytes() -> Vec<u8> {
-    random_bytes_with_size(&mut thread_rng(), 32)
+    random_bytes_with_size(32)
 }
 
 /// Returns n random bytes with size.
-pub fn random_bytes_with_size(rng: &mut ThreadRng, n: usize) -> Vec<u8> {
+pub fn random_bytes_with_size(len: usize) -> Vec<u8> {
+    let rng = thread_rng();
     let range = distributions::Uniform::from(0u8..u8::MAX);
-    rng.sample_iter(&range).take(n).collect()
+    rng.sample_iter(&range).take(len).collect()
 }
 
 pub fn random_string() -> String {
     let mut rng = thread_rng();
-    let len = rng.gen_range(1..=100);
+    let len = rng.gen_range(1..=500);
+
+    random_string_with_size(len)
+}
+
+pub fn random_string_with_size(len: usize) -> String {
+    let mut rng = thread_rng();
 
     if len == 0 {
         "".to_string()
@@ -148,7 +154,7 @@ pub fn random_move_action_module_bundle() -> MoveAction {
     let mut rng = thread_rng();
     for _n in 0..rng.gen_range(1..=5) {
         let bytes_len = rng.gen_range(2000..=20000);
-        module_bundle.push(random_bytes_with_size(&mut thread_rng(), bytes_len));
+        module_bundle.push(random_bytes_with_size(bytes_len));
     }
 
     MoveAction::ModuleBundle(module_bundle)
@@ -170,7 +176,7 @@ pub fn random_function_call() -> FunctionCall {
     let mut rng = thread_rng();
     for _n in 0..rng.gen_range(1..=5) {
         let bytes_len = rng.gen_range(20..=100);
-        args.push(random_bytes_with_size(&mut thread_rng(), bytes_len));
+        args.push(random_bytes_with_size(bytes_len));
     }
 
     FunctionCall {
@@ -201,7 +207,7 @@ pub fn random_script_call() -> ScriptCall {
     let mut rng = thread_rng();
     for _n in 0..rng.gen_range(1..=5) {
         let bytes_len = rng.gen_range(20..=200);
-        args.push(random_bytes_with_size(&mut thread_rng(), bytes_len));
+        args.push(random_bytes_with_size(bytes_len));
     }
 
     ScriptCall {
