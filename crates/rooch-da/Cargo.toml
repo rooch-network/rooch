@@ -16,6 +16,8 @@ bcs = { workspace = true }
 log = { workspace = true }
 coerce = { workspace = true }
 async-trait = { workspace = true }
+futures = { workspace = true }
+opendal = { workspace = true }
 
 rooch-config = { workspace = true }
 serde_yaml = { workspace = true }

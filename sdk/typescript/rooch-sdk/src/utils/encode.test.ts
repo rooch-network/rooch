@@ -2,8 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, it, expect } from 'vitest'
-import { TypeTag } from '../types'
-import { typeTagToString } from './encode'
+import { TypeTag, StructTag } from '../types'
+import {
+  typeTagToString,
+  structTagToCanonicalString,
+  typeTagToCanonicalString,
+  structTagToObjectID,
+} from './encode'
 
 describe('typeTagToString', () => {
   it('should handle string type tags correctly', () => {
@@ -41,5 +46,118 @@ describe('typeTagToString', () => {
     expect(typeTagToString(structTypeTagWithTypeParams)).toEqual(
       '0x1::Account::Account<U8, Vector<U64>>',
     )
+  })
+})
+
+describe('strcutTagToString', () => {
+  it('strcutTagToString with no type_params', () => {
+    const structTag: StructTag = {
+      address: '00000000000000000000000000000001',
+      module: 'module1',
+      name: 'name1',
+    }
+
+    const result = structTagToCanonicalString(structTag)
+    expect(result).toBe(
+      '0000000000000000000000000000000000000000000000000000000000000001::module1::name1',
+    )
+  })
+
+  it('strcutTagToString with type_params', () => {
+    const structTag: StructTag = {
+      address: '00000000000000000000000000000001',
+      module: 'module1',
+      name: 'name1',
+      type_params: [
+        'U8',
+        { Vector: 'U64' },
+        {
+          Struct: {
+            address: '0000000000000000000000000000000a',
+            module: 'module2',
+            name: 'name2',
+          },
+        },
+      ],
+    }
+
+    const result = structTagToCanonicalString(structTag)
+    expect(result).toBe(
+      '0000000000000000000000000000000000000000000000000000000000000001::module1::name1<u8,vector<u64>,000000000000000000000000000000000000000000000000000000000000000a::module2::name2>',
+    )
+  })
+})
+
+describe('typeTagToString', () => {
+  it('typeTagToString with string type', () => {
+    const typeTag: TypeTag = 'U8'
+
+    const result = typeTagToCanonicalString(typeTag)
+    expect(result).toBe('u8')
+  })
+
+  it('typeTagToString with Vector type', () => {
+    const typeTag: TypeTag = { Vector: 'U64' }
+
+    const result = typeTagToCanonicalString(typeTag)
+    expect(result).toBe('vector<u64>')
+  })
+
+  it('typeTagToString with Struct type', () => {
+    const typeTag: TypeTag = {
+      Struct: {
+        address: '0000000000000000000000000000000a',
+        module: 'module2',
+        name: 'name2',
+      },
+    }
+
+    const result = typeTagToCanonicalString(typeTag)
+    expect(result).toBe(
+      '000000000000000000000000000000000000000000000000000000000000000a::module2::name2',
+    )
+  })
+
+  it('typeTagToString with unknown type', () => {
+    const typeTag: any = { Unknown: 'U64' }
+
+    expect(() => typeTagToCanonicalString(typeTag)).toThrowError()
+  })
+})
+
+describe('structTagToObjectID', () => {
+  it('test_named_object_id', () => {
+    const structTag: StructTag = {
+      address: '0x3',
+      module: 'timestamp',
+      name: 'Timestamp',
+      type_params: [],
+    }
+
+    const timestamp_object_id = structTagToObjectID(structTag)
+    const object_id = '0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3'
+    expect(timestamp_object_id).toBe(object_id)
+  })
+
+  it('test_account_named_object_id', () => {
+    const structTag: StructTag = {
+      address: '0x3',
+      module: 'coin_store',
+      name: 'CoinStore',
+      type_params: [
+        {
+          Struct: {
+            address: '0x3',
+            module: 'gas_coin',
+            name: 'GasCoin',
+            type_params: [],
+          },
+        },
+      ],
+    }
+
+    const coin_store_object_id = structTagToObjectID(structTag)
+    const object_id = '0x9fe449ea079f937dbc977733d6b0ae450ec44ba22ec8793076026606db1c9f49'
+    expect(coin_store_object_id).toBe(object_id)
   })
 })

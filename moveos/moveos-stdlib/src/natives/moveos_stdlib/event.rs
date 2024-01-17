@@ -5,7 +5,7 @@ use crate::natives::helpers;
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{
-    gas_algebra::InternalGas,
+    gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
     language_storage::{StructTag, TypeTag},
     vm_status::StatusCode,
 };
@@ -37,12 +37,14 @@ impl NativeEventContext {
 #[derive(Debug, Clone)]
 pub struct EmitGasParameters {
     pub base: InternalGas,
+    pub per_byte_in_str: InternalGasPerByte,
 }
 
 impl EmitGasParameters {
     pub fn zeros() -> Self {
         Self {
             base: InternalGas::zero(),
+            per_byte_in_str: InternalGasPerByte::zero(),
         }
     }
 }
@@ -56,7 +58,7 @@ pub fn native_emit(
     debug_assert!(ty_args.len() == 1);
     debug_assert!(args.len() == 1);
 
-    // TODO(Gas): Charge the arg size dependent costs
+    let mut cost = gas_params.base;
 
     let ty = ty_args.pop().unwrap();
     let type_tag = context.type_to_type_tag(&ty)?;
@@ -77,10 +79,12 @@ pub fn native_emit(
     let event_data = msg
         .simple_serialize(&layout)
         .ok_or_else(|| PartialVMError::new(StatusCode::INTERNAL_TYPE_ERROR))?;
+    cost += gas_params.per_byte_in_str * NumBytes::new(event_data.len() as u64);
+
     let event_context = context.extensions_mut().get_mut::<NativeEventContext>();
     event_context.events.push((struct_tag, event_data));
 
-    Ok(NativeResult::ok(gas_params.base, smallvec![]))
+    Ok(NativeResult::ok(cost, smallvec![]))
 }
 
 /***************************************************************************************************

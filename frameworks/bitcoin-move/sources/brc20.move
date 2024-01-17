@@ -284,7 +284,7 @@ module bitcoin_move::brc20 {
         }
     }
 
-    public(friend) fun progress_utxo_op(ctx: &mut Context, op: Op) : bool {
+    public(friend) fun process_utxo_op(ctx: &mut Context, op: Op) : bool {
         let result = if(is_transfer(&op)){
             let transfer_op_opt = as_transfer(&op);
             if(option::is_some(&transfer_op_opt)){
@@ -303,7 +303,7 @@ module bitcoin_move::brc20 {
         result
     }
 
-    public(friend) fun progress_inscribe_op(ctx: &mut Context, op: Op) :bool {
+    public(friend) fun process_inscribe_op(ctx: &mut Context, op: Op) :bool {
         
         let result = if(is_deploy(&op)){
             let deploy_op_opt = as_deploy(&op);

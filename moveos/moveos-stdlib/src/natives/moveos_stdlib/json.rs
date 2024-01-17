@@ -10,7 +10,10 @@ use move_core_types::language_storage::TypeTag;
 use move_core_types::u256::U256;
 use move_core_types::value::MoveStructLayout;
 use move_core_types::vm_status::StatusCode;
-use move_core_types::{gas_algebra::InternalGas, value::MoveTypeLayout};
+use move_core_types::{
+    gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
+    value::MoveTypeLayout,
+};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type,
@@ -210,11 +213,15 @@ fn json_obj_to_key_value_pairs(json_obj: &serde_json::Value) -> Result<Vec<(Stri
 #[derive(Debug, Clone)]
 pub struct FromBytesGasParameters {
     pub base: InternalGas,
+    pub per_byte_in_str: InternalGasPerByte,
 }
 
 impl FromBytesGasParameters {
     pub fn zeros() -> Self {
-        Self { base: 0.into() }
+        Self {
+            base: 0.into(),
+            per_byte_in_str: 0.into(),
+        }
     }
 }
 
@@ -231,7 +238,7 @@ fn native_from_json(
     debug_assert_eq!(ty_args.len(), 1);
     debug_assert_eq!(args.len(), 1);
 
-    let cost = gas_params.base;
+    let mut cost = gas_params.base;
     let type_param = &ty_args[0];
     // TODO(Gas): charge for getting the layout
     let layout = context
@@ -246,6 +253,7 @@ fn native_from_json(
         })?;
 
     let bytes = pop_arg!(args, Vec<u8>);
+    cost += gas_params.per_byte_in_str * NumBytes::new(bytes.len() as u64);
 
     // If layout is not MoveTypeLayout::MoveStructLayout, return error
     if let MoveTypeLayout::Struct(struct_layout) = layout {

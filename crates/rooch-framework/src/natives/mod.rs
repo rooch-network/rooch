@@ -20,8 +20,6 @@ pub struct GasParameters {
     hash: rooch_framework::crypto::hash::GasParameters,
     ed25519: rooch_framework::crypto::ed25519::GasParameters,
     ecdsa_k1: rooch_framework::crypto::ecdsa_k1::GasParameters,
-    ecdsa_k1_recoverable: rooch_framework::crypto::ecdsa_k1_recoverable::GasParameters,
-    schnorr: rooch_framework::crypto::schnorr::GasParameters,
     encoding: rooch_framework::crypto::encoding::GasParameters,
     decoding: rooch_framework::crypto::decoding::GasParameters,
     bcs: rooch_framework::bcs::GasParameters,
@@ -36,9 +34,6 @@ impl FromOnChainGasSchedule for GasParameters {
             hash: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             ed25519: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             ecdsa_k1: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
-            ecdsa_k1_recoverable: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)
-                .unwrap(),
-            schnorr: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             encoding: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             decoding: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             bcs: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
@@ -54,8 +49,6 @@ impl InitialGasSchedule for GasParameters {
             hash: InitialGasSchedule::initial(),
             ed25519: InitialGasSchedule::initial(),
             ecdsa_k1: InitialGasSchedule::initial(),
-            ecdsa_k1_recoverable: InitialGasSchedule::initial(),
-            schnorr: InitialGasSchedule::initial(),
             encoding: InitialGasSchedule::initial(),
             decoding: InitialGasSchedule::initial(),
             bcs: InitialGasSchedule::initial(),
@@ -115,9 +108,6 @@ impl GasParameters {
             hash: rooch_framework::crypto::hash::GasParameters::zeros(),
             ed25519: rooch_framework::crypto::ed25519::GasParameters::zeros(),
             ecdsa_k1: rooch_framework::crypto::ecdsa_k1::GasParameters::zeros(),
-            ecdsa_k1_recoverable:
-                rooch_framework::crypto::ecdsa_k1_recoverable::GasParameters::zeros(),
-            schnorr: rooch_framework::crypto::schnorr::GasParameters::zeros(),
             encoding: rooch_framework::crypto::encoding::GasParameters::zeros(),
             decoding: rooch_framework::crypto::decoding::GasParameters::zeros(),
             bcs: rooch_framework::bcs::GasParameters::zeros(),
@@ -154,14 +144,6 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     add_natives!(
         "ecdsa_k1",
         rooch_framework::crypto::ecdsa_k1::make_all(gas_params.ecdsa_k1)
-    );
-    add_natives!(
-        "ecdsa_k1_recoverable",
-        rooch_framework::crypto::ecdsa_k1_recoverable::make_all(gas_params.ecdsa_k1_recoverable)
-    );
-    add_natives!(
-        "schnorr",
-        rooch_framework::crypto::schnorr::make_all(gas_params.schnorr)
     );
     add_natives!(
         "encoding",

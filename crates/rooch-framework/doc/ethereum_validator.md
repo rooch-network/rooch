@@ -11,9 +11,6 @@ This module implements Ethereum validator with the ECDSA recoverable signature o
 -  [Function `auth_validator_id`](#0x3_ethereum_validator_auth_validator_id)
 -  [Function `rotate_authentication_key_entry`](#0x3_ethereum_validator_rotate_authentication_key_entry)
 -  [Function `remove_authentication_key_entry`](#0x3_ethereum_validator_remove_authentication_key_entry)
--  [Function `get_public_key_from_authenticator_payload`](#0x3_ethereum_validator_get_public_key_from_authenticator_payload)
--  [Function `get_signature_from_authenticator_payload`](#0x3_ethereum_validator_get_signature_from_authenticator_payload)
--  [Function `get_authentication_key_from_authenticator_payload`](#0x3_ethereum_validator_get_authentication_key_from_authenticator_payload)
 -  [Function `public_key_to_address`](#0x3_ethereum_validator_public_key_to_address)
 -  [Function `public_key_to_authentication_key`](#0x3_ethereum_validator_public_key_to_authentication_key)
 -  [Function `get_authentication_key_option_from_account`](#0x3_ethereum_validator_get_authentication_key_option_from_account)
@@ -26,10 +23,13 @@ This module implements Ethereum validator with the ECDSA recoverable signature o
 <pre><code><b>use</b> <a href="">0x1::debug</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::signer</a>;
+<b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::context</a>;
+<b>use</b> <a href="">0x2::hex</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
+<b>use</b> <a href="auth_payload.md#0x3_auth_payload">0x3::auth_payload</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
-<b>use</b> <a href="ecdsa_k1_recoverable.md#0x3_ecdsa_k1_recoverable">0x3::ecdsa_k1_recoverable</a>;
+<b>use</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1">0x3::ecdsa_k1</a>;
 <b>use</b> <a href="ethereum_address.md#0x3_ethereum_address">0x3::ethereum_address</a>;
 </code></pre>
 
@@ -103,44 +103,15 @@ there defines auth validator id for each blockchain
 
 
 
-<a name="0x3_ethereum_validator_get_public_key_from_authenticator_payload"></a>
-
-## Function `get_public_key_from_authenticator_payload`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_get_public_key_from_authenticator_payload">get_public_key_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
-<a name="0x3_ethereum_validator_get_signature_from_authenticator_payload"></a>
-
-## Function `get_signature_from_authenticator_payload`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_get_signature_from_authenticator_payload">get_signature_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
-<a name="0x3_ethereum_validator_get_authentication_key_from_authenticator_payload"></a>
-
-## Function `get_authentication_key_from_authenticator_payload`
-
-Get the authentication key of the given authenticator from authenticator_payload.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_get_authentication_key_from_authenticator_payload">get_authentication_key_from_authenticator_payload</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
 <a name="0x3_ethereum_validator_public_key_to_address"></a>
 
 ## Function `public_key_to_address`
 
+TODO: fix this
+remove get_public_key_from_authenticator_payload function
+authenticator_payload is no public key included, Should use ecdsa k1 ecrecover from sign
+
+Get the authentication key of the given authenticator from authenticator_payload.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_public_key_to_address">public_key_to_address</a>(public_key: <a href="">vector</a>&lt;u8&gt;): <a href="ethereum_address.md#0x3_ethereum_address_ETHAddress">ethereum_address::ETHAddress</a>
@@ -203,7 +174,7 @@ Extract the authentication key of the authentication key option.
 Only validate the authenticator's signature.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_validate_signature">validate_signature</a>(authenticator_payload: &<a href="">vector</a>&lt;u8&gt;, tx_hash: &<a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_validate_signature">validate_signature</a>(payload: <a href="auth_payload.md#0x3_auth_payload_AuthPayload">auth_payload::AuthPayload</a>, tx_hash: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 

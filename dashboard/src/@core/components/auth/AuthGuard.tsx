@@ -26,9 +26,6 @@ const AuthGuard = (props: AuthGuardProps) => {
         return
       }
 
-      console.log(auth)
-      console.log('----------------')
-
       if (!auth.accounts && !auth.loading) {
         if (router.asPath !== '/') {
           router.replace({

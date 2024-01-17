@@ -103,7 +103,7 @@ impl<'a> BitcoinLightClientModule<'a> {
         ident_str!("remaining_tx_count");
     pub const SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("submit_new_block");
-    pub const PROGRESS_UTXOS_ENTRY_FUNCTION_NAME: &'static IdentStr = ident_str!("progress_utxos");
+    pub const PROCESS_UTXOS_ENTRY_FUNCTION_NAME: &'static IdentStr = ident_str!("process_utxos");
 
     pub fn get_block(&self, block_hash: BlockHash) -> Result<Option<Header>> {
         let call = Self::create_function_call(
@@ -251,9 +251,9 @@ impl<'a> BitcoinLightClientModule<'a> {
         )
     }
 
-    pub fn create_progress_utxos_call(batch_size: u64) -> FunctionCall {
+    pub fn create_process_utxos_call(batch_size: u64) -> FunctionCall {
         Self::create_function_call(
-            Self::PROGRESS_UTXOS_ENTRY_FUNCTION_NAME,
+            Self::PROCESS_UTXOS_ENTRY_FUNCTION_NAME,
             vec![],
             vec![
                 MoveValue::Address(BitcoinBlockStore::object_id().into()),
