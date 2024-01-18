@@ -19,4 +19,5 @@ pub mod key_struct;
 pub mod multichain_id;
 pub mod sequencer;
 pub mod stdlib_version;
+pub mod test_utils;
 pub mod transaction;

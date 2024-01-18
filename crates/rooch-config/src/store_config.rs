@@ -8,6 +8,7 @@ use crate::{BaseConfig, ConfigModule, RoochOpt};
 use anyhow::Result;
 use clap::Parser;
 use moveos_config::store_config::RocksdbConfig;
+use moveos_config::DataDirPath;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -121,6 +122,20 @@ impl StoreConfig {
     }
     pub fn cache_size(&self) -> usize {
         self.cache_size.unwrap_or(DEFAULT_CACHE_SIZE)
+    }
+
+    pub fn get_mock_moveos_store_dir(data_dir: &DataDirPath) -> PathBuf {
+        data_dir
+            .path()
+            .join(R_DEFAULT_DB_DIR.as_path())
+            .join(R_DEFAULT_DB_MOVEOS_SUBDIR.as_path())
+    }
+
+    pub fn get_mock_rooch_store_dir(data_dir: &DataDirPath) -> PathBuf {
+        data_dir
+            .path()
+            .join(R_DEFAULT_DB_DIR.as_path())
+            .join(R_DEFAULT_DB_ROOCH_SUBDIR.as_path())
     }
 }
 
