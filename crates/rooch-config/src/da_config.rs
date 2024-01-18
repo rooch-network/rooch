@@ -62,17 +62,27 @@ impl FromStr for InternalDAServerConfigType {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let v: Value = serde_json::from_str(s).map_err(|e| format!("Error parsing JSON: {}, {}", e, s))?;
+        let v: Value =
+            serde_json::from_str(s).map_err(|e| format!("Error parsing JSON: {}, {}", e, s))?;
 
         if let Some(obj) = v.as_object() {
             if let Some(celestia) = obj.get("celestia") {
                 let celestia_config: DAServerCelestiaConfig =
-                    serde_json::from_value(celestia.clone())
-                        .map_err(|e| format!("invalid celestia config: {} error: {}, original: {}", celestia, e, s))?;
+                    serde_json::from_value(celestia.clone()).map_err(|e| {
+                        format!(
+                            "invalid celestia config: {} error: {}, original: {}",
+                            celestia, e, s
+                        )
+                    })?;
                 Ok(InternalDAServerConfigType::Celestia(celestia_config))
             } else if let Some(openda) = obj.get("open-da") {
                 let openda_config: DAServerOpenDAConfig = serde_json::from_value(openda.clone())
-                    .map_err(|e| format!("invalid open-da config: {}, error: {}, original: {}", openda, e, s))?;
+                    .map_err(|e| {
+                        format!(
+                            "invalid open-da config: {}, error: {}, original: {}",
+                            openda, e, s
+                        )
+                    })?;
                 Ok(InternalDAServerConfigType::OpenDA(openda_config))
             } else {
                 Err(format!("Invalid value: {}", s))
@@ -468,7 +478,7 @@ mod tests {
                     openda_config,
                     DAServerOpenDAConfig {
                         scheme: OpenDAScheme::GCS,
-                        config: config,
+                        config,
                         max_segment_size: Some(2048),
                     }
                 );
