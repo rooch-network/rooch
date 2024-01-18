@@ -62,17 +62,17 @@ impl FromStr for InternalDAServerConfigType {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let v: Value = serde_json::from_str(s).map_err(|_| format!("Invalid JSON: {}", s))?;
+        let v: Value = serde_json::from_str(s).map_err(|e| format!("Error parsing JSON: {}, {}", e, s))?;
 
         if let Some(obj) = v.as_object() {
             if let Some(celestia) = obj.get("celestia") {
                 let celestia_config: DAServerCelestiaConfig =
                     serde_json::from_value(celestia.clone())
-                        .map_err(|_| format!("invalid celestia config: {}", celestia))?;
+                        .map_err(|e| format!("invalid celestia config: {} error: {}, original: {}", celestia, e, s))?;
                 Ok(InternalDAServerConfigType::Celestia(celestia_config))
             } else if let Some(openda) = obj.get("open-da") {
                 let openda_config: DAServerOpenDAConfig = serde_json::from_value(openda.clone())
-                    .map_err(|_| format!("invalid open-da config: {}", openda))?;
+                    .map_err(|e| format!("invalid open-da config: {}, error: {}, original: {}", openda, e, s))?;
                 Ok(InternalDAServerConfigType::OpenDA(openda_config))
             } else {
                 Err(format!("Invalid value: {}", s))
@@ -430,5 +430,60 @@ mod tests {
         let output = parse_hashmap(input);
 
         assert!(output.is_err());
+    }
+
+    #[test]
+    fn test_internal_da_server_config_str() {
+        let celestia_config_str = r#"{"celestia": {"namespace": "test_namespace", "conn": "test_conn", "auth_token": "test_token", "max_segment_size": 2048}}"#;
+        let openda_config_str = r#"{"open-da": {"scheme": "gcs", "config": {"Param1": "value1", "param2": "Value2"}, "max_segment_size": 2048}}"#;
+        let invalid_config_str = r#"{"unknown": {...}}"#;
+
+        match InternalDAServerConfigType::from_str(celestia_config_str) {
+            Ok(InternalDAServerConfigType::Celestia(celestia_config)) => {
+                assert_eq!(
+                    celestia_config,
+                    DAServerCelestiaConfig {
+                        namespace: Some("test_namespace".to_string()),
+                        conn: Some("test_conn".to_string()),
+                        auth_token: Some("test_token".to_string()),
+                        max_segment_size: Some(2048),
+                    }
+                );
+            }
+            Ok(_) => {
+                panic!("Expected Celestia Config");
+            }
+            Err(e) => {
+                panic!("Error parsing Celestia Config: {}", e)
+            }
+        }
+
+        let mut config: HashMap<String, String> = HashMap::new();
+        config.insert("Param1".to_string(), "value1".to_string());
+        config.insert("param2".to_string(), "Value2".to_string());
+
+        match InternalDAServerConfigType::from_str(openda_config_str) {
+            Ok(InternalDAServerConfigType::OpenDA(openda_config)) => {
+                assert_eq!(
+                    openda_config,
+                    DAServerOpenDAConfig {
+                        scheme: OpenDAScheme::GCS,
+                        config: config,
+                        max_segment_size: Some(2048),
+                    }
+                );
+            }
+            Ok(_) => {
+                panic!("Expected OpenDA Config");
+            }
+            Err(e) => {
+                panic!("Error parsing OpenDA Config: {}", e)
+            }
+        }
+
+        if let Err(_) = InternalDAServerConfigType::from_str(invalid_config_str) {
+        } else {
+            panic!("Expected Error for invalid config");
+        }
     }
 }
