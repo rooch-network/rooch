@@ -1,21 +1,27 @@
 {
+  "quick-start": "快速开始",
   "installation": "安装",
   "cli": "CLI",
-  "quick-start": "快速开始",
+  "create-rooch-move-contract": "创建 Rooch Move 合约",
   "connect-devnet": "连接开发网络",
   "run-local-testnet": "运行本地测试网络",
   "faucet": {
     "title": "水龙头",
     "display": "hidden"
   },
-  "typescript-sdk": "Typescript-SDK",
+  "typescript-sdk": "Typescript SDK",
   "address-space": "地址空间",
   "library": "库",
-  "create-rooch-move-contract": "创建 Rooch Move 合约",
+  "access-path": "访问路径",
+  "timestamp": "时间戳",
   "object": "对象",
+  "coin-intro": "Coin 简介",
+  "private-generics": "私有泛型",
+  "unit-test": "单元测试",
   "interactive-ethereum": {
     "title": "与以太坊交互",
     "display": "hidden"
   },
-  "rpc": "RPC"
+  "rpc": "RPC",
+  "move-on-rooch": "Move on Rooch"
 }

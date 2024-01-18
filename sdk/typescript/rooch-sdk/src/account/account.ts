@@ -19,6 +19,7 @@ import {
   addressToListTuple,
   uint8Array2SeqNumber,
   addressToSeqNumber,
+  encodeStructTypeTag,
 } from '../utils'
 import { Ed25519Keypair } from '../utils/keypairs'
 
@@ -301,5 +302,44 @@ export class Account implements IAccount {
     }
 
     return result.return_values![0].decoded_value as boolean
+  }
+
+  async gasCoinBalance(): Promise<bigint> {
+    const result = await this.client.executeViewFunction(
+      '0x3::gas_coin::balance',
+      [],
+      [
+        {
+          type: 'Address',
+          value: this.getAddress(),
+        },
+      ],
+    )
+
+    if (result && result.vm_status !== 'Executed') {
+      throw new Error('view 0x3::gas_coin::balance fail')
+    }
+
+    return BigInt(result.return_values![0].decoded_value as string)
+  }
+
+  async coinBalance(coinType: string): Promise<bigint> {
+    const structType = encodeStructTypeTag(coinType)
+    const result = await this.client.executeViewFunction(
+      '0x3::account_coin_store::balance',
+      [structType],
+      [
+        {
+          type: 'Address',
+          value: this.getAddress(),
+        },
+      ],
+    )
+
+    if (result && result.vm_status !== 'Executed') {
+      throw new Error('view 0x3::account_coin_store::balance fail')
+    }
+
+    return BigInt(result.return_values![0].decoded_value as string)
   }
 }

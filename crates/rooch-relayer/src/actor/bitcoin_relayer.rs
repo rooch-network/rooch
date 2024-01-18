@@ -139,7 +139,7 @@ impl BitcoinRelayer {
             .as_module_binding::<BitcoinLightClientModule>();
         let remaining_tx_count = bitcoin_light_client.remaining_tx_count()?;
         if remaining_tx_count > 0 {
-            let call = BitcoinLightClientModule::create_progress_utxos_call(self.tx_batch_size);
+            let call = BitcoinLightClientModule::create_process_utxos_call(self.tx_batch_size);
             info!(
                 "BitcoinRelayer process utxo, remaining tx count: {}",
                 remaining_tx_count

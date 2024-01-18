@@ -17,8 +17,8 @@
 -  [Function `clone_op`](#0x4_brc20_clone_op)
 -  [Function `drop_op`](#0x4_brc20_drop_op)
 -  [Function `is_brc20`](#0x4_brc20_is_brc20)
--  [Function `progress_utxo_op`](#0x4_brc20_progress_utxo_op)
--  [Function `progress_inscribe_op`](#0x4_brc20_progress_inscribe_op)
+-  [Function `process_utxo_op`](#0x4_brc20_process_utxo_op)
+-  [Function `process_inscribe_op`](#0x4_brc20_process_inscribe_op)
 -  [Function `get_tick_info`](#0x4_brc20_get_tick_info)
 -  [Function `get_balance`](#0x4_brc20_get_balance)
 
@@ -199,24 +199,24 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<a name="0x4_brc20_progress_utxo_op"></a>
+<a name="0x4_brc20_process_utxo_op"></a>
 
-## Function `progress_utxo_op`
+## Function `process_utxo_op`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="brc20.md#0x4_brc20_progress_utxo_op">progress_utxo_op</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, op: <a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): bool
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="brc20.md#0x4_brc20_process_utxo_op">process_utxo_op</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, op: <a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): bool
 </code></pre>
 
 
 
-<a name="0x4_brc20_progress_inscribe_op"></a>
+<a name="0x4_brc20_process_inscribe_op"></a>
 
-## Function `progress_inscribe_op`
+## Function `process_inscribe_op`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="brc20.md#0x4_brc20_progress_inscribe_op">progress_inscribe_op</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, op: <a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): bool
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="brc20.md#0x4_brc20_process_inscribe_op">process_inscribe_op</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, op: <a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): bool
 </code></pre>
 
 

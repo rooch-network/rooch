@@ -14,7 +14,7 @@
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
 -  [Function `borrow_inscription`](#0x4_ord_borrow_inscription)
 -  [Function `spend_utxo`](#0x4_ord_spend_utxo)
--  [Function `progress_transaction`](#0x4_ord_progress_transaction)
+-  [Function `process_transaction`](#0x4_ord_process_transaction)
 -  [Function `txid`](#0x4_ord_txid)
 -  [Function `index`](#0x4_ord_index)
 -  [Function `body`](#0x4_ord_body)
@@ -150,13 +150,13 @@
 
 
 
-<a name="0x4_ord_progress_transaction"></a>
+<a name="0x4_ord_process_transaction"></a>
 
-## Function `progress_transaction`
+## Function `process_transaction`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_progress_transaction">progress_transaction</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>): <a href="">vector</a>&lt;<a href="utxo.md#0x4_utxo_SealOut">utxo::SealOut</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_process_transaction">process_transaction</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>): <a href="">vector</a>&lt;<a href="utxo.md#0x4_utxo_SealOut">utxo::SealOut</a>&gt;
 </code></pre>
 
 

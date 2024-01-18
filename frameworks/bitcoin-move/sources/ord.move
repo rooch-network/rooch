@@ -161,7 +161,7 @@ module bitcoin_move::ord {
             let inscription = object::borrow(&inscription_obj); 
             if(brc20::is_brc20(&inscription.json_body)){
                 let op = brc20::new_op(origin_owner, to_address, simple_map::clone(&inscription.json_body));
-                brc20::progress_utxo_op(ctx, op);
+                brc20::process_utxo_op(ctx, op);
                 //TODO record the execution result
             };
             object::transfer_extend(inscription_obj, to_address);
@@ -173,7 +173,7 @@ module bitcoin_move::ord {
         seal_outs
     }
 
-    public fun progress_transaction(ctx: &mut Context, tx: &Transaction): vector<SealOut>{
+    public fun process_transaction(ctx: &mut Context, tx: &Transaction): vector<SealOut>{
         let output_seals = vector::empty();
 
         let inscriptions = from_transaction(tx);
@@ -207,7 +207,7 @@ module bitcoin_move::ord {
             let inscription = vector::pop_back(&mut inscriptions);
             //Because the previous output of inscription input is a witness program address, so we simply use the output address as the from address.
             let from = to_address;
-            progress_inscribe_protocol(ctx, from, to_address, &inscription);
+            process_inscribe_protocol(ctx, from, to_address, &inscription);
             let inscription_obj = create_obj(ctx, inscription);
             let object_id = object::id(&inscription_obj);
 
@@ -221,10 +221,10 @@ module bitcoin_move::ord {
         output_seals
     }
 
-    fun progress_inscribe_protocol(ctx: &mut Context, from: address, to: address, inscription: &Inscription){
+    fun process_inscribe_protocol(ctx: &mut Context, from: address, to: address, inscription: &Inscription){
         if (brc20::is_brc20(&inscription.json_body)){
             let op = brc20::new_op(from, to, simple_map::clone(&inscription.json_body));
-            brc20::progress_inscribe_op(ctx, op);
+            brc20::process_inscribe_op(ctx, op);
             //TODO record the execution result
         };
     }

@@ -1,7 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
+import { hexlify } from '@ethersproject/bytes'
+import { sha3_256 } from '@noble/hashes/sha3'
 import { ROOCH_ADDRESS_LENGTH } from '../constants'
-import { FunctionId, AccountAddress, Identifier, TypeTag } from '../types'
+import { FunctionId, AccountAddress, Identifier, TypeTag, StructTag } from '../types'
 
 export function functionIdToStirng(functionId: FunctionId): string {
   if (typeof functionId !== 'string') {
@@ -52,6 +55,15 @@ export function normalizeRoochAddress(value: string, forceAdd0x: boolean = false
   return `0x${address.padStart(ROOCH_ADDRESS_LENGTH, '0')}`
 }
 
+export function canonicalRoochAddress(value: string, forceAdd0x: boolean = false): string {
+  let address = value.toLowerCase()
+  if (!forceAdd0x && address.startsWith('0x')) {
+    address = address.slice(2)
+  }
+
+  return `${address.padStart(ROOCH_ADDRESS_LENGTH, '0')}`
+}
+
 export function typeTagToString(type_tag: TypeTag): string {
   if (typeof type_tag === 'string') {
     return type_tag
@@ -72,4 +84,33 @@ export function typeTagToString(type_tag: TypeTag): string {
   }
 
   throw new Error(`Unknown type tag: ${JSON.stringify(type_tag)}`)
+}
+
+export function structTagToCanonicalString(structTag: StructTag): string {
+  let result = `${canonicalRoochAddress(structTag.address)}::${structTag.module}::${structTag.name}`
+
+  if (structTag.type_params && structTag.type_params.length > 0) {
+    const typeParams = structTag.type_params.map(typeTagToCanonicalString).join(',')
+    result += `<${typeParams}>`
+  }
+
+  return result
+}
+
+export function typeTagToCanonicalString(typeTag: TypeTag): string {
+  if (typeof typeTag === 'string') {
+    return typeTag.toLocaleLowerCase()
+  } else if ('Vector' in typeTag) {
+    return `vector<${typeTagToCanonicalString(typeTag.Vector)}>`
+  } else if ('Struct' in typeTag) {
+    return structTagToCanonicalString(typeTag.Struct)
+  } else {
+    throw new Error(`Unknown TypeTag: ${JSON.stringify(typeTag)}`)
+  }
+}
+
+export function structTagToObjectID(structTag: StructTag): string {
+  const canonicalString = structTagToCanonicalString(structTag)
+  const hash = sha3_256(canonicalString)
+  return hexlify(hash)
 }

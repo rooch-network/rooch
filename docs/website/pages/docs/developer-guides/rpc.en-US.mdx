@@ -1009,3 +1009,281 @@ Response:
   "id": 101
 }
 ```
+
+### btc_queryUTXOs
+
+```shell
+curl --location 'http://localhost:50051' \
+--header 'Content-Type: application/json' \
+--data '{
+    "id": 101,
+    "jsonrpc": "2.0",
+    "method": "btc_queryUTXOs",
+    "params": [
+        null, null, "3", true
+    ]
+}'
+```
+
+```shell
+{
+    "jsonrpc": "2.0",
+    "result": {
+        "data": [
+            {
+                "object_id": "0x53ecba6bd8512287bb153f90b500b707b432af0db7e7e30f098755dd2acd90c0",
+                "owner": "0x0000000000000000000000000000000000000000000000000000000000000004",
+                "owner_bitcoin_address": null,
+                "flag": 0,
+                "value": {
+                    "txid": "0x53cb51a5afc66d3b4a94bd44469c0e60bcbcb728008fd91c7867a9515a1f8f3d",
+                    "bitcoin_txid": "3d8f1f5a51a967781cd98f0028b7bcbc600e9c4644bd944a3b6dc6afa551cb53",
+                    "vout": 1,
+                    "value": 0,
+                    "seals": "{\"data\":[]}"
+                },
+                "object_type": "0x4::utxo::UTXO",
+                "tx_order": 203,
+                "state_index": 1,
+                "created_at": 0,
+                "updated_at": 0
+            },
+            {
+                "object_id": "0x02a26226625959a46a85411def4dfce8bf6741b60083f1d8029d2eb7c5537b87",
+                "owner": "0xe5f0793893d5117a4a6a245295e504a1c53c76b339b9a2f96c66e6bcf02473bc",
+                "owner_bitcoin_address": "bc1pz24vcth8ey6kj2jv8uucxwgw946sg7c7tdrqmnnrfq96her2asgqel4222",
+                "flag": 0,
+                "value": {
+                    "txid": "0x53cb51a5afc66d3b4a94bd44469c0e60bcbcb728008fd91c7867a9515a1f8f3d",
+                    "bitcoin_txid": "3d8f1f5a51a967781cd98f0028b7bcbc600e9c4644bd944a3b6dc6afa551cb53",
+                    "vout": 0,
+                    "value": 5000000000,
+                    "seals": "{\"data\":[]}"
+                },
+                "object_type": "0x4::utxo::UTXO",
+                "tx_order": 203,
+                "state_index": 0,
+                "created_at": 0,
+                "updated_at": 0
+            },
+            {
+                "object_id": "0x9dca6d407ab237f3e004778945ff296a01f98c309e332bded089062e11d1dee4",
+                "owner": "0xe5f0793893d5117a4a6a245295e504a1c53c76b339b9a2f96c66e6bcf02473bc",
+                "owner_bitcoin_address": "bc1pz24vcth8ey6kj2jv8uucxwgw946sg7c7tdrqmnnrfq96her2asgqel4222",
+                "flag": 0,
+                "value": {
+                    "txid": "0x4242756ae7f3d884b17f087d531847b4d5aa08ffd34184a85e1d72cf728da2c7",
+                    "bitcoin_txid": "c7a28d72cf721d5ea88441d3ff08aad5b44718537d087fb184d8f3e76a754242",
+                    "vout": 0,
+                    "value": 5000000000,
+                    "seals": "{\"data\":[]}"
+                },
+                "object_type": "0x4::utxo::UTXO",
+                "tx_order": 201,
+                "state_index": 3,
+                "created_at": 0,
+                "updated_at": 0
+            }
+        ],
+        "next_cursor": {
+            "tx_order": 201,
+            "state_index": 3
+        },
+        "has_next_page": true
+    },
+    "id": 101
+}
+```
+
+### btc_queryUTXOs
+
+```shell
+curl --location 'http://localhost:50051' \
+--header 'Content-Type: application/json' \
+--data '{
+    "id": 101,
+    "jsonrpc": "2.0",
+    "method": "btc_queryUTXOs",
+    "params": [
+        {"owner":"bc1pz24vcth8ey6kj2jv8uucxwgw946sg7c7tdrqmnnrfq96her2asgqel4222"}, null, "3", true
+    ]
+}'
+```
+
+```shell
+{
+    "jsonrpc": "2.0",
+    "result": {
+        "data": [
+            {
+                "object_id": "0x02a26226625959a46a85411def4dfce8bf6741b60083f1d8029d2eb7c5537b87",
+                "owner": "0xe5f0793893d5117a4a6a245295e504a1c53c76b339b9a2f96c66e6bcf02473bc",
+                "owner_bitcoin_address": "bc1pz24vcth8ey6kj2jv8uucxwgw946sg7c7tdrqmnnrfq96her2asgqel4222",
+                "flag": 0,
+                "value": {
+                    "txid": "0x53cb51a5afc66d3b4a94bd44469c0e60bcbcb728008fd91c7867a9515a1f8f3d",
+                    "bitcoin_txid": "3d8f1f5a51a967781cd98f0028b7bcbc600e9c4644bd944a3b6dc6afa551cb53",
+                    "vout": 0,
+                    "value": 5000000000,
+                    "seals": "{\"data\":[]}"
+                },
+                "object_type": "0x4::utxo::UTXO",
+                "tx_order": 203,
+                "state_index": 0,
+                "created_at": 0,
+                "updated_at": 0
+            },
+            {
+                "object_id": "0x9dca6d407ab237f3e004778945ff296a01f98c309e332bded089062e11d1dee4",
+                "owner": "0xe5f0793893d5117a4a6a245295e504a1c53c76b339b9a2f96c66e6bcf02473bc",
+                "owner_bitcoin_address": "bc1pz24vcth8ey6kj2jv8uucxwgw946sg7c7tdrqmnnrfq96her2asgqel4222",
+                "flag": 0,
+                "value": {
+                    "txid": "0x4242756ae7f3d884b17f087d531847b4d5aa08ffd34184a85e1d72cf728da2c7",
+                    "bitcoin_txid": "c7a28d72cf721d5ea88441d3ff08aad5b44718537d087fb184d8f3e76a754242",
+                    "vout": 0,
+                    "value": 5000000000,
+                    "seals": "{\"data\":[]}"
+                },
+                "object_type": "0x4::utxo::UTXO",
+                "tx_order": 201,
+                "state_index": 3,
+                "created_at": 0,
+                "updated_at": 0
+            },
+            {
+                "object_id": "0x8a82f637e4964f4651abb5d35e3bc9c2d1c00c5c678d7f3fb0a5c4f3248007a8",
+                "owner": "0xe5f0793893d5117a4a6a245295e504a1c53c76b339b9a2f96c66e6bcf02473bc",
+                "owner_bitcoin_address": "bc1pz24vcth8ey6kj2jv8uucxwgw946sg7c7tdrqmnnrfq96her2asgqel4222",
+                "flag": 0,
+                "value": {
+                    "txid": "0x5ca8776c70db65736f69bce5b8ed2a6108134696ca5da8edd8c946293b6d839f",
+                    "bitcoin_txid": "9f836d3b2946c9d8eda85dca96461308612aedb8e5bc696f7365db706c77a85c",
+                    "vout": 0,
+                    "value": 5000000000,
+                    "seals": "{\"data\":[]}"
+                },
+                "object_type": "0x4::utxo::UTXO",
+                "tx_order": 199,
+                "state_index": 2,
+                "created_at": 0,
+                "updated_at": 0
+            }
+        ],
+        "next_cursor": {
+            "tx_order": 199,
+            "state_index": 2
+        },
+        "has_next_page": true
+    },
+    "id": 101
+}
+```
+
+### btc_queryInscriptions
+
+```shell
+curl --location 'http://localhost:50051' \
+--header 'Content-Type: application/json' \
+--data '{
+    "id": 101,
+    "jsonrpc": "2.0",
+    "method": "btc_queryInscriptions",
+    "params": [
+        {"owner":"bc1prwkw9eatwve4zthumxd9jjsz9vsrfvyla6x7jv27kwpasu7j839samxheh"}, null, "3", true
+    ]
+}'
+```
+
+```shell
+{
+    "jsonrpc": "2.0",
+    "result": {
+        "data": [
+            {
+                "object_id": "0x0e9244b7960e271ff1bc68e88f7df1bec45e9246048d5b9f7101b53774e56365",
+                "owner": "0xfc7ec61a7c481c66797954dd5256e3f34bb578bb350d3cfa4df5940e3e960219",
+                "owner_bitcoin_address": "bc1prwkw9eatwve4zthumxd9jjsz9vsrfvyla6x7jv27kwpasu7j839samxheh",
+                "flag": 0,
+                "value": {
+                    "txid": "0xb8b7a9b8be2f43746dceaf83b741737e3b577d8cbbc950e10001f7aa9becefc7",
+                    "bitcoin_txid": "c7efec9baaf70100e150c9bb8c7d573b7e7341b783afce6d74432fbeb8a9b7b8",
+                    "index": 0,
+                    "body": "0x48656c6c6f20726f6f63680a",
+                    "content_encoding": null,
+                    "content_type": "text/plain;charset=utf-8",
+                    "metadata": "0x",
+                    "metaprotocol": null,
+                    "parent": null,
+                    "pointer": null
+                },
+                "object_type": "0x4::ord::Inscription",
+                "tx_order": 205,
+                "state_index": 0,
+                "created_at": 0,
+                "updated_at": 0
+            }
+        ],
+        "next_cursor": {
+            "tx_order": 205,
+            "state_index": 0
+        },
+        "has_next_page": false
+    },
+    "id": 101
+}
+```
+
+### btc_queryInscriptions
+
+```shell
+curl --location 'http://localhost:50051' \
+--header 'Content-Type: application/json' \
+--data '{
+    "id": 101,
+    "jsonrpc": "2.0",
+    "method": "btc_queryInscriptions",
+    "params": [
+        null, null, "10", true
+    ]
+}'
+```
+
+```shell
+{
+    "jsonrpc": "2.0",
+    "result": {
+        "data": [
+            {
+                "object_id": "0x0e9244b7960e271ff1bc68e88f7df1bec45e9246048d5b9f7101b53774e56365",
+                "owner": "0xfc7ec61a7c481c66797954dd5256e3f34bb578bb350d3cfa4df5940e3e960219",
+                "owner_bitcoin_address": "bc1prwkw9eatwve4zthumxd9jjsz9vsrfvyla6x7jv27kwpasu7j839samxheh",
+                "flag": 0,
+                "value": {
+                    "txid": "0xb8b7a9b8be2f43746dceaf83b741737e3b577d8cbbc950e10001f7aa9becefc7",
+                    "bitcoin_txid": "c7efec9baaf70100e150c9bb8c7d573b7e7341b783afce6d74432fbeb8a9b7b8",
+                    "index": 0,
+                    "body": "0x48656c6c6f20726f6f63680a",
+                    "content_encoding": null,
+                    "content_type": "text/plain;charset=utf-8",
+                    "metadata": "0x",
+                    "metaprotocol": null,
+                    "parent": null,
+                    "pointer": null
+                },
+                "object_type": "0x4::ord::Inscription",
+                "tx_order": 205,
+                "state_index": 0,
+                "created_at": 0,
+                "updated_at": 0
+            }
+        ],
+        "next_cursor": {
+            "tx_order": 205,
+            "state_index": 0
+        },
+        "has_next_page": false
+    },
+    "id": 101
+}
+```

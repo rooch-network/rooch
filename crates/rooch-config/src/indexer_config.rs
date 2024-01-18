@@ -8,6 +8,7 @@ use crate::store_config::R_DEFAULT_DB_DIR;
 use crate::{BaseConfig, ConfigModule, RoochOpt};
 use anyhow::Result;
 use clap::Parser;
+use moveos_config::DataDirPath;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -64,6 +65,13 @@ impl IndexerConfig {
 
     pub fn get_indexer_db(&self) -> PathBuf {
         self.data_dir()
+            .join(R_DEFAULT_DB_DIR.as_path())
+            .join(ROOCH_INDEXER_DB_FILENAME)
+    }
+
+    pub fn get_mock_indexer_db(data_dir: &DataDirPath) -> PathBuf {
+        data_dir
+            .path()
             .join(R_DEFAULT_DB_DIR.as_path())
             .join(ROOCH_INDEXER_DB_FILENAME)
     }

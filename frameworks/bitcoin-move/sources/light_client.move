@@ -81,7 +81,7 @@ module bitcoin_move::light_client{
 
         let block = bcs::from_bytes<Block>(block_bytes);
         validate_block(btc_block_store, block_height, block_hash, &block);
-        progress_txs(btc_block_store, &block); 
+        process_txs(btc_block_store, &block); 
         let block_header = types::header(&block);
 
         if(table::contains(&btc_block_store.height_to_hash, block_height)){
@@ -103,23 +103,23 @@ module bitcoin_move::light_client{
         //TODO validate txid
     }
 
-    fun progress_txs(btc_block_store: &mut BitcoinBlockStore, block:&Block){
+    fun process_txs(btc_block_store: &mut BitcoinBlockStore, block:&Block){
         let txdata = types::txdata(block);
         let idx = 0;
         while(idx < vector::length(txdata)){
             let tx = vector::borrow(txdata, idx);
-            progress_tx(btc_block_store, tx);
+            process_tx(btc_block_store, tx);
             idx = idx + 1;
         }
     }
 
-    fun progress_tx(btc_block_store: &mut BitcoinBlockStore, tx: &Transaction){
+    fun process_tx(btc_block_store: &mut BitcoinBlockStore, tx: &Transaction){
         let txid = types::tx_id(tx);
         table::add(&mut btc_block_store.txs, txid, *tx);
         table_vec::push_back(&mut btc_block_store.tx_ids, txid);
     }
 
-    fun progress_utxo(ctx: &mut Context, btc_utxo_store: &mut BitcoinUTXOStore, tx: &Transaction){
+    fun process_utxo(ctx: &mut Context, btc_utxo_store: &mut BitcoinUTXOStore, tx: &Transaction){
         let txid = types::tx_id(tx);
         let txinput = types::tx_input(tx);
         let idx = 0;
@@ -155,7 +155,7 @@ module bitcoin_move::light_client{
         //If a utxo is spend seal assets, it should not seal new assets
         //TODO confirm this
         if(simple_multimap::length(&output_seals) == 0){
-            let ord_seals = ord::progress_transaction(ctx, tx);
+            let ord_seals = ord::process_transaction(ctx, tx);
             let idx = 0;
             let protocol = type_info::type_name<Inscription>();
             while(idx < vector::length(&ord_seals)){
@@ -222,7 +222,7 @@ module bitcoin_move::light_client{
         }
     }
     
-    entry fun progress_utxos(ctx: &mut Context, btc_block_store_obj: &Object<BitcoinBlockStore>, btc_utxo_store_obj: &mut Object<BitcoinUTXOStore>, batch_size: u64){
+    entry fun process_utxos(ctx: &mut Context, btc_block_store_obj: &Object<BitcoinBlockStore>, btc_utxo_store_obj: &mut Object<BitcoinUTXOStore>, batch_size: u64){
         let btc_block_store = object::borrow(btc_block_store_obj);
         let btc_utxo_store = object::borrow_mut(btc_utxo_store_obj);
         let start_tx_index = btc_utxo_store.next_tx_index;
@@ -230,16 +230,16 @@ module bitcoin_move::light_client{
         if (start_tx_index >= max_tx_count){
             return
         };
-        let progressed_tx_count = 0;
-        let progress_tx_index = start_tx_index;
-        while(progressed_tx_count < batch_size && progress_tx_index < max_tx_count){
-            let txid = *table_vec::borrow(&btc_block_store.tx_ids, progress_tx_index);
+        let processed_tx_count = 0;
+        let process_tx_index = start_tx_index;
+        while(processed_tx_count < batch_size && process_tx_index < max_tx_count){
+            let txid = *table_vec::borrow(&btc_block_store.tx_ids, process_tx_index);
             let tx = table::borrow(&btc_block_store.txs, txid);
-            progress_utxo(ctx, btc_utxo_store, tx);
-            progressed_tx_count = progressed_tx_count + 1;
-            progress_tx_index = progress_tx_index + 1;
+            process_utxo(ctx, btc_utxo_store, tx);
+            processed_tx_count = processed_tx_count + 1;
+            process_tx_index = process_tx_index + 1;
         };
-        btc_utxo_store.next_tx_index = progress_tx_index;
+        btc_utxo_store.next_tx_index = process_tx_index;
     }
 
     public fun txs(btc_block_store_obj: &Object<BitcoinBlockStore>): &Table<address, Transaction>{

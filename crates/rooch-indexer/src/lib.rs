@@ -46,9 +46,10 @@ impl IndexerStore {
         Ok(store)
     }
 
-    pub fn mock_indexer_store() -> Result<Self> {
+    pub fn mock_db_url() -> Result<String> {
         let tmpdir = moveos_config::temp_dir();
         let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_FILENAME);
+
         if !indexer_db.exists() {
             std::fs::File::create(indexer_db.clone())?;
         }
@@ -57,7 +58,12 @@ impl IndexerStore {
             .to_str()
             .ok_or(anyhow::anyhow!("Invalid mock indexer db dir"))?;
 
-        Self::new(db_url)
+        Ok(db_url.to_string())
+    }
+
+    pub fn mock_indexer_store() -> Result<Self> {
+        let db_url = Self::mock_db_url()?;
+        Self::new(db_url.as_str())
     }
 
     pub fn create_all_tables_if_not_exists(&self) -> Result<()> {

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { hexlify } from '@ethersproject/bytes'
-
 import { fromHexString } from './hex'
 import { ROOCH_ADDRESS_LENGTH } from '../constants'
 import { AccountAddress, FunctionId, TypeTag, StructTag, Arg } from '../types'
@@ -17,7 +16,7 @@ import {
   BcsSerializer,
   Serializable,
 } from '../types/bcs'
-import { parseFunctionId, normalizeRoochAddress } from './encode'
+import { parseFunctionId, normalizeRoochAddress, structTagToObjectID } from './encode'
 
 export function encodeFunctionCall(
   functionId: FunctionId,
@@ -103,7 +102,7 @@ export function encodeStructTypeTags(typeArgsString: string[]): TypeTag[] {
   return typeArgsString.map((str) => encodeStructTypeTag(str))
 }
 
-function encodeStructTypeTag(str: string): TypeTag {
+export function encodeStructTypeTag(str: string): TypeTag {
   const arr = str.split('<')
   const arr1 = arr[0].split('::')
   const address = arr1[0]
@@ -217,6 +216,22 @@ function serializeValue(value: any, type: TypeTag, se: BcsSerializer) {
   } else if ((type as { Struct: StructTag }).Struct) {
     const serializable = value as Serializable
     serializable.serialize(se)
+  } else if (type === 'ObjectID') {
+    const list = addressToListTuple(normalizeRoochAddress(value as string))
+    const accountAddress = new rooch_types.AccountAddress(list)
+    accountAddress.serialize(se)
+  } else if (type === 'Object') {
+    const objectId = structTagToObjectID(value as StructTag)
+    const list = addressToListTuple(normalizeRoochAddress(objectId))
+    const accountAddress = new rooch_types.AccountAddress(list)
+    accountAddress.serialize(se)
+  } else if (type === 'Raw') {
+    const vectorValues = value as Uint8Array
+    se.serializeLen(vectorValues.length)
+
+    for (let item of vectorValues) {
+      se.serializeU8(item)
+    }
   }
 }
 
