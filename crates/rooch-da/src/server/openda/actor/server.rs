@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::HashMap;
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::context::ActorContext;
@@ -29,15 +30,37 @@ impl Actor for DAServerOpenDAActor {}
 // TODO add FEC get for SDC protection (wrong response attacks)
 impl DAServerOpenDAActor {
     pub async fn new(cfg: &DAServerOpenDAConfig) -> Result<DAServerOpenDAActor> {
-        let config = cfg.clone();
+        let mut config = cfg.clone();
 
         let op: Operator = match config.scheme {
             OpenDAScheme::S3 => Operator::via_map(Scheme::S3, config.config)?,
-            OpenDAScheme::GCS => Operator::via_map(Scheme::Gcs, config.config)?,
+            OpenDAScheme::GCS =>  {
+                // If certain keys don't exist in the map, set them from environment
+                if !config.config.contains_key("bucket") {
+                    if let Ok(bucket) = std::env::var("OPENDA_GCS_BUCKET") {
+                        config.config.insert("bucket".to_string(), bucket);
+                    }
+                }
+                if !config.config.contains_key("root") {
+                    if let Ok(root) = std::env::var("OPENDA_GCS_ROOT") {
+                        config.config.insert("root".to_string(), root);
+                    }
+                }
+                if !config.config.contains_key("credential") {
+                    if let Ok(root) = std::env::var("OPENDA_GCS_CREDENTIAL") {
+                        config.config.insert("credential".to_string(), root);
+                    }
+                }
+                insert_default_from_env_or_const(&mut config.config, "predefined_acl", "OPENDA_GCS_PREDEFINED_ACL", "publicRead");
+                insert_default_from_env_or_const(&mut config.config, "default_storage_class", "OPENDA_GCS_DEFAULT_STORAGE_CLASS", "STANDARD");
+
+                // After setting defaults, proceed with creating Operator
+                Operator::via_map(Scheme::Gcs, config.config)?
+            },
         };
 
         Ok(Self {
-            max_segment_size: cfg.max_segment_size.unwrap() as usize,
+            max_segment_size: cfg.max_segment_size.unwrap_or(4*1024 * 1024) as usize,
             operator: op,
         })
     }
@@ -75,6 +98,13 @@ impl DAServerOpenDAActor {
             self.operator.write(&segment.id.to_string(), data).await?; // TODO retry logic
         }
         Ok(PutBatchResult::default())
+    }
+}
+
+fn insert_default_from_env_or_const(config: &mut HashMap<String, String>, key: &str, env_var: &str, const_default: &str) {
+    if !config.contains_key(key) {
+        let value = std::env::var(env_var).unwrap_or(const_default.to_string());
+        config.insert(key.to_string(), value);
     }
 }
 
