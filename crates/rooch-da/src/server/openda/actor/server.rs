@@ -47,8 +47,8 @@ impl DAServerOpenDAActor {
                     }
                 }
                 if !config.config.contains_key("credential") {
-                    if let Ok(root) = std::env::var("OPENDA_GCS_CREDENTIAL") {
-                        config.config.insert("credential".to_string(), root);
+                    if let Ok(credential) = std::env::var("OPENDA_GCS_CREDENTIAL") {
+                        config.config.insert("credential".to_string(), credential);
                     }
                 }
                 insert_default_from_env_or_const(
