@@ -24,7 +24,7 @@ use moveos_store::MoveOSStore;
 use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_verifier::build::build_model_with_test_attr;
 use moveos_verifier::metadata::run_extended_checks;
-use rooch_framework::natives::{all_natives, GasParameters};
+use rooch_framework::natives::{all_natives, NativeGasParameters};
 
 use crate::cli_types::WalletContextOptions;
 
@@ -95,7 +95,7 @@ impl Test {
 
         //TODO define gas metering
         let cost_table = move_vm_test_utils::gas_schedule::INITIAL_COST_SCHEDULE.clone();
-        let natives = all_natives(GasParameters::zeros());
+        let natives = all_natives(NativeGasParameters::zeros());
         set_extension_hook(Box::new(new_moveos_natives_runtime));
         self.test
             .execute(path, build_config, natives, Some(cost_table))

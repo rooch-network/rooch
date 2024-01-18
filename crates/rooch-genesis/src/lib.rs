@@ -59,7 +59,7 @@ pub struct RoochGenesis {
     pub config_for_test: MoveOSConfig,
     //TODO we need to add gas parameters to the GenesisPackage
     //How to serialize the gas parameters?
-    pub rooch_framework_gas_params: rooch_framework::natives::GasParameters,
+    pub rooch_framework_gas_params: rooch_framework::natives::NativeGasParameters,
     pub bitcoin_move_gas_params: bitcoin_move::natives::GasParameters,
     pub genesis_package: GenesisPackage,
 }
@@ -90,7 +90,7 @@ impl RoochGenesis {
             vm_config: VMConfig::default(),
         };
 
-        let rooch_framework_gas_params = rooch_framework::natives::GasParameters::initial();
+        let rooch_framework_gas_params = rooch_framework::natives::NativeGasParameters::initial();
         let bitcoin_move_gas_params = bitcoin_move::natives::GasParameters::initial();
         let genesis_package = GenesisPackage::build(genesis_ctx, bitcoin_genesis_ctx, option)?;
 
@@ -201,7 +201,7 @@ impl GenesisPackage {
             })
             .collect();
         //TODO put gas parameters into genesis package
-        let gas_parameters = rooch_framework::natives::GasParameters::initial();
+        let gas_parameters = rooch_framework::natives::NativeGasParameters::initial();
         let vm_config = MoveOSConfig {
             vm_config: VMConfig::default(),
         };

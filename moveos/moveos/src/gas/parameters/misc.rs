@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::gas::gas_member::MUL;
 use crate::gas::table::AbstractValueSizeGasParameter;
 
 crate::gas::native::define_gas_parameters_for_natives!(AbstractValueSizeGasParameter, "storage", [

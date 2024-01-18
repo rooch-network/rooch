@@ -16,7 +16,7 @@ pub mod gas_parameter;
 pub mod rooch_framework;
 
 #[derive(Debug, Clone)]
-pub struct GasParameters {
+pub struct NativeGasParameters {
     moveos_stdlib: moveos_stdlib::natives::GasParameters,
     account: rooch_framework::account::GasParameters,
     hash: rooch_framework::crypto::hash::GasParameters,
@@ -27,7 +27,7 @@ pub struct GasParameters {
     bcs: rooch_framework::bcs::GasParameters,
 }
 
-impl FromOnChainGasSchedule for GasParameters {
+impl FromOnChainGasSchedule for NativeGasParameters {
     fn from_on_chain_gas_schedule(gas_schedule: &BTreeMap<String, u64>) -> Option<Self> {
         Some(Self {
             moveos_stdlib: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)
@@ -43,7 +43,7 @@ impl FromOnChainGasSchedule for GasParameters {
     }
 }
 
-impl ToOnChainGasSchedule for GasParameters {
+impl ToOnChainGasSchedule for NativeGasParameters {
     fn to_on_chain_gas_schedule(&self) -> Vec<(String, u64)> {
         let mut entires = self.moveos_stdlib.to_on_chain_gas_schedule();
         entires.extend(self.account.to_on_chain_gas_schedule());
@@ -57,7 +57,7 @@ impl ToOnChainGasSchedule for GasParameters {
     }
 }
 
-impl InitialGasSchedule for GasParameters {
+impl InitialGasSchedule for NativeGasParameters {
     fn initial() -> Self {
         Self {
             moveos_stdlib: InitialGasSchedule::initial(),
@@ -131,11 +131,11 @@ impl InitialGasSchedule for MoveOSGasParameters {
 }
 
 pub fn get_global_gas_parameter() {
-    let gas_parameter = GasParameters::initial();
+    let gas_parameter = NativeGasParameters::initial();
     println!("global gas parameter {:?}", gas_parameter);
 }
 
-impl GasParameters {
+impl NativeGasParameters {
     pub fn zeros() -> Self {
         Self {
             moveos_stdlib: moveos_stdlib::natives::GasParameters::zeros(),
@@ -150,7 +150,7 @@ impl GasParameters {
     }
 }
 
-pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
+pub fn all_natives(gas_params: NativeGasParameters) -> NativeFunctionTable {
     let mut native_fun_table = moveos_stdlib::natives::all_natives(gas_params.moveos_stdlib);
 
     let mut natives = vec![];
