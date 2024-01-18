@@ -1,16 +1,20 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+
+use crate::gas::gas_member::InitialGasSchedule;
+use crate::gas::r#abstract::{
+    AbstractValueSize, AbstractValueSizePerArg, InternalGasPerAbstractValueUnit,
+};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_binary_format::file_format::CodeOffset;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
 use move_core_types::gas_algebra::{
-    AbstractMemorySize, GasQuantity, InternalGas, NumArgs, NumBytes,
+    AbstractMemorySize, GasQuantity, InternalGas, InternalGasPerArg, InternalGasPerByte, NumArgs, NumBytes,
 };
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::StatusCode;
 use move_vm_types::gas::{GasMeter, SimpleInstruction};
-use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::views::{TypeView, ValueView};
 use moveos_types::moveos_std::event::TransactionEvent;
 use moveos_types::state::StateChangeSet;
@@ -40,7 +44,7 @@ pub const STACK_SIZE_TIER_DEFAULT: u64 = 1;
 pub static ZERO_COST_SCHEDULE: Lazy<CostTable> = Lazy::new(zero_cost_schedule);
 
 #[derive(Clone, Debug, Default, Serialize, PartialEq, Eq, Deserialize)]
-pub struct ExtraGasParameter {
+pub struct StorageGasParameter {
     pub io_read_price: u64,
     pub storage_fee_per_transaction_byte: u64,
     pub storage_fee_per_event_byte: u64,
@@ -50,11 +54,272 @@ pub struct ExtraGasParameter {
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
+pub struct AbstractValueSizeGasParameter {
+    pub u8: AbstractValueSize,
+    pub u16: AbstractValueSize,
+    pub u32: AbstractValueSize,
+    pub u64: AbstractValueSize,
+    pub u128: AbstractValueSize,
+    pub u256: AbstractValueSize,
+    pub bool: AbstractValueSize,
+    pub address: AbstractValueSize,
+    pub struct_: AbstractValueSize,
+    pub vector: AbstractValueSize,
+    pub reference: AbstractValueSize,
+    pub per_u8_packed: AbstractValueSizePerArg,
+    pub per_u16_packed: AbstractValueSizePerArg,
+    pub per_u32_packed: AbstractValueSizePerArg,
+    pub per_u64_packed: AbstractValueSizePerArg,
+    pub per_u128_packed: AbstractValueSizePerArg,
+    pub per_u256_packed: AbstractValueSizePerArg,
+    pub per_bool_packed: AbstractValueSizePerArg,
+    pub per_address_packed: AbstractValueSizePerArg,
+}
+
+impl AbstractValueSizeGasParameter {
+    pub fn zeros() -> Self {
+        Self {
+            u8: 0.into(),
+            u16: 0.into(),
+            u32: 0.into(),
+            u64: 0.into(),
+            u128: 0.into(),
+            u256: 0.into(),
+            bool: 0.into(),
+            address: 0.into(),
+            struct_: 0.into(),
+            vector: 0.into(),
+            reference: 0.into(),
+            per_u8_packed: 0.into(),
+            per_u16_packed: 0.into(),
+            per_u32_packed: 0.into(),
+            per_u64_packed: 0.into(),
+            per_u128_packed: 0.into(),
+            per_u256_packed: 0.into(),
+            per_bool_packed: 0.into(),
+            per_address_packed: 0.into(),
+        }
+    }
+}
+
+impl StorageGasParameter {
+    pub fn zeros() -> Self {
+        Self {
+            io_read_price: 0,
+            storage_fee_per_transaction_byte: 0,
+            storage_fee_per_event_byte: 0,
+            storage_fee_per_op_new_byte: 0,
+            storage_fee_per_op_modify_byte: 0,
+            storage_fee_per_op_delete: 0,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
+pub struct InstructionParameter {
+    pub nop: InternalGas,
+    pub ret: InternalGas,
+    pub abort: InternalGas,
+    pub br_true: InternalGas,
+    pub br_false: InternalGas,
+    pub branch: InternalGas,
+    pub pop: InternalGas,
+    pub ld_u8: InternalGas,
+    pub ld_u16: InternalGas,
+    pub ld_u32: InternalGas,
+    pub ld_u64: InternalGas,
+    pub ld_u128: InternalGas,
+    pub ld_u256: InternalGas,
+    pub ld_true: InternalGas,
+    pub ld_false: InternalGas,
+    pub ld_const_base: InternalGas,
+    pub ld_const_per_byte: InternalGasPerByte,
+    pub imm_borrow_loc: InternalGas,
+    pub mut_borrow_loc: InternalGas,
+    pub imm_borrow_field: InternalGas,
+    pub mut_borrow_field: InternalGas,
+    pub imm_borrow_field_generic: InternalGas,
+    pub mut_borrow_field_generic: InternalGas,
+    pub copy_loc_base: InternalGas,
+    pub copy_loc_per_abs_val_unit: InternalGasPerAbstractValueUnit,
+    pub move_loc_base: InternalGas,
+    pub st_loc_base: InternalGas,
+    pub call_base: InternalGas,
+    pub call_per_arg: InternalGasPerArg,
+    pub call_per_local: InternalGasPerArg,
+    pub call_generic_base: InternalGas,
+    pub call_generic_per_ty_arg: InternalGasPerArg,
+    pub call_generic_per_arg: InternalGasPerArg,
+    pub call_generic_per_local: InternalGasPerArg,
+    pub pack_base: InternalGas,
+    pub pack_per_field: InternalGasPerArg,
+    pub pack_generic_base: InternalGas,
+    pub pack_generic_per_field: InternalGasPerArg,
+    pub unpack_base: InternalGas,
+    pub unpack_per_field: InternalGasPerArg,
+    pub unpack_generic_base: InternalGas,
+    pub unpack_generic_per_field: InternalGasPerArg,
+    pub read_ref_base: InternalGas,
+    pub read_ref_per_abs_val_unit: InternalGasPerAbstractValueUnit,
+    pub write_ref_base: InternalGas,
+    pub freeze_ref: InternalGas,
+    pub cast_u8: InternalGas,
+    pub cast_u16: InternalGas,
+    pub cast_u32: InternalGas,
+    pub cast_u64: InternalGas,
+    pub cast_u128: InternalGas,
+    pub cast_u256: InternalGas,
+    pub add: InternalGas,
+    pub sub: InternalGas,
+    pub mul: InternalGas,
+    pub mod_: InternalGas,
+    pub div: InternalGas,
+    pub bit_or: InternalGas,
+    pub bit_and: InternalGas,
+    pub xor: InternalGas,
+    pub shl: InternalGas,
+    pub shr: InternalGas,
+    pub or: InternalGas,
+    pub and: InternalGas,
+    pub not: InternalGas,
+    pub lt: InternalGas,
+    pub gt: InternalGas,
+    pub le: InternalGas,
+    pub ge: InternalGas,
+    pub eq_base: InternalGas,
+    pub eq_per_abs_val_unit: InternalGasPerAbstractValueUnit,
+    pub neq_base: InternalGas,
+    pub neq_per_abs_val_unit: InternalGasPerAbstractValueUnit,
+    pub imm_borrow_global_base: InternalGas,
+    pub imm_borrow_global_generic_base: InternalGas,
+    pub mut_borrow_global_base: InternalGas,
+    pub mut_borrow_global_generic_base: InternalGas,
+    pub exists_base: InternalGas,
+    pub exists_generic_base: InternalGas,
+    pub move_from_base: InternalGas,
+    pub move_from_generic_base: InternalGas,
+    pub move_to_base: InternalGas,
+    pub move_to_generic_base: InternalGas,
+    pub vec_len_base: InternalGas,
+    pub vec_imm_borrow_base: InternalGas,
+    pub vec_mut_borrow_base: InternalGas,
+    pub vec_push_back_base: InternalGas,
+    pub vec_pop_back_base: InternalGas,
+    pub vec_swap_base: InternalGas,
+    pub vec_pack_base: InternalGas,
+    pub vec_pack_per_elem: InternalGasPerArg,
+    pub vec_unpack_base: InternalGas,
+    pub vec_unpack_per_expected_elem: InternalGasPerArg,
+}
+
+impl InstructionParameter {
+    pub fn zeros() -> Self {
+        Self {
+            nop: 0.into(),
+            ret: 0.into(),
+            abort: 0.into(),
+            br_true: 0.into(),
+            br_false: 0.into(),
+            branch: 0.into(),
+            pop: 0.into(),
+            ld_u8: 0.into(),
+            ld_u16: 0.into(),
+            ld_u32: 0.into(),
+            ld_u64: 0.into(),
+            ld_u128: 0.into(),
+            ld_u256: 0.into(),
+            ld_true: 0.into(),
+            ld_false: 0.into(),
+            ld_const_base: 0.into(),
+            ld_const_per_byte: 0.into(),
+            imm_borrow_loc: 0.into(),
+            mut_borrow_loc: 0.into(),
+            imm_borrow_field: 0.into(),
+            mut_borrow_field: 0.into(),
+            imm_borrow_field_generic: 0.into(),
+            mut_borrow_field_generic: 0.into(),
+            copy_loc_base: 0.into(),
+            copy_loc_per_abs_val_unit: 0.into(),
+            move_loc_base: 0.into(),
+            st_loc_base: 0.into(),
+            call_base: 0.into(),
+            call_per_arg: 0.into(),
+            call_per_local: 0.into(),
+            call_generic_base: 0.into(),
+            call_generic_per_ty_arg: 0.into(),
+            call_generic_per_arg: 0.into(),
+            call_generic_per_local: 0.into(),
+            pack_base: 0.into(),
+            pack_per_field: 0.into(),
+            pack_generic_base: 0.into(),
+            pack_generic_per_field: 0.into(),
+            unpack_base: 0.into(),
+            unpack_per_field: 0.into(),
+            unpack_generic_base: 0.into(),
+            unpack_generic_per_field: 0.into(),
+            read_ref_base: 0.into(),
+            read_ref_per_abs_val_unit: 0.into(),
+            write_ref_base: 0.into(),
+            freeze_ref: 0.into(),
+            cast_u8: 0.into(),
+            cast_u16: 0.into(),
+            cast_u32: 0.into(),
+            cast_u64: 0.into(),
+            cast_u128: 0.into(),
+            cast_u256: 0.into(),
+            add: 0.into(),
+            sub: 0.into(),
+            mul: 0.into(),
+            mod_: 0.into(),
+            div: 0.into(),
+            bit_or: 0.into(),
+            bit_and: 0.into(),
+            xor: 0.into(),
+            shl: 0.into(),
+            shr: 0.into(),
+            or: 0.into(),
+            and: 0.into(),
+            not: 0.into(),
+            lt: 0.into(),
+            gt: 0.into(),
+            le: 0.into(),
+            ge: 0.into(),
+            eq_base: 0.into(),
+            eq_per_abs_val_unit: 0.into(),
+            neq_base: 0.into(),
+            neq_per_abs_val_unit: 0.into(),
+            imm_borrow_global_base: 0.into(),
+            imm_borrow_global_generic_base: 0.into(),
+            mut_borrow_global_base: 0.into(),
+            mut_borrow_global_generic_base: 0.into(),
+            exists_base: 0.into(),
+            exists_generic_base: 0.into(),
+            move_from_base: 0.into(),
+            move_from_generic_base: 0.into(),
+            move_to_base: 0.into(),
+            move_to_generic_base: 0.into(),
+            vec_len_base: 0.into(),
+            vec_imm_borrow_base: 0.into(),
+            vec_mut_borrow_base: 0.into(),
+            vec_push_back_base: 0.into(),
+            vec_pop_back_base: 0.into(),
+            vec_swap_base: 0.into(),
+            vec_pack_base: 0.into(),
+            vec_pack_per_elem: 0.into(),
+            vec_unpack_base: 0.into(),
+            vec_unpack_per_expected_elem: 0.into(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
 pub struct CostTable {
     pub instruction_tiers: BTreeMap<u64, u64>,
     pub stack_height_tiers: BTreeMap<u64, u64>,
     pub stack_size_tiers: BTreeMap<u64, u64>,
-    pub extra_gas_parameter: ExtraGasParameter,
+    pub storage_gas_parameter: StorageGasParameter,
+    pub instruction_gas_parameter: InstructionParameter,
+    pub abstract_value_parameter: AbstractValueSizeGasParameter,
 }
 
 impl CostTable {
@@ -153,20 +418,17 @@ pub fn initial_cost_schedule() -> CostTable {
     .into_iter()
     .collect();
 
-    let extra_gas_parameter = ExtraGasParameter {
-        io_read_price: 1,
-        storage_fee_per_transaction_byte: 20,
-        storage_fee_per_event_byte: 20,
-        storage_fee_per_op_new_byte: 51,
-        storage_fee_per_op_modify_byte: 30,
-        storage_fee_per_op_delete: 10,
-    };
+    let storage_gas_parameter = StorageGasParameter::initial();
+    let instruction_gas_parameter = InstructionParameter::initial();
+    let abstract_value_gas_parameter = AbstractValueSizeGasParameter::initial();
 
     CostTable {
         instruction_tiers,
         stack_size_tiers,
         stack_height_tiers,
-        extra_gas_parameter,
+        storage_gas_parameter,
+        instruction_gas_parameter,
+        abstract_value_parameter: abstract_value_gas_parameter,
     }
 }
 
@@ -177,7 +439,9 @@ pub fn zero_cost_schedule() -> CostTable {
         instruction_tiers: zero_tier.clone(),
         stack_size_tiers: zero_tier.clone(),
         stack_height_tiers: zero_tier,
-        extra_gas_parameter: ExtraGasParameter::default(),
+        storage_gas_parameter: StorageGasParameter::default(),
+        instruction_gas_parameter: InstructionParameter::zeros(),
+        abstract_value_parameter: AbstractValueSizeGasParameter::zeros(),
     }
 }
 
@@ -212,12 +476,12 @@ impl GasCost {
 #[derive(Debug, Clone)]
 pub struct MoveOSGasMeter {
     cost_table: CostTable,
-    gas_left: u64,
+    gas_left: InternalGas,
     //TODO we do not need to use gas_price in gas meter.
     charge: bool,
 
-    execution_gas_used: Rc<RefCell<u64>>,
-    storage_gas_used: Rc<RefCell<u64>>,
+    execution_gas_used: Rc<RefCell<InternalGas>>,
+    storage_gas_used: Rc<RefCell<InternalGas>>,
 
     // The current height of the operand stack, and the maximal height that it has reached.
     stack_height_high_water_mark: u64,
@@ -253,11 +517,11 @@ impl MoveOSGasMeter {
         let (instructions_current_tier_mult, instructions_next_tier_start) =
             cost_table.instruction_tier(0);
         Self {
-            gas_left: budget,
+            gas_left: InternalGas::from(budget),
             cost_table,
             charge: true,
-            execution_gas_used: Rc::new(RefCell::new(0)),
-            storage_gas_used: Rc::new(RefCell::new(0)),
+            execution_gas_used: Rc::new(RefCell::new(InternalGas::from(0))),
+            storage_gas_used: Rc::new(RefCell::new(InternalGas::from(0))),
             stack_height_high_water_mark: 0,
             stack_height_current: 0,
             stack_size_high_water_mark: 0,
@@ -279,10 +543,10 @@ impl MoveOSGasMeter {
     pub fn new_unmetered() -> Self {
         Self {
             cost_table: ZERO_COST_SCHEDULE.clone(),
-            gas_left: 0,
+            gas_left: InternalGas::from(0),
             charge: false,
-            execution_gas_used: Rc::new(RefCell::new(0)),
-            storage_gas_used: Rc::new(RefCell::new(0)),
+            execution_gas_used: Rc::new(RefCell::new(InternalGas::from(0))),
+            storage_gas_used: Rc::new(RefCell::new(InternalGas::from(0))),
             stack_height_high_water_mark: 0,
             stack_height_current: 0,
             stack_height_next_tier_start: None,
@@ -368,52 +632,23 @@ impl MoveOSGasMeter {
         self.stack_height_current = self.stack_height_current.saturating_sub(pops);
     }
 
-    pub fn charge(
-        &mut self,
-        num_instructions: u64,
-        pushes: u64,
-        pops: u64,
-        incr_size: u64,
-        _decr_size: u64,
-    ) -> PartialVMResult<u64> {
-        self.push_stack(pushes)?;
-        self.increase_instruction_count(num_instructions)?;
-        self.increase_stack_size(incr_size)?;
-
-        let gas_cost = GasCost::new(
-            self.instructions_current_tier_mult
-                .checked_mul(num_instructions)
-                .ok_or_else(|| PartialVMError::new(StatusCode::ARITHMETIC_ERROR))?,
-            self.stack_size_current_tier_mult
-                .checked_mul(incr_size)
-                .ok_or_else(|| PartialVMError::new(StatusCode::ARITHMETIC_ERROR))?,
-            self.stack_height_current_tier_mult
-                .checked_mul(pushes)
-                .ok_or_else(|| PartialVMError::new(StatusCode::ARITHMETIC_ERROR))?,
-        )
-        .total_internal()
-        .into();
-        self.deduct_gas(gas_cost)?;
-
-        // self.decrease_stack_size(decr_size);
-        self.pop_stack(pops);
-
-        Ok(gas_cost)
+    pub fn charge_v1(&mut self, cost: InternalGas) -> PartialVMResult<()> {
+        self.deduct_gas(cost)
     }
 
-    pub fn deduct_gas(&mut self, amount: u64) -> PartialVMResult<()> {
+    pub fn deduct_gas(&mut self, cost: InternalGas) -> PartialVMResult<()> {
         if !self.charge {
             return Ok(());
         }
 
-        match self.gas_left.checked_sub(amount) {
+        match self.gas_left.checked_sub(cost) {
+            None => {
+                self.gas_left = InternalGas::from(0);
+                Err(PartialVMError::new(StatusCode::OUT_OF_GAS))
+            }
             Some(gas_left) => {
                 self.gas_left = gas_left;
                 Ok(())
-            }
-            None => {
-                self.gas_left = 0;
-                Err(PartialVMError::new(StatusCode::OUT_OF_GAS))
             }
         }
     }
@@ -439,7 +674,10 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
             return Ok(());
         }
 
-        let new_value = self.execution_gas_used.borrow().add(gas_cost);
+        let new_value = self
+            .execution_gas_used
+            .borrow()
+            .add(InternalGas::from(gas_cost));
         *self.execution_gas_used.borrow_mut() = new_value;
         Ok(())
     }
@@ -453,12 +691,12 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
 
         let fee = self
             .cost_table
-            .extra_gas_parameter
+            .storage_gas_parameter
             .storage_fee_per_transaction_byte
             * data_size;
-        let new_value = self.storage_gas_used.borrow().add(fee);
+        let new_value = self.storage_gas_used.borrow().add(InternalGas::from(fee));
         *self.storage_gas_used.borrow_mut() = new_value;
-        self.deduct_gas(fee)
+        self.deduct_gas(InternalGas::from(fee))
     }
 
     fn charge_event(&mut self, events: &[TransactionEvent]) -> PartialVMResult<()> {
@@ -471,13 +709,13 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
             let fee = event.event_data.len() as u64
                 * self
                     .cost_table
-                    .extra_gas_parameter
+                    .storage_gas_parameter
                     .storage_fee_per_event_byte;
-            let new_value = self.storage_gas_used.borrow().add(fee);
+            let new_value = self.storage_gas_used.borrow().add(InternalGas::from(fee));
             *self.storage_gas_used.borrow_mut() = new_value;
             total_event_fee += fee;
         }
-        self.deduct_gas(total_event_fee)
+        self.deduct_gas(InternalGas::from(total_event_fee))
     }
 
     fn charge_change_set(&mut self, change_set: &StateChangeSet) -> PartialVMResult<()> {
@@ -494,29 +732,29 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
                             (key.len() + value.value.len()) as u64
                                 * self
                                     .cost_table
-                                    .extra_gas_parameter
+                                    .storage_gas_parameter
                                     .storage_fee_per_op_modify_byte
                         }
                         Op::Delete => {
                             self.cost_table
-                                .extra_gas_parameter
+                                .storage_gas_parameter
                                 .storage_fee_per_op_delete
                         }
                         Op::New(value) => {
                             (key.len() + value.value.len()) as u64
                                 * self
                                     .cost_table
-                                    .extra_gas_parameter
+                                    .storage_gas_parameter
                                     .storage_fee_per_op_new_byte
                         }
                     }
                 };
-                let new_value = self.storage_gas_used.borrow().add(fee);
+                let new_value = self.storage_gas_used.borrow().add(InternalGas::from(fee));
                 *self.storage_gas_used.borrow_mut() = new_value;
                 total_change_set_fee += fee;
             }
         }
-        self.deduct_gas(total_change_set_fee)
+        self.deduct_gas(InternalGas::from(total_change_set_fee))
     }
 
     fn check_constrains(&self, max_gas_amount: u64) -> PartialVMResult<()> {
@@ -531,7 +769,7 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
 
         let execution_gas_used = *self.execution_gas_used.borrow();
         let storage_gas_used = *self.storage_gas_used.borrow();
-        if gas_used != execution_gas_used + storage_gas_used {
+        if InternalGas::from(gas_used) != execution_gas_used + storage_gas_used {
             return Err(PartialVMError::new(StatusCode::ABORTED)
                 .with_message("Failed to check the constraints of the gas_used.".to_owned()));
         }
@@ -546,94 +784,89 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
     }
 }
 
-fn get_simple_instruction_stack_change(
-    instr: SimpleInstruction,
-) -> (u64, u64, AbstractMemorySize, AbstractMemorySize) {
-    use SimpleInstruction::*;
-
-    match instr {
-        // NB: The `Ret` pops are accounted for in `Call` instructions, so we say `Ret` has no pops.
-        Nop | Ret => (0, 0, 0.into(), 0.into()),
-        // BrTrue | BrFalse => (1, 0, Type::Bool.size(), 0.into()),
-        // Branch => (0, 0, 0.into(), 0.into()),
-        LdU8 => (0, 1, 0.into(), Type::U8.size()),
-        LdU16 => (0, 1, 0.into(), Type::U16.size()),
-        LdU32 => (0, 1, 0.into(), Type::U32.size()),
-        LdU64 => (0, 1, 0.into(), Type::U64.size()),
-        LdU128 => (0, 1, 0.into(), Type::U128.size()),
-        LdU256 => (0, 1, 0.into(), Type::U256.size()),
-        LdTrue | LdFalse => (0, 1, 0.into(), Type::Bool.size()),
-        FreezeRef => (1, 1, REFERENCE_SIZE, REFERENCE_SIZE),
-        ImmBorrowLoc | MutBorrowLoc => (0, 1, 0.into(), REFERENCE_SIZE),
-        ImmBorrowField | MutBorrowField | ImmBorrowFieldGeneric | MutBorrowFieldGeneric => {
-            (1, 1, REFERENCE_SIZE, REFERENCE_SIZE)
-        }
-        // Since we don't have the size of the value being cast here we take a conservative
-        // over-approximation: it is _always_ getting cast from the smallest integer type.
-        CastU8 => (1, 1, Type::U8.size(), Type::U8.size()),
-        CastU16 => (1, 1, Type::U8.size(), Type::U16.size()),
-        CastU32 => (1, 1, Type::U8.size(), Type::U32.size()),
-        CastU64 => (1, 1, Type::U8.size(), Type::U64.size()),
-        CastU128 => (1, 1, Type::U8.size(), Type::U128.size()),
-        CastU256 => (1, 1, Type::U8.size(), Type::U256.size()),
-        // NB: We don't know the size of what integers we're dealing with, so we conservatively
-        // over-approximate by popping the smallest integers, and push the largest.
-        Add | Sub | Mul | Mod | Div => (2, 1, Type::U8.size() + Type::U8.size(), Type::U256.size()),
-        BitOr | BitAnd | Xor => (2, 1, Type::U8.size() + Type::U8.size(), Type::U256.size()),
-        Shl | Shr => (2, 1, Type::U8.size() + Type::U8.size(), Type::U256.size()),
-        Or | And => (
-            2,
-            1,
-            Type::Bool.size() + Type::Bool.size(),
-            Type::Bool.size(),
-        ),
-        Lt | Gt | Le | Ge => (2, 1, Type::U8.size() + Type::U8.size(), Type::Bool.size()),
-        Not => (1, 1, Type::Bool.size(), Type::Bool.size()),
-        Abort => (1, 0, Type::U64.size(), 0.into()),
-    }
-}
-
-impl MoveOSGasMeter {
-    fn charge_internal_execution(
-        &mut self,
-        num_instructions: u64,
-        pushes: u64,
-        pops: u64,
-        incr_size: u64,
-        decr_size: u64,
-    ) -> PartialVMResult<()> {
-        let charge_result = self.charge(num_instructions, pushes, pops, incr_size, decr_size);
-        match charge_result {
-            Ok(gas_cost) => self.charge_execution(gas_cost),
-            Err(e) => Err(e),
-        }
-    }
-}
-
 impl GasMeter for MoveOSGasMeter {
     fn balance_internal(&self) -> InternalGas {
-        InternalGas::new(self.gas_left)
+        self.gas_left
     }
 
     fn charge_simple_instr(&mut self, instr: SimpleInstruction) -> PartialVMResult<()> {
-        let (pops, pushes, pop_size, push_size) = get_simple_instruction_stack_change(instr);
-        self.charge_internal_execution(1, pushes, pops, push_size.into(), pop_size.into())
+        macro_rules! dispatch {
+            ($($name: ident => $cost: expr),* $(,)?) => {
+                match instr {
+                    $(SimpleInstruction::$name => self.deduct_gas($cost)),*
+                }
+            };
+        }
+
+        let instruction_gas_parameter = self.cost_table.instruction_gas_parameter.clone();
+
+        dispatch! {
+            Nop => instruction_gas_parameter.nop,
+
+            Abort => instruction_gas_parameter.abort,
+            Ret => instruction_gas_parameter.abort,
+
+            LdU8 => instruction_gas_parameter.ld_u8,
+            LdU16 => instruction_gas_parameter.ld_u16,
+            LdU32 => instruction_gas_parameter.ld_u32,
+            LdU64 => instruction_gas_parameter.ld_u64,
+            LdU128 => instruction_gas_parameter.ld_u128,
+            LdU256 => instruction_gas_parameter.ld_u256,
+            LdTrue => instruction_gas_parameter.ld_true,
+            LdFalse => instruction_gas_parameter.ld_false,
+
+            ImmBorrowLoc => instruction_gas_parameter.imm_borrow_loc,
+            MutBorrowLoc => instruction_gas_parameter.mut_borrow_loc,
+            ImmBorrowField => instruction_gas_parameter.imm_borrow_field,
+            MutBorrowField => instruction_gas_parameter.mut_borrow_field,
+            ImmBorrowFieldGeneric => instruction_gas_parameter.imm_borrow_field_generic,
+            MutBorrowFieldGeneric => instruction_gas_parameter.mut_borrow_field_generic,
+            FreezeRef => instruction_gas_parameter.freeze_ref,
+
+            CastU8 => instruction_gas_parameter.cast_u8,
+            CastU16 => instruction_gas_parameter.cast_u16,
+            CastU32 => instruction_gas_parameter.cast_u32,
+            CastU64 => instruction_gas_parameter.cast_u64,
+            CastU128 => instruction_gas_parameter.cast_u128,
+            CastU256 => instruction_gas_parameter.cast_u256,
+
+            Add => instruction_gas_parameter.add,
+            Sub => instruction_gas_parameter.sub,
+            Mul => instruction_gas_parameter.mul,
+            Mod => instruction_gas_parameter.mod_,
+            Div => instruction_gas_parameter.div,
+
+            BitOr => instruction_gas_parameter.bit_or,
+            BitAnd => instruction_gas_parameter.bit_and,
+            Xor => instruction_gas_parameter.xor,
+            Shl => instruction_gas_parameter.shl,
+            Shr => instruction_gas_parameter.shr,
+
+            Or => instruction_gas_parameter.or,
+            And => instruction_gas_parameter.and,
+            Not => instruction_gas_parameter.not,
+
+            Lt => instruction_gas_parameter.lt,
+            Gt => instruction_gas_parameter.gt,
+            Le => instruction_gas_parameter.le,
+            Ge => instruction_gas_parameter.ge,
+        }
     }
 
     fn charge_br_true(&mut self, _target_offset: Option<CodeOffset>) -> PartialVMResult<()> {
-        self.charge_internal_execution(1, 0, 0, 0, 0)
+        self.charge_v1(self.cost_table.instruction_gas_parameter.br_true)
     }
 
     fn charge_br_false(&mut self, _target_offset: Option<CodeOffset>) -> PartialVMResult<()> {
-        self.charge_internal_execution(1, 0, 0, 0, 0)
+        self.charge_v1(self.cost_table.instruction_gas_parameter.br_false)
     }
 
     fn charge_branch(&mut self, _target_offset: CodeOffset) -> PartialVMResult<()> {
-        self.charge_internal_execution(1, 0, 0, 0, 0)
+        self.charge_v1(self.cost_table.instruction_gas_parameter.branch)
     }
 
-    fn charge_pop(&mut self, popped_val: impl ValueView) -> PartialVMResult<()> {
-        self.charge_internal_execution(1, 0, 1, 0, popped_val.legacy_abstract_memory_size().into())
+    fn charge_pop(&mut self, _popped_val: impl ValueView) -> PartialVMResult<()> {
+        self.charge_v1(self.cost_table.instruction_gas_parameter.pop)
     }
 
     fn charge_call(
@@ -641,40 +874,49 @@ impl GasMeter for MoveOSGasMeter {
         _module_id: &ModuleId,
         _func_name: &str,
         args: impl ExactSizeIterator<Item = impl ValueView>,
-        _num_locals: NumArgs,
+        num_locals: NumArgs,
     ) -> PartialVMResult<()> {
-        // We will have to perform this many pops for the call.
-        let pops = args.len() as u64;
-        // Size stays the same -- we're just moving it from the operand stack to the locals. But
-        // the size on the operand stack is reduced by sum_{args} arg.size().
-        let stack_reduction_size = args.fold(AbstractMemorySize::new(0), |acc, elem| {
-            acc + elem.legacy_abstract_memory_size()
-        });
-        self.charge_internal_execution(1, 0, pops, 0, stack_reduction_size.into())
+        let call_base = self.cost_table.instruction_gas_parameter.call_base;
+        let call_per_arg = self.cost_table.instruction_gas_parameter.call_per_arg;
+        let cost = call_base + call_per_arg * NumArgs::new(args.len() as u64);
+        let call_per_local = self.cost_table.instruction_gas_parameter.call_per_local;
+        self.charge_v1(cost + call_per_local * num_locals)
     }
 
     fn charge_call_generic(
         &mut self,
         _module_id: &ModuleId,
         _func_name: &str,
-        _ty_args: impl ExactSizeIterator<Item = impl TypeView>,
+        ty_args: impl ExactSizeIterator<Item = impl TypeView>,
         args: impl ExactSizeIterator<Item = impl ValueView>,
-        _num_locals: NumArgs,
+        num_locals: NumArgs,
     ) -> PartialVMResult<()> {
-        // We have to perform this many pops from the operand stack for this function call.
-        let pops = args.len() as u64;
-        // Calculate the size reduction on the operand stack.
-        let stack_reduction_size = args.fold(AbstractMemorySize::new(0), |acc, elem| {
-            acc + elem.legacy_abstract_memory_size()
-        });
-        // Charge for the pops, no pushes, and account for the stack size decrease. Also track the
-        // `CallGeneric` instruction we must have encountered for this.
-        self.charge_internal_execution(1, 0, pops, 0, stack_reduction_size.into())
+        let call_generic_base = self.cost_table.instruction_gas_parameter.call_generic_base;
+        let call_generic_per_type_arg = self
+            .cost_table
+            .instruction_gas_parameter
+            .call_generic_per_ty_arg;
+        let call_generic_per_arg = self
+            .cost_table
+            .instruction_gas_parameter
+            .call_generic_per_arg;
+
+        let cost = call_generic_base
+            + call_generic_per_type_arg * NumArgs::new(ty_args.len() as u64)
+            + call_generic_per_arg * NumArgs::new(args.len() as u64);
+
+        let call_generic_per_local = self
+            .cost_table
+            .instruction_gas_parameter
+            .call_generic_per_local;
+
+        self.charge_v1(cost + call_generic_per_local * num_locals)
     }
 
     fn charge_ld_const(&mut self, size: NumBytes) -> PartialVMResult<()> {
-        // Charge for the load from the locals onto the stack.
-        self.charge_internal_execution(1, 1, 0, u64::from(size), 0)
+        let ld_const_base = self.cost_table.instruction_gas_parameter.ld_const_base;
+        let ld_const_per_byte = self.cost_table.instruction_gas_parameter.ld_const_per_byte;
+        self.charge_v1(ld_const_base + ld_const_per_byte * size)
     }
 
     fn charge_ld_const_after_deserialization(
@@ -686,138 +928,232 @@ impl GasMeter for MoveOSGasMeter {
     }
 
     fn charge_copy_loc(&mut self, val: impl ValueView) -> PartialVMResult<()> {
-        // Charge for the copy of the local onto the stack.
-        self.charge_internal_execution(1, 1, 0, val.legacy_abstract_memory_size().into(), 0)
+        let (stack_size, heap_size) = self
+            .cost_table
+            .abstract_value_parameter
+            .abstract_value_size_stack_and_heap(val);
+
+        let copy_loc_base = self.cost_table.instruction_gas_parameter.copy_loc_base;
+        let copy_loc_per_abs_val_unit = self
+            .cost_table
+            .instruction_gas_parameter
+            .copy_loc_per_abs_val_unit;
+
+        self.charge_v1(copy_loc_base + copy_loc_per_abs_val_unit * (stack_size + heap_size))
     }
 
-    fn charge_move_loc(&mut self, val: impl ValueView) -> PartialVMResult<()> {
-        // Charge for the move of the local on to the stack. Note that we charge here since we
-        // aren't tracking the local size (at least not yet). If we were, this should be a net-zero
-        // operation in terms of memory usage.
-        self.charge_internal_execution(1, 1, 0, val.legacy_abstract_memory_size().into(), 0)
+    fn charge_move_loc(&mut self, _val: impl ValueView) -> PartialVMResult<()> {
+        let move_local_base = self.cost_table.instruction_gas_parameter.move_loc_base;
+        self.charge_v1(move_local_base)
     }
 
-    fn charge_store_loc(&mut self, val: impl ValueView) -> PartialVMResult<()> {
-        // Charge for the storing of the value on the stack into a local. Note here that if we were
-        // also accounting for the size of the locals that this would be a net-zero operation in
-        // terms of memory.
-        self.charge_internal_execution(1, 0, 1, 0, val.legacy_abstract_memory_size().into())
+    fn charge_store_loc(&mut self, _val: impl ValueView) -> PartialVMResult<()> {
+        let store_local_base = self.cost_table.instruction_gas_parameter.st_loc_base;
+        self.charge_v1(store_local_base)
     }
 
     fn charge_pack(
         &mut self,
-        _is_generic: bool,
+        is_generic: bool,
         args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
-        // We perform `num_fields` number of pops.
-        let num_fields = args.len() as u64;
-        // The actual amount of memory on the stack is staying the same with the addition of some
-        // extra size for the struct, so the size doesn't really change much.
-        self.charge_internal_execution(1, 1, num_fields, STRUCT_SIZE.into(), 0)
+        let num_args = NumArgs::new(args.len() as u64);
+
+        match is_generic {
+            false => {
+                let pack_base = self.cost_table.instruction_gas_parameter.pack_base;
+                let pack_per_field = self.cost_table.instruction_gas_parameter.pack_per_field;
+                self.charge_v1(pack_base + pack_per_field * num_args)
+            }
+            true => {
+                let pack_generic_base = self.cost_table.instruction_gas_parameter.pack_generic_base;
+                let pack_generic_per_field = self
+                    .cost_table
+                    .instruction_gas_parameter
+                    .pack_generic_per_field;
+                self.charge_v1(pack_generic_base + pack_generic_per_field * num_args)
+            }
+        }
     }
 
     fn charge_unpack(
         &mut self,
-        _is_generic: bool,
+        is_generic: bool,
         args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
-        // We perform `num_fields` number of pushes.
-        let num_fields = args.len() as u64;
-        self.charge_internal_execution(1, num_fields, 1, 0, STRUCT_SIZE.into())
+        let num_args = NumArgs::new(args.len() as u64);
+
+        match is_generic {
+            false => {
+                let unpack_base = self.cost_table.instruction_gas_parameter.unpack_base;
+                let unpack_per_field = self.cost_table.instruction_gas_parameter.unpack_per_field;
+                self.charge_v1(unpack_base + unpack_per_field * num_args)
+            }
+            true => {
+                let unpack_generic_base = self
+                    .cost_table
+                    .instruction_gas_parameter
+                    .unpack_generic_base;
+                let unpack_generic_per_field = self
+                    .cost_table
+                    .instruction_gas_parameter
+                    .unpack_generic_per_field;
+                self.charge_v1(unpack_generic_base + unpack_generic_per_field * num_args)
+            }
+        }
     }
 
     fn charge_read_ref(&mut self, ref_val: impl ValueView) -> PartialVMResult<()> {
-        // We read the the reference so we are decreasing the size of the stack by the size of the
-        // reference, and adding to it the size of the value that has been read from that
-        // reference.
-        self.charge_internal_execution(
-            1,
-            1,
-            1,
-            ref_val.legacy_abstract_memory_size().into(),
-            REFERENCE_SIZE.into(),
-        )
+        let (stack_size, heap_size) = self
+            .cost_table
+            .abstract_value_parameter
+            .abstract_value_size_stack_and_heap(ref_val);
+
+        let read_ref_base = self.cost_table.instruction_gas_parameter.read_ref_base;
+        let read_ref_per_abs_val_unit = self
+            .cost_table
+            .instruction_gas_parameter
+            .read_ref_per_abs_val_unit;
+
+        self.charge_v1(read_ref_base + read_ref_per_abs_val_unit * (stack_size + heap_size))
     }
 
     fn charge_write_ref(
         &mut self,
-        new_val: impl ValueView,
-        old_val: impl ValueView,
+        _new_val: impl ValueView,
+        _old_val: impl ValueView,
     ) -> PartialVMResult<()> {
-        // TODO(tzakian): We should account for this elsewhere as the owner of data the the
-        // reference points to won't be on the stack. For now though, we treat it as adding to the
-        // stack size.
-        self.charge_internal_execution(
-            1,
-            1,
-            2,
-            new_val.legacy_abstract_memory_size().into(),
-            old_val.legacy_abstract_memory_size().into(),
-        )
+        let write_ref_base = self.cost_table.instruction_gas_parameter.write_ref_base;
+
+        self.charge_v1(write_ref_base)
     }
 
     fn charge_eq(&mut self, lhs: impl ValueView, rhs: impl ValueView) -> PartialVMResult<()> {
-        let size_reduction = lhs.legacy_abstract_memory_size() + rhs.legacy_abstract_memory_size();
-        self.charge_internal_execution(
-            1,
-            1,
-            2,
-            (Type::Bool.size() + size_reduction).into(),
-            size_reduction.into(),
-        )
+        let eq_base = self.cost_table.instruction_gas_parameter.eq_base;
+        let eq_per_abs_val_unit = self
+            .cost_table
+            .instruction_gas_parameter
+            .eq_per_abs_val_unit;
+
+        let lhs_abs_val_size = self
+            .cost_table
+            .abstract_value_parameter
+            .abstract_value_size_dereferenced(lhs);
+        let rhs_abs_val_size = self
+            .cost_table
+            .abstract_value_parameter
+            .abstract_value_size_dereferenced(rhs);
+
+        let cost = eq_base + eq_per_abs_val_unit * (lhs_abs_val_size + rhs_abs_val_size);
+
+        self.charge_v1(cost)
     }
 
     fn charge_neq(&mut self, lhs: impl ValueView, rhs: impl ValueView) -> PartialVMResult<()> {
-        let size_reduction = lhs.legacy_abstract_memory_size() + rhs.legacy_abstract_memory_size();
-        self.charge_internal_execution(1, 1, 2, Type::Bool.size().into(), size_reduction.into())
+        let neq_base = self.cost_table.instruction_gas_parameter.eq_base;
+        let neq_per_abs_val_unit = self
+            .cost_table
+            .instruction_gas_parameter
+            .neq_per_abs_val_unit;
+
+        let lhs_abs_val_size = self
+            .cost_table
+            .abstract_value_parameter
+            .abstract_value_size_dereferenced(lhs);
+        let rhs_abs_val_size = self
+            .cost_table
+            .abstract_value_parameter
+            .abstract_value_size_dereferenced(rhs);
+
+        let cost = neq_base + neq_per_abs_val_unit * (lhs_abs_val_size + rhs_abs_val_size);
+
+        self.charge_v1(cost)
     }
 
     fn charge_borrow_global(
         &mut self,
-        _is_mut: bool,
-        _is_generic: bool,
+        is_mut: bool,
+        is_generic: bool,
         _ty: impl TypeView,
         _is_success: bool,
     ) -> PartialVMResult<()> {
-        self.charge_internal_execution(1, 1, 1, REFERENCE_SIZE.into(), Type::Address.size().into())
+        let imm_borrow_global_base = self
+            .cost_table
+            .instruction_gas_parameter
+            .imm_borrow_global_base;
+        let imm_borrow_global_generic_base = self
+            .cost_table
+            .instruction_gas_parameter
+            .imm_borrow_global_generic_base;
+        let mut_borrow_global_base = self
+            .cost_table
+            .instruction_gas_parameter
+            .mut_borrow_global_base;
+        let mut_borrow_global_generic_base = self
+            .cost_table
+            .instruction_gas_parameter
+            .mut_borrow_global_generic_base;
+        match (is_mut, is_generic) {
+            (false, false) => self.charge_v1(imm_borrow_global_base),
+            (false, true) => self.charge_v1(imm_borrow_global_generic_base),
+            (true, false) => self.charge_v1(mut_borrow_global_base),
+            (true, true) => self.charge_v1(mut_borrow_global_generic_base),
+        }
     }
 
     fn charge_exists(
         &mut self,
-        _is_generic: bool,
+        is_generic: bool,
         _ty: impl TypeView,
-        // TODO(Gas): see if we can get rid of this param
         _exists: bool,
     ) -> PartialVMResult<()> {
-        self.charge_internal_execution(
-            1,
-            1,
-            1,
-            Type::Bool.size().into(),
-            Type::Address.size().into(),
-        )
+        let exists_base = self.cost_table.instruction_gas_parameter.exists_base;
+        let exists_generic_base = self
+            .cost_table
+            .instruction_gas_parameter
+            .exists_generic_base;
+
+        match is_generic {
+            false => self.charge_v1(exists_base),
+            true => self.charge_v1(exists_generic_base),
+        }
     }
 
     fn charge_move_from(
         &mut self,
-        _is_generic: bool,
+        is_generic: bool,
         _ty: impl TypeView,
-        val: Option<impl ValueView>,
+        _val: Option<impl ValueView>,
     ) -> PartialVMResult<()> {
-        let size = val
-            .map(|val| val.legacy_abstract_memory_size())
-            .unwrap_or_else(AbstractMemorySize::zero);
-        self.charge_internal_execution(1, 1, 1, size.into(), Type::Address.size().into())
+        let move_from_base = self.cost_table.instruction_gas_parameter.move_from_base;
+        let move_from_generic_base = self
+            .cost_table
+            .instruction_gas_parameter
+            .move_from_generic_base;
+
+        match is_generic {
+            false => self.charge_v1(move_from_base),
+            true => self.charge_v1(move_from_generic_base),
+        }
     }
 
     fn charge_move_to(
         &mut self,
-        _is_generic: bool,
+        is_generic: bool,
         _ty: impl TypeView,
         _val: impl ValueView,
         _is_success: bool,
     ) -> PartialVMResult<()> {
-        self.charge_internal_execution(1, 0, 2, 0, Type::Address.size().into())
+        let move_to_base = self.cost_table.instruction_gas_parameter.move_from_base;
+        let move_to_generic_base = self
+            .cost_table
+            .instruction_gas_parameter
+            .move_from_generic_base;
+
+        match is_generic {
+            false => self.charge_v1(move_to_base),
+            true => self.charge_v1(move_to_generic_base),
+        }
     }
 
     fn charge_vec_pack<'a>(
@@ -825,30 +1161,37 @@ impl GasMeter for MoveOSGasMeter {
         _ty: impl TypeView + 'a,
         args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
-        // We will perform `num_args` number of pops.
-        let num_args = args.len() as u64;
-        // The amount of data on the stack stays constant except we have some extra metadata for
-        // the vector to hold the length of the vector.
-        self.charge_internal_execution(1, 1, num_args, VEC_SIZE.into(), 0)
+        let num_args = NumArgs::new(args.len() as u64);
+
+        let vec_pack_base = self.cost_table.instruction_gas_parameter.vec_pack_base;
+        let vec_pack_per_elem = self.cost_table.instruction_gas_parameter.vec_pack_per_elem;
+
+        self.charge_v1(vec_pack_base + vec_pack_per_elem * num_args)
     }
 
     fn charge_vec_len(&mut self, _ty: impl TypeView) -> PartialVMResult<()> {
-        self.charge_internal_execution(1, 1, 1, Type::U64.size().into(), REFERENCE_SIZE.into())
+        self.charge_v1(self.cost_table.instruction_gas_parameter.vec_len_base)
     }
 
     fn charge_vec_borrow(
         &mut self,
-        _is_mut: bool,
+        is_mut: bool,
         _ty: impl TypeView,
         _is_success: bool,
     ) -> PartialVMResult<()> {
-        self.charge_internal_execution(
-            1,
-            1,
-            2,
-            REFERENCE_SIZE.into(),
-            (REFERENCE_SIZE + Type::U64.size()).into(),
-        )
+        let vec_imm_borrow_base = self
+            .cost_table
+            .instruction_gas_parameter
+            .vec_imm_borrow_base;
+        let vec_mut_borrow_base = self
+            .cost_table
+            .instruction_gas_parameter
+            .vec_mut_borrow_base;
+
+        match is_mut {
+            false => self.charge_v1(vec_imm_borrow_base),
+            true => self.charge_v1(vec_mut_borrow_base),
+        }
     }
 
     fn charge_vec_push_back(
@@ -856,8 +1199,7 @@ impl GasMeter for MoveOSGasMeter {
         _ty: impl TypeView,
         _val: impl ValueView,
     ) -> PartialVMResult<()> {
-        // The value was already on the stack, so we aren't increasing the number of bytes on the stack.
-        self.charge_internal_execution(1, 0, 2, 0, REFERENCE_SIZE.into())
+        self.charge_v1(self.cost_table.instruction_gas_parameter.vec_push_back_base)
     }
 
     fn charge_vec_pop_back(
@@ -865,7 +1207,7 @@ impl GasMeter for MoveOSGasMeter {
         _ty: impl TypeView,
         _val: Option<impl ValueView>,
     ) -> PartialVMResult<()> {
-        self.charge_internal_execution(1, 1, 1, 0, REFERENCE_SIZE.into())
+        self.charge_v1(self.cost_table.instruction_gas_parameter.vec_pop_back_base)
     }
 
     fn charge_vec_unpack(
@@ -874,15 +1216,17 @@ impl GasMeter for MoveOSGasMeter {
         expect_num_elements: NumArgs,
         _elems: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
-        // Charge for the pushes
-        let pushes = u64::from(expect_num_elements);
-        // The stack size stays pretty much the same modulo the additional vector size
-        self.charge_internal_execution(1, pushes, 1, 0, VEC_SIZE.into())
+        let vec_unpack_base = self.cost_table.instruction_gas_parameter.vec_unpack_base;
+        let vec_unpack_per_expected_elem = self
+            .cost_table
+            .instruction_gas_parameter
+            .vec_unpack_per_expected_elem;
+
+        self.charge_v1(vec_unpack_base + vec_unpack_per_expected_elem * expect_num_elements)
     }
 
     fn charge_vec_swap(&mut self, _ty: impl TypeView) -> PartialVMResult<()> {
-        let size_decrease = REFERENCE_SIZE + Type::U64.size() + Type::U64.size();
-        self.charge_internal_execution(1, 1, 1, 0, size_decrease.into())
+        self.charge_v1(self.cost_table.instruction_gas_parameter.vec_swap_base)
     }
 
     fn charge_load_resource(
@@ -899,50 +1243,17 @@ impl GasMeter for MoveOSGasMeter {
     fn charge_native_function(
         &mut self,
         amount: InternalGas,
-        ret_vals: Option<impl ExactSizeIterator<Item = impl ValueView>>,
+        _ret_vals: Option<impl ExactSizeIterator<Item = impl ValueView>>,
     ) -> PartialVMResult<()> {
-        // Charge for the number of pushes on to the stack that the return of this function is
-        // going to cause.
-        let pushes = ret_vals
-            .as_ref()
-            .map(|ret_vals| ret_vals.len())
-            .unwrap_or(0) as u64;
-        // Calculate the number of bytes that are getting pushed onto the stack.
-        let size_increase = ret_vals
-            .map(|ret_vals| {
-                ret_vals.fold(AbstractMemorySize::zero(), |acc, elem| {
-                    acc + elem.legacy_abstract_memory_size()
-                })
-            })
-            .unwrap_or_else(AbstractMemorySize::zero);
-        // Charge for the stack operations. We don't count this as an "instruction" since we
-        // already accounted for the `Call` instruction in the
-        // `charge_native_function_before_execution` call.
-        //self.charge(0, pushes, 0, size_increase.into(), 0)?;
-        // Now charge the gas that the native function told us to charge.
-        //self.deduct_gas(amount.into())
-
-        self.charge_execution(amount.into())?;
-        self.deduct_gas(amount.into())?;
-        self.charge_internal_execution(0, pushes, 0, size_increase.into(), 0)
+        self.charge_v1(amount)
     }
 
     fn charge_native_function_before_execution(
         &mut self,
         _ty_args: impl ExactSizeIterator<Item = impl TypeView>,
-        args: impl ExactSizeIterator<Item = impl ValueView>,
+        _args: impl ExactSizeIterator<Item = impl ValueView>,
     ) -> PartialVMResult<()> {
-        // Determine the number of pops that are going to be needed for this function call, and
-        // charge for them.
-        let pops = args.len() as u64;
-        // Calculate the size decrease of the stack from the above pops.
-        let stack_reduction_size = args.fold(AbstractMemorySize::new(pops), |acc, elem| {
-            acc + elem.legacy_abstract_memory_size()
-        });
-        // Track that this is going to be popping from the operand stack. We also increment the
-        // instruction count as we need to account for the `Call` bytecode that initiated this
-        // native call.
-        self.charge_internal_execution(1, 0, pops, 0, stack_reduction_size.into())
+        Ok(())
     }
 
     fn charge_drop_frame(

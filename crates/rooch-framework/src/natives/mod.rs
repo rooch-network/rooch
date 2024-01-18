@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::natives::gas_parameter::gas_member::{FromOnChainGasSchedule, InitialGasSchedule};
+use crate::natives::gas_parameter::gas_member::{
+    FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule,
+};
 use crate::ROOCH_FRAMEWORK_ADDRESS;
 use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunctionTable};
 use moveos_stdlib::natives::GasParameters as MoveOSGasParameters;
@@ -41,6 +43,20 @@ impl FromOnChainGasSchedule for GasParameters {
     }
 }
 
+impl ToOnChainGasSchedule for GasParameters {
+    fn to_on_chain_gas_schedule(&self) -> Vec<(String, u64)> {
+        let mut entires = self.moveos_stdlib.to_on_chain_gas_schedule();
+        entires.extend(self.account.to_on_chain_gas_schedule());
+        entires.extend(self.hash.to_on_chain_gas_schedule());
+        entires.extend(self.ed25519.to_on_chain_gas_schedule());
+        entires.extend(self.ecdsa_k1.to_on_chain_gas_schedule());
+        entires.extend(self.encoding.to_on_chain_gas_schedule());
+        entires.extend(self.decoding.to_on_chain_gas_schedule());
+        entires.extend(self.bcs.to_on_chain_gas_schedule());
+        entires
+    }
+}
+
 impl InitialGasSchedule for GasParameters {
     fn initial() -> Self {
         Self {
@@ -73,6 +89,25 @@ impl FromOnChainGasSchedule for MoveOSGasParameters {
             object: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             json: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
         })
+    }
+}
+
+impl ToOnChainGasSchedule for MoveOSGasParameters {
+    fn to_on_chain_gas_schedule(&self) -> Vec<(String, u64)> {
+        let mut entires = self.move_stdlib.to_on_chain_gas_schedule();
+        entires.extend(self.move_nursery.to_on_chain_gas_schedule());
+        entires.extend(self.table_extension.to_on_chain_gas_schedule());
+        entires.extend(self.type_info.to_on_chain_gas_schedule());
+        entires.extend(self.rlp.to_on_chain_gas_schedule());
+        entires.extend(self.bcd.to_on_chain_gas_schedule());
+        entires.extend(self.bcd.to_on_chain_gas_schedule());
+        entires.extend(self.events.to_on_chain_gas_schedule());
+        entires.extend(self.test_helper.to_on_chain_gas_schedule());
+        entires.extend(self.signer.to_on_chain_gas_schedule());
+        entires.extend(self.move_module.to_on_chain_gas_schedule());
+        entires.extend(self.object.to_on_chain_gas_schedule());
+        entires.extend(self.json.to_on_chain_gas_schedule());
+        entires
     }
 }
 

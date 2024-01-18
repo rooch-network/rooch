@@ -14,6 +14,7 @@ use move_core_types::{
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
+use move_core_types::gas_algebra::InternalGas;
 
 #[cfg(any(test, feature = "fuzzing"))]
 use crate::move_types::type_tag_prop_strategy;
@@ -261,8 +262,8 @@ impl MoveOSTransaction {
 
 #[derive(Debug, Clone)]
 pub struct GasStatement {
-    pub execution_gas_used: u64,
-    pub storage_gas_used: u64,
+    pub execution_gas_used: InternalGas,
+    pub storage_gas_used: InternalGas,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -283,7 +284,6 @@ pub struct RawTransactionOutput {
     pub events: Vec<TransactionEvent>,
     pub gas_used: u64,
     pub is_upgrade: bool,
-    pub gas_statement: GasStatement,
 }
 
 /// TransactionOutput is the execution result of a MoveOS transaction, and pack TransactionEvent to Event
