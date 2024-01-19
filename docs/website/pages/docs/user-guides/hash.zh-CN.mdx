@@ -46,22 +46,28 @@ SHA2-256(hello_world.txt)= f590572de3c69705a0cad30159ab9f728d28f118d108f7a9b5d02
 
 这篇文档主要介绍 Rooch 采用的一些 Hash 库和方法。
 
-## hash
+## 公钥与私钥
+
+私钥是一组随机生成的数字，这组数字区间为 `2^256`，这意味着输入空间足够大，几乎不可能生成相同的私钥。
+
+私钥经过计算可以得到公钥，但是公钥则无法计算出私钥。
+
+地址，通常对应着我们的账户，地址是通过截取一部分、或者做一些拼接而来，通常也无法通过地址计算出对应的公钥。
+
+这些单向的哈希函数为区块链的实现提供了最基础、最重要的保障。
+
+## Rooch 提供的一些哈希函数
 
 - sha2_256
 - sha3_256
 - blake2b256
 - keccak256
-
-## encoding
-
 - base58
 - base58check
 - bech32
 - p2sh
 - p2pkh
+- ecdsa_k1
+- ed25519
 
-## decoding
-
-## ecdsa
-
+更详细的内容，请残阅源码[https://github.com/rooch-network/rooch/tree/main/crates/rooch-framework/sources/crypto](https://github.com/rooch-network/rooch/tree/main/crates/rooch-framework/sources/crypto)。 
