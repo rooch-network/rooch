@@ -34,11 +34,12 @@ pub struct KeyState {
     /// the bytes of key state
     pub key: Vec<u8>,
     /// the type of key state
-    pub key_type: Option<TypeTag>,
+    // pub key_type: Option<TypeTag>,
+    pub key_type: TypeTag,
 }
 
 impl KeyState {
-    pub fn new(key: Vec<u8>, key_type: Option<TypeTag>) -> Self {
+    pub fn new(key: Vec<u8>, key_type: TypeTag) -> Self {
         Self { key, key_type }
     }
 }
@@ -545,7 +546,7 @@ impl StateChangeSet {
 /// A change of a single table.
 #[derive(Clone, Debug)]
 pub struct TableChange {
-    pub entries: BTreeMap<Vec<u8>, Op<State>>,
+    pub entries: BTreeMap<KeyState, Op<State>>,
     /// The size increment of the table, may be negtive which means more deleting than inserting.
     pub size_increment: i64,
     /// the key's type tag

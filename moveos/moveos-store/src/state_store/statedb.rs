@@ -10,7 +10,7 @@ use move_core_types::{
 };
 use moveos_types::move_std::ascii::MoveAsciiString;
 use moveos_types::move_std::string::MoveString;
-use moveos_types::state::{TableState, TableStateSet};
+use moveos_types::state::{KeyState, TableState, TableStateSet};
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
     h256::H256,
@@ -35,7 +35,7 @@ use crate::state_store::NodeDBStore;
 
 #[derive(Clone)]
 pub struct TreeTable<NS> {
-    smt: SMTree<Vec<u8>, State, NS>,
+    smt: SMTree<KeyState, State, NS>,
 }
 
 impl<NS> TreeTable<NS>
@@ -62,7 +62,7 @@ where
 
     pub fn puts<I>(&self, update_set: I) -> Result<H256>
     where
-        I: Into<UpdateSet<Vec<u8>, State>>,
+        I: Into<UpdateSet<KeyState, State>>,
     {
         self.smt.puts(update_set)
     }
@@ -91,7 +91,7 @@ where
         }))
     }
 
-    pub fn put_changes<I: IntoIterator<Item = (Vec<u8>, Op<State>)>>(
+    pub fn put_changes<I: IntoIterator<Item = (KeyState, Op<State>)>>(
         &self,
         changes: I,
     ) -> Result<H256> {
@@ -117,11 +117,11 @@ where
         Ok(())
     }
 
-    pub fn dump(&self) -> Result<Vec<(Vec<u8>, State)>> {
+    pub fn dump(&self) -> Result<Vec<(KeyState, State)>> {
         self.smt.dump()
     }
 
-    pub fn iter(&self) -> Result<SMTIterator<Vec<u8>, State, NS>> {
+    pub fn iter(&self) -> Result<SMTIterator<KeyState, State, NS>> {
         self.smt.iter(None)
     }
 }
@@ -152,7 +152,7 @@ impl StateDBStore {
         self.global_table.get(id.to_bytes())
     }
 
-    pub fn list(&self, cursor: Option<Vec<u8>>, limit: usize) -> Result<Vec<StateKV>> {
+    pub fn list(&self, cursor: Option<KeyState>, limit: usize) -> Result<Vec<StateKV>> {
         self.global_table.list(cursor, limit)
     }
 

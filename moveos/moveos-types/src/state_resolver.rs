@@ -35,7 +35,7 @@ pub trait StateResolver {
     fn resolve_table_item(
         &self,
         handle: &ObjectID,
-        key: &[u8],
+        key: &KeyState,
     ) -> Result<Option<State>, anyhow::Error>;
 
     fn list_table_items(
@@ -142,12 +142,12 @@ pub trait MoveOSResolver: MoveResolver + StateResolver {}
 impl<T> MoveOSResolver for T where T: MoveResolver + StateResolver {}
 
 //TODO define a ResourceKey trait to unify the resource key type, and auto impl it for ObjectID and StructTag.
-pub fn resource_tag_to_key(tag: &StructTag) -> Vec<u8> {
+pub fn resource_tag_to_key(tag: &StructTag) -> KeyState {
     // The resource key is struct_tag to_canonical_string in bcs serialize format string, not String::into_bytes.
     bcs::to_bytes(&tag.to_canonical_string()).expect("bcs to_bytes String must success.")
 }
 
-pub fn module_name_to_key(name: &IdentStr) -> Vec<u8> {
+pub fn module_name_to_key(name: &IdentStr) -> KeyState {
     // The key is the module name in bcs serialize format string, not String::into_bytes.
     bcs::to_bytes(&name.to_string()).expect("bcs to_bytes String must success.")
 }
