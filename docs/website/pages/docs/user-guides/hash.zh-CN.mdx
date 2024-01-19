@@ -1,0 +1,73 @@
+# Hash 介绍
+
+哈希函数是密码学最常用、最基本的一个算法，它可以给任何数据生成一个全局唯一的标识符。
+
+哈希函数的输出通常被称为哈希值（Hash Value）或摘要（Digest）或校验和（Checksum）。
+
+## 作用
+
+哈希函数可以保证我们获取到的数据是完整、真实的。
+
+比如，创建一个空 hello_world.txt 的空文件，利用 `sha256` 算法加密这个文件。如果我们要把这个文件公开给人们下载，但是由于网络的不安全或者是其他原因导致了文件不完整或者下载中被意外篡改了，那么最终这个文件就不是真实、正确的的。
+
+通常情况下，下载文件的网站会提供下载文件的 URL 和附上当前文件的摘要，当下载成功后，我们使用生成摘要的相同哈希算法对文件进行一次哈希，如果输出的哈希值和网站提供的文件摘要是一样的，那么证明这个文件是真实和完整的，是我们需要的目标文件。
+
+```shell
+[joe@mx crypto]$ touch hello_world.txt
+[joe@mx crypto]$ openssl dgst -sha256 hello_world.txt
+SHA2-256(hello_world.txt)= e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+```
+
+修改文件的内容，再次哈希，输出的摘要就会不一样。
+
+```shell
+[joe@mx crypto]$ echo "rooch" >> hello_world.txt
+[joe@mx crypto]$ openssl dgst -sha256 hello_world.txt
+SHA2-256(hello_world.txt)= f590572de3c69705a0cad30159ab9f728d28f118d108f7a9b5d025282dd34d30
+```
+
+哈希函数可以接收任意长度的输入，并产生固定长度的输出。
+
+上面输出的哈希值都是以 Base16 即十六进制的形式表示的，因此每两个数字就表示一个十六进制数，上面有 64 个数字，就代表这个摘要大小为 32 字节。
+
+`*-256` 表示这个哈希算法的输出是 256 位的，即 32 字节，以此类推，以 `*-512` 结尾的哈希算法，其输出固定为 64 字节。
+
+## 安全属性
+
+构成哈希函数的三个主要属性。
+
+1. 抗第一原像性（Pre-image Resistance），即无法根据哈希函数的输出恢复其对应的输入，前提是确保输入空间足够大且具有不可预测性。
+
+2. 抗第二原像性（Second Pre-image Resistance），即给定一个输入和它的哈希值，无法找到不同于该输入的新输入，使得这两个输入产生相同的哈希值。
+
+例如上面的例子，无论是谁创建的 `hello_world.txt` 空文件，同一个哈希函数的摘要都是相同的。一旦输入经过略微修改，其输入必然不同。
+
+3. 抗碰撞性（Collision Resistance），这个性质确保无法找到哈希值相同的两个不同输入。
+
+这篇文档主要介绍 Rooch 采用的一些 Hash 库和方法。
+
+## 公钥与私钥
+
+私钥是一组随机生成的数字，这组数字区间为 `2^256`，这意味着输入空间足够大，几乎不可能生成相同的私钥。
+
+私钥经过计算可以得到公钥，但是公钥则无法计算出私钥。
+
+地址，通常对应着我们的账户，地址是通过截取一部分、或者做一些拼接而来，通常也无法通过地址计算出对应的公钥。
+
+这些单向的哈希函数为区块链的实现提供了最基础、最重要的保障。
+
+## Rooch 提供的一些哈希函数
+
+- sha2_256
+- sha3_256
+- blake2b256
+- keccak256
+- base58
+- base58check
+- bech32
+- p2sh
+- p2pkh
+- ecdsa_k1
+- ed25519
+
+更详细的内容，请残阅源码[https://github.com/rooch-network/rooch/tree/main/crates/rooch-framework/sources/crypto](https://github.com/rooch-network/rooch/tree/main/crates/rooch-framework/sources/crypto)。 
