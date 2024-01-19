@@ -28,7 +28,6 @@ sha3 = { workspace = true }
 smallvec = { workspace = true }
 hex = { workspace = true }
 bitcoin = { workspace = true }
-bitcoin-bech32 = { workspace = true }
 bs58 = { workspace = true, features = ["check"] }
 http = { workspace = true }
 tracing = { workspace = true }

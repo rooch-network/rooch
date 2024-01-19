@@ -8,11 +8,14 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use bitcoin::bech32::segwit::encode_to_fmt_unchecked;
+use bitcoin::consensus::serde::hex::Case;
+use bitcoin::hex::DisplayHex;
 use bitcoin::script::PushBytesBuf;
 use bitcoin::{
-    address::Address, base58, secp256k1::Secp256k1, Network, PrivateKey, Script, WitnessProgram,
+    address::Address, secp256k1::Secp256k1, Network, PrivateKey, Script, WitnessProgram,
     WitnessVersion,
 };
+
 use ethers::types::H160;
 use fastcrypto::secp256k1::Secp256k1PublicKey;
 use move_core_types::{
@@ -38,6 +41,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::serde_as;
 use sha3::{Digest, Sha3_256};
 use std::fmt;
+use std::io::Read;
 use std::str::FromStr;
 
 /// The address type that Rooch supports
@@ -515,7 +519,7 @@ impl BitcoinAddress {
         self.bytes.is_empty()
     }
 
-    ///  Format the BitcoinAddress as a hexadecimal string same as bitcoin
+    ///  Format the base58 as a hexadecimal string
     pub fn format(&self, network: u8) -> Result<String, anyhow::Error> {
         let payload_type = BitcoinAddressPayloadType::try_from(self.bytes[0])?;
         match payload_type {
@@ -523,13 +527,13 @@ impl BitcoinAddress {
                 let mut prefixed = [0; 21];
                 prefixed[0] = Self::get_pubkey_address_prefix(network);
                 prefixed[1..].copy_from_slice(&self.bytes[1..]);
-                Ok(base58::encode_check(&prefixed[..]))
+                Ok(bs58::encode(&prefixed[..]).into_string())
             }
             BitcoinAddressPayloadType::ScriptHash => {
                 let mut prefixed = [0; 21];
                 prefixed[0] = Self::get_script_address_prefix(network);
                 prefixed[1..].copy_from_slice(&self.bytes[1..]);
-                Ok(base58::encode_check(&prefixed[..]))
+                Ok(bs58::encode(&prefixed[..]).into_string())
             }
             BitcoinAddressPayloadType::WitnessProgram => {
                 let hrp = network::Network::try_from(network)?.bech32_hrp();
