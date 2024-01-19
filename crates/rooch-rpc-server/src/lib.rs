@@ -53,6 +53,7 @@ use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{GenesisError, RoochError};
+use rooch_framework::natives::default_gas_schedule;
 
 use crate::server::btc_server::BtcServer;
 use crate::server::eth_server::{EthNetServer, EthServer};
@@ -220,9 +221,14 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
 
     // Init executor
     let is_genesis = moveos_store.statedb.is_genesis();
+
+    // #TODO: If not launched in the Genesis way, the latest onchain GasSchedule needs to be obtained.
+    let gas_schedule_blob =
+        bcs::to_bytes(&default_gas_schedule()).expect("Failure serializing genesis gas schedule");
+
     let btc_network = opt.btc_network.unwrap_or(Network::default().to_num());
     let executor_actor = ExecutorActor::new(
-        chain_id_opt.genesis_ctx(sequencer_account),
+        chain_id_opt.genesis_ctx(sequencer_account, gas_schedule_blob),
         BitcoinGenesisContext::new(btc_network),
         moveos_store.clone(),
         rooch_store.clone(),

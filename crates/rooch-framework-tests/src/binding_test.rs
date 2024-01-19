@@ -10,6 +10,7 @@ use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::transaction::FunctionCall;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::actor::{executor::ExecutorActor, messages::ExecuteTransactionResult};
+use rooch_framework::natives::default_gas_schedule;
 use rooch_store::RoochStore;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
@@ -29,8 +30,10 @@ impl RustBindingTest {
         let moveos_store = MoveOSStore::mock_moveos_store()?;
         let rooch_store = RoochStore::mock_rooch_store()?;
         let sequencer = RoochAddress::random();
+        let gas_schedule_blob =
+            bcs::to_bytes(&default_gas_schedule()).expect("Failure serializing genesis gas schedule");
         let executor = ExecutorActor::new(
-            RoochChainID::LOCAL.genesis_ctx(sequencer),
+            RoochChainID::LOCAL.genesis_ctx(sequencer, gas_schedule_blob),
             BitcoinGenesisContext::new(Network::default().to_num()),
             moveos_store.clone(),
             rooch_store.clone(),

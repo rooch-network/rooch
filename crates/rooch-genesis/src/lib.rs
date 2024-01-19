@@ -27,6 +27,7 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
+use rooch_framework::natives::default_gas_schedule;
 
 pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
     // TODO: For now, ROOCH_LOCAL_GENESIS in only used in integration-test.
@@ -36,8 +37,10 @@ pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
     // genesis for integration test, we need to build the stdlib every time for `private_generic` check
     // see moveos/moveos-verifier/src/metadata.rs#L27-L30
     let bitcoin_genesis_ctx = BitcoinGenesisContext::new(Network::NetworkRegtest.to_num());
+    let gas_schedule_blob =
+        bcs::to_bytes(&default_gas_schedule()).expect("Failure serializing genesis gas schedule");
     RoochGenesis::build_with_option(
-        RoochChainID::LOCAL.genesis_ctx(mock_sequencer),
+        RoochChainID::LOCAL.genesis_ctx(mock_sequencer, gas_schedule_blob),
         bitcoin_genesis_ctx,
         BuildOption::Fresh,
     )
@@ -299,7 +302,7 @@ pub fn rooch_framework_error_descriptions() -> &'static [u8] {
 mod tests {
     use moveos::moveos::MoveOS;
     use moveos_store::MoveOSStore;
-    use rooch_framework::natives::all_natives;
+    use rooch_framework::natives::{all_natives, default_gas_schedule};
     use rooch_types::address::RoochSupportedAddress;
     use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
     use rooch_types::bitcoin::network::Network;
@@ -309,8 +312,10 @@ mod tests {
     fn test_genesis_init() {
         let sequencer = RoochAddress::random();
         let bitcoin_genesis_ctx = BitcoinGenesisContext::new(Network::NetworkRegtest.to_num());
+        let gas_schedule_blob =
+            bcs::to_bytes(&default_gas_schedule()).expect("Failure serializing genesis gas schedule");
         let genesis = super::RoochGenesis::build_with_option(
-            RoochChainID::LOCAL.genesis_ctx(sequencer),
+            RoochChainID::LOCAL.genesis_ctx(sequencer, gas_schedule_blob),
             bitcoin_genesis_ctx,
             crate::BuildOption::Fresh,
         )

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::gas::gas_member::InitialGasSchedule;
+use crate::gas::gas_member::{FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule};
 use crate::gas::r#abstract::{
     AbstractValueSize, AbstractValueSizePerArg, InternalGasPerAbstractValueUnit,
 };
@@ -10,7 +10,8 @@ use move_binary_format::file_format::CodeOffset;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
 use move_core_types::gas_algebra::{
-    AbstractMemorySize, GasQuantity, InternalGas, InternalGasPerArg, InternalGasPerByte, NumArgs, NumBytes,
+    AbstractMemorySize, GasQuantity, InternalGas, InternalGasPerArg, InternalGasPerByte, NumArgs,
+    NumBytes,
 };
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::StatusCode;
@@ -1276,4 +1277,52 @@ impl SwitchableGasMeter for MoveOSGasMeter {
     fn is_metering(&self) -> bool {
         self.charge
     }
+}
+
+pub fn initial_instruction_parameter() -> InstructionParameter {
+    InstructionParameter::initial()
+}
+
+pub fn initial_storage_parameter() -> StorageGasParameter {
+    StorageGasParameter::initial()
+}
+
+pub fn initial_misc_parameter() -> AbstractValueSizeGasParameter {
+    AbstractValueSizeGasParameter::initial()
+}
+
+pub fn from_on_chain_gas_schedule_to_instruction_parameter(
+    gas_schedule: &BTreeMap<String, u64>,
+) -> Option<InstructionParameter> {
+    InstructionParameter::from_on_chain_gas_schedule(gas_schedule)
+}
+
+pub fn from_on_chain_gas_schedule_to_storage_parameter(
+    gas_schedule: &BTreeMap<String, u64>,
+) -> Option<StorageGasParameter> {
+    StorageGasParameter::from_on_chain_gas_schedule(gas_schedule)
+}
+
+pub fn from_on_chain_gas_schedule_to_misc_parameter(
+    gas_schedule: &BTreeMap<String, u64>,
+) -> Option<AbstractValueSizeGasParameter> {
+    AbstractValueSizeGasParameter::from_on_chain_gas_schedule(gas_schedule)
+}
+
+pub fn instruction_parameter_to_on_chain_gas_schedule(
+    gas_parameter: InstructionParameter,
+) -> Vec<(String, u64)> {
+    gas_parameter.to_on_chain_gas_schedule()
+}
+
+pub fn storage_parameter_to_on_chain_gas_schedule(
+    gas_parameter: StorageGasParameter,
+) -> Vec<(String, u64)> {
+    gas_parameter.to_on_chain_gas_schedule()
+}
+
+pub fn misc_parameter_to_on_chain_gas_schedule(
+    gas_parameter: AbstractValueSizeGasParameter,
+) -> Vec<(String, u64)> {
+    gas_parameter.to_on_chain_gas_schedule()
 }

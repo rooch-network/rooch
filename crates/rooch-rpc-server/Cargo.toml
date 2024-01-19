@@ -64,3 +64,4 @@ rooch-rpc-api = { workspace = true }
 rooch-relayer = { workspace = true }
 rooch-indexer = { workspace = true }
 rooch-da = { workspace = true }
+rooch-framework = { workspace = true }

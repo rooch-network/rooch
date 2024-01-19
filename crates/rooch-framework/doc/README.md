@@ -35,6 +35,7 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::ethereum_light_client`](ethereum_light_client.md#0x3_ethereum_light_client)
 -  [`0x3::ethereum_validator`](ethereum_validator.md#0x3_ethereum_validator)
 -  [`0x3::gas_coin`](gas_coin.md#0x3_gas_coin)
+-  [`0x3::gas_schedule`](gas_schedule.md#0x3_gas_schedule)
 -  [`0x3::genesis`](genesis.md#0x3_genesis)
 -  [`0x3::hash`](hash.md#0x3_hash)
 -  [`0x3::multichain_address`](multichain_address.md#0x3_multichain_address)

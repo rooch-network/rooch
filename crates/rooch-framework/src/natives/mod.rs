@@ -6,8 +6,17 @@ use crate::natives::gas_parameter::gas_member::{
 };
 use crate::ROOCH_FRAMEWORK_ADDRESS;
 use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunctionTable};
-use moveos_stdlib::natives::GasParameters as MoveOSGasParameters;
+use moveos::gas::table::{
+    from_on_chain_gas_schedule_to_instruction_parameter,
+    from_on_chain_gas_schedule_to_misc_parameter, from_on_chain_gas_schedule_to_storage_parameter,
+    initial_instruction_parameter, initial_misc_parameter, initial_storage_parameter,
+    instruction_parameter_to_on_chain_gas_schedule, misc_parameter_to_on_chain_gas_schedule,
+    storage_parameter_to_on_chain_gas_schedule, AbstractValueSizeGasParameter,
+    InstructionParameter, StorageGasParameter,
+};
+use moveos_stdlib::natives::GasParameters as MoveOSStdlibGasParameters;
 use std::collections::BTreeMap;
+use serde::{Deserialize, Serialize};
 
 pub mod helpers {
     pub use moveos_stdlib::natives::helpers::*;
@@ -72,7 +81,7 @@ impl InitialGasSchedule for NativeGasParameters {
     }
 }
 
-impl FromOnChainGasSchedule for MoveOSGasParameters {
+impl FromOnChainGasSchedule for MoveOSStdlibGasParameters {
     fn from_on_chain_gas_schedule(gas_schedule: &BTreeMap<String, u64>) -> Option<Self> {
         Some(Self {
             move_stdlib: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
@@ -92,7 +101,7 @@ impl FromOnChainGasSchedule for MoveOSGasParameters {
     }
 }
 
-impl ToOnChainGasSchedule for MoveOSGasParameters {
+impl ToOnChainGasSchedule for MoveOSStdlibGasParameters {
     fn to_on_chain_gas_schedule(&self) -> Vec<(String, u64)> {
         let mut entires = self.move_stdlib.to_on_chain_gas_schedule();
         entires.extend(self.move_nursery.to_on_chain_gas_schedule());
@@ -111,7 +120,7 @@ impl ToOnChainGasSchedule for MoveOSGasParameters {
     }
 }
 
-impl InitialGasSchedule for MoveOSGasParameters {
+impl InitialGasSchedule for MoveOSStdlibGasParameters {
     fn initial() -> Self {
         Self {
             move_stdlib: InitialGasSchedule::initial(),
@@ -194,4 +203,76 @@ pub fn all_natives(gas_params: NativeGasParameters) -> NativeFunctionTable {
     native_fun_table.extend(rooch_native_fun_table);
 
     native_fun_table
+}
+
+#[derive(Clone, Debug)]
+pub struct RoochGasParameters {
+    pub rooch_framework_gas: NativeGasParameters,
+    pub instruction_gas: InstructionParameter,
+    pub storage_gas: StorageGasParameter,
+    pub misc_gas: AbstractValueSizeGasParameter,
+}
+
+impl InitialGasSchedule for RoochGasParameters {
+    fn initial() -> Self {
+        Self {
+            rooch_framework_gas: InitialGasSchedule::initial(),
+            instruction_gas: initial_instruction_parameter(),
+            storage_gas: initial_storage_parameter(),
+            misc_gas: initial_misc_parameter(),
+        }
+    }
+}
+
+impl ToOnChainGasSchedule for RoochGasParameters {
+    fn to_on_chain_gas_schedule(&self) -> Vec<(String, u64)> {
+        let mut entires = self.rooch_framework_gas.to_on_chain_gas_schedule();
+        entires.extend(instruction_parameter_to_on_chain_gas_schedule(
+            self.instruction_gas.clone(),
+        ));
+        entires.extend(storage_parameter_to_on_chain_gas_schedule(
+            self.storage_gas.clone(),
+        ));
+        entires.extend(misc_parameter_to_on_chain_gas_schedule(
+            self.misc_gas.clone(),
+        ));
+        entires
+    }
+}
+
+impl FromOnChainGasSchedule for RoochGasParameters {
+    fn from_on_chain_gas_schedule(gas_schedule: &BTreeMap<String, u64>) -> Option<Self> {
+        Some(Self {
+            rooch_framework_gas: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)
+                .unwrap(),
+            instruction_gas: from_on_chain_gas_schedule_to_instruction_parameter(gas_schedule)
+                .unwrap(),
+            storage_gas: from_on_chain_gas_schedule_to_storage_parameter(gas_schedule).unwrap(),
+            misc_gas: from_on_chain_gas_schedule_to_misc_parameter(gas_schedule).unwrap(),
+        })
+    }
+}
+
+impl RoochGasParameters {
+    pub fn zeros() -> Self {
+        Self {
+            rooch_framework_gas: NativeGasParameters::zeros(),
+            instruction_gas: InstructionParameter::zeros(),
+            storage_gas: StorageGasParameter::zeros(),
+            misc_gas: AbstractValueSizeGasParameter::zeros(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
+pub struct GasSchedule {
+    pub feature_version: u64,
+    pub entries: Vec<(String, u64)>,
+}
+
+pub fn default_gas_schedule() -> GasSchedule {
+    GasSchedule {
+        feature_version: 1,
+        entries: RoochGasParameters::initial().to_on_chain_gas_schedule(),
+    }
 }

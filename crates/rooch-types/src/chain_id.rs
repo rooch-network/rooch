@@ -197,29 +197,29 @@ impl BuiltinChainID {
         ]
     }
 
-    pub fn genesis_ctx(&self, sequencer: RoochAddress) -> GenesisContext {
+    pub fn genesis_ctx(&self, sequencer: RoochAddress, gas_schedule_blob: Vec<u8>) -> GenesisContext {
         let chain_id = self.chain_id().id;
         let sequencer_account = AccountAddress::from(sequencer);
         match self {
             BuiltinChainID::Local => {
                 //Local timestamp from 0, developer can manually set the timestamp
                 let timestamp = 0;
-                GenesisContext::new(chain_id, timestamp, sequencer_account)
+                GenesisContext::new(chain_id, timestamp, sequencer_account, gas_schedule_blob)
             }
             BuiltinChainID::Dev => {
                 //Dev network start from Ethereum block height 9685149, timestamp: 1694571540
                 let timestamp = std::time::Duration::from_secs(1694571540).as_micros() as u64;
-                GenesisContext::new(chain_id, timestamp, sequencer_account)
+                GenesisContext::new(chain_id, timestamp, sequencer_account, gas_schedule_blob)
             }
             BuiltinChainID::Test => {
                 //Test network start from Ethereum block height 9685149, timestamp: 1694571540
                 let timestamp = std::time::Duration::from_secs(1694571540).as_micros() as u64;
-                GenesisContext::new(chain_id, timestamp, sequencer_account)
+                GenesisContext::new(chain_id, timestamp, sequencer_account, gas_schedule_blob)
             }
             BuiltinChainID::Main => {
                 //TODO config main network genesis timestamp
                 let timestamp = 0;
-                GenesisContext::new(chain_id, timestamp, sequencer_account)
+                GenesisContext::new(chain_id, timestamp, sequencer_account, gas_schedule_blob)
             }
         }
     }
@@ -254,11 +254,11 @@ impl CustomChainID {
         self.chain_name.as_str()
     }
 
-    pub fn genesis_ctx(&self, sequencer: RoochAddress) -> GenesisContext {
+    pub fn genesis_ctx(&self, sequencer: RoochAddress, gas_schedule_blob: Vec<u8>) -> GenesisContext {
         //TODO support custom chain genesis timestamp
         let timestamp = 0;
         let sequencer_account = AccountAddress::from(sequencer);
-        GenesisContext::new(self.chain_id.id, timestamp, sequencer_account)
+        GenesisContext::new(self.chain_id.id, timestamp, sequencer_account, gas_schedule_blob)
     }
 }
 
@@ -377,10 +377,10 @@ impl RoochChainID {
         }
     }
 
-    pub fn genesis_ctx(&self, sequencer: RoochAddress) -> GenesisContext {
+    pub fn genesis_ctx(&self, sequencer: RoochAddress, gas_schedule_blob: Vec<u8>) -> GenesisContext {
         match self {
-            Self::Builtin(b) => b.genesis_ctx(sequencer),
-            Self::Custom(c) => c.genesis_ctx(sequencer),
+            Self::Builtin(b) => b.genesis_ctx(sequencer, gas_schedule_blob),
+            Self::Custom(c) => c.genesis_ctx(sequencer, gas_schedule_blob),
         }
     }
 
