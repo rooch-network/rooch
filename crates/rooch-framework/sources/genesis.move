@@ -17,7 +17,6 @@ module rooch_framework::genesis {
     use rooch_framework::address_mapping;
     use rooch_framework::ethereum_light_client;
     use rooch_framework::onchain_config;
-    use rooch_framework::gas_schedule;
 
     const ErrorGenesisInit: u64 = 1;
 
@@ -48,8 +47,7 @@ module rooch_framework::genesis {
         timestamp::genesis_init(ctx, genesis_account, genesis_context.timestamp);
         address_mapping::genesis_init(ctx, genesis_account);
         ethereum_light_client::genesis_init(ctx, genesis_account);
-        onchain_config::genesis_init(ctx, genesis_account, genesis_context.sequencer);
-        gas_schedule::gas_schedule_init(ctx, genesis_account, genesis_context.gas_schedule_blob);
+        onchain_config::genesis_init(ctx, genesis_account, genesis_context.sequencer, genesis_context.gas_schedule_blob);
     }
 
 
