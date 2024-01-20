@@ -3,10 +3,13 @@
 
 module rooch_framework::onchain_config {
 
+    use std::option;
+    use std::option::Option;
     use std::string::String;
     use moveos_std::bcs;
     use moveos_std::context::{Self, Context};
     use moveos_std::object;
+    use std::vector;
 
     friend rooch_framework::upgrade;
     friend rooch_framework::genesis;
@@ -27,11 +30,15 @@ module rooch_framework::onchain_config {
     struct OnchainConfig has key {
         framework_version: u64,
         sequencer: address,
-        gas_schedule: GasSchedule,
+        gas_schedule: Option<GasSchedule>,
     }
 
     public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer, sequencer: address, gas_schedule_blob: vector<u8>){
-        let gas_schedule = bcs::from_bytes<GasSchedule>(gas_schedule_blob);
+        let gas_schedule = option::none<GasSchedule>();
+
+        if (vector::length(&gas_schedule_blob) > 0) {
+            gas_schedule = option::some(bcs::from_bytes<GasSchedule>(gas_schedule_blob));
+        };
 
         let config = OnchainConfig{
             framework_version: 0,
@@ -67,7 +74,7 @@ module rooch_framework::onchain_config {
         object::borrow(obj)
     }
 
-    public fun onchain_gas_schedule(ctx: &Context): &GasSchedule {
+    public fun onchain_gas_schedule(ctx: &Context): &Option<GasSchedule> {
         &onchain_config(ctx).gas_schedule
     }
 }

@@ -16,7 +16,8 @@
 -  [Function `onchain_gas_schedule`](#0x3_onchain_config_onchain_gas_schedule)
 
 
-<pre><code><b>use</b> <a href="">0x1::string</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
@@ -121,5 +122,5 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_onchain_gas_schedule">onchain_gas_schedule</a>(ctx: &<a href="_Context">context::Context</a>): &<a href="onchain_config.md#0x3_onchain_config_GasSchedule">onchain_config::GasSchedule</a>
+<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_onchain_gas_schedule">onchain_gas_schedule</a>(ctx: &<a href="_Context">context::Context</a>): &<a href="_Option">option::Option</a>&lt;<a href="onchain_config.md#0x3_onchain_config_GasSchedule">onchain_config::GasSchedule</a>&gt;
 </code></pre>
