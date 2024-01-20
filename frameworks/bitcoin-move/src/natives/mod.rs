@@ -3,8 +3,10 @@
 
 use move_vm_runtime::native_functions::make_table_from_iter;
 use move_vm_runtime::native_functions::NativeFunctionTable;
-use rooch_framework::natives::gas_parameter::gas_member::{FromOnChainGasSchedule, ToOnChainGasSchedule};
 use rooch_framework::natives::gas_parameter::gas_member::InitialGasSchedule;
+use rooch_framework::natives::gas_parameter::gas_member::{
+    FromOnChainGasSchedule, ToOnChainGasSchedule,
+};
 use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
 use std::collections::BTreeMap;
 

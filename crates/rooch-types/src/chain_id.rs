@@ -197,7 +197,11 @@ impl BuiltinChainID {
         ]
     }
 
-    pub fn genesis_ctx(&self, sequencer: RoochAddress, gas_schedule_blob: Vec<u8>) -> GenesisContext {
+    pub fn genesis_ctx(
+        &self,
+        sequencer: RoochAddress,
+        gas_schedule_blob: Vec<u8>,
+    ) -> GenesisContext {
         let chain_id = self.chain_id().id;
         let sequencer_account = AccountAddress::from(sequencer);
         match self {
@@ -254,11 +258,20 @@ impl CustomChainID {
         self.chain_name.as_str()
     }
 
-    pub fn genesis_ctx(&self, sequencer: RoochAddress, gas_schedule_blob: Vec<u8>) -> GenesisContext {
+    pub fn genesis_ctx(
+        &self,
+        sequencer: RoochAddress,
+        gas_schedule_blob: Vec<u8>,
+    ) -> GenesisContext {
         //TODO support custom chain genesis timestamp
         let timestamp = 0;
         let sequencer_account = AccountAddress::from(sequencer);
-        GenesisContext::new(self.chain_id.id, timestamp, sequencer_account, gas_schedule_blob)
+        GenesisContext::new(
+            self.chain_id.id,
+            timestamp,
+            sequencer_account,
+            gas_schedule_blob,
+        )
     }
 }
 
@@ -377,7 +390,11 @@ impl RoochChainID {
         }
     }
 
-    pub fn genesis_ctx(&self, sequencer: RoochAddress, gas_schedule_blob: Vec<u8>) -> GenesisContext {
+    pub fn genesis_ctx(
+        &self,
+        sequencer: RoochAddress,
+        gas_schedule_blob: Vec<u8>,
+    ) -> GenesisContext {
         match self {
             Self::Builtin(b) => b.genesis_ctx(sequencer, gas_schedule_blob),
             Self::Custom(c) => c.genesis_ctx(sequencer, gas_schedule_blob),

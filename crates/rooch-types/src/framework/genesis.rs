@@ -16,7 +16,7 @@ pub struct GenesisContext {
     /// Sequencer account
     pub sequencer: AccountAddress,
     /// GasSchedule Blob data
-    pub gas_schedule_blob: Vec<u8>
+    pub gas_schedule_blob: Vec<u8>,
 }
 
 impl MoveStructType for GenesisContext {
@@ -31,13 +31,20 @@ impl MoveStructState for GenesisContext {
             move_core_types::value::MoveTypeLayout::U64,
             move_core_types::value::MoveTypeLayout::U64,
             move_core_types::value::MoveTypeLayout::Address,
-            move_core_types::value::MoveTypeLayout::Vector(Box::new(move_core_types::value::MoveTypeLayout::U8)),
+            move_core_types::value::MoveTypeLayout::Vector(Box::new(
+                move_core_types::value::MoveTypeLayout::U8,
+            )),
         ])
     }
 }
 
 impl GenesisContext {
-    pub fn new(chain_id: u64, timestamp: u64, sequencer: AccountAddress, gas_schedule_blob: Vec<u8>) -> Self {
+    pub fn new(
+        chain_id: u64,
+        timestamp: u64,
+        sequencer: AccountAddress,
+        gas_schedule_blob: Vec<u8>,
+    ) -> Self {
         Self {
             chain_id,
             timestamp,

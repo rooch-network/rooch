@@ -30,8 +30,8 @@ impl RustBindingTest {
         let moveos_store = MoveOSStore::mock_moveos_store()?;
         let rooch_store = RoochStore::mock_rooch_store()?;
         let sequencer = RoochAddress::random();
-        let gas_schedule_blob =
-            bcs::to_bytes(&default_gas_schedule()).expect("Failure serializing genesis gas schedule");
+        let gas_schedule_blob = bcs::to_bytes(&default_gas_schedule())
+            .expect("Failure serializing genesis gas schedule");
         let executor = ExecutorActor::new(
             RoochChainID::LOCAL.genesis_ctx(sequencer, gas_schedule_blob),
             BitcoinGenesisContext::new(Network::default().to_num()),

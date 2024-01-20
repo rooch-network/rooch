@@ -13,6 +13,7 @@ use moveos_types::h256;
 use moveos_types::h256::H256;
 use moveos_types::transaction::MoveAction;
 use once_cell::sync::Lazy;
+use rooch_framework::natives::default_gas_schedule;
 use rooch_framework::natives::gas_parameter::gas_member::InitialGasSchedule;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
@@ -27,7 +28,6 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
-use rooch_framework::natives::default_gas_schedule;
 
 pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
     // TODO: For now, ROOCH_LOCAL_GENESIS in only used in integration-test.
@@ -312,8 +312,8 @@ mod tests {
     fn test_genesis_init() {
         let sequencer = RoochAddress::random();
         let bitcoin_genesis_ctx = BitcoinGenesisContext::new(Network::NetworkRegtest.to_num());
-        let gas_schedule_blob =
-            bcs::to_bytes(&default_gas_schedule()).expect("Failure serializing genesis gas schedule");
+        let gas_schedule_blob = bcs::to_bytes(&default_gas_schedule())
+            .expect("Failure serializing genesis gas schedule");
         let genesis = super::RoochGenesis::build_with_option(
             RoochChainID::LOCAL.genesis_ctx(sequencer, gas_schedule_blob),
             bitcoin_genesis_ctx,

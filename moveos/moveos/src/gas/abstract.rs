@@ -225,10 +225,7 @@ impl AbstractValueSizeGasParameter {
 
     /// Calculates the abstract size of the given value.
     /// If the value is a reference, then the size of the value behind it will be returned.
-    pub fn abstract_value_size_dereferenced(
-        &self,
-        val: impl ValueView,
-    ) -> AbstractValueSize {
+    pub fn abstract_value_size_dereferenced(&self, val: impl ValueView) -> AbstractValueSize {
         let mut visitor = DerefVisitor::new(AbstractValueSizeVisitor::new(self));
         val.visit(&mut visitor);
         visitor.into_inner().finish()

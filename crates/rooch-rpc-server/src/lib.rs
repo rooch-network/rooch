@@ -33,6 +33,7 @@ use rooch_da::proxy::DAProxy;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
+use rooch_framework::natives::default_gas_schedule;
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
 use rooch_indexer::indexer_reader::IndexerReader;
@@ -53,7 +54,6 @@ use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{GenesisError, RoochError};
-use rooch_framework::natives::default_gas_schedule;
 
 use crate::server::btc_server::BtcServer;
 use crate::server::eth_server::{EthNetServer, EthServer};

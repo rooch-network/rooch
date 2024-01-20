@@ -6,6 +6,7 @@ use crate::{
     moveos_std::event::TransactionEvent, moveos_std::tx_context::TxContext,
     moveos_std::tx_meta::TxMeta, state::StateChangeSet,
 };
+use move_core_types::gas_algebra::InternalGas;
 use move_core_types::{
     account_address::AccountAddress,
     effects::ChangeSet,
@@ -14,7 +15,6 @@ use move_core_types::{
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
-use move_core_types::gas_algebra::InternalGas;
 
 #[cfg(any(test, feature = "fuzzing"))]
 use crate::move_types::type_tag_prop_strategy;

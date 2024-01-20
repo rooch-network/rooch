@@ -3,12 +3,12 @@
 
 use move_vm_types::gas::{GasMeter, UnmeteredGasMeter};
 
+mod r#abstract;
 mod gas_member;
 mod native;
 pub mod parameter;
 mod parameters;
 pub mod table;
-mod r#abstract;
 
 pub trait SwitchableGasMeter: GasMeter {
     fn stop_metering(&mut self);

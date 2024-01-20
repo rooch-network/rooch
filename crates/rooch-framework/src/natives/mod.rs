@@ -15,8 +15,8 @@ use moveos::gas::table::{
     InstructionParameter, StorageGasParameter,
 };
 use moveos_stdlib::natives::GasParameters as MoveOSStdlibGasParameters;
-use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 pub mod helpers {
     pub use moveos_stdlib::natives::helpers::*;
