@@ -27,6 +27,8 @@ module rooch_framework::genesis {
         timestamp: u64,
         /// Sequencer account
         sequencer: address,
+        /// Gas Schedule
+        gas_schedule_blob: vector<u8>
     }
 
     fun init(ctx: &mut Context){
@@ -45,15 +47,19 @@ module rooch_framework::genesis {
         timestamp::genesis_init(ctx, genesis_account, genesis_context.timestamp);
         address_mapping::genesis_init(ctx, genesis_account);
         ethereum_light_client::genesis_init(ctx, genesis_account);
-        onchain_config::genesis_init(ctx, genesis_account, genesis_context.sequencer);
+        onchain_config::genesis_init(ctx, genesis_account, genesis_context.sequencer, genesis_context.gas_schedule_blob);
     }
 
+
+    #[test_only]
+    use std::vector;
 
     #[test_only]
     /// init the genesis context for test, and return the Context with @rooch_framework genesis account
     public fun init_for_test(): Context{
         let ctx = moveos_std::context::new_test_context(@rooch_framework);
-        context::add(&mut ctx, GenesisContext{chain_id: 20230103, timestamp: 0, sequencer: @rooch_framework});
+        context::add(&mut ctx, GenesisContext{chain_id: 20230103, timestamp: 0, sequencer: @rooch_framework,
+            gas_schedule_blob: vector::empty()});
         init(&mut ctx);
         ctx
     }

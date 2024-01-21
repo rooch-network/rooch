@@ -456,7 +456,7 @@ where
         status: KeptVMStatus,
     ) -> VMResult<(TxContext, RawTransactionOutput)> {
         let gas_used = self.query_gas_used();
-        let is_read_only_execution = self.read_only;
+        // let is_read_only_execution = self.read_only;
         let MoveOSSession {
             vm: _,
             remote: _,
@@ -523,6 +523,9 @@ where
                     .finish(Location::Undefined));
             }
         }
+
+        // Temporary behavior, will enable this in the future.
+        /*
         match gas_meter.charge_event(events.as_slice()) {
             Ok(_) => {}
             Err(partial_vm_error) => {
@@ -544,6 +547,7 @@ where
             gas_statement.execution_gas_used = 0;
             gas_statement.storage_gas_used = 0;
         }
+         */
 
         Ok((
             ctx.tx_context,
@@ -554,7 +558,6 @@ where
                 events,
                 gas_used,
                 is_upgrade,
-                gas_statement,
             },
         ))
     }

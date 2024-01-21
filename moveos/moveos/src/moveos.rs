@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::gas::table::{initial_cost_schedule, ClassifiedGasMeter, MoveOSGasMeter};
+use crate::gas::table::{initial_cost_schedule, MoveOSGasMeter};
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
 use anyhow::{bail, ensure, Result};
 use backtrace::Backtrace;
@@ -248,9 +248,10 @@ impl MoveOS {
         let system_env = ctx.map.clone();
 
         let cost_table = initial_cost_schedule();
-        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
+        let gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
 
-        gas_meter.charge_io_write(ctx.tx_size)?;
+        // Temporary behavior, will enable this in the future.
+        // gas_meter.charge_io_write(ctx.tx_size)?;
 
         let mut session = self.vm.new_session(&self.db, ctx, gas_meter);
 
@@ -416,7 +417,6 @@ impl MoveOS {
             events,
             gas_used: _,
             is_upgrade: _,
-            gas_statement: _,
         } = output;
         let new_state_root = self
             .db

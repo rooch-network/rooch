@@ -13,6 +13,7 @@ use moveos_types::h256;
 use moveos_types::h256::H256;
 use moveos_types::transaction::MoveAction;
 use once_cell::sync::Lazy;
+use rooch_framework::natives::default_gas_schedule;
 use rooch_framework::natives::gas_parameter::gas_member::InitialGasSchedule;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
@@ -36,8 +37,10 @@ pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
     // genesis for integration test, we need to build the stdlib every time for `private_generic` check
     // see moveos/moveos-verifier/src/metadata.rs#L27-L30
     let bitcoin_genesis_ctx = BitcoinGenesisContext::new(Network::NetworkRegtest.to_num());
+    let gas_schedule_blob =
+        bcs::to_bytes(&default_gas_schedule()).expect("Failure serializing genesis gas schedule");
     RoochGenesis::build_with_option(
-        RoochChainID::LOCAL.genesis_ctx(mock_sequencer),
+        RoochChainID::LOCAL.genesis_ctx(mock_sequencer, gas_schedule_blob),
         bitcoin_genesis_ctx,
         BuildOption::Fresh,
     )
@@ -59,7 +62,7 @@ pub struct RoochGenesis {
     pub config_for_test: MoveOSConfig,
     //TODO we need to add gas parameters to the GenesisPackage
     //How to serialize the gas parameters?
-    pub rooch_framework_gas_params: rooch_framework::natives::GasParameters,
+    pub rooch_framework_gas_params: rooch_framework::natives::NativeGasParameters,
     pub bitcoin_move_gas_params: bitcoin_move::natives::GasParameters,
     pub genesis_package: GenesisPackage,
 }
@@ -90,7 +93,7 @@ impl RoochGenesis {
             vm_config: VMConfig::default(),
         };
 
-        let rooch_framework_gas_params = rooch_framework::natives::GasParameters::initial();
+        let rooch_framework_gas_params = rooch_framework::natives::NativeGasParameters::initial();
         let bitcoin_move_gas_params = bitcoin_move::natives::GasParameters::initial();
         let genesis_package = GenesisPackage::build(genesis_ctx, bitcoin_genesis_ctx, option)?;
 
@@ -201,7 +204,7 @@ impl GenesisPackage {
             })
             .collect();
         //TODO put gas parameters into genesis package
-        let gas_parameters = rooch_framework::natives::GasParameters::initial();
+        let gas_parameters = rooch_framework::natives::NativeGasParameters::initial();
         let vm_config = MoveOSConfig {
             vm_config: VMConfig::default(),
         };
@@ -299,7 +302,7 @@ pub fn rooch_framework_error_descriptions() -> &'static [u8] {
 mod tests {
     use moveos::moveos::MoveOS;
     use moveos_store::MoveOSStore;
-    use rooch_framework::natives::all_natives;
+    use rooch_framework::natives::{all_natives, default_gas_schedule};
     use rooch_types::address::RoochSupportedAddress;
     use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
     use rooch_types::bitcoin::network::Network;
@@ -309,8 +312,10 @@ mod tests {
     fn test_genesis_init() {
         let sequencer = RoochAddress::random();
         let bitcoin_genesis_ctx = BitcoinGenesisContext::new(Network::NetworkRegtest.to_num());
+        let gas_schedule_blob = bcs::to_bytes(&default_gas_schedule())
+            .expect("Failure serializing genesis gas schedule");
         let genesis = super::RoochGenesis::build_with_option(
-            RoochChainID::LOCAL.genesis_ctx(sequencer),
+            RoochChainID::LOCAL.genesis_ctx(sequencer, gas_schedule_blob),
             bitcoin_genesis_ctx,
             crate::BuildOption::Fresh,
         )

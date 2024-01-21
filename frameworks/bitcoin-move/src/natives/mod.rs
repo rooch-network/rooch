@@ -3,8 +3,10 @@
 
 use move_vm_runtime::native_functions::make_table_from_iter;
 use move_vm_runtime::native_functions::NativeFunctionTable;
-use rooch_framework::natives::gas_parameter::gas_member::FromOnChainGasSchedule;
 use rooch_framework::natives::gas_parameter::gas_member::InitialGasSchedule;
+use rooch_framework::natives::gas_parameter::gas_member::{
+    FromOnChainGasSchedule, ToOnChainGasSchedule,
+};
 use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
 use std::collections::BTreeMap;
 
@@ -21,6 +23,12 @@ impl FromOnChainGasSchedule for GasParameters {
         Some(Self {
             ord: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
         })
+    }
+}
+
+impl ToOnChainGasSchedule for GasParameters {
+    fn to_on_chain_gas_schedule(&self) -> Vec<(String, u64)> {
+        self.ord.to_on_chain_gas_schedule()
     }
 }
 

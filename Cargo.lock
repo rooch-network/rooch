@@ -8680,6 +8680,7 @@ dependencies = [
  "rooch-config",
  "rooch-da",
  "rooch-executor",
+ "rooch-framework",
  "rooch-indexer",
  "rooch-key",
  "rooch-proposer",
