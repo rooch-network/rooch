@@ -12,7 +12,7 @@ use move_binary_format::{
 use move_core_types::u256::U256;
 use move_core_types::{
     account_address::AccountAddress,
-    gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
+    gas_algebra::{InternalGas, InternalGasPerArg, InternalGasPerByte, NumArgs, NumBytes},
     identifier::Identifier,
     language_storage::ModuleId,
     resolver::ModuleResolver,
@@ -97,6 +97,7 @@ fn native_module_name_inner(
 pub struct VerifyModulesGasParameters {
     pub base: InternalGas,
     pub per_byte: InternalGasPerByte,
+    pub per_module: InternalGasPerArg,
 }
 
 fn native_sort_and_verify_modules_inner(
@@ -117,6 +118,7 @@ fn native_sort_and_verify_modules_inner(
         .iter_mut()
         .map(|b| CompiledModule::deserialize(b))
         .collect::<PartialVMResult<Vec<CompiledModule>>>()?;
+    cost += gas_params.per_module * NumArgs::new(unordered_compiled_modules.len() as u64);
 
     let compiled_modules = sort_by_dependency_order(&unordered_compiled_modules).map_err(|e| {
         PartialVMError::new(StatusCode::CYCLIC_MODULE_DEPENDENCY).with_message(e.to_string())
@@ -712,6 +714,7 @@ impl GasParameters {
             sort_and_verify_modules_inner: VerifyModulesGasParameters {
                 base: 0.into(),
                 per_byte: 0.into(),
+                per_module: 0.into(),
             },
             request_init_functions: RequestInitFunctionsGasParameters {
                 base: 0.into(),
