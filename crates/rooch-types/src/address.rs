@@ -524,13 +524,13 @@ impl BitcoinAddress {
                 let mut prefixed = [0; 21];
                 prefixed[0] = Self::get_pubkey_address_prefix(network);
                 prefixed[1..].copy_from_slice(&self.bytes[1..]);
-                Ok(bs58::encode(&prefixed[..]).into_string())
+                Ok(bs58::encode(&prefixed[..]).with_check().into_string())
             }
             BitcoinAddressPayloadType::ScriptHash => {
                 let mut prefixed = [0; 21];
                 prefixed[0] = Self::get_script_address_prefix(network);
                 prefixed[1..].copy_from_slice(&self.bytes[1..]);
-                Ok(bs58::encode(&prefixed[..]).into_string())
+                Ok(bs58::encode(&prefixed[..]).with_check().into_string())
             }
             BitcoinAddressPayloadType::WitnessProgram => {
                 let hrp = network::Network::try_from(network)?.bech32_hrp();
