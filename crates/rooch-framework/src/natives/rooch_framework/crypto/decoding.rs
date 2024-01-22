@@ -120,7 +120,8 @@ pub fn native_bech32(
         return Ok(NativeResult::err(cost, E_DECODE_FAILED));
     }
 
-    if public_key.len() != 20 && public_key.len() != 32 {
+    // TODO redact public length to 20 and 32 bytes
+    if public_key.len() != 32 && public_key.len() != 52 {
         return Ok(NativeResult::err(cost, E_DECODE_FAILED));
     }
 

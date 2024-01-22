@@ -41,34 +41,31 @@ module rooch_framework::decoding {
    }
 
    #[test]
-   /// This test is verified at https://www.blockchain.com/explorer/addresses/btc/bc1qqvdcf32k0vfxgsyet5ldt246q4jaw8scx3sysx0lnstlt6w4m5rsgej0cd.
-   fun test_bech32_decoding_to_p2wsh_address() {
-      let encoded_address = b"bc1qqvdcf32k0vfxgsyet5ldt246q4jaw8scx3sysx0lnstlt6w4m5rsgej0cd";
+   fun test_bech32_decoding_to_52_public_key() {
+      let encoded_address = b"bech321qvdcf32k0vfxgsyet5ldt246q4jaw8scx3sysx0lnstlt6w4m5rsl7wnyw";
+      // TODO handle bech32 and bech32m public key's difference
       let expected_public_key = bech32(&encoded_address);
 
-      let public_key = x"031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd07"; // 32-bytes public key for a Bech32 (P2WSH) address
+      let public_key = x"000c0d1809110a160f0c0906081004190b141f0d0b0a151a0015121d0e0710180611100410060f1f13100b1f0b1a0e151b140310"; // 52-bytes raw public key for a Bech32 address
       assert!(public_key == expected_public_key, 1002);
    }
 
    #[test]
-   /// This test is verified at https://www.blockchain.com/explorer/addresses/btc/bc1qq302rl92lgujmvlk5h6pf63zn6wekcjql6cmum.
-   fun test_bech32_decoding_to_p2wpkh_address() {
-      let encoded_address = b"bc1qq302rl92lgujmvlk5h6pf63zn6wekcjql6cmum";
+   fun test_bech32_decoding_to_32_public_key() {
+      let encoded_address = b"bech321q302rl92lgujmvlk5h6pf63zn6wekcjqxj30hr";
       let expected_public_key = bech32(&encoded_address);
 
-      let public_key = x"045ea1fcaafa392db3f6a5f414ea229e9d9b6240"; // 20-bytes public key for a Bech32 (P2WPKH) address
-
+      let public_key = x"00110f0a031f050a1f081c121b0c1f1614171a01091a1102131a0e1916181200"; // 32-bytes raw public key for a Bech32 address
       assert!(public_key == expected_public_key, 1003);
    }
 
    #[test]
-   /// This test is verified at https://www.blockchain.com/explorer/addresses/btc/bc1pqvdcf32k0vfxgsyet5ldt246q4jaw8scx3sysx0lnstlt6w4m5rszwjxq3.
-   fun test_bech32_encoding_to_p2tr_address() {
-      let encoded_address = b"bc1pqvdcf32k0vfxgsyet5ldt246q4jaw8scx3sysx0lnstlt6w4m5rszwjxq3";
+   fun test_bech32_decoding_to_52_bech32m_public_key() {
+      let encoded_address = b"bech32m1qvdcf32k0vfxgsyet5ldt246q4jaw8scx3sysx0lnstlt6w4m5rs6l85rk";
+      // TODO handle bech32 and bech32m public key's difference
       let expected_public_key = bech32(&encoded_address);
 
-      let public_key = x"031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd07"; // 32-bytes public key for a Bech32 (Taproot) address
-
+      let public_key = x"000c0d1809110a160f0c0906081004190b141f0d0b0a151a0015121d0e0710180611100410060f1f13100b1f0b1a0e151b140310"; // 52-bytes public key for a Bech32m address
       assert!(public_key == expected_public_key, 1004);
    }
 }

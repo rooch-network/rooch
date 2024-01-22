@@ -97,24 +97,20 @@ pub fn native_bech32(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 2);
 
-    let hrp = pop_arg!(args, u8);
+    let version = pop_arg!(args, u8);
     let public_key = pop_arg!(args, VectorRef);
 
     let cost = gas_params.base
         + (gas_params.per_byte * NumBytes::new(public_key.as_bytes_ref().len() as u64));
 
-    let (prefix, variant) = if hrp == 0 {
+    let (hrp, variant) = if version == 0 {
         ("bech32", Variant::Bech32)
     } else {
         ("bech32m", Variant::Bech32m)
     };
 
-    let encoded = bech32::encode(
-        prefix,
-        public_key.as_bytes_ref().to_vec().to_base32(),
-        variant,
-    )
-    .unwrap();
+    let encoded =
+        bech32::encode(hrp, public_key.as_bytes_ref().to_vec().to_base32(), variant).unwrap();
 
     Ok(NativeResult::ok(
         cost,

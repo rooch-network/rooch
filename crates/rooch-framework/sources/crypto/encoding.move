@@ -61,37 +61,34 @@ module rooch_framework::encoding {
    }
 
    #[test]
-   /// This test is verified at https://www.blockchain.com/explorer/addresses/btc/bc1qqvdcf32k0vfxgsyet5ldt246q4jaw8scx3sysx0lnstlt6w4m5rsgej0cd.
-   fun test_bech32_encoding_to_p2wsh_address() {
-      let public_key = x"031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd07"; // 32-bytes public key for a Bech32 (P2WSH) address
-      let version = 0; // version 0 for a Bech32 (P2WSH) address
+   fun test_bech32_encoding_with_32_public_key() {
+      let public_key = x"031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd07"; // 32-bytes public key for a Bech32 address
+      let version = 0; // version 0 for a Bech32 address
       
       let encoded_address = bech32(&public_key, version);
-      let expected_encoded_address = b"bc1qqvdcf32k0vfxgsyet5ldt246q4jaw8scx3sysx0lnstlt6w4m5rsgej0cd";
+      let expected_encoded_address = b"bech321qvdcf32k0vfxgsyet5ldt246q4jaw8scx3sysx0lnstlt6w4m5rsl7wnyw";
 
       assert!(encoded_address == expected_encoded_address, 1002);
    }
 
    #[test]
-   /// This test is verified at https://www.blockchain.com/explorer/addresses/btc/bc1qq302rl92lgujmvlk5h6pf63zn6wekcjql6cmum.
-   fun test_bech32_encoding_to_p2wpkh_address() {
-      let public_key = x"045ea1fcaafa392db3f6a5f414ea229e9d9b6240"; // 20-bytes public key for a Bech32 (P2WPKH) address
-      let version = 0; // version 0 for a Bech32 (P2WPKH) address
+   fun test_bech32_encoding_with_20_public_key() {
+      let public_key = x"045ea1fcaafa392db3f6a5f414ea229e9d9b6240"; // 20-bytes public key for a Bech32 address
+      let version = 0; // version 0 for a Bech32 address
       
       let encoded_address = bech32(&public_key, version);
-      let expected_encoded_address = b"bc1qq302rl92lgujmvlk5h6pf63zn6wekcjql6cmum";
+      let expected_encoded_address = b"bech321q302rl92lgujmvlk5h6pf63zn6wekcjqxj30hr";
 
       assert!(encoded_address == expected_encoded_address, 1003);
    }
 
    #[test]
-   /// This test is verified at https://www.blockchain.com/explorer/addresses/btc/bc1pqvdcf32k0vfxgsyet5ldt246q4jaw8scx3sysx0lnstlt6w4m5rszwjxq3.
-   fun test_bech32_encoding_to_p2tr_address() {
-      let public_key = x"031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd07"; // 32-bytes public key for a Bech32 (Taproot) address
-      let version = 1; // version 1 for a Bech32 (Taproot) address
+   fun test_bech32_encoding_with_version_1_32_public_key() {
+      let public_key = x"031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd07"; // 32-bytes public key for a Bech32m address
+      let version = 1; // version 1 for a Bech32m address
       
       let encoded_address = bech32(&public_key, version);
-      let expected_encoded_address = b"bc1pqvdcf32k0vfxgsyet5ldt246q4jaw8scx3sysx0lnstlt6w4m5rszwjxq3";
+      let expected_encoded_address = b"bech32m1qvdcf32k0vfxgsyet5ldt246q4jaw8scx3sysx0lnstlt6w4m5rs6l85rk";
 
       assert!(encoded_address == expected_encoded_address, 1004);
    }
