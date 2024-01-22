@@ -40,10 +40,10 @@ There are three main properties that make up a hash function.
 
 2. Second Pre-image Resistance, that is, given an input and its hash value, it is impossible to find a new input different from the input, so that the two inputs produce the same hash value.
 
-For example, in the above example, no matter who creates the empty hello_world.txt file, the digest of the same hash function will be the same. Once the input is slightly modified, the input must be different.
+For example, in the above example, no matter who creates the empty hello_world.txt file, the digest of the same hash function will be the same. Once the input is slightly modified, the digest must be different.
 
 3. Collision Resistance, this property ensures that two different inputs with the same hash value cannot be found.
-This document mainly introduces some Hash libraries and methods used by Rooch.
+This document mainly introduces some hash libraries and methods used by Rooch.
 
 ## Public and private keys
 
@@ -64,8 +64,6 @@ These one-way hash functions provide the most basic and important guarantee for 
 - base58
 - base58check
 - bech32
-- p2sh
-- p2pkh
 - ecdsa_k1
 - ed25519
 
