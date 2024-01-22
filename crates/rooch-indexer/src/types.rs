@@ -7,8 +7,7 @@ use move_core_types::language_storage::{StructTag, TypeTag};
 
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::Event;
-use moveos_types::moveos_std::object::{ObjectEntity, ObjectID, RawObject};
-use moveos_types::moveos_std::raw_table::TableInfo;
+use moveos_types::moveos_std::object::{ObjectID, RawObject};
 use moveos_types::state::TableChangeSet;
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_rpc_api::jsonrpc_types::TableChangeSetView;
@@ -166,12 +165,12 @@ pub struct IndexedGlobalState {
     pub flag: u8,
     // The value of the object, json format
     pub value: String,
-    // The T struct tag of the object value
-    pub object_type: String,
-    // The key type tag of the table
-    pub key_type: String,
+    // The table state root of the object
+    pub state_root: AccountAddress,
     // The table length
     pub size: u64,
+    // The T struct tag of the object value
+    pub object_type: String,
     // The tx order of this transaction
     pub tx_order: u64,
     // The state index in the tx
@@ -194,13 +193,10 @@ impl IndexedGlobalState {
             object_id: raw_object.id,
             owner: raw_object.owner,
             flag: raw_object.flag,
-
             value: raw_object_value_json,
+            state_root: raw_object.state_root,
+            size: raw_object.size,
             object_type,
-            // Maintenance when it is a table handle
-            key_type: "".to_string(),
-            // Maintenance when it is a table handle
-            size: 0,
             tx_order,
             state_index,
 
@@ -210,43 +206,48 @@ impl IndexedGlobalState {
         }
     }
 
-    pub fn new_from_table_object(
-        table_object: ObjectEntity<TableInfo>,
-        table_object_value_json: String,
-        object_type: String,
-        key_type: String,
-        tx_order: u64,
-        state_index: u64,
-    ) -> Self {
-        IndexedGlobalState {
-            object_id: table_object.id,
-            owner: table_object.owner,
-            flag: table_object.flag,
-
-            value: table_object_value_json,
-            object_type,
-            // Maintenance when it is a table handle
-            key_type,
-            // Maintenance when it is a table handle
-            size: table_object.value.size,
-            tx_order,
-            state_index,
-
-            //TODO record transaction timestamp
-            created_at: 0,
-            updated_at: 0,
-        }
-    }
+    // pub fn new_from_table_object(
+    //     table_object: ObjectEntity<TableInfo>,
+    //     table_object_value_json: String,
+    //     object_type: String,
+    //     key_type: String,
+    //     tx_order: u64,
+    //     state_index: u64,
+    // ) -> Self {
+    //     IndexedGlobalState {
+    //         object_id: table_object.id,
+    //         owner: table_object.owner,
+    //         flag: table_object.flag,
+    //
+    //         value: table_object_value_json,
+    //         object_type,
+    //         // Maintenance when it is a table handle
+    //         key_type,
+    //         // Maintenance when it is a table handle
+    //         size: table_object.value.size,
+    //         tx_order,
+    //         state_index,
+    //
+    //         //TODO record transaction timestamp
+    //         created_at: 0,
+    //         updated_at: 0,
+    //     }
+    // }
 }
 
 #[derive(Debug, Clone)]
 pub struct IndexedTableState {
     // The state table handle
     pub table_handle: ObjectID,
-    // The hex of the table key
+    // The hex of the table key state
     pub key_hex: String,
+    // The key of the table, json format
+    // `key` is a key word in SQlite, so use key_str as column name
+    pub key_str: String,
     // The value of the table, json format
     pub value: String,
+    // The type tag of the key
+    pub key_type: TypeTag,
     // The type tag of the value
     pub value_type: TypeTag,
     // The tx order of this transaction
@@ -263,7 +264,9 @@ impl IndexedTableState {
     pub fn new(
         table_handle: ObjectID,
         key_hex: String,
+        key_state_json: String,
         state_value_json: String,
+        key_type: TypeTag,
         value_type: TypeTag,
         tx_order: u64,
         state_index: u64,
@@ -271,7 +274,9 @@ impl IndexedTableState {
         IndexedTableState {
             table_handle,
             key_hex,
+            key_str: key_state_json,
             value: state_value_json,
+            key_type,
             value_type,
             tx_order,
             state_index,

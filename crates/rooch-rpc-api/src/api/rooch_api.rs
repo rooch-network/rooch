@@ -8,8 +8,8 @@ use crate::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, BalanceInfoPageView,
     BytesView, EventOptions, EventPageView, ExecuteTransactionResponseView, FunctionCallView,
     GlobalStateFilterView, H256View, IndexerEventPageView, IndexerGlobalStatePageView,
-    IndexerTableChangeSetPageView, IndexerTableStatePageView, StateOptions, StateSyncFilterView,
-    StateView, StatesPageView, StrView, StructTagView, TableStateFilterView,
+    IndexerTableChangeSetPageView, IndexerTableStatePageView, SimpleKeyStateView, StateOptions,
+    StateSyncFilterView, StateView, StatesPageView, StrView, StructTagView, TableStateFilterView,
     TransactionWithInfoPageView,
 };
 use jsonrpsee::core::RpcResult;
@@ -61,7 +61,7 @@ pub trait RoochAPI {
     async fn list_states(
         &self,
         access_path: AccessPathView,
-        cursor: Option<BytesView>,
+        cursor: Option<SimpleKeyStateView>,
         limit: Option<StrView<usize>>,
         state_option: Option<StateOptions>,
     ) -> RpcResult<StatesPageView>;
@@ -102,7 +102,7 @@ pub trait RoochAPI {
     async fn get_balances(
         &self,
         account_addr: AccountAddressView,
-        cursor: Option<BytesView>,
+        cursor: Option<SimpleKeyStateView>,
         limit: Option<StrView<usize>>,
     ) -> RpcResult<BalanceInfoPageView>;
 

@@ -8,8 +8,6 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{StructTag, TypeTag},
 };
-use moveos_types::move_std::ascii::MoveAsciiString;
-use moveos_types::move_std::string::MoveString;
 use moveos_types::state::{KeyState, TableState, TableStateSet};
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
@@ -52,11 +50,11 @@ where
         }
     }
 
-    pub fn get(&self, key: Vec<u8>) -> Result<Option<State>> {
+    pub fn get(&self, key: KeyState) -> Result<Option<State>> {
         self.smt.get(key)
     }
 
-    pub fn list(&self, cursor: Option<Vec<u8>>, limit: usize) -> Result<Vec<StateKV>> {
+    pub fn list(&self, cursor: Option<KeyState>, limit: usize) -> Result<Vec<StateKV>> {
         self.smt.list(cursor, limit)
     }
 
@@ -149,7 +147,7 @@ impl StateDBStore {
     }
 
     pub fn get(&self, id: ObjectID) -> Result<Option<State>> {
-        self.global_table.get(id.to_bytes())
+        self.global_table.get(id.to_key())
     }
 
     pub fn list(&self, cursor: Option<KeyState>, limit: usize) -> Result<Vec<StateKV>> {
@@ -189,22 +187,20 @@ impl StateDBStore {
             .unwrap_or_else(|| ObjectEntity::new_account_storage_object(account));
 
         // Resource table key type tag: std::ascii::String
-        let resource_key_type = TypeTag::Struct(Box::new(MoveAsciiString::struct_tag()));
-        self.get_as_table_or_create(account_storage.value.resources, resource_key_type)?;
+        // let resource_key_type = TypeTag::Struct(Box::new(MoveAsciiString::struct_tag()));
+        self.get_as_table_or_create(account_storage.value.resources)?;
         // Module table key type tag: std::string::String
-        let module_key_type = TypeTag::Struct(Box::new(MoveString::struct_tag()));
-        self.get_as_table_or_create(account_storage.value.modules, module_key_type)?;
+        // let module_key_type = TypeTag::Struct(Box::new(MoveString::struct_tag()));
+        self.get_as_table_or_create(account_storage.value.modules)?;
         Ok(account_storage)
     }
 
-    fn get_as_table(
-        &self,
-        id: ObjectID,
-    ) -> Result<Option<(ObjectEntity<TableInfo>, TreeTable<NodeDBStore>)>> {
-        let object = self.get_as_object::<TableInfo>(id)?;
+    fn get_as_table(&self, id: ObjectID) -> Result<Option<(RawObject, TreeTable<NodeDBStore>)>> {
+        // let object = self.get_as_object::<TablePlaceholder>(id)?;
+        let object = self.get_as_raw_object(id)?;
         match object {
             Some(object) => {
-                let state_root = object.value.state_root;
+                let state_root = object.state_root;
                 Ok(Some((
                     object,
                     TreeTable::new_with_root(
@@ -220,10 +216,10 @@ impl StateDBStore {
     fn get_as_table_or_create(
         &self,
         id: ObjectID,
-        key_type: TypeTag,
-    ) -> Result<(ObjectEntity<TableInfo>, TreeTable<NodeDBStore>)> {
+        // key_type: TypeTag,
+    ) -> Result<(RawObject, TreeTable<NodeDBStore>)> {
         Ok(self.get_as_table(id)?.unwrap_or_else(|| {
-            self.create_table(id, key_type)
+            self.create_table(id)
                 .expect("create_table should succ when get_as_table_or_create")
         }))
     }
@@ -231,15 +227,15 @@ impl StateDBStore {
     fn create_table(
         &self,
         id: ObjectID,
-        key_type: TypeTag,
-    ) -> Result<(ObjectEntity<TableInfo>, TreeTable<NodeDBStore>)> {
+        // key_type: TypeTag,
+    ) -> Result<(RawObject, TreeTable<NodeDBStore>)> {
         let table = TreeTable::new(self.node_store.clone());
-        let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()), key_type)?;
-        let object = ObjectEntity::new_table_object(id, table_info);
+        let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()))?;
+        let object = ObjectEntity::new_table_object(id, table_info).to_raw();
         Ok((object, table))
     }
 
-    pub fn get_with_key(&self, id: ObjectID, key: Vec<u8>) -> Result<Option<State>> {
+    pub fn get_with_key(&self, id: ObjectID, key: KeyState) -> Result<Option<State>> {
         self.get_as_table(id)
             .and_then(|res| res.map(|(_, table)| table.get(key)).unwrap_or(Ok(None)))
     }
@@ -247,10 +243,10 @@ impl StateDBStore {
     pub fn list_with_key(
         &self,
         id: ObjectID,
-        cursor: Option<Vec<u8>>,
+        cursor: Option<KeyState>,
         limit: usize,
     ) -> Result<Vec<StateKV>> {
-        let (_table_info, table) = self
+        let (_raw_object, table) = self
             .get_as_table(id)?
             .ok_or_else(|| anyhow::format_err!("table with id {} not found", id))?;
         table.list(cursor, limit)
@@ -272,7 +268,7 @@ impl StateDBStore {
             let (modules, resources) = account_change_set.into_inner();
             debug_assert!(modules.is_empty() && resources.is_empty());
             //TODO check if the account_storage and table is changed, if not changed, don't put it
-            changed_objects.put(ObjectID::from(account).to_bytes(), account_storage.into())
+            changed_objects.put(ObjectID::from(account).to_key(), account_storage.into())
         }
 
         for (table_handle, table_change) in state_change_set.changes {
@@ -282,20 +278,19 @@ impl StateDBStore {
                     .put_changes(table_change.entries.into_iter())?;
                 // TODO: do we need to update the size of global table?
             } else {
-                let (mut object, table) =
-                    self.get_as_table_or_create(table_handle, table_change.key_type)?;
+                let (mut object, table) = self.get_as_table_or_create(table_handle)?;
                 let new_state_root = table.put_changes(table_change.entries.into_iter())?;
-                object.value.state_root = AccountAddress::new(new_state_root.into());
-                let curr_table_size: i64 = object.value.size as i64;
+                object.state_root = AccountAddress::new(new_state_root.into());
+                let curr_table_size: i64 = object.size as i64;
                 let updated_table_size = curr_table_size + table_change.size_increment;
                 debug_assert!(updated_table_size >= 0);
-                object.value.size = updated_table_size as u64;
-                changed_objects.put(table_handle.to_bytes(), object.into());
+                object.size = updated_table_size as u64;
+                changed_objects.put(table_handle.to_key(), object.into());
             }
         }
 
         for table_handle in state_change_set.removed_tables {
-            changed_objects.remove(table_handle.to_bytes());
+            changed_objects.remove(table_handle.to_key());
         }
 
         self.global_table.puts(changed_objects)
@@ -309,24 +304,24 @@ impl StateDBStore {
     pub fn create_account_storage(&self, account: AccountAddress) -> Result<()> {
         let account_storage = ObjectEntity::new_account_storage_object(account);
         self.global_table.puts((
-            ObjectID::from(account).to_bytes(),
+            ObjectID::from(account).to_key(),
             State::from(account_storage),
         ))?;
         Ok(())
     }
 
-    pub fn resolve_state(&self, handle: &ObjectID, key: &[u8]) -> Result<Option<State>, Error> {
+    pub fn resolve_state(&self, handle: &ObjectID, key: &KeyState) -> Result<Option<State>, Error> {
         if handle == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
-            self.global_table.get(key.to_vec())
+            self.global_table.get(key.clone())
         } else {
-            self.get_with_key(*handle, key.to_vec())
+            self.get_with_key(*handle, key.clone())
         }
     }
 
     pub fn resolve_list_state(
         &self,
         handle: &ObjectID,
-        cursor: Option<Vec<u8>>,
+        cursor: Option<KeyState>,
         limit: usize,
     ) -> Result<Vec<StateKV>, Error> {
         if handle == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
@@ -344,10 +339,10 @@ impl StateDBStore {
                 state_root = self.global_table.puts(v.entries)?
             } else {
                 // must force create table
-                let key_type = v
-                    .key_type
-                    .ok_or(anyhow::anyhow!("Invalid key type when statedb apply"))?;
-                let (_, table_store) = self.create_table(k, key_type)?;
+                // let key_type = v
+                //     .key_type
+                //     .ok_or(anyhow::anyhow!("Invalid key type when statedb apply"))?;
+                let (_, table_store) = self.create_table(k)?;
                 state_root = table_store.puts(v.entries)?
             }
         }
@@ -414,7 +409,7 @@ impl StateResolver for StateDBStore {
     fn resolve_table_item(
         &self,
         handle: &ObjectID,
-        key: &[u8],
+        key: &KeyState,
     ) -> std::result::Result<Option<State>, Error> {
         self.resolve_state(handle, key)
     }
@@ -422,7 +417,7 @@ impl StateResolver for StateDBStore {
     fn list_table_items(
         &self,
         handle: &ObjectID,
-        cursor: Option<Vec<u8>>,
+        cursor: Option<KeyState>,
         limit: usize,
     ) -> std::result::Result<Vec<StateKV>, Error> {
         self.resolve_list_state(handle, cursor, limit)

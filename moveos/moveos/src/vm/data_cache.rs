@@ -81,10 +81,9 @@ impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
     }
 
     fn module_id_to_table_key(&self, module_id: &ModuleId) -> VMResult<TableKey> {
-        let key_bytes = module_name_to_key(module_id.name());
-        let key_type = TypeTag::Struct(Box::new(MoveString::struct_tag()));
+        let key_state = module_name_to_key(module_id.name());
         let key_layout = MoveTypeLayout::Struct(MoveString::struct_layout());
-        let table_key = TableKey::new(key_layout, key_type, key_bytes);
+        let table_key = TableKey::new(key_layout, key_state.key_type, key_state.key);
         Ok(table_key)
     }
 }

@@ -10,14 +10,14 @@ use moveos_types::{
     transaction::FunctionCall,
 };
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
+use rooch_rpc_api::jsonrpc_types::TransactionWithInfoPageView;
 use rooch_rpc_api::jsonrpc_types::{
-    account_view::BalanceInfoView, transaction_view::TransactionWithInfoView,
+    account_view::BalanceInfoView, transaction_view::TransactionWithInfoView, SimpleKeyStateView,
 };
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, BalanceInfoPageView,
     EventOptions, EventPageView, StateOptions, StatesPageView, StructTagView,
 };
-use rooch_rpc_api::jsonrpc_types::{BytesView, TransactionWithInfoPageView};
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, StateView};
 use rooch_types::{account::Account, address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::sync::Arc;
@@ -131,7 +131,7 @@ impl RoochRpcClient {
     pub async fn list_states(
         &self,
         access_path: AccessPathView,
-        cursor: Option<BytesView>,
+        cursor: Option<SimpleKeyStateView>,
         limit: Option<usize>,
     ) -> Result<StatesPageView> {
         Ok(self
@@ -143,7 +143,7 @@ impl RoochRpcClient {
     pub async fn list_decoded_states(
         &self,
         access_path: AccessPathView,
-        cursor: Option<BytesView>,
+        cursor: Option<SimpleKeyStateView>,
         limit: Option<usize>,
     ) -> Result<StatesPageView> {
         Ok(self
@@ -168,7 +168,7 @@ impl RoochRpcClient {
     pub async fn get_balances(
         &self,
         account_addr: AccountAddressView,
-        cursor: Option<BytesView>,
+        cursor: Option<SimpleKeyStateView>,
         limit: Option<usize>,
     ) -> Result<BalanceInfoPageView> {
         Ok(self

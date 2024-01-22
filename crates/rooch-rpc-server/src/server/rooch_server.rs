@@ -10,13 +10,14 @@ use jsonrpsee::{
 };
 use move_core_types::account_address::AccountAddress;
 use moveos_types::h256::H256;
+use moveos_types::state::KeyState;
 use rooch_rpc_api::jsonrpc_types::event_view::{EventFilterView, EventView, IndexerEventView};
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, GlobalStateFilterView, IndexerEventPageView,
     IndexerGlobalStatePageView, IndexerGlobalStateView, IndexerTableChangeSetPageView,
-    IndexerTableChangeSetView, IndexerTableStatePageView, IndexerTableStateView, KeyStateKVView,
-    KeyStateView, StateOptions, StateSyncFilterView, TableStateFilterView,
+    IndexerTableChangeSetView, IndexerTableStatePageView, IndexerTableStateView, KeyStateView,
+    SimpleKeyStateView, StateKVView, StateOptions, StateSyncFilterView, TableStateFilterView,
 };
 use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
@@ -125,7 +126,7 @@ impl RoochAPIServer for RoochServer {
     async fn list_states(
         &self,
         access_path: AccessPathView,
-        cursor: Option<BytesView>,
+        cursor: Option<SimpleKeyStateView>,
         limit: Option<StrView<usize>>,
         state_option: Option<StateOptions>,
     ) -> RpcResult<StatesPageView> {
@@ -134,31 +135,31 @@ impl RoochAPIServer for RoochServer {
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
-        let cursor_of = cursor.clone().map(|v| v.0);
-        let mut data: Vec<KeyStateKVView> = if state_option.decode {
-            self.aggregate_service
+        let cursor_of = cursor.clone().map(KeyState::from);
+        let mut data: Vec<StateKVView> = if state_option.decode {
+            self.rpc_service
                 .list_annotated_states(access_path.into(), cursor_of, limit_of + 1)
                 .await?
                 .into_iter()
                 .map(|(key_state, state)| {
-                    KeyStateKVView::new(KeyStateView::from(key_state), StateView::from(state))
+                    StateKVView::new(KeyStateView::from(key_state), StateView::from(state))
                 })
                 .collect::<Vec<_>>()
         } else {
-            self.aggregate_service
+            self.rpc_service
                 .list_states(access_path.into(), cursor_of, limit_of + 1)
                 .await?
                 .into_iter()
                 .map(|(key_state, state)| {
-                    KeyStateKVView::new(KeyStateView::from(key_state), StateView::from(state))
+                    StateKVView::new(KeyStateView::from(key_state), StateView::from(state))
                 })
                 .collect::<Vec<_>>()
         };
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
-        let next_cursor = data.last().map_or(cursor, |key_state_kv| {
-            Some(key_state_kv.key_state.key.clone())
+        let next_cursor = data.last().map_or(cursor, |state_kv| {
+            Some(SimpleKeyStateView::from(state_kv.key_state.clone()))
         });
 
         Ok(StatesPageView {
@@ -312,14 +313,15 @@ impl RoochAPIServer for RoochServer {
     async fn get_balances(
         &self,
         account_addr: AccountAddressView,
-        cursor: Option<BytesView>,
+        cursor: Option<SimpleKeyStateView>,
         limit: Option<StrView<usize>>,
     ) -> RpcResult<BalanceInfoPageView> {
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
-        let cursor_of = cursor.clone().map(|v| v.0);
+        // let cursor_of = cursor.clone().map(|v| v.0);
+        let cursor_of = cursor.clone().map(KeyState::from);
 
         let mut data = self
             .aggregate_service
@@ -329,10 +331,9 @@ impl RoochAPIServer for RoochServer {
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
 
-        let next_cursor = data
-            .last()
-            .cloned()
-            .map_or(cursor, |(key, _balance_info)| key.map(StrView));
+        let next_cursor = data.last().cloned().map_or(cursor, |(key, _balance_info)| {
+            key.map(SimpleKeyStateView::from)
+        });
 
         Ok(BalanceInfoPageView {
             data: data

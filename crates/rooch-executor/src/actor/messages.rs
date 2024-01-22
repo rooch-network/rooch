@@ -9,7 +9,8 @@ use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
-use moveos_types::state::{AnnotatedState, State};
+use moveos_types::state::{AnnotatedState, KeyState, State};
+use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
@@ -84,23 +85,23 @@ impl Message for AnnotatedStatesMessage {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ListStatesMessage {
     pub access_path: AccessPath,
-    pub cursor: Option<Vec<u8>>,
+    pub cursor: Option<KeyState>,
     pub limit: usize,
 }
 
 impl Message for ListStatesMessage {
-    type Result = Result<Vec<(Vec<u8>, State)>>;
+    type Result = Result<Vec<StateKV>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ListAnnotatedStatesMessage {
     pub access_path: AccessPath,
-    pub cursor: Option<Vec<u8>>,
+    pub cursor: Option<KeyState>,
     pub limit: usize,
 }
 
 impl Message for ListAnnotatedStatesMessage {
-    type Result = Result<Vec<(Vec<u8>, AnnotatedState)>>;
+    type Result = Result<Vec<AnnotatedStateKV>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

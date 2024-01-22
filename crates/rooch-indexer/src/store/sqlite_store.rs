@@ -52,7 +52,7 @@ impl SqliteIndexerStore {
                     state.flag,
                     escape_sql_string(state.value),
                     escape_sql_string(state.object_type),
-                    escape_sql_string(state.key_type),
+                    escape_sql_string(state.state_root),
                     state.size,
                     state.tx_order,
                     state.state_index,
@@ -64,12 +64,13 @@ impl SqliteIndexerStore {
             .join(",");
         let query = format!(
             "
-                INSERT INTO global_states (object_id, owner, flag, value, object_type, key_type, size, tx_order, state_index, created_at, updated_at) \
+                INSERT INTO global_states (object_id, owner, flag, value, object_type, state_root, size, tx_order, state_index, created_at, updated_at) \
                 VALUES {} \
                 ON CONFLICT (object_id) DO UPDATE SET \
                 owner = excluded.owner, \
                 flag = excluded.flag, \
                 value = excluded.value, \
+                state_root = excluded.state_root, \
                 size = excluded.size, \
                 tx_order = excluded.tx_order, \
                 state_index = excluded.state_index, \
@@ -142,10 +143,12 @@ impl SqliteIndexerStore {
             .into_iter()
             .map(|state| {
                 format!(
-                    "('{}', '{}', '{}', '{}', {}, {}, {}, {})",
+                    "('{}', '{}', '{}', '{}', '{}', '{}', {}, {}, {}, {})",
                     escape_sql_string(state.table_handle),
                     escape_sql_string(state.key_hex),
+                    escape_sql_string(state.key_str),
                     escape_sql_string(state.value),
+                    escape_sql_string(state.key_type),
                     escape_sql_string(state.value_type),
                     state.tx_order,
                     state.state_index,
@@ -157,7 +160,7 @@ impl SqliteIndexerStore {
             .join(",");
         let query = format!(
             "
-                INSERT INTO table_states (table_handle, key_hex, value, value_type, tx_order, state_index, created_at, updated_at) \
+                INSERT INTO table_states (table_handle, key_hex, key_str, value, key_type, value_type, tx_order, state_index, created_at, updated_at) \
                 VALUES {} \
                 ON CONFLICT (table_handle, key_hex) DO UPDATE SET \
                 value = excluded.value, \

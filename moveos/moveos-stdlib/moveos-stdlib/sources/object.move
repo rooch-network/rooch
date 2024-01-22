@@ -6,8 +6,13 @@
 module moveos_std::object {
 
     use std::hash;
+    use std::option;
+    use std::option::Option;
+    use std::string;
     use std::string::String;
     use std::vector;
+    use moveos_std::raw_table::TableInfo;
+    use moveos_std::raw_table;
     use moveos_std::bcs;
     use moveos_std::type_info;
     use moveos_std::address;
@@ -62,20 +67,22 @@ module moveos_std::object {
         // Table size, number of items
         size: u64,
         // TODO where to store table key ?
-        // // Type of the table key: `address::my_module::myStruct`, same as `moveos_std::type_info::type_of<myStruct>()`
-        // key_type: string::String,
+        // Type of the table key: `address::my_module::myStruct`, same as `moveos_std::type_info::type_of<myStruct>()`
+        // key_type: Option<string::String>,
     }
 
-    /// Information about a specific table info type. Stored in the global Object storage.
-    struct TableInfo has key, store {
-        // Table SMT root
-        state_root: address,
-        // Table size, number of items
-        size: u64,
+    // /// Information about a specific table info type. Stored in the global Object storage.
+    // struct TableInfo has key, store {
+    //     // Table SMT root
+    //     state_root: address,
+    //     // Table size, number of items
+    //     size: u64,
+    //
+    //     // Type of the table key: `address::my_module::myStruct`, same as `moveos_std::type_info::type_of<myStruct>()`
+    //     key_type: Option<string::String>,
+    // }
 
-        // // Type of the table key: `address::my_module::myStruct`, same as `moveos_std::type_info::type_of<myStruct>()`
-        // key_type: string::String,
-    }
+    struct TablePlaceholder has key {}
 
     /// Object<T> is a pointer to the ObjectEntity<T>, It has `key` and `store` ability. 
     /// It has the same lifetime as the ObjectEntity<T>
@@ -160,18 +167,26 @@ module moveos_std::object {
         Object{id}
     }
 
+    /// New pure table object
+    public(friend) fun new_table_with_id(id: ObjectID): Object<TablePlaceholder> {
+        let obj_entity = new_internal(id, TablePlaceholder{});
+        add_to_global(obj_entity);
+        Object{id}
+    }
+
     fun new_internal<T: key>(id: ObjectID, value: T): ObjectEntity<T> {
         assert!(!contains_global(id), ErrorObjectAlreadyExist);
         let owner = SYSTEM_OWNER_ADDRESS;
 
-        let table_info = native_new_table(id);
+        let table_info = new_table(id);
         ObjectEntity<T>{
             id,
             owner,
             flag: 0u8,
             value,
-            state_root: table_info.state_root,
-            size: table_info.size
+            state_root: raw_table::state_root(&table_info),
+            size: raw_table::size(&table_info),
+            // key_type: option::none(),
         }
     }
 
@@ -196,8 +211,8 @@ module moveos_std::object {
     /// This function is only can be called by the module of `T`.
     public fun remove<T: key>(self: Object<T>) : T {
         let Object{id} = self;
-        assert!(is_empty_box(id), ) ;
-        destroy_empty_box(id);
+        // TODO Need to ensure that the Table is empty before delete the Object?
+        destroy_empty_table(id);
         let object_entity = remove_from_global<T>(id);
         let ObjectEntity{id:_, owner:_, flag:_, value, state_root:_, size:_} = object_entity;
         value
@@ -349,120 +364,139 @@ module moveos_std::object {
     }
 
     public(friend) fun add_to_global<T: key>(obj: ObjectEntity<T>) {
-        add_box<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), obj.id, obj);
+        add_field<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), obj.id, obj);
     }
 
     public(friend) fun borrow_from_global<T: key>(object_id: ObjectID): &ObjectEntity<T> {
-        borrow_box<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id)
+        borrow_field<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id)
     }
 
     public(friend) fun borrow_mut_from_global<T: key>(object_id: ObjectID): &mut ObjectEntity<T> {
-        let object_entity = borrow_mut_box<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id);
+        let object_entity = borrow_mut_field<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id);
         assert!(!is_frozen_internal(object_entity), ErrorObjectFrozen);
         object_entity
     }
 
     public(friend) fun remove_from_global<T: key>(object_id: ObjectID): ObjectEntity<T> {
-        remove_box<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id)
+        remove_field<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id)
     }
 
     public(friend) fun contains_global(object_id: ObjectID): bool {
-        contains_box<ObjectID>(global_object_storage_handle(), object_id)
+        contains_field<ObjectID>(global_object_storage_handle(), object_id)
     }
 
 
     // === Object Raw Dynamic Table ===
 
+    /// New a table. Aborts if the table exists.
+    public(friend) fun new_table(table_handle: ObjectID): TableInfo {
+        raw_table::new_table(table_handle)
+    }
+
     /// Add a new entry to the table. Aborts if an entry for this
     /// key already exists. The entry itself is not stored in the
     /// table, and cannot be discovered from it.
-    public(friend) fun add_box<K: copy + drop, V>(table_handle: ObjectID, key: K, val: V) {
-        native_add_box<K, V, Box<V>>(table_handle, key, Box {val} );
+    public(friend) fun add_field<K: copy + drop, V>(table_handle: ObjectID, key: K, val: V) {
+        // native_add_box<K, V, Box<V>>(table_handle, key, Box {val} );
+        raw_table::add<K,V>(table_handle, key, val)
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
-    public(friend) fun borrow_box<K: copy + drop, V>(table_handle: ObjectID, key: K): &V {
-        &native_borrow_box<K, V, Box<V>>(table_handle, key).val
+    public(friend) fun borrow_field<K: copy + drop, V>(table_handle: ObjectID, key: K): &V {
+        // &native_borrow_box<K, V, Box<V>>(table_handle, key).val
+        raw_table::borrow<K, V>(table_handle, key)
     }
+
 
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Returns specified default value if there is no entry for `key`.
-    public(friend) fun borrow_box_with_default<K: copy + drop, V>(table_handle: ObjectID, key: K, default: &V): &V {
-        if (!contains_box<K>(table_handle, key)) {
-            default
-        } else {
-            borrow_box(table_handle, key)
-        }
+    public(friend) fun borrow_field_with_default<K: copy + drop, V>(table_handle: ObjectID, key: K, default: &V): &V {
+        // if (!contains_box<K>(table_handle, key)) {
+        //     default
+        // } else {
+        //     borrow_box(table_handle, key)
+        // }
+        raw_table::borrow_with_default<K, V>(table_handle, key, default)
     }
 
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
-    public(friend) fun borrow_mut_box<K: copy + drop, V>(table_handle: ObjectID, key: K): &mut V {
-        &mut native_borrow_mut_box<K, V, Box<V>>(table_handle, key).val
+    public(friend) fun borrow_mut_field<K: copy + drop, V>(table_handle: ObjectID, key: K): &mut V {
+        // &mut native_borrow_mut_box<K, V, Box<V>>(table_handle, key).val
+        raw_table::borrow_mut<K, V>(table_handle, key)
     }
 
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Insert the pair (`key`, `default`) first if there is no entry for `key`.
-    public(friend) fun borrow_mut_box_with_default<K: copy + drop, V: drop>(table_handle: ObjectID, key: K, default: V): &mut V {
-        if (!contains_box<K>(table_handle, copy key)) {
-            add_box(table_handle, key, default)
-        };
-        borrow_mut_box(table_handle, key)
+    public(friend) fun borrow_mut_field_with_default<K: copy + drop, V: drop>(table_handle: ObjectID, key: K, default: V): &mut V {
+        // if (!contains_box<K>(table_handle, copy key)) {
+        //     add_box(table_handle, key, default)
+        // };
+        // borrow_mut_box(table_handle, key)
+        raw_table::borrow_mut_with_default<K, V>(table_handle, key, default)
     }
 
     /// Insert the pair (`key`, `value`) if there is no entry for `key`.
     /// update the value of the entry for `key` to `value` otherwise
-    public(friend) fun upsert_box<K: copy + drop, V: drop>(table_handle: ObjectID, key: K, value: V) {
-        if (!contains_box<K>(table_handle, copy key)) {
-            add_box(table_handle, key, value)
-        } else {
-            let ref = borrow_mut_box(table_handle, key);
-            *ref = value;
-        };
+    public(friend) fun upsert_field<K: copy + drop, V: drop>(table_handle: ObjectID, key: K, value: V) {
+        // if (!contains_box<K>(table_handle, copy key)) {
+        //     add_box(table_handle, key, value)
+        // } else {
+        //     let ref = borrow_mut_box(table_handle, key);
+        //     *ref = value;
+        // };
+
+        raw_table::upsert<K, V>(table_handle, key, value)
     }
 
     /// Remove from `table` and return the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
-    public(friend) fun remove_box<K: copy + drop, V>(table_handle: ObjectID, key: K): V {
-        let Box { val } = native_remove_box<K, V, Box<V>>(table_handle, key);
-        val
+    public(friend) fun remove_field<K: copy + drop, V>(table_handle: ObjectID, key: K): V {
+        // let Box { val } = native_remove_box<K, V, Box<V>>(table_handle, key);
+        // val
+        raw_table::remove<K, V>(table_handle, key)
     }
 
     /// Returns true if `table` contains an entry for `key`.
-    public(friend) fun contains_box<K: copy + drop>(table_handle: ObjectID, key: K): bool {
-        native_contains_box<K>(table_handle, key)
+    public(friend) fun contains_field<K: copy + drop>(table_handle: ObjectID, key: K): bool {
+        // native_contains_box<K>(table_handle, key)
+        raw_table::contains<K>(table_handle, key)
     }
 
     /// Returns the size of the table, the number of key-value pairs
-    public(friend) fun box_length(table_handle: ObjectID): u64 {
-        native_box_length(table_handle)
+    public(friend) fun table_length(table_handle: ObjectID): u64 {
+        // native_box_length(table_handle)
+        raw_table::length(table_handle)
     }
 
     /// Returns true if the table is empty (if `length` returns `0`)
-    public(friend) fun is_empty_box(table_handle: ObjectID): bool {
-        box_length(table_handle) == 0
+    public(friend) fun is_empty_table(table_handle: ObjectID): bool {
+        // box_length(table_handle) == 0
+        raw_table::is_empty(table_handle)
     }
 
     /// Drop a table even if it is not empty.
-    public(friend) fun drop_unchecked_box(table_handle: ObjectID) {
-        native_drop_unchecked_box(table_handle)
+    public(friend) fun drop_unchecked_table(table_handle: ObjectID) {
+        // native_drop_unchecked_box(table_handle)
+        raw_table::drop_unchecked(table_handle)
     }
 
     /// Destroy a table. Aborts if the table is not empty
-    public(friend) fun destroy_empty_box(table_handle: ObjectID) {
-        assert!(is_empty_box(table_handle), ErrorNotEmpty);
-        native_drop_unchecked_box(table_handle)
+    public(friend) fun destroy_empty_table(table_handle: ObjectID) {
+        // assert!(is_empty_box(table_handle), ErrorNotEmpty);
+        // native_drop_unchecked_box(table_handle)
+        raw_table::destroy_empty(table_handle)
     }
 
     // ======================================================================================================
     // Internal API
 
-    /// Wrapper for values. Required for making values appear as resources in the implementation.
-    /// Because the GlobalValue in MoveVM must be a resource.
-    struct Box<V> has key, drop, store {
-        val: V
-    }
+    // /// Wrapper for values. Required for making values appear as resources in the implementation.
+    // /// Because the GlobalValue in MoveVM must be a resource.
+    // struct Box<V> has key, drop, store {
+    //     val: V
+    // }
 
     // /// The TableHandle has the same layout as the ObjectID
     // /// We can convert the ObjectID to TableHandle
@@ -475,22 +509,25 @@ module moveos_std::object {
     //     TableHandle { id }
     // }
 
-    /// New a table. Aborts if the table exists.
-    native public(friend) fun native_new_table(table_handle: ObjectID): TableInfo;
+    // /// New a table. Aborts if the table exists.
+    // native public(friend) fun native_new_table(table_handle: ObjectID): TableInfo;
 
-    native fun native_add_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K, val: Box<V>);
-
-    native fun native_borrow_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K): &Box<V>;
-
-    native fun native_borrow_mut_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K): &mut Box<V>;
-
-    native fun native_contains_box<K: copy + drop>(table_handle: ObjectID, key: K): bool;
-
-    native fun native_remove_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K): Box<V>;
-
-    native fun native_drop_unchecked_box(table_handle: ObjectID);
-
-    native fun native_box_length(table_handle: ObjectID): u64;
+    // // /// New a table with key type. Aborts if the table exists.
+    // // native public(friend) fun native_new_table_with_key_type<K: copy + drop>(table_handle: ObjectID): TableInfo;
+    //
+    // native fun native_add_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K, val: Box<V>);
+    //
+    // native fun native_borrow_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K): &Box<V>;
+    //
+    // native fun native_borrow_mut_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K): &mut Box<V>;
+    //
+    // native fun native_contains_box<K: copy + drop>(table_handle: ObjectID, key: K): bool;
+    //
+    // native fun native_remove_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K): Box<V>;
+    //
+    // native fun native_drop_unchecked_box(table_handle: ObjectID);
+    //
+    // native fun native_box_length(table_handle: ObjectID): u64;
 
 
 
@@ -610,7 +647,7 @@ module moveos_std::object {
         let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut tx_context));
         let object = new_with_id(object_id, TestStruct { count: 1 });
         
-        let ObjectEntity{ id:_,owner:_,flag:_, value:test_struct1} = remove_from_global<TestStruct>(object_id);
+        let ObjectEntity{ id:_,owner:_,flag:_, value:test_struct1, state_root:_, size:_} = remove_from_global<TestStruct>(object_id);
         let test_struct2 = remove(object);
         let TestStruct { count : _ } = test_struct1;
         let TestStruct { count : _ } = test_struct2;

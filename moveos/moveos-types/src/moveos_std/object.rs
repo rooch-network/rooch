@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 use super::{account_storage::AccountStorage, raw_table::TableInfo};
+use crate::state::KeyState;
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     h256,
@@ -16,11 +17,17 @@ use move_core_types::{
     value::{MoveStructLayout, MoveTypeLayout},
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
+use once_cell::sync::Lazy;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use smt::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use std::str::FromStr;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("object");
+
+// New table's state_root should be the place holder hash.
+pub static GENESIS_STATE_ROOT: Lazy<AccountAddress> =
+    Lazy::new(|| AccountAddress::new((*SPARSE_MERKLE_PLACEHOLDER_HASH).into()));
 
 /// Specific Table Object ID associated with an address
 #[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -101,6 +108,11 @@ impl ObjectID {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.to_vec()
+    }
+
+    pub fn to_key(&self) -> KeyState {
+        let key_type = TypeTag::Struct(Box::new(Self::struct_tag()));
+        KeyState::new(self.to_bytes(), key_type)
     }
 }
 
@@ -220,7 +232,31 @@ impl FromStr for ObjectID {
     }
 }
 
-pub type TableObject = ObjectEntity<TableInfo>;
+#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
+pub struct TablePlaceholder {}
+
+impl MoveStructType for TablePlaceholder {
+    const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("TablePlaceholder");
+
+    fn struct_tag() -> StructTag {
+        StructTag {
+            address: Self::ADDRESS,
+            module: Self::MODULE_NAME.to_owned(),
+            name: Self::STRUCT_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
+}
+
+impl MoveStructState for TablePlaceholder {
+    fn struct_layout() -> MoveStructLayout {
+        MoveStructLayout::new(vec![])
+    }
+}
+
+pub type TableObject = ObjectEntity<TablePlaceholder>;
 pub type AccountStorageObject = ObjectEntity<AccountStorage>;
 
 /// The Entity of the Object<T>
@@ -230,17 +266,32 @@ pub struct ObjectEntity<T> {
     pub owner: AccountAddress,
     pub flag: u8,
     pub value: T,
+
+    pub state_root: AccountAddress,
+    pub size: u64,
+    // // TODO where to store table key ?
+    // // Type of the table key: `address::my_module::myStruct`, same as `moveos_std::type_info::type_of<myStruct>()`
+    // // key_type: Option<string::String>,
 }
 
 impl<T> ObjectEntity<T> {
     const SHARED_OBJECT_FLAG_MASK: u8 = 1;
     const FROZEN_OBJECT_FLAG_MASK: u8 = 1 << 1;
-    pub fn new(id: ObjectID, owner: AccountAddress, flag: u8, value: T) -> ObjectEntity<T> {
+    pub fn new(
+        id: ObjectID,
+        owner: AccountAddress,
+        flag: u8,
+        value: T,
+        state_root: AccountAddress,
+        size: u64,
+    ) -> ObjectEntity<T> {
         Self {
             id,
             owner,
             flag,
             value,
+            state_root,
+            size,
         }
     }
 
@@ -270,6 +321,8 @@ where
                 struct_tag: T::struct_tag(),
                 value: bcs::to_bytes(&self.value).expect("MoveState to bcs should success"),
             },
+            state_root: self.state_root,
+            size: self.size,
         }
     }
 }
@@ -283,13 +336,16 @@ where
     }
 }
 
-impl ObjectEntity<TableInfo> {
-    pub fn new_table_object(id: ObjectID, value: TableInfo) -> TableObject {
+impl ObjectEntity<TablePlaceholder> {
+    pub fn new_table_object(id: ObjectID, table_info: TableInfo) -> TableObject {
         Self {
             id,
             owner: AccountAddress::ZERO,
             flag: 0u8,
-            value,
+            value: TablePlaceholder {},
+
+            state_root: table_info.state_root,
+            size: table_info.size,
         }
     }
 
@@ -298,9 +354,20 @@ impl ObjectEntity<TableInfo> {
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
             name: Self::STRUCT_NAME.to_owned(),
-            type_params: vec![TableInfo::struct_tag().into()],
+            type_params: vec![TablePlaceholder::struct_tag().into()],
         }
     }
+
+    // pub fn to_raw_object(&self) -> RawObject {
+    //     // let raw_data = RawData {
+    //     //     pub struct_tag: StructTag,
+    //     //     pub value: Vec<u8>,
+    //     //
+    //     //     struct_tag: TablePlaceholder::struct_tag(),
+    //     //     value:
+    //     // }
+    //     // RawObject::new_raw_object(self.id)
+    // }
 }
 
 impl ObjectEntity<AccountStorage> {
@@ -310,6 +377,8 @@ impl ObjectEntity<AccountStorage> {
             owner: account,
             flag: 0u8,
             value: AccountStorage::new(account),
+            state_root: *GENESIS_STATE_ROOT,
+            size: 0,
         }
     }
 }
@@ -366,6 +435,9 @@ impl RawObject {
             owner: AccountAddress::ZERO,
             flag: 0u8,
             value,
+
+            state_root: *GENESIS_STATE_ROOT,
+            size: 0,
         }
     }
 
@@ -380,12 +452,24 @@ impl RawObject {
             bcs::from_bytes(&bytes[ObjectID::LENGTH..ObjectID::LENGTH + AccountAddress::LENGTH])?;
         let flag = bytes[ObjectID::LENGTH + AccountAddress::LENGTH
             ..ObjectID::LENGTH + AccountAddress::LENGTH + 1][0];
-        let value = bytes[ObjectID::LENGTH + AccountAddress::LENGTH + 1..].to_vec();
+        let state_root: AccountAddress = bcs::from_bytes(
+            &bytes[ObjectID::LENGTH + AccountAddress::LENGTH + 1
+                ..ObjectID::LENGTH + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH],
+        )?;
+        let size: u64 = bcs::from_bytes(
+            &bytes[ObjectID::LENGTH + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH
+                ..ObjectID::LENGTH + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH + 8],
+        )?;
+        let value = bytes
+            [ObjectID::LENGTH + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH + 8..]
+            .to_vec();
         Ok(RawObject {
             id,
             owner,
             flag,
             value: RawData { struct_tag, value },
+            state_root,
+            size,
         })
     }
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -393,6 +477,8 @@ impl RawObject {
         bytes.extend(bcs::to_bytes(&self.id).unwrap());
         bytes.extend(bcs::to_bytes(&self.owner).unwrap());
         bytes.push(self.flag);
+        bytes.extend(bcs::to_bytes(&self.state_root).unwrap());
+        bytes.extend(bcs::to_bytes(&self.size).unwrap());
         bytes.extend_from_slice(&self.value.value);
         bytes
     }
@@ -414,8 +500,10 @@ impl AnnotatedObject {
         owner: AccountAddress,
         flag: u8,
         value: AnnotatedMoveStruct,
+        state_root: AccountAddress,
+        size: u64,
     ) -> Self {
-        Self::new(id, owner, flag, value)
+        Self::new(id, owner, flag, value, state_root, size)
     }
 
     /// Create a new AnnotatedObject from a AnnotatedMoveStruct
@@ -453,7 +541,29 @@ impl AnnotatedObject {
             }
             _ => bail!("ObjectEntity value field should be struct"),
         };
-        Ok(Self::new_annotated_object(object_id, owner, flag, value))
+        let state_root = match fields.next().expect("ObjectEntity should have state_root") {
+            (field_name, AnnotatedMoveValue::Address(field_value)) => {
+                debug_assert!(
+                    field_name.as_str() == "state_root",
+                    "ObjectEntity state_root field name should be state_root"
+                );
+                field_value
+            }
+            _ => bail!("ObjectEntity state_root field should be address"),
+        };
+        let size = match fields.next().expect("ObjectEntity should have size") {
+            (field_name, AnnotatedMoveValue::U64(field_value)) => {
+                debug_assert!(
+                    field_name.as_str() == "size",
+                    "ObjectEntity size field name should be size"
+                );
+                field_value
+            }
+            _ => bail!("ObjectEntity size field should be u64"),
+        };
+        Ok(Self::new_annotated_object(
+            object_id, owner, flag, value, state_root, size,
+        ))
     }
 }
 
@@ -547,7 +657,14 @@ mod tests {
         //let struct_type = TestStruct::struct_tag();
         let object_value = TestStruct { count: 1 };
         let object_id = ObjectID::new(crate::h256::H256::random().into());
-        let object = ObjectEntity::new(object_id, AccountAddress::random(), 0u8, object_value);
+        let object = ObjectEntity::new(
+            object_id,
+            AccountAddress::random(),
+            0u8,
+            object_value,
+            AccountAddress::random(),
+            0,
+        );
 
         let raw_object: RawObject = object.to_raw();
 

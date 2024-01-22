@@ -23,7 +23,7 @@ use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{Event, EventID, TransactionEvent};
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::startup_info::StartupInfo;
-use moveos_types::state::State;
+use moveos_types::state::{KeyState, State};
 use moveos_types::state_resolver::StateResolver;
 use moveos_types::transaction::TransactionExecutionInfo;
 use raw_store::rocks::RocksDB;
@@ -288,7 +288,7 @@ impl StateResolver for MoveOSStore {
     fn resolve_table_item(
         &self,
         handle: &ObjectID,
-        key: &[u8],
+        key: &KeyState,
     ) -> std::result::Result<Option<State>, Error> {
         self.statedb.resolve_table_item(handle, key)
     }
@@ -296,9 +296,9 @@ impl StateResolver for MoveOSStore {
     fn list_table_items(
         &self,
         handle: &ObjectID,
-        cursor: Option<Vec<u8>>,
+        cursor: Option<KeyState>,
         limit: usize,
-    ) -> std::result::Result<Vec<(Vec<u8>, State)>, Error> {
+    ) -> std::result::Result<Vec<(KeyState, State)>, Error> {
         self.statedb.list_table_items(handle, cursor, limit)
     }
 }
