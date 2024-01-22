@@ -99,16 +99,22 @@ pub fn native_bech32(
 
     let hrp = pop_arg!(args, u8);
     let public_key = pop_arg!(args, VectorRef);
-    let mut encoded = "".to_owned();
 
     let cost = gas_params.base
         + (gas_params.per_byte * NumBytes::new(public_key.as_bytes_ref().len() as u64));
 
-    if hrp == 0 {
-        encoded = bech32::encode("bech32", public_key.as_bytes_ref().to_vec().to_base32(), Variant::Bech32).unwrap();
+    let (prefix, variant) = if hrp == 0 {
+        ("bech32", Variant::Bech32)
     } else {
-        encoded = bech32::encode("bech32m", public_key.as_bytes_ref().to_vec().to_base32(), Variant::Bech32m).unwrap();
-    }
+        ("bech32m", Variant::Bech32m)
+    };
+
+    let encoded = bech32::encode(
+        prefix,
+        public_key.as_bytes_ref().to_vec().to_base32(),
+        variant,
+    )
+    .unwrap();
 
     Ok(NativeResult::ok(
         cost,

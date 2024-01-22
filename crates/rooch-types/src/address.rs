@@ -8,8 +8,6 @@ use crate::{
 };
 use anyhow::{bail, Result};
 use bitcoin::bech32::segwit::encode_to_fmt_unchecked;
-use bitcoin::consensus::serde::hex::Case;
-use bitcoin::hex::DisplayHex;
 use bitcoin::script::PushBytesBuf;
 use bitcoin::{
     address::Address, secp256k1::Secp256k1, Network, PrivateKey, Script, WitnessProgram,
@@ -41,7 +39,6 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::serde_as;
 use sha3::{Digest, Sha3_256};
 use std::fmt;
-use std::io::Read;
 use std::str::FromStr;
 
 /// The address type that Rooch supports

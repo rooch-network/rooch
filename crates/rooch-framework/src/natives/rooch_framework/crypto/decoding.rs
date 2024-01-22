@@ -93,7 +93,7 @@ pub fn native_base58check(
  *              + encoding_bech32_data_cost_per_byte * msg.len()       | cost depends on length of message
  *              + encoding_bech32_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
  **************************************************************************************************/
- pub fn native_bech32(
+pub fn native_bech32(
     gas_params: &FromBytesGasParameters,
     _context: &mut NativeContext,
     ty_args: Vec<Type>,
@@ -104,14 +104,14 @@ pub fn native_base58check(
 
     let data = pop_arg!(args, VectorRef);
 
-    let cost = gas_params.base
-        + (gas_params.per_byte * NumBytes::new(data.as_bytes_ref().len() as u64));
+    let cost =
+        gas_params.base + (gas_params.per_byte * NumBytes::new(data.as_bytes_ref().len() as u64));
 
     let binding = data.as_bytes_ref();
     let data_str = std::str::from_utf8(&binding).unwrap();
 
     let (hrp, public_key, variant) = bech32::decode(data_str).unwrap();
-    
+
     if hrp != "bech32" && hrp != "bech32m" {
         return Ok(NativeResult::err(cost, E_DECODE_FAILED));
     };
@@ -120,12 +120,14 @@ pub fn native_base58check(
         return Ok(NativeResult::err(cost, E_DECODE_FAILED));
     }
 
-    //  TODO perform public key check
+    if public_key.len() != 20 && public_key.len() != 32 {
+        return Ok(NativeResult::err(cost, E_DECODE_FAILED));
+    }
 
     Ok(NativeResult::ok(
         cost,
         smallvec![Value::vector_u8(public_key.into_iter().map(u8::from))],
-    ))    
+    ))
 }
 
 #[derive(Debug, Clone)]
