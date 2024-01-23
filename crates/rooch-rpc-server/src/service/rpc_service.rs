@@ -9,7 +9,7 @@ use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
-use moveos_types::state::{AnnotatedKeyState, AnnotatedState, KeyState, MoveStructType, State};
+use moveos_types::state::{AnnotatedState, KeyState, MoveStructType, State};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;

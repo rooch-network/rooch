@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module moveos_std::object_table {
+    use moveos_std::object_id::ObjectID;
+    use moveos_std::object_id;
     use moveos_std::context::{Self, Context};
-    use moveos_std::object::{Self, Object, ObjectID};
+    use moveos_std::object::{Self, Object};
 
     /// A Table for storing objects
     struct ObjectTable<phantom T> has key, store {
@@ -12,7 +14,7 @@ module moveos_std::object_table {
 
     /// Create a new Table.
     public fun new<T: key>(ctx: &mut Context): ObjectTable<T> {
-        let handle = object::address_to_object_id(context::fresh_address(ctx));
+        let handle = object_id::address_to_object_id(context::fresh_address(ctx));
         // let table_info = object::new_table<ObjectID>(handle);
         let obj = object::new_table_with_id(handle);
         object::transfer(obj, @moveos_std);

@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_framework::chain_id {
-    
+
+    use moveos_std::object_id;
     use moveos_std::context::{Self, Context};
     use moveos_std::object;
 
@@ -31,7 +32,7 @@ module rooch_framework::chain_id {
     }
 
     public fun borrow(ctx: &Context) : &ChainID {
-        let object_id = object::named_object_id<ChainID>();
+        let object_id = object_id::named_object_id<ChainID>();
         let obj = context::borrow_object<ChainID>(ctx, object_id);
         object::borrow(obj)
     }

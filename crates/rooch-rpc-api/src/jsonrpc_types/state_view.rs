@@ -21,7 +21,6 @@ use rooch_types::indexer::state::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
-use std::str::FromStr;
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct StateView {
@@ -92,7 +91,7 @@ impl From<SimpleKeyStateView> for KeyState {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema, Ord, Eq, PartialOrd, PartialEq)]
 pub struct KeyStateView {
     pub key: BytesView,
     pub key_type: TypeTagView,

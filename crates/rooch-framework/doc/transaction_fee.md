@@ -14,6 +14,7 @@
 
 <pre><code><b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="coin_store.md#0x3_coin_store">0x3::coin_store</a>;
 <b>use</b> <a href="gas_coin.md#0x3_gas_coin">0x3::gas_coin</a>;

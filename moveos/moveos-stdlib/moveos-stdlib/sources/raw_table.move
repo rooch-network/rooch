@@ -6,15 +6,9 @@
 /// This type table is for internal global storage, so all functions are friend.
 
 module moveos_std::raw_table {
+    use moveos_std::object_id::ObjectID;
 
-    use std::string;
-    use moveos_std::object::ObjectID;
-    // friend moveos_std::table;
-    // friend moveos_std::type_table;
-    // friend moveos_std::storage_context;
-    // friend moveos_std::account_storage;
     friend moveos_std::object;
-    // friend moveos_std::object_table;
 
     /// The key already exists in the table
     const ErrorAlreadyExists: u64 = 1;
@@ -29,7 +23,7 @@ module moveos_std::raw_table {
 
 
     /// Information about a specific table info type. Stored in the global Object storage.
-    struct TableInfo has key, store {
+    struct TableInfo has key, store, drop {
         // Table SMT root
         state_root: address,
         // Table size, number of items

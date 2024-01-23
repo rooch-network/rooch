@@ -11,7 +11,7 @@ TODO we need to redegin the StorageContext and AppStorageContext
 -  [Function `new_with_id`](#0x2_storage_context_new_with_id)
 
 
-<pre><code><b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
+<pre><code><b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 </code></pre>
 
 
@@ -34,5 +34,5 @@ TODO we need to redegin the StorageContext and AppStorageContext
 Create a new StorageContext with a given ObjectID.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_new_with_id">new_with_id</a>(handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="storage_context.md#0x2_storage_context_new_with_id">new_with_id</a>(handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): <a href="storage_context.md#0x2_storage_context_StorageContext">storage_context::StorageContext</a>
 </code></pre>

@@ -611,8 +611,8 @@ impl TableChange {
 #[derive(Default, Clone, Debug, Eq, PartialEq)]
 pub struct TableState {
     pub entries: UpdateSet<KeyState, State>,
-    /// the key's type tag
-    pub key_type: Option<TypeTag>,
+    // /// the key's type tag
+    // pub key_type: Option<TypeTag>,
 }
 
 /// TableStateSet is represent state dump result. Not include events and other stores

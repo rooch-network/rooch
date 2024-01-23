@@ -179,7 +179,7 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                             }
                         }
                         Op::Delete => {
-                            let table_handle = ObjectID::from_bytes(key.as_slice())?;
+                            let table_handle = ObjectID::from_bytes(key.key.as_slice())?;
                             remove_global_states.push(table_handle.to_string());
                         }
                         Op::New(value) => {

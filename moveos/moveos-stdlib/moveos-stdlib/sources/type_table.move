@@ -5,7 +5,9 @@
 
 module moveos_std::type_table {
     use std::ascii::String;
-    use moveos_std::object::{Self, UID, ObjectID};
+    use moveos_std::object_id;
+    use moveos_std::object_id::{ObjectID, UID};
+    use moveos_std::object::{Self};
 
     friend moveos_std::account_storage;
 
@@ -15,7 +17,7 @@ module moveos_std::type_table {
 
     /// Create a new Table.
     public fun new(id: UID): TypeTable {
-        let handle = object::uid_to_object_id(id);
+        let handle = object_id::uid_to_object_id(id);
         internal_new_with_id(handle)
     }
 

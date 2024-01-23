@@ -8,6 +8,8 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{StructTag, TypeTag},
 };
+use moveos_types::move_types::as_struct_tag;
+use moveos_types::state::MoveStructType;
 use moveos_types::state::{KeyState, TableState, TableStateSet};
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
@@ -21,7 +23,6 @@ use moveos_types::{
     moveos_std::object::{ObjectEntity, ObjectID, RawObject},
     moveos_std::raw_table::TableInfo,
 };
-use moveos_types::{moveos_std::raw_table, state::MoveStructType};
 use moveos_types::{
     state::StateChangeSet,
     state_resolver::{self, module_name_to_key, resource_tag_to_key, StateResolver},
@@ -278,14 +279,15 @@ impl StateDBStore {
                     .put_changes(table_change.entries.into_iter())?;
                 // TODO: do we need to update the size of global table?
             } else {
-                let (mut object, table) = self.get_as_table_or_create(table_handle)?;
+                let (mut raw_object, table) = self.get_as_table_or_create(table_handle)?;
                 let new_state_root = table.put_changes(table_change.entries.into_iter())?;
-                object.state_root = AccountAddress::new(new_state_root.into());
-                let curr_table_size: i64 = object.size as i64;
+                raw_object.state_root = AccountAddress::new(new_state_root.into());
+                let curr_table_size: i64 = raw_object.size as i64;
                 let updated_table_size = curr_table_size + table_change.size_increment;
                 debug_assert!(updated_table_size >= 0);
-                object.size = updated_table_size as u64;
-                changed_objects.put(table_handle.to_key(), object.into());
+                raw_object.size = updated_table_size as u64;
+                // let entity_object = ObjectEntity::try_from(object)?.into()
+                changed_objects.put(table_handle.to_key(), raw_object.into_state()?);
             }
         }
 
@@ -342,7 +344,7 @@ impl StateDBStore {
                 // let key_type = v
                 //     .key_type
                 //     .ok_or(anyhow::anyhow!("Invalid key type when statedb apply"))?;
-                let (_, table_store) = self.create_table(k)?;
+                let (_table_object, table_store) = self.create_table(k)?;
                 state_root = table_store.puts(v.entries)?
             }
         }
@@ -368,26 +370,26 @@ impl StateDBStore {
         let mut golbal_table_state = TableState::default();
         for (key, state) in global_states.into_iter() {
             // If the state is an Object, and the T's struct_tag of Object<T> is Table
-            let struct_tag = state.get_object_struct_tag();
-            if let Some(struct_tag) = struct_tag {
-                if raw_table::TableInfo::struct_tag_match(&struct_tag) {
-                    let mut table_state = TableState::default();
-                    let table_handle = ObjectID::from_bytes(key.as_slice())?;
-                    let result = self.get_as_table(table_handle)?;
-                    if result.is_none() {
-                        continue;
-                    };
-                    let (table_info, table_store) = result.unwrap();
-                    let states = table_store.dump()?;
-                    for (inner_key, inner_state) in states.into_iter() {
-                        table_state.entries.put(inner_key, inner_state);
-                    }
-                    table_state.key_type = Some(table_info.value.key_type_tag()?);
-                    table_state_set
-                        .table_state_sets
-                        .insert(table_handle, table_state);
+            // let struct_tag = state.get_object_struct_tag();
+            // if let Some(struct_tag) = struct_tag {
+            if ObjectID::struct_tag_match(&as_struct_tag(key.key_type.clone())?) {
+                let mut table_state = TableState::default();
+                let table_handle = ObjectID::from_bytes(key.key.clone())?;
+                let result = self.get_as_table(table_handle)?;
+                if result.is_none() {
+                    continue;
+                };
+                let (_table_object, table_store) = result.unwrap();
+                let states = table_store.dump()?;
+                for (inner_key, inner_state) in states.into_iter() {
+                    table_state.entries.put(inner_key, inner_state);
                 }
+                // table_state.key_type = Some(table_info.value.key_type_tag()?);
+                table_state_set
+                    .table_state_sets
+                    .insert(table_handle, table_state);
             }
+            // }
 
             golbal_table_state.entries.put(key, state);
         }

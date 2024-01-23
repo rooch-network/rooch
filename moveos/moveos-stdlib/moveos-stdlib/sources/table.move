@@ -9,7 +9,9 @@
 /// struct itself, while the operations are implemented as native functions. No traversal is provided.
 
 module moveos_std::table {
-    use moveos_std::object::{Self, UID, ObjectID};
+    use moveos_std::object_id;
+    use moveos_std::object_id::{ObjectID, UID};
+    use moveos_std::object::{Self};
 
     friend moveos_std::account_storage;
 
@@ -20,7 +22,7 @@ module moveos_std::table {
 
     /// Create a new Table.
     public fun new<K: copy + drop, V: store>(id: UID): Table<K, V> {
-        let handle = object::uid_to_object_id(id);
+        let handle = object_id::uid_to_object_id(id);
         internal_new_with_id<K, V>(handle)
     }
 

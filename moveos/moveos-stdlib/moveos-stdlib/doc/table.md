@@ -30,7 +30,7 @@ struct itself, while the operations are implemented as native functions. No trav
 
 
 <pre><code><b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="raw_table.md#0x2_raw_table">0x2::raw_table</a>;
+<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 </code></pre>
 
 
@@ -54,7 +54,7 @@ Type of tables
 Create a new Table.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_new">new</a>&lt;K: <b>copy</b>, drop, V: store&gt;(id: <a href="object.md#0x2_object_UID">object::UID</a>): <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_new">new</a>&lt;K: <b>copy</b>, drop, V: store&gt;(id: <a href="object_id.md#0x2_object_id_UID">object_id::UID</a>): <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;
 </code></pre>
 
 
@@ -66,7 +66,7 @@ Create a new Table.
 Create a table with a given handle.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="table.md#0x2_table_new_with_id">new_with_id</a>&lt;K: <b>copy</b>, drop, V: store&gt;(handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="table.md#0x2_table_new_with_id">new_with_id</a>&lt;K: <b>copy</b>, drop, V: store&gt;(handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;
 </code></pre>
 
 
@@ -231,5 +231,5 @@ Usable only if the value type <code>V</code> has the <code>drop</code> ability
 Returns table handle of <code><a href="table.md#0x2_table">table</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_handle">handle</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;): &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_handle">handle</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;): &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
 </code></pre>

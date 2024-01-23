@@ -70,18 +70,18 @@ pub struct TableData {
 }
 
 /// A structure representing table key.
-// #[derive(Clone, Ord, PartialOrd, PartialEq, Eq)]
-#[derive(Clone,)]
+#[derive(Clone, Ord, PartialOrd, PartialEq, Eq)]
 pub struct TableKey {
-    pub key_layout: MoveTypeLayout,
+    // pub key_layout: MoveTypeLayout,
     pub key_type: TypeTag,
     pub key: Vec<u8>,
 }
 
 impl TableKey {
-    pub fn new(key_layout: MoveTypeLayout, key_type: TypeTag, key: Vec<u8>) -> Self {
+    pub fn new(key_type: TypeTag, key: Vec<u8>) -> Self {
+        // pub fn new(key_layout: MoveTypeLayout, key_type: TypeTag, key: Vec<u8>) -> Self {
         Self {
-            key_layout,
+            // key_layout,
             key_type,
             key,
         }
@@ -564,7 +564,7 @@ fn add_box(
     let key_layout = type_to_type_layout(context, &ty_args[0])?;
     let key_type = type_to_type_tag(context, &ty_args[0])?;
     let key_bytes = serialize(&key_layout, &key)?;
-    let table_key = TableKey::new(key_layout, key_type, key_bytes);
+    let table_key = TableKey::new(key_type, key_bytes.clone());
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
 
     let (tv, loaded) = table.get_or_create_global_value(context, table_context, table_key)?;
@@ -623,7 +623,7 @@ fn borrow_box(
     let key_bytes = serialize(&key_layout, &key)?;
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
 
-    let table_key = TableKey::new(key_layout, key_type, key_bytes);
+    let table_key = TableKey::new(key_type, key_bytes);
     let (tv, loaded) = table.get_or_create_global_value(context, table_context, table_key)?;
     cost += common_gas_params.calculate_load_cost(loaded);
     let value_type = type_to_type_tag(context, &ty_args[1])?;
@@ -682,7 +682,7 @@ fn contains_box(
     let key_bytes = serialize(&key_layout, &key)?;
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
 
-    let table_key = TableKey::new(key_layout, key_type, key_bytes);
+    let table_key = TableKey::new(key_type, key_bytes);
     let (tv, loaded) = table.get_or_create_global_value(context, table_context, table_key)?;
     cost += common_gas_params.calculate_load_cost(loaded);
 
@@ -733,7 +733,7 @@ fn remove_box(
     let key_bytes = serialize(&key_layout, &key)?;
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
 
-    let table_key = TableKey::new(key_layout, key_type, key_bytes);
+    let table_key = TableKey::new(key_type, key_bytes);
     let (tv, loaded) = table.get_or_create_global_value(context, table_context, table_key)?;
     cost += common_gas_params.calculate_load_cost(loaded);
     let value_type = type_to_type_tag(context, &ty_args[1])?;

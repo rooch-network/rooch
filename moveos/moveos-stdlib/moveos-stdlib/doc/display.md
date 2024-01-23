@@ -21,6 +21,7 @@
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="context.md#0x2_context">0x2::context</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
+<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="simple_map.md#0x2_simple_map">0x2::simple_map</a>;
 </code></pre>
 

@@ -6,12 +6,12 @@ module bitcoin_move::light_client{
     use std::option::{Self, Option};
     use std::vector;
     use std::string::{String};
+    use moveos_std::object_id::ObjectID;
     use moveos_std::type_info;
-    //use moveos_std::event;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
     use moveos_std::bcs;
-    use moveos_std::object::{Self, Object, ObjectID};
+    use moveos_std::object::{Self, Object};
     use moveos_std::table_vec::{Self, TableVec};
     use moveos_std::simple_multimap;
     use moveos_std::signer;

@@ -3,6 +3,7 @@
 
 module rooch_framework::onchain_config {
 
+    use moveos_std::object_id;
     use moveos_std::context::{Self, Context};
     use moveos_std::object;
 
@@ -38,13 +39,13 @@ module rooch_framework::onchain_config {
     }
 
     fun onchain_config_mut(ctx: &mut Context): &mut OnchainConfig {
-        let object_id = object::named_object_id<OnchainConfig>();
+        let object_id = object_id::named_object_id<OnchainConfig>();
         let obj = context::borrow_mut_object_extend<OnchainConfig>(ctx, object_id);
         object::borrow_mut(obj)
     }
 
     public fun onchain_config(ctx: &Context): &OnchainConfig {
-        let object_id = object::named_object_id<OnchainConfig>();
+        let object_id = object_id::named_object_id<OnchainConfig>();
         let obj = context::borrow_object<OnchainConfig>(ctx, object_id);
         object::borrow(obj)
     }

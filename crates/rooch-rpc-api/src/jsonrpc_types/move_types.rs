@@ -59,7 +59,7 @@ impl From<AccountAddressView> for AccountAddress {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, PartialOrd, Ord)]
 pub struct AnnotatedMoveStructView {
     pub abilities: u8,
     #[serde(rename = "type")]
@@ -83,7 +83,7 @@ impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
 }
 
 /// Some specific struct that we want to display in a special way for better readability
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, PartialOrd, Ord)]
 #[serde(untagged)]
 pub enum SpecificStructView {
     MoveString(MoveString),
@@ -111,7 +111,8 @@ impl SpecificStructView {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, PartialOrd, Ord)]
+// #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 pub enum AnnotatedMoveValueView {
     U8(u8),

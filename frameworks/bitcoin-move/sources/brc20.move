@@ -4,7 +4,7 @@
 module bitcoin_move::brc20 {
     use std::option::{Self, Option};
     use std::string::{Self, String};
-    use moveos_std::json;
+    use moveos_std::object_id;
     use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, Object};
     use moveos_std::table::{Self, Table};
@@ -41,7 +41,7 @@ module bitcoin_move::brc20 {
     }
 
     fun borrow_store(ctx: &mut Context) : &mut BRC20Store {
-        let brc20_store_object_id = object::named_object_id<BRC20Store>();
+        let brc20_store_object_id = object_id::named_object_id<BRC20Store>();
         let brc20_store_obj = context::borrow_mut_object_shared<BRC20Store>(ctx, brc20_store_object_id);
         object::borrow_mut(brc20_store_obj)
     }

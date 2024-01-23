@@ -491,7 +491,7 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
                 let fee = {
                     match op {
                         Op::Modify(value) => {
-                            (key.len() + value.value.len()) as u64
+                            (key.key.len() + value.value.len()) as u64
                                 * self
                                     .cost_table
                                     .extra_gas_parameter
@@ -503,7 +503,7 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
                                 .storage_fee_per_op_delete
                         }
                         Op::New(value) => {
-                            (key.len() + value.value.len()) as u64
+                            (key.key.len() + value.value.len()) as u64
                                 * self
                                     .cost_table
                                     .extra_gas_parameter

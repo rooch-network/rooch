@@ -4,7 +4,8 @@
 module rooch_framework::coin_store {
 
     use std::string;
-    use moveos_std::object::{Self, Object, ObjectID};
+    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::{Self, Object};
     use moveos_std::context::{Self, Context};
     use moveos_std::type_info;
     use moveos_std::event;

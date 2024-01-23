@@ -21,7 +21,7 @@ TypeTable is a table use struct Type as Key, struct as Value
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
 <b>use</b> <a href="">0x1::type_name</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="raw_table.md#0x2_raw_table">0x2::raw_table</a>;
+<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 </code></pre>
 
 
@@ -44,7 +44,7 @@ TypeTable is a table use struct Type as Key, struct as Value
 Create a new Table.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_new">new</a>(id: <a href="object.md#0x2_object_UID">object::UID</a>): <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_new">new</a>(id: <a href="object_id.md#0x2_object_id_UID">object_id::UID</a>): <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>
 </code></pre>
 
 
@@ -56,7 +56,7 @@ Create a new Table.
 Create a new Table with a given handle.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="type_table.md#0x2_type_table_new_with_id">new_with_id</a>(handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="type_table.md#0x2_type_table_new_with_id">new_with_id</a>(handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>
 </code></pre>
 
 
@@ -132,7 +132,7 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 Returns table handle of <code><a href="table.md#0x2_table">table</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_handle">handle</a>(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>): &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_handle">handle</a>(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>): &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
 </code></pre>
 
 
