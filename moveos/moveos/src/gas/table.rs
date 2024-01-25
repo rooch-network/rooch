@@ -48,6 +48,14 @@ pub const STACK_SIZE_TIER_DEFAULT: u64 = 1;
 pub static ZERO_COST_SCHEDULE: Lazy<CostTable> = Lazy::new(zero_cost_schedule);
 
 #[derive(Clone, Debug, Default, Serialize, PartialEq, Eq, Deserialize)]
+pub struct GlobalGasEntries {
+    pub last_updated: u64,
+    pub entries: BTreeMap<String, u64>,
+}
+
+pub static mut GLOBAL_GAS_ENTRIES: Lazy<Option<GlobalGasEntries>> = Lazy::new(|| None);
+
+#[derive(Clone, Debug, Default, Serialize, PartialEq, Eq, Deserialize)]
 pub struct StorageGasParameter {
     pub io_read_price: u64,
     pub storage_fee_per_transaction_byte: u64,
@@ -1356,6 +1364,12 @@ pub fn gas_schedule_struct() -> StructTag {
 pub fn get_gas_schedule_entries<Resolver: MoveOSResolver>(
     db: &Resolver,
 ) -> Option<BTreeMap<String, u64>> {
+    unsafe {
+        if GLOBAL_GAS_ENTRIES.is_some() {
+            return Some(GLOBAL_GAS_ENTRIES.clone().unwrap().entries);
+        }
+    }
+
     let id = object::named_object_id(&gas_schedule_struct());
     let gas_schedule_vec_result = db.get_annotated_object(id);
 
@@ -1400,6 +1414,13 @@ pub fn get_gas_schedule_entries<Resolver: MoveOSResolver>(
                 }
             } else {
                 return None;
+            }
+
+            unsafe {
+                *GLOBAL_GAS_ENTRIES = Some(GlobalGasEntries {
+                    last_updated: 0,
+                    entries: gas_schedule_entries.clone(),
+                });
             }
 
             Some(gas_schedule_entries)
