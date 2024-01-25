@@ -7,7 +7,7 @@ use celestia_types::blob::SubmitOptions;
 use celestia_types::nmt::Namespace;
 use celestia_types::{Blob, Commitment};
 
-use crate::server::segment::{Segment, SegmentID};
+use crate::segment::{Segment, SegmentID};
 
 pub struct Backend {
     namespace: Namespace,
@@ -33,9 +33,10 @@ impl Backend {
     }
 
     // TODO return segment id, height, commitment
-    pub async fn submit(&self, segment: Segment) -> Result<SubmitBackendResult> {
-        let data = bcs::to_bytes(&segment).unwrap();
+    pub async fn submit(&self, segment: Box<dyn Segment>) -> Result<SubmitBackendResult> {
+        let data = segment.to_bytes();
         let blob = Blob::new(self.namespace, data).unwrap();
+        let segment_id = segment.get_id();
 
         // TODO tx manager
         // TODO backoff retry
@@ -45,7 +46,7 @@ impl Backend {
             .await
         {
             Ok(height) => Ok(SubmitBackendResult {
-                segment_id: segment.id,
+                segment_id: segment_id,
                 namespace: self.namespace,
                 height,
                 commitment: blob.commitment,
@@ -53,8 +54,8 @@ impl Backend {
             Err(e) => {
                 log::warn!(
                     "failed to submit segment to celestia node, chunk: {}, segment: {}, commitment: {:?}, error:{:?}",
-                    segment.id.chunk_id,
-                    segment.id.segment_id,
+                    segment_id.chunk_id,
+                    segment_id.segment_number,
                     blob.commitment,
                     e,
                 );

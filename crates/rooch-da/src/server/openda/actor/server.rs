@@ -8,11 +8,12 @@ use coerce::actor::message::Handler;
 use coerce::actor::Actor;
 use opendal::{Operator, Scheme};
 use std::collections::HashMap;
+use opendal::layers::RetryLayer;
 
 use rooch_config::da_config::{DAServerOpenDAConfig, OpenDAScheme};
 
 use crate::messages::{PutBatchMessage, PutBatchResult};
-use crate::server::segment::{Segment, SegmentID};
+use crate::segment::{SegmentID, SegmentV0};
 
 pub struct DAServerOpenDAActor {
     max_segment_size: usize,
@@ -90,12 +91,14 @@ impl DAServerOpenDAActor {
         let segments = segs
             .enumerate()
             .map(|(i, data)| {
-                Segment {
+                SegmentV0 {
                     id: SegmentID {
                         chunk_id,
-                        segment_id: i as u64,
+                        segment_number: i as u64,
                     },
                     is_last: i == total - 1, // extra info overhead is much smaller than max_block_size - max_segment_size
+                    data_checksum: 0,
+                    checksum: 0,
                     data: data.to_vec(),
                 }
             })
@@ -107,6 +110,7 @@ impl DAServerOpenDAActor {
             let data = bcs::to_bytes(&segment).unwrap();
             self.operator.write(&segment.id.to_string(), data).await?; // TODO retry logic
         }
+
         Ok(PutBatchResult::default())
     }
 }
@@ -121,6 +125,16 @@ fn insert_default_from_env_or_const(
         let value = std::env::var(env_var).unwrap_or(const_default.to_string());
         config.insert(key.to_string(), value);
     }
+}
+
+fn new_retry_operator(
+    scheme: Scheme,
+    config: HashMap<String, String>,
+    retry: usize,
+) -> Result<Operator> {
+    let mut op = Operator::via_map(scheme, config)?;
+    op = op.layer(RetryLayer::new().with_max_times(retry));
+    Ok(op)
 }
 
 #[async_trait]
