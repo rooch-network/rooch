@@ -15,8 +15,6 @@ module moveos_std::account_storage {
     use moveos_std::object::{Self, Object};
     use moveos_std::tx_context;
     use moveos_std::move_module::{Self, MoveModule};
-    #[test_only]
-    use moveos_std::object_id;
 
     friend moveos_std::context;
 

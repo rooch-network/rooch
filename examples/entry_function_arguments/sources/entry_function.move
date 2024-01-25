@@ -3,7 +3,8 @@
 
 module rooch_examples::entry_function {
    use moveos_std::event;
-   use moveos_std::object::{Self, Object, ObjectID};
+   use moveos_std::object::{Self, Object};
+   use moveos_std::object_id::ObjectID;
    use moveos_std::context::{Self, Context};
 
    fun init(ctx: &mut Context) {

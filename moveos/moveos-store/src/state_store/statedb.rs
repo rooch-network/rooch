@@ -197,7 +197,6 @@ impl StateDBStore {
     }
 
     fn get_as_table(&self, id: ObjectID) -> Result<Option<(RawObject, TreeTable<NodeDBStore>)>> {
-        // let object = self.get_as_object::<TablePlaceholder>(id)?;
         let object = self.get_as_raw_object(id)?;
         match object {
             Some(object) => {
@@ -214,22 +213,14 @@ impl StateDBStore {
         }
     }
 
-    fn get_as_table_or_create(
-        &self,
-        id: ObjectID,
-        // key_type: TypeTag,
-    ) -> Result<(RawObject, TreeTable<NodeDBStore>)> {
+    fn get_as_table_or_create(&self, id: ObjectID) -> Result<(RawObject, TreeTable<NodeDBStore>)> {
         Ok(self.get_as_table(id)?.unwrap_or_else(|| {
             self.create_table(id)
                 .expect("create_table should succ when get_as_table_or_create")
         }))
     }
 
-    fn create_table(
-        &self,
-        id: ObjectID,
-        // key_type: TypeTag,
-    ) -> Result<(RawObject, TreeTable<NodeDBStore>)> {
+    fn create_table(&self, id: ObjectID) -> Result<(RawObject, TreeTable<NodeDBStore>)> {
         let table = TreeTable::new(self.node_store.clone());
         let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()))?;
         let object = ObjectEntity::new_table_object(id, table_info).to_raw();
@@ -286,7 +277,6 @@ impl StateDBStore {
                 let updated_table_size = curr_table_size + table_change.size_increment;
                 debug_assert!(updated_table_size >= 0);
                 raw_object.size = updated_table_size as u64;
-                // let entity_object = ObjectEntity::try_from(object)?.into()
                 changed_objects.put(table_handle.to_key(), raw_object.into_state()?);
             }
         }
@@ -341,9 +331,6 @@ impl StateDBStore {
                 state_root = self.global_table.puts(v.entries)?
             } else {
                 // must force create table
-                // let key_type = v
-                //     .key_type
-                //     .ok_or(anyhow::anyhow!("Invalid key type when statedb apply"))?;
                 let (_table_object, table_store) = self.create_table(k)?;
                 state_root = table_store.puts(v.entries)?
             }
@@ -384,12 +371,10 @@ impl StateDBStore {
                 for (inner_key, inner_state) in states.into_iter() {
                     table_state.entries.put(inner_key, inner_state);
                 }
-                // table_state.key_type = Some(table_info.value.key_type_tag()?);
                 table_state_set
                     .table_state_sets
                     .insert(table_handle, table_state);
             }
-            // }
 
             golbal_table_state.entries.put(key, state);
         }

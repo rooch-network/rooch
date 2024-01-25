@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::blog_remove_article_logic {
-    use moveos_std::object::ObjectID;
+    use moveos_std::object_id::ObjectID;
     use moveos_std::object::Object;
     use moveos_std::table;
     use rooch_examples::article_removed_from_blog;

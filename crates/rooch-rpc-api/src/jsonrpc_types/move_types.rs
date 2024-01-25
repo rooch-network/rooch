@@ -194,6 +194,9 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
 pub struct AnnotatedObjectView {
     pub id: ObjectID,
     pub owner: AccountAddressView,
+    pub flag: u8,
+    pub state_root: AccountAddressView,
+    pub size: u64,
     pub value: AnnotatedMoveStructView,
 }
 
@@ -202,6 +205,9 @@ impl From<AnnotatedObject> for AnnotatedObjectView {
         Self {
             id: origin.id,
             owner: origin.owner.into(),
+            flag: origin.flag,
+            state_root: origin.state_root.into(),
+            size: origin.size,
             value: origin.value.into(),
         }
     }

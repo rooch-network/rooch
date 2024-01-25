@@ -8,7 +8,7 @@
 
 module rooch_examples::blog {
     use moveos_std::event;
-    use moveos_std::object::ObjectID;
+    use moveos_std::object_id::ObjectID;
     use moveos_std::object::Object;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};

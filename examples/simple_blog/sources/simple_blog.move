@@ -6,7 +6,8 @@ module simple_blog::simple_blog {
     use std::signer;
     use std::string::{Self, String};
     use std::vector;
-    use moveos_std::object::{ObjectID, Object};
+    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::{Object};
     use moveos_std::context::{Self, Context};
     use simple_blog::simple_article::{Self, Article};
 

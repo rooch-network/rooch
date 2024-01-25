@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-// use diesel::serialize::ToSql;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{StructTag, TypeTag};
 
@@ -206,34 +205,6 @@ impl IndexedGlobalState {
             updated_at: 0,
         }
     }
-
-    // pub fn new_from_table_object(
-    //     table_object: ObjectEntity<TableInfo>,
-    //     table_object_value_json: String,
-    //     object_type: String,
-    //     key_type: String,
-    //     tx_order: u64,
-    //     state_index: u64,
-    // ) -> Self {
-    //     IndexedGlobalState {
-    //         object_id: table_object.id,
-    //         owner: table_object.owner,
-    //         flag: table_object.flag,
-    //
-    //         value: table_object_value_json,
-    //         object_type,
-    //         // Maintenance when it is a table handle
-    //         key_type,
-    //         // Maintenance when it is a table handle
-    //         size: table_object.value.size,
-    //         tx_order,
-    //         state_index,
-    //
-    //         //TODO record transaction timestamp
-    //         created_at: 0,
-    //         updated_at: 0,
-    //     }
-    // }
 }
 
 #[derive(Debug, Clone)]

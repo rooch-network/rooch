@@ -10,6 +10,8 @@ module bitcoin_move::brc20 {
     use moveos_std::table::{Self, Table};
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::string_utils;
+    #[test_only]
+    use moveos_std::json;
 
     friend bitcoin_move::genesis;
     friend bitcoin_move::ord;

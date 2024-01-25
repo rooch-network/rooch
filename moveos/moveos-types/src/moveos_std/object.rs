@@ -266,22 +266,14 @@ pub struct ObjectEntity<T> {
     pub id: ObjectID,
     pub owner: AccountAddress,
     pub flag: u8,
-    // pub value: T,
     pub state_root: AccountAddress,
     pub size: u64,
     pub value: T,
-    // // TODO where to store table key ?
-    // // Type of the table key: `address::my_module::myStruct`, same as `moveos_std::type_info::type_of<myStruct>()`
-    // // key_type: Option<string::String>,
 }
 
 impl<T> ObjectEntity<T> {
     const SHARED_OBJECT_FLAG_MASK: u8 = 1;
     const FROZEN_OBJECT_FLAG_MASK: u8 = 1 << 1;
-
-    // const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    // const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    // const STRUCT_NAME: &'static IdentStr = OBJECT_ENTITY_STRUCT_NAME;
 
     pub fn new(
         id: ObjectID,
@@ -308,23 +300,6 @@ impl<T> ObjectEntity<T> {
     pub fn is_frozen(&self) -> bool {
         self.flag & Self::FROZEN_OBJECT_FLAG_MASK == Self::FROZEN_OBJECT_FLAG_MASK
     }
-
-    // const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-    // const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    // const STRUCT_NAME: &'static IdentStr = OBJECT_ENTITY_STRUCT_NAME;
-
-    // fn type_params() -> Vec<TypeTag> {
-    //     vec![TypeTag::Struct(Box::new(T::struct_tag()))]
-    // }
-    //
-    // fn struct_tag_with_type_params() -> StructTag {
-    //     StructTag {
-    //         address: Self::ADDRESS,
-    //         module: Self::MODULE_NAME.to_owned(),
-    //         name: Self::STRUCT_NAME.to_owned(),
-    //         type_params: vec![T::struct_tag().into()],
-    //     }
-    // }
 }
 
 impl<T> ObjectEntity<T>
@@ -368,29 +343,6 @@ where
     }
 }
 
-// impl<T> TryFrom<RawObject> for ObjectEntity<T>
-// where
-//     T: MoveStructState,
-// {
-//     type Error = anyhow::Error;
-//
-//     fn try_from(object: RawObject) -> Result<Self> {
-//         let value_type = object.value.struct_tag;
-//         // let value = bcs::from_bytes(&object.value.value)
-//         // let value = bcs::from_bytes::<T>(&object.value.value)
-//         let value = bcs::from_bytes(&object.value.value)
-//             .map_err(|e| anyhow::anyhow!("Deserialize the RawObject error: {:?}", e))?;
-//         Ok(ObjectEntity::new(
-//             object.id,
-//             object.owner,
-//             object.flag,
-//             value,
-//             object.state_root,
-//             object.size,
-//         ))
-//     }
-// }
-
 impl ObjectEntity<TablePlaceholder> {
     pub fn new_table_object(id: ObjectID, table_info: TableInfo) -> TableObject {
         Self {
@@ -412,17 +364,6 @@ impl ObjectEntity<TablePlaceholder> {
             type_params: vec![TablePlaceholder::struct_tag().into()],
         }
     }
-
-    // pub fn to_raw_object(&self) -> RawObject {
-    //     // let raw_data = RawData {
-    //     //     pub struct_tag: StructTag,
-    //     //     pub value: Vec<u8>,
-    //     //
-    //     //     struct_tag: TablePlaceholder::struct_tag(),
-    //     //     value:
-    //     // }
-    //     // RawObject::new_raw_object(self.id)
-    // }
 }
 
 impl ObjectEntity<AccountStorage> {
@@ -479,27 +420,11 @@ where
 
 pub type RawObject = ObjectEntity<RawData>;
 
-// #[derive(Eq, PartialEq, Debug, Clone)]
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct RawData {
     pub struct_tag: StructTag,
     pub value: Vec<u8>,
 }
-
-// impl MoveStructState for RawData {
-//     fn struct_layout() -> MoveStructLayout {
-//         MoveStructLayout::new(vec![StructTag::type_layout(), Vec::<u8>::type_layout()])
-//     }
-// }
-
-// impl MoveStructState for GasPaymentAccount {
-//     fn struct_layout() -> move_core_types::value::MoveStructLayout {
-//         move_core_types::value::MoveStructLayout::new(vec![
-//             move_core_types::value::MoveTypeLayout::Address,
-//             move_core_types::value::MoveTypeLayout::Bool,
-//         ])
-//     }
-// }
 
 impl RawObject {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
@@ -554,7 +479,6 @@ impl RawObject {
         bytes.extend(bcs::to_bytes(&self.id)?);
         bytes.extend(bcs::to_bytes(&self.owner)?);
         bytes.push(self.flag);
-        // bytes.extend_from_slice(&self.value.value);
         bytes.extend(bcs::to_bytes(&self.state_root)?);
         bytes.extend(bcs::to_bytes(&self.size)?);
         bytes.extend_from_slice(&self.value.value);
@@ -585,23 +509,6 @@ impl TryFrom<State> for RawObject {
         state.as_raw_object()
     }
 }
-
-// impl<T> MoveStructState for RawObject
-//     where
-//         T: MoveStructType,
-// {
-//     fn struct_layout() -> MoveStructLayout {
-//         MoveStructLayout::new(vec![ObjectID::type_layout()])
-//     }
-// }
-
-// impl TryFrom<RawObject> for State {
-//     type Error = anyhow::Error;
-//
-//     fn try_from(object: RawObject) -> Result<Self> {
-//         object.
-//     }
-// }
 
 pub type AnnotatedObject = ObjectEntity<AnnotatedMoveStruct>;
 

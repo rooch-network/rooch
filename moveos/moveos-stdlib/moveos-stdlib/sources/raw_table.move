@@ -28,10 +28,6 @@ module moveos_std::raw_table {
         state_root: address,
         // Table size, number of items
         size: u64,
-
-        // // Type of the table key: `address::my_module::myStruct`, same as `moveos_std::type_info::type_of<myStruct>()`
-        // key_type: string::String,
-        // key_type: Option<string::String>,
     }
 
     public fun state_root(table_info: &TableInfo): address {
@@ -41,10 +37,6 @@ module moveos_std::raw_table {
     public fun size(table_info: &TableInfo): u64 {
         table_info.size
     }
-
-    // public fun key_type(table_info: &TableInfo): Option<string::String> {
-    //     table_info.key_type
-    // }
 
     /// Add a new entry to the table. Aborts if an entry for this
     /// key already exists. The entry itself is not stored in the
@@ -139,7 +131,6 @@ module moveos_std::raw_table {
 
     /// New a table. Aborts if the table exists.
     native public(friend) fun new_table(table_handle: ObjectID): TableInfo;
-    // native public(friend) fun new_table<K: copy + drop>(table_handle: ObjectID): TableInfo;
 
     native fun add_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K, val: Box<V>);
 

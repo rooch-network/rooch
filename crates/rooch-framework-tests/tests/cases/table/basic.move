@@ -5,7 +5,7 @@ module test::m {
     use std::string::String;
     use moveos_std::table::{Self, Table};
     use moveos_std::context::{Self, Context};
-    use moveos_std::object::ObjectID;
+    use moveos_std::object_id::ObjectID;
     use moveos_std::object;
 
     struct KVStore has store, key {

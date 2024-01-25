@@ -23,11 +23,7 @@ use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnn
 pub const GLOBAL_OBJECT_STORAGE_HANDLE: ObjectID = ObjectID::ZERO;
 
 pub type StateKV = (KeyState, State);
-// pub type AnnotatedStateKV = (Vec<u8>, AnnotatedState);
 pub type AnnotatedStateKV = (AnnotatedKeyState, AnnotatedState);
-
-// pub type KeyStateKV = (KeyState, State);
-// pub type AnnotatedKeyStateKV = (AnnotatedKeyState, AnnotatedState);
 
 /// A global state resolver which needs to be provided by the environment.
 /// This allows to lookup data in remote storage.

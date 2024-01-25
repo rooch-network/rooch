@@ -239,7 +239,6 @@ impl From<OpView<StateView>> for Op<State> {
 pub struct TableChangeView {
     pub entries: BTreeMap<KeyStateView, OpView<StateView>>,
     pub size_increment: i64,
-    // pub key_type: TypeTagView,
 }
 
 impl From<TableChange> for TableChangeView {
@@ -251,7 +250,6 @@ impl From<TableChange> for TableChangeView {
                 .map(|(k, v)| (k.into(), v.into()))
                 .collect(),
             size_increment: table_change.size_increment,
-            // key_type: table_change.key_type.into(),
         }
     }
 }
@@ -265,7 +263,6 @@ impl From<TableChangeView> for TableChange {
                 .map(|(k, v)| (k.into(), v.into()))
                 .collect(),
             size_increment: table_change.size_increment,
-            // key_type: table_change.key_type.into(),
         }
     }
 }
@@ -303,29 +300,21 @@ impl From<IndexerStateChangeSet> for IndexerStateChangeSetView {
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TableChangeSetView {
-    // #[serde(with = "any_key_map")]
     pub new_tables: BTreeSet<ObjectID>,
-    // #[serde(with = "any_key_map")]
-    // pub new_tables: Vec<ObjectID>,
-    // #[serde(with = "any_key_map")]
-    // pub changes: BTreeMap<ObjectID, TableChangeView>,
-    // #[serde(with = "any_key_map")]
-    // pub new_tables: Vec<ObjectID>,
-    // #[serde(with = "any_key_map")]
+    pub changes: BTreeMap<ObjectID, TableChangeView>,
     pub removed_tables: BTreeSet<ObjectID>,
 }
 
 impl From<TableChangeSet> for TableChangeSetView {
     fn from(table_change_set: TableChangeSet) -> Self {
         Self {
-            // new_tables: table_change_set.new_tables.into_iter().collect(),
             new_tables: table_change_set.new_tables,
             removed_tables: table_change_set.removed_tables.into_iter().collect(),
-            // changes: table_change_set
-            //     .changes
-            //     .into_iter()
-            //     .map(|(k, v)| (k, v.into()))
-            //     .collect(),
+            changes: table_change_set
+                .changes
+                .into_iter()
+                .map(|(k, v)| (k, v.into()))
+                .collect(),
         }
     }
 }
@@ -333,21 +322,16 @@ impl From<TableChangeSet> for TableChangeSetView {
 impl From<TableChangeSetView> for TableChangeSet {
     fn from(table_change_set: TableChangeSetView) -> Self {
         Self {
-            // new_tables: table_change_set
-            //     .new_tables
-            //     .into_iter()
-            //     .collect::<BTreeSet<_>>(),
             new_tables: table_change_set.new_tables,
             removed_tables: table_change_set
                 .removed_tables
                 .into_iter()
                 .collect::<BTreeSet<_>>(),
-            // changes: table_change_set
-            //     .changes
-            //     .into_iter()
-            //     .map(|(k, v)| (k, v.into()))
-            //     .collect(),
-            changes: BTreeMap::default(),
+            changes: table_change_set
+                .changes
+                .into_iter()
+                .map(|(k, v)| (k, v.into()))
+                .collect(),
         }
     }
 }
@@ -408,11 +392,6 @@ impl IndexerGlobalStateView {
         state: IndexerGlobalState,
     ) -> Result<IndexerGlobalStateView, anyhow::Error> {
         let value: AnnotatedMoveStructView = serde_json::from_str(state.value.as_str())?;
-        // let key_type = if !state.key_type.is_empty() {
-        //     Some(TypeTag::from_str(state.key_type.as_str())?.into())
-        // } else {
-        //     None
-        // };
         let global_state_view = IndexerGlobalStateView {
             object_id: state.object_id,
             owner: state.owner.into(),

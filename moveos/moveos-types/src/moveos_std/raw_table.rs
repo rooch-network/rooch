@@ -21,33 +21,15 @@ pub struct TableInfo {
     //TODO use u256?
     pub state_root: AccountAddress,
     pub size: u64,
-    // // The type name of table key TypeTag
-    // key_type: MoveString,
 }
 
 impl TableInfo {
     pub fn new(state_root: AccountAddress) -> Result<Self> {
-        // let key_type_str = MoveString::from_str(key_type.to_string().as_str())?;
         Ok(TableInfo {
             state_root,
             size: 0u64,
-            // key_type: key_type_str,
         })
     }
-
-    // pub fn key_type(&self) -> String {
-    //     self.key_type.to_string()
-    // }
-
-    // pub fn key_type_tag(&self) -> Result<TypeTag> {
-    //     let key_type_str = self.key_type.to_string();
-    //     TypeTag::from_str(key_type_str.as_str()).map_err(|_e| {
-    //         anyhow::anyhow!(
-    //             "key type in TableInfo should be valid TypeTag: {}",
-    //             key_type_str
-    //         )
-    //     })
-    // }
 }
 
 impl MoveStructType for TableInfo {

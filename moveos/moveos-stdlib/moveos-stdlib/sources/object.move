@@ -9,9 +9,7 @@ module moveos_std::object {
     use moveos_std::raw_table::TableInfo;
     use moveos_std::raw_table;
     #[test_only]
-    use moveos_std::object_id;
-    #[test_only]
-    use moveos_std::object_id::{address_to_object_id, custom_object_id, new_uid, UID};
+    use moveos_std::object_id::{custom_object_id, new_uid, UID};
 
     friend moveos_std::context;
     friend moveos_std::account_storage;
@@ -58,10 +56,6 @@ module moveos_std::object {
         state_root: address,
         // Table size, number of items
         size: u64,
-
-        // TODO where to store table key ?
-        // Type of the table key: `address::my_module::myStruct`, same as `moveos_std::type_info::type_of<myStruct>()`
-        // key_type: Option<string::String>,
 
         // The value of the object
         // The value must be the last field

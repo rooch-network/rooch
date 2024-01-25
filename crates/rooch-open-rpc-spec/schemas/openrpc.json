@@ -1898,10 +1898,17 @@
       "TableChangeSetView": {
         "type": "object",
         "required": [
+          "changes",
           "new_tables",
           "removed_tables"
         ],
         "properties": {
+          "changes": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/TableChangeView"
+            }
+          },
           "new_tables": {
             "type": "array",
             "items": {

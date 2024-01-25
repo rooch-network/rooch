@@ -82,7 +82,6 @@ impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
 
     fn module_id_to_table_key(&self, module_id: &ModuleId) -> VMResult<TableKey> {
         let key_state = module_name_to_key(module_id.name());
-        // let key_layout = MoveTypeLayout::Struct(MoveString::struct_layout());
         let table_key = TableKey::new(key_state.key_type, key_state.key);
         Ok(table_key)
     }
@@ -190,7 +189,6 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
         // let key_layout = MoveTypeLayout::Struct(MoveString::struct_layout());
         let mut table_data = self.table_data.write();
         let table = table_data
-            // .get_or_create_table_with_key_type_and_key_layout(table_handle, key_type, key_layout)
             .get_or_create_table(table_handle)
             .map_err(|e| e.finish(Location::Module(module_id.clone())))?;
 
@@ -312,7 +310,6 @@ pub fn into_change_set(table_data: Arc<RwLock<TableData>>) -> PartialVMResult<St
                 TableChange {
                     entries,
                     size_increment,
-                    // key_type,
                 },
             );
         } else {

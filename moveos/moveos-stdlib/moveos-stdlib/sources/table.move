@@ -34,7 +34,6 @@ module moveos_std::table {
     fun internal_new_with_id<K: copy + drop, V: store>(handle: ObjectID): Table<K, V>{
         // The system account deployment contract directly creates the module table in the vm.
         if (!object::contains_global(handle)) {
-            // let table_info = object::new_table(handle);
             let obj = object::new_table_with_id(handle);
             object::transfer(obj, @moveos_std);
         };

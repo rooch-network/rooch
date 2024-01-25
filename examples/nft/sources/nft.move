@@ -5,8 +5,9 @@ module nft::nft {
     use std::string::{Self, String};
     use nft::collection;
     use moveos_std::display;
-    use moveos_std::object::{Self, ObjectID, TypedUID, Object};
+    use moveos_std::object::{Self, Object};
     use moveos_std::context::{Self, Context};
+    use moveos_std::object_id::{ObjectID, TypedUID};
     #[test_only]
     use std::option;
     #[test_only]
