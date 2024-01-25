@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::gas::table::{initial_cost_schedule, MoveOSGasMeter};
+use crate::gas::table::{get_gas_schedule_entries, initial_cost_schedule, MoveOSGasMeter};
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
 use anyhow::{bail, ensure, Result};
 use backtrace::Backtrace;
@@ -208,7 +208,8 @@ impl MoveOS {
             post_execute_functions,
         } = tx;
 
-        let cost_table = initial_cost_schedule();
+        let gas_entries = get_gas_schedule_entries(&self.db);
+        let cost_table = initial_cost_schedule(gas_entries);
         let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
         gas_meter.set_metering(false);
         let session = self
@@ -247,7 +248,8 @@ impl MoveOS {
         // So we keep a backup here, and then insert to the TxContext kv store when session respawed.
         let system_env = ctx.map.clone();
 
-        let cost_table = initial_cost_schedule();
+        let gas_entries = get_gas_schedule_entries(&self.db);
+        let cost_table = initial_cost_schedule(gas_entries);
         let gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
 
         // Temporary behavior, will enable this in the future.
@@ -464,7 +466,8 @@ impl MoveOS {
         function_call: FunctionCall,
     ) -> FunctionResult {
         //TODO limit the view function max gas usage
-        let cost_table = initial_cost_schedule();
+        let gas_entries = get_gas_schedule_entries(&self.db);
+        let cost_table = initial_cost_schedule(gas_entries);
         let mut gas_meter = MoveOSGasMeter::new(cost_table, tx_context.max_gas_amount);
         gas_meter.set_metering(false);
         let mut session = self

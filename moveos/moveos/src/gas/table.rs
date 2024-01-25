@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::SwitchableGasMeter;
 use crate::gas::gas_member::{FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule};
 use crate::gas::r#abstract::{
     AbstractValueSize, AbstractValueSizePerArg, InternalGasPerAbstractValueUnit,
@@ -13,12 +14,16 @@ use move_core_types::gas_algebra::{
     AbstractMemorySize, GasQuantity, InternalGas, InternalGasPerArg, InternalGasPerByte, NumArgs,
     NumBytes,
 };
-use move_core_types::language_storage::ModuleId;
+use move_core_types::identifier::Identifier;
+use move_core_types::language_storage::{ModuleId, StructTag};
 use move_core_types::vm_status::StatusCode;
+use move_resource_viewer::AnnotatedMoveValue;
 use move_vm_types::gas::{GasMeter, SimpleInstruction};
 use move_vm_types::views::{TypeView, ValueView};
 use moveos_types::moveos_std::event::TransactionEvent;
+use moveos_types::moveos_std::object;
 use moveos_types::state::StateChangeSet;
+use moveos_types::state_resolver::{AnnotatedStateReader, MoveOSResolver};
 use moveos_types::transaction::GasStatement;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -26,8 +31,6 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::ops::{Add, Bound};
 use std::rc::Rc;
-
-use super::SwitchableGasMeter;
 
 /// The size in bytes for a reference on the stack
 pub const REFERENCE_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
@@ -376,7 +379,7 @@ pub struct GasCost {
     pub stack_height_gas: u64,
 }
 
-pub fn initial_cost_schedule() -> CostTable {
+pub fn initial_cost_schedule(gas_entries: Option<BTreeMap<String, u64>>) -> CostTable {
     let instruction_tiers: BTreeMap<u64, u64> = vec![
         (0, 1),
         (3000, 2),
@@ -419,9 +422,23 @@ pub fn initial_cost_schedule() -> CostTable {
     .into_iter()
     .collect();
 
-    let storage_gas_parameter = StorageGasParameter::initial();
-    let instruction_gas_parameter = InstructionParameter::initial();
-    let abstract_value_gas_parameter = AbstractValueSizeGasParameter::initial();
+    let (storage_gas_parameter, instruction_gas_parameter, abstract_value_gas_parameter) =
+        if let Some(entries) = gas_entries {
+            (
+                StorageGasParameter::from_on_chain_gas_schedule(&entries)
+                    .expect("restore StorageGasParameter from entries failed"),
+                InstructionParameter::from_on_chain_gas_schedule(&entries)
+                    .expect("restore InstructionParameter from entries failed"),
+                AbstractValueSizeGasParameter::from_on_chain_gas_schedule(&entries)
+                    .expect("restore AbstractValueSizeGasParameter from entries failed"),
+            )
+        } else {
+            (
+                StorageGasParameter::initial(),
+                InstructionParameter::initial(),
+                AbstractValueSizeGasParameter::initial(),
+            )
+        };
 
     CostTable {
         instruction_tiers,
@@ -1325,4 +1342,89 @@ pub fn misc_parameter_to_on_chain_gas_schedule(
     gas_parameter: AbstractValueSizeGasParameter,
 ) -> Vec<(String, u64)> {
     gas_parameter.to_on_chain_gas_schedule()
+}
+
+pub fn gas_schedule_struct() -> StructTag {
+    StructTag {
+        address: AccountAddress::from_hex_literal("0x3").unwrap(),
+        module: Identifier::new("onchain_config").unwrap(),
+        name: Identifier::new("GasSchedule").unwrap(),
+        type_params: vec![],
+    }
+}
+
+pub fn get_gas_schedule_entries<Resolver: MoveOSResolver>(
+    db: &Resolver,
+) -> Option<BTreeMap<String, u64>> {
+    let id = object::named_object_id(&gas_schedule_struct());
+    let gas_schedule_vec_result = db.get_annotated_object(id);
+
+    let mut gas_schedule_entries = BTreeMap::new();
+
+    return match gas_schedule_vec_result {
+        Ok(gas_schedule_opt) => {
+            if let Some(annotated_state) = gas_schedule_opt {
+                let gas_schedule_fields = annotated_state.value.value;
+                if gas_schedule_fields.len() > 1 {
+                    let (_, gas_entry_vec) = gas_schedule_fields.get(1).unwrap();
+                    match gas_entry_vec {
+                        AnnotatedMoveValue::Vector(_, gas_entries_list) => {
+                            for field_value in gas_entries_list.iter() {
+                                match field_value {
+                                    AnnotatedMoveValue::Struct(gas_entries_struct) => {
+                                        let (_, gas_entry_key) =
+                                            gas_entries_struct.value.get(0).unwrap();
+                                        let (_, gas_entry_value) =
+                                            gas_entries_struct.value.get(1).unwrap();
+
+                                        let key = String::from_utf8_lossy(
+                                            extract_bytes_from_value(gas_entry_key)
+                                                .unwrap()
+                                                .as_slice(),
+                                        )
+                                        .to_string();
+
+                                        let value =
+                                            extract_u64_from_value(gas_entry_value).unwrap();
+
+                                        gas_schedule_entries.insert(key, value);
+                                    }
+                                    _ => return None,
+                                }
+                            }
+                        }
+                        _ => return None,
+                    }
+                } else {
+                    return None;
+                }
+            } else {
+                return None;
+            }
+
+            Some(gas_schedule_entries)
+        }
+        Err(_) => None,
+    };
+}
+
+fn extract_bytes_from_value(value: &AnnotatedMoveValue) -> Option<Vec<u8>> {
+    match value {
+        AnnotatedMoveValue::Bytes(v) => Some(v.clone()),
+        AnnotatedMoveValue::Struct(v) => {
+            let (_, item) = v.value.get(0).unwrap();
+            match item {
+                AnnotatedMoveValue::Bytes(value) => Some(value.clone()),
+                _ => None,
+            }
+        }
+        _ => None,
+    }
+}
+
+fn extract_u64_from_value(value: &AnnotatedMoveValue) -> Option<u64> {
+    match value {
+        AnnotatedMoveValue::U64(v) => Some(*v),
+        _ => None,
+    }
 }
