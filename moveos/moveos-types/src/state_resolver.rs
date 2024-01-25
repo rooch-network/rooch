@@ -3,11 +3,12 @@
 
 use crate::move_std::ascii::MoveAsciiString;
 use crate::move_std::string::MoveString;
+use crate::moveos_std::object_id::{NamedTableID, ObjectID};
 use crate::state::{AnnotatedKeyState, KeyState, MoveStructType};
 use crate::{
     access_path::AccessPath,
     moveos_std::move_module::MoveModule,
-    moveos_std::object::{AnnotatedObject, NamedTableID, ObjectID},
+    moveos_std::object::AnnotatedObject,
     state::{AnnotatedState, State},
 };
 use anyhow::{ensure, Error, Result};

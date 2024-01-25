@@ -33,7 +33,7 @@ use std::sync::Arc;
 
 use move_core_types::language_storage::TypeTag;
 use move_vm_runtime::data_cache::TransactionCache;
-use moveos_types::moveos_std::object::NamedTableID;
+use moveos_types::moveos_std::object_id::NamedTableID;
 use moveos_types::state::{KeyState, MoveStructType};
 
 /// Transaction data cache. Keep updates within a transaction so they can all be published at

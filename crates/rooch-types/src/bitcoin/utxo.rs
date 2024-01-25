@@ -14,7 +14,7 @@ use moveos_types::state::MoveStructState;
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::string::MoveString,
-    moveos_std::{object::ObjectID, simple_multimap::SimpleMultiMap, tx_context::TxContext},
+    moveos_std::{object_id::ObjectID, simple_multimap::SimpleMultiMap, tx_context::TxContext},
     state::{MoveState, MoveStructType},
 };
 use serde::{Deserialize, Serialize};
@@ -178,7 +178,7 @@ impl<'a> ModuleBinding<'a> for UTXOModule<'a> {
 mod tests {
     use super::*;
     use move_core_types::account_address::AccountAddress;
-    use moveos_types::moveos_std::object;
+    use moveos_types::moveos_std::object_id;
     use std::str::FromStr;
 
     #[test]
@@ -190,7 +190,7 @@ mod tests {
             .unwrap(),
             0,
         );
-        let object_id = object::custom_object_id(id, &UTXO::struct_tag());
+        let object_id = object_id::custom_object_id(id, &UTXO::struct_tag());
         //println!("{}", object_id);
         //ensure the object id is same as utxo.move
         assert_eq!(

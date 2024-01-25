@@ -4,7 +4,7 @@
 use crate::state::KeyState;
 use crate::{
     move_types::{random_identity, random_struct_tag},
-    moveos_std::object::{NamedTableID, ObjectID},
+    moveos_std::object_id::{NamedTableID, ObjectID},
     state_resolver::{self, module_name_to_key, resource_tag_to_key},
 };
 use anyhow::Result;

@@ -42,6 +42,7 @@ open-fastrlp = { workspace = true }
 const-hex = { workspace = true }
 bitcoin = { workspace = true }
 bitcoincore-rpc = { workspace = true }
+serde_json_any_key = { workspace = true }
 
 move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }

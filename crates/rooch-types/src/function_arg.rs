@@ -18,7 +18,7 @@ use move_core_types::{
 };
 use moveos_types::{
     move_types::FunctionId,
-    moveos_std::object::{self, ObjectID},
+    moveos_std::object_id::{self, ObjectID},
 };
 use std::{
     fmt::{Display, Formatter},
@@ -228,7 +228,7 @@ impl ParsedObjectID {
             ParsedObjectID::ObjectID(object_id) => object_id,
             ParsedObjectID::StructTag(parsed_struct_type) => {
                 let struct_tag = parsed_struct_type.into_struct_tag(mapping)?;
-                object::named_object_id(&struct_tag)
+                object_id::named_object_id(&struct_tag)
             }
         })
     }

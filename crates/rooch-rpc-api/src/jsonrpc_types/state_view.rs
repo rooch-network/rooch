@@ -11,7 +11,7 @@ use move_core_types::effects::Op;
 use moveos_types::state::{AnnotatedKeyState, KeyState, TableChangeSet};
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
-    moveos_std::object::ObjectID,
+    moveos_std::object_id::ObjectID,
     state::{AnnotatedState, State, StateChangeSet, TableChange, TableTypeInfo},
 };
 use rooch_types::indexer::state::{
@@ -20,6 +20,7 @@ use rooch_types::indexer::state::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_json_any_key::*;
 use std::collections::{BTreeMap, BTreeSet};
 use std::str::FromStr;
 
@@ -332,6 +333,78 @@ impl From<TableChangeSetView> for TableChangeSet {
                 .into_iter()
                 .map(|(k, v)| (k, v.into()))
                 .collect(),
+        }
+    }
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+// TableChangeSetToJsonView the same as TableChangeSetView expect JsonSchema attribute
+// serde_json::to_string needs key must be a string
+// serde_json_any_key needs Struct has no JsonSchema attribute,
+// But open rpc needs output has JsonSchema attributes
+pub struct TableChangeSetToJsonView {
+    pub new_tables: BTreeSet<ObjectID>,
+    pub changes: BTreeMap<ObjectID, TableChangeToJsonView>,
+    pub removed_tables: BTreeSet<ObjectID>,
+}
+
+impl From<TableChangeSet> for TableChangeSetToJsonView {
+    fn from(table_change_set: TableChangeSet) -> Self {
+        Self {
+            new_tables: table_change_set.new_tables,
+            removed_tables: table_change_set.removed_tables,
+            changes: table_change_set
+                .changes
+                .into_iter()
+                .map(|(k, v)| (k, v.into()))
+                .collect(),
+        }
+    }
+}
+
+impl From<TableChangeSetToJsonView> for TableChangeSet {
+    fn from(table_change_set: TableChangeSetToJsonView) -> Self {
+        Self {
+            new_tables: table_change_set.new_tables,
+            removed_tables: table_change_set.removed_tables,
+            changes: table_change_set
+                .changes
+                .into_iter()
+                .map(|(k, v)| (k, v.into()))
+                .collect(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TableChangeToJsonView {
+    #[serde(with = "any_key_map")]
+    pub entries: BTreeMap<KeyStateView, OpView<StateView>>,
+    pub size_increment: i64,
+}
+
+impl From<TableChange> for TableChangeToJsonView {
+    fn from(table_change: TableChange) -> Self {
+        Self {
+            entries: table_change
+                .entries
+                .into_iter()
+                .map(|(k, v)| (k.into(), v.into()))
+                .collect(),
+            size_increment: table_change.size_increment,
+        }
+    }
+}
+
+impl From<TableChangeToJsonView> for TableChange {
+    fn from(table_change: TableChangeToJsonView) -> Self {
+        Self {
+            entries: table_change
+                .entries
+                .into_iter()
+                .map(|(k, v)| (k.into(), v.into()))
+                .collect(),
+            size_increment: table_change.size_increment,
         }
     }
 }

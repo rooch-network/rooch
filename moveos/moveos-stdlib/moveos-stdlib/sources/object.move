@@ -24,17 +24,6 @@ module moveos_std::object {
     const ErrorObjectFrozen: u64 = 2;
     const ErrorInvalidOwnerAddress:u64 = 3;
 
-    /// The key already exists in the table
-    const ErrorAlreadyExists: u64 = 4;
-    /// Can not found the key in the table
-    const ErrorNotFound: u64 = 5;
-    /// Duplicate operation on the table
-    const ErrorDuplicateOperation: u64 = 6;
-    /// The table is not empty
-    const ErrorNotEmpty: u64 = 7;
-    /// The table already exists
-    const ErrorTableAlreadyExists: u64 = 8;
-
     const SYSTEM_OWNER_ADDRESS: address = @0x0;
     
     const SHARED_OBJECT_FLAG_MASK: u8 = 1;
@@ -103,7 +92,6 @@ module moveos_std::object {
             value,
             state_root: raw_table::state_root(&table_info),
             size: raw_table::size(&table_info),
-            // key_type: option::none(),
         }
     }
 

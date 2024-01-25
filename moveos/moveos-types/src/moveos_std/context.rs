@@ -3,7 +3,7 @@
 
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
-    moveos_std::object::ObjectID,
+    moveos_std::object_id::ObjectID,
     moveos_std::tx_context::TxContext,
     state::{MoveStructState, MoveStructType},
     state_resolver,

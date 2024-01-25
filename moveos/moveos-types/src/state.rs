@@ -1,7 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::moveos_std::object::{AnnotatedObject, ObjectEntity, ObjectID, RawObject};
+use crate::moveos_std::object::{AnnotatedObject, ObjectEntity, RawObject};
+use crate::moveos_std::object_id::ObjectID;
 use anyhow::{bail, ensure, Result};
 use move_core_types::{
     account_address::AccountAddress,
@@ -580,7 +581,7 @@ impl StateChangeSet {
 }
 
 /// A change of a single table.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct TableChange {
     pub entries: BTreeMap<KeyState, Op<State>>,
     /// The size increment of the table, may be negtive which means more deleting than inserting.
@@ -601,7 +602,7 @@ pub struct TableStateSet {
 
 /// A change set of a single table.
 /// Consistent with the StateChangeSet format. Use for state sync.
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, Eq, PartialEq)]
 pub struct TableChangeSet {
     pub new_tables: BTreeSet<ObjectID>,
     pub removed_tables: BTreeSet<ObjectID>,

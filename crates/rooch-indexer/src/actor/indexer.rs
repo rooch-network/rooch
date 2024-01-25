@@ -18,7 +18,8 @@ use move_core_types::language_storage::TypeTag;
 use move_resource_viewer::MoveValueAnnotator;
 use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::context;
-use moveos_types::moveos_std::object::{ObjectID, RawObject};
+use moveos_types::moveos_std::object::RawObject;
+use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::state::{KeyState, SplitStateChangeSet, State};
 use moveos_types::state_resolver::MoveOSResolverProxy;
 use rooch_rpc_api::jsonrpc_types::{AnnotatedMoveStructView, AnnotatedMoveValueView};
@@ -51,29 +52,6 @@ impl IndexerActor {
         let annotator_state_json = serde_json::to_string(&annotator_state_view)?;
         Ok(annotator_state_json)
     }
-
-    // pub fn new_global_state_from_table_object(
-    //     &self,
-    //     value: State,
-    //     key_type: String,
-    //     tx_order: u64,
-    //     state_index: u64,
-    // ) -> Result<IndexedGlobalState> {
-    //     let table_object = value.cast::<ObjectEntity<TableInfo>>()?;
-    //     let raw_object = value.as_raw_object()?;
-    //     let obj_value_json = self.resolve_raw_object_value_to_json(&raw_object)?;
-    //     let object_type = format_struct_tag(raw_object.value.struct_tag);
-    //
-    //     let state = IndexedGlobalState::new_from_table_object(
-    //         table_object,
-    //         obj_value_json,
-    //         object_type,
-    //         key_type,
-    //         tx_order,
-    //         state_index,
-    //     );
-    //     Ok(state)
-    // }
 
     pub fn new_global_state_from_raw_object(
         &self,
@@ -150,19 +128,6 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                 for (key, op) in table_change.entries.into_iter() {
                     match op {
                         Op::Modify(value) => {
-                            // // table object
-                            // if value.match_struct_type(&ObjectEntity::get_table_object_struct_tag())
-                            // {
-                            //     let state = self.new_global_state_from_table_object(
-                            //         value,
-                            //         table_change.key_type.to_string(),
-                            //         tx_order,
-                            //         state_index_generator,
-                            //     )?;
-                            //     update_global_states.push(state);
-                            // struct object
-                            // } if value.is_object() {
-                            // struct object
                             if value.is_object() {
                                 let state = self.new_global_state_from_raw_object(
                                     value,
@@ -183,20 +148,6 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                             remove_global_states.push(table_handle.to_string());
                         }
                         Op::New(value) => {
-                            // // table object
-                            // if value.match_struct_type(&ObjectEntity::get_table_object_struct_tag())
-                            // {
-                            //     let _table_handle = ObjectID::from_bytes(key.as_slice())?;
-                            //     let key_type = table_change.key_type.to_string();
-                            //     let state = self.new_global_state_from_table_object(
-                            //         value,
-                            //         key_type,
-                            //         tx_order,
-                            //         state_index_generator,
-                            //     )?;
-                            //
-                            //     new_global_states.push(state);
-                            // } else if value.is_object() {
                             if value.is_object() {
                                 let state = self.new_global_state_from_raw_object(
                                     value,
@@ -217,7 +168,6 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                 }
             } else {
                 // TODO update table size if ObjectID is table hanlde
-                // let object = self.moveos_store.0.get_state_store().get_as_object::<TableInfo>(table_handle)?;
 
                 for (key, op) in table_change.entries.into_iter() {
                     match op {

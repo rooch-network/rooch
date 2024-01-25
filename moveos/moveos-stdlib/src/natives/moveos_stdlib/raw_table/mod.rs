@@ -26,7 +26,7 @@ use move_vm_types::{
 };
 use moveos_types::state::{KeyState, MoveState};
 use moveos_types::{
-    moveos_std::{object::ObjectID, raw_table::TableInfo},
+    moveos_std::{object_id::ObjectID, raw_table::TableInfo},
     state_resolver::StateResolver,
 };
 use parking_lot::RwLock;

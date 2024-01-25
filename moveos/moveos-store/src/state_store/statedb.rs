@@ -9,6 +9,7 @@ use move_core_types::{
     language_storage::{StructTag, TypeTag},
 };
 use moveos_types::move_types::as_struct_tag;
+use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::state::MoveStructType;
 use moveos_types::state::{KeyState, TableState, TableStateSet};
 use moveos_types::state_resolver::StateKV;
@@ -20,7 +21,7 @@ use moveos_types::{
 use moveos_types::{
     moveos_std::account_storage::AccountStorage,
     moveos_std::context,
-    moveos_std::object::{ObjectEntity, ObjectID, RawObject},
+    moveos_std::object::{ObjectEntity, RawObject},
     moveos_std::raw_table::TableInfo,
 };
 use moveos_types::{

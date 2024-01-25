@@ -8,7 +8,7 @@ use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::move_std::string::MoveString;
-use moveos_types::{moveos_std::object::ObjectID, state::MoveStructType};
+use moveos_types::{moveos_std::object_id::ObjectID, state::MoveStructType};
 use rooch_types::bitcoin::ord::{Inscription, InscriptionState};
 use rooch_types::indexer::state::GlobalStateFilter;
 use schemars::JsonSchema;

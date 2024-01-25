@@ -7,10 +7,11 @@ use move_core_types::language_storage::{StructTag, TypeTag};
 
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::Event;
-use moveos_types::moveos_std::object::{ObjectID, RawObject};
+use moveos_types::moveos_std::object::RawObject;
+use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::state::TableChangeSet;
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
-use rooch_rpc_api::jsonrpc_types::TableChangeSetView;
+use rooch_rpc_api::jsonrpc_types::TableChangeSetToJsonView;
 use rooch_types::multichain_id::MultiChainID;
 use rooch_types::transaction::{
     AbstractTransaction, TransactionSequenceInfo, TransactionType, TypedTransaction,
@@ -282,7 +283,7 @@ impl IndexedTableChangeSet {
         table_change_set: TableChangeSet,
     ) -> Result<Self> {
         let table_change_set_json =
-            serde_json::to_string(&TableChangeSetView::from(table_change_set))?;
+            serde_json::to_string(&TableChangeSetToJsonView::from(table_change_set))?;
 
         Ok(IndexedTableChangeSet {
             tx_order,

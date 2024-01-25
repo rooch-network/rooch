@@ -12,7 +12,7 @@ use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::option::MoveOption,
     moveos_std::{
-        object::{self, ObjectID},
+        object_id::{self, ObjectID},
         tx_context::TxContext,
     },
     state::MoveStructType,
@@ -36,7 +36,7 @@ pub struct BitcoinBlockStore {
 
 impl BitcoinBlockStore {
     pub fn object_id() -> ObjectID {
-        object::named_object_id(&Self::struct_tag())
+        object_id::named_object_id(&Self::struct_tag())
     }
 }
 
@@ -67,7 +67,7 @@ pub struct BitcoinUTXOStore {
 
 impl BitcoinUTXOStore {
     pub fn object_id() -> ObjectID {
-        object::named_object_id(&Self::struct_tag())
+        object_id::named_object_id(&Self::struct_tag())
     }
 }
 

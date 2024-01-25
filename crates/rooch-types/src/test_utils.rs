@@ -14,9 +14,8 @@ use move_core_types::language_storage::ModuleId;
 use moveos_types::move_types::{random_identity, random_struct_tag, random_type_tag, FunctionId};
 use moveos_types::moveos_std::context;
 use moveos_types::moveos_std::event::{Event, EventID};
-use moveos_types::moveos_std::object::{
-    NamedTableID, ObjectEntity, ObjectID, RawData, TablePlaceholder,
-};
+use moveos_types::moveos_std::object::{ObjectEntity, RawData, TablePlaceholder};
+use moveos_types::moveos_std::object_id::{NamedTableID, ObjectID};
 use moveos_types::moveos_std::raw_table::TableInfo;
 use moveos_types::state::{KeyState, State, StateChangeSet, TableChange};
 use moveos_types::transaction::{FunctionCall, MoveAction, ScriptCall, VerifiedMoveAction};

@@ -12,11 +12,9 @@ use move_core_types::{
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::loaded_data::runtime_types::{StructType, Type};
+use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::{
-    moveos_std::{
-        context::Context,
-        object::{Object, ObjectID},
-    },
+    moveos_std::{context::Context, object::Object},
     state::{MoveStructType, PlaceholderStruct},
     state_resolver::MoveOSResolver,
 };

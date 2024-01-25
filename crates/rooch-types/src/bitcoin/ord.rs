@@ -14,7 +14,7 @@ use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::{option::MoveOption, string::MoveString},
     moveos_std::{
-        object::{self, ObjectID},
+        object_id::{self, ObjectID},
         simple_map::SimpleMap,
         tx_context::TxContext,
     },
@@ -139,7 +139,7 @@ pub struct InscriptionStore {
 
 impl InscriptionStore {
     pub fn object_id() -> ObjectID {
-        object::named_object_id(&Self::struct_tag())
+        object_id::named_object_id(&Self::struct_tag())
     }
 }
 

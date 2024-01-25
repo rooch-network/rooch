@@ -119,56 +119,6 @@ Developers only need to use Object<T> related APIs and do not need to know the O
 ## Constants
 
 
-<a name="0x2_object_ErrorAlreadyExists"></a>
-
-The key already exists in the table
-
-
-<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorAlreadyExists">ErrorAlreadyExists</a>: u64 = 4;
-</code></pre>
-
-
-
-<a name="0x2_object_ErrorDuplicateOperation"></a>
-
-Duplicate operation on the table
-
-
-<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorDuplicateOperation">ErrorDuplicateOperation</a>: u64 = 6;
-</code></pre>
-
-
-
-<a name="0x2_object_ErrorNotEmpty"></a>
-
-The table is not empty
-
-
-<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorNotEmpty">ErrorNotEmpty</a>: u64 = 7;
-</code></pre>
-
-
-
-<a name="0x2_object_ErrorNotFound"></a>
-
-Can not found the key in the table
-
-
-<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorNotFound">ErrorNotFound</a>: u64 = 5;
-</code></pre>
-
-
-
-<a name="0x2_object_ErrorTableAlreadyExists"></a>
-
-The table already exists
-
-
-<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorTableAlreadyExists">ErrorTableAlreadyExists</a>: u64 = 8;
-</code></pre>
-
-
-
 <a name="0x2_object_BOUND_OBJECT_FLAG_MASK"></a>
 
 

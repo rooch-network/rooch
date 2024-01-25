@@ -1068,7 +1068,7 @@ fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> b
 fn is_allowed_data_struct_type(full_struct_name: &str) -> bool {
     matches!(
         full_struct_name,
-        "0x1::string::String" | "0x1::ascii::String" | "0x2::object::ObjectID"
+        "0x1::string::String" | "0x1::ascii::String" | "0x2::object_id::ObjectID"
     )
 }
 

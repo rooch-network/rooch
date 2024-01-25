@@ -8,7 +8,7 @@ use move_core_types::language_storage::{StructTag, TypeTag};
 use moveos_types::access_path::AccessPath;
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
-use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::moveos_std::raw_table::TableInfo;
 use moveos_types::state::{KeyState, PlaceholderStruct};
 use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
@@ -131,7 +131,6 @@ impl AggregateService {
             .as_module_binding::<AccountCoinStoreModule>();
         let coin_stores_handle_opt = account_coin_store_module.coin_stores_handle(account_addr)?;
 
-        // let cursor_of = cursor.map(|v| KeyState::new(v, MoveString::type_tag()));
         match coin_stores_handle_opt {
             Some(coin_stores_handle) => {
                 let coin_store_ids = self
