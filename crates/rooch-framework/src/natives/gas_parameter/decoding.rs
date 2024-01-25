@@ -9,4 +9,6 @@ crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasPar
     [.base58.per_byte, "base58.per_byte", 30 * MUL],
     [.base58check.base, "base58check.base", 1000 * MUL],
     [.base58check.per_byte, "base58check.per_byte", 30 * MUL],
+    [.bech32.base, "bech32.base", 1000 * MUL],
+    [.bech32.per_byte, "bech32.per_byte", 30 * MUL]
 ]);

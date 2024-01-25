@@ -74,28 +74,6 @@ macro_rules! expand_kv_for_native_gas_params {
     }
 }
 
-#[cfg(test)]
-macro_rules! extract_key_for_native_gas_params {
-    (test_only $(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr) => {
-        #[cfg(feature = "testing")]
-        $key
-    };
-    ($(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr) => {
-        $key
-    };
-}
-
-#[cfg(test)]
-macro_rules! extract_path_for_native_gas_params {
-    (test_only $(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr) => {
-        #[cfg(feature = "testing")]
-        stringify!($($field).*)
-    };
-    ($(.$field: ident)+, $(optional)? $key: literal, $initial_val: expr) => {
-        stringify!($($field).*)
-    };
-}
-
 #[macro_export]
 macro_rules! define_gas_parameters_for_natives {
     ($param_ty: ty, $package_name: literal, [$([$($t: tt)*]),* $(,)?] $(, allow_unmapped = $allow_unmapped: expr)?) => {
@@ -144,11 +122,6 @@ macro_rules! define_gas_parameters_for_natives {
          */
     };
 }
-
-#[cfg(test)]
-pub(crate) use extract_key_for_native_gas_params;
-#[cfg(test)]
-pub(crate) use extract_path_for_native_gas_params;
 
 pub use define_gas_parameters_for_natives;
 pub use expand_get_for_native_gas_params;
