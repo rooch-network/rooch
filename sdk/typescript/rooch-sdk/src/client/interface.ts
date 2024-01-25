@@ -8,6 +8,7 @@ import {
   StatePageView,
   StateView,
   Bytes,
+  SimpleKeyStateView,
 } from '../types'
 
 export interface IClient {
@@ -25,5 +26,9 @@ export interface IClient {
 
   getStates(accessPath: string): Promise<StateView | null[]>
 
-  listStates(access_path: string, cursor: Bytes | null, limit: number): Promise<StatePageView>
+  listStates(
+    access_path: string,
+    cursor: SimpleKeyStateView | null,
+    limit: number,
+  ): Promise<StatePageView>
 }

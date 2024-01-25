@@ -22,7 +22,7 @@ use rooch_rpc_api::jsonrpc_types::{
 use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AccountAddressView, BalanceInfoPageView, EventPageView,
-    ExecuteTransactionResponseView, FunctionCallView, H256View, StateView, StatesPageView, StrView,
+    ExecuteTransactionResponseView, FunctionCallView, H256View, StatePageView, StateView, StrView,
     StructTagView, TransactionWithInfoPageView,
 };
 use rooch_rpc_api::{api::rooch_api::RoochAPIServer, api::DEFAULT_RESULT_LIMIT};
@@ -129,7 +129,7 @@ impl RoochAPIServer for RoochServer {
         cursor: Option<SimpleKeyStateView>,
         limit: Option<StrView<usize>>,
         state_option: Option<StateOptions>,
-    ) -> RpcResult<StatesPageView> {
+    ) -> RpcResult<StatePageView> {
         let state_option = state_option.unwrap_or_default();
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
@@ -162,7 +162,7 @@ impl RoochAPIServer for RoochServer {
             Some(SimpleKeyStateView::from(state_kv.key_state.clone()))
         });
 
-        Ok(StatesPageView {
+        Ok(StatePageView {
             data,
             next_cursor,
             has_next_page,

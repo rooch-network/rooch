@@ -246,7 +246,6 @@ criterion = { version = "0.5.1", features = [
 ] }
 #criterion-cpu-time = "0.1.0"
 pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer"] }
-serde_json_any_key = "2.0.0"
 
 
 celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }

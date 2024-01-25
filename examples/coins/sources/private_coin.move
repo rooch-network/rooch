@@ -4,6 +4,7 @@
 module coins::private_coin {
 
     use std::string;
+    use moveos_std::object_id;
     use moveos_std::signer;
     use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, Object};

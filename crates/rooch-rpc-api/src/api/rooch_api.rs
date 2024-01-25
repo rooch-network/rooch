@@ -9,7 +9,7 @@ use crate::jsonrpc_types::{
     BytesView, EventOptions, EventPageView, ExecuteTransactionResponseView, FunctionCallView,
     GlobalStateFilterView, H256View, IndexerEventPageView, IndexerGlobalStatePageView,
     IndexerTableChangeSetPageView, IndexerTableStatePageView, SimpleKeyStateView, StateOptions,
-    StateSyncFilterView, StateView, StatesPageView, StrView, StructTagView, TableStateFilterView,
+    StatePageView, StateSyncFilterView, StateView, StrView, StructTagView, TableStateFilterView,
     TransactionWithInfoPageView,
 };
 use jsonrpsee::core::RpcResult;
@@ -64,7 +64,7 @@ pub trait RoochAPI {
         cursor: Option<SimpleKeyStateView>,
         limit: Option<StrView<usize>>,
         state_option: Option<StateOptions>,
-    ) -> RpcResult<StatesPageView>;
+    ) -> RpcResult<StatePageView>;
 
     /// Get the events by event handle id
     #[method(name = "getEventsByEventHandle")]

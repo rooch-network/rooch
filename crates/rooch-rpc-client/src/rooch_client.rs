@@ -16,7 +16,7 @@ use rooch_rpc_api::jsonrpc_types::{
 };
 use rooch_rpc_api::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, BalanceInfoPageView,
-    EventOptions, EventPageView, StateOptions, StatesPageView, StructTagView,
+    EventOptions, EventPageView, StateOptions, StatePageView, StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, StateView};
 use rooch_types::{account::Account, address::RoochAddress, transaction::rooch::RoochTransaction};
@@ -133,7 +133,7 @@ impl RoochRpcClient {
         access_path: AccessPathView,
         cursor: Option<SimpleKeyStateView>,
         limit: Option<usize>,
-    ) -> Result<StatesPageView> {
+    ) -> Result<StatePageView> {
         Ok(self
             .http
             .list_states(access_path, cursor, limit.map(Into::into), None)
@@ -145,7 +145,7 @@ impl RoochRpcClient {
         access_path: AccessPathView,
         cursor: Option<SimpleKeyStateView>,
         limit: Option<usize>,
-    ) -> Result<StatesPageView> {
+    ) -> Result<StatePageView> {
         Ok(self
             .http
             .list_states(

@@ -9,7 +9,7 @@ use diesel::prelude::*;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use moveos_types::moveos_std::object_id::ObjectID;
-use rooch_rpc_api::jsonrpc_types::TableChangeSetToJsonView;
+use rooch_rpc_api::jsonrpc_types::TableChangeSetView;
 use rooch_types::indexer::state::{IndexerGlobalState, IndexerTableChangeSet, IndexerTableState};
 use std::str::FromStr;
 
@@ -204,7 +204,7 @@ impl StoredTableChangeSet {
         &self,
     ) -> Result<IndexerTableChangeSet, anyhow::Error> {
         let table_handle = ObjectID::from_str(self.table_handle.as_str())?;
-        let table_change_set: TableChangeSetToJsonView =
+        let table_change_set: TableChangeSetView =
             serde_json::from_str(self.table_change_set.as_str())?;
 
         let indexer_state_change_set = IndexerTableChangeSet {

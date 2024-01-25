@@ -12,7 +12,7 @@ import {
   Bytes,
   EventOptions,
   EventPageView,
-  FunctionId,
+  FunctionId, SimpleKeyStateView,
   StateOptions,
   StatePageView,
   StateView,
@@ -178,7 +178,7 @@ export class RoochClient implements IClient {
 
   async listStates(
     access_path: string,
-    cursor: Bytes | null,
+    cursor: SimpleKeyStateView | null,
     limit: number,
   ): Promise<StatePageView> {
     return await this.client.rooch_listStates(access_path, cursor as any, limit.toString(), {

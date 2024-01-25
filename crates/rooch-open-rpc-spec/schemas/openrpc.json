@@ -286,7 +286,7 @@
         }
       ],
       "result": {
-        "name": "StatesPageView",
+        "name": "StatePageView",
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/PageView_for_StateKVView_and_SimpleKeyStateView"
@@ -663,6 +663,21 @@
           },
           "symbol": {
             "type": "string"
+          }
+        }
+      },
+      "DynamicFieldView": {
+        "type": "object",
+        "required": [
+          "k",
+          "v"
+        ],
+        "properties": {
+          "k": {
+            "$ref": "#/components/schemas/KeyStateView"
+          },
+          "v": {
+            "$ref": "#/components/schemas/OpView_for_StateView"
           }
         }
       },
@@ -1933,9 +1948,9 @@
         ],
         "properties": {
           "entries": {
-            "type": "object",
-            "additionalProperties": {
-              "$ref": "#/components/schemas/OpView_for_StateView"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DynamicFieldView"
             }
           },
           "size_increment": {

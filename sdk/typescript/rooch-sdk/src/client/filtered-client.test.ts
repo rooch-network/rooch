@@ -16,7 +16,7 @@ import {
   Arg,
   AnnotatedFunctionResultView,
   StateView,
-  StatePageView,
+  StatePageView, SimpleKeyStateView,
 } from '../types'
 
 const mockFilter: ITransactionFilter = {
@@ -48,7 +48,7 @@ const mockProvider: IClient = {
   },
   listStates: function (
     access_path: string,
-    cursor: Uint8Array | null,
+    cursor: SimpleKeyStateView | null,
     limit: number,
   ): Promise<StatePageView> {
     console.log(access_path, cursor, limit)

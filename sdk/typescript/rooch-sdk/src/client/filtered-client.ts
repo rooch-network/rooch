@@ -73,7 +73,7 @@ export class FilteredProvider implements IClient {
 
   listStates(
     access_path: string,
-    cursor: Uint8Array | null,
+    cursor: SimpleKeyStateView | null,
     limit: number,
   ): Promise<StatePageView> {
     return this.target.listStates(access_path, cursor, limit)

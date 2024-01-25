@@ -16,6 +16,7 @@ import {
   StatePageView,
   parseRoochErrorSubStatus,
   getErrorCategoryName,
+  // SimpleKeyStateView
 } from '@roochnetwork/rooch-sdk'
 
 interface DataParams {
