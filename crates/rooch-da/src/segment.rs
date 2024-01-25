@@ -23,7 +23,7 @@ impl From<u8> for SegmentVersion {
 }
 
 // `Segment` is the basic unit of storage in DA server.
-pub trait Segment {
+pub trait Segment:Send {
     fn to_bytes(&self) -> Vec<u8>;
     fn get_version(&self) -> SegmentVersion;
     fn get_id(&self) -> SegmentID;
@@ -162,7 +162,7 @@ mod tests {
 
     #[test]
     fn test_segment_trait() {
-        let segmentv0 = SegmentV0 {
+        let segment_v0 = SegmentV0 {
             id: SegmentID {
                 chunk_id: 1234567890,
                 segment_number: 12345678,
@@ -174,18 +174,17 @@ mod tests {
         };
 
         let segments: Vec<Box<dyn Segment>> = vec![
-            Box::new(segmentv0.clone()),
+            Box::new(segment_v0.clone()),
         ];
 
         for segment in segments {
-            // 使用 Segment trait 的方法
             let bytes = segment.to_bytes();
             let version = segment.get_version();
 
             match version {
                 SegmentVersion::V0 => {
                     let recovered_segment = SegmentV0::from_bytes(&bytes).expect("successful deserialization");
-                    assert_eq!(&segmentv0, &recovered_segment)
+                    assert_eq!(&segment_v0, &recovered_segment)
                 },
 
                 _ => panic!("unsupported segment version"),

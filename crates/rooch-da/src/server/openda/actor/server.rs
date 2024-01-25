@@ -34,7 +34,9 @@ impl DAServerOpenDAActor {
         let mut config = cfg.clone();
 
         let op: Operator = match config.scheme {
-            OpenDAScheme::S3 => Operator::via_map(Scheme::S3, config.config)?,
+            OpenDAScheme::S3 => {
+                new_retry_operator(Scheme::S3, config.config, None)?
+            },
             OpenDAScheme::GCS => {
                 // If certain keys don't exist in the map, set them from environment
                 if !config.config.contains_key("bucket") {
@@ -66,7 +68,7 @@ impl DAServerOpenDAActor {
                 );
 
                 // After setting defaults, proceed with creating Operator
-                Operator::via_map(Scheme::Gcs, config.config)?
+                new_retry_operator(Scheme::Gcs, config.config, None)?
             }
         };
 
@@ -130,10 +132,11 @@ fn insert_default_from_env_or_const(
 fn new_retry_operator(
     scheme: Scheme,
     config: HashMap<String, String>,
-    retry: usize,
+    max_retry_times: Option<usize>,
 ) -> Result<Operator> {
     let mut op = Operator::via_map(scheme, config)?;
-    op = op.layer(RetryLayer::new().with_max_times(retry));
+    let max_times = max_retry_times.unwrap_or(4);
+    op = op.layer(RetryLayer::new().with_max_times(max_times));
     Ok(op)
 }
 

@@ -33,7 +33,7 @@ impl Backend {
     }
 
     // TODO return segment id, height, commitment
-    pub async fn submit(&self, segment: Box<dyn Segment>) -> Result<SubmitBackendResult> {
+    pub async fn submit(&self, segment: Box<dyn Segment + Send>) -> Result<SubmitBackendResult> {
         let data = segment.to_bytes();
         let blob = Blob::new(self.namespace, data).unwrap();
         let segment_id = segment.get_id();
