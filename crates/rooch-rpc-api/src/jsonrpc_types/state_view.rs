@@ -21,6 +21,7 @@ use rooch_types::indexer::state::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
+use std::str::FromStr;
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct StateView {
@@ -127,6 +128,22 @@ impl From<KeyStateView> for KeyState {
     }
 }
 
+impl std::fmt::Display for KeyStateView {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let key_state = KeyState::from(self.clone());
+        write!(f, "{}", key_state)
+    }
+}
+
+/// KeyStateView parse from str will ignored decoded_key
+impl FromStr for KeyStateView {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let key_state = KeyState::from_str(s)?;
+        Ok(KeyStateView::from(key_state))
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct StateKVView {
     pub key_state: KeyStateView,
@@ -171,7 +188,7 @@ impl From<TableTypeInfoView> for TableTypeInfo {
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct StateChangeSetView {
-    pub new_tables: BTreeMap<ObjectID, TableTypeInfoView>,
+    pub new_tables: BTreeSet<ObjectID>,
     pub removed_tables: BTreeSet<ObjectID>,
     pub changes: BTreeMap<ObjectID, TableChangeView>,
 }
@@ -179,11 +196,7 @@ pub struct StateChangeSetView {
 impl From<StateChangeSet> for StateChangeSetView {
     fn from(table_change_set: StateChangeSet) -> Self {
         Self {
-            new_tables: table_change_set
-                .new_tables
-                .into_iter()
-                .map(|(k, v)| (k, v.into()))
-                .collect(),
+            new_tables: table_change_set.new_tables,
             removed_tables: table_change_set.removed_tables,
             changes: table_change_set
                 .changes
@@ -260,11 +273,7 @@ impl From<TableChangeView> for TableChange {
 impl From<StateChangeSetView> for StateChangeSet {
     fn from(table_change_set: StateChangeSetView) -> Self {
         Self {
-            new_tables: table_change_set
-                .new_tables
-                .into_iter()
-                .map(|(k, v)| (k, v.into()))
-                .collect(),
+            new_tables: table_change_set.new_tables,
             removed_tables: table_change_set.removed_tables,
             changes: table_change_set
                 .changes
@@ -294,25 +303,29 @@ impl From<IndexerStateChangeSet> for IndexerStateChangeSetView {
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TableChangeSetView {
-    pub new_tables: BTreeMap<ObjectID, TableTypeInfoView>,
+    // #[serde(with = "any_key_map")]
+    pub new_tables: BTreeSet<ObjectID>,
+    // #[serde(with = "any_key_map")]
+    // pub new_tables: Vec<ObjectID>,
+    // #[serde(with = "any_key_map")]
+    // pub changes: BTreeMap<ObjectID, TableChangeView>,
+    // #[serde(with = "any_key_map")]
+    // pub new_tables: Vec<ObjectID>,
+    // #[serde(with = "any_key_map")]
     pub removed_tables: BTreeSet<ObjectID>,
-    pub changes: BTreeMap<ObjectID, TableChangeView>,
 }
 
 impl From<TableChangeSet> for TableChangeSetView {
     fn from(table_change_set: TableChangeSet) -> Self {
         Self {
-            new_tables: table_change_set
-                .new_tables
-                .into_iter()
-                .map(|(k, v)| (k, v.into()))
-                .collect(),
-            removed_tables: table_change_set.removed_tables,
-            changes: table_change_set
-                .changes
-                .into_iter()
-                .map(|(k, v)| (k, v.into()))
-                .collect(),
+            // new_tables: table_change_set.new_tables.into_iter().collect(),
+            new_tables: table_change_set.new_tables,
+            removed_tables: table_change_set.removed_tables.into_iter().collect(),
+            // changes: table_change_set
+            //     .changes
+            //     .into_iter()
+            //     .map(|(k, v)| (k, v.into()))
+            //     .collect(),
         }
     }
 }
@@ -320,17 +333,21 @@ impl From<TableChangeSet> for TableChangeSetView {
 impl From<TableChangeSetView> for TableChangeSet {
     fn from(table_change_set: TableChangeSetView) -> Self {
         Self {
-            new_tables: table_change_set
-                .new_tables
+            // new_tables: table_change_set
+            //     .new_tables
+            //     .into_iter()
+            //     .collect::<BTreeSet<_>>(),
+            new_tables: table_change_set.new_tables,
+            removed_tables: table_change_set
+                .removed_tables
                 .into_iter()
-                .map(|(k, v)| (k, v.into()))
-                .collect(),
-            removed_tables: table_change_set.removed_tables,
-            changes: table_change_set
-                .changes
-                .into_iter()
-                .map(|(k, v)| (k, v.into()))
-                .collect(),
+                .collect::<BTreeSet<_>>(),
+            // changes: table_change_set
+            //     .changes
+            //     .into_iter()
+            //     .map(|(k, v)| (k, v.into()))
+            //     .collect(),
+            changes: BTreeMap::default(),
         }
     }
 }

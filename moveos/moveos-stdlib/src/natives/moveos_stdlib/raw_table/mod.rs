@@ -29,7 +29,6 @@ use move_vm_types::{
 use moveos_types::state::KeyState;
 use moveos_types::{
     moveos_std::{object::ObjectID, raw_table::TableInfo},
-    state::TableTypeInfo,
     state_resolver::StateResolver,
 };
 use parking_lot::RwLock;
@@ -64,7 +63,8 @@ const _E_TABLE_ALREADY_EXISTS: u64 = 5;
 /// of the overall context so we can mutate while still accessing the overall context.
 #[derive(Default)]
 pub struct TableData {
-    new_tables: BTreeMap<ObjectID, TableTypeInfo>,
+    // new_tables: BTreeMap<ObjectID, TableTypeInfo>,
+    new_tables: BTreeSet<ObjectID>,
     removed_tables: BTreeSet<ObjectID>,
     tables: BTreeMap<ObjectID, Table>,
 }
@@ -288,7 +288,7 @@ impl TableData {
     pub fn into_inner(
         self,
     ) -> (
-        BTreeMap<ObjectID, TableTypeInfo>,
+        BTreeSet<ObjectID>,
         BTreeSet<ObjectID>,
         BTreeMap<ObjectID, Table>,
     ) {
@@ -483,11 +483,11 @@ fn new_table(
     _common_gas_params: &CommonGasParameters,
     gas_params: &NewTableGasParameters,
     context: &mut NativeContext,
-    ty_args: Vec<Type>,
+    _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     //0 K Type
-    assert_eq!(ty_args.len(), 1);
+    // assert_eq!(ty_args.len(), 1);
     assert_eq!(args.len(), 1);
 
     let table_context = context.extensions().get::<NativeTableContext>();
@@ -495,15 +495,16 @@ fn new_table(
 
     let mut cost = gas_params.base;
     let handle = get_table_handle(&mut args)?;
+    cost += gas_params.per_byte_in_str * NumBytes::new(handle.to_bytes().len() as u64);
     let table = table_data.get_or_create_table(handle)?;
 
-    let key_type = type_to_type_tag(context, &ty_args[0])?;
-    let key_type_name = key_type.to_string();
+    // let key_type = type_to_type_tag(context, &ty_args[0])?;
+    // let key_type_name = key_type.to_string();
     // make a std::string::String
-    let key_type_string_val = Value::struct_(Struct::pack(vec![Value::vector_u8(
-        key_type_name.as_bytes().to_vec(),
-    )]));
-    cost += gas_params.per_byte_in_str * NumBytes::new(key_type_name.len() as u64);
+    // let key_type_string_val = Value::struct_(Struct::pack(vec![Value::vector_u8(
+    //     key_type_name.as_bytes().to_vec(),
+    // )]));
+    // cost += gas_params.per_byte_in_str * NumBytes::new(key_type_name.len() as u64);
 
     // New table's state_root should be the place holder hash.
     let state_root = AccountAddress::new((*SPARSE_MERKLE_PLACEHOLDER_HASH).into());
@@ -511,7 +512,7 @@ fn new_table(
     let table_info_value = Struct::pack(vec![
         Value::address(state_root),
         Value::u64(table.size_increment as u64),
-        key_type_string_val,
+        // key_type_string_val,
     ]);
     Ok(NativeResult::ok(
         cost,

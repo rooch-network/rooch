@@ -274,8 +274,8 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
 
         // Store table change set for state sync
         let mut split_state_change_set = SplitStateChangeSet::default();
-        for (table_handle, table_info) in state_change_set.new_tables {
-            split_state_change_set.add_new_table(table_handle, table_info);
+        for table_handle in state_change_set.new_tables {
+            split_state_change_set.add_new_table(table_handle);
         }
         for (table_handle, table_change) in state_change_set.changes.clone() {
             split_state_change_set.add_table_change(table_handle, table_change);

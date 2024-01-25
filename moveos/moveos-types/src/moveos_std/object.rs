@@ -561,7 +561,7 @@ impl RawObject {
         Ok(bytes)
     }
 
-    fn into_struct_tag(&self) -> StructTag {
+    fn struct_tag(&self) -> StructTag {
         StructTag {
             address: Self::ADDRESS,
             module: Self::MODULE_NAME.to_owned(),
@@ -573,7 +573,7 @@ impl RawObject {
     // The output must consistent with ObjectEntity<T> into state result
     pub fn into_state(&self) -> Result<State> {
         let value = self.to_bytes()?;
-        let value_type = TypeTag::Struct(Box::new(self.into_struct_tag()));
+        let value_type = TypeTag::Struct(Box::new(self.struct_tag()));
         Ok(State::new(value, value_type))
     }
 }

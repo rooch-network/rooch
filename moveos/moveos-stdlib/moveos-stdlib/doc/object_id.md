@@ -3,8 +3,6 @@
 
 # Module `0x2::object_id`
 
-Move Object
-For more details, please refer to https://rooch.network/docs/developer-guides/object
 
 
 -  [Struct `ObjectID`](#0x2_object_id_ObjectID)

@@ -10,7 +10,7 @@ use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types::random_type_tag;
 use moveos_types::moveos_std::context;
 use moveos_types::moveos_std::object::{NamedTableID, ObjectID};
-use moveos_types::state::{MoveState, State, StateChangeSet, TableChange, TableTypeInfo};
+use moveos_types::state::{KeyState, MoveState, MoveType, State, StateChangeSet, TableChange};
 use rand::{thread_rng, Rng};
 use smt::NodeStore;
 use std::str::FromStr;
@@ -55,12 +55,12 @@ fn random_change_set() -> ChangeSet {
 }
 
 fn random_table_change() -> TableChange {
-    let mut table_change = TableChange::new(random_type_tag());
+    let mut table_change = TableChange::default();
 
     let mut rng = thread_rng();
     for _n in 0..rng.gen_range(1..=10) {
         table_change.entries.insert(
-            random_bytes(),
+            KeyState::new(random_bytes(), random_type_tag()),
             Op::New(State::new(random_bytes(), random_type_tag())),
         );
     }
@@ -74,9 +74,7 @@ fn random_state_change_set() -> StateChangeSet {
     let mut rng = thread_rng();
     for _n in 0..rng.gen_range(1..=5) {
         let handle = ObjectID::from(AccountAddress::random());
-        state_change_set
-            .new_tables
-            .insert(handle, TableTypeInfo::new(random_type_tag()));
+        state_change_set.new_tables.insert(handle);
     }
 
     // generate remove tables
@@ -125,13 +123,16 @@ fn test_statedb() {
 
     let mut table_change_set = StateChangeSet::default();
     let table_handle = ObjectID::ONE;
-    let mut table_change = TableChange::new(random_type_tag());
-    let key = MoveString::from_str("test_key").unwrap();
+    let mut table_change = TableChange::default();
+    let key = KeyState::new(
+        MoveString::from_str("test_key").unwrap().to_bytes(),
+        MoveString::type_tag(),
+    );
     let value = MoveString::from_str("test_value").unwrap();
 
     table_change
         .entries
-        .insert(key.to_bytes(), Op::New(value.clone().into()));
+        .insert(key.clone(), Op::New(value.clone().into()));
 
     table_change_set.changes.insert(table_handle, table_change);
     moveos_store
@@ -141,7 +142,7 @@ fn test_statedb() {
 
     let state = moveos_store
         .get_state_store()
-        .resolve_state(&table_handle, &key.to_bytes())
+        .resolve_state(&table_handle, &key.clone().into())
         .unwrap();
     assert!(state.is_some());
     assert_eq!(state.unwrap(), value.into());

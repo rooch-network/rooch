@@ -72,15 +72,16 @@ impl std::fmt::Display for KeyState {
             self.to_bytes()
                 .map_err(|e| std::fmt::Error::custom(e.to_string()))?,
         );
-        writeln!(f, "0x{}", hex_key)
+        write!(f, "0x{}", hex_key)
     }
 }
 
 impl FromStr for KeyState {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let key = hex::decode(s).map_err(|_| anyhow::anyhow!("Invalid key state str: {}", s))?;
-        Ok(KeyState::from_bytes(key.as_slice())?)
+        let key = hex::decode(s.strip_prefix("0x").unwrap_or(s))
+            .map_err(|_| anyhow::anyhow!("Invalid key state str: {}", s))?;
+        KeyState::from_bytes(key.as_slice())
     }
 }
 
@@ -561,7 +562,8 @@ impl std::fmt::Display for TableTypeInfo {
 /// Global State change set.
 #[derive(Default, Clone, Debug)]
 pub struct StateChangeSet {
-    pub new_tables: BTreeMap<ObjectID, TableTypeInfo>,
+    // pub new_tables: BTreeMap<ObjectID, TableTypeInfo>,
+    pub new_tables: BTreeSet<ObjectID>,
     pub removed_tables: BTreeSet<ObjectID>,
     pub changes: BTreeMap<ObjectID, TableChange>,
 }
@@ -574,7 +576,7 @@ impl StateChangeSet {
     ) -> &mut TableChange {
         match self.changes.entry(object_id) {
             btree_map::Entry::Occupied(entry) => entry.into_mut(),
-            btree_map::Entry::Vacant(entry) => entry.insert(TableChange::new()),
+            btree_map::Entry::Vacant(entry) => entry.insert(TableChange::default()),
         }
     }
 
@@ -586,7 +588,7 @@ impl StateChangeSet {
 }
 
 /// A change of a single table.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct TableChange {
     pub entries: BTreeMap<KeyState, Op<State>>,
     /// The size increment of the table, may be negtive which means more deleting than inserting.
@@ -595,17 +597,26 @@ pub struct TableChange {
     // pub key_type: TypeTag,
 }
 
-impl TableChange {
-    pub fn new(// k: ObjectID,
-        // key_type: TypeTag,
-    ) -> Self {
-        Self {
-            entries: BTreeMap::new(),
-            size_increment: 0,
-            // key_type,
-        }
-    }
-}
+// impl TableChange {
+//     pub fn new(// k: ObjectID,
+//         // key_type: TypeTag,
+//     ) -> Self {
+//         Self {
+//             entries: BTreeMap::new(),
+//             size_increment: 0,
+//             // key_type,
+//         }
+//     }
+// }
+
+// impl Default for TableChange {
+//     fn default() -> Self {
+//         Self {
+//             entries: BTreeMap::new(),
+//             size_increment: 0,
+//         }
+//     }
+// }
 
 /// A change of a single table.
 #[derive(Default, Clone, Debug, Eq, PartialEq)]
@@ -626,7 +637,7 @@ pub struct TableStateSet {
 /// Consistent with the StateChangeSet format. Use for state sync.
 #[derive(Default, Clone, Debug)]
 pub struct TableChangeSet {
-    pub new_tables: BTreeMap<ObjectID, TableTypeInfo>,
+    pub new_tables: BTreeSet<ObjectID>,
     pub removed_tables: BTreeSet<ObjectID>,
     pub changes: BTreeMap<ObjectID, TableChange>,
 }
@@ -639,7 +650,7 @@ impl TableChangeSet {
     ) -> &mut TableChange {
         match self.changes.entry(object_id) {
             btree_map::Entry::Occupied(entry) => entry.into_mut(),
-            btree_map::Entry::Vacant(entry) => entry.insert(TableChange::new()),
+            btree_map::Entry::Vacant(entry) => entry.insert(TableChange::default()),
         }
     }
 
@@ -662,9 +673,9 @@ impl SplitStateChangeSet {
         }
     }
 
-    pub fn add_new_table(&mut self, table_handle: ObjectID, table_info: TableTypeInfo) {
+    pub fn add_new_table(&mut self, table_handle: ObjectID) {
         let table_change_set = self.get_or_insert_table_change_set(table_handle);
-        table_change_set.new_tables.insert(table_handle, table_info);
+        table_change_set.new_tables.insert(table_handle);
     }
 
     pub fn add_table_change(&mut self, table_handle: ObjectID, table_change: TableChange) {

@@ -164,7 +164,7 @@ rand_core = { version = "0.6.3", default-features = false }
 schemars = { version = "0.8.10", features = ["either"] }
 serde = { version = "1.0.137", features = ["derive", "rc"] }
 serde_bytes = "0.11.6"
-serde_json = { version = "1.0.81", features = ["preserve_order"] }
+serde_json = { version = "1.0.111", features = ["preserve_order", "arbitrary_precision"] }
 serde_yaml = "0.9"
 serde_repr = "0.1"
 serde-name = "0.2"

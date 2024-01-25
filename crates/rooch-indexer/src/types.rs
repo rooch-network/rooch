@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+// use diesel::serialize::ToSql;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{StructTag, TypeTag};
 

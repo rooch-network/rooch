@@ -173,19 +173,6 @@ impl FromStr for Path {
                                     anyhow::anyhow!("Invalid access path key: {}", key)
                                 })
                             })
-                            // match key.strip_prefix("0x") {
-                            // Some(key) => {
-                            //     let key_bytes = hex::decode(key).map_err(|_| {
-                            //         anyhow::anyhow!("Invalid access path key: {}", key)
-                            //     })?;
-                            //     Ok(KeyState::from_bytes(key_bytes.as_slice())?)
-                            // },
-                            // None => {
-                            //     let move_str = MoveString::from_str(key)?;
-                            //     let key_bytes = bcs::to_bytes(&move_str)?;
-                            //     Ok(KeyState::from_bytes(key_bytes.as_slice())?)
-                            // }
-                            // })
                             .collect::<Result<Vec<_>, _>>()?,
                     ),
                     None => None,
@@ -203,7 +190,7 @@ impl FromStr for Path {
 /// 1. /object/$object_id1[,$object_id2]*
 /// 2. /resource/$account_address/$resource_type1[,$resource_type2]*
 /// 3. /module/$account_address/$module_name1[,$module_name2]*
-/// 4. /table/$table_handle/$key1[,$key2]*
+/// 4. /table/$table_handle/$key_state1[,$key_state2]*
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AccessPath(pub Path);
 
@@ -357,12 +344,28 @@ impl<'de> Deserialize<'de> for AccessPath {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::move_std::string::MoveString;
+    use crate::state::MoveType;
 
     fn test_path_roundtrip(path: &str) {
         let path = path.parse::<Path>().unwrap();
         let path_str = path.to_string();
         let path2 = path_str.parse::<Path>().unwrap();
         assert_eq!(path, path2);
+    }
+
+    #[test]
+    pub fn test_table_path() -> Result<()> {
+        let key1 = KeyState::new("0x12".as_bytes().to_vec(), MoveString::type_tag());
+        let key2 = KeyState::new("0x13".as_bytes().to_vec(), MoveString::type_tag());
+        let key3 = KeyState::new("key1".as_bytes().to_vec(), MoveString::type_tag());
+        let key4 = KeyState::new("key2".as_bytes().to_vec(), MoveString::type_tag());
+        println!("test_table_path key1 {}", key1.to_string());
+        println!("test_table_path key2 {}", key2.to_string());
+        println!("test_table_path key3 {}", key3.to_string());
+        println!("test_table_path key4 {}", key4.to_string());
+
+        Ok(())
     }
 
     #[test]
@@ -373,8 +376,11 @@ mod tests {
         test_path_roundtrip("/resource/0x1/0x2::m1::S1,0x3::m2::S2");
         test_path_roundtrip("/module/0x2/m1");
         test_path_roundtrip("/module/0x2/m1,m2");
-        test_path_roundtrip("/table/0x1/0x12");
-        test_path_roundtrip("/table/0x1/0x12,0x13");
-        test_path_roundtrip("/table/0x1/key1,key2");
+        // test_path_roundtrip("/table/0x1/0x12");
+        // test_path_roundtrip("/table/0x1/0x12,0x13");
+        // test_path_roundtrip("/table/0x1/key1,key2");
+        test_path_roundtrip("/table/0x1/0x043078313207000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700");
+        test_path_roundtrip("/table/0x1/0x043078313207000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700,0x043078313307000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700");
+        test_path_roundtrip("/table/0x1/0x046b65793107000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700,0x046b65793207000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700");
     }
 }

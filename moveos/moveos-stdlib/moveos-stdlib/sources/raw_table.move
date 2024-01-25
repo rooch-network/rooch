@@ -137,17 +137,6 @@ module moveos_std::raw_table {
         val: V
     }
 
-    // /// The TableHandle has the same layout as the ObjectID
-    // /// We can convert the ObjectID to TableHandle
-    // /// Define a TableHandle is for remove the dependency of ObjectID, and object module
-    // struct TableHandle has drop,copy{
-    //     id: address,
-    // }
-    //
-    // public(friend) fun new_table_handle(id: address): TableHandle {
-    //     TableHandle { id }
-    // }
-
     /// New a table. Aborts if the table exists.
     native public(friend) fun new_table(table_handle: ObjectID): TableInfo;
     // native public(friend) fun new_table<K: copy + drop>(table_handle: ObjectID): TableInfo;
