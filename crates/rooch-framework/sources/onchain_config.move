@@ -8,7 +8,6 @@ module rooch_framework::onchain_config {
     use moveos_std::context::{Self, Context};
     use moveos_std::object;
     use std::vector;
-    use std::debug;
 
     friend rooch_framework::upgrade;
     friend rooch_framework::genesis;
