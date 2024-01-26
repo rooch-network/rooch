@@ -47,7 +47,7 @@ use moveos_types::{
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 
-use crate::gas::table::{initial_cost_schedule, ClassifiedGasMeter};
+use crate::gas::table::{get_gas_schedule_entries, initial_cost_schedule, ClassifiedGasMeter};
 use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
 use crate::vm::tx_argument_resolver;
 
@@ -87,7 +87,8 @@ impl MoveOSVM {
         ctx: TxContext,
     ) -> MoveOSSession<'r, '_, S, MoveOSGasMeter> {
         //Do not charge gas for genesis session
-        let cost_table = initial_cost_schedule();
+        let gas_entries = get_gas_schedule_entries(remote);
+        let cost_table = initial_cost_schedule(gas_entries);
         let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
         gas_meter.set_metering(false);
         // Genesis session do not need to execute pre_execute and post_execute function

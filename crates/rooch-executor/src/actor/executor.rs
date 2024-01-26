@@ -16,7 +16,7 @@ use move_core_types::language_storage::ModuleId;
 use move_core_types::resolver::ModuleResolver;
 use move_core_types::value::MoveValue;
 use move_core_types::vm_status::{StatusCode, VMStatus};
-use moveos::gas::table::{initial_cost_schedule, MoveOSGasMeter};
+use moveos::gas::table::{get_gas_schedule_entries, initial_cost_schedule, MoveOSGasMeter};
 use moveos::moveos::{GasPaymentAccount, MoveOS};
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_store::transaction_store::TransactionStore;
@@ -26,12 +26,14 @@ use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::FunctionId;
 use moveos_types::moveos_std::tx_context::TxContext;
+use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::transaction::{
     FunctionCall, MoveAction, MoveOSTransaction, TransactionExecutionInfo, VerifiedMoveAction,
 };
 use moveos_verifier::metadata::load_module_metadata;
+use rooch_framework::natives::gas_parameter::gas_member::FromOnChainGasSchedule;
 use rooch_genesis::RoochGenesis;
 use rooch_store::RoochStore;
 use rooch_types::address::MultiChainAddress;
@@ -66,8 +68,21 @@ impl ExecutorActor {
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
     ) -> Result<Self> {
-        let genesis: RoochGenesis =
+        let mut genesis: RoochGenesis =
             rooch_genesis::RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
+
+        let gas_schedule_entries =
+            get_gas_schedule_entries(&MoveOSResolverProxy(moveos_store.clone()));
+        if let Some(gas_entries) = gas_schedule_entries {
+            if let Some(gas_parameters) =
+                rooch_framework::natives::NativeGasParameters::from_on_chain_gas_schedule(
+                    &gas_entries,
+                )
+            {
+                genesis.rooch_framework_gas_params = gas_parameters;
+            }
+        }
+
         let moveos = MoveOS::new(
             moveos_store,
             genesis.all_natives(),
@@ -319,7 +334,8 @@ impl ExecutorActor {
     pub fn validate_gas_function(&self, tx: &MoveOSTransaction) -> VMResult<Option<bool>> {
         let MoveOSTransaction { ctx, .. } = tx;
 
-        let cost_table = initial_cost_schedule();
+        let gas_entries = get_gas_schedule_entries(self.moveos.moveos_resolver());
+        let cost_table = initial_cost_schedule(gas_entries);
         let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
         gas_meter.set_metering(false);
 
@@ -437,7 +453,8 @@ impl ExecutorActor {
     pub fn get_account_balance(&self, tx: &MoveOSTransaction) -> VMResult<u128> {
         let MoveOSTransaction { ctx, .. } = tx;
 
-        let cost_table = initial_cost_schedule();
+        let gas_entries = get_gas_schedule_entries(self.moveos.moveos_resolver());
+        let cost_table = initial_cost_schedule(gas_entries);
         let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
         gas_meter.set_metering(false);
 

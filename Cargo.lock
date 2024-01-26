@@ -5741,6 +5741,7 @@ dependencies = [
  "move-ir-types",
  "move-model",
  "move-package",
+ "move-resource-viewer",
  "move-stdlib",
  "move-symbol-pool",
  "move-transactional-test-runner",
