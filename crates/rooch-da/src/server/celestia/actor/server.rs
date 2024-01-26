@@ -11,8 +11,8 @@ use coerce::actor::Actor;
 use rooch_config::da_config::DAServerCelestiaConfig;
 
 use crate::messages::{PutBatchMessage, PutBatchResult};
-use crate::server::celestia::backend::Backend;
 use crate::segment::{SegmentID, SegmentV0};
+use crate::server::celestia::backend::Backend;
 
 pub struct DAServerCelestiaActor {
     max_segment_size: usize,

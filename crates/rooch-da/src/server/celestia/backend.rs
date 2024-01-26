@@ -46,7 +46,7 @@ impl Backend {
             .await
         {
             Ok(height) => Ok(SubmitBackendResult {
-                segment_id: segment_id,
+                segment_id,
                 namespace: self.namespace,
                 height,
                 commitment: blob.commitment,

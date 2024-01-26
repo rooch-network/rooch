@@ -23,7 +23,7 @@ impl From<u8> for SegmentVersion {
 }
 
 // `Segment` is the basic unit of storage in DA server.
-pub trait Segment:Send {
+pub trait Segment: Send {
     fn to_bytes(&self) -> Vec<u8>;
     fn get_version(&self) -> SegmentVersion;
     fn get_id(&self) -> SegmentID;
@@ -32,15 +32,18 @@ pub trait Segment:Send {
 #[derive(Serialize, Debug, PartialEq, Clone)]
 pub struct SegmentV0 {
     pub id: SegmentID,
-    pub is_last: bool,  // is last segment in chunk
+    pub is_last: bool,      // is last segment in chunk
     pub data_checksum: u64, // checksum of data, xxh3_64
-    pub checksum: u64,  // checksum of above fields(exclude data), xxh3_64
+    pub checksum: u64,      // checksum of above fields(exclude data), xxh3_64
 
     pub data: Vec<u8>,
 }
 
 impl SegmentV0 {
-    pub fn from_bytes(bytes: &[u8]) -> anyhow::Result<Self> where Self: Sized {
+    pub fn from_bytes(bytes: &[u8]) -> anyhow::Result<Self>
+    where
+        Self: Sized,
+    {
         if bytes.len() < 42 {
             return Err(anyhow::anyhow!("segment_v0: bytes less than 42"));
         }
@@ -67,10 +70,7 @@ impl SegmentV0 {
 
 impl Segment for SegmentV0 {
     fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(
-            42+
-                self.data.len()
-        );
+        let mut bytes = Vec::with_capacity(42 + self.data.len());
 
         bytes.push(0);
         bytes.extend_from_slice(&self.id.chunk_id.to_le_bytes());
@@ -173,9 +173,7 @@ mod tests {
             data: vec![1, 2, 3, 4, 5],
         };
 
-        let segments: Vec<Box<dyn Segment>> = vec![
-            Box::new(segment_v0.clone()),
-        ];
+        let segments: Vec<Box<dyn Segment>> = vec![Box::new(segment_v0.clone())];
 
         for segment in segments {
             let bytes = segment.to_bytes();
@@ -183,9 +181,10 @@ mod tests {
 
             match version {
                 SegmentVersion::V0 => {
-                    let recovered_segment = SegmentV0::from_bytes(&bytes).expect("successful deserialization");
+                    let recovered_segment =
+                        SegmentV0::from_bytes(&bytes).expect("successful deserialization");
                     assert_eq!(&segment_v0, &recovered_segment)
-                },
+                }
 
                 _ => panic!("unsupported segment version"),
             };
