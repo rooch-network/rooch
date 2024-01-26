@@ -3,5 +3,4 @@
 
 pub mod celestia;
 pub mod openda;
-pub mod segment;
 pub mod serverproxy;

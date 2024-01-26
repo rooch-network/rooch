@@ -4,4 +4,5 @@
 pub mod actor;
 pub mod messages;
 pub mod proxy;
+pub mod segment;
 pub mod server;
