@@ -126,41 +126,43 @@ describe('provider', () => {
           const mock = fetchMock.sandbox()
 
           const body = {
-            "jsonrpc": "2.0",
-              "result": {
-            "data": [
-              {
-                "key_state": {
-                  "key": "0x65303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e745f636f696e5f73746f72653a3a4175746f416363657074436f696e73",
-                  "key_type": "0x1::ascii::String",
-                  "decoded_key": "0000000000000000000000000000000000000000000000000000000000000003::account_coin_store::AutoAcceptCoins"
+            jsonrpc: '2.0',
+            result: {
+              data: [
+                {
+                  key_state: {
+                    key: '0x65303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e745f636f696e5f73746f72653a3a4175746f416363657074436f696e73',
+                    key_type: '0x1::ascii::String',
+                    decoded_key:
+                      '0000000000000000000000000000000000000000000000000000000000000003::account_coin_store::AutoAcceptCoins',
+                  },
+                  state: {
+                    value: '0x0db9d01a4f72e3708665fde27fc0da6cf353b0a9b0a2f3a2c2597f3e949e62d8',
+                    value_type: '0x3::account_coin_store::AutoAcceptCoins',
+                    decoded_value: {
+                      abilities: 8,
+                      type: '0x3::account_coin_store::AutoAcceptCoins',
+                      value: {
+                        auto_accept_coins: {
+                          abilities: 4,
+                          type: '0x2::table::Table<address, bool>',
+                          value: {
+                            handle:
+                              '0x0db9d01a4f72e3708665fde27fc0da6cf353b0a9b0a2f3a2c2597f3e949e62d8',
+                          },
+                        },
+                      },
+                    },
+                  },
                 },
-                "state": {
-                  "value": "0x0db9d01a4f72e3708665fde27fc0da6cf353b0a9b0a2f3a2c2597f3e949e62d8",
-                  "value_type": "0x3::account_coin_store::AutoAcceptCoins",
-                  "decoded_value": {
-                    "abilities": 8,
-                    "type": "0x3::account_coin_store::AutoAcceptCoins",
-                    "value": {
-                      "auto_accept_coins": {
-                        "abilities": 4,
-                        "type": "0x2::table::Table<address, bool>",
-                        "value": {
-                          "handle": "0x0db9d01a4f72e3708665fde27fc0da6cf353b0a9b0a2f3a2c2597f3e949e62d8"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            ],
-                "next_cursor": {
-                  "key": "0x65303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e745f636f696e5f73746f72653a3a4175746f416363657074436f696e73",
-                  "key_type": "0x1::ascii::String"
+              ],
+              next_cursor: {
+                key: '0x65303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e745f636f696e5f73746f72653a3a4175746f416363657074436f696e73',
+                key_type: '0x1::ascii::String',
+              },
+              has_next_page: false,
             },
-            "has_next_page": true
-          },
-            "id": 101
+            id: '0',
           }
 
           mock.post('*', JSON.stringify(body))
@@ -176,16 +178,14 @@ describe('provider', () => {
         try {
           const assetsPath =
             '/table/0x030d80ff6a6b1a2467dffd11a7f0eba7d2b1a486289c3484112ca1245645dfe0'
-          const cursor = null;
+          const cursor = null
           const result = await provider.listStates(assetsPath, cursor, 1)
 
           expect(result.data).toBeDefined()
-          expect(result.next_cursor).toBe(
-              {
-                "key": "0x65303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e745f636f696e5f73746f72653a3a4175746f416363657074436f696e73",
-                "key_type": "0x1::ascii::String"
-              },
-          )
+          expect(result.next_cursor).toBe({
+            key: '0x65303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e745f636f696e5f73746f72653a3a4175746f416363657074436f696e73',
+            key_type: '0x1::ascii::String',
+          })
           expect(result.has_next_page).toBeFalsy()
         } catch (err: any) {
           expect(err).to.be.an('error')

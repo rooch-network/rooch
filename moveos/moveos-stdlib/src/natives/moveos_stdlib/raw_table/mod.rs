@@ -25,10 +25,7 @@ use move_vm_types::{
     values::{GlobalValue, Struct, Value},
 };
 use moveos_types::state::{KeyState, MoveState};
-use moveos_types::{
-    moveos_std::{object_id::ObjectID, raw_table::TableInfo},
-    state_resolver::StateResolver,
-};
+use moveos_types::{moveos_std::object_id::ObjectID, state_resolver::StateResolver};
 use parking_lot::RwLock;
 use smallvec::smallvec;
 use smt::SPARSE_MERKLE_PLACEHOLDER_HASH;
@@ -713,10 +710,10 @@ fn native_box_length(
         .resolver
         .resolve_object_state(&handle)
         .map_err(|err| partial_extension_error(format!("remote table resolver failure: {}", err)))?
-        .map(|state| state.as_object::<TableInfo>())
+        .map(|state| state.as_raw_object())
         .transpose()
         .map_err(|err| partial_extension_error(format!("remote table resolver failure: {}", err)))?
-        .map_or_else(|| 0u64, |obj| obj.value.size);
+        .map_or_else(|| 0u64, |obj| obj.size);
 
     let size_increment = if table_data.exist_table(&handle) {
         table_data.borrow_table(&handle).unwrap().size_increment

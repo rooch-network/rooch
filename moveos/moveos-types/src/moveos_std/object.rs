@@ -53,7 +53,8 @@ impl MoveStructState for TablePlaceholder {
 pub type TableObject = ObjectEntity<TablePlaceholder>;
 pub type AccountStorageObject = ObjectEntity<AccountStorage>;
 
-/// The Entity of the Object<T>
+/// The Entity of the Object<T>.
+/// The value must be the last field
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct ObjectEntity<T> {
     pub id: ObjectID,
@@ -342,16 +343,6 @@ impl AnnotatedObject {
             }
             _ => bail!("ObjectEntity flag field should be u8"),
         };
-        let value = match fields.next().expect("ObjectEntity should have value") {
-            (field_name, AnnotatedMoveValue::Struct(field_value)) => {
-                debug_assert!(
-                    field_name.as_str() == "value",
-                    "ObjectEntity value field name should be value"
-                );
-                field_value
-            }
-            _ => bail!("ObjectEntity value field should be struct"),
-        };
         let state_root = match fields.next().expect("ObjectEntity should have state_root") {
             (field_name, AnnotatedMoveValue::Address(field_value)) => {
                 debug_assert!(
@@ -371,6 +362,16 @@ impl AnnotatedObject {
                 field_value
             }
             _ => bail!("ObjectEntity size field should be u64"),
+        };
+        let value = match fields.next().expect("ObjectEntity should have value") {
+            (field_name, AnnotatedMoveValue::Struct(field_value)) => {
+                debug_assert!(
+                    field_name.as_str() == "value",
+                    "ObjectEntity value field name should be value"
+                );
+                field_value
+            }
+            _ => bail!("ObjectEntity value field should be struct"),
         };
         Ok(Self::new_annotated_object(
             object_id, owner, flag, value, state_root, size,

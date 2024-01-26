@@ -8,8 +8,8 @@ use move_core_types::language_storage::{StructTag, TypeTag};
 use moveos_types::access_path::AccessPath;
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::moveos_std::object::RawObject;
 use moveos_types::moveos_std::object_id::ObjectID;
-use moveos_types::moveos_std::raw_table::TableInfo;
 use moveos_types::state::{KeyState, PlaceholderStruct};
 use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
 use rooch_rpc_api::jsonrpc_types::CoinInfoView;
@@ -251,10 +251,10 @@ impl AggregateService {
             .collect::<Result<Vec<_>>>()
     }
 
-    pub async fn get_table_infos(
+    pub async fn get_raw_objects(
         &self,
         table_handles: Vec<ObjectID>,
-    ) -> Result<HashMap<ObjectID, Option<TableInfo>>> {
+    ) -> Result<HashMap<ObjectID, Option<RawObject>>> {
         // Global table 0x0 table's key type is always ObjectID.
         let access_path = AccessPath::objects(table_handles.clone());
         self.rpc_service
@@ -265,13 +265,10 @@ impl AggregateService {
             .map(|(state_opt, table_handle)| {
                 Ok((
                     table_handle,
-                    state_opt
-                        .map(|state| {
-                            Ok::<TableInfo, anyhow::Error>(
-                                state.as_object_uncheck::<TableInfo>()?.value,
-                            )
-                        })
-                        .transpose()?,
+                    match state_opt {
+                        Some(state) => Some(state.as_raw_object()?),
+                        None => None,
+                    },
                 ))
             })
             .collect::<Result<HashMap<_, _>>>()

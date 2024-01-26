@@ -3,7 +3,7 @@
 //check the account coin store object id
 //# run --signers test
 script {
-    use moveos_std::object;
+    use moveos_std::object_id;
     use moveos_std::context::Context;
     use rooch_framework::coin_store::CoinStore;
     use rooch_framework::gas_coin::GasCoin;

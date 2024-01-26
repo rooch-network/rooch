@@ -48,11 +48,13 @@ script {
         let kv = m::make_kv_store(ctx);
         m::add(&mut kv, string::utf8(b"test"), b"value");
         let object_id = m::save_to_object_storage(ctx, kv);
+        std::debug::print(&110120);
         std::debug::print(&object_id);
     }
 }
 
-//# run --signers test --args @0x1a2c876ea44c751aedab69ef139181114c79abf4fb8bca363b66969218e7d815
+//# run --signers test --args @0x20190e28d7f8ca90e1b0d8cbf8d8a07f1de0f985a778138cf879aa9b10955aa4
+
 script {
     use std::string;
     use moveos_std::object::{Self, Object};

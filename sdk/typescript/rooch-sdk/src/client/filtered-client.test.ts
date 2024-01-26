@@ -16,7 +16,8 @@ import {
   Arg,
   AnnotatedFunctionResultView,
   StateView,
-  StatePageView, SimpleKeyStateView,
+  StatePageView,
+  SimpleKeyStateView,
 } from '../types'
 
 const mockFilter: ITransactionFilter = {
