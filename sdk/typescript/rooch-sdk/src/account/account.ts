@@ -5,7 +5,15 @@ import { DEFAULT_MAX_GAS_AMOUNT } from '../constants'
 import { IAccount, CallOption, ISessionKey } from './interface'
 import { IClient } from '../client'
 import { IAuthorizer, IAuthorization, PrivateKeyAuth } from '../auth'
-import { AccountAddress, FunctionId, TypeTag, Arg, StatePageView, Bytes, IPage } from '../types'
+import {
+  AccountAddress,
+  FunctionId,
+  TypeTag,
+  Arg,
+  StatePageView,
+  IPage,
+  SimpleKeyStateView,
+} from '../types'
 import { BcsSerializer } from '../types/bcs'
 import {
   RoochTransaction,
@@ -256,7 +264,10 @@ export class Account implements IAccount {
    * @param cursor The page cursor
    * @param limit The page limit
    */
-  public async querySessionKeys(cursor: Bytes | null, limit: number): Promise<IPage<ISessionKey>> {
+  public async querySessionKeys(
+    cursor: SimpleKeyStateView | null,
+    limit: number,
+  ): Promise<IPage<ISessionKey, SimpleKeyStateView>> {
     const accessPath = `/resource/${this.address}/0x3::session_key::SessionKeys`
     const state = await this.client.getStates(accessPath)
     if (state) {

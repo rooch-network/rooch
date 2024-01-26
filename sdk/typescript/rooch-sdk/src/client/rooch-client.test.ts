@@ -126,32 +126,41 @@ describe('provider', () => {
           const mock = fetchMock.sandbox()
 
           const body = {
-            jsonrpc: '2.0',
-            result: {
-              data: [
-                {
-                  state: {
-                    value:
-                      '0x0e526f6f63682047617320436f696e03524743090000000000000000000000000000000000000000000000000000000000000000',
-                    value_type: '0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>',
-                    decoded_value: {
-                      abilities: 8,
-                      type: '0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>',
-                      value: {
-                        decimals: 9,
-                        name: 'Rooch Gas Coin',
-                        supply: '0',
-                        symbol: 'RGC',
-                      },
-                    },
-                  },
+            "jsonrpc": "2.0",
+              "result": {
+            "data": [
+              {
+                "key_state": {
+                  "key": "0x65303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e745f636f696e5f73746f72653a3a4175746f416363657074436f696e73",
+                  "key_type": "0x1::ascii::String",
+                  "decoded_key": "0000000000000000000000000000000000000000000000000000000000000003::account_coin_store::AutoAcceptCoins"
                 },
-              ],
-              next_cursor:
-                '0xa501303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a636f696e3a3a436f696e496e666f3c303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e3e',
-              has_next_page: false,
+                "state": {
+                  "value": "0x0db9d01a4f72e3708665fde27fc0da6cf353b0a9b0a2f3a2c2597f3e949e62d8",
+                  "value_type": "0x3::account_coin_store::AutoAcceptCoins",
+                  "decoded_value": {
+                    "abilities": 8,
+                    "type": "0x3::account_coin_store::AutoAcceptCoins",
+                    "value": {
+                      "auto_accept_coins": {
+                        "abilities": 4,
+                        "type": "0x2::table::Table<address, bool>",
+                        "value": {
+                          "handle": "0x0db9d01a4f72e3708665fde27fc0da6cf353b0a9b0a2f3a2c2597f3e949e62d8"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+                "next_cursor": {
+                  "key": "0x65303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e745f636f696e5f73746f72653a3a4175746f416363657074436f696e73",
+                  "key_type": "0x1::ascii::String"
             },
-            id: '0',
+            "has_next_page": true
+          },
+            "id": 101
           }
 
           mock.post('*', JSON.stringify(body))
@@ -166,13 +175,16 @@ describe('provider', () => {
 
         try {
           const assetsPath =
-            '/table/0x82af1915608fa5f3e5286e4372e289b5b3ef03d0126cdae9ca7f561a145359c8'
-          const cursor = new Uint8Array([0])
-          const result = await provider.listStates(assetsPath, cursor, 10)
+            '/table/0x030d80ff6a6b1a2467dffd11a7f0eba7d2b1a486289c3484112ca1245645dfe0'
+          const cursor = null;
+          const result = await provider.listStates(assetsPath, cursor, 1)
 
           expect(result.data).toBeDefined()
           expect(result.next_cursor).toBe(
-            '0xa501303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a636f696e3a3a436f696e496e666f3c303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e3e',
+              {
+                "key": "0x65303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e745f636f696e5f73746f72653a3a4175746f416363657074436f696e73",
+                "key_type": "0x1::ascii::String"
+              },
           )
           expect(result.has_next_page).toBeFalsy()
         } catch (err: any) {

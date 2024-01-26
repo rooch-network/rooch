@@ -8,6 +8,7 @@ import {
   AnnotatedFunctionResultView,
   StateView,
   StatePageView,
+  SimpleKeyStateView,
 } from '../types'
 import { IClient } from './interface'
 

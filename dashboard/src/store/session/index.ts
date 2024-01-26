@@ -16,7 +16,7 @@ import {
   StatePageView,
   parseRoochErrorSubStatus,
   getErrorCategoryName,
-  // SimpleKeyStateView
+  SimpleKeyStateView
 } from '@roochnetwork/rooch-sdk'
 
 interface DataParams {
@@ -161,7 +161,7 @@ export const StateSlice = CreateGenericSlice({
       nextCursor: null,
       hasNextPage: false,
     },
-  } as GenericState<IPage<ISessionKey>>,
+  } as GenericState<IPage<ISessionKey, SimpleKeyStateView>>,
   reducers: {},
 })
 
