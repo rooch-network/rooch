@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::natives::helpers::{make_module_natives, make_native};
-use bitcoin::Network;
-use bitcoin::{Address, PublicKey};
-use bitcoin_bech32::{constants::Network as Bech32Network, u5, WitnessProgram};
+use bech32::{self, ToBase32, Variant};
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -105,105 +103,18 @@ pub fn native_bech32(
     let cost = gas_params.base
         + (gas_params.per_byte * NumBytes::new(public_key.as_bytes_ref().len() as u64));
 
-    // Version 0 for bech32 encoding and 1-16 are for bech32m encoding
-    let Ok(version) = u5::try_from_u8(version) else {
-        return Ok(NativeResult::err(cost, E_INVALID_DATA));
+    let (hrp, variant) = if version == 0 {
+        ("bech32", Variant::Bech32)
+    } else {
+        ("bech32m", Variant::Bech32m)
     };
 
-    let Ok(witness_program) = WitnessProgram::new(
-        version,
-        public_key.as_bytes_ref().to_vec(),
-        Bech32Network::Bitcoin, // TODO network selection
-    ) else {
-        return Ok(NativeResult::err(cost, E_INVALID_SCRIPT_VERSION));
-    };
-
-    let address = witness_program.to_address();
-    let address_bytes = address.as_bytes().to_vec();
+    let encoded =
+        bech32::encode(hrp, public_key.as_bytes_ref().to_vec().to_base32(), variant).unwrap();
 
     Ok(NativeResult::ok(
         cost,
-        smallvec![Value::vector_u8(address_bytes)],
-    ))
-}
-
-/***************************************************************************************************
- * native fun p2pkh
- * Implementation of the Move native function `encoding::p2pkh(public_key: &vector<u8>): vector<u8>`
- *   gas cost: encoding_p2pkh_cost_base                               | base cost for function call and fixed opers
- *              + encoding_p2pkh_data_cost_per_byte * msg.len()       | cost depends on length of message
- *              + encoding_p2pkh_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
- **************************************************************************************************/
-pub fn native_p2pkh(
-    gas_params: &FromBytesGasParameters,
-    _context: &mut NativeContext,
-    ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    debug_assert!(ty_args.is_empty());
-    debug_assert!(args.len() == 1);
-
-    let public_key = pop_arg!(args, VectorRef);
-    let public_key_bytes_ref = public_key.as_bytes_ref();
-
-    let cost =
-        gas_params.base + (gas_params.per_byte * NumBytes::new(public_key_bytes_ref.len() as u64));
-
-    let Ok(bitcoin_public_key) = PublicKey::from_slice(&public_key_bytes_ref) else {
-        return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
-    };
-
-    // Generate the P2PKH address from the bitcoin public key
-    let p2pkh_address = Address::p2pkh(&bitcoin_public_key, Network::Bitcoin); // TODO network selection
-    let p2pkh_address_bytes = p2pkh_address.to_string().as_bytes().to_vec();
-
-    Ok(NativeResult::ok(
-        cost,
-        smallvec![Value::vector_u8(p2pkh_address_bytes)],
-    ))
-}
-
-/***************************************************************************************************
- * native fun p2sh
- * Implementation of the Move native function `encoding::p2sh(public_key: &vector<u8>): vector<u8>`
- *   gas cost: encoding_p2sh_cost_base                               | base cost for function call and fixed opers
- *              + encoding_p2sh_data_cost_per_byte * msg.len()       | cost depends on length of message
- *              + encoding_p2sh_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
- **************************************************************************************************/
-pub fn native_p2sh(
-    gas_params: &FromBytesGasParameters,
-    _context: &mut NativeContext,
-    ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    debug_assert!(ty_args.is_empty());
-    debug_assert!(args.len() == 1);
-
-    let public_key = pop_arg!(args, VectorRef);
-    let public_key_bytes_ref = public_key.as_bytes_ref();
-
-    let cost =
-        gas_params.base + (gas_params.per_byte * NumBytes::new(public_key_bytes_ref.len() as u64));
-
-    let Ok(bitcoin_public_key) = PublicKey::from_slice(&public_key_bytes_ref) else {
-        return Ok(NativeResult::err(cost, E_INVALID_PUBKEY));
-    };
-
-    // Create a redeem script (e.g., P2PKH)
-    let script_pubkey = Address::p2pkh(&bitcoin_public_key, Network::Bitcoin).script_pubkey(); // TODO network selection
-    let redeem_script = script_pubkey.as_script();
-    // Generate the P2SH address from the redeem script
-    let Ok(p2sh_address) = Address::p2sh(
-        redeem_script,
-        Network::Bitcoin, // TODO network selection
-    ) else {
-        return Ok(NativeResult::err(cost, E_EXCESSIVE_SCRIPT_SIZE));
-    };
-    let p2sh_address_bytes = p2sh_address.to_string().as_bytes().to_vec();
-
-    Ok(NativeResult::ok(
-        cost,
-        smallvec![Value::vector_u8(p2sh_address_bytes)],
+        smallvec![Value::vector_u8(encoded.bytes())],
     ))
 }
 
@@ -231,8 +142,6 @@ pub struct GasParameters {
     pub base58: FromBytesGasParameters,
     pub base58check: FromBytesGasParameters,
     pub bech32: FromBytesGasParameters,
-    pub p2pkh: FromBytesGasParameters,
-    pub p2sh: FromBytesGasParameters,
 }
 
 impl GasParameters {
@@ -241,8 +150,6 @@ impl GasParameters {
             base58: FromBytesGasParameters::zeros(),
             base58check: FromBytesGasParameters::zeros(),
             bech32: FromBytesGasParameters::zeros(),
-            p2pkh: FromBytesGasParameters::zeros(),
-            p2sh: FromBytesGasParameters::zeros(),
         }
     }
 }
@@ -255,8 +162,6 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             make_native(gas_params.base58check, native_base58check),
         ),
         ("bech32", make_native(gas_params.bech32, native_bech32)),
-        ("p2pkh", make_native(gas_params.p2pkh, native_p2pkh)),
-        ("p2sh", make_native(gas_params.p2sh, native_p2sh)),
     ];
 
     make_module_natives(natives)

@@ -47,7 +47,7 @@ use moveos_types::{
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 
-use crate::gas::table::{initial_cost_schedule, ClassifiedGasMeter};
+use crate::gas::table::{get_gas_schedule_entries, initial_cost_schedule, ClassifiedGasMeter};
 use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
 use crate::vm::tx_argument_resolver;
 
@@ -87,7 +87,8 @@ impl MoveOSVM {
         ctx: TxContext,
     ) -> MoveOSSession<'r, '_, S, MoveOSGasMeter> {
         //Do not charge gas for genesis session
-        let cost_table = initial_cost_schedule();
+        let gas_entries = get_gas_schedule_entries(remote);
+        let cost_table = initial_cost_schedule(gas_entries);
         let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
         gas_meter.set_metering(false);
         // Genesis session do not need to execute pre_execute and post_execute function
@@ -456,7 +457,7 @@ where
         status: KeptVMStatus,
     ) -> VMResult<(TxContext, RawTransactionOutput)> {
         let gas_used = self.query_gas_used();
-        let is_read_only_execution = self.read_only;
+        // let is_read_only_execution = self.read_only;
         let MoveOSSession {
             vm: _,
             remote: _,
@@ -523,6 +524,9 @@ where
                     .finish(Location::Undefined));
             }
         }
+
+        // Temporary behavior, will enable this in the future.
+        /*
         match gas_meter.charge_event(events.as_slice()) {
             Ok(_) => {}
             Err(partial_vm_error) => {
@@ -544,6 +548,7 @@ where
             gas_statement.execution_gas_used = 0;
             gas_statement.storage_gas_used = 0;
         }
+         */
 
         Ok((
             ctx.tx_context,
@@ -554,7 +559,6 @@ where
                 events,
                 gas_used,
                 is_upgrade,
-                gas_statement,
             },
         ))
     }

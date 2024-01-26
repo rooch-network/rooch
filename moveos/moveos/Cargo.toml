@@ -50,6 +50,7 @@ move-compiler = { workspace = true }
 move-symbol-pool = { workspace = true }
 move-package = { workspace = true }
 move-model = { workspace = true }
+move-resource-viewer = { workspace = true }
 
 moveos-types = { workspace = true }
 moveos-store = { workspace = true }
