@@ -36,20 +36,20 @@ Event for framework upgrades
 ## Constants
 
 
-<a name="0x3_upgrade_BitcoinMoveAccount"></a>
-
-
-
-<pre><code><b>const</b> <a href="upgrade.md#0x3_upgrade_BitcoinMoveAccount">BitcoinMoveAccount</a>: <b>address</b> = 0x4;
-</code></pre>
-
-
-
 <a name="0x3_upgrade_ErrorNotSequencer"></a>
 
 
 
 <pre><code><b>const</b> <a href="upgrade.md#0x3_upgrade_ErrorNotSequencer">ErrorNotSequencer</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_upgrade_BitcoinMoveAccount"></a>
+
+
+
+<pre><code><b>const</b> <a href="upgrade.md#0x3_upgrade_BitcoinMoveAccount">BitcoinMoveAccount</a>: <b>address</b> = 0x4;
 </code></pre>
 
 

@@ -8,9 +8,16 @@ module rooch_framework::onchain_config {
     use moveos_std::context::{Self, Context};
     use moveos_std::object;
     use std::vector;
+    use moveos_std::signer;
 
     friend rooch_framework::upgrade;
     friend rooch_framework::genesis;
+
+    const ErrorNotSequencer: u64 = 1;
+
+    struct GasScheduleUpdated has store, copy, drop {
+        last_updated: u64
+    }
 
     #[data_struct]
     struct GasEntry has store, copy, drop {
@@ -74,6 +81,25 @@ module rooch_framework::onchain_config {
         let object_id = object::named_object_id<OnchainConfig>();
         let obj = context::borrow_object<OnchainConfig>(ctx, object_id);
         object::borrow(obj)
+    }
+
+    entry fun update_onchain_gas_schedule(ctx: &mut Context, account: &signer, gas_schedule_blob: vector<u8>) {
+        let sender_address = signer::address_of(account);
+        assert!(sender_address == Self::sequencer(ctx), ErrorNotSequencer);
+
+        let gas_schedule = GasSchedule {
+            feature_version: 0,
+            entries: vector::empty<GasEntry>()
+        };
+
+        if (vector::length(&gas_schedule_blob) > 0) {
+            gas_schedule = bcs::from_bytes<GasSchedule>(gas_schedule_blob);
+        };
+
+        context::add(ctx, GasScheduleUpdated {last_updated: 1});
+
+        let obj = context::new_named_object(ctx, gas_schedule);
+        object::transfer_extend(obj, @rooch_framework);
     }
 
     public fun onchain_gas_schedule(ctx: &Context): &GasSchedule {
