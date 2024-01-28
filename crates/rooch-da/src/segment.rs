@@ -29,6 +29,8 @@ pub trait Segment: Send {
     fn get_id(&self) -> SegmentID;
 }
 
+pub const SEGMENT_V0_DATA_OFFSET: usize = 42;
+
 #[derive(Serialize, Debug, PartialEq, Clone)]
 pub struct SegmentV0 {
     pub id: SegmentID,
@@ -44,16 +46,16 @@ impl SegmentV0 {
     where
         Self: Sized,
     {
-        if bytes.len() < 42 {
-            return Err(anyhow::anyhow!("segment_v0: bytes less than 42"));
+        if bytes.len() < SEGMENT_V0_DATA_OFFSET {
+            return Err(anyhow::anyhow!("segment_v0: bytes less than {}", SEGMENT_V0_DATA_OFFSET));
         }
 
         let chunk_id = u128::from_le_bytes(bytes[1..17].try_into()?);
         let segment_number = u64::from_le_bytes(bytes[17..25].try_into()?);
         let is_last = bytes[25] != 0;
         let data_checksum = u64::from_le_bytes(bytes[26..34].try_into()?);
-        let checksum = u64::from_le_bytes(bytes[34..42].try_into()?);
-        let data = bytes[42..].to_vec();
+        let checksum = u64::from_le_bytes(bytes[34..SEGMENT_V0_DATA_OFFSET].try_into()?);
+        let data = bytes[SEGMENT_V0_DATA_OFFSET..].to_vec();
 
         Ok(Self {
             id: SegmentID {
@@ -70,7 +72,7 @@ impl SegmentV0 {
 
 impl Segment for SegmentV0 {
     fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(42 + self.data.len());
+        let mut bytes = Vec::with_capacity(SEGMENT_V0_DATA_OFFSET + self.data.len());
 
         bytes.push(0);
         bytes.extend_from_slice(&self.id.chunk_id.to_le_bytes());
@@ -93,7 +95,7 @@ impl Segment for SegmentV0 {
 
 pub fn get_data_offset(version: SegmentVersion) -> usize {
     match version {
-        SegmentVersion::V0 => 42,
+        SegmentVersion::V0 => SEGMENT_V0_DATA_OFFSET,
         SegmentVersion::Unknown(_) => panic!("unsupported segment version"),
     }
 }
