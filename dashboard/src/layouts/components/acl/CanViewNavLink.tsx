@@ -4,9 +4,6 @@
 // ** React Imports
 import { ReactNode } from 'react'
 
-// ** Hooks Imports
-import { useAuth } from 'src/hooks/useAuth'
-
 // ** Types
 import { NavLink } from 'src/@core/layouts/types'
 
@@ -17,15 +14,9 @@ interface Props {
 
 const CanViewNavLink = (props: Props) => {
   // ** Props
-  const { children, navLink } = props
+  const { children } = props
 
-  const auth = useAuth()
-
-  if (auth.accounts || (navLink && navLink.auth === false)) {
-    return <>{children}</>
-  } else {
-    return null
-  }
+  return <>{children}</>
 }
 
 export default CanViewNavLink

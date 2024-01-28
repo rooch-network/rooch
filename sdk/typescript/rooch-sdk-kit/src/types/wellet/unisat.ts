@@ -3,7 +3,7 @@
 
 import { WalletAccount } from '../WalletAccount'
 import { BitcoinWallet } from './bitcoinWallet'
-import { SupportWallet } from '../../feature'
+import { SupportChain } from '../../feature'
 
 export class UniSatWallet extends BitcoinWallet {
   async sign(msg: string, _: string): Promise<string> {
@@ -27,6 +27,6 @@ export class UniSatWallet extends BitcoinWallet {
     }
     let publicKey = await this.getTarget().getPublicKey()
 
-    return [new WalletAccount(accounts[0], SupportWallet.BITCOIN, publicKey)]
+    return [new WalletAccount(accounts[0], SupportChain.BITCOIN, publicKey)]
   }
 }

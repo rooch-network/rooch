@@ -8,21 +8,21 @@ import Button from '@mui/material/Button'
 // ** Type Imports
 import { Settings } from 'src/@core/context/settingsContext'
 
-import { SupportChains } from '@roochnetwork/rooch-sdk-kit'
 import Typography from '@mui/material/Typography'
+import { AllNetwork } from '@roochnetwork/rooch-sdk'
 
 interface Props {
   settings: Settings
 }
 
-const SwitchChainDropdown = (props: Props) => {
+const SwitchNetworkDropdown = (props: Props) => {
   return (
     <Button variant="text" size="small" disabled={true}>
       <Box sx={{ mr: 0, display: 'flex', flexDirection: 'column', textAlign: 'center' }}>
-        <Typography sx={{ fontWeight: 500 }}>{'CHAIN-' + SupportChains[0]}</Typography>
+        <Typography sx={{ fontWeight: 500 }}>{'Network-' + AllNetwork[0].name}</Typography>
       </Box>
     </Button>
   )
 }
 
-export default SwitchChainDropdown
+export default SwitchNetworkDropdown

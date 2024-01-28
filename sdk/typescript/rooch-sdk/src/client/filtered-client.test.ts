@@ -10,14 +10,8 @@ import {
   FuncFilter,
   FilterFunc,
 } from './filtered-client'
-import {
-  FunctionId,
-  TypeTag,
-  Arg,
-  AnnotatedFunctionResultView,
-  StateView,
-  StatePageView,
-} from '../types'
+import { AnnotatedFunctionResultView, StateView, StatePageView } from '../types'
+import { ExecuteViewFunctionParams, ListStatesParams } from './types.ts'
 
 const mockFilter: ITransactionFilter = {
   init: vi.fn(),
@@ -35,23 +29,15 @@ const mockProvider: IClient = {
     throw new Error('Function not implemented.')
   },
   executeViewFunction: function (
-    funcId: FunctionId,
-    tyArgs?: TypeTag[] | undefined,
-    args?: Arg[] | undefined,
+    params: ExecuteViewFunctionParams,
   ): Promise<AnnotatedFunctionResultView> {
-    console.log(funcId, tyArgs, args)
     throw new Error('Function not implemented.')
   },
   getStates: function (accessPath: string): Promise<StateView | null[]> {
     console.log(accessPath)
     throw new Error('Function not implemented.')
   },
-  listStates: function (
-    access_path: string,
-    cursor: Uint8Array | null,
-    limit: number,
-  ): Promise<StatePageView> {
-    console.log(access_path, cursor, limit)
+  listStates: function (params: ListStatesParams): Promise<StatePageView> {
     throw new Error('Function not implemented.')
   },
 }

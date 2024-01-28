@@ -42,7 +42,10 @@ export function useCreateSessionKey({
   const rooch = useRoochClient()
   const currentWallet = useCurrentWallet()
   const currentAccount = useWalletStore((state) => state.currentAccount)
-  let roochAddress = useResolveRoochAddress(currentAccount!.getAddress(), RoochMultiChainID.Bitcoin)
+  let roochAddress = useResolveRoochAddress(
+    currentAccount?.getAddress() ?? '',
+    RoochMultiChainID.Bitcoin,
+  )
   // TODO: save session with account & scope
   const sessionKey = useWalletStore((state) => state.sessionAccount)
   const setSessionAccountStatus = useWalletStore((state) => state.setSessionAccountStatus)
@@ -68,6 +71,8 @@ export function useCreateSessionKey({
 
       let scope = args.scope ?? defaultScope
       let maxInactiveInterval = args.maxInactiveInterval ?? 1200
+
+      console.log(roochAddress)
 
       let acc = new Account(
         rooch,

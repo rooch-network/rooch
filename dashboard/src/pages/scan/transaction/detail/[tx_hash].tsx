@@ -17,10 +17,8 @@ import TableCell, { TableCellBaseProps } from '@mui/material/TableCell'
 // ** Configs
 import { useRouter } from 'next/router'
 
-// ** Store
-import { useAppSelector } from 'src/store'
-
-import { TransactionWithInfoView } from '@roochnetwork/rooch-sdk'
+import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
+import { formatAddress } from 'src/@core/utils/format'
 
 const MUITableCell = styled(TableCell)<TableCellBaseProps>(({ theme }) => ({
   borderBottom: 0,
@@ -36,20 +34,22 @@ const TransactionDetail = () => {
   const router = useRouter()
 
   // ** States
-  const { result, status } = useAppSelector((state) => state.transaction)
 
-  const txHash = router.query.tx_hash
+  const cursor = router.query.tx_hash
 
-  let data: TransactionWithInfoView | undefined
+  let { data } = useRoochClientQuery(
+    'getTransactions',
+    {
+      cursor: Number(cursor),
+      limit: 1,
+    },
+    {
+      enabled: true,
+    },
+  )
 
-  if (status === 'finished') {
-    data = result.data.find((v) => v.execution_info.tx_hash === txHash)
-  }
-
-  // TODO:
-  if (!data) {
-    router.push('/scan/transaction/list')
-  }
+  console.log(cursor)
+  console.log(data)
 
   if (data) {
     return (
@@ -92,7 +92,7 @@ const TransactionDetail = () => {
                     fontSize: '1.3rem !important',
                   }}
                 >
-                  {txHash}
+                  {data.data[0].execution_info.tx_hash}
                 </Typography>
               </Typography>
             </Box>
@@ -111,7 +111,7 @@ const TransactionDetail = () => {
                     Order:
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important' }}>
-                    {data.sequence_info.tx_order}
+                    {data.data[0].sequence_info.tx_order}
                   </MUITableCell>
                 </TableRow>
                 <TableRow>
@@ -119,7 +119,7 @@ const TransactionDetail = () => {
                     Auth Validator ID:
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important' }}>
-                    {data.sequence_info.tx_order_signature.auth_validator_id}
+                    {data.data[0].sequence_info.tx_order_signature.auth_validator_id}
                   </MUITableCell>
                 </TableRow>
                 <TableRow>
@@ -127,7 +127,7 @@ const TransactionDetail = () => {
                     Accumulator Root:
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important' }}>
-                    {data.sequence_info.tx_accumulator_root}
+                    {data.data[0].sequence_info.tx_accumulator_root}
                   </MUITableCell>
                 </TableRow>
                 <TableRow>
@@ -135,7 +135,7 @@ const TransactionDetail = () => {
                     Signature Payload:{' '}
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important' }}>
-                    {data.sequence_info.tx_order_signature.payload}
+                    {formatAddress(data.data[0].sequence_info.tx_order_signature.payload as any)}
                   </MUITableCell>
                 </TableRow>
                 <TableRow>
@@ -151,14 +151,16 @@ const TransactionDetail = () => {
                   <MUITableCell sx={{ pb: '0 !important', whiteSpace: 'nowrap' }}>
                     Sender:
                   </MUITableCell>
-                  <MUITableCell sx={{ pb: '0 !important' }}>{data.transaction.sender}</MUITableCell>
+                  <MUITableCell sx={{ pb: '0 !important' }}>
+                    {data.data[0].transaction.sender}
+                  </MUITableCell>
                 </TableRow>
                 <TableRow>
                   <MUITableCell sx={{ pb: '0 !important', whiteSpace: 'nowrap' }}>
                     Action Type:
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important', textTransform: 'uppercase' }}>
-                    {data.transaction.action_type}
+                    {data.data[0].transaction.action_type}
                   </MUITableCell>
                 </TableRow>
                 <TableRow>
@@ -166,7 +168,7 @@ const TransactionDetail = () => {
                     Transaction Type:
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important', textTransform: 'uppercase' }}>
-                    {data.transaction.transaction_type}
+                    {data.data[0].transaction.transaction_type}
                   </MUITableCell>
                 </TableRow>
                 <TableRow>
@@ -183,7 +185,7 @@ const TransactionDetail = () => {
                     Status:
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important', textTransform: 'uppercase' }}>
-                    {data.execution_info.status.type}
+                    {data.data[0].execution_info.status.type}
                   </MUITableCell>
                 </TableRow>
                 <TableRow>
@@ -191,7 +193,7 @@ const TransactionDetail = () => {
                     Gas Used:
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important', textTransform: 'uppercase' }}>
-                    {data.execution_info.gas_used}
+                    {data.data[0].execution_info.gas_used}
                   </MUITableCell>
                 </TableRow>
                 <TableRow>
@@ -199,7 +201,7 @@ const TransactionDetail = () => {
                     Event Root:
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important', textTransform: 'uppercase' }}>
-                    {data.execution_info.event_root}
+                    {data.data[0].execution_info.event_root}
                   </MUITableCell>
                 </TableRow>
                 <TableRow>
@@ -207,7 +209,7 @@ const TransactionDetail = () => {
                     State Root:
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important', textTransform: 'uppercase' }}>
-                    {data.execution_info.state_root}
+                    {data.data[0].execution_info.state_root}
                   </MUITableCell>
                 </TableRow>
               </TableBody>

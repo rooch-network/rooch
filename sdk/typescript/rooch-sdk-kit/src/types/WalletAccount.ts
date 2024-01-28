@@ -4,7 +4,7 @@
 import { RoochMultiChainID } from '@roochnetwork/rooch-sdk'
 
 import { MultiChainAddress } from './address'
-import { SupportWallet } from '../feature'
+import { SupportChain } from '../feature'
 
 // import { address } from 'bitcoinjs-lib'
 
@@ -13,11 +13,11 @@ export class WalletAccount {
   private readonly publicKey?: string
   private readonly compressedPublicKey?: string
   // TODO: add network info
-  private readonly walletType: SupportWallet
+  private readonly walletType: SupportChain
 
   public constructor(
     address: string,
-    walletType: SupportWallet,
+    walletType: SupportChain,
     publicKey?: string,
     compressedPublicKey?: string,
   ) {
@@ -35,7 +35,7 @@ export class WalletAccount {
   }
 
   public toMultiChainAddress(): MultiChainAddress | null {
-    if (this.walletType !== SupportWallet.ETH) {
+    if (this.walletType !== SupportChain.ETH) {
       return new MultiChainAddress(RoochMultiChainID.Bitcoin, this.address)
     }
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, it, expect, vi } from 'vitest'
-import { DevChain } from '../constants'
+import { DevNetwork } from '../constants'
 import { IClient } from '../client'
 import { Ed25519Keypair } from '../utils/keypairs'
 import { Account } from './account'
@@ -12,7 +12,7 @@ describe('account', () => {
   it('should create Account ok ', async () => {
     const mockProvider: IClient = {
       getChainId: vi.fn().mockImplementation(() => {
-        return DevChain.id
+        return DevNetwork.id
       }),
       getRpcApiVersion: vi.fn(),
       executeViewFunction: vi.fn(),
@@ -33,7 +33,7 @@ describe('account', () => {
     it('should execute call function ok', async () => {
       const mockProvider: IClient = {
         getChainId: vi.fn().mockImplementation(() => {
-          return DevChain.id
+          return DevNetwork.id
         }),
         getRpcApiVersion: vi.fn(),
         executeViewFunction: vi.fn(),

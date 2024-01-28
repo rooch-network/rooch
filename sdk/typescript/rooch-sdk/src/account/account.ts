@@ -86,16 +86,16 @@ export class Account implements IAccount {
   }
 
   private async getSequenceNumber(): Promise<number> {
-    const resp = await this.client.executeViewFunction(
-      '0x3::account::sequence_number',
-      [],
-      [
+    const resp = await this.client.executeViewFunction({
+      funcId: '0x3::account::sequence_number',
+      tyArgs: [],
+      args: [
         {
           type: 'Address',
           value: this.address,
         },
       ],
-    )
+    })
 
     if (resp && resp.return_values) {
       return resp.return_values[0].decoded_value as number
@@ -264,7 +264,11 @@ export class Account implements IAccount {
       const tableId = stateView[0].value
 
       const accessPath = `/table/${tableId}`
-      const pageView = await this.client.listStates(accessPath, cursor, limit)
+      const pageView = await this.client.listStates({
+        accessPath,
+        cursor,
+        limit,
+      })
 
       return {
         data: this.parseStateToSessionKey(pageView),
@@ -282,10 +286,10 @@ export class Account implements IAccount {
    * @param authKey the auth key
    */
   async isSessionKeyExpired(authKey: AccountAddress): Promise<boolean> {
-    const result = await this.client.executeViewFunction(
-      '0x3::session_key::is_expired_session_key',
-      [],
-      [
+    const result = await this.client.executeViewFunction({
+      funcId: '0x3::session_key::is_expired_session_key',
+      tyArgs: [],
+      args: [
         {
           type: 'Address',
           value: this.address,
@@ -295,7 +299,7 @@ export class Account implements IAccount {
           value: addressToSeqNumber(authKey),
         },
       ],
-    )
+    })
 
     if (result && result.vm_status !== 'Executed') {
       throw new Error('view 0x3::session_key::is_expired_session_key fail')
@@ -305,16 +309,16 @@ export class Account implements IAccount {
   }
 
   async gasCoinBalance(): Promise<bigint> {
-    const result = await this.client.executeViewFunction(
-      '0x3::gas_coin::balance',
-      [],
-      [
+    const result = await this.client.executeViewFunction({
+      funcId: '0x3::gas_coin::balance',
+      tyArgs: [],
+      args: [
         {
           type: 'Address',
           value: this.getAddress(),
         },
       ],
-    )
+    })
 
     if (result && result.vm_status !== 'Executed') {
       throw new Error('view 0x3::gas_coin::balance fail')
@@ -325,16 +329,16 @@ export class Account implements IAccount {
 
   async coinBalance(coinType: string): Promise<bigint> {
     const structType = encodeStructTypeTag(coinType)
-    const result = await this.client.executeViewFunction(
-      '0x3::account_coin_store::balance',
-      [structType],
-      [
+    const result = await this.client.executeViewFunction({
+      funcId: '0x3::account_coin_store::balance',
+      tyArgs: [structType],
+      args: [
         {
           type: 'Address',
           value: this.getAddress(),
         },
       ],
-    )
+    })
 
     if (result && result.vm_status !== 'Executed') {
       throw new Error('view 0x3::account_coin_store::balance fail')

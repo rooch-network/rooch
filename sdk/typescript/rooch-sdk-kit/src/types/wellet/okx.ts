@@ -3,7 +3,7 @@
 
 import { WalletAccount } from '../WalletAccount'
 import { BitcoinWallet } from './bitcoinWallet'
-import { SupportWallet } from '../../feature'
+import { SupportChain } from '../../feature'
 
 export class OkxWallet extends BitcoinWallet {
   async sign(msg: string, fromAddress: string): Promise<string> {
@@ -26,7 +26,7 @@ export class OkxWallet extends BitcoinWallet {
     return [
       new WalletAccount(
         account.address,
-        SupportWallet.BITCOIN,
+        SupportChain.BITCOIN,
         account.publicKey,
         account.compressedPublicKey,
       ),

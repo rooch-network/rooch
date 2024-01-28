@@ -4,25 +4,25 @@
 import { useMemo, useState, createContext } from 'react'
 import type { ReactNode } from 'react'
 
-import { AllChain, Chain, isRoochClient, RoochClient } from '@roochnetwork/rooch-sdk'
+import { AllNetwork, Network, isRoochClient, RoochClient } from '@roochnetwork/rooch-sdk'
 
 export interface RoochClientProviderContext {
   client: RoochClient
-  chains: Chain[]
-  chain: Chain
-  selectChain: (network: Chain) => void
+  networks: Network[]
+  network: Network
+  selectChain: (network: Network) => void
 }
 
 export const RoochClientContext = createContext<RoochClientProviderContext | null>(null)
 
-export type RoochClientProviderProps<T extends Chain> = {
+export type RoochClientProviderProps<T extends Network> = {
   createClient?: (name: keyof T, config: T[keyof T]) => RoochClient
   children: ReactNode
-  defaultChain: Chain
-  chains?: Chain[]
+  defaultNetwork: Network
+  network?: Network[]
 }
 
-const DEFAULT_CREATE_CLIENT = function createClient(_name: string, config: Chain | RoochClient) {
+const DEFAULT_CREATE_CLIENT = function createClient(_name: string, config: Network | RoochClient) {
   if (isRoochClient(config)) {
     return config
   }
@@ -30,34 +30,34 @@ const DEFAULT_CREATE_CLIENT = function createClient(_name: string, config: Chain
   return new RoochClient(config)
 }
 
-export function RoochClientProvider<T extends Chain>(props: RoochClientProviderProps<T>) {
-  const { defaultChain, children } = props
+export function RoochClientProvider<T extends Network>(props: RoochClientProviderProps<T>) {
+  const { defaultNetwork, children } = props
 
-  const chains = props.chains ?? AllChain
+  const networks = props.network ?? AllNetwork
 
   const createClient = (props.createClient as typeof DEFAULT_CREATE_CLIENT) ?? DEFAULT_CREATE_CLIENT
 
-  const [selectedChain, setSelectedChain] = useState<Chain>(defaultChain ?? AllChain[0])
+  const [selectedNetwork, setSelectedNetwork] = useState<Network>(defaultNetwork ?? AllNetwork[0])
 
-  const currentChain = props.defaultChain ?? selectedChain
+  const currentNetwork = props.defaultNetwork ?? selectedNetwork
 
   const client = useMemo(() => {
-    return createClient(selectedChain.name, selectedChain)
-  }, [createClient, selectedChain])
+    return createClient(selectedNetwork.name, selectedNetwork)
+  }, [createClient, selectedNetwork])
 
   const ctx = useMemo((): RoochClientProviderContext => {
     return {
       client,
-      chains,
-      chain: currentChain,
-      selectChain: (newChain) => {
-        if (currentChain === newChain) {
+      networks,
+      network: currentNetwork,
+      selectChain: (newNetwork) => {
+        if (currentNetwork === newNetwork) {
           return
         }
-        setSelectedChain(newChain)
+        setSelectedNetwork(newNetwork)
       },
     }
-  }, [client, chains, currentChain])
+  }, [client, networks, currentNetwork])
 
   return <RoochClientContext.Provider value={ctx}>{children}</RoochClientContext.Provider>
 }
