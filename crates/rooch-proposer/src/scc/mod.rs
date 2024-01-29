@@ -84,7 +84,7 @@ impl StateCommitmentChain {
         let batch_data: Vec<u8> = self.buffer.iter().flat_map(|tx| tx.tx.encode()).collect();
         // regard batch(tx list) as a blob: easy to check integrity
         let batch_hash = h256::sha3_256_of(&batch_data);
-        let _ = self
+        if let Err(e) = self
             .da
             .submit_batch(Batch {
                 meta: BatchMeta {
@@ -94,7 +94,11 @@ impl StateCommitmentChain {
                 },
                 data: batch_data,
             })
-            .await;
+            .await
+        {
+            log::error!("submit batch to DA server failed: {}", e);
+            return None;
+        }
 
         let new_block = Block::new(
             block_number,
