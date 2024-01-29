@@ -25,7 +25,8 @@ This directory contains scripts for setting up a local development environment f
 4. Run `ord wallet balance` to check the balance of the wallet
 5. Run `echo "Hello rooch">/tmp/hello.txt` to create a file
 6. Run `ord wallet inscribe --fee-rate 1 --file /tmp/hello.txt` to inscribe the file to the blockchain
-7. Run `bitcoin-cli generatetoaddress 1 <address>` to generate a block to the address
+7. Run `bitcoin-cli generatetoaddress 1 <address>` to mine an inscription
+8. Run `ord wallet inscriptions` to get the reveal transaction ID
 
 ### References
 * [Bitcoin Core](https://bitcoincore.org/en/doc/25.0.0/)
