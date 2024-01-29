@@ -47,7 +47,10 @@ impl SegmentV0 {
         Self: Sized,
     {
         if bytes.len() < SEGMENT_V0_DATA_OFFSET {
-            return Err(anyhow::anyhow!("segment_v0: bytes less than {}", SEGMENT_V0_DATA_OFFSET));
+            return Err(anyhow::anyhow!(
+                "segment_v0: bytes less than {}",
+                SEGMENT_V0_DATA_OFFSET
+            ));
         }
 
         let chunk_id = u128::from_le_bytes(bytes[1..17].try_into()?);
