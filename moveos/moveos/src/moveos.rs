@@ -1,7 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::gas::table::{get_gas_schedule_entries, initial_cost_schedule, MoveOSGasMeter};
+use crate::gas::table::{
+    get_gas_schedule_entries, initial_cost_schedule, unset_global_gas_schedule_cache,
+    GasScheduleUpdated, MoveOSGasMeter,
+};
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
 use anyhow::{bail, ensure, Result};
 use backtrace::Backtrace;
@@ -587,6 +590,11 @@ impl MoveOS {
 
         if pay_gas {
             self.execute_gas_charge_post(&mut session, &action_opt.unwrap())?;
+        }
+
+        let gas_schedule_updated = session.ctx.tx_context.get::<GasScheduleUpdated>()?;
+        if let Some(updated) = gas_schedule_updated {
+            unset_global_gas_schedule_cache(&updated);
         }
 
         let (_ctx, output) = session.finish_with_extensions(kept_status)?;
