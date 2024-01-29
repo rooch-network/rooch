@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { arrayify } from '@ethersproject/bytes'
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import {arrayify} from '@ethersproject/bytes'
+import {describe, it, expect, beforeAll, afterAll} from 'vitest'
 import {
   RoochClient,
   Ed25519Keypair,
@@ -10,10 +10,10 @@ import {
   Account,
   addressToSeqNumber,
   bcsTypes,
-  LocalChain,
+  LocalNetwork,
 } from '../../src'
-import { RoochServer } from './servers/rooch-server'
-import { RoochCli } from './cli/rooch-cli'
+import {RoochServer} from './servers/rooch-server'
+import {RoochCli} from './cli/rooch-cli'
 
 describe('SDK', () => {
   let server: RoochServer
@@ -66,17 +66,17 @@ describe('SDK', () => {
 
   describe('#viewFunction', () => {
     it('view function should be ok', async () => {
-      const client = new RoochClient(LocalChain)
+      const client = new RoochClient(LocalNetwork)
       const result = await client.executeViewFunction(
-        '0x3::account::sequence_number_for_sender',
-        [],
-        [],
+        {
+          funcId: '0x3::account::sequence_number_for_sender'
+        }
       )
       expect(result).toBeDefined()
     })
 
     it('view function with serializable arg should be ok', async () => {
-      const client = new RoochClient(LocalChain)
+      const client = new RoochClient(LocalNetwork)
 
       const multiChainIDEther = 60
       const ethAddress = '0xd33293B247A74f9d49c1F6253d909d51242562De'
@@ -86,20 +86,22 @@ describe('SDK', () => {
       )
 
       const result = await client.executeViewFunction(
-        '0x3::address_mapping::resolve_or_generate',
-        [],
-        [
-          {
-            type: {
-              Struct: {
-                address: '0x3',
-                module: 'address_mapping',
-                name: 'MultiChainAddress',
+        {
+          funcId: '0x3::address_mapping::resolve_or_generate',
+          tyArgs: [],
+          args: [
+            {
+              type: {
+                Struct: {
+                  address: '0x3',
+                  module: 'address_mapping',
+                  name: 'MultiChainAddress',
+                },
               },
+              value: ma,
             },
-            value: ma,
-          },
-        ],
+          ],
+        }
       )
 
       expect(result).toBeDefined()
@@ -110,7 +112,7 @@ describe('SDK', () => {
 
   describe('#runFunction', () => {
     it('call function with private key auth should be ok', async () => {
-      const client = new RoochClient(LocalChain)
+      const client = new RoochClient(LocalNetwork)
 
       const kp = Ed25519Keypair.deriveKeypair(
         'nose aspect organ harbor move prepare raven manage lamp consider oil front',
@@ -139,7 +141,7 @@ describe('SDK', () => {
     })
 
     it('call function with struct be ok', async () => {
-      const client = new RoochClient(LocalChain)
+      const client = new RoochClient(LocalNetwork)
 
       const kp = Ed25519Keypair.deriveKeypair(
         'nose aspect organ harbor move prepare raven manage lamp consider oil front',
@@ -168,7 +170,7 @@ describe('SDK', () => {
     })
 
     it('call function with objectid be ok', async () => {
-      const client = new RoochClient(LocalChain)
+      const client = new RoochClient(LocalNetwork)
 
       const kp = Ed25519Keypair.deriveKeypair(
         'nose aspect organ harbor move prepare raven manage lamp consider oil front',
@@ -197,7 +199,7 @@ describe('SDK', () => {
     })
 
     it('call function with object be ok', async () => {
-      const client = new RoochClient(LocalChain)
+      const client = new RoochClient(LocalNetwork)
 
       const kp = Ed25519Keypair.deriveKeypair(
         'nose aspect organ harbor move prepare raven manage lamp consider oil front',
@@ -230,7 +232,7 @@ describe('SDK', () => {
     })
 
     it('call function with raw be ok', async () => {
-      const client = new RoochClient(LocalChain)
+      const client = new RoochClient(LocalNetwork)
 
       const kp = Ed25519Keypair.deriveKeypair(
         'nose aspect organ harbor move prepare raven manage lamp consider oil front',
@@ -259,7 +261,7 @@ describe('SDK', () => {
     })
 
     it('call fixed_supply_coin::faucet be ok', async () => {
-      const client = new RoochClient(LocalChain)
+      const client = new RoochClient(LocalNetwork)
 
       const kp = Ed25519Keypair.generate()
       const roochAddress = kp.getPublicKey().toRoochAddress()
@@ -331,7 +333,7 @@ describe('SDK', () => {
 
   describe('#getStates', () => {
     it('get annotated states should be ok', async () => {
-      const client = new RoochClient(LocalChain)
+      const client = new RoochClient(LocalNetwork)
       const result = client.getStates('/object/0x1')
       expect(result).toBeDefined()
     })
@@ -339,7 +341,7 @@ describe('SDK', () => {
 
   describe('#sessionKey', () => {
     it('Create session account by registerSessionKey should be ok', async () => {
-      const client = new RoochClient(LocalChain)
+      const client = new RoochClient(LocalNetwork)
 
       const kp = Ed25519Keypair.deriveKeypair(
         'fiber tube acid imitate frost coffee choose crowd grass topple donkey submit',
@@ -363,18 +365,20 @@ describe('SDK', () => {
       // view session Keys
       const sessionKey = kp2.getPublicKey().toRoochAddress()
       const session = await client.executeViewFunction(
-        '0x3::session_key::get_session_key',
-        [],
-        [
-          {
-            type: 'Address',
-            value: roochAddress,
-          },
-          {
-            type: { Vector: 'U8' },
-            value: addressToSeqNumber(sessionKey),
-          },
-        ],
+        {
+          funcId: '0x3::session_key::get_session_key',
+          tyArgs: [],
+          args: [
+            {
+              type: 'Address',
+              value: roochAddress,
+            },
+            {
+              type: {Vector: 'U8'},
+              value: addressToSeqNumber(sessionKey),
+            },
+          ],
+        }
       )
       expect(session).toBeDefined()
 
@@ -387,7 +391,7 @@ describe('SDK', () => {
     })
 
     it('Check session key whether expired should be ok', async () => {
-      const client = new RoochClient(LocalChain)
+      const client = new RoochClient(LocalNetwork)
 
       const kp = Ed25519Keypair.deriveKeypair(
         'fiber tube acid imitate frost coffee choose crowd grass topple donkey submit',
@@ -421,7 +425,7 @@ describe('SDK', () => {
     })
 
     it('Remove session key should be ok', async () => {
-      const client = new RoochClient(LocalChain)
+      const client = new RoochClient(LocalNetwork)
 
       const kp = Ed25519Keypair.deriveKeypair(
         'fiber tube acid imitate frost coffee choose crowd grass topple donkey submit',
@@ -443,18 +447,20 @@ describe('SDK', () => {
       // view session Keys
       const sessionKey = kp2.getPublicKey().toRoochAddress()
       const session = await client.executeViewFunction(
-        '0x3::session_key::get_session_key',
-        [],
-        [
-          {
-            type: 'Address',
-            value: roochAddress,
-          },
-          {
-            type: { Vector: 'U8' },
-            value: addressToSeqNumber(sessionKey),
-          },
-        ],
+        {
+          funcId: '0x3::session_key::get_session_key',
+          tyArgs: [],
+          args: [
+            {
+              type: 'Address',
+              value: roochAddress,
+            },
+            {
+              type: {Vector: 'U8'},
+              value: addressToSeqNumber(sessionKey),
+            },
+          ],
+        }
       )
       expect(session).toBeDefined()
       expect(session.return_values![0].value.value).not.toBe('0x00')
@@ -465,18 +471,20 @@ describe('SDK', () => {
 
       // view session Keys
       const session2 = await client.executeViewFunction(
-        '0x3::session_key::get_session_key',
-        [],
-        [
-          {
-            type: 'Address',
-            value: roochAddress,
-          },
-          {
-            type: { Vector: 'U8' },
-            value: addressToSeqNumber(sessionKey),
-          },
-        ],
+        {
+          funcId: '0x3::session_key::get_session_key',
+          tyArgs: [],
+          args: [
+            {
+              type: 'Address',
+              value: roochAddress,
+            },
+            {
+              type: {Vector: 'U8'},
+              value: addressToSeqNumber(sessionKey),
+            },
+          ],
+        }
       )
 
       expect(session2).toBeDefined()
@@ -484,7 +492,7 @@ describe('SDK', () => {
     })
 
     it('Create session account by createSessionAccount should be ok', async () => {
-      const client = new RoochClient(LocalChain)
+      const client = new RoochClient(LocalNetwork)
 
       const kp = Ed25519Keypair.generate()
       const roochAddress = kp.getPublicKey().toRoochAddress()
@@ -506,7 +514,7 @@ describe('SDK', () => {
     })
 
     it('Create session account with multi scopes should be ok', async () => {
-      const client = new RoochClient(LocalChain)
+      const client = new RoochClient(LocalNetwork)
 
       const kp = Ed25519Keypair.generate()
       const roochAddress = kp.getPublicKey().toRoochAddress()
@@ -531,7 +539,7 @@ describe('SDK', () => {
     })
 
     it('Session account runFunction out of score should fail', async () => {
-      const client = new RoochClient(LocalChain)
+      const client = new RoochClient(LocalNetwork)
 
       const kp = Ed25519Keypair.generate()
       const roochAddress = kp.getPublicKey().toRoochAddress()
@@ -546,7 +554,7 @@ describe('SDK', () => {
     })
 
     it('Query session keys should be ok', async () => {
-      const client = new RoochClient(LocalChain)
+      const client = new RoochClient(LocalNetwork)
 
       const kp = Ed25519Keypair.generate()
       const roochAddress = kp.getPublicKey().toRoochAddress()
