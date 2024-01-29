@@ -3,7 +3,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import fetchMock from 'fetch-mock'
-import { DevChain } from '../constants/chain'
+import { DevNetwork } from '../constants'
 import { RoochClient } from './rooch-client'
 
 describe('provider', () => {
@@ -36,7 +36,7 @@ describe('provider', () => {
         return mock
       })
 
-      const provider = new RoochClient(DevChain, {
+      const provider = new RoochClient(DevNetwork, {
         fetcher: mockFetch,
       })
       expect(provider).toBeDefined()
@@ -44,7 +44,9 @@ describe('provider', () => {
       try {
         const fnId =
           '0x9fb8a2b8b84ea08804c5830c9fca7b6850cdb1a37aca58d33fea861ea1a515af::counter::value'
-        const result = await provider.executeViewFunction(fnId)
+        const result = await provider.executeViewFunction({
+          funcId: fnId,
+        })
         expect(result).toHaveLength(1)
       } catch (err: any) {
         expect(err).to.be.an('error')
@@ -68,7 +70,7 @@ describe('provider', () => {
         return mock
       })
 
-      const provider = new RoochClient(DevChain, {
+      const provider = new RoochClient(DevNetwork, {
         fetcher: mockFetch,
       })
       expect(provider).toBeDefined()
@@ -76,7 +78,7 @@ describe('provider', () => {
       try {
         const fnId =
           '0xc74a6f9397b0eacd8fec9e95e9dc671da9ec69d3088688226070183edf84516::counter::value'
-        await provider.executeViewFunction(fnId)
+        await provider.executeViewFunction({ funcId: fnId })
       } catch (err: any) {
         expect(err).to.be.an('error')
       }
@@ -104,7 +106,7 @@ describe('provider', () => {
           return mock
         })
 
-        const provider = new RoochClient(DevChain, {
+        const provider = new RoochClient(DevNetwork, {
           fetcher: mockFetch,
         })
         expect(provider).toBeDefined()
@@ -159,7 +161,7 @@ describe('provider', () => {
           return mock
         })
 
-        const provider = new RoochClient(DevChain, {
+        const provider = new RoochClient(DevNetwork, {
           fetcher: mockFetch,
         })
         expect(provider).toBeDefined()
@@ -168,7 +170,11 @@ describe('provider', () => {
           const assetsPath =
             '/table/0x82af1915608fa5f3e5286e4372e289b5b3ef03d0126cdae9ca7f561a145359c8'
           const cursor = new Uint8Array([0])
-          const result = await provider.listStates(assetsPath, cursor, 10)
+          const result = await provider.listStates({
+            accessPath: assetsPath,
+            cursor,
+            limit: 10,
+          })
 
           expect(result.data).toBeDefined()
           expect(result.next_cursor).toBe(

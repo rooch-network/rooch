@@ -63,11 +63,11 @@ export function App() {
           <div>
             {connectionStatus !== 'disconnected' ? connectionStatus :
               <Button
-              style={{ marginTop: 10 }}
-              onClick={async () => {
-                await connectWallet()
-              }}>
-                Connect Wallet
+                  style={{ marginTop: 10 }}
+                  onClick={async () => {
+                    await connectWallet()
+                  }}>
+                    Connect Wallet
               </Button>
             }
 

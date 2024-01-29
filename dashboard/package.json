@@ -33,7 +33,8 @@
     "@mui/x-data-grid": "6.11.2",
     "@popperjs/core": "2.11.6",
     "@reduxjs/toolkit": "1.9.3",
-    "@roochnetwork/rooch-sdk": "0.0.6",
+    "@roochnetwork/rooch-sdk": "workspace:*",
+    "@roochnetwork/rooch-sdk-kit": "workspace:*",
     "apexcharts-clevision": "3.28.5",
     "axios": "1.3.4",
     "axios-mock-adapter": "1.21.2",
@@ -69,7 +70,8 @@
     "recharts": "2.4.3",
     "stylis": "4.1.3",
     "stylis-plugin-rtl": "2.1.1",
-    "yup": "1.0.2"
+    "yup": "1.0.2",
+    "@tanstack/react-query": "^5.0.0"
   },
   "devDependencies": {
     "@iconify/iconify": "3.1.0",

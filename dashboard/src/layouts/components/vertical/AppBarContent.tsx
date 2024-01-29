@@ -14,6 +14,7 @@ import { Settings } from 'src/@core/context/settingsContext'
 // ** Components
 import LanguageDropdown from 'src/@core/layouts/components/shared-components/LanguageDropdown'
 import SwitchChainDropdown from 'src/@core/layouts/components/shared-components/SwitchChainDropdown'
+import SwitchNetworkDropdown from 'src/@core/layouts/components/shared-components/SwitchNetworkDropdown'
 import ModeToggler from 'src/@core/layouts/components/shared-components/ModeToggler'
 import UserDropdown from 'src/@core/layouts/components/shared-components/UserDropdown'
 import Autocomplete from 'src/layouts/components/Autocomplete'
@@ -46,6 +47,7 @@ const AppBarContent = (props: Props) => {
         <ModeToggler settings={settings} saveSettings={saveSettings} />
         <LanguageDropdown settings={settings} saveSettings={saveSettings} />
         <SwitchChainDropdown settings={settings} />
+        <SwitchNetworkDropdown settings={settings} />
         <UserDropdown settings={settings} />
       </Box>
     </Box>

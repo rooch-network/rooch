@@ -2,19 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // ** React Imports
-import { useState, useRef, useMemo, useEffect } from 'react'
-
-import { useAuth } from 'src/hooks/useAuth'
-import { useSession } from 'src/hooks/useSessionAccount'
-import { useRooch } from 'src/hooks/useRooch'
+import { useState, useRef } from 'react'
 
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
 import CardContent from '@mui/material/CardContent'
 import Button from '@mui/material/Button'
-import Alert from '@mui/material/Alert'
-import Snackbar from '@mui/material/Snackbar'
+
+// import Alert from '@mui/material/Alert'
+// import Snackbar from '@mui/material/Snackbar'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
@@ -28,9 +25,7 @@ import {
   GridPaginationModel,
 } from '@mui/x-data-grid'
 
-// ** Store & Actions Imports
-import { fetchData, removeRow } from 'src/store/session'
-import { useAppDispatch, useAppSelector } from 'src/store'
+// import { useRoochClientQuery, useWalletStore} from '@roochnetwork/rooch-sdk-kit';
 
 const formatDate = (timestamp: number) => {
   if (timestamp === 0) {
@@ -105,10 +100,6 @@ export default function SessionKeyList() {
     },
   ]
 
-  const auth = useAuth()
-  const session = useSession()
-  const rooch = useRooch()
-
   const mapPageToNextCursor = useRef<{ [page: number]: Uint8Array | null }>({})
 
   // ** State
@@ -117,69 +108,27 @@ export default function SessionKeyList() {
     pageSize: PAGE_SIZE,
   })
 
-  const queryOptions = useMemo(
-    () => ({
-      cursor: mapPageToNextCursor.current[paginationModel.page - 1],
-      pageSize: paginationModel.pageSize,
-    }),
-    [paginationModel],
-  )
+  // const queryOptions = useMemo(
+  //   () => ({
+  //     cursor: mapPageToNextCursor.current[paginationModel.page - 1],
+  //     pageSize: paginationModel.pageSize,
+  //   }),
+  //   [paginationModel],
+  // )
 
-  // ** Hooks
-  const dispatch = useAppDispatch()
-  const { result, status, error } = useAppSelector((state) => state.session)
+  // const account = useWalletStore((store) => store.currentAccount)
+  // const accessPath = `/resource/${account?.getAddress()}/0x3::session_key::SessionKeys`
 
-  useEffect(() => {
-    const defaultAccount = auth.defaultAccount
-    if (!defaultAccount) {
-      return
-    }
+  // let { data: state, isPending } = useRoochClientQuery('getStates', accessPath)
 
-    // Ignore part of request
-    if (status === 'finished' || status === 'error' || status === 'loading') {
-      return
-    }
-
-    dispatch(
-      fetchData({
-        dispatch,
-        provider: rooch.provider!,
-        cursor: queryOptions.cursor,
-        limit: queryOptions.pageSize,
-        account_address: defaultAccount.roochAddress,
-      }),
-    )
-  }, [dispatch, auth, rooch.provider, paginationModel, result, status, queryOptions])
-
-  useEffect(() => {
-    if (status !== 'loading' && result.nextCursor) {
-      // We add nextCursor when available
-      mapPageToNextCursor.current[paginationModel.page] = result.nextCursor
-    }
-  }, [paginationModel.page, status, result.nextCursor])
+  // const tableId = state.decoded_value.value.keys.value.handle
+  // let { data, isPending } = useRoochClientQuery('getStates', `/table/${tableId}`)
 
   const handlePaginationModelChange = (newPaginationModel: GridPaginationModel) => {
     // We have the cursor, we can allow the page transition.
     if (newPaginationModel.page === 0 || mapPageToNextCursor.current[newPaginationModel.page - 1]) {
       setPaginationModel(newPaginationModel)
     }
-  }
-
-  const handleRefresh = () => {
-    const defaultAccount = auth.defaultAccount
-    if (!defaultAccount) {
-      return
-    }
-
-    dispatch(
-      fetchData({
-        dispatch,
-        provider: rooch.provider!,
-        cursor: queryOptions.cursor,
-        limit: queryOptions.pageSize,
-        account_address: defaultAccount.roochAddress,
-      }),
-    )
   }
 
   const handleConfirmRemove = (authentication_key: string | undefined) => {
@@ -192,20 +141,6 @@ export default function SessionKeyList() {
     if (!authentication_key) {
       return false
     }
-
-    const defaultAccount = auth.defaultAccount
-    if (!defaultAccount) {
-      return false
-    }
-
-    dispatch(
-      removeRow({
-        dispatch,
-        account: session.account!,
-        auth_key: authentication_key,
-        refresh: handleRefresh,
-      }),
-    )
 
     return false
   }
@@ -237,12 +172,12 @@ export default function SessionKeyList() {
       <CardHeader title="Session Keys" />
       <CardContent>
         <Box sx={{ textAlign: 'right', marginBottom: '10px', mr: '20px' }}>
-          <Button variant="contained" color="primary" size="small" onClick={() => handleRefresh()}>
+          <Button variant="contained" color="primary" size="small">
             Refresh
           </Button>
         </Box>
         <DataGrid
-          rows={status === 'finished' ? result.data : []}
+          rows={status === 'finished' ? [] : []}
           loading={status === ('loading' as 'loading')}
           columns={columns}
           pageSizeOptions={[10, 25, 50]}
@@ -250,13 +185,13 @@ export default function SessionKeyList() {
           paginationModel={paginationModel}
           autoHeight
         />
-        <Snackbar
-          open={!!error}
-          autoHideDuration={6000}
-          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        >
-          <Alert severity="error">{error}</Alert>
-        </Snackbar>
+        {/*<Snackbar*/}
+        {/*  open={!!error}*/}
+        {/*  autoHideDuration={6000}*/}
+        {/*  anchorOrigin={{ vertical: 'top', horizontal: 'center' }}*/}
+        {/*>*/}
+        {/*  <Alert severity="error">{error}</Alert>*/}
+        {/*</Snackbar>*/}
         <Dialog
           open={confirmDeleteDialog.open}
           onClose={handleConfirmDeleteDialogClose}

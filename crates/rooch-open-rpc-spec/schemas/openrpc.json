@@ -16,6 +16,80 @@
   },
   "methods": [
     {
+      "name": "btc_queryInscriptions",
+      "description": "Query the Inscription via global index by Inscription filter",
+      "params": [
+        {
+          "name": "filter",
+          "schema": {
+            "$ref": "#/components/schemas/InscriptionFilterView"
+          }
+        },
+        {
+          "name": "cursor",
+          "schema": {
+            "$ref": "#/components/schemas/IndexerStateID"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "$ref": "#/components/schemas/usize"
+          }
+        },
+        {
+          "name": "descending_order",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "InscriptionPageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_InscriptionStateView_and_IndexerStateID"
+        }
+      }
+    },
+    {
+      "name": "btc_queryUTXOs",
+      "description": "Query the UTXO via global index by UTXO filter",
+      "params": [
+        {
+          "name": "filter",
+          "schema": {
+            "$ref": "#/components/schemas/UTXOFilterView"
+          }
+        },
+        {
+          "name": "cursor",
+          "schema": {
+            "$ref": "#/components/schemas/IndexerStateID"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "$ref": "#/components/schemas/usize"
+          }
+        },
+        {
+          "name": "descending_order",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "UTXOPageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_UTXOStateView_and_IndexerStateID"
+        }
+      }
+    },
+    {
       "name": "rooch_executeRawTransaction",
       "description": "Send the signed transaction in bcs hex format This method blocks waiting for the transaction to be executed.",
       "params": [
@@ -1232,6 +1306,176 @@
           }
         }
       },
+      "InscriptionFilterView": {
+        "oneOf": [
+          {
+            "description": "Query by owner, represent by bitcoin address",
+            "type": "object",
+            "required": [
+              "owner"
+            ],
+            "properties": {
+              "owner": {
+                "$ref": "#/components/schemas/rooch_types::address::BitcoinAddress"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by txid. Query by object id.",
+            "type": "object",
+            "required": [
+              "object_id"
+            ],
+            "properties": {
+              "object_id": {
+                "$ref": "#/components/schemas/ObjectID"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "InscriptionStateView": {
+        "type": "object",
+        "required": [
+          "created_at",
+          "flag",
+          "object_id",
+          "object_type",
+          "owner",
+          "state_index",
+          "tx_order",
+          "updated_at",
+          "value"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "flag": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          },
+          "object_id": {
+            "$ref": "#/components/schemas/ObjectID"
+          },
+          "object_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+          },
+          "owner_bitcoin_address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/rooch_types::address::BitcoinAddress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state_index": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "tx_order": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "value": {
+            "$ref": "#/components/schemas/InscriptionView"
+          }
+        }
+      },
+      "InscriptionView": {
+        "type": "object",
+        "required": [
+          "bitcoin_txid",
+          "body",
+          "index",
+          "metadata",
+          "txid"
+        ],
+        "properties": {
+          "bitcoin_txid": {
+            "$ref": "#/components/schemas/bitcoin::hash_types::newtypes::Txid"
+          },
+          "body": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "content_encoding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/moveos_types::move_std::string::MoveString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "content_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/moveos_types::move_std::string::MoveString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "index": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0.0
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          },
+          "metaprotocol": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/moveos_types::move_std::string::MoveString"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObjectID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pointer": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "txid": {
+            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+          }
+        }
+      },
       "KeptVMStatusView": {
         "oneOf": [
           {
@@ -1707,6 +1951,35 @@
           }
         }
       },
+      "PageView_for_InscriptionStateView_and_IndexerStateID": {
+        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
+        "type": "object",
+        "required": [
+          "data",
+          "has_next_page"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InscriptionStateView"
+            }
+          },
+          "has_next_page": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IndexerStateID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "PageView_for_KeyStateKVView_and_alloc::vec::Vec<u8>": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
@@ -1760,6 +2033,35 @@
             ],
             "format": "uint64",
             "minimum": 0.0
+          }
+        }
+      },
+      "PageView_for_UTXOStateView_and_IndexerStateID": {
+        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
+        "type": "object",
+        "required": [
+          "data",
+          "has_next_page"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UTXOStateView"
+            }
+          },
+          "has_next_page": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IndexerStateID"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -2210,6 +2512,145 @@
           }
         }
       },
+      "UTXOFilterView": {
+        "oneOf": [
+          {
+            "description": "Query by owner, represent by bitcoin address",
+            "type": "object",
+            "required": [
+              "owner"
+            ],
+            "properties": {
+              "owner": {
+                "$ref": "#/components/schemas/rooch_types::address::BitcoinAddress"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by txid. Query by object id.",
+            "type": "object",
+            "required": [
+              "object_id"
+            ],
+            "properties": {
+              "object_id": {
+                "$ref": "#/components/schemas/ObjectID"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "UTXOStateView": {
+        "type": "object",
+        "required": [
+          "created_at",
+          "flag",
+          "object_id",
+          "object_type",
+          "owner",
+          "state_index",
+          "tx_order",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "flag": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          },
+          "object_id": {
+            "$ref": "#/components/schemas/ObjectID"
+          },
+          "object_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+          },
+          "owner_bitcoin_address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state_index": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "tx_order": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UTXOView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "UTXOView": {
+        "type": "object",
+        "required": [
+          "bitcoin_txid",
+          "seals",
+          "txid",
+          "value",
+          "vout"
+        ],
+        "properties": {
+          "bitcoin_txid": {
+            "description": "The txid of the UTXO",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/bitcoin::hash_types::newtypes::Txid"
+              }
+            ]
+          },
+          "seals": {
+            "description": "Protocol seals",
+            "type": "string"
+          },
+          "txid": {
+            "description": "The txid of the UTXO",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+              }
+            ]
+          },
+          "value": {
+            "description": "The value of the UTXO",
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "vout": {
+            "description": "The vout of the UTXO",
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0.0
+          }
+        }
+      },
       "VMStatusView": {
         "oneOf": [
           {
@@ -2295,6 +2736,9 @@
       "alloc::vec::Vec<u8>": {
         "type": "string"
       },
+      "bitcoin::hash_types::newtypes::Txid": {
+        "type": "string"
+      },
       "move_core_types::account_address::AccountAddress": {
         "type": "string"
       },
@@ -2313,10 +2757,16 @@
       "moveos_types::access_path::AccessPath": {
         "type": "string"
       },
+      "moveos_types::move_std::string::MoveString": {
+        "type": "string"
+      },
       "moveos_types::move_types::FunctionId": {
         "type": "string"
       },
       "primitive_types::H256": {
+        "type": "string"
+      },
+      "rooch_types::address::BitcoinAddress": {
         "type": "string"
       },
       "u128": {
