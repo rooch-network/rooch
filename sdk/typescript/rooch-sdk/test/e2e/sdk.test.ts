@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import {arrayify} from '@ethersproject/bytes'
-import {describe, it, expect, beforeAll, afterAll} from 'vitest'
+import { arrayify } from '@ethersproject/bytes'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import {
   RoochClient,
   Ed25519Keypair,
@@ -12,8 +12,8 @@ import {
   bcsTypes,
   LocalNetwork,
 } from '../../src'
-import {RoochServer} from './servers/rooch-server'
-import {RoochCli} from './cli/rooch-cli'
+import { RoochServer } from './servers/rooch-server'
+import { RoochCli } from './cli/rooch-cli'
 
 describe('SDK', () => {
   let server: RoochServer
@@ -67,11 +67,9 @@ describe('SDK', () => {
   describe('#viewFunction', () => {
     it('view function should be ok', async () => {
       const client = new RoochClient(LocalNetwork)
-      const result = await client.executeViewFunction(
-        {
-          funcId: '0x3::account::sequence_number_for_sender'
-        }
-      )
+      const result = await client.executeViewFunction({
+        funcId: '0x3::account::sequence_number_for_sender',
+      })
       expect(result).toBeDefined()
     })
 
@@ -85,24 +83,22 @@ describe('SDK', () => {
         addressToSeqNumber(ethAddress),
       )
 
-      const result = await client.executeViewFunction(
-        {
-          funcId: '0x3::address_mapping::resolve_or_generate',
-          tyArgs: [],
-          args: [
-            {
-              type: {
-                Struct: {
-                  address: '0x3',
-                  module: 'address_mapping',
-                  name: 'MultiChainAddress',
-                },
+      const result = await client.executeViewFunction({
+        funcId: '0x3::address_mapping::resolve_or_generate',
+        tyArgs: [],
+        args: [
+          {
+            type: {
+              Struct: {
+                address: '0x3',
+                module: 'address_mapping',
+                name: 'MultiChainAddress',
               },
-              value: ma,
             },
-          ],
-        }
-      )
+            value: ma,
+          },
+        ],
+      })
 
       expect(result).toBeDefined()
       expect(result.vm_status).toBe('Executed')
@@ -364,22 +360,20 @@ describe('SDK', () => {
 
       // view session Keys
       const sessionKey = kp2.getPublicKey().toRoochAddress()
-      const session = await client.executeViewFunction(
-        {
-          funcId: '0x3::session_key::get_session_key',
-          tyArgs: [],
-          args: [
-            {
-              type: 'Address',
-              value: roochAddress,
-            },
-            {
-              type: {Vector: 'U8'},
-              value: addressToSeqNumber(sessionKey),
-            },
-          ],
-        }
-      )
+      const session = await client.executeViewFunction({
+        funcId: '0x3::session_key::get_session_key',
+        tyArgs: [],
+        args: [
+          {
+            type: 'Address',
+            value: roochAddress,
+          },
+          {
+            type: { Vector: 'U8' },
+            value: addressToSeqNumber(sessionKey),
+          },
+        ],
+      })
       expect(session).toBeDefined()
 
       // run function with sessoin key
@@ -446,22 +440,20 @@ describe('SDK', () => {
 
       // view session Keys
       const sessionKey = kp2.getPublicKey().toRoochAddress()
-      const session = await client.executeViewFunction(
-        {
-          funcId: '0x3::session_key::get_session_key',
-          tyArgs: [],
-          args: [
-            {
-              type: 'Address',
-              value: roochAddress,
-            },
-            {
-              type: {Vector: 'U8'},
-              value: addressToSeqNumber(sessionKey),
-            },
-          ],
-        }
-      )
+      const session = await client.executeViewFunction({
+        funcId: '0x3::session_key::get_session_key',
+        tyArgs: [],
+        args: [
+          {
+            type: 'Address',
+            value: roochAddress,
+          },
+          {
+            type: { Vector: 'U8' },
+            value: addressToSeqNumber(sessionKey),
+          },
+        ],
+      })
       expect(session).toBeDefined()
       expect(session.return_values![0].value.value).not.toBe('0x00')
 
@@ -470,22 +462,20 @@ describe('SDK', () => {
       expect(tx).toBeDefined()
 
       // view session Keys
-      const session2 = await client.executeViewFunction(
-        {
-          funcId: '0x3::session_key::get_session_key',
-          tyArgs: [],
-          args: [
-            {
-              type: 'Address',
-              value: roochAddress,
-            },
-            {
-              type: {Vector: 'U8'},
-              value: addressToSeqNumber(sessionKey),
-            },
-          ],
-        }
-      )
+      const session2 = await client.executeViewFunction({
+        funcId: '0x3::session_key::get_session_key',
+        tyArgs: [],
+        args: [
+          {
+            type: 'Address',
+            value: roochAddress,
+          },
+          {
+            type: { Vector: 'U8' },
+            value: addressToSeqNumber(sessionKey),
+          },
+        ],
+      })
 
       expect(session2).toBeDefined()
       expect(session2.return_values![0].value.value).toBe('0x00')
