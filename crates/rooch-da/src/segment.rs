@@ -15,9 +15,18 @@ pub enum SegmentVersion {
 impl From<u8> for SegmentVersion {
     fn from(num: u8) -> Self {
         match num {
-            0 => Self::V0,
+            0 => SegmentVersion::V0,
             // ...
             _ => Self::Unknown(num),
+        }
+    }
+}
+
+impl From<SegmentVersion> for u8 {
+    fn from(version: SegmentVersion) -> Self {
+        match version {
+            SegmentVersion::V0 => 0,
+            SegmentVersion::Unknown(num) => num,
         }
     }
 }
@@ -30,13 +39,14 @@ pub trait Segment: Send {
 }
 
 pub const SEGMENT_V0_DATA_OFFSET: usize = 42;
+pub const SEGMENT_V0_CHECKSUM_OFFSET: usize = 34;
 
 #[derive(Serialize, Debug, PartialEq, Clone)]
 pub struct SegmentV0 {
     pub id: SegmentID,
     pub is_last: bool,      // is last segment in chunk
     pub data_checksum: u64, // checksum of data, xxh3_64
-    pub checksum: u64,      // checksum of above fields(exclude data), xxh3_64
+    pub checksum: u64, // checksum of above fields(exclude data) and version after to_bytes, xxh3_64
 
     pub data: Vec<u8>,
 }
@@ -77,7 +87,7 @@ impl Segment for SegmentV0 {
     fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(SEGMENT_V0_DATA_OFFSET + self.data.len());
 
-        bytes.push(0);
+        bytes.push(SegmentVersion::V0.into()); // version
         bytes.extend_from_slice(&self.id.chunk_id.to_le_bytes());
         bytes.extend_from_slice(&self.id.segment_number.to_le_bytes());
         bytes.push(self.is_last as u8);

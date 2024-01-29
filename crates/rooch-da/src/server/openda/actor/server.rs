@@ -10,11 +10,12 @@ use opendal::layers::RetryLayer;
 use opendal::{Operator, Scheme};
 use std::collections::HashMap;
 use std::path::Path;
+use xxhash_rust::xxh3::xxh3_64;
 
 use rooch_config::da_config::{DAServerOpenDAConfig, OpenDAScheme};
 
 use crate::messages::{PutBatchMessage, PutBatchResult};
-use crate::segment::{SegmentID, SegmentV0};
+use crate::segment::{Segment, SegmentID, SegmentV0, SEGMENT_V0_CHECKSUM_OFFSET};
 
 pub struct DAServerOpenDAActor {
     max_segment_size: usize,
@@ -118,6 +119,7 @@ impl DAServerOpenDAActor {
         let segs = batch.batch.data.chunks(self.max_segment_size);
         let total = segs.len();
 
+        // TODO explain why block number is a good idea: easy to get next block number for segments, then we could request chunk by block number
         let chunk_id = batch.batch.meta.block_number;
         let segments = segs
             .enumerate()
@@ -135,11 +137,22 @@ impl DAServerOpenDAActor {
             })
             .collect::<Vec<_>>();
 
-        for segment in segments {
+        for mut segment in segments {
+            segment.data_checksum = xxh3_64(&segment.data);
+
+            let mut bytes = segment.to_bytes();
+
+            let fields = &bytes[0..SEGMENT_V0_CHECKSUM_OFFSET];
+            segment.checksum = xxh3_64(fields);
+
+            bytes.splice(
+                SEGMENT_V0_CHECKSUM_OFFSET..SEGMENT_V0_CHECKSUM_OFFSET + 8,
+                segment.checksum.to_le_bytes().iter().cloned(),
+            );
+
             // TODO record ok segment in order
             // TODO segment indexer trait (local file, db, etc)
-            let data = bcs::to_bytes(&segment).unwrap();
-            self.operator.write(&segment.id.to_string(), data).await?; // TODO retry logic
+            self.operator.write(&segment.id.to_string(), bytes).await?; // TODO retry logic
         }
 
         Ok(PutBatchResult::default())
