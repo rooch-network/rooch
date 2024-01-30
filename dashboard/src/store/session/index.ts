@@ -16,14 +16,13 @@ import {
   StatePageView,
   parseRoochErrorSubStatus,
   getErrorCategoryName,
-  SimpleKeyStateView,
 } from '@roochnetwork/rooch-sdk'
 
 interface DataParams {
   dispatch: Dispatch<AnyAction>
   provider: RoochClient
   account_address: string
-  cursor: Uint8Array | null
+  cursor: string | null
   limit: number
 }
 
@@ -88,7 +87,11 @@ export const fetchData = createAsyncThunk('state/fetchData', async (params: Data
         const tableId = stateView[0].decoded_value.value.keys.value.handle
 
         const accessPath = `/table/${tableId}`
-        const pageView = await params.provider.listStates(accessPath, cursor, limit)
+        const pageView = await params.provider.listStates({
+          accessPath: accessPath,
+          cursor: cursor,
+          limit: limit,
+        })
 
         const result = {
           data: convertToSessionKey(pageView),
@@ -161,7 +164,7 @@ export const StateSlice = CreateGenericSlice({
       nextCursor: null,
       hasNextPage: false,
     },
-  } as GenericState<IPage<ISessionKey, SimpleKeyStateView>>,
+  } as GenericState<IPage<ISessionKey, string>>,
   reducers: {},
 })
 

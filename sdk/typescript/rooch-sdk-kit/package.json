@@ -11,7 +11,7 @@
   "scripts": {
     "build": "build-rooch-sdk-kit",
     "build:clean": "rimraf dist",
-    "test": "pnpm vitest",
+    "test": "pnpm vitest --run",
     "prepublishOnly": "pnpm build",
     "size": "size-limit",
     "analyze": "size-limit --why",

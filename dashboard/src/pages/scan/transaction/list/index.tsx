@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // ** React Imports
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 // ** Next Import
 import Link from 'next/link'
@@ -14,23 +14,20 @@ import Typography from '@mui/material/Typography'
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import Tooltip from '@mui/material/Tooltip'
 
-// ** Store & Actions Imports
-import { fetchData } from 'src/store/scan/transaction'
-import { useAppDispatch, useAppSelector } from 'src/store'
-
 // ** SDK Imports
 import { TransactionWithInfoView } from '@roochnetwork/rooch-sdk'
 
 // ** Utils
 import { formatAddress } from 'src/@core/utils/format'
-import { useRooch } from '../../../../hooks/useRooch'
+import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 
-// ** Hooks
-// import useClipboard from 'src/@core/hooks/useClipboard'
-// import toast from "react-hot-toast";
+interface WrapperTransactionWithInfoView {
+  transactionWithInfoView: TransactionWithInfoView
+  index: number
+}
 
 interface CellType {
-  row: TransactionWithInfoView
+  row: WrapperTransactionWithInfoView
 }
 
 // ** Styled components
@@ -49,7 +46,9 @@ const defaultColumns: GridColDef[] = [
     field: 'sequence_order',
     headerName: 'Sequence Order',
     renderCell: ({ row }: CellType) => (
-      <Typography sx={{ color: 'text.secondary' }}>{row.sequence_info.tx_order}</Typography>
+      <Typography sx={{ color: 'text.secondary' }}>
+        {row.transactionWithInfoView.sequence_info.tx_order}
+      </Typography>
     ),
   },
   {
@@ -58,8 +57,8 @@ const defaultColumns: GridColDef[] = [
     minWidth: 80,
     headerName: 'Txn hash',
     renderCell: ({ row }: CellType) => (
-      <LinkStyled href={`/scan/transaction/detail/${row.execution_info.tx_hash}`}>
-        {formatAddress(row.execution_info.tx_hash)}
+      <LinkStyled href={`/scan/transaction/detail/${row.index}`}>
+        {formatAddress(row.transactionWithInfoView.execution_info.tx_hash)}
       </LinkStyled>
     ),
   },
@@ -69,7 +68,9 @@ const defaultColumns: GridColDef[] = [
     minWidth: 80,
     headerName: 'Method',
     renderCell: ({ row }: CellType) => (
-      <LinkStyled href="/">{row.transaction.action_type.toUpperCase()}</LinkStyled>
+      <LinkStyled href="/">
+        {row.transactionWithInfoView.transaction.action_type.toUpperCase()}
+      </LinkStyled>
     ),
   },
   {
@@ -78,9 +79,13 @@ const defaultColumns: GridColDef[] = [
     field: 'sender',
     headerName: 'Sender',
     renderCell: ({ row }: CellType) => (
-      <Tooltip placement="bottom" sx={{ cursor: 'pointer' }} title={row.transaction.sender}>
+      <Tooltip
+        placement="bottom"
+        sx={{ cursor: 'pointer' }}
+        title={row.transactionWithInfoView.transaction.sender}
+      >
         <Typography sx={{ color: 'text.secondary' }}>
-          {formatAddress(row.transaction.sender)}
+          {formatAddress(row.transactionWithInfoView.transaction.sender)}
         </Typography>
         {/*<LinkStyled href="/" onClick={ (event) => {*/}
         {/*    event.preventDefault()*/}
@@ -96,7 +101,7 @@ const defaultColumns: GridColDef[] = [
     headerName: 'Status',
     renderCell: ({ row }: CellType) => (
       <Typography sx={{ color: 'text.secondary' }}>
-        {row.execution_info.status.type.toUpperCase()}
+        {row.transactionWithInfoView.execution_info.status.type.toUpperCase()}
       </Typography>
     ),
   },
@@ -106,34 +111,27 @@ const defaultColumns: GridColDef[] = [
     field: 'txn-fee',
     headerName: 'Txn Fee',
     renderCell: ({ row }: CellType) => (
-      <Typography sx={{ color: 'text.secondary' }}>{row.execution_info.gas_used}</Typography>
+      <Typography sx={{ color: 'text.secondary' }}>
+        {row.transactionWithInfoView.execution_info.gas_used}
+      </Typography>
     ),
   },
 ]
 
 const TransactionList = () => {
-  // Hook
-  const rooch = useRooch()
-  const dispatch = useAppDispatch()
-  const { result, status } = useAppSelector((state) => state.transaction)
-
   // ** State
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 })
 
-  // const [data, setData] = useState<TransactionResultView[]>([])
-
-  // const clipboard = useClipboard()
-
-  useEffect(() => {
-    dispatch(
-      fetchData({
-        cursor: 0,
-        limit: (paginationModel.page + 1) * paginationModel.pageSize,
-        dispatch,
-        provider: rooch.provider!,
-      }),
-    )
-  }, [dispatch, paginationModel, rooch])
+  let { data, isPending } = useRoochClientQuery(
+    'getTransactions',
+    {
+      cursor: 0,
+      limit: (paginationModel.page + 1) * paginationModel.pageSize,
+    },
+    {
+      enabled: true,
+    },
+  )
 
   return (
     <Card>
@@ -142,18 +140,18 @@ const TransactionList = () => {
         pagination
         disableColumnMenu={true}
         rowCount={
-          status === 'finished' && result.data
-            ? result.has_next_page
-              ? result.data.length + 1
-              : result.data.length
-            : 0
+          data && data.data ? (data.has_next_page ? data.data.length + 1 : data.data.length) : 0
         }
         rows={
-          status === 'finished' && result.data
-            ? result.data.map((row) => ({ ...row, id: row.execution_info.tx_hash }))
+          data && data.data
+            ? data.data.map((row, index) => ({
+                transactionWithInfoView: row,
+                index: index,
+                id: row.execution_info.tx_hash,
+              }))
             : []
         }
-        loading={status === ('loading' as 'loading')}
+        loading={isPending}
         columns={defaultColumns.map((v) => ({
           ...v,
           sortable: false,

@@ -11,8 +11,8 @@ use coerce::actor::Actor;
 use rooch_config::da_config::DAServerCelestiaConfig;
 
 use crate::messages::{PutBatchMessage, PutBatchResult};
+use crate::segment::{SegmentID, SegmentV0};
 use crate::server::celestia::backend::Backend;
-use crate::server::segment::{Segment, SegmentID};
 
 pub struct DAServerCelestiaActor {
     max_segment_size: usize,
@@ -56,12 +56,14 @@ impl DAServerCelestiaActor {
         let segments = segs
             .enumerate()
             .map(|(i, data)| {
-                Segment {
+                SegmentV0 {
                     id: SegmentID {
                         chunk_id,
-                        segment_id: i as u64,
+                        segment_number: i as u64,
                     },
                     is_last: i == total - 1, // extra info overhead is much smaller than max_block_size - max_segment_size
+                    data_checksum: 0,
+                    checksum: 0,
                     data: data.to_vec(),
                 }
             })
@@ -70,7 +72,7 @@ impl DAServerCelestiaActor {
         for segment in segments {
             // TODO record ok segment in order
             // TODO segment indexer trait (local file, db, etc)
-            self.backend.submit(segment).await?;
+            self.backend.submit(Box::new(segment)).await?;
         }
         Ok(PutBatchResult::default())
     }

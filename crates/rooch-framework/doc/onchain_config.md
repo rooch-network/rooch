@@ -5,14 +5,17 @@
 
 
 
+-  [Struct `GasScheduleUpdated`](#0x3_onchain_config_GasScheduleUpdated)
 -  [Struct `GasEntry`](#0x3_onchain_config_GasEntry)
 -  [Resource `GasSchedule`](#0x3_onchain_config_GasSchedule)
 -  [Resource `OnchainConfig`](#0x3_onchain_config_OnchainConfig)
+-  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_onchain_config_genesis_init)
 -  [Function `sequencer`](#0x3_onchain_config_sequencer)
 -  [Function `update_framework_version`](#0x3_onchain_config_update_framework_version)
 -  [Function `framework_version`](#0x3_onchain_config_framework_version)
 -  [Function `onchain_config`](#0x3_onchain_config_onchain_config)
+-  [Function `update_onchain_gas_schedule`](#0x3_onchain_config_update_onchain_gas_schedule)
 -  [Function `onchain_gas_schedule`](#0x3_onchain_config_onchain_gas_schedule)
 
 
@@ -21,6 +24,18 @@
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::object_id</a>;
+<b>use</b> <a href="">0x2::signer</a>;
+</code></pre>
+
+
+
+<a name="0x3_onchain_config_GasScheduleUpdated"></a>
+
+## Struct `GasScheduleUpdated`
+
+
+
+<pre><code><b>struct</b> <a href="onchain_config.md#0x3_onchain_config_GasScheduleUpdated">GasScheduleUpdated</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -57,6 +72,20 @@ OnchainConfig is framework configurations stored on chain.
 
 
 <pre><code><b>struct</b> <a href="onchain_config.md#0x3_onchain_config_OnchainConfig">OnchainConfig</a> <b>has</b> key
+</code></pre>
+
+
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x3_onchain_config_ErrorNotSequencer"></a>
+
+
+
+<pre><code><b>const</b> <a href="onchain_config.md#0x3_onchain_config_ErrorNotSequencer">ErrorNotSequencer</a>: u64 = 1;
 </code></pre>
 
 
@@ -112,6 +141,17 @@ OnchainConfig is framework configurations stored on chain.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config">onchain_config</a>(ctx: &<a href="_Context">context::Context</a>): &<a href="onchain_config.md#0x3_onchain_config_OnchainConfig">onchain_config::OnchainConfig</a>
+</code></pre>
+
+
+
+<a name="0x3_onchain_config_update_onchain_gas_schedule"></a>
+
+## Function `update_onchain_gas_schedule`
+
+
+
+<pre><code>entry <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_update_onchain_gas_schedule">update_onchain_gas_schedule</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, gas_schedule_blob: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 

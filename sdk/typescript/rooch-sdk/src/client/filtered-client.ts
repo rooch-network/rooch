@@ -1,16 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import {
-  FunctionId,
-  TypeTag,
-  Arg,
-  AnnotatedFunctionResultView,
-  StateView,
-  StatePageView,
-  SimpleKeyStateView,
-} from '../types'
+import { AnnotatedFunctionResultView, StatePageView, StateView } from '../types'
 import { IClient } from './interface'
+
+import { ExecuteViewFunctionParams, ListStatesParams } from './types.ts'
 
 export interface ITransactionFilterChain {
   doFilter(request: any): Promise<any>
@@ -60,24 +54,16 @@ export class FilteredProvider implements IClient {
     return this.target.getChainId()
   }
 
-  executeViewFunction(
-    funcId: FunctionId,
-    tyArgs?: TypeTag[] | undefined,
-    args?: Arg[] | undefined,
-  ): Promise<AnnotatedFunctionResultView> {
-    return this.target.executeViewFunction(funcId, tyArgs, args)
+  executeViewFunction(params: ExecuteViewFunctionParams): Promise<AnnotatedFunctionResultView> {
+    return this.target.executeViewFunction(params)
   }
 
   getStates(accessPath: string): Promise<StateView | null[]> {
     return this.target.getStates(accessPath)
   }
 
-  listStates(
-    access_path: string,
-    cursor: SimpleKeyStateView | null,
-    limit: number,
-  ): Promise<StatePageView> {
-    return this.target.listStates(access_path, cursor, limit)
+  listStates(params: ListStatesParams): Promise<StatePageView> {
+    return this.target.listStates(params)
   }
 
   sendRawTransaction(playload: Uint8Array): Promise<string> {

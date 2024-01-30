@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // ** React Imports
-import { useState, ReactElement } from 'react'
+import { useState, ReactElement, useEffect } from 'react'
 
 // ** MUI Imports
 import Grid from '@mui/material/Grid'
@@ -56,11 +56,16 @@ const StateList = () => {
 
   // ** State
   const [activeTab, setActiveTab] = useState(router.query.tab as Actions)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    if (router.query.tab) {
+      setActiveTab(router.query.tab as Actions)
+      setIsLoading(false)
+    }
+  }, [router.query])
 
   const handleChange = (event: any, value: any) => {
-    console.log(value)
-
     setIsLoading(true)
     setActiveTab(value)
     router
@@ -79,12 +84,7 @@ const StateList = () => {
     <TabContext value={activeTab}>
       <Grid>
         <Grid item xs={12}>
-          <TabList
-            variant="scrollable"
-            scrollButtons="auto"
-            onChange={handleChange}
-            aria-label="customized tabs example"
-          >
+          <TabList variant="scrollable" scrollButtons="auto" onChange={handleChange}>
             <Tab
               value="get"
               label={

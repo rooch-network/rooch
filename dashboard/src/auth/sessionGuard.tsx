@@ -3,24 +3,17 @@
 
 import React, { ReactNode, useState } from 'react'
 import {
-  Alert,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Snackbar,
   TextField,
 } from '@mui/material'
 
-// ** Next Import
-import { useRouter } from 'next/router'
-
 // ** Hooks Import
-import { useAuth } from 'src/hooks/useAuth'
-import { useSession } from 'src/hooks/useSessionAccount'
-import { AccountType } from 'src/context/types'
+import { useCurrentSessionAccount, useCreateSessionKey } from '@roochnetwork/rooch-sdk-kit'
 
 interface Props {
   open: boolean
@@ -96,49 +89,26 @@ interface SessionGuardProps {
 const SessionGuard = (props: SessionGuardProps) => {
   const { children } = props
 
-  const auth = useAuth()
-  const router = useRouter()
-  const { initialization, account, requestAuthorize, close, errorMsg } = useSession()
+  const sessionAccount = useCurrentSessionAccount()
+  const { mutate: createSessionKey } = useCreateSessionKey()
+
   const handleAuth = (scope: Array<string>, maxInactiveInterval: number) => {
-    requestAuthorize && requestAuthorize(scope, maxInactiveInterval)
+    // requestAuthorize && requestAuthorize(scope, maxInactiveInterval)
+    createSessionKey({
+      scope: scope,
+      maxInactiveInterval: maxInactiveInterval,
+    })
   }
 
-  const hanleLogout = () => {
-    close && close()
-    auth.logout()
-
-    if (router.asPath !== '/') {
-      router.replace({
-        pathname: '/login',
-        query: { returnUrl: router.asPath },
-      })
-    } else {
-      router.replace('/login')
-    }
-  }
-
-  const isSessionInvalid = () => {
-    return !initialization && (account === undefined || account === null)
-  }
+  // const isSessionInvalid = () => {
+  //   return !initialization && (account === undefined || account === null)
+  // }
 
   return (
-    <div>
-      <div>
-        <AuthDialog
-          open={isSessionInvalid()}
-          onReqAuthorize={handleAuth}
-          onLogout={auth.defaultAccount?.type === AccountType.ROOCH ? hanleLogout : undefined}
-        ></AuthDialog>
-        <Snackbar
-          open={errorMsg !== null}
-          autoHideDuration={6000}
-          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        >
-          <Alert severity="error">{errorMsg}</Alert>
-        </Snackbar>
-      </div>
-      <div>{children}</div>
-    </div>
+    <>
+      <AuthDialog open={sessionAccount === null} onReqAuthorize={handleAuth} onLogout={close} />
+      {children}
+    </>
   )
 }
 

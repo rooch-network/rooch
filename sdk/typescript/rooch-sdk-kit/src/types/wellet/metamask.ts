@@ -3,7 +3,7 @@
 
 import { ETHWallet } from './ethWallet'
 import { WalletAccount } from '../WalletAccount'
-import { SupportWallet } from '../../feature'
+import { SupportChain } from '../../feature'
 
 export class Metamask extends ETHWallet {
   getTarget(): any {
@@ -41,6 +41,6 @@ export class Metamask extends ETHWallet {
         return accounts
       })
 
-    return accounts.map((v) => new WalletAccount(v, SupportWallet.ETH))
+    return accounts.map((v) => new WalletAccount(v, SupportChain.ETH))
   }
 }

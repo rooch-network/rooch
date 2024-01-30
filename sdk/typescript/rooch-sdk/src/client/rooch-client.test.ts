@@ -3,8 +3,9 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import fetchMock from 'fetch-mock'
-import { DevChain } from '../constants/chain'
+import { DevNetwork } from '../constants'
 import { RoochClient } from './rooch-client'
+import { ListStatesParams } from './types.ts'
 
 describe('provider', () => {
   it('should create JsonRpcProvider ok ', async () => {
@@ -36,7 +37,7 @@ describe('provider', () => {
         return mock
       })
 
-      const provider = new RoochClient(DevChain, {
+      const provider = new RoochClient(DevNetwork, {
         fetcher: mockFetch,
       })
       expect(provider).toBeDefined()
@@ -44,7 +45,9 @@ describe('provider', () => {
       try {
         const fnId =
           '0x9fb8a2b8b84ea08804c5830c9fca7b6850cdb1a37aca58d33fea861ea1a515af::counter::value'
-        const result = await provider.executeViewFunction(fnId)
+        const result = await provider.executeViewFunction({
+          funcId: fnId,
+        })
         expect(result).toHaveLength(1)
       } catch (err: any) {
         expect(err).to.be.an('error')
@@ -68,7 +71,7 @@ describe('provider', () => {
         return mock
       })
 
-      const provider = new RoochClient(DevChain, {
+      const provider = new RoochClient(DevNetwork, {
         fetcher: mockFetch,
       })
       expect(provider).toBeDefined()
@@ -76,7 +79,7 @@ describe('provider', () => {
       try {
         const fnId =
           '0xc74a6f9397b0eacd8fec9e95e9dc671da9ec69d3088688226070183edf84516::counter::value'
-        await provider.executeViewFunction(fnId)
+        await provider.executeViewFunction({ funcId: fnId })
       } catch (err: any) {
         expect(err).to.be.an('error')
       }
@@ -104,7 +107,7 @@ describe('provider', () => {
           return mock
         })
 
-        const provider = new RoochClient(DevChain, {
+        const provider = new RoochClient(DevNetwork, {
           fetcher: mockFetch,
         })
         expect(provider).toBeDefined()
@@ -121,7 +124,7 @@ describe('provider', () => {
     })
 
     describe('#listStates', () => {
-      it('should list annotated states ok', async () => {
+      it('should list annotated states ok', async (params: ListStatesParams) => {
         const mockFetch = vi.fn().mockImplementation(() => {
           const mock = fetchMock.sandbox()
 
@@ -170,16 +173,20 @@ describe('provider', () => {
           return mock
         })
 
-        const provider = new RoochClient(DevChain, {
+        const provider = new RoochClient(DevNetwork, {
           fetcher: mockFetch,
         })
         expect(provider).toBeDefined()
 
         try {
-          const assetsPath =
+          const accessPath =
             '/table/0x030d80ff6a6b1a2467dffd11a7f0eba7d2b1a486289c3484112ca1245645dfe0'
           const cursor = null
-          const result = await provider.listStates(assetsPath, cursor, 1)
+          const result = await provider.listStates({
+            accessPath: accessPath,
+            cursor: cursor,
+            limit: 1,
+          })
 
           expect(result.data).toBeDefined()
           expect(result.next_cursor).toBe({

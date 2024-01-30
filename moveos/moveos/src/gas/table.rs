@@ -14,7 +14,8 @@ use move_core_types::gas_algebra::{
     AbstractMemorySize, GasQuantity, InternalGas, InternalGasPerArg, InternalGasPerByte, NumArgs,
     NumBytes,
 };
-use move_core_types::identifier::Identifier;
+use move_core_types::ident_str;
+use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::language_storage::{ModuleId, StructTag};
 use move_core_types::vm_status::StatusCode;
 use move_resource_viewer::AnnotatedMoveValue;
@@ -22,7 +23,7 @@ use move_vm_types::gas::{GasMeter, SimpleInstruction};
 use move_vm_types::views::{TypeView, ValueView};
 use moveos_types::moveos_std::event::TransactionEvent;
 use moveos_types::moveos_std::object_id;
-use moveos_types::state::StateChangeSet;
+use moveos_types::state::{MoveStructState, MoveStructType, StateChangeSet};
 use moveos_types::state_resolver::{AnnotatedStateReader, MoveOSResolver};
 use moveos_types::transaction::GasStatement;
 use once_cell::sync::Lazy;
@@ -31,6 +32,7 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::ops::{Add, Bound};
 use std::rc::Rc;
+use std::sync::Mutex;
 
 /// The size in bytes for a reference on the stack
 pub const REFERENCE_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
@@ -53,7 +55,33 @@ pub struct GlobalGasEntries {
     pub entries: BTreeMap<String, u64>,
 }
 
-pub static mut GLOBAL_GAS_ENTRIES: Lazy<Option<GlobalGasEntries>> = Lazy::new(|| None);
+pub static mut GLOBAL_GAS_ENTRIES: Lazy<Mutex<Option<GlobalGasEntries>>> =
+    Lazy::new(|| Mutex::new(None));
+
+#[derive(Clone, Debug, Default, Serialize, PartialEq, Eq, Deserialize)]
+pub struct GasScheduleUpdated {
+    pub last_updated: u64,
+}
+
+pub const ROOCH_FRAMEWORK_ADDRESS: AccountAddress = {
+    let mut addr = [0u8; AccountAddress::LENGTH];
+    addr[AccountAddress::LENGTH - 1] = 3u8;
+    AccountAddress::new(addr)
+};
+
+impl MoveStructType for GasScheduleUpdated {
+    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = ident_str!("onchain_config");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("GasScheduleUpdated");
+}
+
+impl MoveStructState for GasScheduleUpdated {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            move_core_types::value::MoveTypeLayout::U64,
+        ])
+    }
+}
 
 #[derive(Clone, Debug, Default, Serialize, PartialEq, Eq, Deserialize)]
 pub struct StorageGasParameter {
@@ -1361,12 +1389,20 @@ pub fn gas_schedule_struct() -> StructTag {
     }
 }
 
+pub fn unset_global_gas_schedule_cache(gas_schedule_updated: &GasScheduleUpdated) {
+    if gas_schedule_updated.last_updated == 1 {
+        unsafe {
+            *(GLOBAL_GAS_ENTRIES.lock().unwrap()) = None;
+        }
+    }
+}
+
 pub fn get_gas_schedule_entries<Resolver: MoveOSResolver>(
     db: &Resolver,
 ) -> Option<BTreeMap<String, u64>> {
     unsafe {
-        if GLOBAL_GAS_ENTRIES.is_some() {
-            return Some(GLOBAL_GAS_ENTRIES.clone().unwrap().entries);
+        if GLOBAL_GAS_ENTRIES.lock().unwrap().is_some() {
+            return Some(GLOBAL_GAS_ENTRIES.lock().unwrap().clone().unwrap().entries);
         }
     }
 
@@ -1417,7 +1453,7 @@ pub fn get_gas_schedule_entries<Resolver: MoveOSResolver>(
             }
 
             unsafe {
-                *GLOBAL_GAS_ENTRIES = Some(GlobalGasEntries {
+                *(GLOBAL_GAS_ENTRIES.lock().unwrap()) = Some(GlobalGasEntries {
                     last_updated: 0,
                     entries: gas_schedule_entries.clone(),
                 });

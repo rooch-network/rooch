@@ -142,12 +142,10 @@ impl InternalDAServerConfig {
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum OpenDAScheme {
-    // gcs(Google Could Service) config:
+    // gcs(Google Could Service) main config:
     // bucket
     // root
-    // credential
-    // predefined_acl
-    // default_storage_class
+    // credential （it's okay to pass credential file path here, it'll be handled it automatically）
     #[default]
     GCS,
     // s3 config:

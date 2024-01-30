@@ -4,22 +4,22 @@
 import fetch from 'isomorphic-fetch'
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
-import { Chain, ChainInfo, DevChain } from '../constants'
+import { ChainInfo, Network, DevNetwork } from '../constants'
 import {
   AnnotatedFunctionResultView,
-  Arg,
   bcsTypes,
   Bytes,
   EventOptions,
   EventPageView,
-  FunctionId,
-  SimpleKeyStateView,
+  GlobalStateView,
+  InscriptionStatePageView,
   StateOptions,
   StatePageView,
   StateView,
+  TableStateView,
   TransactionWithInfoPageView,
   TransactionWithInfoView,
-  TypeTag,
+  UTXOStatePageView,
 } from '../types'
 import {
   addressToSeqNumber,
@@ -29,7 +29,17 @@ import {
   typeTagToString,
 } from '../utils'
 import { IClient } from './interface'
-import { ResoleRoochAddressParams } from './types.ts'
+import {
+  ExecuteViewFunctionParams,
+  GetEventsParams,
+  GetTransactionsParams,
+  QueryGlobalStatesParams,
+  QueryInscriptionsParams,
+  QueryTableStatesParams,
+  QueryUTXOsParams,
+  ResoleRoochAddressParams,
+  ListStatesParams,
+} from './types.ts'
 
 export const ROOCH_CLIENT_BRAND = Symbol.for('@roochnetwork/rooch-sdk')
 
@@ -60,7 +70,7 @@ const DEFAULT_OPTIONS: RpcProviderOptions = {
 }
 
 export class RoochClient implements IClient {
-  public chain: Chain
+  public network: Network
 
   private client: JsonRpcClient
 
@@ -68,15 +78,15 @@ export class RoochClient implements IClient {
 
   private cacheExpiry: number | undefined
 
-  constructor(chain: Chain = DevChain, public options: RpcProviderOptions = DEFAULT_OPTIONS) {
-    this.chain = chain
+  constructor(network: Network = DevNetwork, public options: RpcProviderOptions = DEFAULT_OPTIONS) {
+    this.network = network
 
     const opts = { ...DEFAULT_OPTIONS, ...options }
     this.options = opts
 
     this.client = new JsonRpcClient(
       new RequestManager([
-        new HTTPTransport(chain.url, {
+        new HTTPTransport(network.url, {
           headers: {
             'Content-Type': 'application/json',
           },
@@ -86,12 +96,12 @@ export class RoochClient implements IClient {
     )
   }
 
-  switchChain(chain: Chain) {
+  switchChain(network: Network) {
     this.client.close()
-    this.chain = chain
+    this.network = network
     this.client = new JsonRpcClient(
       new RequestManager([
-        new HTTPTransport(chain.url, {
+        new HTTPTransport(network.url, {
           headers: {
             'Content-Type': 'application/json',
           },
@@ -101,15 +111,12 @@ export class RoochClient implements IClient {
     )
   }
 
-  /**
-   * info temp
-   */
   ChainInfo(): ChainInfo {
-    return this.chain.info
+    return this.network.info
   }
 
   getChainId(): number {
-    return this.chain.id
+    return this.network.id
   }
 
   async getRpcApiVersion(): Promise<string | undefined> {
@@ -130,15 +137,13 @@ export class RoochClient implements IClient {
 
   // Execute a read-only function call The function do not change the state of Application
   async executeViewFunction(
-    funcId: FunctionId,
-    tyArgs?: TypeTag[],
-    args?: Arg[],
+    params: ExecuteViewFunctionParams,
   ): Promise<AnnotatedFunctionResultView> {
-    const tyStrArgs = tyArgs?.map((v) => typeTagToString(v))
-    const bcsArgs = args?.map((arg) => toHexString(encodeArg(arg))) as any
+    const tyStrArgs = params.tyArgs?.map((v) => typeTagToString(v))
+    const bcsArgs = params.args?.map((arg) => toHexString(encodeArg(arg))) as any
 
     return this.client.rooch_executeViewFunction({
-      function_id: functionIdToStirng(funcId),
+      function_id: functionIdToStirng(params.funcId),
       ty_args: tyStrArgs ?? [],
       args: bcsArgs ?? [],
     })
@@ -154,20 +159,19 @@ export class RoochClient implements IClient {
     return await this.client.rooch_getTransactionsByHash(tx_hashes)
   }
 
-  async getTransactions(cursor: number, limit: number): Promise<TransactionWithInfoPageView> {
-    return this.client.rooch_getTransactionsByOrder(cursor.toString(), limit.toString())
+  async getTransactions(params: GetTransactionsParams): Promise<TransactionWithInfoPageView> {
+    return this.client.rooch_getTransactionsByOrder(
+      params.cursor.toString(),
+      params.limit.toString(),
+    )
   }
 
   // Get the events by event handle id
-  async getEvents(
-    event_handle_type: string,
-    cursor: number,
-    limit: number,
-  ): Promise<EventPageView> {
+  async getEvents(params: GetEventsParams): Promise<EventPageView> {
     return await this.client.rooch_getEventsByEventHandle(
-      event_handle_type,
-      cursor.toString(),
-      limit.toString(),
+      params.eventHandleType,
+      params.cursor.toString(),
+      params.limit.toString(),
       { decode: true } as EventOptions,
     )
   }
@@ -177,14 +181,52 @@ export class RoochClient implements IClient {
     return await this.client.rooch_getStates(access_path, { decode: true } as StateOptions)
   }
 
-  async listStates(
-    access_path: string,
-    cursor: SimpleKeyStateView | null,
-    limit: number,
-  ): Promise<StatePageView> {
-    return await this.client.rooch_listStates(access_path, cursor as any, limit.toString(), {
-      decode: true,
-    } as StateOptions)
+  // TODO: bug? next_cursor The true type is string
+  async listStates(params: ListStatesParams): Promise<StatePageView> {
+    return await this.client.rooch_listStates(
+      params.accessPath,
+      params.cursor as any,
+      params.limit.toString(),
+      {
+        decode: true,
+      } as StateOptions,
+    )
+  }
+
+  async queryGlobalStates(params: QueryGlobalStatesParams): Promise<GlobalStateView> {
+    return await this.client.rooch_queryGlobalStates(
+      params.filter,
+      params.cursor as any,
+      params.limit.toString(),
+      params.descending_order,
+    )
+  }
+
+  async queryTableStates(params: QueryTableStatesParams): Promise<TableStateView> {
+    return await this.client.rooch_queryTableStates(
+      params.filter,
+      params.cursor as any,
+      params.limit.toString(),
+      params.descending_order,
+    )
+  }
+
+  async queryInscriptions(params: QueryInscriptionsParams): Promise<InscriptionStatePageView> {
+    return await this.client.btc_queryInscriptions(
+      params.filter as any,
+      params.cursor as any,
+      params.limit.toString(),
+      params.descending_order,
+    )
+  }
+
+  async queryUTXOs(params: QueryUTXOsParams): Promise<UTXOStatePageView> {
+    return await this.client.btc_queryUTXOs(
+      params.filter as any,
+      params.cursor as any,
+      params.limit.toString(),
+      params.descending_order,
+    )
   }
 
   // Resolve the rooch address
@@ -194,10 +236,10 @@ export class RoochClient implements IClient {
       addressToSeqNumber(params.address),
     )
 
-    const result = await this.executeViewFunction(
-      '0x3::address_mapping::resolve_or_generate',
-      [],
-      [
+    const result = await this.executeViewFunction({
+      funcId: '0x3::address_mapping::resolve_or_generate',
+      tyArgs: [],
+      args: [
         {
           type: {
             Struct: {
@@ -209,7 +251,7 @@ export class RoochClient implements IClient {
           value: ma,
         },
       ],
-    )
+    })
 
     if (result && result.vm_status === 'Executed' && result.return_values) {
       return result.return_values[0].decoded_value as string

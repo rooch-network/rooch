@@ -243,6 +243,7 @@ criterion = { version = "0.5.1", features = [
     "async_tokio",
     "html_reports",
 ] }
+xxhash-rust = "0.8.8"
 #criterion-cpu-time = "0.1.0"
 pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer"] }
 

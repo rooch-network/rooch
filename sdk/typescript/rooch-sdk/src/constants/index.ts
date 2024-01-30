@@ -3,5 +3,5 @@
 
 export * from './address'
 export * from './gas'
-export * from './chain'
+export * from './networks'
 export * from './multiChainID'

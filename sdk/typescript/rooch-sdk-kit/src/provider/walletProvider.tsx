@@ -8,12 +8,12 @@ import { createWalletStore, WalletStore } from '../walletStore'
 import { useAutoConnectWallet } from '../hooks'
 import { getInstalledWallets } from '../utils/walletUtils'
 import { BaseWallet } from '../types/wellet/baseWallet'
-import { SupportWallet } from '../feature'
+import { SupportChain } from '../feature'
 
 // TODO: use web3modal ?
 
 type WalletProviderProps = {
-  wallet?: SupportWallet
+  chain?: SupportChain
 
   /** Enables automatically reconnecting to the most recently used wallet account upon mounting. */
   autoConnect?: boolean
@@ -25,6 +25,8 @@ type WalletProviderProps = {
   storageKey?: string
 
   children: ReactNode
+
+  fallback?: ReactNode
 }
 
 const DEFAULT_STORAGE_KEY = 'rooch-sdk-kit:wallet-connect-info'
@@ -32,26 +34,27 @@ const DEFAULT_STORAGE_KEY = 'rooch-sdk-kit:wallet-connect-info'
 export const WalletContext = createContext<WalletStore | null>(null)
 
 export function WalletProvider({
-  wallet = SupportWallet.ETH,
-  storage = localStorage,
+  chain = SupportChain.BITCOIN,
+  storage,
   storageKey = DEFAULT_STORAGE_KEY,
   autoConnect = false,
   children,
+  fallback,
 }: WalletProviderProps) {
   const [wallets, setWallets] = useState<BaseWallet[]>()
   const [loading, setLoading] = useState(true)
   const storeRef = useRef<ReturnType<typeof createWalletStore>>()
 
   useEffect(() => {
-    getInstalledWallets(wallet).then((v) => setWallets(v))
-  }, [wallet])
+    getInstalledWallets(chain).then((v) => setWallets(v))
+  }, [chain])
 
   useEffect(() => {
     if (wallets && wallets.length !== 0) {
       storeRef.current = createWalletStore({
         wallet: wallets[0],
         autoConnectEnabled: autoConnect,
-        storage,
+        storage: storage ?? localStorage,
         storageKey,
       })
       setLoading(false)
@@ -64,7 +67,7 @@ export function WalletProvider({
       <WalletConnectionManager>{children}</WalletConnectionManager>
     </WalletContext.Provider>
   ) : (
-    <>loading</>
+    fallback
   )
 }
 

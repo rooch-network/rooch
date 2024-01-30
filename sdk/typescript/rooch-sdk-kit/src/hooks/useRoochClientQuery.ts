@@ -5,7 +5,7 @@ import type { RoochClient } from '@roochnetwork/rooch-sdk'
 import type { UseQueryOptions, UseQueryResult } from '@tanstack/react-query'
 import { useQuery } from '@tanstack/react-query'
 
-import type { PartialBy } from '../types/utilityTypes'
+import type { PartialBy } from '../types'
 import { useRoochClientContext } from './useRoochClient'
 
 export type RpcMethodName = {
@@ -52,7 +52,7 @@ export function useRoochClientQuery<T extends keyof RpcMethods, TData = RpcMetho
 
   return useQuery({
     ...options,
-    queryKey: [roochContext.chain, method, params, ...queryKey],
+    queryKey: [roochContext.network, method, params, ...queryKey],
     queryFn: async () => {
       return await roochContext.client[method](params as never)
     },

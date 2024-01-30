@@ -9,7 +9,7 @@ use crate::jsonrpc_types::transaction_view::TransactionWithInfoView;
 use crate::jsonrpc_types::{
     move_types::{MoveActionTypeView, MoveActionView},
     BytesView, IndexerGlobalStateView, IndexerTableChangeSetView, IndexerTableStateView,
-    SimpleKeyStateView, StateKVView, StrView, StructTagView,
+    StateKVView, StrView, StructTagView,
 };
 use move_core_types::u256::U256;
 use rooch_types::framework::coin::CoinInfo;
@@ -22,8 +22,8 @@ use std::string::String;
 
 pub type EventPageView = PageView<EventView, u64>;
 pub type TransactionWithInfoPageView = PageView<TransactionWithInfoView, u64>;
-pub type StatePageView = PageView<StateKVView, SimpleKeyStateView>;
-pub type BalanceInfoPageView = PageView<BalanceInfoView, SimpleKeyStateView>;
+pub type StatePageView = PageView<StateKVView, String>;
+pub type BalanceInfoPageView = PageView<BalanceInfoView, String>;
 pub type IndexerEventPageView = PageView<IndexerEventView, IndexerEventID>;
 pub type IndexerTableChangeSetPageView = PageView<IndexerTableChangeSetView, IndexerStateID>;
 
