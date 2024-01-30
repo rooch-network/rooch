@@ -7,7 +7,7 @@
 
 /// A basic scalable vector library implemented using `Table`.
 module moveos_std::table_vec {
-    use moveos_std::object::{UID};
+    use moveos_std::object_id::UID;
     use moveos_std::table::{Self, Table};
 
     struct TableVec<phantom Element: store> has store {

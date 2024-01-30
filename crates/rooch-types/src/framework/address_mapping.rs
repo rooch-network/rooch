@@ -5,7 +5,7 @@ use crate::address::{MultiChainAddress, RoochAddress};
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::{Ok, Result};
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
-use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::option::MoveOption,

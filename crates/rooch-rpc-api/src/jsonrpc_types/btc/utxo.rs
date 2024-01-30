@@ -7,7 +7,7 @@ use crate::jsonrpc_types::{AccountAddressView, StructTagView};
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 use move_core_types::account_address::AccountAddress;
-use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::state::MoveStructType;
 use rooch_types::bitcoin::utxo::{UTXOState, UTXO};
 use rooch_types::indexer::state::GlobalStateFilter;

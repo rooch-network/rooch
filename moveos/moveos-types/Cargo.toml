@@ -40,7 +40,6 @@ move-binary-format = { workspace = true }
 smt = { workspace = true }
 
 
-
 [dev-dependencies]
 proptest = { workspace = true }
 proptest-derive = { workspace = true }

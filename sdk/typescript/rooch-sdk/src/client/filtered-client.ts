@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { AnnotatedFunctionResultView, StateView, StatePageView } from '../types'
+import { AnnotatedFunctionResultView, StatePageView, StateView } from '../types'
 import { IClient } from './interface'
 
 import { ExecuteViewFunctionParams, ListStatesParams } from './types.ts'

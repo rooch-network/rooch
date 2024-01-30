@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { AccountAddress, FunctionId, TypeTag, Arg, Bytes, IPage } from '../types'
+import { AccountAddress, FunctionId, TypeTag, Arg, IPage } from '../types'
 
 export interface CallOption {
   maxGasAmount?: number
@@ -78,7 +78,7 @@ export interface IAccount {
    * @param cursor The page cursor
    * @param limit The page limit
    */
-  querySessionKeys(cursor: Bytes | null, limit: number): Promise<IPage<ISessionKey>>
+  querySessionKeys(cursor: string | null, limit: number): Promise<IPage<ISessionKey, string>>
 
   /**
    * Check session key whether expired

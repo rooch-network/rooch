@@ -132,7 +132,7 @@ impl BtcAPIServer for BtcServer {
             .pack_inscriptions(states)
             .await?
             .into_iter()
-            .map(InscriptionStateView::try_new_from_inscription_state)
+            .map(|v| InscriptionStateView::try_new_from_inscription_state(v, self.btc_network))
             .collect::<Result<Vec<_>, _>>()?;
 
         let has_next_page = data.len() > limit_of;

@@ -8,7 +8,7 @@ use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::move_std::string::MoveString;
-use moveos_types::{moveos_std::object::ObjectID, state::MoveStructType};
+use moveos_types::{moveos_std::object_id::ObjectID, state::MoveStructType};
 use rooch_types::bitcoin::ord::{Inscription, InscriptionState};
 use rooch_types::indexer::state::GlobalStateFilter;
 use schemars::JsonSchema;
@@ -88,7 +88,7 @@ impl From<Inscription> for InscriptionView {
 pub struct InscriptionStateView {
     pub object_id: ObjectID,
     pub owner: AccountAddressView,
-    pub owner_bitcoin_address: Option<BitcoinAddressView>,
+    pub owner_bitcoin_address: Option<String>,
     pub flag: u8,
     pub value: InscriptionView,
     pub object_type: StructTagView,
@@ -101,11 +101,16 @@ pub struct InscriptionStateView {
 impl InscriptionStateView {
     pub fn try_new_from_inscription_state(
         inscription: InscriptionState,
+        network: u8,
     ) -> Result<InscriptionStateView, anyhow::Error> {
+        let owner_bitcoin_address = match inscription.owner_bitcoin_address {
+            Some(baddress) => Some(baddress.format(network)?),
+            None => None,
+        };
         Ok(InscriptionStateView {
             object_id: inscription.object_id,
             owner: inscription.owner.into(),
-            owner_bitcoin_address: inscription.owner_bitcoin_address.map(Into::into),
+            owner_bitcoin_address,
             flag: inscription.flag,
             value: inscription.value.into(),
             object_type: inscription.object_type.into(),

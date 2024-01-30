@@ -4,7 +4,8 @@
 
 module test::m {
     use moveos_std::context::{Self, Context};
-    use moveos_std::object::{Self, Object, ObjectID};
+    use moveos_std::object::{Self, Object};
+    use moveos_std::object_id::ObjectID;
     use std::debug;
 
     struct S has store, key { v: u8 }

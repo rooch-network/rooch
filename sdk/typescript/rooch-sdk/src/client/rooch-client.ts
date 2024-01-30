@@ -33,12 +33,12 @@ import {
   ExecuteViewFunctionParams,
   GetEventsParams,
   GetTransactionsParams,
-  ListStatesParams,
   QueryGlobalStatesParams,
   QueryInscriptionsParams,
   QueryTableStatesParams,
   QueryUTXOsParams,
   ResoleRoochAddressParams,
+  ListStatesParams,
 } from './types.ts'
 
 export const ROOCH_CLIENT_BRAND = Symbol.for('@roochnetwork/rooch-sdk')

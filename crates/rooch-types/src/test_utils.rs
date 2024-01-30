@@ -14,9 +14,10 @@ use move_core_types::language_storage::ModuleId;
 use moveos_types::move_types::{random_identity, random_struct_tag, random_type_tag, FunctionId};
 use moveos_types::moveos_std::context;
 use moveos_types::moveos_std::event::{Event, EventID};
-use moveos_types::moveos_std::object::{NamedTableID, ObjectEntity, ObjectID, RawData};
+use moveos_types::moveos_std::object::{ObjectEntity, RawData, TablePlaceholder};
+use moveos_types::moveos_std::object_id::{NamedTableID, ObjectID};
 use moveos_types::moveos_std::raw_table::TableInfo;
-use moveos_types::state::{State, StateChangeSet, TableChange, TableTypeInfo};
+use moveos_types::state::{KeyState, State, StateChangeSet, TableChange};
 use moveos_types::transaction::{FunctionCall, MoveAction, ScriptCall, VerifiedMoveAction};
 use rand::distributions::Alphanumeric;
 use rand::{distributions, thread_rng, Rng};
@@ -279,12 +280,12 @@ pub fn random_event() -> Event {
 }
 
 pub fn random_table_change() -> TableChange {
-    let mut table_change = TableChange::new(random_type_tag());
+    let mut table_change = TableChange::default();
 
     let mut rng = thread_rng();
     for _n in 0..rng.gen_range(1..=10) {
         table_change.entries.insert(
-            random_bytes(),
+            KeyState::new(random_bytes(), random_type_tag()),
             Op::New(State::new(random_bytes(), random_type_tag())),
         );
     }
@@ -298,9 +299,7 @@ pub fn random_state_change_set() -> StateChangeSet {
     let mut rng = thread_rng();
     for _n in 0..rng.gen_range(1..=5) {
         let handle = ObjectID::from(AccountAddress::random());
-        state_change_set
-            .new_tables
-            .insert(handle, TableTypeInfo::new(random_type_tag()));
+        state_change_set.new_tables.insert(handle);
     }
 
     // generate remove tables
@@ -341,8 +340,8 @@ pub fn random_state_change_set() -> StateChangeSet {
     state_change_set
 }
 
-pub fn random_table_object() -> Result<ObjectEntity<TableInfo>> {
-    let table_info = TableInfo::new(AccountAddress::random(), random_type_tag())?;
+pub fn random_table_object() -> Result<ObjectEntity<TablePlaceholder>> {
+    let table_info = TableInfo::new(AccountAddress::random())?;
 
     Ok(ObjectEntity::new_table_object(
         ObjectID::from(AccountAddress::random()),

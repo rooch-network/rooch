@@ -8,7 +8,7 @@
 
 module rooch_examples::article_created {
 
-    use moveos_std::object::ObjectID;
+    use moveos_std::object_id::ObjectID;
     use rooch_examples::article::{Self, ArticleCreated};
     use std::option;
     use std::string::String;

@@ -12,12 +12,13 @@ use move_core_types::{
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types::parse_module_id;
+use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::moveos_std::type_info::TypeInfo;
 use moveos_types::transaction::MoveAction;
 use moveos_types::{
     access_path::AccessPath,
     move_types::FunctionId,
-    moveos_std::object::{AnnotatedObject, ObjectID},
+    moveos_std::object::AnnotatedObject,
     transaction::{FunctionCall, ScriptCall},
 };
 use moveos_types::{move_std::ascii::MoveAsciiString, state::MoveStructType};
@@ -59,7 +60,7 @@ impl From<AccountAddressView> for AccountAddress {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, PartialOrd, Ord)]
 pub struct AnnotatedMoveStructView {
     pub abilities: u8,
     #[serde(rename = "type")]
@@ -83,7 +84,7 @@ impl From<AnnotatedMoveStruct> for AnnotatedMoveStructView {
 }
 
 /// Some specific struct that we want to display in a special way for better readability
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, PartialOrd, Ord)]
 #[serde(untagged)]
 pub enum SpecificStructView {
     MoveString(MoveString),
@@ -111,7 +112,8 @@ impl SpecificStructView {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Eq, PartialEq, PartialOrd, Ord)]
+// #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 pub enum AnnotatedMoveValueView {
     U8(u8),
@@ -193,6 +195,9 @@ impl From<AnnotatedMoveValue> for AnnotatedMoveValueView {
 pub struct AnnotatedObjectView {
     pub id: ObjectID,
     pub owner: AccountAddressView,
+    pub flag: u8,
+    pub state_root: AccountAddressView,
+    pub size: u64,
     pub value: AnnotatedMoveStructView,
 }
 
@@ -201,6 +206,9 @@ impl From<AnnotatedObject> for AnnotatedObjectView {
         Self {
             id: origin.id,
             owner: origin.owner.into(),
+            flag: origin.flag,
+            state_root: origin.state_root.into(),
+            size: origin.size,
             value: origin.value.into(),
         }
     }

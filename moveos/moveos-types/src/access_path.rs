@@ -1,12 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::state::KeyState;
 use crate::{
-    move_std::string::MoveString,
     move_types::{random_identity, random_struct_tag},
-    moveos_std::object::{NamedTableID, ObjectID},
+    moveos_std::object_id::{NamedTableID, ObjectID},
     state_resolver::{self, module_name_to_key, resource_tag_to_key},
 };
+use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::StructTag,
 };
@@ -30,7 +31,7 @@ pub enum Path {
     /// Get table values by keys
     Table {
         table_handle: ObjectID,
-        keys: Option<Vec<Vec<u8>>>,
+        keys: Option<Vec<KeyState>>,
     },
 }
 
@@ -90,10 +91,7 @@ impl std::fmt::Display for Path {
                     keys.clone()
                         .unwrap_or(vec![])
                         .iter()
-                        .map(|key| {
-                            let hex_key = hex::encode(key);
-                            format!("0x{hex_key}")
-                        })
+                        .map(|key| key.to_string())
                         .collect::<Vec<_>>()
                         .join(",")
                 )?;
@@ -170,14 +168,10 @@ impl FromStr for Path {
                 let keys = match iter.next() {
                     Some(v) => Some(
                         v.split(',')
-                            .map(|key| match key.strip_prefix("0x") {
-                                Some(key) => hex::decode(key).map_err(|_| {
+                            .map(|key| {
+                                KeyState::from_str(key).map_err(|_| {
                                     anyhow::anyhow!("Invalid access path key: {}", key)
-                                }),
-                                None => {
-                                    let move_str = MoveString::from_str(key)?;
-                                    Ok(bcs::to_bytes(&move_str)?)
-                                }
+                                })
                             })
                             .collect::<Result<Vec<_>, _>>()?,
                     ),
@@ -196,7 +190,7 @@ impl FromStr for Path {
 /// 1. /object/$object_id1[,$object_id2]*
 /// 2. /resource/$account_address/$resource_type1[,$resource_type2]*
 /// 3. /module/$account_address/$module_name1[,$module_name2]*
-/// 4. /table/$table_handle/$key1[,$key2]*
+/// 4. /table/$table_handle/$key_state1[,$key_state2]*
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AccessPath(pub Path);
 
@@ -239,7 +233,7 @@ impl AccessPath {
         })
     }
 
-    pub fn table(table_handle: ObjectID, keys: Vec<Vec<u8>>) -> Self {
+    pub fn table(table_handle: ObjectID, keys: Vec<KeyState>) -> Self {
         AccessPath(Path::Table {
             table_handle,
             keys: Some(keys),
@@ -255,7 +249,7 @@ impl AccessPath {
 
     /// Convert AccessPath to TableQuery, return the table handle and keys
     /// All other AccessPath is a shortcut for TableQuery
-    pub fn into_table_query(self) -> (ObjectID, Option<Vec<Vec<u8>>>) {
+    pub fn into_table_query(self) -> (ObjectID, Option<Vec<KeyState>>) {
         match self.0 {
             Path::Table { table_handle, keys } => (table_handle, keys),
             Path::Object { object_ids } => {
@@ -263,7 +257,7 @@ impl AccessPath {
                 let keys = Some(
                     object_ids
                         .iter()
-                        .map(|object_id| object_id.to_bytes())
+                        .map(|object_id| object_id.to_key())
                         .collect(),
                 );
                 (table_handle, keys)
@@ -350,12 +344,28 @@ impl<'de> Deserialize<'de> for AccessPath {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::move_std::string::MoveString;
+    use crate::state::MoveType;
 
     fn test_path_roundtrip(path: &str) {
         let path = path.parse::<Path>().unwrap();
         let path_str = path.to_string();
         let path2 = path_str.parse::<Path>().unwrap();
         assert_eq!(path, path2);
+    }
+
+    #[test]
+    pub fn test_table_path() -> Result<()> {
+        let key1 = KeyState::new("0x12".as_bytes().to_vec(), MoveString::type_tag());
+        let key2 = KeyState::new("0x13".as_bytes().to_vec(), MoveString::type_tag());
+        let key3 = KeyState::new("key1".as_bytes().to_vec(), MoveString::type_tag());
+        let key4 = KeyState::new("key2".as_bytes().to_vec(), MoveString::type_tag());
+        println!("test_table_path key1 {}", key1.to_string());
+        println!("test_table_path key2 {}", key2.to_string());
+        println!("test_table_path key3 {}", key3.to_string());
+        println!("test_table_path key4 {}", key4.to_string());
+
+        Ok(())
     }
 
     #[test]
@@ -366,8 +376,11 @@ mod tests {
         test_path_roundtrip("/resource/0x1/0x2::m1::S1,0x3::m2::S2");
         test_path_roundtrip("/module/0x2/m1");
         test_path_roundtrip("/module/0x2/m1,m2");
-        test_path_roundtrip("/table/0x1/0x12");
-        test_path_roundtrip("/table/0x1/0x12,0x13");
-        test_path_roundtrip("/table/0x1/key1,key2");
+        // test_path_roundtrip("/table/0x1/0x12");
+        // test_path_roundtrip("/table/0x1/0x12,0x13");
+        // test_path_roundtrip("/table/0x1/key1,key2");
+        test_path_roundtrip("/table/0x1/0x043078313207000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700");
+        test_path_roundtrip("/table/0x1/0x043078313207000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700,0x043078313307000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700");
+        test_path_roundtrip("/table/0x1/0x046b65793107000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700,0x046b65793207000000000000000000000000000000000000000000000000000000000000000106737472696e6706537472696e6700");
     }
 }

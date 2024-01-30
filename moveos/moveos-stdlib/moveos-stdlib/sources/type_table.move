@@ -4,10 +4,10 @@
 /// TypeTable is a table use struct Type as Key, struct as Value
 
 module moveos_std::type_table {
-
     use std::ascii::String;
-    use moveos_std::raw_table;
-    use moveos_std::object::{Self, UID, ObjectID};
+    use moveos_std::object_id;
+    use moveos_std::object_id::{ObjectID, UID};
+    use moveos_std::object::{Self};
 
     friend moveos_std::account_storage;
 
@@ -17,7 +17,7 @@ module moveos_std::type_table {
 
     /// Create a new Table.
     public fun new(id: UID): TypeTable {
-        let handle = object::uid_to_object_id(id);
+        let handle = object_id::uid_to_object_id(id);
         internal_new_with_id(handle)
     }
 
@@ -29,8 +29,7 @@ module moveos_std::type_table {
     fun internal_new_with_id(handle: ObjectID): TypeTable{
         // The system account deployment contract directly creates the module table in the vm.
         if (!object::contains_global(handle)) {
-            let table_info = raw_table::new_table<String>(object::object_id_to_table_handle(handle));
-            let obj = object::new_with_id(handle, table_info);
+            let obj = object::new_table_with_id(handle);
             object::transfer(obj, @moveos_std);
         };
         TypeTable {
@@ -47,30 +46,30 @@ module moveos_std::type_table {
     /// Add a new entry of `V` to the table. Aborts if an entry for
     /// entry of `V` type already exists.
     public fun add<V: key>(table: &mut TypeTable, val: V) {
-        raw_table::add<String, V>(object::object_id_to_table_handle(table.handle), key<V>(), val);
+        object::add_field<String, V>(table.handle, key<V>(), val);
     }
 
     /// Acquire an immutable reference to the value which type is `V`.
     /// Aborts if there is no entry for `V`.
     public fun borrow<V: key>(table: &TypeTable): &V {
-        raw_table::borrow<String, V>(object::object_id_to_table_handle(table.handle), key<V>())
+        object::borrow_field<String, V>(table.handle, key<V>())
     }
 
     /// Acquire a mutable reference to the value which type is `V`.
     /// Aborts if there is no entry for `V`.
     public fun borrow_mut<V: key>(table: &mut TypeTable): &mut V {
-        raw_table::borrow_mut<String, V>(object::object_id_to_table_handle(table.handle), key<V>())
+        object::borrow_mut_field<String, V>(table.handle, key<V>())
     }
 
     /// Remove from `table` and return the value which type is `V`.
     /// Aborts if there is no entry for `V`.
     public fun remove<V: key>(table: &mut TypeTable): V {
-        raw_table::remove<String, V>(object::object_id_to_table_handle(table.handle), key<V>())
+        object::remove_field<String, V>(table.handle, key<V>())
     }
 
     /// Returns true if `table` contains an entry for type `V`.
     public fun contains<V: key>(table: &TypeTable): bool {
-        raw_table::contains<String>(object::object_id_to_table_handle(table.handle), key<V>())
+        object::contains_field<String>(table.handle, key<V>())
     }
 
     /// Returns table handle of `table`.
@@ -82,13 +81,13 @@ module moveos_std::type_table {
     /// Testing only: allows to drop a table even if it is not empty.
     public fun drop_unchecked(table: TypeTable) {
         let TypeTable{handle} = table;
-        raw_table::drop_unchecked(object::object_id_to_table_handle(handle))
+        object::drop_unchecked_table(handle)
     }
 
     /// Destroy a table. The table must be empty to succeed.
     public fun destroy_empty(table: TypeTable) {
         let TypeTable{handle} = table;
-        raw_table::destroy_empty(object::object_id_to_table_handle(handle))
+        object::destroy_empty_table(handle)
     }
 
     #[test_only]

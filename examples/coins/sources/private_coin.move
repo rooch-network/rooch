@@ -4,6 +4,7 @@
 module coins::private_coin {
 
     use std::string;
+    use moveos_std::object_id;
     use moveos_std::signer;
     use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, Object};
@@ -58,7 +59,7 @@ module coins::private_coin {
     }
 
     fun deposit_to_treaury(ctx: &mut Context, coin: Coin<PRC>) {
-        let treasury_object_id = object::named_object_id<Treasury>();
+        let treasury_object_id = object_id::named_object_id<Treasury>();
         let treasury_obj = context::borrow_mut_object_extend<Treasury>(ctx, treasury_object_id);
         coin_store::deposit_extend(&mut object::borrow_mut(treasury_obj).coin_store, coin);
     }

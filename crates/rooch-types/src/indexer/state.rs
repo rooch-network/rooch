@@ -5,7 +5,7 @@ use crate::indexer::Filter;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{StructTag, TypeTag};
-use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::state::{StateChangeSet, TableChangeSet};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -60,7 +60,7 @@ pub struct IndexerGlobalState {
     pub flag: u8,
     pub value: String,
     pub object_type: StructTag,
-    pub key_type: String,
+    pub state_root: AccountAddress,
     pub size: u64,
     pub tx_order: u64,
     pub state_index: u64,
@@ -72,7 +72,9 @@ pub struct IndexerGlobalState {
 pub struct IndexerTableState {
     pub table_handle: ObjectID,
     pub key_hex: String,
+    pub key_str: String,
     pub value: String,
+    pub key_type: TypeTag,
     pub value_type: TypeTag,
     pub tx_order: u64,
     pub state_index: u64,

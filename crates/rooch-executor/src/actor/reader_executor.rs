@@ -22,7 +22,7 @@ use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::moveos_std::event::EventHandle;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event};
 use moveos_types::state::{AnnotatedState, State};
-use moveos_types::state_resolver::{AnnotatedStateReader, StateReader};
+use moveos_types::state_resolver::{AnnotatedStateKV, AnnotatedStateReader, StateKV, StateReader};
 use moveos_types::transaction::TransactionExecutionInfo;
 use rooch_genesis::RoochGenesis;
 use rooch_store::RoochStore;
@@ -125,7 +125,7 @@ impl Handler<ListStatesMessage> for ReaderExecutorActor {
         &mut self,
         msg: ListStatesMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<(Vec<u8>, State)>, anyhow::Error> {
+    ) -> Result<Vec<StateKV>, anyhow::Error> {
         let statedb = self.moveos().moveos_resolver();
         statedb.list_states(msg.access_path, msg.cursor, msg.limit)
     }
@@ -137,7 +137,7 @@ impl Handler<ListAnnotatedStatesMessage> for ReaderExecutorActor {
         &mut self,
         msg: ListAnnotatedStatesMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<(Vec<u8>, AnnotatedState)>, anyhow::Error> {
+    ) -> Result<Vec<AnnotatedStateKV>, anyhow::Error> {
         let statedb = self.moveos().moveos_resolver();
         statedb.list_annotated_states(msg.access_path, msg.cursor, msg.limit)
     }

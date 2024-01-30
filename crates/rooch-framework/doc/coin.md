@@ -41,6 +41,7 @@ This module provides the foundation for typesafe Coins.
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 </code></pre>
 
@@ -285,7 +286,7 @@ Returns <code><b>true</b></code> if the type <code>CoinType</code> is an registe
 Return the ObjectID of Object<CoinInfo<CoinType>>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info_id">coin_info_id</a>&lt;CoinType: key&gt;(): <a href="_ObjectID">object::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info_id">coin_info_id</a>&lt;CoinType: key&gt;(): <a href="_ObjectID">object_id::ObjectID</a>
 </code></pre>
 
 

@@ -23,6 +23,8 @@ use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::event::{Event, EventID};
 use moveos_types::moveos_std::tx_context::TxContext;
+use moveos_types::state::KeyState;
+use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::FunctionCall;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
@@ -102,9 +104,9 @@ impl ExecutorProxy {
     pub async fn list_states(
         &self,
         access_path: AccessPath,
-        cursor: Option<Vec<u8>>,
+        cursor: Option<KeyState>,
         limit: usize,
-    ) -> Result<Vec<(Vec<u8>, State)>> {
+    ) -> Result<Vec<StateKV>> {
         self.reader_actor
             .send(ListStatesMessage {
                 access_path,
@@ -117,9 +119,9 @@ impl ExecutorProxy {
     pub async fn list_annotated_states(
         &self,
         access_path: AccessPath,
-        cursor: Option<Vec<u8>>,
+        cursor: Option<KeyState>,
         limit: usize,
-    ) -> Result<Vec<(Vec<u8>, AnnotatedState)>> {
+    ) -> Result<Vec<AnnotatedStateKV>> {
         self.reader_actor
             .send(ListAnnotatedStatesMessage {
                 access_path,

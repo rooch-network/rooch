@@ -23,6 +23,7 @@
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 </code></pre>
 

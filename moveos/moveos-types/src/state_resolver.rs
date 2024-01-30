@@ -1,11 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::state::{AnnotatedKeyState, KeyState};
+use crate::move_std::ascii::MoveAsciiString;
+use crate::move_std::string::MoveString;
+use crate::moveos_std::object_id::{NamedTableID, ObjectID};
+use crate::state::{AnnotatedKeyState, KeyState, MoveStructType};
 use crate::{
     access_path::AccessPath,
     moveos_std::move_module::MoveModule,
-    moveos_std::object::{AnnotatedObject, NamedTableID, ObjectID},
+    moveos_std::object::AnnotatedObject,
     state::{AnnotatedState, State},
 };
 use anyhow::{ensure, Error, Result};
@@ -20,11 +23,8 @@ use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnn
 
 pub const GLOBAL_OBJECT_STORAGE_HANDLE: ObjectID = ObjectID::ZERO;
 
-pub type StateKV = (Vec<u8>, State);
-pub type AnnotatedStateKV = (Vec<u8>, AnnotatedState);
-
-pub type KeyStateKV = (KeyState, State);
-pub type AnnotatedKeyStateKV = (AnnotatedKeyState, AnnotatedState);
+pub type StateKV = (KeyState, State);
+pub type AnnotatedStateKV = (AnnotatedKeyState, AnnotatedState);
 
 /// A global state resolver which needs to be provided by the environment.
 /// This allows to lookup data in remote storage.
@@ -35,19 +35,19 @@ pub trait StateResolver {
     fn resolve_table_item(
         &self,
         handle: &ObjectID,
-        key: &[u8],
+        key: &KeyState,
     ) -> Result<Option<State>, anyhow::Error>;
 
     fn list_table_items(
         &self,
         handle: &ObjectID,
-        cursor: Option<Vec<u8>>,
+        cursor: Option<KeyState>,
         limit: usize,
     ) -> Result<Vec<StateKV>, anyhow::Error>;
 
     // get object data from global state tree.
     fn resolve_object_state(&self, object: &ObjectID) -> Result<Option<State>, anyhow::Error> {
-        self.resolve_table_item(&GLOBAL_OBJECT_STORAGE_HANDLE, &object.to_bytes())
+        self.resolve_table_item(&GLOBAL_OBJECT_STORAGE_HANDLE, &object.to_key())
     }
 }
 
@@ -122,7 +122,7 @@ where
     fn resolve_table_item(
         &self,
         handle: &ObjectID,
-        key: &[u8],
+        key: &KeyState,
     ) -> Result<Option<State>, anyhow::Error> {
         self.0.resolve_table_item(handle, key)
     }
@@ -130,7 +130,7 @@ where
     fn list_table_items(
         &self,
         handle: &ObjectID,
-        cursor: Option<Vec<u8>>,
+        cursor: Option<KeyState>,
         limit: usize,
     ) -> Result<Vec<StateKV>, anyhow::Error> {
         self.0.list_table_items(handle, cursor, limit)
@@ -142,14 +142,18 @@ pub trait MoveOSResolver: MoveResolver + StateResolver {}
 impl<T> MoveOSResolver for T where T: MoveResolver + StateResolver {}
 
 //TODO define a ResourceKey trait to unify the resource key type, and auto impl it for ObjectID and StructTag.
-pub fn resource_tag_to_key(tag: &StructTag) -> Vec<u8> {
+pub fn resource_tag_to_key(tag: &StructTag) -> KeyState {
     // The resource key is struct_tag to_canonical_string in bcs serialize format string, not String::into_bytes.
-    bcs::to_bytes(&tag.to_canonical_string()).expect("bcs to_bytes String must success.")
+    let key = bcs::to_bytes(&tag.to_canonical_string()).expect("bcs to_bytes String must success.");
+    let key_type = TypeTag::Struct(Box::new(MoveAsciiString::struct_tag()));
+    KeyState::new(key, key_type)
 }
 
-pub fn module_name_to_key(name: &IdentStr) -> Vec<u8> {
+pub fn module_name_to_key(name: &IdentStr) -> KeyState {
     // The key is the module name in bcs serialize format string, not String::into_bytes.
-    bcs::to_bytes(&name.to_string()).expect("bcs to_bytes String must success.")
+    let key = bcs::to_bytes(&name.to_string()).expect("bcs to_bytes String must success.");
+    let key_type = TypeTag::Struct(Box::new(MoveString::struct_tag()));
+    KeyState::new(key, key_type)
 }
 
 /// StateReader provide an unify State API with AccessPath
@@ -167,7 +171,7 @@ pub trait StateReader: StateResolver {
     fn list_states(
         &self,
         path: AccessPath,
-        cursor: Option<Vec<u8>>,
+        cursor: Option<KeyState>,
         limit: usize,
     ) -> Result<Vec<StateKV>> {
         let (handle, _keys) = path.into_table_query();
@@ -193,7 +197,7 @@ pub trait AnnotatedStateReader: StateReader + MoveResolver {
     fn list_annotated_states(
         &self,
         path: AccessPath,
-        cursor: Option<Vec<u8>>,
+        cursor: Option<KeyState>,
         limit: usize,
     ) -> Result<Vec<AnnotatedStateKV>> {
         let annotator = MoveValueAnnotator::new(self);
@@ -202,7 +206,8 @@ pub trait AnnotatedStateReader: StateReader + MoveResolver {
             .into_iter()
             .map(|(key, state)| {
                 (
-                    key,
+                    key.into_annotated_state(&annotator)
+                        .expect("key state into_annotated_state should success"),
                     state
                         .into_annotated_state(&annotator)
                         .expect("state into_annotated_state should success"),

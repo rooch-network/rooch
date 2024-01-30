@@ -23,7 +23,6 @@ import InputAdornment from '@mui/material/InputAdornment'
 import Button from '@mui/material/Button'
 import Icon from '../../../../@core/components/icon'
 import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
-import { HexString } from '@roochnetwork/rooch-sdk'
 
 interface CellType {
   row: any
@@ -88,7 +87,7 @@ const StateList = () => {
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 })
   const [curStateView, setCurStateView] = useState<any | null>(null)
 
-  const mapPageToNextCursor = useRef<{ [page: number]: Uint8Array | null }>({})
+  const mapPageToNextCursor = useRef<{ [page: number]: string | null }>({})
   const [cacheResult, setCacheResult] = useState<{ [page: number]: any[] }>({})
   const [count, setCount] = useState(10)
 
@@ -118,8 +117,7 @@ const StateList = () => {
     }
 
     if (data.has_next_page) {
-      mapPageToNextCursor.current[paginationModel.page] =
-        new HexString(data.next_cursor as any).toUint8Array() ?? null
+      mapPageToNextCursor.current[paginationModel.page] = (data.next_cursor as any) ?? null
     }
 
     cacheResult[paginationModel.page] = data.data

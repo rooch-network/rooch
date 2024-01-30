@@ -74,7 +74,7 @@ task 8 'publish'. lines 64-71:
 Error: error: module init function only should have two parameter types with signer or storageContext
    ┌─ /tmp/tempfile:67:5
    │  
-67 │ ╭     fun init( _: object::ObjectID ){
+67 │ ╭     fun init( _: object_id::ObjectID ){
 68 │ │     }
    │ ╰─────^
 

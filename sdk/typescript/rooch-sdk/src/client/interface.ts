@@ -15,5 +15,5 @@ export interface IClient {
 
   getStates(accessPath: string): Promise<StateView | null[]>
 
-  listStates(listStatesParams: ListStatesParams): Promise<StatePageView>
+  listStates(params: ListStatesParams): Promise<StatePageView>
 }

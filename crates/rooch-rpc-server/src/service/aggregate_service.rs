@@ -4,14 +4,13 @@
 use crate::service::rpc_service::RpcService;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::StructTag;
+use move_core_types::language_storage::{StructTag, TypeTag};
 use moveos_types::access_path::AccessPath;
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
-use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::moveos_std::raw_table::TableInfo;
-use moveos_types::state::{AnnotatedKeyState, KeyState, PlaceholderStruct, State};
-use moveos_types::state_resolver::{AnnotatedKeyStateKV, KeyStateKV};
+use moveos_types::moveos_std::object::RawObject;
+use moveos_types::moveos_std::object_id::ObjectID;
+use moveos_types::state::{KeyState, PlaceholderStruct};
 use rooch_rpc_api::jsonrpc_types::account_view::BalanceInfoView;
 use rooch_rpc_api::jsonrpc_types::CoinInfoView;
 use rooch_types::address::{BitcoinAddress, MultiChainAddress};
@@ -123,9 +122,9 @@ impl AggregateService {
     pub async fn get_balances(
         &self,
         account_addr: AccountAddress,
-        cursor: Option<Vec<u8>>,
+        cursor: Option<KeyState>,
         limit: usize,
-    ) -> Result<Vec<(Option<Vec<u8>>, BalanceInfoView)>> {
+    ) -> Result<Vec<(Option<KeyState>, BalanceInfoView)>> {
         let account_coin_store_module = self
             .rpc_service
             .executor
@@ -252,10 +251,10 @@ impl AggregateService {
             .collect::<Result<Vec<_>>>()
     }
 
-    pub async fn get_table_infos(
+    pub async fn get_raw_objects(
         &self,
         table_handles: Vec<ObjectID>,
-    ) -> Result<HashMap<ObjectID, Option<TableInfo>>> {
+    ) -> Result<HashMap<ObjectID, Option<RawObject>>> {
         // Global table 0x0 table's key type is always ObjectID.
         let access_path = AccessPath::objects(table_handles.clone());
         self.rpc_service
@@ -266,110 +265,22 @@ impl AggregateService {
             .map(|(state_opt, table_handle)| {
                 Ok((
                     table_handle,
-                    state_opt
-                        .map(|state| {
-                            Ok::<TableInfo, anyhow::Error>(
-                                state.as_object_uncheck::<TableInfo>()?.value,
-                            )
-                        })
-                        .transpose()?,
+                    match state_opt {
+                        Some(state) => Some(state.as_raw_object()?),
+                        None => None,
+                    },
                 ))
             })
             .collect::<Result<HashMap<_, _>>>()
     }
 
-    pub async fn list_states(
-        &self,
-        access_path: AccessPath,
-        cursor: Option<Vec<u8>>,
-        limit: usize,
-    ) -> Result<Vec<KeyStateKV>> {
-        let states = self
-            .rpc_service
-            .list_states(access_path.clone(), cursor, limit)
-            .await?;
-
-        let (table_handle, _keys) = access_path.into_table_query();
-        let table_infos = self.get_table_infos(vec![table_handle]).await?;
-        // For now, global table 0x0 has no key type yet.
-        let key_type_opt = table_infos
-            .get(&table_handle)
-            .cloned()
-            .flatten()
-            .map(|v| v.key_type_tag())
-            .transpose()?;
-
-        Ok(states
-            .into_iter()
-            .map(|(key, state)| {
-                (
-                    KeyState {
-                        key,
-                        key_type: key_type_opt.as_ref().cloned(),
-                    },
-                    state,
-                )
-            })
-            .collect())
-    }
-
-    pub async fn list_annotated_states(
-        &self,
-        access_path: AccessPath,
-        cursor: Option<Vec<u8>>,
-        limit: usize,
-    ) -> Result<Vec<AnnotatedKeyStateKV>> {
-        let states = self
-            .rpc_service
-            .list_annotated_states(access_path.clone(), cursor, limit)
-            .await?;
-
-        let (table_handle, _keys) = access_path.into_table_query();
-        let table_infos = self.get_table_infos(vec![table_handle]).await?;
-
-        let key_type_opt = table_infos
-            .get(&table_handle)
-            .cloned()
-            .flatten()
-            .map(|v| v.key_type_tag())
-            .transpose()?;
-
-        Ok(match key_type_opt {
-            Some(key_type) => {
-                let key_states = states
-                    .iter()
-                    .map(|(key, _state)| State::new(key.clone(), key_type.clone()))
-                    .collect();
-                let anotated_key_states = self
-                    .rpc_service
-                    .get_annotated_states_by_state(key_states)
-                    .await?;
-                states
-                    .into_iter()
-                    .zip(anotated_key_states)
-                    .map(|((_key, state), key_state)| {
-                        let key_state = AnnotatedKeyState::new(
-                            KeyState::new(key_state.state.value, Some(key_state.state.value_type)),
-                            Some(key_state.decoded_value),
-                        );
-                        (key_state, state)
-                    })
-                    .collect()
-            }
-            None => states
-                .into_iter()
-                .map(|(key, state)| {
-                    let key_state = AnnotatedKeyState::new(KeyState::new(key, None), None);
-                    (key_state, state)
-                })
-                .collect(),
-        })
-    }
-
     pub async fn pack_uxtos(&self, states: Vec<IndexerGlobalState>) -> Result<Vec<UTXOState>> {
         let table_handles = states.iter().map(|m| m.object_id).collect::<Vec<_>>();
         let owners = states.iter().map(|m| m.owner).collect::<Vec<_>>();
-        let owner_keys = states.iter().map(|m| m.owner.to_vec()).collect::<Vec<_>>();
+        let owner_keys = states
+            .iter()
+            .map(|m| KeyState::new(m.owner.to_vec(), TypeTag::Address))
+            .collect::<Vec<_>>();
 
         // Global table 0x0 table's key type is always ObjectID.
         let access_path = AccessPath::objects(table_handles.clone());
@@ -444,7 +355,10 @@ impl AggregateService {
     ) -> Result<Vec<InscriptionState>> {
         let table_handles = states.iter().map(|m| m.object_id).collect::<Vec<_>>();
         let owners = states.iter().map(|m| m.owner).collect::<Vec<_>>();
-        let owner_keys = states.iter().map(|m| m.owner.to_vec()).collect::<Vec<_>>();
+        let owner_keys = states
+            .iter()
+            .map(|m| KeyState::new(m.owner.to_vec(), TypeTag::Address))
+            .collect::<Vec<_>>();
 
         // Global table 0x0 table's key type is always ObjectID.
         let access_path = AccessPath::objects(table_handles.clone());

@@ -7,10 +7,12 @@ module moveos_std::account_storage {
 
     use std::string::String;
     use std::vector;
+    use moveos_std::object_id;
+    use moveos_std::object_id::ObjectID;
     use moveos_std::bcs;
     use moveos_std::type_table::{Self, TypeTable};
     use moveos_std::table::{Self, Table};
-    use moveos_std::object::{Self, ObjectID, Object};
+    use moveos_std::object::{Self, Object};
     use moveos_std::tx_context;
     use moveos_std::move_module::{Self, MoveModule};
 
@@ -31,7 +33,7 @@ module moveos_std::account_storage {
 
     //Ensure the NamedTableID generate use same method with Rust code
     public fun named_table_id(account: address, table_type: u64): ObjectID{
-        object::address_to_object_id(tx_context::derive_id(bcs::to_bytes(&account), table_type))
+        object_id::address_to_object_id(tx_context::derive_id(bcs::to_bytes(&account), table_type))
     }
 
     /// Create a new account storage space
@@ -149,8 +151,8 @@ module moveos_std::account_storage {
     
     #[test]
     fun test_named_table_id() {
-        assert!(named_table_id(@0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647, NamedTableResource) == object::address_to_object_id(@0x04d8b5ccef4d5b55fa9371d1a9c344fcd4bd40dd9f32dd1d94696775fe3f3013), 1000);
-        assert!(named_table_id(@0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647, NamedTableModule) == object::address_to_object_id(@0xead64c5e724c9d52b0eb792b350d56001f1fe0dc2dec0e2e713420daba18109a), 1001);
+        assert!(named_table_id(@0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647, NamedTableResource) == object_id::address_to_object_id(@0x04d8b5ccef4d5b55fa9371d1a9c344fcd4bd40dd9f32dd1d94696775fe3f3013), 1000);
+        assert!(named_table_id(@0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647, NamedTableModule) == object_id::address_to_object_id(@0xead64c5e724c9d52b0eb792b350d56001f1fe0dc2dec0e2e713420daba18109a), 1001);
     }
 
     #[test_only]

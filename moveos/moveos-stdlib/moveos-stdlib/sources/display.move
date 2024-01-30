@@ -3,6 +3,7 @@
 
 module moveos_std::display{
     use std::string::String;
+    use moveos_std::object_id;
     use moveos_std::object::{Self, Object};
     use moveos_std::context::{Self, Context};
     use moveos_std::simple_map;
@@ -16,7 +17,7 @@ module moveos_std::display{
     /// Create or borrow_mut Display object for resource `T`
     /// Only the module of `T` can call this function.
     public fun resource_display<T: key>(ctx: &mut Context): &mut Object<Display<T>> {
-        let object_id = object::named_object_id<Display<T>>();
+        let object_id = object_id::named_object_id<Display<T>>();
         if (!context::exists_object<Display<T>>(ctx, object_id)) {
             let display_obj = context::new_named_object(ctx, Display<T> {
                 sample_map: simple_map::create()
@@ -32,7 +33,7 @@ module moveos_std::display{
     /// Create or borrow_mut Display object for `Object<T>`
     /// Only the module of `T` can call this function.
     public fun object_display<T: key>(ctx: &mut Context): &mut Object<Display<Object<T>>> {
-        let object_id = object::named_object_id<Display<Object<T>>>();
+        let object_id = object_id::named_object_id<Display<Object<T>>>();
         if (!context::exists_object<Display<Object<T>>>(ctx, object_id)) {
             let display_obj = context::new_named_object(ctx, Display<Object<T>> {
                 sample_map: simple_map::create()

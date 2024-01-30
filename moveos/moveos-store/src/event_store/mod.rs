@@ -5,7 +5,7 @@ use crate::{EVENT_HANDLE_PREFIX_NAME, EVENT_PREFIX_NAME};
 use anyhow::{anyhow, Result};
 use move_core_types::language_storage::StructTag;
 use moveos_types::moveos_std::event::{Event, EventHandle, EventID, TransactionEvent};
-use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::object_id::ObjectID;
 use raw_store::{derive_store, CodecKVStore, StoreInstance};
 use std::cmp::min;
 use std::collections::{HashMap, HashSet};

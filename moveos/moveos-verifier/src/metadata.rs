@@ -607,7 +607,7 @@ pub fn is_allowed_input_struct(name: String, is_ref: bool) -> bool {
         name.as_str(),
         "0x1::string::String"
             | "0x1::ascii::String"
-            | "0x2::object::ObjectID"
+            | "0x2::object_id::ObjectID"
             | "0x2::context::Context"
     ) ||
     // Object<T> only support passing argument by-ref, not by-value
@@ -1068,7 +1068,7 @@ fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> b
 fn is_allowed_data_struct_type(full_struct_name: &str) -> bool {
     matches!(
         full_struct_name,
-        "0x1::string::String" | "0x1::ascii::String" | "0x2::object::ObjectID"
+        "0x1::string::String" | "0x1::ascii::String" | "0x2::object_id::ObjectID"
     )
 }
 
@@ -1571,7 +1571,7 @@ pub fn check_metadata_format(module: &CompiledModule) -> Result<(), MalformedErr
 
             if data.key == *ROOCH_METADATA_KEY {
                 bcs::from_bytes::<RuntimeModuleMetadataV1>(&data.value)
-                    .map_err(|e| MalformedError::DeserializedError(data.key.clone(), e))?;
+                    .map_err(|e| MalformedError::DeserializedError(data.key.clone(), e.clone()))?;
             }
         } else {
             return Err(MalformedError::UnknownKey(data.key.clone()));

@@ -1,7 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::moveos_std::object::{AnnotatedObject, ObjectEntity, ObjectID, RawObject};
+use crate::moveos_std::object::{AnnotatedObject, ObjectEntity, RawObject};
+use crate::moveos_std::object_id::ObjectID;
 use anyhow::{bail, ensure, Result};
 use move_core_types::{
     account_address::AccountAddress,
@@ -15,9 +16,11 @@ use move_core_types::{
 };
 use move_resource_viewer::{AnnotatedMoveValue, MoveValueAnnotator};
 use move_vm_types::values::Value;
+use serde::ser::Error;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use smt::UpdateSet;
 use std::collections::{btree_map, BTreeMap, BTreeSet};
+use std::str::FromStr;
 
 /// `State` is represent state in MoveOS statedb, it can be a Move module or a Move Object or a Move resource or a Table value
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -29,17 +32,56 @@ pub struct State {
 }
 
 /// `KeyState` is represent key state
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct KeyState {
     /// the bytes of key state
     pub key: Vec<u8>,
     /// the type of key state
-    pub key_type: Option<TypeTag>,
+    pub key_type: TypeTag,
 }
 
 impl KeyState {
-    pub fn new(key: Vec<u8>, key_type: Option<TypeTag>) -> Self {
+    pub fn new(key: Vec<u8>, key_type: TypeTag) -> Self {
         Self { key, key_type }
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        bcs::from_bytes(bytes)
+            .map_err(|e| anyhow::anyhow!("Deserialize the KeyState error: {:?}", e))
+    }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>> {
+        bcs::to_bytes(self).map_err(|e| anyhow::anyhow!("Serialize the KeyState error: {:?}", e))
+    }
+
+    pub fn into_annotated_state<T: MoveResolver + ?Sized>(
+        self,
+        annotator: &MoveValueAnnotator<T>,
+    ) -> Result<AnnotatedKeyState> {
+        let decoded_value = annotator.view_value(&self.key_type, &self.key)?;
+        Ok(AnnotatedKeyState::new(self, decoded_value))
+    }
+}
+
+impl std::fmt::Display for KeyState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let hex_key = hex::encode(
+            self.to_bytes()
+                .map_err(|e| std::fmt::Error::custom(e.to_string()))?,
+        );
+        write!(f, "0x{}", hex_key)
+    }
+}
+
+impl FromStr for KeyState {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let key = hex::decode(s.strip_prefix("0x").unwrap_or(s))
+            .map_err(|_| anyhow::anyhow!("Invalid key state str: {}", s))?;
+        KeyState::from_bytes(key.as_slice())
     }
 }
 
@@ -490,11 +532,11 @@ impl AnnotatedState {
 #[derive(Debug, Clone)]
 pub struct AnnotatedKeyState {
     pub state: KeyState,
-    pub decoded_key: Option<AnnotatedMoveValue>,
+    pub decoded_key: AnnotatedMoveValue,
 }
 
 impl AnnotatedKeyState {
-    pub fn new(state: KeyState, decoded_key: Option<AnnotatedMoveValue>) -> Self {
+    pub fn new(state: KeyState, decoded_key: AnnotatedMoveValue) -> Self {
         Self { state, decoded_key }
     }
 }
@@ -519,90 +561,64 @@ impl std::fmt::Display for TableTypeInfo {
 /// Global State change set.
 #[derive(Default, Clone, Debug)]
 pub struct StateChangeSet {
-    pub new_tables: BTreeMap<ObjectID, TableTypeInfo>,
+    pub new_tables: BTreeSet<ObjectID>,
     pub removed_tables: BTreeSet<ObjectID>,
     pub changes: BTreeMap<ObjectID, TableChange>,
 }
 
 impl StateChangeSet {
-    pub fn get_or_insert_table_change(
-        &mut self,
-        object_id: ObjectID,
-        key_type: TypeTag,
-    ) -> &mut TableChange {
+    pub fn get_or_insert_table_change(&mut self, object_id: ObjectID) -> &mut TableChange {
         match self.changes.entry(object_id) {
             btree_map::Entry::Occupied(entry) => entry.into_mut(),
-            btree_map::Entry::Vacant(entry) => entry.insert(TableChange::new(key_type)),
+            btree_map::Entry::Vacant(entry) => entry.insert(TableChange::default()),
         }
     }
 
-    pub fn add_op(&mut self, handle: ObjectID, key_type: TypeTag, key: Vec<u8>, op: Op<State>) {
-        let table_change = self.get_or_insert_table_change(handle, key_type);
+    pub fn add_op(&mut self, handle: ObjectID, key: KeyState, op: Op<State>) {
+        let table_change = self.get_or_insert_table_change(handle);
         table_change.entries.insert(key, op);
     }
 }
 
 /// A change of a single table.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct TableChange {
-    pub entries: BTreeMap<Vec<u8>, Op<State>>,
+    pub entries: BTreeMap<KeyState, Op<State>>,
     /// The size increment of the table, may be negtive which means more deleting than inserting.
     pub size_increment: i64,
-    /// the key's type tag
-    pub key_type: TypeTag,
-}
-
-impl TableChange {
-    pub fn new(
-        // k: ObjectID,
-        key_type: TypeTag,
-    ) -> Self {
-        Self {
-            entries: BTreeMap::new(),
-            size_increment: 0,
-            key_type,
-        }
-    }
 }
 
 /// A change of a single table.
 #[derive(Default, Clone, Debug, Eq, PartialEq)]
 pub struct TableState {
-    pub entries: UpdateSet<Vec<u8>, State>,
-    /// the key's type tag
-    pub key_type: Option<TypeTag>,
+    pub entries: UpdateSet<KeyState, State>,
 }
 
 /// TableStateSet is represent state dump result. Not include events and other stores
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct TableStateSet {
-    // pub table_state_sets: BTreeMap<ObjectID, UpdateSet<Vec<u8>, State>>,
     pub table_state_sets: BTreeMap<ObjectID, TableState>,
 }
 
 /// A change set of a single table.
 /// Consistent with the StateChangeSet format. Use for state sync.
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, Eq, PartialEq)]
 pub struct TableChangeSet {
-    pub new_tables: BTreeMap<ObjectID, TableTypeInfo>,
+    pub new_tables: BTreeSet<ObjectID>,
     pub removed_tables: BTreeSet<ObjectID>,
     pub changes: BTreeMap<ObjectID, TableChange>,
 }
 
 impl TableChangeSet {
-    pub fn get_or_insert_table_change(
-        &mut self,
-        object_id: ObjectID,
-        key_type: TypeTag,
-    ) -> &mut TableChange {
+    pub fn get_or_insert_table_change(&mut self, object_id: ObjectID) -> &mut TableChange {
         match self.changes.entry(object_id) {
             btree_map::Entry::Occupied(entry) => entry.into_mut(),
-            btree_map::Entry::Vacant(entry) => entry.insert(TableChange::new(key_type)),
+            btree_map::Entry::Vacant(entry) => entry.insert(TableChange::default()),
         }
     }
 
-    pub fn add_op(&mut self, key_type: TypeTag, handle: ObjectID, key: Vec<u8>, op: Op<State>) {
-        let table_change = self.get_or_insert_table_change(handle, key_type);
+    pub fn add_op(&mut self, handle: ObjectID, key: KeyState, op: Op<State>) {
+        let table_change = self.get_or_insert_table_change(handle);
         table_change.entries.insert(key, op);
     }
 }
@@ -620,9 +636,9 @@ impl SplitStateChangeSet {
         }
     }
 
-    pub fn add_new_table(&mut self, table_handle: ObjectID, table_info: TableTypeInfo) {
+    pub fn add_new_table(&mut self, table_handle: ObjectID) {
         let table_change_set = self.get_or_insert_table_change_set(table_handle);
-        table_change_set.new_tables.insert(table_handle, table_info);
+        table_change_set.new_tables.insert(table_handle);
     }
 
     pub fn add_table_change(&mut self, table_handle: ObjectID, table_change: TableChange) {

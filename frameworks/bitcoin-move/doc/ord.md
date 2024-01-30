@@ -38,6 +38,7 @@
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::table_vec</a>;
@@ -244,7 +245,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_parent">parent</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_parent">parent</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object_id::ObjectID</a>&gt;
 </code></pre>
 
 

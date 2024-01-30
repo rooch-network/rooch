@@ -4,7 +4,7 @@
 module rooch_examples::article_create_logic {
     use moveos_std::context::Context;
     use moveos_std::object;
-    use moveos_std::object::ObjectID;
+    use moveos_std::object_id::ObjectID;
     use rooch_examples::article;
     use rooch_examples::article_created;
     use std::string::String;

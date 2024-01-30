@@ -10,6 +10,7 @@ pub mod event;
 pub mod module_upgrade_flag;
 pub mod move_module;
 pub mod object;
+pub mod object_id;
 pub mod raw_table;
 pub mod simple_map;
 pub mod simple_multimap;

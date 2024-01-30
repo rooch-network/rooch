@@ -20,7 +20,7 @@
 
 <pre><code><b>use</b> <a href="context.md#0x2_context">0x2::context</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="raw_table.md#0x2_raw_table">0x2::raw_table</a>;
+<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 </code></pre>
 
 
@@ -65,11 +65,11 @@ Add a new Object to the table.
 
 ## Function `borrow`
 
-Acquire an immutable reference to the Object<T> with <code>object_id</code>.
-Aborts if there is no entry for <code>object_id</code>.
+Acquire an immutable reference to the Object<T> with <code><a href="object_id.md#0x2_object_id">object_id</a></code>.
+Aborts if there is no entry for <code><a href="object_id.md#0x2_object_id">object_id</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_table.md#0x2_object_table_borrow">borrow</a>&lt;T&gt;(<a href="table.md#0x2_table">table</a>: &<a href="object_table.md#0x2_object_table_ObjectTable">object_table::ObjectTable</a>&lt;T&gt;, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="object_table.md#0x2_object_table_borrow">borrow</a>&lt;T&gt;(<a href="table.md#0x2_table">table</a>: &<a href="object_table.md#0x2_object_table_ObjectTable">object_table::ObjectTable</a>&lt;T&gt;, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 
@@ -78,11 +78,11 @@ Aborts if there is no entry for <code>object_id</code>.
 
 ## Function `borrow_mut`
 
-Acquire a mutable reference to the Object<T> with <code>object_id</code>.
-Aborts if there is no entry for <code>object_id</code>.
+Acquire a mutable reference to the Object<T> with <code><a href="object_id.md#0x2_object_id">object_id</a></code>.
+Aborts if there is no entry for <code><a href="object_id.md#0x2_object_id">object_id</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_table.md#0x2_object_table_borrow_mut">borrow_mut</a>&lt;T&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="object_table.md#0x2_object_table_ObjectTable">object_table::ObjectTable</a>&lt;T&gt;, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="object_table.md#0x2_object_table_borrow_mut">borrow_mut</a>&lt;T&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="object_table.md#0x2_object_table_ObjectTable">object_table::ObjectTable</a>&lt;T&gt;, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 
@@ -91,11 +91,11 @@ Aborts if there is no entry for <code>object_id</code>.
 
 ## Function `remove`
 
-Remove from <code><a href="table.md#0x2_table">table</a></code> and return the Object<T>  with <code>object_id</code>.
-Aborts if there is no entry for <code>object_id</code>.
+Remove from <code><a href="table.md#0x2_table">table</a></code> and return the Object<T>  with <code><a href="object_id.md#0x2_object_id">object_id</a></code>.
+Aborts if there is no entry for <code><a href="object_id.md#0x2_object_id">object_id</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_table.md#0x2_object_table_remove">remove</a>&lt;T&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="object_table.md#0x2_object_table_ObjectTable">object_table::ObjectTable</a>&lt;T&gt;, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="object_table.md#0x2_object_table_remove">remove</a>&lt;T&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="object_table.md#0x2_object_table_ObjectTable">object_table::ObjectTable</a>&lt;T&gt;, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 
@@ -104,10 +104,10 @@ Aborts if there is no entry for <code>object_id</code>.
 
 ## Function `contains`
 
-Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an entry for <code>object_id</code>.
+Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an entry for <code><a href="object_id.md#0x2_object_id">object_id</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_table.md#0x2_object_table_contains">contains</a>&lt;T&gt;(<a href="table.md#0x2_table">table</a>: &<a href="object_table.md#0x2_object_table_ObjectTable">object_table::ObjectTable</a>&lt;T&gt;, object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="object_table.md#0x2_object_table_contains">contains</a>&lt;T&gt;(<a href="table.md#0x2_table">table</a>: &<a href="object_table.md#0x2_object_table_ObjectTable">object_table::ObjectTable</a>&lt;T&gt;, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): bool
 </code></pre>
 
 
@@ -155,5 +155,5 @@ Returns true iff the table is empty (if <code>length</code> returns <code>0</cod
 Returns table handle of <code><a href="table.md#0x2_table">table</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_table.md#0x2_object_table_handle">handle</a>&lt;T&gt;(<a href="table.md#0x2_table">table</a>: &<a href="object_table.md#0x2_object_table_ObjectTable">object_table::ObjectTable</a>&lt;T&gt;): &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object_table.md#0x2_object_table_handle">handle</a>&lt;T&gt;(<a href="table.md#0x2_table">table</a>: &<a href="object_table.md#0x2_object_table_ObjectTable">object_table::ObjectTable</a>&lt;T&gt;): &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
 </code></pre>

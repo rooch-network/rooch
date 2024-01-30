@@ -2,7 +2,9 @@ CREATE TABLE table_states
 (
     table_handle       VARCHAR        NOT NULL,
     key_hex            VARCHAR        NOT NULL,
+    key_str            VARCHAR        NOT NULL,
     value              VARCHAR        NOT NULL,
+    key_type           VARCHAR        NOT NULL,
     value_type         VARCHAR        NOT NULL,
     tx_order           BIGINT         NOT NULL,
     state_index        BIGINT         NOT NULL,

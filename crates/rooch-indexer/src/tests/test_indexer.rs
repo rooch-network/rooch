@@ -14,7 +14,7 @@ use move_core_types::language_storage::StructTag;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
 use moveos_types::move_types::{random_struct_tag, random_type_tag};
-use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::{MoveStructType, SplitStateChangeSet};
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
@@ -42,7 +42,7 @@ fn random_update_global_states(states: Vec<IndexedGlobalState>) -> Vec<IndexedGl
             flag: item.flag,
             value: random_string(),
             object_type: item.object_type,
-            key_type: item.key_type,
+            state_root: item.state_root,
             size: item.size + 1,
             tx_order: item.tx_order,
             state_index: item.state_index,
@@ -58,11 +58,10 @@ fn random_new_global_states() -> Result<Vec<IndexedGlobalState>> {
     let mut state_index = 0u64;
     let mut rng = thread_rng();
     for n in 0..rng.gen_range(1..=10) {
-        let state = IndexedGlobalState::new_from_table_object(
-            random_table_object()?,
+        let state = IndexedGlobalState::new_from_raw_object(
+            random_table_object()?.to_raw(),
             random_string(),
             random_struct_tag().to_canonical_string(),
-            random_type_tag().to_canonical_string(),
             n as u64,
             state_index,
         );
@@ -96,6 +95,8 @@ fn random_new_table_states() -> Vec<IndexedTableState> {
             ObjectID::from(AccountAddress::random()),
             H256::random().to_string(),
             random_string(),
+            random_string(),
+            random_type_tag(),
             random_type_tag(),
             n as u64,
             state_index,
@@ -113,7 +114,9 @@ fn random_update_table_states(states: Vec<IndexedTableState>) -> Vec<IndexedTabl
         .map(|item| IndexedTableState {
             table_handle: item.table_handle,
             key_hex: item.key_hex,
+            key_str: random_string(),
             value: random_string(),
+            key_type: random_type_tag(),
             value_type: random_type_tag(),
             tx_order: item.tx_order,
             state_index: item.state_index,
@@ -270,7 +273,6 @@ fn test_state_store() -> Result<()> {
 
     let coin_info_type =
         StructTag::from_str(format_struct_tag(CoinInfo::<GasCoin>::struct_tag()).as_str())?;
-    // println!("")
     let filter = GlobalStateFilter::ObjectType(coin_info_type);
     let query_global_states =
         indexer_reader.query_global_states_with_filter(filter, None, 1, true)?;
@@ -285,8 +287,8 @@ fn test_state_store() -> Result<()> {
     // test state sync
     let state_change_set = random_state_change_set();
     let mut split_state_change_set = SplitStateChangeSet::default();
-    for (table_handle, table_info) in state_change_set.new_tables {
-        split_state_change_set.add_new_table(table_handle, table_info);
+    for table_handle in state_change_set.new_tables {
+        split_state_change_set.add_new_table(table_handle);
     }
     for (table_handle, table_change) in state_change_set.changes.clone() {
         split_state_change_set.add_table_change(table_handle, table_change);

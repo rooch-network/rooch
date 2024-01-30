@@ -18,7 +18,9 @@ use move_vm_types::{
     loaded_data::runtime_types::Type,
     values::{GlobalValue, Reference, Struct, Value},
 };
-use moveos_stdlib::natives::moveos_stdlib::raw_table::{serialize, TableData, TableRuntimeValue};
+use moveos_stdlib::natives::moveos_stdlib::raw_table::{
+    serialize, TableData, TableKey, TableRuntimeValue,
+};
 use moveos_types::{
     move_std::string::MoveString,
     moveos_std::move_module::MoveModule,
@@ -31,8 +33,8 @@ use std::sync::Arc;
 
 use move_core_types::language_storage::TypeTag;
 use move_vm_runtime::data_cache::TransactionCache;
-use moveos_types::moveos_std::object::NamedTableID;
-use moveos_types::state::MoveStructType;
+use moveos_types::moveos_std::object_id::NamedTableID;
+use moveos_types::state::{KeyState, MoveStructType};
 
 /// Transaction data cache. Keep updates within a transaction so they can all be published at
 /// once when the transaction succeeds.
@@ -78,9 +80,10 @@ impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
         (key_typetag, value_typetag)
     }
 
-    fn module_key_bytes(&self, module_id: &ModuleId) -> VMResult<Vec<u8>> {
-        let key = module_name_to_key(module_id.name());
-        Ok(key)
+    fn module_id_to_table_key(&self, module_id: &ModuleId) -> VMResult<TableKey> {
+        let key_state = module_name_to_key(module_id.name());
+        let table_key = TableKey::new(key_state.key_type, key_state.key);
+        Ok(table_key)
     }
 }
 
@@ -145,8 +148,8 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
                 .borrow_table(&table_handle)
                 .map_err(|e| e.finish(Location::Undefined))?;
 
-            let key_bytes = self.module_key_bytes(module_id)?;
-            if let Some(global_value) = table.get_global_value(&key_bytes) {
+            let table_key = self.module_id_to_table_key(module_id)?;
+            if let Some(global_value) = table.get_global_value(&table_key) {
                 let byte_codes = load_module_from_table_runtime_value(global_value, value_type)
                     .map_err(|e| e.finish(Location::Undefined))?;
                 return Ok(byte_codes);
@@ -181,18 +184,17 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
 
         // Key type: std::string::String
         // value type: moveos_std::moveos_std::move_module::MoveModule
-        let (key_type, value_type) = Self::module_table_typetag();
+        let (_key_type, value_type) = Self::module_table_typetag();
 
-        let key_layout = MoveTypeLayout::Struct(MoveString::struct_layout());
+        // let key_layout = MoveTypeLayout::Struct(MoveString::struct_layout());
         let mut table_data = self.table_data.write();
-        // TODO: check or ensure the module table exists.
         let table = table_data
-            .get_or_create_table_with_key_type_and_key_layout(table_handle, key_type, key_layout)
+            .get_or_create_table(table_handle)
             .map_err(|e| e.finish(Location::Module(module_id.clone())))?;
 
-        let key_bytes = self.module_key_bytes(module_id)?;
+        let table_key = self.module_id_to_table_key(module_id)?;
         let (tv, _) = table
-            .get_or_create_global_value_with_layout_fn(self.resolver, key_bytes, |t| {
+            .get_or_create_global_value_with_layout_fn(self.resolver, table_key, |t| {
                 self.loader.get_type_layout(t, self).map_err(|e| {
                     PartialVMError::new(StatusCode::STORAGE_ERROR).with_message(e.to_string())
                 })
@@ -228,8 +230,8 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
                 .borrow_table(&table_handle)
                 .map_err(|e| e.finish(Location::Undefined))?;
 
-            let key_bytes = self.module_key_bytes(module_id)?;
-            if table.contains_key(&key_bytes) {
+            let table_key = self.module_id_to_table_key(module_id)?;
+            if table.contains_key(&table_key) {
                 return Ok(true);
             }
         }
@@ -269,7 +271,7 @@ pub fn into_change_set(table_data: Arc<RwLock<TableData>>) -> PartialVMResult<St
     let (new_tables, removed_tables, tables) = data.into_inner();
     let mut changes = BTreeMap::new();
     for (handle, table) in tables {
-        let (_, _, key_type, content, size_increment) = table.into_inner();
+        let (_, content, size_increment) = table.into_inner();
         let mut entries = BTreeMap::new();
         for (key, table_value) in content {
             let (value_layout, value_type, op) = match table_value.into_effect() {
@@ -280,7 +282,7 @@ pub fn into_change_set(table_data: Arc<RwLock<TableData>>) -> PartialVMResult<St
                 Op::New(box_val) => {
                     let bytes = unbox_and_serialize(&value_layout, box_val)?;
                     entries.insert(
-                        key,
+                        KeyState::new(key.key, key.key_type),
                         Op::New(State {
                             value_type,
                             value: bytes,
@@ -290,7 +292,7 @@ pub fn into_change_set(table_data: Arc<RwLock<TableData>>) -> PartialVMResult<St
                 Op::Modify(val) => {
                     let bytes = unbox_and_serialize(&value_layout, val)?;
                     entries.insert(
-                        key,
+                        KeyState::new(key.key, key.key_type),
                         Op::Modify(State {
                             value_type,
                             value: bytes,
@@ -298,7 +300,7 @@ pub fn into_change_set(table_data: Arc<RwLock<TableData>>) -> PartialVMResult<St
                     );
                 }
                 Op::Delete => {
-                    entries.insert(key, Op::Delete);
+                    entries.insert(KeyState::new(key.key, key.key_type), Op::Delete);
                 }
             }
         }
@@ -308,7 +310,6 @@ pub fn into_change_set(table_data: Arc<RwLock<TableData>>) -> PartialVMResult<St
                 TableChange {
                     entries,
                     size_increment,
-                    key_type,
                 },
             );
         } else {

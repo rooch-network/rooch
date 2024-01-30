@@ -30,10 +30,11 @@ use move_core_types::{
     value::{serialize_values, MoveValue},
     vm_status::{StatusCode, StatusType},
 };
+use moveos_types::state::KeyState;
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
     move_types::FunctionId,
-    moveos_std::object::ObjectID,
+    moveos_std::object_id::ObjectID,
     moveos_std::tx_context::TxContext,
     state::State,
     state_resolver::StateResolver,
@@ -287,7 +288,7 @@ impl StateResolver for RemoteStore {
     fn resolve_table_item(
         &self,
         _handle: &ObjectID,
-        _key: &[u8],
+        _key: &KeyState,
     ) -> anyhow::Result<Option<State>, anyhow::Error> {
         Ok(None)
     }
@@ -295,7 +296,7 @@ impl StateResolver for RemoteStore {
     fn list_table_items(
         &self,
         _handle: &ObjectID,
-        _cursor: Option<Vec<u8>>,
+        _cursor: Option<KeyState>,
         _limit: usize,
     ) -> anyhow::Result<Vec<StateKV>, anyhow::Error> {
         todo!()

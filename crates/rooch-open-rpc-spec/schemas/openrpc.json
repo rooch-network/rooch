@@ -170,7 +170,7 @@
         {
           "name": "cursor",
           "schema": {
-            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+            "type": "string"
           }
         },
         {
@@ -184,7 +184,7 @@
         "name": "BalanceInfoPageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_BalanceInfoView_and_alloc::vec::Vec<u8>"
+          "$ref": "#/components/schemas/PageView_for_BalanceInfoView_and_String"
         }
       }
     },
@@ -343,7 +343,7 @@
         {
           "name": "cursor",
           "schema": {
-            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+            "type": "string"
           }
         },
         {
@@ -360,10 +360,10 @@
         }
       ],
       "result": {
-        "name": "StatesPageView",
+        "name": "StatePageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_KeyStateKVView_and_alloc::vec::Vec<u8>"
+          "$ref": "#/components/schemas/PageView_for_StateKVView_and_String"
         }
       }
     },
@@ -737,6 +737,21 @@
           },
           "symbol": {
             "type": "string"
+          }
+        }
+      },
+      "DynamicFieldView": {
+        "type": "object",
+        "required": [
+          "k",
+          "v"
+        ],
+        "properties": {
+          "k": {
+            "$ref": "#/components/schemas/KeyStateView"
+          },
+          "v": {
+            "$ref": "#/components/schemas/OpView_for_StateView"
           }
         }
       },
@@ -1148,6 +1163,7 @@
           "owner",
           "size",
           "state_index",
+          "state_root",
           "tx_order",
           "updated_at",
           "value"
@@ -1162,16 +1178,6 @@
             "type": "integer",
             "format": "uint8",
             "minimum": 0.0
-          },
-          "key_type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "object_id": {
             "$ref": "#/components/schemas/ObjectID"
@@ -1191,6 +1197,9 @@
             "type": "integer",
             "format": "uint64",
             "minimum": 0.0
+          },
+          "state_root": {
+            "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
           },
           "tx_order": {
             "type": "integer",
@@ -1263,7 +1272,9 @@
         "type": "object",
         "required": [
           "created_at",
+          "key",
           "key_hex",
+          "key_type",
           "state_index",
           "table_handle",
           "tx_order",
@@ -1277,8 +1288,14 @@
             "format": "uint64",
             "minimum": 0.0
           },
+          "key": {
+            "$ref": "#/components/schemas/AnnotatedMoveValueView"
+          },
           "key_hex": {
             "type": "string"
+          },
+          "key_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
           },
           "state_index": {
             "type": "integer",
@@ -1370,13 +1387,9 @@
             "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
           },
           "owner_bitcoin_address": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/rooch_types::address::BitcoinAddress"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           },
           "state_index": {
@@ -1574,25 +1587,11 @@
           }
         ]
       },
-      "KeyStateKVView": {
-        "type": "object",
-        "required": [
-          "key_state",
-          "state"
-        ],
-        "properties": {
-          "key_state": {
-            "$ref": "#/components/schemas/KeyStateView"
-          },
-          "state": {
-            "$ref": "#/components/schemas/StateView"
-          }
-        }
-      },
       "KeyStateView": {
         "type": "object",
         "required": [
-          "key"
+          "key",
+          "key_type"
         ],
         "properties": {
           "decoded_key": {
@@ -1609,14 +1608,7 @@
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
           },
           "key_type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
           }
         }
       },
@@ -1779,7 +1771,7 @@
           }
         ]
       },
-      "PageView_for_BalanceInfoView_and_alloc::vec::Vec<u8>": {
+      "PageView_for_BalanceInfoView_and_String": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -1797,13 +1789,9 @@
             "type": "boolean"
           },
           "next_cursor": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           }
         }
@@ -1980,7 +1968,7 @@
           }
         }
       },
-      "PageView_for_KeyStateKVView_and_alloc::vec::Vec<u8>": {
+      "PageView_for_StateKVView_and_String": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -1991,20 +1979,16 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/KeyStateKVView"
+              "$ref": "#/components/schemas/StateKVView"
             }
           },
           "has_next_page": {
             "type": "boolean"
           },
           "next_cursor": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-              },
-              {
-                "type": "null"
-              }
+            "type": [
+              "string",
+              "null"
             ]
           }
         }
@@ -2119,10 +2103,11 @@
             }
           },
           "new_tables": {
-            "type": "object",
-            "additionalProperties": {
-              "$ref": "#/components/schemas/TableTypeInfoView"
-            }
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ObjectID"
+            },
+            "uniqueItems": true
           },
           "removed_tables": {
             "type": "array",
@@ -2130,6 +2115,21 @@
               "$ref": "#/components/schemas/ObjectID"
             },
             "uniqueItems": true
+          }
+        }
+      },
+      "StateKVView": {
+        "type": "object",
+        "required": [
+          "key_state",
+          "state"
+        ],
+        "properties": {
+          "key_state": {
+            "$ref": "#/components/schemas/KeyStateView"
+          },
+          "state": {
+            "$ref": "#/components/schemas/StateView"
           }
         }
       },
@@ -2200,10 +2200,11 @@
             }
           },
           "new_tables": {
-            "type": "object",
-            "additionalProperties": {
-              "$ref": "#/components/schemas/TableTypeInfoView"
-            }
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ObjectID"
+            },
+            "uniqueItems": true
           },
           "removed_tables": {
             "type": "array",
@@ -2218,18 +2219,14 @@
         "type": "object",
         "required": [
           "entries",
-          "key_type",
           "size_increment"
         ],
         "properties": {
           "entries": {
-            "type": "object",
-            "additionalProperties": {
-              "$ref": "#/components/schemas/OpView_for_StateView"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DynamicFieldView"
             }
-          },
-          "key_type": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
           },
           "size_increment": {
             "type": "integer",
@@ -2253,17 +2250,6 @@
             "additionalProperties": false
           }
         ]
-      },
-      "TableTypeInfoView": {
-        "type": "object",
-        "required": [
-          "key_type"
-        ],
-        "properties": {
-          "key_type": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
-          }
-        }
       },
       "TransactionExecutionInfoView": {
         "type": "object",

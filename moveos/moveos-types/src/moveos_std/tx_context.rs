@@ -8,7 +8,7 @@ use crate::gas_config::GasConfig;
 use crate::h256::{self, H256};
 use crate::move_std::string::MoveString;
 use crate::moveos_std::copyable_any::{Any, AnyTrait};
-use crate::moveos_std::object::ObjectID;
+use crate::moveos_std::object_id::ObjectID;
 use crate::moveos_std::simple_map::SimpleMap;
 use crate::state::{MoveState, MoveStructState, MoveStructType};
 use anyhow::Result;

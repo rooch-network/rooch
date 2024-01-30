@@ -6,14 +6,12 @@ use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, u256::U256, value::MoveValue,
 };
+use moveos_types::moveos_std::object_id;
+use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::{option::MoveOption, string::MoveString},
-    moveos_std::{
-        object::{self, ObjectID},
-        simple_map::SimpleMap,
-        tx_context::TxContext,
-    },
+    moveos_std::{simple_map::SimpleMap, tx_context::TxContext},
     state::{MoveState, MoveStructState, MoveStructType},
 };
 use serde::{Deserialize, Serialize};
@@ -36,7 +34,7 @@ pub struct BRC20Store {
 
 impl BRC20Store {
     pub fn object_id() -> ObjectID {
-        object::named_object_id(&Self::struct_tag())
+        object_id::named_object_id(&Self::struct_tag())
     }
 }
 

@@ -3,6 +3,7 @@
 
 module rooch_framework::onchain_config {
 
+    use moveos_std::object_id;
     use std::string::String;
     use moveos_std::bcs;
     use moveos_std::context::{Self, Context};
@@ -72,13 +73,13 @@ module rooch_framework::onchain_config {
     }
 
     fun onchain_config_mut(ctx: &mut Context): &mut OnchainConfig {
-        let object_id = object::named_object_id<OnchainConfig>();
+        let object_id = object_id::named_object_id<OnchainConfig>();
         let obj = context::borrow_mut_object_extend<OnchainConfig>(ctx, object_id);
         object::borrow_mut(obj)
     }
 
     public fun onchain_config(ctx: &Context): &OnchainConfig {
-        let object_id = object::named_object_id<OnchainConfig>();
+        let object_id = object_id::named_object_id<OnchainConfig>();
         let obj = context::borrow_object<OnchainConfig>(ctx, object_id);
         object::borrow(obj)
     }
@@ -103,7 +104,7 @@ module rooch_framework::onchain_config {
     }
 
     public fun onchain_gas_schedule(ctx: &Context): &GasSchedule {
-        let object_id = object::named_object_id<GasSchedule>();
+        let object_id = object_id::named_object_id<GasSchedule>();
         let obj = context::borrow_object<GasSchedule>(ctx, object_id);
         object::borrow(obj)
     }

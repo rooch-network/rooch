@@ -4,7 +4,6 @@
 import { RoochMultiChainID } from '../constants'
 import {
   Arg,
-  Bytes,
   FunctionId,
   GlobalStateFilterView,
   IndexerStateID,
@@ -27,7 +26,7 @@ export interface ResoleRoochAddressParams {
 
 export interface ListStatesParams {
   accessPath: string
-  cursor: Bytes | null
+  cursor: string | null
   limit: number
 }
 

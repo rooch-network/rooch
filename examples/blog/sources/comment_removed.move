@@ -8,7 +8,7 @@
 
 module rooch_examples::comment_removed {
 
-    use moveos_std::object::ObjectID;
+    use moveos_std::object_id::ObjectID;
     use rooch_examples::article::{Self, CommentRemoved};
 
     public fun id(comment_removed: &CommentRemoved): ObjectID {

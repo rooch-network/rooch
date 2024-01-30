@@ -3,7 +3,6 @@
 // Copyright (c) The Move Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::natives::helpers;
 /// A native Table implementation for save any type of value.
 /// Refactor from https://github.com/rooch-network/move/blob/c7d8c2b0cdd06dbd90e0ab306932356620b5648a/language/extensions/move-table-extension/src/lib.rs#L4
 use better_any::{Tid, TidAble};
@@ -23,14 +22,10 @@ use move_vm_runtime::{
 use move_vm_types::{
     loaded_data::runtime_types::Type,
     natives::function::NativeResult,
-    pop_arg,
     values::{GlobalValue, Struct, Value},
 };
-use moveos_types::{
-    moveos_std::{object::ObjectID, raw_table::TableInfo},
-    state::TableTypeInfo,
-    state_resolver::StateResolver,
-};
+use moveos_types::state::{KeyState, MoveState};
+use moveos_types::{moveos_std::object_id::ObjectID, state_resolver::StateResolver};
 use parking_lot::RwLock;
 use smallvec::smallvec;
 use smt::SPARSE_MERKLE_PLACEHOLDER_HASH;
@@ -45,7 +40,6 @@ use std::{
 #[derive(Tid)]
 pub struct NativeTableContext<'a> {
     resolver: &'a dyn StateResolver,
-    //tx_hash: [u8; 32],
     table_data: Arc<RwLock<TableData>>,
 }
 
@@ -63,9 +57,22 @@ const _E_TABLE_ALREADY_EXISTS: u64 = 5;
 /// of the overall context so we can mutate while still accessing the overall context.
 #[derive(Default)]
 pub struct TableData {
-    new_tables: BTreeMap<ObjectID, TableTypeInfo>,
+    new_tables: BTreeSet<ObjectID>,
     removed_tables: BTreeSet<ObjectID>,
     tables: BTreeMap<ObjectID, Table>,
+}
+
+/// A structure representing table key.
+#[derive(Clone, Ord, PartialOrd, PartialEq, Eq)]
+pub struct TableKey {
+    pub key_type: TypeTag,
+    pub key: Vec<u8>,
+}
+
+impl TableKey {
+    pub fn new(key_type: TypeTag, key: Vec<u8>) -> Self {
+        Self { key_type, key }
+    }
 }
 
 /// A structure representing runtime table value.
@@ -183,9 +190,7 @@ impl TableRuntimeValue {
 /// A structure representing a single table.
 pub struct Table {
     handle: ObjectID,
-    key_layout: MoveTypeLayout,
-    key_type: TypeTag,
-    content: BTreeMap<Vec<u8>, TableRuntimeValue>,
+    content: BTreeMap<TableKey, TableRuntimeValue>,
     size_increment: i64,
 }
 
@@ -206,54 +211,25 @@ impl<'a> NativeTableContext<'a> {
 impl TableData {
     /// Gets or creates a new table in the TableData. This initializes information about
     /// the table, like the type layout for keys and values.
-    fn get_or_create_table(
+    pub fn get_or_create_table(
         &mut self,
-        context: &NativeContext,
+        // _context: &NativeContext,
         handle: ObjectID,
-        key_ty: &Type,
     ) -> PartialVMResult<&mut Table> {
         match self.tables.entry(handle) {
             Entry::Vacant(e) => {
-                let key_layout = type_to_type_layout(context, key_ty)?;
-                let key_type = type_to_type_tag(context, key_ty)?;
                 let table = Table {
                     handle,
-                    key_layout,
-                    key_type,
                     content: Default::default(),
                     size_increment: 0,
                 };
                 if log::log_enabled!(log::Level::Trace) {
-                    let key_type = type_to_type_tag(context, key_ty)?;
-                    log::trace!("[RawTable] creating table {} with key {}", handle, key_type);
+                    log::trace!("[RawTable] creating table {}", handle);
                 }
                 Ok(e.insert(table))
             }
             Entry::Occupied(e) => Ok(e.into_mut()),
         }
-    }
-
-    /// Gets or creates a new table in the TableData.
-    /// For system accounts (0x1, 0x2, 0x3...), executing the genesis publish transaction will trigger the table create operation.
-    pub fn get_or_create_table_with_key_type_and_key_layout(
-        &mut self,
-        handle: ObjectID,
-        key_type: TypeTag,
-        key_layout: MoveTypeLayout,
-    ) -> PartialVMResult<&mut Table> {
-        Ok(match self.tables.entry(handle) {
-            Entry::Vacant(e) => {
-                let table = Table {
-                    handle,
-                    key_layout,
-                    key_type,
-                    content: Default::default(),
-                    size_increment: 0,
-                };
-                e.insert(table)
-            }
-            Entry::Occupied(e) => e.into_mut(),
-        })
     }
 
     pub fn borrow_table(&self, handle: &ObjectID) -> PartialVMResult<&Table> {
@@ -270,7 +246,7 @@ impl TableData {
     pub fn into_inner(
         self,
     ) -> (
-        BTreeMap<ObjectID, TableTypeInfo>,
+        BTreeSet<ObjectID>,
         BTreeSet<ObjectID>,
         BTreeMap<ObjectID, Table>,
     ) {
@@ -288,13 +264,13 @@ impl Table {
         &mut self,
         native_context: &NativeContext,
         table_context: &NativeTableContext,
-        key: Vec<u8>,
+        key: TableKey,
     ) -> PartialVMResult<(&mut TableRuntimeValue, Option<Option<NumBytes>>)> {
-        Ok(match self.content.entry(key) {
+        Ok(match self.content.entry(key.clone()) {
             Entry::Vacant(entry) => {
                 let (tv, loaded) = match table_context
                     .resolver
-                    .resolve_table_item(&self.handle, entry.key())
+                    .resolve_table_item(&self.handle, &KeyState::new(key.key, key.key_type))
                     .map_err(|err| {
                         partial_extension_error(format!("remote table resolver failure: {}", err))
                     })? {
@@ -322,13 +298,13 @@ impl Table {
     pub fn get_or_create_global_value_with_layout_fn(
         &mut self,
         resolver: &dyn StateResolver,
-        key: Vec<u8>,
+        key: TableKey,
         f: impl FnOnce(&TypeTag) -> PartialVMResult<MoveTypeLayout>,
     ) -> PartialVMResult<(&mut TableRuntimeValue, Option<Option<NumBytes>>)> {
-        Ok(match self.content.entry(key) {
+        Ok(match self.content.entry(key.clone()) {
             Entry::Vacant(entry) => {
                 let (tv, loaded) = match resolver
-                    .resolve_table_item(&self.handle, entry.key())
+                    .resolve_table_item(&self.handle, &KeyState::new(key.key, key.key_type))
                     .map_err(|err| {
                         partial_extension_error(format!("remote table resolver failure: {}", err))
                     })? {
@@ -353,35 +329,21 @@ impl Table {
         })
     }
 
-    pub fn get_global_value(&self, key: &Vec<u8>) -> Option<&TableRuntimeValue> {
+    pub fn get_global_value(&self, key: &TableKey) -> Option<&TableRuntimeValue> {
         self.content.get(key)
     }
 
-    pub fn contains_key(&self, key: &Vec<u8>) -> bool {
+    pub fn contains_key(&self, key: &TableKey) -> bool {
         self.content.contains_key(key)
     }
 
-    pub fn into_inner(
-        self,
-    ) -> (
-        ObjectID,
-        MoveTypeLayout,
-        TypeTag,
-        BTreeMap<Vec<u8>, TableRuntimeValue>,
-        i64,
-    ) {
+    pub fn into_inner(self) -> (ObjectID, BTreeMap<TableKey, TableRuntimeValue>, i64) {
         let Table {
             handle,
-            key_layout,
-            key_type,
             content,
             size_increment,
         } = self;
-        (handle, key_layout, key_type, content, size_increment)
-    }
-
-    pub fn key_layout(&self) -> &MoveTypeLayout {
-        &self.key_layout
+        (handle, content, size_increment)
     }
 }
 
@@ -464,11 +426,9 @@ fn native_new_table(
     _common_gas_params: &CommonGasParameters,
     gas_params: &NewTableGasParameters,
     context: &mut NativeContext,
-    ty_args: Vec<Type>,
+    _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    //0 K Type
-    assert_eq!(ty_args.len(), 1);
     assert_eq!(args.len(), 1);
 
     let table_context = context.extensions().get::<NativeTableContext>();
@@ -476,15 +436,8 @@ fn native_new_table(
 
     let mut cost = gas_params.base;
     let handle = get_table_handle(&mut args)?;
-    let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
-
-    let key_type = type_to_type_tag(context, &ty_args[0])?;
-    let key_type_name = key_type.to_string();
-    // make a std::string::String
-    let key_type_string_val = Value::struct_(Struct::pack(vec![Value::vector_u8(
-        key_type_name.as_bytes().to_vec(),
-    )]));
-    cost += gas_params.per_byte_in_str * NumBytes::new(key_type_name.len() as u64);
+    cost += gas_params.per_byte_in_str * NumBytes::new(handle.to_bytes().len() as u64);
+    let table = table_data.get_or_create_table(handle)?;
 
     // New table's state_root should be the place holder hash.
     let state_root = AccountAddress::new((*SPARSE_MERKLE_PLACEHOLDER_HASH).into());
@@ -492,7 +445,6 @@ fn native_new_table(
     let table_info_value = Struct::pack(vec![
         Value::address(state_root),
         Value::u64(table.size_increment as u64),
-        key_type_string_val,
     ]);
     Ok(NativeResult::ok(
         cost,
@@ -539,13 +491,15 @@ fn native_add_box(
 
     let mut cost = gas_params.base;
 
-    // let table = table_data.borrow_mut_table(&handle)?;
-    let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
+    let table = table_data.get_or_create_table(handle)?;
 
-    let key_bytes = serialize(&table.key_layout, &key)?;
+    let key_layout = type_to_type_layout(context, &ty_args[0])?;
+    let key_type = type_to_type_tag(context, &ty_args[0])?;
+    let key_bytes = serialize(&key_layout, &key)?;
+    let table_key = TableKey::new(key_type, key_bytes.clone());
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
 
-    let (tv, loaded) = table.get_or_create_global_value(context, table_context, key_bytes)?;
+    let (tv, loaded) = table.get_or_create_global_value(context, table_context, table_key)?;
     cost += common_gas_params.calculate_load_cost(loaded);
     let value_layout = type_to_type_layout(context, &ty_args[1])?;
     let value_type = type_to_type_tag(context, &ty_args[1])?;
@@ -591,15 +545,17 @@ fn native_borrow_box(
     let key = args.pop_back().unwrap();
     let handle = get_table_handle(&mut args)?;
 
-    // let table = table_data.borrow_mut_table(&handle)?;
-    let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
+    let key_layout = type_to_type_layout(context, &ty_args[0])?;
+    let key_type = type_to_type_tag(context, &ty_args[0])?;
+    let table = table_data.get_or_create_table(handle)?;
 
     let mut cost = gas_params.base;
 
-    let key_bytes = serialize(&table.key_layout, &key)?;
+    let key_bytes = serialize(&key_layout, &key)?;
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
 
-    let (tv, loaded) = table.get_or_create_global_value(context, table_context, key_bytes)?;
+    let table_key = TableKey::new(key_type, key_bytes);
+    let (tv, loaded) = table.get_or_create_global_value(context, table_context, table_key)?;
     cost += common_gas_params.calculate_load_cost(loaded);
     let value_type = type_to_type_tag(context, &ty_args[1])?;
     match tv.borrow_global(value_type) {
@@ -641,23 +597,24 @@ fn native_contains_box(
     let key = args.pop_back().unwrap();
     let handle = get_table_handle(&mut args)?;
 
-    // let table = table_data.borrow_mut_table(&handle)?;
-    let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
+    let key_layout = type_to_type_layout(context, &ty_args[0])?;
+    let key_type = type_to_type_tag(context, &ty_args[0])?;
+    let table = table_data.get_or_create_table(handle)?;
 
     let mut cost = gas_params.base;
-
     if log::log_enabled!(log::Level::Trace) {
         log::trace!(
             "[RawTable] contains: table_handle: {}, key_type: {}",
             &&table.handle,
-            type_to_type_tag(context, &ty_args[0])?
+            key_type
         );
     }
 
-    let key_bytes = serialize(&table.key_layout, &key)?;
+    let key_bytes = serialize(&key_layout, &key)?;
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
 
-    let (tv, loaded) = table.get_or_create_global_value(context, table_context, key_bytes)?;
+    let table_key = TableKey::new(key_type, key_bytes);
+    let (tv, loaded) = table.get_or_create_global_value(context, table_context, table_key)?;
     cost += common_gas_params.calculate_load_cost(loaded);
 
     let exists = Value::bool(tv.exists()?);
@@ -698,14 +655,17 @@ fn native_remove_box(
     let key = args.pop_back().unwrap();
     let handle = get_table_handle(&mut args)?;
 
-    // let table = table_data.borrow_mut_table(&handle)?;
-    let table = table_data.get_or_create_table(context, handle, &ty_args[0])?;
+    let key_layout = type_to_type_layout(context, &ty_args[0])?;
+    let key_type = type_to_type_tag(context, &ty_args[0])?;
+    let table = table_data.get_or_create_table(handle)?;
 
     let mut cost = gas_params.base;
 
-    let key_bytes = serialize(&table.key_layout, &key)?;
+    let key_bytes = serialize(&key_layout, &key)?;
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
-    let (tv, loaded) = table.get_or_create_global_value(context, table_context, key_bytes)?;
+
+    let table_key = TableKey::new(key_type, key_bytes);
+    let (tv, loaded) = table.get_or_create_global_value(context, table_context, table_key)?;
     cost += common_gas_params.calculate_load_cost(loaded);
     let value_type = type_to_type_tag(context, &ty_args[1])?;
     match tv.move_from(value_type) {
@@ -750,10 +710,10 @@ fn native_box_length(
         .resolver
         .resolve_object_state(&handle)
         .map_err(|err| partial_extension_error(format!("remote table resolver failure: {}", err)))?
-        .map(|state| state.as_object::<TableInfo>())
+        .map(|state| state.as_raw_object())
         .transpose()
         .map_err(|err| partial_extension_error(format!("remote table resolver failure: {}", err)))?
-        .map_or_else(|| 0u64, |obj| obj.value.size);
+        .map_or_else(|| 0u64, |obj| obj.size);
 
     let size_increment = if table_data.exist_table(&handle) {
         table_data.borrow_table(&handle).unwrap().size_increment
@@ -859,10 +819,11 @@ impl GasParameters {
 // =========================================================================================
 // Helpers
 
-// The handle type in Move is `&ObjectID`. This function extracts the address from `ObjectID`.
 fn get_table_handle(args: &mut VecDeque<Value>) -> PartialVMResult<ObjectID> {
-    let handle = pop_arg!(args, Struct);
-    helpers::get_object_id_from_struct(handle)
+    let handle = args.pop_back().unwrap();
+    ObjectID::from_runtime_value(handle).map_err(|e| {
+        PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
+    })
 }
 
 pub fn serialize(layout: &MoveTypeLayout, val: &Value) -> PartialVMResult<Vec<u8>> {

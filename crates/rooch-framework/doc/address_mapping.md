@@ -29,6 +29,7 @@
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="core_addresses.md#0x3_core_addresses">0x3::core_addresses</a>;
 <b>use</b> <a href="multichain_address.md#0x3_multichain_address">0x3::multichain_address</a>;
@@ -79,7 +80,7 @@
 Return AddressMapping table handle, including mapping and reverse_mapping table handle
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_address_mapping_handle">address_mapping_handle</a>(ctx: &<a href="_Context">context::Context</a>): (<a href="_ObjectID">object::ObjectID</a>, <a href="_ObjectID">object::ObjectID</a>, <a href="_ObjectID">object::ObjectID</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_address_mapping_handle">address_mapping_handle</a>(ctx: &<a href="_Context">context::Context</a>): (<a href="_ObjectID">object_id::ObjectID</a>, <a href="_ObjectID">object_id::ObjectID</a>, <a href="_ObjectID">object_id::ObjectID</a>)
 </code></pre>
 
 
