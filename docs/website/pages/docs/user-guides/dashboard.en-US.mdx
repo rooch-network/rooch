@@ -8,37 +8,71 @@ Rooch's dashboard provides users with one-stop services, including account overv
 
 The login url for the Rooch dashboard is: [https://dashboard.rooch.network/login/](https://dashboard.rooch.network/login/)
 
-## Login
+## For Bitcoin network
+
+### Login
+
+Open the [Rooch website](https://rooch.network/) and click the `Dashboard` button on the navigation bar. When logging in for the first time, the UniSat wallet connection prompt will automatically pop up by default:
+
+![](/docs/dashboard-btc-login.png)
+
+Click the `Connect` button, agree to log in, and then enter the Dashboard page.
+
+![](/docs/dashboard-btc.png)
+
+### Navigation bar introduction
+
+The top of the dashboard page is the navigation bar, including the search box, light and dark theme switching button, language switching button, network switching button, and connected wallet address.
+
+### Sidebar introduction
+
+Currently available functions include: status query, transaction query, and inscription assets.
+
+For status query, click the `List` method to list the current `UTXO` objects. The three attributes of object type, object ID, and object owner will be displayed in the list.
+
+For transaction query, click the `Transaction` button to view transaction information. The last 10 pieces of information are listed by default.
+
+![](/docs/dashboard-btc-transaction.png)
+
+Inscription assets, here displays the information of the inscription object. Each inscription object includes: inscription time, object ID, object type, corresponding transaction hash on the Bitcoin chain, metadata and other attributes.
+
+![](/docs/dashboard-inscription.png)
+
+> Note: It is still under rapid development, and subsequent functions will be launched gradually!
+
+## For Etherume network
+
+### Login
 
 Open the Rooch dashboard url and you will see the following login interface. `MetaMask` wallet is selected by default. Click the `CONNECT` button to log in.
 
 ![Dashboard login page](/docs/dashboard-login.png)
 
-### Session key
+#### Session key
 
 The first login authentication will prompt the user to authenticate the session key. The session key has an expiration time limit. If it expires, it needs to be verified again:
 
 ![](/docs/dashboard-session-key.png)
 
-## Navigation bar introduction
+### Navigation bar introduction
 
 The top of the dashboard page is the navigation bar, including the search box, light and dark theme switching button, language switching button, network switching button, and connected wallet address.
 
 The search box allows you to search for transactions, addresses, events, etc.
 
-## Sidebar introduction
+### Sidebar introduction
 
 The sidebar is a quick navigation for various functions of the Rooch dashboard. Click the corresponding control to quickly jump to the corresponding page.
 
-### Analytics
+#### Analytics
 
 See an overview of the dashboard here.
 
-### Tutorial
+#### Tutorial
 
 Here are some examples of frontends deployed to the Rooch network.
 
-#### Counter Example
+##### Counter Example
 
 A Counter example is deployed by default in the Dashboard. We can directly experience its counting function. The counter value is displayed on the left and the button for incrementing the counter is on the right.
 
@@ -46,21 +80,21 @@ This counter can be called by all accounts that have authenticated the session k
 
 ![](/docs/dashboard-counter-example.png)
 
-### SCAN
+#### SCAN
 
 Rooch’s block explorer function is integrated here.
 
 {/*
-### Wallets & Assets
+#### Wallets & Assets
 
 Here is the operation page related to wallet and assets.
 */}
 
-### AUTHENTICATION
+#### AUTHENTICATION
 
 The permission control panel of various DApps that interact with Rooch is integrated here.
 
-#### Session
+##### Session
 
 All records that have been authenticated by the Session key are listed here.
 
