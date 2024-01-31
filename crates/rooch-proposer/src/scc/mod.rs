@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 use moveos_types::h256;
 use moveos_types::h256::H256;
-use rooch_da::messages::{Batch, BatchMeta};
+use rooch_da::messages::Batch;
 use rooch_da::proxy::DAProxy;
 use rooch_types::block::Block;
 use rooch_types::transaction::AbstractTransaction;
@@ -87,11 +87,8 @@ impl StateCommitmentChain {
         if let Err(e) = self
             .da
             .submit_batch(Batch {
-                meta: BatchMeta {
-                    block_number,
-                    batch_hash,
-                    signature: vec![],
-                },
+                block_number,
+                batch_hash,
                 data: batch_data,
             })
             .await

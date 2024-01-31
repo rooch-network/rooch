@@ -14,7 +14,7 @@ use futures::StreamExt;
 
 use rooch_config::da_config::{DAConfig, InternalDAServerConfigType};
 
-use crate::messages::{Batch, PutBatchMessage};
+use crate::messages::{Batch, PutBatchInternalDAMessage};
 use crate::server::celestia::actor::server::DAServerCelestiaActor;
 use crate::server::celestia::proxy::DAServerCelestiaProxy;
 use crate::server::openda::actor::server::DAServerOpenDAActor;
@@ -92,7 +92,7 @@ impl DAActor {
             let batch = batch.clone();
             futures_unordered.push(async move {
                 server
-                    .put_batch(PutBatchMessage {
+                    .public_batch(PutBatchInternalDAMessage {
                         batch: batch.clone(),
                     })
                     .await
