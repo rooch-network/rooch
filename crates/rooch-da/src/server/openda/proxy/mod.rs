@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::messages::{PutBatchMessage, PutBatchResult};
+use crate::messages::PutBatchInternalDAMessage;
 use crate::server::openda::actor::server::DAServerOpenDAActor;
 use crate::server::serverproxy::DAServerProxy;
 use async_trait::async_trait;
@@ -17,14 +17,14 @@ impl DAServerOpenDAProxy {
         Self { actor }
     }
 
-    pub async fn submit_batch(&self, msg: PutBatchMessage) -> anyhow::Result<PutBatchResult> {
+    pub async fn submit_batch(&self, msg: PutBatchInternalDAMessage) -> anyhow::Result<()> {
         self.actor.send(msg).await?
     }
 }
 
 #[async_trait]
 impl DAServerProxy for DAServerOpenDAProxy {
-    async fn put_batch(&self, msg: PutBatchMessage) -> anyhow::Result<PutBatchResult> {
+    async fn public_batch(&self, msg: PutBatchInternalDAMessage) -> anyhow::Result<()> {
         self.submit_batch(msg).await
     }
 }

@@ -4,11 +4,11 @@
 use anyhow::Result;
 use async_trait::async_trait;
 
-use crate::messages::{PutBatchMessage, PutBatchResult};
+use crate::messages::PutBatchInternalDAMessage;
 
 #[async_trait]
 pub trait DAServerProxy: Sync + Send {
-    async fn put_batch(&self, request: PutBatchMessage) -> Result<PutBatchResult>;
+    async fn public_batch(&self, request: PutBatchInternalDAMessage) -> Result<()>;
 }
 
 // DAServerNopProxy is a no-op implementation of DAServerProxy
@@ -16,7 +16,7 @@ pub struct DAServerNopProxy;
 
 #[async_trait]
 impl DAServerProxy for DAServerNopProxy {
-    async fn put_batch(&self, _request: PutBatchMessage) -> Result<PutBatchResult> {
-        Ok(PutBatchResult::default())
+    async fn public_batch(&self, _request: PutBatchInternalDAMessage) -> Result<()> {
+        Ok(())
     }
 }

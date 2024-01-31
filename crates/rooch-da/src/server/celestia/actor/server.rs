@@ -8,9 +8,10 @@ use coerce::actor::context::ActorContext;
 use coerce::actor::message::Handler;
 use coerce::actor::Actor;
 
+use crate::chunk::DABatchV0;
 use rooch_config::da_config::DAServerCelestiaConfig;
 
-use crate::messages::{PutBatchMessage, PutBatchResult};
+use crate::messages::PutBatchInternalDAMessage;
 use crate::segment::{SegmentID, SegmentV0};
 use crate::server::celestia::backend::Backend;
 
@@ -41,7 +42,8 @@ impl DAServerCelestiaActor {
         }
     }
 
-    pub async fn pub_batch(&self, batch: PutBatchMessage) -> Result<PutBatchResult> {
+    // TODO reuse public_batch logic in openda
+    pub async fn public_batch(&self, batch: PutBatchInternalDAMessage) -> Result<()> {
         // TODO using chunk builder to make segments:
         // 1. persist batch into buffer then return ok
         // 2. collect batch for better compression ratio
@@ -49,10 +51,18 @@ impl DAServerCelestiaActor {
         // 4. submit segments to celestia node
         // 5. record segment id in order
         // 6. clean up batch buffer
-        let segs = batch.batch.data.chunks(self.max_segment_size);
+        // TODO more chunk version supports
+        let chunk = DABatchV0 {
+            version: 0,
+            block_number: batch.batch.block_number,
+            batch_hash: batch.batch.batch_hash,
+            data: batch.batch.data,
+        };
+        let chunk_bytes = bcs::to_bytes(&chunk).unwrap();
+        let segs = chunk_bytes.chunks(self.max_segment_size);
         let total = segs.len();
 
-        let chunk_id = batch.batch.meta.block_number;
+        let chunk_id = batch.batch.block_number;
         let segments = segs
             .enumerate()
             .map(|(i, data)| {
@@ -74,17 +84,17 @@ impl DAServerCelestiaActor {
             // TODO segment indexer trait (local file, db, etc)
             self.backend.submit(Box::new(segment)).await?;
         }
-        Ok(PutBatchResult::default())
+        Ok(())
     }
 }
 
 #[async_trait]
-impl Handler<PutBatchMessage> for DAServerCelestiaActor {
+impl Handler<PutBatchInternalDAMessage> for DAServerCelestiaActor {
     async fn handle(
         &mut self,
-        msg: PutBatchMessage,
+        msg: PutBatchInternalDAMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<PutBatchResult> {
-        self.pub_batch(msg).await
+    ) -> Result<()> {
+        self.public_batch(msg).await
     }
 }
