@@ -12,6 +12,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use xxhash_rust::xxh3::xxh3_64;
 
+use crate::chunk::DABatchV0;
 use rooch_config::da_config::{DAServerOpenDAConfig, OpenDAScheme};
 
 use crate::messages::PutBatchInternalDAMessage;
@@ -116,7 +117,16 @@ impl DAServerOpenDAActor {
         // 4. submit segments to celestia node
         // 5. record segment id in order
         // 6. clean up batch buffer
-        let segs = batch.batch.data.chunks(self.max_segment_size);
+
+        // TODO more chunk version supports
+        let chunk = DABatchV0 {
+            version: 0,
+            block_number: batch.batch.block_number,
+            batch_hash: batch.batch.batch_hash,
+            data: batch.batch.data,
+        };
+        let chunk_bytes = bcs::to_bytes(&chunk).unwrap();
+        let segs = chunk_bytes.chunks(self.max_segment_size);
         let total = segs.len();
 
         // TODO explain why block number is a good idea: easy to get next block number for segments, then we could request chunk by block number

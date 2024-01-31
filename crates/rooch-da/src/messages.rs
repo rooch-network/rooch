@@ -13,6 +13,7 @@ pub struct Batch {
     pub block_number: u128,
     // sha3_256 hash of the batch data
     pub batch_hash: H256,
+    // encoded tx list
     pub data: Vec<u8>,
 }
 
