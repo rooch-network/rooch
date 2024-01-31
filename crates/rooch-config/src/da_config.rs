@@ -15,6 +15,7 @@ use crate::RoochOpt;
 
 #[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
 pub struct DAConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(name = "internal-da-server", long, help = "internal da server config")]
@@ -55,7 +56,7 @@ impl FromStr for DAServerSubmitStrategy {
 #[serde(rename_all = "kebab-case")]
 pub enum InternalDAServerConfigType {
     Celestia(DAServerCelestiaConfig),
-    OpenDA(DAServerOpenDAConfig),
+    OpenDa(DAServerOpenDAConfig),
 }
 
 impl FromStr for InternalDAServerConfigType {
@@ -83,7 +84,7 @@ impl FromStr for InternalDAServerConfigType {
                             openda, e, s
                         )
                     })?;
-                Ok(InternalDAServerConfigType::OpenDA(openda_config))
+                Ok(InternalDAServerConfigType::OpenDa(openda_config))
             } else {
                 Err(format!("Invalid value: {}", s))
             }
@@ -212,6 +213,7 @@ pub struct DAServerOpenDAConfig {
         default_value = "gcs",
         help = "specifies the type of storage service to be used. 'gcs' with corresponding GCS server configuration, 's3' with corresponding S3 server configuration, etc."
     )]
+    #[serde(default)]
     pub scheme: OpenDAScheme,
     #[clap(
     name = "config",
@@ -471,7 +473,7 @@ mod tests {
         config.insert("param2".to_string(), "Value2".to_string());
 
         match InternalDAServerConfigType::from_str(openda_config_str) {
-            Ok(InternalDAServerConfigType::OpenDA(openda_config)) => {
+            Ok(InternalDAServerConfigType::OpenDa(openda_config)) => {
                 assert_eq!(
                     openda_config,
                     DAServerOpenDAConfig {

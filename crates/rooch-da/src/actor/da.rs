@@ -54,7 +54,7 @@ impl DAActor {
                         da_server.clone().into(),
                     )));
                 }
-                if let InternalDAServerConfigType::OpenDA(openda_config) = server_config_type {
+                if let InternalDAServerConfigType::OpenDa(openda_config) = server_config_type {
                     let da_server = DAServerOpenDAActor::new(openda_config)
                         .await?
                         .into_actor(
