@@ -14,7 +14,7 @@ use xxhash_rust::xxh3::xxh3_64;
 
 use rooch_config::da_config::{DAServerOpenDAConfig, OpenDAScheme};
 
-use crate::messages::{PutBatchMessage, PutBatchResult};
+use crate::messages::PutBatchInternalDAMessage;
 use crate::segment::{Segment, SegmentID, SegmentV0, SEGMENT_V0_CHECKSUM_OFFSET};
 
 pub struct DAServerOpenDAActor {
@@ -108,7 +108,7 @@ impl DAServerOpenDAActor {
         })
     }
 
-    pub async fn pub_batch(&self, batch: PutBatchMessage) -> Result<PutBatchResult> {
+    pub async fn pub_batch(&self, batch: PutBatchInternalDAMessage) -> Result<()> {
         // TODO using chunk builder to make segments:
         // 1. persist batch into buffer then return ok
         // 2. collect batch for better compression ratio
@@ -120,7 +120,7 @@ impl DAServerOpenDAActor {
         let total = segs.len();
 
         // TODO explain why block number is a good idea: easy to get next block number for segments, then we could request chunk by block number
-        let chunk_id = batch.batch.meta.block_number;
+        let chunk_id = batch.batch.block_number;
         let segments = segs
             .enumerate()
             .map(|(i, data)| {
@@ -155,7 +155,7 @@ impl DAServerOpenDAActor {
             self.operator.write(&segment.id.to_string(), bytes).await?; // TODO retry logic
         }
 
-        Ok(PutBatchResult::default())
+        Ok(())
     }
 }
 
@@ -200,12 +200,12 @@ async fn new_retry_operator(
 }
 
 #[async_trait]
-impl Handler<PutBatchMessage> for DAServerOpenDAActor {
+impl Handler<PutBatchInternalDAMessage> for DAServerOpenDAActor {
     async fn handle(
         &mut self,
-        msg: PutBatchMessage,
+        msg: PutBatchInternalDAMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<PutBatchResult> {
+    ) -> Result<()> {
         self.pub_batch(msg).await
     }
 }
