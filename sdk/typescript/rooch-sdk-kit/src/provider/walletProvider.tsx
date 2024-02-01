@@ -66,9 +66,9 @@ export function WalletProvider({
     <WalletContext.Provider value={storeRef.current!}>
       <WalletConnectionManager>{children}</WalletConnectionManager>
     </WalletContext.Provider>
-  ) : (
-    fallback ? fallback : null
-  )
+  ) : fallback ? (
+    fallback
+  ) : null
 }
 
 type WalletConnectionManagerProps = Required<Pick<WalletProviderProps, 'children'>>
