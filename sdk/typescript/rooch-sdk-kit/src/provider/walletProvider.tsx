@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { createContext, useEffect, useRef, useState, ReactNode } from 'react'
+import { createContext, useEffect, useRef, useState, ReactElement } from 'react'
 import type { StateStorage } from 'zustand/middleware'
 
 import { createWalletStore, WalletStore } from '../walletStore'
@@ -24,9 +24,9 @@ type WalletProviderProps = {
   /** The key to use to store the most recently connected wallet account. */
   storageKey?: string
 
-  children: ReactNode
+  children: ReactElement
 
-  fallback?: ReactNode
+  fallback?: ReactElement
 }
 
 const DEFAULT_STORAGE_KEY = 'rooch-sdk-kit:wallet-connect-info'
@@ -67,7 +67,7 @@ export function WalletProvider({
       <WalletConnectionManager>{children}</WalletConnectionManager>
     </WalletContext.Provider>
   ) : (
-    fallback
+    fallback ? fallback : null
   )
 }
 
