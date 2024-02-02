@@ -163,6 +163,7 @@ export class RoochClient implements IClient {
     return this.client.rooch_getTransactionsByOrder(
       params.cursor.toString(),
       params.limit.toString(),
+      params.descending_order,
     )
   }
 
@@ -172,6 +173,7 @@ export class RoochClient implements IClient {
       params.eventHandleType,
       params.cursor.toString(),
       params.limit.toString(),
+      params.descending_order,
       { decode: true } as EventOptions,
     )
   }
