@@ -1,0 +1,113 @@
+---
+title: Rooch v0.3 发布，启动测试网
+description: "Rooch v0.3 发布，接入比特币网络，实现铭文铭刻，启动测试网。"
+author: geometryolife
+category: News
+date: 2024/02/02
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+Rooch v0.3 发布，接入比特币网络，实现铭文铭刻，启动先行测试网（Pre-testnet）。这是 Rooch 第三（生根 Rooting）至第四（开枝 Branching）个里程碑的过度阶段。
+
+## Rooch v0.3 的关键特性
+
+这个版本主要提供了以下主要特性：
+
+### DA
+
+* 接入 Celestia。
+
+### Bitcoin 支持
+
+* 接入 Bitcoin 测试网络
+* Rooch 成为 Bitcoin 网络执行层
+
+### Dashboard
+
+* 提供 Bitcoin 网络交互功能
+* 集成 UniSat 钱包
+
+### NFT 标准
+
+### 完善多链结算的方案
+
+* [多链结算](../docs/tech-highlights/multi-chain-settlement.zh-CN.mdx)
+* [二层网络实现多链结算-神话还是现实](./multi-chain_settlement_by_layer2-myth_or_Reality.zh-CN.mdx)
+
+### Move 标准库以及虚拟机
+
+* 实现了在 Move 中发布 Move 模块：[account_storage::publish_modules_entry](https://github.com/rooch-network/rooch/blob/7fd6418dff1aa7e40cae9e8eede375b776bbb771/moveos/moveos-stdlib/moveos-stdlib/sources/account_storage.move#L224)。
+* 实现了 [Coin](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/coin.move)， [CoinStore](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/coin_store.move) 以及 [account_coin_store](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/account_coin_store.move)。想进一步了解 Rooch 的 Coin 标准，可以参考 [examples/coins](https://github.com/rooch-network/rooch/tree/main/examples/coins)。
+* 实现了 Gas 计费以及 GasToken。
+* 实现了 [Event](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/event.move) 标准。
+* 改进了 [Object](../docs/developer-guides/object.zh-CN.mdx) 以及 [StorageAbstraction](../docs/dive-into-rooch/storage-abstraction.zh-CN.mdx) 的设计。
+
+### JSON RPC 以及 SDK
+
+* 实现 Bitcoin 相关 RPC
+  * 提供 UTXO 查询接口：`btc_queryUTXOs`
+  * 提供铭文查询接口：`btc_queryInscriptions`
+* SDK 添加 Bitcoin 相关操作
+
+Rooch 当前支持的接口请参看：[Rooch JSON RPC](../docs/developer-guides/rpc.zh-CN.mdx)。
+
+### Rooch Dashboard
+
+Rooch Dashboard 是一个基于 Rooch JSON RPC 的 Web 应用，提供状态和交易查询，账户设置管理能功能，未来会增加新的功能。
+访问地址：[https://dashboard.rooch.network/](https://dashboard.rooch.network/)。 
+
+用户可以通过 MetaMask 操作 Dashboard，使用说明请参看：[Rooch Dashboard 使用说明](../docs/user-guides/dashboard.zh-CN.mdx)。
+
+### 先行测试网
+
+开发者网络信息
+
+1. 名称: test
+2. ChainID: 20230102
+3. RPC: https://test-seed.rooch.network/
+
+如何使用测试网，请参考文档：[连接测试网络](../docs/developer-guides/connect-test.zh-CN.mdx)
+
+## 下一步的目标
+
+下一步，Rooch 的主要目标：
+
+## 下一步的目标
+
+1. 提供永久激励测试网络，让开发者可以在上面部署应用，让用户试用。
+
+## Rooch 里程碑
+
+Rooch 在主网启动之前一共有五个里程碑。我们用植物的生长过程来命名这些里程碑，希望 Rooch 能够像植物一样，从种子到参天大树，成为 Web3 的基础设施。
+
+### 播种 (Seeding) -- 2023 Q1
+
+完成技术方案设计和团队组建。
+
+### 萌芽｜Sprouting -- 2023 Q2
+
+发布第一个 Rooch 容器预览版本，提供基本的开发者工具，让开发者可以基于 Rooch 容器进行开发。
+
+### 生根 (Rooting) -- 2023 Q3
+
+连接到不同的 L1 公链，以及 DA 链，提供多链结算的支持。发布 Move Framework 稳定版。运行公开的开发者测试网。
+
+### 开枝 (Branching) -- 2023 Q4
+
+和生态团队一起共建 Framework 以及 Layer2 基础设施，提供 App 专用容器以及存储方案。运行永久激励测试网（incentive test network）。
+
+### 固本 (Strengthening) -- 2024 Q1
+
+安全加固以及性能优化，运行预备主网（pre-main network）。
+
+### 散叶 (Foliage) -- 2024 Q1
+
+各种应用在 Rooch 网络中成长起来，运行主网。
+
+## 总结
+
+Rooch 的里程碑遵循应用场景驱动的原则，以开发者和用户的使用体验为中心，尝试拓展 Web3 应用的边界，探索 Web3 大规模采用落地的可能。想了解并试用 Rooch，请参看文档：[新手入门](../docs/getting-started.zh-CN.md)。
+Rooch v0.2 详细的发布说明请参看：[Rooch v0.3](https://github.com/rooch-network/rooch/releases/tag/v0.3)。感谢参与贡献的十多位开发者，如果想进一步了解和参与 Rooch，请加入 [Rooch Discord](https://discord.gg/rooch)。
