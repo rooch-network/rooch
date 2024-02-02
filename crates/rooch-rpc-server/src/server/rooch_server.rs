@@ -178,25 +178,37 @@ impl RoochAPIServer for RoochServer {
         event_handle_type: StructTagView,
         cursor: Option<StrView<u64>>,
         limit: Option<StrView<u64>>,
+        descending_order: Option<bool>,
         event_options: Option<EventOptions>,
     ) -> RpcResult<EventPageView> {
         let event_options = event_options.unwrap_or_default();
         let cursor = cursor.map(|v| v.0);
         let limit = limit.map(|v| v.0);
+        let descending_order = descending_order.unwrap_or(true);
 
         // NOTE: fetch one more object to check if there is next page
         let limit_of = min(limit.unwrap_or(DEFAULT_RESULT_LIMIT), MAX_RESULT_LIMIT);
         let limit = limit_of + 1;
         let mut data = if event_options.decode {
             self.rpc_service
-                .get_annotated_events_by_event_handle(event_handle_type.into(), cursor, limit)
+                .get_annotated_events_by_event_handle(
+                    event_handle_type.into(),
+                    cursor,
+                    limit,
+                    descending_order,
+                )
                 .await?
                 .into_iter()
                 .map(EventView::from)
                 .collect::<Vec<_>>()
         } else {
             self.rpc_service
-                .get_events_by_event_handle(event_handle_type.into(), cursor, limit)
+                .get_events_by_event_handle(
+                    event_handle_type.into(),
+                    cursor,
+                    limit,
+                    descending_order,
+                )
                 .await?
                 .into_iter()
                 .map(EventView::from)
@@ -243,6 +255,7 @@ impl RoochAPIServer for RoochServer {
         &self,
         cursor: Option<StrView<u64>>,
         limit: Option<StrView<u64>>,
+        descending_order: Option<bool>,
     ) -> RpcResult<TransactionWithInfoPageView> {
         let last_sequencer_order = self
             .rpc_service
@@ -251,14 +264,21 @@ impl RoochAPIServer for RoochServer {
             .map_or(0, |v| v.last_order);
 
         let limit_of = limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT);
+        let descending_order = descending_order.unwrap_or(true);
         let cursor = cursor.map(|v| v.0);
-        let start = cursor.unwrap_or(0);
-        let end = min(start + (limit_of + 1), last_sequencer_order + 1);
 
-        let mut tx_orders: Vec<_> = if cursor.is_some() {
-            ((start + 1)..=end).collect()
+        let mut tx_orders = if descending_order {
+            let start = cursor.unwrap_or(last_sequencer_order + 1);
+            let end = if start >= limit_of {
+                start - limit_of
+            } else {
+                0
+            };
+            (end..start).rev().collect::<Vec<_>>()
         } else {
-            (start..end).collect()
+            let start = cursor.unwrap_or(0);
+            let end = min(start + (limit_of + 1), last_sequencer_order + 1);
+            (start..end).collect::<Vec<_>>()
         };
 
         // Since tx order is strictly incremental, traversing the SMT Tree can be optimized into a multi get query to improve query performance.

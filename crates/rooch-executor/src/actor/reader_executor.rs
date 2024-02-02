@@ -154,12 +154,18 @@ impl Handler<GetAnnotatedEventsByEventHandleMessage> for ReaderExecutorActor {
             event_handle_type,
             cursor,
             limit,
+            descending_order,
         } = msg;
         let event_store = self.moveos().event_store();
         let resolver = self.moveos().moveos_resolver();
 
         let event_handle_id = EventHandle::derive_event_handle_id(&event_handle_type);
-        let events = event_store.get_events_by_event_handle_id(&event_handle_id, cursor, limit)?;
+        let events = event_store.get_events_by_event_handle_id(
+            &event_handle_id,
+            cursor,
+            limit,
+            descending_order,
+        )?;
 
         events
             .into_iter()
@@ -183,11 +189,12 @@ impl Handler<GetEventsByEventHandleMessage> for ReaderExecutorActor {
             event_handle_type,
             cursor,
             limit,
+            descending_order,
         } = msg;
         let event_store = self.moveos().event_store();
 
         let event_handle_id = EventHandle::derive_event_handle_id(&event_handle_type);
-        event_store.get_events_by_event_handle_id(&event_handle_id, cursor, limit)
+        event_store.get_events_by_event_handle_id(&event_handle_id, cursor, limit, descending_order)
     }
 }
 

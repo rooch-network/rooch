@@ -78,10 +78,15 @@ impl RoochRpcClient {
         &self,
         cursor: Option<u64>,
         limit: Option<u64>,
+        descending_order: Option<bool>,
     ) -> Result<TransactionWithInfoPageView> {
         Ok(self
             .http
-            .get_transactions_by_order(cursor.map(Into::into), limit.map(Into::into))
+            .get_transactions_by_order(
+                cursor.map(Into::into),
+                limit.map(Into::into),
+                descending_order,
+            )
             .await?)
     }
 
@@ -114,6 +119,7 @@ impl RoochRpcClient {
         event_handle_type: StructTagView,
         cursor: Option<u64>,
         limit: Option<u64>,
+        descending_order: Option<bool>,
         event_options: Option<EventOptions>,
     ) -> Result<EventPageView> {
         let s = self
@@ -122,6 +128,7 @@ impl RoochRpcClient {
                 event_handle_type,
                 cursor.map(Into::into),
                 limit.map(Into::into),
+                descending_order,
                 event_options,
             )
             .await?;

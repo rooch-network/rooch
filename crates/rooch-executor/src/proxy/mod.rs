@@ -136,12 +136,14 @@ impl ExecutorProxy {
         event_handle_type: StructTag,
         cursor: Option<u64>,
         limit: u64,
+        descending_order: bool,
     ) -> Result<Vec<AnnotatedEvent>> {
         self.reader_actor
             .send(GetAnnotatedEventsByEventHandleMessage {
                 event_handle_type,
                 cursor,
                 limit,
+                descending_order,
             })
             .await?
     }
@@ -151,12 +153,14 @@ impl ExecutorProxy {
         event_handle_type: StructTag,
         cursor: Option<u64>,
         limit: u64,
+        descending_order: bool,
     ) -> Result<Vec<Event>> {
         self.reader_actor
             .send(GetEventsByEventHandleMessage {
                 event_handle_type,
                 cursor,
                 limit,
+                descending_order,
             })
             .await?
     }

@@ -31,6 +31,7 @@ pub trait EventStore {
         event_handle_id: &ObjectID,
         cursor: Option<u64>,
         limit: u64,
+        descending_order: bool,
     ) -> Result<Vec<Event>>;
 
     fn get_events_by_event_handle_type(
@@ -38,6 +39,7 @@ pub trait EventStore {
         event_handle_type: &StructTag,
         cursor: Option<u64>,
         limit: u64,
+        descending_order: bool,
     ) -> Result<Vec<Event>>;
 }
 
@@ -137,6 +139,7 @@ impl EventDBStore {
         event_handle_id: &ObjectID,
         cursor: Option<u64>,
         limit: u64,
+        descending_order: bool,
     ) -> Result<Vec<Event>> {
         let event_handle = self.get_event_handle(*event_handle_id)?.ok_or_else(|| {
             anyhow!(
@@ -145,14 +148,24 @@ impl EventDBStore {
             )
         })?;
         let last_seq = event_handle.count;
-        let start = match cursor {
-            //The cursor do not include the result
-            Some(cursor) => cursor + 1,
-            //None means start from -1
-            None => 0,
+
+        let ids = if descending_order {
+            let start = cursor.unwrap_or(last_seq + 1);
+            let end = if start >= limit { start - limit } else { 0 };
+            (end..start).rev().collect::<Vec<_>>()
+        } else {
+            let start = match cursor {
+                //The cursor do not include the result
+                Some(cursor) => cursor + 1,
+                //None means start from -1
+                None => 0,
+            };
+            let end = min(start + limit, last_seq + 1);
+            (start..end).collect::<Vec<_>>()
         };
-        let end = min(start + limit, last_seq);
-        let event_ids = (start..end)
+
+        let event_ids = ids
+            .into_iter()
             .map(|v| (EventID::new(*event_handle_id, v)))
             .collect::<Vec<_>>();
         Ok(self
@@ -167,8 +180,9 @@ impl EventDBStore {
         event_handle_type: &StructTag,
         cursor: Option<u64>,
         limit: u64,
+        descending_order: bool,
     ) -> Result<Vec<Event>> {
         let event_handle_id = EventHandle::derive_event_handle_id(event_handle_type);
-        self.get_events_by_event_handle_id(&event_handle_id, cursor, limit)
+        self.get_events_by_event_handle_id(&event_handle_id, cursor, limit, descending_order)
     }
 }

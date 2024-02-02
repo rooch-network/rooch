@@ -16,6 +16,10 @@ pub struct GetTransactionsByOrderCommand {
     #[clap(long)]
     pub limit: Option<u64>,
 
+    /// descending order
+    #[clap(short = 'd', long)]
+    descending_order: Option<bool>,
+
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
 }
@@ -27,7 +31,7 @@ impl CommandAction<TransactionWithInfoPageView> for GetTransactionsByOrderComman
 
         let resp = client
             .rooch
-            .get_transactions_by_order(self.cursor, self.limit)
+            .get_transactions_by_order(self.cursor, self.limit, self.descending_order)
             .await?;
 
         Ok(resp)
