@@ -61,10 +61,12 @@ export interface QueryUTXOsParams {
 export interface GetTransactionsParams {
   cursor: number
   limit: number
+  descending_order: boolean
 }
 
 export interface GetEventsParams {
   eventHandleType: string
   cursor: number
   limit: number
+  descending_order: boolean
 }

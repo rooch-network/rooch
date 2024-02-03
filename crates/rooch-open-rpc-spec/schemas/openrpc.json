@@ -223,6 +223,12 @@
           }
         },
         {
+          "name": "descending_order",
+          "schema": {
+            "type": "boolean"
+          }
+        },
+        {
           "name": "event_options",
           "schema": {
             "$ref": "#/components/schemas/EventOptions"
@@ -318,6 +324,12 @@
           "name": "limit",
           "schema": {
             "$ref": "#/components/schemas/u64"
+          }
+        },
+        {
+          "name": "descending_order",
+          "schema": {
+            "type": "boolean"
           }
         }
       ],

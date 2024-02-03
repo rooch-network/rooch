@@ -42,6 +42,7 @@ const TransactionDetail = () => {
     {
       cursor: Number(cursor),
       limit: 1,
+      descending_order: false,
     },
     {
       enabled: true,

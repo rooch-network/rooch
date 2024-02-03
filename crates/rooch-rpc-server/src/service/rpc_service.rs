@@ -180,10 +180,16 @@ impl RpcService {
         event_handle_type: StructTag,
         cursor: Option<u64>,
         limit: u64,
+        descending_order: bool,
     ) -> Result<Vec<AnnotatedEvent>> {
         let resp = self
             .executor
-            .get_annotated_events_by_event_handle(event_handle_type, cursor, limit)
+            .get_annotated_events_by_event_handle(
+                event_handle_type,
+                cursor,
+                limit,
+                descending_order,
+            )
             .await?;
         Ok(resp)
     }
@@ -193,10 +199,11 @@ impl RpcService {
         event_handle_type: StructTag,
         cursor: Option<u64>,
         limit: u64,
+        descending_order: bool,
     ) -> Result<Vec<Event>> {
         let resp = self
             .executor
-            .get_events_by_event_handle(event_handle_type, cursor, limit)
+            .get_events_by_event_handle(event_handle_type, cursor, limit, descending_order)
             .await?;
         Ok(resp)
     }

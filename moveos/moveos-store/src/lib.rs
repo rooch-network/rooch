@@ -201,9 +201,14 @@ impl EventStore for MoveOSStore {
         event_handle_id: &ObjectID,
         cursor: Option<u64>,
         limit: u64,
+        descending_order: bool,
     ) -> Result<Vec<Event>> {
-        self.get_event_store()
-            .get_events_by_event_handle_id(event_handle_id, cursor, limit)
+        self.get_event_store().get_events_by_event_handle_id(
+            event_handle_id,
+            cursor,
+            limit,
+            descending_order,
+        )
     }
 
     fn get_events_by_event_handle_type(
@@ -211,9 +216,14 @@ impl EventStore for MoveOSStore {
         event_handle_type: &StructTag,
         cursor: Option<u64>,
         limit: u64,
+        descending_order: bool,
     ) -> Result<Vec<Event>> {
-        self.get_event_store()
-            .get_events_by_event_handle_type(event_handle_type, cursor, limit)
+        self.get_event_store().get_events_by_event_handle_type(
+            event_handle_type,
+            cursor,
+            limit,
+            descending_order,
+        )
     }
 }
 
