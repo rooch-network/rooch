@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::collections::HashMap;
-use std::error::Error;
 use std::fmt::Display;
 use std::str::FromStr;
 
@@ -10,19 +9,10 @@ use clap::Parser;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::config::parse_hashmap;
+
 use crate::config::Config;
 use crate::RoochOpt;
-
-#[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize, Parser)]
-#[serde(deny_unknown_fields)]
-#[serde(rename_all = "kebab-case")]
-pub struct DAConfig {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "internal-da-server", long, help = "internal da server config")]
-    pub internal_da_server: Option<InternalDAServerConfig>,
-    // TODO external da server config
-    // TODO internal external policy
-}
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -34,22 +24,26 @@ pub enum DAServerSubmitStrategy {
     Number(usize),
 }
 
-impl FromStr for DAServerSubmitStrategy {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "all" => Ok(DAServerSubmitStrategy::All),
-            "quorum" => Ok(DAServerSubmitStrategy::Quorum),
-            _ => {
-                if let Ok(n) = s.parse::<usize>() {
-                    Ok(DAServerSubmitStrategy::Number(n))
-                } else {
-                    Err(format!("invalid da server submit strategy: {}", s))
-                }
-            }
-        }
-    }
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum OpenDAScheme {
+    // local filesystem, for developing only, config:
+    // root: file path to the root directory
+    #[default]
+    Fs,
+    // gcs(Google Could Service) main config:
+    // bucket
+    // root
+    // credential （it's okay to pass credential file path here, it'll be handled it automatically）
+    Gcs,
+    // s3 config:
+    // root
+    // bucket
+    // region
+    // endpoint
+    // access_key_id
+    // secret_access_key
+    S3,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -59,38 +53,34 @@ pub enum InternalDAServerConfigType {
     OpenDa(DAServerOpenDAConfig),
 }
 
-impl FromStr for InternalDAServerConfigType {
-    type Err = String;
+#[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize, Parser)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "kebab-case")]
+pub struct DAConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(name = "internal-da-server", long, help = "internal da server config")]
+    pub internal_da_server: Option<InternalDAServerConfig>,
+    // TODO external da server config
+}
+
+impl Config for DAConfig {}
+
+impl FromStr for DAConfig {
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let v: Value =
-            serde_json::from_str(s).map_err(|e| format!("Error parsing JSON: {}, {}", e, s))?;
+        let deserialized = serde_json::from_str(s)?;
+        Ok(deserialized)
+    }
+}
 
-        if let Some(obj) = v.as_object() {
-            if let Some(celestia) = obj.get("celestia") {
-                let celestia_config: DAServerCelestiaConfig =
-                    serde_json::from_value(celestia.clone()).map_err(|e| {
-                        format!(
-                            "invalid celestia config: {} error: {}, original: {}",
-                            celestia, e, s
-                        )
-                    })?;
-                Ok(InternalDAServerConfigType::Celestia(celestia_config))
-            } else if let Some(openda) = obj.get("open-da") {
-                let openda_config: DAServerOpenDAConfig = serde_json::from_value(openda.clone())
-                    .map_err(|e| {
-                        format!(
-                            "invalid open-da config: {}, error: {}, original: {}",
-                            openda, e, s
-                        )
-                    })?;
-                Ok(InternalDAServerConfigType::OpenDa(openda_config))
-            } else {
-                Err(format!("Invalid value: {}", s))
-            }
-        } else {
-            Err(format!("Invalid value: {}", s))
+impl DAConfig {
+    pub fn merge_with_opt(&mut self, opt: &RoochOpt) -> anyhow::Result<()> {
+        if let Some(ref da_config) = opt.da {
+            // TODO merge with field checking
+            *self = da_config.clone();
         }
+        Ok(())
     }
 }
 
@@ -140,124 +130,26 @@ impl InternalDAServerConfig {
     }
 }
 
-#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum OpenDAScheme {
-    // gcs(Google Could Service) main config:
-    // bucket
-    // root
-    // credential （it's okay to pass credential file path here, it'll be handled it automatically）
-    #[default]
-    GCS,
-    // s3 config:
-    // root
-    // bucket
-    // region
-    // endpoint
-    // access_key_id
-    // secret_access_key
-    S3,
-}
-
-impl Display for OpenDAScheme {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            OpenDAScheme::GCS => write!(f, "gcs"),
-            OpenDAScheme::S3 => write!(f, "s3"),
-        }
-    }
-}
-
-impl FromStr for OpenDAScheme {
-    type Err = &'static str;
+impl FromStr for InternalDAServerConfig {
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "gcs" => Ok(OpenDAScheme::GCS),
-            "s3" => Ok(OpenDAScheme::S3),
-            _ => Err("open-da scheme no match"),
-        }
+        let deserialized = serde_json::from_str(s)?;
+        Ok(deserialized)
     }
-}
-
-fn parse_hashmap(
-    s: &str,
-) -> Result<HashMap<String, String>, Box<dyn Error + Send + Sync + 'static>> {
-    s.split(',')
-        .filter(|kv| !kv.is_empty())
-        .map(|kv| {
-            let mut parts = kv.splitn(2, '=');
-            match (parts.next(), parts.next()) {
-                (Some(key), Some(value)) if !key.trim().is_empty() => {
-                    Ok((key.to_string(), value.to_string()))
-                }
-                (Some(""), Some(_)) => Err("key is missing before '='".into()),
-                _ => {
-                    Err("each key=value pair must be separated by a comma and contain a key".into())
-                }
-            }
-        })
-        .collect()
-}
-
-// test parse_hashmap
-
-// Open DA provides ability to access various storage services
-#[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize, Parser)]
-#[serde(deny_unknown_fields)]
-pub struct DAServerOpenDAConfig {
-    #[clap(
-        name = "scheme",
-        long,
-        value_enum,
-        default_value = "gcs",
-        help = "specifies the type of storage service to be used. 'gcs' with corresponding GCS server configuration, 's3' with corresponding S3 server configuration, etc."
-    )]
-    #[serde(default)]
-    pub scheme: OpenDAScheme,
-    #[clap(
-    name = "config",
-    long,
-    value_parser = parse_hashmap,
-    help = "specifies the configuration of the storage service. 'gcs' with corresponding GCS server configuration, 's3' with corresponding S3 server configuration, etc."
-    )]
-    pub config: HashMap<String, String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
-        name = "max-segment-size",
-        long,
-        help = "max segment size, striking a balance between throughput and the constraints on blob size."
-    )]
-    pub max_segment_size: Option<u64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 pub struct DAServerCelestiaConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
-        name = "namespace",
-        long,
-        env = "DA_CELESTIA_NAMESPACE",
-        help = "celestia namespace"
-    )]
+    #[clap(name = "namespace", long, help = "celestia namespace")]
     pub namespace: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
-        name = "conn",
-        long,
-        env = "DA_CELESTIA_CONN",
-        help = "celestia node connection"
-    )]
+    #[clap(name = "conn", long, help = "celestia node connection")]
     pub conn: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(
-        name = "auth-token",
-        long,
-        env = "DA_CELESTIA_AUTH_TOKEN",
-        help = "celestia node auth token"
-    )]
+    #[clap(name = "auth-token", long, help = "celestia node auth token")]
     pub auth_token: Option<String>,
     // for celestia:
     // support for up to 8 MB blocks, starting with 2MB at genesis and upgradeable through onchain governance.
@@ -265,7 +157,6 @@ pub struct DAServerCelestiaConfig {
     #[clap(
         name = "max-segment-size",
         long,
-        env = "DA_CELESTIA_MAX_SEGMENT_SIZE",
         help = "max segment size, striking a balance between throughput and the constraints on blob size."
     )]
     pub max_segment_size: Option<u64>,
@@ -292,33 +183,109 @@ impl DAServerCelestiaConfig {
     }
 }
 
-impl Config for DAConfig {}
-
-impl FromStr for DAConfig {
-    type Err = anyhow::Error;
+impl FromStr for InternalDAServerConfigType {
+    type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let deserialized = serde_json::from_str(s)?;
-        Ok(deserialized)
-    }
-}
+        let v: Value =
+            serde_json::from_str(s).map_err(|e| format!("Error parsing JSON: {}, {}", e, s))?;
 
-impl FromStr for InternalDAServerConfig {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let deserialized = serde_json::from_str(s)?;
-        Ok(deserialized)
-    }
-}
-
-impl DAConfig {
-    pub fn merge_with_opt(&mut self, opt: &RoochOpt) -> anyhow::Result<()> {
-        if let Some(ref da_config) = opt.da {
-            // TODO merge with field checking
-            *self = da_config.clone();
+        if let Some(obj) = v.as_object() {
+            if let Some(celestia) = obj.get("celestia") {
+                let celestia_config: DAServerCelestiaConfig =
+                    serde_json::from_value(celestia.clone()).map_err(|e| {
+                        format!(
+                            "invalid celestia config: {} error: {}, original: {}",
+                            celestia, e, s
+                        )
+                    })?;
+                Ok(InternalDAServerConfigType::Celestia(celestia_config))
+            } else if let Some(openda) = obj.get("open-da") {
+                let openda_config: DAServerOpenDAConfig = serde_json::from_value(openda.clone())
+                    .map_err(|e| {
+                        format!(
+                            "invalid open-da config: {}, error: {}, original: {}",
+                            openda, e, s
+                        )
+                    })?;
+                Ok(InternalDAServerConfigType::OpenDa(openda_config))
+            } else {
+                Err(format!("Invalid value: {}", s))
+            }
+        } else {
+            Err(format!("Invalid value: {}", s))
         }
-        Ok(())
+    }
+}
+
+// Open DA provides ability to access various storage services
+#[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize, Parser)]
+#[serde(deny_unknown_fields)]
+pub struct DAServerOpenDAConfig {
+    #[clap(
+        name = "scheme",
+        long,
+        value_enum,
+        default_value = "fs",
+        help = "specifies the type of storage service to be used. 'gcs' with corresponding GCS server configuration, 's3' with corresponding S3 server configuration, etc."
+    )]
+    #[serde(default)]
+    pub scheme: OpenDAScheme,
+    #[clap(
+    name = "config",
+    long,
+    value_parser = parse_hashmap,
+    help = "specifies the configuration of the storage service. 'gcs' with corresponding GCS server configuration, 's3' with corresponding S3 server configuration, etc."
+    )]
+    pub config: HashMap<String, String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "max-segment-size",
+        long,
+        help = "max segment size, striking a balance between throughput and the constraints on blob size."
+    )]
+    pub max_segment_size: Option<u64>,
+}
+
+impl FromStr for DAServerSubmitStrategy {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "all" => Ok(DAServerSubmitStrategy::All),
+            "quorum" => Ok(DAServerSubmitStrategy::Quorum),
+            _ => {
+                if let Ok(n) = s.parse::<usize>() {
+                    Ok(DAServerSubmitStrategy::Number(n))
+                } else {
+                    Err(format!("invalid da server submit strategy: {}", s))
+                }
+            }
+        }
+    }
+}
+
+impl Display for OpenDAScheme {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OpenDAScheme::Fs => write!(f, "fs"),
+            OpenDAScheme::Gcs => write!(f, "gcs"),
+            OpenDAScheme::S3 => write!(f, "s3"),
+        }
+    }
+}
+
+impl FromStr for OpenDAScheme {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "gcs" => Ok(OpenDAScheme::Gcs),
+            "s3" => Ok(OpenDAScheme::S3),
+            "fs" => Ok(OpenDAScheme::Fs),
+            _ => Err("open-da scheme no match"),
+        }
     }
 }
 
@@ -385,64 +352,6 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_hashmap_ok() {
-        let input = "key1=VALUE1,key2=value2";
-        let output = parse_hashmap(input).unwrap();
-
-        let mut expected = HashMap::new();
-        expected.insert("key1".to_string(), "VALUE1".to_string());
-        expected.insert("key2".to_string(), "value2".to_string());
-
-        assert_eq!(output, expected);
-    }
-
-    #[test]
-    fn test_parse_hashmap_empty_value() {
-        let input = "key1=,key2=value2";
-        let output = parse_hashmap(input).unwrap();
-
-        let mut expected = HashMap::new();
-        expected.insert("key1".to_string(), "".to_string());
-        expected.insert("key2".to_string(), "value2".to_string());
-
-        assert_eq!(output, expected);
-    }
-
-    #[test]
-    fn test_parse_hashmap_empty_string() {
-        let input = "";
-        let output = parse_hashmap(input).unwrap();
-
-        let expected = HashMap::new();
-
-        assert_eq!(output, expected);
-    }
-
-    #[test]
-    fn test_parse_hashmap_missing_value() {
-        let input = "key1,key2=value2";
-        let output = parse_hashmap(input);
-
-        assert!(output.is_err());
-    }
-
-    #[test]
-    fn test_parse_hashmap_missing_key() {
-        let input = "=value1,key2=value2";
-        let output = parse_hashmap(input);
-
-        assert!(output.is_err());
-    }
-
-    #[test]
-    fn test_parse_hashmap_no_equals_sign() {
-        let input = "key1value1,key2=value2";
-        let output = parse_hashmap(input);
-
-        assert!(output.is_err());
-    }
-
-    #[test]
     fn test_internal_da_server_config_str() {
         let celestia_config_str = r#"{"celestia": {"namespace": "test_namespace", "conn": "test_conn", "auth_token": "test_token", "max_segment_size": 2048}}"#;
         let openda_config_str = r#"{"open-da": {"scheme": "gcs", "config": {"Param1": "value1", "param2": "Value2"}, "max_segment_size": 2048}}"#;
@@ -477,7 +386,7 @@ mod tests {
                 assert_eq!(
                     openda_config,
                     DAServerOpenDAConfig {
-                        scheme: OpenDAScheme::GCS,
+                        scheme: OpenDAScheme::Gcs,
                         config,
                         max_segment_size: Some(2048),
                     }

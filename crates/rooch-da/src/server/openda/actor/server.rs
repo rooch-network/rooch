@@ -37,7 +37,7 @@ impl DAServerOpenDAActor {
         let mut config = cfg.clone();
 
         let op: Operator = match config.scheme {
-            OpenDAScheme::GCS => {
+            OpenDAScheme::Gcs => {
                 // If certain keys don't exist in the map, set them from environment
                 if !config.config.contains_key("bucket") {
                     if let Ok(bucket) = std::env::var("OPENDA_GCS_BUCKET") {
@@ -80,10 +80,10 @@ impl DAServerOpenDAActor {
                     "STANDARD",
                 );
 
-                check_config_exist(OpenDAScheme::GCS, &config.config, "bucket")?;
+                check_config_exist(OpenDAScheme::Gcs, &config.config, "bucket")?;
                 match (
-                    check_config_exist(OpenDAScheme::GCS, &config.config, "credential"),
-                    check_config_exist(OpenDAScheme::GCS, &config.config, "credential_path"),
+                    check_config_exist(OpenDAScheme::Gcs, &config.config, "credential"),
+                    check_config_exist(OpenDAScheme::Gcs, &config.config, "credential_path"),
                 ) {
                     (Ok(_), Ok(_)) => (),
 
@@ -93,7 +93,7 @@ impl DAServerOpenDAActor {
                     (Err(_), Ok(_)) => (),
 
                     (Err(_), Err(_)) => {
-                        return Err(anyhow!("either 'credential' or 'credential_path' must exist in config for scheme {:?}", OpenDAScheme::GCS));
+                        return Err(anyhow!("either 'credential' or 'credential_path' must exist in config for scheme {:?}", OpenDAScheme::Gcs));
                     }
                 }
 

@@ -4,6 +4,8 @@
 use anyhow::Context;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use std::collections::HashMap;
+use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -72,5 +74,88 @@ impl<C> std::ops::Deref for PersistedConfig<C> {
 impl<C> std::ops::DerefMut for PersistedConfig<C> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
+    }
+}
+
+pub fn parse_hashmap(
+    s: &str,
+) -> Result<HashMap<String, String>, Box<dyn Error + Send + Sync + 'static>> {
+    s.split(',')
+        .filter(|kv| !kv.is_empty())
+        .map(|kv| {
+            let mut parts = kv.splitn(2, '=');
+            match (parts.next(), parts.next()) {
+                (Some(key), Some(value)) if !key.trim().is_empty() => {
+                    Ok((key.to_string(), value.to_string()))
+                }
+                (Some(""), Some(_)) => Err("key is missing before '='".into()),
+                _ => {
+                    Err("each key=value pair must be separated by a comma and contain a key".into())
+                }
+            }
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_hashmap_ok() {
+        let input = "key1=VALUE1,key2=value2";
+        let output = parse_hashmap(input).unwrap();
+
+        let mut expected = HashMap::new();
+        expected.insert("key1".to_string(), "VALUE1".to_string());
+        expected.insert("key2".to_string(), "value2".to_string());
+
+        assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn test_parse_hashmap_empty_value() {
+        let input = "key1=,key2=value2";
+        let output = parse_hashmap(input).unwrap();
+
+        let mut expected = HashMap::new();
+        expected.insert("key1".to_string(), "".to_string());
+        expected.insert("key2".to_string(), "value2".to_string());
+
+        assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn test_parse_hashmap_empty_string() {
+        let input = "";
+        let output = parse_hashmap(input).unwrap();
+
+        let expected = HashMap::new();
+
+        assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn test_parse_hashmap_missing_value() {
+        let input = "key1,key2=value2";
+        let output = parse_hashmap(input);
+
+        assert!(output.is_err());
+    }
+
+    #[test]
+    fn test_parse_hashmap_missing_key() {
+        let input = "=value1,key2=value2";
+        let output = parse_hashmap(input);
+
+        assert!(output.is_err());
+    }
+
+    #[test]
+    fn test_parse_hashmap_no_equals_sign() {
+        let input = "key1value1,key2=value2";
+        let output = parse_hashmap(input);
+
+        assert!(output.is_err());
     }
 }

@@ -22,7 +22,10 @@ pub struct Server {
 impl CommandAction<String> for Server {
     async fn execute(self) -> RoochResult<String> {
         match self.cmd {
-            ServerCommand::Start(start) => start.execute_serialized().await,
+            ServerCommand::Start(start) => {
+                println!("{:?}", start);
+                start.execute_serialized().await
+            }
             ServerCommand::Clean(clean) => clean.execute().map(|_| "".to_owned()),
         }
     }
