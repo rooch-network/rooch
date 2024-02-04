@@ -109,6 +109,7 @@ pub struct GetAnnotatedEventsByEventHandleMessage {
     pub event_handle_type: StructTag,
     pub cursor: Option<u64>,
     pub limit: u64,
+    pub descending_order: bool,
 }
 
 impl Message for GetAnnotatedEventsByEventHandleMessage {
@@ -120,6 +121,7 @@ pub struct GetEventsByEventHandleMessage {
     pub event_handle_type: StructTag,
     pub cursor: Option<u64>,
     pub limit: u64,
+    pub descending_order: bool,
 }
 
 impl Message for GetEventsByEventHandleMessage {

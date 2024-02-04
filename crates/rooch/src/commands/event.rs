@@ -41,6 +41,9 @@ pub struct GetEventsByEventHandle {
     /// Max number of items returned per page
     #[clap(long)]
     limit: Option<u64>,
+    /// descending order
+    #[clap(short = 'd', long)]
+    descending_order: Option<bool>,
 
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
@@ -59,6 +62,7 @@ impl CommandAction<EventPageView> for GetEventsByEventHandle {
                 event_handle_type.into(),
                 self.cursor,
                 self.limit,
+                self.descending_order,
                 Some(EventOptions::default().decode(true)),
             )
             .await

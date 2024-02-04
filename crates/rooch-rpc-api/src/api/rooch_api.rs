@@ -73,6 +73,7 @@ pub trait RoochAPI {
         event_handle_type: StructTagView,
         cursor: Option<StrView<u64>>,
         limit: Option<StrView<u64>>,
+        descending_order: Option<bool>,
         event_options: Option<EventOptions>,
     ) -> RpcResult<EventPageView>;
 
@@ -87,6 +88,7 @@ pub trait RoochAPI {
         &self,
         cursor: Option<StrView<u64>>,
         limit: Option<StrView<u64>>,
+        descending_order: Option<bool>,
     ) -> RpcResult<TransactionWithInfoPageView>;
 
     /// get account balance by AccountAddress and CoinType
