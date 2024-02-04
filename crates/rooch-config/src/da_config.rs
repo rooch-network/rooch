@@ -3,16 +3,21 @@
 
 use std::collections::HashMap;
 use std::fmt::Display;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::sync::Arc;
 
 use clap::Parser;
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::config::parse_hashmap;
+use crate::config::{parse_hashmap, retrieve_map_config_value, MapConfigValueSource};
 
 use crate::config::Config;
-use crate::RoochOpt;
+use crate::{BaseConfig, RoochOpt};
+
+static R_DEFAULT_OPENDA_FS_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("openda_fs"));
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -60,6 +65,9 @@ pub struct DAConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(name = "internal-da-server", long, help = "internal da server config")]
     pub internal_da_server: Option<InternalDAServerConfig>,
+    #[serde(skip)]
+    #[clap(skip)]
+    base: Option<Arc<BaseConfig>>,
     // TODO external da server config
 }
 
@@ -75,12 +83,56 @@ impl FromStr for DAConfig {
 }
 
 impl DAConfig {
-    pub fn merge_with_opt(&mut self, opt: &RoochOpt) -> anyhow::Result<()> {
+    pub fn merge_with_opt_with_init(
+        &mut self,
+        opt: &RoochOpt,
+        base: Arc<BaseConfig>,
+        with_init: bool,
+    ) -> anyhow::Result<()> {
         if let Some(ref da_config) = opt.da {
             // TODO merge with field checking
             *self = da_config.clone();
         }
+        self.base = Some(base);
+
+        let default_fs_root = self.get_openda_fs_dir();
+
+        if let Some(InternalDAServerConfig { servers, .. }) = &mut self.internal_da_server {
+            for server in servers {
+                if let InternalDAServerConfigType::OpenDa(open_da_config) = server {
+                    if matches!(open_da_config.scheme, OpenDAScheme::Fs) {
+                        let var_source = retrieve_map_config_value(
+                            &mut open_da_config.config,
+                            "root",
+                            None,
+                            default_fs_root.to_str().unwrap(),
+                        );
+                        if let MapConfigValueSource::Default = var_source {
+                            if !with_init {
+                                continue;
+                            }
+                            if !default_fs_root.exists() {
+                                std::fs::create_dir_all(default_fs_root.clone())?;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         Ok(())
+    }
+
+    fn base(&self) -> &BaseConfig {
+        self.base.as_ref().expect("Config should init.")
+    }
+
+    pub fn data_dir(&self) -> &Path {
+        self.base().data_dir()
+    }
+
+    pub fn get_openda_fs_dir(&self) -> PathBuf {
+        self.data_dir().join(R_DEFAULT_OPENDA_FS_DIR.as_path())
     }
 }
 

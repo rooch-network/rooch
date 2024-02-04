@@ -9,6 +9,12 @@ use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+pub enum MapConfigValueSource {
+    ConfigKey,   // Value came from the presence of a key in the configuration
+    Environment, // Value came from the environment
+    Default,     // Value came from a defined default value
+}
+
 pub trait Config
 where
     Self: DeserializeOwned + Serialize,
@@ -95,6 +101,33 @@ pub fn parse_hashmap(
             }
         })
         .collect()
+}
+
+// value order:
+// 1. key value
+// 2. env value
+// 3. default value
+pub fn retrieve_map_config_value(
+    config: &mut HashMap<String, String>,
+    key: &str,
+    env_var: Option<&str>,
+    default_var: &str,
+) -> MapConfigValueSource {
+    if config.contains_key(key) {
+        return MapConfigValueSource::ConfigKey;
+    }
+
+    if let Some(env_var) = env_var {
+        if let Ok(env_var_value) = std::env::var(env_var) {
+            // env_var exists
+            config.insert(key.to_string(), env_var_value.clone());
+            return MapConfigValueSource::Environment;
+        }
+    }
+
+    // Use the default
+    config.insert(key.to_string(), default_var.to_string());
+    MapConfigValueSource::Default
 }
 
 #[cfg(test)]
