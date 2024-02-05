@@ -124,8 +124,6 @@ const UTXOList = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, paginationModel.page])
 
-  console.log(data)
-
   return (
     <Card>
       <DataGrid

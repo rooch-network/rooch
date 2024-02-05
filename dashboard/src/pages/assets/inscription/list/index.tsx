@@ -94,7 +94,6 @@ function hexToString(hex: string): string {
 }
 
 const InscriptionGrad = () => {
-
   const account = useWalletStore((state) => state.currentAccount)
 
   // ** State
@@ -136,8 +135,6 @@ const InscriptionGrad = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, paginationModel.page])
-
-  console.log(data)
 
   return (
     <Card>

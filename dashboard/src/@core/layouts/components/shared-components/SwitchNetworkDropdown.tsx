@@ -9,7 +9,7 @@ import Button from '@mui/material/Button'
 import { Settings } from 'src/@core/context/settingsContext'
 
 import Typography from '@mui/material/Typography'
-import { AllNetwork } from '@roochnetwork/rooch-sdk'
+import { TESTNetwork } from '@roochnetwork/rooch-sdk'
 
 interface Props {
   settings: Settings
@@ -19,7 +19,7 @@ const SwitchNetworkDropdown = (props: Props) => {
   return (
     <Button variant="text" size="small" disabled={true}>
       <Box sx={{ mr: 0, display: 'flex', flexDirection: 'column', textAlign: 'center' }}>
-        <Typography sx={{ fontWeight: 500 }}>{'Network-' + AllNetwork[0].name}</Typography>
+        <Typography sx={{ fontWeight: 500 }}>{'Network-' + TESTNetwork.name}</Typography>
       </Box>
     </Button>
   )

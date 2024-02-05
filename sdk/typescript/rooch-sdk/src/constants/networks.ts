@@ -72,7 +72,7 @@ export const DevNetwork = new Network(DEV_NETWORK_ID, 'dev', {
   url: DevNetworkURL,
 })
 
-export const TESTNetwork = new Network(TEST_NETWORK_ID, 'dev', {
+export const TESTNetwork = new Network(TEST_NETWORK_ID, 'test', {
   url: TestNetworkURL,
 })
 
