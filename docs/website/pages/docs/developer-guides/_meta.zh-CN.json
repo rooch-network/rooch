@@ -4,6 +4,7 @@
   "cli": "CLI",
   "create-rooch-move-contract": "创建 Rooch Move 合约",
   "connect-devnet": "连接开发网络",
+  "connect-testnet": "连接测试网络",
   "run-local-testnet": "运行本地测试网络",
   "faucet": {
     "title": "水龙头",
