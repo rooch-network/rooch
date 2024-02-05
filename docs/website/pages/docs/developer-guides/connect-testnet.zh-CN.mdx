@@ -15,13 +15,13 @@ rooch env list
           dev            |       https://dev-seed.rooch.network:443/        |                       Null                       |     True  
 ```
 
-此时我们需要手动添加测试网 `test` 网络：
+此时我们需要手动添加 `test` 网络：
 
 ```bash
 rooch env add --alias test --rpc https://test-seed.rooch.network:443
 ```
 
-激活 `test` 测试网络：
+激活 `test` 网络：
 
 ```bash
 rooch env switch test
@@ -63,7 +63,7 @@ curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","metho
 
 ## 部署 Example 合约
 
-当前，开发者测试网会自动给开发者分配 `GasCoin`，开发者可直接通过命令部署合约。
+当前，测试网会自动给开发者分配 `GasCoin`，开发者可直接通过命令部署合约。
 
 ```bash
 git clone https://github.com/rooch-network/rooch.git
