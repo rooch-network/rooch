@@ -37,30 +37,33 @@ const navigation = (): VerticalNavItemsType => {
     //   path: '/wallet',
     // },
     {
-      title: 'Assets',
+      title: 'My Assets',
       icon: 'bxs-badge-dollar',
       children: [
         {
           title: 'Inscription',
-          path: '/scan/inscription/list',
+          path: '/assets/inscription/list',
+        },
+        {
+          title: 'UTXO',
+          path: '/assets/utxo/list',
         },
       ],
     },
-    {
-      sectionTitle: 'Tutorial',
-    },
 
+    // {
+    //   sectionTitle: 'Tutorial',
+    // },
     // {
     //   title: 'Publish Package',
     //   icon: 'bxs-package',
     //   path: '/tutorial/publish/package',
     // },
-    {
-      title: 'Counter Example',
-      icon: 'bxs-package',
-      path: '/tutorial/counter',
-    },
-
+    // {
+    //   title: 'Counter Example',
+    //   icon: 'bxs-package',
+    //   path: '/tutorial/counter',
+    // },
     // {
     //   sectionTitle: 'Authentication',
     // },

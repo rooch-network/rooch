@@ -11,30 +11,21 @@ import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import Tooltip from '@mui/material/Tooltip'
 
 // ** SDK Imports
-import { IndexerStateID, InscriptionStateView } from '@roochnetwork/rooch-sdk'
+import { IndexerStateID, UTXOStateView } from '@roochnetwork/rooch-sdk'
 
-// import { useWalletStore } from '@roochnetwork/rooch-sdk-kit'
+import { useWalletStore } from '@roochnetwork/rooch-sdk-kit'
 
 // ** Utils
 import { formatAddress } from 'src/@core/utils/format'
 import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 
 interface CellType {
-  row: InscriptionStateView
+  row: UTXOStateView
 }
 
 // ** renders client column
 
 const defaultColumns: GridColDef[] = [
-  {
-    flex: 0.1,
-    minWidth: 90,
-    field: 'mint_time',
-    headerName: 'Mint Time',
-    renderCell: ({ row }: CellType) => (
-      <Typography sx={{ color: 'text.secondary' }}>{row.created_at}</Typography>
-    ),
-  },
   {
     flex: 0.1,
     field: 'object_id',
@@ -65,7 +56,7 @@ const defaultColumns: GridColDef[] = [
     renderCell: ({ row }: CellType) => (
       <Tooltip placement="bottom" sx={{ cursor: 'pointer' }} title={row.object_id}>
         <Typography sx={{ color: 'text.secondary' }}>
-          {formatAddress(row.value.bitcoin_txid)}
+          {formatAddress((row.value?.bitcoin_txid as any) ?? '')}
         </Typography>
       </Tooltip>
     ),
@@ -73,17 +64,25 @@ const defaultColumns: GridColDef[] = [
   {
     flex: 0.2,
     minWidth: 125,
-    field: 'metadata',
-    headerName: 'Metadata',
+    field: 'seals',
+    headerName: 'Seals',
     renderCell: ({ row }: CellType) => (
-      <Typography sx={{ color: 'text.secondary' }}>{row.value.metadata}</Typography>
+      <Typography sx={{ color: 'text.secondary' }}>{row.value?.seals}</Typography>
+    ),
+  },
+  {
+    flex: 0.2,
+    minWidth: 125,
+    field: 'value',
+    headerName: 'Value',
+    renderCell: ({ row }: CellType) => (
+      <Typography sx={{ color: 'text.secondary' }}>{row.value?.value}</Typography>
     ),
   },
 ]
 
-const InscriptionGrad = () => {
-  // TODO: filter owner
-  // const account = useWalletStore((state) => state.currentAccount)
+const UTXOList = () => {
+  const account = useWalletStore((state) => state.currentAccount)
 
   // ** State
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 })
@@ -97,8 +96,11 @@ const InscriptionGrad = () => {
   )
 
   let { data, isPending } = useRoochClientQuery(
-    'queryInscriptions',
+    'queryUTXOs',
     {
+      filter: {
+        owner: account?.getAddress() ?? '',
+      },
       cursor: cursor,
       limit: paginationModel.pageSize,
       descending_order: true,
@@ -145,4 +147,4 @@ const InscriptionGrad = () => {
   )
 }
 
-export default InscriptionGrad
+export default UTXOList

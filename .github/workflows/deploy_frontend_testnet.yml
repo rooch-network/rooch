@@ -1,11 +1,7 @@
-name: Deploy Frontend
+name: Deploy Testnet Frontend
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'dashboard/**'
-
 
 jobs:
   deploy:
