@@ -39,7 +39,7 @@ module rooch_framework::address_mapping{
     /// Return AddressMapping table handle, including mapping and reverse_mapping table handle
     public fun address_mapping_handle(ctx: &Context): (ObjectID, ObjectID, ObjectID) {
         let object_id = object_id::named_object_id<AddressMapping>();
-        let address_mapping_obj = context::borrow_object<AddressMapping>(ctx, object_id);
+        let address_mapping_obj = object::borrow_object<AddressMapping>(object_id);
         let address_mapping = object::borrow<AddressMapping>(address_mapping_obj);
         (object_id, *table::handle(&address_mapping.mapping), *table::handle(&address_mapping.reverse_mapping))
     }
@@ -47,12 +47,12 @@ module rooch_framework::address_mapping{
     /// Borrow the address mapping object
     public fun borrow(ctx: &Context) : &Object<AddressMapping> {
         let object_id = object_id::named_object_id<AddressMapping>();
-        context::borrow_object<AddressMapping>(ctx, object_id)
+        object::borrow_object<AddressMapping>(object_id)
     }
 
     fun borrow_mut(ctx: &mut Context) : &mut Object<AddressMapping> {
         let object_id = object_id::named_object_id<AddressMapping>();
-        context::borrow_mut_object_extend<AddressMapping>(ctx, object_id)
+        object::borrow_mut_object_extend<AddressMapping>(object_id)
     }
 
     public fun resolve_address(obj: &Object<AddressMapping>, maddress: MultiChainAddress): Option<address> {

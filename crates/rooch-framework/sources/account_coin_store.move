@@ -6,6 +6,7 @@ module rooch_framework::account_coin_store {
     use std::string;
     use std::option;
     use std::option::Option;
+    use moveos_std::object;
     use moveos_std::object_id;
     use moveos_std::object_id::ObjectID;
     use moveos_std::object::{Object};
@@ -227,7 +228,7 @@ module rooch_framework::account_coin_store {
 
     fun borrow_account_coin_store<CoinType: key>(ctx: &Context, addr: address): &Object<CoinStore<CoinType>> {
         let account_coin_store_id = account_coin_store_id<CoinType>(addr);
-        context::borrow_object<CoinStore<CoinType>>(ctx, account_coin_store_id)
+        object::borrow_object<CoinStore<CoinType>>(account_coin_store_id)
     }
 
     fun borrow_mut_account_coin_store<CoinType: key>(

@@ -5,10 +5,14 @@ module moveos_std::object_dynamic_field {
     use moveos_std::object;
     use moveos_std::object::Object;
 
+    ///Can not update the object which is sharded object
+    // const ErrorObjectIsShared: u64 = 1;
+
     /// Add a dynamic filed to the object. Aborts if an entry for this
     /// key already exists. The entry itself is not stored in the
     /// table, and cannot be discovered from it.
     public fun add_field<T: key, K: copy + drop, V>(obj: &mut Object<T>, key: K, val: V) {
+        // assert!(!object::is_shared(obj), ErrorObjectIsShared);
         object::add_field<K,V>(object::id(obj), key, val)
     }
 
@@ -27,12 +31,14 @@ module moveos_std::object_dynamic_field {
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public fun borrow_mut_field<T: key, K: copy + drop, V>(obj: &mut Object<T>, key: K): &mut V {
+        // assert!(!object::is_shared(obj), ErrorObjectIsShared);
         object::borrow_mut_field<K, V>(object::id(obj), key)
     }
 
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Insert the pair (`key`, `default`) first if there is no entry for `key`.
     public fun borrow_mut_field_with_default<T: key, K: copy + drop, V: drop>(obj: &mut Object<T>, key: K, default: V): &mut V {
+        // assert!(!object::is_shared(obj), ErrorObjectIsShared);
         object::borrow_mut_field_with_default<K, V>(object::id(obj), key, default)
     }
 

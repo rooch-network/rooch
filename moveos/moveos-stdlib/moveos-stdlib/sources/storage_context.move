@@ -6,7 +6,7 @@
 module moveos_std::storage_context {
 
     use moveos_std::object_id::ObjectID;
-    friend moveos_std::account_storage;
+    friend moveos_std::resource;
     friend moveos_std::context;
     
 

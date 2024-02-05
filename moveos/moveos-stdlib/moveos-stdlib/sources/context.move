@@ -13,11 +13,11 @@ module moveos_std::context {
     use moveos_std::object_id;
     use moveos_std::storage_context::{StorageContext};
     use moveos_std::tx_context::{Self, TxContext};
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object::{Self, Object, borrow_object};
     use moveos_std::tx_meta::{TxMeta};
     use moveos_std::tx_result::{TxResult};
     use moveos_std::signer;
-    use moveos_std::account_storage::{Self, AccountStorage};
+    use moveos_std::resource::{Self, Resource};
     use moveos_std::move_module::{Self, MoveModule};
     use moveos_std::table::{Self, Table};
     use moveos_std::type_table::{Self, TypeTable};
@@ -127,20 +127,25 @@ module moveos_std::context {
 
     // === Account Storage functions ===
 
-    #[private_generics(T)]
+    // #[private_generics(T)]
     /// Borrow a resource from the account's storage
     /// This function equates to `borrow_global<T>(address)` instruction in Move
     public fun borrow_resource<T: key>(self: &Context, account: address): &T {
-        let account_storage = borrow_account_storage(self, account);
-        account_storage::borrow_resource<T>(account_storage)
+        // let account_storage = borrow_account_storage(self, account);
+        let obj = borrow_object<Resource>(resource::resource_object_id(account));
+        resource::borrow_resource<T>(obj)
     }
 
     #[private_generics(T)]
     /// Borrow a mut resource from the account's storage
     /// This function equates to `borrow_global_mut<T>(address)` instruction in Move
     public fun borrow_mut_resource<T: key>(self: &mut Context, account: address): &mut T {
-        let account_storage = borrow_account_storage_mut(self, account);
-        account_storage::borrow_mut_resource<T>(account_storage)
+        // let account_storage = borrow_account_storage_mut(self, account);
+        // let obj = borrow_mut_object_extend<Resource>(resource::resource_object_id(account));
+        let object_id = resource::resource_object_id(account);
+        let object_entity = object::borrow_mut_from_global<Resource>(object_id);
+        let obj_mut = object::as_mut_ref(object_entity);
+        resource::borrow_mut_resource<T>(obj_mut)
     }
 
     #[private_generics(T)]
@@ -150,16 +155,24 @@ module moveos_std::context {
         let account_address = signer::address_of(account);
         //Auto create the account storage when move resource to the account
         ensure_account_storage(self, account_address);
-        let account_storage = borrow_account_storage_mut(self, account_address);
-        account_storage::move_resource_to(account_storage, resource);
+        // let obj = borrow_mut_object_extend<Resource>(object_id::address_to_object_id(account_address));
+        let object_id = resource::resource_object_id(account_address);
+        let object_entity = object::borrow_mut_from_global<Resource>(object_id);
+        let obj_mut = object::as_mut_ref(object_entity);
+        resource::move_resource_to(obj_mut, resource);
     }
 
     #[private_generics(T)]
     /// Move a resource from the account's storage
     /// This function equates to `move_from<T>(address)` instruction in Move
     public fun move_resource_from<T: key>(self: &mut Context, account: address): T {
-        let account_storage = borrow_account_storage_mut(self, account);
-        account_storage::move_resource_from<T>(account_storage)
+        // let obj = borrow_mut_object_extend<Resource>(object_id::address_to_object_id(account_address));
+        // borrow_mut_object<>()
+        let object_id = resource::resource_object_id(account);
+        let object_entity = object::borrow_mut_from_global<Resource>(object_id);
+        let obj_mut = object::as_mut_ref(object_entity);
+        // let obj = borrow_mut_object_extend<Resource>(object_id::address_to_object_id(account_address));
+        resource::move_resource_from<T>(obj_mut)
     }
 
     #[private_generics(T)]
@@ -167,8 +180,9 @@ module moveos_std::context {
     /// This function equates to `exists<T>(address)` instruction in Move
     public fun exists_resource<T: key>(self: &Context, account: address) : bool {
         if (exist_account_storage(self, account)) {
-            let account_storage = borrow_account_storage(self, account);
-            account_storage::exists_resource<T>(account_storage)
+            let obj = borrow_object<Resource>(resource::resource_object_id(account));
+            // let account_storage = borrow_account_storage(self, account);
+            resource::exists_resource<T>(obj)
         }else{
             false
         }
@@ -177,22 +191,24 @@ module moveos_std::context {
     /// Publish modules to the account's storage
     public fun publish_modules(self: &mut Context, account: &signer, modules: vector<MoveModule>) {
         let account_address = signer::address_of(account);
-        ensure_account_storage(self, account_address);
-        let account_storage = borrow_account_storage_mut(self, account_address);
-        let upgrade_flag = account_storage::publish_modules(account_storage, account_address, modules);
+        // ensure_account_storage(self, account_address);
+        // let account_storage = borrow_account_storage_mut(self, account_address);
+        let upgrade_flag = move_module::publish_modules(account_address, modules);
         // Store ModuleUpgradeFlag in tx_context which will be fetched in VM in Rust, 
         // and then announce to the VM that the code loading cache should be considered outdated. 
         tx_context::set_module_upgrade_flag(&mut self.tx_context, upgrade_flag);
     }
 
-    /// Check if the account has a module with the given name
-    public fun exists_module(self: &Context, account: address, name: String): bool {
-        if (exist_account_storage(self, account)) {
-            let account_storage = borrow_account_storage(self, account);
-            account_storage::exists_module(account_storage, name)
-        }else{
-            false
-        }
+    /// Check if the account has a module with the given module_id
+    public fun exists_module(_self: &Context, module_id: String): bool {
+        // if (exist_account_storage(self, account)) {
+        //     let account_storage = borrow_account_storage(self, account);
+        //     resource::exists_module(account_storage, module_id)
+        // }else{
+        //     false
+        // }
+
+        move_module::exists_module(module_id)
     }
 
     /// Entry function to publish modules
@@ -266,32 +282,32 @@ module moveos_std::context {
         object::new_with_id(id, value)
     }
 
-    /// Borrow Object from object store by object_id
-    /// Any one can borrow an `&Object<T>` from the global object storage
-    public fun borrow_object<T: key>(_self: &Context, object_id: ObjectID): &Object<T> {
-        let object_entity = object::borrow_from_global<T>(object_id);
-        object::as_ref(object_entity)
-    }
+    // /// Borrow Object from object store by object_id
+    // /// Any one can borrow an `&Object<T>` from the global object storage
+    // public fun borrow_object<T: key>(_self: &Context, object_id: ObjectID): &Object<T> {
+    //     let object_entity = object::borrow_from_global<T>(object_id);
+    //     object::as_ref(object_entity)
+    // }
+    //
+    // /// Borrow mut Object by `owner` and `object_id`
+    // public fun borrow_mut_object<T: key>(self: &mut Context, owner: &signer, object_id: ObjectID): &mut Object<T> {
+    //     let owner_address = signer::address_of(owner);
+    //     let obj = borrow_mut_object_internal<T>(self, object_id);
+    //     assert!(object::owner(obj) == owner_address, ErrorObjectOwnerNotMatch);
+    //     obj
+    // }
 
-    /// Borrow mut Object by `owner` and `object_id`
-    public fun borrow_mut_object<T: key>(self: &mut Context, owner: &signer, object_id: ObjectID): &mut Object<T> {
-        let owner_address = signer::address_of(owner);
-        let obj = borrow_mut_object_internal<T>(self, object_id);
-        assert!(object::owner(obj) == owner_address, ErrorObjectOwnerNotMatch);
-        obj
-    }
-
-    /// Take out the UserOwnedObject by `owner` and `object_id`
-    /// The `T` must have `key + store` ability.
-    /// Note: When the Object is taken out, the Object will auto become `SystemOwned` Object.
-    public fun take_object<T: key + store>(_self: &mut Context, owner: &signer, object_id: ObjectID): Object<T> {
-        let owner_address = signer::address_of(owner);
-        let object_entity = object::borrow_mut_from_global<T>(object_id);
-        assert!(object::owner_internal(object_entity) == owner_address, ErrorObjectOwnerNotMatch);
-        assert!(!object::is_bound_internal(object_entity), ErrorObjectIsBound);
-        object::to_system_owned_internal(object_entity);
-        object::mut_entity_as_object(object_entity)
-    }
+    // /// Take out the UserOwnedObject by `owner` and `object_id`
+    // /// The `T` must have `key + store` ability.
+    // /// Note: When the Object is taken out, the Object will auto become `SystemOwned` Object.
+    // public fun take_object<T: key + store>(_self: &mut Context, owner: &signer, object_id: ObjectID): Object<T> {
+    //     let owner_address = signer::address_of(owner);
+    //     let object_entity = object::borrow_mut_from_global<T>(object_id);
+    //     assert!(object::owner_internal(object_entity) == owner_address, ErrorObjectOwnerNotMatch);
+    //     assert!(!object::is_bound_internal(object_entity), ErrorObjectIsBound);
+    //     object::to_system_owned_internal(object_entity);
+    //     object::mut_entity_as_object(object_entity)
+    // }
 
     #[private_generics(T)]
     /// Take out the UserOwnedObject by `object_id`, return the owner and Object
@@ -305,19 +321,19 @@ module moveos_std::context {
         (owner, object::mut_entity_as_object(object_entity))
     }
 
-    /// Borrow mut Shared Object by object_id
-    public fun borrow_mut_object_shared<T: key>(self: &mut Context, object_id: ObjectID): &mut Object<T> {
-        let obj = borrow_mut_object_internal<T>(self, object_id);
-        assert!(object::is_shared(obj), ErrorObjectNotShared);
-        obj
-    }
+    // /// Borrow mut Shared Object by object_id
+    // public fun borrow_mut_object_shared<T: key>(self: &mut Context, object_id: ObjectID): &mut Object<T> {
+    //     let obj = borrow_mut_object_internal<T>(self, object_id);
+    //     assert!(object::is_shared(obj), ErrorObjectNotShared);
+    //     obj
+    // }
 
-    #[private_generics(T)]
-    /// The module of T can borrow mut Object from object store by any object_id
-    public fun borrow_mut_object_extend<T: key>(_self: &mut Context, object_id: ObjectID) : &mut Object<T> {
-        let object_entity = object::borrow_mut_from_global<T>(object_id);
-        object::as_mut_ref(object_entity)
-    }
+    // #[private_generics(T)]
+    // /// The module of T can borrow mut Object from object store by any object_id
+    // public fun borrow_mut_object_extend<T: key>(_self: &mut Context, object_id: ObjectID) : &mut Object<T> {
+    //     let object_entity = object::borrow_mut_from_global<T>(object_id);
+    //     object::as_mut_ref(object_entity)
+    // }
 
     /// Check if the object exists in the global object storage
     public fun exists_object<T: key>(_self: &Context, object_id: ObjectID): bool {
@@ -329,32 +345,35 @@ module moveos_std::context {
 
     fun ensure_account_storage(self: &mut Context, account: address) {
         if (!exist_account_storage(self, account)) {
-            let account_storage = account_storage::create_account_storage(account);
-            let object_id = object_id::address_to_object_id(account);
-            let obj = object::new_with_id(object_id, account_storage);
-            account_storage::transfer(obj, account);
+            resource::create_resource_object(account);
         }
     }
 
-    fun borrow_account_storage(self: &Context, account: address): &AccountStorage {
-        let obj = borrow_object<AccountStorage>(self, object_id::address_to_object_id(account));
-        object::borrow(obj)
-    }
+    // fun ensure_account_storage(self: &mut Context, account: address) {
+    //     if (!exist_account_storage(self, account)) {
+    //         resource::create_resource_storage(account);
+    //     }
+    // }
 
-    fun borrow_account_storage_mut(self: &mut Context, account: address): &mut AccountStorage {
-        let obj = borrow_mut_object_internal<AccountStorage>(self, object_id::address_to_object_id(account));
-        object::borrow_mut(obj)
-    }
+    // fun borrow_account_storage(self: &Context, account: address): &AccountStorage {
+    //     let obj = borrow_object<AccountStorage>(self, resource::resource_object_id(account));
+    //     object::borrow(obj)
+    // }
+    //
+    // fun borrow_account_storage_mut(self: &mut Context, account: address): &mut AccountStorage {
+    //     let obj = borrow_mut_object_internal<AccountStorage>(self, resource::resource_object_id(account));
+    //     object::borrow_mut(obj)
+    // }
 
     fun exist_account_storage(self: &Context, account: address): bool {
-        exists_object<AccountStorage>(self, object_id::address_to_object_id(account))
+        exists_object<Resource>(self, resource::resource_object_id(account))
     }
 
-    fun borrow_mut_object_internal<T: key>(_self: &mut Context, object_id: ObjectID): &mut Object<T> {
-        let object_entity = object::borrow_mut_from_global<T>(object_id);
-        let obj = object::as_mut_ref(object_entity);
-        obj
-    }
+    // fun borrow_mut_object_internal<T: key>(_self: &mut Context, object_id: ObjectID): &mut Object<T> {
+    //     let object_entity = object::borrow_mut_from_global<T>(object_id);
+    //     let obj = object::as_mut_ref(object_entity);
+    //     obj
+    // }
 
     
     #[test_only]
@@ -409,8 +428,8 @@ module moveos_std::context {
     }
 
     #[test(alice = @0x42)]
-    fun test_borrow_object(alice: &signer){
-        let alice_addr = signer::address_of(alice);
+    fun test_borrow_object(alice: signer){
+        let alice_addr = signer::address_of(&alice);
         let ctx = new_test_context(alice_addr);
         
         let obj = new_object(&mut ctx, TestStruct{value: 1});
@@ -419,7 +438,7 @@ module moveos_std::context {
 
         //test borrow_object by id
         {
-            let _obj = borrow_object<TestStruct>(&mut ctx, object_id);
+            let _obj = object::borrow_object<TestStruct>(object_id);
         };
        
         drop_test_context(ctx);
@@ -437,12 +456,12 @@ module moveos_std::context {
 
         //test borrow_mut_object by owner
         {
-            let _obj = borrow_mut_object<TestStruct>(&mut ctx, alice, object_id);
+            let _obj = object::borrow_mut_object<TestStruct>(alice, object_id);
         };
 
         // borrow_mut_object by non-owner failed 
         {
-            let _obj = borrow_mut_object<TestStruct>(&mut ctx, bob, object_id);
+            let _obj = object::borrow_mut_object<TestStruct>(bob, object_id);
         };
         drop_test_context(ctx);
     }
@@ -458,7 +477,7 @@ module moveos_std::context {
         object::to_shared(obj);
         // any one can borrow_mut the shared object
         {
-            let obj = borrow_mut_object_shared<TestStruct>(&mut ctx, object_id);
+            let obj = object::borrow_mut_object_shared<TestStruct>(object_id);
             assert!(object::is_shared(obj), 1000);
         };
         drop_test_context(ctx);
@@ -476,12 +495,12 @@ module moveos_std::context {
         object::to_frozen(obj);
         //test borrow_object
         {
-            let _obj = borrow_object<TestStruct>(&mut ctx, object_id);
+            let _obj = object::borrow_object<TestStruct>(object_id);
         };
 
         // none one can borrow_mut from the frozen object
         {
-            let _obj = borrow_mut_object_extend<TestStruct>(&mut ctx, object_id);
+            let _obj = object::borrow_mut_object_extend<TestStruct>(object_id);
         };
         drop_test_context(ctx);
     }

@@ -204,7 +204,7 @@ module rooch_framework::coin {
     public fun coin_info<CoinType: key>(ctx: &Context): &CoinInfo<CoinType> {
         let coin_info_id = coin_info_id<CoinType>();
         assert!(context::exists_object<CoinInfo<CoinType>>(ctx, coin_info_id), ErrorCoinInfosNotFound);
-        let coin_info_obj = context::borrow_object<CoinInfo<CoinType>>(ctx, coin_info_id);
+        let coin_info_obj = object::borrow_object<CoinInfo<CoinType>>(coin_info_id);
         object::borrow(coin_info_obj)
     }
 

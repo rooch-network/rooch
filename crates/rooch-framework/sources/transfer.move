@@ -51,7 +51,7 @@ module rooch_framework::transfer {
         if(!account::exists_at(ctx, to)) {
             account::create_account(ctx, to);
         };
-        let obj = context::take_object<T>(ctx, from, object_id);
+        let obj = object::take_object<T>(from, object_id);
         object::transfer(obj, to);
     }
 }

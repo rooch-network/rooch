@@ -5,8 +5,11 @@
 module moveos_std::move_module {
     use std::vector;
     use std::string::{Self, String};
+    use moveos_std::object_id::ObjectID;
+    use moveos_std::object;
+    use moveos_std::object_id;
 
-    friend moveos_std::account_storage;
+    friend moveos_std::context;
     
     /// Module address is not the same as the signer
     const ErrorAddressNotMatchWithSigner: u64 = 1;
@@ -56,16 +59,16 @@ module moveos_std::move_module {
         bytes_vec
     }
 
-    public fun module_name(move_module: &MoveModule): String {
-        module_name_inner(&move_module.byte_codes)
+    public fun module_id(move_module: &MoveModule): String {
+        module_id_inner(&move_module.byte_codes)
     }
 
     /// Sort modules by dependency order and then verify. 
     /// Return their names and names of the modules with init function if sorted dependency order.
-    /// This function will ensure the module's bytecode is valid and the module id is matching the account address.
+    /// This function will ensure the module's bytecode is valid and the module id is matching the module object address.
     /// Return
-    ///     1. Module names of all the modules. Order of names is not matching the input, but sorted by module dependency order
-    ///     2. Module names of the modules with init function.
+    ///     1. Module ids of all the modules. Order of names is not matching the input, but sorted by module dependency order
+    ///     2. Module ids of the modules with init function.
     ///     3. Indices in input modules of each sorted modules.
     public fun sort_and_verify_modules(
         modules: &vector<MoveModule>, account_address: address
@@ -212,19 +215,106 @@ module moveos_std::move_module {
         new_batch(rebinded_bytes)
     }
 
-    native fun module_name_inner(byte_codes: &vector<u8>): String;
+    /// ModuleObject is part of the StorageAbstraction
+    /// It is used to store the modules
+    struct Module has key {
+        // resources: TypeTable,
+        // modules: Table<String, MoveModule>,
+    }
+
+    public fun module_object_id(): ObjectID {
+        object_id::named_object_id<Module>()
+    }
+
+    /// Create a new module object space
+    public(friend) fun create_module_object() {
+        // let module_storage = AccountStorage {
+        //     resources: type_table::new_with_id(named_table_id(account, NamedTableResource)),
+        //     modules: table::new_with_id(named_table_id(account, NamedTableModule)),
+        // };
+        // module_storage
+        // let object_id = object_id::named_object_id<Module>();
+        // let object_id = object_id::address_to_object_id(account);
+        let obj = object::new_with_id(module_object_id(), Module {});
+        // object::transfer(obj, account)
+        // object::to_shared(obj)
+        object::transfer(obj, @moveos_std)
+    }
+
+    // ==== Module functions ====
+
+    /// Check if the module object has a module with the given name
+    public fun exists_module(module_id: String): bool {
+        // let object_id = object_id::named_object_id<Module>();
+
+        // exists_module_at_module_storage(self, name)
+        object::contains_field<String>(module_object_id(), module_id)
+    }
+
+    /// Publish modules to the module object's storage
+    /// Return true if the modules are upgraded
+    public(friend) fun publish_modules(account_address: address, modules: vector<MoveModule>) : bool {
+        let i = 0;
+        let len = vector::length(&modules);
+        let (module_ids, module_ids_with_init_fn, indices) = sort_and_verify_modules(&modules, account_address);
+
+        let upgrade_flag = false;
+        while (i < len) {
+            let module_id = vector::pop_back(&mut module_ids);
+            let index = vector::pop_back(&mut indices);
+            let m = vector::borrow(&modules, index);
+
+            // // The module already exists, which means we are upgrading the module
+            // if (table::contains(&self.modules, name)) {
+            //     let old_m = table::remove(&mut self.modules, name);
+            //     move_module::check_comatibility(m, &old_m);
+            //     upgrade_flag = true;
+            // } else {
+            //     // request init function invoking
+            //     if (vector::contains(&module_ids_with_init_fn, &name)) {
+            //         move_module::request_init_functions(vector::singleton(copy name), account_address);
+            //     }
+            // };
+            // table::add(&mut self.modules, name, *m);
+            // i = i + 1;
+
+            // The module already exists, which means we are upgrading the module
+            let object_id = module_object_id();
+            // let module_signer = signer::module_signer<Module>();
+            // let obj_mut = object::borrow_mut_object<Module>(&module_signer, object_id);
+            if (exists_module(module_id)) {
+                let old_m = object::remove_field(object_id, module_id);
+                check_comatibility(m, &old_m);
+                upgrade_flag = true;
+            } else {
+                // request init function invoking
+                if (vector::contains(&module_ids_with_init_fn, &module_id)) {
+                    // request_init_functions(vector::singleton(copy module_id), account_address);
+                    request_init_functions(vector::singleton(copy module_id));
+                }
+            };
+            // table::add(&mut self.modules, name, *m);
+            object::add_field(object_id, module_id, *m);
+            i = i + 1;
+        };
+        upgrade_flag
+    }
+
+
+    native fun module_id_inner(byte_codes: &vector<u8>): String;
 
     /// Sort modules by dependency order and then verify. 
     /// Return
-    ///  The first vector is the module names of all the modules.
-    ///  The second vector is the module names of the modules with init function.
+    ///  The first vector is the module ids of all the modules.
+    ///  The second vector is the module ids of the modules with init function.
     ///  The third vector is the indices in input modules of each sorted modules.
     native fun sort_and_verify_modules_inner(modules: vector<vector<u8>>, account_address: address): (vector<String>, vector<String>, vector<u64>);
     
     /// Request to call the init functions of the given modules
-    /// module_names: names of modules which have a init function
+    /// module_ids: names of modules which have a init function
     /// account_address: address of all the modules
-    native public(friend) fun request_init_functions(module_names: vector<String>, account_address: address);
+    // native public(friend) fun request_init_functions(module_ids: vector<String>, account_address: address);
+    native public(friend) fun request_init_functions(module_ids: vector<String>);
 
     native fun check_compatibililty_inner(new_bytecodes: vector<u8>, old_bytecodes: vector<u8>);
 
@@ -287,14 +377,34 @@ module moveos_std::move_module {
     use std::debug;
     #[test_only]
     use std::signer;
+    #[test_only]
+    use moveos_std::object::{Object, take_object};
+    #[test_only]
+    use moveos_std::signer::module_signer;
+
+    #[test_only]
+    fun drop_module_object(self: Object<Module>) {
+        // let AccountStorage {
+        //     resources,
+        //     modules
+        // } = self;
+        // type_table::drop_unchecked(resources);
+        // table::drop_unchecked(modules);
+
+        // let AccountStorage {
+        // } = self;
+        object::drop_unchecked_table(object::id(&self));
+        let obj = object::remove(self);
+        let Module {} = obj;
+    }
 
     #[test]
-    fun test_get_module_name() {
+    fun test_get_module_id() {
         // The following is the bytes and hex of the compiled module: example/counter/sources/counter.move
         // with account 0x42
         let module_bytes: vector<u8> = x"a11ceb0b060000000b010004020408030c26043206053832076a7308dd0140069d02220abf02050cc402560d9a03020000010100020c00010300000004000100000500010000060201000007030400010807080108010909010108010a0a0b0108040605060606010708010002070801060c0106080101030107080001080002070801050107090003070801060c090002060801050106090007636f756e74657207636f6e7465787407436f756e74657207436f6e7465787408696e63726561736509696e6372656173655f04696e69740576616c756513626f72726f775f6d75745f7265736f75726365106d6f76655f7265736f757263655f746f0f626f72726f775f7265736f75726365000000000000000000000000000000000000000000000000000000000000004200000000000000000000000000000000000000000000000000000000000000020520000000000000000000000000000000000000000000000000000000000000004200020107030001040001030b0011010201010000050d0b00070038000c010a01100014060100000000000000160b010f0015020200000001060b000b0106000000000000000012003801020301000001060b000700380210001402000000";
         let m: MoveModule = Self::new(module_bytes);
-        let name = Self::module_name(&m);
+        let name = Self::module_id(&m);
         debug::print(&name);
     }
 
@@ -306,8 +416,8 @@ module moveos_std::move_module {
         let module_bytes: vector<u8> = x"a11ceb0b060000000b010004020408030c26043206053832076a7308dd0140069d02220abf02050cc402560d9a03020000010100020c00010300000004000100000500010000060201000007030400010807080108010909010108010a0a0b0108040605060606010708010002070801060c0106080101030107080001080002070801050107090003070801060c090002060801050106090007636f756e74657207636f6e7465787407436f756e74657207436f6e7465787408696e63726561736509696e6372656173655f04696e69740576616c756513626f72726f775f6d75745f7265736f75726365106d6f76655f7265736f757263655f746f0f626f72726f775f7265736f75726365000000000000000000000000000000000000000000000000000000000000004200000000000000000000000000000000000000000000000000000000000000020520000000000000000000000000000000000000000000000000000000000000004200020107030001040001030b0011010201010000050d0b00070038000c010a01100014060100000000000000160b010f0015020200000001060b000b0106000000000000000012003801020301000001060b000700380210001402000000";
         let m: MoveModule = Self::new(module_bytes);
         let modules = vector::singleton(m);
-        let (module_names, _module_names_with_init_fn, _indices) = Self::sort_and_verify_modules(&modules, addr);
-        debug::print(&module_names);
+        let (module_ids, _module_ids_with_init_fn, _indices) = Self::sort_and_verify_modules(&modules, addr);
+        debug::print(&module_ids);
     }
 
     #[test(account=@0x1314)]
@@ -319,8 +429,8 @@ module moveos_std::move_module {
         let module_bytes: vector<u8> = x"a11ceb0b060000000b010004020408030c26043206053832076a7308dd0140069d02220abf02050cc402560d9a03020000010100020c00010300000004000100000500010000060201000007030400010807080108010909010108010a0a0b0108040605060606010708010002070801060c0106080101030107080001080002070801050107090003070801060c090002060801050106090007636f756e74657207636f6e7465787407436f756e74657207436f6e7465787408696e63726561736509696e6372656173655f04696e69740576616c756513626f72726f775f6d75745f7265736f75726365106d6f76655f7265736f757263655f746f0f626f72726f775f7265736f75726365000000000000000000000000000000000000000000000000000000000000004200000000000000000000000000000000000000000000000000000000000000020520000000000000000000000000000000000000000000000000000000000000004200020107030001040001030b0011010201010000050d0b00070038000c010a01100014060100000000000000160b010f0015020200000001060b000b0106000000000000000012003801020301000001060b000700380210001402000000";
         let m: MoveModule = Self::new(module_bytes);
         let modules = vector::singleton(m);
-        let (module_names, _module_names_with_init_fn, _indices) = Self::sort_and_verify_modules(&modules, addr);
-        debug::print(&module_names);
+        let (module_ids, _module_ids_with_init_fn, _indices) = Self::sort_and_verify_modules(&modules, addr);
+        debug::print(&module_ids);
     }
     
     #[test(account=@0x42)]
@@ -367,6 +477,21 @@ module moveos_std::move_module {
         let module_bytes = vector::borrow(&modules, 0).byte_codes;
         // compare the remapped modules bytes
         assert!(std::compare::cmp_bcs_bytes(&module_bytes, &ref_bytes) == 0u8, 1);
+    }
 
+    #[test(sender=@0x42)]
+    fun test_publish_modules(sender: address) {
+        // let sender_addr = signer::address_of(&sender);
+        create_module_object();
+        // The following is the bytes and hex of the compiled module: example/counter/sources/counter.move
+        // with account 0x42
+        let module_bytes: vector<u8> = x"a11ceb0b060000000b010004020408030c26043206053832076a7308dd0140069d02220abf02050cc402560d9a03020000010100020c00010300000004000100000500010000060201000007030400010807080108010909010108010a0a0b0108040605060606010708010002070801060c0106080101030107080001080002070801050107090003070801060c090002060801050106090007636f756e74657207636f6e7465787407436f756e74657207436f6e7465787408696e63726561736509696e6372656173655f04696e69740576616c756513626f72726f775f6d75745f7265736f75726365106d6f76655f7265736f757263655f746f0f626f72726f775f7265736f75726365000000000000000000000000000000000000000000000000000000000000004200000000000000000000000000000000000000000000000000000000000000020520000000000000000000000000000000000000000000000000000000000000004200020107030001040001030b0011010201010000050d0b00070038000c010a01100014060100000000000000160b010f0015020200000001060b000b0106000000000000000012003801020301000001060b000700380210001402000000";
+        let m: MoveModule = Self::new(module_bytes);
+        Self::publish_modules(sender, vector::singleton(m));
+
+        let module_signer = module_signer<Module>();
+        let module_obj = take_object<Module>(&module_signer, module_object_id());
+        Self::drop_module_object(module_obj);
     }
 }
+

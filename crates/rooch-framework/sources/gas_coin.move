@@ -24,7 +24,7 @@ module rooch_framework::gas_coin {
     fun borrow_mut_coin_info(ctx: &mut Context) : &mut Object<CoinInfo<GasCoin>> {
         let signer = signer::module_signer<GasCoin>();
         let coin_info_id = coin::coin_info_id<GasCoin>();
-        context::borrow_mut_object<CoinInfo<GasCoin>>(ctx, &signer, coin_info_id)
+        object::borrow_mut_object<CoinInfo<GasCoin>>(&signer, coin_info_id)
     }
 
     fun mint(ctx: &mut Context, amount: u256): Coin<GasCoin> {
