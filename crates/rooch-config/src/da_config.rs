@@ -289,6 +289,7 @@ pub struct DAServerOpenDAConfig {
     value_parser = parse_hashmap,
     help = "specifies the configuration of the storage service. 'gcs' with corresponding GCS server configuration, 's3' with corresponding S3 server configuration, etc."
     )]
+    #[serde(default)]
     pub config: HashMap<String, String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
