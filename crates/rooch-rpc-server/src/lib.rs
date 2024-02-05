@@ -187,13 +187,14 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
 
     //Init store
     let base_config = BaseConfig::load_with_opt(opt)?;
+    let arc_base_config = Arc::new(base_config);
     let mut store_config = StoreConfig::default();
-    store_config.merge_with_opt_with_init(opt, Arc::new(base_config.clone()), true)?;
+    store_config.merge_with_opt_with_init(opt, Arc::clone(&arc_base_config), true)?;
     let (moveos_store, rooch_store) = init_storage(&store_config)?;
 
     //Init indexer store
     let mut indexer_config = IndexerConfig::default();
-    indexer_config.merge_with_opt_with_init(opt, Arc::new(base_config), true)?;
+    indexer_config.merge_with_opt_with_init(opt, Arc::clone(&arc_base_config), true)?;
     let (indexer_store, indexer_reader) = init_indexer(&indexer_config)?;
 
     // Check for key pairs
@@ -254,7 +255,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
 
     // Init DA
     let mut da_config = DAConfig::default();
-    da_config.merge_with_opt(opt)?;
+    da_config.merge_with_opt_with_init(opt, Arc::clone(&arc_base_config), true)?;
 
     let da_proxy = DAProxy::new(
         DAActor::new(da_config, &actor_system)

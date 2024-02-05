@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use clap::Parser;
+use rooch_config::da_config::DAConfig;
 use rooch_config::indexer_config::IndexerConfig;
 use rooch_config::store_config::StoreConfig;
 use rooch_config::{BaseConfig, RoochOpt};
@@ -19,18 +20,23 @@ pub struct CleanCommand {
 impl CleanCommand {
     pub fn execute(self) -> RoochResult<()> {
         let base_config = BaseConfig::load_with_opt(&self.opt)?;
+        let arc_base_config = Arc::new(base_config);
         let mut store_config = StoreConfig::default();
-        store_config.merge_with_opt_with_init(&self.opt, Arc::new(base_config.clone()), false)?;
+        store_config.merge_with_opt_with_init(&self.opt, Arc::clone(&arc_base_config), false)?;
         let mut indexer_config = IndexerConfig::default();
-        indexer_config.merge_with_opt_with_init(&self.opt, Arc::new(base_config), false)?;
+        indexer_config.merge_with_opt_with_init(&self.opt, Arc::clone(&arc_base_config), false)?;
+        let mut da_config = DAConfig::default();
+        da_config.merge_with_opt_with_init(&self.opt, Arc::clone(&arc_base_config), false)?;
 
         let rooch_store_dir = store_config.get_rooch_store_dir();
         let moveos_store_dir = store_config.get_moveos_store_dir();
         let indexer_store_file = indexer_config.get_indexer_db();
+        let openda_fs_dir = da_config.get_openda_fs_dir();
 
         self.remove_store_dir(&rooch_store_dir, "Rooch")?;
         self.remove_store_dir(&moveos_store_dir, "MoveOS")?;
         self.remove_store_file(&indexer_store_file, "Indexer")?;
+        self.remove_store_dir(&openda_fs_dir, "OpenDA")?;
 
         println!("Rooch server storage successfully cleaned");
 
