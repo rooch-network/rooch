@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use coerce::actor::context::ActorContext;
 use coerce::actor::message::Handler;
 use coerce::actor::Actor;
-use opendal::layers::RetryLayer;
+use opendal::layers::{LoggingLayer, RetryLayer};
 use opendal::{Operator, Scheme};
 use rooch_config::config::retrieve_map_config_value;
 use std::collections::HashMap;
@@ -203,7 +203,9 @@ async fn new_retry_operator(
 ) -> Result<Operator> {
     let mut op = Operator::via_map(scheme, config)?;
     let max_times = max_retry_times.unwrap_or(4);
-    op = op.layer(RetryLayer::new().with_max_times(max_times));
+    op = op
+        .layer(RetryLayer::new().with_max_times(max_times))
+        .layer(LoggingLayer::default());
     op.check().await?;
     Ok(op)
 }
