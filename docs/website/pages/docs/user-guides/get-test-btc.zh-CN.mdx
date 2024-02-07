@@ -1,1 +1,35 @@
-# Get BTC test coin
+# 获取 BTC 测试币
+
+我们打开领取 BTC 测试币的网址：https://coinfaucet.eu/en/btc-testnet/
+
+在我们的 UniSat 钱包的设置页面，将地址类型切换到为非 `Taproot` 类型，当前的水龙头暂时不支持 Taproot 地址领取 BTC 测试币。
+
+![](/docs/get-test-coin/btc-address-type.png)
+
+在领取地址输入钱包地址：
+
+![](/docs/get-test-coin/btc-input-address.png)
+
+等待几秒后，就可以看到接受到的测试币了：
+
+![](/docs/get-test-coin/btc-received.png)
+
+这个时候我们再通过转账的方式，将 BTC 测试币从 Native Segwit 类型地址转到 Taproot 类型地址，方便后续测试使用。
+
+切换到 Taproot 地址后，点击复制地址：
+
+> 此时，还没有 BTC 测试币！
+
+![](/docs/get-test-coin/btc-taproot.png)
+
+再次通过设置页面，切换回 Native Segwit 类型地址，粘贴刚才复制的 Taproot 类型地址，填写转账金额，这里就转 `0.0003` BTC，点击下一步：
+
+![](/docs/get-test-coin/btc-send.png)
+
+点击 `Sign & Pay` 按钮：
+
+![](/docs/get-test-coin/btc-signpay.png)
+
+此时，我们的 Taproot 地址已经有测试币了：
+
+![](/docs/get-test-coin/btc-ok.png)
