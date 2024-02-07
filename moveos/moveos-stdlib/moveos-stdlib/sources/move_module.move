@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /// `move_module` provides some basic functions for handle Move module in Move.
+/// ModuleObject is part of the StorageAbstraction
+/// It is used to store the modules
 module moveos_std::move_module {
     use std::vector;
     use std::string::{Self, String};
@@ -68,7 +70,7 @@ module moveos_std::move_module {
     /// This function will ensure the module's bytecode is valid and the module id is matching the module object address.
     /// Return
     ///     1. Module ids of all the modules. Order of names is not matching the input, but sorted by module dependency order
-    ///     2. Module ids of the modules with init function.
+    ///     2. Module names of the modules with init function.
     ///     3. Indices in input modules of each sorted modules.
     public fun sort_and_verify_modules(
         modules: &vector<MoveModule>, account_address: address
@@ -215,11 +217,8 @@ module moveos_std::move_module {
         new_batch(rebinded_bytes)
     }
 
-    /// ModuleObject is part of the StorageAbstraction
     /// It is used to store the modules
-    struct Module has key {
-        // resources: TypeTable,
-        // modules: Table<String, MoveModule>,
+    struct Module has key, store {
     }
 
     public fun module_object_id(): ObjectID {
@@ -228,26 +227,20 @@ module moveos_std::move_module {
 
     /// Create a new module object space
     public(friend) fun create_module_object() {
-        // let module_storage = AccountStorage {
-        //     resources: type_table::new_with_id(named_table_id(account, NamedTableResource)),
-        //     modules: table::new_with_id(named_table_id(account, NamedTableModule)),
-        // };
-        // module_storage
-        // let object_id = object_id::named_object_id<Module>();
-        // let object_id = object_id::address_to_object_id(account);
         let obj = object::new_with_id(module_object_id(), Module {});
-        // object::transfer(obj, account)
-        // object::to_shared(obj)
         object::transfer(obj, @moveos_std)
     }
 
     // ==== Module functions ====
 
     /// Check if the module object has a module with the given name
-    public fun exists_module(module_id: String): bool {
-        // let object_id = object_id::named_object_id<Module>();
+    public fun exists_module(account: address, name: String): bool {
+        let module_id = module_id_from_name_inner(account, name);
+        exists_module_id(module_id)
+    }
 
-        // exists_module_at_module_storage(self, name)
+    /// Check if the module object has a module with the given id
+    public fun exists_module_id(module_id: String): bool {
         object::contains_field<String>(module_object_id(), module_id)
     }
 
@@ -264,36 +257,18 @@ module moveos_std::move_module {
             let index = vector::pop_back(&mut indices);
             let m = vector::borrow(&modules, index);
 
-            // // The module already exists, which means we are upgrading the module
-            // if (table::contains(&self.modules, name)) {
-            //     let old_m = table::remove(&mut self.modules, name);
-            //     move_module::check_comatibility(m, &old_m);
-            //     upgrade_flag = true;
-            // } else {
-            //     // request init function invoking
-            //     if (vector::contains(&module_ids_with_init_fn, &name)) {
-            //         move_module::request_init_functions(vector::singleton(copy name), account_address);
-            //     }
-            // };
-            // table::add(&mut self.modules, name, *m);
-            // i = i + 1;
-
             // The module already exists, which means we are upgrading the module
             let object_id = module_object_id();
-            // let module_signer = signer::module_signer<Module>();
-            // let obj_mut = object::borrow_mut_object<Module>(&module_signer, object_id);
-            if (exists_module(module_id)) {
+            if (exists_module_id(module_id)) {
                 let old_m = object::remove_field(object_id, module_id);
                 check_comatibility(m, &old_m);
                 upgrade_flag = true;
             } else {
                 // request init function invoking
                 if (vector::contains(&module_ids_with_init_fn, &module_id)) {
-                    // request_init_functions(vector::singleton(copy module_id), account_address);
                     request_init_functions(vector::singleton(copy module_id));
                 }
             };
-            // table::add(&mut self.modules, name, *m);
             object::add_field(object_id, module_id, *m);
             i = i + 1;
         };
@@ -303,18 +278,20 @@ module moveos_std::move_module {
 
     native fun module_id_inner(byte_codes: &vector<u8>): String;
 
+    native fun module_id_from_name_inner(account: address, name: String): String;
+
     /// Sort modules by dependency order and then verify. 
     /// Return
     ///  The first vector is the module ids of all the modules.
-    ///  The second vector is the module ids of the modules with init function.
+    ///  The second vector is the module names of the modules with init function.
     ///  The third vector is the indices in input modules of each sorted modules.
     native fun sort_and_verify_modules_inner(modules: vector<vector<u8>>, account_address: address): (vector<String>, vector<String>, vector<u64>);
     
     /// Request to call the init functions of the given modules
-    /// module_ids: names of modules which have a init function
+    /// module_names: names of modules which have a init function
     /// account_address: address of all the modules
     // native public(friend) fun request_init_functions(module_ids: vector<String>, account_address: address);
-    native public(friend) fun request_init_functions(module_ids: vector<String>);
+    native public(friend) fun request_init_functions(module_names: vector<String>);
 
     native fun check_compatibililty_inner(new_bytecodes: vector<u8>, old_bytecodes: vector<u8>);
 
@@ -384,15 +361,6 @@ module moveos_std::move_module {
 
     #[test_only]
     fun drop_module_object(self: Object<Module>) {
-        // let AccountStorage {
-        //     resources,
-        //     modules
-        // } = self;
-        // type_table::drop_unchecked(resources);
-        // table::drop_unchecked(modules);
-
-        // let AccountStorage {
-        // } = self;
         object::drop_unchecked_table(object::id(&self));
         let obj = object::remove(self);
         let Module {} = obj;

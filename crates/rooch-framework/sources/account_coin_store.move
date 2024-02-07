@@ -226,7 +226,7 @@ module rooch_framework::account_coin_store {
     // Internal functions
     // 
 
-    fun borrow_account_coin_store<CoinType: key>(ctx: &Context, addr: address): &Object<CoinStore<CoinType>> {
+    fun borrow_account_coin_store<CoinType: key>(_ctx: &Context, addr: address): &Object<CoinStore<CoinType>> {
         let account_coin_store_id = account_coin_store_id<CoinType>(addr);
         object::borrow_object<CoinStore<CoinType>>(account_coin_store_id)
     }

@@ -132,9 +132,10 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             //TODO find a better way to create account storage
             moveos
                 .state()
-                .create_account_storage(addr.into_inner())
+                .create_resource_object(addr.into_inner())
                 .unwrap();
         }
+        moveos.state().create_module_object().unwrap();
 
         let adapter = Self {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),

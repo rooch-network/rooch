@@ -5,7 +5,7 @@
 module rooch_framework::gas_coin {
     use std::string;
     use moveos_std::signer;
-    use moveos_std::context::{Self, Context};
+    use moveos_std::context::{Context};
     use moveos_std::object::{Self, Object};
     use rooch_framework::coin::{Self, Coin, CoinInfo};
     use rooch_framework::account_coin_store;
@@ -21,7 +21,7 @@ module rooch_framework::gas_coin {
         account_coin_store::balance<GasCoin>(ctx, addr)
     }
 
-    fun borrow_mut_coin_info(ctx: &mut Context) : &mut Object<CoinInfo<GasCoin>> {
+    fun borrow_mut_coin_info(_ctx: &mut Context) : &mut Object<CoinInfo<GasCoin>> {
         let signer = signer::module_signer<GasCoin>();
         let coin_info_id = coin::coin_info_id<GasCoin>();
         object::borrow_mut_object<CoinInfo<GasCoin>>(&signer, coin_info_id)

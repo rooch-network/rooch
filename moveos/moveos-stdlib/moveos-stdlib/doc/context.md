@@ -43,21 +43,16 @@ and let developers customize the storage
 -  [Function `new_account_named_object`](#0x2_context_new_account_named_object)
 -  [Function `new_custom_object_uid`](#0x2_context_new_custom_object_uid)
 -  [Function `new_custom_object`](#0x2_context_new_custom_object)
--  [Function `borrow_object`](#0x2_context_borrow_object)
--  [Function `borrow_mut_object`](#0x2_context_borrow_mut_object)
--  [Function `take_object`](#0x2_context_take_object)
 -  [Function `take_object_extend`](#0x2_context_take_object_extend)
--  [Function `borrow_mut_object_shared`](#0x2_context_borrow_mut_object_shared)
--  [Function `borrow_mut_object_extend`](#0x2_context_borrow_mut_object_extend)
 -  [Function `exists_object`](#0x2_context_exists_object)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="account_storage.md#0x2_account_storage">0x2::account_storage</a>;
 <b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
+<b>use</b> <a href="resource.md#0x2_resource">0x2::resource</a>;
 <b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
 <b>use</b> <a href="storage_context.md#0x2_storage_context">0x2::storage_context</a>;
 <b>use</b> <a href="table.md#0x2_table">0x2::table</a>;
@@ -325,8 +320,7 @@ Borrow a resource from the account's storage
 This function equates to <code><b>borrow_global</b>&lt;T&gt;(<b>address</b>)</code> instruction in Move
 
 
-<pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_resource">borrow_resource</a>&lt;T: key&gt;(self: &<a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): &T
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_resource">borrow_resource</a>&lt;T: key&gt;(_self: &<a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): &T
 </code></pre>
 
 
@@ -340,7 +334,7 @@ This function equates to <code><b>borrow_global_mut</b>&lt;T&gt;(<b>address</b>)
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_resource">borrow_mut_resource</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): &<b>mut</b> T
+<b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_resource">borrow_mut_resource</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): &<b>mut</b> T
 </code></pre>
 
 
@@ -350,11 +344,11 @@ This function equates to <code><b>borrow_global_mut</b>&lt;T&gt;(<b>address</b>)
 ## Function `move_resource_to`
 
 Move a resource to the account's storage
-This function equates to <code><b>move_to</b>&lt;T&gt;(&<a href="">signer</a>, resource)</code> instruction in Move
+This function equates to <code><b>move_to</b>&lt;T&gt;(&<a href="">signer</a>, <a href="resource.md#0x2_resource">resource</a>)</code> instruction in Move
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="context.md#0x2_context_move_resource_to">move_resource_to</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: &<a href="">signer</a>, resource: T)
+<b>public</b> <b>fun</b> <a href="context.md#0x2_context_move_resource_to">move_resource_to</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: &<a href="">signer</a>, <a href="resource.md#0x2_resource">resource</a>: T)
 </code></pre>
 
 
@@ -368,7 +362,7 @@ This function equates to <code><b>move_from</b>&lt;T&gt;(<b>address</b>)</code> 
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="context.md#0x2_context_move_resource_from">move_resource_from</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): T
+<b>public</b> <b>fun</b> <a href="context.md#0x2_context_move_resource_from">move_resource_from</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): T
 </code></pre>
 
 
@@ -403,10 +397,10 @@ Publish modules to the account's storage
 
 ## Function `exists_module`
 
-Check if the account has a module with the given name
+Check if the account has a module with the given module_id
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exists_module">exists_module</a>(self: &<a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>, name: <a href="_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exists_module">exists_module</a>(_self: &<a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>, name: <a href="_String">string::String</a>): bool
 </code></pre>
 
 
@@ -525,45 +519,6 @@ Create a new custom object, the ObjectID is generated by the <code>id</code> and
 
 
 
-<a name="0x2_context_borrow_object"></a>
-
-## Function `borrow_object`
-
-Borrow Object from object store by object_id
-Any one can borrow an <code>&Object&lt;T&gt;</code> from the global object storage
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_object">borrow_object</a>&lt;T: key&gt;(_self: &<a href="context.md#0x2_context_Context">context::Context</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
-</code></pre>
-
-
-
-<a name="0x2_context_borrow_mut_object"></a>
-
-## Function `borrow_mut_object`
-
-Borrow mut Object by <code>owner</code> and <code><a href="object_id.md#0x2_object_id">object_id</a></code>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_object">borrow_mut_object</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, owner: &<a href="">signer</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
-</code></pre>
-
-
-
-<a name="0x2_context_take_object"></a>
-
-## Function `take_object`
-
-Take out the UserOwnedObject by <code>owner</code> and <code><a href="object_id.md#0x2_object_id">object_id</a></code>
-The <code>T</code> must have <code>key + store</code> ability.
-Note: When the Object is taken out, the Object will auto become <code>SystemOwned</code> Object.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_take_object">take_object</a>&lt;T: store, key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, owner: &<a href="">signer</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
-</code></pre>
-
-
-
 <a name="0x2_context_take_object_extend"></a>
 
 ## Function `take_object_extend`
@@ -574,31 +529,6 @@ This function is for developer to extend, Only the module of <code>T</code> can 
 
 <pre><code>#[private_generics(#[T])]
 <b>public</b> <b>fun</b> <a href="context.md#0x2_context_take_object_extend">take_object_extend</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): (<b>address</b>, <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;)
-</code></pre>
-
-
-
-<a name="0x2_context_borrow_mut_object_shared"></a>
-
-## Function `borrow_mut_object_shared`
-
-Borrow mut Shared Object by object_id
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_object_shared">borrow_mut_object_shared</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
-</code></pre>
-
-
-
-<a name="0x2_context_borrow_mut_object_extend"></a>
-
-## Function `borrow_mut_object_extend`
-
-The module of T can borrow mut Object from object store by any object_id
-
-
-<pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_object_extend">borrow_mut_object_extend</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 

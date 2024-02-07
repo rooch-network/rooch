@@ -9,7 +9,9 @@ use move_core_types::{
     language_storage::{StructTag, TypeTag},
 };
 use moveos_types::move_types::as_struct_tag;
+use moveos_types::moveos_std::move_module::Module;
 use moveos_types::moveos_std::object_id::ObjectID;
+use moveos_types::moveos_std::resource::Resource;
 use moveos_types::state::MoveStructType;
 use moveos_types::state::{KeyState, TableState, TableStateSet};
 use moveos_types::state_resolver::StateKV;
@@ -19,7 +21,6 @@ use moveos_types::{
     state::{MoveStructState, State},
 };
 use moveos_types::{
-    moveos_std::account_storage::AccountStorage,
     moveos_std::context,
     moveos_std::object::{ObjectEntity, RawObject},
     moveos_std::raw_table::TableInfo,
@@ -173,28 +174,32 @@ impl StateDBStore {
             .map_err(Into::into)
     }
 
-    fn get_as_account_storage(
+    fn get_as_resource_object(
         &self,
         account: AccountAddress,
-    ) -> Result<Option<ObjectEntity<AccountStorage>>> {
-        self.get_as_object::<AccountStorage>(account.into())
+    ) -> Result<Option<ObjectEntity<Resource>>> {
+        self.get_as_object::<Resource>(account.into())
     }
 
-    fn get_as_account_storage_or_create(
+    fn get_as_resource_object_or_create(
         &self,
         account: AccountAddress,
-    ) -> Result<ObjectEntity<AccountStorage>> {
-        let account_storage = self
-            .get_as_account_storage(account)?
-            .unwrap_or_else(|| ObjectEntity::new_account_storage_object(account));
+    ) -> Result<ObjectEntity<Resource>> {
+        let resource_object = self
+            .get_as_resource_object(account)?
+            .unwrap_or(ObjectEntity::new_resource_object(account));
+        Ok(resource_object)
+    }
 
-        // Resource table key type tag: std::ascii::String
-        // let resource_key_type = TypeTag::Struct(Box::new(MoveAsciiString::struct_tag()));
-        self.get_as_table_or_create(account_storage.value.resources)?;
-        // Module table key type tag: std::string::String
-        // let module_key_type = TypeTag::Struct(Box::new(MoveString::struct_tag()));
-        self.get_as_table_or_create(account_storage.value.modules)?;
-        Ok(account_storage)
+    fn get_as_module_object(&self) -> Result<Option<ObjectEntity<Module>>> {
+        self.get_as_object::<Module>(Module::module_object_id())
+    }
+
+    fn get_as_module_object_or_create(&self) -> Result<ObjectEntity<Module>> {
+        let module_object = self
+            .get_as_module_object()?
+            .unwrap_or(ObjectEntity::new_module_object());
+        Ok(module_object)
     }
 
     fn get_as_table(&self, id: ObjectID) -> Result<Option<(RawObject, TreeTable<NodeDBStore>)>> {
@@ -252,16 +257,18 @@ impl StateDBStore {
     ) -> Result<H256> {
         let mut changed_objects = UpdateSet::new();
         //TODO
-        //We want deprecate the global storage instructions https://github.com/rooch-network/rooch/issues/248
-        //So the ChangeSet should be empty, but we need the mutated accounts to init the account storage
-        ////We need to figure out a way to init a fresh account.
+        // We want deprecate the global storage instructions https://github.com/rooch-network/rooch/issues/248
+        // So the ChangeSet should be empty, but we need the mutated accounts to init the account storage
+        // We need to figure out a way to init a fresh account.
         for (account, account_change_set) in change_set.into_inner() {
-            let account_storage = self.get_as_account_storage_or_create(account)?;
+            let resource_object = self.get_as_resource_object_or_create(account)?;
+            let module_object = self.get_as_module_object_or_create()?;
 
             let (modules, resources) = account_change_set.into_inner();
             debug_assert!(modules.is_empty() && resources.is_empty());
-            //TODO check if the account_storage and table is changed, if not changed, don't put it
-            changed_objects.put(ObjectID::from(account).to_key(), account_storage.into())
+            //TODO check if the resource object and module object and table is changed, if not changed, don't put it
+            changed_objects.put(ObjectID::from(account).to_key(), resource_object.into());
+            changed_objects.put(ObjectID::from(account).to_key(), module_object.into());
         }
 
         for (table_handle, table_change) in state_change_set.changes {
@@ -294,11 +301,21 @@ impl StateDBStore {
     }
 
     //Only for unit test and integration test runner
-    pub fn create_account_storage(&self, account: AccountAddress) -> Result<()> {
-        let account_storage = ObjectEntity::new_account_storage_object(account);
+    pub fn create_resource_object(&self, account: AccountAddress) -> Result<()> {
+        let resource_object = ObjectEntity::new_resource_object(account);
         self.global_table.puts((
             ObjectID::from(account).to_key(),
-            State::from(account_storage),
+            State::from(resource_object),
+        ))?;
+        Ok(())
+    }
+
+    //Only for unit test and integration test runner
+    pub fn create_module_object(&self) -> Result<()> {
+        let module_object = ObjectEntity::new_module_object();
+        self.global_table.puts((
+            Module::module_object_id().to_key(),
+            State::from(module_object),
         ))?;
         Ok(())
     }
@@ -358,8 +375,6 @@ impl StateDBStore {
         let mut golbal_table_state = TableState::default();
         for (key, state) in global_states.into_iter() {
             // If the state is an Object, and the T's struct_tag of Object<T> is Table
-            // let struct_tag = state.get_object_struct_tag();
-            // if let Some(struct_tag) = struct_tag {
             if ObjectID::struct_tag_match(&as_struct_tag(key.key_type.clone())?) {
                 let mut table_state = TableState::default();
                 let table_handle = ObjectID::from_bytes(key.key.clone())?;

@@ -17,6 +17,11 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `new_table_with_id`](#0x2_object_new_table_with_id)
 -  [Function `borrow`](#0x2_object_borrow)
 -  [Function `borrow_mut`](#0x2_object_borrow_mut)
+-  [Function `borrow_object`](#0x2_object_borrow_object)
+-  [Function `borrow_mut_object`](#0x2_object_borrow_mut_object)
+-  [Function `borrow_mut_object_extend`](#0x2_object_borrow_mut_object_extend)
+-  [Function `take_object`](#0x2_object_take_object)
+-  [Function `borrow_mut_object_shared`](#0x2_object_borrow_mut_object_shared)
 -  [Function `remove`](#0x2_object_remove)
 -  [Function `to_shared`](#0x2_object_to_shared)
 -  [Function `is_shared`](#0x2_object_is_shared)
@@ -61,6 +66,7 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 
 <pre><code><b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="raw_table.md#0x2_raw_table">0x2::raw_table</a>;
+<b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
 </code></pre>
 
 
@@ -151,6 +157,34 @@ Developers only need to use Object<T> related APIs and do not need to know the O
 
 
 <pre><code><b>const</b> <a href="object.md#0x2_object_ErrorObjectFrozen">ErrorObjectFrozen</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x2_object_ErrorObjectIsBound"></a>
+
+Can not take out the object which is bound to the account
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorObjectIsBound">ErrorObjectIsBound</a>: u64 = 6;
+</code></pre>
+
+
+
+<a name="0x2_object_ErrorObjectNotShared"></a>
+
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorObjectNotShared">ErrorObjectNotShared</a>: u64 = 5;
+</code></pre>
+
+
+
+<a name="0x2_object_ErrorObjectOwnerNotMatch"></a>
+
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorObjectOwnerNotMatch">ErrorObjectOwnerNotMatch</a>: u64 = 4;
 </code></pre>
 
 
@@ -257,6 +291,70 @@ Borrow the object mutable value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut">borrow_mut</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): &<b>mut</b> T
+</code></pre>
+
+
+
+<a name="0x2_object_borrow_object"></a>
+
+## Function `borrow_object`
+
+Borrow Object from object store by object_id
+Any one can borrow an <code>&<a href="object.md#0x2_object_Object">Object</a>&lt;T&gt;</code> from the global object storage
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_object">borrow_object</a>&lt;T: key&gt;(<a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<a name="0x2_object_borrow_mut_object"></a>
+
+## Function `borrow_mut_object`
+
+Borrow mut Object by <code>owner</code> and <code><a href="object_id.md#0x2_object_id">object_id</a></code>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut_object">borrow_mut_object</a>&lt;T: key&gt;(owner: &<a href="">signer</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<a name="0x2_object_borrow_mut_object_extend"></a>
+
+## Function `borrow_mut_object_extend`
+
+Borrow mut Object by <code><a href="object_id.md#0x2_object_id">object_id</a></code>
+
+
+<pre><code>#[private_generics(#[T])]
+<b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut_object_extend">borrow_mut_object_extend</a>&lt;T: key&gt;(<a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<a name="0x2_object_take_object"></a>
+
+## Function `take_object`
+
+Take out the UserOwnedObject by <code>owner</code> and <code><a href="object_id.md#0x2_object_id">object_id</a></code>
+The <code>T</code> must have <code>key + store</code> ability.
+Note: When the Object is taken out, the Object will auto become <code>SystemOwned</code> Object.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_take_object">take_object</a>&lt;T: store, key&gt;(owner: &<a href="">signer</a>, <a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<a name="0x2_object_borrow_mut_object_shared"></a>
+
+## Function `borrow_mut_object_shared`
+
+Borrow mut Shared Object by object_id
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut_object_shared">borrow_mut_object_shared</a>&lt;T: key&gt;(<a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 

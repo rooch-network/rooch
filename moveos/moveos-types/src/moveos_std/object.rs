@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-use super::{account_storage::AccountStorage, raw_table::TableInfo};
+use super::raw_table::TableInfo;
+use crate::moveos_std::move_module::Module;
 use crate::moveos_std::object_id::ObjectID;
+use crate::moveos_std::resource::Resource;
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     state::{MoveState, MoveStructState, MoveStructType, State},
@@ -51,7 +53,8 @@ impl MoveStructState for TablePlaceholder {
 }
 
 pub type TableObject = ObjectEntity<TablePlaceholder>;
-pub type AccountStorageObject = ObjectEntity<AccountStorage>;
+pub type ResourceObject = ObjectEntity<Resource>;
+pub type ModuleObject = ObjectEntity<Module>;
 
 /// The Entity of the Object<T>.
 /// The value must be the last field
@@ -160,13 +163,26 @@ impl ObjectEntity<TablePlaceholder> {
     }
 }
 
-impl ObjectEntity<AccountStorage> {
-    pub fn new_account_storage_object(account: AccountAddress) -> AccountStorageObject {
+impl ObjectEntity<Resource> {
+    pub fn new_resource_object(account: AccountAddress) -> ResourceObject {
         Self {
             id: ObjectID::from(account),
             owner: account,
             flag: 0u8,
-            value: AccountStorage::new(account),
+            value: Resource::default(),
+            state_root: *GENESIS_STATE_ROOT,
+            size: 0,
+        }
+    }
+}
+
+impl ObjectEntity<Module> {
+    pub fn new_module_object() -> ModuleObject {
+        Self {
+            id: Module::module_object_id(),
+            owner: MOVEOS_STD_ADDRESS,
+            flag: 0u8,
+            value: Module::default(),
             state_root: *GENESIS_STATE_ROOT,
             size: 0,
         }

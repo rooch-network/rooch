@@ -15,7 +15,7 @@ module creator::test {
     }
 
     public fun run(ctx: &mut Context, s: &signer) {
-        let _ = string::utf8(b"account_storage");
+        let _ = string::utf8(b"resource_object");
         publish_foo<Foo>(ctx, s)
     }
 }

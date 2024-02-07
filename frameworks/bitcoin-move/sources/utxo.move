@@ -89,7 +89,7 @@ module bitcoin_move::utxo{
         context::exists_object<UTXO>(ctx, object_id)
     }
 
-    public fun borrow_utxo(ctx: &Context, txid: address, vout: u32): &Object<UTXO>{
+    public fun borrow_utxo(_ctx: &Context, txid: address, vout: u32): &Object<UTXO>{
         let id = OutputID{
             txid: txid,
             vout: vout,

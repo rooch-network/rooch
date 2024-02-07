@@ -132,7 +132,7 @@ module bitcoin_move::ord {
         context::exists_object<Inscription>(ctx, object_id)
     }
 
-    public fun borrow_inscription(ctx: &Context, txid: address, index: u32): &Object<Inscription>{
+    public fun borrow_inscription(_ctx: &Context, txid: address, index: u32): &Object<Inscription>{
         let id = InscriptionID{
             txid: txid,
             index: index,

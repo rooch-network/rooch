@@ -37,7 +37,7 @@ module rooch_framework::address_mapping{
     }
 
     /// Return AddressMapping table handle, including mapping and reverse_mapping table handle
-    public fun address_mapping_handle(ctx: &Context): (ObjectID, ObjectID, ObjectID) {
+    public fun address_mapping_handle(_ctx: &Context): (ObjectID, ObjectID, ObjectID) {
         let object_id = object_id::named_object_id<AddressMapping>();
         let address_mapping_obj = object::borrow_object<AddressMapping>(object_id);
         let address_mapping = object::borrow<AddressMapping>(address_mapping_obj);
@@ -45,12 +45,12 @@ module rooch_framework::address_mapping{
     }
 
     /// Borrow the address mapping object
-    public fun borrow(ctx: &Context) : &Object<AddressMapping> {
+    public fun borrow(_ctx: &Context) : &Object<AddressMapping> {
         let object_id = object_id::named_object_id<AddressMapping>();
         object::borrow_object<AddressMapping>(object_id)
     }
 
-    fun borrow_mut(ctx: &mut Context) : &mut Object<AddressMapping> {
+    fun borrow_mut(_ctx: &mut Context) : &mut Object<AddressMapping> {
         let object_id = object_id::named_object_id<AddressMapping>();
         object::borrow_mut_object_extend<AddressMapping>(object_id)
     }

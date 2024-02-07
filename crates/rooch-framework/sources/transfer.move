@@ -3,7 +3,7 @@
 
 module rooch_framework::transfer {
     use moveos_std::object_id::ObjectID;
-    use moveos_std::context::{Self, Context};
+    use moveos_std::context::{Context};
     use moveos_std::object::{Self};
     use rooch_framework::account;
     use rooch_framework::account_coin_store;

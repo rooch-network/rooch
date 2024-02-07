@@ -46,7 +46,7 @@ pub struct NativeTableContext<'a> {
 /// Ensure the error codes in this file is consistent with the error code in raw_table.move
 const E_ALREADY_EXISTS: u64 = 1;
 const E_NOT_FOUND: u64 = 2;
-const E_DUPLICATE_OPERATION: u64 = 3;
+const _E_DUPLICATE_OPERATION: u64 = 3;
 const _E_NOT_EMPTY: u64 = 4; // This is not used, just used to keep consistent with raw_table.move
 const _E_TABLE_ALREADY_EXISTS: u64 = 5;
 
@@ -754,12 +754,10 @@ fn native_drop_unchecked_box(
     let mut table_data = table_context.table_data.write();
 
     let handle = get_table_handle(&mut args)?;
+    table_data.tables.remove(&handle);
 
-    if table_data.removed_tables.insert(handle) {
-        Ok(NativeResult::ok(gas_params.base, smallvec![]))
-    } else {
-        Ok(NativeResult::err(gas_params.base, E_DUPLICATE_OPERATION))
-    }
+    table_data.removed_tables.insert(handle);
+    Ok(NativeResult::ok(gas_params.base, smallvec![]))
 }
 
 pub fn make_native_drop_unchecked_box(gas_params: DropUncheckedBoxGasParameters) -> NativeFunction {
