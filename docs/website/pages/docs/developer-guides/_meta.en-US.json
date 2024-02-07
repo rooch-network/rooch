@@ -4,6 +4,7 @@
   "cli": "CLI",
   "create-rooch-move-contract": "Create Rooch Move contract",
   "connect-devnet": "Connect to devnet",
+  "connect-testnet": "Connect to testnet",
   "run-local-testnet": "Run a local testnet",
   "faucet": {
     "title": "Faucet",
