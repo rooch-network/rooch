@@ -19,14 +19,19 @@ This directory contains scripts for setting up a local development environment f
 
 ## Usage
 
+You can also configure the environment using the env script, use `./env -i`
+
 1. Run `ord wallet create` to create a new ord wallet
 2. Run `ord wallet receive` to get a new address to receive funds
 3. Run `bitcoin-cli generatetoaddress 101 <address>` to generate 101 blocks to the address
 4. Run `ord wallet balance` to check the balance of the wallet
-5. Run `echo "Hello rooch">/tmp/hello.txt` to create a file
-6. Run `ord wallet inscribe --fee-rate 1 --file /tmp/hello.txt` to inscribe the file to the blockchain
+5. Run `echo "{"p":"brc-20","op":"mint","tick":"Rooch","amt":"1"}">/tmp/hello.txt` to create a file
+6. Run `ord wallet inscribe --fee-rate 1 --file /tmp/hello.txt --destination <address>` to inscribe the file to the blockchain
 7. Run `bitcoin-cli generatetoaddress 1 <address>` to mine an inscription
 8. Run `ord wallet inscriptions` to get the reveal transaction ID
+
+
+
 
 ### References
 * [Bitcoin Core](https://bitcoincore.org/en/doc/25.0.0/)
