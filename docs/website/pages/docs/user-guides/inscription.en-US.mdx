@@ -1,1 +1,50 @@
 # Inscription
+
+This tutorial mainly introduces how to engrave inscriptions and how to view the inscribed inscription assets on Rooch.
+
+## Inscribe tools
+
+Here is an inscribe tool:
+
+- BTC testnet：https://inscribetheplanet.com/testnet
+- BTC mainnet：https://inscribetheplanet.com
+
+> Currently Rooch has launched the advance network, please choose the first link for inscription!
+
+## Prepare inscription materials
+
+1. Make sure the UniSat wallet's Taproot type address already has BTC.
+
+2. Create a hello.txt file and fill in the inscription information in JSON format:
+
+```json
+{"p":"brc-20","op":"mint","tick":"Rooch","amt":"10"}
+```
+
+## Start inscribe
+
+Open the inscribe tool in your browser:
+
+![](/docs/inscription/inscription-tool.png)
+
+Fill in the Taproot type address, upload the `hello.txt` file you just prepared, and then click the `Submit` button:
+
+![](/docs/inscription/inscription-input.png)
+
+Then the payment address will be displayed. We copy the payment address provided by the inscribe tool and pay the fee required for this inscribe to this address. Here is `1253` sats (equivalent to `0.00001253` BTC):
+
+![](/docs/inscription/pay.png)
+
+After the payment is completed, two links will be displayed. The first one is used to check the on-chain status of the transaction we just sent. It has not been confirmed yet and you need to wait for a few minutes:
+
+![](/docs/inscription/tx-confirmed.png)
+
+## View the inscription on the Rooch dashboard
+
+![](/docs/inscription/dashboard-utxo.png)
+
+When the transaction is confirmed, we open the Rooch dashboard and click on the sidebar `My Assets` to view the UTXO object:
+
+Next, click `Inscription` to view the inscription assets currently owned by the wallet:
+
+![](/docs/inscription/dashboard-inscription.png)
