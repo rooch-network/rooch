@@ -41,7 +41,10 @@ impl DAServerOpenDAActor {
             OpenDAScheme::Fs => {
                 // root must be existed
                 if !config.config.contains_key("root") {
-                    anyhow!("key 'root' must be existed in config for scheme {:?}", OpenDAScheme::Fs);
+                    return Err(anyhow!(
+                        "key 'root' must be existed in config for scheme {:?}",
+                        OpenDAScheme::Fs
+                    ));
                 }
                 new_retry_operator(Scheme::Fs, config.config, None).await?
             }

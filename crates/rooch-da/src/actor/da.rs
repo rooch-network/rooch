@@ -3,7 +3,7 @@
 
 use std::sync::{Arc, RwLock};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use coerce::actor::context::ActorContext;
 use coerce::actor::message::Handler;
@@ -39,7 +39,9 @@ impl DAActor {
 
         let mut servers: Vec<Arc<dyn DAServerProxy + Send + Sync>> = Vec::new();
         let mut submit_threshold = 1;
+        let mut success_count = 0;
 
+        // server config has higher priority than submit threshold
         if let Some(internal_da_server_config) = &da_config.internal_da_server {
             let mut server_config = internal_da_server_config.clone();
             submit_threshold = server_config.calculate_submit_threshold();
@@ -53,6 +55,7 @@ impl DAActor {
                     servers.push(Arc::new(DAServerCelestiaProxy::new(
                         da_server.clone().into(),
                     )));
+                    success_count += 1;
                 }
                 if let InternalDAServerConfigType::OpenDa(openda_config) = server_config_type {
                     let da_server = DAServerOpenDAActor::new(openda_config)
@@ -63,10 +66,19 @@ impl DAActor {
                         )
                         .await?;
                     servers.push(Arc::new(DAServerOpenDAProxy::new(da_server.clone().into())));
+                    success_count += 1;
                 }
             }
         } else {
             servers.push(Arc::new(crate::server::serverproxy::DAServerNopProxy {}));
+        }
+
+        if success_count < submit_threshold {
+            return Err(anyhow!(
+                "failed to start da: not enough servers for future submissions. exp>= {} act: {}",
+                submit_threshold,
+                success_count
+            ));
         }
 
         Ok(Self {
