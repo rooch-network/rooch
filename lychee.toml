@@ -1,2 +1,2 @@
 exclude_path = ["crates", "moveos", "examples", "sdk", "frameworks"]
-exclude = [ 'dev-seed.rooch.network', 'localhost', '127.0.0.1', 'https://twitter.com/RoochNetwork', 'conduct@rooch.network' ]
+exclude = [ 'dev-seed.rooch.network', 'localhost', '127.0.0.1', 'https://twitter.com/RoochNetwork', 'conduct@rooch.network', 'https://tokei.rs/b1/github/rooch-network/rooch?category=lines' ]

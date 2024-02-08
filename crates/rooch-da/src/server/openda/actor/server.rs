@@ -6,8 +6,9 @@ use async_trait::async_trait;
 use coerce::actor::context::ActorContext;
 use coerce::actor::message::Handler;
 use coerce::actor::Actor;
-use opendal::layers::RetryLayer;
+use opendal::layers::{LoggingLayer, RetryLayer};
 use opendal::{Operator, Scheme};
+use rooch_config::config::retrieve_map_config_value;
 use std::collections::HashMap;
 use std::path::Path;
 use xxhash_rust::xxh3::xxh3_64;
@@ -37,7 +38,17 @@ impl DAServerOpenDAActor {
         let mut config = cfg.clone();
 
         let op: Operator = match config.scheme {
-            OpenDAScheme::GCS => {
+            OpenDAScheme::Fs => {
+                // If certain keys don't exist in the map, set them from environment or const
+                retrieve_map_config_value(
+                    &mut config.config,
+                    "root",
+                    Some("OPENDA_FS_ROOT"),
+                    "/tmp/rooch/da",
+                );
+                new_retry_operator(Scheme::Fs, config.config, None).await?
+            }
+            OpenDAScheme::Gcs => {
                 // If certain keys don't exist in the map, set them from environment
                 if !config.config.contains_key("bucket") {
                     if let Ok(bucket) = std::env::var("OPENDA_GCS_BUCKET") {
@@ -73,17 +84,17 @@ impl DAServerOpenDAActor {
                             .insert("credential_path".to_string(), credential);
                     }
                 }
-                insert_default_from_env_or_const(
+                retrieve_map_config_value(
                     &mut config.config,
                     "default_storage_class",
-                    "OPENDA_GCS_DEFAULT_STORAGE_CLASS",
+                    Some("OPENDA_GCS_DEFAULT_STORAGE_CLASS"),
                     "STANDARD",
                 );
 
-                check_config_exist(OpenDAScheme::GCS, &config.config, "bucket")?;
+                check_config_exist(OpenDAScheme::Gcs, &config.config, "bucket")?;
                 match (
-                    check_config_exist(OpenDAScheme::GCS, &config.config, "credential"),
-                    check_config_exist(OpenDAScheme::GCS, &config.config, "credential_path"),
+                    check_config_exist(OpenDAScheme::Gcs, &config.config, "credential"),
+                    check_config_exist(OpenDAScheme::Gcs, &config.config, "credential_path"),
                 ) {
                     (Ok(_), Ok(_)) => (),
 
@@ -93,7 +104,7 @@ impl DAServerOpenDAActor {
                     (Err(_), Ok(_)) => (),
 
                     (Err(_), Err(_)) => {
-                        return Err(anyhow!("either 'credential' or 'credential_path' must exist in config for scheme {:?}", OpenDAScheme::GCS));
+                        return Err(anyhow!("either 'credential' or 'credential_path' must exist in config for scheme {:?}", OpenDAScheme::Gcs));
                     }
                 }
 
@@ -169,18 +180,6 @@ impl DAServerOpenDAActor {
     }
 }
 
-fn insert_default_from_env_or_const(
-    config: &mut HashMap<String, String>,
-    key: &str,
-    env_var: &str,
-    const_default: &str,
-) {
-    if !config.contains_key(key) {
-        let value = std::env::var(env_var).unwrap_or(const_default.to_string());
-        config.insert(key.to_string(), value);
-    }
-}
-
 fn check_config_exist(
     scheme: OpenDAScheme,
     config: &HashMap<String, String>,
@@ -204,7 +203,9 @@ async fn new_retry_operator(
 ) -> Result<Operator> {
     let mut op = Operator::via_map(scheme, config)?;
     let max_times = max_retry_times.unwrap_or(4);
-    op = op.layer(RetryLayer::new().with_max_times(max_times));
+    op = op
+        .layer(RetryLayer::new().with_max_times(max_times))
+        .layer(LoggingLayer::default());
     op.check().await?;
     Ok(op)
 }

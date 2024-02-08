@@ -127,6 +127,7 @@ const TransactionList = () => {
     {
       cursor: 0,
       limit: (paginationModel.page + 1) * paginationModel.pageSize,
+      descending_order: false,
     },
     {
       enabled: true,
