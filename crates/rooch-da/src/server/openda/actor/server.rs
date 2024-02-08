@@ -39,13 +39,10 @@ impl DAServerOpenDAActor {
 
         let op: Operator = match config.scheme {
             OpenDAScheme::Fs => {
-                // If certain keys don't exist in the map, set them from environment or const
-                retrieve_map_config_value(
-                    &mut config.config,
-                    "root",
-                    Some("OPENDA_FS_ROOT"),
-                    "/tmp/rooch/da",
-                );
+                // root must be existed
+                if !config.config.contains_key("root") {
+                    anyhow!("key 'root' must be existed in config for scheme {:?}", OpenDAScheme::Fs);
+                }
                 new_retry_operator(Scheme::Fs, config.config, None).await?
             }
             OpenDAScheme::Gcs => {
