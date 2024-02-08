@@ -71,6 +71,7 @@ impl DAActor {
             }
         } else {
             servers.push(Arc::new(crate::server::serverproxy::DAServerNopProxy {}));
+            success_count += 1;
         }
 
         if success_count < submit_threshold {
