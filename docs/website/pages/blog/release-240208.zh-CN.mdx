@@ -1,6 +1,6 @@
 ---
-title: Rooch v0.3 发布，启动测试网
-description: "Rooch v0.3 发布，接入比特币网络，实现铭文铭刻，启动测试网。"
+title: Rooch v0.3 发布，启动先行测试网
+description: "Rooch v0.3 发布，接入比特币网络，实现铭文铭刻，启动先行测试网。"
 author: geometryolife
 category: News
 date: 2024/02/08
@@ -18,12 +18,22 @@ Rooch v0.3 发布，接入比特币网络，实现铭文铭刻，启动先行测
 
 ### DA
 
-* 接入 Celestia。
+Rooch 目前实现了 DA 开放网络框架，后续可以支持以下场景：
+
+* 可接入像 Celestia 这样的 DA Chain
+* 也可以接入云存储作为快速存储介质
+* 还可以为测试或缓存服务开启本地存储
+* 协同作业，多 DA 后端可在开放网络内协同工作，在满足不同需求的同时实现高可靠性。
 
 ### Bitcoin 支持
 
-* 接入 Bitcoin 测试网络
-* Rooch 成为 Bitcoin 网络执行层
+* 接入 Bitcoin 测试网络，将 UniSat 作为默认钱包，详细使用方法请参考[安装 UniSat](../docs/user-guides/install-unisat.zh-CN.mdx)。
+* Rooch 实现 Bitcoin 中继网络，为成为 Bitcoin 网络执行层提供基本支持。
+* 实现交易类型、交易进度、地址、余额、铭文、UTXO 等解析。
+
+### 对象存储
+
+这一版本对对象存储做了重大重构，详细使用请参考[对象](../docs/developer-guides/object.zh-CN.mdx)，为开发者提供更好的开发体验。
 
 ### 铭文
 
@@ -48,7 +58,7 @@ Rooch 当前支持的接口请参看：[Rooch JSON RPC](../docs/developer-guides
 
 ### 先行测试网
 
-开发者网络信息
+先行网络信息：
 
 1. 名称: test
 2. ChainID: 20230102
