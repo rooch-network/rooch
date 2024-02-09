@@ -96,9 +96,9 @@ module moveos_std::object {
             id,
             owner,
             flag: 0u8,
-            value,
             state_root: raw_table::state_root(&table_info),
             size: raw_table::size(&table_info),
+            value,
         }
     }
 

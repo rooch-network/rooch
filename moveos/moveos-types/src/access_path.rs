@@ -1,13 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::moveos_std::move_module::Module;
+use crate::moveos_std::resource::Resource;
 use crate::state::KeyState;
 use crate::{
     move_types::{random_identity, random_struct_tag},
-    moveos_std::object_id::{NamedTableID, ObjectID},
-    state_resolver::{self, module_name_to_key, resource_tag_to_key},
+    moveos_std::object_id::ObjectID,
+    state_resolver::{self, module_id_to_key, resource_tag_to_key},
 };
 use anyhow::Result;
+use move_core_types::language_storage::ModuleId;
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::StructTag,
 };
@@ -266,24 +269,27 @@ impl AccessPath {
                 account,
                 module_names,
             } => {
-                let table_handle = NamedTableID::Module(account).to_object_id();
+                let module_object_id = Module::module_object_id();
                 let keys = module_names.map(|s| {
                     s.into_iter()
-                        .map(|name| module_name_to_key(&name))
+                        .map(|name| {
+                            let module_id = ModuleId::new(account, name);
+                            module_id_to_key(&module_id)
+                        })
                         .collect()
                 });
 
-                (table_handle, keys)
+                (module_object_id, keys)
             }
             Path::Resource {
                 account,
                 resource_types,
             } => {
-                let resource_table_id = NamedTableID::Resource(account).to_object_id();
+                let resource_object_id = Resource::resource_object_id(account);
                 let keys = resource_types
                     .map(|s| s.into_iter().map(|tag| resource_tag_to_key(&tag)).collect());
 
-                (resource_table_id, keys)
+                (resource_object_id, keys)
             }
         }
     }

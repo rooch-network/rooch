@@ -63,7 +63,7 @@ pub struct TableData {
 }
 
 /// A structure representing table key.
-#[derive(Clone, Ord, PartialOrd, PartialEq, Eq)]
+#[derive(Clone, Ord, PartialOrd, PartialEq, Eq, Debug)]
 pub struct TableKey {
     pub key_type: TypeTag,
     pub key: Vec<u8>,
@@ -270,13 +270,21 @@ impl Table {
             Entry::Vacant(entry) => {
                 let (tv, loaded) = match table_context
                     .resolver
-                    .resolve_table_item(&self.handle, &KeyState::new(key.key, key.key_type))
+                    .resolve_table_item(
+                        &self.handle,
+                        &KeyState::new(key.clone().key, key.clone().key_type),
+                    )
                     .map_err(|err| {
                         partial_extension_error(format!("remote table resolver failure: {}", err))
                     })? {
                     Some(value_box) => {
                         let value_layout = get_type_layout(native_context, &value_box.value_type)?;
 
+                        println!("[DEBUG] get_or_create_global_value table key {:?}", key);
+                        println!(
+                            "[DEBUG] get_or_create_global_value value_type {}",
+                            value_box.value_type.to_canonical_string()
+                        );
                         let val = deserialize_and_box(&value_layout, &value_box.value)?;
                         (
                             TableRuntimeValue::new(
@@ -304,13 +312,24 @@ impl Table {
         Ok(match self.content.entry(key.clone()) {
             Entry::Vacant(entry) => {
                 let (tv, loaded) = match resolver
-                    .resolve_table_item(&self.handle, &KeyState::new(key.key, key.key_type))
+                    .resolve_table_item(
+                        &self.handle,
+                        &KeyState::new(key.key.clone(), key.key_type.clone()),
+                    )
                     .map_err(|err| {
                         partial_extension_error(format!("remote table resolver failure: {}", err))
                     })? {
                     Some(value_box) => {
                         let value_layout = f(&value_box.value_type)?;
 
+                        println!(
+                            "[DEBUG] get_or_create_global_value_with_layout_fn table key {:?}",
+                            key
+                        );
+                        println!(
+                            "[DEBUG] get_or_create_global_value_with_layout_fn value_type {}",
+                            value_box.value_type.to_canonical_string()
+                        );
                         let val = deserialize_and_box(&value_layout, &value_box.value)?;
                         (
                             TableRuntimeValue::new(

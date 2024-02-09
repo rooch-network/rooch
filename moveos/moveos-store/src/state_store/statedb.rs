@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
+use move_core_types::language_storage::ModuleId;
 use move_core_types::{
     account_address::AccountAddress,
     effects::{ChangeSet, Op},
-    identifier::Identifier,
     language_storage::{StructTag, TypeTag},
 };
 use moveos_types::move_types::as_struct_tag;
@@ -27,7 +27,7 @@ use moveos_types::{
 };
 use moveos_types::{
     state::StateChangeSet,
-    state_resolver::{self, module_name_to_key, resource_tag_to_key, StateResolver},
+    state_resolver::{self, module_id_to_key, resource_tag_to_key, StateResolver},
 };
 use smt::{NodeStore, SMTIterator, SMTree, UpdateSet};
 use std::collections::BTreeMap;
@@ -72,15 +72,14 @@ where
         self.smt.root_hash()
     }
 
-    pub fn put_modules(&self, modules: BTreeMap<Identifier, Op<Vec<u8>>>) -> Result<H256> {
+    pub fn put_modules(&self, modules: BTreeMap<ModuleId, Op<Vec<u8>>>) -> Result<H256> {
         //We wrap the modules to `MoveModule`
         //For distinguish `vector<u8>` and MoveModule in Move.
-        self.put_changes(modules.into_iter().map(|(k, v)| {
-            (
-                module_name_to_key(k.as_ident_str()),
-                v.map(|v| MoveModule::new(v).into()),
-            )
-        }))
+        self.put_changes(
+            modules
+                .into_iter()
+                .map(|(k, v)| (module_id_to_key(&k), v.map(|v| MoveModule::new(v).into()))),
+        )
     }
 
     pub fn put_resources(&self, modules: BTreeMap<StructTag, Op<Vec<u8>>>) -> Result<H256> {
@@ -178,7 +177,7 @@ impl StateDBStore {
         &self,
         account: AccountAddress,
     ) -> Result<Option<ObjectEntity<Resource>>> {
-        self.get_as_object::<Resource>(account.into())
+        self.get_as_object::<Resource>(Resource::resource_object_id(account))
     }
 
     fn get_as_resource_object_or_create(
@@ -195,12 +194,12 @@ impl StateDBStore {
         self.get_as_object::<Module>(Module::module_object_id())
     }
 
-    fn get_as_module_object_or_create(&self) -> Result<ObjectEntity<Module>> {
-        let module_object = self
-            .get_as_module_object()?
-            .unwrap_or(ObjectEntity::new_module_object());
-        Ok(module_object)
-    }
+    // fn get_as_module_object_or_create(&self) -> Result<ObjectEntity<Module>> {
+    //     let module_object = self
+    //         .get_as_module_object()?
+    //         .unwrap_or(ObjectEntity::new_module_object());
+    //     Ok(module_object)
+    // }
 
     fn get_as_table(&self, id: ObjectID) -> Result<Option<(RawObject, TreeTable<NodeDBStore>)>> {
         let object = self.get_as_raw_object(id)?;
@@ -258,17 +257,20 @@ impl StateDBStore {
         let mut changed_objects = UpdateSet::new();
         //TODO
         // We want deprecate the global storage instructions https://github.com/rooch-network/rooch/issues/248
-        // So the ChangeSet should be empty, but we need the mutated accounts to init the account storage
+        // So the ChangeSet should be empty, but we need the mutated accounts to init the resource object and module object
         // We need to figure out a way to init a fresh account.
         for (account, account_change_set) in change_set.into_inner() {
             let resource_object = self.get_as_resource_object_or_create(account)?;
-            let module_object = self.get_as_module_object_or_create()?;
+            let module_object_opt = self.get_as_module_object()?;
 
             let (modules, resources) = account_change_set.into_inner();
             debug_assert!(modules.is_empty() && resources.is_empty());
             //TODO check if the resource object and module object and table is changed, if not changed, don't put it
             changed_objects.put(ObjectID::from(account).to_key(), resource_object.into());
-            changed_objects.put(ObjectID::from(account).to_key(), module_object.into());
+            if module_object_opt.is_none() {
+                let module_object = ObjectEntity::new_module_object();
+                changed_objects.put(Module::module_object_id().to_key(), module_object.into());
+            }
         }
 
         for (table_handle, table_change) in state_change_set.changes {
@@ -278,7 +280,15 @@ impl StateDBStore {
                     .put_changes(table_change.entries.into_iter())?;
                 // TODO: do we need to update the size of global table?
             } else {
-                let (mut raw_object, table) = self.get_as_table_or_create(table_handle)?;
+                // let (mut raw_object, table) = self.get_as_table_or_create(table_handle)?;
+                let table_result_opt = self.get_as_table(table_handle)?;
+                let (mut raw_object, table) = match table_result_opt {
+                    Some((raw_object, table)) => (raw_object, table),
+                    None => {
+                        
+                    }
+                };
+
                 let new_state_root = table.put_changes(table_change.entries.into_iter())?;
                 raw_object.state_root = AccountAddress::new(new_state_root.into());
                 let curr_table_size: i64 = raw_object.size as i64;

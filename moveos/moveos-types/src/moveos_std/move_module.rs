@@ -7,6 +7,7 @@ use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     state::{MoveStructState, MoveStructType},
 };
+use move_core_types::language_storage::StructTag;
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
@@ -41,9 +42,7 @@ impl MoveStructState for MoveModule {
     }
 }
 
-// pub const MODULE_NAME: &IdentStr = ident_str!("resource");
-
-#[derive(Eq, PartialEq, Debug, Clone, Default, Deserialize, Serialize, Hash)]
+#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct Module {}
 
 impl Module {
@@ -56,6 +55,15 @@ impl MoveStructType for Module {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("Module");
+
+    fn struct_tag() -> StructTag {
+        StructTag {
+            address: Self::ADDRESS,
+            module: Self::MODULE_NAME.to_owned(),
+            name: Self::STRUCT_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
 }
 
 impl MoveStructState for Module {
