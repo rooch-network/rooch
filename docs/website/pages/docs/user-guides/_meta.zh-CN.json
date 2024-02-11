@@ -1,6 +1,8 @@
 {
-  "install-metamask": "安装 MetaMask",
   "dashboard": "仪表盘",
-  "add-network": "添加网络",
-  "interact-with-metamask": "与 MetaMask 交互"
+  "install-metamask": "安装 MetaMask",
+  "interact-with-metamask": "与 MetaMask 交互",
+  "install-unisat": "安装 Unist",
+  "get-test-btc": "获取测试 BTC",
+  "inscription": "铭刻铭文"
 }

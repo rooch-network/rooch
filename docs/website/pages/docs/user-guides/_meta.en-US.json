@@ -1,6 +1,9 @@
 {
-  "install-metamask": "Install MetaMask",
   "dashboard": "Dashboard",
+  "install-metamask": "Install MetaMask",
   "add-network": "Add network",
-  "interact-with-metamask": "Interact with MetaMask"
+  "interact-with-metamask": "Interact with MetaMask",
+  "install-unisat": "Install Unist",
+  "get-test-btc": "Get Test BTC",
+  "inscription": "Inscribe Inscription"
 }
