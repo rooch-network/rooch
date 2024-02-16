@@ -279,12 +279,6 @@ impl Table {
                     })? {
                     Some(value_box) => {
                         let value_layout = get_type_layout(native_context, &value_box.value_type)?;
-
-                        println!("[DEBUG] get_or_create_global_value table key {:?}", key);
-                        println!(
-                            "[DEBUG] get_or_create_global_value value_type {}",
-                            value_box.value_type.to_canonical_string()
-                        );
                         let val = deserialize_and_box(&value_layout, &value_box.value)?;
                         (
                             TableRuntimeValue::new(
@@ -321,15 +315,6 @@ impl Table {
                     })? {
                     Some(value_box) => {
                         let value_layout = f(&value_box.value_type)?;
-
-                        println!(
-                            "[DEBUG] get_or_create_global_value_with_layout_fn table key {:?}",
-                            key
-                        );
-                        println!(
-                            "[DEBUG] get_or_create_global_value_with_layout_fn value_type {}",
-                            value_box.value_type.to_canonical_string()
-                        );
                         let val = deserialize_and_box(&value_layout, &value_box.value)?;
                         (
                             TableRuntimeValue::new(

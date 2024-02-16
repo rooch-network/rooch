@@ -81,12 +81,6 @@ impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
     }
 
     fn module_id_to_table_key(&self, module_id: &ModuleId) -> VMResult<TableKey> {
-        // let binding = module_id.to_string();
-        // let module_id = IdentStr::new(binding.as_str()).map_err(|e| {
-        //     PartialVMError::new(StatusCode::TYPE_MISMATCH)
-        //         .with_message(e.to_string())
-        //         .finish(Location::Undefined)
-        // })?;
         let key_state = module_id_to_key(module_id);
         let table_key = TableKey::new(key_state.key_type, key_state.key);
         Ok(table_key)

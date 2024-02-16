@@ -40,7 +40,7 @@ module coins::private_coin {
     public entry fun faucet(ctx: &mut Context, account: &signer) {
         let account_addr = signer::address_of(account);
         let coin_signer = signer::module_signer<Treasury>();
-        let coin_info_obj = context::borrow_mut_object<CoinInfo<PRC>>(ctx, &coin_signer, coin::coin_info_id<PRC>());
+        let coin_info_obj = object::borrow_mut_object<CoinInfo<PRC>>(&coin_signer, coin::coin_info_id<PRC>());
         let coin = coin::mint_extend<PRC>(coin_info_obj, 10000);
         account_coin_store::deposit_extend(ctx, account_addr, coin);
     }
@@ -58,9 +58,9 @@ module coins::private_coin {
         account_coin_store::transfer_extend<PRC>(ctx, from_addr, to_addr, amount);
     }
 
-    fun deposit_to_treaury(ctx: &mut Context, coin: Coin<PRC>) {
+    fun deposit_to_treaury(_ctx: &mut Context, coin: Coin<PRC>) {
         let treasury_object_id = object_id::named_object_id<Treasury>();
-        let treasury_obj = context::borrow_mut_object_extend<Treasury>(ctx, treasury_object_id);
+        let treasury_obj = object::borrow_mut_object_extend<Treasury>(treasury_object_id);
         coin_store::deposit_extend(&mut object::borrow_mut(treasury_obj).coin_store, coin);
     }
 }

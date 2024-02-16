@@ -173,34 +173,6 @@ impl StateDBStore {
             .map_err(Into::into)
     }
 
-    // fn get_as_resource_object(
-    //     &self,
-    //     account: AccountAddress,
-    // ) -> Result<Option<ObjectEntity<Resource>>> {
-    //     self.get_as_object::<Resource>(Resource::resource_object_id(account))
-    // }
-
-    // fn get_as_resource_object_or_create(
-    //     &self,
-    //     account: AccountAddress,
-    // ) -> Result<ObjectEntity<Resource>> {
-    //     let resource_object = self
-    //         .get_as_resource_object(account)?
-    //         .unwrap_or(ObjectEntity::new_resource_object(account));
-    //     Ok(resource_object)
-    // }
-
-    // fn get_as_module_object(&self) -> Result<Option<ObjectEntity<Module>>> {
-    //     self.get_as_object::<Module>(Module::module_object_id())
-    // }
-
-    // fn get_as_module_object_or_create(&self) -> Result<ObjectEntity<Module>> {
-    //     let module_object = self
-    //         .get_as_module_object()?
-    //         .unwrap_or(ObjectEntity::new_module_object());
-    //     Ok(module_object)
-    // }
-
     fn get_as_table(&self, id: ObjectID) -> Result<Option<(RawObject, TreeTable<NodeDBStore>)>> {
         let object = self.get_as_raw_object(id)?;
         match object {
@@ -218,29 +190,6 @@ impl StateDBStore {
         }
     }
 
-    // fn get_as_table_or_create(&self, id: ObjectID) -> Result<(RawObject, TreeTable<NodeDBStore>)> {
-    //     Ok(self.get_as_table(id)?.unwrap_or_else(|| {
-    //         self.create_table_default(id)
-    //             .expect("create_table should succ when get_as_table_or_create")
-    //     }))
-    // }
-    //
-    // fn get_as_table_or_create(&self, id: ObjectID) -> Result<(RawObject, TreeTable<NodeDBStore>)> {
-    //     Ok(self.get_as_table(id)?.unwrap_or_else(|| {
-    //         self.create_table_default(id)
-    //             .expect("create_table should succ when get_as_table_or_create")
-    //     }))
-    // }
-
-    // fn create_table_default(&self, id: ObjectID) -> Result<(RawObject, TreeTable<NodeDBStore>)> {
-    //     // let table = TreeTable::new(self.node_store.clone());
-    //     // let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()))?;
-    //     // let object = ObjectEntity::new_table_object(id, table_info).to_raw();
-    //     // Ok((object, table))
-    //
-    //     self.create_table(id, false, None)
-    // }
-
     fn create_table(
         &self,
         id: ObjectID,
@@ -257,26 +206,11 @@ impl StateDBStore {
             ))?;
             ObjectEntity::new_resource_object(account).to_raw()
         } else {
-            // self.create_table(table_handle)?
             let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()))?;
             ObjectEntity::new_table_object(id, table_info).to_raw()
         };
-        // let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()))?;
-        // let object = ObjectEntity::new_table_object(id, table_info).to_raw();
         Ok((object, table))
     }
-
-    // fn create_table_store(&self) -> Result<TreeTable<NodeDBStore>> {
-    //     let table = TreeTable::new(self.node_store.clone());
-    //
-    //     Ok(table)
-    // }
-
-    // fn create_module_table(&self) -> Result<(RawObject, TreeTable<NodeDBStore>)> {
-    //     let table = TreeTable::new(self.node_store.clone());
-    //     let object = ObjectEntity::new_module_object().to_raw();
-    //     Ok((object, table))
-    // }
 
     pub fn get_with_key(&self, id: ObjectID, key: KeyState) -> Result<Option<State>> {
         self.get_as_table(id)
@@ -307,20 +241,10 @@ impl StateDBStore {
         // So the ChangeSet should be empty, but we need the mutated accounts to init the resource object and module object
         // We need to figure out a way to init a fresh account.
         for (account, account_change_set) in change_set.into_inner() {
-            // let resource_object = self.get_as_resource_object_or_create(account)?;
-            // let module_object_opt = self.get_as_module_object()?;
-
             let (modules, resources) = account_change_set.into_inner();
             debug_assert!(modules.is_empty() && resources.is_empty());
 
             account_resource_ids_mapping.insert(Resource::resource_object_id(account), account);
-            //TODO check if the resource object and module object and table is changed, if not changed, don't put it
-            // changed_objects.put(ObjectID::from(account).to_key(), resource_object.into());
-
-            // if module_object_opt.is_none() {
-            //     let module_object = ObjectEntity::new_module_object();
-            //     changed_objects.put(Module::module_object_id().to_key(), module_object.into());
-            // }
         }
 
         for (table_handle, table_change) in state_change_set.changes {
@@ -330,7 +254,6 @@ impl StateDBStore {
                     .put_changes(table_change.entries.into_iter())?;
                 // TODO: do we need to update the size of global table?
             } else {
-                // let (mut raw_object, table) = self.get_as_table_or_create(table_handle)?;
                 let table_result_opt = self.get_as_table(table_handle)?;
                 let (mut raw_object, table) = match table_result_opt {
                     Some((raw_object, table)) => (raw_object, table),
@@ -365,30 +288,6 @@ impl StateDBStore {
         self.global_table.smt.is_genesis()
     }
 
-    //Only for unit test and integration test runner
-    pub fn create_resource_object_for_test(&self, account: AccountAddress) -> Result<()> {
-        let object_id = Resource::resource_object_id(account);
-        let table_result_opt = self.get_as_table(object_id)?;
-        if table_result_opt.is_none() {
-            let resource_object = ObjectEntity::new_resource_object(account);
-            self.global_table
-                .puts((object_id.to_key(), State::from(resource_object)))?;
-        };
-        Ok(())
-    }
-
-    //Only for unit test and integration test runner
-    pub fn create_module_object_for_test(&self) -> Result<()> {
-        let object_id = Module::module_object_id();
-        let table_result_opt = self.get_as_table(object_id)?;
-        if table_result_opt.is_none() {
-            let module_object = ObjectEntity::new_module_object();
-            self.global_table
-                .puts((object_id.to_key(), State::from(module_object)))?;
-        };
-        Ok(())
-    }
-
     pub fn resolve_state(&self, handle: &ObjectID, key: &KeyState) -> Result<Option<State>, Error> {
         if handle == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
             self.global_table.get(key.clone())
@@ -419,7 +318,6 @@ impl StateDBStore {
             } else {
                 // must force create table
                 let table_store = TreeTable::new(self.node_store.clone());
-                // let (_table_object, table_store) = self.create_table(k)?;
                 state_root = table_store.puts(v.entries)?
             }
         }

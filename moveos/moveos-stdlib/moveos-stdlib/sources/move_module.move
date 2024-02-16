@@ -288,9 +288,7 @@ module moveos_std::move_module {
     native fun sort_and_verify_modules_inner(modules: vector<vector<u8>>, account_address: address): (vector<String>, vector<String>, vector<u64>);
     
     /// Request to call the init functions of the given modules
-    /// module_names: names of modules which have a init function
-    /// account_address: address of all the modules
-    // native public(friend) fun request_init_functions(module_ids: vector<String>, account_address: address);
+    /// module_ids: ids of modules which have a init function
     native public(friend) fun request_init_functions(module_ids: vector<String>);
 
     native fun check_compatibililty_inner(new_bytecodes: vector<u8>, old_bytecodes: vector<u8>);

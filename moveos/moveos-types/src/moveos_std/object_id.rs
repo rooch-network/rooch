@@ -22,36 +22,6 @@ use std::str::FromStr;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("object_id");
 
-// /// Specific Table Object ID associated with an address
-// #[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-// pub enum NamedTableID {
-//     Resource(AccountAddress),
-//     Module(AccountAddress),
-// }
-//
-// impl NamedTableID {
-//     const RESOURCE_TABLE_INDEX: u64 = 0;
-//     const MODULE_TABLE_INDEX: u64 = 1;
-//
-//     pub fn to_object_id(self) -> ObjectID {
-//         self.into()
-//     }
-//
-//     pub fn account(&self) -> AccountAddress {
-//         match self {
-//             NamedTableID::Resource(addr) => *addr,
-//             NamedTableID::Module(addr) => *addr,
-//         }
-//     }
-//
-//     pub fn table_index(&self) -> u64 {
-//         match self {
-//             NamedTableID::Resource(_) => Self::RESOURCE_TABLE_INDEX,
-//             NamedTableID::Module(_) => Self::MODULE_TABLE_INDEX,
-//         }
-//     }
-// }
-
 #[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, JsonSchema)]
 pub struct ObjectID(#[schemars(with = "Hex")] AccountAddress);
 
@@ -198,15 +168,6 @@ impl From<ObjectID> for AccountAddress {
         AccountAddress::new(object_id.0.into())
     }
 }
-
-// impl From<NamedTableID> for ObjectID {
-//     fn from(named_object_id: NamedTableID) -> Self {
-//         ObjectID::derive_id(
-//             named_object_id.account().to_vec(),
-//             named_object_id.table_index(),
-//         )
-//     }
-// }
 
 impl FromStr for ObjectID {
     type Err = anyhow::Error;

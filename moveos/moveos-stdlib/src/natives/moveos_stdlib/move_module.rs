@@ -27,9 +27,6 @@ use move_vm_types::{
     values::{Struct, Value, Vector, VectorRef},
 };
 use moveos_stdlib_builder::dependency_order::sort_by_dependency_order;
-// use moveos_types::move_std::string::MoveString;
-// use moveos_types::moveos_std::object_id::ObjectID;
-// use moveos_types::state::MoveState;
 use moveos_types::moveos_std::move_module::MoveModuleId;
 use smallvec::smallvec;
 use std::collections::{BTreeSet, HashMap, VecDeque};
@@ -102,34 +99,14 @@ fn native_module_id_from_name_inner(
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    println!("[DEBUG] move_module native_module_id_from_name_inner module_id 000");
-
     let name = args.pop_back().unwrap();
     let name_ident = unpack_string_to_identifier(name)?;
-
-    // let byte_name = pop_arg!(args, VectorRef);
-    // let byte_name_ref = byte_name.as_bytes_ref();
-    // let name_identifier = Identifier::from_utf8(byte_name_ref.to_vec()).map_err(|e| {
-    //     PartialVMError::new(StatusCode::UNPACK_TYPE_MISMATCH_ERROR).with_message(e.to_string())
-    // })?;
-
-    // let name = pop_arg!(args, Value);
-    // let module_name = MoveString::from_runtime_value(name).map_err(|e| {
-    //     PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
-    // })?;
-    // let name_identifier = Identifier::try_from(module_name).map_err(|e| {
-    //     PartialVMError::new(StatusCode::UNPACK_TYPE_MISMATCH_ERROR).with_message(e.to_string())
-    // })?;
     let account_address = pop_arg!(args, AccountAddress);
 
     let module_id = ModuleId::new(account_address, name_ident).short_str_lossless();
     let cost = gas_params.base + gas_params.per_byte_in_str * NumBytes::new(module_id.len() as u64);
     let output = Struct::pack(vec![Value::vector_u8(module_id.as_bytes().to_vec())]);
     let output_value = Value::struct_(output);
-    println!(
-        "[DEBUG] move_module native_module_id_from_name_inner module_id {}",
-        module_id
-    );
     Ok(NativeResult::ok(cost, smallvec![output_value]))
 }
 
@@ -225,7 +202,6 @@ fn native_sort_and_verify_modules_inner(
 
     let init_module_ids: Vec<Value> = init_identifier
         .iter()
-        // .map(|mid| mid.short_str_lossless())
         .map(|id| {
             Value::struct_(Struct::pack(vec![Value::vector_u8(
                 id.short_str_lossless().as_bytes().to_vec(),
@@ -243,8 +219,6 @@ fn native_sort_and_verify_modules_inner(
 /***************************************************************************************************
  * native fun request_init_functions(
  *      module_ids: vector<String>,
-// *      module_names: vector<String>,
-// *      account_address: address
  * );
  * module_ids: ids of modules which have an init function
 // * account_address: address of all the modules
@@ -263,7 +237,6 @@ fn request_init_functions(
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     let mut cost = gas_params.base;
-    // let account_address = pop_arg!(args, AccountAddress);
     let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
     for id_value in pop_arg!(args, Vec<Value>) {
         let id_str = unpack_string(id_value)?;
@@ -272,7 +245,6 @@ fn request_init_functions(
         })?;
 
         cost += gas_params.per_function * NumBytes::new(1u64);
-        // let module_id = ModuleId::new(account_address, name_ident);
         let module_id = move_module_id.into_module_id();
         module_context.init_functions.insert(module_id);
     }

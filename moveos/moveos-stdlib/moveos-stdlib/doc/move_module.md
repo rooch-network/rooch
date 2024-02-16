@@ -352,8 +352,7 @@ Return true if the modules are upgraded
 ## Function `request_init_functions`
 
 Request to call the init functions of the given modules
-module_names: names of modules which have a init function
-account_address: address of all the modules
+module_ids: ids of modules which have a init function
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_request_init_functions">request_init_functions</a>(module_ids: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;)
