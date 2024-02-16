@@ -130,12 +130,12 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             }
             named_address_mapping.insert(name, addr);
             //TODO find a better way to create account storage
-            moveos
-                .state()
-                .create_resource_object(addr.into_inner())
-                .unwrap();
+            // moveos
+            //     .state()
+            //     .create_resource_object_for_test(addr.into_inner())
+            //     .unwrap();
         }
-        moveos.state().create_module_object().unwrap();
+        // moveos.state().create_module_object_for_test().unwrap();
 
         let adapter = Self {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),

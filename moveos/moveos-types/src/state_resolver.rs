@@ -153,7 +153,8 @@ pub fn resource_tag_to_key(tag: &StructTag) -> KeyState {
 // pub fn module_id_to_key(module_id: &IdentStr) -> KeyState {
 pub fn module_id_to_key(module_id: &ModuleId) -> KeyState {
     // The key is the module name in bcs serialize format string, not String::into_bytes.
-    let key = bcs::to_bytes(&module_id.to_string()).expect("bcs to_bytes String must success.");
+    let key =
+        bcs::to_bytes(&module_id.short_str_lossless()).expect("bcs to_bytes String must success.");
     let key_type = TypeTag::Struct(Box::new(MoveString::struct_tag()));
     KeyState::new(key, key_type)
 }

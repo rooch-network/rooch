@@ -70,7 +70,7 @@ module moveos_std::move_module {
     /// This function will ensure the module's bytecode is valid and the module id is matching the module object address.
     /// Return
     ///     1. Module ids of all the modules. Order of names is not matching the input, but sorted by module dependency order
-    ///     2. Module names of the modules with init function.
+    ///     2. Module ids of the modules with init function.
     ///     3. Indices in input modules of each sorted modules.
     public fun sort_and_verify_modules(
         modules: &vector<MoveModule>, account_address: address
@@ -283,7 +283,7 @@ module moveos_std::move_module {
     /// Sort modules by dependency order and then verify. 
     /// Return
     ///  The first vector is the module ids of all the modules.
-    ///  The second vector is the module names of the modules with init function.
+    ///  The second vector is the module ids of the modules with init function.
     ///  The third vector is the indices in input modules of each sorted modules.
     native fun sort_and_verify_modules_inner(modules: vector<vector<u8>>, account_address: address): (vector<String>, vector<String>, vector<u64>);
     
@@ -291,7 +291,7 @@ module moveos_std::move_module {
     /// module_names: names of modules which have a init function
     /// account_address: address of all the modules
     // native public(friend) fun request_init_functions(module_ids: vector<String>, account_address: address);
-    native public(friend) fun request_init_functions(module_names: vector<String>);
+    native public(friend) fun request_init_functions(module_ids: vector<String>);
 
     native fun check_compatibililty_inner(new_bytecodes: vector<u8>, old_bytecodes: vector<u8>);
 
@@ -384,7 +384,7 @@ module moveos_std::move_module {
         let module_bytes: vector<u8> = x"a11ceb0b060000000b010004020408030c26043206053832076a7308dd0140069d02220abf02050cc402560d9a03020000010100020c00010300000004000100000500010000060201000007030400010807080108010909010108010a0a0b0108040605060606010708010002070801060c0106080101030107080001080002070801050107090003070801060c090002060801050106090007636f756e74657207636f6e7465787407436f756e74657207436f6e7465787408696e63726561736509696e6372656173655f04696e69740576616c756513626f72726f775f6d75745f7265736f75726365106d6f76655f7265736f757263655f746f0f626f72726f775f7265736f75726365000000000000000000000000000000000000000000000000000000000000004200000000000000000000000000000000000000000000000000000000000000020520000000000000000000000000000000000000000000000000000000000000004200020107030001040001030b0011010201010000050d0b00070038000c010a01100014060100000000000000160b010f0015020200000001060b000b0106000000000000000012003801020301000001060b000700380210001402000000";
         let m: MoveModule = Self::new(module_bytes);
         let modules = vector::singleton(m);
-        let (module_ids, _module_ids_with_init_fn, _indices) = Self::sort_and_verify_modules(&modules, addr);
+        let (module_ids, _module_names_with_init_fn, _indices) = Self::sort_and_verify_modules(&modules, addr);
         debug::print(&module_ids);
     }
 
@@ -397,7 +397,7 @@ module moveos_std::move_module {
         let module_bytes: vector<u8> = x"a11ceb0b060000000b010004020408030c26043206053832076a7308dd0140069d02220abf02050cc402560d9a03020000010100020c00010300000004000100000500010000060201000007030400010807080108010909010108010a0a0b0108040605060606010708010002070801060c0106080101030107080001080002070801050107090003070801060c090002060801050106090007636f756e74657207636f6e7465787407436f756e74657207436f6e7465787408696e63726561736509696e6372656173655f04696e69740576616c756513626f72726f775f6d75745f7265736f75726365106d6f76655f7265736f757263655f746f0f626f72726f775f7265736f75726365000000000000000000000000000000000000000000000000000000000000004200000000000000000000000000000000000000000000000000000000000000020520000000000000000000000000000000000000000000000000000000000000004200020107030001040001030b0011010201010000050d0b00070038000c010a01100014060100000000000000160b010f0015020200000001060b000b0106000000000000000012003801020301000001060b000700380210001402000000";
         let m: MoveModule = Self::new(module_bytes);
         let modules = vector::singleton(m);
-        let (module_ids, _module_ids_with_init_fn, _indices) = Self::sort_and_verify_modules(&modules, addr);
+        let (module_ids, _module_names_with_init_fn, _indices) = Self::sort_and_verify_modules(&modules, addr);
         debug::print(&module_ids);
     }
     

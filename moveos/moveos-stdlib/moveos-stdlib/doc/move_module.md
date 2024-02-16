@@ -169,7 +169,7 @@ Return their names and names of the modules with init function if sorted depende
 This function will ensure the module's bytecode is valid and the module id is matching the module object address.
 Return
 1. Module ids of all the modules. Order of names is not matching the input, but sorted by module dependency order
-2. Module names of the modules with init function.
+2. Module ids of the modules with init function.
 3. Indices in input modules of each sorted modules.
 
 
@@ -356,7 +356,7 @@ module_names: names of modules which have a init function
 account_address: address of all the modules
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_request_init_functions">request_init_functions</a>(module_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_request_init_functions">request_init_functions</a>(module_ids: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;)
 </code></pre>
 
 

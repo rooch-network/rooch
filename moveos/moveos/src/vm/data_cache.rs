@@ -100,7 +100,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
     /// Gives all proper guarantees on lifetime of global data as well.
     fn into_effects(self, loader: &Loader) -> PartialVMResult<(ChangeSet, Vec<Event>)> {
         let mut change_set = ChangeSet::new();
-        // The accounts are just used for initializing account storage.
+        // The accounts are just used for initializing account resource object.
         // No modules and resources added here.
         for addr in self.accounts {
             change_set

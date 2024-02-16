@@ -343,7 +343,7 @@ This function equates to <code><b>borrow_global_mut</b>&lt;T&gt;(<b>address</b>)
 
 ## Function `move_resource_to`
 
-Move a resource to the account's storage
+Move a resource to the account's resource object
 This function equates to <code><b>move_to</b>&lt;T&gt;(&<a href="">signer</a>, <a href="resource.md#0x2_resource">resource</a>)</code> instruction in Move
 
 
@@ -397,7 +397,7 @@ Publish modules to the account's storage
 
 ## Function `exists_module`
 
-Check if the account has a module with the given module_id
+Check if the account has a module with the given module name
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exists_module">exists_module</a>(_self: &<a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>, name: <a href="_String">string::String</a>): bool

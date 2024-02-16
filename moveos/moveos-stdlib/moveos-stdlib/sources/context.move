@@ -146,11 +146,11 @@ module moveos_std::context {
     }
 
     #[private_generics(T)]
-    /// Move a resource to the account's storage
+    /// Move a resource to the account's resource object
     /// This function equates to `move_to<T>(&signer, resource)` instruction in Move
     public fun move_resource_to<T: key>(self: &mut Context, account: &signer, resource: T){
         let account_address = signer::address_of(account);
-        //Auto create the account storage when move resource to the account
+        //Auto create the resource object when move resource to the account
         ensure_resource_object(self, account_address);
         let object_id = resource::resource_object_id(account_address);
         let object_entity = object::borrow_mut_from_global<Resource>(object_id);
@@ -189,7 +189,7 @@ module moveos_std::context {
         tx_context::set_module_upgrade_flag(&mut self.tx_context, upgrade_flag);
     }
 
-    /// Check if the account has a module with the given module_id
+    /// Check if the account has a module with the given module name
     public fun exists_module(_self: &Context, account: address, name: String): bool {
         move_module::exists_module(account, name)
     }

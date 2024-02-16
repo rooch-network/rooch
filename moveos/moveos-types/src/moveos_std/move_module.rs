@@ -7,7 +7,9 @@ use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     state::{MoveStructState, MoveStructType},
 };
-use move_core_types::language_storage::StructTag;
+use anyhow::{anyhow, Result};
+use move_core_types::identifier::Identifier;
+use move_core_types::language_storage::{ModuleId, StructTag};
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
@@ -15,6 +17,7 @@ use move_core_types::{
     value::{MoveStructLayout, MoveTypeLayout},
 };
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("move_module");
 
@@ -69,5 +72,36 @@ impl MoveStructType for Module {
 impl MoveStructState for Module {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![])
+    }
+}
+
+/// Represents the module id
+#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
+pub struct MoveModuleId {
+    address: AccountAddress,
+    name: Identifier,
+}
+
+impl MoveModuleId {
+    pub fn parse(str: &str) -> Result<Self> {
+        let parts: Vec<_> = str.split("::").collect();
+        if parts.len() != 2 {
+            return Err(anyhow!("Invalid module id"));
+        }
+        let address = AccountAddress::from_str(parts[0])?;
+        let name = Identifier::new(parts[1])?;
+        Ok(Self { address, name })
+    }
+
+    pub fn into_module_id(self) -> ModuleId {
+        ModuleId::new(self.address, self.name)
+    }
+}
+
+impl FromStr for MoveModuleId {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse(s)
     }
 }

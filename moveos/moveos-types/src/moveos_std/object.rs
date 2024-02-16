@@ -169,10 +169,9 @@ impl ObjectEntity<Resource> {
             id: Resource::resource_object_id(account),
             owner: account,
             flag: 0u8,
-            value: Resource {},
             state_root: *GENESIS_STATE_ROOT,
             size: 0,
-            // value: Resource {},
+            value: Resource {},
         }
     }
 }
@@ -183,10 +182,9 @@ impl ObjectEntity<Module> {
             id: Module::module_object_id(),
             owner: MOVEOS_STD_ADDRESS,
             flag: 0u8,
-            value: Module {},
             state_root: *GENESIS_STATE_ROOT,
             size: 0,
-            // value: Module {},
+            value: Module {},
         }
     }
 }

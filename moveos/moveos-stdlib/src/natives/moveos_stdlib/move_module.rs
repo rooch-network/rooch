@@ -30,9 +30,11 @@ use moveos_stdlib_builder::dependency_order::sort_by_dependency_order;
 // use moveos_types::move_std::string::MoveString;
 // use moveos_types::moveos_std::object_id::ObjectID;
 // use moveos_types::state::MoveState;
+use moveos_types::moveos_std::move_module::MoveModuleId;
 use smallvec::smallvec;
 use std::collections::{BTreeSet, HashMap, VecDeque};
 use std::hash::Hash;
+use std::str::FromStr;
 
 // ========================================================================================
 
@@ -100,11 +102,16 @@ fn native_module_id_from_name_inner(
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    let byte_name = pop_arg!(args, VectorRef);
-    let byte_name_ref = byte_name.as_bytes_ref();
-    let name_identifier = Identifier::from_utf8(byte_name_ref.to_vec()).map_err(|e| {
-        PartialVMError::new(StatusCode::UNPACK_TYPE_MISMATCH_ERROR).with_message(e.to_string())
-    })?;
+    println!("[DEBUG] move_module native_module_id_from_name_inner module_id 000");
+
+    let name = args.pop_back().unwrap();
+    let name_ident = unpack_string_to_identifier(name)?;
+
+    // let byte_name = pop_arg!(args, VectorRef);
+    // let byte_name_ref = byte_name.as_bytes_ref();
+    // let name_identifier = Identifier::from_utf8(byte_name_ref.to_vec()).map_err(|e| {
+    //     PartialVMError::new(StatusCode::UNPACK_TYPE_MISMATCH_ERROR).with_message(e.to_string())
+    // })?;
 
     // let name = pop_arg!(args, Value);
     // let module_name = MoveString::from_runtime_value(name).map_err(|e| {
@@ -115,10 +122,14 @@ fn native_module_id_from_name_inner(
     // })?;
     let account_address = pop_arg!(args, AccountAddress);
 
-    let module_id = ModuleId::new(account_address, name_identifier).short_str_lossless();
+    let module_id = ModuleId::new(account_address, name_ident).short_str_lossless();
     let cost = gas_params.base + gas_params.per_byte_in_str * NumBytes::new(module_id.len() as u64);
     let output = Struct::pack(vec![Value::vector_u8(module_id.as_bytes().to_vec())]);
     let output_value = Value::struct_(output);
+    println!(
+        "[DEBUG] move_module native_module_id_from_name_inner module_id {}",
+        module_id
+    );
     Ok(NativeResult::ok(cost, smallvec![output_value]))
 }
 
@@ -212,30 +223,31 @@ fn native_sort_and_verify_modules_inner(
         .collect();
     let module_ids = Vector::pack(&Type::Struct(CachedStructIndex(0)), module_ids)?;
 
-    let init_module_names: Vec<Value> = init_identifier
+    let init_module_ids: Vec<Value> = init_identifier
         .iter()
-        .map(|id| id.name().to_owned().into_string())
-        .map(|name| {
+        // .map(|mid| mid.short_str_lossless())
+        .map(|id| {
             Value::struct_(Struct::pack(vec![Value::vector_u8(
-                name.as_bytes().to_vec(),
+                id.short_str_lossless().as_bytes().to_vec(),
             )]))
         })
         .collect();
-    let init_module_names = Vector::pack(&Type::Struct(CachedStructIndex(0)), init_module_names)?;
+    let init_module_ids = Vector::pack(&Type::Struct(CachedStructIndex(0)), init_module_ids)?;
     let sorted_indices = Value::vector_u64(indices);
     Ok(NativeResult::ok(
         cost,
-        smallvec![module_ids, init_module_names, sorted_indices],
+        smallvec![module_ids, init_module_ids, sorted_indices],
     ))
 }
 
 /***************************************************************************************************
  * native fun request_init_functions(
- *      module_names: vector<String>,
- *      account_address: address
+ *      module_ids: vector<String>,
+// *      module_names: vector<String>,
+// *      account_address: address
  * );
  * module_ids: ids of modules which have an init function
- * account_address: address of all the modules
+// * account_address: address of all the modules
  **************************************************************************************************/
 
 #[derive(Clone, Debug)]
@@ -251,12 +263,17 @@ fn request_init_functions(
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     let mut cost = gas_params.base;
-    let account_address = pop_arg!(args, AccountAddress);
+    // let account_address = pop_arg!(args, AccountAddress);
     let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
-    for name_str in pop_arg!(args, Vec<Value>) {
-        let name_ident = unpack_string_to_identifier(name_str)?;
+    for id_value in pop_arg!(args, Vec<Value>) {
+        let id_str = unpack_string(id_value)?;
+        let move_module_id = MoveModuleId::from_str(id_str.as_str()).map_err(|e| {
+            PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
+        })?;
+
         cost += gas_params.per_function * NumBytes::new(1u64);
-        let module_id = ModuleId::new(account_address, name_ident);
+        // let module_id = ModuleId::new(account_address, name_ident);
+        let module_id = move_module_id.into_module_id();
         module_context.init_functions.insert(module_id);
     }
     Ok(NativeResult::ok(cost, smallvec![]))
@@ -710,6 +727,20 @@ where
         }
     }
     Ok(())
+}
+
+/// Unpack input `std::string::String` to rust String.
+fn unpack_string(value: Value) -> PartialVMResult<String> {
+    let mut fields = value.value_as::<Struct>()?.unpack()?; // std::string::String;
+    let val = fields.next().ok_or_else(|| {
+        PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE)
+            .with_message("There must have only one field".to_owned())
+    })?;
+    let bytes = val.value_as::<Vec<u8>>()?;
+    let ident = String::from_utf8(bytes).map_err(|e| {
+        PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
+    })?;
+    Ok(ident)
 }
 
 /// Unpack input `std::string::String` to identifier.
