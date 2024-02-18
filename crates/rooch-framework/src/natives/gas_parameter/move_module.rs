@@ -5,8 +5,8 @@ use crate::natives::gas_parameter::native::MUL;
 use moveos_stdlib::natives::moveos_stdlib::move_module::GasParameters;
 
 crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasParameters, "move_module", [
-    [.module_name_inner.base, "module_name_inner.base", 1000 * MUL],
-    [.module_name_inner.per_byte_in_str, "module_name_inner.per_byte_in_str", 20 * MUL],
+    [.module_id_inner.base, "module_id_inner.base", 1000 * MUL],
+    [.module_id_inner.per_byte_in_str, "module_id_inner.per_byte_in_str", 20 * MUL],
     [.sort_and_verify_modules_inner.base, "sort_and_verify_modules_inner.base", 100_000 * MUL],
     [.sort_and_verify_modules_inner.per_byte, "sort_and_verify_modules_inner.per_byte", 20 * MUL],
     [.sort_and_verify_modules_inner.per_module, "sort_and_verify_modules_inner.per_module", 10_000 * MUL],

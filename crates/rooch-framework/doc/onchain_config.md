@@ -140,7 +140,7 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config">onchain_config</a>(ctx: &<a href="_Context">context::Context</a>): &<a href="onchain_config.md#0x3_onchain_config_OnchainConfig">onchain_config::OnchainConfig</a>
+<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config">onchain_config</a>(_ctx: &<a href="_Context">context::Context</a>): &<a href="onchain_config.md#0x3_onchain_config_OnchainConfig">onchain_config::OnchainConfig</a>
 </code></pre>
 
 
@@ -162,5 +162,5 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_onchain_gas_schedule">onchain_gas_schedule</a>(ctx: &<a href="_Context">context::Context</a>): &<a href="onchain_config.md#0x3_onchain_config_GasSchedule">onchain_config::GasSchedule</a>
+<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_onchain_gas_schedule">onchain_gas_schedule</a>(_ctx: &<a href="_Context">context::Context</a>): &<a href="onchain_config.md#0x3_onchain_config_GasSchedule">onchain_config::GasSchedule</a>
 </code></pre>

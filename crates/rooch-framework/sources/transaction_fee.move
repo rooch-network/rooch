@@ -35,9 +35,9 @@ module rooch_framework::transaction_fee {
         (gas_amount as u256) * (get_gas_factor(ctx) as u256)
     }
 
-    public(friend) fun deposit_fee(ctx: &mut Context, gas_coin: Coin<GasCoin>) {
+    public(friend) fun deposit_fee(_ctx: &mut Context, gas_coin: Coin<GasCoin>) {
         let object_id = object_id::named_object_id<TransactionFeePool>();
-        let pool_object = context::borrow_mut_object_extend<TransactionFeePool>(ctx, object_id);
+        let pool_object = object::borrow_mut_object_extend<TransactionFeePool>(object_id);
         let pool = object::borrow_mut(pool_object);
         coin_store::deposit<GasCoin>(&mut pool.fee, gas_coin);
     }

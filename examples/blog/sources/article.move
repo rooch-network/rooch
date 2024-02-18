@@ -369,12 +369,12 @@ module rooch_examples::article {
         object::remove(article_obj)
     }
 
-    public fun get_article_mut(ctx: &mut Context, obj_id: ObjectID): &mut Object<Article> {
-        context::borrow_mut_object_extend<Article>(ctx, obj_id)
+    public fun get_article_mut(_ctx: &mut Context, obj_id: ObjectID): &mut Object<Article> {
+        object::borrow_mut_object_extend<Article>(obj_id)
     }
 
-    public fun get_article(ctx: &mut Context, obj_id: ObjectID): &Object<Article> {
-        context::borrow_object<Article>(ctx, obj_id)
+    public fun get_article(_ctx: &mut Context, obj_id: ObjectID): &Object<Article> {
+        object::borrow_object<Article>(obj_id)
     }
 
     public(friend) fun drop_article(article_obj: Object<Article>) {

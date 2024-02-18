@@ -27,9 +27,11 @@ use move_vm_types::{
     values::{Struct, Value, Vector, VectorRef},
 };
 use moveos_stdlib_builder::dependency_order::sort_by_dependency_order;
+use moveos_types::moveos_std::move_module::MoveModuleId;
 use smallvec::smallvec;
 use std::collections::{BTreeSet, HashMap, VecDeque};
 use std::hash::Hash;
+use std::str::FromStr;
 
 // ========================================================================================
 
@@ -57,16 +59,16 @@ impl<'a> NativeModuleContext<'a> {
 }
 
 /***************************************************************************************************
- * native fun module_name_inner(byte_codes: &vector<u8>): String;
+ * native fun module_id_inner(byte_codes: &vector<u8>): String;
  **************************************************************************************************/
 #[derive(Clone, Debug)]
-pub struct ModuleNameInnerGasParameters {
+pub struct ModuleIdInnerGasParameters {
     pub base: InternalGas,
     pub per_byte_in_str: InternalGasPerByte,
 }
 
-fn native_module_name_inner(
-    gas_params: &ModuleNameInnerGasParameters,
+fn native_module_id_inner(
+    gas_params: &ModuleIdInnerGasParameters,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -75,9 +77,35 @@ fn native_module_name_inner(
     let byte_codes_ref = byte_codes.as_bytes_ref();
 
     let module = CompiledModule::deserialize(&byte_codes_ref)?;
-    let name = module.self_id().name().to_owned().into_string();
-    let cost = gas_params.base + gas_params.per_byte_in_str * NumBytes::new(name.len() as u64);
-    let output = Struct::pack(vec![Value::vector_u8(name.as_bytes().to_vec())]);
+    let module_id = module.self_id().short_str_lossless();
+    let cost = gas_params.base + gas_params.per_byte_in_str * NumBytes::new(module_id.len() as u64);
+    let output = Struct::pack(vec![Value::vector_u8(module_id.as_bytes().to_vec())]);
+    let output_value = Value::struct_(output);
+    Ok(NativeResult::ok(cost, smallvec![output_value]))
+}
+
+/***************************************************************************************************
+ * native fun module_id_from_name_inner(account: address, name: String): String;
+ **************************************************************************************************/
+#[derive(Clone, Debug)]
+pub struct ModuleIdFromNameInnerGasParameters {
+    pub base: InternalGas,
+    pub per_byte_in_str: InternalGasPerByte,
+}
+
+fn native_module_id_from_name_inner(
+    gas_params: &ModuleIdFromNameInnerGasParameters,
+    _context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    let name = args.pop_back().unwrap();
+    let name_ident = unpack_string_to_identifier(name)?;
+    let account_address = pop_arg!(args, AccountAddress);
+
+    let module_id = ModuleId::new(account_address, name_ident).short_str_lossless();
+    let cost = gas_params.base + gas_params.per_byte_in_str * NumBytes::new(module_id.len() as u64);
+    let output = Struct::pack(vec![Value::vector_u8(module_id.as_bytes().to_vec())]);
     let output_value = Value::struct_(output);
     Ok(NativeResult::ok(cost, smallvec![output_value]))
 }
@@ -88,7 +116,7 @@ fn native_module_name_inner(
  *      account_address: address
  * ): (vector<String>, vector<String>, vector<u64>);
  * Return
- *  The first vector is the module names of all the modules.
+ *  The first vector is the module ids of all the modules.
  *  The second vector is the module names of the modules with init function.
  *  The third vector is the indices in input modules of each sorted modules.
  **************************************************************************************************/
@@ -138,7 +166,7 @@ fn native_sort_and_verify_modules_inner(
 
     // moveos verifier
     let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
-    let mut module_names = vec![];
+    let mut module_ids = vec![];
     let mut init_identifier = vec![];
     for module in &compiled_modules {
         let module_address = *module.self_id().address();
@@ -152,7 +180,7 @@ fn native_sort_and_verify_modules_inner(
                 if res {
                     init_identifier.push(module.self_id());
                 }
-                module_names.push(module.self_id().name().to_owned().into_string());
+                module_ids.push(module.self_id().short_str_lossless());
             }
             Err(e) => {
                 //TODO provide a flag to control whether to print debug log.
@@ -162,40 +190,38 @@ fn native_sort_and_verify_modules_inner(
         }
     }
 
-    let module_names: Vec<Value> = module_names
+    let module_ids: Vec<Value> = module_ids
         .iter()
-        .map(|name| {
+        .map(|module_id| {
             Value::struct_(Struct::pack(vec![Value::vector_u8(
-                name.as_bytes().to_vec(),
+                module_id.as_bytes().to_vec(),
             )]))
         })
         .collect();
-    let module_names = Vector::pack(&Type::Struct(CachedStructIndex(0)), module_names)?;
+    let module_ids = Vector::pack(&Type::Struct(CachedStructIndex(0)), module_ids)?;
 
-    let init_module_names: Vec<Value> = init_identifier
+    let init_module_ids: Vec<Value> = init_identifier
         .iter()
-        .map(|id| id.name().to_owned().into_string())
-        .map(|name| {
+        .map(|id| {
             Value::struct_(Struct::pack(vec![Value::vector_u8(
-                name.as_bytes().to_vec(),
+                id.short_str_lossless().as_bytes().to_vec(),
             )]))
         })
         .collect();
-    let init_module_names = Vector::pack(&Type::Struct(CachedStructIndex(0)), init_module_names)?;
+    let init_module_ids = Vector::pack(&Type::Struct(CachedStructIndex(0)), init_module_ids)?;
     let sorted_indices = Value::vector_u64(indices);
     Ok(NativeResult::ok(
         cost,
-        smallvec![module_names, init_module_names, sorted_indices],
+        smallvec![module_ids, init_module_ids, sorted_indices],
     ))
 }
 
 /***************************************************************************************************
  * native fun request_init_functions(
- *      module_names: vector<String>,
- *      account_address: address
+ *      module_ids: vector<String>,
  * );
- * module_names: names of modules which have a init function
- * account_address: address of all the modules
+ * module_ids: ids of modules which have an init function
+// * account_address: address of all the modules
  **************************************************************************************************/
 
 #[derive(Clone, Debug)]
@@ -211,12 +237,15 @@ fn request_init_functions(
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     let mut cost = gas_params.base;
-    let account_address = pop_arg!(args, AccountAddress);
     let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
-    for name_str in pop_arg!(args, Vec<Value>) {
-        let name_ident = unpack_string_to_identifier(name_str)?;
+    for id_value in pop_arg!(args, Vec<Value>) {
+        let id_str = unpack_string(id_value)?;
+        let move_module_id = MoveModuleId::from_str(id_str.as_str()).map_err(|e| {
+            PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
+        })?;
+
         cost += gas_params.per_function * NumBytes::new(1u64);
-        let module_id = ModuleId::new(account_address, name_ident);
+        let module_id = move_module_id.into_module_id();
         module_context.init_functions.insert(module_id);
     }
     Ok(NativeResult::ok(cost, smallvec![]))
@@ -672,6 +701,20 @@ where
     Ok(())
 }
 
+/// Unpack input `std::string::String` to rust String.
+fn unpack_string(value: Value) -> PartialVMResult<String> {
+    let mut fields = value.value_as::<Struct>()?.unpack()?; // std::string::String;
+    let val = fields.next().ok_or_else(|| {
+        PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE)
+            .with_message("There must have only one field".to_owned())
+    })?;
+    let bytes = val.value_as::<Vec<u8>>()?;
+    let ident = String::from_utf8(bytes).map_err(|e| {
+        PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
+    })?;
+    Ok(ident)
+}
+
 /// Unpack input `std::string::String` to identifier.
 fn unpack_string_to_identifier(value: Value) -> PartialVMResult<Identifier> {
     let mut fields = value.value_as::<Struct>()?.unpack()?; // std::string::String;
@@ -691,7 +734,8 @@ fn unpack_string_to_identifier(value: Value) -> PartialVMResult<Identifier> {
  **************************************************************************************************/
 #[derive(Debug, Clone)]
 pub struct GasParameters {
-    pub module_name_inner: ModuleNameInnerGasParameters,
+    pub module_id_inner: ModuleIdInnerGasParameters,
+    pub module_id_from_name_inner: ModuleIdFromNameInnerGasParameters,
     pub sort_and_verify_modules_inner: VerifyModulesGasParameters,
     pub request_init_functions: RequestInitFunctionsGasParameters,
     pub check_compatibililty_inner: CheckCompatibilityInnerGasParameters,
@@ -707,7 +751,11 @@ pub struct GasParameters {
 impl GasParameters {
     pub fn zeros() -> Self {
         Self {
-            module_name_inner: ModuleNameInnerGasParameters {
+            module_id_inner: ModuleIdInnerGasParameters {
+                base: 0.into(),
+                per_byte_in_str: 0.into(),
+            },
+            module_id_from_name_inner: ModuleIdFromNameInnerGasParameters {
                 base: 0.into(),
                 per_byte_in_str: 0.into(),
             },
@@ -759,8 +807,15 @@ impl GasParameters {
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
     let natives = [
         (
-            "module_name_inner",
-            make_native(gas_params.module_name_inner, native_module_name_inner),
+            "module_id_inner",
+            make_native(gas_params.module_id_inner, native_module_id_inner),
+        ),
+        (
+            "module_id_from_name_inner",
+            make_native(
+                gas_params.module_id_from_name_inner,
+                native_module_id_from_name_inner,
+            ),
         ),
         (
             "sort_and_verify_modules_inner",

@@ -9,7 +9,7 @@ module moveos_std::object_id {
     use moveos_std::address;
 
     friend moveos_std::context;
-    friend moveos_std::account_storage;
+    friend moveos_std::resource;
     friend moveos_std::storage_context;
     friend moveos_std::event;
     friend moveos_std::table;

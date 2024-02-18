@@ -105,7 +105,7 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_borrow">borrow</a>(ctx: &<a href="_Context">context::Context</a>): &<a href="chain_id.md#0x3_chain_id_ChainID">chain_id::ChainID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_borrow">borrow</a>(_ctx: &<a href="_Context">context::Context</a>): &<a href="chain_id.md#0x3_chain_id_ChainID">chain_id::ChainID</a>
 </code></pre>
 
 

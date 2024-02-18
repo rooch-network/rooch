@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-use super::{account_storage::AccountStorage, raw_table::TableInfo};
+use super::raw_table::TableInfo;
+use crate::moveos_std::move_module::Module;
 use crate::moveos_std::object_id::ObjectID;
+use crate::moveos_std::resource::Resource;
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     state::{MoveState, MoveStructState, MoveStructType, State},
@@ -51,7 +53,8 @@ impl MoveStructState for TablePlaceholder {
 }
 
 pub type TableObject = ObjectEntity<TablePlaceholder>;
-pub type AccountStorageObject = ObjectEntity<AccountStorage>;
+pub type ResourceObject = ObjectEntity<Resource>;
+pub type ModuleObject = ObjectEntity<Module>;
 
 /// The Entity of the Object<T>.
 /// The value must be the last field
@@ -73,17 +76,17 @@ impl<T> ObjectEntity<T> {
         id: ObjectID,
         owner: AccountAddress,
         flag: u8,
-        value: T,
         state_root: AccountAddress,
         size: u64,
+        value: T,
     ) -> ObjectEntity<T> {
         Self {
             id,
             owner,
             flag,
-            value,
             state_root,
             size,
+            value,
         }
     }
 
@@ -160,15 +163,28 @@ impl ObjectEntity<TablePlaceholder> {
     }
 }
 
-impl ObjectEntity<AccountStorage> {
-    pub fn new_account_storage_object(account: AccountAddress) -> AccountStorageObject {
+impl ObjectEntity<Resource> {
+    pub fn new_resource_object(account: AccountAddress) -> ResourceObject {
         Self {
-            id: ObjectID::from(account),
+            id: Resource::resource_object_id(account),
             owner: account,
             flag: 0u8,
-            value: AccountStorage::new(account),
             state_root: *GENESIS_STATE_ROOT,
             size: 0,
+            value: Resource {},
+        }
+    }
+}
+
+impl ObjectEntity<Module> {
+    pub fn new_module_object() -> ModuleObject {
+        Self {
+            id: Module::module_object_id(),
+            owner: MOVEOS_STD_ADDRESS,
+            flag: 0u8,
+            state_root: *GENESIS_STATE_ROOT,
+            size: 0,
+            value: Module {},
         }
     }
 }
@@ -205,9 +221,9 @@ where
             MoveTypeLayout::Struct(ObjectID::struct_layout()),
             MoveTypeLayout::Address,
             MoveTypeLayout::U8,
-            MoveTypeLayout::Struct(T::struct_layout()),
             MoveTypeLayout::Address,
             MoveTypeLayout::U64,
+            MoveTypeLayout::Struct(T::struct_layout()),
         ])
     }
 }
@@ -230,10 +246,9 @@ impl RawObject {
             id,
             owner: AccountAddress::ZERO,
             flag: 0u8,
-            value,
-
             state_root: *GENESIS_STATE_ROOT,
             size: 0,
+            value,
         }
     }
 
@@ -311,11 +326,11 @@ impl AnnotatedObject {
         id: ObjectID,
         owner: AccountAddress,
         flag: u8,
-        value: AnnotatedMoveStruct,
         state_root: AccountAddress,
         size: u64,
+        value: AnnotatedMoveStruct,
     ) -> Self {
-        Self::new(id, owner, flag, value, state_root, size)
+        Self::new(id, owner, flag, state_root, size, value)
     }
 
     /// Create a new AnnotatedObject from a AnnotatedMoveStruct
@@ -374,7 +389,7 @@ impl AnnotatedObject {
             _ => bail!("ObjectEntity value field should be struct"),
         };
         Ok(Self::new_annotated_object(
-            object_id, owner, flag, value, state_root, size,
+            object_id, owner, flag, state_root, size, value,
         ))
     }
 }
@@ -438,9 +453,9 @@ mod tests {
             object_id,
             AccountAddress::random(),
             0u8,
-            object_value,
             AccountAddress::random(),
             0,
+            object_value,
         );
 
         let raw_object: RawObject = object.to_raw();

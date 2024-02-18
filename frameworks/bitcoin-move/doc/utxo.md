@@ -161,7 +161,7 @@ Get the UTXO's vout
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_borrow_utxo">borrow_utxo</a>(ctx: &<a href="_Context">context::Context</a>, txid: <b>address</b>, vout: u32): &<a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_borrow_utxo">borrow_utxo</a>(_ctx: &<a href="_Context">context::Context</a>, txid: <b>address</b>, vout: u32): &<a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;
 </code></pre>
 
 

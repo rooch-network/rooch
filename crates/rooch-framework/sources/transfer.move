@@ -3,7 +3,7 @@
 
 module rooch_framework::transfer {
     use moveos_std::object_id::ObjectID;
-    use moveos_std::context::{Self, Context};
+    use moveos_std::context::{Context};
     use moveos_std::object::{Self};
     use rooch_framework::account;
     use rooch_framework::account_coin_store;
@@ -51,7 +51,7 @@ module rooch_framework::transfer {
         if(!account::exists_at(ctx, to)) {
             account::create_account(ctx, to);
         };
-        let obj = context::take_object<T>(ctx, from, object_id);
+        let obj = object::take_object<T>(from, object_id);
         object::transfer(obj, to);
     }
 }

@@ -117,7 +117,7 @@ module nft::nft {
         );
         let nft_id = context::new_object_uid<NFT>(&mut ctx);
 
-        let collection_obj = context::borrow_mut_object_shared(&mut ctx, collection_id);
+        let collection_obj = object::borrow_mut_object_shared(collection_id);
         let nft_obj = mint(
             collection_obj,
             nft_id,

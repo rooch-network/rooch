@@ -4,14 +4,17 @@
 # Module `0x2::move_module`
 
 <code><a href="move_module.md#0x2_move_module">move_module</a></code> provides some basic functions for handle Move module in Move.
+ModuleObject is part of the StorageAbstraction
+It is used to store the modules
 
 
 -  [Struct `MoveModule`](#0x2_move_module_MoveModule)
+-  [Resource `Module`](#0x2_move_module_Module)
 -  [Constants](#@Constants_0)
 -  [Function `new`](#0x2_move_module_new)
 -  [Function `new_batch`](#0x2_move_module_new_batch)
 -  [Function `into_byte_codes_batch`](#0x2_move_module_into_byte_codes_batch)
--  [Function `module_name`](#0x2_move_module_module_name)
+-  [Function `module_id`](#0x2_move_module_module_id)
 -  [Function `sort_and_verify_modules`](#0x2_move_module_sort_and_verify_modules)
 -  [Function `check_comatibility`](#0x2_move_module_check_comatibility)
 -  [Function `binding_module_address`](#0x2_move_module_binding_module_address)
@@ -22,6 +25,11 @@
 -  [Function `replace_constant_u8`](#0x2_move_module_replace_constant_u8)
 -  [Function `replace_constant_u64`](#0x2_move_module_replace_constant_u64)
 -  [Function `replace_constant_u256`](#0x2_move_module_replace_constant_u256)
+-  [Function `module_object_id`](#0x2_move_module_module_object_id)
+-  [Function `create_module_object`](#0x2_move_module_create_module_object)
+-  [Function `exists_module`](#0x2_move_module_exists_module)
+-  [Function `exists_module_id`](#0x2_move_module_exists_module_id)
+-  [Function `publish_modules`](#0x2_move_module_publish_modules)
 -  [Function `request_init_functions`](#0x2_move_module_request_init_functions)
 -  [Function `replace_address_identifiers`](#0x2_move_module_replace_address_identifiers)
 -  [Function `replace_identifiers`](#0x2_move_module_replace_identifiers)
@@ -34,6 +42,8 @@
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
+<b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
+<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 </code></pre>
 
 
@@ -45,6 +55,18 @@
 
 
 <pre><code><b>struct</b> <a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x2_move_module_Module"></a>
+
+## Resource `Module`
+
+It is used to store the modules
+
+
+<pre><code><b>struct</b> <a href="move_module.md#0x2_move_module_Module">Module</a> <b>has</b> store, key
 </code></pre>
 
 
@@ -127,13 +149,13 @@ Module verification error
 
 
 
-<a name="0x2_move_module_module_name"></a>
+<a name="0x2_move_module_module_id"></a>
 
-## Function `module_name`
+## Function `module_id`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_module_name">module_name</a>(<a href="move_module.md#0x2_move_module">move_module</a>: &<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>): <a href="_String">string::String</a>
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_module_id">module_id</a>(<a href="move_module.md#0x2_move_module">move_module</a>: &<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>): <a href="_String">string::String</a>
 </code></pre>
 
 
@@ -144,10 +166,10 @@ Module verification error
 
 Sort modules by dependency order and then verify.
 Return their names and names of the modules with init function if sorted dependency order.
-This function will ensure the module's bytecode is valid and the module id is matching the account address.
+This function will ensure the module's bytecode is valid and the module id is matching the module object address.
 Return
-1. Module names of all the modules. Order of names is not matching the input, but sorted by module dependency order
-2. Module names of the modules with init function.
+1. Module ids of all the modules. Order of names is not matching the input, but sorted by module dependency order
+2. Module ids of the modules with init function.
 3. Indices in input modules of each sorted modules.
 
 
@@ -265,16 +287,75 @@ Replace given u256 constant to the new ones
 
 
 
+<a name="0x2_move_module_module_object_id"></a>
+
+## Function `module_object_id`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_module_object_id">module_object_id</a>(): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+</code></pre>
+
+
+
+<a name="0x2_move_module_create_module_object"></a>
+
+## Function `create_module_object`
+
+Create a new module object space
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_create_module_object">create_module_object</a>()
+</code></pre>
+
+
+
+<a name="0x2_move_module_exists_module"></a>
+
+## Function `exists_module`
+
+Check if the module object has a module with the given name
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_exists_module">exists_module</a>(account: <b>address</b>, name: <a href="_String">string::String</a>): bool
+</code></pre>
+
+
+
+<a name="0x2_move_module_exists_module_id"></a>
+
+## Function `exists_module_id`
+
+Check if the module object has a module with the given id
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_exists_module_id">exists_module_id</a>(module_id: <a href="_String">string::String</a>): bool
+</code></pre>
+
+
+
+<a name="0x2_move_module_publish_modules"></a>
+
+## Function `publish_modules`
+
+Publish modules to the module object's storage
+Return true if the modules are upgraded
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_publish_modules">publish_modules</a>(account_address: <b>address</b>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;): bool
+</code></pre>
+
+
+
 <a name="0x2_move_module_request_init_functions"></a>
 
 ## Function `request_init_functions`
 
 Request to call the init functions of the given modules
-module_names: names of modules which have a init function
-account_address: address of all the modules
+module_ids: ids of modules which have a init function
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_request_init_functions">request_init_functions</a>(module_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, account_address: <b>address</b>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_request_init_functions">request_init_functions</a>(module_ids: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;)
 </code></pre>
 
 

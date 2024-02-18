@@ -122,7 +122,7 @@ Only the framework genesis account can update the global clock time.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x3_timestamp">timestamp</a>(ctx: &<a href="_Context">context::Context</a>): &<a href="timestamp.md#0x3_timestamp_Timestamp">timestamp::Timestamp</a>
+<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x3_timestamp">timestamp</a>(_ctx: &<a href="_Context">context::Context</a>): &<a href="timestamp.md#0x3_timestamp_Timestamp">timestamp::Timestamp</a>
 </code></pre>
 
 

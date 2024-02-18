@@ -9,6 +9,7 @@ TypeTable is a table use struct Type as Key, struct as Value
 -  [Struct `TypeTable`](#0x2_type_table_TypeTable)
 -  [Function `new`](#0x2_type_table_new)
 -  [Function `new_with_id`](#0x2_type_table_new_with_id)
+-  [Function `key`](#0x2_type_table_key)
 -  [Function `add`](#0x2_type_table_add)
 -  [Function `borrow`](#0x2_type_table_borrow)
 -  [Function `borrow_mut`](#0x2_type_table_borrow_mut)
@@ -57,6 +58,18 @@ Create a new Table with a given handle.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="type_table.md#0x2_type_table_new_with_id">new_with_id</a>(handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>
+</code></pre>
+
+
+
+<a name="0x2_type_table_key"></a>
+
+## Function `key`
+
+Note: We use Type name as key, the key will be serialized by bcs in the native function.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_key">key</a>&lt;V&gt;(): <a href="_String">ascii::String</a>
 </code></pre>
 
 

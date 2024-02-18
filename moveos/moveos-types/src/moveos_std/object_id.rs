@@ -22,36 +22,6 @@ use std::str::FromStr;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("object_id");
 
-/// Specific Table Object ID associated with an address
-#[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub enum NamedTableID {
-    Resource(AccountAddress),
-    Module(AccountAddress),
-}
-
-impl NamedTableID {
-    const RESOURCE_TABLE_INDEX: u64 = 0;
-    const MODULE_TABLE_INDEX: u64 = 1;
-
-    pub fn to_object_id(self) -> ObjectID {
-        self.into()
-    }
-
-    pub fn account(&self) -> AccountAddress {
-        match self {
-            NamedTableID::Resource(addr) => *addr,
-            NamedTableID::Module(addr) => *addr,
-        }
-    }
-
-    pub fn table_index(&self) -> u64 {
-        match self {
-            NamedTableID::Resource(_) => Self::RESOURCE_TABLE_INDEX,
-            NamedTableID::Module(_) => Self::MODULE_TABLE_INDEX,
-        }
-    }
-}
-
 #[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, JsonSchema)]
 pub struct ObjectID(#[schemars(with = "Hex")] AccountAddress);
 
@@ -199,15 +169,6 @@ impl From<ObjectID> for AccountAddress {
     }
 }
 
-impl From<NamedTableID> for ObjectID {
-    fn from(named_object_id: NamedTableID) -> Self {
-        ObjectID::derive_id(
-            named_object_id.account().to_vec(),
-            named_object_id.table_index(),
-        )
-    }
-}
-
 impl FromStr for ObjectID {
     type Err = anyhow::Error;
 
@@ -247,6 +208,8 @@ pub fn custom_object_id<ID: Serialize>(id: ID, struct_tag: &StructTag) -> Object
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::moveos_std::move_module::Module;
+    use crate::moveos_std::resource::Resource;
 
     #[test]
     fn test_address_to_object_id() {
@@ -282,15 +245,15 @@ mod tests {
     }
 
     #[test]
-    fn test_named_table_id() {
+    fn test_resource_and_module_object_id() {
         //ensure the table id is same as the table id in move
         let addr = AccountAddress::from_hex_literal(
             "0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647",
         )
         .unwrap();
-        let resource_table_id = NamedTableID::Resource(addr).to_object_id();
-        let module_table_id = NamedTableID::Module(addr).to_object_id();
-        print!("{:?} {:?}", resource_table_id, module_table_id)
+        let resource_object_id = Resource::resource_object_id(addr);
+        let module_object_id = Module::module_object_id();
+        print!("{:?} {:?}", resource_object_id, module_object_id)
     }
 
     fn test_object_id_roundtrip(object_id: ObjectID) {
