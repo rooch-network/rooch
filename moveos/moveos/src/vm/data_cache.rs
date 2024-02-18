@@ -25,7 +25,7 @@ use moveos_types::{
     move_std::string::MoveString,
     moveos_std::move_module::MoveModule,
     state::{MoveStructState, State, StateChangeSet, TableChange},
-    state_resolver::{module_name_to_key, MoveOSResolver},
+    state_resolver::{module_id_to_key, MoveOSResolver},
 };
 use parking_lot::RwLock;
 use std::collections::{btree_map::BTreeMap, BTreeSet};
@@ -33,7 +33,7 @@ use std::sync::Arc;
 
 use move_core_types::language_storage::TypeTag;
 use move_vm_runtime::data_cache::TransactionCache;
-use moveos_types::moveos_std::object_id::NamedTableID;
+use moveos_types::moveos_std::move_module::Module;
 use moveos_types::state::{KeyState, MoveStructType};
 
 /// Transaction data cache. Keep updates within a transaction so they can all be published at
@@ -81,7 +81,7 @@ impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
     }
 
     fn module_id_to_table_key(&self, module_id: &ModuleId) -> VMResult<TableKey> {
-        let key_state = module_name_to_key(module_id.name());
+        let key_state = module_id_to_key(module_id);
         let table_key = TableKey::new(key_state.key_type, key_state.key);
         Ok(table_key)
     }
@@ -94,7 +94,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
     /// Gives all proper guarantees on lifetime of global data as well.
     fn into_effects(self, loader: &Loader) -> PartialVMResult<(ChangeSet, Vec<Event>)> {
         let mut change_set = ChangeSet::new();
-        // The accounts are just used for initializing account storage.
+        // The accounts are just used for initializing account resource object.
         // No modules and resources added here.
         for addr in self.accounts {
             change_set
@@ -139,13 +139,12 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
     /// Get the serialized format of a `CompiledModule` given a `ModuleId`.
     fn load_module(&self, module_id: &ModuleId) -> VMResult<Vec<u8>> {
         let table_data = self.table_data.read();
-        let sender = module_id.address();
-        let table_handle = NamedTableID::Module(*sender).to_object_id();
+        let module_object_id = Module::module_object_id();
         let (_, value_type) = Self::module_table_typetag();
         // TODO: check or ensure the module table exists.
-        if table_data.exist_table(&table_handle) {
+        if table_data.exist_table(&module_object_id) {
             let table = table_data
-                .borrow_table(&table_handle)
+                .borrow_table(&module_object_id)
                 .map_err(|e| e.finish(Location::Undefined))?;
 
             let table_key = self.module_id_to_table_key(module_id)?;
@@ -180,7 +179,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
         is_republishing: bool,
     ) -> VMResult<()> {
         let sender = module_id.address();
-        let table_handle = NamedTableID::Module(*sender).to_object_id();
+        let module_object_id = Module::module_object_id();
 
         // Key type: std::string::String
         // value type: moveos_std::moveos_std::move_module::MoveModule
@@ -189,7 +188,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
         // let key_layout = MoveTypeLayout::Struct(MoveString::struct_layout());
         let mut table_data = self.table_data.write();
         let table = table_data
-            .get_or_create_table(table_handle)
+            .get_or_create_table(module_object_id)
             .map_err(|e| e.finish(Location::Module(module_id.clone())))?;
 
         let table_key = self.module_id_to_table_key(module_id)?;
@@ -223,11 +222,10 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
     /// Check if this module exists.
     fn exists_module(&self, module_id: &ModuleId) -> VMResult<bool> {
         let table_data = self.table_data.read();
-        let sender = module_id.address();
-        let table_handle = NamedTableID::Module(*sender).to_object_id();
-        if table_data.exist_table(&table_handle) {
+        let module_object_id = Module::module_object_id();
+        if table_data.exist_table(&module_object_id) {
             let table = table_data
-                .borrow_table(&table_handle)
+                .borrow_table(&module_object_id)
                 .map_err(|e| e.finish(Location::Undefined))?;
 
             let table_key = self.module_id_to_table_key(module_id)?;

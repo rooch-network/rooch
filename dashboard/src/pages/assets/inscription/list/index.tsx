@@ -74,7 +74,11 @@ const defaultColumns: GridColDef[] = [
     field: 'content',
     headerName: 'Content',
     renderCell: ({ row }: CellType) => (
-      <Typography sx={{ color: 'text.secondary' }}>{hexToString(row.value.body as any)}</Typography>
+      <Typography sx={{ color: 'text.secondary' }}>
+        {row.value.content_type === 'text/plain;charset=utf-8'
+          ? hexToString(row.value.body as any)
+          : row.value.content_type}
+      </Typography>
     ),
   },
 ]
@@ -135,6 +139,8 @@ const InscriptionGrad = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, paginationModel.page])
+
+  console.log(data)
 
   return (
     <Card>

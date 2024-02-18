@@ -12,7 +12,6 @@ This is the reference documentation of the MoveOS standard library.
 ## Index
 
 
--  [`0x2::account_storage`](account_storage.md#0x2_account_storage)
 -  [`0x2::address`](address.md#0x2_address)
 -  [`0x2::any`](any.md#0x2_any)
 -  [`0x2::bcs`](bcs.md#0x2_bcs)
@@ -28,6 +27,7 @@ This is the reference documentation of the MoveOS standard library.
 -  [`0x2::object_id`](object_id.md#0x2_object_id)
 -  [`0x2::object_table`](object_table.md#0x2_object_table)
 -  [`0x2::raw_table`](raw_table.md#0x2_raw_table)
+-  [`0x2::resource`](resource.md#0x2_resource)
 -  [`0x2::rlp`](rlp.md#0x2_rlp)
 -  [`0x2::signer`](signer.md#0x2_signer)
 -  [`0x2::simple_map`](simple_map.md#0x2_simple_map)

@@ -6,6 +6,7 @@ module simple_blog::simple_blog {
     use std::signer;
     use std::string::{Self, String};
     use std::vector;
+    use moveos_std::object;
     use moveos_std::object_id::ObjectID;
     use moveos_std::object::{Object};
     use moveos_std::context::{Self, Context};
@@ -94,7 +95,7 @@ module simple_blog::simple_blog {
         article_id: ObjectID,
     ) {
         delete_article_from_myblog(ctx, owner, article_id);
-        let article_obj = context::take_object(ctx, owner, article_id);
+        let article_obj = object::take_object(owner, article_id);
         simple_article::delete_article(article_obj);
     }
 }

@@ -106,7 +106,7 @@ module bitcoin_move::ord {
             index: inscription.index,
         };
         let store_obj_id = object_id::named_object_id<InscriptionStore>();
-        let store_obj = context::borrow_mut_object_shared<InscriptionStore>(ctx, store_obj_id);
+        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
         let store = object::borrow_mut(store_obj);
         table_vec::push_back(&mut store.inscriptions, id);
         context::new_custom_object(ctx, id, inscription)
@@ -132,13 +132,13 @@ module bitcoin_move::ord {
         context::exists_object<Inscription>(ctx, object_id)
     }
 
-    public fun borrow_inscription(ctx: &Context, txid: address, index: u32): &Object<Inscription>{
+    public fun borrow_inscription(_ctx: &Context, txid: address, index: u32): &Object<Inscription>{
         let id = InscriptionID{
             txid: txid,
             index: index,
         };
         let object_id = object_id::custom_object_id<InscriptionID,Inscription>(id);
-        context::borrow_object(ctx, object_id)
+        object::borrow_object(object_id)
     }
 
     public fun spend_utxo(ctx: &mut Context, utxo_obj: &mut Object<UTXO>, tx: &Transaction): vector<SealOut>{

@@ -26,8 +26,8 @@ module test::m {
     }
 
     //We can not use `Object<S>` as transaction argument now, so use ObjectID
-    public entry fun remove(ctx: &mut Context, sender: &signer, obj_s_id: ObjectID) {
-        let obj_s = context::take_object<S>(ctx, sender, obj_s_id);
+    public entry fun remove(_ctx: &mut Context, sender: &signer, obj_s_id: ObjectID) {
+        let obj_s = object::take_object<S>(sender, obj_s_id);
         let S{ v } = object::remove(obj_s);
         assert!(v == 2, 1001);
     }

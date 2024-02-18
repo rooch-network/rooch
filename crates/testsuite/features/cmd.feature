@@ -21,7 +21,7 @@ Feature: Rooch CLI integration tests
       Then cmd: "rpc request --method rooch_getStates --params '["/resource/0x3/0x3::account::Account",{"decode":true}]'"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x3::account::Account'"
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3",{"decode":true}]'"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::account_storage::AccountStorage>'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::resource::Resource>'"
       Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}]"
       Then assert: "'{{$.rpc[-1]}}' contains '0x3::account::Account'"
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3",{"decode":true}]'"

@@ -72,15 +72,15 @@ module rooch_framework::onchain_config {
         onchain_config(ctx).framework_version
     }
 
-    fun onchain_config_mut(ctx: &mut Context): &mut OnchainConfig {
+    fun onchain_config_mut(_ctx: &mut Context): &mut OnchainConfig {
         let object_id = object_id::named_object_id<OnchainConfig>();
-        let obj = context::borrow_mut_object_extend<OnchainConfig>(ctx, object_id);
+        let obj = object::borrow_mut_object_extend<OnchainConfig>(object_id);
         object::borrow_mut(obj)
     }
 
-    public fun onchain_config(ctx: &Context): &OnchainConfig {
+    public fun onchain_config(_ctx: &Context): &OnchainConfig {
         let object_id = object_id::named_object_id<OnchainConfig>();
-        let obj = context::borrow_object<OnchainConfig>(ctx, object_id);
+        let obj = object::borrow_object<OnchainConfig>(object_id);
         object::borrow(obj)
     }
 
@@ -103,9 +103,9 @@ module rooch_framework::onchain_config {
         object::transfer_extend(obj, @rooch_framework);
     }
 
-    public fun onchain_gas_schedule(ctx: &Context): &GasSchedule {
+    public fun onchain_gas_schedule(_ctx: &Context): &GasSchedule {
         let object_id = object_id::named_object_id<GasSchedule>();
-        let obj = context::borrow_object<GasSchedule>(ctx, object_id);
+        let obj = object::borrow_object<GasSchedule>(object_id);
         object::borrow(obj)
     }
 }

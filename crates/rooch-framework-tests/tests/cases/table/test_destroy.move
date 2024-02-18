@@ -32,19 +32,19 @@ module test::m {
         table::borrow(&store.table, key)
     }
     
-    public fun save_to_account_storage(ctx: &mut Context, account: &signer, store: KVStore){
+    public fun save_to_resource_object(ctx: &mut Context, account: &signer, store: KVStore){
         context::move_resource_to(ctx, account, store);
     }
 
-    public fun borrow_from_account_storage(ctx: &Context, account: address) : &KVStore{
+    public fun borrow_from_resource_object(ctx: &Context, account: address) : &KVStore{
         context::borrow_resource(ctx, account)
     }
 
-    public fun borrow_mut_from_account_storage(ctx: &mut Context, account: address) : &mut KVStore{
+    public fun borrow_mut_from_resource_object(ctx: &mut Context, account: address) : &mut KVStore{
         context::borrow_mut_resource(ctx, account)
     }
 
-    public fun move_from_account_storage(ctx: &mut Context, account: address) : KVStore{
+    public fun move_from_resource_object(ctx: &mut Context, account: address) : KVStore{
         context::move_resource_from(ctx, account)
     }
 
@@ -72,7 +72,7 @@ script {
         let kv = m::make_kv_store(ctx);
         m::add(&mut kv, string::utf8(b"test"), b"value");
         assert!(m::length(&kv) == 1, 1000); // check length is correct when data in table cache
-        m::save_to_account_storage(ctx, &sender, kv);
+        m::save_to_resource_object(ctx, &sender, kv);
     }
 }
 
@@ -85,7 +85,7 @@ script {
 
     fun main(ctx: &mut Context) {
         let sender = context::sender(ctx);
-        let kv = m::borrow_from_account_storage(ctx, sender);
+        let kv = m::borrow_from_resource_object(ctx, sender);
         assert!(m::contains(kv, string::utf8(b"test")), 1001);
         let v = m::borrow(kv, string::utf8(b"test"));
         assert!(v == &b"value", 1002);
@@ -101,7 +101,7 @@ script {
 
     fun main(ctx: &mut Context) {
         let sender = context::sender(ctx);
-        let kv = m::borrow_mut_from_account_storage(ctx, sender);
+        let kv = m::borrow_mut_from_resource_object(ctx, sender);
         m::add(kv, string::utf8(b"test1"), b"value1");
         assert!(m::length(kv) == 2, 1003); 
         let _value = m::remove(kv, string::utf8(b"test1"));
@@ -116,7 +116,7 @@ script {
 
     fun main(ctx: &mut Context) {
         let sender = context::sender(ctx);
-        let kv = m::move_from_account_storage(ctx, sender);
+        let kv = m::move_from_resource_object(ctx, sender);
         m::destroy(kv);
     }
 }
@@ -130,7 +130,7 @@ script {
 
     fun main(ctx: &mut Context) {
         let sender = context::sender(ctx);
-        let kv = m::move_from_account_storage(ctx, sender);
+        let kv = m::move_from_resource_object(ctx, sender);
         let v = m::remove(&mut kv, string::utf8(b"test"));
         assert!(v == b"value", 1004);
         m::destroy(kv);

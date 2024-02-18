@@ -3,7 +3,9 @@
 
 use crate::move_std::ascii::MoveAsciiString;
 use crate::move_std::string::MoveString;
-use crate::moveos_std::object_id::{NamedTableID, ObjectID};
+use crate::moveos_std::move_module::Module;
+use crate::moveos_std::object_id::ObjectID;
+use crate::moveos_std::resource::Resource;
 use crate::state::{AnnotatedKeyState, KeyState, MoveStructType};
 use crate::{
     access_path::AccessPath,
@@ -15,7 +17,6 @@ use anyhow::{ensure, Error, Result};
 use move_core_types::metadata::Metadata;
 use move_core_types::{
     account_address::AccountAddress,
-    identifier::IdentStr,
     language_storage::{ModuleId, StructTag, TypeTag},
     resolver::{ModuleResolver, MoveResolver, ResourceResolver},
 };
@@ -65,12 +66,12 @@ where
         tag: &StructTag,
         _metadata: &[Metadata],
     ) -> Result<(Option<Vec<u8>>, usize), Error> {
-        let resource_table_id = NamedTableID::Resource(*address).to_object_id();
+        let resource_object_id = Resource::resource_object_id(*address);
 
         let key = resource_tag_to_key(tag);
         let result = self
             .0
-            .resolve_table_item(&resource_table_id, &key)?
+            .resolve_table_item(&resource_object_id, &key)?
             .map(|s| {
                 ensure!(
                     s.match_struct_type(tag),
@@ -104,12 +105,12 @@ where
     }
 
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Error> {
-        let module_table_id = NamedTableID::Module(*module_id.address()).to_object_id();
-        let key = module_name_to_key(module_id.name());
+        let module_object_id = Module::module_object_id();
+        let key = module_id_to_key(module_id);
         //We wrap the modules byte codes to `MoveModule` type when store the module.
         //So we need unwrap the MoveModule type.
         self.0
-            .resolve_table_item(&module_table_id, &key)?
+            .resolve_table_item(&module_object_id, &key)?
             .map(|s| Ok(s.cast::<MoveModule>()?.byte_codes))
             .transpose()
     }
@@ -149,9 +150,11 @@ pub fn resource_tag_to_key(tag: &StructTag) -> KeyState {
     KeyState::new(key, key_type)
 }
 
-pub fn module_name_to_key(name: &IdentStr) -> KeyState {
+// pub fn module_id_to_key(module_id: &IdentStr) -> KeyState {
+pub fn module_id_to_key(module_id: &ModuleId) -> KeyState {
     // The key is the module name in bcs serialize format string, not String::into_bytes.
-    let key = bcs::to_bytes(&name.to_string()).expect("bcs to_bytes String must success.");
+    let key =
+        bcs::to_bytes(&module_id.short_str_lossless()).expect("bcs to_bytes String must success.");
     let key_type = TypeTag::Struct(Box::new(MoveString::struct_tag()));
     KeyState::new(key, key_type)
 }

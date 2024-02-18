@@ -31,9 +31,9 @@ module rooch_framework::chain_id {
         self.id
     }
 
-    public fun borrow(ctx: &Context) : &ChainID {
+    public fun borrow(_ctx: &Context) : &ChainID {
         let object_id = object_id::named_object_id<ChainID>();
-        let obj = context::borrow_object<ChainID>(ctx, object_id);
+        let obj = object::borrow_object<ChainID>(object_id);
         object::borrow(obj)
     }
 
