@@ -4,6 +4,5 @@
   "get-test-btc": "获取 BTC 测试币",
   "inscription": "铭文",
   "install-metamask": "安装 MetaMask",
-  "interact-with-metamask": "与 MetaMask 交互",
-  "hash": "哈希"
+  "interact-with-metamask": "与 MetaMask 交互"
 }

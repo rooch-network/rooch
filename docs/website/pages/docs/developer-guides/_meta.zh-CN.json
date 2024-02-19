@@ -13,6 +13,7 @@
   "typescript-sdk": "Typescript SDK",
   "address-space": "地址空间",
   "library": "库",
+  "hash": "哈希",
   "access-path": "访问路径",
   "timestamp": "时间戳",
   "object": "对象",

@@ -4,6 +4,5 @@
   "get-test-btc": "Get BTC test coin",
   "inscription": "Inscription",
   "install-metamask": "Install MetaMask",
-  "interact-with-metamask": "Interact with MetaMask",
-  "hash": "Hash"
+  "interact-with-metamask": "Interact with MetaMask"
 }
