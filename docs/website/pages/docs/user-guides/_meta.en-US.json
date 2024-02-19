@@ -1,9 +1,8 @@
 {
+  "install-unisat": "Install UniSat",
   "dashboard": "Dashboard",
+  "get-test-btc": "Get BTC test coin",
+  "inscription": "Inscription",
   "install-metamask": "Install MetaMask",
-  "add-network": "Add network",
-  "interact-with-metamask": "Interact with MetaMask",
-  "install-unisat": "Install Unist",
-  "get-test-btc": "Get Test BTC",
-  "inscription": "Inscribe Inscription"
+  "interact-with-metamask": "Interact with MetaMask"
 }

@@ -1,8 +1,8 @@
 {
+  "install-unisat": "安装 UniSat",
   "dashboard": "仪表盘",
+  "get-test-btc": "获取 BTC 测试币",
+  "inscription": "铭文",
   "install-metamask": "安装 MetaMask",
-  "interact-with-metamask": "与 MetaMask 交互",
-  "install-unisat": "安装 Unist",
-  "get-test-btc": "获取测试 BTC",
-  "inscription": "铭刻铭文"
+  "interact-with-metamask": "与 MetaMask 交互"
 }
