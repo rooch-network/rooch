@@ -96,7 +96,6 @@ impl SegmentV0 {
 
 impl Segment for SegmentV0 {
     fn to_bytes(&self) -> Vec<u8> {
-
         let mut bytes = Vec::with_capacity(SEGMENT_V0_DATA_OFFSET + self.data.len());
         bytes.push(SegmentVersion::V0.into()); // version
         bytes.extend_from_slice(&self.id.chunk_id.to_le_bytes());

@@ -159,7 +159,6 @@ impl DAServerOpenDAActor {
             .collect::<Vec<_>>();
 
         for mut segment in segments {
-
             let bytes = segment.to_bytes();
 
             // TODO record ok segment in order
