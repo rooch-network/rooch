@@ -42,9 +42,9 @@ module bitcoin_move::brc20 {
         object::to_shared(obj);
     }
 
-    fun borrow_store(ctx: &mut Context) : &mut BRC20Store {
+    fun borrow_store(_ctx: &mut Context) : &mut BRC20Store {
         let brc20_store_object_id = object_id::named_object_id<BRC20Store>();
-        let brc20_store_obj = context::borrow_mut_object_shared<BRC20Store>(ctx, brc20_store_object_id);
+        let brc20_store_obj = object::borrow_mut_object_shared<BRC20Store>(brc20_store_object_id);
         object::borrow_mut(brc20_store_obj)
     }
 

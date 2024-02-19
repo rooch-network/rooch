@@ -2,14 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
+use move_core_types::language_storage::ModuleId;
 use move_core_types::{
     account_address::AccountAddress,
     effects::{ChangeSet, Op},
-    identifier::Identifier,
     language_storage::{StructTag, TypeTag},
 };
 use moveos_types::move_types::as_struct_tag;
+use moveos_types::moveos_std::move_module::Module;
 use moveos_types::moveos_std::object_id::ObjectID;
+use moveos_types::moveos_std::resource::Resource;
 use moveos_types::state::MoveStructType;
 use moveos_types::state::{KeyState, TableState, TableStateSet};
 use moveos_types::state_resolver::StateKV;
@@ -19,14 +21,13 @@ use moveos_types::{
     state::{MoveStructState, State},
 };
 use moveos_types::{
-    moveos_std::account_storage::AccountStorage,
     moveos_std::context,
     moveos_std::object::{ObjectEntity, RawObject},
     moveos_std::raw_table::TableInfo,
 };
 use moveos_types::{
     state::StateChangeSet,
-    state_resolver::{self, module_name_to_key, resource_tag_to_key, StateResolver},
+    state_resolver::{self, module_id_to_key, resource_tag_to_key, StateResolver},
 };
 use smt::{NodeStore, SMTIterator, SMTree, UpdateSet};
 use std::collections::BTreeMap;
@@ -71,15 +72,14 @@ where
         self.smt.root_hash()
     }
 
-    pub fn put_modules(&self, modules: BTreeMap<Identifier, Op<Vec<u8>>>) -> Result<H256> {
+    pub fn put_modules(&self, modules: BTreeMap<ModuleId, Op<Vec<u8>>>) -> Result<H256> {
         //We wrap the modules to `MoveModule`
         //For distinguish `vector<u8>` and MoveModule in Move.
-        self.put_changes(modules.into_iter().map(|(k, v)| {
-            (
-                module_name_to_key(k.as_ident_str()),
-                v.map(|v| MoveModule::new(v).into()),
-            )
-        }))
+        self.put_changes(
+            modules
+                .into_iter()
+                .map(|(k, v)| (module_id_to_key(&k), v.map(|v| MoveModule::new(v).into()))),
+        )
     }
 
     pub fn put_resources(&self, modules: BTreeMap<StructTag, Op<Vec<u8>>>) -> Result<H256> {
@@ -173,30 +173,6 @@ impl StateDBStore {
             .map_err(Into::into)
     }
 
-    fn get_as_account_storage(
-        &self,
-        account: AccountAddress,
-    ) -> Result<Option<ObjectEntity<AccountStorage>>> {
-        self.get_as_object::<AccountStorage>(account.into())
-    }
-
-    fn get_as_account_storage_or_create(
-        &self,
-        account: AccountAddress,
-    ) -> Result<ObjectEntity<AccountStorage>> {
-        let account_storage = self
-            .get_as_account_storage(account)?
-            .unwrap_or_else(|| ObjectEntity::new_account_storage_object(account));
-
-        // Resource table key type tag: std::ascii::String
-        // let resource_key_type = TypeTag::Struct(Box::new(MoveAsciiString::struct_tag()));
-        self.get_as_table_or_create(account_storage.value.resources)?;
-        // Module table key type tag: std::string::String
-        // let module_key_type = TypeTag::Struct(Box::new(MoveString::struct_tag()));
-        self.get_as_table_or_create(account_storage.value.modules)?;
-        Ok(account_storage)
-    }
-
     fn get_as_table(&self, id: ObjectID) -> Result<Option<(RawObject, TreeTable<NodeDBStore>)>> {
         let object = self.get_as_raw_object(id)?;
         match object {
@@ -214,17 +190,25 @@ impl StateDBStore {
         }
     }
 
-    fn get_as_table_or_create(&self, id: ObjectID) -> Result<(RawObject, TreeTable<NodeDBStore>)> {
-        Ok(self.get_as_table(id)?.unwrap_or_else(|| {
-            self.create_table(id)
-                .expect("create_table should succ when get_as_table_or_create")
-        }))
-    }
-
-    fn create_table(&self, id: ObjectID) -> Result<(RawObject, TreeTable<NodeDBStore>)> {
+    fn create_table(
+        &self,
+        id: ObjectID,
+        is_resource_object: bool,
+        account: Option<AccountAddress>,
+    ) -> Result<(RawObject, TreeTable<NodeDBStore>)> {
         let table = TreeTable::new(self.node_store.clone());
-        let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()))?;
-        let object = ObjectEntity::new_table_object(id, table_info).to_raw();
+
+        let object = if Module::module_object_id() == id {
+            ObjectEntity::new_module_object().to_raw()
+        } else if is_resource_object {
+            let account = account.ok_or(anyhow::anyhow!(
+                "Invalid account when create resource object"
+            ))?;
+            ObjectEntity::new_resource_object(account).to_raw()
+        } else {
+            let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()))?;
+            ObjectEntity::new_table_object(id, table_info).to_raw()
+        };
         Ok((object, table))
     }
 
@@ -250,18 +234,17 @@ impl StateDBStore {
         change_set: ChangeSet,
         state_change_set: StateChangeSet,
     ) -> Result<H256> {
+        let mut account_resource_ids_mapping = BTreeMap::new();
         let mut changed_objects = UpdateSet::new();
         //TODO
-        //We want deprecate the global storage instructions https://github.com/rooch-network/rooch/issues/248
-        //So the ChangeSet should be empty, but we need the mutated accounts to init the account storage
-        ////We need to figure out a way to init a fresh account.
+        // We want deprecate the global storage instructions https://github.com/rooch-network/rooch/issues/248
+        // So the ChangeSet should be empty, but we need the mutated accounts to init the resource object and module object
+        // We need to figure out a way to init a fresh account.
         for (account, account_change_set) in change_set.into_inner() {
-            let account_storage = self.get_as_account_storage_or_create(account)?;
-
             let (modules, resources) = account_change_set.into_inner();
             debug_assert!(modules.is_empty() && resources.is_empty());
-            //TODO check if the account_storage and table is changed, if not changed, don't put it
-            changed_objects.put(ObjectID::from(account).to_key(), account_storage.into())
+
+            account_resource_ids_mapping.insert(Resource::resource_object_id(account), account);
         }
 
         for (table_handle, table_change) in state_change_set.changes {
@@ -271,7 +254,19 @@ impl StateDBStore {
                     .put_changes(table_change.entries.into_iter())?;
                 // TODO: do we need to update the size of global table?
             } else {
-                let (mut raw_object, table) = self.get_as_table_or_create(table_handle)?;
+                let table_result_opt = self.get_as_table(table_handle)?;
+                let (mut raw_object, table) = match table_result_opt {
+                    Some((raw_object, table)) => (raw_object, table),
+                    None => {
+                        let (is_resource_object, account) =
+                            match account_resource_ids_mapping.get(&table_handle) {
+                                Some(account) => (true, Some(*account)),
+                                None => (false, None),
+                            };
+                        self.create_table(table_handle, is_resource_object, account)?
+                    }
+                };
+
                 let new_state_root = table.put_changes(table_change.entries.into_iter())?;
                 raw_object.state_root = AccountAddress::new(new_state_root.into());
                 let curr_table_size: i64 = raw_object.size as i64;
@@ -291,16 +286,6 @@ impl StateDBStore {
 
     pub fn is_genesis(&self) -> bool {
         self.global_table.smt.is_genesis()
-    }
-
-    //Only for unit test and integration test runner
-    pub fn create_account_storage(&self, account: AccountAddress) -> Result<()> {
-        let account_storage = ObjectEntity::new_account_storage_object(account);
-        self.global_table.puts((
-            ObjectID::from(account).to_key(),
-            State::from(account_storage),
-        ))?;
-        Ok(())
     }
 
     pub fn resolve_state(&self, handle: &ObjectID, key: &KeyState) -> Result<Option<State>, Error> {
@@ -332,7 +317,7 @@ impl StateDBStore {
                 state_root = self.global_table.puts(v.entries)?
             } else {
                 // must force create table
-                let (_table_object, table_store) = self.create_table(k)?;
+                let table_store = TreeTable::new(self.node_store.clone());
                 state_root = table_store.puts(v.entries)?
             }
         }
@@ -358,8 +343,6 @@ impl StateDBStore {
         let mut golbal_table_state = TableState::default();
         for (key, state) in global_states.into_iter() {
             // If the state is an Object, and the T's struct_tag of Object<T> is Table
-            // let struct_tag = state.get_object_struct_tag();
-            // if let Some(struct_tag) = struct_tag {
             if ObjectID::struct_tag_match(&as_struct_tag(key.key_type.clone())?) {
                 let mut table_state = TableState::default();
                 let table_handle = ObjectID::from_bytes(key.key.clone())?;

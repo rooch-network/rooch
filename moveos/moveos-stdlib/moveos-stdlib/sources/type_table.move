@@ -9,7 +9,7 @@ module moveos_std::type_table {
     use moveos_std::object_id::{ObjectID, UID};
     use moveos_std::object::{Self};
 
-    friend moveos_std::account_storage;
+    friend moveos_std::resource;
 
     struct TypeTable has store {
         handle: ObjectID,
@@ -38,7 +38,7 @@ module moveos_std::type_table {
     }
 
     /// Note: We use Type name as key, the key will be serialized by bcs in the native function. 
-    fun key<V>(): String {
+    public fun key<V>(): String {
         let type_name = std::type_name::get<V>();
         std::type_name::into_string(type_name)
     }

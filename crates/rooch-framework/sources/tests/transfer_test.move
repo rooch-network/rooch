@@ -120,7 +120,7 @@ module rooch_framework::transfer_test{
 
         transfer::transfer_object<TestStruct>(&mut ctx, &from, to_addr, object_id);
         
-        let obj = context::borrow_object<TestStruct>(&ctx, object_id);
+        let obj = object::borrow_object<TestStruct>(object_id);
         assert!(object::owner(obj)== to_addr, 1001);
         
         moveos_std::context::drop_test_context(ctx);

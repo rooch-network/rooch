@@ -1,0 +1,106 @@
+---
+title: Rooch v0.3 release, launching Pre-testnet
+description: "Rooch v0.3 is released, connects to the Bitcoin network, implements inscription interactive, and launches the Pre-testnet"
+author: geometryolife
+category: News
+date: 2024/02/08
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+Rooch v0.3 is released, connects to the Bitcoin network, implements inscription interactive, and launches the Pre-testnet. This is the transitional stage between the third (Rooting) and the fourth (Branching) milestones of Rooch.
+
+## Key features of Rooch v0.3
+
+This version mainly provides the following main features:
+
+## DA
+
+Rooch currently implements the DA open network framework and can support the following scenarios in the future:
+
+* Can be connected to DA Chain like Celestia
+* You can also access cloud storage as a fast storage medium
+* You can also enable local storage for testing or caching services
+* Collaborative work, multiple DA backends can work together within an open network to achieve high reliability while meeting different needs.
+
+## Bitcoin support
+
+Connect to the Bitcoin test network and use UniSat as the default wallet. For detailed usage, please refer to [Installing UniSat](../docs/user-guides/install-unisat.en-US.mdx).
+Rooch implements the Bitcoin relay network and provides basic support for becoming the Bitcoin network execution layer.
+Implement the analysis of transaction type, transaction progress, address, balance, inscription, UTXO, etc.
+
+## Object storage
+
+This version has made a major reconstruction of object storage. Please refer to the [Object](../docs/developer-guides/object.en-US.mdx) for detailed usage to provide developers with a better development experience.
+
+## Inscription
+
+Currently, basic functions such as inscription inscribe, display, and query have been implemented. For detailed operations, please refer to [Inscription](../docs/user-guides/inscription.en-US.mdx).
+
+## Rooch Dashboard
+
+* Provide Bitcoin network interactive functions
+* Integrate UniSat wallet, open the Dashboard and it will automatically detect, verify, authorize and log in
+* Provide inscription query function
+* Access address: https://dashboard.rooch.network/
+* For usage instructions, please see: [Rooch Dashboard usage instructions](../docs/user-guides/dashboard.en-US.mdx).
+
+## JSON RPC and SDK
+
+* Implement Bitcoin related RPC
+  * Provide UTXO query interface: `btc_queryUTXOs`
+  * Provides inscription query interface: `btc_queryInscriptions`
+* SDK adds Bitcoin related operations
+
+For the interfaces currently supported by Rooch, please see: [Rooch JSON RPC](../docs/developer-guides/rpc.en-US.mdx).
+
+## Pre-test network
+
+Advance network information:
+
+1. Name: test
+2. ChainID: 20230102
+3. RPC: https://test-seed.rooch.network/(opens in a new tab)
+
+How to use the test network, please refer to the document: [Connect to the test network](../docs/developer-guides/connect-testnet.en-US.mdx)
+
+## Next step goal
+
+1. Provide a per-manent incentive test network so that developers can deploy applications on it and let users try it out.
+2. Run the RoochBTC pioneer network to achieve indexing of Bitcoin mainnet assets. For a detailed description of this goal, see [RoochBTC - Implementing Bitcoin's second layer with an on-chain indexer](https://rooch.network/zh-CN/blog/rooch-btc).
+
+## Rooch Milestones
+
+Before the launch of the mainnet, Rooch has five milestones. We have named these milestones via the stages of plant growth, aiming for Rooch to grow from a seed to a towering tree, becoming the infrastructure for Web3.
+
+### Seeding -- 2023 Q1
+
+Complete technical design and team formation.
+
+### Sprouting -- 2023 Q2
+
+Release the first preview version of Rooch Container, providing basic developer tools for building applications on Rooch.
+
+### Rooting -- 2023 Q3
+
+Connect to different L1 public chains and DA chains, providing support for multi-chain settlement. Release a stable version of the Move Framework. Run a public developer test network.
+
+### Branching -- 2023 Q4
+
+Collaborate with ecosystem teams to build frameworks and Layer2 infrastructure, providing app-specific containers and storage solutions. Run a permanent incentive test network.
+
+### Strengthening -- 2024 Q1
+
+Enhance security and optimize performance. Run a pre-main network.
+
+### Foliage -- 2024 Q1
+
+Numerous applications thrive on the Rooch network. Run the mainnet.
+
+## Conclusion
+
+Rooch's milestones are driven by application scenarios, focusing on the experience of developers and users. The goal is to expand the boundaries of Web3 applications and explore the possibilities of mass adoption. To learn more and try Rooch, please refer to the [Getting Started](../docs/getting-started.en-US.md) documentation.
+
+For more detailed information on Rooch v0.3, please refer to the [Rooch v0.3 release notes](https://github.com/rooch-network/rooch/releases/tag/v0.3). We would like to thank the over ten developers who have contributed to Rooch so far. If you want to learn more and get involved in Rooch, please join the [Rooch Discord](https://discord.gg/rooch).

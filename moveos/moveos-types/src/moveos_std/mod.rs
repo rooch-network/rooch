@@ -1,9 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-/// This mod contains all the Rust to Move type mapping that are used in MoveosStd
-pub mod account_storage;
 pub mod any;
+/// This mod contains all the Rust to Move type mapping that are used in MoveosStd
 pub mod context;
 pub mod copyable_any;
 pub mod event;
@@ -12,6 +11,7 @@ pub mod move_module;
 pub mod object;
 pub mod object_id;
 pub mod raw_table;
+pub mod resource;
 pub mod simple_map;
 pub mod simple_multimap;
 pub mod tx_context;

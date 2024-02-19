@@ -80,7 +80,7 @@
 Return AddressMapping table handle, including mapping and reverse_mapping table handle
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_address_mapping_handle">address_mapping_handle</a>(ctx: &<a href="_Context">context::Context</a>): (<a href="_ObjectID">object_id::ObjectID</a>, <a href="_ObjectID">object_id::ObjectID</a>, <a href="_ObjectID">object_id::ObjectID</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_address_mapping_handle">address_mapping_handle</a>(_ctx: &<a href="_Context">context::Context</a>): (<a href="_ObjectID">object_id::ObjectID</a>, <a href="_ObjectID">object_id::ObjectID</a>, <a href="_ObjectID">object_id::ObjectID</a>)
 </code></pre>
 
 
@@ -92,7 +92,7 @@ Return AddressMapping table handle, including mapping and reverse_mapping table 
 Borrow the address mapping object
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_borrow">borrow</a>(ctx: &<a href="_Context">context::Context</a>): &<a href="_Object">object::Object</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">address_mapping::AddressMapping</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_borrow">borrow</a>(_ctx: &<a href="_Context">context::Context</a>): &<a href="_Object">object::Object</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">address_mapping::AddressMapping</a>&gt;
 </code></pre>
 
 

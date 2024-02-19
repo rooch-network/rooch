@@ -13,6 +13,7 @@
   "typescript-sdk": "Typescript SDK",
   "address-space": "Address space",
   "library": "Library",
+  "hash": "Hash",
   "access-path": "Access path",
   "timestamp": "Timestamp",
   "object": "Object",

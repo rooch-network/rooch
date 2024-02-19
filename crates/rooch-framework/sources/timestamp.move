@@ -59,15 +59,15 @@ module rooch_framework::timestamp {
         }
     }
 
-    fun timestamp_mut(ctx: &mut Context): &mut Timestamp {
+    fun timestamp_mut(_ctx: &mut Context): &mut Timestamp {
         let object_id = object_id::named_object_id<Timestamp>();
-        let obj = context::borrow_mut_object_extend<Timestamp>(ctx, object_id);
+        let obj = object::borrow_mut_object_extend<Timestamp>(object_id);
         object::borrow_mut(obj)
     }
 
-    public fun timestamp(ctx: &Context): &Timestamp {
+    public fun timestamp(_ctx: &Context): &Timestamp {
         let object_id = object_id::named_object_id<Timestamp>();
-        let obj = context::borrow_object<Timestamp>(ctx, object_id);
+        let obj = object::borrow_object<Timestamp>(object_id);
         object::borrow(obj)
     }
 

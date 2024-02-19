@@ -242,7 +242,7 @@ module rooch_framework::coin_store {
         object_id: ObjectID
     ): &mut Object<CoinStore<CoinType>> {
         assert!(context::exists_object<CoinStore<CoinType>>(ctx, object_id), ErrorCoinStoreNotFound);
-        context::borrow_mut_object_extend<CoinStore<CoinType>>(ctx, object_id)
+        object::borrow_mut_object_extend<CoinStore<CoinType>>(object_id)
     }
 
     fun check_coin_store_not_frozen<CoinType: key>(coin_store: &CoinStore<CoinType>) {

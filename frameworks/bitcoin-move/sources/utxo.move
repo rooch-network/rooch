@@ -89,13 +89,13 @@ module bitcoin_move::utxo{
         context::exists_object<UTXO>(ctx, object_id)
     }
 
-    public fun borrow_utxo(ctx: &Context, txid: address, vout: u32): &Object<UTXO>{
+    public fun borrow_utxo(_ctx: &Context, txid: address, vout: u32): &Object<UTXO>{
         let id = OutputID{
             txid: txid,
             vout: vout,
         };
         let object_id = object_id::custom_object_id<OutputID,UTXO>(id);
-        context::borrow_object(ctx, object_id)
+        object::borrow_object(object_id)
     }
 
      #[private_generics(T)]

@@ -48,6 +48,12 @@ const navigation = (): VerticalNavItemsType => {
           title: 'UTXO',
           path: '/assets/utxo/list',
         },
+        {
+          title: 'Mint',
+          externalLink: true,
+          openInNewTab: true,
+          path: 'https://inscribetheplanet.com/testnet',
+        },
       ],
     },
 

@@ -26,7 +26,7 @@ module moveos_std::display{
             //And the caller do not need to care about the display object
             object::transfer_extend(display_obj, @moveos_std);
         };
-        context::borrow_mut_object_extend<Display<T>>(ctx, object_id)
+        object::borrow_mut_object_extend<Display<T>>(object_id)
     }
 
     #[private_generics(T)]
@@ -42,7 +42,7 @@ module moveos_std::display{
             //And the caller do not need to care about the display object
             object::transfer_extend(display_obj, @moveos_std);
         };
-        context::borrow_mut_object_extend<Display<Object<T>>>(ctx, object_id)
+        object::borrow_mut_object_extend<Display<Object<T>>>(object_id)
     }
 
     /// Set the key-value pair for the display object
