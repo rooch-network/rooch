@@ -11,13 +11,12 @@ use opendal::{Operator, Scheme};
 use rooch_config::config::retrieve_map_config_value;
 use std::collections::HashMap;
 use std::path::Path;
-use xxhash_rust::xxh3::xxh3_64;
 
 use crate::chunk::DABatchV0;
 use rooch_config::da_config::{DAServerOpenDAConfig, OpenDAScheme};
 
 use crate::messages::PutBatchInternalDAMessage;
-use crate::segment::{Segment, SegmentID, SegmentV0, SEGMENT_V0_CHECKSUM_OFFSET};
+use crate::segment::{Segment, SegmentID, SegmentV0};
 
 pub struct DAServerOpenDAActor {
     max_segment_size: usize,
@@ -158,7 +157,7 @@ impl DAServerOpenDAActor {
             })
             .collect::<Vec<_>>();
 
-        for mut segment in segments {
+        for segment in segments {
             let bytes = segment.to_bytes();
 
             // TODO record ok segment in order
