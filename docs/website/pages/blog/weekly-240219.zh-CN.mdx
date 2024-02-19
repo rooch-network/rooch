@@ -1,0 +1,82 @@
+---
+title: Rooch 周报 2024-02-19
+description: "在过去的一个月中，Rooch 团队完成了 Bitcoin 测试网络的接入，目前可以体验铭文铭刻、展示等功能，优化 DA，完善命令行工具和 Dashboard，完善用户文档，修复已知问题"
+author: geometryolife
+category: Rooch Weekly
+date: 2024/02/19
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## Rooch 的开发进展
+
+### 新特性
+
+- **feat(DA): add openDA and multi DA servers supports  (#1286)** (2024-01-05) @popcnt
+- **Counting gas in several types (#1285)** (2024-01-08) @stevenlaw123
+- **Pass writer executor state to reader executor and verify (#1287)** (2024-01-09) @Bai Chuan
+- **sdk-btc & sdk-eth & signature verify (#1289)** (2024-01-12) @sven Tan
+- **feat(DA): add openDA  (#1295)** (2024-01-14) @popcnt
+- **[gh-1299] add podman support for running bitcoin local node. (#1300)** (2024-01-15) @feliciss
+- **Feature owen sdk support object type (#1301)** (2024-01-16) @Owen Wu
+- **Introduce transaction benchmark and Implements test transaction builder (#1308)** (2024-01-18) @Bai Chuan
+- **restore gas parameters from on chain state (#1319)** (2024-01-26) @stevenlaw123
+- **feat(DA): multi version segment supports (#1320)** (2024-01-27) @popcnt
+- **feat(DA): add checksum for segment  (#1326)** (2024-01-29) @popcnt
+- **support for dynamic fields in object (#1321)** (2024-01-30) @bai chuan
+- **[rpc] support get transactions and events in reverse order (#1354)** (2024-02-03) @bai chuan
+- **feat(da): add fs as open-da for dev env (#1360)** (2024-02-05) @popcnt
+- **feat(da): add log for openda (#1365)** (2024-02-07) @popcnt
+- **add bitcoin env shell (#1368)** (2024-02-08) @sven tan
+
+### 重大重构
+
+- **Split executor into writer executor and reader executor (#1281)** (2024-01-04) @Bai Chuan
+- **Update gas cost tables (#1312)** (2024-01-21) @0xPause
+- **Refactor gas billing and upload gas parameters to the chain. (#1313)** (2024-01-21) @stevenlaw123
+- **[gh-1314] refactor crypto encoding hash functions (#1315)** (2024-01-25) @feliciss
+- **refactor account storage base on dynamic field (#1373)** (2024-02-18) @bai chuan
+
+### 改进和修复
+
+- **blog: add the roochBTC introduction article (#1283)** (2024-01-05) @Joe Chen
+- **add weekly 2024-01-03 (#1284)** (2024-01-05) @Joe Chen
+- **docs: add coin usage guide (#1280)** (2024-01-09) @Joe Chen
+- **add protobuf dependencies (#1293)** (2024-01-11) @yourmoonlight
+- **Review moveos-stdlib and rooch-framework native functions, fix gas meters (#1290)** (2024-01-11) @0xPause
+- **add btc rpc url to seed deploy workflow (#1297)** (2024-01-12) @yourmoonlight
+- **ci(da): add test for parse_hashmap in da config (#1304)** (2024-01-15) @popcnt
+- **docs: add rooch-genesis docs for contributing (#1292)** (2024-01-15) @Joe Chen
+- **add btc rpc examples (#1291)** (2024-01-15) @Joe Chen
+- **[r1448437375] rename progress to process. (#1306)** (2024-01-17) @feliciss
+- **update website sidebar menu (#1305)** (2024-01-16) @Joe Chen
+- **Fix/bitcoin docker node (#1307)** (2024-01-17) @sven Tan
+- **feat(DA): simplify openDA startup (#1310)** (2024-01-18) @popcnt
+- **hash introduction (#1311)** (2024-01-19) @Joe Chen
+- **fix some typos (#1316)** (2024-01-25) @Joe Chen
+- **update the gas cache by the flag in TxContext (#1324)** (2024-01-29) @stevenlaw123
+- **[gh-1328] change scripts and add details to readme. (#1329)** (2024-01-29) @feliciss
+- **fix dashboard  (#1325)** (2024-01-30) @sven tan
+- **fix deploy (#1331)** (2024-01-30) @sven tan
+- **add testnet deploy workflow (#1332)** (2024-01-30) @yourmoonlight
+- **docs: update dashboard user doc for bitcoin (#1333)** (2024-01-31) @joe chen
+- **feat(da): each batch is a chunk for chunk v0 (#1336)** (2024-01-31) @popcnt
+- **ci(da): add openda workflow (#1337)** (2024-01-31) @popcnt
+- **docs: add unisat wallet installation guide (#1338)** (2024-02-01) @joe chen
+- **fix(workflow): fix docker build (#1345)** (2024-02-01) @popcnt
+- **fix(workflow): fix da options (#1346)** (2024-02-01) @popcnt
+- **fix(workflow): fix docker build (#1351)** (2024-02-02) @popcnt
+- **ci: fix secrets in da option (#1355)** (2024-02-02) @popcnt
+- **feat: fixbug for 'walletprovider' cannot be used as a jsx component (#1340)** (2024-02-04) @owen wu
+- **ci: add stand alone deploy testnet workflow &&  clean dev data before deploy dev (#1356)** (2024-02-05) @yourmoonlight
+- **ci: use fs as open-da for dev env (#1361)** (2024-02-05) @popcnt
+- **fix dashboard testnet (#1362)** (2024-02-05) @sven tan
+- **docs: add connect testnet guide (#1359)** (2024-02-07) @joe chen
+- **delete old docs: add-network (#1364)** (2024-02-08) @joe chen
+- **docs: how to get btc test coins (#1363)** (2024-02-08) @joe chen
+- **docs: add inscription guide (#1366)** (2024-02-08) @joe chen
+- **add mint (#1369)** (2024-02-09) @sven tan
+- **fix doc meta (#1372)** (2024-02-11) @jolestar
+- **blog: add v0.3 release notes (#1358)** (2024-02-16) @joe chen
