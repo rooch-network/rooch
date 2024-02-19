@@ -9,15 +9,15 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use moveos_config::store_config::RocksdbConfig;
 use moveos_config::{temp_dir, DataDirPath};
 use moveos_store::{MoveOSDB, MoveOSStore};
+use rooch_framework::natives::default_gas_schedule;
 // use pprof::criterion::{Output, PProfProfiler};
 use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
+use rooch_config::da_config::DAConfig;
 use rooch_config::indexer_config::IndexerConfig;
 use rooch_config::store_config::StoreConfig;
 use rooch_da::actor::da::DAActor;
 use rooch_da::proxy::DAProxy;
-use rooch_da::server::serverproxy::DAServerNopProxy;
-use rooch_da::server::serverproxy::DAServerProxy;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
@@ -45,7 +45,6 @@ use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::transaction::TypedTransaction;
-use std::sync::Arc;
 use std::time::Duration;
 use tokio::runtime::Runtime;
 use tracing::info;
@@ -102,7 +101,11 @@ fn transaction_query_benchmark(c: &mut Criterion) {
     let mut tx_orders = (1..500).cycle().map(|v| v);
     c.bench_function("get_transactions_by_order", |b| {
         b.to_async(Runtime::new().unwrap()).iter(|| {
-            rooch_server.get_transactions_by_order(Some(StrView(tx_orders.next().unwrap())), None)
+            rooch_server.get_transactions_by_order(
+                Some(StrView(tx_orders.next().unwrap())),
+                None,
+                None,
+            )
         })
     });
 }
@@ -139,8 +142,10 @@ async fn setup_service(
     // Init executor
     let is_genesis = moveos_store.statedb.is_genesis();
     let btc_network = Network::default().to_num();
+    let gas_schedule_blob =
+        bcs::to_bytes(&default_gas_schedule()).expect("Failure serializing genesis gas schedule");
     let executor_actor = ExecutorActor::new(
-        chain_id.genesis_ctx(rooch_account),
+        chain_id.genesis_ctx(rooch_account, gas_schedule_blob),
         BitcoinGenesisContext::new(btc_network),
         moveos_store.clone(),
         rooch_store.clone(),
@@ -165,10 +170,10 @@ async fn setup_service(
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
 
     // Init DA
-    let da_server_proxies: Vec<Arc<dyn DAServerProxy + Send + Sync>> =
-        vec![Arc::new(DAServerNopProxy {})];
+    let da_config = DAConfig::default();
     let da_proxy = DAProxy::new(
-        DAActor::new(da_server_proxies)
+        DAActor::new(da_config, &actor_system)
+            .await?
             .into_actor(Some("DAProxy"), &actor_system)
             .await?
             .into(),
