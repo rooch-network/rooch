@@ -159,17 +159,8 @@ impl DAServerOpenDAActor {
             .collect::<Vec<_>>();
 
         for mut segment in segments {
-            segment.data_checksum = xxh3_64(&segment.data);
 
-            let mut bytes = segment.to_bytes();
-
-            let fields = &bytes[0..SEGMENT_V0_CHECKSUM_OFFSET];
-            segment.checksum = xxh3_64(fields);
-
-            bytes.splice(
-                SEGMENT_V0_CHECKSUM_OFFSET..SEGMENT_V0_CHECKSUM_OFFSET + 8,
-                segment.checksum.to_le_bytes().iter().cloned(),
-            );
+            let bytes = segment.to_bytes();
 
             // TODO record ok segment in order
             // TODO segment indexer trait (local file, db, etc)
