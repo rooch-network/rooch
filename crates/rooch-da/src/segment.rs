@@ -5,6 +5,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use serde::Serialize;
+use xxhash_rust::xxh3::xxh3_64;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum SegmentVersion {
@@ -70,6 +71,16 @@ impl SegmentV0 {
         let checksum = u64::from_le_bytes(bytes[34..SEGMENT_V0_DATA_OFFSET].try_into()?);
         let data = bytes[SEGMENT_V0_DATA_OFFSET..].to_vec();
 
+        let exp_checksum = xxh3_64(&bytes[0..SEGMENT_V0_CHECKSUM_OFFSET]);
+        if exp_checksum != checksum {
+            return Err(anyhow::anyhow!("segment_v0: checksum mismatch"));
+        }
+
+        let exp_data_checksum = xxh3_64(&data);
+        if exp_data_checksum != data_checksum {
+            return Err(anyhow::anyhow!("segment_v0: data checksum mismatch"));
+        }
+
         Ok(Self {
             id: SegmentID {
                 chunk_id,
@@ -85,14 +96,16 @@ impl SegmentV0 {
 
 impl Segment for SegmentV0 {
     fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(SEGMENT_V0_DATA_OFFSET + self.data.len());
 
+        let mut bytes = Vec::with_capacity(SEGMENT_V0_DATA_OFFSET + self.data.len());
         bytes.push(SegmentVersion::V0.into()); // version
         bytes.extend_from_slice(&self.id.chunk_id.to_le_bytes());
         bytes.extend_from_slice(&self.id.segment_number.to_le_bytes());
         bytes.push(self.is_last as u8);
-        bytes.extend_from_slice(&self.data_checksum.to_le_bytes());
-        bytes.extend_from_slice(&self.checksum.to_le_bytes());
+        let data_checksum = xxh3_64(&self.data);
+        bytes.extend_from_slice(&data_checksum.to_le_bytes());
+        let checksum = xxh3_64(&bytes[0..SEGMENT_V0_CHECKSUM_OFFSET]);
+        bytes.extend_from_slice(&checksum.to_le_bytes());
         bytes.extend_from_slice(&self.data);
         bytes
     }
@@ -177,7 +190,7 @@ mod tests {
 
     #[test]
     fn test_segment_trait() {
-        let segment_v0 = SegmentV0 {
+        let mut segment_v0 = SegmentV0 {
             id: SegmentID {
                 chunk_id: 1234567890,
                 segment_number: 12345678,
@@ -198,6 +211,8 @@ mod tests {
                 SegmentVersion::V0 => {
                     let recovered_segment =
                         SegmentV0::from_bytes(&bytes).expect("successful deserialization");
+                    segment_v0.checksum = recovered_segment.checksum;
+                    segment_v0.data_checksum = recovered_segment.data_checksum;
                     assert_eq!(&segment_v0, &recovered_segment)
                 }
 
