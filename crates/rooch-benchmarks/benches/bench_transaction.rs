@@ -58,6 +58,8 @@ pub struct StoreHolder {
     _indexer_store: IndexerStore,
 }
 fn transaction_write_benchmark(c: &mut Criterion) {
+    std::env::set_var("RUST_LOG", "error");
+
     let tempdir = temp_dir();
     let keystore = InMemKeystore::new_insecure_for_tests(10);
 
