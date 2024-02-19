@@ -11,13 +11,12 @@ use opendal::{Operator, Scheme};
 use rooch_config::config::retrieve_map_config_value;
 use std::collections::HashMap;
 use std::path::Path;
-use xxhash_rust::xxh3::xxh3_64;
 
 use crate::chunk::DABatchV0;
 use rooch_config::da_config::{DAServerOpenDAConfig, OpenDAScheme};
 
 use crate::messages::PutBatchInternalDAMessage;
-use crate::segment::{Segment, SegmentID, SegmentV0, SEGMENT_V0_CHECKSUM_OFFSET};
+use crate::segment::{Segment, SegmentID, SegmentV0};
 
 pub struct DAServerOpenDAActor {
     max_segment_size: usize,
@@ -39,13 +38,13 @@ impl DAServerOpenDAActor {
 
         let op: Operator = match config.scheme {
             OpenDAScheme::Fs => {
-                // If certain keys don't exist in the map, set them from environment or const
-                retrieve_map_config_value(
-                    &mut config.config,
-                    "root",
-                    Some("OPENDA_FS_ROOT"),
-                    "/tmp/rooch/da",
-                );
+                // root must be existed
+                if !config.config.contains_key("root") {
+                    return Err(anyhow!(
+                        "key 'root' must be existed in config for scheme {:?}",
+                        OpenDAScheme::Fs
+                    ));
+                }
                 new_retry_operator(Scheme::Fs, config.config, None).await?
             }
             OpenDAScheme::Gcs => {
@@ -158,18 +157,8 @@ impl DAServerOpenDAActor {
             })
             .collect::<Vec<_>>();
 
-        for mut segment in segments {
-            segment.data_checksum = xxh3_64(&segment.data);
-
-            let mut bytes = segment.to_bytes();
-
-            let fields = &bytes[0..SEGMENT_V0_CHECKSUM_OFFSET];
-            segment.checksum = xxh3_64(fields);
-
-            bytes.splice(
-                SEGMENT_V0_CHECKSUM_OFFSET..SEGMENT_V0_CHECKSUM_OFFSET + 8,
-                segment.checksum.to_le_bytes().iter().cloned(),
-            );
+        for segment in segments {
+            let bytes = segment.to_bytes();
 
             // TODO record ok segment in order
             // TODO segment indexer trait (local file, db, etc)
