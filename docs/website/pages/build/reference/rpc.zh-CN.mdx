@@ -1,0 +1,1289 @@
+# Rooch JSON-RPC
+
+在区块链网络中，客户端和服务器端的交互都是通过请求与相应的方式进行的。RPC（Remote Process Call，远程过程调用）是一种客户端与服务器端交互的一种协议，这种协议规范了客户端和实现了 RPC 接口的服务器端交互时的数据格式。
+
+市面上有众多的 RPC 接口实现，比如 `JSON-RPC`、`XML-RPC`、`Protobuf-RPC` 等等，Rooch 采用的是 JSON-RPC 的协议规范。
+
+调用方按照 RPC 的协议规范编写好 RPC 请求，客户端将 RPC 接口的函数名称和参数进行序列化，发送到服务端后，服务器端通过反序列化将请求中的函数和参数提取出来，服务器调用相关函数并将调用的结果返回给客户端，这就是 RPC 接口的大致工作流程。
+
+## 类型转换说明
+
+- `u64`、`u128`、`u256` 在 JSON 中用 string 来表示。
+- `ObjectID` 和 `address` 在 JSON 中用以 `0x` 开头的 hex string 来表示。
+
+## 示例
+
+接下来通过几个小例子来演示如何调用 Rooch 的 JSON-RPC 接口。
+
+### rooch_getChainID
+
+`rooch_getChainID` 这个接口方法是用来获取 Rooch 的链 ID 的。
+
+#### 使用命令行程序 curl 作为客户端
+
+```shell
+curl --location 'https://dev-seed.rooch.network/' --header 'Content-Type: application/json' --data '{
+    "jsonrpc": "2.0",
+    "method": "rooch_getChainID",
+    "params": [],
+    "id": 0
+}'
+```
+
+`--location` 指定要请求的节点 URL，此处指定的是 Rooch 的 `dev` 网络节点。
+
+`--header` 指定的是请求的头部信息，比如指定 JSON 格式的数据类型等。
+
+`--data` 指定的就是我们要请求 RPC 接口中的**方法名**和**参数**等信息，这里要以 JSON 的数据格式来填写。
+
+```shell
+{"jsonrpc":"2.0","result":"20230103","id":0}
+```
+
+这是 RPC 请求后从 Rooch 节点以 JSON 格式返回的响应信息，我们重点关注 `result` 字段，即 RPC 的执行结果，Rooch 的 `dev` 网络的链 ID 号为 `20230103`。
+
+#### 使用 Web 页面的客户端向 Rooch 节点发送请求
+
+上面我们介绍了如何在命令行界面来向 Rooch 节点发送 RPC 请求，接下来将介绍如何使用 Rooch 提供的 Web 客户端来发送请求。
+
+![Web JSON-RPC Client](/docs/web-rpc-client.png)
+
+- 点击连接，使用 Web 版本的 [Rooch JSON-RPC](https://playground.open-rpc.org/?schemaUrl=https://raw.githubusercontent.com/rooch-network/rooch/main/crates/rooch-open-rpc-spec/schemas/openrpc.json) 客户端。
+
+页面右边的 `Methods` 是目前 Rooch 对外提供的可调用的 RPC 接口。
+
+![](/docs/web-rpc-try.png)
+
+我们点开 `rooch_getChainID` 这个方法，点击 `TRY IT NOW` 按钮，就会在页面下方展示调用页面，如下图。
+
+这个 Web 程序相比 curl 程序更易使用，而且提供了相应的请求模板，只需要我们填写必需的请求信息即可。
+
+![](/docs/web-rpc-run.png)
+
+- 第一步，填写 Rooch 网络的节点 URL，这里使用 `dev` 节点网络：`https://dev-seed.rooch.network/`
+- 第二步，填写要调用的 RPC 方法名，比如：`rooch_getChainID`
+- 第三步，点击运行按钮
+
+当调用成功后，可以看到右侧提示成功响应了，并在下方返回了相应的响应信息，跟 `curl` 命令返回的信息是一样的：
+
+![](/docs/web-rpc-ok.png)
+
+### rooch_listStates
+
+按 `access_path` 列出状态。如果 `StateOptions.decode` 为 `true`，则对状态进行解码并在响应中返回解码后的值。
+
+> 参阅更多 [Access path](./access-path.zh-CN.mdx) 的内容。
+
+```shell
+curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"rooch_listStates","params":["/resource/0x3", null, null, {"decode":true}],"id":1}' https://dev-seed.rooch.network:443 | jq
+```
+
+- `--data` 是我们主要填写的 JSON 内容，协议版本必须是 `2.0` 。
+- `method` 填写要调用的 RPC 方法。
+- `params` 填写调用 RPC 方法的参数列表，通过我们提供的 RPC 站点可以看到 `access_path` 是必须的，`cursor`、`limit`、`state_option` 是可选的。
+- `id` 是客户端和服务端通信时关联的标识信息，当客户端使用任意的 ID 进行请求时，服务端也必须使用相同的值来标识返回的响应信息，使用任意的整数即可。
+
+为了方便阅读，我们使用 `jq` 命令来格式化返回的 JSON 数据。
+
+响应：
+
+```shell
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "data": [
+      {
+        "value": "0x0300000000000000",
+        "value_type": "0x3::account::Account",
+        "decoded_value": {
+          "abilities": 12,
+          "type": "0x3::account::Account",
+          "value": {
+            "sequence_number": "3"
+          }
+        }
+      },
+      {
+        "value": "0xa77372914626778ea3cf80a251016ac603f588d54cce495b309e8b7c496876e7",
+        "value_type": "0x3::account_authentication::AuthenticationKeys",
+        "decoded_value": {
+          "abilities": 8,
+          "type": "0x3::account_authentication::AuthenticationKeys",
+          "value": {
+            "authentication_keys": {
+              "abilities": 4,
+              "type": "0x2::type_table::TypeTable",
+              "value": {
+                "handle": "0xa77372914626778ea3cf80a251016ac603f588d54cce495b309e8b7c496876e7"
+              }
+            }
+          }
+        }
+      },
+      {
+        "value": "0x362b4ea80aa2e877fe09b92d4b0a9e93e4f30be5d178570860bb4a53fd561c19",
+        "value_type": "0x3::account_coin_store::CoinStores",
+        "decoded_value": {
+          "abilities": 8,
+          "type": "0x3::account_coin_store::CoinStores",
+          "value": {
+            "coin_stores": {
+              "abilities": 4,
+              "type": "0x2::table::Table<0x1::string::String, 0x2::object::ObjectID>",
+              "value": {
+                "handle": "0x362b4ea80aa2e877fe09b92d4b0a9e93e4f30be5d178570860bb4a53fd561c19"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "next_cursor": "0x60303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e745f636f696e5f73746f72653a3a436f696e53746f726573",
+    "has_next_page": false
+  },
+  "id": 1
+}
+```
+
+可以看到，响应的内容是一个 JSON 对象，这个对象包含三个属性：
+
+- `jsonrpc` 指定版本，这个跟发送请求的是一样的，标识通信的版本。
+- `result` 属性就是响应的主体内容，稍后再作解释。
+- `id` 请求发过来的是什么 ID，它就以同样的 ID 进行响应，保证通信之间的上下文一致。
+
+接下来，我们再仔细看看 `result` 属性，它又包含三个属性：
+
+- `data` 使用一个列表存放，这个 RPC 方法返回的具体内容。
+- `next_cursor` 这是一个分页的游标，它指向页面的最后一项。通信的过程中，返回的响应数据如果比较大，不能够一次传递完，就要进行分页。下一次请求时，就会自动带上这个值，让响应程序知道下一次该从哪个位置读取。
+- `has_next_page` 如果数据比较多，要进行分页，这个值就为 `true`，否则为 `false`。
+
+### rooch_getEventsByEventHandle
+
+通过事件句柄 ID 获取事件。
+
+请求：
+
+```shell
+[joe@mx quick_start_object_counter]$ curl --location --request POST 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data-raw '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_getEventsByEventHandle",                                                                                                                       "params":["0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::UserCounterCreatedEvent", null, "1000", {"decode":true}]
+}'
+```
+
+响应：
+
+```shell
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "data": [
+      {
+        "event_id": {
+          "event_handle_id": "0x3c8af60a5e71022d3ec7f3581c87e9eb81a7e4e94e0706d8107db64c3905b68e",
+          "event_seq": 0
+        },
+        "event_type": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::UserCounterCreatedEvent",
+        "event_data": "0xbfc363a0afb2515ada06376ca4366f14c08b3d1021f23996bedd9109241aebd4",
+        "event_index": 3,
+        "decoded_event_data": {
+          "abilities": 2,
+          "type": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::UserCounterCreatedEvent",
+          "value": {
+            "id": "0xbfc363a0afb2515ada06376ca4366f14c08b3d1021f23996bedd9109241aebd4"
+          }
+        }
+      }
+    ],
+    "next_cursor": 0,
+    "has_next_page": false
+  },
+  "id": 101
+}
+```
+
+### rooch_getBalances
+
+通过 `AccountAddress` 获取账户余额。
+
+请求：
+
+```shell
+curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_getBalances",
+ "params":["0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",null, "5"]
+}'
+```
+
+响应：
+
+```shell
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "data": [
+      {
+        "coin_type": "0x3::gas_coin::GasCoin",
+        "name": "Rooch Gas Coin",
+        "symbol": "RGC",
+        "decimals": 18,
+        "supply": "600000000000000000000",
+        "balance": "99999999999997204086"
+      }
+    ],
+    "next_cursor": "0x53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e",
+    "has_next_page": false
+  },
+  "id": 101
+}
+```
+
+### rooch_getBalance
+
+通过 `AccountAddress` 和 `CoinType` 获取账户余额。
+
+请求：
+
+```shell
+curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_getBalance",
+ "params":["0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069", "0x3::gas_coin::GasCoin"]
+}' | jq
+```
+
+响应：
+
+```shell
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "coin_type": "0x3::gas_coin::GasCoin",
+    "name": "Rooch Gas Coin",
+    "symbol": "RGC",
+    "decimals": 18,
+    "supply": "300000000000000000000",
+    "balance": "99999999999996463576"
+  },
+  "id": 101
+}
+```
+
+### rooch_getStates
+
+通过 `access_path` 获取状态 如果 `StateOptions.decode` 为 `true`，则对状态进行解码，并在响应中返回解码后的值。
+
+请求：
+
+```shell
+[joe@mx quick_start_object_counter]$ curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"rooch_getStates","params":["/object/0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::Counter", {"decode":true}],"id":1}' https://dev-seed.rooch.network:443
+```
+
+响应：
+
+```shell
+{
+  "jsonrpc": "2.0",
+  "result": [
+    {
+      "value": "0xc98ad59f7c47f496df769a78119bc4d56a50ff19aa207ad8dcf89ae79fc1c6890000000000000000000000000000000000000000000000000000000000000000010000000000000000",
+      "value_type": "0x2::object::ObjectEntity<0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::Counter>",
+      "decoded_value": {
+        "abilities": 0,
+        "type": "0x2::object::ObjectEntity<0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::Counter>",
+        "value": {
+          "flag": 1,
+          "id": "0xc98ad59f7c47f496df769a78119bc4d56a50ff19aa207ad8dcf89ae79fc1c689",
+          "owner": "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "value": {
+            "abilities": 12,
+            "type": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::Counter",
+            "value": {
+              "count_value": "0"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "id": 1
+}
+```
+
+### rooch_getTransactionsByHash
+
+请求：
+
+```shell
+curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_getTransactionsByHash",
+ "params":[["0x08156186e176ae50d5e15cd52fd1225089621eef716dbb05736422ed1be58f8a"]]
+}' | jq
+```
+
+响应：
+
+```shell
+{
+  "jsonrpc": "2.0",
+  "result": [
+    {
+      "transaction": {
+        "transaction_type": "rooch",
+        "sequence_number": 4,
+        "sender": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "action_type": "functioncall",
+        "action": {
+          "function_call": {
+            "function_id": "d9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::increase",
+            "ty_args": [],
+            "args": [
+              "0xbfc363a0afb2515ada06376ca4366f14c08b3d1021f23996bedd9109241aebd4"
+            ]
+          }
+        },
+        "raw": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a0300690400000000000000d7af34010000000000e1f5050000000001d9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a0300691a717569636b5f73746172745f6f626a6563745f636f756e74657208696e637265617365000120bfc363a0afb2515ada06376ca4366f14c08b3d1021f23996bedd9109241aebd400000000000000006100b12a9f7cba1686862581af02ae1a1b7adad94670291e88d2c63b8daec816f35e8f43d61dde845ee07ee749ec0ca2c53be5d690ca526c6d0b3bad6259fb00c209b538115d45ef7ceaff0f4918d23c5c84f0b35fa1791b4fc86b1391e84b40fdde"
+      },
+      "sequence_info": {
+        "tx_order": "4442",
+        "tx_order_signature": {
+          "auth_validator_id": "0",
+          "payload": "0x00e6badca0ceac73f3fcb1b2fd89820f7d93e56422320371738ad7ad3f3a58dd74f2fb8437722363271b19b92eaec97e635e2a224d37fbb1c50ea0a7044a80e30eca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
+        },
+        "tx_accumulator_root": "0x21e4d358567d8124f42fb25dd8cf10a6e98364c9293a13d6a5cd34a4d4c608e9"
+      },
+      "execution_info": {
+        "tx_hash": "0x08156186e176ae50d5e15cd52fd1225089621eef716dbb05736422ed1be58f8a",
+        "state_root": "0xbe5e35a3cec42b1a4cf14cced6750a88ead97ada8040f217eb8c758aa7a418f6",
+        "event_root": "0x6a159a9537e443cf250ab24ae468cf85012f95338867cda12d9939be7adc0743",
+        "gas_used": 15305,
+        "status": {
+          "type": "executed"
+        }
+      }
+    }
+  ],
+  "id": 101
+}
+```
+
+### rooch_getTransactionsByOrder
+
+请求：
+
+```shell
+curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_getTransactionsByOrder",
+ "params":[null, null]
+}' | jq
+```
+
+响应：
+
+```shell
+......
+        "sequence_info": {
+          "tx_order": "49",
+          "tx_order_signature": {
+            "auth_validator_id": "0",
+            "payload": "0x00c07c23a3ca6655efbd166f382ad1880dfc1fc9f5ebd3f44b0d985fbbbac24bc01528745e62c121a633eaabe1b66b21cc82ce57e565d9b0bf85977dbebeb75900ca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
+          },
+          "tx_accumulator_root": "0xb0cf37dc71ec65a645959cbcc495fb36e686cf32c85c4626e37a857842efb8f6"
+        },
+        "execution_info": {
+          "tx_hash": "0xf18e26d1fed3021c8ebbd48a633560f679e0df306e759da2776cf9764ad56028",
+          "state_root": "0x226e96f308f6eef3fa61f9fed6a5f4a5af62effb39a45ae50e20a7e45a492a82",
+          "event_root": "0xf9fa4469e8fdd44eb522702621670245ca2d43852a4998db05a9e31ee2e80c79",
+          "gas_used": 248658,
+          "status": {
+            "type": "executed"
+          }
+        }
+      }
+    ],
+    "next_cursor": 49,
+    "has_next_page": true
+  },
+  "id": 101
+}
+```
+
+### rooch_queryEvents
+
+目前提供两种查询事件的方式。
+
+1. 通过 `sender` 查询事件：
+
+请求：
+
+```shell
+[joe@mx quick_start_object_counter]$ curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data '{
+    "id": 101,
+    "jsonrpc": "2.0",
+    "method": "rooch_queryEvents",
+    "params": [
+        {"sender":"0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069"}, null, "10", true
+    ]
+}' | jq
+```
+
+响应：
+
+```shell
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "data": [
+      {
+        "indexer_event_id": {
+          "tx_order": 4442,
+          "event_index": 1
+        },
+        "event_id": {
+          "event_handle_id": "0x6ab771425e05fad096ce70d6ca4903de7cca732ee4c9f6820eb215be288e98dd",
+          "event_seq": 4447
+        },
+        "event_type": "0x3::coin_store::DepositEvent",
+        "event_data": "0x5184184f61a704261615f879b5c100ebaa530a03e7b72b5ca09317fe4302b12f53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696ec93b000000000000000000000000000000000000000000000000000000000000",
+        "tx_hash": "0x08156186e176ae50d5e15cd52fd1225089621eef716dbb05736422ed1be58f8a",
+        "sender": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "created_at": 0,
+        "decoded_event_data": null
+      },
+      {
+        "indexer_event_id": {
+          "tx_order": 4442,
+          "event_index": 0
+        },
+        "event_id": {
+          "event_handle_id": "0x8e3089f2c059cc5377a1b6b7c3dcefba8a586697c35de27c2a4b68f81defb69c",
+          "event_seq": 4442
+        },
+        "event_type": "0x3::coin_store::WithdrawEvent",
+        "event_data": "0x3b7fcb00060dc80466da1185345b80f896a327100a7911f2fe480b29b22d59f853303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696ec93b000000000000000000000000000000000000000000000000000000000000",
+        "tx_hash": "0x08156186e176ae50d5e15cd52fd1225089621eef716dbb05736422ed1be58f8a",
+        "sender": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "created_at": 0,
+        "decoded_event_data": null
+      },
+      {
+        "indexer_event_id": {
+          "tx_order": 4440,
+          "event_index": 1
+        },
+        "event_id": {
+          "event_handle_id": "0x6ab771425e05fad096ce70d6ca4903de7cca732ee4c9f6820eb215be288e98dd",
+          "event_seq": 4445
+        },
+        "event_type": "0x3::coin_store::DepositEvent",
+        "event_data": "0x5184184f61a704261615f879b5c100ebaa530a03e7b72b5ca09317fe4302b12f53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696ec93b000000000000000000000000000000000000000000000000000000000000",
+        "tx_hash": "0xdb59788af6a3e7a7fd9ccee93be392c5ca42c1da3d689bed2434ec5a7a6598dd",
+        "sender": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "created_at": 0,
+        "decoded_event_data": null
+      },
+      {
+        "indexer_event_id": {
+          "tx_order": 4440,
+          "event_index": 0
+        },
+        "event_id": {
+          "event_handle_id": "0x8e3089f2c059cc5377a1b6b7c3dcefba8a586697c35de27c2a4b68f81defb69c",
+          "event_seq": 4440
+        },
+        "event_type": "0x3::coin_store::WithdrawEvent",
+        "event_data": "0x3b7fcb00060dc80466da1185345b80f896a327100a7911f2fe480b29b22d59f853303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696ec93b000000000000000000000000000000000000000000000000000000000000",
+        "tx_hash": "0xdb59788af6a3e7a7fd9ccee93be392c5ca42c1da3d689bed2434ec5a7a6598dd",
+        "sender": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "created_at": 0,
+        "decoded_event_data": null
+      },
+      {
+        "indexer_event_id": {
+          "tx_order": 4156,
+          "event_index": 1
+        },
+        "event_id": {
+          "event_handle_id": "0x6ab771425e05fad096ce70d6ca4903de7cca732ee4c9f6820eb215be288e98dd",
+          "event_seq": 4161
+        },
+        "event_type": "0x3::coin_store::DepositEvent",
+        "event_data": "0x5184184f61a704261615f879b5c100ebaa530a03e7b72b5ca09317fe4302b12f53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696ec93b000000000000000000000000000000000000000000000000000000000000",
+        "tx_hash": "0x09ddacbcc565e8d2f7544f4dded01ba54b80d43a6df1995bf6b0d55a6d5b78a4",
+        "sender": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "created_at": 0,
+        "decoded_event_data": null
+      },
+      {
+        "indexer_event_id": {
+          "tx_order": 4156,
+          "event_index": 0
+        },
+        "event_id": {
+          "event_handle_id": "0x8e3089f2c059cc5377a1b6b7c3dcefba8a586697c35de27c2a4b68f81defb69c",
+          "event_seq": 4156
+        },
+        "event_type": "0x3::coin_store::WithdrawEvent",
+        "event_data": "0x3b7fcb00060dc80466da1185345b80f896a327100a7911f2fe480b29b22d59f853303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696ec93b000000000000000000000000000000000000000000000000000000000000",
+        "tx_hash": "0x09ddacbcc565e8d2f7544f4dded01ba54b80d43a6df1995bf6b0d55a6d5b78a4",
+        "sender": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "created_at": 0,
+        "decoded_event_data": null
+      },
+      {
+        "indexer_event_id": {
+          "tx_order": 4152,
+          "event_index": 1
+        },
+        "event_id": {
+          "event_handle_id": "0x6ab771425e05fad096ce70d6ca4903de7cca732ee4c9f6820eb215be288e98dd",
+          "event_seq": 4157
+        },
+        "event_type": "0x3::coin_store::DepositEvent",
+        "event_data": "0x5184184f61a704261615f879b5c100ebaa530a03e7b72b5ca09317fe4302b12f53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696ed5100b0000000000000000000000000000000000000000000000000000000000",
+        "tx_hash": "0x0ea9d9a0dd8d19b13e5b0c89d46b9eb58e7c82990a970be5397f554d1f516e4a",
+        "sender": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "created_at": 0,
+        "decoded_event_data": null
+      },
+      {
+        "indexer_event_id": {
+          "tx_order": 4152,
+          "event_index": 0
+        },
+        "event_id": {
+          "event_handle_id": "0x8e3089f2c059cc5377a1b6b7c3dcefba8a586697c35de27c2a4b68f81defb69c",
+          "event_seq": 4152
+        },
+        "event_type": "0x3::coin_store::WithdrawEvent",
+        "event_data": "0x3b7fcb00060dc80466da1185345b80f896a327100a7911f2fe480b29b22d59f853303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696ed5100b0000000000000000000000000000000000000000000000000000000000",
+        "tx_hash": "0x0ea9d9a0dd8d19b13e5b0c89d46b9eb58e7c82990a970be5397f554d1f516e4a",
+        "sender": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "created_at": 0,
+        "decoded_event_data": null
+      },
+      {
+        "indexer_event_id": {
+          "tx_order": 4136,
+          "event_index": 5
+        },
+        "event_id": {
+          "event_handle_id": "0x6ab771425e05fad096ce70d6ca4903de7cca732ee4c9f6820eb215be288e98dd",
+          "event_seq": 4141
+        },
+        "event_type": "0x3::coin_store::DepositEvent",
+        "event_data": "0x5184184f61a704261615f879b5c100ebaa530a03e7b72b5ca09317fe4302b12f53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e8aa92a0000000000000000000000000000000000000000000000000000000000",
+        "tx_hash": "0x4b0819be8e5a0bcbce20df2c28fbbde744535a53bacf5f0580c0fb271ac8161e",
+        "sender": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "created_at": 0,
+        "decoded_event_data": null
+      },
+      {
+        "indexer_event_id": {
+          "tx_order": 4136,
+          "event_index": 4
+        },
+        "event_id": {
+          "event_handle_id": "0x8e3089f2c059cc5377a1b6b7c3dcefba8a586697c35de27c2a4b68f81defb69c",
+          "event_seq": 4136
+        },
+        "event_type": "0x3::coin_store::WithdrawEvent",
+        "event_data": "0x3b7fcb00060dc80466da1185345b80f896a327100a7911f2fe480b29b22d59f853303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e8aa92a0000000000000000000000000000000000000000000000000000000000",
+        "tx_hash": "0x4b0819be8e5a0bcbce20df2c28fbbde744535a53bacf5f0580c0fb271ac8161e",
+        "sender": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "created_at": 0,
+        "decoded_event_data": null
+      }
+    ],
+    "next_cursor": {
+      "tx_order": 4136,
+      "event_index": 4
+    },
+    "has_next_page": true
+  },
+  "id": 101
+}
+```
+
+2. 通过交易的排序范围来查询事件。
+
+请求：
+
+```shell
+curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data '{
+    "id": 101,
+    "jsonrpc": "2.0",
+    "method": "rooch_queryEvents",
+    "params": [
+        {"tx_order_range":{"from_order":0, "to_order":3}}, null, "10", true
+    ]
+}' | jq
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  6658  100  6485  100   173  28927    771 --:--:-- --:--:-- --:--:-- 29723
+```
+
+响应：
+
+```shell
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "data": [
+      {
+        "indexer_event_id": {
+          "tx_order": 2,
+          "event_index": 1
+        },
+        "event_id": {
+          "event_handle_id": "0x6ab771425e05fad096ce70d6ca4903de7cca732ee4c9f6820eb215be288e98dd",
+          "event_seq": 3
+        },
+        "event_type": "0x3::coin_store::DepositEvent",
+        "event_data": "0x5184184f61a704261615f879b5c100ebaa530a03e7b72b5ca09317fe4302b12f53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e52cb030000000000000000000000000000000000000000000000000000000000",
+        "tx_hash": "0xc2ad19a0dcfa2e2811624874e9c334c273bff2799fb3254e2c0371f057b1000c",
+        "sender": "0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35",
+        "created_at": 0,
+        "decoded_event_data": null
+      },
+      {
+        "indexer_event_id": {
+          "tx_order": 2,
+          "event_index": 0
+        },
+        "event_id": {
+          "event_handle_id": "0x8e3089f2c059cc5377a1b6b7c3dcefba8a586697c35de27c2a4b68f81defb69c",
+          "event_seq": 2
+        },
+        "event_type": "0x3::coin_store::WithdrawEvent",
+        "event_data": "0x125813b64065138cd0e37b7cc73c6d90dc7e1a0a00de9e1741b8c338dcc620ae53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e52cb030000000000000000000000000000000000000000000000000000000000",
+        "tx_hash": "0xc2ad19a0dcfa2e2811624874e9c334c273bff2799fb3254e2c0371f057b1000c",
+        "sender": "0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35",
+        "created_at": 0,
+        "decoded_event_data": null
+      },
+      {
+        "indexer_event_id": {
+          "tx_order": 1,
+          "event_index": 1
+        },
+        "event_id": {
+          "event_handle_id": "0x6ab771425e05fad096ce70d6ca4903de7cca732ee4c9f6820eb215be288e98dd",
+          "event_seq": 2
+        },
+        "event_type": "0x3::coin_store::DepositEvent",
+        "event_data": "0x5184184f61a704261615f879b5c100ebaa530a03e7b72b5ca09317fe4302b12f53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e3ea6020000000000000000000000000000000000000000000000000000000000",
+        "tx_hash": "0x7de9409a8c51262981dbcb8ecf6acda53c7f6920657786178321990c4246baef",
+        "sender": "0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35",
+        "created_at": 0,
+        "decoded_event_data": null
+      },
+      {
+        "indexer_event_id": {
+          "tx_order": 1,
+          "event_index": 0
+        },
+        "event_id": {
+          "event_handle_id": "0x8e3089f2c059cc5377a1b6b7c3dcefba8a586697c35de27c2a4b68f81defb69c",
+          "event_seq": 1
+        },
+        "event_type": "0x3::coin_store::WithdrawEvent",
+        "event_data": "0x125813b64065138cd0e37b7cc73c6d90dc7e1a0a00de9e1741b8c338dcc620ae53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e3ea6020000000000000000000000000000000000000000000000000000000000",
+        "tx_hash": "0x7de9409a8c51262981dbcb8ecf6acda53c7f6920657786178321990c4246baef",
+        "sender": "0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35",
+        "created_at": 0,
+        "decoded_event_data": null
+      },
+      {
+        "indexer_event_id": {
+          "tx_order": 0,
+          "event_index": 4
+        },
+        "event_id": {
+          "event_handle_id": "0x6ab771425e05fad096ce70d6ca4903de7cca732ee4c9f6820eb215be288e98dd",
+          "event_seq": 1
+        },
+        "event_type": "0x3::coin_store::DepositEvent",
+        "event_data": "0x5184184f61a704261615f879b5c100ebaa530a03e7b72b5ca09317fe4302b12f53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e1a661a0000000000000000000000000000000000000000000000000000000000",
+        "tx_hash": "0x6fb503df33e446ceff37e07ebf143f7e332981b3e356c6b973947f3c265885a8",
+        "sender": "0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35",
+        "created_at": 0,
+        "decoded_event_data": null
+      },
+      {
+        "indexer_event_id": {
+          "tx_order": 0,
+          "event_index": 3
+        },
+        "event_id": {
+          "event_handle_id": "0x8e3089f2c059cc5377a1b6b7c3dcefba8a586697c35de27c2a4b68f81defb69c",
+          "event_seq": 0
+        },
+        "event_type": "0x3::coin_store::WithdrawEvent",
+        "event_data": "0x125813b64065138cd0e37b7cc73c6d90dc7e1a0a00de9e1741b8c338dcc620ae53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e1a661a0000000000000000000000000000000000000000000000000000000000",
+        "tx_hash": "0x6fb503df33e446ceff37e07ebf143f7e332981b3e356c6b973947f3c265885a8",
+        "sender": "0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35",
+        "created_at": 0,
+        "decoded_event_data": null
+      },
+      {
+        "indexer_event_id": {
+          "tx_order": 0,
+          "event_index": 2
+        },
+        "event_id": {
+          "event_handle_id": "0x6ab771425e05fad096ce70d6ca4903de7cca732ee4c9f6820eb215be288e98dd",
+          "event_seq": 0
+        },
+        "event_type": "0x3::coin_store::DepositEvent",
+        "event_data": "0x125813b64065138cd0e37b7cc73c6d90dc7e1a0a00de9e1741b8c338dcc620ae53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e000010632d5ec76b050000000000000000000000000000000000000000000000",
+        "tx_hash": "0x6fb503df33e446ceff37e07ebf143f7e332981b3e356c6b973947f3c265885a8",
+        "sender": "0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35",
+        "created_at": 0,
+        "decoded_event_data": null
+      },
+      {
+        "indexer_event_id": {
+          "tx_order": 0,
+          "event_index": 1
+        },
+        "event_id": {
+          "event_handle_id": "0xdebc7ccc8fa8855fad9fdd2919e875e06bcfa9b11cdc53c3247e0f81239852e2",
+          "event_seq": 1
+        },
+        "event_type": "0x3::coin_store::CreateEvent",
+        "event_data": "0x125813b64065138cd0e37b7cc73c6d90dc7e1a0a00de9e1741b8c338dcc620ae53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e",
+        "tx_hash": "0x6fb503df33e446ceff37e07ebf143f7e332981b3e356c6b973947f3c265885a8",
+        "sender": "0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35",
+        "created_at": 0,
+        "decoded_event_data": null
+      },
+      {
+        "indexer_event_id": {
+          "tx_order": 0,
+          "event_index": 0
+        },
+        "event_id": {
+          "event_handle_id": "0x358779b791ef606d7f07df8881c1939f26de95119486b60745a9c3127ae8fd37",
+          "event_seq": 0
+        },
+        "event_type": "0x3::coin::MintEvent",
+        "event_data": "0x53303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6761735f636f696e3a3a476173436f696e000010632d5ec76b050000000000000000000000000000000000000000000000",
+        "tx_hash": "0x6fb503df33e446ceff37e07ebf143f7e332981b3e356c6b973947f3c265885a8",
+        "sender": "0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35",
+        "created_at": 0,
+        "decoded_event_data": null
+      }
+    ],
+    "next_cursor": {
+      "tx_order": 0,
+      "event_index": 0
+    },
+    "has_next_page": false
+  },
+  "id": 101
+}
+```
+
+### rooch_executeViewFunction
+
+执行只读函数，调用该函数不会改变应用的状态。
+
+请求：
+
+```shell
+curl --location --header 'Content-Type: application/json' --data '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_executeViewFunction",
+ "params":[{"function_id":"0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::init", "ty_args":[], "args":[]}]
+}' https://dev-seed.rooch.network:443 | jq
+```
+
+响应：
+
+```shell
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "vm_status": {
+      "MoveAbort": {
+        "location": "0000000000000000000000000000000000000000000000000000000000000002::object",
+        "abort_code": "1"
+      }
+    },
+    "return_values": null
+  },
+  "id": 101
+}
+```
+
+### rooch_queryGlobalStates
+
+通过状态过滤器查询全局状态索引器。
+
+过滤器可以有 4 种方式设置：
+
+- `object_type` + `owner`
+- `object_type`
+- `owner`
+- `object_id`
+
+下面演示使用 `owner` 来查询。
+
+请求：
+
+```shell
+curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_queryGlobalStates",
+ "params":[{"owner":"0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069"}, null, "5", false]
+}' | jq
+```
+
+响应：
+
+```shell
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "data": [
+      {
+        "object_id": "0x3b7fcb00060dc80466da1185345b80f896a327100a7911f2fe480b29b22d59f8",
+        "owner": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "flag": 0,
+        "value": {
+          "abilities": 8,
+          "type": "0x3::coin_store::CoinStore<0x3::gas_coin::GasCoin>",
+          "value": {
+            "balance": {
+              "abilities": 4,
+              "type": "0x3::coin_store::Balance",
+              "value": {
+                "value": "99999999999997204086"
+              }
+            },
+            "coin_type": "0000000000000000000000000000000000000000000000000000000000000003::gas_coin::GasCoin",
+            "frozen": false
+          }
+        },
+        "object_type": "0x3::coin_store::CoinStore",
+        "key_type": null,
+        "size": 0,
+        "tx_order": 423,
+        "state_index": 2,
+        "created_at": 0,
+        "updated_at": 0
+      },
+      {
+        "object_id": "0xbfc363a0afb2515ada06376ca4366f14c08b3d1021f23996bedd9109241aebd4",
+        "owner": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "flag": 0,
+        "value": {
+          "abilities": 12,
+          "type": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::Counter",
+          "value": {
+            "count_value": "123"
+          }
+        },
+        "object_type": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::Counter",
+        "key_type": null,
+        "size": 0,
+        "tx_order": 423,
+        "state_index": 3,
+        "created_at": 0,
+        "updated_at": 0
+      },
+      {
+        "object_id": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "owner": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+        "flag": 0,
+        "value": {
+          "abilities": 8,
+          "type": "0x2::account_storage::AccountStorage",
+          "value": {
+            "modules": {
+              "abilities": 4,
+              "type": "0x2::table::Table<0x1::string::String, 0x2::move_module::MoveModule>",
+              "value": {
+                "handle": "0xc8f877a25f28d6060b5b8f34e83f86aa69308c4bfffc5a124130e4c2e980cd54"
+              }
+            },
+            "resources": {
+              "abilities": 4,
+              "type": "0x2::type_table::TypeTable",
+              "value": {
+                "handle": "0x1b46cf25c0aedc8a4249e312dbd4cec5e37009014bffdd193e748cf37f5eb278"
+              }
+            }
+          }
+        },
+        "object_type": "0x2::account_storage::AccountStorage",
+        "key_type": null,
+        "size": 0,
+        "tx_order": 423,
+        "state_index": 8,
+        "created_at": 0,
+        "updated_at": 0
+      }
+    ],
+    "next_cursor": {
+      "tx_order": 423,
+      "state_index": 8
+    },
+    "has_next_page": false
+  },
+  "id": 101
+}
+```
+
+### rooch_queryTransactions
+
+通过交易过滤器查询交易索引器。
+
+请求：
+
+```shell
+curl --location 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_queryTransactions",
+ "params":[{"tx_hashes":["0x09ddacbcc565e8d2f7544f4dded01ba54b80d43a6df1995bf6b0d55a6d5b78a4"]}, null, "5", true]
+}' | jq
+```
+
+响应：
+
+```shell
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "data": [
+      {
+        "transaction": {
+          "transaction_type": "rooch",
+          "sequence_number": 2,
+          "sender": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069",
+          "action_type": "functioncall",
+          "action": {
+            "function_call": {
+              "function_id": "d9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a030069::quick_start_object_counter::increase",
+              "ty_args": [],
+              "args": [
+                "0xbfc363a0afb2515ada06376ca4366f14c08b3d1021f23996bedd9109241aebd4"
+              ]
+            }
+          },
+          "raw": "0xd9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a0300690200000000000000d7af34010000000000e1f5050000000001d9858821a52538c99f822d3f90ec798f76466bb7a1e82ebdb42d19b62a0300691a717569636b5f73746172745f6f626a6563745f636f756e74657208696e637265617365000120bfc363a0afb2515ada06376ca4366f14c08b3d1021f23996bedd9109241aebd4000000000000000061009e4f47e14a1b1e3f8bbd51bada6af1a76df543879aa5a920d142bc4e9dabc5027045ef855e5b8b2c547acc93644eb073143c2f3ba982a5e4e1031c6bc27d460eb538115d45ef7ceaff0f4918d23c5c84f0b35fa1791b4fc86b1391e84b40fdde"
+        },
+        "sequence_info": {
+          "tx_order": "933",
+          "tx_order_signature": {
+            "auth_validator_id": "0",
+            "payload": "0x0080461bbf41a5607c99a087222bedaf73b33d1f19e861aa9afe900d7e8826d10150b532d49062e87d71d166609a887df23ac3d44c2d8065bbd4ff4830d473530bca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
+          },
+          "tx_accumulator_root": "0xf41d37b7e0f58b483e14ecc35b42ab9bce765aa715608b1ca5f2116b83fa34cc"
+        },
+        "execution_info": {
+          "tx_hash": "0x09ddacbcc565e8d2f7544f4dded01ba54b80d43a6df1995bf6b0d55a6d5b78a4",
+          "state_root": "0x45ae059f9f9b104168f9127b5b48276155b21a61423e80b9ac499211f5f4274f",
+          "event_root": "0x45ae059f9f9b104168f9127b5b48276155b21a61423e80b9ac499211f5f4274f",
+          "gas_used": 15305,
+          "status": {
+            "type": "executed"
+          }
+        }
+      }
+    ],
+    "next_cursor": 933,
+    "has_next_page": false
+  },
+  "id": 101
+}
+```
+
+### btc_queryUTXOs
+
+```shell
+curl --location 'http://localhost:50051' \
+--header 'Content-Type: application/json' \
+--data '{
+    "id": 101,
+    "jsonrpc": "2.0",
+    "method": "btc_queryUTXOs",
+    "params": [
+        null, null, "3", true
+    ]
+}'
+```
+
+```shell
+{
+    "jsonrpc": "2.0",
+    "result": {
+        "data": [
+            {
+                "object_id": "0x53ecba6bd8512287bb153f90b500b707b432af0db7e7e30f098755dd2acd90c0",
+                "owner": "0x0000000000000000000000000000000000000000000000000000000000000004",
+                "owner_bitcoin_address": null,
+                "flag": 0,
+                "value": {
+                    "txid": "0x53cb51a5afc66d3b4a94bd44469c0e60bcbcb728008fd91c7867a9515a1f8f3d",
+                    "bitcoin_txid": "3d8f1f5a51a967781cd98f0028b7bcbc600e9c4644bd944a3b6dc6afa551cb53",
+                    "vout": 1,
+                    "value": 0,
+                    "seals": "{\"data\":[]}"
+                },
+                "object_type": "0x4::utxo::UTXO",
+                "tx_order": 203,
+                "state_index": 1,
+                "created_at": 0,
+                "updated_at": 0
+            },
+            {
+                "object_id": "0x02a26226625959a46a85411def4dfce8bf6741b60083f1d8029d2eb7c5537b87",
+                "owner": "0xe5f0793893d5117a4a6a245295e504a1c53c76b339b9a2f96c66e6bcf02473bc",
+                "owner_bitcoin_address": "bc1pz24vcth8ey6kj2jv8uucxwgw946sg7c7tdrqmnnrfq96her2asgqel4222",
+                "flag": 0,
+                "value": {
+                    "txid": "0x53cb51a5afc66d3b4a94bd44469c0e60bcbcb728008fd91c7867a9515a1f8f3d",
+                    "bitcoin_txid": "3d8f1f5a51a967781cd98f0028b7bcbc600e9c4644bd944a3b6dc6afa551cb53",
+                    "vout": 0,
+                    "value": 5000000000,
+                    "seals": "{\"data\":[]}"
+                },
+                "object_type": "0x4::utxo::UTXO",
+                "tx_order": 203,
+                "state_index": 0,
+                "created_at": 0,
+                "updated_at": 0
+            },
+            {
+                "object_id": "0x9dca6d407ab237f3e004778945ff296a01f98c309e332bded089062e11d1dee4",
+                "owner": "0xe5f0793893d5117a4a6a245295e504a1c53c76b339b9a2f96c66e6bcf02473bc",
+                "owner_bitcoin_address": "bc1pz24vcth8ey6kj2jv8uucxwgw946sg7c7tdrqmnnrfq96her2asgqel4222",
+                "flag": 0,
+                "value": {
+                    "txid": "0x4242756ae7f3d884b17f087d531847b4d5aa08ffd34184a85e1d72cf728da2c7",
+                    "bitcoin_txid": "c7a28d72cf721d5ea88441d3ff08aad5b44718537d087fb184d8f3e76a754242",
+                    "vout": 0,
+                    "value": 5000000000,
+                    "seals": "{\"data\":[]}"
+                },
+                "object_type": "0x4::utxo::UTXO",
+                "tx_order": 201,
+                "state_index": 3,
+                "created_at": 0,
+                "updated_at": 0
+            }
+        ],
+        "next_cursor": {
+            "tx_order": 201,
+            "state_index": 3
+        },
+        "has_next_page": true
+    },
+    "id": 101
+}
+```
+
+### btc_queryUTXOs
+
+```shell
+curl --location 'http://localhost:50051' \
+--header 'Content-Type: application/json' \
+--data '{
+    "id": 101,
+    "jsonrpc": "2.0",
+    "method": "btc_queryUTXOs",
+    "params": [
+        {"owner":"bc1pz24vcth8ey6kj2jv8uucxwgw946sg7c7tdrqmnnrfq96her2asgqel4222"}, null, "3", true
+    ]
+}'
+```
+
+```shell
+{
+    "jsonrpc": "2.0",
+    "result": {
+        "data": [
+            {
+                "object_id": "0x02a26226625959a46a85411def4dfce8bf6741b60083f1d8029d2eb7c5537b87",
+                "owner": "0xe5f0793893d5117a4a6a245295e504a1c53c76b339b9a2f96c66e6bcf02473bc",
+                "owner_bitcoin_address": "bc1pz24vcth8ey6kj2jv8uucxwgw946sg7c7tdrqmnnrfq96her2asgqel4222",
+                "flag": 0,
+                "value": {
+                    "txid": "0x53cb51a5afc66d3b4a94bd44469c0e60bcbcb728008fd91c7867a9515a1f8f3d",
+                    "bitcoin_txid": "3d8f1f5a51a967781cd98f0028b7bcbc600e9c4644bd944a3b6dc6afa551cb53",
+                    "vout": 0,
+                    "value": 5000000000,
+                    "seals": "{\"data\":[]}"
+                },
+                "object_type": "0x4::utxo::UTXO",
+                "tx_order": 203,
+                "state_index": 0,
+                "created_at": 0,
+                "updated_at": 0
+            },
+            {
+                "object_id": "0x9dca6d407ab237f3e004778945ff296a01f98c309e332bded089062e11d1dee4",
+                "owner": "0xe5f0793893d5117a4a6a245295e504a1c53c76b339b9a2f96c66e6bcf02473bc",
+                "owner_bitcoin_address": "bc1pz24vcth8ey6kj2jv8uucxwgw946sg7c7tdrqmnnrfq96her2asgqel4222",
+                "flag": 0,
+                "value": {
+                    "txid": "0x4242756ae7f3d884b17f087d531847b4d5aa08ffd34184a85e1d72cf728da2c7",
+                    "bitcoin_txid": "c7a28d72cf721d5ea88441d3ff08aad5b44718537d087fb184d8f3e76a754242",
+                    "vout": 0,
+                    "value": 5000000000,
+                    "seals": "{\"data\":[]}"
+                },
+                "object_type": "0x4::utxo::UTXO",
+                "tx_order": 201,
+                "state_index": 3,
+                "created_at": 0,
+                "updated_at": 0
+            },
+            {
+                "object_id": "0x8a82f637e4964f4651abb5d35e3bc9c2d1c00c5c678d7f3fb0a5c4f3248007a8",
+                "owner": "0xe5f0793893d5117a4a6a245295e504a1c53c76b339b9a2f96c66e6bcf02473bc",
+                "owner_bitcoin_address": "bc1pz24vcth8ey6kj2jv8uucxwgw946sg7c7tdrqmnnrfq96her2asgqel4222",
+                "flag": 0,
+                "value": {
+                    "txid": "0x5ca8776c70db65736f69bce5b8ed2a6108134696ca5da8edd8c946293b6d839f",
+                    "bitcoin_txid": "9f836d3b2946c9d8eda85dca96461308612aedb8e5bc696f7365db706c77a85c",
+                    "vout": 0,
+                    "value": 5000000000,
+                    "seals": "{\"data\":[]}"
+                },
+                "object_type": "0x4::utxo::UTXO",
+                "tx_order": 199,
+                "state_index": 2,
+                "created_at": 0,
+                "updated_at": 0
+            }
+        ],
+        "next_cursor": {
+            "tx_order": 199,
+            "state_index": 2
+        },
+        "has_next_page": true
+    },
+    "id": 101
+}
+```
+
+### btc_queryInscriptions
+
+```shell
+curl --location 'http://localhost:50051' \
+--header 'Content-Type: application/json' \
+--data '{
+    "id": 101,
+    "jsonrpc": "2.0",
+    "method": "btc_queryInscriptions",
+    "params": [
+        {"owner":"bc1prwkw9eatwve4zthumxd9jjsz9vsrfvyla6x7jv27kwpasu7j839samxheh"}, null, "3", true
+    ]
+}'
+```
+
+```shell
+{
+    "jsonrpc": "2.0",
+    "result": {
+        "data": [
+            {
+                "object_id": "0x0e9244b7960e271ff1bc68e88f7df1bec45e9246048d5b9f7101b53774e56365",
+                "owner": "0xfc7ec61a7c481c66797954dd5256e3f34bb578bb350d3cfa4df5940e3e960219",
+                "owner_bitcoin_address": "bc1prwkw9eatwve4zthumxd9jjsz9vsrfvyla6x7jv27kwpasu7j839samxheh",
+                "flag": 0,
+                "value": {
+                    "txid": "0xb8b7a9b8be2f43746dceaf83b741737e3b577d8cbbc950e10001f7aa9becefc7",
+                    "bitcoin_txid": "c7efec9baaf70100e150c9bb8c7d573b7e7341b783afce6d74432fbeb8a9b7b8",
+                    "index": 0,
+                    "body": "0x48656c6c6f20726f6f63680a",
+                    "content_encoding": null,
+                    "content_type": "text/plain;charset=utf-8",
+                    "metadata": "0x",
+                    "metaprotocol": null,
+                    "parent": null,
+                    "pointer": null
+                },
+                "object_type": "0x4::ord::Inscription",
+                "tx_order": 205,
+                "state_index": 0,
+                "created_at": 0,
+                "updated_at": 0
+            }
+        ],
+        "next_cursor": {
+            "tx_order": 205,
+            "state_index": 0
+        },
+        "has_next_page": false
+    },
+    "id": 101
+}
+```
+
+### btc_queryInscriptions
+
+```shell
+curl --location 'http://localhost:50051' \
+--header 'Content-Type: application/json' \
+--data '{
+    "id": 101,
+    "jsonrpc": "2.0",
+    "method": "btc_queryInscriptions",
+    "params": [
+        null, null, "10", true
+    ]
+}'
+```
+
+```shell
+{
+    "jsonrpc": "2.0",
+    "result": {
+        "data": [
+            {
+                "object_id": "0x0e9244b7960e271ff1bc68e88f7df1bec45e9246048d5b9f7101b53774e56365",
+                "owner": "0xfc7ec61a7c481c66797954dd5256e3f34bb578bb350d3cfa4df5940e3e960219",
+                "owner_bitcoin_address": "bc1prwkw9eatwve4zthumxd9jjsz9vsrfvyla6x7jv27kwpasu7j839samxheh",
+                "flag": 0,
+                "value": {
+                    "txid": "0xb8b7a9b8be2f43746dceaf83b741737e3b577d8cbbc950e10001f7aa9becefc7",
+                    "bitcoin_txid": "c7efec9baaf70100e150c9bb8c7d573b7e7341b783afce6d74432fbeb8a9b7b8",
+                    "index": 0,
+                    "body": "0x48656c6c6f20726f6f63680a",
+                    "content_encoding": null,
+                    "content_type": "text/plain;charset=utf-8",
+                    "metadata": "0x",
+                    "metaprotocol": null,
+                    "parent": null,
+                    "pointer": null
+                },
+                "object_type": "0x4::ord::Inscription",
+                "tx_order": 205,
+                "state_index": 0,
+                "created_at": 0,
+                "updated_at": 0
+            }
+        ],
+        "next_cursor": {
+            "tx_order": 205,
+            "state_index": 0
+        },
+        "has_next_page": false
+    },
+    "id": 101
+}
+```

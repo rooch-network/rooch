@@ -1,0 +1,614 @@
+# 快速入门
+
+本小节将通过一个计数器例子来快速介绍 Rooch 的开发入门。
+
+## 什么是计数器
+
+计数器是一个计数的小程序，它包含一个初始值，我们可以通过一个递增指令，让它的值递增，从而达到计数的目的。
+
+我们可以使用任何编程语言来实现这个小程序，这篇教程将使用 Move 语言来编写它，并且让它成功运行在 Rooch 上。
+
+## 创建计数器项目
+
+在我们创建计数器合约程序前，我们可以使用 Rooch 提供的 CLI 命令来初始化一个空项目：
+
+```shell
+rooch move new quick_start_counter
+```
+
+详细的方法请参考[创建 Rooch Move 合约](./create-rooch-move-contract.zh-CN.mdx)。
+
+接下来在 `sources` 目录里创建一个 `counter.move` 文件来编写我们的合约代码。
+
+## 合约编写
+
+```move
+module quick_start_counter::quick_start_counter {
+    use moveos_std::context::{Self, Context};
+
+    struct Counter has key {
+        count_value: u64
+    }
+
+    fun init(ctx: &mut Context, account: &signer) {
+        context::move_resource_to(ctx, account, Counter { count_value: 0 });
+    }
+
+    entry fun increase(ctx: &mut Context) {
+        let counter = context::borrow_mut_resource<Counter>(ctx, @quick_start_counter);
+        counter.count_value = counter.count_value + 1;
+    }
+}
+```
+
+通过简单的 17 行代码，就在 Rooch Move 上实现了简单的计数器功能。
+
+接下来将详细介绍代码的每一行功能。
+
+### 模块声明
+
+在 Move 语言中，合约通常编写在一个个模块中，简单的合约通过一个模块就能完成，而复杂的合约可能由多个模块组成。我们的计数器合约非常简单，所以只有一个 `quick_start_counter` 模块。
+
+模块中，通常包含实现当前模块功能所需要的数据类型和函数。
+
+```move
+module quick_start_counter::quick_start_counter {
+```
+
+在第 1 行中，我们用 `module` 关键字来声明一个 `quick_start_counter` 模块。
+
+在 Move 系的区块链系统中，模块是通过地址来唯一标识的，即一个地址只能拥有一个同名称的模块，无法多次发布同一个名称的模块。同一份合约可以被多个地址发布，为了在区块链系统中识别出合约模块到底是谁发布的，需要通过`地址`来唯一标识。
+
+所以，声明一个 Move 模块的语法是 `module 地址::模块名`。
+
+### 导入模块
+
+```move
+use moveos_std::context::{Self, Context};
+```
+
+在第 2~3 行中，是导入模块的语句。要在 Rooch 上实现计数器合约，我们需要使用 Rooch 的某些功能库，此合约使用了 MoveOS 标准库提供 `context` 等功能模块。
+
+### 定义数据结构
+
+```move
+struct Counter has key {
+    count_value: u64
+}
+```
+
+我们定义一个 `Counter` 类型的结构体用来记录计数值，结构体只包含一个 `u64` 类型的字段 `count_value`。
+
+我们要将 `Counter` 类型的值记录到 Rooch 的全局存储中，所以需要给这个类型提供一个 `key` 能力，让 Move 能够通过**键**来查找数据。
+
+### 初始化函数
+
+```move
+fun init(ctx: &mut Context, account: &signer) {
+    context::move_resource_to(ctx, account, Counter { value: 0 })
+}
+```
+
+Move 中提供一个特定的初始化函数 `init` 来自动初始化合约，确保合约发布后一些必需的操作已被执行。
+
+例如，我们希望计数器合约一经发布，合约就自动为我们初始化好计数器，使它的计数值为 `0`。
+
+第 9 行是 `init` 函数的函数签名，接受两个参数 `ctx` 和 `account`。
+
+### 递增函数
+
+接下来，我们要定义一个递增函数，每执行一次，就让计数器的值递增 `1`。
+
+```move
+entry fun increase(ctx: &mut Context) {
+    let counter = context::borrow_mut_resource<Counter>(ctx, @quick_start_counter);
+    counter.count_value = counter.count_value + 1;
+}
+```
+
+第 13 行是 `increase` 函数的签名，接受一个上下文参数。
+
+在第 14 行中，调用 Rooch 提供的账户存储的 `borrow_mut_resource` 指令来获取 `Counter` 类型的可变引用，并将函数的返回值绑定到 `counter` 变量。借用到 `Counter` 的可变引用，我们就可以对他的值进行修改操作。
+
+`borrow_mut_resource` 函数接受一个上下文参数，和一个要借用 `Counter` 资源的地址参数，为了简单起见，我们直接使用发布计数器模块的地址作为借用方。
+
+在第 15 行中，我们通过成员运算获取到 `Counter` 结构的字段值，并进行加一操作。
+
+至此，我们就实现了计数器的递增逻辑。
+
+### 入口函数
+
+入口函数是由 `entry` 关键字修饰的函数。
+
+出于安全考虑，在 Move 虚拟机中禁止了外部（命令行等）直接调用操作模块数据的函数，而是提供一种名为`入口函数`的方式来间接调用逻辑函数，入口函数是合约向外暴露的一种接口。
+
+> 注意：本例中演示的计数器合约，我们为了尽可能地精简，我们将逻辑操作和入口函数合并成了一个 `increase` 函数，在实际开发中，建议将逻辑和入口分开封装到不同的函数中。
+
+如你所见，第 13 行的 `increase` 函数被 `entry` 关键字修饰了，因此它便成为了一个入口函数。有了入口函数，我们就可以在命令行或其他客户端中执行计数器的递增操作了。
+
+> 特别注意，`increase` 函数的上下文参数是 Move VM 自动传递的参数，在合约编写中需要显式传递，而对外部调用而言，则不需要手动传递，所以在命令行中调用 `increase` 函数时，不需要传递任何参数。
+
+## 在 Rooch 的命令行界面中演示计数器程序
+
+1. 首先检查当前 Rooch 默认激活的网络是否为 `dev` 网络：
+
+```shell
+$ rooch env list
+
+       Env Alias         |                     RPC URL                      |                  Websocket URL                   |  Active Env
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+         local           |               http://0.0.0.0:50051               |                       Null                       |
+          dev            |       https://dev-seed.rooch.network:443/        |                       Null                       |     True
+```
+
+注意，如果 `Active Env` 的 `dev` 环境不是 `True`，使用 `rooch env switch --alias dev` 命令切换到开发网络。
+
+2. 开启另一个终端，并切换到 `counter` 项目的根目录，编译合约：
+
+```shell
+$ rooch move build
+
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+INCLUDING DEPENDENCY MoveStdlib
+INCLUDING DEPENDENCY MoveosStdlib
+INCLUDING DEPENDENCY RoochFramework
+BUILDING quick_start_counter
+Success
+```
+
+3. 发布计数器合约到 Rooch 上：
+
+```shell
+$ rooch move publish
+
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
+INCLUDING DEPENDENCY MoveStdlib
+INCLUDING DEPENDENCY MoveosStdlib
+INCLUDING DEPENDENCY RoochFramework
+BUILDING quick_start_counter
+Publish modules to address: 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81
+{
+  "sequence_info": {
+    "tx_order": "17128",
+    "tx_order_signature": {
+      "auth_validator_id": "0",
+      "payload": "0x00b5d56a8178299d628e0d341fff4b97904f7ff80f9e3e8aca10f0d1d9ac65e5736757caec9be17aa54b1da860b183a6d1574f1db9ba632910fb308c4d6283d30eca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
+    },
+    "tx_accumulator_root": "0xb408f55b7e003f54fa37a87ccaa25937bedb7d04d3d8a06f745de4e30b25a3cf"
+  },
+  "execution_info": {
+    "tx_hash": "0xa45998b0a7d979597d0ed4021c2ffbe778d2e0889d3151ad29493e3d91f177a6",
+    "state_root": "0x0a5f095123b459749938b4fc436c06c429066f6a48a8f014bba6360471b6d03b",
+    "event_root": "0x8be169d5a1b2bdace1ff085fae4753e37f69095ec543a83ef34cae23e9ebb747",
+    "gas_used": 1644906,
+    "status": {
+      "type": "executed"
+    }
+  },
+......
+```
+
+看到输出结果的 `execution_info.status` 中出现 `executed`，说明计数器合约已经成功发布，并且初始化好了计数器。
+
+4. 我们使用 Rooch 提供的资源查找命令来获取 `Counter` 资源的相关信息。
+
+语法是 `rooch resource --address 发布资源的地址 --resource 资源的类型`：
+
+```shell
+$ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81 --resource 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter
+
+{
+  "value": "0x0000000000000000",
+  "value_type": "0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter",
+  "decoded_value": {
+    "abilities": 8,
+    "type": "0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter",
+    "value": {
+      "count_value": "0"
+    }
+  }
+}
+```
+
+注意 `value` 属性，可以看到在 `Counter` 资源的输出信息中，`Counter` 的字段值 `count_value` 确实是 `0`。
+
+5. 接着我们调用计数器的递增函数：
+
+语法是 `rooch move run --function 模块发布的地址::模块名::入口函数名 --sender-account 发送当前交易的地址`。
+
+> 注意：区块链系统中，执行某些操作通常是通过向区块链系统中发送某个交易来执行相应的操作。
+
+```shell
+$ rooch move run --function 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::increase --sender-account 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81
+
+{
+  "sequence_info": {
+    "tx_order": "17160",
+    "tx_order_signature": {
+      "auth_validator_id": "0",
+      "payload": "0x00f3809e65ee7aef9d9f4f7f79820ad6a25d44aed583c74300f30a0550f8256e371546e4515125636646acb3e625bb5d02db933656218832103300861b4a2b9d07ca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
+    },
+    "tx_accumulator_root": "0x89ace9f8d15707a008f7237566761e28743a4c73d9f5b19622c65e4a072850bc"
+  },
+  "execution_info": {
+    "tx_hash": "0x19139e0f8779c43e7feb989553d66e41eab2840705417898dee376b3ea2ea3d0",
+    "state_root": "0xb876495e3c144700fb315cf2697a990d25578b4b832f9b34bb74e4f233d4faf2",
+    "event_root": "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
+    "gas_used": 12769,
+    "status": {
+      "type": "executed"
+    }
+  },
+......
+```
+
+如果看到 `status` 中提示了 `executed`，证明 `increase` 函数调用成功了。
+
+6. 再次查看计数器的值是否是我们预期的值：
+
+```shell
+$ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81 --resource 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter
+
+{
+  "value": "0x0100000000000000",
+  "value_type": "0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter",
+  "decoded_value": {
+    "abilities": 8,
+    "type": "0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter",
+    "value": {
+      "count_value": "1"
+    }
+  }
+}
+```
+
+如你所见，`Counter` 的 `value` 字段的值确实已经更新为 `1` 了。
+
+至此，你已经了解了如何在 Rooch 中编写合约以及如何在命令行中调用合约了。
+
+接下来，我们增加一点点难度，我们将演示如何在前端中运行和使用计数器合约程序。
+
+## 快速体验
+
+这个例子的源代码存放在 `rooch/examples/quick_start_counter` 目录中，为了更方便测试，我们将 `Move.toml` 文件中的地址修改为通配符 `_`。
+
+如果直接使用我们提供的例子运行，执行的 Shell 命令会有一点区别：
+
+```shell
+$ rooch move build --named-addresses quick_start_counter=default
+
+$ rooch move publish --named-addresses quick_start_counter=default
+
+# 注意 `0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81` 是我演示的地址，当你实际运行时，需要更改为你自己的钱包地址
+$ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81 --resource 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter
+
+$ rooch move run --function 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::increase --sender-account default
+
+$ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81 --resource 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter
+```
+
+> 注意：命令中的 `default` 代表的是 Rooch 配置中的默认地址，如果你想使用其他的地址，也可以直接传递以 `0x` 开头的地址。
+
+## 面向对象的存储模型
+
+上面我们使用了账户的**资源存储模型**来简单地实现和使用计数器。接下来我们将介绍另一种存储模型——**对象存储模型**。
+
+我们将重构计数器这个例子，并在 Rooch 的 `dev` 网络进行演示。
+
+### 初始化项目
+
+创建一个名为 `quick_start_object_counter` 的 Move 项目：
+
+```shell
+rooch move new quick_start_object_counter
+```
+
+下面是重构之后的计数器代码：
+
+```move
+module quick_start_object_counter::quick_start_object_counter {
+    use std::signer;
+    use moveos_std::event;
+    use moveos_std::object::{Self, ObjectID, Object};
+    use moveos_std::context::{Self, Context};
+
+    struct Counter has key, store {
+        count_value: u64
+    }
+
+    struct UserCounterCreatedEvent has drop {
+        id: ObjectID
+    }
+
+    fun init(ctx: &mut Context, owner: &signer) {
+        create_shared(ctx);
+        create_user(ctx, owner);
+    }
+
+    fun create_shared(ctx: &mut Context) {
+        let counter = Counter { count_value: 0 };
+        let counter_obj = context::new_named_object(ctx, counter);
+        object::to_shared(counter_obj);
+    }
+
+    fun create_user(ctx: &mut Context, owner: &signer): ObjectID {
+        let counter = Counter { count_value: 123 };
+        let owner_addr = signer::address_of(owner);
+        let counter_obj = context::new_object(ctx, counter);
+        let counter_obj_id = object::id(&counter_obj);
+        object::transfer(counter_obj, owner_addr);
+        let user_counter_created_event = UserCounterCreatedEvent { id: counter_obj_id };
+        event::emit(user_counter_created_event);
+        counter_obj_id
+    }
+
+    public entry fun increase(counter_obj: &mut Object<Counter>) {
+        let counter = object::borrow_mut(counter_obj);
+        counter.count_value = counter.count_value + 1;
+    }
+}
+```
+
+### 解释
+
+我们会使用一些 Move 和 MoveOS 提供的一些库，`signer` 模块获取签名交易的地址。`event` 模块处理事件，这里主要用于标记对象创建的事件。
+
+定义两个数据结构，`Counter` 存储计数器的值，`UserCounterCreatedEvent` 存储计数器对象的 ID。
+
+同样，我们定义 `init` 来调用创建计数器的逻辑函数，可以看到，我们分别调用了两个函数：`create_shared` 和 `create_user`。这个例子中，我们演示 Rooch 的对象存储模型中的两种对象的区别和作用。
+
+`create_shared` 函数封装了创建**共享计数器**的逻辑，它会创建一个所有用户都能够递增的计数器。首先构造一个初始值为 `0` 的计数器；然后调用 `new_named_object` 函数来创建一个命名对象，这个计数器是全局唯一的，因此我们可以直接通过类型来查询它的相关属性；最后，我们调用 `to_shared` 函数将计数器对象变成共享的，让任意账户都能修改它的值。
+
+`create_user` 函数封装了创建普通的计数器的逻辑，这个计数器的值只能由创建者修改。首先，我们构造一个初始值为 `123` 的计数器，然后获取签名交易的地址。使用 `new_object` 函数创建一个计数器对象并获取计数器对象的 ID。接着，调用 `transfer` 函数将计数器对象转移到签名这笔交易的账户地址，即可完成计数器对象的创建。为了在命令行中获取计数器对象的 ID 并用来递增计数器，我们需要借助事件来发送消息。
+
+`increase` 入口函数，封装了我们递增计数器的逻辑。首先，调用 `borrow_mut` 从计数器对象中获取计数器的可变引用，然后进行计数值的 `+1` 操作。
+
+### 前提条件
+
+为了演示这个例子，我们需要准备两个 Rooch 账户。
+
+可以通过 `rooch account create` 命令来创建账户，通过 `rooch account switch` 命令来切换账户，通过 `rooch account list` 命令来列出当前存在的账户列表。
+
+```shell
+                     Rooch Address (Ed25519)                       |               Public Key (Base64)                | Auth Validator ID | Active Address
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63 |   AP/7lMzNiiFOSk6AWrYlozVau+5dBukK5nLt9ei6DE4N   |        0         |     True
+0xd9ba8633a96c91eea2c180e23e8cca8bb8cfd438764143d7ca4753c3e2b7f5fe |   AIF6/NuwAcH3nSgETrAt51ppZyE3RlSKxe5eWqaBNKNG   |        0         |
+```
+
+接下来，我将使用这两个账户来演示这个例子，`0x94bfa` 开头的地址作为发布计数器合约的账户地址，`0xd9ba8` 开头的账户作为其他用户来操作共享计数器。
+
+### 演示
+
+1. 编译部署
+
+```shell
+rooch move publish --named-addresses quick_start_object_counter=default
+```
+
+2. 获取用户拥有的计数器对象 ID：
+
+```shell
+curl --location --request POST 'https://dev-seed.rooch.network:443' --header 'Content-Type: application/json' --data-raw '{
+ "id":101,
+ "jsonrpc":"2.0",
+ "method":"rooch_getEventsByEventHandle",                                                                                                                       "params":["0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::UserCounterCreatedEvent", null, "1000", {"decode":true}]
+}'|jq '.result.data[0].decoded_event_data.value.id'
+```
+
+使用 `curl` 向 Rooch 开发网发送一个请求，获取刚才部署上去的合约中所创建的计数器对象 ID。
+
+> 注意：参数列表中的地址务必修改为你自己的，我的默认账户地址是 `0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63`。
+
+之后可以在响应信息中看到计数器对象 ID 为 `0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2`，这是创建计数器对象时随机生成的。
+
+```shell
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   922  100   683  100   239   2831    990 --:--:-- --:--:-- --:--:--  3841
+
+"0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2"
+```
+
+3. 分别检查我们创建并初始化好的两个计数器。
+
+- 共享计数器：
+
+查看计数器对象的命令是 `rooch object --id 合约地址::模块名::类型名`。因为命名对象是全局唯一的，因此我们可以使用类型名来直接获取共享计数器对象的相关属性。
+
+```shell
+[joe@mx quick_start_object_counter]$ rooch object --id 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
+
+{
+  "value": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c3880000000000000000000000000000000000000000000000000000000000000000010000000000000000",
+  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+  "decoded_value": {
+    "abilities": 0,
+    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+    "value": {
+      "flag": 1,
+      "id": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c388",
+      "owner": "0x0000000000000000000000000000000000000000000000000000000000000000",    <= Note here!
+      "value": {
+        "abilities": 12,
+        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter",
+        "value": {
+          "count_value": "0"    <= Note here!
+        }
+      }
+    }
+  }
+}
+```
+
+可以看到共享计数器的 `owner` 地址是 `0x0000000000000000000000000000000000000000000000000000000000000000`，代表 `SystemOwnedObject` 类型的对象，它的计数值 `count_value` 也初始化为 `0` 了。
+
+- 用户拥有的计数器：
+
+```shell
+[joe@mx quick_start_object_counter]$ rooch object --id 0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2
+
+{
+  "value": "0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c294bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63007b00000000000000",
+  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+  "decoded_value": {
+    "abilities": 0,
+    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+    "value": {
+      "flag": 0,
+      "id": "0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2",
+      "owner": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63",    <= Note here!
+      "value": {
+        "abilities": 12,
+        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter",
+        "value": {
+          "count_value": "123"    <= Note here!
+        }
+      }
+    }
+  }
+}
+```
+
+可以看到用户拥有的计数器的 `owner` 地址是 `0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63`，代表 `UserOwnedObject` 类型的对象，它的计数值 `count_value` 也初始化为 `123` 了。
+
+4. 调用 `increase` 函数递增计数器。
+
+- 共享的：
+
+命令的语法是：`rooch move run --function 合约地址::模块名::函数名 --args object:合约地址::模块名::类型名`： 
+
+```shell
+rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::increase --args object:0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
+```
+
+查看：
+
+```shell
+[joe@mx quick_start_object_counter]$ rooch object --id 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
+
+{
+  "value": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c3880000000000000000000000000000000000000000000000000000000000000000010100000000000000",
+  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+  "decoded_value": {
+    "abilities": 0,
+    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+    "value": {
+      "flag": 1,
+      "id": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c388",
+      "owner": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "value": {
+        "abilities": 12,
+        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter",
+        "value": {
+          "count_value": "1"    <= Note here!
+        }
+      }
+    }
+  }
+}
+```
+
+确实如我们所期望的那样，计数值增加了！
+
+- 用户拥有的：
+
+```shell
+rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::increase --args object:0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2
+```
+
+查看：
+
+```shell
+[joe@mx quick_start_object_counter]$ rooch object --id 0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2
+{
+  "value": "0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c294bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63007c00000000000000",
+  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+  "decoded_value": {
+    "abilities": 0,
+    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+    "value": {
+      "flag": 0,
+      "id": "0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2",
+      "owner": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63",
+      "value": {
+        "abilities": 12,
+        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter",
+        "value": {
+          "count_value": "124"    <= Note here!
+        }
+      }
+    }
+  }
+}
+```
+
+用户拥有的计数器的值从 `123` 更改为 `124` 了。
+
+5. 切换账户：
+
+```shell
+[joe@mx ~]$ rooch account switch --address 0xd9ba8633a96c91eea2c180e23e8cca8bb8cfd438764143d7ca4753c3e2b7f5fe
+The active account was successfully switched to `0xd9ba8633a96c91eea2c180e23e8cca8bb8cfd438764143d7ca4753c3e2b7f5fe`
+```
+
+6. 再次递增计数器。
+
+- 共享的：
+
+```shell
+rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::increase --args object:0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
+```
+
+查看：
+
+```shell
+[joe@mx quick_start_object_counter]$ rooch object --id 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter
+
+{
+  "value": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c3880000000000000000000000000000000000000000000000000000000000000000010100000000000000",
+  "value_type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+  "decoded_value": {
+    "abilities": 0,
+    "type": "0x2::object::ObjectEntity<0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter>",
+    "value": {
+      "flag": 1,
+      "id": "0x5d6b1f08e259030c7493b7b4b0f78a390cf3eb81b720d5ef123a6f7ba794c388",
+      "owner": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "value": {
+        "abilities": 12,
+        "type": "0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::Counter",
+        "value": {
+          "count_value": "2"    <= Note here!
+        }
+      }
+    }
+  }
+}
+```
+
+- 用户拥有的：
+
+```shell
+[joe@mx quick_start_object_counter]$ rooch move run --function 0x94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63::quick_start_object_counter::increase --args object:0x09dd7a2f60fda09c7e9009041b36742109911fe79b0240a0badc07fc800fc4c2
+
+Transaction error: RPC call failed: ErrorObject { code: ServerError(-32000), message: "VMError with status NO_ACCOUNT_ROLE at location UNDEFINED and message Object owner mismatch, object owner:94bfa175058278af4afe25bb546f39bd4706d4c74539bbdc59c6d936b1695f63, sender:d9ba8633a96c91eea2c180e23e8cca8bb8cfd438764143d7ca4753c3e2b7f5fe", data: None }
+```
+
+可以看到，当我们用其他账户执行 `increase` 函数时，会返回错误信息，告诉我们对象的拥有者不匹配，即其他账户无法另一个账户所拥有的对象。
+
+到这里，相信你已经对 Rooch 的对象存储有了一定的了解，在开发过程中可以根据需求合理运用资源存储和对象存储方案，在 [`simple_blog` 例子](../getting-started.zh-CN.md)中，就结合了两者。
+
+## 总结
+
+到这里你已经一步步了解了如何使用 Rooch 进行开发，部署和调用智能合约了。在 Rooch 中，面向对象的编程模型是十分重要的一个内容，想了解更多使用方法，请参阅[对象](./object.zh-CN.mdx)。
