@@ -1,0 +1,7 @@
+{
+  "account": "Account",
+  "transaction": "Transaction",
+  "object": "Object",
+  "token": "Token",
+  "move": "Move concepts"
+}
