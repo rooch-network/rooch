@@ -1,2 +1,6 @@
 {
+  "rooch-cli": "Rooch CLI",
+  "rooch-framework": "Rooch Framework",
+  "sdk": "SDK",
+  "rpc": "RPC"
 }

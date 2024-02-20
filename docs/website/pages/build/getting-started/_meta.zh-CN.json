@@ -1,8 +1,7 @@
 {
-  "getting-started": "开始入门",
-  "token": "代币",
-  "object": "对象",
-  "contract": "合约",
-  "example-guides": "示例指南",
-  "reference": "参考指南"
+  "installation": "安装",
+  "connect-to-rooch": "连接 Rooch",
+  "get-account": "获取账户",
+  "quick-start": "快速开始",
+  "getting-started": "新手入门"
 }

@@ -1,8 +1,7 @@
 {
-  "getting-started": "Getting Started",
-  "token": "Token",
-  "object": "Object",
-  "contract": "Contract",
-  "example-guides": "Example guides",
-  "reference": "Reference"
+  "installation": "Installation",
+  "connect-to-rooch": "Connect to Rooch",
+  "get-account": "Get account",
+  "quick-start": "Quick start",
+  "getting-started": "Getting-started"
 }
