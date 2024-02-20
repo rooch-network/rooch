@@ -8,8 +8,16 @@
       "layout": "raw"
     }
   },
+  "learn": {
+    "title": "学习",
+    "type": "page"
+  },
+  "build": {
+    "title": "构建",
+    "type": "page"
+  },
   "docs": {
-    "title": "文档",
+    "title": "文档（弃用）",
     "type": "page"
   },
   "blog": {
