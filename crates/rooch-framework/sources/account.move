@@ -5,23 +5,40 @@ module rooch_framework::account {
    use std::hash;
    use std::vector;
    use std::signer;
+   use moveos_std::core_addresses;
    use moveos_std::bcs;
-   use moveos_std::context::{Self, Context};
-   use rooch_framework::account_authentication;
-   use rooch_framework::account_coin_store;
+   // use moveos_std::context::{Self, Context};
+   // use rooch_framework::account_authentication;
+   // use rooch_framework::account_coin_store;
 
-   friend rooch_framework::transaction_validator;
-   friend rooch_framework::transfer;
-   friend rooch_framework::genesis;
-   friend rooch_framework::upgrade;
+   use std::ascii::String;
+   use moveos_std::account;
+   use moveos_std::context;
+   use moveos_std::context::{exists_object, Context};
+   use moveos_std::object_id::ObjectID;
+   use moveos_std::object_id;
+   use moveos_std::type_table::{key};
+   use moveos_std::object::{Self, Object};
+   #[test_only]
+   use moveos_std::object::{borrow_object, borrow_mut_object, take_object};
+   #[test_only]
+   use moveos_std::signer;
 
-   /// Resource representing an account.
+   friend moveos_std::context;
+
+   // friend rooch_framework::transaction_validator;
+   // friend rooch_framework::transfer;
+   // friend rooch_framework::genesis;
+   // friend rooch_framework::upgrade;
+
+   /// Account is part of the StorageAbstraction
+   /// It is also used to store the account's resources
    struct Account has key, store {
       sequence_number: u64,
    }
 
-   /// ResourceAccount can only be stored under address, not in other structs.
-   struct ResourceAccount has key {}
+   // /// AccountAccount can only be stored under address, not in other structs.
+   // struct AccountAccount has key {}
    /// SignerCapability can only be stored in other structs, not under address.
    /// So that the capability is always controlled by contracts, not by some EOA.
    struct SignerCapability has store { addr: address }
@@ -31,55 +48,60 @@ module rooch_framework::account {
    // cannot be dummy key, or empty key
    const CONTRACT_ACCOUNT_AUTH_KEY_PLACEHOLDER:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000001";
 
-   /// Scheme identifier used when hashing an account's address together with a seed to derive the address (not the
-   /// authentication key) of a resource account. This is an abuse of the notion of a scheme identifier which, for now,
-   /// serves to domain separate hashes used to derive resource account addresses from hashes used to derive
-   /// authentication keys. Without such separation, an adversary could create (and get a signer for) a resource account
-   /// whose address matches an existing address of a MultiEd25519 wallet.
-   const SCHEME_DERIVE_RESOURCE_ACCOUNT: u8 = 255;
-   
    /// Account already exists
    const ErrorAccountAlreadyExists: u64 = 1;
    /// Account does not exist
    const ErrorAccountNotExist: u64 = 2;
    /// Sequence number exceeds the maximum value for a u64
-   const ErrorSequenceNumberTooBig: u64 = 3; 
+   const ErrorSequenceNumberTooBig: u64 = 3;
    /// Cannot create account because address is reserved
-   const ErrorAddressReseved: u64 = 5;
-   /// An attempt to create a resource account on an account that has a committed transaction
-   const ErrorResourceAccountAlreadyUsed: u64 = 6;
-   /// Resource Account can't derive resource account
-   const ErrorAccountIsAlreadyResourceAccount: u64 = 7;
-   /// Address to create is not a valid reserved address for Rooch framework
-   const ErrorNotValidFrameworkReservedAddress: u64 = 11;
+   const ErrorAddressReserved: u64 = 4;
+   /// Address to create is not a valid reserved address
+   const ErrorNotValidSystemReservedAddress: u64 = 5;
+
+
+   /// The resource with the given type already exists
+   const ErrorResourceAlreadyExists: u64 = 6;
+   /// The resource with the given type not exists
+   const ErrorResourceNotExists: u64 = 7;
 
 
    //TODO should we provide create account from arbitrary address?
+   // TODO Can create accounts arbitrary. Is this a security risk?
    /// A entry function to create an account under `new_address`
    public entry fun create_account_entry(ctx: &mut Context, new_address: address){
       // If account already exists, do nothing
       // Because if the new address is the same as the sender, the account must already created in the `transaction_validator::pre_execute` function
       if(!exists_at(ctx, new_address)){
-         create_account(ctx, new_address);
+         create_account_internal(ctx, new_address);
       };
    }
 
    /// Publishes a new `Account` resource under `new_address`. A signer representing `new_address`
    /// is returned. This way, the caller of this function can publish additional resources under
    /// `new_address`.
-   public(friend) fun create_account(ctx: &mut Context, new_address: address): signer {
+   public fun create_account(ctx: &mut Context, system: &signer, new_address: address): signer {
+      core_addresses::assert_system_reserved(system);
+      create_account_internal(ctx, new_address)
+   }
+
+   fun create_account_internal(ctx: &mut Context, new_address: address): signer {
+      // assert!(
+      //    new_address != @vm_reserved,
+      //    ErrorAddressReseved
+      // );
       assert!(
-         new_address != @vm_reserved,
-         ErrorAddressReseved
+         !core_addresses::is_reserved_address(new_address),
+         ErrorAddressReserved
       );
 
       // Make sure the Account is not already created.
       assert!(
          !context::exists_resource<Account>(ctx, new_address),
          ErrorAccountAlreadyExists
-      ); 
+      );
 
-      let new_account = create_account_unchecked(ctx, new_address); 
+      let new_account = create_account_unchecked(ctx, new_address);
       new_account
    }
 
@@ -91,25 +113,19 @@ module rooch_framework::account {
          Account {
             sequence_number: 0,
       });
-      account_authentication::init_authentication_keys(ctx, &new_account);
-      account_coin_store::init_account_coin_stores(ctx, &new_account);
+
+      create_account_object(new_address);
+      // account_authentication::init_authentication_keys(ctx, &new_account);
+      // account_coin_store::init_account_coin_stores(ctx, &new_account);
       new_account
    }
 
    /// create the account for system reserved addresses
-   public(friend) fun create_framework_reserved_account(ctx: &mut Context, addr: address): (signer, SignerCapability) {
+   public fun create_system_reserved_account(ctx: &mut Context, system: &signer, addr: address): (signer, SignerCapability) {
+      core_addresses::assert_system_reserved(system);
       assert!(
-         addr == @0x1 ||
-             addr == @0x2 ||
-             addr == @0x3 ||
-             addr == @0x4 ||
-             addr == @0x5 ||
-             addr == @0x6 ||
-             addr == @0x7 ||
-             addr == @0x8 ||
-             addr == @0x9 ||
-             addr == @0xa,
-         ErrorNotValidFrameworkReservedAddress,
+         core_addresses::is_system_reserved_address(addr),
+         ErrorNotValidSystemReservedAddress,
       );
       let signer = create_account_unchecked(ctx, addr);
       let signer_cap = SignerCapability { addr };
@@ -117,20 +133,20 @@ module rooch_framework::account {
    }
 
 
-   /// Return the current sequence number at `addr`
-   public fun sequence_number(ctx: &Context, addr: address): u64 {
-      // if account does not exist, return 0 as sequence number
-      // TODO: refactor this after we decide how to handle account create.
-      if (!context::exists_resource<Account>(ctx, addr)) {
-         return 0
-      };
-      let account = context::borrow_resource<Account>(ctx, addr);
-      sequence_number_for_account(account)
-   }
+   // /// Return the current sequence number at `addr`
+   // public fun sequence_number(ctx: &Context, addr: address): u64 {
+   //    // if account does not exist, return 0 as sequence number
+   //    // TODO: refactor this after we decide how to handle account create.
+   //    if (!context::exists_resource<Account>(ctx, addr)) {
+   //       return 0
+   //    };
+   //    let account = context::borrow_resource<Account>(ctx, addr);
+   //    sequence_number_for_account(account)
+   // }
 
    public fun sequence_number_for_sender(ctx: &Context): u64 {
       let sender = context::sender(ctx);
-      sequence_number(ctx, sender)
+      account::sequence_number(sender)
    }
 
    public(friend) fun increment_sequence_number(ctx: &mut Context) {
@@ -156,70 +172,91 @@ module rooch_framework::account {
       cap.addr
    }
 
-   public fun is_resource_account(ctx: &Context, addr: address): bool {
-      context::exists_resource<ResourceAccount>(ctx, addr)
+   public fun exists_at(_ctx: &Context, addr: address): bool {
+      // context::exists_resource<Account>(ctx, addr)
+      //
+      // if (exist_account_object(self, account)) {
+      //    let obj = borrow_object<Account>(account::account_object_id(account));
+      //    account::exists_resource<T>(obj)
+      // }else{
+      //    false
+      // }
+
+      // exists_object<Account>(self, account::account_object_id(account))
+
+      // let object_id = account_object_id(addr);
+      // object::contains_global(object_id)
+
+      // context::exists_resource<Account>(ctx, addr)
+      account::exists_at(addr)
    }
 
-   public fun exists_at(ctx: &Context, addr: address): bool {
-      context::exists_resource<Account>(ctx, addr)
-   }
+
+   // native public(friend) fun create_signer(addr: address): signer;
 
 
-   native public(friend) fun create_signer(addr: address): signer;
+   // /// This is a helper function to generate seed for resource address
+   // fun generate_seed_bytes(ctx: &Context, addr: &address): vector<u8> {
+   //    let sequence_number = Self::sequence_number(ctx, *addr);
+   //
+   //    let seed_bytes = bcs::to_bytes(addr);
+   //    vector::append(&mut seed_bytes, bcs::to_bytes(&sequence_number));
+   //
+   //    hash::sha3_256(seed_bytes)
+   // }
 
 
-   /// A resource account is used to manage resources independent of an account managed by a user.
-   /// In Rooch a resource account is created based upon the sha3 256 of the source's address and additional seed data.
-   /// A resource account can only be created once
-   public fun create_resource_account(ctx: &mut Context, source: &signer): (signer, SignerCapability) {
-      let source_addr = signer::address_of(source);
-      let seed = generate_seed_bytes(ctx, &source_addr);
-      let resource_addr = create_resource_address(&source_addr, seed);
-      assert!(!is_resource_account(ctx, resource_addr), ErrorAccountIsAlreadyResourceAccount);
-      let resource_signer = if (exists_at(ctx, resource_addr)) {
-         let account = context::borrow_resource<Account>(ctx, resource_addr);
-         assert!(account.sequence_number == 0, ErrorResourceAccountAlreadyUsed);
-         create_signer(resource_addr)
-      } else {
-         create_account_unchecked(ctx, resource_addr)
-      };
+   // public fun create_signer_with_capability(capability: &SignerCapability): signer {
+   //    let addr = &capability.addr;
+   //    create_signer(*addr)
+   // }
 
-      context::move_resource_to<ResourceAccount>(ctx,
-         &resource_signer,
-         ResourceAccount {}
-      );
+   // public fun get_signer_capability_address(capability: &SignerCapability): address {
+   //    capability.addr
+   // }
 
-      let signer_cap = SignerCapability { addr: resource_addr };
-      (resource_signer, signer_cap)
-   }
 
-   /// This is a helper function to generate seed for resource address
-   fun generate_seed_bytes(ctx: &Context, addr: &address): vector<u8> {
-      let sequence_number = Self::sequence_number(ctx, *addr);
 
-      let seed_bytes = bcs::to_bytes(addr);
-      vector::append(&mut seed_bytes, bcs::to_bytes(&sequence_number));
+   // public fun account_object_id(account: address): ObjectID {
+   //    object_id::address_to_object_id(account)
+   // }
+   //
+   // /// Create a new account object space
+   // public(friend) fun create_account_object(account: address) {
+   //    let object_id = object_id::address_to_object_id(account);
+   //    let obj = object::new_with_id(object_id, Account {sequence_number: 0});
+   //    object::transfer(obj, account)
+   // }
+   //
+   // // === Account Object Functions
+   //
+   // public fun borrow_resource<T: key>(self: &Object<Account>): &T {
+   //    object::borrow_field<String, T>(object::id(self), key<T>())
+   // }
+   //
+   // public fun borrow_mut_resource<T: key>(self: &mut Object<Account>): &mut T {
+   //    object::borrow_mut_field<String, T>(object::id(self), key<T>())
+   // }
+   //
+   // public fun move_resource_to<T: key>(self: &mut Object<Account>, resource: T){
+   //    assert!(!object::contains_field<String>(object::id(self), key<T>()), ErrorResourceAlreadyExists);
+   //    object::add_field<String, T>(object::id(self), key<T>(), resource)
+   // }
+   //
+   // public fun move_resource_from<T: key>(self: &mut Object<Account>): T {
+   //    assert!(object::contains_field<String>(object::id(self), key<T>()), ErrorResourceNotExists);
+   //    object::remove_field<String, T>(object::id(self), key<T>())
+   // }
+   //
+   // public fun exists_resource<T: key>(self: &Object<Account>) : bool {
+   //    object::contains_field<String>(object::id(self), key<T>())
+   // }
+   //
+   // public(friend) fun transfer(obj: Object<Account>, account: address) {
+   //    object::transfer_extend(obj, account);
+   // }
 
-      hash::sha3_256(seed_bytes)
-   }
 
-   /// This is a helper function to compute resource addresses. Computation of the address
-   /// involves the use of a cryptographic hash operation and should be use thoughtfully.
-   public fun create_resource_address(source: &address, seed: vector<u8>): address {
-      let bytes = bcs::to_bytes(source);
-      vector::append(&mut bytes, seed);
-      vector::push_back(&mut bytes, SCHEME_DERIVE_RESOURCE_ACCOUNT);
-      bcs::to_address(hash::sha3_256(bytes))
-   }
-
-   public fun create_signer_with_capability(capability: &SignerCapability): signer {
-      let addr = &capability.addr;
-      create_signer(*addr)
-   }
-
-   public fun get_signer_capability_address(capability: &SignerCapability): address {
-      capability.addr
-   }
 
    #[test_only]
    /// Create signer for testing, independently of an Rooch-style `Account`.
@@ -233,7 +270,7 @@ module rooch_framework::account {
    #[test]
    /// Assert correct signer creation.
    fun test_create_signer_for_test() {
-      assert!(signer::address_of(&create_signer_for_test(@rooch_framework)) == @0x3, 100);
+      assert!(signer::address_of(&create_signer_for_test(@moveos_std)) == @0x2, 100);
       assert!(signer::address_of(&create_signer_for_test(@0x123)) == @0x123, 101);
    }
 
@@ -257,28 +294,6 @@ module rooch_framework::account {
       cap: SignerCapability
    }
 
-   #[test]
-   fun test_create_resource_account()  {
-      let alice_addr = @123456;
-      let ctx = context::new_test_context(alice_addr);
-      let alice = create_account_for_test(&mut ctx, alice_addr);
-      let (resource_account, resource_account_cap) = create_resource_account(&mut ctx, &alice);
-      let signer_cap_addr = get_signer_capability_address(&resource_account_cap);
-      context::move_resource_to<CapResponsbility>(&mut ctx,
-         &resource_account,
-         CapResponsbility {
-            cap: resource_account_cap
-         }
-      );
-
-      let resource_addr = signer::address_of(&resource_account);
-      std::debug::print(&100100);
-      std::debug::print(&resource_addr);
-      assert!(resource_addr != signer::address_of(&alice), 106);
-      assert!(resource_addr == signer_cap_addr, 107);
-      context::drop_test_context(ctx);
-   }
-
    #[test(sender=@0x42)]
    fun test_create_account_entry(sender: address){
       let ctx = context::new_test_context(sender);
@@ -294,25 +309,190 @@ module rooch_framework::account {
       context::drop_test_context(ctx);
    }
 
-   //TODO figure out why this test should failed
-   #[test(sender=@0x42, resource_account=@0xbb6e573f7feb9d8474ac20813fc086cc3100b8b7d49c246b0f4aee8ea19eaef4)]
-   #[expected_failure(abort_code = ErrorResourceAccountAlreadyUsed, location = Self)]
-   fun test_failure_create_resource_account_wrong_sequence_number(sender: address, resource_account: address){
-      {
-         let ctx = context::new_test_context(resource_account);
-         create_account_for_test(&mut ctx, resource_account);
-         increment_sequence_number(&mut ctx);
-         context::drop_test_context(ctx);
-      };
-      let ctx = context::new_test_context(sender);
-      let sender_signer = create_account_for_test(&mut ctx, sender);
-      let (signer, cap) = create_resource_account(&mut ctx, &sender_signer);
-      context::move_resource_to<CapResponsbility>(&mut ctx,
-         &signer,
-         CapResponsbility {
-            cap
-         }
-      );
-      context::drop_test_context(ctx);
+
+
+   #[test_only]
+   fun drop_account_object(self: Object<Account>) {
+      object::drop_unchecked_table(object::id(&self));
+      let obj = object::remove(self);
+      let Account {sequence_number:_} = obj;
    }
+
+   #[test_only]
+   struct Test has key{
+      addr: address,
+      version: u64
+   }
+
+   #[test(sender=@0x42)]
+   fun test_account_object(sender: signer){
+      let sender_addr = signer::address_of(&sender);
+      create_account_object(sender_addr);
+      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      move_resource_to(obj_mut, Test{
+         addr: sender_addr,
+         version: 1,
+      });
+      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
+      Self::drop_account_object(obj);
+   }
+
+   #[test(sender=@0x42)]
+   fun test_move_to_account_object(sender: signer){
+      let sender_addr = signer::address_of(&sender);
+      create_account_object(sender_addr);
+      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      move_resource_to(obj_mut, Test{
+         addr: sender_addr,
+         version: 1,
+      });
+      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
+      Self::drop_account_object(obj);
+   }
+
+   #[test(sender=@0x42)]
+   fun test_move_from_account_object(sender: signer){
+      let sender_addr = signer::address_of(&sender);
+      create_account_object(sender_addr);
+      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      move_resource_to(obj_mut, Test{
+         addr: sender_addr,
+         version: 1,
+      });
+      let Test {
+         addr,
+         version
+      } = move_resource_from<Test>(obj_mut);
+      assert!(addr == sender_addr, 0x10);
+      assert!(version == 1, 0x11);
+      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
+      Self::drop_account_object(obj);
+   }
+
+   #[test(sender=@0x42)]
+   #[expected_failure(abort_code = ErrorAccountAlreadyExists, location = Self)]
+   fun test_failure_repeatedly_move_to_account_object(sender: signer){
+      let sender_addr = signer::address_of(&sender);
+      create_account_object(sender_addr);
+      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      move_resource_to(obj_mut, Test{
+         addr: sender_addr,
+         version: 1,
+      });
+      move_resource_to(obj_mut, Test{
+         addr: sender_addr,
+         version: 1,
+      });
+      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
+      Self::drop_account_object(obj);
+   }
+
+   #[test(sender=@0x42)]
+   #[expected_failure(abort_code = ErrorAccountNotExists, location = Self)]
+   fun test_failure_repeatedly_move_from_account_object(sender: signer){
+      let sender_addr = signer::address_of(&sender);
+      create_account_object(sender_addr);
+      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      move_resource_to(obj_mut, Test{
+         addr: sender_addr,
+         version: 1,
+      });
+      let Test {
+         addr: _,
+         version: _
+      } = move_resource_from<Test>(obj_mut);
+      let Test {
+         addr: _,
+         version: _
+      } = move_resource_from<Test>(obj_mut);
+      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
+      Self::drop_account_object(obj);
+   }
+
+   #[test(sender=@0x42)]
+   fun test_borrow_resource(sender: signer){
+      let sender_addr = signer::address_of(&sender);
+      create_account_object(sender_addr);
+      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      move_resource_to(obj_mut, Test{
+         addr: sender_addr,
+         version: 1,
+      });
+
+      let ref_test = borrow_resource<Test>(obj_mut);
+      assert!( ref_test.version == 1, 1);
+      assert!( ref_test.addr == sender_addr, 2);
+      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
+      Self::drop_account_object(obj);
+   }
+
+   #[test(sender=@0x42)]
+   fun test_borrow_mut_resource(sender: signer){
+      let sender_addr = signer::address_of(&sender);
+      create_account_object(sender_addr);
+      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      move_resource_to(obj_mut, Test{
+         addr: sender_addr,
+         version: 1,
+      });
+      {
+         let ref_test = borrow_mut_resource<Test>(obj_mut);
+         assert!( ref_test.version == 1, 1);
+         assert!( ref_test.addr == sender_addr, 2);
+         ref_test.version = 2;
+      };
+      {
+         let ref_test = borrow_resource<Test>(obj_mut);
+         assert!( ref_test.version == 2, 3);
+      };
+      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
+      Self::drop_account_object(obj);
+   }
+
+   #[test(sender=@0x42)]
+   #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
+   fun test_failure_borrow_resource_no_exists(sender: signer){
+      let sender_addr = signer::address_of(&sender);
+      create_account_object(sender_addr);
+      let obj_ref = borrow_object<Account>(account_object_id(sender_addr));
+      borrow_resource<Test>(obj_ref);
+      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
+      Self::drop_account_object(obj);
+   }
+
+   #[test(sender=@0x42)]
+   #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
+   fun test_failure_borrow_mut_resource_no_exists(sender: signer){
+      let sender_addr = signer::address_of(&sender);
+      create_account_object(sender_addr);
+      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      borrow_mut_resource<Test>(obj_mut);
+      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
+      Self::drop_account_object(obj);
+   }
+
+   #[test(sender=@0x42)]
+   fun test_ensure_move_from_and_exists(sender: signer){
+      let sender_addr = signer::address_of(&sender);
+      create_account_object(sender_addr);
+      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      let test_exists = exists_resource<Test>(obj_mut);
+      assert!(!test_exists, 1);
+      move_resource_to(obj_mut, Test{
+         addr: sender_addr,
+         version: 1,
+      });
+      let test_exists = exists_resource<Test>(obj_mut);
+      assert!(test_exists, 2);
+      let test = move_resource_from<Test>(obj_mut);
+      let test_exists = exists_resource<Test>(obj_mut);
+      assert!(!test_exists, 3);
+      let Test{
+         addr: _,
+         version: _
+      } = test;
+      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
+      Self::drop_account_object(obj);
+   }
+
 }

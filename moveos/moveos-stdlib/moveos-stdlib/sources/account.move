@@ -7,7 +7,7 @@ module moveos_std::account {
    use std::signer;
    use moveos_std::core_addresses;
    use moveos_std::bcs;
-   // use moveos_std::context::{Self, Context};
+   use moveos_std::context::{Self, Context};
    // use rooch_framework::account_authentication;
    // use rooch_framework::account_coin_store;
 
@@ -16,7 +16,7 @@ module moveos_std::account {
    use moveos_std::object_id::ObjectID;
    use moveos_std::object_id;
    use moveos_std::type_table::{key};
-   use moveos_std::object::{Self, Object};
+   use moveos_std::object::{Self, Object, borrow_object};
    #[test_only]
    use moveos_std::object::{borrow_object, borrow_mut_object, take_object};
    #[test_only]
@@ -78,12 +78,12 @@ module moveos_std::account {
    /// Publishes a new `Account` resource under `new_address`. A signer representing `new_address`
    /// is returned. This way, the caller of this function can publish additional resources under
    /// `new_address`.
-   public fun create_account(ctx: &mut Context, system: &signer, new_address: address): signer {
+   public fun create_account(system: &signer, new_address: address): signer {
       core_addresses::assert_system_reserved(system);
-      create_account_internal(ctx, new_address)
+      create_account_internal(new_address)
    }
 
-   fun create_account_internal(ctx: &mut Context, new_address: address): signer {
+   fun create_account_internal(new_address: address): signer {
       // assert!(
       //    new_address != @vm_reserved,
       //    ErrorAddressReseved
@@ -103,14 +103,15 @@ module moveos_std::account {
       new_account
    }
 
-   fun create_account_unchecked(ctx: &mut Context, new_address: address): signer {
+   // fun create_account_unchecked(ctx: &mut Context, new_address: address): signer {
+   fun create_account_unchecked(new_address: address): signer {
       let new_account = create_signer(new_address);
 
-      context::move_resource_to<Account>(ctx,
-         &new_account,
-         Account {
-            sequence_number: 0,
-      });
+      // context::move_resource_to<Account>(ctx,
+      //    &new_account,
+      //    Account {
+      //       sequence_number: 0,
+      // });
 
       create_account_object(new_address);
       // account_authentication::init_authentication_keys(ctx, &new_account);
@@ -119,13 +120,13 @@ module moveos_std::account {
    }
 
    /// create the account for system reserved addresses
-   public fun create_system_reserved_account(ctx: &mut Context, system: &signer, addr: address): (signer, SignerCapability) {
+   public fun create_system_reserved_account(system: &signer, addr: address): (signer, SignerCapability) {
       core_addresses::assert_system_reserved(system);
       assert!(
          core_addresses::is_system_reserved_address(addr),
          ErrorNotValidSystemReservedAddress,
       );
-      let signer = create_account_unchecked(ctx, addr);
+      let signer = create_account_unchecked(addr);
       let signer_cap = SignerCapability { addr };
       (signer, signer_cap)
    }
@@ -135,11 +136,20 @@ module moveos_std::account {
    public fun sequence_number(ctx: &Context, addr: address): u64 {
       // if account does not exist, return 0 as sequence number
       // TODO: refactor this after we decide how to handle account create.
-      if (!context::exists_resource<Account>(ctx, addr)) {
-         return 0
-      };
-      let account = context::borrow_resource<Account>(ctx, addr);
-      sequence_number_for_account(account)
+
+      // let object_id = account_object_id(addr);
+      // if (!object::contains_global(object_id)) {
+      //    return 0
+      // };
+      // let obj = object::borrow_object<Account>(object_id);
+      // let account = borrow_resource(obj);
+      // sequence_number_for_account(account)
+
+         if (!exist_account_object(ctx, addr)) {
+            return 0
+         };
+         let account = borrow_resource<Account>(ctx, addr);
+         sequence_number_for_account(account)
    }
 
    public fun sequence_number_for_sender(ctx: &Context): u64 {
@@ -147,19 +157,19 @@ module moveos_std::account {
       sequence_number(ctx, sender)
    }
 
-   public(friend) fun increment_sequence_number(ctx: &mut Context) {
-      let sender = context::sender(ctx);
-      let tx_sequence_number = context::sequence_number(ctx);
-
-      let account = context::borrow_mut_resource<Account>(ctx, sender);
-
-      assert!(
-         (account.sequence_number as u128) < MAX_U64,
-         ErrorSequenceNumberTooBig
-      );
-
-      account.sequence_number = tx_sequence_number + 1;
-   }
+   // public(friend) fun increment_sequence_number(ctx: &mut Context) {
+   //    let sender = context::sender(ctx);
+   //    let tx_sequence_number = context::sequence_number(ctx);
+   //
+   //    let account = context::borrow_mut_resource<Account>(ctx, sender);
+   //
+   //    assert!(
+   //       (account.sequence_number as u128) < MAX_U64,
+   //       ErrorSequenceNumberTooBig
+   //    );
+   //
+   //    account.sequence_number = tx_sequence_number + 1;
+   // }
 
    /// Helper to return the sequence number field for given `account`
    fun sequence_number_for_account(account: &Account): u64 {
@@ -170,19 +180,28 @@ module moveos_std::account {
       cap.addr
    }
 
-   public fun exists_at(ctx: &Context, addr: address): bool {
-      context::exists_resource<Account>(ctx, addr)
+   public fun exists_at<T: key>(ctx: &Context, addr: address): bool {
+      // exists_resource<Account>(ctx, addr)
+      exists_resource<T>(ctx, addr)
 
-      if (exist_account_object(self, account)) {
-         let obj = borrow_object<Account>(account::account_object_id(account));
-         account::exists_resource<T>(obj)
-      }else{
-         false
-      }
+      //
+      // if (exist_account_object(self, account)) {
+      //    let obj = borrow_object<Account>(account::account_object_id(account));
+      //    account::exists_resource<T>(obj)
+      // }else{
+      //    false
+      // }
+      //
+      // let object_id = account_object_id(addr);
+      // object::contains_global(object_id)
 
       // exists_object<Account>(self, account::account_object_id(account))
    }
 
+   public fun create_signer_for_system(system: &signer, addr: address): signer {
+      core_addresses::assert_system_reserved(system);
+      create_signer(addr)
+   }
 
    native public(friend) fun create_signer(addr: address): signer;
 
@@ -222,25 +241,25 @@ module moveos_std::account {
 
    // === Account Object Functions
 
-   public fun borrow_resource<T: key>(self: &Object<Account>): &T {
+   public fun account_borrow_resource<T: key>(self: &Object<Account>): &T {
       object::borrow_field<String, T>(object::id(self), key<T>())
    }
 
-   public fun borrow_mut_resource<T: key>(self: &mut Object<Account>): &mut T {
+   public fun account_borrow_mut_resource<T: key>(self: &mut Object<Account>): &mut T {
       object::borrow_mut_field<String, T>(object::id(self), key<T>())
    }
 
-   public fun move_resource_to<T: key>(self: &mut Object<Account>, resource: T){
+   public fun account_move_resource_to<T: key>(self: &mut Object<Account>, resource: T){
       assert!(!object::contains_field<String>(object::id(self), key<T>()), ErrorResourceAlreadyExists);
       object::add_field<String, T>(object::id(self), key<T>(), resource)
    }
 
-   public fun move_resource_from<T: key>(self: &mut Object<Account>): T {
+   public fun account_move_resource_from<T: key>(self: &mut Object<Account>): T {
       assert!(object::contains_field<String>(object::id(self), key<T>()), ErrorResourceNotExists);
       object::remove_field<String, T>(object::id(self), key<T>())
    }
 
-   public fun exists_resource<T: key>(self: &Object<Account>) : bool {
+   public fun account_exists_resource<T: key>(self: &Object<Account>) : bool {
       object::contains_field<String>(object::id(self), key<T>())
    }
 
@@ -248,6 +267,72 @@ module moveos_std::account {
       object::transfer_extend(obj, account);
    }
 
+   // === Account Storage functions ===
+
+   // #[private_generics(T)]
+   /// Borrow a resource from the account's storage
+   /// This function equates to `borrow_global<T>(address)` instruction in Move
+   public fun borrow_resource<T: key>(_self: &Context, account: address): &T {
+      let obj = borrow_object<Account>(account_object_id(account));
+      account_borrow_resource<T>(obj)
+   }
+
+   #[private_generics(T)]
+   /// Borrow a mut resource from the account's storage
+   /// This function equates to `borrow_global_mut<T>(address)` instruction in Move
+   public fun borrow_mut_resource<T: key>(_self: &mut Context, account: address): &mut T {
+      let object_id = account_object_id(account);
+      let object_entity = object::borrow_mut_from_global<Account>(object_id);
+      let obj_mut = object::as_mut_ref(object_entity);
+      account_borrow_mut_resource<T>(obj_mut)
+   }
+
+   #[private_generics(T)]
+   /// Move a resource to the account's resource object
+   /// This function equates to `move_to<T>(&signer, resource)` instruction in Move
+   public fun move_resource_to<T: key>(self: &mut Context, account: &signer, resource: T){
+      let account_address = signer::address_of(account);
+      //Auto create the resource object when move resource to the account
+      ensure_account_object(self, account_address);
+      let object_id = account_object_id(account_address);
+      let object_entity = object::borrow_mut_from_global<Account>(object_id);
+      let obj_mut = object::as_mut_ref(object_entity);
+      account_move_resource_to(obj_mut, resource);
+   }
+
+   #[private_generics(T)]
+   /// Move a resource from the account's storage
+   /// This function equates to `move_from<T>(address)` instruction in Move
+   public fun move_resource_from<T: key>(_self: &mut Context, account: address): T {
+      let object_id = account_object_id(account);
+      let object_entity = object::borrow_mut_from_global<Account>(object_id);
+      let obj_mut = object::as_mut_ref(object_entity);
+      account_move_resource_from<T>(obj_mut)
+   }
+
+   #[private_generics(T)]
+   /// Check if the account has a resource of the given type
+   /// This function equates to `exists<T>(address)` instruction in Move
+   public fun exists_resource<T: key>(self: &Context, account: address) : bool {
+      if (exist_account_object(self, account)) {
+         let obj = borrow_object<Account>(account_object_id(account));
+         account_exists_resource<T>(obj)
+      }else{
+         false
+      }
+   }
+
+   // == Internal functions ==
+
+   fun ensure_account_object(self: &mut Context, account: address) {
+      if (!exist_account_object(self, account)) {
+         create_account_object(account);
+      }
+   }
+
+   fun exist_account_object(self: &Context, account: address): bool {
+      exists_object<Account>(self, account_object_id(account))
+   }
 
 
    #[test_only]
