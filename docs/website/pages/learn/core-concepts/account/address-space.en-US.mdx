@@ -1,0 +1,17 @@
+# Rooch address space
+
+In the Move language, modules are defined on addresses, and modules rely on addresses as basic identifiers. Rooch is a multi-chain infrastructure platform. We have specially standardized the allocation of addresses, which can avoid module naming conflicts and facilitate expansion.
+
+## Move standard library address
+
+Rooch is a Layer2 based on Move, so the standard library in Rooch Move follows the Move convention of address `0x1`, and the named address is `MoveStdlib`.
+
+## MoveOS library address
+
+The MoveOS library provides more extensions based on the Move standard library, such as state storage abstraction and encapsulation abstraction of data structures such as Table, TypeTable, Object, StorageContext, and AccountStorage.
+
+In order to facilitate pulling the upstream code of the Move standard library and maintain compatible upgrades, it is necessary to allocate an independent address space to the MoveOS library. Rooch agreed that `0x2` is the address of MoveOS, and the named address is `MoveosStdlib`.
+
+## RoochFramework address
+
+`RoochFramework` uses address `0x3` and includes Rooch’s account, transaction verification, multi-chain address mapping and other modules.
