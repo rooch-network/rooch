@@ -88,8 +88,8 @@ pub async fn setup_service(
         moveos_store.clone(),
         rooch_store.clone(),
     )?
-        .into_actor(Some("ReaderExecutor"), &actor_system)
-        .await?;
+    .into_actor(Some("ReaderExecutor"), &actor_system)
+    .await?;
     let executor = executor_actor
         .into_actor(Some("Executor"), &actor_system)
         .await?;
