@@ -1,7 +1,7 @@
 {
-  "account": "账户",
+  "accounts": "账户",
   "transaction": "交易",
-  "object": "对象",
+  "objects": "对象",
   "token": "代币",
-  "move": "Move 概念"
+  "move-contracts": "Move 概念"
 }

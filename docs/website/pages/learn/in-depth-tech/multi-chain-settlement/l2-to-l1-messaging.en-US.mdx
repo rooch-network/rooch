@@ -1,0 +1,71 @@
+# L2 to L1 message passing
+
+## Overview
+
+L2 to L1 messaging is implemented by L1 transactions triggered by L2. (Asset transfers are based on this mechanism)
+
+Rooch has the ability of multi-chain asset settlement, for different roles of L1 (arbitration chain/settlement chain), the process is the same, both are:
+
+1. Initialization transaction: L2 to L1 request is initiated by user in L2. 2. Proof transaction: L2 to L1 request is initiated by user in L2.
+2. Proof transaction: the user submits a proof of inclusion of the transaction in L1, which proves the change of L2 state. 3.
+3. Confirmation Transaction: The user submits a transaction confirmation at L1, and L1 executes the L1 transaction requested by L2 after verification.
+
+The core difference between the arbitration/settlement chain in L2 to L1 messaging is the validation mechanism behind it:
+
+1. Arbitration chain: L2 is validated by the validation node directly through the arbitration contract on L1. 2. Settlement chain: L2 is validated by L2 through the arbitration contract on L1.
+2. Settlement Chain: L2 light node contracts assist the validating node to validate through the arbitration contract on L1. (See below for a more detailed description)
+
+## Initializing a transaction
+
+1. The user initiates the L2 to L1 request by calling the `call_remote` function in `l2_stub` with the following parameters.
+    1. `action`: coded information about the contract call on L1
+
+2. `l2_stub` will call the `send_l2_to_l1` function in `rooch_transport` to complete the logging of events on L2, with the following parameters:
+    1. `msg_sequence
+    2. `msg_sender
+    3. `action`
+
+3. `send_l2_to_l1` After completing the check, issue the `L2ToL1Event` event with the following parameters:
+    1. `msg_sequence
+    2. `msg_sender
+    3. `action`
+    4. `from`: the originator of the `send_l2_to_l1`. In this case it is `l2_stub`.
+    5. `L2ToL1Event_version`: event version number
+
+## Prove the transaction
+
+After the root of the L2 block containing the `L2ToL1Event` event has been committed to L1, the user can submit a proof transaction.
+
+### Proof generation
+
+This is a proof that the `L2ToL1Event` Merkle Trie contains a proof, there are multiple ways to generate it, we just need to make sure the root matches the record on L1.
+
+This is done off-chain.
+
+### Initiate a proof transaction
+
+Initiate a `prove_l2_to_l1` transaction on L1 via `rooch_transport` to verify that the proof we generated off-chain matches the L2 output of the record on L1.
+
+## Confirm Transaction
+
+At the end of the challenge period, users can submit confirmation transactions.
+
+A `finalize_l2_to_l1` transaction is initiated on L1 via `rooch_transport` to verify that the proof transaction passed the challenge period successfully. Upon completion of the check, `action` is invoked.
+
+## Settlement Chain Validation Mechanism
+
+Let's explore the nature of secure settlement by starting with Rollups' causality model, which is as follows for L2 to L1 messaging:
+
+1. cause: transaction on L2
+2. effect: L2 output
+3. causal (message) medium: proposer
+4. observer: verifier
+
+For the arbitration chain, we already have a complete fraud proof mechanism, and causality does not rely on observers, so only an honest observer (verifier) is needed to guarantee that the causality has been correctly established.
+
+In order for the settlement chain to be equivalent to the arbitration chain, we need to construct consistent causality, which for the settlement chain implies the following preconditions:
+
+1. the same media completion result record: the proposer needs to record the L2 output in the settlement chain
+![Multi-chain Proposer](/docs/rooch-multi-chain-settlement-l2-to-l1.svg)
+2. the same observer to verify the result record: through the L1 light node on the L2 to complete the L1 result record in the L2 confirmation, to realize the verifier's observation.
+![Multi-chain State Verification](/docs/rooch-multi-chain-settlement-l2-to-l1-flow.svg)

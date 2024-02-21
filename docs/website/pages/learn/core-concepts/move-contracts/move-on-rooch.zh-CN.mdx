@@ -1,0 +1,80 @@
+# Move on Rooch
+
+Rooch 的目标是让开发者可以快速构建并部署全链应用（Fully on-chain Application），而开发应用最重要的是要有一个高效的开发语言。Rooch 选择了 Move 语言作为开发语言，我们认为它的以下特性，让它成为最适合构建全链应用的智能合约语言。
+
+1. **平台无关性**：Move 以及其虚拟机没有和具体的区块链平台实现耦合，不同的区块链平台为了适应不同的应用场景，可以基于 Move 做创新。
+2. **安全性**：Move 自带的安全特性以及对资源的稀缺性的支持，更适合区块链这种资产和应用逻辑深度绑定的应用场景。
+3. **扩展性**：Move 的依赖管理机制，让平台可以提供强大的内置库，同时开发者也可以方便地引入第三方库，更适合构建复杂的应用。
+
+## Rooch Move 的特性
+
+Move 语言的特性可以查阅文末的参考资料，这里主要介绍 Rooch 给 Move 带来的新特性。
+
+### 内置标准库
+
+Rooch 当前内置了三个标准库，分别是 `MoveStdlib`、`MoveosStdlib` 和 `RoochFramework`，详细介绍参看[内置库](./library.zh-CN.mdx)。
+
+### 私有泛型
+
+`#[private_generics(T)]` 是一个函数注解，它保证了添加该注解的函数，只能在定义 `T` 的模块内调用，安全模型上遵循和 Move 存储指令类似约束，但把这个能力开放给了开发者。这个特性是后面几个特性的基础条件，详细介绍参看[私有泛型](./private-generics.zh-CN.mdx)。 
+
+### 存储抽象
+
+存储抽象的目标是让开发者可以在智能合约中更灵活地定义自己的状态存储结构，而不局限于平台提供的标准化方案。所以 Rooch 在合约中实现了 Move 原来的存储指令，以下是对照表：
+
+| Move 存储指令                              | Rooch 中的函数                                                                   | 说明                                                |
+|--------------------------------------------|----------------------------------------------------------------------------------|-----------------------------------------------------|
+| `move_to<T:key>(&signer,T)`                | `context::move_resource_to<T:key>(&mut Context,&signer,T)`          | 将 `T` 类型的资源存储在 `signer` 的用户状态空间内。 |
+| `move_from<T:key>(address):T`              | `context::move_resource_from<T:key>(&mut Context,address): T`       | 将 `T` 类型的资源从用户状态空间中取出来。           |
+| `borrow_global<T:key>(address):&T`         | `context::borrow_resource<T:key>(&Context,address): &T`             | 从用户空间中读取 `T` 类型的的不可变引用。           |
+| `borrow_global_mut<T:key>(address):&mut T` | `context::borrow_mut_resource<T:key>(&mut Context,address): &mut T` | 从用户空间中读取 `T` 类型的的可变引用。             |
+| `exists<T:key>(address):bool`              | `context::exists_resource<T:key>(&Context,address): bool`           | 判断用户空间中是否存在 `T` 类型的资源。             |
+
+`context` 提供的以上方法，都有 `private_generics(T)` 注解的约束，保证安全性上和 Move 存储指令一致。
+
+除了 Account Resource， Rooch 还同时提供 Object 存储。关于 Rooch Object 的详细信息参看 [Rooch Object](./object.zh-CN.mdx)。
+
+关于存储抽象的设计，可以参考[存储抽象](../dive-into-rooch/storage-abstraction.zh-CN.mdx)。
+
+### Context
+
+Context 包含两个字段，一个是 `TxContext` 包含当前交易相关的信息，另外一个是 `StorageContext`，是一个全局的 `Object` 存储。
+
+```move
+module moveos_std::context{
+    struct Context {
+        tx_context: TxContext,
+        storage_context: StorageContext,
+    }
+}
+```
+
+开发者需要在 `entry` 函数中定义 `Context` 参数，MoveVM 会自动填充该参数。
+
+```move
+module example::my_module{
+    public entry fun my_entry_fun(ctx: &mut Context){
+        //function logic
+    }
+}
+```
+
+### 获取当前模块的 `signer`
+
+通过函数 `moveos_std::signer::module_signer<T>():signer` 可以用来获取当前模块的 `signer`，以当前模块的账户身份调用 `context::move_resource_to` 等需要 `signer` 的函数。
+
+这里的 `T` 受 `private_generics(T)` 约束，保证了调用的安全。
+
+### Crypto 算法支持
+
+1. [ecdsa_k1](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/doc/ecdsa_k1.md)：验证 ecdsa_k1 签名
+2. [ecdsa_k1_recoverable](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/doc/ecdsa_k1_recoverable.md)：支持从签名中恢复公钥，并验证签名
+3. [ed25519](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/doc/ed25519.md)：验证 ed25519 签名
+4. [schnorr](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/doc/schnorr.md)：验证 schnorr 签名
+5. [hash](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/doc/hash.md) 函数：`sha2_256`、`sha3_256`、`blake2b256`、`keccak256`、`ripemd160` 
+
+## 更多参考资料
+
+1. [MoveBook](https://move-language.github.io/move/)：Move 语言的基础教程
+2. [Move on Aptos](https://aptos.dev/move/move-on-aptos/)：包含 Move 语言的介绍以及 Move 在 Aptos 上的特性
+3. [Move on Sui](https://docs.sui.io/learn/why-move)：包含 Move 语言的介绍以及 Move 在 Sui 上的特性
