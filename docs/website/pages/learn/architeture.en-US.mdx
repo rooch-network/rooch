@@ -1,0 +1,88 @@
+# Rooch
+
+Rooch is a smart contract execution runtime with the following features:
+
+- **MoveVM** - Rooch embeds a full MoveVM for developers to program the smart contracts with Move Language
+- **Scalable** - Rooch is a fast execution environment that can achieve 100k peak TPS when composed in a network
+- **Modular** - Rooch has abstracted interfaces which enables different DA Layer, Settlement Layer and Arbitration Layer to be integrated
+
+## Architecture
+
+import Image from "next/image";
+
+<Image
+  src="/docs/rooch-architecture.png"
+  alt="Rooch Architecture"
+  width={600}
+  height={600}
+  className="mx-auto my-2"
+/>
+
+- **RPC** - RPC component provides access endpoint for users and developers to upload Move modules as well as send transactions to call contracts and native functions
+  - **RPC Proxy** is a special components designed for interpreting differernt transaction structures to the native schema to allow users sending transactions directly from all kinds of wallets in the market. E.g. users can directly send transactions from MetaMask to call a Move contract on Rooch
+- **MoveOS** - MoveOS is the component that does all the computational and storage work
+  - **flexEmu** is a general purpose MIPS emulator that generates [Fraud Proof](/docs/tech-highlights/fraud-proof) for exeuction
+  - **MoveVM** is a full function turing-complete VM that executes smart contracts written in [Move Language](/docs/tech-highlights/move-language)
+  - **State Storage** contains all the user and contract states
+- **Role Specific Modules** - These are the funcational modules that allow node operators to config their nodes as different roles in a Layered network (see [Rooch Network](/docs/rooch-network) for more details)
+- **Interfaces** - Rooch has built-in interfaces to work with different layers. Interfaces being abstracted enough ensures that Rooch will be able to adapt to different ecosystems.
+
+> Find out more about [Rooch on GitHub](https://github.com/rooch-network/rooch)
+
+
+## Network architecture
+
+Rooch Network provides robust, all-in-one services for Web3 DApps to easily and flexibly deploy. This allows Web3 developers to focus on building cool stuff without worrying about infrastructure.
+
+import Image from "next/image";
+
+<Image
+  src="/docs/rooch-network-architecture.png"
+  alt="Hello"
+  width={700}
+  height={700}
+  className="mx-auto my-8"
+/>
+
+### Execution Layer
+
+The Execution Layer consists of all the DApps using Rooch as containers and a smart contract execution environment.
+
+Depending on the scenarios and resource requirements, there are three types of usage for Rooch:
+
+- **General Purpose Platform** - We will launch and maintain a Rooch instance that serves as a general purpose smart contract platform. DApps and developers will be able to deploy their smart contracts directly onto an existing platform. The development experience will be just like working on a Layer1 blockchain but with much higher TPS, lower Gas Fees, and larger and more convenient storage.
+- **DApp Specific Platform** - DApps that want to have a customized platform can launch a dedicated Rooch instance, where builders can define customized and other specialized features such as tokenomics.
+- **Sector Specific Platform** - Web3 builders who want to develop and scale their ecosystem with multiple DApps can also launch a Rooch instance where assets and functionalities of different DApps will have seamless interoperability and users can share accounts and profiles across different ecosystem DApps.
+
+### Network Middleware
+
+The Rooch Network has several essential middleware services that are in charge of processing transactions and states for all the Rooch instances on the execution layer. Each of the services is based on the same core Rooch implementations.
+
+- **Sequencer** - The Sequencer is in charge of verifying incoming transactions and ordering them. The ordered transactions will be submitted to the DA Chain and Proposer.
+- **Challenger** - The Challenger is the guardian of the Rooch Layer2 network. It constantly monitors the transaction stream and also executes them to calculate state transitions. If the calculated state result does not match with the proposed state to the Arbitration Layer, the Challenger shall request the fraud proofs and submit them for arbitration. (See [Fraud Proof](/docs/tech-highlights/fraud-proof) for more information).
+- **ZK Prover** - The ZK Prover generates ZK Proofs for state transitions based on the batched transactions. The Proof will be sent to the Arbitration Layer to optimize the challenge period required by the security mechanism. (See [Hybrid Security with ZK Proof](/docs/tech-highlights/hybrid-security) for more information).
+- **Proposer** - The Proposer is responsible for executing all the ordered transactions and committing the resulting state to the Arbitration Layer.
+
+### DA Layer
+
+The importance of DA (Data Availability) is to ensure anyone can get access to all the transactions that occurred in the off-chain environment.
+
+Rooch Network will adopt a third-party solution to ensure the availability of the transactions and to maintain a high TPS. We are still researching different candidates, which include [Celestia](https://celestia.org/), [Eigenlayer](https://www.eigenlayer.xyz/), [Polygon Avail](https://polygon.technology/blog-tags/polygon-avail), and [Arweave](https://www.arweave.org/).
+
+### Arbitration Layer
+
+The Arbitration Layer acts as the "court" for arbitrating and verifying all state transitions that happened in different Rooch instances containing different DApps.
+
+In the Rooch Network, Ethereum takes the role of the arbitration layer and will be the sole source of security for all DApps in the Rooch Ecosystem. The rationale here is that Ethereum has the highest practical attack cost, measured by its market cap.
+
+On Ethereum, there are three smart contracts serving different roles:
+
+- **Fraud Proof Arbitration contract** - This contract accepts fraud proofs and emulates the execution of the state transition to make a decision on slashing.
+- **ZK Verifier contract** - This contract is responsible for verifying the ZK Proofs submitted by the ZK Prover.
+- **State Commitment Chain** - This contract keeps a chain of record of all the states committed by the Proposer.
+
+### Settlement Layer
+
+The Settlement Layer provides state settlement for all Rooch-based DApps. Every DApp using Rooch as the execution environment will be able to migrate assets (i.e., tokens) between their DApp and different Layer1s.
+
+The Rooch Network supports integrating arbitrary Layer1s to be a part of the Settlement Layer, all using Ethereum as the source of security guarantee. (See [Multi-Chain Settlement](/docs/tech-highlights/multi-chain-settlement) for more information).
