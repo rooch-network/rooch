@@ -1,16 +1,10 @@
-// Copyright (c) RoochNetwork
-// SPDX-License-Identifier: Apache-2.0
-
 use anyhow::Result;
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::system::ActorSystem;
 use coerce::actor::IntoActor;
-use criterion::{criterion_group, criterion_main, Criterion};
 use moveos_config::store_config::RocksdbConfig;
-use moveos_config::{temp_dir, DataDirPath};
+use moveos_config::DataDirPath;
 use moveos_store::{MoveOSDB, MoveOSStore};
-use rooch_framework::natives::default_gas_schedule;
-// use pprof::criterion::{Output, PProfProfiler};
 use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
 use rooch_config::da_config::DAConfig;
@@ -21,6 +15,7 @@ use rooch_da::proxy::DAProxy;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
+use rooch_framework::natives::default_gas_schedule;
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
 use rooch_indexer::indexer_reader::IndexerReader;
@@ -31,9 +26,6 @@ use rooch_key::keystore::memory_keystore::InMemKeystore;
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
 use rooch_proposer::proxy::ProposerProxy;
-use rooch_rpc_api::api::rooch_api::RoochAPIServer;
-use rooch_rpc_api::jsonrpc_types::StrView;
-use rooch_rpc_server::server::rooch_server::RoochServer;
 use rooch_rpc_server::service::aggregate_service::AggregateService;
 use rooch_rpc_server::service::rpc_service::RpcService;
 use rooch_sequencer::actor::sequencer::SequencerActor;
@@ -46,73 +38,12 @@ use rooch_types::bitcoin::network::Network;
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::transaction::TypedTransaction;
 use std::time::Duration;
-use tokio::runtime::Runtime;
 use tracing::info;
 
 pub const EXAMPLE_SIMPLE_BLOG_PACKAGE_NAME: &'static str = "simple_blog";
 pub const EXAMPLE_SIMPLE_BLOG_NAMED_ADDRESS: &str = "simple_blog";
 
-pub struct StoreHolder {
-    _moveos_store: MoveOSStore,
-    _rooch_store: RoochStore,
-    _indexer_store: IndexerStore,
-}
-fn transaction_write_benchmark(c: &mut Criterion) {
-    std::env::set_var("RUST_LOG", "error");
-
-    let tempdir = temp_dir();
-    let keystore = InMemKeystore::new_insecure_for_tests(10);
-
-    let rt: Runtime = Runtime::new().unwrap();
-    let (rpc_service, _aggregate_service) =
-        rt.block_on(async { setup_service(&tempdir, &keystore).await.unwrap() });
-
-    let default_account = keystore.addresses()[0];
-    let mut test_transaction_builder = TestTransactionBuilder::new(default_account.into());
-    let tx = create_publish_transaction(&test_transaction_builder, &keystore).unwrap();
-    let _publish_result = rt.block_on(async { rpc_service.execute_tx(tx).await.unwrap() });
-
-    let mut transactions = (1..500)
-        .cycle()
-        .map(|n| create_transaction(&mut test_transaction_builder, &keystore, n).unwrap());
-    c.bench_function("execute_tx", |b| {
-        b.to_async(Runtime::new().unwrap())
-            .iter(|| rpc_service.execute_tx(transactions.next().unwrap()))
-    });
-}
-
-fn transaction_query_benchmark(c: &mut Criterion) {
-    let tempdir = temp_dir();
-    let keystore = InMemKeystore::new_insecure_for_tests(10);
-
-    let rt: Runtime = Runtime::new().unwrap();
-    let (rpc_service, aggregate_service) =
-        rt.block_on(async { setup_service(&tempdir, &keystore).await.unwrap() });
-    let rooch_server = RoochServer::new(rpc_service.clone(), aggregate_service);
-
-    let default_account = keystore.addresses()[0];
-    let mut test_transaction_builder = TestTransactionBuilder::new(default_account.into());
-    let tx = create_publish_transaction(&test_transaction_builder, &keystore).unwrap();
-    let _publish_result = rt.block_on(async { rpc_service.execute_tx(tx).await.unwrap() });
-    //
-    for n in 1..500 {
-        let tx = create_transaction(&mut test_transaction_builder, &keystore, n).unwrap();
-        let _ = rt.block_on(async { rpc_service.execute_tx(tx).await.unwrap() });
-    }
-
-    let mut tx_orders = (1..500).cycle().map(|v| v);
-    c.bench_function("get_transactions_by_order", |b| {
-        b.to_async(Runtime::new().unwrap()).iter(|| {
-            rooch_server.get_transactions_by_order(
-                Some(StrView(tx_orders.next().unwrap())),
-                None,
-                None,
-            )
-        })
-    });
-}
-
-async fn setup_service(
+pub async fn setup_service(
     datadir: &DataDirPath,
     keystore: &InMemKeystore,
 ) -> Result<(RpcService, AggregateService)> {
@@ -218,7 +149,7 @@ async fn setup_service(
     Ok((rpc_service, aggregate_service))
 }
 
-fn init_storage(datadir: &DataDirPath) -> Result<(MoveOSStore, RoochStore)> {
+pub fn init_storage(datadir: &DataDirPath) -> Result<(MoveOSStore, RoochStore)> {
     let (rooch_db_path, moveos_db_path) = (
         StoreConfig::get_mock_rooch_store_dir(datadir),
         StoreConfig::get_mock_moveos_store_dir(datadir),
@@ -248,7 +179,7 @@ fn init_storage(datadir: &DataDirPath) -> Result<(MoveOSStore, RoochStore)> {
     Ok((moveos_store, rooch_store))
 }
 
-fn init_indexer(datadir: &DataDirPath) -> Result<(IndexerStore, IndexerReader)> {
+pub fn init_indexer(datadir: &DataDirPath) -> Result<(IndexerStore, IndexerReader)> {
     let indexer_db_path = IndexerConfig::get_mock_indexer_db(datadir);
     let indexer_db_parent_dir = indexer_db_path
         .parent()
@@ -269,7 +200,7 @@ fn init_indexer(datadir: &DataDirPath) -> Result<(IndexerStore, IndexerReader)> 
     Ok((indexer_store, indexer_reader))
 }
 
-fn create_publish_transaction(
+pub fn create_publish_transaction(
     test_transaction_builder: &TestTransactionBuilder,
     keystore: &InMemKeystore,
 ) -> Result<TypedTransaction> {
@@ -283,7 +214,7 @@ fn create_publish_transaction(
     Ok(TypedTransaction::Rooch(rooch_tx))
 }
 
-fn create_transaction(
+pub fn create_transaction(
     test_transaction_builder: &mut TestTransactionBuilder,
     keystore: &InMemKeystore,
     sequence_number: u64,
@@ -296,12 +227,3 @@ fn create_transaction(
         keystore.sign_transaction(&test_transaction_builder.sender.into(), tx_data, None)?;
     Ok(TypedTransaction::Rooch(rooch_tx))
 }
-
-criterion_group! {
-    name = rooch_transaction_benches;
-    config = Criterion::default().sample_size(200).measurement_time(Duration::from_secs(10));
-    // config = Criterion::default().sample_size(200).measurement_time(Duration::from_secs(10))
-    // .with_profiler(PProfProfiler::new(100, Output::Flamegraph(None)));
-    targets = transaction_write_benchmark, transaction_query_benchmark
-}
-criterion_main!(rooch_transaction_benches);
