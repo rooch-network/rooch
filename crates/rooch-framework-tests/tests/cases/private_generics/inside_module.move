@@ -2,7 +2,7 @@
 
 //# publish
 module creator::test {
-    use moveos_std::context::{Self, Context};
+    use moveos_std::context::{Context};
     use moveos_std::account;
 
     struct Foo has key {

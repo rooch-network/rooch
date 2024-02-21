@@ -7,9 +7,6 @@ module rooch_examples::timestamp {
 
     use moveos_std::context::{Context};
 
-    #[test_only]
-    use rooch_framework::account;
-
     struct CurrentTimeMicroseconds has key {
         microseconds: u64,
     }

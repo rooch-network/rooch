@@ -3,7 +3,8 @@
 //# publish
 module creator::test {
     use std::string;
-    use moveos_std::context::{Self, Context};
+    use moveos_std::context::{Context};
+    use moveos_std::account;
 
     struct Foo has key, store {
         x: u64,

@@ -5,7 +5,7 @@ module rooch_examples::module_init {
     use std::debug;
     use std::string::{Self, String};
     use moveos_std::account;
-    use moveos_std::context::{Self, Context};
+    use moveos_std::context::{Context};
     use moveos_std::signer;
     
     struct InitConfig has key{

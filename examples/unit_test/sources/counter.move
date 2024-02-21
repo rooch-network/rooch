@@ -3,6 +3,8 @@ module unit_test::unit_test {
     use moveos_std::signer;
     use moveos_std::context::{Context};
     #[test_only]
+    use moveos_std::context;
+    #[test_only]
     use moveos_std::context::drop_test_context;
 
     struct Counter has key {
