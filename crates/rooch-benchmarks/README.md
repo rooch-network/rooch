@@ -11,6 +11,8 @@ cargo bench
 ```shell
 cargo bench --bench bench_tx
 cargo bench --bench bench_tx  -- --verbose
+cargo bench --bench bench_tx_query
+cargo bench --bench bench_tx_write
 ```
 
 3. run a special benchmark with pprof (on linux)
