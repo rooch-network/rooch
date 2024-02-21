@@ -9,6 +9,7 @@ module rooch_examples::complex_struct {
    use moveos_std::bcs;
    use moveos_std::signer;
    use std::vector;
+   use moveos_std::account;
 
    struct SimpleStruct has store, copy, drop {
       value: u64,
@@ -111,11 +112,11 @@ module rooch_examples::complex_struct {
       let complex_object = context::new_object(ctx, s);
       object::transfer(complex_object, @rooch_examples);
       let s2 = new_complex_struct(object_id);
-      context::move_resource_to(ctx, &module_signer, s2);
+      account::move_resource_to(ctx, &module_signer, s2);
    }
 
    public fun value(ctx: &Context): &ComplexStruct {
-      context::borrow_resource<ComplexStruct>(ctx,@rooch_examples)
+      account::borrow_resource<ComplexStruct>(ctx,@rooch_examples)
    }
 
    public fun value_of_object(obj: &Object<ComplexStruct>) : &ComplexStruct {

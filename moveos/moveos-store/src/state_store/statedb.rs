@@ -9,9 +9,9 @@ use move_core_types::{
     language_storage::{StructTag, TypeTag},
 };
 use moveos_types::move_types::as_struct_tag;
+use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::move_module::Module;
 use moveos_types::moveos_std::object_id::ObjectID;
-use moveos_types::moveos_std::resource::Resource;
 use moveos_types::state::MoveStructType;
 use moveos_types::state::{KeyState, TableState, TableStateSet};
 use moveos_types::state_resolver::StateKV;
@@ -204,7 +204,7 @@ impl StateDBStore {
             let account = account.ok_or(anyhow::anyhow!(
                 "Invalid account when create resource object"
             ))?;
-            ObjectEntity::new_resource_object(account).to_raw()
+            ObjectEntity::new_account_object(account).to_raw()
         } else {
             let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()))?;
             ObjectEntity::new_table_object(id, table_info).to_raw()
@@ -244,7 +244,7 @@ impl StateDBStore {
             let (modules, resources) = account_change_set.into_inner();
             debug_assert!(modules.is_empty() && resources.is_empty());
 
-            account_resource_ids_mapping.insert(Resource::resource_object_id(account), account);
+            account_resource_ids_mapping.insert(Account::account_object_id(account), account);
         }
 
         for (table_handle, table_change) in state_change_set.changes {

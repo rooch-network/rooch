@@ -3,8 +3,9 @@
 
 module rooch_examples::timestamp {
     use std::signer;
+    use moveos_std::account;
 
-    use moveos_std::context::{Self, Context};
+    use moveos_std::context::{Context};
 
     #[test_only]
     use rooch_framework::account;
@@ -24,25 +25,25 @@ module rooch_examples::timestamp {
     public(friend) fun set_time_has_started(framework: &signer, ctx: &mut Context) {
         assert!(signer::address_of(framework) == @moveos_std, ErrorNotOperating);
         let timer = CurrentTimeMicroseconds { microseconds: 0 };
-        context::move_resource_to(ctx, framework, timer);
+        account::move_resource_to(ctx, framework, timer);
     }
 
     public(friend) fun update_global_time(
         timestamp: u64, ctx: &mut Context
     )   {
-        let global_timer_mut_ref = context::borrow_mut_resource<CurrentTimeMicroseconds>(ctx, @moveos_std);
+        let global_timer_mut_ref = account::borrow_mut_resource<CurrentTimeMicroseconds>(ctx, @moveos_std);
         global_timer_mut_ref.microseconds = timestamp;
     }
 
     #[test_only]
     public fun set_time_has_started_for_testing(ctx: &mut Context) {
-        if (!context::exists_resource<CurrentTimeMicroseconds>(ctx, @moveos_std)) {
+        if (!account::exists_resource<CurrentTimeMicroseconds>(ctx, @moveos_std)) {
             set_time_has_started(&account::create_signer_for_test(@moveos_std),ctx);
         };
     }
 
     public fun now_microseconds(ctx: & Context): u64 {
-       context::borrow_resource<CurrentTimeMicroseconds>(ctx, @moveos_std).microseconds
+       account::borrow_resource<CurrentTimeMicroseconds>(ctx, @moveos_std).microseconds
     }
 
 
@@ -52,7 +53,7 @@ module rooch_examples::timestamp {
 
     #[test_only]
     public fun update_global_time_for_test(timestamp_microsecs: u64,ctx: &mut Context)  {
-        let global_timer_mut_ref = context::borrow_mut_resource<CurrentTimeMicroseconds>(ctx, @moveos_std);
+        let global_timer_mut_ref = account::borrow_mut_resource<CurrentTimeMicroseconds>(ctx, @moveos_std);
         let now = global_timer_mut_ref.microseconds;
         assert!(now < timestamp_microsecs, ErrorInvalidTimestamp);
         global_timer_mut_ref.microseconds = timestamp_microsecs;

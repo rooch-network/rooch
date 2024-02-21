@@ -12,7 +12,7 @@ module rooch_framework::timestamp {
     use moveos_std::object;
     use moveos_std::context::{Self, Context};
     use moveos_std::signer;
-    use rooch_framework::core_addresses;
+    use moveos_std::core_addresses;
 
     friend rooch_framework::genesis;
     friend rooch_framework::ethereum_light_client;
@@ -47,7 +47,7 @@ module rooch_framework::timestamp {
     /// Only the framework genesis account can update the global clock time.
     public fun try_update_global_time(ctx: &mut Context, genesis_account: &signer, timestamp_milliseconds: u64) : bool {
         let genesis_address = signer::address_of(genesis_account);
-        assert!(core_addresses::is_framework_reserved_address(genesis_address), ErrorNotGenesisAddress);
+        assert!(core_addresses::is_system_reserved_address(genesis_address), ErrorNotGenesisAddress);
 
         let current_timestamp = timestamp_mut(ctx); 
         let now = current_timestamp.milliseconds;

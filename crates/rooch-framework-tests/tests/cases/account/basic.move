@@ -18,7 +18,7 @@ script {
 //check
 //# run --signers 0x42
 script {
-    use rooch_framework::account;
+    use moveos_std::account;
     use moveos_std::context::Context;
     fun main(ctx: &mut Context, _sender: signer) {
         assert!(account::exists_at(ctx, @0x42), 0);

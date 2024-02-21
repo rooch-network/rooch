@@ -11,7 +11,7 @@ module nft::nft {
     #[test_only]
     use std::option;
     #[test_only]
-    use rooch_framework::account;
+    use rooch_framework::account as account_entry;
 
     const ErrorCreatorNotMatch: u64 = 1;
 
@@ -106,7 +106,7 @@ module nft::nft {
     #[test(sender = @nft)]
     public fun test_create_nft (sender: address){
         let ctx = context::new_test_context(sender);
-        account::create_account_for_test(&mut ctx, sender);
+        account_entry::create_account_for_test(&mut ctx, sender);
 
         let collection_id = collection::create_collection(
             &mut ctx,

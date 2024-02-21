@@ -8,15 +8,20 @@ module rooch_examples::rooch_examples {
     use std::signer;
     use std::string::{Self, String};
     use std::vector;
+    use moveos_std::account;
+    use moveos_std::account::SignerCapability;
 
     use moveos_std::event::Self;
     use moveos_std::simple_map::{Self, SimpleMap};
-    use moveos_std::context::{Self, Context};
+    use moveos_std::context::{Context};
     use moveos_std::object;
     use rooch_framework::coin;
     use rooch_framework::account_coin_store;
     use rooch_examples::timestamp;
-    use rooch_framework::account::{Self, SignerCapability};
+    #[test_only]
+    use rooch_framework::account as account_entry;
+    #[test_only]
+    use moveos_std::context;
 
     #[test_only]
     use rooch_framework::genesis;
@@ -110,7 +115,7 @@ module rooch_examples::rooch_examples {
         let (signer, cap) = account::create_resource_account(ctx, account);
         let resource_address = signer::address_of(&signer);
 
-        context::move_resource_to(ctx, account, ResouceAccountAddress {
+        account::move_resource_to(ctx, account, ResouceAccountAddress {
             addr: resource_address
         });
         
@@ -121,7 +126,7 @@ module rooch_examples::rooch_examples {
         account_coin_store::do_accept_coin<WGBCOIN>(ctx,&signer);
         account_coin_store::deposit_extend(ctx, signer::address_of(account), coin);
         object::transfer(coin_info, resource_address);
-        context::move_resource_to(ctx, &signer, State {
+        account::move_resource_to(ctx, &signer, State {
             next_game_id: 0,
             games: simple_map::create(),
             cap
@@ -138,9 +143,9 @@ module rooch_examples::rooch_examples {
         check_if_state_exists(ctx);
         let now = timestamp::now_seconds(ctx);
         check_if_signer_is_contract_deployer(account);
-        let resouce_address = context::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
+        let resouce_address = account::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
         let next_game_id = {
-            let state_mut_ref = context::borrow_mut_resource<State>(ctx, resouce_address);
+            let state_mut_ref = account::borrow_mut_resource<State>(ctx, resouce_address);
             get_next_game_id(&mut state_mut_ref.next_game_id)
         };
 
@@ -161,7 +166,7 @@ module rooch_examples::rooch_examples {
             expiration_timestamp_in_seconds: EXPIRATION_TIME_IN_SECONDS + now,
         };
         {
-            let state_mut_ref = context::borrow_mut_resource<State>(ctx, resouce_address);
+            let state_mut_ref = account::borrow_mut_resource<State>(ctx, resouce_address);
             simple_map::add(&mut state_mut_ref.games, next_game_id, new_game);
         };
         account_coin_store::transfer<WGBCOIN>(ctx, account, resouce_address, prize_pool_amount);
@@ -186,8 +191,8 @@ module rooch_examples::rooch_examples {
     ) {
         check_if_state_exists(ctx);
         let now = timestamp::now_seconds(ctx);
-        let resouce_address = context::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
-        let state_mut_ref = context::borrow_mut_resource<State>(ctx, resouce_address);
+        let resouce_address = account::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
+        let state_mut_ref = account::borrow_mut_resource<State>(ctx, resouce_address);
         check_if_game_exists(&state_mut_ref.games, &game_id);
         let game_mut_ref = simple_map::borrow_mut(&mut state_mut_ref.games, &game_id);
         check_if_player_participates_in_the_game(player, game_mut_ref);
@@ -221,9 +226,9 @@ module rooch_examples::rooch_examples {
     ) {
         check_if_state_exists(ctx);
         let now = timestamp::now_seconds(ctx);
-        let resouce_address = context::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
+        let resouce_address = account::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
         let (game_id, player_address, decision) = {
-            let state_mut_ref = context::borrow_mut_resource<State>(ctx, resouce_address);
+            let state_mut_ref = account::borrow_mut_resource<State>(ctx, resouce_address);
 
 
             check_if_game_exists(&state_mut_ref.games, &game_id);
@@ -296,9 +301,9 @@ module rooch_examples::rooch_examples {
                                                     ctx: &mut Context) {
         check_if_state_exists(ctx);
         let now = timestamp::now_seconds(ctx);
-        let resouce_address = context::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
+        let resouce_address = account::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
         let (game, resouce_account_signer) = {
-            let state_mut_ref = context::borrow_mut_resource<State>(ctx, resouce_address);
+            let state_mut_ref = account::borrow_mut_resource<State>(ctx, resouce_address);
             check_if_game_exists(&state_mut_ref.games, &game_id);
 
             let (_, game) = simple_map::remove(&mut state_mut_ref.games, &game_id);
@@ -374,9 +379,9 @@ module rooch_examples::rooch_examples {
     }
 
     fun check_if_state_exists(ctx: &mut Context) {
-        assert!(context::exists_resource<ResouceAccountAddress>(ctx, @rooch_examples), ErrorStateIsNotInitialized);
-        let resouce_address = context::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
-        assert!(context::exists_resource<State>(ctx, resouce_address), ErrorStateIsNotInitialized);
+        assert!(account::exists_resource<ResouceAccountAddress>(ctx, @rooch_examples), ErrorStateIsNotInitialized);
+        let resouce_address = account::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
+        assert!(account::exists_resource<State>(ctx, resouce_address), ErrorStateIsNotInitialized);
     }
 
     fun check_if_signer_is_contract_deployer(signer: &signer) {
@@ -438,13 +443,13 @@ module rooch_examples::rooch_examples {
         let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @rooch_examples);
+        let account = &account_entry::create_account_for_test(ctx, @rooch_examples);
         timestamp::set_time_has_started_for_testing(ctx);
 
         init(account, ctx);
-        let resouce_address = context::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
+        let resouce_address = account::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
 
-        let state = context::borrow_mut_resource<State>(ctx, resouce_address);
+        let state = account::borrow_mut_resource<State>(ctx, resouce_address);
         assert!(state.next_game_id == 0, 0);
         assert!(simple_map::length(&state.games) == 0, 1);
 
@@ -461,8 +466,8 @@ module rooch_examples::rooch_examples {
     fun test_init_again() {
         let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
-        let account = &account::create_account_for_test(ctx, @rooch_examples);
-        let _move_os = &account::create_account_for_test(ctx, @moveos_std);
+        let account = &account_entry::create_account_for_test(ctx, @rooch_examples);
+        let _move_os = &account_entry::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
         init(account, ctx);
@@ -476,8 +481,8 @@ module rooch_examples::rooch_examples {
         
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @rooch_examples);
-        let _move_os = &account::create_account_for_test(ctx, @moveos_std);
+        let account = &account_entry::create_account_for_test(ctx, @rooch_examples);
+        let _move_os = &account_entry::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
  
         init(account, ctx);
@@ -489,9 +494,9 @@ module rooch_examples::rooch_examples {
         
         timestamp::update_global_time_for_test_secs(10, ctx);
         create_game(account, prize_pool_amount, player_one_address, player_two_address, ctx);
-        let resouce_address = context::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
+        let resouce_address = account::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
 
-        let state = context::borrow_mut_resource<State>(ctx, resouce_address);
+        let state = account::borrow_mut_resource<State>(ctx, resouce_address);
         assert!(state.next_game_id == 1, 0);
         assert!(simple_map::length(&state.games) == 1, 1);
         assert!(simple_map::contains_key(&state.games, &0), 2);
@@ -521,8 +526,8 @@ module rooch_examples::rooch_examples {
         let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @rooch_examples);
-        let _move_os = &account::create_account_for_test(ctx, @moveos_std);
+        let account = &account_entry::create_account_for_test(ctx, @rooch_examples);
+        let _move_os = &account_entry::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
         init(account, ctx);
@@ -533,7 +538,7 @@ module rooch_examples::rooch_examples {
         timestamp::update_global_time_for_test_secs(10, ctx);
 
         let (player_one, _player_two) = {
-            (account::create_account_for_test(ctx, player_one_address), account::create_account_for_test(
+            (account_entry::create_account_for_test(ctx, player_one_address), account_entry::create_account_for_test(
                 ctx,
                 player_two_address
             ))
@@ -542,7 +547,7 @@ module rooch_examples::rooch_examples {
         create_game(account, prize_pool_amount, player_one_address, player_two_address, ctx);
 
 
-        let resouce_address = context::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
+        let resouce_address = account::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
 
         let salt = b"saltsaltsalt";
         let decision = bcs::to_bytes(&DECISION_SPLIT);
@@ -553,7 +558,7 @@ module rooch_examples::rooch_examples {
 
         submit_decision(&player_one, 0, decision_hash, salt_hash, ctx);
 
-        let state = context::borrow_mut_resource<State>(ctx, resouce_address);
+        let state = account::borrow_mut_resource<State>(ctx, resouce_address);
 
         assert!(state.next_game_id == 1, 0);
         assert!(simple_map::length(&state.games) == 1, 1);
@@ -584,8 +589,8 @@ module rooch_examples::rooch_examples {
         let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @rooch_examples);
-        let _move_os = &account::create_account_for_test(ctx, @moveos_std);
+        let account = &account_entry::create_account_for_test(ctx, @rooch_examples);
+        let _move_os = &account_entry::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
         init(account, ctx);
@@ -596,7 +601,7 @@ module rooch_examples::rooch_examples {
         timestamp::update_global_time_for_test_secs(10, ctx);
 
         let (player_one, _player_two) = {
-            (account::create_account_for_test(ctx, player_one_address), account::create_account_for_test(
+            (account_entry::create_account_for_test(ctx, player_one_address), account_entry::create_account_for_test(
                 ctx,
                 player_two_address
             ))
@@ -621,8 +626,8 @@ module rooch_examples::rooch_examples {
         let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @rooch_examples);
-        let _move_os = &account::create_account_for_test(ctx, @moveos_std);
+        let account = &account_entry::create_account_for_test(ctx, @rooch_examples);
+        let _move_os = &account_entry::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
         init(account, ctx);
@@ -633,7 +638,7 @@ module rooch_examples::rooch_examples {
         timestamp::update_global_time_for_test_secs(10, ctx);
 
         let (player_one, player_two) = {
-            (account::create_account_for_test(ctx, player_one_address), account::create_account_for_test(
+            (account_entry::create_account_for_test(ctx, player_one_address), account_entry::create_account_for_test(
                 ctx,
                 player_two_address
             ))
@@ -664,9 +669,9 @@ module rooch_examples::rooch_examples {
 
         reveal_decision(&player_one, 0, string::utf8(player_one_salt), ctx);
         {
-            let resouce_address = context::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
+            let resouce_address = account::borrow_resource<ResouceAccountAddress>(ctx, @rooch_examples).addr;
             {
-                let state = context::borrow_mut_resource<State>(ctx, resouce_address);
+                let state = account::borrow_mut_resource<State>(ctx, resouce_address);
                 assert!(state.next_game_id == 1, 0);
                 assert!(simple_map::length(&state.games) == 1, 1);
                 assert!(simple_map::contains_key(&state.games, &0), 2);
@@ -694,7 +699,7 @@ module rooch_examples::rooch_examples {
 
             reveal_decision(&player_two, 0, string::utf8(player_two_salt), ctx);
             {
-                let state = context::borrow_mut_resource<State>(ctx, resouce_address);
+                let state = account::borrow_mut_resource<State>(ctx, resouce_address);
                 assert!(state.next_game_id == 1, 28);
                 assert!(simple_map::length(&state.games) == 0, 29);
             };
@@ -711,8 +716,8 @@ module rooch_examples::rooch_examples {
         let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @rooch_examples);
-        let _move_os = &account::create_account_for_test(ctx, @moveos_std);
+        let account = &account_entry::create_account_for_test(ctx, @rooch_examples);
+        let _move_os = &account_entry::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
         init(account, ctx);
@@ -723,7 +728,7 @@ module rooch_examples::rooch_examples {
         timestamp::update_global_time_for_test_secs(10, ctx);
 
         let (player_one, player_two) = {
-            (account::create_account_for_test(ctx, player_one_address), account::create_account_for_test(
+            (account_entry::create_account_for_test(ctx, player_one_address), account_entry::create_account_for_test(
                 ctx,
                 player_two_address
             ))
@@ -755,13 +760,13 @@ module rooch_examples::rooch_examples {
         reveal_decision(&player_one, 0, string::utf8(player_one_salt), ctx);
         reveal_decision(&player_two, 0, string::utf8(player_two_salt), ctx);
         {
-            let resouce_address = context::borrow_resource<ResouceAccountAddress>(
+            let resouce_address = account::borrow_resource<ResouceAccountAddress>(
                 ctx,
                 @rooch_examples
             ).addr;
 
             {
-                let state = context::borrow_mut_resource<State>(ctx, resouce_address);
+                let state = account::borrow_mut_resource<State>(ctx, resouce_address);
                 assert!(state.next_game_id == 1, 0);
             };
             assert!(account_coin_store::balance<WGBCOIN>(ctx, resouce_address) == 0, 40);
@@ -776,8 +781,8 @@ module rooch_examples::rooch_examples {
         let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @rooch_examples);
-        let _move_os = &account::create_account_for_test(ctx, @moveos_std);
+        let account = &account_entry::create_account_for_test(ctx, @rooch_examples);
+        let _move_os = &account_entry::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
         init(account, ctx);
@@ -788,7 +793,7 @@ module rooch_examples::rooch_examples {
         timestamp::update_global_time_for_test_secs(10, ctx);
 
         let (player_one, player_two) = {
-            (account::create_account_for_test(ctx, player_one_address), account::create_account_for_test(
+            (account_entry::create_account_for_test(ctx, player_one_address), account_entry::create_account_for_test(
                 ctx,
                 player_two_address
             ))
@@ -822,13 +827,13 @@ module rooch_examples::rooch_examples {
 
 
         {
-            let resouce_address = context::borrow_resource<ResouceAccountAddress>(
+            let resouce_address = account::borrow_resource<ResouceAccountAddress>(
                 ctx,
                 @rooch_examples
             ).addr;
 
             {
-                let state = context::borrow_mut_resource<State>(ctx, resouce_address);
+                let state = account::borrow_mut_resource<State>(ctx, resouce_address);
                 assert!(state.next_game_id == 1, 0);
             };
             assert!(account_coin_store::balance<WGBCOIN>(ctx, resouce_address) == 0, 40);
@@ -843,8 +848,8 @@ module rooch_examples::rooch_examples {
         let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @rooch_examples);
-        let _move_os = &account::create_account_for_test(ctx, @moveos_std);
+        let account = &account_entry::create_account_for_test(ctx, @rooch_examples);
+        let _move_os = &account_entry::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
         init(account, ctx);
@@ -855,7 +860,7 @@ module rooch_examples::rooch_examples {
         timestamp::update_global_time_for_test_secs(10, ctx);
 
         let (player_one, player_two) = {
-            (account::create_account_for_test(ctx, player_one_address), account::create_account_for_test(
+            (account_entry::create_account_for_test(ctx, player_one_address), account_entry::create_account_for_test(
                 ctx,
                 player_two_address
             ))
@@ -888,13 +893,13 @@ module rooch_examples::rooch_examples {
         reveal_decision(&player_two, 0, string::utf8(player_two_salt), ctx);
 
         {
-            let resouce_address = context::borrow_resource<ResouceAccountAddress>(
+            let resouce_address = account::borrow_resource<ResouceAccountAddress>(
                 ctx,
                 @rooch_examples
             ).addr;
 
             {
-                let state = context::borrow_mut_resource<State>(ctx, resouce_address);
+                let state = account::borrow_mut_resource<State>(ctx, resouce_address);
                 assert!(state.next_game_id == 1, 0);
             };
             assert!(account_coin_store::balance<WGBCOIN>(ctx, resouce_address) == 0, 40);
@@ -911,8 +916,8 @@ module rooch_examples::rooch_examples {
         let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @rooch_examples);
-        let _move_os = &account::create_account_for_test(ctx, @moveos_std);
+        let account = &account_entry::create_account_for_test(ctx, @rooch_examples);
+        let _move_os = &account_entry::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
         init(account, ctx);
@@ -923,7 +928,7 @@ module rooch_examples::rooch_examples {
         timestamp::update_global_time_for_test_secs(10, ctx);
 
         let (player_one, player_two) = {
-            (account::create_account_for_test(ctx, player_one_address), account::create_account_for_test(
+            (account_entry::create_account_for_test(ctx, player_one_address), account_entry::create_account_for_test(
                 ctx,
                 player_two_address
             ))
@@ -951,8 +956,8 @@ module rooch_examples::rooch_examples {
         let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @rooch_examples);
-        let _move_os = &account::create_account_for_test(ctx, @moveos_std);
+        let account = &account_entry::create_account_for_test(ctx, @rooch_examples);
+        let _move_os = &account_entry::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
         init(account, ctx);
@@ -963,7 +968,7 @@ module rooch_examples::rooch_examples {
         timestamp::update_global_time_for_test_secs(10, ctx);
 
         let (player_one, player_two) = {
-            (account::create_account_for_test(ctx, player_one_address), account::create_account_for_test(
+            (account_entry::create_account_for_test(ctx, player_one_address), account_entry::create_account_for_test(
                 ctx,
                 player_two_address
             ))
@@ -977,13 +982,13 @@ module rooch_examples::rooch_examples {
         timestamp::update_global_time_for_test_secs(3612, ctx);
         release_funds_after_expiration(account, 0, ctx);
         {
-            let resouce_address = context::borrow_resource<ResouceAccountAddress>(
+            let resouce_address = account::borrow_resource<ResouceAccountAddress>(
                 ctx,
                 @rooch_examples
             ).addr;
 
             {
-                let state = context::borrow_mut_resource<State>(ctx, resouce_address);
+                let state = account::borrow_mut_resource<State>(ctx, resouce_address);
                 assert!(state.next_game_id == 1, 0);
             };
             assert!(account_coin_store::balance<WGBCOIN>(ctx, resouce_address) == 0, 13);
@@ -998,8 +1003,8 @@ module rooch_examples::rooch_examples {
         let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
 
-        let account = &account::create_account_for_test(ctx, @rooch_examples);
-        let _move_os = &account::create_account_for_test(ctx, @moveos_std);
+        let account = &account_entry::create_account_for_test(ctx, @rooch_examples);
+        let _move_os = &account_entry::create_account_for_test(ctx, @moveos_std);
         timestamp::set_time_has_started_for_testing(ctx);
 
         init(account, ctx);
@@ -1010,7 +1015,7 @@ module rooch_examples::rooch_examples {
         timestamp::update_global_time_for_test_secs(10, ctx);
 
         let (player_one, player_two) = {
-            (account::create_account_for_test(ctx, player_one_address), account::create_account_for_test(
+            (account_entry::create_account_for_test(ctx, player_one_address), account_entry::create_account_for_test(
                 ctx,
                 player_two_address
             ))
@@ -1043,13 +1048,13 @@ module rooch_examples::rooch_examples {
         timestamp::update_global_time_for_test_secs(3612, ctx);
         release_funds_after_expiration(account, 0, ctx);
         {
-            let resouce_address = context::borrow_resource<ResouceAccountAddress>(
+            let resouce_address = account::borrow_resource<ResouceAccountAddress>(
                 ctx,
                 @rooch_examples
             ).addr;
 
             {
-                let state = context::borrow_mut_resource<State>(ctx, resouce_address);
+                let state = account::borrow_mut_resource<State>(ctx, resouce_address);
                 assert!(state.next_game_id == 1, 0);
             };
             assert!(account_coin_store::balance<WGBCOIN>(ctx, resouce_address) == 0, 40);

@@ -5,6 +5,7 @@ module rooch_framework::session_key {
     use std::vector;
     use std::option::{Self, Option};
     use std::signer;
+    use moveos_std::account;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
     use moveos_std::tx_meta::{Self, FunctionCallMeta};
@@ -88,10 +89,10 @@ module rooch_framework::session_key {
 
     /// Get the session key of the account_address by the authentication key
     public fun get_session_key(ctx: &Context, account_address: address, authentication_key: vector<u8>) : Option<SessionKey> {
-        if (!context::exists_resource<SessionKeys>(ctx, account_address)){
+        if (!account::exists_resource<SessionKeys>(ctx, account_address)){
             return option::none()
         };
-        let session_keys = context::borrow_resource<SessionKeys>(ctx, account_address);
+        let session_keys = account::borrow_resource<SessionKeys>(ctx, account_address);
         if (!table::contains(&session_keys.keys, authentication_key)){
             return option::none()
         }else{
@@ -112,12 +113,12 @@ module rooch_framework::session_key {
             last_active_time: now_seconds,
             max_inactive_interval: max_inactive_interval,
         };
-        if (!context::exists_resource<SessionKeys>(ctx, sender_addr)){
+        if (!account::exists_resource<SessionKeys>(ctx, sender_addr)){
             let keys = context::new_table<vector<u8>, SessionKey>(ctx);
-            context::move_resource_to<SessionKeys>(ctx, sender, SessionKeys{keys});
+            account::move_resource_to<SessionKeys>(ctx, sender, SessionKeys{keys});
         };
 
-        let session_keys = context::borrow_mut_resource<SessionKeys>(ctx, sender_addr);
+        let session_keys = account::borrow_mut_resource<SessionKeys>(ctx, sender_addr);
         table::add(&mut session_keys.keys, authentication_key, session_key);
     }
 
@@ -168,7 +169,7 @@ module rooch_framework::session_key {
     /// If the session key is expired or invalid, abort the tx, otherwise return option::some(authentication key)
     public(friend) fun validate(ctx: &Context, auth_validator_id: u64, authenticator_payload: vector<u8>) : Option<vector<u8>> {
         let sender_addr = context::sender(ctx);
-        if (!context::exists_resource<SessionKeys>(ctx, sender_addr)){
+        if (!account::exists_resource<SessionKeys>(ctx, sender_addr)){
             return option::none()
         };
         // We only support native validator for SessionKey now
@@ -234,8 +235,8 @@ module rooch_framework::session_key {
     public(friend) fun active_session_key(ctx: &mut Context, authentication_key: vector<u8>) {
         let sender_addr = context::sender(ctx);
         let now_seconds = timestamp::now_seconds(ctx);
-        assert!(context::exists_resource<SessionKeys>(ctx, sender_addr), ErrorSessionKeyIsInvalid);
-        let session_keys = context::borrow_mut_resource<SessionKeys>(ctx, sender_addr);
+        assert!(account::exists_resource<SessionKeys>(ctx, sender_addr), ErrorSessionKeyIsInvalid);
+        let session_keys = account::borrow_mut_resource<SessionKeys>(ctx, sender_addr);
         assert!(table::contains(&session_keys.keys, authentication_key), ErrorSessionKeyIsInvalid);
         let session_key = table::borrow_mut(&mut session_keys.keys, authentication_key);
         session_key.last_active_time = now_seconds;
@@ -248,8 +249,8 @@ module rooch_framework::session_key {
 
     public fun remove_session_key(ctx: &mut Context, sender: &signer, authentication_key: vector<u8>) {
         let sender_addr = signer::address_of(sender);
-        assert!(context::exists_resource<SessionKeys>(ctx, sender_addr), ErrorSessionKeyIsInvalid);
-        let session_keys = context::borrow_mut_resource<SessionKeys>(ctx, sender_addr);
+        assert!(account::exists_resource<SessionKeys>(ctx, sender_addr), ErrorSessionKeyIsInvalid);
+        let session_keys = account::borrow_mut_resource<SessionKeys>(ctx, sender_addr);
         assert!(table::contains(&session_keys.keys, authentication_key), ErrorSessionKeyIsInvalid);
         table::remove(&mut session_keys.keys, authentication_key);
     }

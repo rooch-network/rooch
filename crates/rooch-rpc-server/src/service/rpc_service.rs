@@ -8,6 +8,7 @@ use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
+use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::state::{AnnotatedState, KeyState, MoveStructType, State};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
@@ -18,7 +19,6 @@ use rooch_proposer::proxy::ProposerProxy;
 use rooch_relayer::TxSubmiter;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponse, ExecuteTransactionResponseView};
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::account::Account;
 use rooch_types::address::{MultiChainAddress, RoochAddress};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{

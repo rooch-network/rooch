@@ -4,6 +4,7 @@
 use anyhow::Result;
 use jsonrpsee::http_client::HttpClient;
 use moveos_types::h256::H256;
+use moveos_types::moveos_std::account::Account;
 use moveos_types::{
     access_path::AccessPath,
     state::{MoveStructType, State},
@@ -19,7 +20,7 @@ use rooch_rpc_api::jsonrpc_types::{
     EventOptions, EventPageView, StateOptions, StatePageView, StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, StateView};
-use rooch_types::{account::Account, address::RoochAddress, transaction::rooch::RoochTransaction};
+use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]

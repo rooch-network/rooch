@@ -8,7 +8,7 @@ module creator::test {
     }
 
     public fun publish_foo(ctx: &mut Context, s: &signer) {
-        context::move_resource_to<Foo>(ctx, s, Foo { x: 500 })
+        account::move_resource_to<Foo>(ctx, s, Foo { x: 500 })
     }
 }
 

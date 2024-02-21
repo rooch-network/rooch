@@ -7,6 +7,7 @@ module rooch_examples::kv_store {
    use moveos_std::context::{Self, Context};
    use moveos_std::table::{Self, Table};
    use std::string::{String};
+   use moveos_std::account;
 
    struct KVStore has store, key {
       table: Table<String, String>,
@@ -29,11 +30,11 @@ module rooch_examples::kv_store {
    }
 
    public fun borrow_kv_store(ctx: &Context): &KVStore {
-      context::borrow_resource(ctx, @rooch_examples)
+      account::borrow_resource(ctx, @rooch_examples)
    }
 
    public fun borrow_kv_store_mut(ctx: &mut Context): &mut KVStore {
-      context::borrow_mut_resource(ctx, @rooch_examples)
+      account::borrow_mut_resource(ctx, @rooch_examples)
    }
 
    //init when module publish
@@ -42,7 +43,7 @@ module rooch_examples::kv_store {
          table: context::new_table(ctx),
       };
       let module_signer = signer::module_signer<KVStore>();
-      context::move_resource_to(ctx, &module_signer, kv);
+      account::move_resource_to(ctx, &module_signer, kv);
    }
 
    public entry fun add_value(ctx: &mut Context, key: String, value: String) {

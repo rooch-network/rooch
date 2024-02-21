@@ -4,6 +4,7 @@
 module rooch_examples::coin_factory {
    use std::string::{Self, String};
    use std::vector;
+   use moveos_std::account;
    use moveos_std::signer;
    use moveos_std::table::{Self, Table};
    use moveos_std::context::{Self, Context};
@@ -24,7 +25,7 @@ module rooch_examples::coin_factory {
    fun init(ctx: &mut Context) {
       let module_signer = signer::module_signer<TemplateStore>();
       let templates = context::new_table<String, vector<u8>>(ctx);
-      context::move_resource_to(ctx, &module_signer, TemplateStore { templates });
+      account::move_resource_to(ctx, &module_signer, TemplateStore { templates });
       //register default template
       let name = string::utf8(b"fixed_supply_coin");
       //rooch move build -p examples/module_template/template
@@ -34,7 +35,7 @@ module rooch_examples::coin_factory {
    }
 
    fun register_template(ctx: &mut Context, name: String, template_bytes: vector<u8>) {
-      let template_store = context::borrow_mut_resource<TemplateStore>(ctx, @rooch_examples);
+      let template_store = account::borrow_mut_resource<TemplateStore>(ctx, @rooch_examples);
       table::add(&mut template_store.templates, name, template_bytes);
    }
 
@@ -46,7 +47,7 @@ module rooch_examples::coin_factory {
       module_name: String, coin_name: String, 
       coin_symbol: String, total_supply: u256, decimals: u8
    ) {
-      let template_store = context::borrow_mut_resource<TemplateStore>(ctx, @rooch_examples);
+      let template_store = account::borrow_mut_resource<TemplateStore>(ctx, @rooch_examples);
       let template_bytes = *table::borrow(&template_store.templates, string::utf8(b"fixed_supply_coin"));
       let template_module = move_module::new(template_bytes);
 

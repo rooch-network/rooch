@@ -27,11 +27,6 @@ and let developers customize the storage
 -  [Function `new_table`](#0x2_context_new_table)
 -  [Function `new_type_table`](#0x2_context_new_type_table)
 -  [Function `new_table_vec`](#0x2_context_new_table_vec)
--  [Function `borrow_resource`](#0x2_context_borrow_resource)
--  [Function `borrow_mut_resource`](#0x2_context_borrow_mut_resource)
--  [Function `move_resource_to`](#0x2_context_move_resource_to)
--  [Function `move_resource_from`](#0x2_context_move_resource_from)
--  [Function `exists_resource`](#0x2_context_exists_resource)
 -  [Function `publish_modules`](#0x2_context_publish_modules)
 -  [Function `exists_module`](#0x2_context_exists_module)
 -  [Function `publish_modules_entry`](#0x2_context_publish_modules_entry)
@@ -52,7 +47,6 @@ and let developers customize the storage
 <b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
-<b>use</b> <a href="resource.md#0x2_resource">0x2::resource</a>;
 <b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
 <b>use</b> <a href="storage_context.md#0x2_storage_context">0x2::storage_context</a>;
 <b>use</b> <a href="table.md#0x2_table">0x2::table</a>;
@@ -312,75 +306,6 @@ Get a value from the context map
 
 
 
-<a name="0x2_context_borrow_resource"></a>
-
-## Function `borrow_resource`
-
-Borrow a resource from the account's storage
-This function equates to <code><b>borrow_global</b>&lt;T&gt;(<b>address</b>)</code> instruction in Move
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_resource">borrow_resource</a>&lt;T: key&gt;(_self: &<a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): &T
-</code></pre>
-
-
-
-<a name="0x2_context_borrow_mut_resource"></a>
-
-## Function `borrow_mut_resource`
-
-Borrow a mut resource from the account's storage
-This function equates to <code><b>borrow_global_mut</b>&lt;T&gt;(<b>address</b>)</code> instruction in Move
-
-
-<pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="context.md#0x2_context_borrow_mut_resource">borrow_mut_resource</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): &<b>mut</b> T
-</code></pre>
-
-
-
-<a name="0x2_context_move_resource_to"></a>
-
-## Function `move_resource_to`
-
-Move a resource to the account's resource object
-This function equates to <code><b>move_to</b>&lt;T&gt;(&<a href="">signer</a>, <a href="resource.md#0x2_resource">resource</a>)</code> instruction in Move
-
-
-<pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="context.md#0x2_context_move_resource_to">move_resource_to</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: &<a href="">signer</a>, <a href="resource.md#0x2_resource">resource</a>: T)
-</code></pre>
-
-
-
-<a name="0x2_context_move_resource_from"></a>
-
-## Function `move_resource_from`
-
-Move a resource from the account's storage
-This function equates to <code><b>move_from</b>&lt;T&gt;(<b>address</b>)</code> instruction in Move
-
-
-<pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="context.md#0x2_context_move_resource_from">move_resource_from</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): T
-</code></pre>
-
-
-
-<a name="0x2_context_exists_resource"></a>
-
-## Function `exists_resource`
-
-Check if the account has a resource of the given type
-This function equates to <code><b>exists</b>&lt;T&gt;(<b>address</b>)</code> instruction in Move
-
-
-<pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="context.md#0x2_context_exists_resource">exists_resource</a>&lt;T: key&gt;(self: &<a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): bool
-</code></pre>
-
-
-
 <a name="0x2_context_publish_modules"></a>
 
 ## Function `publish_modules`
@@ -388,7 +313,7 @@ This function equates to <code><b>exists</b>&lt;T&gt;(<b>address</b>)</code> ins
 Publish modules to the account's storage
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_publish_modules">publish_modules</a>(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_publish_modules">publish_modules</a>(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;)
 </code></pre>
 
 
@@ -400,7 +325,7 @@ Publish modules to the account's storage
 Check if the account has a module with the given module name
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exists_module">exists_module</a>(_self: &<a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>, name: <a href="_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exists_module">exists_module</a>(_self: &<a href="context.md#0x2_context_Context">context::Context</a>, <a href="account.md#0x2_account">account</a>: <b>address</b>, name: <a href="_String">string::String</a>): bool
 </code></pre>
 
 
@@ -413,7 +338,7 @@ Entry function to publish modules
 The order of modules must be sorted by dependency order.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="context.md#0x2_context_publish_modules_entry">publish_modules_entry</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="context.md#0x2_context_publish_modules_entry">publish_modules_entry</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
 </code></pre>
 
 
@@ -476,7 +401,7 @@ Create a new named Object, the ObjectID is generated by the type_name of <code>T
 Create a new account named Object UID, then call <code><a href="object.md#0x2_object_new">object::new</a></code> to create a new Object
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_account_named_object_uid">new_account_named_object_uid</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>): <a href="object_id.md#0x2_object_id_TypedUID">object_id::TypedUID</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_account_named_object_uid">new_account_named_object_uid</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="account.md#0x2_account">account</a>: <b>address</b>): <a href="object_id.md#0x2_object_id_TypedUID">object_id::TypedUID</a>&lt;T&gt;
 </code></pre>
 
 
@@ -489,7 +414,7 @@ Create a new account named object, the ObjectID is generated by the account addr
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_account_named_object">new_account_named_object</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, account: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+<b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_account_named_object">new_account_named_object</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="account.md#0x2_account">account</a>: <b>address</b>, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 

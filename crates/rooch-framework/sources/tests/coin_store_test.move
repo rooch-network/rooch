@@ -5,10 +5,10 @@ module rooch_framework::coin_store_test{
     use std::string;
     use moveos_std::context::{Context};
     use moveos_std::object::{Self, Object};
-    use rooch_framework::account;
     use rooch_framework::coin::{Self, CoinInfo};
     use rooch_framework::account_coin_store;
     use rooch_framework::coin_store;
+    use rooch_framework::account as account_entry;
 
     #[test_only]
     struct FakeCoin has key, store {}
@@ -80,7 +80,7 @@ module rooch_framework::coin_store_test{
         // An non do_accept_coined account is has a no frozen coin store by default
         assert!(!account_coin_store::is_account_coin_store_frozen<FakeCoin>(&ctx, addr), 1);
         
-        account::create_account_for_test(&mut ctx, addr);
+        account_entry::create_account_for_test(&mut ctx, addr);
         mint_and_deposit(&mut ctx, &mut coin_info_obj, addr, 100);
 
         // freeze account
@@ -100,7 +100,7 @@ module rooch_framework::coin_store_test{
     fun test_withdraw_from_account_frozen(account: signer) {
         let ctx = rooch_framework::genesis::init_for_test();
         let account_addr = signer::address_of(&account);
-        account::create_account_for_test(&mut ctx, account_addr);
+        account_entry::create_account_for_test(&mut ctx, account_addr);
         let coin_info_obj = register_fake_coin(&mut ctx, 9);
 
         mint_and_deposit(&mut ctx, &mut coin_info_obj, account_addr, 100);
@@ -116,7 +116,7 @@ module rooch_framework::coin_store_test{
     fun test_deposit_to_account_frozen(account: signer) {
         let ctx = rooch_framework::genesis::init_for_test();
         let account_addr = signer::address_of(&account);
-        account::create_account_for_test(&mut ctx, account_addr);
+        account_entry::create_account_for_test(&mut ctx, account_addr);
 
         let coin_info_obj = register_fake_coin(&mut ctx, 9);
 
@@ -134,7 +134,7 @@ module rooch_framework::coin_store_test{
         let ctx = rooch_framework::genesis::init_for_test();
         let account_addr = signer::address_of(&account);
 
-        account::create_account_for_test(&mut ctx, account_addr);
+        account_entry::create_account_for_test(&mut ctx, account_addr);
         let coin_info_obj = register_fake_coin(&mut ctx, 9);
         mint_and_deposit(&mut ctx, &mut coin_info_obj, account_addr, 100);
 

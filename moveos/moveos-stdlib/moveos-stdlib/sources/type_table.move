@@ -9,8 +9,6 @@ module moveos_std::type_table {
     use moveos_std::object_id::{ObjectID, UID};
     use moveos_std::object::{Self};
 
-    friend moveos_std::resource;
-
     struct TypeTable has store {
         handle: ObjectID,
     }

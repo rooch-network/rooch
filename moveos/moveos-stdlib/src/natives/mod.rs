@@ -14,6 +14,7 @@ pub struct GasParameters {
     pub move_stdlib: move_stdlib::natives::GasParameters,
     pub move_nursery: move_stdlib::natives::NurseryGasParameters,
     pub table_extension: raw_table::GasParameters,
+    pub account: moveos_stdlib::account::GasParameters,
     pub type_info: moveos_stdlib::type_info::GasParameters,
     pub rlp: moveos_stdlib::rlp::GasParameters,
     pub bcd: moveos_stdlib::bcs::GasParameters,
@@ -31,6 +32,7 @@ impl GasParameters {
             move_stdlib: move_stdlib::natives::GasParameters::zeros(),
             move_nursery: move_stdlib::natives::NurseryGasParameters::zeros(),
             table_extension: raw_table::GasParameters::zeros(),
+            account: moveos_stdlib::account::GasParameters::zeros(),
             type_info: moveos_stdlib::type_info::GasParameters::zeros(),
             rlp: moveos_stdlib::rlp::GasParameters::zeros(),
             bcd: moveos_stdlib::bcs::GasParameters::zeros(),
@@ -78,6 +80,10 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     }
 
     // moveos_stdlib natives
+    add_natives!(
+        "account",
+        moveos_stdlib::account::make_all(gas_params.account)
+    );
     add_natives!(
         "type_info",
         moveos_stdlib::type_info::make_all(gas_params.type_info)
