@@ -119,7 +119,7 @@ pub async fn setup_service(
         .await?;
     let proposer_proxy = ProposerProxy::new(proposer.clone().into());
     //TODO load from config
-    let block_propose_duration_in_seconds: u64 = 60;
+    let block_propose_duration_in_seconds: u64 = 5;
     let mut timers = vec![];
     let proposer_timer = Timer::start(
         proposer,
