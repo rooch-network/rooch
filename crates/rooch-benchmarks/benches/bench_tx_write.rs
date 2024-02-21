@@ -34,7 +34,7 @@ pub fn transaction_write_benchmark(c: &mut Criterion) {
 
 criterion_group! {
     name = rooch_tx_write_bench;
-    config = Criterion::default().sample_size(200).measurement_time(Duration::from_secs(10));
+    config = Criterion::default().sample_size(200).measurement_time(Duration::from_secs(100));
     targets = transaction_write_benchmark
 }
 

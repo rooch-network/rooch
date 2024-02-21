@@ -88,8 +88,8 @@ pub async fn setup_service(
         moveos_store.clone(),
         rooch_store.clone(),
     )?
-    .into_actor(Some("ReaderExecutor"), &actor_system)
-    .await?;
+        .into_actor(Some("ReaderExecutor"), &actor_system)
+        .await?;
     let executor = executor_actor
         .into_actor(Some("Executor"), &actor_system)
         .await?;
@@ -119,7 +119,7 @@ pub async fn setup_service(
         .await?;
     let proposer_proxy = ProposerProxy::new(proposer.clone().into());
     //TODO load from config
-    let block_propose_duration_in_seconds: u64 = 5;
+    let block_propose_duration_in_seconds: u64 = 60;
     let mut timers = vec![];
     let proposer_timer = Timer::start(
         proposer,
