@@ -17,7 +17,7 @@ module rooch_framework::account_authentication_test{
         let genesis_ctx = rooch_framework::genesis::init_for_test();
             
         let user_address = @0x42;
-        let user_signer = rooch_framework::account::create_signer_for_test(user_address);
+        let user_signer = moveos_std::account::create_signer_for_test(user_address);
         let user_ctx = context::new_test_context(user_address);
         
         let validator_id = auth_validator_registry::register<TestAuthValidator>(&mut user_ctx);

@@ -7,6 +7,7 @@ use jsonrpsee::{
     core::{async_trait, Error as JsonRpcError, RpcResult},
     RpcModule,
 };
+use moveos_types::moveos_std::account::Account;
 use moveos_types::{
     access_path::AccessPath, gas_config::GasConfig, h256::H256, state::MoveStructType,
 };
@@ -32,7 +33,6 @@ use rooch_rpc_api::{
     },
 };
 use rooch_types::{
-    account::Account,
     address::{EthereumAddress, MultiChainAddress},
     framework::gas_coin::GasCoin,
     transaction::{AbstractTransaction, TypedTransaction},

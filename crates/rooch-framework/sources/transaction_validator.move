@@ -3,9 +3,11 @@
 
 module rooch_framework::transaction_validator {
     use std::option;
+    use moveos_std::signer::module_signer;
     use moveos_std::context::{Self, Context};
     use moveos_std::tx_result;
-    use rooch_framework::account;
+    use moveos_std::account;
+    use rooch_framework::account as account_entry;
     use rooch_framework::multichain_address::MultiChainAddress;
     use rooch_framework::address_mapping;
     use rooch_framework::account_authentication;
@@ -37,6 +39,8 @@ module rooch_framework::transaction_validator {
     /// The authenticator's auth validator id is not installed to the sender's account
     const ErrorValidateNotInstalledAuthValidator: u64 = 1010;
 
+    /// Just using to get module signer
+    struct TransactionValidatorPlaceholder {}
 
     /// This function is for Rooch to validate the transaction sender's authenticator.
     /// If the authenticator is invaid, abort this function.
@@ -123,7 +127,7 @@ module rooch_framework::transaction_validator {
         let sender = context::sender(ctx);
         //Auto create account if not exist
         if (!account::exists_at(ctx, sender)) {
-            account::create_account(ctx, sender);
+            account_entry::create_account(ctx, sender);
             // Auto get gas coin from faucet if not enough
             // TODO remove this after we provide the gas faucet
             //100 RGC
@@ -158,7 +162,8 @@ module rooch_framework::transaction_validator {
         };
 
         // Increment sequence number
-        account::increment_sequence_number(ctx);
+        let system = module_signer<TransactionValidatorPlaceholder>();
+        account::increment_sequence_number_for_system(ctx, &system);
 
         let tx_result = context::tx_result(ctx);
         let gas_payment_account = context::tx_gas_payment_account(ctx);

@@ -8,10 +8,10 @@ use move_core_types::effects::{AccountChangeSet, ChangeSet, Op};
 use moveos_types::h256::H256;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types::random_type_tag;
+use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::context;
 use moveos_types::moveos_std::move_module::Module;
 use moveos_types::moveos_std::object_id::ObjectID;
-use moveos_types::moveos_std::resource::Resource;
 use moveos_types::state::{KeyState, MoveState, MoveType, State, StateChangeSet, TableChange};
 use rand::{thread_rng, Rng};
 use smt::NodeStore;
@@ -103,10 +103,10 @@ fn random_state_change_set() -> StateChangeSet {
 
     // generate resources change tables
     for _n in 0..rng.gen_range(1..=10) {
-        let resource_object_id = Resource::resource_object_id(AccountAddress::random());
+        let account_object_id = Account::account_object_id(AccountAddress::random());
         state_change_set
             .changes
-            .insert(resource_object_id, random_table_change());
+            .insert(account_object_id, random_table_change());
     }
 
     // generate global table

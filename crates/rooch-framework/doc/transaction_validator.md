@@ -5,12 +5,15 @@
 
 
 
+-  [Struct `TransactionValidatorPlaceholder`](#0x3_transaction_validator_TransactionValidatorPlaceholder)
 -  [Constants](#@Constants_0)
 -  [Function `validate`](#0x3_transaction_validator_validate)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x2::account</a>;
 <b>use</b> <a href="">0x2::context</a>;
+<b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::tx_result</a>;
 <b>use</b> <a href="account.md#0x3_account">0x3::account</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
@@ -24,6 +27,18 @@
 <b>use</b> <a href="multichain_address.md#0x3_multichain_address">0x3::multichain_address</a>;
 <b>use</b> <a href="session_key.md#0x3_session_key">0x3::session_key</a>;
 <b>use</b> <a href="transaction_fee.md#0x3_transaction_fee">0x3::transaction_fee</a>;
+</code></pre>
+
+
+
+<a name="0x3_transaction_validator_TransactionValidatorPlaceholder"></a>
+
+## Struct `TransactionValidatorPlaceholder`
+
+Just using to get module signer
+
+
+<pre><code><b>struct</b> <a href="transaction_validator.md#0x3_transaction_validator_TransactionValidatorPlaceholder">TransactionValidatorPlaceholder</a>
 </code></pre>
 
 

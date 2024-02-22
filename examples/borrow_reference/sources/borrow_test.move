@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::borrow_test {
+    use moveos_std::account;
     use rooch_examples::borrowd::{BorrowCapability, DataStore};
     use rooch_examples::borrowd;
-    use moveos_std::context::{Self, Context};
+    use moveos_std::context::{Context};
 
     #[test_only]
     use std::signer;
+    #[test_only]
+    use moveos_std::context;
 
     struct Capabilities has key {
         borrow_cap: BorrowCapability,
@@ -23,10 +26,10 @@ module rooch_examples::borrow_test {
     ) {
         let borrow_cap = borrowd::new_borrow_cap();
         let data_store = borrowd::new_data_store();
-        context::move_resource_to<Capabilities>(ctx, account, Capabilities {
+        account::move_resource_to<Capabilities>(ctx, account, Capabilities {
             borrow_cap,
         });
-        context::move_resource_to<DataStoreWrapper>(ctx, account, DataStoreWrapper {
+        account::move_resource_to<DataStoreWrapper>(ctx, account, DataStoreWrapper {
             data_store,
         });
     }
@@ -35,11 +38,11 @@ module rooch_examples::borrow_test {
         ctx: &mut Context,
         addr: address,
     ) {
-        let cap = context::borrow_mut_resource<Capabilities>(ctx, addr);
+        let cap = account::borrow_mut_resource<Capabilities>(ctx, addr);
         borrowd::do_immutable_borrow(ctx, &cap.borrow_cap);
 
         //  Invalid usage of reference as function argument. Cannot transfer a mutable reference that is being borrowed
-        // let data_store_warpper = context::borrow_mut_resource<DataStoreWrapper>(ctx, addr);
+        // let data_store_warpper = account::borrow_mut_resource<DataStoreWrapper>(ctx, addr);
         // borrowd::do_mutable_borrow(ctx, addr, &mut data_store_warpper.data_store);
     }
 

@@ -5,7 +5,7 @@
 /// This test module is used to test the gas coin
 module rooch_framework::gas_coin_test{
 
-    use rooch_framework::account;
+    use rooch_framework::account as account_entry;
     use rooch_framework::coin;
     use rooch_framework::gas_coin::{Self, GasCoin};
 
@@ -27,7 +27,7 @@ module rooch_framework::gas_coin_test{
     #[test(user = @0x42)]
     fun test_faucet(user: address){
         let genesis_ctx = rooch_framework::genesis::init_for_test();
-        account::create_account_for_test(&mut genesis_ctx, user);
+        account_entry::create_account_for_test(&mut genesis_ctx, user);
         let init_gas = 9999u256;
         gas_coin::faucet_for_test(&mut genesis_ctx, user, init_gas); 
         std::debug::print(&gas_coin::balance(&genesis_ctx, user));

@@ -10,7 +10,8 @@
 -  [Function `transfer_object`](#0x3_transfer_transfer_object)
 
 
-<pre><code><b>use</b> <a href="">0x2::context</a>;
+<pre><code><b>use</b> <a href="">0x2::account</a>;
+<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="account.md#0x3_account">0x3::account</a>;

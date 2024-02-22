@@ -13,7 +13,7 @@ module moveos_std::object {
     use moveos_std::object_id::{custom_object_id, new_uid, UID};
 
     friend moveos_std::context;
-    friend moveos_std::resource;
+    friend moveos_std::account;
     friend moveos_std::move_module;
     friend moveos_std::storage_context;
     friend moveos_std::event;
