@@ -3,6 +3,7 @@
 
 module rooch_framework::ethereum_light_client{
 
+    use moveos_std::account;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
     use moveos_std::bcs;
@@ -54,14 +55,14 @@ module rooch_framework::ethereum_light_client{
         let block_store = BlockStore{
             blocks: context::new_table(ctx),
         };
-        context::move_resource_to(ctx, genesis_account, block_store);
+        account::move_resource_to(ctx, genesis_account, block_store);
     }
 
     fun process_block(ctx: &mut Context, block_header_bytes: vector<u8>){
         let block_header = bcs::from_bytes<BlockHeader>(block_header_bytes);
         //TODO validate the block hash
         //TODO validate the block via ethereum consensus(pos validators)
-        let block_store = context::borrow_mut_resource<BlockStore>(ctx, @rooch_framework);
+        let block_store = account::borrow_mut_resource<BlockStore>(ctx, @rooch_framework);
         if(table::contains(&block_store.blocks, block_header.number)){
             //repeat block number
             //TODO check if it is a soft fork.
@@ -81,7 +82,7 @@ module rooch_framework::ethereum_light_client{
 
     /// Get block via block_number
     public fun get_block(ctx: &Context, block_number: u64): &BlockHeader{
-        let block_store = context::borrow_resource<BlockStore>(ctx, @rooch_framework);
+        let block_store = account::borrow_resource<BlockStore>(ctx, @rooch_framework);
         assert!(table::contains(&block_store.blocks, block_number), ErrorBlockNotFound);
         table::borrow(&block_store.blocks, block_number)
     }

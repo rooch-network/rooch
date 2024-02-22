@@ -6,6 +6,7 @@ module rooch_framework::account_coin_store {
     use std::string;
     use std::option;
     use std::option::Option;
+    use moveos_std::account;
     use moveos_std::object;
     use moveos_std::object_id;
     use moveos_std::object_id::ObjectID;
@@ -51,14 +52,14 @@ module rooch_framework::account_coin_store {
         let auto_accepted_coins = AutoAcceptCoins {
             auto_accept_coins: context::new_table<address, bool>(ctx),
         };
-        context::move_resource_to(ctx, genesis_account, auto_accepted_coins);
+        account::move_resource_to(ctx, genesis_account, auto_accepted_coins);
     }
 
     public(friend) fun init_account_coin_stores(ctx: &mut Context, account: &signer) {
         let coin_stores = CoinStores {
             coin_stores: context::new_table<string::String, ObjectID>(ctx),
         };
-        context::move_resource_to(ctx, account, coin_stores);
+        account::move_resource_to(ctx, account, coin_stores);
     }
 
     // Public functions
@@ -81,9 +82,9 @@ module rooch_framework::account_coin_store {
 
     /// Return CoinStores table handle for addr
     public fun coin_stores_handle(ctx: &Context, addr: address): Option<ObjectID> {
-        if (context::exists_resource<CoinStores>(ctx, addr))
+        if (account::exists_resource<CoinStores>(ctx, addr))
             {
-                let coin_stores = context::borrow_resource<CoinStores>(ctx, addr);
+                let coin_stores = account::borrow_resource<CoinStores>(ctx, addr);
                 option::some(*table::handle(&coin_stores.coin_stores))
             } else {
             option::none<ObjectID>()
@@ -102,7 +103,7 @@ module rooch_framework::account_coin_store {
     /// Check whether the address can auto accept coin.
     /// Default is true if absent
     public fun can_auto_accept_coin(ctx: &Context, addr: address): bool {
-        let auto_accept_coins = context::borrow_resource<AutoAcceptCoins>(ctx, @rooch_framework);
+        let auto_accept_coins = account::borrow_resource<AutoAcceptCoins>(ctx, @rooch_framework);
         if (table::contains<address, bool>(&auto_accept_coins.auto_accept_coins, addr)) {
             return *table::borrow<address, bool>(&auto_accept_coins.auto_accept_coins, addr)
         };
@@ -119,7 +120,7 @@ module rooch_framework::account_coin_store {
     /// Configure whether auto-accept coins.
     public fun set_auto_accept_coin(ctx: &mut Context, account: &signer, enable: bool) {
         let addr = signer::address_of(account);
-        let auto_accept_coins = context::borrow_mut_resource<AutoAcceptCoins>(ctx, @rooch_framework);
+        let auto_accept_coins = account::borrow_mut_resource<AutoAcceptCoins>(ctx, @rooch_framework);
         table::upsert<address, bool>(&mut auto_accept_coins.auto_accept_coins, addr, enable);
 
         event::emit<AcceptCoinEvent>(AcceptCoinEvent { enable });
@@ -252,7 +253,7 @@ module rooch_framework::account_coin_store {
 
     fun create_account_coin_store<CoinType: key>(ctx: &mut Context, addr: address) {
         let account_coin_store_id = coin_store::create_account_coin_store<CoinType>(ctx, addr);
-        let coin_stores = context::borrow_mut_resource<CoinStores>(ctx, addr);
+        let coin_stores = account::borrow_mut_resource<CoinStores>(ctx, addr);
         let coin_type = type_info::type_name<CoinType>();
         table::add(&mut coin_stores.coin_stores, coin_type, account_coin_store_id);
     }

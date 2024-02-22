@@ -3,6 +3,7 @@
 
 module rooch_framework::auth_validator_registry {
 
+    use moveos_std::account;
     use moveos_std::type_info;
     use moveos_std::table::{Self, Table};
     use moveos_std::type_table::{Self, TypeTable};
@@ -33,7 +34,7 @@ module rooch_framework::auth_validator_registry {
             validators: context::new_table(ctx),
             validators_with_type: context::new_type_table(ctx),
         };
-        context::move_resource_to(ctx, sender, registry);
+        account::move_resource_to(ctx, sender, registry);
     }
 
     #[private_generics(ValidatorType)]
@@ -47,7 +48,7 @@ module rooch_framework::auth_validator_registry {
         //TODO consider change type_info::module_name to ascii::String.
         let module_name = std::ascii::string(type_info::module_name(&type_info));
 
-        let registry = context::borrow_mut_resource<ValidatorRegistry>(ctx, @rooch_framework);
+        let registry = account::borrow_mut_resource<ValidatorRegistry>(ctx, @rooch_framework);
         let id = registry.validator_num;
 
         assert!(!type_table::contains<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type), ErrorValidatorAlreadyRegistered);
@@ -69,13 +70,13 @@ module rooch_framework::auth_validator_registry {
     }
 
     public fun borrow_validator(ctx: &Context, id: u64): &AuthValidator {
-        let registry = context::borrow_resource<ValidatorRegistry>(ctx, @rooch_framework);
+        let registry = account::borrow_resource<ValidatorRegistry>(ctx, @rooch_framework);
         assert!(table::contains(&registry.validators, id), ErrorValidatorUnregistered);
         table::borrow(&registry.validators, id)
     }
 
     public fun borrow_validator_by_type<ValidatorType: store>(ctx: &Context): &AuthValidator {
-        let registry = context::borrow_resource<ValidatorRegistry>(ctx, @rooch_framework);
+        let registry = account::borrow_resource<ValidatorRegistry>(ctx, @rooch_framework);
         assert!(type_table::contains<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type), ErrorValidatorUnregistered);
         let validator_with_type = type_table::borrow<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type);
         assert!(table::contains(&registry.validators, validator_with_type.id), ErrorValidatorUnregistered);

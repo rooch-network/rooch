@@ -6,9 +6,9 @@ module rooch_framework::address_mapping{
     use std::option::{Self, Option};
     use std::signer;
     use std::vector;
+    use moveos_std::core_addresses;
     use moveos_std::object_id::ObjectID;
     use moveos_std::object_id;
-    use rooch_framework::core_addresses::assert_framework_reserved_address;
     use moveos_std::bcs;
     use moveos_std::context::{Self, Context};
     use moveos_std::table::{Self, Table};
@@ -147,7 +147,7 @@ module rooch_framework::address_mapping{
     /// Bind a multi-chain address to the rooch address
     /// Called by system
     public fun bind_by_system(ctx: &mut Context, system: &signer, rooch_address: address, maddress: MultiChainAddress) {
-        assert_framework_reserved_address(system);
+        core_addresses::assert_system_reserved(system);
         bind_no_check(ctx, rooch_address, maddress);
     }
 

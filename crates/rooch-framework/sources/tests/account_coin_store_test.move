@@ -5,10 +5,10 @@ module rooch_framework::account_coin_store_test{
     use std::string;
     use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, Object};
-    use rooch_framework::account;
     use rooch_framework::coin::{Self, CoinInfo,
         supply, value, mint_extend, burn_extend
     };
+    use rooch_framework::account as account_entry;
     use rooch_framework::account_coin_store::{Self, transfer, withdraw, withdraw_extend,
         is_accept_coin, do_accept_coin, set_auto_accept_coin, balance, deposit};
 
@@ -46,7 +46,7 @@ module rooch_framework::account_coin_store_test{
 
         let coin_info_obj = register_fake_coin(&mut source_ctx, 9);
 
-        account::create_account_for_test(&mut destination_ctx, signer::address_of(&destination));
+        account_entry::create_account_for_test(&mut destination_ctx, signer::address_of(&destination));
 
         let coins_minted = mint_extend<FakeCoin>(&mut coin_info_obj, 100);
         deposit(&mut source_ctx, source_addr, coins_minted);
@@ -115,8 +115,8 @@ module rooch_framework::account_coin_store_test{
         let mint_coins1 = mint_extend<FakeCoin>(&mut coin_info_obj, 10);
         let mint_coins2 = mint_extend<FakeCoin>(&mut coin_info_obj, 20);
 
-        account::create_account_for_test(&mut source1_ctx, source1_addr);
-        account::create_account_for_test(&mut source2_ctx, source2_addr);
+        account_entry::create_account_for_test(&mut source1_ctx, source1_addr);
+        account_entry::create_account_for_test(&mut source2_ctx, source2_addr);
 
         // source1 default deposit should succ
         deposit(&mut source1_ctx, source1_addr, mint_coins1);
@@ -143,8 +143,8 @@ module rooch_framework::account_coin_store_test{
         let mint_coins1 = mint_extend<FakeCoin>(&mut coin_info_obj, 10);
         let mint_coins2 = mint_extend<FakeCoin>(&mut coin_info_obj, 20);
 
-        account::create_account_for_test(&mut source1_ctx, source1_addr);
-        account::create_account_for_test(&mut source2_ctx, source2_addr);
+        account_entry::create_account_for_test(&mut source1_ctx, source1_addr);
+        account_entry::create_account_for_test(&mut source2_ctx, source2_addr);
 
         // source1 default deposit should succ
         deposit(&mut source1_ctx, source1_addr, mint_coins1);

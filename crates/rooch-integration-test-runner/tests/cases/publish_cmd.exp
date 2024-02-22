@@ -1,12 +1,12 @@
 processed 4 tasks
 
-task 1 'publish'. lines 3-13:
+task 1 'publish'. lines 3-15:
 status EXECUTED
 
-task 2 'run'. lines 15-23:
+task 2 'run'. lines 17-25:
 status EXECUTED
 
-task 3 'view'. lines 25-27:
+task 3 'view'. lines 27-29:
 key 0x42::test::Foo {
     x: 500
 }

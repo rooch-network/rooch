@@ -13,7 +13,8 @@
 -  [Function `get_block`](#0x3_ethereum_light_client_get_block)
 
 
-<pre><code><b>use</b> <a href="">0x2::bcs</a>;
+<pre><code><b>use</b> <a href="">0x2::account</a>;
+<b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::table</a>;

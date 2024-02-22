@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::moveos_std::account::Account;
 use crate::moveos_std::move_module::Module;
-use crate::moveos_std::resource::Resource;
 use crate::state::KeyState;
 use crate::{
     move_types::{random_identity, random_struct_tag},
@@ -285,11 +285,11 @@ impl AccessPath {
                 account,
                 resource_types,
             } => {
-                let resource_object_id = Resource::resource_object_id(account);
+                let account_object_id = Account::account_object_id(account);
                 let keys = resource_types
                     .map(|s| s.into_iter().map(|tag| resource_tag_to_key(&tag)).collect());
 
-                (resource_object_id, keys)
+                (account_object_id, keys)
             }
         }
     }

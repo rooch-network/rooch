@@ -87,7 +87,7 @@ there defines auth validator id for each blockchain
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, public_key: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="">account</a>: &<a href="">signer</a>, public_key: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -98,7 +98,7 @@ there defines auth validator id for each blockchain
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 

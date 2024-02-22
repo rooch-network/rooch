@@ -90,7 +90,7 @@ Mint gas coin to the given account.
 TODO find a way to protect this function from DOS attack.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_faucet_entry">faucet_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_faucet_entry">faucet_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 

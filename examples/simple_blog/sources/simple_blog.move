@@ -6,10 +6,11 @@ module simple_blog::simple_blog {
     use std::signer;
     use std::string::{Self, String};
     use std::vector;
+    use moveos_std::account;
     use moveos_std::object;
     use moveos_std::object_id::ObjectID;
     use moveos_std::object::{Object};
-    use moveos_std::context::{Self, Context};
+    use moveos_std::context::{Context};
     use simple_blog::simple_article::{Self, Article};
 
     const ErrorDataTooLong: u64 = 1;
@@ -33,33 +34,33 @@ module simple_blog::simple_blog {
             name: string::utf8(b"MyBlog"),
             articles,
         };
-        context::move_resource_to(ctx, owner, myblog);
+        account::move_resource_to(ctx, owner, myblog);
     }
 
     public entry fun set_blog_name(ctx: &mut Context, owner: &signer, blog_name: String) {
         assert!(std::string::length(&blog_name) <= 200, ErrorDataTooLong);
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
-        if (!context::exists_resource<MyBlog>(ctx, owner_address)) {
+        if (!account::exists_resource<MyBlog>(ctx, owner_address)) {
             create_blog(ctx, owner);
         };
-        let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
+        let myblog = account::borrow_mut_resource<MyBlog>(ctx, owner_address);
         myblog.name = blog_name;
     }
 
     /// Get owner's blog's articles
     public fun get_blog_articles(ctx: &Context, owner_address: address): &vector<ObjectID> {
-        let myblog = context::borrow_resource<MyBlog>(ctx, owner_address);
+        let myblog = account::borrow_resource<MyBlog>(ctx, owner_address);
         &myblog.articles
     }
 
     fun add_article_to_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
         let owner_address = signer::address_of(owner);
         // if blog not exist, create it
-        if (!context::exists_resource<MyBlog>(ctx, owner_address)) {
+        if (!account::exists_resource<MyBlog>(ctx, owner_address)) {
             create_blog(ctx, owner);
         };
-        let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
+        let myblog = account::borrow_mut_resource<MyBlog>(ctx, owner_address);
         vector::push_back(&mut myblog.articles, article_id);
     }
 
@@ -83,7 +84,7 @@ module simple_blog::simple_blog {
 
     fun delete_article_from_myblog(ctx: &mut Context, owner: &signer, article_id: ObjectID) {
         let owner_address = signer::address_of(owner);
-        let myblog = context::borrow_mut_resource<MyBlog>(ctx, owner_address);
+        let myblog = account::borrow_mut_resource<MyBlog>(ctx, owner_address);
         let (contains, index) = vector::index_of(&myblog.articles, &article_id);
         assert!(contains, ErrorNotFound);
         vector::remove(&mut myblog.articles, index);

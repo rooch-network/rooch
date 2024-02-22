@@ -208,8 +208,8 @@ pub fn custom_object_id<ID: Serialize>(id: ID, struct_tag: &StructTag) -> Object
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::moveos_std::account::Account;
     use crate::moveos_std::move_module::Module;
-    use crate::moveos_std::resource::Resource;
 
     #[test]
     fn test_address_to_object_id() {
@@ -251,9 +251,9 @@ mod tests {
             "0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647",
         )
         .unwrap();
-        let resource_object_id = Resource::resource_object_id(addr);
+        let account_object_id = Account::account_object_id(addr);
         let module_object_id = Module::module_object_id();
-        print!("{:?} {:?}", resource_object_id, module_object_id)
+        print!("{:?} {:?}", account_object_id, module_object_id)
     }
 
     fn test_object_id_roundtrip(object_id: ObjectID) {

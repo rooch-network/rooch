@@ -8,6 +8,7 @@ use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
+use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::state::{AnnotatedState, KeyState, MoveStructType, State};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
@@ -18,7 +19,6 @@ use rooch_proposer::proxy::ProposerProxy;
 use rooch_relayer::TxSubmiter;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponse, ExecuteTransactionResponseView};
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::account::Account;
 use rooch_types::address::{MultiChainAddress, RoochAddress};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
@@ -373,13 +373,15 @@ impl TxSubmiter for RpcService {
     //TODO provide a trait to abstract the async state reader, elemiate the duplicated code bwteen RpcService and Client
     async fn get_sequence_number(&self, address: RoochAddress) -> Result<u64> {
         Ok(self
-            .get_states(AccessPath::resource(address.into(), Account::struct_tag()))
+            .get_states(AccessPath::object(Account::account_object_id(
+                address.into(),
+            )))
             .await?
             .pop()
             .flatten()
-            .map(|state| state.cast::<Account>())
+            .map(|state| state.as_object_uncheck::<Account>())
             .transpose()?
-            .map_or(0, |account| account.sequence_number))
+            .map_or(0, |account| account.value.sequence_number))
     }
     async fn submit_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
         Ok(self.execute_tx(TypedTransaction::Rooch(tx)).await?.into())

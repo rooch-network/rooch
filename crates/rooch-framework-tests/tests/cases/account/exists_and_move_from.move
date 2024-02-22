@@ -3,7 +3,8 @@
 //# publish
 module test::m {
     use std::signer;
-    use moveos_std::context::{Self, Context};
+    use moveos_std::context::{Context};
+    use moveos_std::account;
     use moveos_std::signer as moveos_signer;
 
     struct Test has key{
@@ -14,7 +15,7 @@ module test::m {
     fun init(ctx: &mut Context) {
         let sender = &moveos_signer::module_signer<Test>();
         let sender_addr = signer::address_of(sender);
-        context::move_resource_to(ctx, sender, Test{
+        account::move_resource_to(ctx, sender, Test{
             addr: sender_addr,
             version: 0,
         });
@@ -22,10 +23,10 @@ module test::m {
 
     public fun test_exists_and_move_from(ctx: &mut Context, sender:&signer){
         let sender_addr = signer::address_of(sender);
-        let test_exists = context::exists_resource<Test>(ctx, sender_addr);
+        let test_exists = account::exists_resource<Test>(ctx, sender_addr);
         assert!(test_exists, 1);
-        let test = context::move_resource_from<Test>(ctx, sender_addr); 
-        let test_exists = context::exists_resource<Test>(ctx, sender_addr);
+        let test = account::move_resource_from<Test>(ctx, sender_addr);
+        let test_exists = account::exists_resource<Test>(ctx, sender_addr);
         assert!(!test_exists, 2);
         let Test{
             addr: _,

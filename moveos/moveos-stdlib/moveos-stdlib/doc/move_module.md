@@ -317,7 +317,7 @@ Create a new module object space
 Check if the module object has a module with the given name
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_exists_module">exists_module</a>(account: <b>address</b>, name: <a href="_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_exists_module">exists_module</a>(<a href="account.md#0x2_account">account</a>: <b>address</b>, name: <a href="_String">string::String</a>): bool
 </code></pre>
 
 

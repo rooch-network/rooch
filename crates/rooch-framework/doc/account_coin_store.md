@@ -33,6 +33,7 @@
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x2::account</a>;
 <b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
@@ -116,7 +117,7 @@ Account hasn't accept <code>CoinType</code>
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_init_account_coin_stores">init_account_coin_stores</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_init_account_coin_stores">init_account_coin_stores</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -191,7 +192,7 @@ Add a balance of <code>Coin</code> type to the sending account.
 If user turns off AutoAcceptCoin, call this method to receive the corresponding Coin
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_do_accept_coin">do_accept_coin</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_do_accept_coin">do_accept_coin</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -203,7 +204,7 @@ If user turns off AutoAcceptCoin, call this method to receive the corresponding 
 Configure whether auto-accept coins.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_set_auto_accept_coin">set_auto_accept_coin</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, enable: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_set_auto_accept_coin">set_auto_accept_coin</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="">account</a>: &<a href="">signer</a>, enable: bool)
 </code></pre>
 
 
@@ -216,7 +217,7 @@ Withdraw specifed <code>amount</code> of coin <code>CoinType</code> from the sig
 This public entry function requires the <code>CoinType</code> to have <code>key</code> and <code>store</code> abilities.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_withdraw">withdraw</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_withdraw">withdraw</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="">account</a>: &<a href="">signer</a>, amount: u256): <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;CoinType&gt;
 </code></pre>
 
 
@@ -319,7 +320,7 @@ Creating a resource that stores balance of <code>CoinType</code> on user's accou
 Required if user wants to start accepting deposits of <code>CoinType</code> in his account.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_accept_coin_entry">accept_coin_entry</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_accept_coin_entry">accept_coin_entry</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -332,7 +333,7 @@ Enable account's auto-accept-coin feature.
 The script function is reenterable.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_enable_auto_accept_coin_entry">enable_auto_accept_coin_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_enable_auto_accept_coin_entry">enable_auto_accept_coin_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -345,5 +346,5 @@ Disable account's auto-accept-coin feature.
 The script function is reenterable.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_disable_auto_accept_coin_entry">disable_auto_accept_coin_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_disable_auto_accept_coin_entry">disable_auto_accept_coin_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="">account</a>: &<a href="">signer</a>)
 </code></pre>
