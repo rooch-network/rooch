@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_framework::account {
+   use moveos_std::account::SignerCapability;
    use rooch_framework::account_coin_store;
    use rooch_framework::account_authentication;
    use moveos_std::signer::module_signer;
@@ -34,6 +35,17 @@ module rooch_framework::account {
       account_authentication::init_authentication_keys(ctx, &new_account);
       account_coin_store::init_account_coin_stores(ctx, &new_account);
       new_account
+   }
+
+   /// A resource account is used to manage resources independent of an account managed by a user.
+   /// In Rooch a resource account is created based upon the sha3 256 of the source's address and additional seed data.
+   /// A resource account can only be created once
+   public fun create_resource_account(ctx: &mut Context, source: &signer): (signer, SignerCapability) {
+      let (resource_signer, signer_cap) = account::create_resource_account(ctx, source);
+
+      account_authentication::init_authentication_keys(ctx, &resource_signer);
+      account_coin_store::init_account_coin_stores(ctx, &resource_signer);
+      (resource_signer, signer_cap)
    }
 
    #[test_only]

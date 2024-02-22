@@ -87,7 +87,7 @@ export class Account implements IAccount {
 
   private async getSequenceNumber(): Promise<number> {
     const resp = await this.client.executeViewFunction({
-      funcId: '0x3::account::sequence_number',
+      funcId: '0x2::account::sequence_number',
       tyArgs: [],
       args: [
         {

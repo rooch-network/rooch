@@ -5,11 +5,7 @@ use anyhow::Result;
 use jsonrpsee::http_client::HttpClient;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::account::Account;
-use moveos_types::{
-    access_path::AccessPath,
-    state::{MoveStructType, State},
-    transaction::FunctionCall,
-};
+use moveos_types::{access_path::AccessPath, state::State, transaction::FunctionCall};
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
 use rooch_rpc_api::jsonrpc_types::TransactionWithInfoPageView;
 use rooch_rpc_api::jsonrpc_types::{
@@ -103,16 +99,18 @@ impl RoochRpcClient {
 
     pub async fn get_sequence_number(&self, sender: RoochAddress) -> Result<u64> {
         Ok(self
-            .get_states(AccessPath::resource(sender.into(), Account::struct_tag()))
+            .get_states(AccessPath::object(Account::account_object_id(
+                sender.into(),
+            )))
             .await?
             .pop()
             .flatten()
             .map(|state_view| {
                 let state = State::from(state_view);
-                state.cast::<Account>()
+                state.as_object_uncheck::<Account>()
             })
             .transpose()?
-            .map_or(0, |account| account.sequence_number))
+            .map_or(0, |account| account.value.sequence_number))
     }
 
     pub async fn get_events_by_event_handle(

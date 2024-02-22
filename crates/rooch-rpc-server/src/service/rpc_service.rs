@@ -373,13 +373,15 @@ impl TxSubmiter for RpcService {
     //TODO provide a trait to abstract the async state reader, elemiate the duplicated code bwteen RpcService and Client
     async fn get_sequence_number(&self, address: RoochAddress) -> Result<u64> {
         Ok(self
-            .get_states(AccessPath::resource(address.into(), Account::struct_tag()))
+            .get_states(AccessPath::object(Account::account_object_id(
+                address.into(),
+            )))
             .await?
             .pop()
             .flatten()
-            .map(|state| state.cast::<Account>())
+            .map(|state| state.as_object_uncheck::<Account>())
             .transpose()?
-            .map_or(0, |account| account.sequence_number))
+            .map_or(0, |account| account.value.sequence_number))
     }
     async fn submit_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
         Ok(self.execute_tx(TypedTransaction::Rooch(tx)).await?.into())

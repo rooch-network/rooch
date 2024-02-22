@@ -18,7 +18,6 @@ module rooch_examples::rooch_examples {
     use rooch_framework::coin;
     use rooch_framework::account_coin_store;
     use rooch_examples::timestamp;
-    #[test_only]
     use rooch_framework::account as account_entry;
     #[test_only]
     use moveos_std::context;
@@ -112,7 +111,7 @@ module rooch_examples::rooch_examples {
 
     fun init(account: &signer, ctx: &mut Context) {
         // let source_addr = signer::address_of(account);
-        let (signer, cap) = account::create_resource_account(ctx, account);
+        let (signer, cap) = account_entry::create_resource_account(ctx, account);
         let resource_address = signer::address_of(&signer);
 
         account::move_resource_to(ctx, account, ResouceAccountAddress {
@@ -462,7 +461,7 @@ module rooch_examples::rooch_examples {
     }
 
     #[test]
-    #[expected_failure(abort_code = 7, location = rooch_framework::account)]
+    #[expected_failure(abort_code = 6, location = moveos_std::account)]
     fun test_init_again() {
         let storage_context = genesis::init_for_test();
         let ctx = &mut storage_context;
