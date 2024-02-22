@@ -249,6 +249,7 @@ base64 = "0.21.3"
 pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer"] }
 
 
+
 celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 

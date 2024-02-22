@@ -75,4 +75,12 @@ bench = false
 
 [[bench]]
 harness = false
-name = "bench_transaction"
+name = "bench_tx_write"
+
+[[bench]]
+harness = false
+name = "bench_tx_query"
+
+[[bench]]
+harness = false
+name = "bench_tx"
