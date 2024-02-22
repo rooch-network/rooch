@@ -1,7 +1,7 @@
 {
   "installation": "安装",
   "connect-to-rooch": "连接 Rooch",
-  "get-account": "获取账户",
-  "quick-start": "快速开始",
+  "first-account": "第一个账户",
+  "first-contract": "第一个合约",
   "getting-started": "新手入门"
 }

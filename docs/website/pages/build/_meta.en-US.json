@@ -1,8 +1,6 @@
 {
   "getting-started": "Getting Started",
-  "token": "Token",
-  "object": "Object",
-  "contract": "Contract",
+  "rooch-framework": "Rooch Framework",
   "example-guides": "Example guides",
   "reference": "Reference"
 }

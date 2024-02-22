@@ -1,7 +1,7 @@
 {
   "installation": "Installation",
   "connect-to-rooch": "Connect to Rooch",
-  "get-account": "Get account",
-  "quick-start": "Quick start",
+  "first-account": "First account",
+  "first-contract": "First contract",
   "getting-started": "Getting-started"
 }
