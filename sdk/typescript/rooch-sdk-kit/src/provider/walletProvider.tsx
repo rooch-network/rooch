@@ -5,9 +5,9 @@ import { createContext, useEffect, useRef, useState, ReactElement } from 'react'
 import type { StateStorage } from 'zustand/middleware'
 
 import { createWalletStore, WalletStore } from '../walletStore'
-import { useAutoConnectWallet } from '../hooks'
+import { useAutoConnectWallet, useWalletStore } from '../hooks'
 import { getInstalledWallets } from '../utils/walletUtils'
-import { BaseWallet } from '../types/wellet/baseWallet'
+import { BaseWallet } from '../types'
 import { SupportChain } from '../feature'
 
 // TODO: use web3modal ?
@@ -52,7 +52,8 @@ export function WalletProvider({
   useEffect(() => {
     if (wallets && wallets.length !== 0) {
       storeRef.current = createWalletStore({
-        wallet: wallets[0],
+        supportWallets: wallets,
+        currentWallet: wallets[0],
         autoConnectEnabled: autoConnect,
         storage: storage ?? localStorage,
         storageKey,
@@ -61,7 +62,6 @@ export function WalletProvider({
     }
   }, [wallets, autoConnect, storageKey, storage])
 
-  // TODO: how to show loading ?
   return !loading ? (
     <WalletContext.Provider value={storeRef.current!}>
       <WalletConnectionManager>{children}</WalletConnectionManager>
@@ -75,5 +75,33 @@ type WalletConnectionManagerProps = Required<Pick<WalletProviderProps, 'children
 
 function WalletConnectionManager({ children }: WalletConnectionManagerProps) {
   useAutoConnectWallet()
+
+  const connectionStatus = useWalletStore((store) => store.connectionStatus)
+  const currentWallet = useWalletStore((store) => store.currentWallet)
+  const setWalletDisconnected = useWalletStore((store) => store.setWalletDisconnected)
+  const setAccountSwitched = useWalletStore((store) => store.setAccountSwitched)
+  const currentAccount = useWalletStore((state) => state.currentAccount)
+
+  const accountsChangedHandler = (accounts: string[]) => {
+    if (accounts.length === 0) {
+      setWalletDisconnected()
+    } else {
+      if (accounts[0] !== currentAccount?.getAddress()) {
+        setAccountSwitched(currentWallet.account!)
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (connectionStatus === 'connected') {
+      currentWallet.onAccountsChanged(accountsChangedHandler)
+    }
+
+    return () => {
+      if (connectionStatus === 'connected') {
+        currentWallet.removeAccountsChanged(accountsChangedHandler)
+      }
+    }
+  })
   return children
 }

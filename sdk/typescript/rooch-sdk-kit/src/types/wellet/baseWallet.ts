@@ -9,26 +9,32 @@ import { Buffer } from 'buffer'
 export const RoochSignPrefix = 'Rooch tx hash:\n'
 
 export abstract class BaseWallet {
-  protected abstract sign(msg: string, fromAddress: string): Promise<string>
+  account?: WalletAccount
+
+  abstract connect(): Promise<WalletAccount[]>
+  abstract sign(msg: string): Promise<string>
+  abstract switchNetwork(): void
+  abstract getNetwork(): string
+  abstract getSupportNetworks(): string[]
+  abstract onAccountsChanged(callback: (account: Array<string>) => void): void
+  abstract removeAccountsChanged(callback: (account: Array<string>) => void): void
+  abstract onNetworkChanged(callback: (network: string) => void): void
+  abstract removeNetworkChanged(callback: (network: string) => void): void
+  abstract normalize_recovery_id(recoveryID: number): number
+  abstract getTarget(): any
+  abstract getScheme(): number
   protected abstract toSerializedSignature(
     msg: string,
     signature: string,
     signatureInfo: string,
-    walletAccount: WalletAccount,
   ): SerializedSignature
 
-  abstract normalize_recovery_id(recoveryID: number): number
-  abstract getTarget(): any
-  abstract getScheme(): number
-
-  abstract connect(): Promise<WalletAccount[]>
-
-  async signMessage(msg: Uint8Array, walletAccount: WalletAccount, msgInfo?: any) {
+  async signMessage(msg: Uint8Array, msgInfo?: any) {
     const digest = sha3_256(msg)
-    return await this.signMessageWithHashed(digest, walletAccount, msgInfo)
+    return await this.signMessageWithHashed(digest, msgInfo)
   }
 
-  async signMessageWithHashed(msgHash: Uint8Array, walletAccount: WalletAccount, msgInfo: any) {
+  async signMessageWithHashed(msgHash: Uint8Array, msgInfo: any) {
     let msgHex = Buffer.from(msgHash).toString('hex')
 
     if (msgInfo.charAt(msgInfo.length - 1) !== '\n') {
@@ -38,9 +44,9 @@ export abstract class BaseWallet {
     msgInfo = msgInfo + RoochSignPrefix
     let fullMsg = msgInfo + msgHex
 
-    const sign = await this.sign(fullMsg, walletAccount.getAddress())
+    const sign = await this.sign(fullMsg)
 
-    return this.toSerializedSignature(msgHex, sign, msgInfo, walletAccount)
+    return this.toSerializedSignature(msgHex, sign, msgInfo)
   }
 
   async checkInstalled(): Promise<boolean> {

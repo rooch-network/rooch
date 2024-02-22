@@ -6,6 +6,7 @@ import { WalletAccount } from '../WalletAccount'
 import { SupportChain } from '../../feature'
 
 export class Metamask extends ETHWallet {
+
   getTarget(): any {
     return (window as any).ethereum
   }
@@ -14,25 +15,14 @@ export class Metamask extends ETHWallet {
     return 1
   }
 
-  async sign(msg: string, from: string): Promise<string> {
+  async sign(msg: string): Promise<string> {
     return await this.getTarget().request({
       method: 'personal_sign',
-      params: [msg, from],
+      params: [msg, this.account?.getAddress()],
     })
   }
 
   async connect(): Promise<WalletAccount[]> {
-    // const chainId = (await window.ethereum?.request({ method: 'eth_chainId' })) as string
-
-    // if (chainId !== chainInfo.chainId) {
-    //   try {
-    //     await this.switchChain({ ...chainInfo })
-    //   } catch (e: any) {
-    //     console.log('connect error', e.toString())
-    //     return []
-    //   }
-    // }
-
     const accounts: string[] = await this.getTarget()
       .request({
         method: 'eth_requestAccounts',

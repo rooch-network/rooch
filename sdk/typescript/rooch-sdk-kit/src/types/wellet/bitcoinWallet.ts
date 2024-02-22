@@ -6,7 +6,6 @@ import { RoochMultiChainID, SerializedSignature } from '@roochnetwork/rooch-sdk'
 import { Buffer } from 'buffer'
 import { MultiChainAddress } from '../address'
 import { AuthenticatorPayload } from '../AuthenticatorPayload'
-import { WalletAccount } from '../WalletAccount'
 
 const BITCOIN_MAGIC_SIGN_PREFIX = 'Bitcoin Signed Message:\n'
 
@@ -15,8 +14,9 @@ export abstract class BitcoinWallet extends BaseWallet {
     _: string,
     signature: string,
     signatureInfo: string,
-    walletAccount: WalletAccount,
   ): SerializedSignature {
+    const walletAccount = this.account!
+
     let signBuffer = Buffer.from(signature, 'base64')
 
     // remove recover id

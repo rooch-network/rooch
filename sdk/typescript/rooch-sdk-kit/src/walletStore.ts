@@ -7,10 +7,9 @@ import { StateStorage } from 'zustand/middleware'
 import { IAccount } from '@roochnetwork/rooch-sdk'
 
 import { WalletAccount } from './types/WalletAccount'
-import { BaseWallet } from './types/wellet/baseWallet'
+import { BaseWallet } from './types'
 
 type WalletConnectionStatus = 'disconnected' | 'connecting' | 'connected'
-type SessionKeyStatus = 'valid' | 'invalid' | 'creating'
 
 export type WalletActions = {
   setAccountSwitched: (selectedAccount: WalletAccount) => void
@@ -21,7 +20,6 @@ export type WalletActions = {
   ) => void
   updateWalletAccounts: (accounts: readonly WalletAccount[]) => void
   setWalletDisconnected: () => void
-  setSessionAccountStatus: (status: SessionKeyStatus) => void
   setSessionAccount: (session: IAccount) => void
 }
 
@@ -29,11 +27,9 @@ export type WalletStore = ReturnType<typeof createWalletStore>
 
 export type StoreState = {
   autoConnectEnabled: boolean
-  // TODO: Support multiple accounts ?
   sessionAccount: IAccount | null
-  sessionAccountStatus: SessionKeyStatus
-  wallet: BaseWallet
-  roochAddress: string
+  currentWallet: BaseWallet
+  supportWallets: BaseWallet[]
   accounts: readonly WalletAccount[]
   currentAccount: WalletAccount | null
   lastConnectedAccountAddress: string | null
@@ -43,13 +39,15 @@ export type StoreState = {
 
 type WalletConfiguration = {
   autoConnectEnabled: boolean
-  wallet: BaseWallet
+  currentWallet: BaseWallet
+  supportWallets: BaseWallet[]
   storage: StateStorage
   storageKey: string
 }
 
 export function createWalletStore({
-  wallet,
+  currentWallet,
+  supportWallets,
   storage,
   storageKey,
   autoConnectEnabled,
@@ -59,11 +57,9 @@ export function createWalletStore({
       (set, get) => ({
         autoConnectEnabled,
         sessionAccount: null,
-        sessionAccountStatus: 'invalid',
-        roochAddress: '',
-        wallet,
+        currentWallet,
+        supportWallets,
         accounts: [],
-        currentWallet: null,
         currentAccount: null,
         lastConnectedAccountAddress: null,
         lastConnectedWalletName: null,
@@ -84,7 +80,6 @@ export function createWalletStore({
         setWalletDisconnected() {
           set(() => ({
             accounts: [],
-            currentWallet: null,
             currentAccount: null,
             lastConnectedWalletName: null,
             lastConnectedAccountAddress: null,
@@ -111,11 +106,6 @@ export function createWalletStore({
           set(() => ({
             sessionAccount,
             sessionKeyStatus: 'valid',
-          }))
-        },
-        setSessionAccountStatus(sessionAccountStatus) {
-          set(() => ({
-            sessionAccountStatus,
           }))
         },
       }),
