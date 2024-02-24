@@ -3,7 +3,7 @@
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use moveos_config::temp_dir;
-use rooch_benchmarks::tx::{create_transaction, setup_service};
+use rooch_benchmarks::tx::{create_publish_transaction, create_transaction, setup_service};
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
 use rooch_test_transaction_builder::TestTransactionBuilder;
@@ -22,7 +22,10 @@ pub fn transaction_write_benchmark(c: &mut Criterion) {
     let default_account = keystore.addresses()[0];
     let mut test_transaction_builder = TestTransactionBuilder::new(default_account.into());
 
-    let transactions: Vec<_> = (0..10000)
+    let tx = create_publish_transaction(&test_transaction_builder, &keystore).unwrap();
+    let _publish_result = rt.block_on(async { rpc_service.execute_tx(tx).await.unwrap() });
+
+    let transactions: Vec<_> = (0..1000)
         .map(|n| create_transaction(&mut test_transaction_builder, &keystore, n).unwrap())
         .collect();
     let mut transactions_iter = transactions.into_iter().cycle();
