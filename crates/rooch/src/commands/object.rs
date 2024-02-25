@@ -17,6 +17,9 @@ pub struct ObjectCommand {
 
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
+
+    #[clap(long)]
+    pub show_display: bool,
 }
 
 #[async_trait]
@@ -26,13 +29,21 @@ impl CommandAction<Option<StateView>> for ObjectCommand {
         let mapping = context.address_mapping();
         let id = self.id.into_object_id(&mapping)?;
         let client = context.get_client().await?;
-        let resp = client
-            .rooch
-            .get_decoded_states(AccessPath::object(id))
-            .await?
-            .pop()
-            .flatten();
-
+        let resp = if self.show_display {
+            client
+                .rooch
+                .get_decoded_states_with_display(AccessPath::object(id))
+                .await?
+                .pop()
+                .flatten()
+        } else {
+            client
+                .rooch
+                .get_decoded_states(AccessPath::object(id))
+                .await?
+                .pop()
+                .flatten()
+        };
         Ok(resp)
     }
 }
