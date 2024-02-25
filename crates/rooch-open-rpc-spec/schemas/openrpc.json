@@ -752,6 +752,20 @@
           }
         }
       },
+      "DisplayFieldsView": {
+        "type": "object",
+        "required": [
+          "fields"
+        ],
+        "properties": {
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "DynamicFieldView": {
         "type": "object",
         "required": [
@@ -1721,6 +1735,16 @@
                   }
                 ]
               },
+              "display_fields": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DisplayFieldsView"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "type": {
                 "type": "string",
                 "enum": [
@@ -1747,6 +1771,16 @@
                 "anyOf": [
                   {
                     "$ref": "#/components/schemas/AnnotatedMoveValueView"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "display_fields": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DisplayFieldsView"
                   },
                   {
                     "type": "null"
@@ -2152,6 +2186,11 @@
             "description": "If true, the state is decoded and the decoded value is returned in the response.",
             "default": false,
             "type": "boolean"
+          },
+          "showDisplay": {
+            "description": "If true, result with display rendered is returned",
+            "default": false,
+            "type": "boolean"
           }
         }
       },
@@ -2183,6 +2222,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/AnnotatedMoveValueView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "display_fields": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DisplayFieldsView"
               },
               {
                 "type": "null"

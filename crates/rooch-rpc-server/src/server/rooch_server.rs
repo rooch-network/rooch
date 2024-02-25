@@ -168,7 +168,7 @@ impl RoochAPIServer for RoochServer {
                     .map(|option_annotated_s| {
                         option_annotated_s.map(|annotated_s| {
                             debug_assert!(
-                                valid_display_field_views.len() > 0,
+                                !valid_display_field_views.is_empty(),
                                 "display fields should not be empty"
                             );
                             let display_view = valid_display_field_views.pop().unwrap();
@@ -217,8 +217,8 @@ impl RoochAPIServer for RoochServer {
             let display_field_views = self.get_display_fields_and_render(state_refs).await?;
             key_states
                 .into_iter()
-                .zip(states.into_iter())
-                .zip(display_field_views.into_iter())
+                .zip(states)
+                .zip(display_field_views)
                 .map(|((key_state, state), display_field_view)| {
                     StateKVView::new(
                         KeyStateView::from(key_state),

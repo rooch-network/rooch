@@ -131,7 +131,7 @@ fn parse_template(template: &str, move_value: &AnnotatedMoveValue) -> Result<Str
             }
             '}' if !escaped => {
                 in_braces = false;
-                let value = get_value_from_move_struct(&move_value, &var_name)?;
+                let value = get_value_from_move_struct(move_value, &var_name)?;
                 output = output.replace(&format!("{{{}}}", var_name), &value);
             }
             _ if !escaped => {
