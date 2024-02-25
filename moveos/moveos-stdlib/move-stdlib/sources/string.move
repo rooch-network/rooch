@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// The `string` module defines the `String` type which represents UTF8 encoded strings.
 module std::string {
     use std::vector;

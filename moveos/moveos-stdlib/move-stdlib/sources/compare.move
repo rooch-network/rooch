@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// Utilities for comparing Move values based on their representation in BCS.
 module std::compare {
     use std::vector;

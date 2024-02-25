@@ -44,7 +44,8 @@ members = [
     "crates/rooch-benchmarks",
     "crates/rooch-test-transaction-builder",
     "crates/data_verify",
-    "frameworks/bitcoin-move"
+    "frameworks/bitcoin-move",
+    "frameworks/bitcoin-ordinals-tests"
 ]
 
 default-members = [
@@ -115,6 +116,7 @@ data-verify = { path = "crates/data_verify" }
 
 # frameworks
 bitcoin-move = { path = "frameworks/bitcoin-move" }
+bitcoin-ordinals-tests = { path = "frameworks/bitcoin-ordinals-tests" }
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.
@@ -255,8 +257,9 @@ base64 = "0.21.3"
 wasmer = "4.2.5"
 ciborium = "0.2.1"
 pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer", "protobuf-codec"] }
-
-
+ord-bitcoincore-rpc = { version = "0.17.2" }
+reqwest = { version = "0.11.24" }
+jsonrpc-core = { version = "18.0.0" }
 
 celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }

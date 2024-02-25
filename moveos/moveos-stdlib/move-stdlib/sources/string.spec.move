@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 spec std::string {
     spec internal_check_utf8(v: &vector<u8>): bool {
         pragma opaque;

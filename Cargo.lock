@@ -863,6 +863,7 @@ dependencies = [
  "bitcoin_hashes 0.12.0",
  "hex_lit",
  "secp256k1 0.27.0",
+ "serde 1.0.195",
 ]
 
 [[package]]
@@ -930,6 +931,23 @@ dependencies = [
  "sha3 0.9.1",
  "smallvec 1.11.0",
  "tracing",
+]
+
+[[package]]
+name = "bitcoin-ordinals-tests"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.3",
+ "bitcoin 0.31.0",
+ "hex",
+ "jsonrpc-core",
+ "jsonrpsee 0.16.3",
+ "ord-bitcoincore-rpc",
+ "reqwest",
+ "rooch-open-rpc-macros",
+ "serde 1.0.195",
+ "serde_json",
+ "tempfile",
 ]
 
 [[package]]
@@ -4546,6 +4564,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonrpc-core"
+version = "18.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14f7f76aef2d054868398427f6c54943cf3d1caa9a7ec7d0c38d69df97a965eb"
+dependencies = [
+ "futures",
+ "futures-executor",
+ "futures-util",
+ "log",
+ "serde 1.0.195",
+ "serde_derive",
+ "serde_json",
+]
+
+[[package]]
 name = "jsonrpsee"
 version = "0.16.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6745,6 +6778,32 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
+name = "ord-bitcoincore-rpc"
+version = "0.17.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16b622f69d68d7201d5186615978aca36ceb7e7c57d7771491d3e261c64ff4d8"
+dependencies = [
+ "bitcoin-private",
+ "jsonrpc",
+ "log",
+ "ord-bitcoincore-rpc-json",
+ "serde 1.0.195",
+ "serde_json",
+]
+
+[[package]]
+name = "ord-bitcoincore-rpc-json"
+version = "0.17.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5bb35088f918c775bc27fa79e372d034892b216fb7900aeedd6e06654879ad33"
+dependencies = [
+ "bitcoin 0.30.1",
+ "bitcoin-private",
+ "serde 1.0.195",
+ "serde_json",
+]
+
+[[package]]
 name = "ordered-float"
 version = "2.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8136,9 +8195,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.11.20"
+version = "0.11.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e9ad3fe7488d7e34558a2033d45a0c90b72d97b4f80705666fea71472e2e6a1"
+checksum = "c6920094eb85afde5e4a138be3f2de8bbdf28000f0029e72c45025a56b042251"
 dependencies = [
  "base64 0.21.3",
  "bytes",
@@ -8165,6 +8224,8 @@ dependencies = [
  "serde 1.0.195",
  "serde_json",
  "serde_urlencoded",
+ "sync_wrapper",
+ "system-configuration",
  "tokio",
  "tokio-native-tls",
  "tokio-rustls",
@@ -10576,6 +10637,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "system-configuration"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba3a3adc5c275d719af8cb4272ea1c4a6d668a777f37e115f6d11ddbc1c8e0e7"
+dependencies = [
+ "bitflags 1.3.2",
+ "core-foundation",
+ "system-configuration-sys",
+]
+
+[[package]]
+name = "system-configuration-sys"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a75fb188eb626b924683e3b95e3a48e63551fcfb51949de2f06a9d91dbee93c9"
+dependencies = [
+ "core-foundation-sys",
+ "libc",
+]
+
+[[package]]
 name = "tap"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11697,9 +11779,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-streams"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4609d447824375f43e1ffbc051b50ad8f4b3ae8219680c94452ea05eb240ac7"
+checksum = "b65dc4c90b63b118468cf747d8bf3566c1913ef60be765b5730ead9e0a3ba129"
 dependencies = [
  "futures-util",
  "js-sys",

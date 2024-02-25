@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 spec std::acl {
     spec ACL {
         invariant forall i in 0..len(list), j in 0..len(list): list[i] == list[j] ==> i == j;

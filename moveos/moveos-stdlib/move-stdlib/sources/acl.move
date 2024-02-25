@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// Access control list (acl) module. An acl is a list of account addresses who
 /// have the access permission to a certain object.
 /// This module uses a `vector` to represent the list, but can be refactored to
