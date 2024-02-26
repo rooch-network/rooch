@@ -13,7 +13,7 @@ fn test_chain_id() {
         .executor
         .get_moveos_store()
         .statedb
-        .get(ChainID::chain_id_object_id())
+        .get(&ChainID::chain_id_object_id())
         .unwrap();
     assert!(chain_id.is_some());
     let chain_id_module =

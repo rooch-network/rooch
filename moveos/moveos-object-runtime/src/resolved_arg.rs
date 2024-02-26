@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use move_core_types::{account_address::AccountAddress, value::MoveValue};
-use moveos_types::moveos_std::{
-    object::ObjectID,
-    object::{ObjectEntity, RawData},
+use moveos_types::{
+    moveos_std::object::{ObjectEntity, ObjectID, RawData},
+    state::MoveState,
 };
 
 #[derive(Debug, Clone)]

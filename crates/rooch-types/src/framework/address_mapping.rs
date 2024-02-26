@@ -98,15 +98,17 @@ impl<'a> AddressMapping<'a> {
                 let value2 = values.get(2).ok_or(anyhow::anyhow!(
                     "Address mapping handle expected return value"
                 ))?;
-                let address_mapping_handle = ObjectID::from_bytes(&value0.value).map_err(|e| {
+                let address_mapping_handle =
+                    ObjectID::from_bytes(value0.value.clone()).map_err(|e| {
+                        anyhow::anyhow!("Address mapping handle convert error {}", e.to_string())
+                    })?;
+                let mapping_handle = ObjectID::from_bytes(value1.value.clone()).map_err(|e| {
                     anyhow::anyhow!("Address mapping handle convert error {}", e.to_string())
                 })?;
-                let mapping_handle = ObjectID::from_bytes(&value1.value).map_err(|e| {
-                    anyhow::anyhow!("Address mapping handle convert error {}", e.to_string())
-                })?;
-                let reverse_mapping_handle = ObjectID::from_bytes(&value2.value).map_err(|e| {
-                    anyhow::anyhow!("Address mapping handle convert error {}", e.to_string())
-                })?;
+                let reverse_mapping_handle =
+                    ObjectID::from_bytes(value2.value.clone()).map_err(|e| {
+                        anyhow::anyhow!("Address mapping handle convert error {}", e.to_string())
+                    })?;
                 Ok((
                     address_mapping_handle,
                     mapping_handle,

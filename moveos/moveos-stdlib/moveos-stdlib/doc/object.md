@@ -14,6 +14,7 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Resource `Box`](#0x2_object_Box)
 -  [Struct `TestStructID`](#0x2_object_TestStructID)
 -  [Constants](#@Constants_0)
+-  [Function `has_parent`](#0x2_object_has_parent)
 -  [Function `address_to_object_id`](#0x2_object_address_to_object_id)
 -  [Function `named_object_id`](#0x2_object_named_object_id)
 -  [Function `account_named_object_id`](#0x2_object_account_named_object_id)
@@ -55,7 +56,6 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `as_ref`](#0x2_object_as_ref)
 -  [Function `as_mut_ref`](#0x2_object_as_mut_ref)
 -  [Function `mut_entity_as_object`](#0x2_object_mut_entity_as_object)
--  [Function `global_object_storage_handle`](#0x2_object_global_object_storage_handle)
 -  [Function `add_to_global`](#0x2_object_add_to_global)
 -  [Function `borrow_root_object`](#0x2_object_borrow_root_object)
 -  [Function `borrow_from_global`](#0x2_object_borrow_from_global)
@@ -205,6 +205,16 @@ The Object or dynamic field already exists
 
 
 
+<a name="0x2_object_ErrorChildObjectTooDeep"></a>
+
+The child object level is too deep
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorChildObjectTooDeep">ErrorChildObjectTooDeep</a>: u64 = 11;
+</code></pre>
+
+
+
 <a name="0x2_object_ErrorFieldsNotEmpty"></a>
 
 The dynamic fields is not empty
@@ -289,15 +299,6 @@ Can not take out the object which is bound to the account
 
 
 
-<a name="0x2_object_GlobalObjectStorageHandleID"></a>
-
-
-
-<pre><code><b>const</b> <a href="object.md#0x2_object_GlobalObjectStorageHandleID">GlobalObjectStorageHandleID</a>: <b>address</b> = 0x0;
-</code></pre>
-
-
-
 <a name="0x2_object_SHARED_OBJECT_FLAG_MASK"></a>
 
 
@@ -321,6 +322,17 @@ Can not take out the object which is bound to the account
 
 
 <pre><code><b>const</b> <a href="object.md#0x2_object_SYSTEM_OWNER_ADDRESS">SYSTEM_OWNER_ADDRESS</a>: <b>address</b> = 0x0;
+</code></pre>
+
+
+
+<a name="0x2_object_has_parent"></a>
+
+## Function `has_parent`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_has_parent">has_parent</a>(object_id: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
 </code></pre>
 
 
@@ -811,18 +823,6 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_mut_entity_as_object">mut_entity_as_object</a>&lt;T: key&gt;(object_entity: &<b>mut</b> <a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;T&gt;): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
-</code></pre>
-
-
-
-<a name="0x2_object_global_object_storage_handle"></a>
-
-## Function `global_object_storage_handle`
-
-The global object storage's object id should be <code>0x0</code>
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_global_object_storage_handle">global_object_storage_handle</a>(): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
