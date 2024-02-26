@@ -214,18 +214,28 @@ impl RoochAPIServer for RoochServer {
                 .into_iter()
                 .unzip();
             let state_refs: Vec<&AnnotatedState> = states.iter().collect();
-            let display_field_views = self.get_display_fields_and_render(state_refs).await?;
-            key_states
-                .into_iter()
-                .zip(states)
-                .zip(display_field_views)
-                .map(|((key_state, state), display_field_view)| {
-                    StateKVView::new(
-                        KeyStateView::from(key_state),
-                        StateView::from(state).with_display_fields(display_field_view),
-                    )
-                })
-                .collect::<Vec<_>>()
+            if state_option.show_display {
+                let display_field_views = self.get_display_fields_and_render(state_refs).await?;
+                key_states
+                    .into_iter()
+                    .zip(states)
+                    .zip(display_field_views)
+                    .map(|((key_state, state), display_field_view)| {
+                        StateKVView::new(
+                            KeyStateView::from(key_state),
+                            StateView::from(state).with_display_fields(display_field_view),
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            } else {
+                key_states
+                    .into_iter()
+                    .zip(states)
+                    .map(|(key_state, state)| {
+                        StateKVView::new(KeyStateView::from(key_state), StateView::from(state))
+                    })
+                    .collect::<Vec<_>>()
+            }
         } else {
             self.rpc_service
                 .list_states(access_path.into(), cursor_of, limit_of + 1)
