@@ -30,8 +30,8 @@ pub struct New {
     #[clap(long = "address", short = 'a')]
     account_address: Option<AccountAddress>,
 
-    #[clap(flatten)]
-    pub new: new::New,
+    ///The name of the package to be created.
+    name: String,
 
     #[clap(flatten)]
     wallet_context_options: WalletContextOptions,
@@ -55,7 +55,7 @@ impl New {
     }
 
     pub async fn execute(self, path: Option<PathBuf>) -> anyhow::Result<()> {
-        let name = &self.new.name.to_lowercase();
+        let name = &self.name.to_lowercase();
         let address = if let Some(account_address) = &self.account_address {
             // Existing account address is available
             account_address.to_hex_literal()
@@ -67,7 +67,10 @@ impl New {
             }
         };
 
-        self.new.execute(
+        let new_cli = new::New {
+            name: name.to_string(),
+        };
+        new_cli.execute(
             path,
             "0.0.1",
             [
