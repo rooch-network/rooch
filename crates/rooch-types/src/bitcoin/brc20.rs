@@ -83,7 +83,7 @@ impl<'a> BRC20Module<'a> {
             Self::GET_TICK_INFO_FUNCTION_NAME,
             vec![],
             vec![
-                MoveValue::Address(BRC20Store::object_id().into()),
+                MoveValue::vector_u8(BRC20Store::object_id().value().to_vec()),
                 MoveValue::vector_u8(MoveString::from(tick).to_bytes()),
             ],
         );
@@ -105,7 +105,7 @@ impl<'a> BRC20Module<'a> {
             Self::GET_BALANCE_FUNCTION_NAME,
             vec![],
             vec![
-                MoveValue::Address(BRC20Store::object_id().into()),
+                BRC20Store::object_id().to_move_value(),
                 MoveValue::vector_u8(MoveString::from(tick).to_bytes()),
                 MoveValue::Address(addr),
             ],

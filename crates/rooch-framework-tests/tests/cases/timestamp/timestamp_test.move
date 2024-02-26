@@ -10,7 +10,7 @@ script {
 }
 
 //Timestamp object as argument.
-//# run --signers test --args @0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3
+//# run --signers test --args object:0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3
 script {
     use moveos_std::object::{Self, Object};
     use rooch_framework::timestamp::{Self, Timestamp};
@@ -35,7 +35,7 @@ script {
 }
 
 // Update timestamp
-//# run --signers test --args @0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3
+//# run --signers test --args object:0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3
 script {
     use moveos_std::context::Context;
     use moveos_std::object::{Self, Object};

@@ -1,6 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-use crate::state::KeyState;
+use crate::state::{KeyState, MoveState};
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     h256,
@@ -19,39 +19,28 @@ use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+use std::vec;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("object_id");
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, JsonSchema)]
-pub struct ObjectID(#[schemars(with = "Hex")] AccountAddress);
+#[derive(Eq, PartialEq, Clone, PartialOrd, Ord, Hash, JsonSchema)]
+pub struct ObjectID {
+    #[schemars(with = "Hex")]
+    value: Vec<u8>,
+}
 
 impl ObjectID {
-    pub const LENGTH: usize = h256::LENGTH;
+    pub fn zero() -> Self {
+        Self::new(AccountAddress::ZERO.to_vec())
+    }
 
     /// Creates a new ObjectID
-    pub const fn new(obj_id: [u8; Self::LENGTH]) -> Self {
-        Self(AccountAddress::new(obj_id))
-    }
-
-    /// Hex address: 0x0
-    pub const ZERO: Self = Self::new([0u8; Self::LENGTH]);
-
-    /// Hex address: 0x1
-    pub const ONE: Self = Self::get_hex_object_id_one();
-
-    /// Hex address: 0x2
-    pub const TWO: Self = Self::get_hex_object_id_two();
-
-    const fn get_hex_object_id_one() -> Self {
-        let mut addr = [0u8; AccountAddress::LENGTH];
-        addr[AccountAddress::LENGTH - 1] = 1u8;
-        Self::new(addr)
-    }
-
-    const fn get_hex_object_id_two() -> Self {
-        let mut addr = [0u8; AccountAddress::LENGTH];
-        addr[AccountAddress::LENGTH - 1] = 2u8;
-        Self::new(addr)
+    pub(crate) fn new(value: Vec<u8>) -> Self {
+        debug_assert!(
+            value.len() % AccountAddress::LENGTH == 0,
+            "Invalid ObjectID length"
+        );
+        Self { value }
     }
 
     /// Create an ObjectID from transaction hash digest and `creation_num`.
@@ -60,29 +49,63 @@ impl ObjectID {
     pub fn derive_id(tx_hash: Vec<u8>, creation_num: u64) -> Self {
         let mut buffer = tx_hash;
         buffer.extend(creation_num.to_le_bytes());
-        Self::new(h256::sha3_256_of(&buffer).into())
+        Self::new(h256::sha3_256_of(&buffer).0.to_vec())
     }
 
-    pub fn from_bytes<T: AsRef<[u8]>>(bytes: T) -> Result<Self> {
-        <[u8; Self::LENGTH]>::try_from(bytes.as_ref())
-            .map_err(|_| anyhow::anyhow!("Invalid ObjectID bytes, length:{}", bytes.as_ref().len()))
-            .map(ObjectID::from)
+    pub fn value(&self) -> &[u8] {
+        &self.value
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_vec()
+    pub fn to_move_value(&self) -> move_core_types::value::MoveValue {
+        //We use self.value bytes here, not the self.to_bytes() bytes
+        move_core_types::value::MoveValue::vector_u8(self.value.clone())
     }
 
     pub fn to_key(&self) -> KeyState {
         let key_type = TypeTag::Struct(Box::new(Self::struct_tag()));
         KeyState::new(self.to_bytes(), key_type)
     }
+
+    pub fn random() -> Self {
+        Self::new(h256::H256::random().0.to_vec())
+    }
+
+    pub fn from_hex_literal(literal: &str) -> Result<Self> {
+        let literal = literal.strip_prefix("0x").unwrap_or(literal);
+        let hex_len = literal.len();
+        // If the string is too short, pad it
+        if hex_len < AccountAddress::LENGTH * 2 {
+            let mut hex_str = String::with_capacity(AccountAddress::LENGTH * 2);
+            for _ in 0..AccountAddress::LENGTH * 2 - hex_len {
+                hex_str.push('0');
+            }
+            hex_str.push_str(literal);
+            Self::from_hex(hex_str.as_str())
+        } else {
+            Self::from_hex(literal)
+        }
+    }
+
+    pub fn from_hex(hex: &str) -> Result<Self> {
+        let bytes =
+            hex::decode(hex).map_err(|_e| anyhow::anyhow!("Invalid ObjectID hex:{}", hex))?;
+        Ok(Self::new(bytes))
+    }
+
+    // pub fn to_path(self) -> Vec<AccountAddress>{
+    //     self.0
+    // }
 }
 
 impl std::fmt::Display for ObjectID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // The AccountAddress display has no prefix, so we add it here
-        write!(f, "0x{}", self.0)
+        write!(f, "0x{}", hex::encode(&self.value))
+    }
+}
+
+impl std::fmt::Debug for ObjectID {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "0x{}", hex::encode(&self.value))
     }
 }
 
@@ -94,7 +117,7 @@ impl MoveStructType for ObjectID {
 
 impl MoveStructState for ObjectID {
     fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![MoveTypeLayout::Address])
+        MoveStructLayout::new(vec![MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8))])
     }
 }
 
@@ -103,7 +126,7 @@ impl Serialize for ObjectID {
         if serializer.is_human_readable() {
             serializer.serialize_str(self.to_string().as_str())
         } else {
-            self.0.serialize(serializer)
+            self.value.serialize(serializer)
         }
     }
 }
@@ -114,7 +137,9 @@ impl<'de> Deserialize<'de> for ObjectID {
             let s = String::deserialize(deserializer)?;
             Ok(ObjectID::from_str(s.as_str()).map_err(serde::de::Error::custom)?)
         } else {
-            Ok(ObjectID(AccountAddress::deserialize(deserializer)?))
+            Vec::deserialize(deserializer)
+                .map_err(serde::de::Error::custom)
+                .map(ObjectID::new)
         }
     }
 }
@@ -142,30 +167,24 @@ impl TryFrom<AnnotatedMoveStruct> for ObjectID {
             .value
             .pop()
             .ok_or_else(|| anyhow::anyhow!("Invalid ObjectID"))?;
-        debug_assert!(field_name.as_str() == "id");
-        let account_address = match field_value {
-            AnnotatedMoveValue::Address(account_address) => account_address,
+        debug_assert!(field_name.as_str() == "value");
+        let value = match field_value {
+            AnnotatedMoveValue::Bytes(bytes) => bytes,
             _ => return Err(anyhow::anyhow!("Invalid ObjectID")),
         };
-        Ok(ObjectID(account_address))
+        Ok(ObjectID::new(value))
     }
 }
 
-impl From<[u8; ObjectID::LENGTH]> for ObjectID {
-    fn from(bytes: [u8; ObjectID::LENGTH]) -> Self {
-        Self::new(bytes)
+impl From<[u8; AccountAddress::LENGTH]> for ObjectID {
+    fn from(bytes: [u8; AccountAddress::LENGTH]) -> Self {
+        Self::new(bytes.to_vec())
     }
 }
 
 impl From<AccountAddress> for ObjectID {
     fn from(address: AccountAddress) -> Self {
-        ObjectID(address)
-    }
-}
-
-impl From<ObjectID> for AccountAddress {
-    fn from(object_id: ObjectID) -> Self {
-        AccountAddress::new(object_id.0.into())
+        ObjectID::new(address.to_vec())
     }
 }
 
@@ -179,30 +198,28 @@ impl FromStr for ObjectID {
                 .map_err(|_e| anyhow::anyhow!("Named ObjectID must be a valid struct tag:{}", s))?;
             Ok(named_object_id(&struct_tag))
         } else {
-            let address = AccountAddress::from_hex_literal(s)
-                .map_err(|_e| anyhow::anyhow!("Invalid ObjectID:{}|", s))?;
-            Ok(ObjectID::from(address))
+            ObjectID::from_hex_literal(s)
         }
     }
 }
 
 pub fn named_object_id(struct_tag: &StructTag) -> ObjectID {
     let struct_tag_hash = h256::sha3_256_of(struct_tag.to_canonical_string().as_bytes());
-    AccountAddress::new(struct_tag_hash.0).into()
+    ObjectID::new(struct_tag_hash.0.to_vec())
 }
 
 pub fn account_named_object_id(account: AccountAddress, struct_tag: &StructTag) -> ObjectID {
     let mut buffer = account.to_vec();
     buffer.extend_from_slice(struct_tag.to_canonical_string().as_bytes());
     let struct_tag_hash = h256::sha3_256_of(&buffer);
-    AccountAddress::new(struct_tag_hash.0).into()
+    ObjectID::new(struct_tag_hash.0.to_vec())
 }
 
 pub fn custom_object_id<ID: Serialize>(id: ID, struct_tag: &StructTag) -> ObjectID {
     let mut buffer = bcs::to_bytes(&id).expect("ID to bcs should success");
     buffer.extend_from_slice(struct_tag.to_canonical_string().as_bytes());
     let struct_tag_hash = h256::sha3_256_of(&buffer);
-    AccountAddress::new(struct_tag_hash.0).into()
+    ObjectID::new(struct_tag_hash.0.to_vec())
 }
 
 #[cfg(test)]
@@ -215,8 +232,8 @@ mod tests {
     fn test_address_to_object_id() {
         let address = AccountAddress::random();
         let object_id = ObjectID::from(address);
-        let address2 = AccountAddress::from(object_id);
-        assert_eq!(address, address2);
+        //let address2 = AccountAddress::from(object_id);
+        assert_eq!(address.to_vec(), object_id.value().to_vec());
     }
 
     #[test]
@@ -271,16 +288,16 @@ mod tests {
         assert_eq!(object_id, object_id_from_json);
 
         let bytes = bcs::to_bytes(&object_id).unwrap();
-        assert!(bytes.len() == 32);
+        assert_eq!(bytes.len(), 33);
         let object_id_from_bytes = bcs::from_bytes(&bytes).unwrap();
         assert_eq!(object_id, object_id_from_bytes);
     }
 
     #[test]
     fn test_object_id() {
-        test_object_id_roundtrip(ObjectID::ZERO);
-        test_object_id_roundtrip(ObjectID::ONE);
-        test_object_id_roundtrip(ObjectID::new(crate::h256::H256::random().into()));
+        test_object_id_roundtrip(ObjectID::zero());
+        test_object_id_roundtrip(ObjectID::new(AccountAddress::ONE.to_vec()));
+        test_object_id_roundtrip(ObjectID::random());
     }
 
     #[test]
@@ -342,6 +359,12 @@ mod tests {
                 "0xaa825038ae811f5c94d20175699d808eae4c624fa85c81faad45de1145284e06"
             )
             .unwrap()
+        );
+        let bytes = bcs::to_bytes(&custom_object_id).unwrap();
+        assert_eq!(
+            bytes,
+            hex::decode("20aa825038ae811f5c94d20175699d808eae4c624fa85c81faad45de1145284e06")
+                .unwrap()
         );
     }
 }

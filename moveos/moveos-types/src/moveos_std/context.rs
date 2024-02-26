@@ -6,7 +6,6 @@ use crate::{
     moveos_std::object_id::ObjectID,
     moveos_std::tx_context::TxContext,
     state::{MoveStructState, MoveStructType},
-    state_resolver,
 };
 use anyhow::Result;
 use move_core_types::{
@@ -15,10 +14,11 @@ use move_core_types::{
     identifier::IdentStr,
     value::{MoveStructLayout, MoveTypeLayout},
 };
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("context");
-pub const GLOBAL_OBJECT_STORAGE_HANDLE: ObjectID = state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE;
+pub static GLOBAL_OBJECT_STORAGE_HANDLE: Lazy<ObjectID> = Lazy::new(ObjectID::zero);
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct StorageContext {
@@ -49,7 +49,7 @@ impl Context {
         Self {
             tx_context,
             storage_context: StorageContext {
-                handle: GLOBAL_OBJECT_STORAGE_HANDLE,
+                handle: GLOBAL_OBJECT_STORAGE_HANDLE.clone(),
             },
         }
     }

@@ -8,7 +8,7 @@ use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     state::{MoveState, MoveStructState, MoveStructType, State},
 };
-use anyhow::{bail, ensure, Result};
+use anyhow::{anyhow, bail, ensure, Result};
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
@@ -118,7 +118,7 @@ where
 
     pub fn to_raw(&self) -> RawObject {
         RawObject {
-            id: self.id,
+            id: self.id.clone(),
             owner: self.owner,
             flag: self.flag,
             value: RawData {
@@ -230,7 +230,7 @@ where
 
 pub type RawObject = ObjectEntity<RawData>;
 
-#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
+#[derive(Eq, PartialEq, Debug, Clone)]
 pub struct RawData {
     pub struct_tag: StructTag,
     pub value: Vec<u8>,
@@ -252,27 +252,60 @@ impl RawObject {
         }
     }
 
+    //This function is from bcs module,
+    //find a better way to parse the bytes.
+    fn parse_length(bytes: &[u8]) -> Result<usize> {
+        let mut value: u64 = 0;
+        let mut iter = bytes.iter();
+        let mut used_bytes: usize = 0;
+        for shift in (0..32).step_by(7) {
+            let byte = *iter
+                .next()
+                .ok_or_else(|| anyhow!("Invalid bytes, NonCanonicalUleb128Encoding"))?;
+            used_bytes += 1;
+            let digit = byte & 0x7f;
+            value |= u64::from(digit) << shift;
+            // If the highest bit of `byte` is 0, return the final value.
+            if digit == byte {
+                if shift > 0 && digit == 0 {
+                    // We only accept canonical ULEB128 encodings, therefore the
+                    // heaviest (and last) base-128 digit must be non-zero.
+                    bail!("Invalid bytes, NonCanonicalUleb128Encoding");
+                }
+                // Decoded integer must not overflow.
+                return Ok(u32::try_from(value)
+                    .map_err(|_| anyhow!("Invalid bytes, IntegerOverflowDuringUleb128Decoding"))?
+                    as usize
+                    + used_bytes);
+            }
+        }
+        // Decoded integer must not overflow.
+        bail!("Invalid bytes, IntegerOverflowDuringUleb128Decoding")
+    }
+
     pub fn from_bytes(bytes: &[u8], struct_tag: StructTag) -> Result<Self> {
+        let object_id_length = Self::parse_length(bytes)?;
+
         ensure!(
-            bytes.len() > ObjectID::LENGTH + AccountAddress::LENGTH + AccountAddress::LENGTH,
+            bytes.len() > object_id_length + AccountAddress::LENGTH + AccountAddress::LENGTH,
             "Invalid bytes length"
         );
 
-        let id: ObjectID = bcs::from_bytes(&bytes[..ObjectID::LENGTH])?;
+        let id: ObjectID = bcs::from_bytes(&bytes[..object_id_length])?;
         let owner: AccountAddress =
-            bcs::from_bytes(&bytes[ObjectID::LENGTH..ObjectID::LENGTH + AccountAddress::LENGTH])?;
-        let flag = bytes[ObjectID::LENGTH + AccountAddress::LENGTH
-            ..ObjectID::LENGTH + AccountAddress::LENGTH + 1][0];
+            bcs::from_bytes(&bytes[object_id_length..object_id_length + AccountAddress::LENGTH])?;
+        let flag = bytes[object_id_length + AccountAddress::LENGTH
+            ..object_id_length + AccountAddress::LENGTH + 1][0];
         let state_root: AccountAddress = bcs::from_bytes(
-            &bytes[ObjectID::LENGTH + AccountAddress::LENGTH + 1
-                ..ObjectID::LENGTH + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH],
+            &bytes[object_id_length + AccountAddress::LENGTH + 1
+                ..object_id_length + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH],
         )?;
         let size: u64 = bcs::from_bytes(
-            &bytes[ObjectID::LENGTH + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH
-                ..ObjectID::LENGTH + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH + 8],
+            &bytes[object_id_length + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH
+                ..object_id_length + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH + 8],
         )?;
         let value = bytes
-            [ObjectID::LENGTH + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH + 8..]
+            [object_id_length + AccountAddress::LENGTH + 1 + AccountAddress::LENGTH + 8..]
             .to_vec();
         Ok(RawObject {
             id,
@@ -283,6 +316,7 @@ impl RawObject {
             size,
         })
     }
+
     pub fn to_bytes(&self) -> Result<Vec<u8>> {
         let mut bytes = vec![];
         bytes.extend(bcs::to_bytes(&self.id)?);
@@ -395,7 +429,7 @@ impl AnnotatedObject {
 }
 
 /// In Move, Object<T> is like a pointer to ObjectEntity<T>
-#[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Clone, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Object<T> {
     pub id: ObjectID,
     pub ty: std::marker::PhantomData<T>,
@@ -426,6 +460,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::Ok;
 
     #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
     struct TestStruct {
@@ -448,7 +483,7 @@ mod tests {
     fn test_object_serialize() -> Result<()> {
         //let struct_type = TestStruct::struct_tag();
         let object_value = TestStruct { count: 1 };
-        let object_id = ObjectID::new(crate::h256::H256::random().into());
+        let object_id = ObjectID::random();
         let object = ObjectEntity::new(
             object_id,
             AccountAddress::random(),
@@ -458,7 +493,9 @@ mod tests {
             object_value,
         );
 
-        let raw_object: RawObject = object.to_raw();
+        let bytes = bcs::to_bytes(&object)?;
+
+        let raw_object: RawObject = RawObject::from_bytes(&bytes, TestStruct::struct_tag())?;
 
         let object2 = bcs::from_bytes::<ObjectEntity<TestStruct>>(&raw_object.to_bytes()?).unwrap();
         assert_eq!(object, object2);

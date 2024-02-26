@@ -12,7 +12,6 @@ use move_core_types::{
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::loaded_data::runtime_types::{StructType, Type};
-use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::{
     moveos_std::{context::Context, object::Object},
     state::{MoveStructType, PlaceholderStruct},
@@ -47,7 +46,6 @@ where
             }
         });
 
-        //check object id
         if func.parameters.len() != args.len() {
             return Err(
                 PartialVMError::new(StatusCode::NUMBER_OF_ARGUMENTS_MISMATCH)
@@ -59,11 +57,13 @@ where
                     .finish(Location::Undefined),
             );
         }
+
+        // check object id
         for (paramter, arg) in func.parameters.iter().zip(args.iter()) {
             let type_tag_opt = get_type_tag(&self.session, paramter)?;
             if let Some(t) = type_tag_opt {
                 if let Some(object_type) = get_object_type(&t) {
-                    let object_id = ObjectID::from_bytes(arg).map_err(|e| {
+                    let object_id = bcs::from_bytes(arg).map_err(|e| {
                         PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
                             .with_message(format!("Invalid object id: {:?}", e))
                             .finish(Location::Undefined)
@@ -78,7 +78,10 @@ where
                         })?
                         .ok_or_else(|| {
                             PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
-                                .with_message(format!("Object not found: {:?}", object_id))
+                                .with_message(format!(
+                                    "Object not found: {:?}, type: {:?}",
+                                    object_id, object_type
+                                ))
                                 .finish(Location::Undefined)
                         })?;
                     let object = state.as_raw_object().map_err(|e| {

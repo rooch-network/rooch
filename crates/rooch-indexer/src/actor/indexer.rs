@@ -20,7 +20,7 @@ use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::context;
 use moveos_types::moveos_std::object::RawObject;
 use moveos_types::moveos_std::object_id::ObjectID;
-use moveos_types::state::{KeyState, SplitStateChangeSet, State};
+use moveos_types::state::{KeyState, MoveState, SplitStateChangeSet, State};
 use moveos_types::state_resolver::MoveOSResolverProxy;
 use rooch_rpc_api::jsonrpc_types::{AnnotatedMoveStructView, AnnotatedMoveValueView};
 
@@ -124,7 +124,7 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
 
         for (table_handle, table_change) in state_change_set.changes.clone() {
             // handle global object
-            if table_handle == context::GLOBAL_OBJECT_STORAGE_HANDLE {
+            if table_handle == *context::GLOBAL_OBJECT_STORAGE_HANDLE {
                 for (key, op) in table_change.entries.into_iter() {
                     match op {
                         Op::Modify(value) => {
@@ -144,7 +144,7 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                             }
                         }
                         Op::Delete => {
-                            let table_handle = ObjectID::from_bytes(key.key.as_slice())?;
+                            let table_handle = ObjectID::from_bytes(key.key)?;
                             remove_global_states.push(table_handle.to_string());
                         }
                         Op::New(value) => {
@@ -175,7 +175,7 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                             let state = self.new_table_state(
                                 key,
                                 value,
-                                table_handle,
+                                table_handle.clone(),
                                 tx_order,
                                 state_index_generator,
                             )?;
@@ -188,7 +188,7 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                             let state = self.new_table_state(
                                 key,
                                 value,
-                                table_handle,
+                                table_handle.clone(),
                                 tx_order,
                                 state_index_generator,
                             )?;

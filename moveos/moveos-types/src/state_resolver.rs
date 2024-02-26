@@ -21,8 +21,9 @@ use move_core_types::{
     resolver::{ModuleResolver, MoveResolver, ResourceResolver},
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
+use once_cell::sync::Lazy;
 
-pub const GLOBAL_OBJECT_STORAGE_HANDLE: ObjectID = ObjectID::ZERO;
+pub static GLOBAL_OBJECT_STORAGE_HANDLE: Lazy<ObjectID> = Lazy::new(ObjectID::zero);
 
 pub type StateKV = (KeyState, State);
 pub type AnnotatedStateKV = (AnnotatedKeyState, AnnotatedState);

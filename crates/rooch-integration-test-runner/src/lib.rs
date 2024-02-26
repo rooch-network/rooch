@@ -282,7 +282,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             MoveOSSubcommands::ViewObject { object_id } => {
                 let resoler = self.moveos.moveos_resolver();
                 let object = resoler
-                    .get_annotated_object(object_id)?
+                    .get_annotated_object(object_id.clone())?
                     .ok_or_else(|| anyhow::anyhow!("Object with id {} not found", object_id))?;
                 //TODO should we bring the AnnotatedObjectView from jsonrpc to test adapter for better json output formatting?
                 Ok(Some(format!("{:?}", object)))

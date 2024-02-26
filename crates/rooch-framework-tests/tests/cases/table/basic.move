@@ -53,7 +53,7 @@ script {
     }
 }
 
-//# run --signers test --args @0x20190e28d7f8ca90e1b0d8cbf8d8a07f1de0f985a778138cf879aa9b10955aa4
+//# run --signers test --args object:0x20190e28d7f8ca90e1b0d8cbf8d8a07f1de0f985a778138cf879aa9b10955aa4
 
 script {
     use std::string;

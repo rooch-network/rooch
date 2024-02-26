@@ -256,7 +256,7 @@ impl AccessPath {
         match self.0 {
             Path::Table { table_handle, keys } => (table_handle, keys),
             Path::Object { object_ids } => {
-                let table_handle = state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE;
+                let table_handle = state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE.clone();
                 let keys = Some(
                     object_ids
                         .iter()

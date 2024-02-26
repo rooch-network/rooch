@@ -110,9 +110,10 @@ fn random_state_change_set() -> StateChangeSet {
     }
 
     // generate global table
-    state_change_set
-        .changes
-        .insert(context::GLOBAL_OBJECT_STORAGE_HANDLE, random_table_change());
+    state_change_set.changes.insert(
+        context::GLOBAL_OBJECT_STORAGE_HANDLE.clone(),
+        random_table_change(),
+    );
 
     state_change_set
 }
@@ -124,7 +125,7 @@ fn test_statedb() {
     let change_set = ChangeSet::new();
 
     let mut table_change_set = StateChangeSet::default();
-    let table_handle = ObjectID::ONE;
+    let table_handle = ObjectID::from(AccountAddress::random());
     let mut table_change = TableChange::default();
     let key = KeyState::new(
         MoveString::from_str("test_key").unwrap().to_bytes(),
@@ -136,7 +137,9 @@ fn test_statedb() {
         .entries
         .insert(key.clone(), Op::New(value.clone().into()));
 
-    table_change_set.changes.insert(table_handle, table_change);
+    table_change_set
+        .changes
+        .insert(table_handle.clone(), table_change);
     moveos_store
         .get_state_store()
         .apply_change_set(change_set, table_change_set)

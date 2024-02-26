@@ -149,7 +149,7 @@ impl AggregateService {
                     .collect::<Result<Vec<_>>>()?;
 
                 let coin_stores = self
-                    .get_coin_stores(coin_store_ids.iter().map(|(_, v)| *v).collect())
+                    .get_coin_stores(coin_store_ids.iter().map(|(_, v)| v.clone()).collect())
                     .await?;
 
                 let coin_types = coin_stores
@@ -275,7 +275,10 @@ impl AggregateService {
     }
 
     pub async fn pack_uxtos(&self, states: Vec<IndexerGlobalState>) -> Result<Vec<UTXOState>> {
-        let table_handles = states.iter().map(|m| m.object_id).collect::<Vec<_>>();
+        let table_handles = states
+            .iter()
+            .map(|m| m.object_id.clone())
+            .collect::<Vec<_>>();
         let owners = states.iter().map(|m| m.owner).collect::<Vec<_>>();
         let owner_keys = states
             .iter()
@@ -353,7 +356,10 @@ impl AggregateService {
         &self,
         states: Vec<IndexerGlobalState>,
     ) -> Result<Vec<InscriptionState>> {
-        let table_handles = states.iter().map(|m| m.object_id).collect::<Vec<_>>();
+        let table_handles = states
+            .iter()
+            .map(|m| m.object_id.clone())
+            .collect::<Vec<_>>();
         let owners = states.iter().map(|m| m.owner).collect::<Vec<_>>();
         let owner_keys = states
             .iter()

@@ -12,8 +12,8 @@ use moveos_types::move_types::as_struct_tag;
 use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::move_module::Module;
 use moveos_types::moveos_std::object_id::ObjectID;
-use moveos_types::state::MoveStructType;
 use moveos_types::state::{KeyState, TableState, TableStateSet};
+use moveos_types::state::{MoveState, MoveStructType};
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
     h256::H256,
@@ -224,7 +224,7 @@ impl StateDBStore {
         limit: usize,
     ) -> Result<Vec<StateKV>> {
         let (_raw_object, table) = self
-            .get_as_table(id)?
+            .get_as_table(id.clone())?
             .ok_or_else(|| anyhow::format_err!("table with id {} not found", id))?;
         table.list(cursor, limit)
     }
@@ -249,12 +249,12 @@ impl StateDBStore {
 
         for (table_handle, table_change) in state_change_set.changes {
             // handle global object
-            if table_handle == context::GLOBAL_OBJECT_STORAGE_HANDLE {
+            if table_handle == *context::GLOBAL_OBJECT_STORAGE_HANDLE {
                 self.global_table
                     .put_changes(table_change.entries.into_iter())?;
                 // TODO: do we need to update the size of global table?
             } else {
-                let table_result_opt = self.get_as_table(table_handle)?;
+                let table_result_opt = self.get_as_table(table_handle.clone())?;
                 let (mut raw_object, table) = match table_result_opt {
                     Some((raw_object, table)) => (raw_object, table),
                     None => {
@@ -263,7 +263,7 @@ impl StateDBStore {
                                 Some(account) => (true, Some(*account)),
                                 None => (false, None),
                             };
-                        self.create_table(table_handle, is_resource_object, account)?
+                        self.create_table(table_handle.clone(), is_resource_object, account)?
                     }
                 };
 
@@ -289,10 +289,10 @@ impl StateDBStore {
     }
 
     pub fn resolve_state(&self, handle: &ObjectID, key: &KeyState) -> Result<Option<State>, Error> {
-        if handle == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
+        if handle == &*state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
             self.global_table.get(key.clone())
         } else {
-            self.get_with_key(*handle, key.clone())
+            self.get_with_key(handle.clone(), key.clone())
         }
     }
 
@@ -302,10 +302,10 @@ impl StateDBStore {
         cursor: Option<KeyState>,
         limit: usize,
     ) -> Result<Vec<StateKV>, Error> {
-        if handle == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
+        if handle == &*state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
             self.global_table.list(cursor, limit)
         } else {
-            self.list_with_key(*handle, cursor, limit)
+            self.list_with_key(handle.clone(), cursor, limit)
         }
     }
 
@@ -313,7 +313,7 @@ impl StateDBStore {
     pub fn apply(&self, table_state_set: TableStateSet) -> Result<H256> {
         let mut state_root = H256::zero();
         for (k, v) in table_state_set.table_state_sets.into_iter() {
-            if k == state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
+            if k == *state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
                 state_root = self.global_table.puts(v.entries)?
             } else {
                 // must force create table
@@ -328,10 +328,10 @@ impl StateDBStore {
     //     &self,
     //     handle: &ObjectID,
     // ) -> Result<Option<SMTIterator<Vec<u8>, State, NodeDBStore>>> {
-    //     if handle == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
+    //     if handle == &*state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
     //         self.global_table.iter().map(|v| Some(v))
     //     } else {
-    //         self.get_as_table(*handle)
+    //         self.get_as_table(handle.clone())
     //             .and_then(|res| res.map_or(Ok(None), |(_, table)| table.iter().map(|v| Some(v))))
     //     }
     // }
@@ -345,8 +345,8 @@ impl StateDBStore {
             // If the state is an Object, and the T's struct_tag of Object<T> is Table
             if ObjectID::struct_tag_match(&as_struct_tag(key.key_type.clone())?) {
                 let mut table_state = TableState::default();
-                let table_handle = ObjectID::from_bytes(key.key.clone())?;
-                let result = self.get_as_table(table_handle)?;
+                let table_handle = ObjectID::from_bytes(&key.key)?;
+                let result = self.get_as_table(table_handle.clone())?;
                 if result.is_none() {
                     continue;
                 };
@@ -362,9 +362,10 @@ impl StateDBStore {
 
             golbal_table_state.entries.put(key, state);
         }
-        table_state_set
-            .table_state_sets
-            .insert(context::GLOBAL_OBJECT_STORAGE_HANDLE, golbal_table_state);
+        table_state_set.table_state_sets.insert(
+            context::GLOBAL_OBJECT_STORAGE_HANDLE.clone(),
+            golbal_table_state,
+        );
 
         Ok(table_state_set)
     }

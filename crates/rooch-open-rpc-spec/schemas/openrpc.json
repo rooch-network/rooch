@@ -1713,7 +1713,15 @@
         }
       },
       "ObjectID": {
-        "$ref": "#/components/schemas/Hex"
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "properties": {
+          "value": {
+            "$ref": "#/components/schemas/Hex"
+          }
+        }
       },
       "OpView_for_StateView": {
         "oneOf": [

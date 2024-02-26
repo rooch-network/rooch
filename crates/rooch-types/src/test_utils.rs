@@ -335,9 +335,10 @@ pub fn random_state_change_set() -> StateChangeSet {
     }
 
     // generate global table
-    state_change_set
-        .changes
-        .insert(context::GLOBAL_OBJECT_STORAGE_HANDLE, random_table_change());
+    state_change_set.changes.insert(
+        context::GLOBAL_OBJECT_STORAGE_HANDLE.clone(),
+        random_table_change(),
+    );
 
     state_change_set
 }

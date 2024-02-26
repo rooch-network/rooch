@@ -52,20 +52,20 @@
 ## Constants
 
 
-<a name="0x3_multichain_address_LENGTH"></a>
-
-
-
-<pre><code><b>const</b> <a href="multichain_address.md#0x3_multichain_address_LENGTH">LENGTH</a>: u64 = 31;
-</code></pre>
-
-
-
 <a name="0x3_multichain_address_ErrorMultiChainIDMismatch"></a>
 
 
 
 <pre><code><b>const</b> <a href="multichain_address.md#0x3_multichain_address_ErrorMultiChainIDMismatch">ErrorMultiChainIDMismatch</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_multichain_address_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="multichain_address.md#0x3_multichain_address_LENGTH">LENGTH</a>: u64 = 31;
 </code></pre>
 
 

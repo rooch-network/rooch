@@ -6,7 +6,6 @@ module moveos_std::object_id {
     use std::vector;
     use moveos_std::bcs;
     use moveos_std::type_info;
-    use moveos_std::address;
 
     friend moveos_std::context;
     friend moveos_std::account;
@@ -19,11 +18,13 @@ module moveos_std::object_id {
   
     /// ObjectID is a unique identifier for the Object
     struct ObjectID has store, copy, drop {
-        id: address,
+        // ObjectID store the path of the object in the state tree
+        // It may contains multiple address
+        value: vector<u8>,
     }
 
-    public fun id(object_id: &ObjectID): address {
-        object_id.id
+    public fun value(object_id: &ObjectID): &vector<u8> {
+        &object_id.value
     }
 
     /// UID is a unique identifier, it can be `drop`,but can not be `copy` or `store`
@@ -54,33 +55,28 @@ module moveos_std::object_id {
 
     /// Generate a new ObjectID from an address
     public(friend) fun address_to_object_id(address: address): ObjectID {
-        ObjectID { id: address }
+        ObjectID { value: bcs::to_bytes(&address) }
     }
 
     public fun named_object_id<T>(): ObjectID {
-        address_to_object_id(
-            address::from_bytes(
-                hash::sha3_256(
-                    *std::string::bytes(&type_info::type_name<T>())
-                )
-            )
-        )
+        ObjectID {
+            value: hash::sha3_256(*std::string::bytes(&type_info::type_name<T>()))
+        }
     }
 
     public fun account_named_object_id<T>(account: address): ObjectID {
         let bytes = bcs::to_bytes(&account);
         vector::append(&mut bytes, *std::string::bytes(&type_info::type_name<T>()));
-        address_to_object_id(
-            address::from_bytes(
-                hash::sha3_256(bytes)
-            )
-        )
+        ObjectID {
+            value: hash::sha3_256(bytes)
+        }
     }
 
     public fun custom_object_id<ID: drop, T>(id: ID): ObjectID {
         let bytes = bcs::to_bytes(&id);
         vector::append(&mut bytes, *std::string::bytes(&type_info::type_name<T>()));
-        let hash = hash::sha3_256(bytes);
-        address_to_object_id(address::from_bytes(hash))
+        ObjectID {
+            value: hash::sha3_256(bytes)
+        }
     }
 }

@@ -216,16 +216,16 @@ impl TableData {
         // _context: &NativeContext,
         handle: ObjectID,
     ) -> PartialVMResult<&mut Table> {
-        match self.tables.entry(handle) {
+        match self.tables.entry(handle.clone()) {
             Entry::Vacant(e) => {
+                if log::log_enabled!(log::Level::Trace) {
+                    log::trace!("[RawTable] creating table {}", handle);
+                }
                 let table = Table {
                     handle,
                     content: Default::default(),
                     size_increment: 0,
                 };
-                if log::log_enabled!(log::Level::Trace) {
-                    log::trace!("[RawTable] creating table {}", handle);
-                }
                 Ok(e.insert(table))
             }
             Entry::Occupied(e) => Ok(e.into_mut()),

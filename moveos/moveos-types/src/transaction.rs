@@ -309,8 +309,8 @@ impl TransactionOutput {
             .events
             .clone()
             .into_iter()
-            .enumerate()
-            .map(|(index, event)| Event::new_with_event_id(event_ids[index], event))
+            .zip(event_ids)
+            .map(|(event, event_id)| Event::new_with_event_id(event_id, event))
             .collect::<Vec<_>>();
 
         TransactionOutput {
