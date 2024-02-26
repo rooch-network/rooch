@@ -1,1 +1,12 @@
 # Pipeline Transaction Processing
+
+Optimizing the transaction processing procedure and related components is the key for improving the throughput rate for the overall system. For this purpose, Rooch utilizes a pipeline structure to achieve parallel transaction execution.
+
+![Diagram](/docs/pipeline-transaction-processing.png)
+
+The role of Sequencer and Proposer are decoupled into two different nodes:
+
+- Sequencer is mainly responsible for verifying and ordering all the incoming transactions; the output is formed as a transaction stream, which will then be sent to the Proposer
+- Proposer is responsible for executing all the transactions received from Sequencers, as well packing transactions into blocks and calculating the final state for each block
+
+The proposer executes all the transactions in a block in parallel, utilizing a simlar approach introduced by [BlockSTM](https://arxiv.org/abs/2203.06871).

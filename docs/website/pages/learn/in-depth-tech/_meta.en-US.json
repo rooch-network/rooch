@@ -1,20 +1,12 @@
 {
-  "move-language": "Move Language",
-  "account-abstraction": "Account Abstraction",
   "fraud-proof": "Fraud Proof",
   "hybrid-security": "Hybrid Security with ZK Proof",
   "multi-chain-settlement": "Multi-Chain Settlement",
-  "decentralized-validator": {
-    "title": "Decentralized Validator",
-    "display": "hidden"
-  },
+  "on-chain-indexer": "On-chain Indexer",
   "pipeline-transaction-processing": "Pipeline Transaction Processing",
   "sequence-proof": "Sequence Proof",
   "storage": {
     "title": "Storage"
   },
-  "p2p-state-channel": {
-    "title": "P2P Channel",
-    "display": "hidden"
-  }
+  "hash": "Hash"
 }

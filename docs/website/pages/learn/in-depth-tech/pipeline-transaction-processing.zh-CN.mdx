@@ -1,1 +1,12 @@
-# Pipeline Transaction Processing
+# 管道交易处理
+
+优化交易处理流程和相关组件是提高整个系统吞吐率的关键。为此，Rooch 利用管道结构来实现并行交易执行。
+
+![Diagram](/docs/pipeline-transaction-processing.png)
+
+Sequencer 和 Proposer 的角色被解耦为两个不同的节点：
+
+- Sequencer 主要负责对所有传入的交易进行验证和排序；输出形成交易流，然后发送给 Proposer
+- Proposer 负责执行从 Sequencer 接收到的所有交易，并将交易打包到块中并计算每个块的最终状态
+
+Proposer 使用 [BlockSTM](https://arxiv.org/abs/2203.06871) 引入的类似方法，并行执行一个区块中的所有交易。

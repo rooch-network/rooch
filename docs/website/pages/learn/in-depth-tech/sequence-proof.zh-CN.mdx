@@ -1,1 +1,17 @@
-# Sequence proof
+# 交易排序证明
+
+排序证明（Sequence Proof）证明交易是否位于序列中的特定位置，从而最大化预确认的安全性([maximizing security of pre-confirmations](https://vitalik.ca/general/2021/01/05/rollup.html))。
+
+## 没有排序证明的情况
+
+![Without Sequence Proof Diagram](/docs/without-sequence-proof.png)
+
+在 Layer2 网络中，受欺诈证明（Fraud Proof）或零知识证明（ZK Proof）的限制，排序器（Sequencer）不能更改交易内容，否则将面临惩罚。但是，排序器可以拒绝某个用户的交易（通过不将交易发送给 DA 和 Layer1），或者改变交易的位置，通过串通第三方获得间接利。（例如拒绝保证金交易以获取清仓利润，或更改交易订单以获取 MEV 利润）
+
+## 有排序证明的情况
+
+![With Sequence Proof Diagram](/docs/with-sequence-proof.png)
+
+使用排序证明，一旦用户将交易提交给排序器，排序器需要返回确认以及顺序证明，证明该交易包含在交易序列的某个位置。如果之后排序器从序列中取出交易并没有提交，用户可以使用排序证明来仲裁惩罚排序器。
+
+这种机制确保排序器对此类行为产生反激励，并且排序器不会因拒绝某些交易而获得任何利润。
