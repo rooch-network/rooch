@@ -4,6 +4,7 @@
 use crate::moveos_std::object::{AnnotatedObject, ObjectEntity, RawObject};
 use crate::moveos_std::object_id::ObjectID;
 use anyhow::{bail, ensure, Result};
+use core::str;
 use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
@@ -436,6 +437,15 @@ impl State {
                     None
                 }
             }
+            _ => None,
+        }
+    }
+
+    /// If the state is a Move resource, return the T's struct_tag
+    /// Otherwise, return None
+    pub fn get_resource_struct_tag(&self) -> Option<StructTag> {
+        match self.value_type() {
+            TypeTag::Struct(struct_tag) => Some(struct_tag.as_ref().clone()),
             _ => None,
         }
     }
