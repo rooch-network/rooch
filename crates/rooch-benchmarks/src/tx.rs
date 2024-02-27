@@ -40,7 +40,10 @@ use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::transaction::TypedTransaction;
+use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Duration;
+use tempfile::TempDir;
 use tracing::info;
 
 pub const EXAMPLE_SIMPLE_BLOG_PACKAGE_NAME: &'static str = "simple_blog";
@@ -229,4 +232,15 @@ pub fn create_transaction(
     let rooch_tx =
         keystore.sign_transaction(&test_transaction_builder.sender.into(), tx_data, None)?;
     Ok(TypedTransaction::Rooch(rooch_tx))
+}
+
+pub fn temp_dir() -> DataDirPath {
+    match std::env::var("PUREMEM") {
+        Ok(pure_mem) => {
+            let temp_dir = TempDir::new_in(pure_mem)
+                .expect("Failed to create temp dir in provided memory fs path");
+            DataDirPath::TempPath(Arc::from(temp_dir))
+        }
+        Err(_) => moveos_config::temp_dir(),
+    }
 }
