@@ -1,7 +1,7 @@
 //# init --addresses tester=0x42
 
 //call function use move value style argument
-//# run --signers tester --args 1u8 1u16 1u32 1u64 1u128 1u256 @0x42 b"hello" @0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3 @0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3
+//# run --signers tester --args 1u8 1u16 1u32 1u64 1u128 1u256 @0x42 b"hello" object_id:0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3 object:0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3
 script {
     
     fun main(
