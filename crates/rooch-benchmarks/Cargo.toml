@@ -35,6 +35,7 @@ hyper = { workspace = true }
 log = { workspace = true }
 lazy_static = { workspace = true }
 rpassword = { workspace = true }
+tempfile = { workspace = true }
 
 criterion = { workspace = true }
 #criterion-cpu-time = { workspace = true }

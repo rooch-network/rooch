@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use moveos_config::temp_dir;
-use rooch_benchmarks::tx::{create_publish_transaction, create_transaction, setup_service};
+use rooch_benchmarks::tx::{
+    create_publish_transaction, create_transaction, setup_service, temp_dir,
+};
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
 use rooch_test_transaction_builder::TestTransactionBuilder;
