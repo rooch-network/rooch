@@ -23,10 +23,10 @@ module nft::nft {
 
     fun init(ctx: &mut Context){
         let nft_display_object = display::object_display<NFT>(ctx);
-        display::set_value(nft_display_object, string::utf8(b"name"), string::utf8(b"{ value.name }"));
-        display::set_value(nft_display_object, string::utf8(b"owner"), string::utf8(b"{ owner }"));
-        display::set_value(nft_display_object, string::utf8(b"creator"), string::utf8(b"{ value.creator }"));
-        display::set_value(nft_display_object, string::utf8(b"uri"), string::utf8(b"https://base_url/{ collection }/{ id }"));
+        display::set_value(nft_display_object, string::utf8(b"name"), string::utf8(b"{value.name}"));
+        display::set_value(nft_display_object, string::utf8(b"owner"), string::utf8(b"{owner}"));
+        display::set_value(nft_display_object, string::utf8(b"creator"), string::utf8(b"{value.creator}"));
+        display::set_value(nft_display_object, string::utf8(b"uri"), string::utf8(b"https://base_url/{value.collection}/{id}"));
     }
 
     /// Mint a new NFT,
