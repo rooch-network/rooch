@@ -72,6 +72,18 @@ impl TestTransactionBuilder {
         self.new_function_call("simple_blog", "create_article", args, vec![])
     }
 
+    pub fn call_article_create_with_size(&self, len: usize) -> MoveAction {
+        let mut args = vec![];
+        args.push(
+            bcs::to_bytes(&random_string_with_size(20)).expect("serialize title should success"),
+        );
+        args.push(
+            bcs::to_bytes(&random_string_with_size(len)).expect("serialize body should success"),
+        );
+
+        self.new_function_call("simple_blog", "create_article", args, vec![])
+    }
+
     pub fn new_publish_examples(
         &self,
         subpath: &'static str,

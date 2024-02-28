@@ -3,7 +3,7 @@
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use rooch_benchmarks::tx::{
-    create_publish_transaction, create_transaction, setup_service, temp_dir,
+    create_publish_transaction, create_transaction, get_tx_data_size, setup_service, temp_dir,
 };
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
@@ -26,8 +26,11 @@ pub fn transaction_write_benchmark(c: &mut Criterion) {
     let tx = create_publish_transaction(&test_transaction_builder, &keystore).unwrap();
     let _publish_result = rt.block_on(async { rpc_service.execute_tx(tx).await.unwrap() });
 
+    let tx_data_size = get_tx_data_size();
     let transactions: Vec<_> = (0..1000)
-        .map(|n| create_transaction(&mut test_transaction_builder, &keystore, n).unwrap())
+        .map(|n| {
+            create_transaction(&mut test_transaction_builder, &keystore, n, tx_data_size).unwrap()
+        })
         .collect();
     let mut transactions_iter = transactions.into_iter().cycle();
 

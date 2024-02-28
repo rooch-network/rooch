@@ -8,6 +8,7 @@ use coerce::actor::IntoActor;
 use moveos_config::store_config::RocksdbConfig;
 use moveos_config::DataDirPath;
 use moveos_store::{MoveOSDB, MoveOSStore};
+use moveos_types::transaction::MoveAction;
 use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
 use rooch_config::da_config::DAConfig;
@@ -39,7 +40,9 @@ use rooch_types::address::RoochAddress;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::chain_id::RoochChainID;
+use rooch_types::test_utils::{random_string, random_string_with_size};
 use rooch_types::transaction::TypedTransaction;
+use std::env;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -220,14 +223,26 @@ pub fn create_publish_transaction(
     Ok(TypedTransaction::Rooch(rooch_tx))
 }
 
+pub fn get_tx_data_size() -> Option<usize> {
+    let tx_data_size = match env::var("TX_SIZE") {
+        Ok(size_str) => Some(size_str.parse::<usize>().expect("Failed to parse TX_SIZE")),
+        Err(_) => None,
+    };
+    tx_data_size
+}
+
 pub fn create_transaction(
     test_transaction_builder: &mut TestTransactionBuilder,
     keystore: &InMemKeystore,
     sequence_number: u64,
+    tx_data_size: Option<usize>,
 ) -> Result<TypedTransaction> {
     test_transaction_builder.update_sequence_number(sequence_number);
-
-    let action = test_transaction_builder.call_article_create();
+    let action = if let Some(size) = tx_data_size {
+        test_transaction_builder.call_article_create_with_size(size)
+    } else {
+        test_transaction_builder.call_article_create()
+    };
     let tx_data = test_transaction_builder.build(action);
     let rooch_tx =
         keystore.sign_transaction(&test_transaction_builder.sender.into(), tx_data, None)?;
