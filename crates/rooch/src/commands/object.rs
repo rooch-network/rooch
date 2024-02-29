@@ -18,6 +18,7 @@ pub struct ObjectCommand {
     #[clap(flatten)]
     pub(crate) context_options: WalletContextOptions,
 
+    /// Render and return display fields.
     #[clap(long)]
     pub show_display: bool,
 }

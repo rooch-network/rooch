@@ -13,7 +13,7 @@ use moveos_types::{
     access_path::AccessPath,
     h256::H256,
     moveos_std::{
-        display::{get_display_object_id, RawDisplay},
+        display::{get_object_display_id, get_resource_display_id, RawDisplay},
         object::ObjectEntity,
     },
     state::{AnnotatedKeyState, AnnotatedState, KeyState},
@@ -66,18 +66,28 @@ impl RoochServer {
     async fn get_display_fields_and_render(
         &self,
         states: Vec<&AnnotatedState>,
+        is_object: bool,
     ) -> Result<Vec<Option<DisplayFieldsView>>> {
         let mut display_ids = vec![];
+        let mut displayable_states = vec![];
         for s in &states {
-            // TODO: handle Move resources
-            let struct_tag = s.state.get_object_struct_tag();
-            if let Some(tag) = struct_tag {
-                display_ids.push(get_display_object_id(tag.into()));
-            };
+            displayable_states.push(if is_object {
+                if let Some(tag) = s.state.get_object_struct_tag() {
+                    display_ids.push(get_object_display_id(tag.into()));
+                    true
+                } else {
+                    false
+                }
+            } else if let Some(tag) = s.state.get_resource_struct_tag() {
+                display_ids.push(get_resource_display_id(tag.into()));
+                true
+            } else {
+                false
+            });
         }
         // get display fields
         let path = AccessPath::objects(display_ids);
-        let display_fields = self
+        let mut display_fields = self
             .rpc_service
             .get_states(path)
             .await?
@@ -88,15 +98,21 @@ impl RoochServer {
                     .transpose()
             })
             .collect::<Result<Vec<Option<ObjectEntity<RawDisplay>>>>>()?;
+        display_fields.reverse();
 
         let mut display_field_views = vec![];
-        for (annotated_s, option_display_obj) in states.into_iter().zip(display_fields) {
-            let struct_tag = annotated_s.state.get_object_struct_tag();
-            display_field_views.push(match struct_tag {
-                Some(_tag) => option_display_obj.map(|obj| {
-                    DisplayFieldsView::new(obj.value.render(&annotated_s.decoded_value))
-                }),
-                _ => None,
+        for (annotated_s, displayable) in states.into_iter().zip(displayable_states) {
+            display_field_views.push(if displayable {
+                debug_assert!(
+                    !display_fields.is_empty(),
+                    "Display fields should not be empty"
+                );
+                display_fields
+                    .pop()
+                    .unwrap()
+                    .map(|obj| DisplayFieldsView::new(obj.value.render(&annotated_s.decoded_value)))
+            } else {
+                None
             });
         }
         Ok(display_field_views)
@@ -151,17 +167,21 @@ impl RoochAPIServer for RoochServer {
         state_option: Option<StateOptions>,
     ) -> RpcResult<Vec<Option<StateView>>> {
         let state_option = state_option.unwrap_or_default();
+        let show_display =
+            state_option.show_display && (access_path.0.is_object() || access_path.0.is_resource());
 
-        let state_views = if state_option.decode || state_option.show_display {
+        let state_views = if state_option.decode || show_display {
+            let is_object = access_path.0.is_object();
             let states = self
                 .rpc_service
                 .get_annotated_states(access_path.into())
                 .await?;
 
-            if state_option.show_display {
+            if show_display {
                 let valid_states = states.iter().filter_map(|s| s.as_ref()).collect::<Vec<_>>();
-                let mut valid_display_field_views =
-                    self.get_display_fields_and_render(valid_states).await?;
+                let mut valid_display_field_views = self
+                    .get_display_fields_and_render(valid_states, is_object)
+                    .await?;
                 valid_display_field_views.reverse();
                 states
                     .into_iter()
@@ -198,6 +218,9 @@ impl RoochAPIServer for RoochServer {
         state_option: Option<StateOptions>,
     ) -> RpcResult<StatePageView> {
         let state_option = state_option.unwrap_or_default();
+        let show_display =
+            state_option.show_display && (access_path.0.is_object() || access_path.0.is_resource());
+
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
@@ -206,7 +229,8 @@ impl RoochAPIServer for RoochServer {
             Some(key_state_str) => Some(KeyState::from_str(key_state_str.as_str())?),
             None => None,
         };
-        let mut data: Vec<StateKVView> = if state_option.decode || state_option.show_display {
+        let mut data: Vec<StateKVView> = if state_option.decode || show_display {
+            let is_object = access_path.0.is_object();
             let (key_states, states): (Vec<AnnotatedKeyState>, Vec<AnnotatedState>) = self
                 .rpc_service
                 .list_annotated_states(access_path.into(), cursor_of, limit_of + 1)
@@ -214,8 +238,10 @@ impl RoochAPIServer for RoochServer {
                 .into_iter()
                 .unzip();
             let state_refs: Vec<&AnnotatedState> = states.iter().collect();
-            if state_option.show_display {
-                let display_field_views = self.get_display_fields_and_render(state_refs).await?;
+            if show_display {
+                let display_field_views = self
+                    .get_display_fields_and_render(state_refs, is_object)
+                    .await?;
                 key_states
                     .into_iter()
                     .zip(states)
