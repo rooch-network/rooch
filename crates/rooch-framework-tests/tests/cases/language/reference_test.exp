@@ -1,0 +1,16 @@
+processed 3 tasks
+
+task 1 'publish'. lines 3-8:
+Error: error[E07004]: invalid return of locally borrowed state
+  ┌─ /tmp/tempfile:6:9
+  │
+6 │         &1u8
+  │         ^^^^
+  │         │
+  │         Invalid return. Local variable '%#1' is still being borrowed.
+  │         It is still being borrowed by this reference
+
+
+
+task 2 'publish'. lines 11-19:
+status EXECUTED
