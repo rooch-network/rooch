@@ -1,6 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-use crate::state::KeyState;
+use crate::state::{KeyState, MoveState};
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     h256,
@@ -16,6 +16,7 @@ use move_core_types::{
     value::{MoveStructLayout, MoveTypeLayout},
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
+use move_vm_types::values::Struct;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -31,6 +32,10 @@ impl ObjectID {
     /// Creates a new ObjectID
     pub const fn new(obj_id: [u8; Self::LENGTH]) -> Self {
         Self(AccountAddress::new(obj_id))
+    }
+
+    pub fn random() -> Self {
+        Self::new(h256::H256::random().into())
     }
 
     /// Hex address: 0x0
@@ -95,6 +100,23 @@ impl MoveStructType for ObjectID {
 impl MoveStructState for ObjectID {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Address])
+    }
+
+    fn from_runtime_value_struct(value: Struct) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut fields = value.unpack()?;
+        let address = AccountAddress::from_runtime_value(
+            fields
+                .next()
+                .ok_or_else(|| anyhow::anyhow!("Invalid ObjectID"))?,
+        )?;
+        Ok(ObjectID(address))
+    }
+
+    fn to_runtime_value_struct(&self) -> Struct {
+        Struct::pack(vec![self.0.to_runtime_value()])
     }
 }
 
@@ -343,5 +365,13 @@ mod tests {
             )
             .unwrap()
         );
+    }
+
+    #[test]
+    fn test_from_runtime_value() {
+        let object_id = ObjectID::random();
+        let runtime_value = object_id.to_runtime_value();
+        let object_id2 = ObjectID::from_runtime_value(runtime_value).unwrap();
+        assert_eq!(object_id, object_id2);
     }
 }

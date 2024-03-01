@@ -34,12 +34,12 @@ script {
 
     fun main(obj_from_arg: &mut Object<TestStruct>) {
         let value_from_arg = m::get_value(object::borrow(obj_from_arg));
-        let object_from_ctx = object::borrow_object(object::id(obj_from_arg));
-        let value_from_ctx = m::get_value(object::borrow(object_from_ctx));
+        let obj_from_store = object::borrow_object(object::id(obj_from_arg));
+        let value_from_ctx = m::get_value(object::borrow(obj_from_store));
         assert!(value_from_arg == value_from_ctx, 1);
         m::set_value(object::borrow_mut(obj_from_arg), 42);
         let value_from_arg = m::get_value(object::borrow(obj_from_arg));
-        let value_from_ctx = m::get_value(object::borrow(object_from_ctx));
+        let value_from_ctx = m::get_value(object::borrow(obj_from_store));
         assert!(value_from_arg == 42, 2);
         assert!(value_from_arg == value_from_ctx, 3);
     }
@@ -53,15 +53,15 @@ script {
 
     fun main(sender: &signer, obj_from_arg: &mut Object<TestStruct>) {
         let value_from_arg = m::get_value(object::borrow(obj_from_arg));
-        let object_from_ctx = object::borrow_mut_object(sender, object::id(obj_from_arg));
-        let value_from_ctx = m::get_value(object::borrow(object_from_ctx));
+        let obj_from_store = object::borrow_mut_object(sender, object::id(obj_from_arg));
+        let value_from_ctx = m::get_value(object::borrow(obj_from_store));
         assert!(value_from_arg == value_from_ctx, 1);
         
         m::set_value(object::borrow_mut(obj_from_arg), 42);
-        m::set_value(object::borrow_mut(object_from_ctx), 420);
+        m::set_value(object::borrow_mut(obj_from_store), 420);
         
         let value_from_arg = m::get_value(object::borrow(obj_from_arg));
-        let value_from_ctx = m::get_value(object::borrow(object_from_ctx));
+        let value_from_ctx = m::get_value(object::borrow(obj_from_store));
         assert!(value_from_ctx == 420, 2);
         assert!(value_from_arg == value_from_ctx, 3);
     }
