@@ -73,7 +73,7 @@ impl RpcService {
     }
 
     pub async fn execute_tx(&self, tx: TypedTransaction) -> Result<ExecuteTransactionResponse> {
-        // First, validate the transactin
+        // First, validate the transaction
         let moveos_tx = self.executor.validate_transaction(tx.clone()).await?;
         let sequence_info = self.sequencer.sequence_transaction(tx.clone()).await?;
         // Then execute
@@ -82,41 +82,53 @@ impl RpcService {
             .propose_transaction(tx.clone(), execution_info.clone(), sequence_info.clone())
             .await?;
 
-        // Sync lastest state root from writer executor to reader executor
+        // Sync latest state root from writer executor to reader executor
         self.executor
             .refresh_state(execution_info.state_root, output.is_upgrade)
             .await?;
 
-        // Last save indexer
-        let result = self
-            .indexer
-            .indexer_states(sequence_info.tx_order, output.state_changeset.clone())
-            .await;
-        match result {
-            Ok(_) => {}
-            Err(error) => log::error!("Indexer states error: {}", error),
-        };
-        let result = self
-            .indexer
-            .indexer_transaction(
-                tx.clone(),
-                sequence_info.clone(),
-                execution_info.clone(),
-                moveos_tx.clone(),
-            )
-            .await;
-        match result {
-            Ok(_) => {}
-            Err(error) => log::error!("Indexer transactions error: {}", error),
-        };
-        let result = self
-            .indexer
-            .indexer_events(output.events.clone(), tx, sequence_info.clone(), moveos_tx)
-            .await;
-        match result {
-            Ok(_) => {}
-            Err(error) => log::error!("Indexer events error: {}", error),
-        };
+        let indexer = self.indexer.clone();
+        let sequence_info_clone = sequence_info.clone();
+        let moveos_tx_clone = moveos_tx.clone();
+        let execution_info_clone = execution_info.clone();
+        let output_clone = output.clone();
+
+        tokio::spawn(async move {
+            let result = indexer
+                .indexer_states(
+                    sequence_info_clone.tx_order,
+                    output_clone.state_changeset.clone(),
+                )
+                .await;
+            match result {
+                Ok(_) => {}
+                Err(error) => log::error!("indexer states error: {}", error),
+            };
+            let result = indexer
+                .indexer_transaction(
+                    tx.clone(),
+                    sequence_info_clone.clone(),
+                    execution_info_clone.clone(),
+                    moveos_tx_clone.clone(),
+                )
+                .await;
+            match result {
+                Ok(_) => {}
+                Err(error) => log::error!("indexer transactions error: {}", error),
+            };
+            let result = indexer
+                .indexer_events(
+                    output_clone.events.clone(),
+                    tx,
+                    sequence_info_clone.clone(),
+                    moveos_tx_clone,
+                )
+                .await;
+            match result {
+                Ok(_) => {}
+                Err(error) => log::error!("indexer events error: {}", error),
+            };
+        });
 
         Ok(ExecuteTransactionResponse {
             sequence_info,
