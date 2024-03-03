@@ -1,0 +1,14 @@
+[package]
+name = "display"
+version = "0.0.1"
+
+[dependencies]
+MoveStdlib = { local = "../../moveos/moveos-stdlib/move-stdlib" }
+MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
+RoochFramework = { local = "../../crates/rooch-framework" }
+
+[addresses]
+display =  "_"
+
+[dev-addresses]
+display = "0x42"

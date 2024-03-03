@@ -22,6 +22,10 @@ pub struct StateCommand {
     /// RPC client options.
     #[clap(flatten)]
     context_options: WalletContextOptions,
+
+    /// Render and return display fields.
+    #[clap(long)]
+    pub show_display: bool,
 }
 
 #[async_trait]
@@ -29,11 +33,19 @@ impl CommandAction<Vec<Option<StateView>>> for StateCommand {
     async fn execute(self) -> RoochResult<Vec<Option<StateView>>> {
         let client = self.context_options.build()?.get_client().await?;
 
-        let resp = client
-            .rooch
-            .get_decoded_states(self.access_path)
-            .await
-            .map_err(RoochError::from)?;
+        let resp = if self.show_display {
+            client
+                .rooch
+                .get_decoded_states_with_display(self.access_path)
+                .await
+                .map_err(RoochError::from)?
+        } else {
+            client
+                .rooch
+                .get_decoded_states(self.access_path)
+                .await
+                .map_err(RoochError::from)?
+        };
         Ok(resp)
     }
 }
