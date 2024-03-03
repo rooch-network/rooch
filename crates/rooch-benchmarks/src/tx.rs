@@ -5,6 +5,7 @@ use anyhow::Result;
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::system::ActorSystem;
 use coerce::actor::IntoActor;
+use lazy_static::lazy_static;
 use moveos_config::store_config::RocksdbConfig;
 use moveos_config::DataDirPath;
 use moveos_store::{MoveOSDB, MoveOSStore};
@@ -40,7 +41,9 @@ use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::transaction::TypedTransaction;
-use std::path::PathBuf;
+use std::env;
+use std::fmt::Display;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 use tempfile::TempDir;
@@ -48,6 +51,60 @@ use tracing::info;
 
 pub const EXAMPLE_SIMPLE_BLOG_PACKAGE_NAME: &'static str = "simple_blog";
 pub const EXAMPLE_SIMPLE_BLOG_NAMED_ADDRESS: &str = "simple_blog";
+
+#[derive(PartialEq, Eq)]
+pub enum TxType {
+    Empty,
+    Transfer,
+    Blog,
+}
+
+impl FromStr for TxType {
+    type Err = ();
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "transfer" => Ok(TxType::Transfer),
+            "blog" => Ok(TxType::Blog),
+            _ => Ok(TxType::Empty),
+        }
+    }
+}
+
+impl Display for TxType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match self {
+            TxType::Empty => "empty".to_string(),
+            TxType::Transfer => "transfer".to_string(),
+            TxType::Blog => "blog".to_string(),
+        };
+        write!(f, "{}", str)
+    }
+}
+
+lazy_static! {
+    pub static ref TX_SIZE: usize = {
+        env::var("TX_SIZE")
+            .unwrap_or_else(|_| String::from("0"))
+            .parse::<usize>()
+            .unwrap_or(0usize)
+    };
+    pub static ref TX_TYPE: TxType = {
+        let tx_type_str = env::var("TX_TYPE").unwrap_or_else(|_| String::from("empty"));
+        tx_type_str.parse::<TxType>().unwrap_or(TxType::Empty)
+    };
+    pub static ref DATA_DIR: DataDirPath = get_data_dir();
+}
+
+pub fn get_data_dir() -> DataDirPath {
+    match env::var("DATA_DIR") {
+        Ok(pure_mem) => {
+            let temp_dir = TempDir::new_in(pure_mem)
+                .expect("Failed to create temp dir in provided data dir path");
+            DataDirPath::TempPath(Arc::from(temp_dir))
+        }
+        Err(_) => moveos_config::temp_dir(),
+    }
+}
 
 pub async fn setup_service(
     datadir: &DataDirPath,
@@ -182,6 +239,7 @@ pub fn init_storage(datadir: &DataDirPath) -> Result<(MoveOSStore, RoochStore)> 
         RocksdbConfig::default(),
         None,
     )?))?;
+
     Ok((moveos_store, rooch_store))
 }
 
@@ -227,20 +285,14 @@ pub fn create_transaction(
 ) -> Result<TypedTransaction> {
     test_transaction_builder.update_sequence_number(sequence_number);
 
-    let action = test_transaction_builder.call_article_create();
+    let action = match *TX_TYPE {
+        TxType::Empty => test_transaction_builder.call_empty_create(),
+        TxType::Transfer => test_transaction_builder.call_transfer_create(),
+        TxType::Blog => test_transaction_builder.call_article_create_with_size(*TX_SIZE),
+    };
+
     let tx_data = test_transaction_builder.build(action);
     let rooch_tx =
         keystore.sign_transaction(&test_transaction_builder.sender.into(), tx_data, None)?;
     Ok(TypedTransaction::Rooch(rooch_tx))
-}
-
-pub fn temp_dir() -> DataDirPath {
-    match std::env::var("PUREMEM") {
-        Ok(pure_mem) => {
-            let temp_dir = TempDir::new_in(pure_mem)
-                .expect("Failed to create temp dir in provided memory fs path");
-            DataDirPath::TempPath(Arc::from(temp_dir))
-        }
-        Err(_) => moveos_config::temp_dir(),
-    }
 }

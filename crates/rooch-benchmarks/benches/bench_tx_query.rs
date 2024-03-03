@@ -28,7 +28,7 @@ pub fn transaction_query_benchmark(c: &mut Criterion) {
     let _publish_result = rt.block_on(async { rpc_service.execute_tx(tx).await.unwrap() });
     //
     for n in 1..500 {
-        let tx = create_transaction(&mut test_transaction_builder, &keystore, n).unwrap();
+        let tx = create_transaction(&mut test_transaction_builder, &keystore, n, None).unwrap();
         let _ = rt.block_on(async { rpc_service.execute_tx(tx).await.unwrap() });
     }
 
