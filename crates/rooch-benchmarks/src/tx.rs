@@ -52,6 +52,7 @@ use tracing::info;
 pub const EXAMPLE_SIMPLE_BLOG_PACKAGE_NAME: &'static str = "simple_blog";
 pub const EXAMPLE_SIMPLE_BLOG_NAMED_ADDRESS: &str = "simple_blog";
 
+#[derive(PartialEq, Eq)]
 pub enum TxType {
     Empty,
     Transfer,
