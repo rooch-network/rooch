@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use criterion::{criterion_group, criterion_main, Criterion};
+use rooch_benchmarks::tx::TxType::{Blog, Empty};
 use rooch_benchmarks::tx::{
-    create_publish_transaction, create_transaction, get_tx_data_size, setup_service, temp_dir,
+    create_publish_transaction, create_transaction, setup_service, DATA_DIR, TX_TYPE,
 };
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
@@ -13,24 +14,26 @@ use std::time::Duration;
 use tokio::runtime::Runtime;
 
 pub fn transaction_write_benchmark(c: &mut Criterion) {
-    let tempdir = temp_dir();
     let keystore = InMemKeystore::new_insecure_for_tests(10);
 
     let rt: Runtime = Runtime::new().unwrap();
     let (rpc_service, _aggregate_service) =
-        rt.block_on(async { setup_service(&tempdir, &keystore).await.unwrap() });
+        rt.block_on(async { setup_service(&DATA_DIR, &keystore).await.unwrap() });
 
     let default_account = keystore.addresses()[0];
     let mut test_transaction_builder = TestTransactionBuilder::new(default_account.into());
 
-    let tx = create_publish_transaction(&test_transaction_builder, &keystore).unwrap();
-    let _publish_result = rt.block_on(async { rpc_service.execute_tx(tx).await.unwrap() });
+    let mut tx_cnt = 1000;
+    if *TX_TYPE == Blog {
+        let tx = create_publish_transaction(&test_transaction_builder, &keystore).unwrap();
+        let _publish_result = rt.block_on(async { rpc_service.execute_tx(tx).await.unwrap() });
+    }
+    if *TX_TYPE == Empty {
+        tx_cnt = 2500;
+    }
 
-    let tx_data_size = get_tx_data_size();
-    let transactions: Vec<_> = (0..1000)
-        .map(|n| {
-            create_transaction(&mut test_transaction_builder, &keystore, n, tx_data_size).unwrap()
-        })
+    let transactions: Vec<_> = (0..tx_cnt)
+        .map(|n| create_transaction(&mut test_transaction_builder, &keystore, n).unwrap())
         .collect();
     let mut transactions_iter = transactions.into_iter().cycle();
 
