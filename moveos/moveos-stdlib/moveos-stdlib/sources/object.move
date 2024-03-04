@@ -25,11 +25,11 @@ module moveos_std::object {
     const ErrorObjectAlreadyExist: u64 = 1;
     const ErrorObjectFrozen: u64 = 2;
     const ErrorInvalidOwnerAddress:u64 = 3;
-
     const ErrorObjectOwnerNotMatch: u64 = 4;
     const ErrorObjectNotShared: u64 = 5;
     ///Can not take out the object which is bound to the account
     const ErrorObjectIsBound: u64 = 6;
+    const ErrorObjectAlreadyBorrowed: u64 = 7;
 
     const SYSTEM_OWNER_ADDRESS: address = @0x0;
     
