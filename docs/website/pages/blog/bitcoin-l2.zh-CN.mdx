@@ -1,0 +1,91 @@
+---
+title: 如何定义 Bitcoin L2 以及包容性视角的 L2
+description: "最近 Bitcoin Magazine 关于 Bitcoin L2 的定义引起了什么是 Bitcoin L2 的争论，这个问题原来 Ethereum 社区也有过争论。那到底如何定义 L2 ？我们可以从技术和生态两个角度分析一下，我更主张一种包容性视角的 L2。"
+author: jolestar
+date: 2024/03/04
+category: Technology
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+## L2 的技术角度定义
+
+如果要从技术上定义 L2，关键是要让它能明显的和 L1 以及中心化的方案有区别。我认为关键有两点：
+
+1. L2 并不创造新的区块空间。创建新的区块空间的技术解决方案本质上都是 L1。
+
+2. L2 要利用 L1 来实现数据可用以及安全，否则和完全中心化的方案就没区别。
+
+但显然，市场并不仅仅从技术角度来定义，更多的是从生态角度。 
+
+## L2 的生态角度定义
+
+从生态的角度定义L2时，我们关注的是L2如何利用或继承L1提供的能力**。**我们以 Bitcoin 为例，分析 Bitcoin 上有哪些可继承以及扩展的方向。
+
+### BTC 资产
+
+这是所有的 L2 都在讲的一个故事，如何让万亿级规模的 BTC 的资产产生额外的使用场景，无论是交易，还是质押，都有非常大的想象空间。而让一个区块链系统的资产到另外一个系统中交易，都需要一个桥，而这里的关键问题是如何让用户信任这个桥，并保证资产的安全。
+
+从这个角度，所有通过桥给 BTC 资产创造使用场景的方案，都可以理解成 Bitcoin L2。甚至BTC ETF 也可以理解成 Bitcoin 的 L2，它是一个完全中心化的托管的桥，通过法律监管保证安全。所以大家纠结的不是去中心化问题，而是信任问题。去中心化的方案可以降低用户的信任成本，给新的项目带来机会，但 Bitcoin 上如何构造安全的去中心化的桥是一个关键难题，L2 能不能利用 Bitcoin 的其他特性来提高这个桥的安全性。
+
+另外随着 Bitcoin 上的扩展协议发展，无论是 Ordinals，以及 Ordinals 之上的扩展协议（BRC20等），Atomicals，还是 RGB，Taproot assets 等，Bitcoin 上的新型资产会越来越多，如何让这个桥具有扩展性，可以快速的支持新的资产类型，也是一个巨大的挑战。
+
+### Bitcoin 区块空间
+
+Bitcoin 作为最去中心化的一个区块链网络，它的区块空间的价值并没有完全发挥出来。而这波 Ordinals 铭文热，可以理解成对 Bitcoin 作为数据可用层（DA）的价值发现。Ordinals 协议定义了一个具有扩展性的数据格式标准，让解析，展示，以及交换 Bitcoin 上铭刻的数据有了一套统一的方案。
+
+Bitcoin 上的扩展协议以及 L2，如何充分有效利用 Bitcoin 的区块空间，是一个探索方向。
+
+### Bitcoin 网络的可编程能力
+
+Bitcoin Script 的编程能力有限，它对资产的编程能力主要表现为三种锁：时间锁，Hash 锁，私钥锁。而 Taproot 让 Bitcoin Script 的复杂度可以上一个量级，所以才有了 bitvm 这样方案的可能。但这方面的关键挑战在于，Bitcoin Script 都是无状态的，它无法读取 Bitcoin 的状态，以及累积状态，只能依赖输入，能否利用 Bitcoin 的脚本来实现仲裁，依然是一个待探索的方向。
+
+另外一个角度是密码学上的创新，包括基于密钥交换来构造博弈机制来保证安全的协议，比如闪电网络。还有 Babylon 的 “可提取的一次性签名”，虽然它的实现细节尚未公布，但市场已经非常期待了。
+
+### Bitcoin 的状态
+
+Bitcoin 的状态包括以下几种：
+
+1. Bitcoin 的时间戳
+2. Bitcoin 的区块 nonce 随机数
+3. Bitcoin 的 UTXO，以及 UTXO 的所有权
+4. Bitcoin 的区块，以及 UTXO 上附加的新资产和信息
+
+然后我们可以通过以上角度来分析不同的 Bitcoin 扩展协议以及 L2 项目是如何扩展 Bitcoin 的。
+
+## 如何扩展 Bitcoin
+
+### 桥 + 可编程环境
+
+鉴于Bitcoin本身的编程能力受限，一种方法是将Bitcoin资产转移到具有更强可编程性的环境中，如EVM，从而为Bitcoin资产开辟新的应用场景。这方面的代表有 BEVM， Merlin，关键在于桥的设计：1. L2 能否利用 L1 提供的安全性。 2. 跨链方案的可扩展性。
+
+### 在 Bitcoin 上扩展一个智能合约层
+
+RGB 利用了 Bitcoin 的 UTXO 只能使用一次的特性，来实现一次性密封，同时也利用 Bitcoin 的区块空间来公布交易承诺，提供了一种 Offchain 的编程环境。它的优势是完全匹配 UTXO 模型，不依赖全局状态，保证了隐私，但这个也同时是它的缺点，限制了它的编程场景。在这个方向上，CKB 的 RGB++  对 RGB 的特性做了取舍，通过 cell 模型提供了更丰富的编程模式。
+
+### Indexer 模式的 Offchain 计算
+
+铭文 Indexer 模式可以理解成一种 Offchain 的计算模型，资产定义在链上，合法性由链下计算保证，同时能提供全局状态。铭文可以理解成一种介于 L1 和 L2 之间的资产，如果协议内置 L1 到 L2 之间的迁移机制，则可以实现资产在 L1 到 L2 之间的流通。 而如果让铭文资产的生成和校验逻辑，通过代码铭刻在 Bitcoin 上，也是一种对 Bitcoin 编程能力的扩展方案，比如 bitseed。
+
+### Stackable L2（堆叠式 L2）
+
+如果通过智能合约来实现 Bitcoin 的扩展协议的 Indexer，在 Indexer 中解析 Bitcoin 上的所有 UTXO 以及附加的状态，同时允许开发者通过智能合约部署应用到 Indexer 中，相当于给 Bitcoin 提供了一种新的智能合约层，这是 Rooch 的方案。之前我把这种模式叫做智能 Indexer，但 Indexer 的概念给人的感觉就是只读的，所以用了一个新词“Stackable L2”，指所有在 L2 中包含 L1 全状态的扩展方案，它完全继承了 L1 的所有状态。这种情况下，L2 的应用即可以读取 L1 上的所有状态，同时也可以创建新的状态，L1 和 L2 的资产可以通过堆叠组合来形成新的资产。而 L2 的安全，可以通过模块化的方案来保证。关于这个概念后面再写详文描述。
+
+以上方案其实都可以通过组合模式互相配合。
+
+## 包容性视角的 L2
+
+如果我们抛开了具体的实现方式，抽象的理解 L2，就会发现它应该是一个连续光谱，从最左端的 CEX，到最右端的 L1，中间地带的解决方案都可以囊括到这个光谱范围内。这个光谱的两端也代表着两种不同的成长模式。CEX 基本是完全产品和用户导向的成长方式，而 L1 构建周期比较长，则是叙事和蓝图优先，而 L2 则在中间，会是一种混合成长模式。
+
+采取包容性视角，我们无需过分纠结于何为“真正的L2”。业界创造的各种技术和方案，Validium，Plasma，Sovereign rollup，Op/Zk rollup ，Modular Execution layer，**Decentralized co**mpute，side chain，L2/L3 等，都应被视为这一光谱的一部分，行业通过各种排列组合方式探索着新的应用需要的基础设施。
+
+而不同的项目对新应用的假设不同，也决定了它的组合方式和成长模式，它可能是 L1 向左一点，或者 CEX 向右一点。未来是不确定的，这个阶段很难断言那种模式会成长起来，但有一点是确定的，行业经过这么多年的摸索，有了上规模 L1，有了上规模的 CEX，也需要有上规模的中间层填补上这个沟壑。
+
+## 相关链接
+
+1. Vitalik Different types of layer 2s  https://twitter.com/VitalikButerin/status/1719241011476463798 
+2. **BITCOIN MAGAZINE EDITORIAL POLICY ON BITCOIN LAYER 2S** https://bitcoinmagazine.com/press-releases/bitcoin-magazine-editorial-policy-on-bitcoin-layer-2s-l2s
+3. **极客对话：如何看待Bitcoin Magazine对Layer2“约法三章”？** https://twitter.com/eternal1997L/status/1762056749069275136
+4. **Bitcoin 的 Layer2 应该怎么做？** https://twitter.com/jolestar/status/1717358817992995120
