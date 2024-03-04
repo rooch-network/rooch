@@ -1,5 +1,5 @@
 [package]
-name = "moveos"
+name = "moveos-object-runtime"
 version = "0.1.0"
 
 # Workspace inherited keys
@@ -14,47 +14,35 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = { workspace = true }
-serde_bytes = { workspace = true }
 anyhow = { workspace = true }
-bcs = { workspace = true }
+better_any = { workspace = true }
+fastcrypto = { workspace = true }
+linked-hash-map = { workspace = true }
 log = { workspace = true }
 once_cell = { workspace = true }
-clap = { workspace = true }
-rayon = { workspace = true }
-tempfile = { workspace = true }
-codespan-reporting = { workspace = true }
-codespan = { workspace = true }
-itertools = { workspace = true }
-regex = { workspace = true }
-parking_lot = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
-backtrace = { workspace = true }
+serde_bytes = { workspace = true }
+sha3 = { workspace = true }
+smallvec = { workspace = true }
+hex = { workspace = true }
+petgraph = { workspace = true }
+parking_lot = { workspace = true }
+itertools = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }
 move-bytecode-verifier = { workspace = true }
 move-core-types = { workspace = true }
+move-command-line-common = { workspace = true }
 move-stdlib = { workspace = true }
 move-unit-test = { workspace = true, optional = true }
 move-vm-runtime = { workspace = true }
 move-vm-test-utils = { workspace = true }
 move-vm-types = { workspace = true }
-move-command-line-common = { workspace = true }
-move-bytecode-source-map = { workspace = true }
-move-ir-types = { workspace = true }
-move-disassembler = { workspace = true }
-move-ir-compiler = { workspace = true }
-move-transactional-test-runner = { workspace = true }
-move-compiler = { workspace = true }
-move-symbol-pool = { workspace = true }
 move-package = { workspace = true }
-move-model = { workspace = true }
-move-resource-viewer = { workspace = true }
+move-prover = { workspace = true }
 
 moveos-types = { workspace = true }
-moveos-store = { workspace = true }
-moveos-stdlib = { workspace = true }
-moveos-stdlib-builder = { workspace = true }
 moveos-verifier = { workspace = true }
-moveos-object-runtime = { workspace = true }
+smt = { workspace = true }

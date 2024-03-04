@@ -6,7 +6,7 @@
 /// A native Table implementation for save any type of value.
 /// Refactor from https://github.com/rooch-network/move/blob/c7d8c2b0cdd06dbd90e0ab306932356620b5648a/language/extensions/move-table-extension/src/lib.rs#L4
 use better_any::{Tid, TidAble};
-use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
@@ -24,7 +24,11 @@ use move_vm_types::{
     natives::function::NativeResult,
     values::{GlobalValue, Struct, Value},
 };
-use moveos_types::state::{KeyState, MoveState};
+use moveos_object_runtime::resolved_arg::ResolvedArg;
+use moveos_types::{
+    moveos_std::object,
+    state::{KeyState, MoveState},
+};
 use moveos_types::{moveos_std::object_id::ObjectID, state_resolver::StateResolver};
 use parking_lot::RwLock;
 use smallvec::smallvec;
@@ -53,6 +57,7 @@ const _E_TABLE_ALREADY_EXISTS: u64 = 5;
 // ===========================================================================================
 // Private Data Structures and Constants
 
+//TODO change to ObjectRuntime and migrate to moveos-object-runtime crate
 /// A structure representing mutable data of the NativeTableContext. This is in a RefCell
 /// of the overall context so we can mutate while still accessing the overall context.
 #[derive(Default)]
@@ -60,6 +65,7 @@ pub struct TableData {
     new_tables: BTreeSet<ObjectID>,
     removed_tables: BTreeSet<ObjectID>,
     tables: BTreeMap<ObjectID, Table>,
+    object_ref_in_args: BTreeMap<ObjectID, Value>,
     object_reference: BTreeMap<ObjectID, GlobalValue>,
 }
 
@@ -247,18 +253,47 @@ impl TableData {
         self.tables.contains_key(handle)
     }
 
-    pub fn get_or_create_object_reference(
-        &mut self,
-        object_id: ObjectID,
-    ) -> PartialVMResult<&mut GlobalValue> {
-        match self.object_reference.entry(object_id) {
-            Entry::Vacant(e) => {
-                let object_id_value = object_id.to_runtime_value();
-                let gv = GlobalValue::cached(Value::struct_(Struct::pack(vec![object_id_value])))?;
-                Ok(e.insert(gv))
-            }
-            Entry::Occupied(e) => Ok(e.into_mut()),
+    pub fn load_object(&mut self, object_id: &ObjectID) -> VMResult<()> {
+        self.object_reference.entry(*object_id).or_insert_with(|| {
+            //TODO we should load the ObjectEntity<T> from the resolver
+            //Then cache the Object<T>
+            let object_id_value = object_id.to_runtime_value();
+            GlobalValue::cached(Value::struct_(Struct::pack(vec![object_id_value])))
+                .expect("Failed to cache the Struct")
+        });
+        Ok(())
+    }
+
+    pub fn borrow_object(&mut self, object_id: &ObjectID) -> VMResult<Value> {
+        let gv = self.object_reference.get(object_id).ok_or_else(|| {
+            PartialVMError::new(StatusCode::STORAGE_ERROR).finish(Location::Undefined)
+        })?;
+
+        if gv.reference_count() >= 2 {
+            // We raise an error if the object is already borrowed
+            // Use the error code in object.move for easy debugging
+            return Err(PartialVMError::new(StatusCode::ABORTED)
+                .with_sub_status(super::object::ERROR_OBJECT_ALREADY_BORROWED)
+                .with_message(format!("Object {} already borrowed", object_id))
+                .finish(Location::Module(object::MODULE_ID.clone())));
         }
+
+        gv.borrow_global()
+            .map_err(|e| e.finish(Location::Undefined))
+    }
+
+    pub fn load_arguments(&mut self, resovled_args: &[ResolvedArg]) -> VMResult<()> {
+        for resolved_arg in resovled_args {
+            if let ResolvedArg::Object(object_arg) = resolved_arg {
+                let object_id = object_arg.object_id();
+                self.load_object(object_id)?;
+                let ref_value = self.borrow_object(object_id)?;
+                //We cache the object reference in the object_ref_in_args
+                //Ensure the reference count and the object can not be borrowed in Move
+                self.object_ref_in_args.insert(*object_id, ref_value);
+            }
+        }
+        Ok(())
     }
 
     /// into inner
@@ -274,6 +309,7 @@ impl TableData {
             removed_tables,
             tables,
             object_reference: _,
+            object_ref_in_args: _,
         } = self;
         (new_tables, removed_tables, tables)
     }

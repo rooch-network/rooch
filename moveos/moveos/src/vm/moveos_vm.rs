@@ -251,9 +251,14 @@ where
                     .load_script(call.code.as_slice(), call.ty_args.clone())?;
 
                 let resolved_args = self.resolve_argument(&loaded_function, call.args)?;
-                self.load_argument(&loaded_function, &resolved_args);
+                let serialized_args = self.load_arguments(resolved_args)?;
                 self.session
-                    .execute_script(call.code, call.ty_args, resolved_args, &mut self.gas_meter)
+                    .execute_script(
+                        call.code,
+                        call.ty_args,
+                        serialized_args,
+                        &mut self.gas_meter,
+                    )
                     .map(|ret| {
                         debug_assert!(
                             ret.return_values.is_empty(),
@@ -270,13 +275,13 @@ where
                 )?;
 
                 let resolved_args = self.resolve_argument(&loaded_function, call.args)?;
-                self.load_argument(&loaded_function, &resolved_args);
+                let serialized_args = self.load_arguments(resolved_args)?;
                 self.session
                     .execute_entry_function(
                         &call.function_id.module_id,
                         &call.function_id.function_name,
                         call.ty_args.clone(),
-                        resolved_args,
+                        serialized_args,
                         &mut self.gas_meter,
                     )
                     .map(|ret| {
@@ -328,7 +333,6 @@ where
         if is_upgrade {
             self.vm.mark_loader_cache_as_invalid();
         };
-
         action_result
     }
 
@@ -404,12 +408,12 @@ where
             call.ty_args.as_slice(),
         )?;
         let resolved_args = self.resolve_argument(&loaded_function, call.args)?;
-        self.load_argument(&loaded_function, &resolved_args);
+        let serialized_args = self.load_arguments(resolved_args)?;
         let return_values = self.session.execute_function_bypass_visibility(
             &call.function_id.module_id,
             &call.function_id.function_name,
             call.ty_args,
-            resolved_args,
+            serialized_args,
             &mut self.gas_meter,
         )?;
         self.update_storage_context_via_return_values(&loaded_function, &return_values);
