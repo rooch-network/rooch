@@ -25,7 +25,7 @@ From the ecosystem perspective, the key is to examine what capabilities of L1 ar
 
 ### BTC Assets
 
-This is a common narrative among all L2s, exploring how the trillion-scale BTC assets can be utilized in additional scenarios, whether in trading or staking, presenting vast imaginative possibilities. Transferring a blockchain system's assets to another system requires a bridge, where trust and security are paramount.
+This is a common narrative among all L2s, exploring how the trillion-scale BTC assets can be utilized in additional scenarios, whether in trading or staking, presenting vast imaginative possibilities. Transferring a blockchain system's assets to another system requires a **bridge**, where trust and security are paramount.
 
 All solutions creating use cases for BTC assets through a bridge can be considered Bitcoin L2. Even BTC ETFs could be seen as a form of Bitcoin L2, representing a fully centralized, custodial bridge secured by regulatory oversight. Thus, the debate is not about decentralization but about trust. Decentralized solutions can reduce the cost of trust for users, offering opportunities for new projects. However, constructing secure, decentralized bridges on Bitcoin is a significant challenge. L2 solutions must also leverage Bitcoin's other features to enhance bridge security.
 
@@ -37,7 +37,7 @@ As the most decentralized blockchain network, Bitcoin's block space value is yet
 
 Exploring how Bitcoin's extension protocols and L2s can effectively utilize Bitcoin's block space is a direction worth exploring.
 
-### **Bitcoin's Programmable Capabilities**
+### Bitcoin's Programmable Capabilities
 
 Bitcoin Script offers limited programming capabilities, primarily in the form of time locks, hash locks, and private key locks. Taproot enhances the complexity of Bitcoin Script, opening possibilities like bitvm. However, a key challenge is Bitcoin Script's statelessness, unable to read or accumulate Bitcoin's state, relying solely on inputs. Using Bitcoin's script for arbitration remains an exploration area.
 
@@ -58,27 +58,28 @@ We can analyze different Bitcoin extension protocols and L2 projects in terms of
 
 ### Bridge + Programmable Environment
 
-Since Bitcoin's programming capabilities are limited, one method is to transfer Bitcoin assets to another programming environment (like EVM) and utilize the programmability of EVM to provide application scenarios for Bitcoin assets. Notable examples include BEVM and Merlin, focusing on the design of the bridge: 1. Whether L2 can utilize the security provided by L1. 2. The scalability of the cross-chain solution.
+Since Bitcoin's programming capabilities are limited, one method is to transfer Bitcoin assets to another programming environment (like EVM) and utilize the programmability of EVM to provide application scenarios for Bitcoin assets. Notable examples include BEVM and Merlin, focusing on the design of the bridge:
+
+1. Whether L2 can utilize the security provided by L1.
+2. The scalability of the cross-chain solution.
 
 ### Expanding a Smart Contract Layer on Bitcoin
 
-RGB utilizes Bitcoin's UTXO feature of being usable only once to implement one-time seals, also using Bitcoin's block space to announce transaction commitments, offering an Offchain programming environment. Its advantage is a perfect match with the UTXO model, independent of a global state, ensuring privacy.
-
-However, this is also its limitation, restricting its programming scenarios. In this direction, CKB's RGB++ makes trade-offs with RGB’s features, providing a richer programming model through the cell model.
+RGB utilizes Bitcoin's UTXO feature of being usable only once to implement [one-time seals](https://www.btcstudy.org/2023/01/10/overview-of-the-main-concepts-and-features-of-the-rgb-design/), also using Bitcoin's block space to announce transaction commitments, offering an Offchain programming environment. Its advantage is a perfect match with the UTXO model, independent of a global state, ensuring privacy. However, this is also its limitation, restricting its programming scenarios. In this direction, CKB's RGB++ makes trade-offs with RGB’s features, providing a richer programming model through the cell model.
 
 ### Indexer Mode of Offchain Computation
 
-The Indexer mode of inscriptions can be understood as an Offchain computation model, where the asset is defined on-chain, but its legitimacy is ensured by off-chain computations, also providing a global state. Inscriptions can be seen as assets between L1 and L2; if the protocol integrates a migration mechanism between L1 and L2, it enables the asset circulation between them. Allowing the generation and verification logic of inscribed assets, through code inscribed on Bitcoin, is also an extension of Bitcoin's programming capabilities, like bitseed.
+The Indexer mode of inscriptions can be understood as an Offchain computation model, where the asset is defined on-chain, but its legitimacy is ensured by off-chain computations, also providing a global state. Inscriptions can be seen as assets between L1 and L2; if the protocol integrates a migration mechanism between L1 and L2, it enables the asset circulation between them. Allowing the generation and verification logic of inscribed assets, through code inscribed on Bitcoin, is also an extension of Bitcoin's programming capabilities, like [bitseed](https://bitseed.pro/).
 
 ### Stackable L2
 
-If a smart contract is used to implement the indexer of Bitcoin's extension protocol, parsing all UTXOs and attached states on Bitcoin, and allowing developers to deploy applications to the indexer, it's like providing a new smart contract layer for Bitcoin. This is the solution of Rooch. Previously, I called this mode "smart indexer," but the indexer concept feels read-only, hence the new term "Stackable L2," referring to all L2 solutions that include L1's full state in L2. In this scenario, L2 applications can read all states on L1 and also create new states. The assets on L1 and L2 can form new assets through stacking combination, and the security of L2 can be ensured through a modular approach. More details on this concept will be discussed in a later article.
+If a smart contract is used to implement the indexer of Bitcoin's extension protocol, parsing all UTXOs and attached states on Bitcoin, and allowing developers to deploy applications to the indexer, it's like providing a new smart contract layer for Bitcoin. This is the solution of Rooch. Previously, I called this mode "smart indexer", but the indexer concept feels read-only, hence the new term "Stackable L2", referring to all L2 solutions that include L1's full state in L2. In this scenario, L2 applications can read all states on L1 and also create new states. The assets on L1 and L2 can form new assets through stacking combination, and the security of L2 can be ensured through a modular approach. More details on this concept will be discussed in a later article.
 
 All the above solutions can actually be combined with each other.
 
 ## Inclusive Perspective of L2
 
-If we abstractly understand L2, setting aside specific implementation methods, we realize it should be viewed as a continuous spectrum. This spectrum ranges from CEX at one end to L1 technologies at the other, with intermediate solutions encompassing the entire range. This spectrum also represents two different growth modes: CEX is almost entirely product- and user-driven, while L1, with longer construction periods, prioritizes narratives and blueprints, with L2 falling in between, adopting a hybrid growth mode.
+If we abstractly understand L2, setting aside specific implementation methods, we realize it should be viewed as a continuous spectrum. This spectrum ranges from CEX at one end to L1 technologies at the other, with intermediate solutions encompassing the entire range. This spectrum also represents two different growth modes: CEX is almost entirely product-driven and user-driven, while L1, with longer construction periods, prioritizes narratives and blueprints, with L2 falling in between, adopting a hybrid growth mode.
 
 From an inclusive perspective, there's no need to fixate on defining what true L2 is. The various technical terms invented by the industry, such as Validium, Plasma, Sovereign rollup, Op/Zk rollup, Modular Execution layer, Decentralized compute, side chain, L2/L3, etc., can all be included in this view. The industry is exploring new infrastructural needs through various combinations and permutations of these technologies.
 
@@ -86,7 +87,7 @@ Different projects have varying assumptions about new applications, which in tur
 
 ### References
 
-1. Buterin, V. (n.d.). *Different types of layer 2s*. Retrieved from  https://twitter.com/VitalikButerin/status/1719241011476463798 
-2. Bitcoin Magazine. (n.d.). *Editorial Policy on Bitcoin Layer 2s*. Retrieved from ****https://bitcoinmagazine.com/press-releases/bitcoin-magazine-editorial-policy-on-bitcoin-layer-2s-l2s
-3. Eternal1997L. (n.d.). *How to view Bitcoin Magazine's "Three Chapters" on Layer2?* Retrieved from https://twitter.com/eternal1997L/status/1762056749069275136
-4. Jolestar. (n.d.). *How should Bitcoin's Layer2 be design?* Retrieved from  https://twitter.com/jolestar/status/1717358817992995120
+1. Buterin, V. (n.d.). *Different types of layer 2s. Retrieved from* https://twitter.com/VitalikButerin/status/1719241011476463798 
+2. Bitcoin Magazine. (n.d.). *Editorial Policy on Bitcoin Layer 2s. Retrieved from* https://bitcoinmagazine.com/press-releases/bitcoin-magazine-editorial-policy-on-bitcoin-layer-2s-l2s
+3. Eternal1997L. (n.d.). *How to view Bitcoin Magazine's "Three Chapters" on Layer2? Retrieved from* https://twitter.com/eternal1997L/status/1762056749069275136
+4. Jolestar. (n.d.). *How should Bitcoin's Layer2 be design? Retrieved from* https://twitter.com/jolestar/status/1717358817992995120
