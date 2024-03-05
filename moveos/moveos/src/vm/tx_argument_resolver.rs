@@ -146,12 +146,22 @@ where
                 }
             } else {
                 //Other non-struct pure value args
-                let arg = args.next().expect("argument length mismatch");
+                let arg = args.next().ok_or_else(|| {
+                    PartialVMError::new(StatusCode::NUMBER_OF_ARGUMENTS_MISMATCH)
+                        .with_message("argument length mismatch".to_string())
+                        .finish(Location::Undefined)
+                })?;
                 resolved_args.push(ResolvedArg::pure(arg));
             }
         }
 
-        debug_assert!(args.next().is_none(), "argument length mismatch");
+        if args.next().is_some() {
+            return Err(
+                PartialVMError::new(StatusCode::NUMBER_OF_ARGUMENTS_MISMATCH)
+                    .with_message("argument length mismatch, too many args".to_string())
+                    .finish(Location::Undefined),
+            );
+        }
 
         if func.parameters.len() != resolved_args.len() {
             return Err(

@@ -5763,6 +5763,8 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "tempfile",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
