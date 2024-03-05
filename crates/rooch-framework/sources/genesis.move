@@ -32,6 +32,7 @@ module rooch_framework::genesis {
     }
 
     fun init(ctx: &mut Context){
+        std::debug::print(&b"framework genesis");
         //TODO genesis account should be a resource account?
         let genesis_account = &account::create_account(ctx, @rooch_framework);
         let genesis_context_option = context::get<GenesisContext>(ctx);

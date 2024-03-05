@@ -1,13 +1,15 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{borrow::Borrow, sync::Arc};
-
+use super::data_cache::{into_change_set, MoveosDataCache};
+use crate::gas::table::{get_gas_schedule_entries, initial_cost_schedule, ClassifiedGasMeter};
+use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
+use crate::vm::tx_argument_resolver;
 use move_binary_format::{
-    compatibility::Compatibility,
-    errors::{Location, PartialVMError, VMError, VMResult},
+    access::ModuleAccess,
+    errors::{verification_error, Location, PartialVMError, PartialVMResult, VMError, VMResult},
     file_format::AbilitySet,
-    CompiledModule,
+    CompiledModule, IndexKind,
 };
 use move_core_types::{
     account_address::AccountAddress,
@@ -25,14 +27,12 @@ use move_vm_runtime::{
     session::{LoadedFunctionInstantiation, SerializedReturnValues, Session},
 };
 use move_vm_types::loaded_data::runtime_types::{CachedStructIndex, StructType, Type};
-use parking_lot::RwLock;
-
 use moveos_stdlib::natives::moveos_stdlib::{
     event::NativeEventContext,
     move_module::NativeModuleContext,
     raw_table::{NativeTableContext, TableData},
 };
-use moveos_types::transaction::RawTransactionOutput;
+use moveos_types::{addresses, transaction::RawTransactionOutput};
 use moveos_types::{
     function_return_value::FunctionReturnValue,
     move_std::string::MoveString,
@@ -46,12 +46,8 @@ use moveos_types::{
     transaction::{FunctionCall, MoveAction, VerifiedMoveAction},
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
-
-use crate::gas::table::{get_gas_schedule_entries, initial_cost_schedule, ClassifiedGasMeter};
-use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
-use crate::vm::tx_argument_resolver;
-
-use super::data_cache::{into_change_set, MoveosDataCache};
+use parking_lot::RwLock;
+use std::{borrow::Borrow, sync::Arc};
 
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
 pub struct MoveOSVM {
@@ -300,23 +296,76 @@ where
                 module_bundle,
                 init_function_modules,
             } => {
-                //TODO check the modules package address with the sender
                 let sender = self.ctx.tx_context.sender();
                 // Check if module is first published. Only the first published module can run init function
                 let modules_with_init = init_function_modules
                     .into_iter()
                     .filter(|m| self.session.get_data_store().exists_module(m) == Ok(false))
                     .collect();
-                //TODO check the compatiblity
-                let compat_config = Compatibility::full_check();
 
-                self.session.publish_module_bundle_with_compat_config(
-                    module_bundle,
-                    sender,
-                    &mut self.gas_meter,
-                    compat_config,
-                )?;
-                //TODO Execute genenis init first
+                // The following code is copy from session.publish_module_bundle_with_compat_config
+                // We need do some modification to support skip the check if the sender is a system reserved address
+                // self.session.publish_module_bundle_with_compat_config(
+                //     module_bundle,
+                //     sender,
+                //     &mut self.gas_meter,
+                //     compat,
+                // )?;
+
+                // deserialize the modules. Perform bounds check. After this indexes can be
+                // used with the `[]` operator
+                let compiled_modules = match module_bundle
+                    .iter()
+                    .map(|blob| CompiledModule::deserialize(blob))
+                    .collect::<PartialVMResult<Vec<_>>>()
+                {
+                    Ok(modules) => modules,
+                    Err(err) => {
+                        return Err(err
+                            .append_message_with_separator(
+                                '\n',
+                                "[VM] module deserialization failed".to_string(),
+                            )
+                            .finish(Location::Undefined));
+                    }
+                };
+
+                // Check if the sender address matches the module address
+                // skip the check if the sender is a system reserved address
+                if !addresses::is_system_reserved_address(sender) {
+                    for module in &compiled_modules {
+                        if module.address() != &sender {
+                            return Err(verification_error(
+                                StatusCode::MODULE_ADDRESS_DOES_NOT_MATCH_SENDER,
+                                IndexKind::AddressIdentifier,
+                                module.self_handle_idx().0,
+                            )
+                            .finish(Location::Undefined));
+                        }
+                    }
+                }
+
+                //TODO check compatibility
+                //let compat = Compatibility::full_check();
+
+                let data_store = self.session.get_data_store();
+
+                // Perform bytecode and loading verification. Modules must be sorted in topological order.
+                self.vm
+                    .runtime
+                    .loader()
+                    .verify_module_bundle_for_publication(&compiled_modules, data_store)?;
+
+                for (module, blob) in compiled_modules.into_iter().zip(module_bundle.into_iter()) {
+                    let is_republishing = data_store.exists_module(&module.self_id())?;
+                    if is_republishing {
+                        // This is an upgrade, so invalidate the loader cache, which still contains the
+                        // old module.
+                        self.vm.mark_loader_cache_as_invalid();
+                    }
+                    data_store.publish_module(&module.self_id(), blob, is_republishing)?;
+                }
+
                 self.execute_init_modules(modules_with_init)
             }
         };

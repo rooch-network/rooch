@@ -15,6 +15,7 @@ use moveos_types::transaction::MoveAction;
 use once_cell::sync::Lazy;
 use rooch_framework::natives::default_gas_schedule;
 use rooch_framework::natives::gas_parameter::gas_member::InitialGasSchedule;
+use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::error::GenesisError;
@@ -193,16 +194,19 @@ impl GenesisPackage {
 
         let bundles = stdlib.module_bundles()?;
 
-        let genesis_txs: Vec<RoochTransaction> = bundles
-            .into_iter()
-            .map(|(genesis_account, bundle)| {
-                RoochTransaction::new_genesis_tx(
-                    genesis_account.into(),
-                    genesis_ctx.chain_id,
-                    MoveAction::ModuleBundle(bundle),
-                )
-            })
-            .collect();
+        let genesis_tx = RoochTransaction::new_genesis_tx(
+            ROOCH_FRAMEWORK_ADDRESS.into(),
+            genesis_ctx.chain_id,
+            //merge all the module bundles into one
+            MoveAction::ModuleBundle(
+                bundles
+                    .into_iter()
+                    .map(|(_, bundles)| bundles)
+                    .flatten()
+                    .collect(),
+            ),
+        );
+        let genesis_txs = vec![genesis_tx];
         //TODO put gas parameters into genesis package
         let gas_parameters = rooch_framework::natives::NativeGasParameters::initial();
         let vm_config = MoveOSConfig {
@@ -310,17 +314,21 @@ mod tests {
 
     #[test]
     fn test_genesis_init() {
+        let _ = tracing_subscriber::fmt::try_init();
         let sequencer = RoochAddress::random();
         let bitcoin_genesis_ctx = BitcoinGenesisContext::new(Network::NetworkRegtest.to_num());
         let gas_schedule_blob = bcs::to_bytes(&default_gas_schedule())
             .expect("Failure serializing genesis gas schedule");
-        let genesis = super::RoochGenesis::build_with_option(
+        let genesis_result = super::RoochGenesis::build_with_option(
             RoochChainID::LOCAL.genesis_ctx(sequencer, gas_schedule_blob),
             bitcoin_genesis_ctx,
             crate::BuildOption::Fresh,
-        )
-        .expect("build rooch framework failed");
-        assert_eq!(genesis.genesis_package.genesis_txs.len(), 4);
+        );
+        let genesis = match genesis_result {
+            Ok(genesis) => genesis,
+            Err(e) => panic!("genesis build failed: {:?}", e),
+        };
+        assert_eq!(genesis.genesis_package.genesis_txs.len(), 1);
         let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
         let mut moveos = MoveOS::new(
             moveos_store,
