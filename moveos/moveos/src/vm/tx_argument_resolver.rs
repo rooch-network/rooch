@@ -32,6 +32,7 @@ where
         &self,
         func: &LoadedFunctionInstantiation,
         args: Vec<Vec<u8>>,
+        location: Location,
     ) -> VMResult<Vec<ResolvedArg>> {
         let mut resolved_args = Vec::with_capacity(args.len());
 
@@ -49,19 +50,19 @@ where
                         get_type_tag(&self.session, parameter)?.ok_or_else(|| {
                             PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
                                 .with_message("Resolve parameter type failed".to_string())
-                                .finish(Location::Undefined)
+                                .finish(location.clone())
                         })?;
                     //The Object<T>'s T type
                     let object_type = get_object_type(&object_type_tag).ok_or_else(|| {
                         PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
                             .with_message("Resolve object type failed".to_string())
-                            .finish(Location::Undefined)
+                            .finish(location.clone())
                     })?;
                     let arg = args.next().expect("argument length mismatch");
                     let object_id = ObjectID::from_bytes(arg).map_err(|e| {
                         PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
                             .with_message(format!("Invalid object id: {:?}", e))
-                            .finish(Location::Undefined)
+                            .finish(location.clone())
                     })?;
                     let state = self
                         .remote
@@ -69,17 +70,17 @@ where
                         .map_err(|e| {
                             PartialVMError::new(StatusCode::STORAGE_ERROR)
                                 .with_message(format!("Failed to resolve object state: {:?}", e))
-                                .finish(Location::Undefined)
+                                .finish(location.clone())
                         })?
                         .ok_or_else(|| {
                             PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
                                 .with_message(format!("Object not found: {:?}", object_id))
-                                .finish(Location::Undefined)
+                                .finish(location.clone())
                         })?;
                     let object = state.as_raw_object().map_err(|e| {
                         PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
                             .with_message(format!("Invalid object state: {:?}", e))
-                            .finish(Location::Undefined)
+                            .finish(location.clone())
                     })?;
                     if let TypeTag::Struct(s) = object_type {
                         if s.as_ref() != &object.value.struct_tag {
@@ -89,7 +90,7 @@ where
                             .with_message(format!(
                                 "Invalid object type, object type in argument:{:?}, object type in store:{:?}",
                                 s, object.value.struct_tag
-                            )).finish(Location::Undefined));
+                            )).finish(location.clone()));
                         }
                     } else {
                         return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
@@ -97,7 +98,7 @@ where
                                 "Object type should be struct, got:{:?}",
                                 object_type
                             ))
-                            .finish(Location::Undefined));
+                            .finish(location.clone()));
                     }
                     match parameter {
                         Type::Reference(_r) => {
@@ -112,7 +113,7 @@ where
                                         "Object is frozen, object id:{:?}",
                                         object_id
                                     ))
-                                    .finish(Location::Undefined));
+                                    .finish(location.clone()));
                             }
                             if !object.is_shared() && object.owner != self.ctx.tx_context.sender() {
                                 return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
@@ -121,7 +122,7 @@ where
                                         object.owner,
                                         self.ctx.tx_context.sender()
                                     ))
-                                    .finish(Location::Undefined));
+                                    .finish(location.clone()));
                             }
                             resolved_args.push(ResolvedArg::object_by_mutref(object));
                         }
@@ -130,18 +131,19 @@ where
                             return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
                                 .with_message(
                                     "Object type only support `&Object<T>` and `&mut Object<T>`, do not support `Object<T>`".to_string())
-                                .finish(Location::Undefined));
+                                .finish(location.clone()));
                         }
                     }
                 } else {
                     //Other pure value Struct args
-                    if is_allowed_argument_struct(&struct_arg_type) {
+                    //If the session is read_only, only allow any pure value struct, otherwise, only allow the allowed struct
+                    if self.read_only || is_allowed_argument_struct(&struct_arg_type) {
                         let arg = args.next().expect("argument length mismatch");
                         resolved_args.push(ResolvedArg::pure(arg));
                     } else {
                         return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
                             .with_message(format!("Unsupported arg type {:?}", struct_arg_type))
-                            .finish(Location::Undefined));
+                            .finish(location.clone()));
                     }
                 }
             } else {
@@ -149,7 +151,7 @@ where
                 let arg = args.next().ok_or_else(|| {
                     PartialVMError::new(StatusCode::NUMBER_OF_ARGUMENTS_MISMATCH)
                         .with_message("argument length mismatch".to_string())
-                        .finish(Location::Undefined)
+                        .finish(location.clone())
                 })?;
                 resolved_args.push(ResolvedArg::pure(arg));
             }
@@ -159,7 +161,7 @@ where
             return Err(
                 PartialVMError::new(StatusCode::NUMBER_OF_ARGUMENTS_MISMATCH)
                     .with_message("argument length mismatch, too many args".to_string())
-                    .finish(Location::Undefined),
+                    .finish(location.clone()),
             );
         }
 
@@ -171,7 +173,7 @@ where
                         func.parameters.len(),
                         resolved_args.len()
                     ))
-                    .finish(Location::Undefined),
+                    .finish(location.clone()),
             );
         }
         //println!("resolved_args: {:?}", resolved_args);

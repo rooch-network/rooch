@@ -198,9 +198,11 @@ where
                 let loaded_function = self
                     .session
                     .load_script(call.code.as_slice(), call.ty_args.clone())?;
+                let location = Location::Script;
                 moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
-                    .map_err(|e| e.finish(Location::Undefined))?;
-                let _resolved_args = self.resolve_argument(&loaded_function, call.args.clone())?;
+                    .map_err(|e| e.finish(location.clone()))?;
+                let _resolved_args =
+                    self.resolve_argument(&loaded_function, call.args.clone(), location)?;
                 Ok(VerifiedMoveAction::Script { call })
             }
             MoveAction::Function(call) => {
@@ -209,9 +211,11 @@ where
                     &call.function_id.function_name,
                     call.ty_args.as_slice(),
                 )?;
+                let location = Location::Module(call.function_id.module_id.clone());
                 moveos_verifier::verifier::verify_entry_function(&loaded_function, &self.session)
-                    .map_err(|e| e.finish(Location::Undefined))?;
-                let _resolved_args = self.resolve_argument(&loaded_function, call.args.clone())?;
+                    .map_err(|e| e.finish(location.clone()))?;
+                let _resolved_args =
+                    self.resolve_argument(&loaded_function, call.args.clone(), location)?;
                 Ok(VerifiedMoveAction::Function { call })
             }
             MoveAction::ModuleBundle(module_bundle) => {
@@ -249,8 +253,8 @@ where
                 let loaded_function = self
                     .session
                     .load_script(call.code.as_slice(), call.ty_args.clone())?;
-
-                let resolved_args = self.resolve_argument(&loaded_function, call.args)?;
+                let location = Location::Script;
+                let resolved_args = self.resolve_argument(&loaded_function, call.args, location)?;
                 let serialized_args = self.load_arguments(resolved_args)?;
                 self.session
                     .execute_script(
@@ -273,8 +277,8 @@ where
                     &call.function_id.function_name,
                     call.ty_args.as_slice(),
                 )?;
-
-                let resolved_args = self.resolve_argument(&loaded_function, call.args)?;
+                let location = Location::Module(call.function_id.module_id.clone());
+                let resolved_args = self.resolve_argument(&loaded_function, call.args, location)?;
                 let serialized_args = self.load_arguments(resolved_args)?;
                 self.session
                     .execute_entry_function(
@@ -407,7 +411,8 @@ where
             &call.function_id.function_name,
             call.ty_args.as_slice(),
         )?;
-        let resolved_args = self.resolve_argument(&loaded_function, call.args)?;
+        let location = Location::Module(call.function_id.module_id.clone());
+        let resolved_args = self.resolve_argument(&loaded_function, call.args, location)?;
         let serialized_args = self.load_arguments(resolved_args)?;
         let return_values = self.session.execute_function_bypass_visibility(
             &call.function_id.module_id,
