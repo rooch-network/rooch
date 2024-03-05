@@ -6,20 +6,10 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::fs::File;
-use std::io::{self, Read};
+use std::io::Read;
 use std::process::Command;
 
-// #[derive(Debug, Serialize, Deserialize)]
-// pub struct OrdInscriptionInfo {
-//     pub id: String,
-//     pub txid: String,
-//     pub index: String,
-//     pub address: String,
-//     pub body: String,
-//     pub content_type: String,
-// }
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Transaction {
     pub id: String,
     pub txid: String,

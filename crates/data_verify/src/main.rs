@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use data_verify::config::DataConfig;
-use data_verify::{brc20_helper, data_export, ord_verify};
+use data_verify::{data_export, ord_verify};
 
 //flight
 fn main() {
     let config = DataConfig::default();
-    let ord_export_data_path = format!("{}ord_export", config.ord_data_path);
-    data_export::export_ord_index_data(&config, &ord_export_data_path.as_str());
-    let ord_tx_json = format!("{}/ord_tx.json", config.ord_data_path);
+    let ord_export_data_path = format!("{}ord_export_100.tsv", config.ord_data_path);
+    // data_export::export_ord_index_data(&config, &ord_export_data_path.as_str());
+    let ord_tx_json = format!("{}/ord_tx_100.json", config.ord_data_path);
     if let Err(err) = data_export::read_ord_export_data(&ord_export_data_path, &ord_tx_json) {
         eprintln!(
             "Error read ord export data {}, error: {}",
@@ -33,9 +33,9 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use data_verify::config;
     use data_verify::config::DataConfig;
     use data_verify::config::DataConfig;
+    use data_verify::{brc20_helper, config};
     use serde::{Deserialize, Serialize};
     use serde_json::Value;
     use std::process::Command;
@@ -396,9 +396,8 @@ mod tests {
     #[test]
     fn test_brc20_jsonscript_analyse() {
         let config = DataConfig::default();
-        let export_json =
-            format!("/Users/BC/tests/testdata/id_txid_inscription_addr_test.json");
-        let _ = crate::brc20_helper::process_transactions(&config, &export_json);
+        let export_json = format!("/Users/BC/tests/testdata/id_txid_inscription_addr_test.json");
+        let _ = brc20_helper::process_transactions(&config, &export_json);
         let export_indexer = format!("{}/data/indexer.tsv", config.ord_data_path);
 
         // Expected content

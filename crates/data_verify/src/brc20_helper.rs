@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::config;
 use crate::config::DataConfig;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -14,7 +13,6 @@ use std::io::BufReader;
 use std::io::Read;
 use std::io::Write;
 
-// use crate::config::project_path;
 #[derive(Debug, Serialize, Deserialize)]
 struct Transaction {
     address: String,

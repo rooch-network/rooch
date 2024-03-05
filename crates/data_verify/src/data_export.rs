@@ -28,14 +28,6 @@ pub fn export_ord_index_data(config: &DataConfig, export_data_dir: &str) {
     }
 }
 
-// #[derive(Debug, Serialize, Deserialize)]
-// pub struct Transaction {
-//     id: String,
-//     txid: String,
-//     index: String,
-//     address: String,
-// }
-
 pub fn read_ord_export_data(file_path: &str, output_file: &str) -> Result<()> {
     let file = File::open(file_path)?;
     let reader = io::BufReader::new(file);
