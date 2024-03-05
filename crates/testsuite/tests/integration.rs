@@ -31,6 +31,7 @@ async fn start_server(w: &mut World, _scenario: String) {
 #[then(expr = "stop the server")] // Cucumber Expression
 async fn stop_server(w: &mut World) {
     println!("stop server");
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
     match w.service.take() {
         Some(service) => {
             service.stop().unwrap();
@@ -41,6 +42,13 @@ async fn stop_server(w: &mut World) {
         }
     }
     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+}
+
+#[then(regex = r#"sleep: "(.*)?""#)]
+async fn sleep(_world: &mut World, args: String) {
+    let args = args.trim().parse::<u64>().unwrap();
+    debug!("sleep: {}", args);
+    tokio::time::sleep(tokio::time::Duration::from_secs(args)).await;
 }
 
 #[then(regex = r#"cmd: "(.*)?""#)]

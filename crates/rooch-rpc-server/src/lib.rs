@@ -77,10 +77,10 @@ pub struct ServerHandle {
 
 impl ServerHandle {
     fn stop(self) -> Result<()> {
-        self.handle.stop()?;
         for timer in self.timers {
             timer.stop();
         }
+        self.handle.stop()?;
         Ok(())
     }
 }
