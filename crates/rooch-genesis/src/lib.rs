@@ -201,8 +201,7 @@ impl GenesisPackage {
             MoveAction::ModuleBundle(
                 bundles
                     .into_iter()
-                    .map(|(_, bundles)| bundles)
-                    .flatten()
+                    .flat_map(|(_, bundles)| bundles)
                     .collect(),
             ),
         );
