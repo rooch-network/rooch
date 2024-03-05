@@ -60,6 +60,7 @@ pub struct TableData {
     new_tables: BTreeSet<ObjectID>,
     removed_tables: BTreeSet<ObjectID>,
     tables: BTreeMap<ObjectID, Table>,
+    object_reference: BTreeMap<ObjectID, GlobalValue>,
 }
 
 /// A structure representing table key.
@@ -206,6 +207,10 @@ impl<'a> NativeTableContext<'a> {
             table_data,
         }
     }
+
+    pub fn table_data(&self) -> Arc<RwLock<TableData>> {
+        self.table_data.clone()
+    }
 }
 
 impl TableData {
@@ -242,6 +247,20 @@ impl TableData {
         self.tables.contains_key(handle)
     }
 
+    pub fn get_or_create_object_reference(
+        &mut self,
+        object_id: ObjectID,
+    ) -> PartialVMResult<&mut GlobalValue> {
+        match self.object_reference.entry(object_id) {
+            Entry::Vacant(e) => {
+                let object_id_value = object_id.to_runtime_value();
+                let gv = GlobalValue::cached(Value::struct_(Struct::pack(vec![object_id_value])))?;
+                Ok(e.insert(gv))
+            }
+            Entry::Occupied(e) => Ok(e.into_mut()),
+        }
+    }
+
     /// into inner
     pub fn into_inner(
         self,
@@ -254,6 +273,7 @@ impl TableData {
             new_tables,
             removed_tables,
             tables,
+            object_reference: _,
         } = self;
         (new_tables, removed_tables, tables)
     }

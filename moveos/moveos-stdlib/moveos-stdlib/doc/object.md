@@ -143,6 +143,15 @@ Developers only need to use Object<T> related APIs and do not need to know the O
 
 
 
+<a name="0x2_object_ErrorObjectAlreadyBorrowed"></a>
+
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorObjectAlreadyBorrowed">ErrorObjectAlreadyBorrowed</a>: u64 = 7;
+</code></pre>
+
+
+
 <a name="0x2_object_ErrorObjectAlreadyExist"></a>
 
 

@@ -294,6 +294,14 @@ impl AccessPath {
         }
     }
 
+    pub fn is_object(&self) -> bool {
+        matches!(self.0, Path::Object { .. })
+    }
+
+    pub fn is_resource(&self) -> bool {
+        matches!(self.0, Path::Resource { .. })
+    }
+
     pub fn random_module() -> AccessPath {
         Self::random_module_with_fixed_address(AccountAddress::random())
     }

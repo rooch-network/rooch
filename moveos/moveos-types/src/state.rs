@@ -4,6 +4,7 @@
 use crate::moveos_std::object::{AnnotatedObject, ObjectEntity, RawObject};
 use crate::moveos_std::object_id::ObjectID;
 use anyhow::{bail, ensure, Result};
+use core::str;
 use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
@@ -15,7 +16,7 @@ use move_core_types::{
     value::{MoveStructLayout, MoveTypeLayout, MoveValue},
 };
 use move_resource_viewer::{AnnotatedMoveValue, MoveValueAnnotator};
-use move_vm_types::values::Value;
+use move_vm_types::values::{Struct, Value};
 use serde::ser::Error;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use smt::UpdateSet;
@@ -204,27 +205,10 @@ pub trait MoveState: MoveType + DeserializeOwned + Serialize {
     }
 
     /// Convert the MoveState to MoveRuntime Value
-    fn to_runtime_value(&self) -> Value {
-        let blob = self.to_bytes();
-        Value::simple_deserialize(&blob, &Self::type_layout())
-            .expect("Deserialize the Move Runtime Value from MoveState bytes should success")
-    }
+    fn to_runtime_value(&self) -> Value;
 
     /// Convert the MoveState from MoveRuntime Value
-    fn from_runtime_value(value: Value) -> Result<Self>
-    where
-        Self: Sized,
-    {
-        let blob = value
-            .simple_serialize(&Self::type_layout())
-            .ok_or_else(|| {
-                anyhow::anyhow!(
-                    "Serilaize the MoveState to bytes error: {:?}",
-                    Self::type_tag()
-                )
-            })?;
-        Self::from_bytes(&blob)
-    }
+    fn from_runtime_value(value: Value) -> Result<Self>;
 }
 
 impl MoveType for u8 {
@@ -236,6 +220,14 @@ impl MoveType for u8 {
 impl MoveState for u8 {
     fn type_layout() -> MoveTypeLayout {
         MoveTypeLayout::U8
+    }
+
+    fn to_runtime_value(&self) -> Value {
+        Value::u8(*self)
+    }
+
+    fn from_runtime_value(value: Value) -> Result<Self> {
+        Ok(value.value_as::<u8>()?)
     }
 }
 
@@ -249,6 +241,14 @@ impl MoveState for u16 {
     fn type_layout() -> MoveTypeLayout {
         MoveTypeLayout::U16
     }
+
+    fn to_runtime_value(&self) -> Value {
+        Value::u16(*self)
+    }
+
+    fn from_runtime_value(value: Value) -> Result<Self> {
+        Ok(value.value_as::<u16>()?)
+    }
 }
 
 impl MoveType for u32 {
@@ -259,6 +259,14 @@ impl MoveType for u32 {
 impl MoveState for u32 {
     fn type_layout() -> MoveTypeLayout {
         MoveTypeLayout::U32
+    }
+
+    fn to_runtime_value(&self) -> Value {
+        Value::u32(*self)
+    }
+
+    fn from_runtime_value(value: Value) -> Result<Self> {
+        Ok(value.value_as::<u32>()?)
     }
 }
 
@@ -272,6 +280,14 @@ impl MoveState for u64 {
     fn type_layout() -> MoveTypeLayout {
         MoveTypeLayout::U64
     }
+
+    fn to_runtime_value(&self) -> Value {
+        Value::u64(*self)
+    }
+
+    fn from_runtime_value(value: Value) -> Result<Self> {
+        Ok(value.value_as::<u64>()?)
+    }
 }
 
 impl MoveType for u128 {
@@ -283,6 +299,14 @@ impl MoveType for u128 {
 impl MoveState for u128 {
     fn type_layout() -> MoveTypeLayout {
         MoveTypeLayout::U128
+    }
+
+    fn to_runtime_value(&self) -> Value {
+        Value::u128(*self)
+    }
+
+    fn from_runtime_value(value: Value) -> Result<Self> {
+        Ok(value.value_as::<u128>()?)
     }
 }
 
@@ -296,6 +320,14 @@ impl MoveState for U256 {
     fn type_layout() -> MoveTypeLayout {
         MoveTypeLayout::U256
     }
+
+    fn to_runtime_value(&self) -> Value {
+        Value::u256(*self)
+    }
+
+    fn from_runtime_value(value: Value) -> Result<Self> {
+        Ok(value.value_as::<U256>()?)
+    }
 }
 
 impl MoveType for bool {
@@ -308,6 +340,14 @@ impl MoveState for bool {
     fn type_layout() -> MoveTypeLayout {
         MoveTypeLayout::Bool
     }
+
+    fn to_runtime_value(&self) -> Value {
+        Value::bool(*self)
+    }
+
+    fn from_runtime_value(value: Value) -> Result<Self> {
+        Ok(value.value_as::<bool>()?)
+    }
 }
 
 impl MoveType for AccountAddress {
@@ -319,6 +359,14 @@ impl MoveType for AccountAddress {
 impl MoveState for AccountAddress {
     fn type_layout() -> MoveTypeLayout {
         MoveTypeLayout::Address
+    }
+
+    fn to_runtime_value(&self) -> Value {
+        Value::address(*self)
+    }
+
+    fn from_runtime_value(value: Value) -> Result<Self> {
+        Ok(value.value_as::<AccountAddress>()?)
     }
 }
 
@@ -338,6 +386,15 @@ where
     fn type_layout() -> MoveTypeLayout {
         MoveTypeLayout::Struct(Self::struct_layout())
     }
+
+    fn to_runtime_value(&self) -> Value {
+        Value::struct_(S::to_runtime_value_struct(self))
+    }
+
+    fn from_runtime_value(value: Value) -> Result<Self> {
+        let s = value.value_as::<Struct>()?;
+        S::from_runtime_value_struct(s)
+    }
 }
 
 impl<S> MoveType for Vec<S>
@@ -355,6 +412,19 @@ where
 {
     fn type_layout() -> MoveTypeLayout {
         MoveTypeLayout::Vector(Box::new(S::type_layout()))
+    }
+
+    fn to_runtime_value(&self) -> Value {
+        let values: Vec<Value> = self.iter().map(MoveState::to_runtime_value).collect();
+        Value::vector_for_testing_only(values)
+    }
+
+    fn from_runtime_value(value: Value) -> Result<Self> {
+        let values = value.value_as::<Vec<Value>>()?;
+        values
+            .into_iter()
+            .map(MoveState::from_runtime_value)
+            .collect()
     }
 }
 
@@ -376,6 +446,29 @@ impl MoveStructType for PlaceholderStruct {
 /// It is like the `MoveResource` in move_core_types
 pub trait MoveStructState: MoveState + MoveStructType + DeserializeOwned + Serialize {
     fn struct_layout() -> MoveStructLayout;
+
+    /// Convert the MoveState to MoveRuntime Value
+    fn to_runtime_value_struct(&self) -> Struct {
+        let blob = self.to_bytes();
+        Struct::simple_deserialize(&blob, &Self::struct_layout())
+            .expect("Deserialize the Move Runtime Value from MoveState bytes should success")
+    }
+
+    /// Convert the MoveState from MoveRuntime Value
+    fn from_runtime_value_struct(value: Struct) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let blob = value
+            .simple_serialize(&Self::struct_layout())
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Serilaize the MoveState to bytes error: {:?}",
+                    Self::type_tag()
+                )
+            })?;
+        Self::from_bytes(&blob)
+    }
 }
 
 impl<T> From<T> for State
@@ -436,6 +529,15 @@ impl State {
                     None
                 }
             }
+            _ => None,
+        }
+    }
+
+    /// If the state is a Move resource, return the T's struct_tag
+    /// Otherwise, return None
+    pub fn get_resource_struct_tag(&self) -> Option<StructTag> {
+        match self.value_type() {
+            TypeTag::Struct(struct_tag) => Some(struct_tag.as_ref().clone()),
             _ => None,
         }
     }

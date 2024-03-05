@@ -35,10 +35,6 @@ impl InscriptionID {
     pub fn new(txid: AccountAddress, index: u32) -> Self {
         Self { txid, index }
     }
-
-    // pub fn inscription_object_id(&self) -> ObjectID {
-    //     object_id::custom_object_id(self.clone(), &Inscription::struct_tag());
-    // }
 }
 
 impl MoveStructType for InscriptionID {
@@ -70,13 +66,6 @@ pub struct Inscription {
     pub pointer: MoveOption<u64>,
     pub json_body: SimpleMap<MoveString, MoveString>,
 }
-
-// impl Inscription {
-//     pub fn inscription_object_id() -> ObjectID {
-//         let inscription_id = InscriptionID::new()
-//         let object_id = object_id::custom_object_id<InscriptionID,Inscription>(id);
-//     }
-// }
 
 impl MoveStructType for Inscription {
     const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;

@@ -4,7 +4,7 @@ This directory contains scripts for setting up a local development environment f
 
 ## Prerequisites
 1. Install [Docker](https://docs.docker.com/install/) or [Podman](https://podman.io/docs/installation)
-2. Install [ord](https://docs.ordinals.com/guides/inscriptions.html#installing-ord)
+2. Install [ord](https://docs.ordinals.com/guides/wallet.html?highlight=install#installing-ord)
 
 ## Setup
 

@@ -71,6 +71,19 @@ impl RoochRpcClient {
             .await?)
     }
 
+    pub async fn get_decoded_states_with_display(
+        &self,
+        access_path: AccessPath,
+    ) -> Result<Vec<Option<StateView>>> {
+        Ok(self
+            .http
+            .get_states(
+                access_path.into(),
+                Some(StateOptions::default().decode(true).show_display(true)),
+            )
+            .await?)
+    }
+
     pub async fn get_transactions_by_order(
         &self,
         cursor: Option<u64>,

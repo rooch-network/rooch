@@ -5,12 +5,17 @@ use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{ModuleId, TypeTag};
+use move_core_types::u256::U256;
 use move_package::BuildConfig;
 use moveos_stdlib_builder::dependency_order::sort_by_dependency_order;
 use moveos_types::move_types::FunctionId;
+use moveos_types::state::MoveStructType;
 use moveos_types::transaction::{FunctionCall, MoveAction};
 use moveos_verifier::build::run_verifier;
 use rooch_types::error::RoochError;
+use rooch_types::framework::empty::Empty;
+use rooch_types::framework::gas_coin::GasCoin;
+use rooch_types::framework::transfer::TransferModule;
 use rooch_types::test_utils::{random_string, random_string_with_size};
 use rooch_types::transaction::rooch::RoochTransactionData;
 use std::collections::BTreeMap;
@@ -62,12 +67,36 @@ impl TestTransactionBuilder {
         })
     }
 
+    pub fn call_empty_create(&self) -> MoveAction {
+        MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![])
+    }
+
+    pub fn call_transfer_create(&self) -> MoveAction {
+        TransferModule::create_transfer_coin_action(
+            GasCoin::struct_tag(),
+            AccountAddress::random(),
+            U256::from(100u128),
+        )
+    }
+
     pub fn call_article_create(&self) -> MoveAction {
         let mut args = vec![];
         args.push(
             bcs::to_bytes(&random_string_with_size(20)).expect("serialize title should success"),
         );
         args.push(bcs::to_bytes(&random_string()).expect("serialize body should success"));
+
+        self.new_function_call("simple_blog", "create_article", args, vec![])
+    }
+
+    pub fn call_article_create_with_size(&self, len: usize) -> MoveAction {
+        let mut args = vec![];
+        args.push(
+            bcs::to_bytes(&random_string_with_size(20)).expect("serialize title should success"),
+        );
+        args.push(
+            bcs::to_bytes(&random_string_with_size(len)).expect("serialize body should success"),
+        );
 
         self.new_function_call("simple_blog", "create_article", args, vec![])
     }
