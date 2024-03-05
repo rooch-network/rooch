@@ -1,0 +1,16 @@
+processed 6 tasks
+
+task 1 'publish'. lines 3-29:
+status EXECUTED
+
+task 2 'run'. lines 30-39:
+status EXECUTED
+
+task 3 'run'. lines 40-50:
+status ABORTED with code 7 in 0000000000000000000000000000000000000000000000000000000000000002::object
+
+task 4 'run'. lines 51-62:
+status ABORTED with code 7 in 0000000000000000000000000000000000000000000000000000000000000002::object
+
+task 5 'run'. lines 63-70:
+status ABORTED with code 7 in 0000000000000000000000000000000000000000000000000000000000000002::object

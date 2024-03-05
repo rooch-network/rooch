@@ -302,6 +302,7 @@ pub fn run_test_impl<'a>(
     path: &Path,
     fully_compiled_program_opt: Option<&'a FullyCompiledProgram>,
 ) -> Result<(), Box<dyn std::error::Error + 'static>> {
+    let _ = tracing_subscriber::fmt::try_init();
     moveos::moveos_test_runner::run_test_impl::<MoveOSTestRunner>(
         path,
         fully_compiled_program_opt,

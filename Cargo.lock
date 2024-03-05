@@ -5749,6 +5749,7 @@ dependencies = [
  "move-vm-runtime",
  "move-vm-test-utils",
  "move-vm-types",
+ "moveos-object-runtime",
  "moveos-stdlib",
  "moveos-stdlib-builder",
  "moveos-store",
@@ -5762,6 +5763,8 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "tempfile",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -5794,6 +5797,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "moveos-object-runtime"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "better_any",
+ "fastcrypto",
+ "hex",
+ "itertools",
+ "linked-hash-map",
+ "log",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-bytecode-verifier",
+ "move-command-line-common",
+ "move-core-types",
+ "move-package",
+ "move-prover",
+ "move-stdlib",
+ "move-unit-test",
+ "move-vm-runtime",
+ "move-vm-test-utils",
+ "move-vm-types",
+ "moveos-types",
+ "moveos-verifier",
+ "once_cell",
+ "parking_lot 0.12.1",
+ "petgraph 0.5.1",
+ "serde 1.0.195",
+ "serde_bytes",
+ "serde_json",
+ "sha3 0.9.1",
+ "smallvec 1.11.0",
+ "smt",
+]
+
+[[package]]
 name = "moveos-stdlib"
 version = "0.1.0"
 dependencies = [
@@ -5816,6 +5855,7 @@ dependencies = [
  "move-vm-runtime",
  "move-vm-test-utils",
  "move-vm-types",
+ "moveos-object-runtime",
  "moveos-stdlib-builder",
  "moveos-types",
  "moveos-verifier",
@@ -8392,6 +8432,8 @@ dependencies = [
  "rooch-types",
  "serde 1.0.195",
  "serde_bytes",
+ "tracing",
+ "tracing-subscriber",
  "walkdir",
 ]
 

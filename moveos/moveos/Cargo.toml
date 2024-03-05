@@ -30,6 +30,8 @@ regex = { workspace = true }
 parking_lot = { workspace = true }
 serde_json = { workspace = true }
 backtrace = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }
@@ -57,3 +59,4 @@ moveos-store = { workspace = true }
 moveos-stdlib = { workspace = true }
 moveos-stdlib-builder = { workspace = true }
 moveos-verifier = { workspace = true }
+moveos-object-runtime = { workspace = true }

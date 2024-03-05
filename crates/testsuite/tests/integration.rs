@@ -22,7 +22,10 @@ struct World {
 async fn start_server(w: &mut World, _scenario: String) {
     let mut service = Service::new();
     let opt = RoochOpt::new_with_temp_store();
+    wait_port_available(opt.port()).await;
+
     let server_opt = ServerOpt::new();
+
     service.start(&opt, server_opt).await.unwrap();
 
     w.service = Some(service);
@@ -31,6 +34,7 @@ async fn start_server(w: &mut World, _scenario: String) {
 #[then(expr = "stop the server")] // Cucumber Expression
 async fn stop_server(w: &mut World) {
     println!("stop server");
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
     match w.service.take() {
         Some(service) => {
             service.stop().unwrap();
@@ -40,7 +44,13 @@ async fn stop_server(w: &mut World) {
             info!("service is none");
         }
     }
-    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+}
+
+#[then(regex = r#"sleep: "(.*)?""#)]
+async fn sleep(_world: &mut World, args: String) {
+    let args = args.trim().parse::<u64>().unwrap();
+    debug!("sleep: {}", args);
+    tokio::time::sleep(tokio::time::Duration::from_secs(args)).await;
 }
 
 #[then(regex = r#"cmd: "(.*)?""#)]
@@ -201,6 +211,28 @@ fn split_string_with_quotes(s: &str) -> Result<Vec<String>> {
     }
 
     Ok(result)
+}
+
+async fn wait_port_available(port: u16) {
+    let mut count = 0;
+    while check_port_in_use(port) {
+        debug!("Port {} is still in use, waiting...", port);
+        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+        count += 1;
+        if count > 60 {
+            panic!("Port {} is still in use after 60 seconds", port);
+        }
+    }
+}
+
+/// check if `port` is available.
+fn check_port_in_use(port: u16) -> bool {
+    use std::net::TcpStream;
+    let in_use = match TcpStream::connect(("0.0.0.0", port)) {
+        Ok(_) => true,
+        Err(_e) => false,
+    };
+    in_use
 }
 
 #[tokio::main]

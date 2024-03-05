@@ -9,6 +9,7 @@ use crate::{
     state::{MoveState, MoveStructState, MoveStructType, State},
 };
 use anyhow::{bail, ensure, Result};
+use move_core_types::language_storage::ModuleId;
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
@@ -22,6 +23,8 @@ use serde::{Deserialize, Serialize};
 use smt::SPARSE_MERKLE_PLACEHOLDER_HASH;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("object");
+pub static MODULE_ID: Lazy<ModuleId> =
+    Lazy::new(|| ModuleId::new(MOVEOS_STD_ADDRESS, MODULE_NAME.to_owned()));
 pub const OBJECT_ENTITY_STRUCT_NAME: &IdentStr = ident_str!("ObjectEntity");
 
 // New table's state_root should be the place holder hash.
@@ -283,15 +286,16 @@ impl RawObject {
             size,
         })
     }
-    pub fn to_bytes(&self) -> Result<Vec<u8>> {
+
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = vec![];
-        bytes.extend(bcs::to_bytes(&self.id)?);
-        bytes.extend(bcs::to_bytes(&self.owner)?);
+        bytes.extend(bcs::to_bytes(&self.id).unwrap());
+        bytes.extend(bcs::to_bytes(&self.owner).unwrap());
         bytes.push(self.flag);
-        bytes.extend(bcs::to_bytes(&self.state_root)?);
-        bytes.extend(bcs::to_bytes(&self.size)?);
+        bytes.extend(bcs::to_bytes(&self.state_root).unwrap());
+        bytes.extend(bcs::to_bytes(&self.size).unwrap());
         bytes.extend_from_slice(&self.value.value);
-        Ok(bytes)
+        bytes
     }
 
     fn struct_tag(&self) -> StructTag {
@@ -304,10 +308,10 @@ impl RawObject {
     }
 
     // The output must consistent with ObjectEntity<T> into state result
-    pub fn into_state(&self) -> Result<State> {
-        let value = self.to_bytes()?;
+    pub fn into_state(&self) -> State {
+        let value = self.to_bytes();
         let value_type = TypeTag::Struct(Box::new(self.struct_tag()));
-        Ok(State::new(value, value_type))
+        State::new(value, value_type)
     }
 }
 
@@ -460,7 +464,7 @@ mod tests {
 
         let raw_object: RawObject = object.to_raw();
 
-        let object2 = bcs::from_bytes::<ObjectEntity<TestStruct>>(&raw_object.to_bytes()?).unwrap();
+        let object2 = bcs::from_bytes::<ObjectEntity<TestStruct>>(&raw_object.to_bytes()).unwrap();
         assert_eq!(object, object2);
         Ok(())
     }

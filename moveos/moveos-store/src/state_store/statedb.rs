@@ -273,7 +273,7 @@ impl StateDBStore {
                 let updated_table_size = curr_table_size + table_change.size_increment;
                 debug_assert!(updated_table_size >= 0);
                 raw_object.size = updated_table_size as u64;
-                changed_objects.put(table_handle.to_key(), raw_object.into_state()?);
+                changed_objects.put(table_handle.to_key(), raw_object.into_state());
             }
         }
 

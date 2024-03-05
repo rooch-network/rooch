@@ -382,32 +382,19 @@ fn deprecated_bad_signatures() -> Vec<Signature> {
         // struct in signature
         Signature(vec![SignatureToken::Struct(StructHandleIndex(0))]),
         // struct in signature
-        Signature(vec![
-            SignatureToken::Bool,
-            SignatureToken::Struct(StructHandleIndex(0)),
-            SignatureToken::U64,
-        ]),
+        Signature(vec![SignatureToken::Struct(StructHandleIndex(0))]),
         // reference to struct in signature
-        Signature(vec![
-            SignatureToken::Address,
-            SignatureToken::MutableReference(Box::new(SignatureToken::Struct(StructHandleIndex(
-                0,
-            )))),
-        ]),
+        Signature(vec![SignatureToken::MutableReference(Box::new(
+            SignatureToken::Struct(StructHandleIndex(0)),
+        ))]),
         // vector of struct in signature
-        Signature(vec![
-            SignatureToken::Bool,
-            SignatureToken::Vector(Box::new(SignatureToken::Struct(StructHandleIndex(0)))),
-            SignatureToken::U64,
-        ]),
+        Signature(vec![SignatureToken::Vector(Box::new(
+            SignatureToken::Struct(StructHandleIndex(0)),
+        ))]),
         // vector of vector of struct in signature
-        Signature(vec![
-            SignatureToken::Bool,
-            SignatureToken::Vector(Box::new(SignatureToken::Vector(Box::new(
-                SignatureToken::Struct(StructHandleIndex(0)),
-            )))),
-            SignatureToken::U64,
-        ]),
+        Signature(vec![SignatureToken::Vector(Box::new(
+            SignatureToken::Vector(Box::new(SignatureToken::Struct(StructHandleIndex(0)))),
+        ))]),
         // reference to vector in signature
         Signature(vec![SignatureToken::Reference(Box::new(
             SignatureToken::Vector(Box::new(SignatureToken::Struct(StructHandleIndex(0)))),
@@ -659,6 +646,7 @@ fn general_cases() -> TestCases {
 
 #[test]
 fn check_script() {
+    let _ = tracing_subscriber::fmt::try_init();
     //
     // Bad signatures
     //
@@ -693,26 +681,47 @@ fn check_script() {
     // Mismatched Cases
     //
     for (signature, args, error) in mismatched_cases() {
-        let script = make_script(signature);
+        let script = make_script(signature.clone());
+        let result = call_script(script, serialize_values(&args));
+        assert!(
+            result.is_err(),
+            "signature: {:?}, args: {:?}",
+            signature,
+            args
+        );
+        let result_error = result.err().unwrap();
         assert_eq!(
-            call_script(script, serialize_values(&args))
-                .err()
-                .unwrap()
-                .major_status(),
-            error
+            result_error.major_status(),
+            error,
+            "signature: {:?}, args: {:?}, expected_status: {:?}, result_error: {:?}",
+            signature,
+            args,
+            error,
+            result_error
         );
     }
 
     for (signature, args, signers, expected_status_opt) in general_cases() {
         // Body of the script is just an abort, so `ABORTED` means the script was accepted and ran
         let expected_status = expected_status_opt.unwrap_or(StatusCode::ABORTED);
-        let script = make_script(signature);
+        let script = make_script(signature.clone());
+        let result =
+            call_script_with_args_ty_args_signers(script, serialize_values(&args), vec![], signers);
+        assert!(
+            result.is_err(),
+            "signature: {:?}, args: {:?}",
+            signature,
+            args
+        );
+        let result_error = result.err().unwrap();
         assert_eq!(
-            call_script_with_args_ty_args_signers(script, serialize_values(&args), vec![], signers)
-                .err()
-                .unwrap()
-                .major_status(),
-            expected_status
+            result_error.major_status(),
+            expected_status,
+            "signature: {:?}, args: {:?}, expected_status: {:?}, result_error: {:?}",
+            signature,
+            args,
+            expected_status,
+            result_error
         );
     }
 }
