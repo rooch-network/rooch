@@ -33,9 +33,8 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use data_verify::brc20_helper;
     use data_verify::config::DataConfig;
-    use data_verify::config::DataConfig;
-    use data_verify::{brc20_helper, config};
     use serde::{Deserialize, Serialize};
     use serde_json::Value;
     use std::process::Command;

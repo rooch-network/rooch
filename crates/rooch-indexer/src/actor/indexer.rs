@@ -153,10 +153,8 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                                     state_index_generator,
                                 )?;
                                 //just for data verify mode, don't write utxo object indexer
-                                if self.data_verify_mode {
-                                    if state.is_utxo_object_state() {
-                                        continue;
-                                    }
+                                if self.data_verify_mode && state.is_utxo_object_state() {
+                                    continue;
                                 }
                                 update_global_states.push(state);
                             } else {
@@ -179,10 +177,8 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                                     state_index_generator,
                                 )?;
                                 //just for data verify mode, don't write utxo object indexer
-                                if self.data_verify_mode {
-                                    if state.is_utxo_object_state() {
-                                        continue;
-                                    }
+                                if self.data_verify_mode && state.is_utxo_object_state() {
+                                    continue;
                                 }
                                 new_global_states.push(state);
                             } else {
