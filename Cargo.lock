@@ -2314,6 +2314,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "data-verify"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "fastcrypto",
+ "log",
+ "moveos-config",
+ "moveos-types",
+ "once_cell",
+ "rooch-config",
+ "rooch-rpc-api",
+ "rooch-types",
+ "serde 1.0.195",
+ "serde_json",
+ "serde_yaml 0.9.25",
+]
+
+[[package]]
 name = "datatest-stable"
 version = "0.1.1"
 source = "git+https://github.com/rooch-network/diem-devtools?branch=feature/pub-test-opts#c65933ee5aa5721ca0e6602995f1464ce0a93a53"

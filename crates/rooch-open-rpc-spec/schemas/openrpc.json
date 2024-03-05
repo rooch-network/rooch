@@ -752,6 +752,40 @@
           }
         }
       },
+      "BitcoinInscriptionIDView": {
+        "type": "object",
+        "required": [
+          "index",
+          "txid"
+        ],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0.0
+          },
+          "txid": {
+            "$ref": "#/components/schemas/bitcoin::hash_types::newtypes::Txid"
+          }
+        }
+      },
+      "BitcoinOutputIDView": {
+        "type": "object",
+        "required": [
+          "txid",
+          "vout"
+        ],
+        "properties": {
+          "txid": {
+            "$ref": "#/components/schemas/bitcoin::hash_types::newtypes::Txid"
+          },
+          "vout": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0.0
+          }
+        }
+      },
       "DynamicFieldView": {
         "type": "object",
         "required": [
@@ -1351,7 +1385,20 @@
             "additionalProperties": false
           },
           {
-            "description": "Query by txid. Query by object id.",
+            "description": "Query by inscription id, represent by bitcoin txid and index",
+            "type": "object",
+            "required": [
+              "inscription_id"
+            ],
+            "properties": {
+              "inscription_id": {
+                "$ref": "#/components/schemas/BitcoinInscriptionIDView"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by object id.",
             "type": "object",
             "required": [
               "object_id"
@@ -2526,7 +2573,20 @@
             "additionalProperties": false
           },
           {
-            "description": "Query by txid. Query by object id.",
+            "description": "Query by bitcoin output id, represent by bitcoin txid and vout",
+            "type": "object",
+            "required": [
+              "output_id"
+            ],
+            "properties": {
+              "output_id": {
+                "$ref": "#/components/schemas/BitcoinOutputIDView"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by object id.",
             "type": "object",
             "required": [
               "object_id"

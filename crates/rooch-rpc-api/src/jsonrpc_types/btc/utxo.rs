@@ -7,22 +7,37 @@ use crate::jsonrpc_types::{AccountAddressView, StructTagView};
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 use move_core_types::account_address::AccountAddress;
+use moveos_types::moveos_std::object_id;
 use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::state::MoveStructType;
-use rooch_types::bitcoin::utxo::{UTXOState, UTXO};
+use rooch_types::bitcoin::utxo::{BitcoinOutputID, OutputID, UTXOState, UTXO};
 use rooch_types::indexer::state::GlobalStateFilter;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, JsonSchema)]
+pub struct BitcoinOutputIDView {
+    // pub txid: AccountAddress,
+    pub txid: TxidView,
+    pub vout: u32,
+}
+
+impl From<BitcoinOutputIDView> for BitcoinOutputID {
+    fn from(inscription: BitcoinOutputIDView) -> Self {
+        BitcoinOutputID {
+            txid: inscription.txid.into(),
+            vout: inscription.vout,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum UTXOFilterView {
     /// Query by owner, represent by bitcoin address
     Owner(BitcoinAddressView),
-
-    // TODO Txid needs to be pre-indexed, or can only be scan the whole table, and database index cannot be used
-    /// Query by txid.
-    // Txid(TxidView),
+    /// Query by bitcoin output id, represent by bitcoin txid and vout
+    OutputId(BitcoinOutputIDView),
     /// Query by object id.
     ObjectId(ObjectID),
 }
@@ -38,6 +53,13 @@ impl UTXOFilterView {
                     object_type: UTXO::struct_tag(),
                     owner: resolve_address,
                 },
+                UTXOFilterView::OutputId(out_id) => {
+                    let bitcoin_output_id = BitcoinOutputID::from(out_id);
+                    let output_id = OutputID::from(bitcoin_output_id);
+                    let object_id = object_id::custom_object_id(output_id, &UTXO::struct_tag());
+
+                    GlobalStateFilter::ObjectId(object_id)
+                }
                 UTXOFilterView::ObjectId(object_id) => GlobalStateFilter::ObjectId(object_id),
             },
             None => GlobalStateFilter::ObjectType(UTXO::struct_tag()),
