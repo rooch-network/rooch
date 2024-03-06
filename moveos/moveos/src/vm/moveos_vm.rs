@@ -5,6 +5,8 @@ use super::data_cache::{into_change_set, MoveosDataCache};
 use crate::gas::table::{get_gas_schedule_entries, initial_cost_schedule, ClassifiedGasMeter};
 use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
 use crate::vm::tx_argument_resolver;
+use move_binary_format::compatibility::Compatibility;
+use move_binary_format::normalized;
 use move_binary_format::{
     access::ModuleAccess,
     errors::{verification_error, Location, PartialVMError, PartialVMResult, VMError, VMResult},
@@ -47,6 +49,7 @@ use moveos_types::{
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 use parking_lot::RwLock;
+use std::collections::BTreeSet;
 use std::{borrow::Borrow, sync::Arc};
 
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
@@ -345,10 +348,28 @@ where
                     }
                 }
 
-                //TODO check compatibility
-                //let compat = Compatibility::full_check();
+                // Collect ids for modules that are published together
+                let mut bundle_unverified = BTreeSet::new();
 
                 let data_store = self.session.get_data_store();
+
+                let compat = Compatibility::full_check();
+                for module in &compiled_modules {
+                    let module_id = module.self_id();
+
+                    if data_store.exists_module(&module_id)? && compat.need_check_compat() {
+                        let old_module = self.vm.load_module(&module_id, &self.remote)?;
+                        let old_m = normalized::Module::new(old_module.as_ref());
+                        let new_m = normalized::Module::new(module);
+                        compat
+                            .check(&old_m, &new_m)
+                            .map_err(|e| e.finish(Location::Undefined))?;
+                    }
+                    if !bundle_unverified.insert(module_id) {
+                        return Err(PartialVMError::new(StatusCode::DUPLICATE_MODULE_NAME)
+                            .finish(Location::Undefined));
+                    }
+                }
 
                 // Perform bytecode and loading verification. Modules must be sorted in topological order.
                 self.vm
