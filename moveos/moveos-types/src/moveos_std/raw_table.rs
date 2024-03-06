@@ -13,14 +13,23 @@ use move_core_types::{
     value::{MoveStructLayout, MoveTypeLayout},
 };
 use serde::{Deserialize, Serialize};
+use smt::SPARSE_MERKLE_PLACEHOLDER_HASH;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("raw_table");
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct TableInfo {
-    //TODO use u256?
     pub state_root: AccountAddress,
     pub size: u64,
+}
+
+impl Default for TableInfo {
+    fn default() -> Self {
+        TableInfo {
+            state_root: AccountAddress::new((*SPARSE_MERKLE_PLACEHOLDER_HASH).into()),
+            size: 0u64,
+        }
+    }
 }
 
 impl TableInfo {
