@@ -12,6 +12,7 @@ module moveos_std::move_module {
     use moveos_std::object_id;
 
     friend moveos_std::context;
+    friend moveos_std::genesis;
     
     /// Module address is not the same as the signer
     const ErrorAddressNotMatchWithSigner: u64 = 1;
@@ -228,6 +229,7 @@ module moveos_std::move_module {
     /// Create a new module object space
     public(friend) fun create_module_object() {
         let obj = object::new_with_id(module_object_id(), Module {});
+        //TODO make this to shared object
         object::transfer(obj, @moveos_std)
     }
 

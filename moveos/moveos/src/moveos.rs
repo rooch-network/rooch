@@ -167,6 +167,9 @@ impl MoveOS {
 
         // execute main tx
         let execute_result = session.execute_move_action(verified_action);
+        if let Some(vm_error) = execute_result.clone().err() {
+            log::error!("execute_genesis_tx vm_error:{:?}", vm_error,);
+        }
         let status = match vm_status_of_result(execute_result.clone()).keep_or_discard() {
             Ok(status) => status,
             Err(discard_status) => {
@@ -423,11 +426,13 @@ impl MoveOS {
             gas_used: _,
             is_upgrade: _,
         } = output;
+        debug_assert!(changeset.accounts().is_empty());
+
         let new_state_root = self
             .db
             .0
             .get_state_store()
-            .apply_change_set(changeset, state_changeset)
+            .apply_change_set(state_changeset)
             .map_err(|e| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR)
                     .with_message(e.to_string())

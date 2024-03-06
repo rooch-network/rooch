@@ -5,12 +5,10 @@ use anyhow::{Error, Result};
 use move_core_types::language_storage::ModuleId;
 use move_core_types::{
     account_address::AccountAddress,
-    effects::{ChangeSet, Op},
+    effects::Op,
     language_storage::{StructTag, TypeTag},
 };
 use moveos_types::move_types::as_struct_tag;
-use moveos_types::moveos_std::account::Account;
-use moveos_types::moveos_std::move_module::Module;
 use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::state::MoveStructType;
 use moveos_types::state::{KeyState, TableState, TableStateSet};
@@ -23,7 +21,6 @@ use moveos_types::{
 use moveos_types::{
     moveos_std::context,
     moveos_std::object::{ObjectEntity, RawObject},
-    moveos_std::raw_table::TableInfo,
 };
 use moveos_types::{
     state::StateChangeSet,
@@ -190,28 +187,6 @@ impl StateDBStore {
         }
     }
 
-    fn create_table(
-        &self,
-        id: ObjectID,
-        is_resource_object: bool,
-        account: Option<AccountAddress>,
-    ) -> Result<(RawObject, TreeTable<NodeDBStore>)> {
-        let table = TreeTable::new(self.node_store.clone());
-
-        let object = if Module::module_object_id() == id {
-            ObjectEntity::new_module_object().to_raw()
-        } else if is_resource_object {
-            let account = account.ok_or(anyhow::anyhow!(
-                "Invalid account when create resource object"
-            ))?;
-            ObjectEntity::new_account_object(account).to_raw()
-        } else {
-            let table_info = TableInfo::new(AccountAddress::new(table.state_root().into()))?;
-            ObjectEntity::new_table_object(id, table_info).to_raw()
-        };
-        Ok((object, table))
-    }
-
     pub fn get_with_key(&self, id: ObjectID, key: KeyState) -> Result<Option<State>> {
         self.get_as_table(id)
             .and_then(|res| res.map(|(_, table)| table.get(key)).unwrap_or(Ok(None)))
@@ -229,52 +204,30 @@ impl StateDBStore {
         table.list(cursor, limit)
     }
 
-    pub fn apply_change_set(
-        &self,
-        change_set: ChangeSet,
-        state_change_set: StateChangeSet,
-    ) -> Result<H256> {
-        let mut account_resource_ids_mapping = BTreeMap::new();
+    pub fn apply_change_set(&self, mut state_change_set: StateChangeSet) -> Result<H256> {
         let mut changed_objects = UpdateSet::new();
-        //TODO
-        // We want deprecate the global storage instructions https://github.com/rooch-network/rooch/issues/248
-        // So the ChangeSet should be empty, but we need the mutated accounts to init the resource object and module object
-        // We need to figure out a way to init a fresh account.
-        for (account, account_change_set) in change_set.into_inner() {
-            let (modules, resources) = account_change_set.into_inner();
-            debug_assert!(modules.is_empty() && resources.is_empty());
 
-            account_resource_ids_mapping.insert(Account::account_object_id(account), account);
+        let global_change = state_change_set
+            .changes
+            .remove(&context::GLOBAL_OBJECT_STORAGE_HANDLE);
+
+        if let Some(global_change) = global_change {
+            self.global_table
+                .put_changes(global_change.entries.into_iter())?;
+            // TODO: update the size of global table
         }
-
         for (table_handle, table_change) in state_change_set.changes {
-            // handle global object
-            if table_handle == context::GLOBAL_OBJECT_STORAGE_HANDLE {
-                self.global_table
-                    .put_changes(table_change.entries.into_iter())?;
-                // TODO: do we need to update the size of global table?
-            } else {
-                let table_result_opt = self.get_as_table(table_handle)?;
-                let (mut raw_object, table) = match table_result_opt {
-                    Some((raw_object, table)) => (raw_object, table),
-                    None => {
-                        let (is_resource_object, account) =
-                            match account_resource_ids_mapping.get(&table_handle) {
-                                Some(account) => (true, Some(*account)),
-                                None => (false, None),
-                            };
-                        self.create_table(table_handle, is_resource_object, account)?
-                    }
-                };
+            let (mut raw_object, table) = self
+                .get_as_table(table_handle)?
+                .ok_or_else(|| anyhow::format_err!("Object with id {} not found", table_handle))?;
 
-                let new_state_root = table.put_changes(table_change.entries.into_iter())?;
-                raw_object.state_root = AccountAddress::new(new_state_root.into());
-                let curr_table_size: i64 = raw_object.size as i64;
-                let updated_table_size = curr_table_size + table_change.size_increment;
-                debug_assert!(updated_table_size >= 0);
-                raw_object.size = updated_table_size as u64;
-                changed_objects.put(table_handle.to_key(), raw_object.into_state());
-            }
+            let new_state_root = table.put_changes(table_change.entries.into_iter())?;
+            raw_object.state_root = AccountAddress::new(new_state_root.into());
+            let curr_table_size: i64 = raw_object.size as i64;
+            let updated_table_size = curr_table_size + table_change.size_increment;
+            debug_assert!(updated_table_size >= 0);
+            raw_object.size = updated_table_size as u64;
+            changed_objects.put(table_handle.to_key(), raw_object.into_state());
         }
 
         for table_handle in state_change_set.removed_tables {
