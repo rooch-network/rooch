@@ -1,1 +1,43 @@
 # First account
+
+This tutorial mainly introduces how to obtain a Rooch account.
+
+## Get a Rooch account using the CLI
+
+There are two ways to obtain Rooch using the command line: automatically create a default account during default initialization, and manually call the account creation command to generate a new account.
+
+1. Default account
+
+```bash
+[joe@mx ~]$ rooch init
+Rooch server config file generated at /home/joe/.rooch/rooch_config/server.yaml
+Creating client config file ["/home/joe/.rooch/rooch_config/rooch.yaml"] with rooch native validator.
+Enter a password to encrypt the keys. Press enter to leave it an empty password:
+Generated new keypair for address [0xd1d967e18284e5289adccf4df9b9f2c9f60c4ea8872d3027df7a8c3972460a75]
+Secret Recovery Phrase : [trust please grit chief ankle brick bean level infant embark chronic zebra]
+Rooch client config file generated at /home/joe/.rooch/rooch_config/rooch.yaml
+null
+```
+
+This generates an account `0xd1d967e18284e5289adccf4df9b9f2c9f60c4ea8872d3027df7a8c3972460a75`, along with its recovery phrase (mnemonic).
+
+This is the account generated when `rooch init` is used to initialize the Rooch configuration. The account is stored in `$HOME/.rooch/rooch_config/rooch.keystore`.
+
+## Create manually
+
+```bash
+[joe@mx ~]$ rooch account create
+Generated new keypair for address with key pair type [0xaecf8918b5ffc84a4bf4a8710220e70d1ec47beda53534f0c57689f82548048a]
+Secret Recovery Phrase : [trust please grit chief ankle brick bean level infant embark chronic zebra]
+"0xaecf8918b5ffc84a4bf4a8710220e70d1ec47beda53534f0c57689f82548048a"
+```
+
+A new account is manually created here, `0xaecf8918b5ffc84a4bf4a8710220e70d1ec47beda53534f0c57689f82548048a`.
+
+This account address is derived from the same set of mnemonic words, so it can also be recovered using the same mnemonic word.
+
+## Use DashBoard to link a Rooch account
+
+When logging in using UniSat or Metamask, a Rooch account address is automatically associated.
+
+TODO: The display function need to implement!
