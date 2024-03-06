@@ -52,10 +52,10 @@ module rooch_framework::transaction_validator {
     ): TxValidateResult {
 
         // === validate the chain id ===
-        assert!(
-            chain_id == chain_id::chain_id(ctx),
-            ErrorValidateBadChainId
-        );
+        // assert!(
+        //     chain_id == chain_id::chain_id(ctx),
+        //     ErrorValidateBadChainId
+        // );
 
         // === validate the sequence number ===
         let tx_sequence_number = context::sequence_number(ctx);

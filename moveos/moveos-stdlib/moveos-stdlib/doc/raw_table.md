@@ -15,10 +15,7 @@ This type table is for internal global storage, so all functions are friend.
 -  [Function `size`](#0x2_raw_table_size)
 -  [Function `add`](#0x2_raw_table_add)
 -  [Function `borrow`](#0x2_raw_table_borrow)
--  [Function `borrow_with_default`](#0x2_raw_table_borrow_with_default)
 -  [Function `borrow_mut`](#0x2_raw_table_borrow_mut)
--  [Function `borrow_mut_with_default`](#0x2_raw_table_borrow_mut_with_default)
--  [Function `upsert`](#0x2_raw_table_upsert)
 -  [Function `remove`](#0x2_raw_table_remove)
 -  [Function `contains`](#0x2_raw_table_contains)
 -  [Function `length`](#0x2_raw_table_length)
@@ -162,19 +159,6 @@ Aborts if there is no entry for <code>key</code>.
 
 
 
-<a name="0x2_raw_table_borrow_with_default"></a>
-
-## Function `borrow_with_default`
-
-Acquire an immutable reference to the value which <code>key</code> maps to.
-Returns specified default value if there is no entry for <code>key</code>.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_with_default">borrow_with_default</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, key: K, default: &V): &V
-</code></pre>
-
-
-
 <a name="0x2_raw_table_borrow_mut"></a>
 
 ## Function `borrow_mut`
@@ -184,32 +168,6 @@ Aborts if there is no entry for <code>key</code>.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_mut">borrow_mut</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, key: K): &<b>mut</b> V
-</code></pre>
-
-
-
-<a name="0x2_raw_table_borrow_mut_with_default"></a>
-
-## Function `borrow_mut_with_default`
-
-Acquire a mutable reference to the value which <code>key</code> maps to.
-Insert the pair (<code>key</code>, <code>default</code>) first if there is no entry for <code>key</code>.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_borrow_mut_with_default">borrow_mut_with_default</a>&lt;K: <b>copy</b>, drop, V: drop&gt;(table_handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, key: K, default: V): &<b>mut</b> V
-</code></pre>
-
-
-
-<a name="0x2_raw_table_upsert"></a>
-
-## Function `upsert`
-
-Insert the pair (<code>key</code>, <code>value</code>) if there is no entry for <code>key</code>.
-update the value of the entry for <code>key</code> to <code>value</code> otherwise
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="raw_table.md#0x2_raw_table_upsert">upsert</a>&lt;K: <b>copy</b>, drop, V: drop&gt;(table_handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, key: K, value: V)
 </code></pre>
 
 

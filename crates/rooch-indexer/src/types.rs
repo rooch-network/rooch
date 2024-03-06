@@ -45,6 +45,7 @@ pub struct IndexedTransaction {
     pub transaction_raw: Vec<u8>,
 
     pub state_root: H256,
+    pub size: u64,
     pub event_root: H256,
     // the amount of gas used.
     pub gas_used: u64,
@@ -92,6 +93,7 @@ impl IndexedTransaction {
             transaction_raw: transaction.encode(),
 
             state_root: execution_info.state_root,
+            size: execution_info.size,
             event_root: execution_info.event_root,
             // the amount of gas used.
             gas_used: execution_info.gas_used,

@@ -27,9 +27,6 @@ and let developers customize the storage
 -  [Function `new_table`](#0x2_context_new_table)
 -  [Function `new_type_table`](#0x2_context_new_type_table)
 -  [Function `new_table_vec`](#0x2_context_new_table_vec)
--  [Function `publish_modules`](#0x2_context_publish_modules)
--  [Function `exists_module`](#0x2_context_exists_module)
--  [Function `publish_modules_entry`](#0x2_context_publish_modules_entry)
 -  [Function `new_object_uid`](#0x2_context_new_object_uid)
 -  [Function `new_object`](#0x2_context_new_object)
 -  [Function `new_named_object_uid`](#0x2_context_new_named_object_uid)
@@ -43,11 +40,8 @@ and let developers customize the storage
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="move_module.md#0x2_move_module">0x2::move_module</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
-<b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
 <b>use</b> <a href="storage_context.md#0x2_storage_context">0x2::storage_context</a>;
 <b>use</b> <a href="table.md#0x2_table">0x2::table</a>;
 <b>use</b> <a href="table_vec.md#0x2_table_vec">0x2::table_vec</a>;
@@ -302,43 +296,6 @@ Get a value from the context map
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_new_table_vec">new_table_vec</a>&lt;V: store&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): <a href="table_vec.md#0x2_table_vec_TableVec">table_vec::TableVec</a>&lt;V&gt;
-</code></pre>
-
-
-
-<a name="0x2_context_publish_modules"></a>
-
-## Function `publish_modules`
-
-Publish modules to the account's storage
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_publish_modules">publish_modules</a>(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;)
-</code></pre>
-
-
-
-<a name="0x2_context_exists_module"></a>
-
-## Function `exists_module`
-
-Check if the account has a module with the given module name
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_exists_module">exists_module</a>(_self: &<a href="context.md#0x2_context_Context">context::Context</a>, <a href="account.md#0x2_account">account</a>: <b>address</b>, name: <a href="_String">string::String</a>): bool
-</code></pre>
-
-
-
-<a name="0x2_context_publish_modules_entry"></a>
-
-## Function `publish_modules_entry`
-
-Entry function to publish modules
-The order of modules must be sorted by dependency order.
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="context.md#0x2_context_publish_modules_entry">publish_modules_entry</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
 </code></pre>
 
 

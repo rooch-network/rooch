@@ -7,20 +7,18 @@
 module moveos_std::context {
 
     use std::option::Option;
-    use std::string::String;
-    use std::vector;
     use moveos_std::object_id::{TypedUID, UID, ObjectID};
     use moveos_std::object_id;
     use moveos_std::storage_context::{StorageContext};
     use moveos_std::tx_context::{Self, TxContext};
     use moveos_std::object::{Self, Object};
     use moveos_std::tx_meta::{TxMeta};
-    use moveos_std::tx_result::{TxResult};
-    use moveos_std::signer;
-    use moveos_std::move_module::{Self, MoveModule};
+    use moveos_std::tx_result::{TxResult}; 
     use moveos_std::table::{Self, Table};
     use moveos_std::type_table::{Self, TypeTable};
     use moveos_std::table_vec::{Self, TableVec};
+
+    friend moveos_std::move_module;
 
     const ErrorObjectOwnerNotMatch: u64 = 1;
     const ErrorObjectNotShared: u64 = 2;
@@ -124,38 +122,6 @@ module moveos_std::context {
         table_vec::new(uid)
     }
 
-    // === Module Storage functions ===
-
-    /// Publish modules to the account's storage
-    public fun publish_modules(self: &mut Context, account: &signer, modules: vector<MoveModule>) {
-        let account_address = signer::address_of(account);
-        let upgrade_flag = move_module::publish_modules(account_address, modules);
-        // Store ModuleUpgradeFlag in tx_context which will be fetched in VM in Rust, 
-        // and then announce to the VM that the code loading cache should be considered outdated. 
-        tx_context::set_module_upgrade_flag(&mut self.tx_context, upgrade_flag);
-    }
-
-    /// Check if the account has a module with the given module name
-    public fun exists_module(_self: &Context, account: address, name: String): bool {
-        move_module::exists_module(account, name)
-    }
-
-    /// Entry function to publish modules
-    /// The order of modules must be sorted by dependency order.
-    public entry fun publish_modules_entry(ctx: &mut Context, account: &signer, modules: vector<vector<u8>>) {
-        let n_modules = vector::length(&modules);
-        let i = 0;
-        let module_vec = vector::empty<MoveModule>();
-        while (i < n_modules) {
-            let code_bytes = vector::pop_back(&mut modules);
-            let m = move_module::new(code_bytes);
-            vector::push_back(&mut module_vec, m);
-            i = i + 1;
-        };
-        
-        Self::publish_modules(ctx, account, module_vec);
-    }
-
     // === Object functions ==
 
     /// Create a new Object UID, then call `object::new` to create a new Object
@@ -256,6 +222,9 @@ module moveos_std::context {
     public fun drop_test_context(self: Context) {
         moveos_std::test_helper::destroy<Context>(self);
     }
+
+    #[test_only]
+    use moveos_std::signer;
 
     #[test_only]
     struct TestStruct has key {

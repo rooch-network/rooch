@@ -7,10 +7,12 @@ module moveos_std::type_table {
     use std::ascii::String;
     use moveos_std::object_id;
     use moveos_std::object_id::{ObjectID, UID};
-    use moveos_std::object::{Self};
+    use moveos_std::object::{Self, Object};
+
+    struct TablePlaceholder has key {}
 
     struct TypeTable has store {
-        handle: ObjectID,
+        handle: Object<TablePlaceholder>,
     }
 
     /// Create a new Table.
@@ -25,13 +27,9 @@ module moveos_std::type_table {
     }
 
     fun internal_new_with_id(handle: ObjectID): TypeTable{
-        // The system account deployment contract directly creates the module table in the vm.
-        if (!object::contains_global(handle)) {
-            let obj = object::new_table_with_id(handle);
-            object::transfer(obj, @moveos_std);
-        };
+        let obj = object::new_with_id(handle, TablePlaceholder{});
         TypeTable {
-            handle,
+            handle: obj,
         }
     }
 
@@ -44,48 +42,48 @@ module moveos_std::type_table {
     /// Add a new entry of `V` to the table. Aborts if an entry for
     /// entry of `V` type already exists.
     public fun add<V: key>(table: &mut TypeTable, val: V) {
-        object::add_field<String, V>(table.handle, key<V>(), val);
+        object::add_field(&mut table.handle, key<V>(), val);
     }
 
     /// Acquire an immutable reference to the value which type is `V`.
     /// Aborts if there is no entry for `V`.
     public fun borrow<V: key>(table: &TypeTable): &V {
-        object::borrow_field<String, V>(table.handle, key<V>())
+        object::borrow_field(&table.handle, key<V>())
     }
 
     /// Acquire a mutable reference to the value which type is `V`.
     /// Aborts if there is no entry for `V`.
     public fun borrow_mut<V: key>(table: &mut TypeTable): &mut V {
-        object::borrow_mut_field<String, V>(table.handle, key<V>())
+        object::borrow_mut_field(&mut table.handle, key<V>())
     }
 
     /// Remove from `table` and return the value which type is `V`.
     /// Aborts if there is no entry for `V`.
     public fun remove<V: key>(table: &mut TypeTable): V {
-        object::remove_field<String, V>(table.handle, key<V>())
+        object::remove_field(&mut table.handle, key<V>())
     }
 
     /// Returns true if `table` contains an entry for type `V`.
     public fun contains<V: key>(table: &TypeTable): bool {
-        object::contains_field<String>(table.handle, key<V>())
+        object::contains_field(&table.handle, key<V>())
     }
 
     /// Returns table handle of `table`.
-    public fun handle(table: &TypeTable): &ObjectID {
-        &table.handle
+    public fun handle(table: &TypeTable): ObjectID {
+        object::id(&table.handle)
     }
   
     #[test_only]
     /// Testing only: allows to drop a table even if it is not empty.
     public fun drop_unchecked(table: TypeTable) {
         let TypeTable{handle} = table;
-        object::drop_unchecked_table(handle)
+        let TablePlaceholder{} = object::remove_unchecked(handle);
     }
 
     /// Destroy a table. The table must be empty to succeed.
     public fun destroy_empty(table: TypeTable) {
         let TypeTable{handle} = table;
-        object::destroy_empty_table(handle)
+        let TablePlaceholder{} = object::remove(handle);
     }
 
     #[test_only]

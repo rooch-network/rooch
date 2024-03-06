@@ -305,6 +305,7 @@ pub fn rooch_framework_error_descriptions() -> &'static [u8] {
 mod tests {
     use moveos::moveos::MoveOS;
     use moveos_store::MoveOSStore;
+    use moveos_types::moveos_std::move_module::ModuleStore;
     use rooch_framework::natives::{all_natives, default_gas_schedule};
     use rooch_types::address::RoochSupportedAddress;
     use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
@@ -330,7 +331,7 @@ mod tests {
         assert_eq!(genesis.genesis_package.genesis_txs.len(), 1);
         let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
         let mut moveos = MoveOS::new(
-            moveos_store,
+            moveos_store.clone(),
             all_natives(genesis.rooch_framework_gas_params),
             genesis.config,
             vec![],
@@ -345,5 +346,16 @@ mod tests {
                 genesis.genesis_package.bitcoin_genesis_ctx,
             )
             .expect("init genesis failed");
+
+        let module_store_obj = moveos_store
+            .statedb
+            .get(ModuleStore::module_store_id())
+            .unwrap();
+        assert!(module_store_obj.is_some());
+        let chain_id_obj = moveos_store
+            .statedb
+            .get(rooch_types::framework::chain_id::ChainID::chain_id_object_id())
+            .unwrap();
+        assert!(chain_id_obj.is_some());
     }
 }

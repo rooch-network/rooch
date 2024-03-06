@@ -4,7 +4,7 @@ use crate::state::{KeyState, MoveState};
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     h256,
-    state::{MoveStructState, MoveStructType},
+    state::{MoveStructState, MoveStructType, MoveType},
 };
 use anyhow::Result;
 use fastcrypto::encoding::Hex;
@@ -21,6 +21,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
+use super::context::GLOBAL_OBJECT_STORAGE_HANDLE;
+
 pub const MODULE_NAME: &IdentStr = ident_str!("object_id");
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy, PartialOrd, Ord, Hash, JsonSchema)]
@@ -32,6 +34,10 @@ impl ObjectID {
     /// Creates a new ObjectID
     pub const fn new(obj_id: [u8; Self::LENGTH]) -> Self {
         Self(AccountAddress::new(obj_id))
+    }
+
+    pub fn root() -> Self {
+        GLOBAL_OBJECT_STORAGE_HANDLE
     }
 
     pub fn random() -> Self {
@@ -72,6 +78,13 @@ impl ObjectID {
         <[u8; Self::LENGTH]>::try_from(bytes.as_ref())
             .map_err(|_| anyhow::anyhow!("Invalid ObjectID bytes, length:{}", bytes.as_ref().len()))
             .map(ObjectID::from)
+    }
+
+    pub fn from_key(key: KeyState) -> Result<Self> {
+        if key.key_type != Self::type_tag() {
+            return Err(anyhow::anyhow!("Invalid ObjectID type"));
+        }
+        Self::from_bytes(key.key)
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -231,7 +244,7 @@ pub fn custom_object_id<ID: Serialize>(id: ID, struct_tag: &StructTag) -> Object
 mod tests {
     use super::*;
     use crate::moveos_std::account::Account;
-    use crate::moveos_std::move_module::Module;
+    use crate::moveos_std::move_module::ModuleStore;
 
     #[test]
     fn test_address_to_object_id() {
@@ -274,7 +287,7 @@ mod tests {
         )
         .unwrap();
         let account_object_id = Account::account_object_id(addr);
-        let module_object_id = Module::module_object_id();
+        let module_object_id = ModuleStore::module_store_id();
         print!("{:?} {:?}", account_object_id, module_object_id)
     }
 

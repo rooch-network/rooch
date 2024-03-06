@@ -8,8 +8,6 @@ module moveos_std::account {
    use moveos_std::core_addresses;
    use moveos_std::bcs;
    use moveos_std::context::{Self, Context};
-
-   use std::ascii::String;
    use moveos_std::context::exists_object;
    use moveos_std::object_id::ObjectID;
    use moveos_std::object_id;
@@ -18,9 +16,10 @@ module moveos_std::account {
    #[test_only]
    use moveos_std::object::{take_object, borrow_mut_object};
 
+   //FIXME remove the store ability from Account
    /// Account is part of the StorageAbstraction
    /// It is also used to store the account's resources
-   struct Account has key, store {
+   struct Account has key,store {
       sequence_number: u64,
    }
 
@@ -249,31 +248,31 @@ module moveos_std::account {
    public(friend) fun create_account_object(account: address) {
       let object_id = object_id::address_to_object_id(account);
       let obj = object::new_with_id(object_id, Account {sequence_number: 0});
-      object::transfer(obj, account)
+      object::transfer_extend(obj, account)
    }
 
    // === Account Object Functions
 
    public fun account_borrow_resource<T: key>(self: &Object<Account>): &T {
-      object::borrow_field<String, T>(object::id(self), key<T>())
+      object::borrow_field(self, key<T>())
    }
 
    public fun account_borrow_mut_resource<T: key>(self: &mut Object<Account>): &mut T {
-      object::borrow_mut_field<String, T>(object::id(self), key<T>())
+      object::borrow_mut_field(self, key<T>())
    }
 
    public fun account_move_resource_to<T: key>(self: &mut Object<Account>, resource: T){
-      assert!(!object::contains_field<String>(object::id(self), key<T>()), ErrorResourceAlreadyExists);
-      object::add_field<String, T>(object::id(self), key<T>(), resource)
+      assert!(!object::contains_field(self, key<T>()), ErrorResourceAlreadyExists);
+      object::add_field(self, key<T>(), resource)
    }
 
    public fun account_move_resource_from<T: key>(self: &mut Object<Account>): T {
-      assert!(object::contains_field<String>(object::id(self), key<T>()), ErrorResourceNotExists);
-      object::remove_field<String, T>(object::id(self), key<T>())
+      assert!(object::contains_field(self, key<T>()), ErrorResourceNotExists);
+      object::remove_field(self, key<T>())
    }
 
    public fun account_exists_resource<T: key>(self: &Object<Account>) : bool {
-      object::contains_field<String>(object::id(self), key<T>())
+      object::contains_field(self, key<T>())
    }
 
    public(friend) fun transfer(obj: Object<Account>, account: address) {
@@ -430,8 +429,7 @@ module moveos_std::account {
 
    #[test_only]
    fun drop_account_object(self: Object<Account>) {
-      object::drop_unchecked_table(object::id(&self));
-      let obj = object::remove(self);
+      let obj = object::remove_unchecked(self);
       let Account {sequence_number:_} = obj;
    }
 

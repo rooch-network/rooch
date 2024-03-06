@@ -11,6 +11,7 @@ pub mod account_authentication;
 pub mod account_coin_store;
 pub mod address_mapping;
 pub mod auth_validator;
+pub mod chain_id;
 pub mod coin;
 pub mod coin_store;
 pub mod empty;

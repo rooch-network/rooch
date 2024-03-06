@@ -11,11 +11,13 @@
 module moveos_std::table {
     use moveos_std::object_id;
     use moveos_std::object_id::{ObjectID, UID};
-    use moveos_std::object::{Self};
+    use moveos_std::object::{Self, Object};
+
+    struct TablePlaceholder has key {}
 
     /// Type of tables
     struct Table<phantom K: copy + drop, phantom V> has store {
-        handle: ObjectID,
+        handle: Object<TablePlaceholder>,
     }
 
     /// Create a new Table.
@@ -30,13 +32,9 @@ module moveos_std::table {
     }
 
     fun internal_new_with_id<K: copy + drop, V: store>(handle: ObjectID): Table<K, V>{
-        // The system account deployment contract directly creates the module table in the vm.
-        if (!object::contains_global(handle)) {
-            let obj = object::new_table_with_id(handle);
-            object::transfer(obj, @moveos_std);
-        };
+        let obj = object::new_with_id(handle, TablePlaceholder{});
         Table {
-            handle,
+            handle: obj,
         }
     }
 
@@ -44,71 +42,71 @@ module moveos_std::table {
     /// key already exists. The entry itself is not stored in the
     /// table, and cannot be discovered from it.
     public fun add<K: copy + drop, V>(table: &mut Table<K, V>, key: K, val: V) {
-        object::add_field<K, V>(table.handle, key, val)
+        object::add_field(&mut table.handle, key, val)
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public fun borrow<K: copy + drop, V>(table: &Table<K, V>, key: K): &V {
-        object::borrow_field<K, V>(table.handle, key)
+        object::borrow_field(&table.handle, key)
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
     /// Returns specified default value if there is no entry for `key`.
     public fun borrow_with_default<K: copy + drop, V>(table: &Table<K, V>, key: K, default: &V): &V {
-        object::borrow_field_with_default<K, V>(table.handle, key, default)
+        object::borrow_field_with_default(&table.handle, key, default)
     }
 
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public fun borrow_mut<K: copy + drop, V>(table: &mut Table<K, V>, key: K): &mut V {
-        object::borrow_mut_field<K, V>(table.handle, key)
+        object::borrow_mut_field(&mut table.handle, key)
     }
 
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Insert the pair (`key`, `default`) first if there is no entry for `key`.
     public fun borrow_mut_with_default<K: copy + drop, V: drop>(table: &mut Table<K, V>, key: K, default: V): &mut V {
-        object::borrow_mut_field_with_default<K, V>(table.handle, key, default)
+        object::borrow_mut_field_with_default(&mut table.handle, key, default)
     }
 
     /// Insert the pair (`key`, `value`) if there is no entry for `key`.
     /// update the value of the entry for `key` to `value` otherwise
     public fun upsert<K: copy + drop, V: drop>(table: &mut Table<K, V>, key: K, value: V) {
-        object::upsert_field<K, V>(table.handle, key, value)
+        object::upsert_field(&mut table.handle, key, value)
     }
 
     /// Remove from `table` and return the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public fun remove<K: copy + drop, V>(table: &mut Table<K, V>, key: K): V {
-        object::remove_field<K, V>(table.handle, key)
+        object::remove_field(&mut table.handle, key)
     }
 
     /// Returns true if `table` contains an entry for `key`.
     public fun contains<K: copy + drop, V>(table: &Table<K, V>, key: K): bool {
-        object::contains_field<K>(table.handle, key)
+        object::contains_field(&table.handle, key)
     }
 
     /// Destroy a table. Aborts if the table is not empty.
     public fun destroy_empty<K: copy + drop, V>(table: Table<K, V>) {
         let Table { handle } = table;
-        object::destroy_empty_table(handle)
+        let TablePlaceholder{} = object::remove(handle);
     }
 
     /// Returns the size of the table, the number of key-value pairs
     public fun length<K: copy + drop, V>(table: &Table<K, V>): u64 {
-        object::table_length(table.handle)
+        object::field_size(&table.handle)
     }
 
     /// Returns true iff the table is empty (if `length` returns `0`)
     public fun is_empty<K: copy + drop, V>(table: &Table<K, V>): bool {
-        object::table_length(table.handle) == 0
+        object::field_size(&table.handle) == 0
     }
 
     /// Drop a possibly non-empty table.
     /// Usable only if the value type `V` has the `drop` ability
     public fun drop<K: copy + drop, V: drop>(table: Table<K, V>) {
         let Table { handle } = table;
-        object::drop_unchecked_table(handle)
+        let TablePlaceholder{} = object::remove_unchecked(handle);
     }
 
 
@@ -116,13 +114,13 @@ module moveos_std::table {
     /// Testing only: allows to drop a table even if it is not empty.
     public fun drop_unchecked<K: copy + drop, V>(table: Table<K, V>) {
         let Table { handle } = table;
-        object::drop_unchecked_table(handle)
+        let TablePlaceholder{} = object::remove_unchecked(handle);
     }
 
 
     /// Returns table handle of `table`.
-    public fun handle<K: copy + drop, V>(table: &Table<K, V>): &ObjectID {
-        &table.handle
+    public fun handle<K: copy + drop, V>(table: &Table<K, V>): ObjectID {
+        object::id(&table.handle)
     }
 
     #[test_only]
@@ -262,7 +260,6 @@ module moveos_std::table {
         let uid2 = object::new_uid_for_test(&mut tx_context);
         let t1 = new<u64, Table<u8, u32>>(uid1);
         let t2 = new<u8, u32>(uid2);
-        let t2_id = t2.handle;
 
         let t1_key = 2u64;
         let t2_key = 1u8;
@@ -273,17 +270,10 @@ module moveos_std::table {
         let value = borrow(borrowed_t2, t2_key);
         assert!(*value == 32u32, 1);
 
-        let t2 = new_with_id<u8, u32>(copy t2_id);
-        assert!(contains(&t2, t2_key), 2);
-        let Table { handle: _ } = t2;
 
         let borrowed_mut_t2 = borrow_mut(&mut t1, t1_key);
         remove(borrowed_mut_t2, t2_key);
-
-        let t3 = new_with_id<u8, u32>(t2_id);
-        assert!(!contains(&t3, t2_key), 2);
         
-        drop_unchecked(t3); // No need to drop t2 as t2 shares same handle with t3
         drop_unchecked(t1);
         moveos_std::tx_context::drop(tx_context);
     }
@@ -309,7 +299,7 @@ module moveos_std::table {
         let uid2 = object::new_uid_for_test(&mut tx_context);
         let t1 = new<u64, Table<u8, u32>>(uid1);
         let t2 = new<u8, u32>(uid2);
-        let t2_id = t2.handle;
+        let t2_id = object::id(&t2.handle);
 
         let t1_key = 2u64;
         let t2_key = 1u8;

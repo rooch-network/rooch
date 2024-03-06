@@ -14,7 +14,6 @@ module moveos_std::object_id {
     friend moveos_std::event;
     friend moveos_std::table;
     friend moveos_std::type_table;
-    friend moveos_std::object_table;
     friend moveos_std::object;
   
     /// ObjectID is a unique identifier for the Object

@@ -19,8 +19,6 @@ module moveos_std::object {
     friend moveos_std::event;
     friend moveos_std::table;
     friend moveos_std::type_table;
-    friend moveos_std::object_table;
-    friend moveos_std::object_dynamic_field;
 
     const ErrorObjectAlreadyExist: u64 = 1;
     const ErrorObjectFrozen: u64 = 2;
@@ -30,6 +28,7 @@ module moveos_std::object {
     ///Can not take out the object which is bound to the account
     const ErrorObjectIsBound: u64 = 6;
     const ErrorObjectAlreadyBorrowed: u64 = 7;
+    const ErrorObjectContainsDynamicFields: u64 = 8;
 
     const SYSTEM_OWNER_ADDRESS: address = @0x0;
     
@@ -56,9 +55,7 @@ module moveos_std::object {
         // The value of the object
         // The value must be the last field
         value: T,
-    }
-
-    struct TablePlaceholder has key,store {}
+    } 
 
     /// Object<T> is a pointer to the ObjectEntity<T>, It has `key` and `store` ability. 
     /// It has the same lifetime as the ObjectEntity<T>
@@ -76,13 +73,6 @@ module moveos_std::object {
 
     public(friend) fun new_with_id<T: key>(id: ObjectID, value: T): Object<T> {
         let obj_entity = new_internal(id, value);
-        add_to_global(obj_entity);
-        Object{id}
-    }
-
-    /// New pure table object
-    public(friend) fun new_table_with_id(id: ObjectID): Object<TablePlaceholder> {
-        let obj_entity = new_internal(id, TablePlaceholder{});
         add_to_global(obj_entity);
         Object{id}
     }
@@ -168,10 +158,20 @@ module moveos_std::object {
     #[private_generics(T)]
     /// Remove the object from the global storage, and return the object value
     /// This function is only can be called by the module of `T`.
+    /// The caller must ensure that the dynamic fields are empty before delete the Object
     public fun remove<T: key>(self: Object<T>) : T {
-        let Object{id} = self;
+        let Object{id} = self; 
+        let object_entity = remove_from_global<T>(id);
+        let ObjectEntity{id:_, owner:_, flag:_, value, state_root:_, size} = object_entity;
         // Need to ensure that the Table is empty before delete the Object
-        destroy_empty_table(id);
+        assert!(size == 0, ErrorObjectContainsDynamicFields);
+        value
+    }
+
+    /// Remove the object from the global storage, and return the object value
+    /// Do not check if the dynamic fields are empty 
+    public(friend) fun remove_unchecked<T: key>(self: Object<T>) : T {
+        let Object{id} = self; 
         let object_entity = remove_from_global<T>(id);
         let ObjectEntity{id:_, owner:_, flag:_, value, state_root:_, size:_} = object_entity;
         value
@@ -323,82 +323,158 @@ module moveos_std::object {
     }
 
     public(friend) fun add_to_global<T: key>(obj: ObjectEntity<T>) {
-        add_field<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), obj.id, obj);
+        add_field_internal<T, ObjectID, ObjectEntity<T>>(global_object_storage_handle(), obj.id, obj);
     }
 
     public(friend) fun borrow_from_global<T: key>(object_id: ObjectID): &ObjectEntity<T> {
-        borrow_field<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id)
+        borrow_field_internal<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id)
     }
 
     public(friend) fun borrow_mut_from_global<T: key>(object_id: ObjectID): &mut ObjectEntity<T> {
-        let object_entity = borrow_mut_field<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id);
+        let object_entity = borrow_mut_field_internal<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id);
         assert!(!is_frozen_internal(object_entity), ErrorObjectFrozen);
         object_entity
     }
 
     public(friend) fun remove_from_global<T: key>(object_id: ObjectID): ObjectEntity<T> {
-        remove_field<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id)
+        remove_field_internal<T, ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id)
     }
 
     public(friend) fun contains_global(object_id: ObjectID): bool {
-        contains_field<ObjectID>(global_object_storage_handle(), object_id)
+        contains_field_internal(global_object_storage_handle(), object_id)
     }
 
 
     // === Object Raw Dynamic Table ===
+
+     #[private_generics(T)]
+    /// Add a dynamic filed to the object. Aborts if an entry for this
+    /// key already exists. The entry itself is not stored in the
+    /// table, and cannot be discovered from it.
+    public fun add_field<T: key, K: copy + drop, V>(obj: &mut Object<T>, key: K, val: V) {
+        add_field_internal<T,K,V>(obj.id, key, val)
+    }
+
+     /// Add a new entry to the table. Aborts if an entry for this
+    /// key already exists. The entry itself is not stored in the
+    /// table, and cannot be discovered from it.
+    public(friend) fun add_field_internal<T: key, K: copy + drop, V>(table_handle: ObjectID, key: K, val: V) {
+        raw_table::add<K,V>(table_handle, key, val);
+        //TODO update global object storage size
+        if(table_handle != global_object_storage_handle()){
+            let object_entity = borrow_mut_from_global<T>(table_handle);
+            object_entity.size = object_entity.size + 1;
+        }
+    }
+
+    /// Acquire an immutable reference to the value which `key` maps to.
+    /// Aborts if there is no entry for `key`.
+    public fun borrow_field<T: key, K: copy + drop, V>(obj: &Object<T>, key: K): &V {
+        borrow_field_internal<K, V>(obj.id, key)
+    }
+
+     /// Acquire an immutable reference to the value which `key` maps to.
+    /// Aborts if there is no entry for `key`.
+    public(friend) fun borrow_field_internal<K: copy + drop, V>(table_handle: ObjectID, key: K): &V {
+        raw_table::borrow<K, V>(table_handle, key)
+    }
+
+    /// Acquire an immutable reference to the value which `key` maps to.
+    /// Returns specified default value if there is no entry for `key`.
+    public fun borrow_field_with_default<T: key, K: copy + drop, V>(obj: &Object<T>, key: K, default: &V): &V {
+        borrow_field_with_default_internal<K, V>(obj.id, key, default)
+    }
+
+    /// Acquire an immutable reference to the value which `key` maps to.
+    /// Returns specified default value if there is no entry for `key`.
+    public(friend) fun borrow_field_with_default_internal<K: copy + drop, V>(table_handle: ObjectID, key: K, default: &V): &V {
+         if (!contains_field_internal<K>(table_handle, key)) {
+            default
+        } else {
+            borrow_field_internal(table_handle, key)
+        }
+    }
+
+    #[private_generics(T)]
+    /// Acquire a mutable reference to the value which `key` maps to.
+    /// Aborts if there is no entry for `key`.
+    public fun borrow_mut_field<T: key, K: copy + drop, V>(obj: &mut Object<T>, key: K): &mut V {
+        borrow_mut_field_internal<K, V>(obj.id, key)
+    }
+
+    /// Acquire a mutable reference to the value which `key` maps to.
+    /// Aborts if there is no entry for `key`.
+    public(friend) fun borrow_mut_field_internal<K: copy + drop, V>(table_handle: ObjectID, key: K): &mut V {
+        raw_table::borrow_mut<K, V>(table_handle, key)
+    }
+
+    #[private_generics(T)]
+    /// Acquire a mutable reference to the value which `key` maps to.
+    /// Insert the pair (`key`, `default`) first if there is no entry for `key`.
+    public fun borrow_mut_field_with_default<T: key, K: copy + drop, V: drop>(obj: &mut Object<T>, key: K, default: V): &mut V {
+        borrow_mut_field_with_default_internal<T, K, V>(obj.id, key, default)
+    }
+
+    /// Acquire a mutable reference to the value which `key` maps to.
+    /// Insert the pair (`key`, `default`) first if there is no entry for `key`.
+    public(friend) fun borrow_mut_field_with_default_internal<T: key, K: copy + drop, V: drop>(table_handle: ObjectID, key: K, default: V): &mut V {
+        if (!contains_field_internal<K>(table_handle, copy key)) {
+            add_field_internal<T, K, V>(table_handle, key, default)
+        };
+        borrow_mut_field_internal(table_handle, key)
+    }
+
+    #[private_generics(T)]
+    /// Insert the pair (`key`, `value`) if there is no entry for `key`.
+    /// update the value of the entry for `key` to `value` otherwise
+    public fun upsert_field<T: key, K: copy + drop, V: drop>(obj: &mut Object<T>, key: K, value: V) {
+        upsert_field_internal<T, K, V>(obj.id, key, value)
+    }
+
+    /// Insert the pair (`key`, `value`) if there is no entry for `key`.
+    /// update the value of the entry for `key` to `value` otherwise
+    public(friend) fun upsert_field_internal<T: key, K: copy + drop, V: drop>(table_handle: ObjectID, key: K, value: V) {
+        if (!contains_field_internal<K>(table_handle, copy key)) {
+            add_field_internal<T, K, V>(table_handle, key, value)
+        } else {
+            let ref = borrow_mut_field_internal(table_handle, key);
+            *ref = value;
+        };
+    }
+
+    #[private_generics(T)]
+    /// Remove from `table` and return the value which `key` maps to.
+    /// Aborts if there is no entry for `key`.
+    public fun remove_field<T: key, K: copy + drop, V>(obj: &mut Object<T>, key: K): V {
+        remove_field_internal<T, K, V>(obj.id, key)
+    }
+
+    /// Remove from `table` and return the value which `key` maps to.
+    /// Aborts if there is no entry for `key`.
+    public(friend) fun remove_field_internal<T: key, K: copy + drop, V>(table_handle: ObjectID, key: K): V {
+        raw_table::remove<K, V>(table_handle, key)
+    }
+
+    /// Returns true if `table` contains an entry for `key`.
+    public fun contains_field<T: key, K: copy + drop>(obj: &Object<T>, key: K): bool {
+        contains_field_internal<K>(obj.id, key)
+    }
+
+       /// Returns true if `table` contains an entry for `key`.
+    public(friend) fun contains_field_internal<K: copy + drop>(table_handle: ObjectID, key: K): bool {
+        raw_table::contains<K>(table_handle, key)
+    }
+
+    /// Returns the size of the table, the number of key-value pairs
+    public fun field_size<T: key>(obj: &Object<T>): u64 {
+        table_length(obj.id)
+    }
 
     /// New a table. Aborts if the table exists.
     public(friend) fun new_table(table_handle: ObjectID): TableInfo {
         raw_table::new_table(table_handle)
     }
 
-    /// Add a new entry to the table. Aborts if an entry for this
-    /// key already exists. The entry itself is not stored in the
-    /// table, and cannot be discovered from it.
-    public(friend) fun add_field<K: copy + drop, V>(table_handle: ObjectID, key: K, val: V) {
-        raw_table::add<K,V>(table_handle, key, val)
-    }
-
-    /// Acquire an immutable reference to the value which `key` maps to.
-    /// Aborts if there is no entry for `key`.
-    public(friend) fun borrow_field<K: copy + drop, V>(table_handle: ObjectID, key: K): &V {
-        raw_table::borrow<K, V>(table_handle, key)
-    }
-
-    /// Acquire an immutable reference to the value which `key` maps to.
-    /// Returns specified default value if there is no entry for `key`.
-    public(friend) fun borrow_field_with_default<K: copy + drop, V>(table_handle: ObjectID, key: K, default: &V): &V {
-        raw_table::borrow_with_default<K, V>(table_handle, key, default)
-    }
-
-    /// Acquire a mutable reference to the value which `key` maps to.
-    /// Aborts if there is no entry for `key`.
-    public(friend) fun borrow_mut_field<K: copy + drop, V>(table_handle: ObjectID, key: K): &mut V {
-        raw_table::borrow_mut<K, V>(table_handle, key)
-    }
-
-    /// Acquire a mutable reference to the value which `key` maps to.
-    /// Insert the pair (`key`, `default`) first if there is no entry for `key`.
-    public(friend) fun borrow_mut_field_with_default<K: copy + drop, V: drop>(table_handle: ObjectID, key: K, default: V): &mut V {
-        raw_table::borrow_mut_with_default<K, V>(table_handle, key, default)
-    }
-
-    /// Insert the pair (`key`, `value`) if there is no entry for `key`.
-    /// update the value of the entry for `key` to `value` otherwise
-    public(friend) fun upsert_field<K: copy + drop, V: drop>(table_handle: ObjectID, key: K, value: V) {
-        raw_table::upsert<K, V>(table_handle, key, value)
-    }
-
-    /// Remove from `table` and return the value which `key` maps to.
-    /// Aborts if there is no entry for `key`.
-    public(friend) fun remove_field<K: copy + drop, V>(table_handle: ObjectID, key: K): V {
-        raw_table::remove<K, V>(table_handle, key)
-    }
-
-    /// Returns true if `table` contains an entry for `key`.
-    public(friend) fun contains_field<K: copy + drop>(table_handle: ObjectID, key: K): bool {
-        raw_table::contains<K>(table_handle, key)
-    }
 
     /// Returns the size of the table, the number of key-value pairs
     public(friend) fun table_length(table_handle: ObjectID): u64 {
@@ -572,5 +648,29 @@ module moveos_std::object {
         let object_id = custom_object_id<TestStructID, TestStruct>(id);
         //ensure the object_id is the same as the object_id generated by the object.rs
         assert!(object_id::id(&object_id) == @0xaa825038ae811f5c94d20175699d808eae4c624fa85c81faad45de1145284e06, 1);
+    }
+
+    #[test(sender_addr = @0x42)]
+    fun test_remove_object_success_with_dynamic_fields(sender_addr: address){
+        let tx_context = moveos_std::tx_context::new_test_context(sender_addr);
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut tx_context));
+        let obj = new_with_id(object_id, TestStruct { count: 1 });
+        add_field(&mut obj, 1u64, 1u64);
+        let _v:u64 = remove_field(&mut obj, 1u64);
+        let s = remove(obj);
+        let TestStruct { count : _ } = s;
+        moveos_std::tx_context::drop(tx_context);
+    }
+
+    #[test(sender_addr = @0x42)]
+    #[expected_failure(abort_code = ErrorObjectContainsDynamicFields, location = Self)]
+    fun test_remove_object_faild_with_dynamic_fields(sender_addr: address){
+        let tx_context = moveos_std::tx_context::new_test_context(sender_addr);
+        let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(&mut tx_context));
+        let obj = new_with_id(object_id, TestStruct { count: 1 });
+        add_field(&mut obj, 1u64, 1u64);
+        let s = remove(obj);
+        let TestStruct { count : _ } = s;
+        moveos_std::tx_context::drop(tx_context);
     }
 }

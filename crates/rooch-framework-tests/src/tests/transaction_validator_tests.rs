@@ -24,6 +24,7 @@ use rooch_types::{
 
 #[test]
 fn test_validate_rooch() {
+    let _ = tracing_subscriber::fmt::try_init();
     let binding_test = binding_test::RustBindingTest::new().unwrap();
     let transaction_validator = binding_test
         .as_module_binding::<rooch_types::framework::transaction_validator::TransactionValidator>(

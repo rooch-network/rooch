@@ -6,6 +6,7 @@ use move_core_types::vm_status::KeptVMStatus;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::moveos_std::object::ObjectEntity;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::transaction::FunctionCall;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
@@ -35,11 +36,15 @@ impl RustBindingTest {
         let executor = ExecutorActor::new(
             RoochChainID::LOCAL.genesis_ctx(sequencer, gas_schedule_blob),
             BitcoinGenesisContext::new(Network::default().to_num()),
-            moveos_store.clone(),
-            rooch_store.clone(),
+            moveos_store,
+            rooch_store,
         )?;
-        let reader_executor =
-            ReaderExecutorActor::new(executor.genesis().clone(), moveos_store, rooch_store)?;
+
+        let reader_executor = ReaderExecutorActor::new(
+            executor.genesis().clone(),
+            executor.get_moveos_store(),
+            executor.get_rooch_store(),
+        )?;
         Ok(Self {
             executor,
             reader_executor,
@@ -67,7 +72,13 @@ impl RustBindingTest {
         tx: T,
     ) -> Result<ExecuteTransactionResult> {
         let verified_tx = self.executor.validate(tx)?;
-        self.executor.execute(verified_tx)
+        let result = self.executor.execute(verified_tx)?;
+        let root = ObjectEntity::root_object(
+            result.transaction_info.state_root,
+            result.transaction_info.size,
+        );
+        self.reader_executor.refresh_state(root, false)?;
+        Ok(result)
     }
 }
 
