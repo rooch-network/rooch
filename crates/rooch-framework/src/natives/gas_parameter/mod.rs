@@ -21,3 +21,4 @@ mod signer;
 mod table_extension;
 mod test_helper;
 mod type_info;
+mod wasm;

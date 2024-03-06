@@ -247,7 +247,8 @@ xxhash-rust = "0.8.8"
 base64 = "0.21.3"
 #criterion-cpu-time = "0.1.0"
 pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer"] }
-
+wasmer = "4.2.5"
+ciborium = "0.2.1"
 
 
 celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }

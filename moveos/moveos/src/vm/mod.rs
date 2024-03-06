@@ -13,3 +13,4 @@ pub mod vm_status_explainer;
 
 #[cfg(test)]
 mod unit_tests;
+mod wasm;
