@@ -11,7 +11,6 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 use moveos_config::{temp_dir, DataDirPath};
-use rooch_types::address::RoochAddress;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::crypto::RoochKeyPair;

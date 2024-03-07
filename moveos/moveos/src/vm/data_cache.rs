@@ -33,7 +33,6 @@ use std::sync::Arc;
 
 use move_core_types::language_storage::TypeTag;
 use move_vm_runtime::data_cache::TransactionCache;
-use moveos_types::bitcoin_client::BitcoinClient;
 use moveos_types::moveos_std::move_module::Module;
 use moveos_types::state::{KeyState, MoveStructType};
 

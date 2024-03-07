@@ -32,7 +32,6 @@ use moveos_stdlib::natives::moveos_stdlib::{
     move_module::NativeModuleContext,
     raw_table::{NativeTableContext, TableData},
 };
-use moveos_types::bitcoin_client::BitcoinClient;
 use moveos_types::transaction::RawTransactionOutput;
 use moveos_types::{
     function_return_value::FunctionReturnValue,
@@ -50,7 +49,6 @@ use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 
 use crate::gas::table::{get_gas_schedule_entries, initial_cost_schedule, ClassifiedGasMeter};
 use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
-use crate::vm::native_extend_context::NativeBitcoinLightClientContext;
 use crate::vm::tx_argument_resolver;
 
 use super::data_cache::{into_change_set, MoveosDataCache};
@@ -72,7 +70,6 @@ impl MoveOSVM {
 
     pub fn new_session<
         'r,
-        'b,
         S: MoveOSResolver,
         G: SwitchableGasMeter + ClassifiedGasMeter + Clone,
     >(
@@ -80,29 +77,26 @@ impl MoveOSVM {
         remote: &'r S,
         ctx: TxContext,
         gas_meter: G,
-        bitcoin_client: &'b Option<BitcoinClient>,
-    ) -> MoveOSSession<'r, '_, 'b, S, G> {
-        MoveOSSession::new(&self.inner, remote, ctx, gas_meter, false, bitcoin_client)
+    ) -> MoveOSSession<'r, '_, S, G> {
+        MoveOSSession::new(&self.inner, remote, ctx, gas_meter, false)
     }
 
-    pub fn new_genesis_session<'r, 'b, S: MoveOSResolver>(
+    pub fn new_genesis_session<'r, S: MoveOSResolver>(
         &self,
         remote: &'r S,
         ctx: TxContext,
-        bitcoin_client: &'b Option<BitcoinClient>,
-    ) -> MoveOSSession<'r, '_, 'b, S, MoveOSGasMeter> {
+    ) -> MoveOSSession<'r, '_, S, MoveOSGasMeter> {
         //Do not charge gas for genesis session
         let gas_entries = get_gas_schedule_entries(remote);
         let cost_table = initial_cost_schedule(gas_entries);
         let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
         gas_meter.set_metering(false);
         // Genesis session do not need to execute pre_execute and post_execute function
-        MoveOSSession::new(&self.inner, remote, ctx, gas_meter, false, bitcoin_client)
+        MoveOSSession::new(&self.inner, remote, ctx, gas_meter, false)
     }
 
     pub fn new_readonly_session<
         'r,
-        'b,
         S: MoveOSResolver,
         G: SwitchableGasMeter + ClassifiedGasMeter + Clone,
     >(
@@ -110,9 +104,8 @@ impl MoveOSVM {
         remote: &'r S,
         ctx: TxContext,
         gas_meter: G,
-        bitcoin_client: &'b Option<BitcoinClient>,
-    ) -> MoveOSSession<'r, '_, 'b, S, G> {
-        MoveOSSession::new(&self.inner, remote, ctx, gas_meter, true, bitcoin_client)
+    ) -> MoveOSSession<'r, '_, S, G> {
+        MoveOSSession::new(&self.inner, remote, ctx, gas_meter, true)
     }
 
     pub fn mark_loader_cache_as_invalid(&self) {
@@ -123,7 +116,7 @@ impl MoveOSVM {
 /// MoveOSSession is a wrapper of MoveVM session with MoveOS specific features.
 /// It is used to execute a transaction, every transaction should be executed in a new session.
 /// Every session has a TxContext, if the transaction have multiple actions, the TxContext is shared.
-pub struct MoveOSSession<'r, 'l, 'b, S, G> {
+pub struct MoveOSSession<'r, 'l, S, G> {
     pub(crate) vm: &'l MoveVM,
     pub(crate) remote: &'r S,
     pub(crate) session: Session<'r, 'l, MoveosDataCache<'r, 'l, S>>,
@@ -131,11 +124,10 @@ pub struct MoveOSSession<'r, 'l, 'b, S, G> {
     pub(crate) table_data: Arc<RwLock<TableData>>,
     pub(crate) gas_meter: G,
     pub(crate) read_only: bool,
-    pub(crate) bitcoin_client: &'b Option<BitcoinClient>,
 }
 
 #[allow(clippy::arc_with_non_send_sync)]
-impl<'r, 'l, 'b, S, G> MoveOSSession<'r, 'l, 'b, S, G>
+impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
 where
     S: MoveOSResolver,
     G: SwitchableGasMeter + ClassifiedGasMeter + Clone,
@@ -146,19 +138,17 @@ where
         ctx: TxContext,
         gas_meter: G,
         read_only: bool,
-        bitcoin_client: &'b Option<BitcoinClient>,
     ) -> Self {
         let ctx = Context::new(ctx);
         let table_data = Arc::new(RwLock::new(TableData::default()));
         Self {
             vm,
             remote,
-            session: Self::new_inner_session(vm, remote, table_data.clone(), bitcoin_client),
+            session: Self::new_inner_session(vm, remote, table_data.clone()),
             ctx,
             table_data,
             gas_meter,
             read_only,
-            bitcoin_client,
         }
     }
 
@@ -171,12 +161,7 @@ where
         let ctx = Context::new(self.ctx.tx_context.spawn(env));
         let table_data = Arc::new(RwLock::new(TableData::default()));
         Self {
-            session: Self::new_inner_session(
-                self.vm,
-                self.remote,
-                table_data.clone(),
-                self.bitcoin_client,
-            ),
+            session: Self::new_inner_session(self.vm, self.remote, table_data.clone()),
             ctx,
             table_data,
             ..self
@@ -187,14 +172,12 @@ where
         vm: &'l MoveVM,
         remote: &'r S,
         table_data: Arc<RwLock<TableData>>,
-        bitcoin_client: &'b Option<BitcoinClient>,
     ) -> Session<'r, 'l, MoveosDataCache<'r, 'l, S>> {
         let mut extensions = NativeContextExtensions::default();
 
         extensions.add(NativeTableContext::new(remote, table_data.clone()));
         extensions.add(NativeModuleContext::new(remote));
         extensions.add(NativeEventContext::default());
-        extensions.add(NativeBitcoinLightClientContext::new(bitcoin_client));
 
         // The VM code loader has bugs around module upgrade. After a module upgrade, the internal
         // cache needs to be flushed to work around those bugs.
@@ -483,7 +466,6 @@ where
             table_data,
             mut gas_meter,
             read_only,
-            bitcoin_client: _,
         } = self;
         let (changeset, raw_events, mut extensions) = session.finish_with_extensions()?;
         //We do not use the event API from data_cache. Instead, we use the NativeEventContext

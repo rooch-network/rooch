@@ -80,10 +80,6 @@ module bitcoin_move::light_client{
         assert!(!table::contains(&btc_block_store.hash_to_height, block_hash), ErrorBlockAlreadyProcessed);
 
         let block = bcs::from_bytes<Block>(block_bytes);
-        123
-        let block = native_get_block(block_hash);
-        //TODO query btc block by native call 11
-
         validate_block(btc_block_store, block_height, block_hash, &block);
         process_txs(btc_block_store, &block); 
         let block_header = types::header(&block);
@@ -311,7 +307,5 @@ module bitcoin_move::light_client{
             option::none()
         }
     }
-
-    native fun native_get_block(block_hash: address): Block;
     
 }

@@ -3,7 +3,6 @@
 
 pub mod access_path;
 pub mod addresses;
-pub mod bitcoin_client;
 pub mod function_return_value;
 pub mod gas_config;
 pub mod genesis_info;
