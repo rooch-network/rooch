@@ -11,7 +11,8 @@ script {
     use moveos_std::move_module;
 
     fun main() {
-        assert!(move_module::exists_module(@moveos_std, string::utf8(b"move_module")), 0);
-        assert!(move_module::exists_module(@test, string::utf8(b"m")), 1);
+        let module_store = borrow_module_store();
+        assert!(move_module::exists_module(module_store, @moveos_std, string::utf8(b"move_module")), 0);
+        assert!(move_module::exists_module(module_store, @test, string::utf8(b"m")), 1);
     }
 }

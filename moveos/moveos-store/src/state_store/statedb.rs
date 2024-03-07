@@ -37,7 +37,10 @@ impl TreeObject {
     }
 
     pub fn get_field(&self, key: KeyState) -> Result<Option<State>> {
-        self.smt.get(key)
+        if self.smt.is_genesis() {
+            return Ok(None);
+        }
+        self.smt.get(key.clone())
     }
 
     pub fn get_field_as_object(&self, id: ObjectID) -> Result<Option<RawObject>> {
@@ -61,7 +64,31 @@ impl TreeObject {
     }
 
     pub fn state_root(&self) -> H256 {
-        self.smt.root_hash()
+        let state_root = self.smt.root_hash();
+        if cfg!(debug_assertions) {
+            debug_assert!(
+                state_root == self.entity.state_root(),
+                "state root not match, object state_root: {}, smt state_root: {}",
+                self.entity.state_root(),
+                state_root
+            );
+        }
+        state_root
+    }
+
+    pub fn is_genesis(&self) -> bool {
+        let is_genesis = self.smt.is_genesis();
+        if cfg!(debug_assertions) {
+            let state_root = self.smt.root_hash();
+            debug_assert!(
+                state_root == self.entity.state_root(),
+                "is_genesis not match, object state_root: {}, size: {}, smt state_root: {}",
+                self.entity.state_root,
+                self.entity.size,
+                self.smt.root_hash()
+            );
+        }
+        is_genesis
     }
 
     pub fn put_changes<I: IntoIterator<Item = (KeyState, Op<State>)>>(
@@ -162,7 +189,7 @@ impl StateDBStore {
                 match change {
                     (key, Op::New(state)) => {
                         changed_objects.insert(
-                            key,
+                            key.clone(),
                             TreeObject::new(self.node_store.clone(), state.as_raw_object()?),
                         );
                         global_size += 1;
@@ -182,31 +209,36 @@ impl StateDBStore {
         }
         for (object_id, object_change) in state_change_set.changes {
             let key = object_id.to_key();
-            let obj = changed_objects.get_mut(&key).ok_or_else(|| {
-                anyhow::format_err!("Object with id {} not found in change set", object_id)
-            })?;
+            let mut obj = match changed_objects.remove(&key) {
+                Some(obj) => obj,
+                None => self
+                    .get_object(object_id)?
+                    .ok_or_else(|| anyhow::format_err!("Object with id {} not found", object_id))?,
+            };
 
             obj.put_changes(object_change.entries.into_iter())?;
             update_set.put(key, obj.entity.into_state())
-            //raw_object.state_root = AccountAddress::new(new_state_root.into());
-            //let curr_table_size: i64 = raw_object.size as i64;
-            //let updated_table_size = curr_table_size + object_change.size_increment;
-            //debug_assert!(updated_table_size >= 0);
-            //raw_object.size = updated_table_size as u64;
-            //changed_objects.put(object_id.to_key(), raw_object.into_state());
         }
 
         for table_handle in state_change_set.removed_tables {
             update_set.remove(table_handle.to_key());
         }
 
+        for (key, value) in changed_objects {
+            update_set.put(key, value.entity.into_state());
+        }
+
+        let update_set_size = update_set.len();
         let state_root = self.root_object.update_fields(update_set)?;
+        if log::log_enabled!(log::Level::Debug) {
+            log::debug!("apply_change_set state_root: {:?}, update_set_size: {}, pre_global_size: {}, new_global_size: {}", state_root, update_set_size, self.root_object.entity.size, global_size);
+        }
         self.root_object.entity.size = global_size;
         Ok((state_root, global_size))
     }
 
     pub fn is_genesis(&self) -> bool {
-        self.root_object.smt.is_genesis()
+        self.root_object.is_genesis()
     }
 
     pub fn resolve_state(&self, handle: &ObjectID, key: &KeyState) -> Result<Option<State>, Error> {

@@ -89,7 +89,7 @@ mod tests {
     #[test]
     fn test_chain_id_object_id() {
         let chain_id_object_id = ChainID::chain_id_object_id();
-        println!("{:?}", chain_id_object_id);
+        //println!("{:?}", chain_id_object_id);
         assert_eq!(
             chain_id_object_id,
             ObjectID::from_str(

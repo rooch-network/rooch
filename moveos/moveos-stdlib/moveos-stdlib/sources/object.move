@@ -452,7 +452,12 @@ module moveos_std::object {
     /// Remove from `table` and return the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public(friend) fun remove_field_internal<T: key, K: copy + drop, V>(table_handle: ObjectID, key: K): V {
-        raw_table::remove<K, V>(table_handle, key)
+        let v = raw_table::remove<K, V>(table_handle, key);
+        if(table_handle != global_object_storage_handle()){
+            let object_entity = borrow_mut_from_global<T>(table_handle);
+            object_entity.size = object_entity.size - 1;
+        };
+        v
     }
 
     /// Returns true if `table` contains an entry for `key`.

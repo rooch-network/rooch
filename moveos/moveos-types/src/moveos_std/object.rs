@@ -519,7 +519,7 @@ mod tests {
             object_id,
             AccountAddress::random(),
             0u8,
-            AccountAddress::random(),
+            H256::random(),
             0,
             object_value,
         );
@@ -529,5 +529,19 @@ mod tests {
         let object2 = bcs::from_bytes::<ObjectEntity<TestStruct>>(&raw_object.to_bytes()).unwrap();
         assert_eq!(object, object2);
         Ok(())
+    }
+
+    #[test]
+    fn test_genesis_state_root() {
+        let genesis_state_root = *GENESIS_STATE_ROOT;
+        //println!("genesis_state_root: {:?}", genesis_state_root);
+        //ensure the genesis state root is not changed
+        assert_eq!(
+            genesis_state_root,
+            AccountAddress::from_hex_literal(
+                "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000"
+            )
+            .unwrap()
+        );
     }
 }

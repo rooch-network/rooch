@@ -372,7 +372,7 @@ module moveos_std::account {
       let alice_addr_actual = signer::address_of(&alice);
       let sequence_number = sequence_number(&mut ctx, alice_addr);
       //std::debug::print(&get_authentication_key(&mut ctx, alice_addr));
-      std::debug::print(&sequence_number);
+      //std::debug::print(&sequence_number);
       assert!(alice_addr_actual == alice_addr, 103);
       assert!(sequence_number >= 0, 104);
       context::drop_test_context(ctx);

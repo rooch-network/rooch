@@ -6,7 +6,6 @@ module moveos_std::genesis {
     use moveos_std::move_module;
 
     fun init(_ctx: &mut Context){
-        std::debug::print(&b"moveos_std genesis");
         move_module::create_module_store();
     }
 }

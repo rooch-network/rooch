@@ -173,6 +173,16 @@ impl ExecutorActor {
         size: u64,
         output: TransactionOutput,
     ) -> Result<ExecuteTransactionResult> {
+        if log::log_enabled!(log::Level::Debug) {
+            log::debug!(
+                "tx_hash: {}, state_root: {}, size: {}, gas_used: {}, status: {:?}",
+                tx_hash,
+                state_root,
+                size,
+                output.gas_used,
+                output.status
+            );
+        }
         let event_hashes: Vec<_> = output.events.iter().map(|e| e.hash()).collect();
         let event_root = InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
 

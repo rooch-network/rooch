@@ -15,7 +15,7 @@ use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::moveos_std::raw_table::TableInfo;
 use moveos_types::state::{KeyState, MoveState, MoveType, State, StateChangeSet, TableChange};
 use rand::{thread_rng, Rng};
-use smt::NodeStore;
+use smt::{NodeStore, UpdateSet};
 use std::str::FromStr;
 
 fn random_bytes() -> Vec<u8> {
@@ -174,3 +174,17 @@ fn test_statedb_state_root() -> Result<()> {
 //     assert_eq!(global_state_set, global_state_set2);
 //     Ok(())
 // }
+
+#[test]
+fn test_state_key_and_update_set() {
+    let mut update_set = UpdateSet::new();
+    (0..100)
+        .map(|_| {
+            let object_id = ObjectID::random();
+            let key = object_id.to_key();
+            let state = State::new(random_bytes(), random_type_tag());
+            (key, state)
+        })
+        .for_each(|(k, v)| update_set.put(k, v));
+    assert!(update_set.len() == 100);
+}

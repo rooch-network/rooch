@@ -33,12 +33,24 @@ pub struct State {
 }
 
 /// `KeyState` is represent key state
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct KeyState {
     /// the bytes of key state
     pub key: Vec<u8>,
     /// the type of key state
     pub key_type: TypeTag,
+}
+
+impl std::fmt::Debug for KeyState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let hex_key = hex::encode(&self.key);
+        write!(
+            f,
+            "key-type:{}, key: 0x{}",
+            self.key_type.to_canonical_string(),
+            hex_key
+        )
+    }
 }
 
 impl KeyState {

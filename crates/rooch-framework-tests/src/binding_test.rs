@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, Result};
+use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
@@ -15,11 +16,7 @@ use rooch_framework::natives::default_gas_schedule;
 use rooch_store::RoochStore;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
-use rooch_types::{
-    address::{RoochAddress, RoochSupportedAddress},
-    chain_id::RoochChainID,
-    transaction::AbstractTransaction,
-};
+use rooch_types::{chain_id::RoochChainID, transaction::AbstractTransaction};
 
 pub struct RustBindingTest {
     pub executor: ExecutorActor,
@@ -30,7 +27,7 @@ impl RustBindingTest {
     pub fn new() -> Result<Self> {
         let moveos_store = MoveOSStore::mock_moveos_store()?;
         let rooch_store = RoochStore::mock_rooch_store()?;
-        let sequencer = RoochAddress::random();
+        let sequencer = AccountAddress::ONE.into();
         let gas_schedule_blob = bcs::to_bytes(&default_gas_schedule())
             .expect("Failure serializing genesis gas schedule");
         let executor = ExecutorActor::new(

@@ -756,7 +756,6 @@ mod test {
         <T as std::str::FromStr>::Err: Debug,
     {
         let address = T::random();
-        println!("{:?}", address);
         let address_str = address.to_string();
         let address_from_str = T::from_str(&address_str).expect("parse address from str failed");
         assert_eq!(
@@ -769,7 +768,6 @@ mod test {
         let address2 = T::try_from(multi_chain_address.clone()).unwrap();
         assert_eq!(address, address2);
         let addr_str = multi_chain_address.to_string();
-        println!("{}", addr_str);
         let address3_result = MultiChainAddress::from_str(&addr_str);
         assert!(
             address3_result.is_ok(),
