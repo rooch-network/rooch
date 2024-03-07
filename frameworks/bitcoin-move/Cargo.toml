@@ -31,6 +31,7 @@ bitcoin = { workspace = true }
 bs58 = { workspace = true, features = ["check"] }
 http = { workspace = true }
 tracing = { workspace = true }
+bitcoincore-rpc = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }

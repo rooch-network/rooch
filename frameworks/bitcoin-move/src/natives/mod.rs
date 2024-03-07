@@ -10,25 +10,30 @@ use rooch_framework::natives::gas_parameter::gas_member::{
 use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
 use std::collections::BTreeMap;
 
-mod gas_parameter;
+pub mod gas_parameter;
+pub mod light_client;
 pub mod ord;
 
 #[derive(Debug, Clone)]
 pub struct GasParameters {
     ord: ord::GasParameters,
+    light_client: light_client::GasParameters,
 }
 
 impl FromOnChainGasSchedule for GasParameters {
     fn from_on_chain_gas_schedule(gas_schedule: &BTreeMap<String, u64>) -> Option<Self> {
         Some(Self {
             ord: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
+            light_client: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
         })
     }
 }
 
 impl ToOnChainGasSchedule for GasParameters {
     fn to_on_chain_gas_schedule(&self) -> Vec<(String, u64)> {
-        self.ord.to_on_chain_gas_schedule()
+        let mut entires = self.ord.to_on_chain_gas_schedule();
+        entires.extend(self.light_client.to_on_chain_gas_schedule());
+        entires
     }
 }
 
@@ -36,6 +41,7 @@ impl InitialGasSchedule for GasParameters {
     fn initial() -> Self {
         Self {
             ord: InitialGasSchedule::initial(),
+            light_client: InitialGasSchedule::initial(),
         }
     }
 }
@@ -49,6 +55,7 @@ impl GasParameters {
     pub fn zeros() -> Self {
         Self {
             ord: ord::GasParameters::zeros(),
+            light_client: light_client::GasParameters::zeros(),
         }
     }
 }
@@ -65,6 +72,10 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     }
 
     add_natives!("ord", ord::make_all(gas_params.ord));
+    add_natives!(
+        "light_client",
+        light_client::make_all(gas_params.light_client)
+    );
 
     make_table_from_iter(BITCOIN_MOVE_ADDRESS, natives)
 }

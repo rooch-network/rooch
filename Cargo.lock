@@ -898,6 +898,7 @@ dependencies = [
  "bcs",
  "better_any",
  "bitcoin 0.31.0",
+ "bitcoincore-rpc",
  "brotli",
  "bs58 0.5.0",
  "fastcrypto",
@@ -5743,6 +5744,7 @@ dependencies = [
  "anyhow",
  "backtrace",
  "bcs",
+ "better_any",
  "clap 4.4.1",
  "codespan",
  "codespan-reporting",
@@ -5919,6 +5921,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bcs",
+ "bitcoincore-rpc",
  "fastcrypto",
  "hex",
  "move-binary-format",

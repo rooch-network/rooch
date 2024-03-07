@@ -25,6 +25,7 @@ use moveos_store::state_store::statedb::StateDBStore;
 use moveos_store::transaction_store::TransactionDBStore;
 use moveos_store::MoveOSStore;
 use moveos_types::addresses::MOVEOS_STD_ADDRESS;
+use moveos_types::bitcoin_client::BitcoinClient;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::FunctionId;
@@ -103,6 +104,7 @@ pub struct MoveOS {
     db: MoveOSResolverProxy<MoveOSStore>,
     system_pre_execute_functions: Vec<FunctionCall>,
     system_post_execute_functions: Vec<FunctionCall>,
+    bitcoin_client: Option<BitcoinClient>,
 }
 
 impl MoveOS {
@@ -112,6 +114,7 @@ impl MoveOS {
         config: MoveOSConfig,
         system_pre_execute_functions: Vec<FunctionCall>,
         system_post_execute_functions: Vec<FunctionCall>,
+        bitcoin_client: Option<BitcoinClient>,
     ) -> Result<Self> {
         let vm = MoveOSVM::new(natives, config.vm_config)?;
         Ok(Self {
@@ -119,6 +122,7 @@ impl MoveOS {
             db: MoveOSResolverProxy(db),
             system_pre_execute_functions,
             system_post_execute_functions,
+            bitcoin_client,
         })
     }
 
@@ -162,7 +166,9 @@ impl MoveOS {
         } = tx;
         ctx.add(genesis_ctx)?;
         ctx.add(bitcoin_genesis_ctx)?;
-        let mut session = self.vm.new_genesis_session(&self.db, ctx);
+        let mut session = self
+            .vm
+            .new_genesis_session(&self.db, ctx, &self.bitcoin_client);
         let verified_action = session.verify_move_action(action)?;
 
         // execute main tx
@@ -215,9 +221,9 @@ impl MoveOS {
         let cost_table = initial_cost_schedule(gas_entries);
         let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
         gas_meter.set_metering(false);
-        let session = self
-            .vm
-            .new_readonly_session(&self.db, ctx.clone(), gas_meter);
+        let session =
+            self.vm
+                .new_readonly_session(&self.db, ctx.clone(), gas_meter, &self.bitcoin_client);
 
         let verified_action = session.verify_move_action(action)?;
         let (_, _) = session.finish_with_extensions(KeptVMStatus::Executed)?;
@@ -258,7 +264,9 @@ impl MoveOS {
         // Temporary behavior, will enable this in the future.
         // gas_meter.charge_io_write(ctx.tx_size)?;
 
-        let mut session = self.vm.new_session(&self.db, ctx, gas_meter);
+        let mut session = self
+            .vm
+            .new_session(&self.db, ctx, gas_meter, &self.bitcoin_client);
 
         // system pre_execute
         // we do not charge gas for system_pre_execute function
@@ -315,7 +323,7 @@ impl MoveOS {
 
     fn execute_gas_charge_post(
         &self,
-        session: &mut MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
+        session: &mut MoveOSSession<'_, '_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
         action: &VerifiedMoveAction,
     ) -> VMResult<Option<bool>> {
         match action {
@@ -473,9 +481,12 @@ impl MoveOS {
         let cost_table = initial_cost_schedule(gas_entries);
         let mut gas_meter = MoveOSGasMeter::new(cost_table, tx_context.max_gas_amount);
         gas_meter.set_metering(false);
-        let mut session = self
-            .vm
-            .new_readonly_session(&self.db, tx_context.clone(), gas_meter);
+        let mut session = self.vm.new_readonly_session(
+            &self.db,
+            tx_context.clone(),
+            gas_meter,
+            &self.bitcoin_client,
+        );
 
         let result = session.execute_function_bypass_visibility(function_call);
         match result {
@@ -495,7 +506,7 @@ impl MoveOS {
     // else return VMError and a bool which indicate if we should respawn the session.
     fn execute_user_action(
         &self,
-        session: &mut MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
+        session: &mut MoveOSSession<'_, '_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
         action: VerifiedMoveAction,
         pre_execute_functions: Vec<FunctionCall>,
         post_execute_functions: Vec<FunctionCall>,
@@ -538,7 +549,7 @@ impl MoveOS {
     // Execute pre_execute and post_execute only.
     fn execute_pre_and_post(
         &self,
-        session: &mut MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
+        session: &mut MoveOSSession<'_, '_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
         pre_execute_functions: Vec<FunctionCall>,
         post_execute_functions: Vec<FunctionCall>,
     ) -> VMResult<()> {
@@ -549,7 +560,7 @@ impl MoveOS {
 
     fn execution_cleanup(
         &self,
-        mut session: MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
+        mut session: MoveOSSession<'_, '_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
         status: VMStatus,
         action_opt: Option<VerifiedMoveAction>,
     ) -> Result<RawTransactionOutput> {

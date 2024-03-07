@@ -20,7 +20,7 @@ use moveos_types::{
 };
 use std::sync::Arc;
 
-impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
+impl<'r, 'l, 'b, S, G> MoveOSSession<'r, 'l, 'b, S, G>
 where
     S: MoveOSResolver,
     G: SwitchableGasMeter,
