@@ -85,7 +85,7 @@ module rooch_framework::account_coin_store {
         if (account::exists_resource<CoinStores>(ctx, addr))
             {
                 let coin_stores = account::borrow_resource<CoinStores>(ctx, addr);
-                option::some(*table::handle(&coin_stores.coin_stores))
+                option::some(table::handle(&coin_stores.coin_stores))
             } else {
             option::none<ObjectID>()
         }

@@ -11,11 +11,12 @@ module rooch_examples::publish {
     use std::vector;
     use std::signer;
     use moveos_std::move_module::{Self, MoveModule};
-    use moveos_std::context::{Self, Context};
+    use moveos_std::context::{Context};
 
     public entry fun publish_modules_entry(ctx: &mut Context,  account: &signer, module_bytes: vector<u8>) {
         let m: MoveModule = move_module::new(module_bytes);
-        context::publish_modules(ctx, account, vector::singleton(m));
+        let module_store = move_module::borrow_mut_module_store();
+        move_module::publish_modules(ctx, module_store, account, vector::singleton(m));
     }
 
     public entry fun publish_counter_example(ctx: &mut Context,  account: &signer) {
@@ -26,6 +27,7 @@ module rooch_examples::publish {
         let old_address = @0x42;
         let new_address = signer::address_of(account);
         let remapped_modules = move_module::binding_module_address(modules, old_address, new_address);
-        context::publish_modules(ctx, account, remapped_modules);
+        let module_store = move_module::borrow_mut_module_store();
+        move_module::publish_modules(ctx, module_store, account, remapped_modules);
     }
 }

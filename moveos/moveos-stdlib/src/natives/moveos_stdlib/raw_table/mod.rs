@@ -70,7 +70,7 @@ pub struct TableData {
 }
 
 /// A structure representing table key.
-#[derive(Clone, Ord, PartialOrd, PartialEq, Eq, Debug)]
+#[derive(Clone, Ord, PartialOrd, PartialEq, Eq)]
 pub struct TableKey {
     pub key_type: TypeTag,
     pub key: Vec<u8>,
@@ -79,6 +79,17 @@ pub struct TableKey {
 impl TableKey {
     pub fn new(key_type: TypeTag, key: Vec<u8>) -> Self {
         Self { key_type, key }
+    }
+}
+
+impl std::fmt::Debug for TableKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "TableKey {{ key_type: {:?}, key: {:?} }}",
+            self.key_type,
+            hex::encode(&self.key)
+        )
     }
 }
 
@@ -615,12 +626,23 @@ fn native_borrow_box(
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
 
     let table_key = TableKey::new(key_type, key_bytes);
-    let (tv, loaded) = table.get_or_create_global_value(context, table_context, table_key)?;
+    let (tv, loaded) =
+        table.get_or_create_global_value(context, table_context, table_key.clone())?;
     cost += common_gas_params.calculate_load_cost(loaded);
     let value_type = type_to_type_tag(context, &ty_args[1])?;
-    match tv.borrow_global(value_type) {
+    match tv.borrow_global(value_type.clone()) {
         Ok(ref_val) => Ok(NativeResult::ok(cost, smallvec![ref_val])),
-        Err(_) => Ok(NativeResult::err(cost, E_NOT_FOUND)),
+        Err(_) => {
+            if log::log_enabled!(log::Level::Debug) {
+                log::warn!(
+                    "[RawTable] borrow_box: handle: {}, value_type: {} key:{:?} not found.",
+                    &table.handle,
+                    value_type.to_canonical_string(),
+                    table_key
+                );
+            }
+            Ok(NativeResult::err(cost, E_NOT_FOUND))
+        }
     }
 }
 

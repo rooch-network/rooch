@@ -5917,6 +5917,7 @@ dependencies = [
  "bcs",
  "chrono",
  "hex",
+ "log",
  "move-core-types",
  "move-resource-viewer",
  "moveos-common",
@@ -5932,6 +5933,8 @@ dependencies = [
  "serde 1.0.195",
  "serde_bytes",
  "smt",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

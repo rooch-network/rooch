@@ -303,18 +303,19 @@ pub fn rooch_framework_error_descriptions() -> &'static [u8] {
 
 #[cfg(test)]
 mod tests {
+    use move_core_types::account_address::AccountAddress;
     use moveos::moveos::MoveOS;
     use moveos_store::MoveOSStore;
+    use moveos_types::moveos_std::move_module::ModuleStore;
     use rooch_framework::natives::{all_natives, default_gas_schedule};
-    use rooch_types::address::RoochSupportedAddress;
     use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
     use rooch_types::bitcoin::network::Network;
-    use rooch_types::{address::RoochAddress, chain_id::RoochChainID};
+    use rooch_types::chain_id::RoochChainID;
 
     #[test]
     fn test_genesis_init() {
         let _ = tracing_subscriber::fmt::try_init();
-        let sequencer = RoochAddress::random();
+        let sequencer = AccountAddress::ONE.into();
         let bitcoin_genesis_ctx = BitcoinGenesisContext::new(Network::NetworkRegtest.to_num());
         let gas_schedule_blob = bcs::to_bytes(&default_gas_schedule())
             .expect("Failure serializing genesis gas schedule");
@@ -345,5 +346,19 @@ mod tests {
                 genesis.genesis_package.bitcoin_genesis_ctx,
             )
             .expect("init genesis failed");
+        assert!(!moveos.moveos_store().get_state_store().is_genesis());
+        let module_store_obj = moveos
+            .moveos_store()
+            .get_state_store()
+            .get(ModuleStore::module_store_id())
+            .unwrap();
+        assert!(module_store_obj.is_some());
+
+        let chain_id_obj = moveos
+            .moveos_store()
+            .get_state_store()
+            .get(rooch_types::framework::chain_id::ChainID::chain_id_object_id())
+            .unwrap();
+        assert!(chain_id_obj.is_some());
     }
 }

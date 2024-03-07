@@ -81,6 +81,7 @@ fn test_store() {
     let transaction_info1 = TransactionExecutionInfo::new(
         H256::random(),
         H256::random(),
+        rand::random(),
         H256::random(),
         rand::random(),
         KeptVMStatus::Executed,
@@ -131,6 +132,7 @@ fn test_iter() {
     let transaction_info1 = TransactionExecutionInfo::new(
         H256::random(),
         H256::random(),
+        rand::random(),
         H256::random(),
         rand::random(),
         KeptVMStatus::Executed,

@@ -33,7 +33,7 @@ use std::sync::Arc;
 
 use move_core_types::language_storage::TypeTag;
 use move_vm_runtime::data_cache::TransactionCache;
-use moveos_types::moveos_std::move_module::Module;
+use moveos_types::moveos_std::move_module::ModuleStore;
 use moveos_types::state::{KeyState, MoveStructType};
 
 /// Transaction data cache. Keep updates within a transaction so they can all be published at
@@ -124,7 +124,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
     /// Get the serialized format of a `CompiledModule` given a `ModuleId`.
     fn load_module(&self, module_id: &ModuleId) -> VMResult<Vec<u8>> {
         let table_data = self.table_data.read();
-        let module_object_id = Module::module_object_id();
+        let module_object_id = ModuleStore::module_store_id();
         let (_, value_type) = Self::module_table_typetag();
         // TODO: check or ensure the module table exists.
         if table_data.exist_table(&module_object_id) {
@@ -163,7 +163,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
         blob: Vec<u8>,
         is_republishing: bool,
     ) -> VMResult<()> {
-        let module_object_id = Module::module_object_id();
+        let module_object_id = ModuleStore::module_store_id();
 
         // Key type: std::string::String
         // value type: moveos_std::moveos_std::move_module::MoveModule
@@ -201,7 +201,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
     /// Check if this module exists.
     fn exists_module(&self, module_id: &ModuleId) -> VMResult<bool> {
         let table_data = self.table_data.read();
-        let module_object_id = Module::module_object_id();
+        let module_object_id = ModuleStore::module_store_id();
         if table_data.exist_table(&module_object_id) {
             let table = table_data
                 .borrow_table(&module_object_id)

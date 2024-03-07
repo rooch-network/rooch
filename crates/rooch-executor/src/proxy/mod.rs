@@ -22,6 +22,7 @@ use moveos_types::function_return_value::{AnnotatedFunctionResult, FunctionResul
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::event::{Event, EventID};
+use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::KeyState;
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
@@ -192,12 +193,9 @@ impl ExecutorProxy {
             .await?
     }
 
-    pub async fn refresh_state(&self, new_state_root: H256, is_upgrade: bool) -> Result<()> {
+    pub async fn refresh_state(&self, root: RootObjectEntity, is_upgrade: bool) -> Result<()> {
         self.reader_actor
-            .send(RefreshStateMessage {
-                new_state_root,
-                is_upgrade,
-            })
+            .send(RefreshStateMessage { root, is_upgrade })
             .await?
     }
 }

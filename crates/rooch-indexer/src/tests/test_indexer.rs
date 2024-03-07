@@ -18,7 +18,7 @@ use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::{MoveStructType, SplitStateChangeSet};
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
-use rand::{thread_rng, Rng};
+use rand::{random, thread_rng, Rng};
 use rooch_config::indexer_config::ROOCH_INDEXER_DB_FILENAME;
 use rooch_types::framework::coin::CoinInfo;
 use rooch_types::framework::gas_coin::GasCoin;
@@ -162,6 +162,7 @@ fn test_transaction_store() -> Result<()> {
     let random_execution_info = TransactionExecutionInfo::new(
         H256::random(),
         H256::random(),
+        random(),
         H256::random(),
         rand::random(),
         KeptVMStatus::Executed,

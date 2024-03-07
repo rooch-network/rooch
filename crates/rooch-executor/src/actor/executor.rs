@@ -112,11 +112,11 @@ impl ExecutorActor {
                 .0;
 
             //TODO should we save the genesis txs to sequencer?
-            for (genesis_tx, (state_root, genesis_tx_output)) in
+            for (genesis_tx, (state_root, size, genesis_tx_output)) in
                 self.genesis.genesis_txs().into_iter().zip(genesis_result)
             {
                 let tx_hash = genesis_tx.tx_hash();
-                self.handle_tx_output(tx_hash, state_root, genesis_tx_output)?;
+                self.handle_tx_output(tx_hash, state_root, size, genesis_tx_output)?;
             }
 
             debug_assert!(
@@ -134,6 +134,10 @@ impl ExecutorActor {
 
     pub fn get_rooch_store(&self) -> RoochStore {
         self.rooch_store.clone()
+    }
+
+    pub fn get_moveos_store(&self) -> MoveOSStore {
+        self.moveos.moveos_store().clone()
     }
 
     pub fn moveos(&self) -> &MoveOS {
@@ -158,22 +162,34 @@ impl ExecutorActor {
 
     pub fn execute(&mut self, tx: VerifiedMoveOSTransaction) -> Result<ExecuteTransactionResult> {
         let tx_hash = tx.ctx.tx_hash();
-        let (state_root, output) = self.moveos.execute_and_apply(tx)?;
-        self.handle_tx_output(tx_hash, state_root, output)
+        let (state_root, size, output) = self.moveos.execute_and_apply(tx)?;
+        self.handle_tx_output(tx_hash, state_root, size, output)
     }
 
     fn handle_tx_output(
         &mut self,
         tx_hash: H256,
         state_root: H256,
+        size: u64,
         output: TransactionOutput,
     ) -> Result<ExecuteTransactionResult> {
+        if log::log_enabled!(log::Level::Debug) {
+            log::debug!(
+                "tx_hash: {}, state_root: {}, size: {}, gas_used: {}, status: {:?}",
+                tx_hash,
+                state_root,
+                size,
+                output.gas_used,
+                output.status
+            );
+        }
         let event_hashes: Vec<_> = output.events.iter().map(|e| e.hash()).collect();
         let event_root = InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
 
         let transaction_info = TransactionExecutionInfo::new(
             tx_hash,
             state_root,
+            size,
             event_root,
             output.gas_used,
             output.status.clone(),

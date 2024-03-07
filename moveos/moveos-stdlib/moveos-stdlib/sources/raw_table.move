@@ -51,40 +51,10 @@ module moveos_std::raw_table {
         &borrow_box<K, V, Box<V>>(table_handle, key).val
     }
 
-    /// Acquire an immutable reference to the value which `key` maps to.
-    /// Returns specified default value if there is no entry for `key`.
-    public(friend) fun borrow_with_default<K: copy + drop, V>(table_handle: ObjectID, key: K, default: &V): &V {
-        if (!contains<K>(table_handle, key)) {
-            default
-        } else {
-            borrow(table_handle, key)
-        }
-    }
-
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public(friend) fun borrow_mut<K: copy + drop, V>(table_handle: ObjectID, key: K): &mut V {
         &mut borrow_box_mut<K, V, Box<V>>(table_handle, key).val
-    }
-
-    /// Acquire a mutable reference to the value which `key` maps to.
-    /// Insert the pair (`key`, `default`) first if there is no entry for `key`.
-    public(friend) fun borrow_mut_with_default<K: copy + drop, V: drop>(table_handle: ObjectID, key: K, default: V): &mut V {
-        if (!contains<K>(table_handle, copy key)) {
-            add(table_handle, key, default)
-        };
-        borrow_mut(table_handle, key)
-    }
-
-    /// Insert the pair (`key`, `value`) if there is no entry for `key`.
-    /// update the value of the entry for `key` to `value` otherwise
-    public(friend) fun upsert<K: copy + drop, V: drop>(table_handle: ObjectID, key: K, value: V) {
-        if (!contains<K>(table_handle, copy key)) {
-            add(table_handle, key, value)
-        } else {
-            let ref = borrow_mut(table_handle, key);
-            *ref = value;
-        };
     }
 
     /// Remove from `table` and return the value which `key` maps to.
