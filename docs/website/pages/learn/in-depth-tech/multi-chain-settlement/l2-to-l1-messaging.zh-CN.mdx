@@ -56,10 +56,10 @@ Rooch 具备多链资产结算的能力，对于不同角色的 L1 (仲裁链/�
 
 让我们先从 Rollups 的因果关系模型出发来探索安全结算本质，对于 L2 至 L1 的消息传递，其模型如下：
 
-1. 因： L2 上交易
+1. 因：L2 上交易
 2. 果：L2 output
 3. 因果（消息）媒介：proposer
-4. 观察者： verifier
+4. 观察者：verifier
 
 对于仲裁链，我们已有完整的欺诈证明机制，而因果关系不依赖观察者，因此只需要一个诚实的观察者（verifier）即可保障因果关系已被正确建立。
 
@@ -69,4 +69,3 @@ Rooch 具备多链资产结算的能力，对于不同角色的 L1 (仲裁链/�
 ![Multi-chain Proposer](/docs/rooch-multi-chain-settlement-l2-to-l1.svg)
 2. 相同的观察者验证结果记录：通过 L2 上的 L1 轻节点完成 L1 结果记录在 L2 的确认，实现 verifier 的观察。
 ![Multi-chain State Verification](/docs/rooch-multi-chain-settlement-l2-to-l1-flow.svg)
-
