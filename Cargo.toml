@@ -351,4 +351,8 @@ strip = true
 codegen-units = 1
 
 [profile.bench]
-debug = true
+inherits = "release"
+debug = false
+opt-level = 3
+lto = true
+codegen-units = 1
