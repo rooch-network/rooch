@@ -477,6 +477,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use move_vm_types::values::Value;
 
     use super::*;
@@ -550,10 +552,8 @@ mod tests {
         //ensure the genesis state root is not changed
         assert_eq!(
             genesis_state_root,
-            AccountAddress::from_hex_literal(
-                "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000"
-            )
-            .unwrap()
+            H256::from_str("0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000")
+                .unwrap()
         );
     }
 }

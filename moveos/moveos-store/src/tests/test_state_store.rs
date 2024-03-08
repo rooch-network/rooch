@@ -14,7 +14,7 @@ use moveos_types::moveos_std::object::{ObjectEntity, GENESIS_STATE_ROOT};
 use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::state::{KeyState, MoveState, MoveType, State, StateChangeSet, TableChange};
 use rand::{thread_rng, Rng};
-use smt::{NodeStore, UpdateSet};
+use smt::NodeStore;
 use std::str::FromStr;
 
 fn random_bytes() -> Vec<u8> {
