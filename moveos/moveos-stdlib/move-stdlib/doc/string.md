@@ -11,6 +11,7 @@ The <code><a href="string.md#0x1_string">string</a></code> module defines the <c
 -  [Function `utf8`](#0x1_string_utf8)
 -  [Function `try_utf8`](#0x1_string_try_utf8)
 -  [Function `bytes`](#0x1_string_bytes)
+-  [Function `into_bytes`](#0x1_string_into_bytes)
 -  [Function `is_empty`](#0x1_string_is_empty)
 -  [Function `length`](#0x1_string_length)
 -  [Function `append`](#0x1_string_append)
@@ -96,6 +97,18 @@ Returns a reference to the underlying byte vector.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="string.md#0x1_string_bytes">bytes</a>(s: &<a href="string.md#0x1_string_String">string::String</a>): &<a href="vector.md#0x1_vector">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x1_string_into_bytes"></a>
+
+## Function `into_bytes`
+
+Unpack the <code><a href="string.md#0x1_string">string</a></code> to get its backing bytes
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="string.md#0x1_string_into_bytes">into_bytes</a>(<a href="string.md#0x1_string">string</a>: <a href="string.md#0x1_string_String">string::String</a>): <a href="vector.md#0x1_vector">vector</a>&lt;u8&gt;
 </code></pre>
 
 

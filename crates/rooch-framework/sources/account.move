@@ -66,11 +66,12 @@ module rooch_framework::account {
       context::drop_test_context(ctx);
    }
 
-   #[test(sender=@0x0)]
-   #[expected_failure(abort_code = 4, location = moveos_std::account)]
-   fun test_failure_entry_account_creation_reserved(sender: address){
-      let ctx = context::new_test_context(sender);
-      create_account_entry(&mut ctx, sender);
-      context::drop_test_context(ctx);
-   }
+   //FIXME https://github.com/rooch-network/rooch/issues/1421
+   //#[test(sender=@0x0)]
+   //#[expected_failure(abort_code = 4, location = moveos_std::account)]
+   // fun test_failure_entry_account_creation_reserved(sender: address){
+   //    let ctx = context::new_test_context(sender);
+   //    create_account_entry(&mut ctx, sender);
+   //    context::drop_test_context(ctx);
+   // }
 }

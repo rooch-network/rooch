@@ -79,6 +79,7 @@ module moveos_std::account {
    }
 
    fun create_account_internal(ctx: &mut Context, new_address: address): signer {
+      std::debug::print(&new_address);
       assert!(
          !core_addresses::is_vm_address(new_address),
          ErrorAddressReserved
@@ -429,7 +430,7 @@ module moveos_std::account {
 
    #[test_only]
    fun drop_account_object(self: Object<Account>) {
-      let obj = object::remove_unchecked(self);
+      let obj = object::drop_unchecked(self);
       let Account {sequence_number:_} = obj;
    }
 

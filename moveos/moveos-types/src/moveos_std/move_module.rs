@@ -45,8 +45,12 @@ impl MoveStructState for MoveModule {
     }
 }
 
-#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
-pub struct ModuleStore {}
+#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Default)]
+pub struct ModuleStore {
+    // // Move VM will auto add a bool field to the empty struct
+    // // So we manually add a bool field to the struct
+    _placeholder: bool,
+}
 
 impl ModuleStore {
     pub fn module_store_id() -> ObjectID {
@@ -71,7 +75,7 @@ impl MoveStructType for ModuleStore {
 
 impl MoveStructState for ModuleStore {
     fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![])
+        MoveStructLayout::new(vec![MoveTypeLayout::Bool])
     }
 }
 

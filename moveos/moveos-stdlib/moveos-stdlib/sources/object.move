@@ -4,11 +4,14 @@
 /// Move Object
 /// For more details, please refer to https://rooch.network/docs/developer-guides/object
 module moveos_std::object {
+    use std::vector;
+    use std::hash;
+    use moveos_std::bcs;
     use moveos_std::signer;
     use moveos_std::object_id;
     use moveos_std::object_id::{ObjectID, TypedUID, address_to_object_id};
-    use moveos_std::raw_table::TableInfo;
     use moveos_std::raw_table;
+    use moveos_std::type_info;
     #[test_only]
     use moveos_std::object_id::{custom_object_id, new_uid, UID};
 
@@ -36,7 +39,13 @@ module moveos_std::object {
     const FROZEN_OBJECT_FLAG_MASK: u8 = 1 << 1;
     const BOUND_OBJECT_FLAG_MASK: u8 = 1 << 2;
 
-    const SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE: vector<u8> = b"SPARSE_MERKLE_PLACEHOLDER_HASH";
+    const SPARSE_MERKLE_PLACEHOLDER_HASH: address = @0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000;
+
+    struct Root has key{
+        // Move VM will auto add a bool field to the empty struct
+        // So we manually add a bool field to the struct
+        _placeholder: bool,
+    }
 
     /// ObjectEntity<T> is a box of the value of T
     /// It does not have any ability, so it can not be `drop`, `copy`, or `store`, and can only be handled by storage API after creation.
@@ -71,23 +80,41 @@ module moveos_std::object {
         new_with_id(object_id::typed_uid_id(&id), value)
     }
 
+    #[private_generics(T)]
+    /// Create a new Object, Add the Object to the global object storage and return the Object
+    /// TODO: remove the `new` function and use `new_v2` instead after the `new_v2` is stable
+    fun new_v2<T: key>(value: T): Object<T> {
+        let parent = borrow_root_object();
+        let id = derive_id<Root, T>(parent);
+        new_with_id(id, value)
+    }
+
     public(friend) fun new_with_id<T: key>(id: ObjectID, value: T): Object<T> {
         let obj_entity = new_internal(id, value);
         add_to_global(obj_entity);
         Object{id}
     }
 
+    fun derive_id<PT: key, T: key>(parent: &ObjectEntity<PT>): ObjectID {
+        let bytes = bcs::to_bytes(&parent.state_root);
+        //TODO the size maybe descreased, so the size should not be used to derive the id
+        //We need to use the tx_context here
+        vector::append(&mut bytes, bcs::to_bytes(&parent.size));
+        vector::append(&mut bytes, std::string::into_bytes(type_info::type_name<T>()));
+        let id = hash::sha3_256(bytes);
+        object_id::address_to_object_id(bcs::to_address(id))
+    }
+
     fun new_internal<T: key>(id: ObjectID, value: T): ObjectEntity<T> {
         assert!(!contains_global(id), ErrorObjectAlreadyExist);
         let owner = SYSTEM_OWNER_ADDRESS;
-
-        let table_info = new_table(id);
+        
         ObjectEntity<T>{
             id,
             owner,
             flag: 0u8,
-            state_root: raw_table::state_root(&table_info),
-            size: raw_table::size(&table_info),
+            state_root: SPARSE_MERKLE_PLACEHOLDER_HASH,
+            size: 0,
             value,
         }
     }
@@ -318,16 +345,23 @@ module moveos_std::object {
 
     /// The global object storage's table handle should be `0x0`
     public(friend) fun global_object_storage_handle(): ObjectID {
-        // raw_table::new_table_handle(GlobalObjectStorageHandle)
         address_to_object_id(GlobalObjectStorageHandleID)
     }
 
     public(friend) fun add_to_global<T: key>(obj: ObjectEntity<T>) {
-        add_field_internal<T, ObjectID, ObjectEntity<T>>(global_object_storage_handle(), obj.id, obj);
+        add_field_internal<Root, ObjectID, ObjectEntity<T>>(global_object_storage_handle(), obj.id, obj);
+    }
+
+    public(friend) fun borrow_root_object(): &ObjectEntity<Root>{
+        borrow_from_global<Root>(global_object_storage_handle())
     }
 
     public(friend) fun borrow_from_global<T: key>(object_id: ObjectID): &ObjectEntity<T> {
         borrow_field_internal<ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id)
+    }
+
+    public(friend) fun borrow_mut_root_object(): &mut ObjectEntity<Root>{
+        borrow_mut_from_global<Root>(global_object_storage_handle())
     }
 
     public(friend) fun borrow_mut_from_global<T: key>(object_id: ObjectID): &mut ObjectEntity<T> {
@@ -337,7 +371,7 @@ module moveos_std::object {
     }
 
     public(friend) fun remove_from_global<T: key>(object_id: ObjectID): ObjectEntity<T> {
-        remove_field_internal<T, ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id)
+        remove_field_internal<Root, ObjectID, ObjectEntity<T>>(global_object_storage_handle(), object_id)
     }
 
     public(friend) fun contains_global(object_id: ObjectID): bool {
@@ -360,11 +394,8 @@ module moveos_std::object {
     /// table, and cannot be discovered from it.
     public(friend) fun add_field_internal<T: key, K: copy + drop, V>(table_handle: ObjectID, key: K, val: V) {
         raw_table::add<K,V>(table_handle, key, val);
-        //TODO update global object storage size
-        if(table_handle != global_object_storage_handle()){
-            let object_entity = borrow_mut_from_global<T>(table_handle);
-            object_entity.size = object_entity.size + 1;
-        }
+        let object_entity = borrow_mut_from_global<T>(table_handle);
+        object_entity.size = object_entity.size + 1;
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
@@ -453,10 +484,8 @@ module moveos_std::object {
     /// Aborts if there is no entry for `key`.
     public(friend) fun remove_field_internal<T: key, K: copy + drop, V>(table_handle: ObjectID, key: K): V {
         let v = raw_table::remove<K, V>(table_handle, key);
-        if(table_handle != global_object_storage_handle()){
-            let object_entity = borrow_mut_from_global<T>(table_handle);
-            object_entity.size = object_entity.size - 1;
-        };
+        let object_entity = borrow_mut_from_global<T>(table_handle);
+        object_entity.size = object_entity.size - 1;
         v
     }
 
@@ -472,41 +501,24 @@ module moveos_std::object {
 
     /// Returns the size of the table, the number of key-value pairs
     public fun field_size<T: key>(obj: &Object<T>): u64 {
-        table_length(obj.id)
+        field_size_internal<T>(obj.id)
     }
 
-    /// New a table. Aborts if the table exists.
-    public(friend) fun new_table(table_handle: ObjectID): TableInfo {
-        raw_table::new_table(table_handle)
+    public(friend) fun field_size_internal<T: key>(object_id: ObjectID): u64 {
+        let object_entity = borrow_from_global<T>(object_id);
+        object_entity.size
     }
-
-
-    /// Returns the size of the table, the number of key-value pairs
-    public(friend) fun table_length(table_handle: ObjectID): u64 {
-        // native_box_length(table_handle)
-        raw_table::length(table_handle)
-    }
-
-    /// Returns true if the table is empty (if `length` returns `0`)
-    public(friend) fun is_empty_table(table_handle: ObjectID): bool {
-        raw_table::is_empty(table_handle)
-    }
-
-    /// Drop a table even if it is not empty.
-    public(friend) fun drop_unchecked_table(table_handle: ObjectID) {
-        raw_table::drop_unchecked(table_handle)
-    }
-
-    /// Destroy a table. Aborts if the table is not empty
-    public(friend) fun destroy_empty_table(table_handle: ObjectID) {
-        raw_table::destroy_empty(table_handle)
-    }
-
 
     #[test_only]
     public fun new_uid_for_test(tx_context: &mut moveos_std::tx_context::TxContext) : UID {
         let object_id = address_to_object_id(moveos_std::tx_context::fresh_address(tx_context));
         new_uid(object_id)
+    }
+
+    #[test_only]
+    /// Testing only: allows to drop a Object even if it's fields is not empty.
+    public fun drop_unchecked<T: key>(self: Object<T>) : T {
+        remove_unchecked(self)
     }
 
     #[test_only]
@@ -677,5 +689,14 @@ module moveos_std::object {
         let s = remove(obj);
         let TestStruct { count : _ } = s;
         moveos_std::tx_context::drop(tx_context);
+    }
+
+    #[test]
+    fun test_new_v2(){
+        let obj1 = new_v2(TestStruct { count: 1 });
+        let obj2 = new_v2(TestStruct { count: 2 });
+        assert!(obj1.id != obj2.id, 1);
+        let TestStruct { count:_} = drop_unchecked(obj1);
+        let TestStruct { count:_} = drop_unchecked(obj2);
     }
 }

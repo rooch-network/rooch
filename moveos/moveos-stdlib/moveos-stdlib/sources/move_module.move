@@ -387,9 +387,7 @@ module moveos_std::move_module {
 
     #[test_only]
     fun drop_module_store(self: Object<ModuleStore>) {
-        object::drop_unchecked_table(object::id(&self));
-        let obj = object::remove(self);
-        let ModuleStore {} = obj;
+        let ModuleStore {} = object::drop_unchecked(self);
     }
 
     #[test]

@@ -315,5 +315,14 @@ module moveos_std::table {
         moveos_std::tx_context::drop(tx_context);
     }
 
+    #[test(sender = @0x42)]
+    fun test_table_object(sender: address){
+        let tx_context = moveos_std::tx_context::new_test_context(sender);
+        let uid = object::new_uid_for_test(&mut tx_context);
+        let t = new<u64, u8>(uid);
+        let _t_obj_entity = object::borrow_from_global<TablePlaceholder>(object::id(&t.handle));
+        drop_unchecked(t);
+        moveos_std::tx_context::drop(tx_context);
+    }
 
 }

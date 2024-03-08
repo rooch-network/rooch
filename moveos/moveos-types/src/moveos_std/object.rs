@@ -1,6 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-use super::raw_table::TableInfo;
+
 use super::table::TablePlaceholder;
 use crate::moveos_std::account::Account;
 use crate::moveos_std::move_module::ModuleStore;
@@ -30,11 +30,14 @@ pub static MODULE_ID: Lazy<ModuleId> =
 pub const OBJECT_ENTITY_STRUCT_NAME: &IdentStr = ident_str!("ObjectEntity");
 
 // New table's state_root should be the place holder hash.
-pub static GENESIS_STATE_ROOT: Lazy<AccountAddress> =
-    Lazy::new(|| AccountAddress::new((*SPARSE_MERKLE_PLACEHOLDER_HASH).into()));
+pub static GENESIS_STATE_ROOT: Lazy<H256> = Lazy::new(|| *SPARSE_MERKLE_PLACEHOLDER_HASH);
 
-#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
-pub struct Root {}
+#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Default)]
+pub struct Root {
+    // Move VM will auto add a bool field to the empty struct
+    // So we manually add a bool field to the struct
+    _placeholder: bool,
+}
 
 impl MoveStructType for Root {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
@@ -53,7 +56,7 @@ impl MoveStructType for Root {
 
 impl MoveStructState for Root {
     fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![])
+        MoveStructLayout::new(vec![MoveTypeLayout::Bool])
     }
 }
 
@@ -76,14 +79,7 @@ pub struct ObjectEntity<T> {
 
 impl ObjectEntity<Root> {
     pub fn genesis_root_object() -> RootObjectEntity {
-        Self {
-            id: ObjectID::root(),
-            owner: MOVEOS_STD_ADDRESS,
-            flag: 0u8,
-            state_root: *GENESIS_STATE_ROOT,
-            size: 0,
-            value: Root {},
-        }
+        Self::root_object(*GENESIS_STATE_ROOT, 0)
     }
 
     pub fn root_object(state_root: H256, size: u64) -> RootObjectEntity {
@@ -93,7 +89,9 @@ impl ObjectEntity<Root> {
             flag: 0u8,
             state_root: AccountAddress::new(state_root.into()),
             size,
-            value: Root {},
+            value: Root {
+                _placeholder: false,
+            },
         }
     }
 }
@@ -179,16 +177,15 @@ where
 }
 
 impl ObjectEntity<TablePlaceholder> {
-    pub fn new_table_object(id: ObjectID, table_info: TableInfo) -> TableObject {
-        Self {
+    pub fn new_table_object(id: ObjectID, state_root: H256, size: u64) -> TableObject {
+        Self::new(
             id,
-            owner: AccountAddress::ZERO,
-            flag: 0u8,
-            value: TablePlaceholder {},
-
-            state_root: table_info.state_root,
-            size: table_info.size,
-        }
+            AccountAddress::ZERO,
+            0u8,
+            state_root,
+            size,
+            TablePlaceholder::default(),
+        )
     }
 
     pub fn get_table_object_struct_tag() -> StructTag {
@@ -203,27 +200,27 @@ impl ObjectEntity<TablePlaceholder> {
 
 impl ObjectEntity<Account> {
     pub fn new_account_object(account: AccountAddress) -> AccountObject {
-        Self {
-            id: Account::account_object_id(account),
-            owner: account,
-            flag: 0u8,
-            state_root: *GENESIS_STATE_ROOT,
-            size: 0,
-            value: Account { sequence_number: 0 },
-        }
+        Self::new(
+            Account::account_object_id(account),
+            account,
+            0u8,
+            *GENESIS_STATE_ROOT,
+            0,
+            Account::default(),
+        )
     }
 }
 
 impl ObjectEntity<ModuleStore> {
     pub fn new_module_store() -> ModuleStoreObject {
-        Self {
-            id: ModuleStore::module_store_id(),
-            owner: MOVEOS_STD_ADDRESS,
-            flag: 0u8,
-            state_root: *GENESIS_STATE_ROOT,
-            size: 0,
-            value: ModuleStore {},
-        }
+        Self::new(
+            ModuleStore::module_store_id(),
+            MOVEOS_STD_ADDRESS,
+            0u8,
+            *GENESIS_STATE_ROOT,
+            0,
+            ModuleStore::default(),
+        )
     }
 }
 
@@ -270,7 +267,7 @@ where
 pub type RawObject = ObjectEntity<RawData>;
 pub type RootObjectEntity = ObjectEntity<Root>;
 
-#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
+#[derive(Eq, PartialEq, Debug, Clone, Hash)]
 pub struct RawData {
     pub struct_tag: StructTag,
     pub value: Vec<u8>,
@@ -280,17 +277,6 @@ impl RawObject {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = OBJECT_ENTITY_STRUCT_NAME;
-
-    pub fn new_raw_object(id: ObjectID, value: RawData) -> RawObject {
-        Self {
-            id,
-            owner: AccountAddress::ZERO,
-            flag: 0u8,
-            state_root: *GENESIS_STATE_ROOT,
-            size: 0,
-            value,
-        }
-    }
 
     pub fn from_bytes(bytes: &[u8], struct_tag: StructTag) -> Result<Self> {
         ensure!(
@@ -491,6 +477,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use move_vm_types::values::Value;
+
     use super::*;
 
     #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
@@ -524,11 +512,43 @@ mod tests {
             object_value,
         );
 
-        let raw_object: RawObject = object.to_raw();
+        let raw_object: RawObject =
+            RawObject::from_bytes(&object.to_bytes()?, TestStruct::struct_tag())?;
 
         let object2 = bcs::from_bytes::<ObjectEntity<TestStruct>>(&raw_object.to_bytes()).unwrap();
         assert_eq!(object, object2);
+
+        let runtime_value = Value::simple_deserialize(
+            &raw_object.into_state().value,
+            &ObjectEntity::<TestStruct>::type_layout(),
+        )
+        .unwrap();
+        let object3 = ObjectEntity::<TestStruct>::from_runtime_value(runtime_value)?;
+        assert_eq!(object, object3);
         Ok(())
+    }
+
+    #[test]
+    fn test_root_object() {
+        let root_object = RootObjectEntity::genesis_root_object();
+        let raw_object: RawObject =
+            RawObject::from_bytes(&root_object.to_bytes().unwrap(), Root::struct_tag()).unwrap();
+        let state = raw_object.into_state();
+
+        let object = raw_object.into_object::<Root>().unwrap();
+        assert_eq!(root_object, object);
+
+        //00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002005350415253455f4d45524b4c455f504c414345484f4c4445525f4841534800000000000000000000
+        //00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002005350415253455f4d45524b4c455f504c414345484f4c4445525f4841534800000000000000000000
+
+        //Struct(Runtime([Struct(Runtime([Address])), Address, U8, Address, U64, Struct(Runtime([]))]))
+        //Struct(Runtime([Struct(Runtime([Address])), Address, U8, Address, U64, Struct(Runtime([Bool]))]))
+        println!("state: {:?}", hex::encode(&state.value));
+        print!("layout: {:?}", &RootObjectEntity::type_layout());
+        let runtime_value =
+            Value::simple_deserialize(&state.value, &RootObjectEntity::type_layout()).unwrap();
+        let object2 = RootObjectEntity::from_runtime_value(runtime_value).unwrap();
+        assert_eq!(root_object, object2);
     }
 
     #[test]
