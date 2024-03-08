@@ -429,7 +429,7 @@ module moveos_std::account {
 
    #[test_only]
    fun drop_account_object(self: Object<Account>) {
-      let obj = object::remove_unchecked(self);
+      let obj = object::drop_unchecked(self);
       let Account {sequence_number:_} = obj;
    }
 

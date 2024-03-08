@@ -243,6 +243,10 @@ impl StateDBStore {
 
     pub fn resolve_state(&self, handle: &ObjectID, key: &KeyState) -> Result<Option<State>, Error> {
         if handle == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
+            //TODO provide a better way to get global object
+            if key == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE.to_key() {
+                return Ok(Some(self.root_object.entity.into_state()));
+            }
             self.root_object.get_field(key.clone())
         } else {
             self.get_field(*handle, key.clone())

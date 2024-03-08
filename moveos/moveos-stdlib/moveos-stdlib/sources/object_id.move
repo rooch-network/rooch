@@ -60,7 +60,7 @@ module moveos_std::object_id {
         address_to_object_id(
             address::from_bytes(
                 hash::sha3_256(
-                    *std::string::bytes(&type_info::type_name<T>())
+                    std::string::into_bytes(type_info::type_name<T>())
                 )
             )
         )

@@ -10,12 +10,11 @@ use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types::random_type_tag;
 use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::context;
-use moveos_types::moveos_std::object::ObjectEntity;
+use moveos_types::moveos_std::object::{ObjectEntity, GENESIS_STATE_ROOT};
 use moveos_types::moveos_std::object_id::ObjectID;
-use moveos_types::moveos_std::raw_table::TableInfo;
 use moveos_types::state::{KeyState, MoveState, MoveType, State, StateChangeSet, TableChange};
 use rand::{thread_rng, Rng};
-use smt::{NodeStore, UpdateSet};
+use smt::NodeStore;
 use std::str::FromStr;
 
 fn random_bytes() -> Vec<u8> {
@@ -60,7 +59,7 @@ fn random_state_change_set() -> StateChangeSet {
             .insert(handle, random_table_change());
         global_change.entries.insert(
             handle.to_key(),
-            Op::New(ObjectEntity::new_table_object(handle, TableInfo::default()).into_state()),
+            Op::New(ObjectEntity::new_table_object(handle, *GENESIS_STATE_ROOT, 0).into_state()),
         );
     }
 
@@ -93,7 +92,7 @@ fn test_statedb() {
     let table_handle = ObjectID::ONE;
     global_change.entries.insert(
         table_handle.to_key(),
-        Op::New(ObjectEntity::new_table_object(table_handle, TableInfo::default()).into_state()),
+        Op::New(ObjectEntity::new_table_object(table_handle, *GENESIS_STATE_ROOT, 0).into_state()),
     );
     table_change_set
         .changes
@@ -174,17 +173,3 @@ fn test_statedb_state_root() -> Result<()> {
 //     assert_eq!(global_state_set, global_state_set2);
 //     Ok(())
 // }
-
-#[test]
-fn test_state_key_and_update_set() {
-    let mut update_set = UpdateSet::new();
-    (0..100)
-        .map(|_| {
-            let object_id = ObjectID::random();
-            let key = object_id.to_key();
-            let state = State::new(random_bytes(), random_type_tag());
-            (key, state)
-        })
-        .for_each(|(k, v)| update_set.put(k, v));
-    assert!(update_set.len() == 100);
-}

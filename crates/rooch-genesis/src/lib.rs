@@ -347,18 +347,21 @@ mod tests {
             )
             .expect("init genesis failed");
         assert!(!moveos.moveos_store().get_state_store().is_genesis());
-        let module_store_obj = moveos
+        let module_store_state = moveos
             .moveos_store()
             .get_state_store()
             .get(ModuleStore::module_store_id())
             .unwrap();
-        assert!(module_store_obj.is_some());
-
-        let chain_id_obj = moveos
+        assert!(module_store_state.is_some());
+        let _module_store_obj = module_store_state
+            .unwrap()
+            .as_object::<ModuleStore>()
+            .unwrap();
+        let chain_id_state = moveos
             .moveos_store()
             .get_state_store()
             .get(rooch_types::framework::chain_id::ChainID::chain_id_object_id())
             .unwrap();
-        assert!(chain_id_obj.is_some());
+        assert!(chain_id_state.is_some());
     }
 }
