@@ -537,14 +537,6 @@ mod tests {
 
         let object = raw_object.into_object::<Root>().unwrap();
         assert_eq!(root_object, object);
-
-        //00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002005350415253455f4d45524b4c455f504c414345484f4c4445525f4841534800000000000000000000
-        //00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002005350415253455f4d45524b4c455f504c414345484f4c4445525f4841534800000000000000000000
-
-        //Struct(Runtime([Struct(Runtime([Address])), Address, U8, Address, U64, Struct(Runtime([]))]))
-        //Struct(Runtime([Struct(Runtime([Address])), Address, U8, Address, U64, Struct(Runtime([Bool]))]))
-        println!("state: {:?}", hex::encode(&state.value));
-        print!("layout: {:?}", &RootObjectEntity::type_layout());
         let runtime_value =
             Value::simple_deserialize(&state.value, &RootObjectEntity::type_layout()).unwrap();
         let object2 = RootObjectEntity::from_runtime_value(runtime_value).unwrap();
