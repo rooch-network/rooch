@@ -12,27 +12,28 @@ use std::sync::{Arc, Mutex};
 use wasmer::Value::I32;
 use wasmer::*;
 
+//#[derive(Clone)]
 pub struct WASMInstance {
-    bytecode: Vec<u8>,
-    instance: Option<Instance>,
-    engine: Option<Engine>,
+    pub bytecode: Vec<u8>,
+    pub instance: Instance,
+    pub store: Store
 }
 
 impl WASMInstance {
-    pub fn new(bytecode: Vec<u8>, instance: Instance, engine: Engine) -> Self {
+    pub fn new(bytecode: Vec<u8>, instance: Instance, store: Store) -> Self {
         Self {
             bytecode,
-            instance: Some(instance),
-            engine: Some(engine),
+            instance,
+            store
         }
     }
 }
 
-static mut GLOBAL_MEMORY: Lazy<Option<Arc<Mutex<Memory>>>> = Lazy::new(|| None);
+pub static mut GLOBAL_MEMORY: Lazy<Option<Arc<Mutex<Memory>>>> = Lazy::new(|| None);
 static mut GLOBAL_INSTANCE_POOL: Lazy<Arc<Mutex<BTreeMap<u64, WASMInstance>>>> =
     Lazy::new(|| Arc::new(Mutex::new(BTreeMap::new())));
 
-fn insert_instance(instance: WASMInstance) -> u64 {
+pub fn insert_wasm_instance(instance: WASMInstance) -> u64 {
     loop {
         unsafe {
             let instance_id: u64 = rand::random();
@@ -49,6 +50,24 @@ fn insert_instance(instance: WASMInstance) -> u64 {
                 return instance_id;
             }
         }
+    }
+}
+
+/*
+pub fn get_wasm_instance<'a>(instance_id: u64) -> Option<WASMInstance> {
+    unsafe {
+        match GLOBAL_INSTANCE_POOL.lock().unwrap().get(&instance_id) {
+            None => {None}
+            Some(v) => Some(v.clone())
+        }
+    }
+}
+
+ */
+
+pub fn get_instance_pool() -> Arc<Mutex<BTreeMap<u64, WASMInstance>>> {
+    unsafe {
+        GLOBAL_INSTANCE_POOL.clone()
     }
 }
 
@@ -132,7 +151,7 @@ fn proc_exit(_env: FunctionEnvMut<Env>, code: i32) {
     eprintln!("program exit with {:}", code)
 }
 
-fn put_data_on_stack(stack_alloc_func: &Function, store: &mut Store, data: &[u8]) -> i32 {
+pub fn put_data_on_stack(stack_alloc_func: &Function, store: &mut Store, data: &[u8]) -> i32 {
     let data_len = data.len() as i32;
     let result = stack_alloc_func
         .call(store, vec![I32(data_len + 1)].as_slice())
@@ -156,7 +175,7 @@ fn put_data_on_stack(stack_alloc_func: &Function, store: &mut Store, data: &[u8]
     offset
 }
 
-fn get_data_from_heap(memory: Arc<Mutex<Memory>>, store: &Store, ptr_offset: i32) -> Vec<u8> {
+pub fn get_data_from_heap(memory: Arc<Mutex<Memory>>, store: &Store, ptr_offset: i32) -> Vec<u8> {
     let bindings = memory.lock().expect("getting memory mutex failed");
     let memory_view = bindings.view(store);
     let mut length_bytes: [u8; 4] = [0; 4];
@@ -178,7 +197,7 @@ fn get_data_from_heap(memory: Arc<Mutex<Memory>>, store: &Store, ptr_offset: i32
     // owned_str
 }
 
-fn create_wasm_instance(bytecode: &Vec<u8>) -> WASMInstance {
+pub fn create_wasm_instance(bytecode: &Vec<u8>) -> WASMInstance {
     let mut store = Store::default();
     let module = Module::new(&store, bytecode).unwrap();
 
@@ -203,5 +222,5 @@ fn create_wasm_instance(bytecode: &Vec<u8>) -> WASMInstance {
     let memory = instance.exports.get_memory("memory").unwrap();
     unsafe { *GLOBAL_MEMORY = Some(Arc::new(Mutex::new(memory.clone()))) };
 
-    return WASMInstance::new(bytecode.clone(), instance, store.engine().clone());
+    return WASMInstance::new(bytecode.clone(), instance, store);
 }

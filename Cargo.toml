@@ -14,6 +14,7 @@ members = [
     "moveos/raw-store",
     "moveos/metrics",
     "moveos/moveos-config",
+    "moveos/moveos-wasm",
     "crates/rooch-key",
     "crates/rooch-types",
     "crates/rooch-framework",
@@ -78,6 +79,7 @@ moveos-verifier = { path = "moveos/moveos-verifier" }
 raw-store = { path = "moveos/raw-store" }
 metrics = { path = "moveos/metrics" }
 moveos-config = { path = "moveos/moveos-config" }
+moveos-wasm = { path = "moveos/moveos-wasm" }
 
 # crates for Rooch
 rooch = { path = "crates/rooch" }

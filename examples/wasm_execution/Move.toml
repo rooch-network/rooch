@@ -6,7 +6,7 @@ version = "0.0.1"
 MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
 
 [addresses]
-rooch_examples =  "0xd801d5692ef72cd22f4855c1ae40d25c283588fa68be8fe47c21e3706c4bb229"
+rooch_examples =  "0x159966c6a3830ac96700e547f08e578fa9a19c5a0d78708715e61c88546edc37"
 moveos_std =  "0x2"
 rooch_framework =  "0x3"
 

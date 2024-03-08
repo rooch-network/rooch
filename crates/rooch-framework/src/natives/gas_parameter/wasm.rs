@@ -3,7 +3,7 @@
 
 use moveos_stdlib::natives::moveos_stdlib::wasm::GasParameters;
 
-crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasParameters, "account", [
+crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasParameters, "wasm", [
     [.create_instance_gas_parameter.base_create_instance, "create_instance_gas_parameter.base_create_instance", 10000],
     [.create_instance_gas_parameter.per_byte_instance, "create_instance_gas_parameter.per_byte_instance", 100],
     [.create_args_gas_parameter.base_create_args, "create_args_gas_parameter.base_create_args", 10000],

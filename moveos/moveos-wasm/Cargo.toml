@@ -1,0 +1,12 @@
+[package]
+name = "moveos-wasm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+once_cell = { workspace = true }
+wasmer = { workspace = true }
+ciborium = { workspace = true }
+rand = { workspace = true }

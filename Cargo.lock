@@ -6034,6 +6034,7 @@ dependencies = [
  "moveos-stdlib-builder",
  "moveos-types",
  "moveos-verifier",
+ "moveos-wasm",
  "once_cell",
  "parking_lot 0.12.1",
  "petgraph 0.5.1",
@@ -6043,6 +6044,7 @@ dependencies = [
  "sha3 0.9.1",
  "smallvec 1.11.0",
  "smt",
+ "wasmer",
 ]
 
 [[package]]
@@ -6160,6 +6162,18 @@ dependencies = [
  "serde_json",
  "termcolor",
  "thiserror",
+]
+
+[[package]]
+name = "moveos-wasm"
+version = "0.1.0"
+dependencies = [
+ "ciborium",
+ "once_cell",
+ "rand 0.8.5",
+ "serde 1.0.195",
+ "serde_json",
+ "wasmer",
 ]
 
 [[package]]

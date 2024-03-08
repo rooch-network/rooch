@@ -115,6 +115,7 @@ impl ToOnChainGasSchedule for MoveOSStdlibGasParameters {
         entires.extend(self.move_module.to_on_chain_gas_schedule());
         entires.extend(self.object.to_on_chain_gas_schedule());
         entires.extend(self.json.to_on_chain_gas_schedule());
+        entires.extend(self.wasm.to_on_chain_gas_schedule());
         entires
     }
 }
