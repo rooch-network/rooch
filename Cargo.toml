@@ -285,7 +285,7 @@ move-symbol-pool = { git = "https://github.com/rooch-network/move", rev = "ef13d
 #move-table-extension = { git = "https://github.com/rooch-network/move", rev = "ef13deb11509f6628434f128e04cc34ce28406d6" }
 move-transactional-test-runner = { git = "https://github.com/rooch-network/move", rev = "ef13deb11509f6628434f128e04cc34ce28406d6" }
 move-unit-test = { git = "https://github.com/rooch-network/move", rev = "ef13deb11509f6628434f128e04cc34ce28406d6", features = ["table-extension"] }
-move-vm-runtime = { git = "https://github.com/rooch-network/move", rev = "ef13deb11509f6628434f128e04cc34ce28406d6" }
+move-vm-runtime = { git = "https://github.com/rooch-network/move", rev = "ef13deb11509f6628434f128e04cc34ce28406d6", features = ["stacktrace", "debugging", "testing"] }
 move-vm-test-utils = { git = "https://github.com/rooch-network/move", rev = "ef13deb11509f6628434f128e04cc34ce28406d6", features = ["table-extension"] }
 move-vm-types = { git = "https://github.com/rooch-network/move", rev = "ef13deb11509f6628434f128e04cc34ce28406d6" }
 read-write-set = { git = "https://github.com/rooch-network/move", rev = "ef13deb11509f6628434f128e04cc34ce28406d6" }

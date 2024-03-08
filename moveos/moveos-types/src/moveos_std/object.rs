@@ -1,8 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 use super::raw_table::TableInfo;
+use super::table::TablePlaceholder;
 use crate::moveos_std::account::Account;
-use crate::moveos_std::move_module::Module;
+use crate::moveos_std::move_module::ModuleStore;
 use crate::moveos_std::object_id::ObjectID;
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
@@ -19,6 +20,7 @@ use move_core_types::{
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use once_cell::sync::Lazy;
+use primitive_types::H256;
 use serde::{Deserialize, Serialize};
 use smt::SPARSE_MERKLE_PLACEHOLDER_HASH;
 
@@ -31,13 +33,13 @@ pub const OBJECT_ENTITY_STRUCT_NAME: &IdentStr = ident_str!("ObjectEntity");
 pub static GENESIS_STATE_ROOT: Lazy<AccountAddress> =
     Lazy::new(|| AccountAddress::new((*SPARSE_MERKLE_PLACEHOLDER_HASH).into()));
 
-#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
-pub struct TablePlaceholder {}
+#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
+pub struct Root {}
 
-impl MoveStructType for TablePlaceholder {
+impl MoveStructType for Root {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("TablePlaceholder");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Root");
 
     fn struct_tag() -> StructTag {
         StructTag {
@@ -49,7 +51,7 @@ impl MoveStructType for TablePlaceholder {
     }
 }
 
-impl MoveStructState for TablePlaceholder {
+impl MoveStructState for Root {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![])
     }
@@ -57,7 +59,7 @@ impl MoveStructState for TablePlaceholder {
 
 pub type TableObject = ObjectEntity<TablePlaceholder>;
 pub type AccountObject = ObjectEntity<Account>;
-pub type ModuleObject = ObjectEntity<Module>;
+pub type ModuleStoreObject = ObjectEntity<ModuleStore>;
 
 /// The Entity of the Object<T>.
 /// The value must be the last field
@@ -66,9 +68,34 @@ pub struct ObjectEntity<T> {
     pub id: ObjectID,
     pub owner: AccountAddress,
     pub flag: u8,
+    /// The state tree root of the object dynamic fields
     pub state_root: AccountAddress,
     pub size: u64,
     pub value: T,
+}
+
+impl ObjectEntity<Root> {
+    pub fn genesis_root_object() -> RootObjectEntity {
+        Self {
+            id: ObjectID::root(),
+            owner: MOVEOS_STD_ADDRESS,
+            flag: 0u8,
+            state_root: *GENESIS_STATE_ROOT,
+            size: 0,
+            value: Root {},
+        }
+    }
+
+    pub fn root_object(state_root: H256, size: u64) -> RootObjectEntity {
+        Self {
+            id: ObjectID::root(),
+            owner: MOVEOS_STD_ADDRESS,
+            flag: 0u8,
+            state_root: AccountAddress::new(state_root.into()),
+            size,
+            value: Root {},
+        }
+    }
 }
 
 impl<T> ObjectEntity<T> {
@@ -79,7 +106,7 @@ impl<T> ObjectEntity<T> {
         id: ObjectID,
         owner: AccountAddress,
         flag: u8,
-        state_root: AccountAddress,
+        state_root: H256,
         size: u64,
         value: T,
     ) -> ObjectEntity<T> {
@@ -87,10 +114,18 @@ impl<T> ObjectEntity<T> {
             id,
             owner,
             flag,
-            state_root,
+            state_root: AccountAddress::new(state_root.into()),
             size,
             value,
         }
+    }
+
+    pub fn state_root(&self) -> H256 {
+        self.state_root.into_bytes().into()
+    }
+
+    pub fn update_state_root(&mut self, new_state_root: H256) {
+        self.state_root = AccountAddress::new(new_state_root.into());
     }
 
     pub fn is_shared(&self) -> bool {
@@ -179,15 +214,15 @@ impl ObjectEntity<Account> {
     }
 }
 
-impl ObjectEntity<Module> {
-    pub fn new_module_object() -> ModuleObject {
+impl ObjectEntity<ModuleStore> {
+    pub fn new_module_store() -> ModuleStoreObject {
         Self {
-            id: Module::module_object_id(),
+            id: ModuleStore::module_store_id(),
             owner: MOVEOS_STD_ADDRESS,
             flag: 0u8,
             state_root: *GENESIS_STATE_ROOT,
             size: 0,
-            value: Module {},
+            value: ModuleStore {},
         }
     }
 }
@@ -231,7 +266,9 @@ where
     }
 }
 
+//TODO rename to RawObjectEntity
 pub type RawObject = ObjectEntity<RawData>;
+pub type RootObjectEntity = ObjectEntity<Root>;
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
 pub struct RawData {
@@ -313,6 +350,24 @@ impl RawObject {
         let value_type = TypeTag::Struct(Box::new(self.struct_tag()));
         State::new(value, value_type)
     }
+
+    pub fn into_object<T: MoveStructState>(self) -> Result<ObjectEntity<T>> {
+        let struct_tag = T::struct_tag();
+        ensure!(
+            self.value.struct_tag == struct_tag,
+            "RawObjectEntity value type should be {}",
+            struct_tag
+        );
+        let value = bcs::from_bytes(&self.value.value)?;
+        Ok(ObjectEntity {
+            id: self.id,
+            owner: self.owner,
+            flag: self.flag,
+            state_root: self.state_root,
+            size: self.size,
+            value,
+        })
+    }
 }
 
 impl TryFrom<State> for RawObject {
@@ -334,7 +389,14 @@ impl AnnotatedObject {
         size: u64,
         value: AnnotatedMoveStruct,
     ) -> Self {
-        Self::new(id, owner, flag, state_root, size, value)
+        Self {
+            id,
+            owner,
+            flag,
+            state_root,
+            size,
+            value,
+        }
     }
 
     /// Create a new AnnotatedObject from a AnnotatedMoveStruct
@@ -457,7 +519,7 @@ mod tests {
             object_id,
             AccountAddress::random(),
             0u8,
-            AccountAddress::random(),
+            H256::random(),
             0,
             object_value,
         );
@@ -467,5 +529,19 @@ mod tests {
         let object2 = bcs::from_bytes::<ObjectEntity<TestStruct>>(&raw_object.to_bytes()).unwrap();
         assert_eq!(object, object2);
         Ok(())
+    }
+
+    #[test]
+    fn test_genesis_state_root() {
+        let genesis_state_root = *GENESIS_STATE_ROOT;
+        //println!("genesis_state_root: {:?}", genesis_state_root);
+        //ensure the genesis state root is not changed
+        assert_eq!(
+            genesis_state_root,
+            AccountAddress::from_hex_literal(
+                "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000"
+            )
+            .unwrap()
+        );
     }
 }

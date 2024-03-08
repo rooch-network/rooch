@@ -14,6 +14,7 @@ use hyper::header::HeaderValue;
 use hyper::Method;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
+use moveos_types::moveos_std::object::ObjectEntity;
 use serde_json::json;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
@@ -416,15 +417,17 @@ fn init_storage(store_config: &StoreConfig) -> Result<(MoveOSStore, RoochStore)>
         store_config.rocksdb_config(),
         None,
     )?))?;
-    let lastest_state_root = moveosdb
-        .config_store
-        .get_startup_info()?
-        .map(|info| info.state_root_hash);
+    let startup_info = moveosdb.config_store.get_startup_info()?;
 
-    if let Some(latest_state_root) = lastest_state_root {
-        info!("Load latest state root {:?}", latest_state_root);
+    if let Some(ref startup_info) = startup_info {
+        info!("Load startup info {:?}", startup_info);
     }
-    let moveos_store = MoveOSStore::new_with_root(moveosdb, lastest_state_root)?;
+    let moveos_store = MoveOSStore::new_with_root(
+        moveosdb,
+        startup_info
+            .map(|s| s.into_root_object())
+            .unwrap_or(ObjectEntity::genesis_root_object()),
+    )?;
 
     let rooch_store = RoochStore::new(StoreInstance::new_db_instance(RocksDB::new(
         rooch_db_path,

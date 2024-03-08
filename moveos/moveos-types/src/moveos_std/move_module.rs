@@ -46,18 +46,18 @@ impl MoveStructState for MoveModule {
 }
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
-pub struct Module {}
+pub struct ModuleStore {}
 
-impl Module {
-    pub fn module_object_id() -> ObjectID {
+impl ModuleStore {
+    pub fn module_store_id() -> ObjectID {
         object_id::named_object_id(&Self::struct_tag())
     }
 }
 
-impl MoveStructType for Module {
+impl MoveStructType for ModuleStore {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("Module");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("ModuleStore");
 
     fn struct_tag() -> StructTag {
         StructTag {
@@ -69,7 +69,7 @@ impl MoveStructType for Module {
     }
 }
 
-impl MoveStructState for Module {
+impl MoveStructState for ModuleStore {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![])
     }

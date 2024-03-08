@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::moveos_std::account::Account;
-use crate::moveos_std::move_module::Module;
+use crate::moveos_std::move_module::ModuleStore;
 use crate::state::KeyState;
 use crate::{
     move_types::{random_identity, random_struct_tag},
@@ -269,7 +269,7 @@ impl AccessPath {
                 account,
                 module_names,
             } => {
-                let module_object_id = Module::module_object_id();
+                let module_object_id = ModuleStore::module_store_id();
                 let keys = module_names.map(|s| {
                     s.into_iter()
                         .map(|name| {

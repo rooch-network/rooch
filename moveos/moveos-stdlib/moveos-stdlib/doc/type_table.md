@@ -6,6 +6,7 @@
 TypeTable is a table use struct Type as Key, struct as Value
 
 
+-  [Resource `TablePlaceholder`](#0x2_type_table_TablePlaceholder)
 -  [Struct `TypeTable`](#0x2_type_table_TypeTable)
 -  [Function `new`](#0x2_type_table_new)
 -  [Function `new_with_id`](#0x2_type_table_new_with_id)
@@ -23,6 +24,17 @@ TypeTable is a table use struct Type as Key, struct as Value
 <b>use</b> <a href="">0x1::type_name</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
+</code></pre>
+
+
+
+<a name="0x2_type_table_TablePlaceholder"></a>
+
+## Resource `TablePlaceholder`
+
+
+
+<pre><code><b>struct</b> <a href="type_table.md#0x2_type_table_TablePlaceholder">TablePlaceholder</a> <b>has</b> key
 </code></pre>
 
 
@@ -145,7 +157,7 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 Returns table handle of <code><a href="table.md#0x2_table">table</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_handle">handle</a>(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>): &<a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_handle">handle</a>(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
 </code></pre>
 
 

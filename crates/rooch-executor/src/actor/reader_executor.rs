@@ -21,6 +21,7 @@ use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::function_return_value::AnnotatedFunctionReturnValue;
 use moveos_types::moveos_std::event::EventHandle;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event};
+use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::state::{AnnotatedState, State};
 use moveos_types::state_resolver::{AnnotatedStateKV, AnnotatedStateReader, StateKV, StateReader};
 use moveos_types::transaction::TransactionExecutionInfo;
@@ -59,6 +60,10 @@ impl ReaderExecutorActor {
 
     pub fn moveos(&self) -> &MoveOS {
         &self.moveos
+    }
+
+    pub fn refresh_state(&mut self, root: RootObjectEntity, is_upgrade: bool) -> Result<()> {
+        self.moveos.refresh_state(root, is_upgrade)
     }
 }
 
@@ -262,10 +267,7 @@ impl Handler<GetAnnotatedStatesByStateMessage> for ReaderExecutorActor {
 #[async_trait]
 impl Handler<RefreshStateMessage> for ReaderExecutorActor {
     async fn handle(&mut self, msg: RefreshStateMessage, _ctx: &mut ActorContext) -> Result<()> {
-        let RefreshStateMessage {
-            new_state_root,
-            is_upgrade,
-        } = msg;
-        self.moveos.refresh_state(new_state_root, is_upgrade)
+        let RefreshStateMessage { root, is_upgrade } = msg;
+        self.refresh_state(root, is_upgrade)
     }
 }

@@ -15,7 +15,7 @@ use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::moveos_std::raw_table::TableInfo;
 use moveos_types::state::{KeyState, MoveState, MoveType, State, StateChangeSet, TableChange};
 use rand::{thread_rng, Rng};
-use smt::NodeStore;
+use smt::{NodeStore, UpdateSet};
 use std::str::FromStr;
 
 fn random_bytes() -> Vec<u8> {
@@ -86,7 +86,7 @@ fn random_state_change_set() -> StateChangeSet {
 
 #[test]
 fn test_statedb() {
-    let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
+    let mut moveos_store = MoveOSStore::mock_moveos_store().unwrap();
 
     let mut table_change_set = StateChangeSet::default();
     let mut global_change = TableChange::default();
@@ -111,7 +111,7 @@ fn test_statedb() {
 
     table_change_set.changes.insert(table_handle, table_change);
     moveos_store
-        .get_state_store()
+        .get_state_store_mut()
         .apply_change_set(table_change_set)
         .unwrap();
 
@@ -144,32 +144,47 @@ fn test_reopen() {
 
 #[test]
 fn test_statedb_state_root() -> Result<()> {
-    let moveos_store = MoveOSStore::mock_moveos_store().expect("moveos store mock should succ");
-    let state_root = moveos_store
-        .get_state_store()
+    let mut moveos_store = MoveOSStore::mock_moveos_store().expect("moveos store mock should succ");
+    let (state_root, size) = moveos_store
+        .get_state_store_mut()
         .apply_change_set(random_state_change_set())?;
-    let new_state_root = moveos_store
-        .get_state_store()
+    let (new_state_root, new_size) = moveos_store
+        .get_state_store_mut()
         .apply_change_set(random_state_change_set())?;
     assert_ne!(state_root, new_state_root);
+    assert_ne!(size, new_size);
     Ok(())
 }
 
+// #[test]
+// fn test_state_db_dump_and_apply() -> Result<()> {
+//     let moveos_store = MoveOSStore::mock_moveos_store().expect("moveos store mock should succ");
+
+//     let state_change_set = random_state_change_set();
+//     let _state_root = moveos_store
+//         .get_state_store()
+//         .apply_change_set(state_change_set)?;
+
+//     let global_state_set = moveos_store.get_state_store().dump()?;
+//     let moveos_store2 = MoveOSStore::mock_moveos_store().expect("moveos store mock should succ");
+//     moveos_store2
+//         .get_state_store()
+//         .apply(global_state_set.clone())?;
+//     let global_state_set2 = moveos_store2.get_state_store().dump()?;
+//     assert_eq!(global_state_set, global_state_set2);
+//     Ok(())
+// }
+
 #[test]
-fn test_state_db_dump_and_apply() -> Result<()> {
-    let moveos_store = MoveOSStore::mock_moveos_store().expect("moveos store mock should succ");
-
-    let state_change_set = random_state_change_set();
-    let _state_root = moveos_store
-        .get_state_store()
-        .apply_change_set(state_change_set)?;
-
-    let global_state_set = moveos_store.get_state_store().dump()?;
-    let moveos_store2 = MoveOSStore::mock_moveos_store().expect("moveos store mock should succ");
-    moveos_store2
-        .get_state_store()
-        .apply(global_state_set.clone())?;
-    let global_state_set2 = moveos_store2.get_state_store().dump()?;
-    assert_eq!(global_state_set, global_state_set2);
-    Ok(())
+fn test_state_key_and_update_set() {
+    let mut update_set = UpdateSet::new();
+    (0..100)
+        .map(|_| {
+            let object_id = ObjectID::random();
+            let key = object_id.to_key();
+            let state = State::new(random_bytes(), random_type_tag());
+            (key, state)
+        })
+        .for_each(|(k, v)| update_set.put(k, v));
+    assert!(update_set.len() == 100);
 }

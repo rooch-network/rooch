@@ -15,6 +15,7 @@ pub mod object_id;
 pub mod raw_table;
 pub mod simple_map;
 pub mod simple_multimap;
+pub mod table;
 pub mod tx_context;
 pub mod tx_meta;
 pub mod tx_result;

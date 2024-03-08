@@ -41,7 +41,7 @@ module rooch_framework::address_mapping{
         let object_id = object_id::named_object_id<AddressMapping>();
         let address_mapping_obj = object::borrow_object<AddressMapping>(object_id);
         let address_mapping = object::borrow<AddressMapping>(address_mapping_obj);
-        (object_id, *table::handle(&address_mapping.mapping), *table::handle(&address_mapping.reverse_mapping))
+        (object_id, table::handle(&address_mapping.mapping), table::handle(&address_mapping.reverse_mapping))
     }
 
     /// Borrow the address mapping object

@@ -6,6 +6,7 @@
 
 use anyhow::{Error, Result};
 use moveos_types::genesis_info::GenesisInfo;
+use moveos_types::moveos_std::object::RootObjectEntity;
 use once_cell::sync::Lazy;
 use raw_store::{ColumnFamilyName, StoreInstance};
 use std::collections::BTreeMap;
@@ -124,9 +125,9 @@ impl MoveOSStore {
         Ok(store)
     }
 
-    pub fn new_with_root(moveosdb: MoveOSDB, state_root: Option<H256>) -> Result<Self> {
+    pub fn new_with_root(moveosdb: MoveOSDB, root: RootObjectEntity) -> Result<Self> {
         let store = Self {
-            statedb: StateDBStore::new_with_root(moveosdb.node_store.clone(), state_root),
+            statedb: StateDBStore::new_with_root(moveosdb.node_store.clone(), root),
             moveosdb,
         };
         Ok(store)
@@ -150,6 +151,10 @@ impl MoveOSStore {
 
     pub fn get_state_store(&self) -> &StateDBStore {
         &self.statedb
+    }
+
+    pub fn get_state_store_mut(&mut self) -> &mut StateDBStore {
+        &mut self.statedb
     }
 }
 

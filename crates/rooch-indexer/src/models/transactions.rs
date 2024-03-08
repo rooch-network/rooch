@@ -55,6 +55,8 @@ pub struct StoredTransaction {
 
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub state_root: String,
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub size: i64,
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub event_root: String,
     /// The amount of gas used.
@@ -92,8 +94,8 @@ impl From<IndexedTransaction> for StoredTransaction {
             authenticator_payload: transaction.authenticator_payload,
             tx_accumulator_root: format!("{:?}", transaction.tx_accumulator_root),
             transaction_raw: transaction.transaction_raw,
-
             state_root: format!("{:?}", transaction.state_root),
+            size: transaction.size as i64,
             event_root: format!("{:?}", transaction.event_root),
             gas_used: transaction.gas_used as i64,
             status: transaction.status,
@@ -126,7 +128,8 @@ impl StoredTransaction {
         let execution_info = TransactionExecutionInfo {
             tx_hash: H256::from_str(self.tx_hash.as_str())?,
             state_root: H256::from_str(self.state_root.as_str())?,
-            event_root: H256::from_str(self.state_root.as_str())?,
+            size: self.size as u64,
+            event_root: H256::from_str(self.event_root.as_str())?,
             gas_used: self.gas_used as u64,
             status,
         };

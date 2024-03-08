@@ -139,7 +139,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                 FunctionId::new(
                     ModuleId::new(
                         MOVEOS_STD_ADDRESS,
-                        Identifier::new("context".to_owned()).unwrap(),
+                        Identifier::new("move_module".to_owned()).unwrap(),
                     ),
                     Identifier::new("publish_modules_entry".to_owned()).unwrap(),
                 ),
