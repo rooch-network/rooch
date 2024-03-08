@@ -1,6 +1,6 @@
 import { ChainToggle } from './chain-toggle'
 import { WalletConnect } from './wallet-connect'
-
+import { NetworkToggle } from './network-toggle'
 import { Separator } from '@/components/ui/separator'
 import { ModeToggle } from '@/components/mode-toggle'
 import { LanguageSwitcher } from '@/components/language-switcher'
@@ -11,6 +11,7 @@ export const NavbarItem = () => {
       <LanguageSwitcher />
       <ModeToggle />
       <ChainToggle />
+      <NetworkToggle />
       <Separator orientation="vertical" className="h-6 md:flex hidden" />
       <WalletConnect />
     </div>
