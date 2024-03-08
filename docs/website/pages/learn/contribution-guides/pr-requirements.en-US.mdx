@@ -125,8 +125,3 @@ You *should not* update your branch by merging the latest main into your branch.
 ## Bisect-able History
 
 It is important that the project history is bisect-able so that when regressions are identified we can easily use `git bisect` to be able to pin-point the exact commit which introduced the regression. This requires that every commit is able to be built and passes all lints and tests. So if your pull request includes multiple commits be sure that each and every commit is able to be built and passes all checks performed by CI.
-
-
-
-
-
