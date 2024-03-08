@@ -12,11 +12,11 @@ The features of the Move language can be found in the reference materials at the
 
 ## Built-in standard library
 
-Rooch currently has three built-in standard libraries, namely `MoveStdlib`, `MoveosStdlib` and `RoochFramework`. For details, see the [built-in libraries](./library.en-US.mdx).
+Rooch currently has three built-in standard libraries, namely `MoveStdlib`, `MoveosStdlib` and `RoochFramework`. For details, see the [built-in libraries](./built-in-library.en-US.mdx).
 
 ## Private generics
 
-`#[private_generics(T)]` is a function annotation that ensures that the function with this annotation can only be called within the module where `T` is defined. This annotation provides a similar constraint to Move's storage instructions, but it opens up this capability to developers. This feature is the basic condition for the following features.
+`#[private_generics(T)]` is a function annotation that ensures that the function with this annotation can only be called within the module where `T` is defined. This annotation provides a similar constraint to Move's storage instructions, but it opens up this capability to developers. This feature is the basic condition for the following features. For details, see [Private Generics](../../../build/rooch-framework/private-generics.en-US.mdx).
 
 ### Storage abstraction
 
@@ -32,9 +32,9 @@ The goal of storage abstraction is to allow developers to more flexibly define t
 
 The above methods provided by `account_storage` are all constrained by the `private_generics(T)` annotation, ensuring that the security is consistent with the Move storage instruction.
 
-In addition to `Account Resource，` Rooch also provides Object Storage, For detailed information about Rooch Object, see [Rooch Object](./object.en-US.mdx).
+In addition to `Account Resource，` Rooch also provides Object Storage, For detailed information about Rooch Object, see [Rooch Object](../objects/object.en-US.mdx).
 
-Regarding the design of storage abstraction, you can refer to [Storage Abstraction](../dive-into-rooch/storage-abstraction.en-US.mdx).
+Regarding the design of storage abstraction, you can refer to [Storage Abstraction](../objects/storage-abstraction.en-US.mdx).
 
 ### Context
 
