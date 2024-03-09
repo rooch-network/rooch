@@ -104,28 +104,31 @@ impl BitcoinRelayer {
 
         let batch_size: usize = 10;
         let mut next_block_hash = start_block_header_info.next_block_hash;
-        self.buffer.push(BlockResult {
-            header_info: start_block_header_info,
-            block: start_block,
-        });
+        // only for data verify mode
+        if !(end_block_height > 0 && start_block_height_usize > end_block_height) {
+            self.buffer.push(BlockResult {
+                header_info: start_block_header_info,
+                block: start_block,
+            });
+        };
         while let Some(next_hash) = next_block_hash {
             let header_info = self.rpc_client.get_block_header_info(&next_hash)?;
             let block = self.rpc_client.get_block(&next_hash)?;
             next_block_hash = header_info.next_block_hash;
             let next_block_height = header_info.height;
-            self.buffer.push(BlockResult { header_info, block });
-            if self.buffer.len() > batch_size {
-                break;
-            }
+
             // only for data verify mode
             if (end_block_height > 0 && next_block_height > end_block_height)
                 || next_block_height < start_block_height_usize
             {
-                info!("BitcoinRelayer process should exit at height {} and start_block_height is {}, end_block_height is {} ", next_block_height, start_block_height_usize, end_block_height);
-                return Err(anyhow::anyhow!(
-                    "BitcoinRelayer should exist at height {}",
-                    next_block_height
-                ));
+                if end_block_height > 0 && start_block_height_usize <= end_block_height {
+                    info!("BitcoinRelayer process should exit at height {} and start_block_height is {}, end_block_height is {} ", next_block_height, start_block_height_usize, end_block_height);
+                };
+                break;
+            }
+            self.buffer.push(BlockResult { header_info, block });
+            if self.buffer.len() > batch_size {
+                break;
             }
         }
         Ok(())
