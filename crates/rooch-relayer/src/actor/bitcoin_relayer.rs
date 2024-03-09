@@ -1,11 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use crate::Relayer;
 use anyhow::Result;
 use async_trait::async_trait;
 use bitcoin::Block;
-use bitcoincore_rpc::{bitcoincore_rpc_json::GetBlockHeaderResult, Auth, Client, RpcApi};
+use bitcoincore_rpc::bitcoincore_rpc_json::GetBlockHeaderResult;
 use moveos_types::{module_binding::MoveFunctionCaller, transaction::FunctionCall};
 use rooch_config::BitcoinRelayerConfig;
 use rooch_executor::proxy::ExecutorProxy;
@@ -17,7 +18,7 @@ pub struct BitcoinRelayer {
     start_block_height: Option<u64>,
     // only for data verify
     end_block_height: Option<u64>,
-    rpc_client: Client,
+    rpc_client: BitcoinClientProxy,
     //TODO if we want make the relayer to an independent process, we need to replace the executor proxy with a rooch rpc client
     move_caller: ExecutorProxy,
     buffer: Vec<BlockResult>,
@@ -34,15 +35,15 @@ pub struct BlockResult {
 }
 
 impl BitcoinRelayer {
-    pub fn new(config: BitcoinRelayerConfig, executor: ExecutorProxy) -> Result<Self> {
-        let rpc = Client::new(
-            config.btc_rpc_url.as_str(),
-            Auth::UserPass(config.btc_rpc_user_name, config.btc_rpc_password),
-        )?;
+    pub fn new(
+        config: BitcoinRelayerConfig,
+        rpc_client: BitcoinClientProxy,
+        executor: ExecutorProxy,
+    ) -> Result<Self> {
         Ok(Self {
             start_block_height: config.btc_start_block_height,
             end_block_height: config.btc_end_block_height,
-            rpc_client: rpc,
+            rpc_client,
             move_caller: executor,
             buffer: vec![],
             tx_batch_size: 1000u64,
@@ -67,10 +68,11 @@ impl BitcoinRelayer {
             .move_caller
             .as_module_binding::<BitcoinLightClientModule>();
         let latest_block_height_in_rooch = bitcoin_light_client.get_latest_block_height()?;
-        let latest_block_hash_in_bitcoin = self.rpc_client.get_best_block_hash()?;
+        let latest_block_hash_in_bitcoin = self.rpc_client.get_best_block_hash().await?;
         let latest_block_header_info = self
             .rpc_client
-            .get_block_header_info(&latest_block_hash_in_bitcoin)?;
+            .get_block_header_info(latest_block_hash_in_bitcoin)
+            .await?;
         let latest_block_height_in_bitcoin = latest_block_header_info.height as u64;
         let start_block_height: u64 = match (self.start_block_height, latest_block_height_in_rooch)
         {
@@ -96,11 +98,16 @@ impl BitcoinRelayer {
         let start_block_header_info = if start_block_height == latest_block_height_in_bitcoin {
             latest_block_header_info
         } else {
-            let start_block_hash = self.rpc_client.get_block_hash(start_block_height)?;
-            self.rpc_client.get_block_header_info(&start_block_hash)?
+            let start_block_hash = self.rpc_client.get_block_hash(start_block_height).await?;
+            self.rpc_client
+                .get_block_header_info(start_block_hash)
+                .await?
         };
 
-        let start_block = self.rpc_client.get_block(&start_block_header_info.hash)?;
+        let start_block = self
+            .rpc_client
+            .get_block(start_block_header_info.hash)
+            .await?;
 
         let batch_size: usize = 10;
         let mut next_block_hash = start_block_header_info.next_block_hash;
@@ -112,8 +119,8 @@ impl BitcoinRelayer {
             });
         };
         while let Some(next_hash) = next_block_hash {
-            let header_info = self.rpc_client.get_block_header_info(&next_hash)?;
-            let block = self.rpc_client.get_block(&next_hash)?;
+            let header_info = self.rpc_client.get_block_header_info(next_hash).await?;
+            let block = self.rpc_client.get_block(next_hash).await?;
             next_block_hash = header_info.next_block_hash;
             let next_block_height = header_info.height;
 
