@@ -85,6 +85,7 @@ impl BitcoinRelayer {
                 latest_block_height_in_bitcoin
             }
         };
+        let start_block_height_usize = start_block_height as usize;
         let end_block_height = self.end_block_height.unwrap_or(0) as usize;
 
         if start_block_height > latest_block_height_in_bitcoin {
@@ -116,9 +117,15 @@ impl BitcoinRelayer {
             if self.buffer.len() > batch_size {
                 break;
             }
-            // only for data verify
-            if next_block_height > end_block_height {
-                break;
+            // only for data verify mode
+            if (end_block_height > 0 && next_block_height > end_block_height)
+                || next_block_height < start_block_height_usize
+            {
+                info!("BitcoinRelayer process should exit at height {} and start_block_height is {}, end_block_height is {} ", next_block_height, start_block_height_usize, end_block_height);
+                return Err(anyhow::anyhow!(
+                    "BitcoinRelayer should exist at height {}",
+                    next_block_height
+                ));
             }
         }
         Ok(())

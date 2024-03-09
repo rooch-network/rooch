@@ -24,7 +24,7 @@ use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, GlobalStateFilterView, IndexerEventPageView,
     IndexerGlobalStatePageView, IndexerGlobalStateView, IndexerTableChangeSetPageView,
     IndexerTableChangeSetView, IndexerTableStatePageView, IndexerTableStateView, KeyStateView,
-    StateKVView, StateOptions, StateSyncFilterView, TableStateFilterView,
+    StateKVView, StateOptions, StateSyncFilterView, TableStateFilterView, TxOptions,
 };
 use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
@@ -141,13 +141,21 @@ impl RoochAPIServer for RoochServer {
     async fn execute_raw_transaction(
         &self,
         payload: BytesView,
+        tx_options: Option<TxOptions>,
     ) -> RpcResult<ExecuteTransactionResponseView> {
+        let tx_options = tx_options.unwrap_or_default();
         let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
-        Ok(self
+        let tx_response = self
             .rpc_service
             .execute_tx(TypedTransaction::Rooch(tx))
-            .await?
-            .into())
+            .await?;
+
+        let result = if tx_options.with_output {
+            ExecuteTransactionResponseView::from(tx_response)
+        } else {
+            ExecuteTransactionResponseView::new_without_output(tx_response)
+        };
+        Ok(result)
     }
 
     async fn execute_view_function(
