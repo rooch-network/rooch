@@ -32,7 +32,6 @@ use moveos_types::{
 use moveos_types::{moveos_std::object_id::ObjectID, state_resolver::StateResolver};
 use parking_lot::RwLock;
 use smallvec::smallvec;
-use smt::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use std::{
     collections::{btree_map::Entry, BTreeMap, BTreeSet, VecDeque},
     sync::Arc,
@@ -423,12 +422,7 @@ impl Table {
 
 /// Returns all natives for tables.
 pub fn table_natives(table_addr: AccountAddress, gas_params: GasParameters) -> NativeFunctionTable {
-    let natives: [(&str, &str, NativeFunction); 8] = [
-        (
-            "raw_table",
-            "new_table",
-            make_native_new_table(gas_params.common.clone(), gas_params.new_table),
-        ),
+    let natives: [(&str, &str, NativeFunction); 5] = [
         (
             "raw_table",
             "add_box",
@@ -454,16 +448,6 @@ pub fn table_natives(table_addr: AccountAddress, gas_params: GasParameters) -> N
             "contains_box",
             make_native_contains_box(gas_params.common, gas_params.contains_box),
         ),
-        (
-            "raw_table",
-            "drop_unchecked_box",
-            make_native_drop_unchecked_box(gas_params.drop_unchecked_box),
-        ),
-        (
-            "raw_table",
-            "box_length",
-            make_native_box_length(gas_params.box_length),
-        ),
     ];
 
     native_functions::make_table_from_iter(table_addr, natives)
@@ -485,53 +469,6 @@ impl CommonGasParameters {
                 None => 0.into(),
             }
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct NewTableGasParameters {
-    pub base: InternalGas,
-    pub per_byte_in_str: InternalGasPerByte,
-}
-
-fn native_new_table(
-    _common_gas_params: &CommonGasParameters,
-    gas_params: &NewTableGasParameters,
-    context: &mut NativeContext,
-    _ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    assert_eq!(args.len(), 1);
-
-    let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.write();
-
-    let mut cost = gas_params.base;
-    let handle = get_table_handle(&mut args)?;
-    cost += gas_params.per_byte_in_str * NumBytes::new(handle.to_bytes().len() as u64);
-    let table = table_data.get_or_create_table(handle)?;
-
-    // New table's state_root should be the place holder hash.
-    let state_root = AccountAddress::new((*SPARSE_MERKLE_PLACEHOLDER_HASH).into());
-    // Represent table info
-    let table_info_value = Struct::pack(vec![
-        Value::address(state_root),
-        Value::u64(table.size_increment as u64),
-    ]);
-    Ok(NativeResult::ok(
-        cost,
-        smallvec![Value::struct_(table_info_value)],
-    ))
-}
-
-pub fn make_native_new_table(
-    common_gas_params: CommonGasParameters,
-    gas_params: NewTableGasParameters,
-) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_new_table(&common_gas_params, &gas_params, context, ty_args, args)
-        },
-    )
 }
 
 #[derive(Debug, Clone)]
@@ -771,95 +708,12 @@ pub fn make_native_remove_box(
 }
 
 #[derive(Debug, Clone)]
-pub struct BoxLengthGasParameters {
-    pub base: InternalGas,
-}
-
-fn native_box_length(
-    gas_params: &BoxLengthGasParameters,
-    context: &mut NativeContext,
-    _ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    assert_eq!(args.len(), 1);
-
-    let table_context = context.extensions().get::<NativeTableContext>();
-    let table_data = table_context.table_data.write();
-
-    let handle = get_table_handle(&mut args)?;
-
-    let remote_table_size = table_context
-        .resolver
-        .resolve_object_state(&handle)
-        .map_err(|err| partial_extension_error(format!("remote table resolver failure: {}", err)))?
-        .map(|state| state.as_raw_object())
-        .transpose()
-        .map_err(|err| partial_extension_error(format!("remote table resolver failure: {}", err)))?
-        .map_or_else(|| 0u64, |obj| obj.size);
-
-    let size_increment = if table_data.exist_table(&handle) {
-        table_data.borrow_table(&handle).unwrap().size_increment
-    } else {
-        0i64
-    };
-    let updated_table_size = (remote_table_size as i64) + size_increment;
-    debug_assert!(updated_table_size >= 0);
-
-    let length = Value::u64(updated_table_size as u64);
-    let cost = gas_params.base;
-
-    Ok(NativeResult::ok(cost, smallvec![length]))
-}
-
-pub fn make_native_box_length(gas_params: BoxLengthGasParameters) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_box_length(&gas_params, context, ty_args, args)
-        },
-    )
-}
-
-#[derive(Debug, Clone)]
-pub struct DropUncheckedBoxGasParameters {
-    pub base: InternalGas,
-}
-
-fn native_drop_unchecked_box(
-    gas_params: &DropUncheckedBoxGasParameters,
-    context: &mut NativeContext,
-    _ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    assert_eq!(args.len(), 1);
-
-    let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.write();
-
-    let handle = get_table_handle(&mut args)?;
-    table_data.tables.remove(&handle);
-
-    table_data.removed_tables.insert(handle);
-    Ok(NativeResult::ok(gas_params.base, smallvec![]))
-}
-
-pub fn make_native_drop_unchecked_box(gas_params: DropUncheckedBoxGasParameters) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_drop_unchecked_box(&gas_params, context, ty_args, args)
-        },
-    )
-}
-
-#[derive(Debug, Clone)]
 pub struct GasParameters {
     pub common: CommonGasParameters,
-    pub new_table: NewTableGasParameters,
     pub add_box: AddBoxGasParameters,
     pub borrow_box: BorrowBoxGasParameters,
     pub contains_box: ContainsBoxGasParameters,
     pub remove_box: RemoveGasParameters,
-    pub drop_unchecked_box: DropUncheckedBoxGasParameters,
-    pub box_length: BoxLengthGasParameters,
 }
 
 impl GasParameters {
@@ -869,10 +723,6 @@ impl GasParameters {
                 load_base: 0.into(),
                 load_per_byte: 0.into(),
                 load_failure: 0.into(),
-            },
-            new_table: NewTableGasParameters {
-                base: 0.into(),
-                per_byte_in_str: 0.into(),
             },
             add_box: AddBoxGasParameters {
                 base: 0.into(),
@@ -890,8 +740,6 @@ impl GasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
-            drop_unchecked_box: DropUncheckedBoxGasParameters { base: 0.into() },
-            box_length: BoxLengthGasParameters { base: 0.into() },
         }
     }
 }
@@ -928,6 +776,7 @@ fn deserialize_and_box(layout: &MoveTypeLayout, bytes: &[u8]) -> PartialVMResult
 }
 
 fn partial_extension_error(msg: impl ToString) -> PartialVMError {
+    log::debug!("PartialVMError: {}", msg.to_string());
     PartialVMError::new(StatusCode::VM_EXTENSION_ERROR).with_message(msg.to_string())
 }
 

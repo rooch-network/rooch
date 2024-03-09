@@ -7,6 +7,7 @@ Move Object
 For more details, please refer to https://rooch.network/docs/developer-guides/object
 
 
+-  [Resource `Root`](#0x2_object_Root)
 -  [Struct `ObjectEntity`](#0x2_object_ObjectEntity)
 -  [Resource `Object`](#0x2_object_Object)
 -  [Struct `TestStructID`](#0x2_object_TestStructID)
@@ -44,7 +45,9 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `mut_entity_as_object`](#0x2_object_mut_entity_as_object)
 -  [Function `global_object_storage_handle`](#0x2_object_global_object_storage_handle)
 -  [Function `add_to_global`](#0x2_object_add_to_global)
+-  [Function `borrow_root_object`](#0x2_object_borrow_root_object)
 -  [Function `borrow_from_global`](#0x2_object_borrow_from_global)
+-  [Function `borrow_mut_root_object`](#0x2_object_borrow_mut_root_object)
 -  [Function `borrow_mut_from_global`](#0x2_object_borrow_mut_from_global)
 -  [Function `remove_from_global`](#0x2_object_remove_from_global)
 -  [Function `contains_global`](#0x2_object_contains_global)
@@ -65,16 +68,28 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `contains_field`](#0x2_object_contains_field)
 -  [Function `contains_field_internal`](#0x2_object_contains_field_internal)
 -  [Function `field_size`](#0x2_object_field_size)
--  [Function `new_table`](#0x2_object_new_table)
--  [Function `table_length`](#0x2_object_table_length)
--  [Function `is_empty_table`](#0x2_object_is_empty_table)
--  [Function `drop_unchecked_table`](#0x2_object_drop_unchecked_table)
--  [Function `destroy_empty_table`](#0x2_object_destroy_empty_table)
+-  [Function `field_size_internal`](#0x2_object_field_size_internal)
 
 
-<pre><code><b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
+<pre><code><b>use</b> <a href="">0x1::hash</a>;
+<b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x1::vector</a>;
+<b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
+<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="raw_table.md#0x2_raw_table">0x2::raw_table</a>;
 <b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
+<b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
+</code></pre>
+
+
+
+<a name="0x2_object_Root"></a>
+
+## Resource `Root`
+
+
+
+<pre><code><b>struct</b> <a href="object.md#0x2_object_Root">Root</a> <b>has</b> key
 </code></pre>
 
 
@@ -231,11 +246,11 @@ Can not take out the object which is bound to the account
 
 
 
-<a name="0x2_object_SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE"></a>
+<a name="0x2_object_SPARSE_MERKLE_PLACEHOLDER_HASH"></a>
 
 
 
-<pre><code><b>const</b> <a href="object.md#0x2_object_SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE">SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE</a>: <a href="">vector</a>&lt;u8&gt; = [83, 80, 65, 82, 83, 69, 95, 77, 69, 82, 75, 76, 69, 95, 80, 76, 65, 67, 69, 72, 79, 76, 68, 69, 82, 95, 72, 65, 83, 72];
+<pre><code><b>const</b> <a href="object.md#0x2_object_SPARSE_MERKLE_PLACEHOLDER_HASH">SPARSE_MERKLE_PLACEHOLDER_HASH</a>: <b>address</b> = 0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000;
 </code></pre>
 
 
@@ -641,6 +656,17 @@ The global object storage's table handle should be <code>0x0</code>
 
 
 
+<a name="0x2_object_borrow_root_object"></a>
+
+## Function `borrow_root_object`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_root_object">borrow_root_object</a>(): &<a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;<a href="object.md#0x2_object_Root">object::Root</a>&gt;
+</code></pre>
+
+
+
 <a name="0x2_object_borrow_from_global"></a>
 
 ## Function `borrow_from_global`
@@ -648,6 +674,17 @@ The global object storage's table handle should be <code>0x0</code>
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_from_global">borrow_from_global</a>&lt;T: key&gt;(<a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): &<a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;T&gt;
+</code></pre>
+
+
+
+<a name="0x2_object_borrow_mut_root_object"></a>
+
+## Function `borrow_mut_root_object`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_mut_root_object">borrow_mut_root_object</a>(): &<b>mut</b> <a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;<a href="object.md#0x2_object_Root">object::Root</a>&gt;
 </code></pre>
 
 
@@ -910,60 +947,11 @@ Returns the size of the table, the number of key-value pairs
 
 
 
-<a name="0x2_object_new_table"></a>
+<a name="0x2_object_field_size_internal"></a>
 
-## Function `new_table`
-
-New a table. Aborts if the table exists.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_new_table">new_table</a>(table_handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): <a href="raw_table.md#0x2_raw_table_TableInfo">raw_table::TableInfo</a>
-</code></pre>
+## Function `field_size_internal`
 
 
 
-<a name="0x2_object_table_length"></a>
-
-## Function `table_length`
-
-Returns the size of the table, the number of key-value pairs
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_table_length">table_length</a>(table_handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): u64
-</code></pre>
-
-
-
-<a name="0x2_object_is_empty_table"></a>
-
-## Function `is_empty_table`
-
-Returns true if the table is empty (if <code>length</code> returns <code>0</code>)
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_is_empty_table">is_empty_table</a>(table_handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): bool
-</code></pre>
-
-
-
-<a name="0x2_object_drop_unchecked_table"></a>
-
-## Function `drop_unchecked_table`
-
-Drop a table even if it is not empty.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_drop_unchecked_table">drop_unchecked_table</a>(table_handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>)
-</code></pre>
-
-
-
-<a name="0x2_object_destroy_empty_table"></a>
-
-## Function `destroy_empty_table`
-
-Destroy a table. Aborts if the table is not empty
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_destroy_empty_table">destroy_empty_table</a>(table_handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_field_size_internal">field_size_internal</a>&lt;T: key&gt;(<a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): u64
 </code></pre>

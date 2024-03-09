@@ -6,15 +6,22 @@ use crate::{
     state::{MoveStructState, MoveStructType},
 };
 use move_core_types::{
-    account_address::AccountAddress, ident_str, identifier::IdentStr, language_storage::StructTag,
-    value::MoveStructLayout,
+    account_address::AccountAddress,
+    ident_str,
+    identifier::IdentStr,
+    language_storage::StructTag,
+    value::{MoveStructLayout, MoveTypeLayout},
 };
 use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("table");
 
-#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
-pub struct TablePlaceholder {}
+#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Default)]
+pub struct TablePlaceholder {
+    // Move VM will auto add a bool field to the empty struct
+    // So we manually add a bool field to the struct
+    _placeholder: bool,
+}
 
 impl MoveStructType for TablePlaceholder {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
@@ -33,6 +40,6 @@ impl MoveStructType for TablePlaceholder {
 
 impl MoveStructState for TablePlaceholder {
     fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![])
+        MoveStructLayout::new(vec![MoveTypeLayout::Bool])
     }
 }

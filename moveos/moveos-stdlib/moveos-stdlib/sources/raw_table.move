@@ -22,22 +22,6 @@ module moveos_std::raw_table {
     const ErrorTableAlreadyExists: u64 = 5;
 
 
-    /// Information about a specific table info type. Stored in the global Object storage.
-    struct TableInfo has key, store, drop {
-        // Table SMT root
-        state_root: address,
-        // Table size, number of items
-        size: u64,
-    }
-
-    public fun state_root(table_info: &TableInfo): address {
-        table_info.state_root
-    }
-
-    public fun size(table_info: &TableInfo): u64 {
-        table_info.size
-    }
-
     /// Add a new entry to the table. Aborts if an entry for this
     /// key already exists. The entry itself is not stored in the
     /// table, and cannot be discovered from it.
@@ -69,26 +53,6 @@ module moveos_std::raw_table {
         contains_box<K>(table_handle, key)
     }
 
-    /// Returns the size of the table, the number of key-value pairs
-    public(friend) fun length(table_handle: ObjectID): u64 {
-        box_length(table_handle)
-    }
-
-    /// Returns true if the table is empty (if `length` returns `0`)
-    public(friend) fun is_empty(table_handle: ObjectID): bool {
-        length(table_handle) == 0
-    }
-
-    /// Drop a table even if it is not empty.
-    public(friend) fun drop_unchecked(table_handle: ObjectID) {
-        drop_unchecked_box(table_handle)
-    }
-    
-    /// Destroy a table. Aborts if the table is not empty
-    public(friend) fun destroy_empty(table_handle: ObjectID) {
-        assert!(is_empty(table_handle), ErrorNotEmpty);
-        drop_unchecked_box(table_handle)
-    }
 
     // ======================================================================================================
     // Internal API
@@ -98,9 +62,6 @@ module moveos_std::raw_table {
     struct Box<V> has key, drop, store {
         val: V
     }
-
-    /// New a table. Aborts if the table exists.
-    native public(friend) fun new_table(table_handle: ObjectID): TableInfo;
 
     native fun add_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K, val: Box<V>);
 
@@ -112,7 +73,4 @@ module moveos_std::raw_table {
 
     native fun remove_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K): Box<V>;
 
-    native fun drop_unchecked_box(table_handle: ObjectID);
-
-    native fun box_length(table_handle: ObjectID): u64;
 }
