@@ -15,7 +15,7 @@ export const ChainToggle = () => {
       <img
         src={iconMap[chain] || '/icon-default.svg'}
         alt={`${chain} icon`}
-        className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all md:mr-2"
+        className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all mr-2 hidden md:block"
       />
     )
   }
@@ -28,7 +28,7 @@ export const ChainToggle = () => {
         className="cursor-default flex items-center justify-center hover:bg-inherit"
       >
         <ChainIcon />
-        <span className="hidden md:block">{chain}</span>
+        <h3 className="uppercase">Chain-{chain}</h3>
       </Button>
     </div>
   )

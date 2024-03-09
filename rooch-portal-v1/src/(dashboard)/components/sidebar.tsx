@@ -1,6 +1,9 @@
 import { ProfileInfo } from '@/components/profile-info'
 import { Logo } from './logo'
 import { SidebarRoutes } from './sidebar-routes'
+import { ModeToggle } from '@/components/mode-toggle'
+import { LanguageSwitcher } from '@/components/language-switcher'
+import { Separator } from '@/components/ui/separator'
 
 interface SidebarProps {
   onClose: () => void
@@ -15,7 +18,12 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
       <div className="flex flex-col w-full px-4">
         <SidebarRoutes onClose={onClose} />
       </div>
-      <div className="flex w-full mt-auto p-4">
+      <div className="flex flex-col w-full mt-auto p-4">
+        <div className="flex flex-col items-start justify-center gap-1">
+          <LanguageSwitcher />
+          <ModeToggle />
+        </div>
+        <Separator orientation="horizontal" className="mt-1" />
         <ProfileInfo />
       </div>
     </div>

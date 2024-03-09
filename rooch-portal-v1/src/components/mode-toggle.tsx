@@ -1,11 +1,5 @@
 import { Moon, Settings, Sun } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { useTheme } from '@/components/theme-provider'
 import { useTranslation } from 'react-i18next'
 
@@ -24,68 +18,23 @@ export const ModeToggle = () => {
     }
   }
 
-  const getThemeName = () => {
-    switch (theme) {
-      case 'light':
-        return t('Theme.light')
-      case 'dark':
-        return t('Theme.dark')
-      default:
-        return t('Theme.system')
-    }
-  }
-
-  const dropdownMenu = () => {
-    return (
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme('light')}>
-          <div className="flex items-center justify-start gap-x-2">
-            <Sun className="h-[1rem] w-[1rem] rotate-0 transition-all" />
-            {t('Theme.light')}
-          </div>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('dark')}>
-          <div className="flex items-center justify-start gap-x-2">
-            <Moon className="h-[1rem] w-[1rem] rotate-0 transition-all " />
-            {t('Theme.dark')}
-          </div>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')}>
-          <div className="flex items-center justify-start gap-x-2">
-            <Settings className="h-[1rem] w-[1rem] rotate-0 transition-all" />
-            {t('Theme.system')}
-          </div>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    )
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light'
+    setTheme(newTheme)
   }
 
   return (
     <>
-      {/* mobile */}
-      <div className="md:hidden">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="select-none">
-              <ThemeIcon />
-              <span className="sr-only">Toggle theme</span>
-            </Button>
-          </DropdownMenuTrigger>
-          {dropdownMenu()}
-        </DropdownMenu>
-      </div>
-
-      {/* desktop */}
-      <div className="hidden md:flex">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="select-none">
-              <ThemeIcon />
-              <span className="ml-2">{getThemeName()}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          {dropdownMenu()}
-        </DropdownMenu>
+      <div className="flex w-full">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="select-none text-muted-foreground hover:text-muted-foreground justify-start px-2 w-full"
+          onClick={toggleTheme}
+        >
+          <ThemeIcon />
+          <span className="ml-2">{t(`Theme.${theme}`)}</span>
+        </Button>
       </div>
     </>
   )
