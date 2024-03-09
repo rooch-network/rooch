@@ -1,43 +1,37 @@
+import { Wallet } from 'lucide-react'
+
+import { formatAddress } from '@/utils/format'
+import { useConnectWallet, useWalletStore } from '@roochnetwork/rooch-sdk-kit'
+
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Wallet } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
 
 export const WalletConnect = () => {
-  const { t } = useTranslation()
+  const { mutateAsync: connectWallet } = useConnectWallet()
+  const account = useWalletStore((state) => state.currentAccount)
+
+  const handleWalletConnect = async () => {
+    try {
+      await connectWallet()
+    } catch (error) {
+      console.error('Wallet connection failed:', error)
+    }
+  }
 
   return (
     <>
-      {/* desktop */}
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="default" size="sm" className="hidden md:flex ml-2">
+            <Button variant="default" size="sm" className="flex ml-2" onClick={handleWalletConnect}>
               <div className="flex items-center justify-center gap-x-2">
                 <Wallet className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />
-                {t('WalletConnect.connectWallet')}
+                {account === null ? 'Connect' : formatAddress(account?.getAddress())}
               </div>
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{t('WalletConnect.connectWalletTip')}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-
-      {/* mobile */}
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="default" size="sm" className="md:hidden flex ml-2">
-              <div className="flex items-center justify-center gap-x-2">
-                <Wallet className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />
-                {t('WalletConnect.connectWalletOnMobile')}
-              </div>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{t('WalletConnect.connectWalletTip')}</p>
+            <p>Your wallet address</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

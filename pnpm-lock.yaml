@@ -352,6 +352,12 @@ importers:
 
   rooch-portal-v1:
     dependencies:
+      '@emotion/cache':
+        specifier: 11.10.5
+        version: 11.10.5
+      '@emotion/react':
+        specifier: 11.10.6
+        version: 11.10.6(@types/react@18.2.63)(react@18.2.0)
       '@radix-ui/react-aspect-ratio':
         specifier: ^1.0.3
         version: 1.0.3(@types/react-dom@18.2.17)(@types/react@18.2.63)(react-dom@18.2.0)(react@18.2.0)
@@ -406,6 +412,9 @@ importers:
       '@roochnetwork/rooch-sdk-kit':
         specifier: workspace:*
         version: link:../sdk/typescript/rooch-sdk-kit
+      '@tanstack/react-query':
+        specifier: ^5.0.0
+        version: 5.12.2(react@18.2.0)
       '@tanstack/react-table':
         specifier: ^8.11.8
         version: 8.13.2(react-dom@18.2.0)(react@18.2.0)
@@ -424,6 +433,9 @@ importers:
       lucide-react:
         specifier: ^0.321.0
         version: 0.321.0(react@18.2.0)
+      nprogress:
+        specifier: 0.2.0
+        version: 0.2.0
       react:
         specifier: ^18.2.0
         version: 18.2.0
@@ -452,6 +464,9 @@ importers:
       '@types/node':
         specifier: ^20.11.16
         version: 20.11.24
+      '@types/nprogress':
+        specifier: 0.2.0
+        version: 0.2.0
       '@types/react':
         specifier: ^18.2.43
         version: 18.2.63
@@ -3685,7 +3700,7 @@ packages:
       '@types/react':
         optional: true
     dependencies:
-      '@babel/runtime': 7.22.11
+      '@babel/runtime': 7.24.0
       '@emotion/babel-plugin': 11.11.0
       '@emotion/cache': 11.10.5
       '@emotion/serialize': 1.1.2
@@ -3695,6 +3710,27 @@ packages:
       '@types/react': 18.2.42
       hoist-non-react-statics: 3.3.2
       react: 18.2.0
+
+  /@emotion/react@11.10.6(@types/react@18.2.63)(react@18.2.0):
+    resolution: {integrity: sha512-6HT8jBmcSkfzO7mc+N1L9uwvOnlcGoix8Zn7srt+9ga0MjREo6lRpuVX0kzo6Jp6oTqDhREOFsygN6Ew4fEQbw==}
+    peerDependencies:
+      '@types/react': '*'
+      react: '>=16.8.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+    dependencies:
+      '@babel/runtime': 7.24.0
+      '@emotion/babel-plugin': 11.11.0
+      '@emotion/cache': 11.10.5
+      '@emotion/serialize': 1.1.2
+      '@emotion/use-insertion-effect-with-fallbacks': 1.0.1(react@18.2.0)
+      '@emotion/utils': 1.2.1
+      '@emotion/weak-memoize': 0.3.1
+      '@types/react': 18.2.63
+      hoist-non-react-statics: 3.3.2
+      react: 18.2.0
+    dev: false
 
   /@emotion/serialize@1.1.2:
     resolution: {integrity: sha512-zR6a/fkFP4EAcCMQtLOhIgpprZOwNmCldtpaISpvz348+DP4Mz8ZoKaGGCQpbzepNIUWbq4w6hNZkwDyKoS+HA==}
