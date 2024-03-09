@@ -23,9 +23,9 @@ export const WalletConnect = () => {
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="default" size="sm" className="flex ml-2" onClick={handleWalletConnect}>
+            <Button variant="ghost" size="sm" className="flex" onClick={handleWalletConnect}>
               <div className="flex items-center justify-center gap-x-2">
-                <Wallet className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />
+                <Wallet className="hidden md:block h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />
                 {account === null ? 'Connect' : formatAddress(account?.getAddress())}
               </div>
             </Button>

@@ -15,20 +15,20 @@ export const ChainToggle = () => {
       <img
         src={iconMap[chain] || '/icon-default.svg'}
         alt={`${chain} icon`}
-        className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all mr-1"
+        className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all md:mr-2"
       />
     )
   }
 
   return (
-    <div className="hidden md:flex">
+    <div className="flex">
       <Button
         variant="ghost"
         size="sm"
         className="cursor-default flex items-center justify-center hover:bg-inherit"
       >
         <ChainIcon />
-        {chain}
+        <span className="hidden md:block">{chain}</span>
       </Button>
     </div>
   )
