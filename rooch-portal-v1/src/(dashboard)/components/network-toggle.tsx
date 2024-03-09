@@ -12,9 +12,9 @@ export const NetworkToggle: FC = () => {
       <Button
         variant="ghost"
         size="sm"
-        className="cursor-default flex items-center justify-center hover:bg-inherit w-full p-0"
+        className="cursor-default flex items-center justify-center text-muted-foreground hover:bg-inherit w-full p-0"
       >
-        <NetworkIcon className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all md:mr-2 hidden md:block" />
+        <NetworkIcon className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 md:mr-2 hidden md:block" />
         <h3 className="uppercase">Network-{network.name}</h3>
       </Button>
     </div>

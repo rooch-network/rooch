@@ -6,7 +6,7 @@ export const ProfileInfo = () => {
     <Button
       variant="ghost"
       size="sm"
-      className="h-[55px] w-full cursor-pointer flex items-center justify-start transition-all ease-in-out"
+      className="h-12 w-full cursor-pointer flex items-center justify-start transition-all ease-in-out"
     >
       <div className="flex items-center justify-start gap-x-3">
         <Avatar>

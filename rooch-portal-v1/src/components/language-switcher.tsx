@@ -18,17 +18,21 @@ export const LanguageSwitcher = () => {
     )
   }
 
+  const languageLabel = () => {
+    return i18n.language === 'zh' ? '简体中文' : 'English'
+  }
+
   return (
     <>
       <div className="w-full">
         <Button
           variant="ghost"
-          size="icon"
+          size="sm"
           className="select-none w-full text-muted-foreground hover:text-muted-foreground justify-start px-2"
           onClick={toggleLanguage}
         >
           {languageIcon()}
-          <span className="ml-2">English</span>
+          <span className="ml-2">{languageLabel()}</span>
         </Button>
       </div>
     </>
