@@ -39,7 +39,7 @@ tempfile = { workspace = true }
 
 criterion = { workspace = true }
 #criterion-cpu-time = { workspace = true }
-pprof = { workspace = true }
+pprof = { workspace = true, features = ["flamegraph", "criterion", "cpp", "frame-pointer"] }
 parking_lot = { workspace = true }
 proptest = { workspace = true }
 rand_core = { default-features = false, workspace = true }
