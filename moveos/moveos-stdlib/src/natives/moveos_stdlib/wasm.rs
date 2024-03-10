@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::collections::VecDeque;
+use std::ops::Deref;
 
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
@@ -11,17 +12,17 @@ use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::natives::function::NativeResult;
 use move_vm_types::pop_arg;
 use move_vm_types::values::Value;
-use smallvec::{smallvec, SmallVec};
-use wasmer::{AsStoreMut, Store};
+use smallvec::smallvec;
 
 use moveos_wasm::wasm::{
-    create_wasm_instance, get_instance_pool, insert_wasm_instance, put_data_on_stack, WASMInstance,
-    GLOBAL_MEMORY,
+    create_wasm_instance, get_instance_pool, insert_wasm_instance, put_data_on_stack
 };
 
 use crate::natives::helpers::{make_module_natives, make_native};
 
 const E_INSTANCE_NO_EXISTS: u64 = 1;
+const E_ARG_NOT_U32: u64 = 2;
+const E_ARG_NOT_VECTOR_U8: u64 = 3;
 
 #[derive(Debug, Clone)]
 pub struct WASMCreateInstanceGasParameters {
@@ -88,7 +89,12 @@ fn native_create_wasm_args_in_memory(
         let value = arg_value.copy_value()?;
         match value.value_as::<Vec<u8>>() {
             Ok(v) => func_args.push(v),
-            Err(_) => {}
+            Err(_) => {
+                return Ok(NativeResult::err(
+                    gas_params.base_create_args,
+                    E_ARG_NOT_VECTOR_U8,
+                ));
+            }
         }
     }
 
@@ -118,7 +124,7 @@ fn native_create_wasm_args_in_memory(
                 let buffer_final_ptr =
                     put_data_on_stack(stack_alloc_func, &mut instance.store, arg_buffer.as_slice());
 
-                data_ptr_list.push(buffer_final_ptr as u32);
+                data_ptr_list.push(buffer_final_ptr as u64);
                 args_bytes_total += arg.len();
             }
         }
@@ -135,7 +141,7 @@ fn native_create_wasm_args_in_memory(
         data_ptr_list
     );
 
-    let mut return_value_list = Value::vector_u32(data_ptr_list);
+    let mut return_value_list = Value::vector_u64(data_ptr_list);
     Ok(NativeResult::Success {
         cost,
         ret_vals: smallvec![return_value_list],
@@ -159,12 +165,60 @@ impl WASMExecuteGasParameters {
 
 #[inline]
 fn native_execute_wasm_function(
-    _gas_params: &WASMExecuteGasParameters,
+    gas_params: &WASMExecuteGasParameters,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
-    mut _args: VecDeque<Value>,
+    mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    let wasm_bytes = pop_arg!(_args, Vec<u8>);
+    let func_args = pop_arg!(args, Vec<u64>);
+    let func_name = pop_arg!(args, Vec<u8>);
+    let instance_id = pop_arg!(args, u64);
+
+    let instance_pool = get_instance_pool();
+    match instance_pool.lock().unwrap().get_mut(&instance_id) {
+        None => {
+            return Ok(NativeResult::err(
+                gas_params.base_create_execution,
+                E_INSTANCE_NO_EXISTS,
+            ));
+        }
+        Some(instance) => {
+            match instance.instance.exports.get_function(
+                String::from_utf8_lossy(func_name.as_slice())
+                    .to_string()
+                    .as_str(),
+            ) {
+                Ok(calling_function) => {
+                    let mut wasm_func_args = Vec::new();
+                    for arg in func_args.iter() {
+                        wasm_func_args.push(wasmer::Value::I32(arg.clone() as i32));
+                    }
+
+                    // TODO: check the length of arguments for the function calling
+
+                    match calling_function.call(&mut instance.store, wasm_func_args.as_slice()) {
+                        Ok(ret) => {
+                            let return_value = ret.deref().get(0).unwrap();
+                            let offset = return_value.i32().unwrap();
+                            let ret_val = Value::u64(offset as u64);
+                            return Ok(NativeResult::Success {
+                                cost: InternalGas::new(100),
+                                ret_vals: smallvec![ret_val],
+                            });
+                        }
+                        Err(_) => {
+                            println!("the calling of the wasm function was failed");
+                        }
+                    }
+
+                }
+                Err(_) => {
+                    print!("get function name failed");
+                }
+            }
+        }
+    }
+
     let ret_val = Value::u64(88888u64);
     Ok(NativeResult::Success {
         cost: InternalGas::new(100),
