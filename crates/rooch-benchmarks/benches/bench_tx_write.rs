@@ -3,6 +3,7 @@
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use pprof::criterion::{Output, PProfProfiler};
+use rooch_benchmarks::helper::{PProfOut, PPROF_OUT};
 use rooch_benchmarks::tx::TxType::{Blog, Empty};
 use rooch_benchmarks::tx::{
     create_publish_transaction, create_transaction, setup_service, DATA_DIR, TX_TYPE,
@@ -45,10 +46,21 @@ pub fn transaction_write_benchmark(c: &mut Criterion) {
     });
 }
 
+fn profiled() -> Criterion {
+    let profiler = match *PPROF_OUT {
+        PProfOut::Protobuf => PProfProfiler::new(2000, Output::Protobuf),
+        PProfOut::Flamegraph => PProfProfiler::new(2000, Output::Flamegraph(None)),
+    };
+    Criterion::default()
+        .with_profiler(profiler)
+        .warm_up_time(Duration::from_millis(100))
+        .sample_size(10)
+        .measurement_time(Duration::from_secs(3))
+}
+
 criterion_group! {
     name = rooch_tx_write_bench;
-    config = Criterion::default().with_profiler(PProfProfiler::new(100, Output::Flamegraph(None))).
-    warm_up_time(Duration::from_millis(100)).sample_size(10).measurement_time(Duration::from_secs(3));
+    config = profiled();
     targets = transaction_write_benchmark
 }
 
