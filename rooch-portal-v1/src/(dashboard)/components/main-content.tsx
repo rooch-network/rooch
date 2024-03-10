@@ -10,7 +10,7 @@ import { Foot } from '@/components/foot'
 
 export const MainContent = () => {
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-full">
       <ScrollArea className="w-full whitespace-nowrap flex-grow">
         <ScrollBar orientation="horizontal" />
         <div className="h-full w-full p-4 md:p-6">

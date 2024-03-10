@@ -5,7 +5,7 @@ import { Sidebar } from './components/sidebar'
 export const DashboardLayout = () => {
   return (
     <div className="h-full">
-      <div className="h-[64px] md:pl-60 fixed inset-y-0 w-full z-50">
+      <div className="h-[56px] md:h-[64px] md:pl-60 fixed inset-y-0 w-full z-50">
         <Navbar />
       </div>
       <div className="hidden md:flex h-full w-60 flex-col fixed inset-y-0 z-50">

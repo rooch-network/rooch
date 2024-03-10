@@ -17,6 +17,7 @@ export const NetworkToggle: FC = () => {
         <NetworkIcon className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 md:mr-2 hidden md:block" />
         <h3 className="uppercase hidden md:flex">Network-</h3>
         <h3 className="uppercase">{network.name}</h3>
+        <h3 className="uppercase flex md:hidden">net</h3>
       </Button>
     </div>
   )

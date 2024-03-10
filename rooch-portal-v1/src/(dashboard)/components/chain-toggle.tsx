@@ -28,7 +28,7 @@ export const ChainToggle = () => {
         className="cursor-default flex items-center justify-center text-muted-foreground hover:bg-inherit"
       >
         <ChainIcon />
-        <h3 className="hidden uppercase md:flex">Chain-</h3>
+        <h3 className="uppercase">Chain-</h3>
         <h3 className="uppercase">{chain}</h3>
       </Button>
     </div>

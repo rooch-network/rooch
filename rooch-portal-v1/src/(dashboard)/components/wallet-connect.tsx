@@ -23,12 +23,33 @@ export const WalletConnect = () => {
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="link" size="sm" className="flex" onClick={handleWalletConnect}>
-              <div className="flex items-center justify-center gap-x-2">
-                <Wallet className="hidden md:block h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />
-                {account === null ? 'Connect' : formatAddress(account?.getAddress())}
-              </div>
-            </Button>
+            <>
+              {/* Desktop */}
+              <Button
+                variant="default"
+                size="sm"
+                className="hidden md:flex p-3 rounded-lg ml-2"
+                onClick={handleWalletConnect}
+              >
+                <div className="flex items-center justify-center gap-x-2">
+                  <Wallet className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />
+                  {account === null ? 'Connect' : formatAddress(account?.getAddress())}
+                </div>
+              </Button>
+
+              {/* Mobile */}
+              <Button
+                variant="default"
+                size="sm"
+                className="flex md:hidden h-auto p-2 rounded-lg ml-2"
+                onClick={handleWalletConnect}
+              >
+                <div className="flex items-center justify-center gap-x-2">
+                  <Wallet className="h-[1rem] w-[1rem] rotate-0 scale-100 transition-all" />
+                  {account === null ? 'Connect' : formatAddress(account?.getAddress())}
+                </div>
+              </Button>
+            </>
           </TooltipTrigger>
           <TooltipContent>
             <p>Your wallet address</p>
