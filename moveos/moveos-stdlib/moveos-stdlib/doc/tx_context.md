@@ -23,6 +23,8 @@
 -  [Function `tx_result`](#0x2_tx_context_tx_result)
 -  [Function `set_module_upgrade_flag`](#0x2_tx_context_set_module_upgrade_flag)
 -  [Function `drop`](#0x2_tx_context_drop)
+-  [Function `borrow`](#0x2_tx_context_borrow)
+-  [Function `borrow_mut`](#0x2_tx_context_borrow_mut)
 
 
 <pre><code><b>use</b> <a href="">0x1::hash</a>;
@@ -252,4 +254,26 @@ The result is only available in the <code>post_execute</code> function.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_drop">drop</a>(self: <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<a name="0x2_tx_context_borrow"></a>
+
+## Function `borrow`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_borrow">borrow</a>(): &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>
+</code></pre>
+
+
+
+<a name="0x2_tx_context_borrow_mut"></a>
+
+## Function `borrow_mut`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_borrow_mut">borrow_mut</a>(): &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>
 </code></pre>

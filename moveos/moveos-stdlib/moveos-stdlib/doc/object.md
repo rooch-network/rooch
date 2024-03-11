@@ -13,6 +13,7 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Struct `TestStructID`](#0x2_object_TestStructID)
 -  [Constants](#@Constants_0)
 -  [Function `new`](#0x2_object_new)
+-  [Function `new_v2`](#0x2_object_new_v2)
 -  [Function `new_with_id`](#0x2_object_new_with_id)
 -  [Function `borrow`](#0x2_object_borrow)
 -  [Function `borrow_mut`](#0x2_object_borrow_mut)
@@ -71,14 +72,10 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `field_size_internal`](#0x2_object_field_size_internal)
 
 
-<pre><code><b>use</b> <a href="">0x1::hash</a>;
-<b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
-<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
+<pre><code><b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="raw_table.md#0x2_raw_table">0x2::raw_table</a>;
 <b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
-<b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
+<b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 </code></pre>
 
 
@@ -274,6 +271,20 @@ Note: the default owner is the SystemOwned Object, the caller should explicitly 
 
 <pre><code>#[private_generics(#[T])]
 <b>public</b> <b>fun</b> <a href="object.md#0x2_object_new">new</a>&lt;T: key&gt;(id: <a href="object_id.md#0x2_object_id_TypedUID">object_id::TypedUID</a>&lt;T&gt;, value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
+</code></pre>
+
+
+
+<a name="0x2_object_new_v2"></a>
+
+## Function `new_v2`
+
+Create a new Object, Add the Object to the global object storage and return the Object
+TODO: remove the <code>new</code> function and use <code>new_v2</code> instead after the <code>new_v2</code> is stable
+
+
+<pre><code>#[private_generics(#[T])]
+<b>public</b> <b>fun</b> <a href="object.md#0x2_object_new_v2">new_v2</a>&lt;T: key&gt;(value: T): <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;
 </code></pre>
 
 

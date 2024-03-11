@@ -178,6 +178,17 @@ module moveos_std::tx_context {
         simple_map::drop(map);
     }
 
+    public fun borrow(): &TxContext {
+        Self::borrow_inner()
+    }
+
+    public fun borrow_mut(): &mut TxContext {
+        Self::borrow_mut_inner()
+    }
+
+    native fun borrow_inner(): &TxContext;
+    native fun borrow_mut_inner(): &mut TxContext;
+
     #[test_only]
     /// Create a TxContext for unit test
     public fun new_test_context(sender: address): TxContext {
@@ -212,5 +223,13 @@ module moveos_std::tx_context {
         let value2 = get<TestValue>(&tx_context);
         assert!(value == option::extract(&mut value2), 1000);
         moveos_std::tx_context::drop(tx_context);
+    }
+
+    #[test(sender=@0x42)]
+    fun test_fresh_address() {
+        let tx_context = borrow_mut();
+        let addr1 = fresh_address(tx_context);
+        let addr2 = fresh_address(tx_context);
+        assert!(addr1 != addr2, 1000);
     }
 }

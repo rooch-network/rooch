@@ -109,7 +109,7 @@ Can not take out the object which is bound to the account
 Get an immutable reference to the transaction context from the storage context
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context">tx_context</a>(self: &<a href="context.md#0x2_context_Context">context::Context</a>): &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="tx_context.md#0x2_tx_context">tx_context</a>(_self: &<a href="context.md#0x2_context_Context">context::Context</a>): &<a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>
 </code></pre>
 
 
@@ -121,7 +121,7 @@ Get an immutable reference to the transaction context from the storage context
 Get a mutable reference to the transaction context from the storage context
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="context.md#0x2_context_tx_context_mut">tx_context_mut</a>(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="context.md#0x2_context_tx_context_mut">tx_context_mut</a>(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): &<b>mut</b> <a href="tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>
 </code></pre>
 
 
@@ -169,7 +169,7 @@ Return the maximum gas amount that can be used by the current transaction
 Generate a new unique address
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_fresh_address">fresh_address</a>(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_fresh_address">fresh_address</a>(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): <b>address</b>
 </code></pre>
 
 
@@ -217,7 +217,7 @@ Return the hash of the current transaction
 Add a value to the context map
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_add">add</a>&lt;T: <b>copy</b>, drop, store&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, value: T)
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_add">add</a>&lt;T: <b>copy</b>, drop, store&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, value: T)
 </code></pre>
 
 
@@ -229,7 +229,7 @@ Add a value to the context map
 Get a value from the context map
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_get">get</a>&lt;T: <b>copy</b>, drop, store&gt;(self: &<a href="context.md#0x2_context_Context">context::Context</a>): <a href="_Option">option::Option</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_get">get</a>&lt;T: <b>copy</b>, drop, store&gt;(_self: &<a href="context.md#0x2_context_Context">context::Context</a>): <a href="_Option">option::Option</a>&lt;T&gt;
 </code></pre>
 
 
@@ -240,7 +240,7 @@ Get a value from the context map
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta">tx_meta</a>(self: &<a href="context.md#0x2_context_Context">context::Context</a>): <a href="tx_meta.md#0x2_tx_meta_TxMeta">tx_meta::TxMeta</a>
+<pre><code><b>public</b> <b>fun</b> <a href="tx_meta.md#0x2_tx_meta">tx_meta</a>(_self: &<a href="context.md#0x2_context_Context">context::Context</a>): <a href="tx_meta.md#0x2_tx_meta_TxMeta">tx_meta::TxMeta</a>
 </code></pre>
 
 
@@ -251,7 +251,7 @@ Get a value from the context map
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_tx_gas_payment_account">tx_gas_payment_account</a>(self: &<a href="context.md#0x2_context_Context">context::Context</a>): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="context.md#0x2_context_tx_gas_payment_account">tx_gas_payment_account</a>(_self: &<a href="context.md#0x2_context_Context">context::Context</a>): <b>address</b>
 </code></pre>
 
 
@@ -262,7 +262,7 @@ Get a value from the context map
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(self: &<a href="context.md#0x2_context_Context">context::Context</a>): <a href="tx_result.md#0x2_tx_result_TxResult">tx_result::TxResult</a>
+<pre><code><b>public</b> <b>fun</b> <a href="tx_result.md#0x2_tx_result">tx_result</a>(_self: &<a href="context.md#0x2_context_Context">context::Context</a>): <a href="tx_result.md#0x2_tx_result_TxResult">tx_result::TxResult</a>
 </code></pre>
 
 

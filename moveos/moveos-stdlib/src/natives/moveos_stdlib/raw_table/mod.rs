@@ -22,14 +22,14 @@ use move_vm_runtime::{
 use move_vm_types::{
     loaded_data::runtime_types::Type,
     natives::function::NativeResult,
-    values::{GlobalValue, Struct, Value},
+    values::{GlobalValue, Struct, StructRef, Value},
 };
 use moveos_object_runtime::resolved_arg::ResolvedArg;
+use moveos_types::{moveos_std::object_id::ObjectID, state_resolver::StateResolver};
 use moveos_types::{
-    moveos_std::object,
+    moveos_std::{object, tx_context::TxContext},
     state::{KeyState, MoveState},
 };
-use moveos_types::{moveos_std::object_id::ObjectID, state_resolver::StateResolver};
 use parking_lot::RwLock;
 use smallvec::smallvec;
 use std::{
@@ -56,11 +56,43 @@ const _E_TABLE_ALREADY_EXISTS: u64 = 5;
 // ===========================================================================================
 // Private Data Structures and Constants
 
+pub struct TxContextValue {
+    value: GlobalValue,
+}
+
+impl TxContextValue {
+    pub fn new(ctx: TxContext) -> Self {
+        Self {
+            value: GlobalValue::cached(ctx.to_runtime_value())
+                .expect("Failed to cache the TxContext"),
+        }
+    }
+
+    pub fn borrow_global(&self) -> PartialVMResult<Value> {
+        self.value.borrow_global()
+    }
+
+    pub fn as_tx_context(&self) -> PartialVMResult<TxContext> {
+        let value = self.value.borrow_global()?;
+        let ctx_ref = value.value_as::<StructRef>()?;
+        Ok(TxContext::from_runtime_value(ctx_ref.read_ref()?)
+            .expect("Failed to convert Value to TxContext"))
+    }
+
+    pub fn into_inner(mut self) -> TxContext {
+        let value = self
+            .value
+            .move_from()
+            .expect("Failed to move value from GlobalValue");
+        TxContext::from_runtime_value(value).expect("Failed to convert Value to TxContext")
+    }
+}
+
 //TODO change to ObjectRuntime and migrate to moveos-object-runtime crate
 /// A structure representing mutable data of the NativeTableContext. This is in a RefCell
 /// of the overall context so we can mutate while still accessing the overall context.
-#[derive(Default)]
 pub struct TableData {
+    pub(crate) tx_context: TxContextValue,
     new_tables: BTreeSet<ObjectID>,
     removed_tables: BTreeSet<ObjectID>,
     tables: BTreeMap<ObjectID, Table>,
@@ -230,6 +262,32 @@ impl<'a> NativeTableContext<'a> {
 }
 
 impl TableData {
+    pub fn new(tx_context: TxContext) -> Self {
+        Self {
+            tx_context: TxContextValue::new(tx_context),
+            new_tables: Default::default(),
+            removed_tables: Default::default(),
+            tables: Default::default(),
+            object_reference: Default::default(),
+            object_ref_in_args: Default::default(),
+        }
+    }
+
+    pub fn tx_context(&self) -> TxContext {
+        self.tx_context
+            .as_tx_context()
+            .expect("Failed to get tx_context")
+    }
+
+    pub fn add_to_tx_context<T: MoveState>(&mut self, value: T) -> PartialVMResult<()> {
+        let mut tx_ctx = self.tx_context.as_tx_context()?;
+        tx_ctx
+            .add(value)
+            .expect("Failed to add value to tx_context");
+        self.tx_context = TxContextValue::new(tx_ctx);
+        Ok(())
+    }
+
     /// Gets or creates a new table in the TableData. This initializes information about
     /// the table, like the type layout for keys and values.
     pub fn get_or_create_table(
@@ -310,18 +368,20 @@ impl TableData {
     pub fn into_inner(
         self,
     ) -> (
+        TxContext,
         BTreeSet<ObjectID>,
         BTreeSet<ObjectID>,
         BTreeMap<ObjectID, Table>,
     ) {
         let TableData {
+            tx_context,
             new_tables,
             removed_tables,
             tables,
             object_reference: _,
             object_ref_in_args: _,
         } = self;
-        (new_tables, removed_tables, tables)
+        (tx_context.into_inner(), new_tables, removed_tables, tables)
     }
 }
 
