@@ -99,6 +99,12 @@
           "schema": {
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
           }
+        },
+        {
+          "name": "tx_option",
+          "schema": {
+            "$ref": "#/components/schemas/TxOptions"
+          }
         }
       ],
       "result": {
@@ -993,7 +999,6 @@
         "type": "object",
         "required": [
           "execution_info",
-          "output",
           "sequence_info"
         ],
         "properties": {
@@ -1001,7 +1006,14 @@
             "$ref": "#/components/schemas/TransactionExecutionInfoView"
           },
           "output": {
-            "$ref": "#/components/schemas/TransactionOutputView"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TransactionOutputView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "sequence_info": {
             "$ref": "#/components/schemas/TransactionSequenceInfoView"
@@ -2603,6 +2615,16 @@
           },
           "transaction": {
             "$ref": "#/components/schemas/TransactionView"
+          }
+        }
+      },
+      "TxOptions": {
+        "type": "object",
+        "properties": {
+          "withOutput": {
+            "description": "If true, the TransactionOutput is returned in the response.",
+            "default": false,
+            "type": "boolean"
           }
         }
       },

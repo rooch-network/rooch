@@ -57,7 +57,6 @@ impl RelayerActor {
         relayer_key: RoochKeyPair,
         ethereum_config: Option<EthereumRelayerConfig>,
         bitcoin_config: Option<BitcoinRelayerConfig>,
-        // bitcoin_client_proxy: Option<BitcoinClientProxy>,
         tx_submiter: T,
     ) -> Result<Self> {
         let chain_id = tx_submiter.get_chain_id().await?;
