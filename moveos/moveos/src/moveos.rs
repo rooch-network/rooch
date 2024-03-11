@@ -583,10 +583,7 @@ impl MoveOS {
         };
 
         let mut pay_gas = false;
-        let gas_payment_account_opt = session
-            .storage_context_mut()
-            .tx_context
-            .get::<GasPaymentAccount>()?;
+        let gas_payment_account_opt = session.tx_context().get::<GasPaymentAccount>()?;
 
         if let Some(gas_payment_account) = gas_payment_account_opt {
             pay_gas = gas_payment_account.pay_gas_by_module_account;
@@ -597,9 +594,9 @@ impl MoveOS {
         //TODO is it a good approach to add tx_result to TxContext?
         let tx_result = TxResult::new(&kept_status, gas_used);
         session
-            .storage_context_mut()
-            .tx_context
-            .add(tx_result)
+            .table_data
+            .write()
+            .add_to_tx_context(tx_result)
             .expect("Add tx_result to TxContext should always success");
 
         // system post_execute
@@ -612,7 +609,7 @@ impl MoveOS {
             self.execute_gas_charge_post(&mut session, &action_opt.unwrap())?;
         }
 
-        let gas_schedule_updated = session.ctx.tx_context.get::<GasScheduleUpdated>()?;
+        let gas_schedule_updated = session.tx_context().get::<GasScheduleUpdated>()?;
         if let Some(updated) = gas_schedule_updated {
             unset_global_gas_schedule_cache(&updated);
         }

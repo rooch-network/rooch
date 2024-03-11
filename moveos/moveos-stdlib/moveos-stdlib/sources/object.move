@@ -4,14 +4,11 @@
 /// Move Object
 /// For more details, please refer to https://rooch.network/docs/developer-guides/object
 module moveos_std::object {
-    use std::vector;
-    use std::hash;
-    use moveos_std::bcs;
     use moveos_std::signer;
     use moveos_std::object_id;
     use moveos_std::object_id::{ObjectID, TypedUID, address_to_object_id};
     use moveos_std::raw_table;
-    use moveos_std::type_info;
+    use moveos_std::tx_context;
     #[test_only]
     use moveos_std::object_id::{custom_object_id, new_uid, UID};
 
@@ -83,9 +80,8 @@ module moveos_std::object {
     #[private_generics(T)]
     /// Create a new Object, Add the Object to the global object storage and return the Object
     /// TODO: remove the `new` function and use `new_v2` instead after the `new_v2` is stable
-    fun new_v2<T: key>(value: T): Object<T> {
-        let parent = borrow_root_object();
-        let id = derive_id<Root, T>(parent);
+    public fun new_v2<T: key>(value: T): Object<T> {
+        let id = object_id::address_to_object_id(tx_context::fresh_address(tx_context::borrow_mut()));
         new_with_id(id, value)
     }
 
@@ -93,16 +89,6 @@ module moveos_std::object {
         let obj_entity = new_internal(id, value);
         add_to_global(obj_entity);
         Object{id}
-    }
-
-    fun derive_id<PT: key, T: key>(parent: &ObjectEntity<PT>): ObjectID {
-        let bytes = bcs::to_bytes(&parent.state_root);
-        //TODO the size maybe descreased, so the size should not be used to derive the id
-        //We need to use the tx_context here
-        vector::append(&mut bytes, bcs::to_bytes(&parent.size));
-        vector::append(&mut bytes, std::string::into_bytes(type_info::type_name<T>()));
-        let id = hash::sha3_256(bytes);
-        object_id::address_to_object_id(bcs::to_address(id))
     }
 
     fun new_internal<T: key>(id: ObjectID, value: T): ObjectEntity<T> {

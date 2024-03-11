@@ -6,6 +6,7 @@ use std::sync::Arc;
 use move_binary_format::file_format::{Signature, SignatureToken};
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::move_vm::MoveVM;
+use moveos_types::moveos_std::tx_context::TxContext;
 use parking_lot::RwLock;
 
 use moveos_stdlib::natives::moveos_stdlib::raw_table::TableData;
@@ -27,7 +28,9 @@ fn publish_and_load_module() {
     let move_vm = MoveVM::new(vec![]).unwrap();
     let remote_view = RemoteStore::new();
     let loader = move_vm.runtime.loader();
-    let table_data = Arc::new(RwLock::new(TableData::default()));
+    let table_data = Arc::new(RwLock::new(TableData::new(
+        TxContext::random_for_testing_only(),
+    )));
 
     let mut data_cache = MoveosDataCache::new(&remote_view, loader, table_data.clone());
 
@@ -41,6 +44,6 @@ fn publish_and_load_module() {
     assert_eq!(loaded_bytes, bytes);
 
     drop(data_cache);
-    let changes = into_change_set(table_data).unwrap();
+    let (_tx_context, changes) = into_change_set(table_data).unwrap();
     drop(changes);
 }

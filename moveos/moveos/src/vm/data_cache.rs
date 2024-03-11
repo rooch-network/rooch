@@ -23,7 +23,7 @@ use moveos_stdlib::natives::moveos_stdlib::raw_table::{
 };
 use moveos_types::{
     move_std::string::MoveString,
-    moveos_std::move_module::MoveModule,
+    moveos_std::{move_module::MoveModule, tx_context::TxContext},
     state::{MoveStructState, State, StateChangeSet, TableChange},
     state_resolver::{module_id_to_key, MoveOSResolver},
 };
@@ -239,13 +239,15 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
     }
 }
 
-pub fn into_change_set(table_data: Arc<RwLock<TableData>>) -> PartialVMResult<StateChangeSet> {
+pub fn into_change_set(
+    table_data: Arc<RwLock<TableData>>,
+) -> PartialVMResult<(TxContext, StateChangeSet)> {
     let table_data = Arc::try_unwrap(table_data).map_err(|_| {
         PartialVMError::new(StatusCode::STORAGE_ERROR)
             .with_message("TableData is referenced more than once".to_owned())
     })?;
     let data = table_data.into_inner();
-    let (new_tables, removed_tables, tables) = data.into_inner();
+    let (tx_context, new_tables, removed_tables, tables) = data.into_inner();
     let mut changes = BTreeMap::new();
     for (handle, table) in tables {
         let (_, content, size_increment) = table.into_inner();
@@ -293,11 +295,14 @@ pub fn into_change_set(table_data: Arc<RwLock<TableData>>) -> PartialVMResult<St
             debug_assert!(size_increment == 0);
         }
     }
-    Ok(StateChangeSet {
-        new_tables,
-        removed_tables,
-        changes,
-    })
+    Ok((
+        tx_context,
+        StateChangeSet {
+            new_tables,
+            removed_tables,
+            changes,
+        },
+    ))
 }
 
 // Unbox a value of `moveos_std::raw_table::Box<V>` to V and serialize it.
