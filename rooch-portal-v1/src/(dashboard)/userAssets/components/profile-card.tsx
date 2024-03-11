@@ -5,7 +5,7 @@ import { Copy, RotateCcw } from 'lucide-react'
 
 export const ProfileCard = () => {
   return (
-    <Card className="relative overflow-hidden w-full border-border/40">
+    <Card className="relative overflow-hidden w-full border-none">
       <CardHeader className="absolute top-0 left-0 z-10 p-4 md:p-6 w-full">
         <div className="flex items-start justify-between">
           <div>
@@ -37,7 +37,7 @@ to-teal-500 dark:from-amber-600 dark:to-teal-600 object-cover w-full h-28 md:h-3
           />
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between relative pb-8 md:pb-14 px-4 md:px-6 dark:bg-primary-foreground shadow-md h-full">
+      <CardFooter className="flex justify-between relative pb-8 md:pb-14 px-4 md:px-6 dark:bg-primary-foreground h-full">
         <div className="absolute">
           <Avatar className="w-12 h-12 md:w-20 md:h-20">
             <AvatarImage src="https://github.com/shadcn.png" alt="Logic" />
