@@ -1,3 +1,6 @@
+import { useState } from 'react'
+
+// ** UI Library Components
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,8 +21,12 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
+
+// ** ROOCH SDK
+import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
+
+// ** ICONS
 import { MenuSquare, ExternalLink } from 'lucide-react'
-import { useState } from 'react'
 
 interface TransactionsProps {
   type: string
@@ -200,23 +207,46 @@ export const TransactionsTable = () => {
   const [currentPage, setCurrentPage] = useState<number>(1)
   const itemsPerPage = 8
 
-  // Calculate the indices for the current page
+  // ** Calculate the indices for the current page
   const indexOfLastItem = currentPage * itemsPerPage
   const indexOfFirstItem = indexOfLastItem - itemsPerPage
 
-  // Slice the txs array to get only the items for the current page
+  // ** Slice the txs array to get only the items for the current page
   const currentItems = txs.slice(indexOfFirstItem, indexOfLastItem)
 
-  // Generate the page numbers for pagination
+  // ** Generate the page numbers for pagination
   const pageNumbers: number[] = []
   for (let i = 1; i <= Math.ceil(txs.length / itemsPerPage); i++) {
     pageNumbers.push(i)
   }
 
-  // Function to change the page
+  // ** Function to change the page
   const paginate = (pageNumber: number): void => {
     setCurrentPage(pageNumber)
   }
+
+  // ** Fetch Transactions with SDK
+  const { data: transactionsData, isPending } = useRoochClientQuery(
+    'getTransactions',
+    {
+      cursor: 0,
+      limit: 10,
+      descending_order: false,
+    },
+    {
+      enabled: true,
+    },
+  )
+
+  if (isPending) {
+    return <div>Loading...</div>
+  }
+
+  if (!transactionsData) {
+    return <div>No transactions data available.</div>
+  }
+
+  console.log(transactionsData.data)
 
   return (
     <div>
