@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::address::BitcoinAddressView;
-use crate::jsonrpc_types::btc::transaction::TxidView;
+use crate::jsonrpc_types::btc::transaction::{hex_to_txid, TxidView};
 use crate::jsonrpc_types::{AccountAddressView, BytesView, MoveStringView, StrView, StructTagView};
+use anyhow::Result;
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 use move_core_types::account_address::AccountAddress;
@@ -14,6 +15,7 @@ use rooch_types::bitcoin::ord::{
     BitcoinInscriptionID, Inscription, InscriptionID, InscriptionState,
 };
 use rooch_types::indexer::state::GlobalStateFilter;
+use rooch_types::into_address::IntoAddress;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -38,36 +40,34 @@ pub enum InscriptionFilterView {
     /// Query by owner, represent by bitcoin address
     Owner(BitcoinAddressView),
     /// Query by inscription id, represent by bitcoin txid and index
-    InscriptionId(BitcoinInscriptionIDView),
+    InscriptionId { txid: String, index: u32 },
     /// Query by object id.
     ObjectId(ObjectID),
+    /// Query all.
+    All,
 }
 
 impl InscriptionFilterView {
     pub fn into_global_state_filter(
-        filter_opt: Option<InscriptionFilterView>,
+        filter: InscriptionFilterView,
         resolve_address: AccountAddress,
-    ) -> GlobalStateFilter {
-        match filter_opt {
-            Some(filter) => match filter {
-                InscriptionFilterView::Owner(_owner) => GlobalStateFilter::ObjectTypeWithOwner {
-                    object_type: Inscription::struct_tag(),
-                    owner: resolve_address,
-                },
-                InscriptionFilterView::InscriptionId(inscription_id) => {
-                    let bitcoin_inscription_id = BitcoinInscriptionID::from(inscription_id);
-                    let inscription_id = InscriptionID::from(bitcoin_inscription_id);
-                    let object_id =
-                        object_id::custom_object_id(inscription_id, &Inscription::struct_tag());
-
-                    GlobalStateFilter::ObjectId(object_id)
-                }
-                InscriptionFilterView::ObjectId(object_id) => {
-                    GlobalStateFilter::ObjectId(object_id)
-                }
+    ) -> Result<GlobalStateFilter> {
+        Ok(match filter {
+            InscriptionFilterView::Owner(_owner) => GlobalStateFilter::ObjectTypeWithOwner {
+                object_type: Inscription::struct_tag(),
+                owner: resolve_address,
             },
-            None => GlobalStateFilter::ObjectType(Inscription::struct_tag()),
-        }
+            InscriptionFilterView::InscriptionId { txid, index } => {
+                let txid = hex_to_txid(txid.as_str())?;
+                let inscription_id = InscriptionID::new(txid.into_address(), index);
+                let object_id =
+                    object_id::custom_object_id(inscription_id, &Inscription::struct_tag());
+
+                GlobalStateFilter::ObjectId(object_id)
+            }
+            InscriptionFilterView::ObjectId(object_id) => GlobalStateFilter::ObjectId(object_id),
+            InscriptionFilterView::All => GlobalStateFilter::ObjectType(Inscription::struct_tag()),
+        })
     }
 }
 

@@ -21,6 +21,7 @@
       "params": [
         {
           "name": "filter",
+          "required": true,
           "schema": {
             "$ref": "#/components/schemas/InscriptionFilterView"
           }
@@ -58,6 +59,7 @@
       "params": [
         {
           "name": "filter",
+          "required": true,
           "schema": {
             "$ref": "#/components/schemas/UTXOFilterView"
           }
@@ -758,40 +760,6 @@
           }
         }
       },
-      "BitcoinInscriptionIDView": {
-        "type": "object",
-        "required": [
-          "index",
-          "txid"
-        ],
-        "properties": {
-          "index": {
-            "type": "integer",
-            "format": "uint32",
-            "minimum": 0.0
-          },
-          "txid": {
-            "$ref": "#/components/schemas/bitcoin::hash_types::newtypes::Txid"
-          }
-        }
-      },
-      "BitcoinOutputIDView": {
-        "type": "object",
-        "required": [
-          "txid",
-          "vout"
-        ],
-        "properties": {
-          "txid": {
-            "$ref": "#/components/schemas/bitcoin::hash_types::newtypes::Txid"
-          },
-          "vout": {
-            "type": "integer",
-            "format": "uint32",
-            "minimum": 0.0
-          }
-        }
-      },
       "DisplayFieldsView": {
         "type": "object",
         "required": [
@@ -1418,7 +1386,21 @@
             ],
             "properties": {
               "inscription_id": {
-                "$ref": "#/components/schemas/BitcoinInscriptionIDView"
+                "type": "object",
+                "required": [
+                  "index",
+                  "txid"
+                ],
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "format": "uint32",
+                    "minimum": 0.0
+                  },
+                  "txid": {
+                    "$ref": "#/components/schemas/bitcoin::hash_types::newtypes::Txid"
+                  }
+                }
               }
             },
             "additionalProperties": false
@@ -1435,6 +1417,13 @@
               }
             },
             "additionalProperties": false
+          },
+          {
+            "description": "Query all.",
+            "type": "string",
+            "enum": [
+              "all"
+            ]
           }
         ]
       },
@@ -2651,7 +2640,21 @@
             ],
             "properties": {
               "output_id": {
-                "$ref": "#/components/schemas/BitcoinOutputIDView"
+                "type": "object",
+                "required": [
+                  "txid",
+                  "vout"
+                ],
+                "properties": {
+                  "txid": {
+                    "$ref": "#/components/schemas/bitcoin::hash_types::newtypes::Txid"
+                  },
+                  "vout": {
+                    "type": "integer",
+                    "format": "uint32",
+                    "minimum": 0.0
+                  }
+                }
               }
             },
             "additionalProperties": false
@@ -2668,6 +2671,13 @@
               }
             },
             "additionalProperties": false
+          },
+          {
+            "description": "Query all.",
+            "type": "string",
+            "enum": [
+              "all"
+            ]
           }
         ]
       },
