@@ -15,3 +15,27 @@ pub static MOVEOS_NAMED_ADDRESS_MAPPING: [(&str, &str); 2] = [
     (MOVE_STD_ADDRESS_NAME, MOVE_STD_ADDRESS_LITERAL),
     (MOVEOS_STD_ADDRESS_NAME, MOVEOS_STD_ADDRESS_LITERAL),
 ];
+
+pub fn is_system_reserved_address(addr: AccountAddress) -> bool {
+    let bytes = addr.into_bytes();
+    bytes.iter().take(31).all(|u| u == &0u8) && bytes[31] > 0u8 && bytes[31] <= 10u8
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_system_reserved_address() {
+        assert_eq!(is_system_reserved_address(AccountAddress::ZERO), false);
+        assert_eq!(is_system_reserved_address(AccountAddress::ONE), true);
+        assert_eq!(is_system_reserved_address(new_address(11)), false);
+        assert_eq!(is_system_reserved_address(AccountAddress::random()), false);
+    }
+
+    fn new_address(u: u8) -> AccountAddress {
+        let mut addr = [0u8; AccountAddress::LENGTH];
+        addr[AccountAddress::LENGTH - 1] = u;
+        AccountAddress::new(addr)
+    }
+}

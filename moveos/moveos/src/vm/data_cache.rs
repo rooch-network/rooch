@@ -8,7 +8,7 @@ use move_vm_runtime::loader::Loader;
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::{
     account_address::AccountAddress,
-    effects::{AccountChangeSet, ChangeSet, Event, Op},
+    effects::{ChangeSet, Event, Op},
     gas_algebra::NumBytes,
     language_storage::ModuleId,
     value::MoveTypeLayout,
@@ -28,12 +28,12 @@ use moveos_types::{
     state_resolver::{module_id_to_key, MoveOSResolver},
 };
 use parking_lot::RwLock;
-use std::collections::{btree_map::BTreeMap, BTreeSet};
+use std::collections::btree_map::BTreeMap;
 use std::sync::Arc;
 
 use move_core_types::language_storage::TypeTag;
 use move_vm_runtime::data_cache::TransactionCache;
-use moveos_types::moveos_std::move_module::Module;
+use moveos_types::moveos_std::move_module::ModuleStore;
 use moveos_types::state::{KeyState, MoveStructType};
 
 /// Transaction data cache. Keep updates within a transaction so they can all be published at
@@ -54,7 +54,6 @@ pub struct MoveosDataCache<'r, 'l, S> {
     loader: &'l Loader,
     event_data: Vec<(Vec<u8>, u64, Type, MoveTypeLayout, Value)>,
     table_data: Arc<RwLock<TableData>>,
-    accounts: BTreeSet<AccountAddress>,
 }
 
 impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
@@ -66,7 +65,6 @@ impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
             loader,
             event_data: vec![],
             table_data,
-            accounts: BTreeSet::new(),
         }
     }
 
@@ -93,18 +91,6 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
     ///
     /// Gives all proper guarantees on lifetime of global data as well.
     fn into_effects(self, loader: &Loader) -> PartialVMResult<(ChangeSet, Vec<Event>)> {
-        let mut change_set = ChangeSet::new();
-        // The accounts are just used for initializing account resource object.
-        // No modules and resources added here.
-        for addr in self.accounts {
-            change_set
-                .add_account_changeset(
-                    addr,
-                    AccountChangeSet::from_modules_resources(BTreeMap::new(), BTreeMap::new()),
-                )
-                .expect("accounts should be unique");
-        }
-
         let mut events = vec![];
         for (guid, seq_num, ty, ty_layout, val) in self.event_data {
             let ty_tag = loader.type_to_type_tag(&ty)?;
@@ -114,13 +100,12 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
             events.push((guid, seq_num, ty_tag, blob))
         }
 
-        Ok((change_set, events))
+        Ok((ChangeSet::new(), events))
     }
 
     fn num_mutated_accounts(&self, _sender: &AccountAddress) -> u64 {
-        // The sender's account will always be mutated.
-        // No accounts mutated in global operations are disabled.
-        self.accounts.len() as u64
+        //TODO load from table data
+        todo!("num_mutated_accounts")
     }
 
     // Retrieve data from the local cache or loads it from the resolver cache into the local cache.
@@ -139,7 +124,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
     /// Get the serialized format of a `CompiledModule` given a `ModuleId`.
     fn load_module(&self, module_id: &ModuleId) -> VMResult<Vec<u8>> {
         let table_data = self.table_data.read();
-        let module_object_id = Module::module_object_id();
+        let module_object_id = ModuleStore::module_store_id();
         let (_, value_type) = Self::module_table_typetag();
         // TODO: check or ensure the module table exists.
         if table_data.exist_table(&module_object_id) {
@@ -178,8 +163,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
         blob: Vec<u8>,
         is_republishing: bool,
     ) -> VMResult<()> {
-        let sender = module_id.address();
-        let module_object_id = Module::module_object_id();
+        let module_object_id = ModuleStore::module_store_id();
 
         // Key type: std::string::String
         // value type: moveos_std::moveos_std::move_module::MoveModule
@@ -210,19 +194,14 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
                 .move_from(value_type.clone())
                 .map_err(|e: PartialVMError| e.finish(Location::Module(module_id.clone())))?;
         }
-        match tv.move_to(box_value, module_layout, value_type) {
-            Ok(_) => {
-                self.accounts.insert(*sender);
-                Ok(())
-            }
-            Err((err, _)) => Err(err.finish(Location::Module(module_id.clone()))),
-        }
+        tv.move_to(box_value, module_layout, value_type)
+            .map_err(|(err, _value)| err.finish(Location::Module(module_id.clone())))
     }
 
     /// Check if this module exists.
     fn exists_module(&self, module_id: &ModuleId) -> VMResult<bool> {
         let table_data = self.table_data.read();
-        let module_object_id = Module::module_object_id();
+        let module_object_id = ModuleStore::module_store_id();
         if table_data.exist_table(&module_object_id) {
             let table = table_data
                 .borrow_table(&module_object_id)

@@ -15,7 +15,7 @@ use moveos_types::{
 use smallvec::smallvec;
 use std::{collections::VecDeque, sync::Arc};
 
-const ERROR_OBJECT_ALREADY_BORROWED: u64 = 7;
+pub(crate) const ERROR_OBJECT_ALREADY_BORROWED: u64 = 7;
 
 #[derive(Debug, Clone)]
 pub struct AsRefGasParameters {
@@ -116,15 +116,13 @@ fn borrow_object_reference(
 
     let data = table_context.table_data();
     let mut table_data = data.write();
-    let gv = table_data.get_or_create_object_reference(object_id)?;
-
-    if gv.reference_count() >= 2 {
-        return Err(PartialVMError::new(StatusCode::ABORTED)
-            .with_sub_status(ERROR_OBJECT_ALREADY_BORROWED)
-            .with_message(format!("Object {} already borrowed", object_id)));
-    }
-
-    gv.borrow_global()
+    //TODO remove load_object, the object should loaded when load ObjectEntity
+    table_data
+        .load_object(&object_id)
+        .map_err(|e| e.to_partial())?;
+    table_data
+        .borrow_object(&object_id)
+        .map_err(|e| e.to_partial())
 }
 
 #[derive(Debug, Clone)]

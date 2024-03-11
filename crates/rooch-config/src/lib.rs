@@ -195,6 +195,10 @@ impl RoochOpt {
             btc_end_block_height: self.btc_end_block_height,
         })
     }
+
+    pub fn port(&self) -> u16 {
+        self.port.unwrap_or(50051)
+    }
 }
 
 #[derive(Debug, Clone)]

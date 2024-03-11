@@ -26,6 +26,10 @@ where
         Self { updates }
     }
 
+    pub fn get(&self, key: &K) -> Option<&V> {
+        self.updates.get(key).and_then(|v| v.as_ref())
+    }
+
     /// Add a put operation to the batch.
     pub fn put(&mut self, key: K, value: V) {
         self.updates.insert(key, Some(value));

@@ -10,6 +10,7 @@ use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
+use moveos_types::moveos_std::object::ObjectEntity;
 use moveos_types::state::{AnnotatedState, KeyState, MoveStructType, State};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
@@ -84,7 +85,10 @@ impl RpcService {
 
         // Sync latest state root from writer executor to reader executor
         self.executor
-            .refresh_state(execution_info.state_root, output.is_upgrade)
+            .refresh_state(
+                ObjectEntity::root_object(execution_info.state_root, execution_info.size),
+                output.is_upgrade,
+            )
             .await?;
 
         let indexer = self.indexer.clone();

@@ -6,7 +6,7 @@
 /// A native Table implementation for save any type of value.
 /// Refactor from https://github.com/rooch-network/move/blob/c7d8c2b0cdd06dbd90e0ab306932356620b5648a/language/extensions/move-table-extension/src/lib.rs#L4
 use better_any::{Tid, TidAble};
-use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
@@ -24,11 +24,14 @@ use move_vm_types::{
     natives::function::NativeResult,
     values::{GlobalValue, Struct, Value},
 };
-use moveos_types::state::{KeyState, MoveState};
+use moveos_object_runtime::resolved_arg::ResolvedArg;
+use moveos_types::{
+    moveos_std::object,
+    state::{KeyState, MoveState},
+};
 use moveos_types::{moveos_std::object_id::ObjectID, state_resolver::StateResolver};
 use parking_lot::RwLock;
 use smallvec::smallvec;
-use smt::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use std::{
     collections::{btree_map::Entry, BTreeMap, BTreeSet, VecDeque},
     sync::Arc,
@@ -53,6 +56,7 @@ const _E_TABLE_ALREADY_EXISTS: u64 = 5;
 // ===========================================================================================
 // Private Data Structures and Constants
 
+//TODO change to ObjectRuntime and migrate to moveos-object-runtime crate
 /// A structure representing mutable data of the NativeTableContext. This is in a RefCell
 /// of the overall context so we can mutate while still accessing the overall context.
 #[derive(Default)]
@@ -60,11 +64,12 @@ pub struct TableData {
     new_tables: BTreeSet<ObjectID>,
     removed_tables: BTreeSet<ObjectID>,
     tables: BTreeMap<ObjectID, Table>,
+    object_ref_in_args: BTreeMap<ObjectID, Value>,
     object_reference: BTreeMap<ObjectID, GlobalValue>,
 }
 
 /// A structure representing table key.
-#[derive(Clone, Ord, PartialOrd, PartialEq, Eq, Debug)]
+#[derive(Clone, Ord, PartialOrd, PartialEq, Eq)]
 pub struct TableKey {
     pub key_type: TypeTag,
     pub key: Vec<u8>,
@@ -73,6 +78,17 @@ pub struct TableKey {
 impl TableKey {
     pub fn new(key_type: TypeTag, key: Vec<u8>) -> Self {
         Self { key_type, key }
+    }
+}
+
+impl std::fmt::Debug for TableKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "TableKey {{ key_type: {:?}, key: {:?} }}",
+            self.key_type,
+            hex::encode(&self.key)
+        )
     }
 }
 
@@ -247,18 +263,47 @@ impl TableData {
         self.tables.contains_key(handle)
     }
 
-    pub fn get_or_create_object_reference(
-        &mut self,
-        object_id: ObjectID,
-    ) -> PartialVMResult<&mut GlobalValue> {
-        match self.object_reference.entry(object_id) {
-            Entry::Vacant(e) => {
-                let object_id_value = object_id.to_runtime_value();
-                let gv = GlobalValue::cached(Value::struct_(Struct::pack(vec![object_id_value])))?;
-                Ok(e.insert(gv))
-            }
-            Entry::Occupied(e) => Ok(e.into_mut()),
+    pub fn load_object(&mut self, object_id: &ObjectID) -> VMResult<()> {
+        self.object_reference.entry(*object_id).or_insert_with(|| {
+            //TODO we should load the ObjectEntity<T> from the resolver
+            //Then cache the Object<T>
+            let object_id_value = object_id.to_runtime_value();
+            GlobalValue::cached(Value::struct_(Struct::pack(vec![object_id_value])))
+                .expect("Failed to cache the Struct")
+        });
+        Ok(())
+    }
+
+    pub fn borrow_object(&mut self, object_id: &ObjectID) -> VMResult<Value> {
+        let gv = self.object_reference.get(object_id).ok_or_else(|| {
+            PartialVMError::new(StatusCode::STORAGE_ERROR).finish(Location::Undefined)
+        })?;
+
+        if gv.reference_count() >= 2 {
+            // We raise an error if the object is already borrowed
+            // Use the error code in object.move for easy debugging
+            return Err(PartialVMError::new(StatusCode::ABORTED)
+                .with_sub_status(super::object::ERROR_OBJECT_ALREADY_BORROWED)
+                .with_message(format!("Object {} already borrowed", object_id))
+                .finish(Location::Module(object::MODULE_ID.clone())));
         }
+
+        gv.borrow_global()
+            .map_err(|e| e.finish(Location::Undefined))
+    }
+
+    pub fn load_arguments(&mut self, resovled_args: &[ResolvedArg]) -> VMResult<()> {
+        for resolved_arg in resovled_args {
+            if let ResolvedArg::Object(object_arg) = resolved_arg {
+                let object_id = object_arg.object_id();
+                self.load_object(object_id)?;
+                let ref_value = self.borrow_object(object_id)?;
+                //We cache the object reference in the object_ref_in_args
+                //Ensure the reference count and the object can not be borrowed in Move
+                self.object_ref_in_args.insert(*object_id, ref_value);
+            }
+        }
+        Ok(())
     }
 
     /// into inner
@@ -274,6 +319,7 @@ impl TableData {
             removed_tables,
             tables,
             object_reference: _,
+            object_ref_in_args: _,
         } = self;
         (new_tables, removed_tables, tables)
     }
@@ -376,12 +422,7 @@ impl Table {
 
 /// Returns all natives for tables.
 pub fn table_natives(table_addr: AccountAddress, gas_params: GasParameters) -> NativeFunctionTable {
-    let natives: [(&str, &str, NativeFunction); 8] = [
-        (
-            "raw_table",
-            "new_table",
-            make_native_new_table(gas_params.common.clone(), gas_params.new_table),
-        ),
+    let natives: [(&str, &str, NativeFunction); 5] = [
         (
             "raw_table",
             "add_box",
@@ -407,16 +448,6 @@ pub fn table_natives(table_addr: AccountAddress, gas_params: GasParameters) -> N
             "contains_box",
             make_native_contains_box(gas_params.common, gas_params.contains_box),
         ),
-        (
-            "raw_table",
-            "drop_unchecked_box",
-            make_native_drop_unchecked_box(gas_params.drop_unchecked_box),
-        ),
-        (
-            "raw_table",
-            "box_length",
-            make_native_box_length(gas_params.box_length),
-        ),
     ];
 
     native_functions::make_table_from_iter(table_addr, natives)
@@ -438,53 +469,6 @@ impl CommonGasParameters {
                 None => 0.into(),
             }
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct NewTableGasParameters {
-    pub base: InternalGas,
-    pub per_byte_in_str: InternalGasPerByte,
-}
-
-fn native_new_table(
-    _common_gas_params: &CommonGasParameters,
-    gas_params: &NewTableGasParameters,
-    context: &mut NativeContext,
-    _ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    assert_eq!(args.len(), 1);
-
-    let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.write();
-
-    let mut cost = gas_params.base;
-    let handle = get_table_handle(&mut args)?;
-    cost += gas_params.per_byte_in_str * NumBytes::new(handle.to_bytes().len() as u64);
-    let table = table_data.get_or_create_table(handle)?;
-
-    // New table's state_root should be the place holder hash.
-    let state_root = AccountAddress::new((*SPARSE_MERKLE_PLACEHOLDER_HASH).into());
-    // Represent table info
-    let table_info_value = Struct::pack(vec![
-        Value::address(state_root),
-        Value::u64(table.size_increment as u64),
-    ]);
-    Ok(NativeResult::ok(
-        cost,
-        smallvec![Value::struct_(table_info_value)],
-    ))
-}
-
-pub fn make_native_new_table(
-    common_gas_params: CommonGasParameters,
-    gas_params: NewTableGasParameters,
-) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_new_table(&common_gas_params, &gas_params, context, ty_args, args)
-        },
-    )
 }
 
 #[derive(Debug, Clone)]
@@ -579,12 +563,23 @@ fn native_borrow_box(
     cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
 
     let table_key = TableKey::new(key_type, key_bytes);
-    let (tv, loaded) = table.get_or_create_global_value(context, table_context, table_key)?;
+    let (tv, loaded) =
+        table.get_or_create_global_value(context, table_context, table_key.clone())?;
     cost += common_gas_params.calculate_load_cost(loaded);
     let value_type = type_to_type_tag(context, &ty_args[1])?;
-    match tv.borrow_global(value_type) {
+    match tv.borrow_global(value_type.clone()) {
         Ok(ref_val) => Ok(NativeResult::ok(cost, smallvec![ref_val])),
-        Err(_) => Ok(NativeResult::err(cost, E_NOT_FOUND)),
+        Err(_) => {
+            if log::log_enabled!(log::Level::Debug) {
+                log::warn!(
+                    "[RawTable] borrow_box: handle: {}, value_type: {} key:{:?} not found.",
+                    &table.handle,
+                    value_type.to_canonical_string(),
+                    table_key
+                );
+            }
+            Ok(NativeResult::err(cost, E_NOT_FOUND))
+        }
     }
 }
 
@@ -713,95 +708,12 @@ pub fn make_native_remove_box(
 }
 
 #[derive(Debug, Clone)]
-pub struct BoxLengthGasParameters {
-    pub base: InternalGas,
-}
-
-fn native_box_length(
-    gas_params: &BoxLengthGasParameters,
-    context: &mut NativeContext,
-    _ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    assert_eq!(args.len(), 1);
-
-    let table_context = context.extensions().get::<NativeTableContext>();
-    let table_data = table_context.table_data.write();
-
-    let handle = get_table_handle(&mut args)?;
-
-    let remote_table_size = table_context
-        .resolver
-        .resolve_object_state(&handle)
-        .map_err(|err| partial_extension_error(format!("remote table resolver failure: {}", err)))?
-        .map(|state| state.as_raw_object())
-        .transpose()
-        .map_err(|err| partial_extension_error(format!("remote table resolver failure: {}", err)))?
-        .map_or_else(|| 0u64, |obj| obj.size);
-
-    let size_increment = if table_data.exist_table(&handle) {
-        table_data.borrow_table(&handle).unwrap().size_increment
-    } else {
-        0i64
-    };
-    let updated_table_size = (remote_table_size as i64) + size_increment;
-    debug_assert!(updated_table_size >= 0);
-
-    let length = Value::u64(updated_table_size as u64);
-    let cost = gas_params.base;
-
-    Ok(NativeResult::ok(cost, smallvec![length]))
-}
-
-pub fn make_native_box_length(gas_params: BoxLengthGasParameters) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_box_length(&gas_params, context, ty_args, args)
-        },
-    )
-}
-
-#[derive(Debug, Clone)]
-pub struct DropUncheckedBoxGasParameters {
-    pub base: InternalGas,
-}
-
-fn native_drop_unchecked_box(
-    gas_params: &DropUncheckedBoxGasParameters,
-    context: &mut NativeContext,
-    _ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    assert_eq!(args.len(), 1);
-
-    let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.write();
-
-    let handle = get_table_handle(&mut args)?;
-    table_data.tables.remove(&handle);
-
-    table_data.removed_tables.insert(handle);
-    Ok(NativeResult::ok(gas_params.base, smallvec![]))
-}
-
-pub fn make_native_drop_unchecked_box(gas_params: DropUncheckedBoxGasParameters) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_drop_unchecked_box(&gas_params, context, ty_args, args)
-        },
-    )
-}
-
-#[derive(Debug, Clone)]
 pub struct GasParameters {
     pub common: CommonGasParameters,
-    pub new_table: NewTableGasParameters,
     pub add_box: AddBoxGasParameters,
     pub borrow_box: BorrowBoxGasParameters,
     pub contains_box: ContainsBoxGasParameters,
     pub remove_box: RemoveGasParameters,
-    pub drop_unchecked_box: DropUncheckedBoxGasParameters,
-    pub box_length: BoxLengthGasParameters,
 }
 
 impl GasParameters {
@@ -811,10 +723,6 @@ impl GasParameters {
                 load_base: 0.into(),
                 load_per_byte: 0.into(),
                 load_failure: 0.into(),
-            },
-            new_table: NewTableGasParameters {
-                base: 0.into(),
-                per_byte_in_str: 0.into(),
             },
             add_box: AddBoxGasParameters {
                 base: 0.into(),
@@ -832,8 +740,6 @@ impl GasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
-            drop_unchecked_box: DropUncheckedBoxGasParameters { base: 0.into() },
-            box_length: BoxLengthGasParameters { base: 0.into() },
         }
     }
 }
@@ -870,6 +776,7 @@ fn deserialize_and_box(layout: &MoveTypeLayout, bytes: &[u8]) -> PartialVMResult
 }
 
 fn partial_extension_error(msg: impl ToString) -> PartialVMError {
+    log::debug!("PartialVMError: {}", msg.to_string());
     PartialVMError::new(StatusCode::VM_EXTENSION_ERROR).with_message(msg.to_string())
 }
 

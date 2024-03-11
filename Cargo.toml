@@ -14,6 +14,7 @@ members = [
     "moveos/raw-store",
     "moveos/metrics",
     "moveos/moveos-config",
+    "moveos/moveos-object-runtime",
     "crates/rooch-key",
     "crates/rooch-types",
     "crates/rooch-framework",
@@ -79,6 +80,7 @@ moveos-verifier = { path = "moveos/moveos-verifier" }
 raw-store = { path = "moveos/raw-store" }
 metrics = { path = "moveos/metrics" }
 moveos-config = { path = "moveos/moveos-config" }
+moveos-object-runtime = { path = "moveos/moveos-object-runtime" }
 
 # crates for Rooch
 rooch = { path = "crates/rooch" }
@@ -248,7 +250,7 @@ criterion = { version = "0.5.1", features = [
 xxhash-rust = "0.8.8"
 base64 = "0.21.3"
 #criterion-cpu-time = "0.1.0"
-pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer"] }
+pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer", "protobuf-codec"] }
 
 
 
@@ -285,7 +287,7 @@ move-symbol-pool = { git = "https://github.com/rooch-network/move", rev = "ef13d
 #move-table-extension = { git = "https://github.com/rooch-network/move", rev = "ef13deb11509f6628434f128e04cc34ce28406d6" }
 move-transactional-test-runner = { git = "https://github.com/rooch-network/move", rev = "ef13deb11509f6628434f128e04cc34ce28406d6" }
 move-unit-test = { git = "https://github.com/rooch-network/move", rev = "ef13deb11509f6628434f128e04cc34ce28406d6", features = ["table-extension"] }
-move-vm-runtime = { git = "https://github.com/rooch-network/move", rev = "ef13deb11509f6628434f128e04cc34ce28406d6" }
+move-vm-runtime = { git = "https://github.com/rooch-network/move", rev = "ef13deb11509f6628434f128e04cc34ce28406d6", features = ["stacktrace", "debugging", "testing"] }
 move-vm-test-utils = { git = "https://github.com/rooch-network/move", rev = "ef13deb11509f6628434f128e04cc34ce28406d6", features = ["table-extension"] }
 move-vm-types = { git = "https://github.com/rooch-network/move", rev = "ef13deb11509f6628434f128e04cc34ce28406d6" }
 read-write-set = { git = "https://github.com/rooch-network/move", rev = "ef13deb11509f6628434f128e04cc34ce28406d6" }
@@ -349,6 +351,3 @@ opt-level = "z"
 lto = true
 strip = true
 codegen-units = 1
-
-[profile.bench]
-debug = true

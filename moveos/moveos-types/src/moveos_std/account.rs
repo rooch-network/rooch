@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 pub const MODULE_NAME: &IdentStr = ident_str!("account");
 
 /// Account is the rust representation of the account in moveos_std
-#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
+#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Default)]
 pub struct Account {
     pub sequence_number: u64,
 }

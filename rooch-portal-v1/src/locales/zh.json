@@ -1,0 +1,20 @@
+{
+  "Sidebar": {
+    "assets": "投资组合",
+    "staking": "质押",
+    "mint": "铸造",
+    "apps": "应用",
+    "transactions": "交易",
+    "settings": "设置"
+  },
+  "Theme": {
+    "light": "浅色模式",
+    "dark": "深色模式",
+    "system": "跟随系统"
+  },
+  "WalletConnect": {
+    "connectWallet": "连接钱包",
+    "connectWalletOnMobile": "连接钱包",
+    "connectWalletTip": "连接您的 Rooch 钱包"
+  }
+}

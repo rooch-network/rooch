@@ -144,13 +144,13 @@ module rooch_framework::ethereum_validator {
     ) {}
 
     fun post_execute(
-        ctx: &mut Context,
+        _ctx: &mut Context,
     ) {
-        let account_addr = context::sender(ctx);
-        if (is_authentication_key_in_account(ctx, account_addr)) {
-            let auth_key_in_account = get_authentication_key_from_account(ctx, account_addr);
-            std::debug::print(&auth_key_in_account);
-        }
+        // let account_addr = context::sender(ctx);
+        // if (is_authentication_key_in_account(ctx, account_addr)) {
+        //     let auth_key_in_account = get_authentication_key_from_account(ctx, account_addr);
+        //     std::debug::print(&auth_key_in_account);
+        // }
     }
 
     #[test]

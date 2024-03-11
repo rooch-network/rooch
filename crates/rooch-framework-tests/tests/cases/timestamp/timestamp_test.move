@@ -35,23 +35,16 @@ script {
 }
 
 // Update timestamp
-//# run --signers test --args @0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3
+//# run --signers test
 script {
     use moveos_std::context::Context;
-    use moveos_std::object::{Self, Object};
-    use rooch_framework::timestamp::{Self, Timestamp};
+    use rooch_framework::timestamp;
 
-    fun main(ctx: &mut Context, timestamp_obj: &Object<Timestamp>) {
-        let timestamp = object::borrow(timestamp_obj);
-        let seconds_from_arg = timestamp::seconds(timestamp);
-        let seconds_from_ctx = timestamp::now_seconds(ctx);
-        assert!(seconds_from_arg == seconds_from_ctx, 1);
+    fun main(ctx: &mut Context) {
         let seconds = 100;
         timestamp::fast_forward_seconds_for_local(ctx, seconds);
-        let seconds_from_arg = timestamp::seconds(timestamp);
         let seconds_from_ctx = timestamp::now_seconds(ctx);
-        assert!(seconds_from_arg == seconds_from_ctx, 2);
-        assert!(seconds_from_arg == seconds, 3); 
+        assert!(seconds == seconds_from_ctx, 1);
     }
 }
 

@@ -14,7 +14,6 @@ module moveos_std::object_id {
     friend moveos_std::event;
     friend moveos_std::table;
     friend moveos_std::type_table;
-    friend moveos_std::object_table;
     friend moveos_std::object;
   
     /// ObjectID is a unique identifier for the Object
@@ -61,7 +60,7 @@ module moveos_std::object_id {
         address_to_object_id(
             address::from_bytes(
                 hash::sha3_256(
-                    *std::string::bytes(&type_info::type_name<T>())
+                    std::string::into_bytes(type_info::type_name<T>())
                 )
             )
         )

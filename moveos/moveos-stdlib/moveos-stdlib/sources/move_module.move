@@ -7,11 +7,13 @@
 module moveos_std::move_module {
     use std::vector;
     use std::string::{Self, String};
-    use moveos_std::object_id::ObjectID;
-    use moveos_std::object;
-    use moveos_std::object_id;
+    use moveos_std::object_id::{Self, ObjectID};
+    use moveos_std::object::{Self, Object};
+    use moveos_std::context::{Self, Context};
+    use moveos_std::tx_context;
+    use moveos_std::signer;
 
-    friend moveos_std::context;
+    friend moveos_std::genesis;
     
     /// Module address is not the same as the signer
     const ErrorAddressNotMatchWithSigner: u64 = 1;
@@ -218,35 +220,68 @@ module moveos_std::move_module {
     }
 
     /// It is used to store the modules
-    struct Module has key, store {
+    struct ModuleStore has key {
     }
 
-    public fun module_object_id(): ObjectID {
-        object_id::named_object_id<Module>()
+    public fun module_store_id(): ObjectID {
+        object_id::named_object_id<ModuleStore>()
     }
 
     /// Create a new module object space
-    public(friend) fun create_module_object() {
-        let obj = object::new_with_id(module_object_id(), Module {});
-        object::transfer(obj, @moveos_std)
+    public(friend) fun create_module_store() {
+        let obj = object::new_with_id(module_store_id(), ModuleStore {});
+        object::to_shared(obj)
+    }
+
+    public fun borrow_module_store(): &Object<ModuleStore> {
+        object::borrow_object(module_store_id())
+    }
+
+    public fun borrow_mut_module_store(): &mut Object<ModuleStore> {
+        object::borrow_mut_object_shared(module_store_id())
     }
 
     // ==== Module functions ====
 
     /// Check if the module object has a module with the given name
-    public fun exists_module(account: address, name: String): bool {
+    public fun exists_module(module_object: &Object<ModuleStore>, account: address, name: String): bool {
         let module_id = module_id_from_name_inner(account, name);
-        exists_module_id(module_id)
+        exists_module_id(module_object, module_id)
     }
 
     /// Check if the module object has a module with the given id
-    public fun exists_module_id(module_id: String): bool {
-        object::contains_field<String>(module_object_id(), module_id)
+    public fun exists_module_id(module_object: &Object<ModuleStore>, module_id: String): bool {
+        object::contains_field(module_object, module_id)
+    }
+
+        /// Publish modules to the account's storage
+    public fun publish_modules(ctx: &mut Context, module_store: &mut Object<ModuleStore>, account: &signer, modules: vector<MoveModule>) {
+        let account_address = signer::address_of(account);
+        let upgrade_flag = publish_modules_internal(module_store, account_address, modules);
+        // Store ModuleUpgradeFlag in tx_context which will be fetched in VM in Rust, 
+        // and then announce to the VM that the code loading cache should be considered outdated. 
+        tx_context::set_module_upgrade_flag(context::tx_context_mut(ctx), upgrade_flag);
+    }
+   
+    /// Entry function to publish modules
+    /// The order of modules must be sorted by dependency order.
+    public entry fun publish_modules_entry(ctx: &mut Context, account: &signer, modules: vector<vector<u8>>) {
+        let n_modules = vector::length(&modules);
+        let i = 0;
+        let module_vec = vector::empty<MoveModule>();
+        while (i < n_modules) {
+            let code_bytes = vector::pop_back(&mut modules);
+            let m = new(code_bytes);
+            vector::push_back(&mut module_vec, m);
+            i = i + 1;
+        };
+        let module_store = borrow_mut_module_store(); 
+        Self::publish_modules(ctx, module_store, account, module_vec);
     }
 
     /// Publish modules to the module object's storage
     /// Return true if the modules are upgraded
-    public(friend) fun publish_modules(account_address: address, modules: vector<MoveModule>) : bool {
+    public(friend) fun publish_modules_internal(module_object: &mut Object<ModuleStore>, account_address: address, modules: vector<MoveModule>) : bool {
         let i = 0;
         let len = vector::length(&modules);
         let (module_ids, module_ids_with_init_fn, indices) = sort_and_verify_modules(&modules, account_address);
@@ -258,9 +293,8 @@ module moveos_std::move_module {
             let m = vector::borrow(&modules, index);
 
             // The module already exists, which means we are upgrading the module
-            let object_id = module_object_id();
-            if (exists_module_id(module_id)) {
-                let old_m = object::remove_field(object_id, module_id);
+            if (exists_module_id(module_object, module_id)) {
+                let old_m = object::remove_field(module_object, module_id);
                 check_comatibility(m, &old_m);
                 upgrade_flag = true;
             } else {
@@ -269,7 +303,7 @@ module moveos_std::move_module {
                     request_init_functions(vector::singleton(copy module_id));
                 }
             };
-            object::add_field(object_id, module_id, *m);
+            object::add_field(module_object, module_id, *m);
             i = i + 1;
         };
         upgrade_flag
@@ -350,18 +384,10 @@ module moveos_std::move_module {
 
     #[test_only]
     use std::debug;
-    #[test_only]
-    use std::signer;
-    #[test_only]
-    use moveos_std::object::{Object, take_object};
-    #[test_only]
-    use moveos_std::signer::module_signer;
 
     #[test_only]
-    fun drop_module_object(self: Object<Module>) {
-        object::drop_unchecked_table(object::id(&self));
-        let obj = object::remove(self);
-        let Module {} = obj;
+    fun drop_module_store(self: Object<ModuleStore>) {
+        let ModuleStore {} = object::drop_unchecked(self);
     }
 
     #[test]
@@ -448,16 +474,13 @@ module moveos_std::move_module {
     #[test(sender=@0x42)]
     fun test_publish_modules(sender: address) {
         // let sender_addr = signer::address_of(&sender);
-        create_module_object();
+        create_module_store();
+        let module_object = borrow_mut_module_store();
         // The following is the bytes and hex of the compiled module: example/counter/sources/counter.move
         // with account 0x42
         let module_bytes: vector<u8> = x"a11ceb0b060000000b010006020608030e2b043906053f320771890108fa014006ba02220adc02050ce1026e0dcf030200000101010200030c000204000000050001000006000100000702010000080201000009030400010a07080108010b09010108010c0a0b0108050606060706010708010002070801060c0106080101030107080001080002070801050107090003070801060c090002060801050106090007636f756e746572076163636f756e7407636f6e7465787407436f756e74657207436f6e7465787408696e63726561736509696e6372656173655f04696e69740d696e69745f666f725f746573740576616c756513626f72726f775f6d75745f7265736f75726365106d6f76655f7265736f757263655f746f0f626f72726f775f7265736f75726365000000000000000000000000000000000000000000000000000000000000004200000000000000000000000000000000000000000000000000000000000000020520000000000000000000000000000000000000000000000000000000000000004200020109030001040001030b0011010201010000050d0b00070038000c010a01100014060100000000000000160b010f0015020200000001060b000b0106000000000000000012003801020301000001060b000b0106000000000000000012003801020401000001060b000700380210001402000000";
         let m: MoveModule = Self::new(module_bytes);
-        Self::publish_modules(sender, vector::singleton(m));
-
-        let module_signer = module_signer<Module>();
-        let module_obj = take_object<Module>(&module_signer, module_object_id());
-        Self::drop_module_object(module_obj);
+        Self::publish_modules_internal(module_object, sender, vector::singleton(m));
     }
 }
 

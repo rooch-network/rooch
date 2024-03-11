@@ -29,6 +29,7 @@ use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::FunctionId;
 use moveos_types::moveos_std::event::EventID;
+use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::moveos_std::tx_result::TxResult;
 use moveos_types::startup_info::StartupInfo;
@@ -131,7 +132,7 @@ impl MoveOS {
         genesis_txs: Vec<T>,
         genesis_ctx: GT,
         bitcoin_genesis_ctx: BGT,
-    ) -> Result<Vec<(H256, TransactionOutput)>> {
+    ) -> Result<Vec<(H256, u64, TransactionOutput)>> {
         ensure!(
             self.db.0.get_state_store().is_genesis(),
             "genesis already initialized"
@@ -153,7 +154,7 @@ impl MoveOS {
         tx: MoveOSTransaction,
         genesis_ctx: GT,
         bitcoin_genesis_ctx: BGT,
-    ) -> Result<(H256, TransactionOutput)> {
+    ) -> Result<(H256, u64, TransactionOutput)> {
         let MoveOSTransaction {
             mut ctx,
             action,
@@ -167,6 +168,9 @@ impl MoveOS {
 
         // execute main tx
         let execute_result = session.execute_move_action(verified_action);
+        if let Some(vm_error) = execute_result.clone().err() {
+            log::error!("execute_genesis_tx vm_error:{:?}", vm_error,);
+        }
         let status = match vm_status_of_result(execute_result.clone()).keep_or_discard() {
             Ok(status) => status,
             Err(discard_status) => {
@@ -178,13 +182,22 @@ impl MoveOS {
         if raw_output.status != KeptVMStatus::Executed {
             bail!("genesis tx should success, error: {:?}", raw_output.status);
         }
-        let (state_root, event_ids) = self.apply_transaction_output(raw_output.clone())?;
+        let (state_root, size, event_ids) = self.apply_transaction_output(raw_output.clone())?;
         let output = TransactionOutput::new(raw_output, event_ids);
-        Ok((state_root, output))
+        log::info!(
+            "execute genesis tx state_root:{}, state_size:{}",
+            state_root,
+            size
+        );
+        Ok((state_root, size, output))
     }
 
     pub fn state(&self) -> &StateDBStore {
         self.db.0.get_state_store()
+    }
+
+    pub fn moveos_store(&self) -> &MoveOSStore {
+        &self.db.0
     }
 
     pub fn moveos_resolver(&self) -> &MoveOSResolverProxy<MoveOSStore> {
@@ -402,18 +415,18 @@ impl MoveOS {
     pub fn execute_and_apply(
         &mut self,
         tx: VerifiedMoveOSTransaction,
-    ) -> Result<(H256, TransactionOutput)> {
+    ) -> Result<(H256, u64, TransactionOutput)> {
         let raw_output = self.execute(tx)?;
-        let (state_root, event_ids) = self.apply_transaction_output(raw_output.clone())?;
+        let (state_root, size, event_ids) = self.apply_transaction_output(raw_output.clone())?;
         let output = TransactionOutput::new(raw_output, event_ids);
 
-        Ok((state_root, output))
+        Ok((state_root, size, output))
     }
 
     fn apply_transaction_output(
         &mut self,
         output: RawTransactionOutput,
-    ) -> Result<(H256, Vec<EventID>)> {
+    ) -> Result<(H256, u64, Vec<EventID>)> {
         //TODO move apply change set to a suitable place, and make MoveOS stateless?
         let RawTransactionOutput {
             status: _,
@@ -423,11 +436,13 @@ impl MoveOS {
             gas_used: _,
             is_upgrade: _,
         } = output;
-        let new_state_root = self
+        debug_assert!(changeset.accounts().is_empty());
+
+        let (new_state_root, size) = self
             .db
             .0
-            .get_state_store()
-            .apply_change_set(changeset, state_changeset)
+            .get_state_store_mut()
+            .apply_change_set(state_changeset)
             .map_err(|e| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR)
                     .with_message(e.to_string())
@@ -446,13 +461,13 @@ impl MoveOS {
         self.db
             .0
             .get_config_store()
-            .save_startup_info(StartupInfo::new(new_state_root))
+            .save_startup_info(StartupInfo::new(new_state_root, size))
             .map_err(|e| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR)
                     .with_message(e.to_string())
                     .finish(Location::Undefined)
             })?;
-        Ok((new_state_root, event_ids))
+        Ok((new_state_root, size, event_ids))
     }
 
     /// Execute readonly view function
@@ -486,7 +501,12 @@ impl MoveOS {
                     Err(e) => FunctionResult::err(e),
                 }
             }
-            Err(e) => FunctionResult::err(e),
+            Err(e) => {
+                if log::log_enabled!(log::Level::Debug) {
+                    log::warn!("execute_readonly_function error:{:?}", e);
+                }
+                FunctionResult::err(e)
+            }
         }
     }
 
@@ -601,8 +621,8 @@ impl MoveOS {
         Ok(output)
     }
 
-    pub fn refresh_state(&self, new_state_root: H256, is_upgrade: bool) -> Result<()> {
-        self.state().update_state_root(new_state_root)?;
+    pub fn refresh_state(&mut self, root: RootObjectEntity, is_upgrade: bool) -> Result<()> {
+        self.db.0.statedb.update_root(root)?;
 
         if is_upgrade {
             self.vm.mark_loader_cache_as_invalid();

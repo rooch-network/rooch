@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use criterion::{criterion_group, criterion_main, Criterion};
+use pprof::criterion::{Output, PProfProfiler};
+use rooch_benchmarks::helper::{PProfOut, PPROF_OUT};
 use rooch_benchmarks::tx::TxType::{Blog, Empty};
 use rooch_benchmarks::tx::{
     create_publish_transaction, create_transaction, setup_service, DATA_DIR, TX_TYPE,
@@ -9,7 +11,6 @@ use rooch_benchmarks::tx::{
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
 use rooch_test_transaction_builder::TestTransactionBuilder;
-use std::fs::File;
 use std::time::Duration;
 use tokio::runtime::Runtime;
 
@@ -37,28 +38,29 @@ pub fn transaction_write_benchmark(c: &mut Criterion) {
         .collect();
     let mut transactions_iter = transactions.into_iter().cycle();
 
-    let guard = pprof::ProfilerGuardBuilder::default()
-        .frequency(1000)
-        .blocklist(&["libc", "libgcc", "pthread", "vdso"])
-        .build()
-        .unwrap();
-
     c.bench_function("execute_tx", |b| {
         b.to_async(Runtime::new().unwrap()).iter(|| {
             let tx = transactions_iter.next().unwrap();
             rpc_service.execute_tx(tx)
         });
     });
+}
 
-    if let Ok(report) = guard.report().build() {
-        let file = File::create("flamegraph.svg").unwrap();
-        report.flamegraph(file).unwrap();
+fn profiled() -> Criterion {
+    let profiler = match *PPROF_OUT {
+        PProfOut::Protobuf => PProfProfiler::new(2000, Output::Protobuf),
+        PProfOut::Flamegraph => PProfProfiler::new(2000, Output::Flamegraph(None)),
     };
+    Criterion::default()
+        .with_profiler(profiler)
+        .warm_up_time(Duration::from_millis(100))
+        .sample_size(10)
+        .measurement_time(Duration::from_secs(3))
 }
 
 criterion_group! {
     name = rooch_tx_write_bench;
-    config = Criterion::default().warm_up_time(Duration::from_millis(100)).sample_size(10).measurement_time(Duration::from_secs(3));
+    config = profiled();
     targets = transaction_write_benchmark
 }
 
