@@ -1398,7 +1398,7 @@
                     "minimum": 0.0
                   },
                   "txid": {
-                    "$ref": "#/components/schemas/bitcoin::hash_types::newtypes::Txid"
+                    "type": "string"
                   }
                 }
               }
@@ -2647,7 +2647,7 @@
                 ],
                 "properties": {
                   "txid": {
-                    "$ref": "#/components/schemas/bitcoin::hash_types::newtypes::Txid"
+                    "type": "string"
                   },
                   "vout": {
                     "type": "integer",
