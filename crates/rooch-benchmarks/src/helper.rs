@@ -1,45 +1,43 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use proptest::{
-    strategy::{Strategy, ValueTree},
-    test_runner::TestRunner,
-};
+use crate::helper::PProfOut::{Flamegraph, Protobuf};
+use lazy_static::lazy_static;
+use std::env;
+use std::fmt::Display;
+use std::str::FromStr;
 
-/// Context for generating single values out of strategies.
-///
-/// Proptest is designed to be built around "value trees", which represent a spectrum from complex
-/// values to simpler ones. But in some contexts, like benchmarking or generating corpuses, one just
-/// wants a single value. This is a convenience struct for that.
-#[derive(Default)]
-pub struct ValueGenerator {
-    runner: TestRunner,
+#[derive(PartialEq, Eq)]
+pub enum PProfOut {
+    Protobuf,
+    Flamegraph,
 }
 
-impl ValueGenerator {
-    /// Creates a new value generator with the default RNG.
-    pub fn new() -> Self {
-        Default::default()
-    }
-
-    /// Creates a new value generator with a deterministic RNG.
-    ///
-    /// This generator has a hardcoded seed, so its results are predictable across test runs.
-    /// However, a new proptest version may change the seed.
-    pub fn deterministic() -> Self {
-        Self {
-            runner: TestRunner::deterministic(),
+impl FromStr for PProfOut {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "proto" => Ok(Protobuf),
+            "flamegraph" => Ok(Flamegraph),
+            _ => Ok(Flamegraph),
         }
     }
+}
 
-    /// Generates a single value for this strategy.
-    ///
-    /// Panics if generating the new value fails. The only situation in which this can happen is if
-    /// generating the value causes too many internal rejects.
-    pub fn generate<S: Strategy>(&mut self, strategy: S) -> S::Value {
-        strategy
-            .new_tree(&mut self.runner)
-            .expect("creating a new value should succeed")
-            .current()
+impl Display for PProfOut {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Protobuf => write!(f, "proto"),
+            Flamegraph => write!(f, "flamegraph"),
+        }
     }
+}
+
+lazy_static! {
+    pub static ref PPROF_OUT: PProfOut = {
+        let pprof_out_str = env::var("PPROF_OUT").unwrap_or_else(|_| String::from("flamegraph"));
+        pprof_out_str
+            .parse::<PProfOut>()
+            .unwrap_or(PProfOut::Flamegraph)
+    };
 }
