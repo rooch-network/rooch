@@ -25,11 +25,11 @@ script {
 //Get timestamp from context
 //# run --signers test
 script {
-    use moveos_std::context::Context;
+    
     use rooch_framework::timestamp;
 
-    fun main(ctx: &Context) {
-        let now_seconds = timestamp::now_seconds(ctx);
+    fun main() {
+        let now_seconds = timestamp::now_seconds();
         std::debug::print(&now_seconds);
     }
 }
@@ -37,13 +37,13 @@ script {
 // Update timestamp
 //# run --signers test
 script {
-    use moveos_std::context::Context;
+    
     use rooch_framework::timestamp;
 
-    fun main(ctx: &mut Context) {
+    fun main() {
         let seconds = 100;
-        timestamp::fast_forward_seconds_for_local(ctx, seconds);
-        let seconds_from_ctx = timestamp::now_seconds(ctx);
+        timestamp::fast_forward_seconds_for_local(seconds);
+        let seconds_from_ctx = timestamp::now_seconds();
         assert!(seconds == seconds_from_ctx, 1);
     }
 }

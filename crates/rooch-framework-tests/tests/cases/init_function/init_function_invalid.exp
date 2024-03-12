@@ -1,4 +1,4 @@
-processed 13 tasks
+processed 12 tasks
 
 task 1 'publish'. lines 3-9:
 Error: error: module init function should not have a primitive type other than a signer
@@ -61,7 +61,7 @@ Error: error: module init function should not have a primitive type other than a
 
 
 task 7 'publish'. lines 52-62:
-Error: error: module init function only should have two parameter types with signer or storageContext
+Error: error: module init function only should have one parameter types with signer
    ┌─ /tmp/tempfile:57:5
    │  
 57 │ ╭     fun init( _foo: Foo ){
@@ -71,7 +71,7 @@ Error: error: module init function only should have two parameter types with sig
 
 
 task 8 'publish'. lines 64-71:
-Error: error: module init function only should have two parameter types with signer or storageContext
+Error: error: module init function only should have one parameter types with signer
    ┌─ /tmp/tempfile:67:5
    │  
 67 │ ╭     fun init( _: object_id::ObjectID ){
@@ -81,7 +81,7 @@ Error: error: module init function only should have two parameter types with sig
 
 
 task 9 'publish'. lines 73-80:
-Error: error: module init function only should have two parameter types with signer or storageContext
+Error: error: module init function only should have one parameter types with signer
    ┌─ /tmp/tempfile:76:5
    │  
 76 │ ╭     fun init( _: string::String ){
@@ -91,7 +91,7 @@ Error: error: module init function only should have two parameter types with sig
 
 
 task 10 'publish'. lines 82-89:
-Error: error: module init function only should have two parameter types with signer or storageContext
+Error: error: module init function only should have one parameter types with signer
    ┌─ /tmp/tempfile:85:5
    │  
 85 │ ╭     fun init( _: string::String ){
@@ -101,21 +101,11 @@ Error: error: module init function only should have two parameter types with sig
 
 
 task 11 'publish'. lines 91-98:
-Error: error: module init function only should have two parameter types with signer or storageContext
+Error: error: module init function only should have one parameter types with signer
    ┌─ /tmp/tempfile:94:5
    │  
 94 │ ╭     fun init( _: ascii::String ){
 95 │ │     }
    │ ╰─────^
-
-
-
-task 12 'publish'. lines 100-107:
-Error: error: module init function should not have a reference primitive type other than a signer
-    ┌─ /tmp/tempfile:103:5
-    │  
-103 │ ╭     fun init( _ : & context::Context){
-104 │ │     }
-    │ ╰─────^
 
 

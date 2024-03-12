@@ -96,12 +96,3 @@ module creator::test {
         
     }
 }
-
-//# publish
-module creator::test {
-    use moveos_std::context;
-
-    fun init( _ : & context::Context){
-        
-    }
-}

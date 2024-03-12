@@ -3,16 +3,7 @@
 //# publish
 module creator::test {
 
-    fun init( _ : & signer){
-        
-    }
-}
-
-//# publish
-module creator::test_mut_ref_storage_context {
-    use moveos_std::context;
-
-    fun init( _ : &mut context::Context){
+    fun init(){
         
     }
 }
@@ -28,7 +19,7 @@ module creator::test_signer {
 //# publish
 module creator::test_ref_signer {
 
-    fun init( _ : & signer){
+    fun init( _ : &signer){
         
     }
 }
