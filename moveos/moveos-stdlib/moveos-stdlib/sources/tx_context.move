@@ -105,14 +105,21 @@ module moveos_std::tx_context {
     }
 
     /// Add a value to the context map
-    public(friend) fun add<T: drop + store + copy>(self: &mut TxContext, value: T) {
+    fun add<T: drop + store + copy>(self: &mut TxContext, value: T) {
         let any = copyable_any::pack(value);
         let type_name = *copyable_any::type_name(&any);
         simple_map::add(&mut self.map, type_name, any)
     }
 
+    /// Add a value to the context map via system reserved address
+    public fun add_attribute_via_system<T: drop + store + copy>(system: &signer, value: T){
+        moveos_std::core_addresses::assert_system_reserved(system);
+        let ctx = borrow_mut();
+        add(ctx, value);
+    } 
+
     /// Get a value from the context map
-    public fun get<T: drop + store + copy>(self: &TxContext): Option<T> {
+    fun get<T: drop + store + copy>(self: &TxContext): Option<T> {
         let type_name = type_info::type_name<T>();
         if (simple_map::contains_key(&self.map, &type_name)) {
             let any = simple_map::borrow(&self.map, &type_name);
@@ -122,42 +129,58 @@ module moveos_std::tx_context {
         }
     }
 
+    /// Get attribute value from the context map
+    public fun get_attribute<T: drop + store + copy>(): Option<T> {
+        let ctx = borrow();
+        get(ctx)
+    }
+
     /// Check if the key is in the context map
-    public fun contains<T: drop + store + copy>(self: &TxContext): bool {
+    fun contains<T: drop + store + copy>(self: &TxContext): bool {
         let type_name = type_info::type_name<T>();
         simple_map::contains_key(&self.map, &type_name)
+    }
+
+    /// Check if the key is in the context map
+    public fun contains_attribute<T: drop + store + copy>(): bool {
+        let ctx = borrow();
+        contains<T>(ctx)
     }
 
     /// Get the transaction meta data
     /// The TxMeta is writed by the VM before the transaction execution.
     /// The meta data is only available when executing or validating a transaction, otherwise abort(eg. readonly function call).
-    public fun tx_meta(self: &TxContext): TxMeta {
-        let meta = get<TxMeta>(self);
+    public fun tx_meta(): TxMeta {
+        let ctx = borrow();
+        let meta = get<TxMeta>(ctx);
         assert!(option::is_some(&meta), ErrorInvalidContext);
         option::extract(&mut meta)
     }
 
-    public fun tx_gas_payment_account(self: &TxContext): address {
-        let gas_payment_account = get<GasPaymentAccount>(self);
+    public fun tx_gas_payment_account(): address {
+        let ctx = borrow();
+        let gas_payment_account = get<GasPaymentAccount>(ctx);
         assert!(option::is_some(&gas_payment_account), ErrorInvalidContext);
         option::extract(&mut gas_payment_account).account
     }
 
     /// The result is only available in the `post_execute` function.
-    public fun tx_result(self: &TxContext): TxResult {
-        let result = get<TxResult>(self);
+    public fun tx_result(): TxResult {
+        let ctx = borrow();
+        let result = get<TxResult>(ctx);
         assert!(option::is_some(&result), ErrorInvalidContext);
         option::extract(&mut result)
     }
 
-    public(friend) fun set_module_upgrade_flag(self: &mut TxContext, is_upgrade: bool) {
-        if(!contains<ModuleUpgradeFlag>(self)){
-            add(self, ModuleUpgradeFlag{is_upgrade});
+    public(friend) fun set_module_upgrade_flag(is_upgrade: bool) {
+        let ctx = borrow_mut();
+        if(!contains<ModuleUpgradeFlag>(ctx)){
+            add(ctx, ModuleUpgradeFlag{is_upgrade});
         }else{
             //If the flag is already set, means the module upgrade flag is set in the previous function call.
             //We only need to set the flag if is_upgrade is true.
             if(is_upgrade){
-                let flag = get<ModuleUpgradeFlag>(self);
+                let flag = get<ModuleUpgradeFlag>(ctx);
                 assert!(option::is_some(&flag), ErrorInvalidContext);
                 option::borrow_mut(&mut flag).is_upgrade = true;
             }
@@ -178,16 +201,11 @@ module moveos_std::tx_context {
         simple_map::drop(map);
     }
 
-    public fun borrow(): &TxContext {
+    fun borrow(): &TxContext {
         Self::borrow_inner()
     }
 
-    public(friend) fun borrow_mut(): &mut TxContext {
-        Self::borrow_mut_inner()
-    }
-
-    public fun borrow_mut_via_system(system: &signer): &mut TxContext {
-        moveos_std::core_addresses::assert_system_reserved(system);
+    fun borrow_mut(): &mut TxContext {
         Self::borrow_mut_inner()
     }
 
@@ -196,39 +214,32 @@ module moveos_std::tx_context {
     native fun borrow_mut_inner(): &mut TxContext;
 
     #[test_only]
-    /// Create a TxContext for unit test
-    public fun new_test_context(sender: address): TxContext {
-        new_test_context_random(sender, b"test_tx")
+    /// set the TxContext sender for unit test
+    public fun set_ctx_sender_for_testing(sender: address){
+        let ctx = borrow_mut();
+        ctx.sender = sender;
     }
 
     #[test_only]
-    /// Create a random TxContext for unit test
-    public fun new_test_context_random(sender: address, seed: vector<u8>): TxContext {
-        let tx_hash = hash::sha3_256(seed);
-        TxContext {
-            sender,
-            sequence_number: 0,
-            max_gas_amount: 100000000,
-            tx_hash,
-            tx_size: 1,
-            ids_created: 0,
-            map: simple_map::create(),
-        }
+    /// set the TxContext sequence_number for unit test
+    public fun set_ctx_sequencer_number_for_testing(sequence_number: u64){
+        let ctx = borrow_mut();
+        ctx.sequence_number = sequence_number;
     }
+
 
     #[test_only]
     struct TestValue has store, drop, copy{
         value: u64,
     }
 
-    #[test(sender=@0x42)]
-    fun test_context(sender: address) {
-        let tx_context = new_test_context(sender);
+    #[test]
+    fun test_attributes() {
+        let ctx = borrow_mut();
         let value = TestValue{value: 42};
-        add(&mut tx_context, value);
-        let value2 = get<TestValue>(&tx_context);
+        add(ctx, value);
+        let value2 = get<TestValue>(ctx);
         assert!(value == option::extract(&mut value2), 1000);
-        moveos_std::tx_context::drop(tx_context);
     }
 
     #[test(sender=@0x42)]

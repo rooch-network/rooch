@@ -259,7 +259,7 @@ module moveos_std::move_module {
         let upgrade_flag = publish_modules_internal(module_store, account_address, modules);
         // Store ModuleUpgradeFlag in tx_context which will be fetched in VM in Rust, 
         // and then announce to the VM that the code loading cache should be considered outdated. 
-        tx_context::set_module_upgrade_flag(tx_context::borrow_mut(), upgrade_flag);
+        tx_context::set_module_upgrade_flag(upgrade_flag);
     }
    
     /// Entry function to publish modules
