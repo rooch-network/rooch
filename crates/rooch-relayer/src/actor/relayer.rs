@@ -4,10 +4,13 @@
 use super::bitcoin_relayer::BitcoinRelayer;
 use super::ethereum_relayer::EthereumRelayer;
 use super::messages::RelayTick;
+use crate::actor::bitcoin_client::BitcoinClientActor;
+use crate::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use crate::{Relayer, TxSubmiter};
 use anyhow::Result;
 use async_trait::async_trait;
-use coerce::actor::{context::ActorContext, message::Handler, Actor};
+use coerce::actor::system::ActorSystem;
+use coerce::actor::{context::ActorContext, message::Handler, Actor, IntoActor};
 use moveos_types::{gas_config::GasConfig, transaction::MoveAction};
 use rooch_config::{BitcoinRelayerConfig, EthereumRelayerConfig};
 use rooch_executor::proxy::ExecutorProxy;
@@ -65,7 +68,13 @@ impl RelayerActor {
         }
 
         if let Some(bitcoin_config) = bitcoin_config {
-            let bitcoin_relayer = BitcoinRelayer::new(bitcoin_config, executor)?;
+            let actor_system = ActorSystem::global_system();
+            let bitcoin_client_actor = BitcoinClientActor::new(bitcoin_config.clone())?
+                .into_actor(Some("BitcoinClient"), &actor_system)
+                .await?;
+            let bitcoin_client_proxy = BitcoinClientProxy::new(bitcoin_client_actor.into());
+            let bitcoin_relayer =
+                BitcoinRelayer::new(bitcoin_config, bitcoin_client_proxy, executor)?;
             relayers.push(Box::new(bitcoin_relayer));
         }
 

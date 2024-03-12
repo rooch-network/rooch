@@ -9,15 +9,17 @@ use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::object::RawObject;
 use moveos_types::moveos_std::object_id::ObjectID;
-use moveos_types::state::TableChangeSet;
+use moveos_types::state::{MoveStructType, TableChangeSet};
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_rpc_api::jsonrpc_types::TableChangeSetView;
+use rooch_types::bitcoin::utxo::UTXO;
 use rooch_types::multichain_id::MultiChainID;
 use rooch_types::transaction::{
     AbstractTransaction, TransactionSequenceInfo, TransactionType, TypedTransaction,
 };
 
 use crate::errors::IndexerError;
+use crate::utils::format_struct_tag;
 
 pub type IndexerResult<T> = Result<T, IndexerError>;
 
@@ -208,6 +210,10 @@ impl IndexedGlobalState {
             updated_at: 0,
         }
     }
+
+    pub fn is_utxo_object_state(&self) -> bool {
+        self.object_type == format_struct_tag(UTXO::struct_tag())
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -261,6 +267,10 @@ impl IndexedTableState {
             updated_at: 0,
         }
     }
+
+    // pub fn is_utxo_object_state(&self) -> bool {
+    //     self.object_type == format_struct_tag(UTXO::struct_tag())
+    // }
 }
 
 #[derive(Debug, Clone)]

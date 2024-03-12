@@ -39,7 +39,7 @@ impl RoochRpcClient {
     pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
         let tx_payload = bcs::to_bytes(&tx)?;
         self.http
-            .execute_raw_transaction(tx_payload.into())
+            .execute_raw_transaction(tx_payload.into(), None)
             .await
             .map_err(|e| anyhow::anyhow!(e))
     }

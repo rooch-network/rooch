@@ -4,6 +4,7 @@
 use crate::jsonrpc_types::account_view::BalanceInfoView;
 use crate::jsonrpc_types::event_view::EventFilterView;
 use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionWithInfoView};
+use crate::jsonrpc_types::TxOptions;
 use crate::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, BalanceInfoPageView,
     BytesView, EventOptions, EventPageView, ExecuteTransactionResponseView, FunctionCallView,
@@ -36,6 +37,7 @@ pub trait RoochAPI {
     async fn execute_raw_transaction(
         &self,
         tx_bcs_hex: BytesView,
+        tx_option: Option<TxOptions>,
     ) -> RpcResult<ExecuteTransactionResponseView>;
 
     /// Execute a read-only function call

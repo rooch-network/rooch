@@ -5,6 +5,7 @@ use super::types::Transaction;
 use crate::address::BitcoinAddress;
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
 use crate::indexer::state::IndexerGlobalState;
+use crate::into_address::IntoAddress;
 use anyhow::Result;
 use move_core_types::language_storage::StructTag;
 use move_core_types::{
@@ -231,6 +232,27 @@ impl InscriptionState {
             state_index: state.state_index,
             created_at: state.created_at,
             updated_at: state.updated_at,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq)]
+pub struct BitcoinInscriptionID {
+    pub txid: bitcoin::Txid,
+    pub index: u32,
+}
+
+impl BitcoinInscriptionID {
+    pub fn new(txid: bitcoin::Txid, index: u32) -> Self {
+        Self { txid, index }
+    }
+}
+
+impl From<BitcoinInscriptionID> for InscriptionID {
+    fn from(inscription: BitcoinInscriptionID) -> Self {
+        InscriptionID {
+            txid: inscription.txid.into_address(),
+            index: inscription.index,
         }
     }
 }

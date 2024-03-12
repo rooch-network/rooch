@@ -42,6 +42,7 @@ members = [
     "crates/rooch-indexer",
     "crates/rooch-benchmarks",
     "crates/rooch-test-transaction-builder",
+    "crates/data_verify",
     "frameworks/bitcoin-move"
 ]
 
@@ -108,6 +109,7 @@ rooch-indexer = { path = "crates/rooch-indexer" }
 rooch-da = { path = "crates/rooch-da" }
 rooch-benchmarks = { path = "crates/rooch-benchmarks" }
 rooch-test-transaction-builder = { path = "crates/rooch-test-transaction-builder" }
+data-verify = { path = "crates/data_verify" }
 
 # frameworks
 bitcoin-move = { path = "frameworks/bitcoin-move" }

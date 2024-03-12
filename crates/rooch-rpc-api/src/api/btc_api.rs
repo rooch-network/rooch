@@ -17,7 +17,7 @@ pub trait BtcAPI {
     #[method(name = "queryUTXOs")]
     async fn query_utxos(
         &self,
-        filter: Option<UTXOFilterView>,
+        filter: UTXOFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
@@ -28,7 +28,7 @@ pub trait BtcAPI {
     #[method(name = "queryInscriptions")]
     async fn query_inscriptions(
         &self,
-        filter: Option<InscriptionFilterView>,
+        filter: InscriptionFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,

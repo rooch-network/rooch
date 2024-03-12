@@ -37,13 +37,13 @@ module moveos_std::context {
     }
 
     /// Get an immutable reference to the transaction context from the storage context
-    public(friend) fun tx_context(self: &Context): &TxContext {
-        &self.tx_context
+    public(friend) fun tx_context(_self: &Context): &TxContext {
+        tx_context::borrow()
     }
 
     /// Get a mutable reference to the transaction context from the storage context
-    public(friend) fun tx_context_mut(self: &mut Context): &mut TxContext {
-        &mut self.tx_context
+    public(friend) fun tx_context_mut(_self: &mut Context): &mut TxContext {
+        tx_context::borrow_mut()
     }
 
     // Wrap functions for TxContext
@@ -64,13 +64,13 @@ module moveos_std::context {
     }
 
     /// Generate a new unique address
-    public fun fresh_address(self: &mut Context): address {
-        tx_context::fresh_address(&mut self.tx_context)
+    public fun fresh_address(_self: &mut Context): address {
+        tx_context::fresh_address(tx_context::borrow_mut())
     }
 
     /// Generate a new unique ObjectID
     public fun fresh_object_id(self: &mut Context): ObjectID {
-        object_id::address_to_object_id(tx_context::fresh_address(&mut self.tx_context))
+        object_id::address_to_object_id(fresh_address(self))
     }
 
     /// Generate a new unique ID
@@ -84,25 +84,25 @@ module moveos_std::context {
     } 
 
     /// Add a value to the context map
-    public fun add<T: drop + store + copy>(self: &mut Context, value: T) {
-        tx_context::add(&mut self.tx_context, value); 
+    public fun add<T: drop + store + copy>(_self: &mut Context, value: T) {
+        tx_context::add(tx_context::borrow_mut(), value); 
     }
 
     /// Get a value from the context map
-    public fun get<T: drop + store + copy>(self: &Context): Option<T> {
-        tx_context::get(&self.tx_context)
+    public fun get<T: drop + store + copy>(_self: &Context): Option<T> {
+        tx_context::get(tx_context::borrow())
     }
 
-    public fun tx_meta(self: &Context): TxMeta {
-        tx_context::tx_meta(&self.tx_context)
+    public fun tx_meta(_self: &Context): TxMeta {
+        tx_context::tx_meta(tx_context::borrow())
     }
 
-    public fun tx_gas_payment_account(self: &Context): address {
-        tx_context::tx_gas_payment_account(&self.tx_context)
+    public fun tx_gas_payment_account(_self: &Context): address {
+        tx_context::tx_gas_payment_account(tx_context::borrow())
     }
 
-    public fun tx_result(self: &Context): TxResult {
-        tx_context::tx_result(&self.tx_context)
+    public fun tx_result(_self: &Context): TxResult {
+        tx_context::tx_result(tx_context::borrow())
     }
 
     // === Table functions ===

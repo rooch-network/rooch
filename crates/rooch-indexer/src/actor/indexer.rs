@@ -20,20 +20,27 @@ use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::context;
 use moveos_types::moveos_std::object::RawObject;
 use moveos_types::moveos_std::object_id::ObjectID;
-use moveos_types::state::{KeyState, SplitStateChangeSet, State};
-use moveos_types::state_resolver::MoveOSResolverProxy;
+use moveos_types::state::{KeyState, MoveStructType, SplitStateChangeSet, State};
+use moveos_types::state_resolver::{MoveOSResolverProxy, StateResolver};
 use rooch_rpc_api::jsonrpc_types::{AnnotatedMoveStructView, AnnotatedMoveValueView};
+use rooch_types::bitcoin::utxo::UTXO;
 
 pub struct IndexerActor {
     indexer_store: IndexerStore,
     moveos_store: MoveOSResolverProxy<MoveOSStore>,
+    data_verify_mode: bool,
 }
 
 impl IndexerActor {
-    pub fn new(indexer_store: IndexerStore, moveos_store: MoveOSStore) -> Result<Self> {
+    pub fn new(
+        indexer_store: IndexerStore,
+        moveos_store: MoveOSStore,
+        data_verify_mode: bool,
+    ) -> Result<Self> {
         Ok(Self {
             indexer_store,
             moveos_store: MoveOSResolverProxy(moveos_store),
+            data_verify_mode,
         })
     }
 
@@ -51,6 +58,17 @@ impl IndexerActor {
         let annotator_state_view = AnnotatedMoveValueView::from(annotator_state);
         let annotator_state_json = serde_json::to_string(&annotator_state_view)?;
         Ok(annotator_state_json)
+    }
+
+    pub fn resolve_object_state(&self, table_handle: &ObjectID) -> Result<Option<State>> {
+        self.moveos_store.resolve_object_state(table_handle)
+    }
+
+    pub fn is_utxo_object(&self, state_opt: Option<State>) -> bool {
+        match state_opt {
+            Some(state) => state.match_struct_type(&UTXO::struct_tag()),
+            None => false,
+        }
     }
 
     pub fn new_global_state_from_raw_object(
@@ -134,6 +152,10 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                                     tx_order,
                                     state_index_generator,
                                 )?;
+                                //just for data verify mode, don't write utxo object indexer
+                                if self.data_verify_mode && state.is_utxo_object_state() {
+                                    continue;
+                                }
                                 update_global_states.push(state);
                             } else {
                                 log::warn!(
@@ -154,6 +176,10 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                                     tx_order,
                                     state_index_generator,
                                 )?;
+                                //just for data verify mode, don't write utxo object indexer
+                                if self.data_verify_mode && state.is_utxo_object_state() {
+                                    continue;
+                                }
                                 new_global_states.push(state);
                             } else {
                                 log::warn!(
@@ -168,7 +194,6 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                 }
             } else {
                 // TODO update table size if ObjectID is table hanlde
-
                 for (key, op) in table_change.entries.into_iter() {
                     match op {
                         Op::Modify(value) => {
@@ -179,6 +204,15 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                                 tx_order,
                                 state_index_generator,
                             )?;
+
+                            //just for data verify mode, don't write utxo object indexer
+                            if self.data_verify_mode {
+                                let object_state = self.resolve_object_state(&table_handle)?;
+                                if self.is_utxo_object(object_state) {
+                                    continue;
+                                };
+                            };
+
                             update_table_states.push(state);
                         }
                         Op::Delete => {
@@ -192,6 +226,15 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
                                 tx_order,
                                 state_index_generator,
                             )?;
+
+                            //just for data verify mode, don't write utxo object indexer
+                            if self.data_verify_mode {
+                                let object_state = self.resolve_object_state(&table_handle)?;
+                                if self.is_utxo_object(object_state) {
+                                    continue;
+                                };
+                            };
+
                             new_table_states.push(state);
                         }
                     }

@@ -1,0 +1,92 @@
+[
+    {
+      "address": "bcrt1pd8dsgg7h9q6rsm0pxsp7y0d8zl63wu3fa6txtvm6pjk5v0cswk9qpfj74k",
+      "id": "1",
+      "inscription_body": {
+        "lim": "1000",
+        "max": "21000000",
+        "op": "deploy",
+        "p": "brc-20",
+        "tick": "CrMr"
+      },
+      "txid": "c709f3d0af929f2f5cbf55f42115e92cdf0de4264c6170a28025519a389f9fad"
+    },
+    {
+      "address": "bcrt1p5dm3qd9sg323ach2gw7jy944kp98p42kusr4udg6fz2k5lh96z0q7zgruk",
+      "id": "2",
+      "inscription_body": {
+        "amt": "1000",
+        "op": "mint",
+        "p": "brc-20",
+        "tick": "CrMr"
+      },
+      "txid": "9bd233a53a7ae7a5b18752fe7519a0491d1545143ca7558685465a9c9e9ffadb"
+    },
+    {
+        "address": "bcrt1p5dm3qd9sg323ach2gw7jy944kp98p42kusr4udg6fz2k5lh96z0q7zgruk",
+        "id": "3",
+        "inscription_body": {
+          "amt": "1000",
+          "op": "mint",
+          "p": "brc-20",
+          "tick": "CrMr"
+        },
+        "txid": "9bd233a53a7ae7a5b18752fe7519a0491d1545143ca7558685465a9c9e9ffadb"
+      },
+      {
+        "address": "bcrt1p5dm3qd9sg323ach2gw7jy944kp98p42kusr4udg6fz2k5lh96z0q7zgruk",
+        "id": "4",
+        "inscription_body": {
+          "amt": "1000",
+          "op": "mint",
+          "p": "brc-20",
+          "tick": "CrMr"
+        },
+        "txid": "9bd233a53a7ae7a5b18752fe7519a0491d1545143ca7558685465a9c9e9ffadb"
+      },
+      {
+        "address": "bcrt1p5dm3qd9sg323ach2gw7jy944kp98p42kusr4udg6fz2k5lh96z0q7zgruk",
+        "id": "5",
+        "inscription_body": {
+          "amt": "1000",
+          "op": "mint",
+          "p": "brc-20",
+          "tick": "CrMr"
+        },
+        "txid": "9bd233a53a7ae7a5b18752fe7519a0491d1545143ca7558685465a9c9e9ffadb"
+      },
+      {
+        "address": "bcrt1p5dm3qd9sg323ach2gw7jy944kp98p42kusr4udg6fz2k5lh96z0q7zgruk",
+        "id": "6",
+        "inscription_body": {
+          "amt": "1000",
+          "op": "transfer",
+          "p": "brc-20",
+          "tick": "CrMr"
+        },
+        "txid": "9bd233a53a7ae7a5b18752fe7519a0491d1545143ca7558685465a9c9e9ffadb"
+    },
+    {
+        "address": "bcrt1pd8dsgg7h9q6rsm0pxsp7y0d8zl63wu3fa6txtvm6pjk5v0cswk9qpfj74k",
+        "id": "1",
+        "inscription_body": {
+          "lim": "1000",
+          "max": "21000000",
+          "op": "deploy",
+          "p": "brc-20",
+          "tick": "ordi"
+        },
+        "txid": "c709f3d0af929f2f5cbf55f42115e92cdf0de4264c6170a28025519a389f9fad"
+      },
+      {
+        "address": "bcrt1p5dm3qd9sg323ach2gw7jy944kp98p42kusr4udg6fz2k5lh96z0q7zgruk",
+        "id": "2",
+        "inscription_body": {
+          "amt": "1000",
+          "op": "mint",
+          "p": "brc-20",
+          "tick": "ordi"
+        },
+        "txid": "9bd233a53a7ae7a5b18752fe7519a0491d1545143ca7558685465a9c9e9ffadb"
+      }
+]
