@@ -172,7 +172,17 @@ pub struct ExecuteTransactionResponse {
 pub struct ExecuteTransactionResponseView {
     pub sequence_info: TransactionSequenceInfoView,
     pub execution_info: TransactionExecutionInfoView,
-    pub output: TransactionOutputView,
+    pub output: Option<TransactionOutputView>,
+}
+
+impl ExecuteTransactionResponseView {
+    pub fn new_without_output(response: ExecuteTransactionResponse) -> Self {
+        Self {
+            sequence_info: response.sequence_info.into(),
+            execution_info: response.execution_info.into(),
+            output: None,
+        }
+    }
 }
 
 impl From<ExecuteTransactionResponse> for ExecuteTransactionResponseView {
@@ -180,7 +190,7 @@ impl From<ExecuteTransactionResponse> for ExecuteTransactionResponseView {
         Self {
             sequence_info: response.sequence_info.into(),
             execution_info: response.execution_info.into(),
-            output: response.output.into(),
+            output: Some(response.output.into()),
         }
     }
 }

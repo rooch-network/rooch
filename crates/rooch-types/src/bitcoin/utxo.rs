@@ -174,6 +174,27 @@ impl<'a> ModuleBinding<'a> for UTXOModule<'a> {
     }
 }
 
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq)]
+pub struct BitcoinOutputID {
+    pub txid: bitcoin::Txid,
+    pub vout: u32,
+}
+
+impl BitcoinOutputID {
+    pub fn new(txid: bitcoin::Txid, vout: u32) -> Self {
+        Self { txid, vout }
+    }
+}
+
+impl From<BitcoinOutputID> for OutputID {
+    fn from(output_id: BitcoinOutputID) -> Self {
+        OutputID {
+            txid: output_id.txid.into_address(),
+            vout: output_id.vout,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

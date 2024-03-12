@@ -116,6 +116,11 @@ pub struct RoochOpt {
     pub btc_start_block_height: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long, env = "BTC_END_BLOCK_HEIGHT")]
+    /// The end block height of the Bitcoin chain to stop relaying from, default is none.
+    pub btc_end_block_height: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long)]
     /// The bitcoin network, default is regtest.
     pub btc_network: Option<u8>,
@@ -133,6 +138,11 @@ pub struct RoochOpt {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long)]
     pub da: Option<DAConfig>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(long)]
+    /// The data verify flag. If true, may be ignore some indexer write
+    pub data_verify_mode: Option<bool>,
 }
 
 impl std::fmt::Display for RoochOpt {
@@ -157,11 +167,13 @@ impl RoochOpt {
             btc_rpc_username: None,
             btc_rpc_password: None,
             btc_start_block_height: None,
+            btc_end_block_height: None,
             btc_network: Some(Network::default().to_num()),
             sequencer_account: None,
             proposer_account: None,
             relayer_account: None,
             da: None,
+            data_verify_mode: None,
         }
     }
 
@@ -180,6 +192,7 @@ impl RoochOpt {
             btc_rpc_user_name: self.btc_rpc_username.clone().unwrap(),
             btc_rpc_password: self.btc_rpc_password.clone().unwrap(),
             btc_start_block_height: self.btc_start_block_height,
+            btc_end_block_height: self.btc_end_block_height,
         })
     }
 
@@ -199,6 +212,7 @@ pub struct BitcoinRelayerConfig {
     pub btc_rpc_user_name: String,
     pub btc_rpc_password: String,
     pub btc_start_block_height: Option<u64>,
+    pub btc_end_block_height: Option<u64>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

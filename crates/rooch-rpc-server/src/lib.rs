@@ -284,7 +284,8 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     timers.push(proposer_timer);
 
     // Init indexer
-    let indexer_executor = IndexerActor::new(indexer_store, moveos_store)?
+    let data_verify_mode = opt.data_verify_mode.unwrap_or(false);
+    let indexer_executor = IndexerActor::new(indexer_store, moveos_store, data_verify_mode)?
         .into_actor(Some("Indexer"), &actor_system)
         .await?;
     let indexer_reader_executor = IndexerReaderActor::new(indexer_reader)?

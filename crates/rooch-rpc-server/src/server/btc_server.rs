@@ -41,7 +41,7 @@ impl BtcServer {
 impl BtcAPIServer for BtcServer {
     async fn query_utxos(
         &self,
-        filter: Option<UTXOFilterView>,
+        filter: UTXOFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
@@ -54,7 +54,7 @@ impl BtcAPIServer for BtcServer {
         let descending_order = descending_order.unwrap_or(true);
 
         let resolve_address = match filter.clone() {
-            Some(UTXOFilterView::Owner(address)) => {
+            UTXOFilterView::Owner(address) => {
                 let multi_chain_address = MultiChainAddress::try_from_str_with_multichain_id(
                     RoochMultiChainID::Bitcoin,
                     address.to_string().as_str(),
@@ -66,7 +66,8 @@ impl BtcAPIServer for BtcServer {
             _ => AccountAddress::ZERO,
         };
 
-        let global_state_filter = UTXOFilterView::into_global_state_filter(filter, resolve_address);
+        let global_state_filter =
+            UTXOFilterView::into_global_state_filter(filter, resolve_address)?;
         let states = self
             .rpc_service
             .query_global_states(global_state_filter, cursor, limit_of + 1, descending_order)
@@ -95,7 +96,7 @@ impl BtcAPIServer for BtcServer {
 
     async fn query_inscriptions(
         &self,
-        filter: Option<InscriptionFilterView>,
+        filter: InscriptionFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
@@ -108,7 +109,7 @@ impl BtcAPIServer for BtcServer {
         let descending_order = descending_order.unwrap_or(true);
 
         let resolve_address = match filter.clone() {
-            Some(InscriptionFilterView::Owner(address)) => {
+            InscriptionFilterView::Owner(address) => {
                 let multi_chain_address = MultiChainAddress::try_from_str_with_multichain_id(
                     RoochMultiChainID::Bitcoin,
                     address.to_string().as_str(),
@@ -121,7 +122,7 @@ impl BtcAPIServer for BtcServer {
         };
 
         let global_state_filter =
-            InscriptionFilterView::into_global_state_filter(filter, resolve_address);
+            InscriptionFilterView::into_global_state_filter(filter, resolve_address)?;
         let states = self
             .rpc_service
             .query_global_states(global_state_filter, cursor, limit_of + 1, descending_order)

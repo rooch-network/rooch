@@ -1,0 +1,33 @@
+[package]
+name = "data-verify"
+version = "0.1.0"
+
+# Workspace inherited keys
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_yaml = { workspace = true }
+serde_json = { workspace = true }
+log = { workspace = true }
+once_cell = { workspace = true }
+bcs = { workspace = true }
+fastcrypto = { workspace = true }
+
+moveos-config = { workspace = true }
+moveos-types = { workspace = true }
+
+rooch-config = { workspace = true }
+rooch-types ={ workspace = true }
+rooch-rpc-api ={ workspace = true }
+
+
