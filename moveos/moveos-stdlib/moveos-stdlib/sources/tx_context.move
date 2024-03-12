@@ -36,8 +36,6 @@ module moveos_std::tx_context {
     }
 
     /// Information about the transaction currently being executed.
-    /// This cannot be constructed by a transaction--it is a privileged object created by
-    /// the VM, stored in a `Context` and passed in to the entrypoint of the transaction as `&mut Context`.
     struct TxContext {
         /// The address of the user that signed the current transaction
         sender: address,

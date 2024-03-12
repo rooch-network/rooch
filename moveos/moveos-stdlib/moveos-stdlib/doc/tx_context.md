@@ -57,8 +57,6 @@ An account address for paying gas during the transaction validation stage.
 ## Struct `TxContext`
 
 Information about the transaction currently being executed.
-This cannot be constructed by a transaction--it is a privileged object created by
-the VM, stored in a <code>Context</code> and passed in to the entrypoint of the transaction as <code>&<b>mut</b> Context</code>.
 
 
 <pre><code><b>struct</b> <a href="tx_context.md#0x2_tx_context_TxContext">TxContext</a>

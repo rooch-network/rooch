@@ -7,7 +7,7 @@ module creator::test {
     use moveos_std::context;
     use moveos_std::object_id;
 
-    entry public fun test_entry_function_valid_struct_string(_str: string::String ){
+    entry public fun test_entry_function_valid_struct_string(_str: string::String){
         
     }
 
@@ -15,11 +15,11 @@ module creator::test {
 
     }
 
-    entry public fun test_entry_function_valid_struct_storage_context(_sctx: &mut context::Context ){
+    entry public fun test_entry_function_valid_struct_storage_context(_sctx: &mut context::Context){
         
     }
 
-    entry public fun test_entry_function_valid_struct_object_id(_id: object_id::ObjectID ){
+    entry public fun test_entry_function_valid_struct_object_id(_id: object_id::ObjectID){
         
     }
 }

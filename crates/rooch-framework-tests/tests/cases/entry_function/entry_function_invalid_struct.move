@@ -8,11 +8,11 @@ module creator::test {
         x: u64,
     }
 
-    entry public fun test_entry_function_invalid_struct(_foo: Foo ){
+    entry public fun test_entry_function_invalid_struct(_foo: Foo){
         
     }
 
-    entry public fun test_entry_function_invalid_struct_txcontext(_: &tx_context::TxContext ){
+    entry public fun test_entry_function_invalid_struct_txcontext(_: &tx_context::TxContext){
         
     }
 }
