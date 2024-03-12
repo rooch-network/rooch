@@ -484,12 +484,14 @@ impl<'a> ExtendedChecker<'a> {
                         if struct_tag.is_none() {
                             self.env.error(
                                 &fun.get_loc(),
-                                "module init function should input a reference structure"
+                                "module init function should input a reference structure",
                             );
                             return;
                         }
 
-                        if !check_storage_context_struct_tag(struct_tag.unwrap().to_canonical_string()){
+                        if !check_storage_context_struct_tag(
+                            struct_tag.unwrap().to_canonical_string(),
+                        ) {
                             self.env.error(
                                 &fun.get_loc(),
                                 "module init function should not input reference structures other than Context"
@@ -517,7 +519,7 @@ impl<'a> ExtendedChecker<'a> {
 
                     _ => self.env.error(
                         &fun.get_loc(),
-                        "module init function only should have two parameter types with signer or storageContext",
+                        "module init function only should have one parameter types with signer",
                     ),
                 }
             }
