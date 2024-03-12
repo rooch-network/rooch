@@ -1,8 +1,14 @@
 module moveos_std::wasm {
-    use moveos_std::context::Context;
-
-    public fun create_wasm_instance(_ctx: &Context, bytecode: vector<u8>): u64 {
+    public fun create_wasm_instance(bytecode: vector<u8>): u64 {
         native_create_wasm_instance(bytecode)
+    }
+
+    public fun create_cbor_values(value: vector<u8>): vector<u8> {
+        native_create_cbor_values(value)
+    }
+
+    public fun add_length_with_data(value: vector<u8>): vector<u8> {
+        native_add_length_with_data(value)
     }
 
     public fun create_memory_wasm_args(instance_id: u64, func_name: vector<u8>, args: vector<vector<u8>>): vector<u64> {
@@ -13,15 +19,31 @@ module moveos_std::wasm {
         native_execute_wasm_function(instance_id, func_name, args)
     }
 
+    public fun read_data_length(instance_id: u64, data_ptr: u64): u32 {
+        native_read_data_length(instance_id, data_ptr)
+    }
+
+    public fun read_data_from_heap(instance_id: u64, data_ptr: u32, data_length: u32): vector<u8> {
+        native_read_data_from_heap(instance_id, data_ptr, data_length)
+    }
+
+    public fun release_wasm_instance(instance_id: u64) {
+        native_release_wasm_instance(instance_id)
+    }
+
     native fun native_create_wasm_instance(bytecodes: vector<u8>): u64;
 
-    // native func native_create_cbor_values(value: vector<u8>): vector<u8>;
+    native fun native_create_cbor_values(value: vector<u8>): vector<u8>;
+
+    native fun native_add_length_with_data(value: vector<u8>): vector<u8>;
 
     native fun native_create_wasm_args_in_memory(instance_id: u64, func_name: vector<u8>, args_bytes: vector<vector<u8>>): vector<u64>;
 
     native fun native_execute_wasm_function(instance_id: u64, func_name: vector<u8>, args: vector<u64>): u64;
 
-    // native native_read_data_from_heap(instance_id: u64, data_ptr: u32): vector<u8>;
+    native fun native_read_data_length(instance_id: u64, data_ptr: u64): u32;
 
-    // native native_release_wasm_instance(instance_id: u64);
+    native fun native_read_data_from_heap(instance_id: u64, data_ptr: u32, data_length: u32): vector<u8>;
+
+    native fun native_release_wasm_instance(instance_id: u64);
 }

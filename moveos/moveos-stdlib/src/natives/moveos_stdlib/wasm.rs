@@ -15,7 +15,7 @@ use move_vm_types::values::Value;
 use smallvec::smallvec;
 
 use moveos_wasm::wasm::{
-    create_wasm_instance, get_instance_pool, insert_wasm_instance, put_data_on_stack
+    create_wasm_instance, get_instance_pool, insert_wasm_instance, put_data_on_stack,
 };
 
 use crate::natives::helpers::{make_module_natives, make_native};
@@ -39,6 +39,7 @@ impl WASMCreateInstanceGasParameters {
     }
 }
 
+// native_create_wasm_instance
 #[inline]
 fn native_create_wasm_instance(
     gas_params: &WASMCreateInstanceGasParameters,
@@ -60,6 +61,60 @@ fn native_create_wasm_instance(
 }
 
 #[derive(Debug, Clone)]
+pub struct WASMCreateAddLength {
+    pub base: InternalGas,
+}
+
+impl WASMCreateAddLength {
+    pub fn zeros() -> Self {
+        Self { base: 0.into() }
+    }
+}
+
+// native_add_length_with_data
+#[inline]
+fn native_add_length_with_data(
+    _gas_params: &WASMCreateAddLength,
+    _context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    mut _args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    Ok(NativeResult::Success {
+        cost: InternalGas::new(100),
+        ret_vals: smallvec![Value::u64(9999)],
+    })
+}
+
+#[derive(Debug, Clone)]
+pub struct WASMCreateCBORValue {
+    pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
+}
+
+impl WASMCreateCBORValue {
+    pub fn zeros() -> Self {
+        Self {
+            base: 0.into(),
+            per_byte: 0.into(),
+        }
+    }
+}
+
+// native_create_cbor_values
+#[inline]
+fn native_create_cbor_values(
+    _gas_params: &WASMCreateCBORValue,
+    _context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    mut _args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    Ok(NativeResult::Success {
+        cost: InternalGas::new(100),
+        ret_vals: smallvec![Value::u64(9999)],
+    })
+}
+
+#[derive(Debug, Clone)]
 pub struct WASMCreateArgsGasParameters {
     pub base_create_args: InternalGas,
     pub per_byte_args: InternalGasPerByte,
@@ -74,6 +129,7 @@ impl WASMCreateArgsGasParameters {
     }
 }
 
+// native_create_wasm_args_in_memory
 #[inline]
 fn native_create_wasm_args_in_memory(
     gas_params: &WASMCreateArgsGasParameters,
@@ -163,6 +219,7 @@ impl WASMExecuteGasParameters {
     }
 }
 
+// native_execute_wasm_function
 #[inline]
 fn native_execute_wasm_function(
     gas_params: &WASMExecuteGasParameters,
@@ -210,7 +267,6 @@ fn native_execute_wasm_function(
                             println!("the calling of the wasm function was failed");
                         }
                     }
-
                 }
                 Err(_) => {
                     print!("get function name failed");
@@ -226,6 +282,85 @@ fn native_execute_wasm_function(
     })
 }
 
+#[derive(Debug, Clone)]
+pub struct WASMReadAddLength {
+    pub base: InternalGas,
+}
+
+impl WASMReadAddLength {
+    pub fn zeros() -> Self {
+        Self { base: 0.into() }
+    }
+}
+
+// native_read_data_length
+#[inline]
+fn native_read_data_length(
+    _gas_params: &WASMReadAddLength,
+    _context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    mut _args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    Ok(NativeResult::Success {
+        cost: InternalGas::new(100),
+        ret_vals: smallvec![Value::u64(9999)],
+    })
+}
+
+#[derive(Debug, Clone)]
+pub struct WASMReadHeapData {
+    pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
+}
+
+impl WASMReadHeapData {
+    pub fn zeros() -> Self {
+        Self {
+            base: 0.into(),
+            per_byte: 0.into(),
+        }
+    }
+}
+
+// native_read_data_from_heap
+#[inline]
+fn native_read_data_from_heap(
+    _gas_params: &WASMReadHeapData,
+    _context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    mut _args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    Ok(NativeResult::Success {
+        cost: InternalGas::new(100),
+        ret_vals: smallvec![Value::u64(9999)],
+    })
+}
+
+#[derive(Debug, Clone)]
+pub struct WASMReleaseInstance {
+    pub base: InternalGas,
+}
+
+impl WASMReleaseInstance {
+    pub fn zeros() -> Self {
+        Self { base: 0.into() }
+    }
+}
+
+// native_release_wasm_instance
+#[inline]
+fn native_release_wasm_instance(
+    _gas_params: &WASMReleaseInstance,
+    _context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    mut _args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    Ok(NativeResult::Success {
+        cost: InternalGas::new(100),
+        ret_vals: smallvec![Value::u64(9999)],
+    })
+}
+
 /***************************************************************************************************
  * module
  **************************************************************************************************/
@@ -233,16 +368,26 @@ fn native_execute_wasm_function(
 #[derive(Debug, Clone)]
 pub struct GasParameters {
     pub create_instance_gas_parameter: WASMCreateInstanceGasParameters,
+    pub create_cbor_value_gas_parameter: WASMCreateCBORValue,
+    pub add_length_with_data: WASMCreateAddLength,
     pub create_args_gas_parameter: WASMCreateArgsGasParameters,
     pub function_execution_gas_parameter: WASMExecuteGasParameters,
+    pub read_data_length_gas_parameter: WASMReadAddLength,
+    pub read_heap_data: WASMReadHeapData,
+    pub release_wasm_instance: WASMReleaseInstance,
 }
 
 impl GasParameters {
     pub fn zeros() -> Self {
         Self {
             create_instance_gas_parameter: WASMCreateInstanceGasParameters::zeros(),
+            create_cbor_value_gas_parameter: WASMCreateCBORValue::zeros(),
+            add_length_with_data: WASMCreateAddLength::zeros(),
             create_args_gas_parameter: WASMCreateArgsGasParameters::zeros(),
             function_execution_gas_parameter: WASMExecuteGasParameters::zeros(),
+            read_data_length_gas_parameter: WASMReadAddLength::zeros(),
+            read_heap_data: WASMReadHeapData::zeros(),
+            release_wasm_instance: WASMReleaseInstance::zeros(),
         }
     }
 }
@@ -257,6 +402,17 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             ),
         ),
         (
+            "native_create_cbor_values",
+            make_native(
+                gas_params.create_cbor_value_gas_parameter,
+                native_create_cbor_values,
+            ),
+        ),
+        (
+            "native_add_length_with_data",
+            make_native(gas_params.add_length_with_data, native_add_length_with_data),
+        ),
+        (
             "native_create_wasm_args_in_memory",
             make_native(
                 gas_params.create_args_gas_parameter,
@@ -268,6 +424,24 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             make_native(
                 gas_params.function_execution_gas_parameter,
                 native_execute_wasm_function,
+            ),
+        ),
+        (
+            "native_read_data_length",
+            make_native(
+                gas_params.read_data_length_gas_parameter,
+                native_read_data_length,
+            ),
+        ),
+        (
+            "native_read_data_from_heap",
+            make_native(gas_params.read_heap_data, native_read_data_from_heap),
+        ),
+        (
+            "native_release_wasm_instance",
+            make_native(
+                gas_params.release_wasm_instance,
+                native_release_wasm_instance,
             ),
         ),
     ];
