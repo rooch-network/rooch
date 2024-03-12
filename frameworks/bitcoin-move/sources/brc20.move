@@ -5,7 +5,6 @@ module bitcoin_move::brc20 {
     use std::option::{Self, Option};
     use std::string::{Self, String};
     use moveos_std::object_id;
-    use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, Object};
     use moveos_std::table::{Self, Table};
     use moveos_std::simple_map::{Self, SimpleMap};
@@ -34,15 +33,15 @@ module bitcoin_move::brc20 {
         coins: Table<String, BRC20Balance>,
     }
 
-    public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer){
+    public(friend) fun genesis_init(_genesis_account: &signer){
         let brc20_store = BRC20Store{
-            coins: context::new_table(ctx),
+            coins: table::new(),
         }; 
-        let obj = context::new_named_object(ctx, brc20_store);
+        let obj = object::new_named_object( brc20_store);
         object::to_shared(obj);
     }
 
-    fun borrow_store(_ctx: &mut Context) : &mut BRC20Store {
+    fun borrow_store() : &mut BRC20Store {
         let brc20_store_object_id = object_id::named_object_id<BRC20Store>();
         let brc20_store_obj = object::borrow_mut_object_shared<BRC20Store>(brc20_store_object_id);
         object::borrow_mut(brc20_store_obj)
@@ -156,9 +155,8 @@ module bitcoin_move::brc20 {
         deploy_op
     }
 
-    fun execute_deploy(ctx: &mut Context, deploy: DeployOp): bool{
-        let balance_table_id = context::fresh_uid(ctx);
-        let brc20_store = borrow_store(ctx);
+    fun execute_deploy(deploy: DeployOp): bool{
+        let brc20_store = borrow_store();
         if(table::contains(&brc20_store.coins, deploy.tick)){
             std::debug::print(&string::utf8(b"brc20 already exists"));
             return false
@@ -174,7 +172,7 @@ module bitcoin_move::brc20 {
         let lim = option::destroy_with_default(string_utils::parse_decimal_option(&deploy.lim, dec), 0u256);
         let max = option::destroy_some(max_opt);
         let coin_info = BRC20CoinInfo{ tick, max, lim, dec , supply: 0u256};
-        let balance_info = BRC20Balance{ info: coin_info, balance:table::new(balance_table_id) };
+        let balance_info = BRC20Balance{ info: coin_info, balance:table::new() };
         table::add(&mut brc20_store.coins, tick, balance_info);
         true
     }
@@ -202,8 +200,8 @@ module bitcoin_move::brc20 {
         mint_op
     }
 
-    fun execute_mint(ctx: &mut Context, mint: MintOp): bool{
-        let brc20_store = borrow_store(ctx);
+    fun execute_mint(mint: MintOp): bool{
+        let brc20_store = borrow_store();
         if(!table::contains(&brc20_store.coins, mint.tick)){
             std::debug::print(&string::utf8(b"brc20 does not exist"));
             return false
@@ -257,10 +255,10 @@ module bitcoin_move::brc20 {
         transfer_op
     }
 
-    fun execute_transfer(ctx: &mut Context, transfer: TransferOp): bool{
+    fun execute_transfer(transfer: TransferOp): bool{
         let from = transfer.from;
         let to = transfer.to;
-        let brc20_store = borrow_store(ctx);
+        let brc20_store = borrow_store();
         if(!table::contains(&brc20_store.coins, transfer.tick)){
             std::debug::print(&string::utf8(b"brc20 does not exist"));
             return false
@@ -286,12 +284,12 @@ module bitcoin_move::brc20 {
         }
     }
 
-    public(friend) fun process_utxo_op(ctx: &mut Context, op: Op) : bool {
+    public(friend) fun process_utxo_op(op: Op) : bool {
         let result = if(is_transfer(&op)){
             let transfer_op_opt = as_transfer(&op);
             if(option::is_some(&transfer_op_opt)){
                 let transfer_op = option::destroy_some(transfer_op_opt);
-                execute_transfer(ctx, transfer_op)
+                execute_transfer(transfer_op)
             }else{
                 std::debug::print(&string::utf8(b"invalid transfer op"));
                 std::debug::print(&op);
@@ -305,7 +303,7 @@ module bitcoin_move::brc20 {
         result
     }
 
-    public(friend) fun process_inscribe_op(ctx: &mut Context, op: Op) :bool {
+    public(friend) fun process_inscribe_op(op: Op) :bool {
         
         let result = if(is_deploy(&op)){
             let deploy_op_opt = as_deploy(&op);
@@ -315,7 +313,7 @@ module bitcoin_move::brc20 {
                 false
             }else{
                 let deploy_op = option::destroy_some(deploy_op_opt);
-                execute_deploy(ctx, deploy_op)
+                execute_deploy(deploy_op)
             }
         }else if(is_mint(&op)){
             let mint_op_opt = as_mint(&op);
@@ -325,7 +323,7 @@ module bitcoin_move::brc20 {
                 false
             }else{
                 let mint_op = option::destroy_some(mint_op_opt);
-                execute_mint(ctx, mint_op)
+                execute_mint(mint_op)
             }
         }else if(is_transfer(&op)){
             let transfer_op_opt = as_transfer(&op);
@@ -335,7 +333,7 @@ module bitcoin_move::brc20 {
                 false
             }else{
                 let transfer_op = option::destroy_some(transfer_op_opt);
-                execute_transfer(ctx, transfer_op)
+                execute_transfer(transfer_op)
             }
         }else{
             std::debug::print(&string::utf8(b"unknown brc20 op"));
@@ -429,9 +427,8 @@ module bitcoin_move::brc20 {
 
     #[test(genesis_account=@0x4)]
     fun test_brc20_roundtrip(genesis_account: &signer){
-        let ctx = moveos_std::context::new_test_context(@rooch_framework);
 
-        genesis_init(&mut ctx, genesis_account);
+        genesis_init(genesis_account);
         
         let deploy_op_json = b"{\"p\":\"brc-20\",\"op\":\"deploy\",\"tick\":\"ordi\",\"max\":\"21000000\",\"lim\":\"1000\"}";
         let deployer = @0x42;
@@ -439,22 +436,22 @@ module bitcoin_move::brc20 {
         let transfer_to = @0x44;
         let op = Op { from: deployer, to: deployer, json_map: json::to_map(deploy_op_json) };
         let deploy_op = option::destroy_some(as_deploy(&op));
-        assert!(execute_deploy(&mut ctx, deploy_op), 1);
+        assert!(execute_deploy(deploy_op), 1);
         drop_op(op);
 
         let mint_op_json = b"{\"p\":\"brc-20\",\"op\":\"mint\",\"tick\":\"ordi\",\"amt\":\"1000\"}";
         let op = Op { from: minter, to: minter, json_map: json::to_map(mint_op_json) };
         let mint_op = option::destroy_some(as_mint(&op));
-        assert!(execute_mint(&mut ctx, mint_op), 2);
+        assert!(execute_mint(mint_op), 2);
         drop_op(op);
         
         let transfer_op_json = b"{\"p\":\"brc-20\",\"op\":\"transfer\",\"tick\":\"ordi\",\"amt\":\"1000\"}";
         let op = Op { from: minter, to: transfer_to, json_map: json::to_map(transfer_op_json) };
         let transfer_op = option::destroy_some(as_transfer(&op));
-        assert!(execute_transfer(&mut ctx, transfer_op), 3);
+        assert!(execute_transfer(transfer_op), 3);
         drop_op(op);
         
-        let brc20_store = borrow_store(&mut ctx);
+        let brc20_store = borrow_store();
         let balance_info = table::borrow(&brc20_store.coins, string::utf8(b"ordi"));
         let coin_info = &balance_info.info;
         assert!(coin_info.supply == 1000000000000000000000u256, 4);
@@ -462,7 +459,7 @@ module bitcoin_move::brc20 {
         assert!(balance1 == 0u256, 5);
         let balance2 = *table::borrow(&balance_info.balance, transfer_to);
         assert!(balance2 == 1000000000000000000000u256, 6);
-        context::drop_test_context(ctx);
+        
 
     }
 }

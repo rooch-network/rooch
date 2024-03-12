@@ -13,7 +13,6 @@ module bitcoin_move::ord {
     use rooch_framework::bitcoin_address::BitcoinAddress;
     use moveos_std::bcs;
     use moveos_std::event;
-    use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, Object};
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::json;
@@ -71,12 +70,12 @@ module bitcoin_move::ord {
         inscriptions: TableVec<InscriptionID>,
     }
 
-    public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer){
-        let inscriptions = context::new_table_vec<InscriptionID>(ctx);
+    public(friend) fun genesis_init(_genesis_account: &signer){
+        let inscriptions = table_vec::new<InscriptionID>();
         let store = InscriptionStore{
             inscriptions: inscriptions,
         };
-        let store_obj = context::new_named_object(ctx, store);
+        let store_obj = object::new_named_object( store);
         object::to_shared(store_obj);
     }
 
@@ -100,7 +99,7 @@ module bitcoin_move::ord {
         }
     }
 
-    fun create_obj(ctx: &mut Context, inscription: Inscription): Object<Inscription> {
+    fun create_obj(inscription: Inscription): Object<Inscription> {
         let id = InscriptionID{
             txid: inscription.txid,
             index: inscription.index,
@@ -109,7 +108,7 @@ module bitcoin_move::ord {
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
         let store = object::borrow_mut(store_obj);
         table_vec::push_back(&mut store.inscriptions, id);
-        context::new_custom_object(ctx, id, inscription)
+        object::new_custom_object(id, inscription)
     }
     
     fun parse_json_body(record: &InscriptionRecord) : SimpleMap<String,String> {
@@ -123,16 +122,16 @@ module bitcoin_move::ord {
         json::to_map(record.body)
     }
 
-    public fun exists_inscription(ctx: &Context, txid: address, index: u32): bool{
+    public fun exists_inscription(txid: address, index: u32): bool{
         let id = InscriptionID{
             txid: txid,
             index: index,
         };
         let object_id = object_id::custom_object_id<InscriptionID,Inscription>(id);
-        context::exists_object<Inscription>(ctx, object_id)
+        object::exists_object_with_type<Inscription>(object_id)
     }
 
-    public fun borrow_inscription(_ctx: &Context, txid: address, index: u32): &Object<Inscription>{
+    public fun borrow_inscription(txid: address, index: u32): &Object<Inscription>{
         let id = InscriptionID{
             txid: txid,
             index: index,
@@ -141,7 +140,7 @@ module bitcoin_move::ord {
         object::borrow_object(object_id)
     }
 
-    public fun spend_utxo(ctx: &mut Context, utxo_obj: &mut Object<UTXO>, tx: &Transaction): vector<SealOut>{
+    public fun spend_utxo(utxo_obj: &mut Object<UTXO>, tx: &Transaction): vector<SealOut>{
         let utxo = object::borrow_mut(utxo_obj);
         let seal_object_ids = utxo::remove_seals<Inscription>(utxo);
         let seal_outs = vector::empty();
@@ -159,11 +158,11 @@ module bitcoin_move::ord {
         let objects_len = vector::length(&seal_object_ids);
         while(j < objects_len){
             let seal_object_id = *vector::borrow(&mut seal_object_ids, j);
-            let (origin_owner, inscription_obj) = context::take_object_extend<Inscription>(ctx, seal_object_id);
+            let (origin_owner, inscription_obj) = object::take_object_extend<Inscription>(seal_object_id);
             let inscription = object::borrow(&inscription_obj); 
             if(brc20::is_brc20(&inscription.json_body)){
                 let op = brc20::new_op(origin_owner, to_address, simple_map::clone(&inscription.json_body));
-                brc20::process_utxo_op(ctx, op);
+                brc20::process_utxo_op(op);
                 //TODO record the execution result
             };
             object::transfer_extend(inscription_obj, to_address);
@@ -171,11 +170,11 @@ module bitcoin_move::ord {
             j = j + 1;
         };
         //Auto create address mapping if not exist
-        bind_multichain_address(ctx, address, bitcoin_address_opt);
+        bind_multichain_address(address, bitcoin_address_opt);
         seal_outs
     }
 
-    public fun process_transaction(ctx: &mut Context, tx: &Transaction): vector<SealOut>{
+    public fun process_transaction(tx: &Transaction): vector<SealOut>{
         let output_seals = vector::empty();
 
         let inscriptions = from_transaction(tx);
@@ -209,24 +208,24 @@ module bitcoin_move::ord {
             let inscription = vector::pop_back(&mut inscriptions);
             //Because the previous output of inscription input is a witness program address, so we simply use the output address as the from address.
             let from = to_address;
-            process_inscribe_protocol(ctx, from, to_address, &inscription);
-            let inscription_obj = create_obj(ctx, inscription);
+            process_inscribe_protocol(from, to_address, &inscription);
+            let inscription_obj = create_obj(inscription);
             let object_id = object::id(&inscription_obj);
 
             object::transfer_extend(inscription_obj, to_address);
             vector::push_back(&mut output_seals, utxo::new_seal_out(output_index, object_id));
             //Auto create address mapping if not exist
-            bind_multichain_address(ctx, to_address, bitcoin_address_opt);
+            bind_multichain_address(to_address, bitcoin_address_opt);
             idx = idx + 1;
         };
         vector::destroy_empty(inscriptions);
         output_seals
     }
 
-    fun process_inscribe_protocol(ctx: &mut Context, from: address, to: address, inscription: &Inscription){
+    fun process_inscribe_protocol(from: address, to: address, inscription: &Inscription){
         if (brc20::is_brc20(&inscription.json_body)){
             let op = brc20::new_op(from, to, simple_map::clone(&inscription.json_body));
-            brc20::process_inscribe_op(ctx, op);
+            brc20::process_inscribe_op(op);
             //TODO record the execution result
         };
     }
@@ -353,14 +352,14 @@ module bitcoin_move::ord {
 
     native fun from_witness(witness: &Witness): vector<InscriptionRecord>;
 
-    public(friend) fun bind_multichain_address(ctx: &mut Context, rooch_address: address, bitcoin_address_opt: Option<BitcoinAddress>) {
+    public(friend) fun bind_multichain_address(rooch_address: address, bitcoin_address_opt: Option<BitcoinAddress>) {
         //Auto create address mapping if not exist
         if(option::is_some(&bitcoin_address_opt)) {
             let bitcoin_address = option::extract(&mut bitcoin_address_opt);
             let maddress = multichain_address::from_bitcoin(bitcoin_address);
-            if (!address_mapping::exists_mapping(ctx, maddress)) {
+            if (!address_mapping::exists_mapping(maddress)) {
                 let bitcoin_move_signer = moveos_std::signer::module_signer<Inscription>();
-                address_mapping::bind_by_system(ctx, &bitcoin_move_signer, rooch_address, maddress);
+                address_mapping::bind_by_system(&bitcoin_move_signer, rooch_address, maddress);
             };
         };
     }
