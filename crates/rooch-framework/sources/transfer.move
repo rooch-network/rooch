@@ -19,7 +19,7 @@ module rooch_framework::transfer {
         to: address,
         amount: u256,
     ) {
-        if(!account::exists_at( to)) {
+        if(!account::exists_at(to)) {
             account_entry::create_account(to);
         };
 
@@ -38,7 +38,7 @@ module rooch_framework::transfer {
     ) {
         let maddress = multichain_address::new(multichain_id, raw_address);
         let to = address_mapping::resolve_or_generate(maddress);
-        if(!account::exists_at( to)) {
+        if(!account::exists_at(to)) {
             account_entry::create_account(to);
             address_mapping::bind_no_check(to, maddress);
         };
@@ -49,7 +49,7 @@ module rooch_framework::transfer {
     /// TODO: Currently, we can not pass the `Object<T>` argument by value, so, we use `ObjectID` instead.
     /// After the `Object<T>` argument can be passed by value, we should change the argument type to `Object<T>`.
     public entry fun transfer_object<T: key + store>(from: &signer, to: address, object_id: ObjectID) {
-        if(!account::exists_at( to)) {
+        if(!account::exists_at(to)) {
             account_entry::create_account(to);
         };
         let obj = object::take_object<T>(from, object_id);

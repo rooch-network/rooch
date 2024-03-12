@@ -65,7 +65,7 @@ module rooch_framework::session_key {
         }
     }
 
-    fun is_expired( session_key: &SessionKey) : bool {
+    fun is_expired(session_key: &SessionKey) : bool {
         let now_seconds = timestamp::now_seconds();
         if (session_key.max_inactive_interval > 0 && session_key.last_active_time + session_key.max_inactive_interval < now_seconds){
             return true
@@ -73,26 +73,26 @@ module rooch_framework::session_key {
         return false
     }
 
-    public fun is_expired_session_key( account_address: address, authentication_key: vector<u8>) : bool {
-        let session_key_option = get_session_key( account_address, authentication_key);
+    public fun is_expired_session_key(account_address: address, authentication_key: vector<u8>) : bool {
+        let session_key_option = get_session_key(account_address, authentication_key);
         if (option::is_none(&session_key_option)){
             return true
         };
 
         let session_key = option::extract(&mut session_key_option);
-        is_expired( &session_key)
+        is_expired(&session_key)
     }
 
-    public fun exists_session_key( account_address: address, authentication_key: vector<u8>) : bool {
-        option::is_some(&get_session_key( account_address, authentication_key))
+    public fun exists_session_key(account_address: address, authentication_key: vector<u8>) : bool {
+        option::is_some(&get_session_key(account_address, authentication_key))
     }
 
     /// Get the session key of the account_address by the authentication key
-    public fun get_session_key( account_address: address, authentication_key: vector<u8>) : Option<SessionKey> {
-        if (!account::exists_resource<SessionKeys>( account_address)){
+    public fun get_session_key(account_address: address, authentication_key: vector<u8>) : Option<SessionKey> {
+        if (!account::exists_resource<SessionKeys>(account_address)){
             return option::none()
         };
-        let session_keys = account::borrow_resource<SessionKeys>( account_address);
+        let session_keys = account::borrow_resource<SessionKeys>(account_address);
         if (!table::contains(&session_keys.keys, authentication_key)){
             return option::none()
         }else{
@@ -104,7 +104,7 @@ module rooch_framework::session_key {
         //Can not create new session key by the other session key
         assert!(!auth_validator::is_validate_via_session_key(), ErrorSessionKeyCreatePermissionDenied);
         let sender_addr = signer::address_of(sender);
-        assert!(!exists_session_key( sender_addr, authentication_key), ErrorSessionKeyAlreadyExists);
+        assert!(!exists_session_key(sender_addr, authentication_key), ErrorSessionKeyAlreadyExists);
         let now_seconds = timestamp::now_seconds();
         let session_key = SessionKey {
             authentication_key: authentication_key,
@@ -113,17 +113,17 @@ module rooch_framework::session_key {
             last_active_time: now_seconds,
             max_inactive_interval: max_inactive_interval,
         };
-        if (!account::exists_resource<SessionKeys>( sender_addr)){
+        if (!account::exists_resource<SessionKeys>(sender_addr)){
             let keys = table::new<vector<u8>, SessionKey>();
-            account::move_resource_to<SessionKeys>( sender, SessionKeys{keys});
+            account::move_resource_to<SessionKeys>(sender, SessionKeys{keys});
         };
 
-        let session_keys = account::borrow_mut_resource<SessionKeys>( sender_addr);
+        let session_keys = account::borrow_mut_resource<SessionKeys>(sender_addr);
         table::add(&mut session_keys.keys, authentication_key, session_key);
     }
 
     public entry fun create_session_key_entry(sender: &signer, authentication_key: vector<u8>, scope_module_address: address, scope_module_name: std::ascii::String, scope_function_name: std::ascii::String, max_inactive_interval: u64) {
-        create_session_key( sender, authentication_key, vector::singleton(SessionScope{
+        create_session_key(sender, authentication_key, vector::singleton(SessionScope{
             module_address: scope_module_address,
             module_name: scope_module_name,
             function_name: scope_function_name,
@@ -161,15 +161,15 @@ module rooch_framework::session_key {
             idx = idx + 1;
         };
 
-        create_session_key( sender, authentication_key, scopes, max_inactive_interval);
+        create_session_key(sender, authentication_key, scopes, max_inactive_interval);
     }
 
     /// Validate the current tx via the session key
     /// If the authentication key is not a session key, return option::none
     /// If the session key is expired or invalid, abort the tx, otherwise return option::some(authentication key)
-    public(friend) fun validate( auth_validator_id: u64, authenticator_payload: vector<u8>) : Option<vector<u8>> {
+    public(friend) fun validate(auth_validator_id: u64, authenticator_payload: vector<u8>) : Option<vector<u8>> {
         let sender_addr = tx_context::sender();
-        if (!account::exists_resource<SessionKeys>( sender_addr)){
+        if (!account::exists_resource<SessionKeys>(sender_addr)){
             return option::none()
         };
         // We only support native validator for SessionKey now
@@ -179,21 +179,21 @@ module rooch_framework::session_key {
 
         let auth_key = native_validator::get_authentication_key_from_authenticator_payload(&authenticator_payload);
         
-        let session_key_option = get_session_key( sender_addr, auth_key);
+        let session_key_option = get_session_key(sender_addr, auth_key);
         if (option::is_none(&session_key_option)){
             return option::none()
         };
         let session_key = option::extract(&mut session_key_option);
-        assert!(!is_expired( &session_key), ErrorSessionIsExpired);
+        assert!(!is_expired(&session_key), ErrorSessionIsExpired);
         
-        assert!(in_session_scope( &session_key), ErrorFunctionCallBeyondSessionScope);
+        assert!(in_session_scope(&session_key), ErrorFunctionCallBeyondSessionScope);
 
         native_validator::validate_signature(&authenticator_payload, &tx_context::tx_hash());
         option::some(auth_key)
     }
 
     /// Check the current tx is in the session scope or not
-    fun in_session_scope( session_key: &SessionKey): bool{
+    fun in_session_scope(session_key: &SessionKey): bool{
         let idx = 0;
         let tx_meta = tx_context::tx_meta();
         
@@ -236,7 +236,7 @@ module rooch_framework::session_key {
         let sender_addr = tx_context::sender();
         let now_seconds = timestamp::now_seconds();
         assert!(account::exists_resource<SessionKeys>(sender_addr), ErrorSessionKeyIsInvalid);
-        let session_keys = account::borrow_mut_resource<SessionKeys>( sender_addr);
+        let session_keys = account::borrow_mut_resource<SessionKeys>(sender_addr);
         assert!(table::contains(&session_keys.keys, authentication_key), ErrorSessionKeyIsInvalid);
         let session_key = table::borrow_mut(&mut session_keys.keys, authentication_key);
         session_key.last_active_time = now_seconds;
@@ -249,14 +249,14 @@ module rooch_framework::session_key {
 
     public fun remove_session_key(sender: &signer, authentication_key: vector<u8>) {
         let sender_addr = signer::address_of(sender);
-        assert!(account::exists_resource<SessionKeys>( sender_addr), ErrorSessionKeyIsInvalid);
-        let session_keys = account::borrow_mut_resource<SessionKeys>( sender_addr);
+        assert!(account::exists_resource<SessionKeys>(sender_addr), ErrorSessionKeyIsInvalid);
+        let session_keys = account::borrow_mut_resource<SessionKeys>(sender_addr);
         assert!(table::contains(&session_keys.keys, authentication_key), ErrorSessionKeyIsInvalid);
         table::remove(&mut session_keys.keys, authentication_key);
     }
 
     public entry fun remove_session_key_entry(sender: &signer, authentication_key: vector<u8>) {
-        remove_session_key( sender, authentication_key);
+        remove_session_key(sender, authentication_key);
     }
 
     #[test]

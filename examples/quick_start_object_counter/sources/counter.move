@@ -20,7 +20,7 @@ module quick_start_object_counter::quick_start_object_counter {
 
     fun create_shared() {
         let counter = Counter { count_value: 0 };
-        let counter_obj = object::new_named_object( counter);
+        let counter_obj = object::new_named_object(counter);
         object::to_shared(counter_obj);
     }
 

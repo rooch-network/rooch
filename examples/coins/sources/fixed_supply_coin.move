@@ -36,7 +36,7 @@ module coins::fixed_supply_coin {
         object::to_frozen(coin_info_obj);
         let coin_store_obj = coin_store::create_coin_store<FSC>();
         coin_store::deposit(&mut coin_store_obj, coin);
-        let treasury_obj = object::new_named_object( Treasury { coin_store: coin_store_obj });
+        let treasury_obj = object::new_named_object(Treasury { coin_store: coin_store_obj });
         // Make the treasury object to shared, so anyone can get mutable Treasury object
         object::to_shared(treasury_obj);
     }

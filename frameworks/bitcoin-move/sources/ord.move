@@ -75,7 +75,7 @@ module bitcoin_move::ord {
         let store = InscriptionStore{
             inscriptions: inscriptions,
         };
-        let store_obj = object::new_named_object( store);
+        let store_obj = object::new_named_object(store);
         object::to_shared(store_obj);
     }
 

@@ -31,7 +31,7 @@ module rooch_framework::timestamp {
 
     public(friend) fun genesis_init(_genesis_account: &signer, initial_time_milliseconds: u64) {
         let timestamp = Timestamp { milliseconds: initial_time_milliseconds };
-        let obj = object::new_named_object( timestamp);
+        let obj = object::new_named_object(timestamp);
         object::transfer_extend(obj, @rooch_framework);
     }
 

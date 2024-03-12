@@ -512,8 +512,8 @@ module moveos_std::account {
       });
 
       let ref_test = account_borrow_resource<Test>(obj_mut);
-      assert!( ref_test.version == 1, 1);
-      assert!( ref_test.addr == sender_addr, 2);
+      assert!(ref_test.version == 1, 1);
+      assert!(ref_test.addr == sender_addr, 2);
       let obj = take_object<Account>(&sender, account_object_id(sender_addr));
       Self::drop_account_object(obj);
    }
@@ -529,13 +529,13 @@ module moveos_std::account {
       });
       {
          let ref_test = account_borrow_mut_resource<Test>(obj_mut);
-         assert!( ref_test.version == 1, 1);
-         assert!( ref_test.addr == sender_addr, 2);
+         assert!(ref_test.version == 1, 1);
+         assert!(ref_test.addr == sender_addr, 2);
          ref_test.version = 2;
       };
       {
          let ref_test = account_borrow_resource<Test>(obj_mut);
-         assert!( ref_test.version == 2, 3);
+         assert!(ref_test.version == 2, 3);
       };
       let obj = take_object<Account>(&sender, account_object_id(sender_addr));
       Self::drop_account_object(obj);

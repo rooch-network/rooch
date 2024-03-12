@@ -31,7 +31,7 @@ module coins::private_coin {
         );
         object::transfer(coin_info_obj, @coins);
         let coin_store = coin_store::create_coin_store_extend<PRC>();
-        let treasury_obj = object::new_named_object( Treasury { coin_store });
+        let treasury_obj = object::new_named_object(Treasury { coin_store });
         object::transfer_extend(treasury_obj, @coins);
     }
 

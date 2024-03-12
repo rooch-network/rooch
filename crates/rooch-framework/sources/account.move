@@ -17,7 +17,7 @@ module rooch_framework::account {
    public entry fun create_account_entry(new_address: address){
       // If account already exists, do nothing
       // Because if the new address is the same as the sender, the account must already created in the `transaction_validator::pre_execute` function
-      if(!account::exists_at( new_address)){
+      if(!account::exists_at(new_address)){
          create_account(new_address);
       };
    }

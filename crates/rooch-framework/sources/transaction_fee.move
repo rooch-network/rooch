@@ -19,7 +19,7 @@ module rooch_framework::transaction_fee {
 
     public(friend) fun genesis_init(_genesis_account: &signer)  {
         let fee_store = coin_store::create_coin_store<GasCoin>();
-        let obj = object::new_named_object( TransactionFeePool{
+        let obj = object::new_named_object(TransactionFeePool{
             fee: fee_store,
         });
         object::transfer_extend(obj, @rooch_framework);

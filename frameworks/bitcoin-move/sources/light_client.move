@@ -61,14 +61,14 @@ module bitcoin_move::light_client{
             txs: table::new(),
             tx_ids: table_vec::new(),
         };
-        let obj = object::new_named_object( btc_block_store);
+        let obj = object::new_named_object(btc_block_store);
         object::to_shared(obj);
 
         let btc_utxo_store = BitcoinUTXOStore{
             next_tx_index: 0,
             utxo: table::new(),
         };
-        let obj = object::new_named_object( btc_utxo_store);
+        let obj = object::new_named_object(btc_utxo_store);
         object::to_shared(obj);
     }
 

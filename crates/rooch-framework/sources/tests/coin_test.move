@@ -101,7 +101,7 @@ module rooch_framework::coin_test{
     ) {
         rooch_framework::genesis::init_for_test();
 
-        let coin_info_obj = register_fake_coin( 9);
+        let coin_info_obj = register_fake_coin(9);
         let coins_minted = mint_extend<FakeCoin>(&mut coin_info_obj, 100);
         destroy_zero(coins_minted);
         object::transfer(coin_info_obj, @rooch_framework);
@@ -112,7 +112,7 @@ module rooch_framework::coin_test{
     #[test]
     fun test_test_extract() {
         rooch_framework::genesis::init_for_test();
-        let coin_info_obj = register_fake_coin( 9);
+        let coin_info_obj = register_fake_coin(9);
         let coins_minted = mint_extend<FakeCoin>(&mut coin_info_obj, 100);
 
         let extracted = extract(&mut coins_minted, 25);

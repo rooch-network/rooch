@@ -21,6 +21,6 @@ script {
     use moveos_std::account;
     
     fun main(_sender: signer) {
-        assert!(account::exists_at( @0x42), 0);
+        assert!(account::exists_at(@0x42), 0);
     }
 }

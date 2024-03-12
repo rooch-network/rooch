@@ -29,7 +29,7 @@ module rooch_framework::address_mapping{
     public(friend) fun genesis_init(_genesis_account: &signer) {
         let mapping = table::new<MultiChainAddress, address>();
         let reverse_mapping = table::new<address, vector<MultiChainAddress>>();
-        let obj = object::new_named_object( AddressMapping{
+        let obj = object::new_named_object(AddressMapping{
             mapping,
             reverse_mapping
         });

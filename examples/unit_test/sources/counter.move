@@ -21,11 +21,11 @@ module unit_test::unit_test {
         let account_addr = signer::address_of(account);
         account::move_resource_to(account, Counter { count_value: 0 });
 
-        let counter = account::borrow_resource<Counter>( account_addr);
+        let counter = account::borrow_resource<Counter>(account_addr);
         assert!(counter.count_value == 0, 999);
         // assert!(counter.count_value == 2, 999);
         increase(account);
-        let counter = account::borrow_resource<Counter>( account_addr);
+        let counter = account::borrow_resource<Counter>(account_addr);
         assert!(counter.count_value == 1, 1000);
     }
 }

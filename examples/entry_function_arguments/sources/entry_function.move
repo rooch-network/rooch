@@ -8,7 +8,7 @@ module rooch_examples::entry_function {
    
 
    fun init() {
-      let obj = object::new_named_object( TestStruct{});
+      let obj = object::new_named_object(TestStruct{});
       object::to_shared(obj);      
    }
 

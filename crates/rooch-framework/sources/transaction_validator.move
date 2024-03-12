@@ -86,7 +86,7 @@ module rooch_framework::transaction_validator {
 
         // We skip the gas check for the new account, for avoid break the current testcase
         // TODO remove the skip afater we provide the gas faucet and update all testcase
-        if(account::exists_at( sender)){
+        if(account::exists_at(sender)){
             let gas_balance = gas_coin::balance(sender);
             assert!(
                 gas_balance >= gas,
@@ -123,7 +123,7 @@ module rooch_framework::transaction_validator {
     ) {
         let sender = tx_context::sender();
         //Auto create account if not exist
-        if (!account::exists_at( sender)) {
+        if (!account::exists_at(sender)) {
             account_entry::create_account(sender);
             // Auto get gas coin from faucet if not enough
             // TODO remove this after we provide the gas faucet

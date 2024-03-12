@@ -52,10 +52,10 @@ module rooch_framework::onchain_config {
             framework_version: 0,
             sequencer,
         };
-        let obj = object::new_named_object( config);
+        let obj = object::new_named_object(config);
         object::transfer_extend(obj, @rooch_framework);
 
-        let obj = object::new_named_object( gas_schedule);
+        let obj = object::new_named_object(gas_schedule);
         object::transfer_extend(obj, @rooch_framework);
     }
 
@@ -99,7 +99,7 @@ module rooch_framework::onchain_config {
         let system = moveos_std::signer::module_signer<GasScheduleUpdated>();
         tx_context::add_attribute_via_system(&system, GasScheduleUpdated {last_updated: 1});
 
-        let obj = object::new_named_object( gas_schedule);
+        let obj = object::new_named_object(gas_schedule);
         object::transfer_extend(obj, @rooch_framework);
     }
 

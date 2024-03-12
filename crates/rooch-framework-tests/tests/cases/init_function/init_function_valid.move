@@ -11,7 +11,7 @@ module creator::test {
 //# publish
 module creator::test_signer {
 
-    fun init( _ : signer){
+    fun init(_ : signer){
         
     }
 }
@@ -19,7 +19,7 @@ module creator::test_signer {
 //# publish
 module creator::test_ref_signer {
 
-    fun init( _ : &signer){
+    fun init(_ : &signer){
         
     }
 }

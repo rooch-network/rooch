@@ -43,18 +43,18 @@ module rooch_framework::account_coin_store_test{
         let destination_addr = signer::address_of(&destination);
         
 
-        let coin_info_obj = register_fake_coin( 9);
+        let coin_info_obj = register_fake_coin(9);
 
         account_entry::create_account_for_testing(signer::address_of(&destination));
 
         let coins_minted = mint_extend<FakeCoin>(&mut coin_info_obj, 100);
-        deposit( source_addr, coins_minted);
+        deposit(source_addr, coins_minted);
 
-        let coin = withdraw<FakeCoin>( &source, 10);
+        let coin = withdraw<FakeCoin>(&source, 10);
         assert!(value(&coin) == 10, 7);
         deposit(destination_addr, coin);
 
-        transfer<FakeCoin>( &source, destination_addr, 50);
+        transfer<FakeCoin>(&source, destination_addr, 50);
 
         assert!(balance<FakeCoin>(source_addr) == 40, 4);
         assert!(balance<FakeCoin>(destination_addr) == 60, 5);
@@ -71,14 +71,14 @@ module rooch_framework::account_coin_store_test{
         rooch_framework::genesis::init_for_test();
         let source_addr = signer::address_of(&source);
 
-        let coin_info_obj = register_fake_coin( 9);
+        let coin_info_obj = register_fake_coin(9);
 
         let coins_minted = mint_extend<FakeCoin>(&mut coin_info_obj, 100);
-        deposit( source_addr, coins_minted);
+        deposit(source_addr, coins_minted);
         assert!(balance<FakeCoin>(source_addr) == 100, 0);
         assert!(supply<FakeCoin>(object::borrow(&coin_info_obj)) == 100, 1);
 
-        let coin = withdraw_extend<FakeCoin>( source_addr, 10);
+        let coin = withdraw_extend<FakeCoin>(source_addr, 10);
         burn_extend<FakeCoin>(&mut coin_info_obj, coin);
         assert!(balance<FakeCoin>(source_addr) == 90, 2);
         assert!(supply<FakeCoin>(object::borrow(&coin_info_obj)) == 90, 3);
@@ -168,12 +168,12 @@ module rooch_framework::account_coin_store_test{
         let destination_addr = signer::address_of(&destination);
         
 
-        let coin_info_obj = register_fake_coin( 9);
+        let coin_info_obj = register_fake_coin(9);
         assert!(supply<FakeCoin>(object::borrow(&coin_info_obj)) == 0, 0);
 
         let coins_minted = mint_extend<FakeCoin>(&mut coin_info_obj, 100);
-        deposit( source_addr, coins_minted);
-        transfer<FakeCoin>( &source, destination_addr, 50);
+        deposit(source_addr, coins_minted);
+        transfer<FakeCoin>(&source, destination_addr, 50);
 
         object::transfer(coin_info_obj, @rooch_framework);
         

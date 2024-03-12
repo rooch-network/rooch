@@ -37,7 +37,7 @@ module bitcoin_move::brc20 {
         let brc20_store = BRC20Store{
             coins: table::new(),
         }; 
-        let obj = object::new_named_object( brc20_store);
+        let obj = object::new_named_object(brc20_store);
         object::to_shared(obj);
     }
 
