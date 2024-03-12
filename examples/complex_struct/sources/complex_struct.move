@@ -3,15 +3,13 @@
 
 module rooch_examples::complex_struct {
 
-   use moveos_std::context::{Self, Context};
    use moveos_std::object::{Self, Object};
-   use moveos_std::object_id::ObjectID;
    use moveos_std::bcs;
    use moveos_std::signer;
    use std::vector;
    use moveos_std::account;
 
-   struct SimpleStruct has store, copy, drop {
+   struct SimpleStruct has key, store, copy, drop {
       value: u64,
    }
 
@@ -23,7 +21,7 @@ module rooch_examples::complex_struct {
       field_u128: u128,
       field_u256: u256,
       field_address: address,
-      field_object_id: ObjectID,
+      field_object: Object<SimpleStruct>,
       field_ascii_str: std::ascii::String,
       field_str: std::string::String,
       field_struct: SimpleStruct,
@@ -35,7 +33,7 @@ module rooch_examples::complex_struct {
       field_vec_struct: vector<SimpleStruct>,
    }
 
-   fun new_complex_struct(object_id: ObjectID): ComplexStruct{
+   fun new_complex_struct(simple_object: Object<SimpleStruct>): ComplexStruct{
 
       let simple_struct = SimpleStruct{ value: 42};
 
@@ -69,7 +67,7 @@ module rooch_examples::complex_struct {
          field_u128: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF,
          field_u256: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF,
          field_address: @rooch_examples,
-         field_object_id: object_id,
+         field_object: simple_object,
          field_ascii_str: std::ascii::string(b"hello"),
          field_str: utf8_str,
          field_struct: simple_struct,
@@ -91,7 +89,7 @@ module rooch_examples::complex_struct {
          field_u128: _,
          field_u256: _,
          field_address: _,
-         field_object_id: _,
+         field_object,
          field_ascii_str: _,
          field_str: _,
          field_struct: _,
@@ -102,21 +100,23 @@ module rooch_examples::complex_struct {
          field_vec_str: _,
          field_vec_struct: _,
       } = s;
+      let SimpleStruct{value:_} = object::remove(field_object);
    } 
 
    //init when module publish
-   fun init(ctx: &mut Context) {
+   fun init() {
       let module_signer = signer::module_signer<ComplexStruct>();
-      let object_id = context::fresh_object_id(ctx);
-      let s = new_complex_struct(object_id);
-      let complex_object = context::new_object(ctx, s);
+      let simple_object1 = object::new(SimpleStruct{ value: 42});
+      let s = new_complex_struct(simple_object1);
+      let complex_object = object::new(s);
       object::transfer(complex_object, @rooch_examples);
-      let s2 = new_complex_struct(object_id);
-      account::move_resource_to(ctx, &module_signer, s2);
+      let simple_object2 = object::new(SimpleStruct{ value: 42});
+      let s2 = new_complex_struct(simple_object2);
+      account::move_resource_to(&module_signer, s2);
    }
 
-   public fun value(ctx: &Context): &ComplexStruct {
-      account::borrow_resource<ComplexStruct>(ctx,@rooch_examples)
+   public fun value(): &ComplexStruct {
+      account::borrow_resource<ComplexStruct>(@rooch_examples)
    }
 
    public fun value_of_object(obj: &Object<ComplexStruct>) : &ComplexStruct {
