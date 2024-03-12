@@ -4,7 +4,7 @@
 module rooch_framework::transaction_fee {
 
     use moveos_std::object_id;
-    use moveos_std::context::{Self, Context};
+    
     use moveos_std::object::{Self, Object};
     use rooch_framework::coin_store::{Self, CoinStore};
     use rooch_framework::coin::Coin;
@@ -17,25 +17,25 @@ module rooch_framework::transaction_fee {
         fee: Object<CoinStore<GasCoin>>,
     }
 
-    public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer)  {
-        let fee_store = coin_store::create_coin_store<GasCoin>(ctx);
-        let obj = context::new_named_object(ctx, TransactionFeePool{
+    public(friend) fun genesis_init(_genesis_account: &signer)  {
+        let fee_store = coin_store::create_coin_store<GasCoin>();
+        let obj = object::new_named_object( TransactionFeePool{
             fee: fee_store,
         });
         object::transfer_extend(obj, @rooch_framework);
     }
 
     /// Returns the gas factor of gas.
-    public fun get_gas_factor(_ctx: &Context): u64 {
+    public fun get_gas_factor(): u64 {
         //TODO we should provide a algorithm to cordanate the gas factor based on the network throughput
         return 1
     }
 
-    public fun calculate_gas(ctx: &Context, gas_amount: u64): u256{
-        (gas_amount as u256) * (get_gas_factor(ctx) as u256)
+    public fun calculate_gas(gas_amount: u64): u256{
+        (gas_amount as u256) * (get_gas_factor() as u256)
     }
 
-    public(friend) fun deposit_fee(_ctx: &mut Context, gas_coin: Coin<GasCoin>) {
+    public(friend) fun deposit_fee(gas_coin: Coin<GasCoin>) {
         let object_id = object_id::named_object_id<TransactionFeePool>();
         let pool_object = object::borrow_mut_object_extend<TransactionFeePool>(object_id);
         let pool = object::borrow_mut(pool_object);

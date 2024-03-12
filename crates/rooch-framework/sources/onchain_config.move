@@ -6,7 +6,7 @@ module rooch_framework::onchain_config {
     use moveos_std::object_id;
     use std::string::String;
     use moveos_std::bcs;
-    use moveos_std::context::{Self, Context};
+    use moveos_std::tx_context;
     use moveos_std::object;
     use std::vector;
     use moveos_std::signer;
@@ -38,7 +38,7 @@ module rooch_framework::onchain_config {
         sequencer: address,
     }
 
-    public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer, sequencer: address, gas_schedule_blob: vector<u8>){
+    public(friend) fun genesis_init(_genesis_account: &signer, sequencer: address, gas_schedule_blob: vector<u8>){
         let gas_schedule = GasSchedule {
             feature_version: 0,
             entries: vector::empty<GasEntry>()
@@ -52,41 +52,41 @@ module rooch_framework::onchain_config {
             framework_version: 0,
             sequencer,
         };
-        let obj = context::new_named_object(ctx, config);
+        let obj = object::new_named_object( config);
         object::transfer_extend(obj, @rooch_framework);
 
-        let obj = context::new_named_object(ctx, gas_schedule);
+        let obj = object::new_named_object( gas_schedule);
         object::transfer_extend(obj, @rooch_framework);
     }
 
-    public fun sequencer(ctx: &Context): address {
-        onchain_config(ctx).sequencer
+    public fun sequencer(): address {
+        onchain_config().sequencer
     }
 
-    public(friend) fun update_framework_version(ctx: &mut Context) {
-        let config = onchain_config_mut(ctx);
+    public(friend) fun update_framework_version() {
+        let config = onchain_config_mut();
         config.framework_version = config.framework_version + 1;
     }
 
-    public fun framework_version(ctx: &Context): u64 {
-        onchain_config(ctx).framework_version
+    public fun framework_version(): u64 {
+        onchain_config().framework_version
     }
 
-    fun onchain_config_mut(_ctx: &mut Context): &mut OnchainConfig {
+    fun onchain_config_mut(): &mut OnchainConfig {
         let object_id = object_id::named_object_id<OnchainConfig>();
         let obj = object::borrow_mut_object_extend<OnchainConfig>(object_id);
         object::borrow_mut(obj)
     }
 
-    public fun onchain_config(_ctx: &Context): &OnchainConfig {
+    public fun onchain_config(): &OnchainConfig {
         let object_id = object_id::named_object_id<OnchainConfig>();
         let obj = object::borrow_object<OnchainConfig>(object_id);
         object::borrow(obj)
     }
 
-    entry fun update_onchain_gas_schedule(ctx: &mut Context, account: &signer, gas_schedule_blob: vector<u8>) {
+    entry fun update_onchain_gas_schedule(account: &signer, gas_schedule_blob: vector<u8>) {
         let sender_address = signer::address_of(account);
-        assert!(sender_address == Self::sequencer(ctx), ErrorNotSequencer);
+        assert!(sender_address == Self::sequencer(), ErrorNotSequencer);
 
         let gas_schedule = GasSchedule {
             feature_version: 0,
@@ -96,14 +96,14 @@ module rooch_framework::onchain_config {
         if (vector::length(&gas_schedule_blob) > 0) {
             gas_schedule = bcs::from_bytes<GasSchedule>(gas_schedule_blob);
         };
+        let system = moveos_std::signer::module_signer<GasScheduleUpdated>();
+        tx_context::add_attribute_via_system(&system, GasScheduleUpdated {last_updated: 1});
 
-        context::add(ctx, GasScheduleUpdated {last_updated: 1});
-
-        let obj = context::new_named_object(ctx, gas_schedule);
+        let obj = object::new_named_object( gas_schedule);
         object::transfer_extend(obj, @rooch_framework);
     }
 
-    public fun onchain_gas_schedule(_ctx: &Context): &GasSchedule {
+    public fun onchain_gas_schedule(): &GasSchedule {
         let object_id = object_id::named_object_id<GasSchedule>();
         let obj = object::borrow_object<GasSchedule>(object_id);
         object::borrow(obj)

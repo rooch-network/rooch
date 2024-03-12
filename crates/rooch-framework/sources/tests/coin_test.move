@@ -5,7 +5,7 @@
 /// This test module is used to test the coin logic in coin and account module.
 module rooch_framework::coin_test{
     use std::string;
-    use moveos_std::context::{Context};
+    
     use moveos_std::object::{Self, Object};
     use rooch_framework::coin;
     use rooch_framework::coin::{register_extend,
@@ -18,11 +18,10 @@ module rooch_framework::coin_test{
 
     #[test_only]
     fun register_fake_coin(
-        ctx: &mut Context,
+        
         decimals: u8,
     ) : Object<coin::CoinInfo<FakeCoin>> {
         coin::register_extend<FakeCoin>(
-            ctx,
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
             decimals,
@@ -32,14 +31,14 @@ module rooch_framework::coin_test{
     #[test]
     fun test_end_to_end(
     ) {
-        let source_ctx = rooch_framework::genesis::init_for_test();
+        rooch_framework::genesis::init_for_test();
 
         let name = string::utf8(b"Fake coin");
         let symbol = string::utf8(b"FCD");
         let decimals = 9u8;
 
         let coin_info_obj = register_extend<FakeCoin>(
-            &mut source_ctx,
+            
             name,
             symbol,
             decimals,
@@ -70,16 +69,16 @@ module rooch_framework::coin_test{
 
         assert!(supply<FakeCoin>(object::borrow(&coin_info_obj)) == 0, 7);
         object::transfer(coin_info_obj, @rooch_framework);
-        moveos_std::context::drop_test_context(source_ctx);
+        
     }
 
     #[test]
     #[expected_failure(abort_code = 2, location = rooch_framework::coin)]
     public fun fail_register() {
-        let source_ctx = rooch_framework::genesis::init_for_test();
+        rooch_framework::genesis::init_for_test();
 
         let coin_info_obj = register_extend<FakeCoin>(
-            &mut source_ctx,
+            
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
             9,
@@ -87,33 +86,33 @@ module rooch_framework::coin_test{
         object::transfer(coin_info_obj, @rooch_framework);
 
         let coin_info_obj = register_extend<FakeCoin>(
-            &mut source_ctx,
+            
             string::utf8(b"Fake coin"),
             string::utf8(b"FCD"),
             9,
         );
         object::transfer(coin_info_obj, @rooch_framework);
-        moveos_std::context::drop_test_context(source_ctx);
+        
     }
 
     #[test]
     #[expected_failure(abort_code = 4, location = rooch_framework::coin)]
     public fun test_destroy_non_zero(
     ) {
-        let source_ctx = rooch_framework::genesis::init_for_test();
+        rooch_framework::genesis::init_for_test();
 
-        let coin_info_obj = register_fake_coin(&mut source_ctx, 9);
+        let coin_info_obj = register_fake_coin( 9);
         let coins_minted = mint_extend<FakeCoin>(&mut coin_info_obj, 100);
         destroy_zero(coins_minted);
         object::transfer(coin_info_obj, @rooch_framework);
-        moveos_std::context::drop_test_context(source_ctx);
+        
     }
 
 
     #[test]
     fun test_test_extract() {
-        let source_ctx = rooch_framework::genesis::init_for_test();
-        let coin_info_obj = register_fake_coin(&mut source_ctx, 9);
+        rooch_framework::genesis::init_for_test();
+        let coin_info_obj = register_fake_coin( 9);
         let coins_minted = mint_extend<FakeCoin>(&mut coin_info_obj, 100);
 
         let extracted = extract(&mut coins_minted, 25);
@@ -123,19 +122,19 @@ module rooch_framework::coin_test{
         burn_extend(&mut coin_info_obj, coins_minted);
         burn_extend(&mut coin_info_obj, extracted);
         object::transfer(coin_info_obj, @rooch_framework);
-        moveos_std::context::drop_test_context(source_ctx);
+        
     }
 
 
     #[test]
     public fun test_is_registered() {
-        let ctx = rooch_framework::genesis::init_for_test();
-        assert!(!is_registered<FakeCoin>(&ctx), 0);
+        rooch_framework::genesis::init_for_test();
+        assert!(!is_registered<FakeCoin>(), 0);
 
-        let coin_info_obj = register_fake_coin(&mut ctx, 9);
+        let coin_info_obj = register_fake_coin(9);
         object::transfer(coin_info_obj, @rooch_framework);
-        assert!(is_registered<FakeCoin>(&ctx), 1);
-        moveos_std::context::drop_test_context(ctx);
+        assert!(is_registered<FakeCoin>(), 1);
+        
     }
 
     #[test]

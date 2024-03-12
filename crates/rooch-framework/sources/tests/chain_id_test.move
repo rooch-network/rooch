@@ -7,8 +7,8 @@ module rooch_framework::chain_id_test{
     
     #[test]
     fun test_get_chain_id(){
-        let ctx = rooch_framework::genesis::init_for_test();
-        let _id = chain_id::chain_id(&ctx);
-        moveos_std::context::drop_test_context(ctx);
+        rooch_framework::genesis::init_for_test();
+        let _id = chain_id::chain_id();
+        
     }
 }

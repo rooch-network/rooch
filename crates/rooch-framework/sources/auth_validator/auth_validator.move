@@ -3,12 +3,12 @@
 
 /// This module contains the error code for auth_validator module
 /// The auth_validator implementation should contain the following functions
-/// public fun validate(ctx: &Context, authenticator_payload: vector<u8>)
-/// fun pre_execute(ctx: &mut Context)
-/// fun post_execute(ctx: &mut Context)
+/// public fun validate(authenticator_payload: vector<u8>)
+/// fun pre_execute()
+/// fun post_execute()
 module rooch_framework::auth_validator {
     use std::option::{Self, Option};
-    use moveos_std::context::{Self, Context};
+    use moveos_std::tx_context;
 
     friend rooch_framework::auth_validator_registry;
     friend rooch_framework::transaction_validator;
@@ -82,22 +82,22 @@ module rooch_framework::auth_validator {
     }
 
     /// Get the TxValidateResult from the TxContext, Only can be called after the transaction is validated
-    public fun get_validate_result_from_ctx(ctx: &Context): TxValidateResult {
-        let validate_result_opt = context::get<TxValidateResult>(ctx);
+    public fun get_validate_result_from_ctx(): TxValidateResult {
+        let validate_result_opt = tx_context::get_attribute<TxValidateResult>();
         assert!(option::is_some(&validate_result_opt), ErrorMustExecuteAfterValidate);
         option::extract(&mut validate_result_opt)
     }
 
     /// Get the auth validator's id from the TxValidateResult in the TxContext
-    public fun get_validator_id_from_ctx(ctx: &Context): u64 {
-        let validate_result = get_validate_result_from_ctx(ctx);
+    public fun get_validator_id_from_ctx(): u64 {
+        let validate_result = get_validate_result_from_ctx();
         validate_result.auth_validator_id
     }
 
     /// Get the session key from the TxValidateResult in the TxContext
     /// If the TxValidateResult is None or SessionKey is None, return None
-    public fun get_session_key_from_ctx_option(ctx: &Context): Option<vector<u8>> {
-        let validate_result_opt = context::get<TxValidateResult>(ctx);
+    public fun get_session_key_from_ctx_option(): Option<vector<u8>> {
+        let validate_result_opt = tx_context::get_attribute<TxValidateResult>();
         if (option::is_some(&validate_result_opt)) {
             let validate_result = option::extract(&mut validate_result_opt);
             validate_result.session_key 
@@ -107,14 +107,14 @@ module rooch_framework::auth_validator {
     }
 
     /// The current tx is validate via the session key or not
-    public fun is_validate_via_session_key(ctx: &Context): bool {
-        option::is_some(&get_session_key_from_ctx_option(ctx))
+    public fun is_validate_via_session_key(): bool {
+        option::is_some(&get_session_key_from_ctx_option())
     }
 
     /// Get the session key from the TxValidateResult in the TxContext
     /// Only can be called after the transaction is validated
-    public fun get_session_key_from_ctx(ctx: &Context): vector<u8> {
-        assert!(is_validate_via_session_key(ctx), ErrorMustExecuteAfterValidate);
-        option::extract(&mut get_session_key_from_ctx_option(ctx))
+    public fun get_session_key_from_ctx(): vector<u8> {
+        assert!(is_validate_via_session_key(), ErrorMustExecuteAfterValidate);
+        option::extract(&mut get_session_key_from_ctx_option())
     }
 }

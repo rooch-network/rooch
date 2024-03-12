@@ -4,13 +4,12 @@
 /// This module is a empty module that does nothing
 /// It is used to test or demo some use cases
 module rooch_framework::empty{
-    use moveos_std::context::{Self, Context};
     use moveos_std::object;
 
     struct Empty has key{}
 
-    fun init(ctx: &mut Context){
-        let obj = context::new_named_object(ctx, Empty{});
+    fun init(_sender: &signer){
+        let obj = object::new_named_object(Empty{});
         object::to_shared(obj);        
     }
     

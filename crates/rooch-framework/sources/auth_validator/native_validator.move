@@ -7,7 +7,7 @@ module rooch_framework::native_validator {
     use std::vector;
     use std::option;
     use std::signer;
-    use moveos_std::context::{Self, Context};
+    use moveos_std::tx_context; 
     use rooch_framework::hash;
     use rooch_framework::account_authentication;
     use rooch_framework::ed25519;
@@ -26,7 +26,7 @@ module rooch_framework::native_validator {
     }
 
     public entry fun rotate_authentication_key_entry(
-        ctx: &mut Context,
+        
         account: &signer,
         public_key: vector<u8>
     ) {
@@ -39,15 +39,15 @@ module rooch_framework::native_validator {
         // User can rotate the authentication key arbitrarily, so we do not need to check the new public key with the account address.
         let authentication_key = public_key_to_authentication_key(public_key);
         let account_addr = signer::address_of(account);
-        rotate_authentication_key(ctx, account_addr, authentication_key);
+        rotate_authentication_key(account_addr, authentication_key);
     }
 
-    fun rotate_authentication_key(ctx: &mut Context, account_addr: address, authentication_key: vector<u8>) {
-        account_authentication::rotate_authentication_key<NativeValidator>(ctx, account_addr, authentication_key);
+    fun rotate_authentication_key(account_addr: address, authentication_key: vector<u8>) {
+        account_authentication::rotate_authentication_key<NativeValidator>(account_addr, authentication_key);
     }
 
-    public entry fun remove_authentication_key_entry(ctx: &mut Context, account: &signer) {
-        account_authentication::remove_authentication_key<NativeValidator>(ctx, signer::address_of(account));
+    public entry fun remove_authentication_key_entry(account: &signer) {
+        account_authentication::remove_authentication_key<NativeValidator>(signer::address_of(account));
     }
 
     public fun get_public_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
@@ -95,8 +95,8 @@ module rooch_framework::native_validator {
     }
 
     /// Get the authentication key of the given account, if it not exist, return the account address as authentication key.
-    public fun get_authentication_key_with_default(ctx: &Context, addr: address): vector<u8> {
-        let auth_key_option = account_authentication::get_authentication_key<NativeValidator>(ctx, addr);
+    public fun get_authentication_key_with_default(addr: address): vector<u8> {
+        let auth_key_option = account_authentication::get_authentication_key<NativeValidator>(addr);
         if (option::is_some(&auth_key_option)) {
             option::extract(&mut auth_key_option)
         }else {
@@ -120,31 +120,27 @@ module rooch_framework::native_validator {
         );
     }
 
-    public fun validate(ctx: &Context, authenticator_payload: vector<u8>) {
-        let tx_hash = context::tx_hash(ctx);
+    public fun validate(authenticator_payload: vector<u8>) {
+        let tx_hash = tx_context::tx_hash();
         validate_signature(&authenticator_payload, &tx_hash);
 
         let auth_key_from_authenticator_payload = get_authentication_key_from_authenticator_payload(&authenticator_payload);
-        let auth_key_in_account = get_authentication_key_with_default(ctx, context::sender(ctx));
+        let auth_key_in_account = get_authentication_key_with_default(tx_context::sender());
         assert!(
             auth_key_in_account == auth_key_from_authenticator_payload,
             auth_validator::error_invalid_account_auth_key()
         );
     }
 
-    fun pre_execute(
-        _ctx: &mut Context,
-    ) {}
+    fun pre_execute() {}
 
-    fun post_execute(
-        ctx: &mut Context,
-    ) {
-        let account_addr = context::sender(ctx);
-        let auth_key_option = account_authentication::get_authentication_key<NativeValidator>(ctx, account_addr);
+    fun post_execute() {
+        let account_addr = tx_context::sender();
+        let auth_key_option = account_authentication::get_authentication_key<NativeValidator>(account_addr);
         // If the account does not have an authentication key, set the account address as the authentication key after the first transaction is executed.
         if (option::is_none(&auth_key_option)) {
             let authentication_key = default_authentication_key(account_addr);
-            rotate_authentication_key(ctx, account_addr, authentication_key);
+            rotate_authentication_key(account_addr, authentication_key);
         }
     }
 
