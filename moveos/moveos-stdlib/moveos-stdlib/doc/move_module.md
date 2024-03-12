@@ -46,7 +46,6 @@ It is used to store the modules
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="context.md#0x2_context">0x2::context</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
@@ -370,7 +369,7 @@ Check if the module object has a module with the given id
 Publish modules to the account's storage
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_publish_modules">publish_modules</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, module_store: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="move_module.md#0x2_move_module_ModuleStore">move_module::ModuleStore</a>&gt;, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_publish_modules">publish_modules</a>(module_store: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="move_module.md#0x2_move_module_ModuleStore">move_module::ModuleStore</a>&gt;, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;)
 </code></pre>
 
 
@@ -383,7 +382,7 @@ Entry function to publish modules
 The order of modules must be sorted by dependency order.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="move_module.md#0x2_move_module_publish_modules_entry">publish_modules_entry</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="move_module.md#0x2_move_module_publish_modules_entry">publish_modules_entry</a>(<a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
 </code></pre>
 
 

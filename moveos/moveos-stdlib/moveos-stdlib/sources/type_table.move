@@ -5,29 +5,20 @@
 
 module moveos_std::type_table {
     use std::ascii::String;
-    use moveos_std::object_id;
-    use moveos_std::object_id::{ObjectID, UID};
+    use moveos_std::object_id::{ObjectID};
     use moveos_std::object::{Self, Object};
 
-    struct TablePlaceholder has key {}
+    struct TablePlaceholder has key {
+        _placeholder: bool,
+    }
 
     struct TypeTable has store {
         handle: Object<TablePlaceholder>,
     }
 
     /// Create a new Table.
-    public fun new(id: UID): TypeTable {
-        let handle = object_id::uid_to_object_id(id);
-        internal_new_with_id(handle)
-    }
-
-    /// Create a new Table with a given handle.
-    public(friend) fun new_with_id(handle: ObjectID): TypeTable{
-        internal_new_with_id(handle)
-    }
-
-    fun internal_new_with_id(handle: ObjectID): TypeTable{
-        let obj = object::new_with_id(handle, TablePlaceholder{});
+    public fun new(): TypeTable {
+        let obj = object::new(TablePlaceholder{_placeholder: false});
         TypeTable {
             handle: obj,
         }
@@ -77,13 +68,13 @@ module moveos_std::type_table {
     /// Testing only: allows to drop a table even if it is not empty.
     public fun drop_unchecked(table: TypeTable) {
         let TypeTable{handle} = table;
-        let TablePlaceholder{} = object::remove_unchecked(handle);
+        let TablePlaceholder{_placeholder:_} = object::remove_unchecked(handle);
     }
 
     /// Destroy a table. The table must be empty to succeed.
     public fun destroy_empty(table: TypeTable) {
         let TypeTable{handle} = table;
-        let TablePlaceholder{} = object::remove(handle);
+        let TablePlaceholder{_placeholder:_} = object::remove(handle);
     }
 
     #[test_only]
@@ -91,11 +82,9 @@ module moveos_std::type_table {
         val: u64,
     }
 
-    #[test(sender = @0x42)]
-    fun test_all(sender: address) {
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let uid = object::new_uid_for_test(&mut tx_context);
-        let table = new(uid);
+    #[test]
+    fun test_all() {
+        let table = new();
 
         let t = TestType {
             val: 1,
@@ -113,15 +102,12 @@ module moveos_std::type_table {
         assert!(!contains<TestType>(&table), 5);
 
         drop_unchecked(table);
-        moveos_std::tx_context::drop(tx_context);
     }
 
-    #[test(sender = @0x42)]
+    #[test]
     #[expected_failure]
-    fun test_add_key_exist_failure(sender: address) {
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let uid = object::new_uid_for_test(&mut tx_context);
-        let table = new(uid);
+    fun test_add_key_exist_failure() {
+        let table = new();
 
         let t = TestType {
             val: 1,
@@ -136,58 +122,45 @@ module moveos_std::type_table {
         add<TestType>(&mut table, t);
 
         drop_unchecked(table);
-        moveos_std::tx_context::drop(tx_context);
     }
 
-    #[test(sender = @0x42)]
+    #[test]
     #[expected_failure]
-    fun test_borrow_key_not_exist_failure(sender: address) {
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let uid = object::new_uid_for_test(&mut tx_context);
-        let table = new(uid);
+    fun test_borrow_key_not_exist_failure() {
+        let table = new();
         let _ = borrow<TestType>(&table).val;
 
         drop_unchecked(table);
-        moveos_std::tx_context::drop(tx_context);
     }
 
-    #[test(sender = @0x42)]
+    #[test]
     #[expected_failure]
-    fun test_borrow_mut_key_not_exist_failure(sender: address) {
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let uid = object::new_uid_for_test(&mut tx_context);
-        let table = new(uid);
+    fun test_borrow_mut_key_not_exist_failure() {
+        let table = new();
         let t = borrow_mut<TestType>(&mut table);
         t.val = 1;
 
         drop_unchecked(table);
-        moveos_std::tx_context::drop(tx_context);
     }
 
-    #[test(sender = @0x42)]
+    #[test]
     #[expected_failure]
-    fun test_remove_key_not_exist_failure(sender: address) {
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let uid = object::new_uid_for_test(&mut tx_context);
-        let table = new(uid);
+    fun test_remove_key_not_exist_failure() {
+        let table = new();
         let TestType { val: _} = remove<TestType>(&mut table);
 
         drop_unchecked(table);
-        moveos_std::tx_context::drop(tx_context); 
     }
 
-    #[test(sender = @0x42)]
+    #[test]
     #[expected_failure]
-    fun test_destroy_non_empty_failure(sender: address) {
-        let tx_context = moveos_std::tx_context::new_test_context(sender);
-        let uid = object::new_uid_for_test(&mut tx_context);
-        let table = new(uid);
+    fun test_destroy_non_empty_failure() {
+        let table = new();
         let t = TestType {
             val: 1,
         };
         add<TestType>(&mut table, t);
 
         destroy_empty(table);
-        moveos_std::tx_context::drop(tx_context);
     }
 }

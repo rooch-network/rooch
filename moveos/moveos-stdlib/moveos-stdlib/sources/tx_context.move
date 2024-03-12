@@ -64,22 +64,23 @@ module moveos_std::tx_context {
     }
 
     /// Return the address of the user that signed the current transaction
-    public(friend) fun sender(self: &TxContext): address {
-        self.sender
+    public fun sender(): address {
+        borrow().sender
     }
 
     /// Return the sequence number of the current transaction
-    public(friend) fun sequence_number(self: &TxContext): u64 {
-        self.sequence_number
+    public fun sequence_number(): u64 {
+        borrow().sequence_number
     }
 
     /// Return the max gas to be used
-    public(friend) fun max_gas_amount(self: &TxContext): u64 {
-        self.max_gas_amount
+    public fun max_gas_amount(): u64 {
+        borrow().max_gas_amount
     } 
 
     /// Generate a new unique address,
-    public(friend) fun fresh_address(ctx: &mut TxContext): address {
+    public(friend) fun fresh_address(): address {
+        let ctx = borrow_mut();
         let addr = derive_id(ctx.tx_hash, ctx.ids_created);
         ctx.ids_created = ctx.ids_created + 1;
         addr
@@ -88,20 +89,19 @@ module moveos_std::tx_context {
     public(friend) fun derive_id(hash: vector<u8>, index: u64): address {
         let bytes = hash;
         vector::append(&mut bytes, bcs::to_bytes(&index));
-        //TODO change return type to h256 and use h256 to replace address?
         let id = hash::sha3_256(bytes);
         bcs::to_address(id)
     }
 
     /// Return the hash of the current transaction
-    public(friend) fun tx_hash(self: &TxContext): vector<u8> {
-        self.tx_hash
+    public fun tx_hash(): vector<u8> {
+        borrow().tx_hash
     }
 
     /// Return the number of ids created by the current transaction.
     /// Hidden for now, but may expose later
-    fun ids_created(self: &TxContext): u64 {
-        self.ids_created
+    fun ids_created(): u64 {
+        borrow().ids_created
     }
 
     /// Add a value to the context map
@@ -112,7 +112,7 @@ module moveos_std::tx_context {
     }
 
     /// Get a value from the context map
-    public(friend) fun get<T: drop + store + copy>(self: &TxContext): Option<T> {
+    public fun get<T: drop + store + copy>(self: &TxContext): Option<T> {
         let type_name = type_info::type_name<T>();
         if (simple_map::contains_key(&self.map, &type_name)) {
             let any = simple_map::borrow(&self.map, &type_name);
@@ -123,7 +123,7 @@ module moveos_std::tx_context {
     }
 
     /// Check if the key is in the context map
-    public(friend) fun contains<T: drop + store + copy>(self: &TxContext): bool {
+    public fun contains<T: drop + store + copy>(self: &TxContext): bool {
         let type_name = type_info::type_name<T>();
         simple_map::contains_key(&self.map, &type_name)
     }
@@ -131,20 +131,20 @@ module moveos_std::tx_context {
     /// Get the transaction meta data
     /// The TxMeta is writed by the VM before the transaction execution.
     /// The meta data is only available when executing or validating a transaction, otherwise abort(eg. readonly function call).
-    public(friend) fun tx_meta(self: &TxContext): TxMeta {
+    public fun tx_meta(self: &TxContext): TxMeta {
         let meta = get<TxMeta>(self);
         assert!(option::is_some(&meta), ErrorInvalidContext);
         option::extract(&mut meta)
     }
 
-    public(friend) fun tx_gas_payment_account(self: &TxContext): address {
+    public fun tx_gas_payment_account(self: &TxContext): address {
         let gas_payment_account = get<GasPaymentAccount>(self);
         assert!(option::is_some(&gas_payment_account), ErrorInvalidContext);
         option::extract(&mut gas_payment_account).account
     }
 
     /// The result is only available in the `post_execute` function.
-    public(friend) fun tx_result(self: &TxContext): TxResult {
+    public fun tx_result(self: &TxContext): TxResult {
         let result = get<TxResult>(self);
         assert!(option::is_some(&result), ErrorInvalidContext);
         option::extract(&mut result)
@@ -182,9 +182,15 @@ module moveos_std::tx_context {
         Self::borrow_inner()
     }
 
-    public fun borrow_mut(): &mut TxContext {
+    public(friend) fun borrow_mut(): &mut TxContext {
         Self::borrow_mut_inner()
     }
+
+    public fun borrow_mut_via_system(system: &signer): &mut TxContext {
+        moveos_std::core_addresses::assert_system_reserved(system);
+        Self::borrow_mut_inner()
+    }
+
 
     native fun borrow_inner(): &TxContext;
     native fun borrow_mut_inner(): &mut TxContext;
@@ -227,9 +233,8 @@ module moveos_std::tx_context {
 
     #[test(sender=@0x42)]
     fun test_fresh_address() {
-        let tx_context = borrow_mut();
-        let addr1 = fresh_address(tx_context);
-        let addr2 = fresh_address(tx_context);
+        let addr1 = fresh_address();
+        let addr2 = fresh_address();
         assert!(addr1 != addr2, 1000);
     }
 }

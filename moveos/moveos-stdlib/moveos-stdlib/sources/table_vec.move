@@ -7,7 +7,6 @@
 
 /// A basic scalable vector library implemented using `Table`.
 module moveos_std::table_vec {
-    use moveos_std::object_id::UID;
     use moveos_std::table::{Self, Table};
 
     struct TableVec<phantom Element: store> has store {
@@ -19,15 +18,15 @@ module moveos_std::table_vec {
     const ErrorTableNonEmpty: u64 = 2;
 
     /// Create an empty TableVec.
-    public fun new<Element: store>(id: UID): TableVec<Element> {
+    public fun new<Element: store>(): TableVec<Element> {
         TableVec {
-            contents: table::new(id)
+            contents: table::new()
         }
     }
 
     /// Return a TableVec of size one containing element `e`.
-    public fun singleton<Element: store>(id: UID, e: Element): TableVec<Element> {
-        let t = new(id);
+    public fun singleton<Element: store>(e: Element): TableVec<Element> {
+        let t = new();
         push_back(&mut t, e);
         t
     }

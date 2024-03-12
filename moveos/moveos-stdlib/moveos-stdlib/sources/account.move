@@ -7,8 +7,6 @@ module moveos_std::account {
    use std::signer;
    use moveos_std::core_addresses;
    use moveos_std::bcs;
-   use moveos_std::context::{Self, Context};
-   use moveos_std::context::exists_object;
    use moveos_std::object_id::ObjectID;
    use moveos_std::object_id;
    use moveos_std::type_table::{key};
@@ -66,19 +64,19 @@ module moveos_std::account {
    /// Publishes a new `Account` resource under `new_address`. A signer representing `new_address`
    /// is returned. This way, the caller of this function can publish additional resources under
    /// `new_address`.
-   public(friend) fun create_account(ctx: &mut Context, new_address: address): signer {
-      create_account_internal(ctx, new_address)
+   public(friend) fun create_account(new_address: address): signer {
+      create_account_internal(new_address)
    }
 
    /// Publishes a new `Account` resource under `new_address` via system. A signer representing `new_address`
    /// is returned. This way, the caller of this function can publish additional resources under
    /// `new_address`.
-   public fun create_account_for_system(ctx: &mut Context, system: &signer, new_address: address): signer {
+   public fun create_account_for_system(system: &signer, new_address: address): signer {
       core_addresses::assert_system_reserved(system);
-      create_account_internal(ctx, new_address)
+      create_account_internal(new_address)
    }
 
-   fun create_account_internal(ctx: &mut Context, new_address: address): signer {
+   fun create_account_internal(new_address: address): signer {
       assert!(
          !core_addresses::is_vm_address(new_address),
          ErrorAddressReserved
@@ -86,15 +84,15 @@ module moveos_std::account {
 
       // Make sure the Account is not already created.
       assert!(
-         !exist_account_object(ctx, new_address),
+         !exist_account_object(new_address),
          ErrorAccountAlreadyExists
       );
 
-      let new_account = create_account_unchecked(ctx, new_address);
+      let new_account = create_account_unchecked(new_address);
       new_account
    }
 
-   fun create_account_unchecked(_ctx: &mut Context, new_address: address): signer {
+   fun create_account_unchecked(new_address: address): signer {
       let new_account = create_signer(new_address);
 
       create_account_object(new_address);
@@ -102,23 +100,23 @@ module moveos_std::account {
    }
 
    /// create the account for system reserved addresses
-   public fun create_system_reserved_account(ctx: &mut Context, system: &signer, addr: address): (signer, SignerCapability) {
+   public fun create_system_reserved_account(system: &signer, addr: address): (signer, SignerCapability) {
       core_addresses::assert_system_reserved(system);
       assert!(
          core_addresses::is_system_reserved_address(addr),
          ErrorNotValidSystemReservedAddress,
       );
-      let signer = create_account_unchecked(ctx, addr);
+      let signer = create_account_unchecked(addr);
       let signer_cap = SignerCapability { addr };
       (signer, signer_cap)
    }
 
 
    /// Return the current sequence number at `addr`
-   public fun sequence_number(ctx: &Context, addr: address): u64 {
+   public fun sequence_number(addr: address): u64 {
       // if account does not exist, return 0 as sequence number
       // TODO: refactor this after we decide how to handle account create.
-      if (!exist_account_object(ctx, addr)) {
+      if (!exist_account_object(addr)) {
          return 0
       };
       let object_id = account_object_id(addr);
@@ -127,23 +125,13 @@ module moveos_std::account {
       sequence_number_for_account(account)
    }
 
-   public fun sequence_number_for_sender(ctx: &Context): u64 {
-      let sender = context::sender(ctx);
-      sequence_number(ctx, sender)
-   }
-
-   public(friend) fun increment_sequence_number(ctx: &mut Context) {
-      increment_sequence_number_internal(ctx)
-   }
-
-   public fun increment_sequence_number_for_system(ctx: &mut Context, system: &signer) {
+   public fun increment_sequence_number_for_system(system: &signer, sender: address) {
       core_addresses::assert_system_reserved(system);
-      increment_sequence_number_internal(ctx)
+      increment_sequence_number_internal(sender)
    }
 
-   fun increment_sequence_number_internal(ctx: &mut Context) {
-      let sender = context::sender(ctx);
-      let tx_sequence_number = context::sequence_number(ctx);
+   fun increment_sequence_number_internal(sender: address) {
+      let tx_sequence_number = sequence_number(sender);
 
       let object_id = account_object_id(sender);
       let object_entity = object::borrow_mut_from_global<Account>(object_id);
@@ -167,12 +155,12 @@ module moveos_std::account {
       cap.addr
    }
 
-   public fun is_resource_account(ctx: &Context, addr: address): bool {
-      exists_resource<ResourceAccount>(ctx, addr)
+   public fun is_resource_account(addr: address): bool {
+      exists_resource<ResourceAccount>(addr)
    }
 
-   public fun exists_at(ctx: &Context, addr: address): bool {
-      exist_account_object(ctx, addr)
+   public fun exists_at(addr: address): bool {
+      exist_account_object(addr)
    }
 
    public fun create_signer_for_system(system: &signer, addr: address): signer {
@@ -185,25 +173,22 @@ module moveos_std::account {
    /// A resource account is used to manage resources independent of an account managed by a user.
    /// In Rooch a resource account is created based upon the sha3 256 of the source's address and additional seed data.
    /// A resource account can only be created once
-   public fun create_resource_account(ctx: &mut Context, source: &signer): (signer, SignerCapability) {
+   public fun create_resource_account(source: &signer): (signer, SignerCapability) {
       let source_addr = signer::address_of(source);
-      let seed = generate_seed_bytes(ctx, &source_addr);
+      let seed = generate_seed_bytes(&source_addr);
       let resource_addr = create_resource_address(&source_addr, seed);
-      assert!(!is_resource_account(ctx, resource_addr), ErrorAccountIsAlreadyResourceAccount);
-      let resource_signer = if (exists_at(ctx, resource_addr)) {
+      assert!(!is_resource_account(resource_addr), ErrorAccountIsAlreadyResourceAccount);
+      let resource_signer = if (exists_at(resource_addr)) {
          let object_id = account_object_id(resource_addr);
          let obj = object::borrow_object<Account>(object_id);
          let account = object::borrow<Account>(obj);
          assert!(account.sequence_number == 0, ErrorResourceAccountAlreadyUsed);
          create_signer(resource_addr)
       } else {
-         create_account_unchecked(ctx, resource_addr)
+         create_account_unchecked(resource_addr)
       };
 
-      move_resource_to<ResourceAccount>(ctx,
-         &resource_signer,
-         ResourceAccount {}
-      );
+      move_resource_to<ResourceAccount>(&resource_signer,ResourceAccount {});
 
       let signer_cap = SignerCapability { addr: resource_addr };
       (resource_signer, signer_cap)
@@ -211,8 +196,8 @@ module moveos_std::account {
 
 
    /// This is a helper function to generate seed for resource address
-   fun generate_seed_bytes(ctx: &Context, addr: &address): vector<u8> {
-      let sequence_number = Self::sequence_number(ctx, *addr);
+   fun generate_seed_bytes(addr: &address): vector<u8> {
+      let sequence_number = Self::sequence_number(*addr);
 
       let seed_bytes = bcs::to_bytes(addr);
       vector::append(&mut seed_bytes, bcs::to_bytes(&sequence_number));
@@ -284,7 +269,7 @@ module moveos_std::account {
    // #[private_generics(T)]
    /// Borrow a resource from the account's storage
    /// This function equates to `borrow_global<T>(address)` instruction in Move
-   public fun borrow_resource<T: key>(_self: &Context, account: address): &T {
+   public fun borrow_resource<T: key>(account: address): &T {
       let obj = borrow_object<Account>(account_object_id(account));
       account_borrow_resource<T>(obj)
    }
@@ -292,7 +277,7 @@ module moveos_std::account {
    #[private_generics(T)]
    /// Borrow a mut resource from the account's storage
    /// This function equates to `borrow_global_mut<T>(address)` instruction in Move
-   public fun borrow_mut_resource<T: key>(_self: &mut Context, account: address): &mut T {
+   public fun borrow_mut_resource<T: key>(account: address): &mut T {
       let object_id = account_object_id(account);
       let object_entity = object::borrow_mut_from_global<Account>(object_id);
       let obj_mut = object::as_mut_ref(object_entity);
@@ -302,10 +287,11 @@ module moveos_std::account {
    #[private_generics(T)]
    /// Move a resource to the account's resource object
    /// This function equates to `move_to<T>(&signer, resource)` instruction in Move
-   public fun move_resource_to<T: key>(self: &mut Context, account: &signer, resource: T){
+   public fun move_resource_to<T: key>(account: &signer, resource: T){
       let account_address = signer::address_of(account);
       //Auto create the resource object when move resource to the account
-      ensure_account_object(self, account_address);
+      //TODO should we auto create the account?
+      ensure_account_object(account_address);
       let object_id = account_object_id(account_address);
       let object_entity = object::borrow_mut_from_global<Account>(object_id);
       let obj_mut = object::as_mut_ref(object_entity);
@@ -315,7 +301,7 @@ module moveos_std::account {
    #[private_generics(T)]
    /// Move a resource from the account's storage
    /// This function equates to `move_from<T>(address)` instruction in Move
-   public fun move_resource_from<T: key>(_self: &mut Context, account: address): T {
+   public fun move_resource_from<T: key>(account: address): T {
       let object_id = account_object_id(account);
       let object_entity = object::borrow_mut_from_global<Account>(object_id);
       let obj_mut = object::as_mut_ref(object_entity);
@@ -325,8 +311,8 @@ module moveos_std::account {
    #[private_generics(T)]
    /// Check if the account has a resource of the given type
    /// This function equates to `exists<T>(address)` instruction in Move
-   public fun exists_resource<T: key>(self: &Context, account: address) : bool {
-      if (exist_account_object(self, account)) {
+   public fun exists_resource<T: key>(account: address) : bool {
+      if (exist_account_object(account)) {
          let obj = borrow_object<Account>(account_object_id(account));
          account_exists_resource<T>(obj)
       }else{
@@ -336,14 +322,14 @@ module moveos_std::account {
 
    // == Internal functions ==
 
-   fun ensure_account_object(self: &mut Context, account: address) {
-      if (!exist_account_object(self, account)) {
+   fun ensure_account_object(account: address) {
+      if (!exist_account_object(account)) {
          create_account_object(account);
       }
    }
 
-   fun exist_account_object(self: &Context, account: address): bool {
-      exists_object<Account>(self, account_object_id(account))
+   fun exist_account_object(account: address): bool {
+      object::exists_object(account_object_id(account))
    }
 
 
@@ -352,8 +338,8 @@ module moveos_std::account {
    public fun create_signer_for_test(addr: address): signer { create_signer(addr) }
 
    #[test_only]
-   public fun create_only_account_for_test(ctx: &mut Context, new_address: address): signer {
-      create_account_unchecked(ctx, new_address)
+   public fun create_account_for_testing(new_address: address): signer {
+      create_account_unchecked(new_address)
    }
 
    #[test]
@@ -365,17 +351,14 @@ module moveos_std::account {
 
    #[test]
    /// Assert correct account creation.
-   fun test_create_only_account_for_test() {
+   fun test_create_account_for_testing() {
       let alice_addr = @123456;
-      let ctx = context::new_test_context(alice_addr);
-      let alice = create_only_account_for_test(&mut ctx, alice_addr);
+      let alice = create_account_for_testing(alice_addr);
       let alice_addr_actual = signer::address_of(&alice);
-      let sequence_number = sequence_number(&mut ctx, alice_addr);
-      //std::debug::print(&get_authentication_key(&mut ctx, alice_addr));
+      let sequence_number = sequence_number(alice_addr);
       //std::debug::print(&sequence_number);
       assert!(alice_addr_actual == alice_addr, 103);
       assert!(sequence_number >= 0, 104);
-      context::drop_test_context(ctx);
    }
 
    #[test_only]
@@ -386,11 +369,10 @@ module moveos_std::account {
    #[test]
    fun test_create_resource_account()  {
       let alice_addr = @123456;
-      let ctx = context::new_test_context(alice_addr);
-      let alice = create_only_account_for_test(&mut ctx, alice_addr);
-      let (resource_account, resource_account_cap) = create_resource_account(&mut ctx, &alice);
+      let alice = create_account_for_testing(alice_addr);
+      let (resource_account, resource_account_cap) = create_resource_account(&alice);
       let signer_cap_addr = get_signer_capability_address(&resource_account_cap);
-      move_resource_to<CapResponsbility>(&mut ctx,
+      move_resource_to<CapResponsbility>(
          &resource_account,
          CapResponsbility {
             cap: resource_account_cap
@@ -402,7 +384,6 @@ module moveos_std::account {
       std::debug::print(&resource_addr);
       assert!(resource_addr != signer::address_of(&alice), 106);
       assert!(resource_addr == signer_cap_addr, 107);
-      context::drop_test_context(ctx);
    }
 
    //TODO figure out why this test should failed
@@ -410,21 +391,17 @@ module moveos_std::account {
    #[expected_failure(abort_code = ErrorResourceAccountAlreadyUsed, location = Self)]
    fun test_failure_create_resource_account_wrong_sequence_number(sender: address, resource_account: address){
       {
-         let ctx = context::new_test_context(resource_account);
-         create_only_account_for_test(&mut ctx, resource_account);
-         increment_sequence_number(&mut ctx);
-         context::drop_test_context(ctx);
+         create_account_for_testing(resource_account);
+         increment_sequence_number_internal(resource_account);
       };
-      let ctx = context::new_test_context(sender);
-      let sender_signer = create_only_account_for_test(&mut ctx, sender);
-      let (signer, cap) = create_resource_account(&mut ctx, &sender_signer);
-      move_resource_to<CapResponsbility>(&mut ctx,
+      let sender_signer = create_account_for_testing(sender);
+      let (signer, cap) = create_resource_account(&sender_signer);
+      move_resource_to<CapResponsbility>(
          &signer,
          CapResponsbility {
             cap
          }
       );
-      context::drop_test_context(ctx);
    }
 
    #[test_only]
@@ -613,10 +590,8 @@ module moveos_std::account {
    #[test(sender=@0x42)]
    fun test_ensure_account_object(sender: signer){
       let sender_addr = signer::address_of(&sender);
-      let ctx = context::new_test_context(sender_addr);
-      ensure_account_object(&mut ctx , sender_addr);
-      assert!(exist_account_object(&ctx , sender_addr), 1);
-      context::drop_test_context(ctx);
+      ensure_account_object(sender_addr);
+      assert!(exist_account_object(sender_addr), 1);
    }
 
 }

@@ -9,7 +9,6 @@ module moveos_std::move_module {
     use std::string::{Self, String};
     use moveos_std::object_id::{Self, ObjectID};
     use moveos_std::object::{Self, Object};
-    use moveos_std::context::{Self, Context};
     use moveos_std::tx_context;
     use moveos_std::signer;
 
@@ -255,17 +254,17 @@ module moveos_std::move_module {
     }
 
         /// Publish modules to the account's storage
-    public fun publish_modules(ctx: &mut Context, module_store: &mut Object<ModuleStore>, account: &signer, modules: vector<MoveModule>) {
+    public fun publish_modules(module_store: &mut Object<ModuleStore>, account: &signer, modules: vector<MoveModule>) {
         let account_address = signer::address_of(account);
         let upgrade_flag = publish_modules_internal(module_store, account_address, modules);
         // Store ModuleUpgradeFlag in tx_context which will be fetched in VM in Rust, 
         // and then announce to the VM that the code loading cache should be considered outdated. 
-        tx_context::set_module_upgrade_flag(context::tx_context_mut(ctx), upgrade_flag);
+        tx_context::set_module_upgrade_flag(tx_context::borrow_mut(), upgrade_flag);
     }
    
     /// Entry function to publish modules
     /// The order of modules must be sorted by dependency order.
-    public entry fun publish_modules_entry(ctx: &mut Context, account: &signer, modules: vector<vector<u8>>) {
+    public entry fun publish_modules_entry(account: &signer, modules: vector<vector<u8>>) {
         let n_modules = vector::length(&modules);
         let i = 0;
         let module_vec = vector::empty<MoveModule>();
@@ -276,7 +275,7 @@ module moveos_std::move_module {
             i = i + 1;
         };
         let module_store = borrow_mut_module_store(); 
-        Self::publish_modules(ctx, module_store, account, module_vec);
+        Self::publish_modules(module_store, account, module_vec);
     }
 
     /// Publish modules to the module object's storage
