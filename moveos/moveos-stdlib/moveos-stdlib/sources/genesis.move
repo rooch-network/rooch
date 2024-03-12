@@ -4,7 +4,7 @@
 module moveos_std::genesis {
     use moveos_std::move_module;
 
-    fun init(_sender: &signer){
+    fun init(){
         move_module::create_module_store();
     }
 }

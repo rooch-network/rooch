@@ -184,6 +184,18 @@ module moveos_std::object {
         mut_entity_as_object(object_entity)
     }
 
+    #[private_generics(T)]
+    /// Take out the UserOwnedObject by `object_id`, return the owner and Object
+    /// This function is for developer to extend, Only the module of `T` can take out the `UserOwnedObject` with object_id.
+    public fun take_object_extend<T: key>(object_id: ObjectID): (address, Object<T>) {
+        let object_entity = borrow_mut_from_global<T>(object_id);
+        assert!(is_user_owned_internal(object_entity), ErrorObjectOwnerNotMatch);
+        assert!(!is_bound_internal(object_entity), ErrorObjectIsBound);
+        let owner = owner_internal(object_entity);
+        to_system_owned_internal(object_entity);
+        (owner, mut_entity_as_object(object_entity))
+    }
+
     // // #[private_generics(T)]
     // TODO Need to tighter restrictions ?
     /// Borrow mut Shared Object by object_id

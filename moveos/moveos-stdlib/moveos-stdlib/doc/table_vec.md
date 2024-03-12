@@ -22,8 +22,7 @@ A basic scalable vector library implemented using <code>Table</code>.
 -  [Function `swap_remove`](#0x2_table_vec_swap_remove)
 
 
-<pre><code><b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
-<b>use</b> <a href="table.md#0x2_table">0x2::table</a>;
+<pre><code><b>use</b> <a href="table.md#0x2_table">0x2::table</a>;
 </code></pre>
 
 
@@ -69,7 +68,7 @@ A basic scalable vector library implemented using <code>Table</code>.
 Create an empty TableVec.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table_vec.md#0x2_table_vec_new">new</a>&lt;Element: store&gt;(id: <a href="object_id.md#0x2_object_id_UID">object_id::UID</a>): <a href="table_vec.md#0x2_table_vec_TableVec">table_vec::TableVec</a>&lt;Element&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="table_vec.md#0x2_table_vec_new">new</a>&lt;Element: store&gt;(): <a href="table_vec.md#0x2_table_vec_TableVec">table_vec::TableVec</a>&lt;Element&gt;
 </code></pre>
 
 
@@ -81,7 +80,7 @@ Create an empty TableVec.
 Return a TableVec of size one containing element <code>e</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table_vec.md#0x2_table_vec_singleton">singleton</a>&lt;Element: store&gt;(id: <a href="object_id.md#0x2_object_id_UID">object_id::UID</a>, e: Element): <a href="table_vec.md#0x2_table_vec_TableVec">table_vec::TableVec</a>&lt;Element&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="table_vec.md#0x2_table_vec_singleton">singleton</a>&lt;Element: store&gt;(e: Element): <a href="table_vec.md#0x2_table_vec_TableVec">table_vec::TableVec</a>&lt;Element&gt;
 </code></pre>
 
 

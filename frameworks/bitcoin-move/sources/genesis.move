@@ -17,7 +17,7 @@ module bitcoin_move::genesis{
         network: u8,
     }
 
-    fun init(_genesis_account: &signer){
+    fun init(){
         let genesis_account = signer::module_signer<BitcoinGenesisContext>();
         brc20::genesis_init(&genesis_account);
         ord::genesis_init(&genesis_account);

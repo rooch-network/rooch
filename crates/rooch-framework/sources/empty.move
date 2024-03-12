@@ -8,7 +8,7 @@ module rooch_framework::empty{
 
     struct Empty has key{}
 
-    fun init(_sender: &signer){
+    fun init(){
         let obj = object::new_named_object(Empty{});
         object::to_shared(obj);        
     }

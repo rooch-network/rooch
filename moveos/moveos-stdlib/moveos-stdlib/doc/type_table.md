@@ -9,7 +9,6 @@ TypeTable is a table use struct Type as Key, struct as Value
 -  [Resource `TablePlaceholder`](#0x2_type_table_TablePlaceholder)
 -  [Struct `TypeTable`](#0x2_type_table_TypeTable)
 -  [Function `new`](#0x2_type_table_new)
--  [Function `new_with_id`](#0x2_type_table_new_with_id)
 -  [Function `key`](#0x2_type_table_key)
 -  [Function `add`](#0x2_type_table_add)
 -  [Function `borrow`](#0x2_type_table_borrow)
@@ -57,19 +56,7 @@ TypeTable is a table use struct Type as Key, struct as Value
 Create a new Table.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_new">new</a>(id: <a href="object_id.md#0x2_object_id_UID">object_id::UID</a>): <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>
-</code></pre>
-
-
-
-<a name="0x2_type_table_new_with_id"></a>
-
-## Function `new_with_id`
-
-Create a new Table with a given handle.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="type_table.md#0x2_type_table_new_with_id">new_with_id</a>(handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_new">new</a>(): <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>
 </code></pre>
 
 

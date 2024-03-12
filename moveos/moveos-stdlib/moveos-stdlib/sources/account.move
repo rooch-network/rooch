@@ -335,7 +335,7 @@ module moveos_std::account {
 
    #[test_only]
    /// Create signer for testing, independently of an Rooch-style `Account`.
-   public fun create_signer_for_test(addr: address): signer { create_signer(addr) }
+   public fun create_signer_for_testing(addr: address): signer { create_signer(addr) }
 
    #[test_only]
    public fun create_account_for_testing(new_address: address): signer {
@@ -344,9 +344,9 @@ module moveos_std::account {
 
    #[test]
    /// Assert correct signer creation.
-   fun test_create_signer_for_test() {
-      assert!(signer::address_of(&create_signer_for_test(@moveos_std)) == @0x2, 100);
-      assert!(signer::address_of(&create_signer_for_test(@0x123)) == @0x123, 101);
+   fun test_create_signer_for_testing() {
+      assert!(signer::address_of(&create_signer_for_testing(@moveos_std)) == @0x2, 100);
+      assert!(signer::address_of(&create_signer_for_testing(@0x123)) == @0x123, 101);
    }
 
    #[test]

@@ -471,10 +471,10 @@ impl<'a> ExtendedChecker<'a> {
             }
 
             let arg_tys = &fun.get_parameter_types();
-            if arg_tys.len() != 1 && arg_tys.len() != 2 {
+            if arg_tys.len() > 1 {
                 self.env.error(
                     &fun.get_loc(),
-                    "module init function should have 1 or 2 parameters",
+                    "module init function can only have up to 1 signer parameters",
                 )
             }
             for ty in arg_tys {

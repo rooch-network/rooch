@@ -21,10 +21,10 @@
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
-<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::signer</a>;
+<b>use</b> <a href="">0x2::tx_context</a>;
 </code></pre>
 
 
@@ -96,7 +96,7 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _genesis_account: &<a href="">signer</a>, sequencer: <b>address</b>, gas_schedule_blob: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>, sequencer: <b>address</b>, gas_schedule_blob: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -107,7 +107,7 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_sequencer">sequencer</a>(ctx: &<a href="_Context">context::Context</a>): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_sequencer">sequencer</a>(): <b>address</b>
 </code></pre>
 
 
@@ -118,7 +118,7 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_update_framework_version">update_framework_version</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_update_framework_version">update_framework_version</a>()
 </code></pre>
 
 
@@ -129,7 +129,7 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_framework_version">framework_version</a>(ctx: &<a href="_Context">context::Context</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_framework_version">framework_version</a>(): u64
 </code></pre>
 
 
@@ -140,7 +140,7 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config">onchain_config</a>(_ctx: &<a href="_Context">context::Context</a>): &<a href="onchain_config.md#0x3_onchain_config_OnchainConfig">onchain_config::OnchainConfig</a>
+<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config">onchain_config</a>(): &<a href="onchain_config.md#0x3_onchain_config_OnchainConfig">onchain_config::OnchainConfig</a>
 </code></pre>
 
 
@@ -151,7 +151,7 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
-<pre><code>entry <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_update_onchain_gas_schedule">update_onchain_gas_schedule</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="">account</a>: &<a href="">signer</a>, gas_schedule_blob: <a href="">vector</a>&lt;u8&gt;)
+<pre><code>entry <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_update_onchain_gas_schedule">update_onchain_gas_schedule</a>(<a href="">account</a>: &<a href="">signer</a>, gas_schedule_blob: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -162,5 +162,5 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_onchain_gas_schedule">onchain_gas_schedule</a>(_ctx: &<a href="_Context">context::Context</a>): &<a href="onchain_config.md#0x3_onchain_config_GasSchedule">onchain_config::GasSchedule</a>
+<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_onchain_gas_schedule">onchain_gas_schedule</a>(): &<a href="onchain_config.md#0x3_onchain_config_GasSchedule">onchain_config::GasSchedule</a>
 </code></pre>

@@ -32,7 +32,7 @@ module rooch_framework::genesis {
         gas_schedule_blob: vector<u8>
     }
 
-    fun init(_sender: &signer){
+    fun init(){
         //TODO genesis account should be a resource account?
         let genesis_account = &account::create_account(@rooch_framework);
         let genesis_context_option = tx_context::get_attribute<GenesisContext>();

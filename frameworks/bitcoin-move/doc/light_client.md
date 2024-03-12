@@ -27,7 +27,6 @@
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
-<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::signer</a>;
@@ -106,7 +105,7 @@
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="light_client.md#0x4_light_client_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _genesis_account: &<a href="">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="light_client.md#0x4_light_client_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -118,7 +117,7 @@
 The relay server submit a new Bitcoin block to the light client.
 
 
-<pre><code>entry <b>fun</b> <a href="light_client.md#0x4_light_client_submit_new_block">submit_new_block</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, btc_block_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinBlockStore">light_client::BitcoinBlockStore</a>&gt;, block_height: u64, block_hash: <b>address</b>, block_bytes: <a href="">vector</a>&lt;u8&gt;)
+<pre><code>entry <b>fun</b> <a href="light_client.md#0x4_light_client_submit_new_block">submit_new_block</a>(btc_block_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinBlockStore">light_client::BitcoinBlockStore</a>&gt;, block_height: u64, block_hash: <b>address</b>, block_bytes: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -140,7 +139,7 @@ The relay server submit a new Bitcoin block to the light client.
 
 
 
-<pre><code>entry <b>fun</b> <a href="light_client.md#0x4_light_client_process_utxos">process_utxos</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, btc_block_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinBlockStore">light_client::BitcoinBlockStore</a>&gt;, btc_utxo_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinUTXOStore">light_client::BitcoinUTXOStore</a>&gt;, batch_size: u64)
+<pre><code>entry <b>fun</b> <a href="light_client.md#0x4_light_client_process_utxos">process_utxos</a>(btc_block_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinBlockStore">light_client::BitcoinBlockStore</a>&gt;, btc_utxo_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinUTXOStore">light_client::BitcoinUTXOStore</a>&gt;, batch_size: u64)
 </code></pre>
 
 
