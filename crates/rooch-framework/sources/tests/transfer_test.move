@@ -26,7 +26,7 @@ module rooch_framework::transfer_test{
     #[test(from = @0x42, to = @0x43)]
     fun test_transfer_coin(from: address, to: address){
         rooch_framework::genesis::init_for_test();
-        let from_signer = account_entry::create_account_for_test(from);
+        let from_signer = account_entry::create_account_for_testing(from);
         let init_gas = 9999u256;
         gas_coin::faucet_for_test(from, init_gas); 
         assert!(gas_coin::balance(from) == init_gas, 1000);
@@ -42,7 +42,7 @@ module rooch_framework::transfer_test{
     #[test_only]
     fun test_transfer_coin_to_multichain_address(from: address, to: MultiChainAddress){
         rooch_framework::genesis::init_for_test();
-        let from_signer = account_entry::create_account_for_test(from);
+        let from_signer = account_entry::create_account_for_testing(from);
         let init_gas = 9999u256;
         gas_coin::faucet_for_test(from, init_gas); 
         assert!(gas_coin::balance(from) == init_gas, 1000);
@@ -97,7 +97,7 @@ module rooch_framework::transfer_test{
         rooch_framework::genesis::init_for_test();
         let coin_info_obj = register_fake_coin(9);
 
-        let from = account_entry::create_account_for_test(from_addr);
+        let from = account_entry::create_account_for_testing(from_addr);
         assert!(!account::exists_at(to_addr), 1000);
 
         let amount = 100u256;
@@ -113,7 +113,7 @@ module rooch_framework::transfer_test{
     fun test_transfer_object(from_addr: address, to_addr: address) {
         rooch_framework::genesis::init_for_test();
       
-        let from = account_entry::create_account_for_test(from_addr);
+        let from = account_entry::create_account_for_testing(from_addr);
         let obj = object::new(TestStruct{value: 100});
         let object_id = object::id(&obj);
         object::transfer(obj, from_addr);

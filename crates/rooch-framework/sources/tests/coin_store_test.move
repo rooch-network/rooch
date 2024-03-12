@@ -79,7 +79,7 @@ module rooch_framework::coin_store_test{
         // An non do_accept_coined account is has a no frozen coin store by default
         assert!(!account_coin_store::is_account_coin_store_frozen<FakeCoin>(addr), 1);
         
-        account_entry::create_account_for_test(addr);
+        account_entry::create_account_for_testing(addr);
         mint_and_deposit(&mut coin_info_obj, addr, 100);
 
         // freeze account
@@ -99,7 +99,7 @@ module rooch_framework::coin_store_test{
     fun test_withdraw_from_account_frozen(account: signer) {
         rooch_framework::genesis::init_for_test();
         let account_addr = signer::address_of(&account);
-        account_entry::create_account_for_test(account_addr);
+        account_entry::create_account_for_testing(account_addr);
         let coin_info_obj = register_fake_coin(9);
 
         mint_and_deposit(&mut coin_info_obj, account_addr, 100);
@@ -115,7 +115,7 @@ module rooch_framework::coin_store_test{
     fun test_deposit_to_account_frozen(account: signer) {
         rooch_framework::genesis::init_for_test();
         let account_addr = signer::address_of(&account);
-        account_entry::create_account_for_test(account_addr);
+        account_entry::create_account_for_testing(account_addr);
 
         let coin_info_obj = register_fake_coin(9);
 
@@ -133,7 +133,7 @@ module rooch_framework::coin_store_test{
         rooch_framework::genesis::init_for_test();
         let account_addr = signer::address_of(&account);
 
-        account_entry::create_account_for_test(account_addr);
+        account_entry::create_account_for_testing(account_addr);
         let coin_info_obj = register_fake_coin(9);
         mint_and_deposit(&mut coin_info_obj, account_addr, 100);
 

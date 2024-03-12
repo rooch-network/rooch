@@ -61,6 +61,6 @@ module rooch_framework::genesis {
         let genesis_account = moveos_std::signer::module_signer<GenesisContext>();
         tx_context::add_attribute_via_system(&genesis_account, GenesisContext{chain_id: 20230103, timestamp: 0, sequencer: @rooch_framework,
             gas_schedule_blob: vector::empty()});
-        init(&genesis_account);
+        init();
     }
 }

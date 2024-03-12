@@ -45,7 +45,7 @@ module rooch_framework::account_coin_store_test{
 
         let coin_info_obj = register_fake_coin( 9);
 
-        account_entry::create_account_for_test(signer::address_of(&destination));
+        account_entry::create_account_for_testing(signer::address_of(&destination));
 
         let coins_minted = mint_extend<FakeCoin>(&mut coin_info_obj, 100);
         deposit( source_addr, coins_minted);
@@ -114,8 +114,8 @@ module rooch_framework::account_coin_store_test{
         let mint_coins1 = mint_extend<FakeCoin>(&mut coin_info_obj, 10);
         let mint_coins2 = mint_extend<FakeCoin>(&mut coin_info_obj, 20);
 
-        account_entry::create_account_for_test(source1_addr);
-        account_entry::create_account_for_test(source2_addr);
+        account_entry::create_account_for_testing(source1_addr);
+        account_entry::create_account_for_testing(source2_addr);
 
         // source1 default deposit should succ
         deposit(source1_addr, mint_coins1);
@@ -140,8 +140,8 @@ module rooch_framework::account_coin_store_test{
         let mint_coins1 = mint_extend<FakeCoin>(&mut coin_info_obj, 10);
         let mint_coins2 = mint_extend<FakeCoin>(&mut coin_info_obj, 20);
 
-        account_entry::create_account_for_test(source1_addr);
-        account_entry::create_account_for_test(source2_addr);
+        account_entry::create_account_for_testing(source1_addr);
+        account_entry::create_account_for_testing(source2_addr);
 
         // source1 default deposit should succ
         deposit(source1_addr, mint_coins1);

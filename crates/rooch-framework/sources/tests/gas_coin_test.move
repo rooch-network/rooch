@@ -27,7 +27,7 @@ module rooch_framework::gas_coin_test{
     #[test(user = @0x42)]
     fun test_faucet(user: address){
         rooch_framework::genesis::init_for_test();
-        account_entry::create_account_for_test(user);
+        account_entry::create_account_for_testing(user);
         let init_gas = 9999u256;
         gas_coin::faucet_for_test(user, init_gas); 
         std::debug::print(&gas_coin::balance(user));

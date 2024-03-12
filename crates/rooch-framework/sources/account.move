@@ -46,7 +46,7 @@ module rooch_framework::account {
    }
 
    #[test_only]
-   public fun create_account_for_test(new_address: address): signer {
+   public fun create_account_for_testing(new_address: address): signer {
       create_account(new_address)
    }
 
