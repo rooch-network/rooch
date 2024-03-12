@@ -1,5 +1,6 @@
 import { CacheProvider } from '@emotion/react'
 import { ThemeProvider } from '@/components/theme-provider'
+import { Toaster } from '@/components/ui/toaster'
 
 import { createEmotionCache } from '@/utils/create-emotion-cache'
 
@@ -25,6 +26,7 @@ function App() {
                 <DashboardLayout />
               </ThemeProvider>
             </WalletProvider>
+            <Toaster />
           </RoochClientProvider>
         </QueryClientProvider>
       </CacheProvider>
