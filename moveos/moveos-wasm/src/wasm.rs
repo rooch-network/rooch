@@ -1,14 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use ciborium::Value;
-use once_cell::sync::Lazy;
-use rand;
-use serde_json;
-use serde_json::{Number, Value as JSONValue};
 use std::collections::BTreeMap;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
+
+use once_cell::sync::Lazy;
+use rand;
 use wasmer::Value::I32;
 use wasmer::*;
 
@@ -16,7 +14,7 @@ use wasmer::*;
 pub struct WASMInstance {
     pub bytecode: Vec<u8>,
     pub instance: Instance,
-    pub store: Store
+    pub store: Store,
 }
 
 impl WASMInstance {
@@ -24,7 +22,7 @@ impl WASMInstance {
         Self {
             bytecode,
             instance,
-            store
+            store,
         }
     }
 }
@@ -53,25 +51,11 @@ pub fn insert_wasm_instance(instance: WASMInstance) -> u64 {
     }
 }
 
-/*
-pub fn get_wasm_instance<'a>(instance_id: u64) -> Option<WASMInstance> {
-    unsafe {
-        match GLOBAL_INSTANCE_POOL.lock().unwrap().get(&instance_id) {
-            None => {None}
-            Some(v) => Some(v.clone())
-        }
-    }
-}
-
- */
-
 pub fn get_instance_pool() -> Arc<Mutex<BTreeMap<u64, WASMInstance>>> {
-    unsafe {
-        GLOBAL_INSTANCE_POOL.clone()
-    }
+    unsafe { GLOBAL_INSTANCE_POOL.clone() }
 }
 
-fn remove_instance(instance_id: u64) {
+pub fn remove_instance(instance_id: u64) {
     unsafe {
         GLOBAL_INSTANCE_POOL.lock().unwrap().remove(&instance_id);
     }

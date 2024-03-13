@@ -6014,6 +6014,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "better_any",
+ "ciborium",
  "fastcrypto",
  "hex",
  "itertools",

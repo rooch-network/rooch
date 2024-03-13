@@ -29,6 +29,7 @@ hex = { workspace = true }
 petgraph = { workspace = true }
 parking_lot = { workspace = true }
 itertools = { workspace = true }
+ciborium = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }

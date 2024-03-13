@@ -4,7 +4,7 @@
 use std::collections::VecDeque;
 use std::ops::Deref;
 
-use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_core_types::vm_status::StatusCode;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -12,7 +12,9 @@ use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::natives::function::NativeResult;
 use move_vm_types::pop_arg;
 use move_vm_types::values::Value;
+use serde_json::Value as JSONValue;
 use smallvec::smallvec;
+use wasmer::MemoryAccessError;
 
 use moveos_wasm::wasm::{
     create_wasm_instance, get_instance_pool, insert_wasm_instance, put_data_on_stack,
@@ -23,6 +25,10 @@ use crate::natives::helpers::{make_module_natives, make_native};
 const E_INSTANCE_NO_EXISTS: u64 = 1;
 const E_ARG_NOT_U32: u64 = 2;
 const E_ARG_NOT_VECTOR_U8: u64 = 3;
+const E_JSON_MARSHAL_FAILED: u64 = 4;
+const E_WASM_EXECUTION_FAILED: u64 = 5;
+const E_WASM_FUNCTION_NOT_FOUND: u64 = 6;
+const E_WASM_MEMORY_ACCESS_FAILED: u64 = 7;
 
 #[derive(Debug, Clone)]
 pub struct WASMCreateInstanceGasParameters {
@@ -61,31 +67,6 @@ fn native_create_wasm_instance(
 }
 
 #[derive(Debug, Clone)]
-pub struct WASMCreateAddLength {
-    pub base: InternalGas,
-}
-
-impl WASMCreateAddLength {
-    pub fn zeros() -> Self {
-        Self { base: 0.into() }
-    }
-}
-
-// native_add_length_with_data
-#[inline]
-fn native_add_length_with_data(
-    _gas_params: &WASMCreateAddLength,
-    _context: &mut NativeContext,
-    _ty_args: Vec<Type>,
-    mut _args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    Ok(NativeResult::Success {
-        cost: InternalGas::new(100),
-        ret_vals: smallvec![Value::u64(9999)],
-    })
-}
-
-#[derive(Debug, Clone)]
 pub struct WASMCreateCBORValue {
     pub base: InternalGas,
     pub per_byte: InternalGasPerByte,
@@ -103,14 +84,72 @@ impl WASMCreateCBORValue {
 // native_create_cbor_values
 #[inline]
 fn native_create_cbor_values(
-    _gas_params: &WASMCreateCBORValue,
+    gas_params: &WASMCreateCBORValue,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
-    mut _args: VecDeque<Value>,
+    mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
+    let data = pop_arg!(args, Vec<u8>);
+    let data_string = String::from_utf8_lossy(data.as_slice()).to_string();
+
+    let data_json: JSONValue = match serde_json::from_str(data_string.as_str()) {
+        Ok(json_value) => json_value,
+        Err(_) => {
+            return Ok(NativeResult::err(gas_params.base, E_JSON_MARSHAL_FAILED));
+        }
+    };
+
+    let mut cbor_buffer = Vec::new();
+    ciborium::into_writer(&data_json, &mut cbor_buffer).expect("ciborium marshal failed");
+
+    let ret_vec = Value::vector_u8(cbor_buffer.clone());
+
+    let mut cost = gas_params.base;
+    cost += gas_params.per_byte * NumBytes::new(cbor_buffer.len() as u64);
+
     Ok(NativeResult::Success {
-        cost: InternalGas::new(100),
-        ret_vals: smallvec![Value::u64(9999)],
+        cost,
+        ret_vals: smallvec![ret_vec],
+    })
+}
+
+#[derive(Debug, Clone)]
+pub struct WASMCreateAddLength {
+    pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
+}
+
+impl WASMCreateAddLength {
+    pub fn zeros() -> Self {
+        Self {
+            base: 0.into(),
+            per_byte: 0.into(),
+        }
+    }
+}
+
+// native_add_length_with_data
+#[inline]
+fn native_add_length_with_data(
+    gas_params: &WASMCreateAddLength,
+    _context: &mut NativeContext,
+    _ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    let mut data = pop_arg!(args, Vec<u8>);
+
+    let mut buffer_final = Vec::new();
+    buffer_final.append(&mut (data.len() as u32).to_be_bytes().to_vec());
+    buffer_final.append(&mut data);
+
+    let ret_vec = Value::vector_u8(buffer_final.clone());
+
+    let mut cost = gas_params.base;
+    cost += gas_params.per_byte * NumBytes::new(buffer_final.len() as u64);
+
+    Ok(NativeResult::Success {
+        cost,
+        ret_vals: smallvec![ret_vec],
     })
 }
 
@@ -232,13 +271,11 @@ fn native_execute_wasm_function(
     let instance_id = pop_arg!(args, u64);
 
     let instance_pool = get_instance_pool();
-    match instance_pool.lock().unwrap().get_mut(&instance_id) {
-        None => {
-            return Ok(NativeResult::err(
-                gas_params.base_create_execution,
-                E_INSTANCE_NO_EXISTS,
-            ));
-        }
+    let ret = match instance_pool.lock().unwrap().get_mut(&instance_id) {
+        None => Ok(NativeResult::err(
+            gas_params.base_create_execution,
+            E_INSTANCE_NO_EXISTS,
+        )),
         Some(instance) => {
             match instance.instance.exports.get_function(
                 String::from_utf8_lossy(func_name.as_slice())
@@ -258,52 +295,83 @@ fn native_execute_wasm_function(
                             let return_value = ret.deref().get(0).unwrap();
                             let offset = return_value.i32().unwrap();
                             let ret_val = Value::u64(offset as u64);
-                            return Ok(NativeResult::Success {
-                                cost: InternalGas::new(100),
+
+                            let mut cost = gas_params.base_create_execution;
+                            cost += gas_params.per_byte_execution_result
+                                * NumBytes::new(instance.bytecode.len() as u64);
+
+                            Ok(NativeResult::Success {
+                                cost,
                                 ret_vals: smallvec![ret_val],
-                            });
+                            })
                         }
-                        Err(_) => {
-                            println!("the calling of the wasm function was failed");
-                        }
+                        Err(_) => Ok(NativeResult::err(
+                            gas_params.base_create_execution,
+                            E_WASM_EXECUTION_FAILED,
+                        )),
                     }
                 }
-                Err(_) => {
-                    print!("get function name failed");
-                }
+                Err(_) => Ok(NativeResult::err(
+                    gas_params.base_create_execution,
+                    E_WASM_FUNCTION_NOT_FOUND,
+                )),
             }
         }
-    }
-
-    let ret_val = Value::u64(88888u64);
-    Ok(NativeResult::Success {
-        cost: InternalGas::new(100),
-        ret_vals: smallvec![ret_val],
-    })
+    };
+    ret
 }
 
 #[derive(Debug, Clone)]
 pub struct WASMReadAddLength {
     pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
 }
 
 impl WASMReadAddLength {
     pub fn zeros() -> Self {
-        Self { base: 0.into() }
+        Self {
+            base: 0.into(),
+            per_byte: 0.into(),
+        }
     }
 }
 
 // native_read_data_length
 #[inline]
 fn native_read_data_length(
-    _gas_params: &WASMReadAddLength,
+    gas_params: &WASMReadAddLength,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
-    mut _args: VecDeque<Value>,
+    mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
+    let data_ptr = pop_arg!(args, u64);
+    let instance_id = pop_arg!(args, u64);
+
+    let mut data_length = 0;
+    let instance_pool = get_instance_pool();
+    match instance_pool.lock().unwrap().get_mut(&instance_id) {
+        None => {
+            return Ok(NativeResult::err(gas_params.base, E_INSTANCE_NO_EXISTS));
+        }
+        Some(instance) => {
+            let memory = instance.instance.exports.get_memory("memory").unwrap();
+            let memory_view = memory.view(&instance.store);
+            let mut length_bytes: [u8; 4] = [0; 4];
+            match memory_view.read(data_ptr, length_bytes.as_mut_slice()) {
+                Ok(_) => data_length = u32::from_be_bytes(length_bytes),
+                Err(_) => {
+                    return Ok(NativeResult::err(
+                        gas_params.base,
+                        E_WASM_MEMORY_ACCESS_FAILED,
+                    ));
+                }
+            }
+        }
+    }
+
     Ok(NativeResult::Success {
-        cost: InternalGas::new(100),
-        ret_vals: smallvec![Value::u64(9999)],
+        cost: gas_params.base,
+        ret_vals: smallvec![Value::u32(data_length)],
     })
 }
 
@@ -325,15 +393,39 @@ impl WASMReadHeapData {
 // native_read_data_from_heap
 #[inline]
 fn native_read_data_from_heap(
-    _gas_params: &WASMReadHeapData,
+    gas_params: &WASMReadHeapData,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
-    mut _args: VecDeque<Value>,
+    mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    Ok(NativeResult::Success {
-        cost: InternalGas::new(100),
-        ret_vals: smallvec![Value::u64(9999)],
-    })
+    let data_length = pop_arg!(args, u32);
+    let data_ptr = pop_arg!(args, u32);
+    let instance_id = pop_arg!(args, u64);
+
+    let instance_pool = get_instance_pool();
+    let ret = match instance_pool.lock().unwrap().get_mut(&instance_id) {
+        None => Ok(NativeResult::err(gas_params.base, E_INSTANCE_NO_EXISTS)),
+        Some(instance) => {
+            let memory = instance.instance.exports.get_memory("memory").unwrap();
+            let memory_view = memory.view(&instance.store);
+            let mut data = vec![0; data_length as usize];
+            match memory_view.read((data_ptr + 4) as u64, &mut data) {
+                Ok(_) => {
+                    let mut cost = gas_params.base;
+                    cost += gas_params.per_byte * NumBytes::new(instance.bytecode.len() as u64);
+                    Ok(NativeResult::Success {
+                        cost,
+                        ret_vals: smallvec![Value::vector_u8(data)],
+                    })
+                }
+                Err(_) => Ok(NativeResult::err(
+                    gas_params.base,
+                    E_WASM_MEMORY_ACCESS_FAILED,
+                )),
+            }
+        }
+    };
+    ret
 }
 
 #[derive(Debug, Clone)]
@@ -350,15 +442,28 @@ impl WASMReleaseInstance {
 // native_release_wasm_instance
 #[inline]
 fn native_release_wasm_instance(
-    _gas_params: &WASMReleaseInstance,
+    gas_params: &WASMReleaseInstance,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
-    mut _args: VecDeque<Value>,
+    mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    Ok(NativeResult::Success {
-        cost: InternalGas::new(100),
-        ret_vals: smallvec![Value::u64(9999)],
-    })
+    let instance_id = pop_arg!(args, u64);
+
+    moveos_wasm::wasm::remove_instance(instance_id);
+
+    let instance_pool = get_instance_pool();
+    let ret = match instance_pool.lock().unwrap().get_mut(&instance_id) {
+        None => Ok(NativeResult::err(gas_params.base, E_INSTANCE_NO_EXISTS)),
+        Some(_) => {
+            moveos_wasm::wasm::remove_instance(instance_id);
+
+            Ok(NativeResult::Success {
+                cost: gas_params.base,
+                ret_vals: smallvec![Value::bool(true)],
+            })
+        }
+    };
+    ret
 }
 
 /***************************************************************************************************
