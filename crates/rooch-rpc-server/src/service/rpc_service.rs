@@ -8,7 +8,9 @@ use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
+use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
+use moveos_types::moveos_std::object::ObjectEntity;
 use moveos_types::state::{AnnotatedState, KeyState, MoveStructType, State};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
@@ -18,7 +20,6 @@ use rooch_proposer::proxy::ProposerProxy;
 use rooch_relayer::TxSubmiter;
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponse, ExecuteTransactionResponseView};
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::account::Account;
 use rooch_types::address::{MultiChainAddress, RoochAddress};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
@@ -73,7 +74,7 @@ impl RpcService {
     }
 
     pub async fn execute_tx(&self, tx: TypedTransaction) -> Result<ExecuteTransactionResponse> {
-        // First, validate the transactin
+        // First, validate the transaction
         let moveos_tx = self.executor.validate_transaction(tx.clone()).await?;
         let sequence_info = self.sequencer.sequence_transaction(tx.clone()).await?;
         // Then execute
@@ -82,41 +83,56 @@ impl RpcService {
             .propose_transaction(tx.clone(), execution_info.clone(), sequence_info.clone())
             .await?;
 
-        // Sync lastest state root from writer executor to reader executor
+        // Sync latest state root from writer executor to reader executor
         self.executor
-            .refresh_state(execution_info.state_root, output.is_upgrade)
+            .refresh_state(
+                ObjectEntity::root_object(execution_info.state_root, execution_info.size),
+                output.is_upgrade,
+            )
             .await?;
 
-        // Last save indexer
-        let result = self
-            .indexer
-            .indexer_states(sequence_info.tx_order, output.state_changeset.clone())
-            .await;
-        match result {
-            Ok(_) => {}
-            Err(error) => log::error!("Indexer states error: {}", error),
-        };
-        let result = self
-            .indexer
-            .indexer_transaction(
-                tx.clone(),
-                sequence_info.clone(),
-                execution_info.clone(),
-                moveos_tx.clone(),
-            )
-            .await;
-        match result {
-            Ok(_) => {}
-            Err(error) => log::error!("Indexer transactions error: {}", error),
-        };
-        let result = self
-            .indexer
-            .indexer_events(output.events.clone(), tx, sequence_info.clone(), moveos_tx)
-            .await;
-        match result {
-            Ok(_) => {}
-            Err(error) => log::error!("Indexer events error: {}", error),
-        };
+        let indexer = self.indexer.clone();
+        let sequence_info_clone = sequence_info.clone();
+        let moveos_tx_clone = moveos_tx.clone();
+        let execution_info_clone = execution_info.clone();
+        let output_clone = output.clone();
+
+        tokio::spawn(async move {
+            let result = indexer
+                .indexer_states(
+                    sequence_info_clone.tx_order,
+                    output_clone.state_changeset.clone(),
+                )
+                .await;
+            match result {
+                Ok(_) => {}
+                Err(error) => log::error!("indexer states error: {}", error),
+            };
+            let result = indexer
+                .indexer_transaction(
+                    tx.clone(),
+                    sequence_info_clone.clone(),
+                    execution_info_clone.clone(),
+                    moveos_tx_clone.clone(),
+                )
+                .await;
+            match result {
+                Ok(_) => {}
+                Err(error) => log::error!("indexer transactions error: {}", error),
+            };
+            let result = indexer
+                .indexer_events(
+                    output_clone.events.clone(),
+                    tx,
+                    sequence_info_clone.clone(),
+                    moveos_tx_clone,
+                )
+                .await;
+            match result {
+                Ok(_) => {}
+                Err(error) => log::error!("indexer events error: {}", error),
+            };
+        });
 
         Ok(ExecuteTransactionResponse {
             sequence_info,
@@ -373,13 +389,15 @@ impl TxSubmiter for RpcService {
     //TODO provide a trait to abstract the async state reader, elemiate the duplicated code bwteen RpcService and Client
     async fn get_sequence_number(&self, address: RoochAddress) -> Result<u64> {
         Ok(self
-            .get_states(AccessPath::resource(address.into(), Account::struct_tag()))
+            .get_states(AccessPath::object(Account::account_object_id(
+                address.into(),
+            )))
             .await?
             .pop()
             .flatten()
-            .map(|state| state.cast::<Account>())
+            .map(|state| state.as_object_uncheck::<Account>())
             .transpose()?
-            .map_or(0, |account| account.sequence_number))
+            .map_or(0, |account| account.value.sequence_number))
     }
     async fn submit_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
         Ok(self.execute_tx(TypedTransaction::Rooch(tx)).await?.into())

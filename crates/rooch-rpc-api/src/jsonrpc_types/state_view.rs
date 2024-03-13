@@ -24,10 +24,29 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+pub struct DisplayFieldsView {
+    pub fields: BTreeMap<String, String>,
+}
+
+impl DisplayFieldsView {
+    pub fn new(fields: BTreeMap<String, String>) -> Self {
+        Self { fields }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 pub struct StateView {
     pub value: BytesView,
     pub value_type: TypeTagView,
     pub decoded_value: Option<AnnotatedMoveValueView>,
+    pub display_fields: Option<DisplayFieldsView>,
+}
+
+impl StateView {
+    pub fn with_display_fields(mut self, display_fields: Option<DisplayFieldsView>) -> Self {
+        self.display_fields = display_fields;
+        self
+    }
 }
 
 impl From<State> for StateView {
@@ -36,6 +55,7 @@ impl From<State> for StateView {
             value: StrView(state.value),
             value_type: state.value_type.into(),
             decoded_value: None,
+            display_fields: None,
         }
     }
 }
@@ -46,6 +66,7 @@ impl From<AnnotatedState> for StateView {
             value: StrView(state.state.value),
             value_type: state.state.value_type.into(),
             decoded_value: Some(state.decoded_value.into()),
+            display_fields: None,
         }
     }
 }

@@ -471,10 +471,10 @@ impl<'a> ExtendedChecker<'a> {
             }
 
             let arg_tys = &fun.get_parameter_types();
-            if arg_tys.len() != 1 && arg_tys.len() != 2 {
+            if arg_tys.len() > 1 {
                 self.env.error(
                     &fun.get_loc(),
-                    "module init function should have 1 or 2 parameters",
+                    "module init function can only have up to 1 signer parameters",
                 )
             }
             for ty in arg_tys {
@@ -484,12 +484,14 @@ impl<'a> ExtendedChecker<'a> {
                         if struct_tag.is_none() {
                             self.env.error(
                                 &fun.get_loc(),
-                                "module init function should input a reference structure"
+                                "module init function should input a reference structure",
                             );
                             return;
                         }
 
-                        if !check_storage_context_struct_tag(struct_tag.unwrap().to_canonical_string()){
+                        if !check_storage_context_struct_tag(
+                            struct_tag.unwrap().to_canonical_string(),
+                        ) {
                             self.env.error(
                                 &fun.get_loc(),
                                 "module init function should not input reference structures other than Context"
@@ -517,7 +519,7 @@ impl<'a> ExtendedChecker<'a> {
 
                     _ => self.env.error(
                         &fun.get_loc(),
-                        "module init function only should have two parameter types with signer or storageContext",
+                        "module init function only should have one parameter types with signer",
                     ),
                 }
             }

@@ -12,13 +12,13 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
 use move_core_types::language_storage::ModuleId;
 use moveos_types::move_types::{random_identity, random_struct_tag, random_type_tag, FunctionId};
+use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::context;
 use moveos_types::moveos_std::event::{Event, EventID};
-use moveos_types::moveos_std::move_module::Module;
-use moveos_types::moveos_std::object::{ObjectEntity, RawData, TablePlaceholder};
+use moveos_types::moveos_std::move_module::ModuleStore;
+use moveos_types::moveos_std::object::{ObjectEntity, GENESIS_STATE_ROOT};
 use moveos_types::moveos_std::object_id::ObjectID;
-use moveos_types::moveos_std::raw_table::TableInfo;
-use moveos_types::moveos_std::resource::Resource;
+use moveos_types::moveos_std::table::TablePlaceholder;
 use moveos_types::state::{KeyState, State, StateChangeSet, TableChange};
 use moveos_types::transaction::{FunctionCall, MoveAction, ScriptCall, VerifiedMoveAction};
 use rand::distributions::Alphanumeric;
@@ -320,7 +320,7 @@ pub fn random_state_change_set() -> StateChangeSet {
 
     // generate modules change tables
     for _n in 0..rng.gen_range(1..=5) {
-        let module_object_id = Module::module_object_id();
+        let module_object_id = ModuleStore::module_store_id();
         state_change_set
             .changes
             .insert(module_object_id, random_table_change());
@@ -328,10 +328,10 @@ pub fn random_state_change_set() -> StateChangeSet {
 
     // generate resources change tables
     for _n in 0..rng.gen_range(1..=10) {
-        let resource_object_id = Resource::resource_object_id(AccountAddress::random());
+        let account_object_id = Account::account_object_id(AccountAddress::random());
         state_change_set
             .changes
-            .insert(resource_object_id, random_table_change());
+            .insert(account_object_id, random_table_change());
     }
 
     // generate global table
@@ -343,20 +343,9 @@ pub fn random_state_change_set() -> StateChangeSet {
 }
 
 pub fn random_table_object() -> Result<ObjectEntity<TablePlaceholder>> {
-    let table_info = TableInfo::new(AccountAddress::random())?;
-
     Ok(ObjectEntity::new_table_object(
         ObjectID::from(AccountAddress::random()),
-        table_info,
+        *GENESIS_STATE_ROOT,
+        0,
     ))
-}
-
-#[allow(dead_code)]
-pub fn random_raw_object() -> ObjectEntity<RawData> {
-    let raw_data = RawData {
-        struct_tag: random_struct_tag(),
-        value: random_bytes(),
-    };
-
-    ObjectEntity::new_raw_object(ObjectID::from(AccountAddress::random()), raw_data)
 }

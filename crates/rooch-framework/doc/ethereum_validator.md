@@ -20,12 +20,11 @@ This module implements Ethereum validator with the ECDSA recoverable signature o
 -  [Function `validate`](#0x3_ethereum_validator_validate)
 
 
-<pre><code><b>use</b> <a href="">0x1::debug</a>;
-<b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::hex</a>;
+<b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
 <b>use</b> <a href="auth_payload.md#0x3_auth_payload">0x3::auth_payload</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
@@ -87,7 +86,7 @@ there defines auth validator id for each blockchain
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>, public_key: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_rotate_authentication_key_entry">rotate_authentication_key_entry</a>(<a href="">account</a>: &<a href="">signer</a>, public_key: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -98,7 +97,7 @@ there defines auth validator id for each blockchain
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_remove_authentication_key_entry">remove_authentication_key_entry</a>(<a href="">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -138,7 +137,7 @@ Get the authentication key of the given public key.
 Get the authentication key option of the given account.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_get_authentication_key_option_from_account">get_authentication_key_option_from_account</a>(ctx: &<a href="_Context">context::Context</a>, addr: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_get_authentication_key_option_from_account">get_authentication_key_option_from_account</a>(addr: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
 </code></pre>
 
 
@@ -150,7 +149,7 @@ Get the authentication key option of the given account.
 The authentication key exists in account or not.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_is_authentication_key_in_account">is_authentication_key_in_account</a>(ctx: &<a href="_Context">context::Context</a>, addr: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_is_authentication_key_in_account">is_authentication_key_in_account</a>(addr: <b>address</b>): bool
 </code></pre>
 
 
@@ -162,7 +161,7 @@ The authentication key exists in account or not.
 Extract the authentication key of the authentication key option.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_get_authentication_key_from_account">get_authentication_key_from_account</a>(ctx: &<a href="_Context">context::Context</a>, addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_get_authentication_key_from_account">get_authentication_key_from_account</a>(addr: <b>address</b>): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
@@ -185,5 +184,5 @@ Only validate the authenticator's signature.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_validate">validate</a>(ctx: &<a href="_Context">context::Context</a>, authenticator_payload: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_validator.md#0x3_ethereum_validator_validate">validate</a>(authenticator_payload: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>

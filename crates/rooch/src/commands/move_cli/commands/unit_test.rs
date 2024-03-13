@@ -21,7 +21,7 @@ use moveos_stdlib::natives::moveos_stdlib::{
     raw_table::{NativeTableContext, TableData},
 };
 use moveos_store::MoveOSStore;
-use moveos_types::state_resolver::MoveOSResolverProxy;
+use moveos_types::{moveos_std::tx_context::TxContext, state_resolver::MoveOSResolverProxy};
 use moveos_verifier::build::build_model_with_test_attr;
 use moveos_verifier::metadata::run_extended_checks;
 use rooch_framework::natives::{all_natives, NativeGasParameters};
@@ -111,7 +111,9 @@ static MOVEOSSTORE: Lazy<Box<MoveOSResolverProxy<MoveOSStore>>> = Lazy::new(|| {
 #[allow(clippy::arc_with_non_send_sync)]
 fn new_moveos_natives_runtime(ext: &mut NativeContextExtensions) {
     let statedb = Lazy::force(&MOVEOSSTORE).as_ref();
-    let table_data = Arc::new(RwLock::new(TableData::default()));
+    let table_data = Arc::new(RwLock::new(TableData::new(
+        TxContext::random_for_testing_only(),
+    )));
     let table_ext = NativeTableContext::new(statedb, table_data);
     let module_ext = NativeModuleContext::new(statedb);
     let event_ext = NativeEventContext::default();

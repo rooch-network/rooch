@@ -10,10 +10,11 @@ module rooch_examples::blog {
     use moveos_std::event;
     use moveos_std::object_id::ObjectID;
     use moveos_std::object::Object;
-    use moveos_std::context::{Self, Context};
+    
     use moveos_std::table::{Self, Table};
     use std::signer;
     use std::string::String;
+    use moveos_std::account;
     use rooch_examples::article::Article;
 
     friend rooch_examples::blog_add_article_logic;
@@ -152,25 +153,25 @@ module rooch_examples::blog {
     }
 
 
-    public(friend) fun update_version_and_add(ctx: &mut Context, account: &signer, blog: Blog) {
+    public(friend) fun update_version_and_add(account: &signer, blog: Blog) {
         assert!(signer::address_of(account) == @rooch_examples, ErrorNotGenesisAccount);
         blog.version = blog.version + 1;
-        private_add_blog(ctx, account, blog);
+        private_add_blog(account, blog);
     }
 
-    public(friend) fun remove_blog(ctx: &mut Context): Blog {
-        context::move_resource_from<Blog>(ctx, @rooch_examples)
+    public(friend) fun remove_blog(): Blog {
+        account::move_resource_from<Blog>(@rooch_examples)
     }
 
-    public(friend) fun add_blog(ctx: &mut Context, account: &signer, blog: Blog) {
+    public(friend) fun add_blog(account: &signer, blog: Blog) {
         assert!(signer::address_of(account) == @rooch_examples, ErrorNotGenesisAccount);
         assert!(blog.version == 0, ErrorInappropriateVersion);
-        private_add_blog(ctx, account, blog);
+        private_add_blog(account, blog);
     }
 
-    fun private_add_blog(ctx: &mut Context, account: &signer, blog: Blog) {
+    fun private_add_blog(account: &signer, blog: Blog) {
         assert!(std::string::length(&blog.name) <= 200, ErrorDataTooLong);
-        context::move_resource_to(ctx, account, blog);
+        account::move_resource_to(account, blog);
     }
 
     public(friend) fun drop_blog(blog: Blog) {
@@ -182,12 +183,12 @@ module rooch_examples::blog {
         table::destroy_empty(articles);
     }
 
-    public(friend) fun borrow_mut_blog(ctx: &mut Context): &mut Blog {
-        context::borrow_mut_resource<Blog>(ctx, @rooch_examples)
+    public(friend) fun borrow_mut_blog(): &mut Blog {
+        account::borrow_mut_resource<Blog>(@rooch_examples)
     }
 
-    public fun borrow_blog(ctx: &mut Context): &Blog {
-        context::borrow_resource<Blog>(ctx, @rooch_examples)
+    public fun borrow_blog(): &Blog {
+        account::borrow_resource<Blog>(@rooch_examples)
     }
 
     public(friend) fun update_version(blog: &mut Blog) {

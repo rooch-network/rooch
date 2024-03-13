@@ -2,46 +2,70 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::jsonrpc_types::address::BitcoinAddressView;
-use crate::jsonrpc_types::btc::transaction::TxidView;
+use crate::jsonrpc_types::btc::transaction::{hex_to_txid, TxidView};
 use crate::jsonrpc_types::{AccountAddressView, StructTagView};
+use anyhow::Result;
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 use move_core_types::account_address::AccountAddress;
+use moveos_types::moveos_std::object_id;
 use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::state::MoveStructType;
-use rooch_types::bitcoin::utxo::{UTXOState, UTXO};
+use rooch_types::bitcoin::utxo::{BitcoinOutputID, OutputID, UTXOState, UTXO};
 use rooch_types::indexer::state::GlobalStateFilter;
+use rooch_types::into_address::IntoAddress;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, JsonSchema)]
+pub struct BitcoinOutputIDView {
+    // pub txid: AccountAddress,
+    pub txid: TxidView,
+    pub vout: u32,
+}
+
+impl From<BitcoinOutputIDView> for BitcoinOutputID {
+    fn from(inscription: BitcoinOutputIDView) -> Self {
+        BitcoinOutputID {
+            txid: inscription.txid.into(),
+            vout: inscription.vout,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum UTXOFilterView {
     /// Query by owner, represent by bitcoin address
     Owner(BitcoinAddressView),
-
-    // TODO Txid needs to be pre-indexed, or can only be scan the whole table, and database index cannot be used
-    /// Query by txid.
-    // Txid(TxidView),
+    /// Query by bitcoin output id, represent by bitcoin txid and vout
+    OutputId { txid: String, vout: u32 },
     /// Query by object id.
     ObjectId(ObjectID),
+    /// Query all.
+    All,
 }
 
 impl UTXOFilterView {
     pub fn into_global_state_filter(
-        filter_opt: Option<UTXOFilterView>,
+        filter_opt: UTXOFilterView,
         resolve_address: AccountAddress,
-    ) -> GlobalStateFilter {
-        match filter_opt {
-            Some(filter) => match filter {
-                UTXOFilterView::Owner(_owner) => GlobalStateFilter::ObjectTypeWithOwner {
-                    object_type: UTXO::struct_tag(),
-                    owner: resolve_address,
-                },
-                UTXOFilterView::ObjectId(object_id) => GlobalStateFilter::ObjectId(object_id),
+    ) -> Result<GlobalStateFilter> {
+        Ok(match filter_opt {
+            UTXOFilterView::Owner(_owner) => GlobalStateFilter::ObjectTypeWithOwner {
+                object_type: UTXO::struct_tag(),
+                owner: resolve_address,
             },
-            None => GlobalStateFilter::ObjectType(UTXO::struct_tag()),
-        }
+            UTXOFilterView::OutputId { txid, vout } => {
+                let txid = hex_to_txid(txid.as_str())?;
+                let output_id = OutputID::new(txid.into_address(), vout);
+                let object_id = object_id::custom_object_id(output_id, &UTXO::struct_tag());
+
+                GlobalStateFilter::ObjectId(object_id)
+            }
+            UTXOFilterView::ObjectId(object_id) => GlobalStateFilter::ObjectId(object_id),
+            UTXOFilterView::All => GlobalStateFilter::ObjectType(UTXO::struct_tag()),
+        })
     }
 }
 

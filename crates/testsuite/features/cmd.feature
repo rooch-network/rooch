@@ -18,12 +18,12 @@ Feature: Rooch CLI integration tests
     @serial
     Scenario: rooch rpc test
       Given a server for rooch_rpc_test
-      Then cmd: "rpc request --method rooch_getStates --params '["/resource/0x3/0x3::account::Account",{"decode":true}]'"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x3::account::Account'"
+      Then cmd: "rpc request --method rooch_getStates --params '["/resource/0x3/0x3::account_coin_store::CoinStores",{"decode":true}]'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x3::account_coin_store::CoinStores'"
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x3",{"decode":true}]'"
-      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::resource::Resource>'"
+      Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x2::account::Account>'"
       Then cmd: "rpc request --method rooch_listStates --params '["/resource/0x3", null, null, {"decode":true}]"
-      Then assert: "'{{$.rpc[-1]}}' contains '0x3::account::Account'"
+      Then assert: "'{{$.rpc[-1]}}' contains '0x3::account_coin_store::CoinStores'"
       Then cmd: "rpc request --method rooch_getStates --params '["/object/0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3",{"decode":true}]'"
       Then assert: "{{$.rpc[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::timestamp::Timestamp>'"
       Then assert: "{{$.rpc[-1][0].decoded_value.value.value.value.milliseconds}} == 0"
@@ -115,7 +115,10 @@ Feature: Rooch CLI integration tests
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
     Then cmd: "move run --function default::event_test::emit_event  --args 11u64"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-
+    
+    # because the indexer is async update, so sleep 5 seconds to wait indexer update.
+    Then sleep: "5"
+    
     Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, null, "1", true]'"
     Then assert: "{{$.rpc[-1].data[0].sequence_info.tx_order}} == 1"
     Then assert: "{{$.rpc[-1].next_cursor}} == 1"

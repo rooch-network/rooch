@@ -38,7 +38,6 @@ This module provides the foundation for typesafe Coins.
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::object_id</a>;
@@ -238,7 +237,7 @@ Coin amount cannot be zero
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_genesis_init">genesis_init</a>(_ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _genesis_account: &<a href="">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin.md#0x3_coin_genesis_init">genesis_init</a>(__genesis_account: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -262,7 +261,7 @@ A helper function that returns the address of CoinType.
 A helper function that check the <code>CoinType</code> is registered, if not, abort.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_check_coin_info_registered">check_coin_info_registered</a>&lt;CoinType: key&gt;(ctx: &<a href="_Context">context::Context</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_check_coin_info_registered">check_coin_info_registered</a>&lt;CoinType: key&gt;()
 </code></pre>
 
 
@@ -274,7 +273,7 @@ A helper function that check the <code>CoinType</code> is registered, if not, ab
 Returns <code><b>true</b></code> if the type <code>CoinType</code> is an registered coin.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_registered">is_registered</a>&lt;CoinType: key&gt;(ctx: &<a href="_Context">context::Context</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_is_registered">is_registered</a>&lt;CoinType: key&gt;(): bool
 </code></pre>
 
 
@@ -434,7 +433,7 @@ Create a new <code><a href="coin.md#0x3_coin_Coin">Coin</a>&lt;CoinType&gt;</cod
 Borrow the CoinInfo<CoinType>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info">coin_info</a>&lt;CoinType: key&gt;(ctx: &<a href="_Context">context::Context</a>): &<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_coin_info">coin_info</a>&lt;CoinType: key&gt;(): &<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;
 </code></pre>
 
 
@@ -448,7 +447,7 @@ This function is protected by <code>private_generics</code>, so it can only be c
 
 
 <pre><code>#[private_generics(#[CoinType])]
-<b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_register_extend">register_extend</a>&lt;CoinType: key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, name: <a href="_String">string::String</a>, symbol: <a href="_String">string::String</a>, decimals: u8): <a href="_Object">object::Object</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;&gt;
+<b>public</b> <b>fun</b> <a href="coin.md#0x3_coin_register_extend">register_extend</a>&lt;CoinType: key&gt;(name: <a href="_String">string::String</a>, symbol: <a href="_String">string::String</a>, decimals: u8): <a href="_Object">object::Object</a>&lt;<a href="coin.md#0x3_coin_CoinInfo">coin::CoinInfo</a>&lt;CoinType&gt;&gt;
 </code></pre>
 
 

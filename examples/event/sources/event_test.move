@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::event_test {
-    use moveos_std::context::{Self, Context};
+    
     use moveos_std::event;
 
     struct WithdrawEvent has copy, drop {
@@ -11,10 +11,10 @@ module rooch_examples::event_test {
     }
 
     public entry fun emit_event(
-        ctx: &mut Context,
+        
         amount: u64,
     ) {
-        let addr = context::sender(ctx);
+        let addr = moveos_std::tx_context::sender();
         event::emit<WithdrawEvent>(WithdrawEvent {
             addr,
             amount,

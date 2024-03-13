@@ -5,9 +5,9 @@
 
 This module contains the error code for auth_validator module
 The auth_validator implementation should contain the following functions
-public fun validate(ctx: &Context, authenticator_payload: vector<u8>)
-fun pre_execute(ctx: &mut Context)
-fun post_execute(ctx: &mut Context)
+public fun validate(authenticator_payload: vector<u8>)
+fun pre_execute()
+fun post_execute()
 
 
 -  [Struct `AuthValidator`](#0x3_auth_validator_AuthValidator)
@@ -29,7 +29,7 @@ fun post_execute(ctx: &mut Context)
 
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
 <b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x2::context</a>;
+<b>use</b> <a href="">0x2::tx_context</a>;
 </code></pre>
 
 
@@ -178,7 +178,7 @@ InvalidAuthenticator, include invalid signature
 Get the TxValidateResult from the TxContext, Only can be called after the transaction is validated
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validate_result_from_ctx">get_validate_result_from_ctx</a>(ctx: &<a href="_Context">context::Context</a>): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validate_result_from_ctx">get_validate_result_from_ctx</a>(): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
 </code></pre>
 
 
@@ -190,7 +190,7 @@ Get the TxValidateResult from the TxContext, Only can be called after the transa
 Get the auth validator's id from the TxValidateResult in the TxContext
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validator_id_from_ctx">get_validator_id_from_ctx</a>(ctx: &<a href="_Context">context::Context</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_validator_id_from_ctx">get_validator_id_from_ctx</a>(): u64
 </code></pre>
 
 
@@ -203,7 +203,7 @@ Get the session key from the TxValidateResult in the TxContext
 If the TxValidateResult is None or SessionKey is None, return None
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_ctx_option">get_session_key_from_ctx_option</a>(ctx: &<a href="_Context">context::Context</a>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_ctx_option">get_session_key_from_ctx_option</a>(): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
 </code></pre>
 
 
@@ -215,7 +215,7 @@ If the TxValidateResult is None or SessionKey is None, return None
 The current tx is validate via the session key or not
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(ctx: &<a href="_Context">context::Context</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_is_validate_via_session_key">is_validate_via_session_key</a>(): bool
 </code></pre>
 
 
@@ -228,5 +228,5 @@ Get the session key from the TxValidateResult in the TxContext
 Only can be called after the transaction is validated
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_ctx">get_session_key_from_ctx</a>(ctx: &<a href="_Context">context::Context</a>): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_ctx">get_session_key_from_ctx</a>(): <a href="">vector</a>&lt;u8&gt;
 </code></pre>

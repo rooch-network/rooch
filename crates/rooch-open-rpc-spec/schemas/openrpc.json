@@ -21,6 +21,7 @@
       "params": [
         {
           "name": "filter",
+          "required": true,
           "schema": {
             "$ref": "#/components/schemas/InscriptionFilterView"
           }
@@ -58,6 +59,7 @@
       "params": [
         {
           "name": "filter",
+          "required": true,
           "schema": {
             "$ref": "#/components/schemas/UTXOFilterView"
           }
@@ -98,6 +100,12 @@
           "required": true,
           "schema": {
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+          }
+        },
+        {
+          "name": "tx_option",
+          "schema": {
+            "$ref": "#/components/schemas/TxOptions"
           }
         }
       ],
@@ -752,6 +760,20 @@
           }
         }
       },
+      "DisplayFieldsView": {
+        "type": "object",
+        "required": [
+          "fields"
+        ],
+        "properties": {
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "DynamicFieldView": {
         "type": "object",
         "required": [
@@ -945,7 +967,6 @@
         "type": "object",
         "required": [
           "execution_info",
-          "output",
           "sequence_info"
         ],
         "properties": {
@@ -953,7 +974,14 @@
             "$ref": "#/components/schemas/TransactionExecutionInfoView"
           },
           "output": {
-            "$ref": "#/components/schemas/TransactionOutputView"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TransactionOutputView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "sequence_info": {
             "$ref": "#/components/schemas/TransactionSequenceInfoView"
@@ -1351,7 +1379,34 @@
             "additionalProperties": false
           },
           {
-            "description": "Query by txid. Query by object id.",
+            "description": "Query by inscription id, represent by bitcoin txid and index",
+            "type": "object",
+            "required": [
+              "inscription_id"
+            ],
+            "properties": {
+              "inscription_id": {
+                "type": "object",
+                "required": [
+                  "index",
+                  "txid"
+                ],
+                "properties": {
+                  "index": {
+                    "type": "integer",
+                    "format": "uint32",
+                    "minimum": 0.0
+                  },
+                  "txid": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by object id.",
             "type": "object",
             "required": [
               "object_id"
@@ -1362,6 +1417,13 @@
               }
             },
             "additionalProperties": false
+          },
+          {
+            "description": "Query all.",
+            "type": "string",
+            "enum": [
+              "all"
+            ]
           }
         ]
       },
@@ -1721,6 +1783,16 @@
                   }
                 ]
               },
+              "display_fields": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DisplayFieldsView"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "type": {
                 "type": "string",
                 "enum": [
@@ -1747,6 +1819,16 @@
                 "anyOf": [
                   {
                     "$ref": "#/components/schemas/AnnotatedMoveValueView"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "display_fields": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DisplayFieldsView"
                   },
                   {
                     "type": "null"
@@ -2152,6 +2234,11 @@
             "description": "If true, the state is decoded and the decoded value is returned in the response.",
             "default": false,
             "type": "boolean"
+          },
+          "showDisplay": {
+            "description": "If true, result with display rendered is returned",
+            "default": false,
+            "type": "boolean"
           }
         }
       },
@@ -2183,6 +2270,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/AnnotatedMoveValueView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "display_fields": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DisplayFieldsView"
               },
               {
                 "type": "null"
@@ -2510,6 +2607,16 @@
           }
         }
       },
+      "TxOptions": {
+        "type": "object",
+        "properties": {
+          "withOutput": {
+            "description": "If true, the TransactionOutput is returned in the response.",
+            "default": false,
+            "type": "boolean"
+          }
+        }
+      },
       "UTXOFilterView": {
         "oneOf": [
           {
@@ -2526,7 +2633,34 @@
             "additionalProperties": false
           },
           {
-            "description": "Query by txid. Query by object id.",
+            "description": "Query by bitcoin output id, represent by bitcoin txid and vout",
+            "type": "object",
+            "required": [
+              "output_id"
+            ],
+            "properties": {
+              "output_id": {
+                "type": "object",
+                "required": [
+                  "txid",
+                  "vout"
+                ],
+                "properties": {
+                  "txid": {
+                    "type": "string"
+                  },
+                  "vout": {
+                    "type": "integer",
+                    "format": "uint32",
+                    "minimum": 0.0
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by object id.",
             "type": "object",
             "required": [
               "object_id"
@@ -2537,6 +2671,13 @@
               }
             },
             "additionalProperties": false
+          },
+          {
+            "description": "Query all.",
+            "type": "string",
+            "enum": [
+              "all"
+            ]
           }
         ]
       },

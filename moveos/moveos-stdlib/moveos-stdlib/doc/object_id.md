@@ -149,7 +149,7 @@ Generate a new ObjectID from an address
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object_id.md#0x2_object_id_account_named_object_id">account_named_object_id</a>&lt;T&gt;(account: <b>address</b>): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="object_id.md#0x2_object_id_account_named_object_id">account_named_object_id</a>&lt;T&gt;(<a href="account.md#0x2_account">account</a>: <b>address</b>): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
 </code></pre>
 
 

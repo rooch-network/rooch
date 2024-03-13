@@ -68,7 +68,7 @@ describe('SDK', () => {
     it('view function should be ok', async () => {
       const client = new RoochClient(LocalNetwork)
       const result = await client.executeViewFunction({
-        funcId: '0x3::account::sequence_number_for_sender',
+        funcId: '0x2::account::sequence_number_for_sender',
       })
       expect(result).toBeDefined()
     })
@@ -539,7 +539,7 @@ describe('SDK', () => {
       expect(account).toBeDefined()
 
       // create session account
-      const sessionAccount = await account.createSessionAccount(['0x3::account::*'], 100)
+      const sessionAccount = await account.createSessionAccount(['0x2::account::*'], 100)
       expect(sessionAccount).toBeDefined()
     })
 

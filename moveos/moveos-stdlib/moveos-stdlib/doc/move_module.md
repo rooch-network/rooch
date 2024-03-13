@@ -9,7 +9,7 @@ It is used to store the modules
 
 
 -  [Struct `MoveModule`](#0x2_move_module_MoveModule)
--  [Resource `Module`](#0x2_move_module_Module)
+-  [Resource `ModuleStore`](#0x2_move_module_ModuleStore)
 -  [Constants](#@Constants_0)
 -  [Function `new`](#0x2_move_module_new)
 -  [Function `new_batch`](#0x2_move_module_new_batch)
@@ -25,11 +25,15 @@ It is used to store the modules
 -  [Function `replace_constant_u8`](#0x2_move_module_replace_constant_u8)
 -  [Function `replace_constant_u64`](#0x2_move_module_replace_constant_u64)
 -  [Function `replace_constant_u256`](#0x2_move_module_replace_constant_u256)
--  [Function `module_object_id`](#0x2_move_module_module_object_id)
--  [Function `create_module_object`](#0x2_move_module_create_module_object)
+-  [Function `module_store_id`](#0x2_move_module_module_store_id)
+-  [Function `create_module_store`](#0x2_move_module_create_module_store)
+-  [Function `borrow_module_store`](#0x2_move_module_borrow_module_store)
+-  [Function `borrow_mut_module_store`](#0x2_move_module_borrow_mut_module_store)
 -  [Function `exists_module`](#0x2_move_module_exists_module)
 -  [Function `exists_module_id`](#0x2_move_module_exists_module_id)
 -  [Function `publish_modules`](#0x2_move_module_publish_modules)
+-  [Function `publish_modules_entry`](#0x2_move_module_publish_modules_entry)
+-  [Function `publish_modules_internal`](#0x2_move_module_publish_modules_internal)
 -  [Function `request_init_functions`](#0x2_move_module_request_init_functions)
 -  [Function `replace_address_identifiers`](#0x2_move_module_replace_address_identifiers)
 -  [Function `replace_identifiers`](#0x2_move_module_replace_identifiers)
@@ -44,6 +48,8 @@ It is used to store the modules
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
+<b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
+<b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 </code></pre>
 
 
@@ -59,14 +65,14 @@ It is used to store the modules
 
 
 
-<a name="0x2_move_module_Module"></a>
+<a name="0x2_move_module_ModuleStore"></a>
 
-## Resource `Module`
+## Resource `ModuleStore`
 
 It is used to store the modules
 
 
-<pre><code><b>struct</b> <a href="move_module.md#0x2_move_module_Module">Module</a> <b>has</b> store, key
+<pre><code><b>struct</b> <a href="move_module.md#0x2_move_module_ModuleStore">ModuleStore</a> <b>has</b> key
 </code></pre>
 
 
@@ -287,25 +293,47 @@ Replace given u256 constant to the new ones
 
 
 
-<a name="0x2_move_module_module_object_id"></a>
+<a name="0x2_move_module_module_store_id"></a>
 
-## Function `module_object_id`
+## Function `module_store_id`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_module_object_id">module_object_id</a>(): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_module_store_id">module_store_id</a>(): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
 </code></pre>
 
 
 
-<a name="0x2_move_module_create_module_object"></a>
+<a name="0x2_move_module_create_module_store"></a>
 
-## Function `create_module_object`
+## Function `create_module_store`
 
 Create a new module object space
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_create_module_object">create_module_object</a>()
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_create_module_store">create_module_store</a>()
+</code></pre>
+
+
+
+<a name="0x2_move_module_borrow_module_store"></a>
+
+## Function `borrow_module_store`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_borrow_module_store">borrow_module_store</a>(): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="move_module.md#0x2_move_module_ModuleStore">move_module::ModuleStore</a>&gt;
+</code></pre>
+
+
+
+<a name="0x2_move_module_borrow_mut_module_store"></a>
+
+## Function `borrow_mut_module_store`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_borrow_mut_module_store">borrow_mut_module_store</a>(): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="move_module.md#0x2_move_module_ModuleStore">move_module::ModuleStore</a>&gt;
 </code></pre>
 
 
@@ -317,7 +345,7 @@ Create a new module object space
 Check if the module object has a module with the given name
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_exists_module">exists_module</a>(account: <b>address</b>, name: <a href="_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_exists_module">exists_module</a>(module_object: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="move_module.md#0x2_move_module_ModuleStore">move_module::ModuleStore</a>&gt;, <a href="account.md#0x2_account">account</a>: <b>address</b>, name: <a href="_String">string::String</a>): bool
 </code></pre>
 
 
@@ -329,7 +357,7 @@ Check if the module object has a module with the given name
 Check if the module object has a module with the given id
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_exists_module_id">exists_module_id</a>(module_id: <a href="_String">string::String</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_exists_module_id">exists_module_id</a>(module_object: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="move_module.md#0x2_move_module_ModuleStore">move_module::ModuleStore</a>&gt;, module_id: <a href="_String">string::String</a>): bool
 </code></pre>
 
 
@@ -338,11 +366,36 @@ Check if the module object has a module with the given id
 
 ## Function `publish_modules`
 
+Publish modules to the account's storage
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_publish_modules">publish_modules</a>(module_store: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="move_module.md#0x2_move_module_ModuleStore">move_module::ModuleStore</a>&gt;, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;)
+</code></pre>
+
+
+
+<a name="0x2_move_module_publish_modules_entry"></a>
+
+## Function `publish_modules_entry`
+
+Entry function to publish modules
+The order of modules must be sorted by dependency order.
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="move_module.md#0x2_move_module_publish_modules_entry">publish_modules_entry</a>(<a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
+</code></pre>
+
+
+
+<a name="0x2_move_module_publish_modules_internal"></a>
+
+## Function `publish_modules_internal`
+
 Publish modules to the module object's storage
 Return true if the modules are upgraded
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_publish_modules">publish_modules</a>(account_address: <b>address</b>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;): bool
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_publish_modules_internal">publish_modules_internal</a>(module_object: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="move_module.md#0x2_move_module_ModuleStore">move_module::ModuleStore</a>&gt;, account_address: <b>address</b>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;): bool
 </code></pre>
 
 

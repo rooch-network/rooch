@@ -34,7 +34,6 @@
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
-<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::object</a>;
@@ -113,7 +112,7 @@
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _genesis_account: &<a href="">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -124,7 +123,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_exists_inscription">exists_inscription</a>(ctx: &<a href="_Context">context::Context</a>, txid: <b>address</b>, index: u32): bool
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_exists_inscription">exists_inscription</a>(txid: <b>address</b>, index: u32): bool
 </code></pre>
 
 
@@ -135,7 +134,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_inscription">borrow_inscription</a>(_ctx: &<a href="_Context">context::Context</a>, txid: <b>address</b>, index: u32): &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_inscription">borrow_inscription</a>(txid: <b>address</b>, index: u32): &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;
 </code></pre>
 
 
@@ -146,7 +145,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_spend_utxo">spend_utxo</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, utxo_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;, tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>): <a href="">vector</a>&lt;<a href="utxo.md#0x4_utxo_SealOut">utxo::SealOut</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_spend_utxo">spend_utxo</a>(utxo_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;, tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>): <a href="">vector</a>&lt;<a href="utxo.md#0x4_utxo_SealOut">utxo::SealOut</a>&gt;
 </code></pre>
 
 
@@ -157,7 +156,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_process_transaction">process_transaction</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>): <a href="">vector</a>&lt;<a href="utxo.md#0x4_utxo_SealOut">utxo::SealOut</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_process_transaction">process_transaction</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>): <a href="">vector</a>&lt;<a href="utxo.md#0x4_utxo_SealOut">utxo::SealOut</a>&gt;
 </code></pre>
 
 
@@ -300,5 +299,5 @@
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_bind_multichain_address">bind_multichain_address</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, rooch_address: <b>address</b>, bitcoin_address_opt: <a href="_Option">option::Option</a>&lt;<a href="_BitcoinAddress">bitcoin_address::BitcoinAddress</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_bind_multichain_address">bind_multichain_address</a>(rooch_address: <b>address</b>, bitcoin_address_opt: <a href="_Option">option::Option</a>&lt;<a href="_BitcoinAddress">bitcoin_address::BitcoinAddress</a>&gt;)
 </code></pre>

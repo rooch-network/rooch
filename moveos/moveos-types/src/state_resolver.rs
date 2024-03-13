@@ -3,9 +3,9 @@
 
 use crate::move_std::ascii::MoveAsciiString;
 use crate::move_std::string::MoveString;
-use crate::moveos_std::move_module::Module;
+use crate::moveos_std::account::Account;
+use crate::moveos_std::move_module::ModuleStore;
 use crate::moveos_std::object_id::ObjectID;
-use crate::moveos_std::resource::Resource;
 use crate::state::{AnnotatedKeyState, KeyState, MoveStructType};
 use crate::{
     access_path::AccessPath,
@@ -66,12 +66,12 @@ where
         tag: &StructTag,
         _metadata: &[Metadata],
     ) -> Result<(Option<Vec<u8>>, usize), Error> {
-        let resource_object_id = Resource::resource_object_id(*address);
+        let account_object_id = Account::account_object_id(*address);
 
         let key = resource_tag_to_key(tag);
         let result = self
             .0
-            .resolve_table_item(&resource_object_id, &key)?
+            .resolve_table_item(&account_object_id, &key)?
             .map(|s| {
                 ensure!(
                     s.match_struct_type(tag),
@@ -105,7 +105,7 @@ where
     }
 
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Error> {
-        let module_object_id = Module::module_object_id();
+        let module_object_id = ModuleStore::module_store_id();
         let key = module_id_to_key(module_id);
         //We wrap the modules byte codes to `MoveModule` type when store the module.
         //So we need unwrap the MoveModule type.

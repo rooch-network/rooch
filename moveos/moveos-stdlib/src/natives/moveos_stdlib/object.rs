@@ -1,22 +1,21 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use move_binary_format::errors::PartialVMResult;
-use move_core_types::gas_algebra::InternalGas;
+use crate::natives::{helpers::make_module_natives, moveos_stdlib::raw_table::NativeTableContext};
+use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_core_types::{gas_algebra::InternalGas, vm_status::StatusCode};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
-    loaded_data::runtime_types::Type,
-    natives::function::NativeResult,
-    values::{GlobalValue, Struct, Value},
+    loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
 };
 use moveos_types::{
-    moveos_std::object::Object,
+    moveos_std::{object::Object, object_id::ObjectID},
     state::{MoveState, PlaceholderStruct},
 };
 use smallvec::smallvec;
 use std::{collections::VecDeque, sync::Arc};
 
-use crate::natives::helpers::make_module_natives;
+pub(crate) const ERROR_OBJECT_ALREADY_BORROWED: u64 = 7;
 
 #[derive(Debug, Clone)]
 pub struct AsRefGasParameters {
@@ -98,11 +97,9 @@ pub fn make_native_as_mut_ref_inner(gas_params: AsMutRefGasParameters) -> Native
 
 fn borrow_object_reference(
     context: &mut NativeContext,
-    object_id: Value,
+    object_id_value: Value,
     ref_type: &Type,
 ) -> PartialVMResult<Value> {
-    let gv = GlobalValue::cached(Value::struct_(Struct::pack(vec![object_id])))?;
-
     let type_tag = context.type_to_type_tag(ref_type)?;
     let type_layout = context
         .get_type_layout(&type_tag)
@@ -113,8 +110,19 @@ fn borrow_object_reference(
         "Expected a struct type with layout same as Object<T>"
     );
 
-    //TODO should we keep the GlobalValue in Context?
-    gv.borrow_global()
+    let object_id = ObjectID::from_runtime_value(object_id_value)
+        .map_err(|_e| partial_extension_error("Invalid object id argument"))?;
+    let table_context = context.extensions_mut().get_mut::<NativeTableContext>();
+
+    let data = table_context.table_data();
+    let mut table_data = data.write();
+    //TODO remove load_object, the object should loaded when load ObjectEntity
+    table_data
+        .load_object(&object_id)
+        .map_err(|e| e.to_partial())?;
+    table_data
+        .borrow_object(&object_id)
+        .map_err(|e| e.to_partial())
 }
 
 #[derive(Debug, Clone)]
@@ -145,4 +153,8 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
     ];
 
     make_module_natives(natives)
+}
+
+fn partial_extension_error(msg: impl ToString) -> PartialVMError {
+    PartialVMError::new(StatusCode::VM_EXTENSION_ERROR).with_message(msg.to_string())
 }

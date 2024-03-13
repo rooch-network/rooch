@@ -3,11 +3,13 @@
 
 module rooch_framework::upgrade {
 
+    use moveos_std::signer::module_signer;
     use moveos_std::signer;
     use moveos_std::event;
-    use moveos_std::context::{Self, Context};
+    
+    use moveos_std::account::create_signer_for_system;
+    use moveos_std::move_module;
     use rooch_framework::onchain_config;
-    use rooch_framework::account::create_signer;
 
     const ErrorNotSequencer: u64 = 1;
 
@@ -21,28 +23,29 @@ module rooch_framework::upgrade {
         version: u64,
     }
 
-    entry fun upgrade_entry(ctx: &mut Context, account: &signer, 
+    entry fun upgrade_entry(account: &signer, 
         move_std_bundles: vector<vector<u8>>,
         moveos_std_bundles: vector<vector<u8>>,
         rooch_framework_bundles: vector<vector<u8>>,
         bitcoin_move_bundles: vector<vector<u8>>,
     ) {
         let sender_address = signer::address_of(account);
-        assert!(sender_address == onchain_config::sequencer(ctx), ErrorNotSequencer);
+        assert!(sender_address == onchain_config::sequencer(), ErrorNotSequencer);
 
-        let std_signer = create_signer(MoveStdAccount);
-        context::publish_modules_entry(ctx, &std_signer, move_std_bundles);
+        let system = module_signer<FrameworkUpgradeEvent>();
+        let std_signer = create_signer_for_system(&system, MoveStdAccount);
+        move_module::publish_modules_entry(&std_signer, move_std_bundles);
 
-        let moveos_std_signer = create_signer(MoveosStdAccount);
-        context::publish_modules_entry(ctx, &moveos_std_signer, moveos_std_bundles);
+        let moveos_std_signer = create_signer_for_system(&system, MoveosStdAccount);
+        move_module::publish_modules_entry(&moveos_std_signer, moveos_std_bundles);
 
-        let framework_signer = create_signer(RoochFrameworkAccount);
-        context::publish_modules_entry(ctx, &framework_signer, rooch_framework_bundles);
+        let framework_signer = create_signer_for_system(&system, RoochFrameworkAccount);
+        move_module::publish_modules_entry(&framework_signer, rooch_framework_bundles);
 
-        let bitcoin_move_signer = create_signer(BitcoinMoveAccount);
-        context::publish_modules_entry(ctx, &bitcoin_move_signer, bitcoin_move_bundles);
+        let bitcoin_move_signer = create_signer_for_system(&system, BitcoinMoveAccount);
+        move_module::publish_modules_entry(&bitcoin_move_signer, bitcoin_move_bundles);
 
-        onchain_config::update_framework_version(ctx);
-        event::emit<FrameworkUpgradeEvent>(FrameworkUpgradeEvent { version: onchain_config::framework_version(ctx) });
+        onchain_config::update_framework_version();
+        event::emit<FrameworkUpgradeEvent>(FrameworkUpgradeEvent { version: onchain_config::framework_version() });
     }
 }

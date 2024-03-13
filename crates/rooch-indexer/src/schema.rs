@@ -76,6 +76,7 @@ diesel::table! {
         tx_accumulator_root -> Text,
         transaction_raw -> Binary,
         state_root -> Text,
+        size -> BigInt,
         event_root -> Text,
         gas_used -> BigInt,
         status -> Text,

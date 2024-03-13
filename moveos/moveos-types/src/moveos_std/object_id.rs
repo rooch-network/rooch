@@ -1,10 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-use crate::state::KeyState;
+use crate::state::{KeyState, MoveState};
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     h256,
-    state::{MoveStructState, MoveStructType},
+    state::{MoveStructState, MoveStructType, MoveType},
 };
 use anyhow::Result;
 use fastcrypto::encoding::Hex;
@@ -16,9 +16,12 @@ use move_core_types::{
     value::{MoveStructLayout, MoveTypeLayout},
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
+use move_vm_types::values::Struct;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+
+use super::context::GLOBAL_OBJECT_STORAGE_HANDLE;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("object_id");
 
@@ -31,6 +34,14 @@ impl ObjectID {
     /// Creates a new ObjectID
     pub const fn new(obj_id: [u8; Self::LENGTH]) -> Self {
         Self(AccountAddress::new(obj_id))
+    }
+
+    pub fn root() -> Self {
+        GLOBAL_OBJECT_STORAGE_HANDLE
+    }
+
+    pub fn random() -> Self {
+        Self::new(h256::H256::random().into())
     }
 
     /// Hex address: 0x0
@@ -69,6 +80,13 @@ impl ObjectID {
             .map(ObjectID::from)
     }
 
+    pub fn from_key(key: KeyState) -> Result<Self> {
+        if key.key_type != Self::type_tag() {
+            return Err(anyhow::anyhow!("Invalid ObjectID type"));
+        }
+        Self::from_bytes(key.key)
+    }
+
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.to_vec()
     }
@@ -95,6 +113,23 @@ impl MoveStructType for ObjectID {
 impl MoveStructState for ObjectID {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Address])
+    }
+
+    fn from_runtime_value_struct(value: Struct) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut fields = value.unpack()?;
+        let address = AccountAddress::from_runtime_value(
+            fields
+                .next()
+                .ok_or_else(|| anyhow::anyhow!("Invalid ObjectID"))?,
+        )?;
+        Ok(ObjectID(address))
+    }
+
+    fn to_runtime_value_struct(&self) -> Struct {
+        Struct::pack(vec![self.0.to_runtime_value()])
     }
 }
 
@@ -208,8 +243,8 @@ pub fn custom_object_id<ID: Serialize>(id: ID, struct_tag: &StructTag) -> Object
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::moveos_std::move_module::Module;
-    use crate::moveos_std::resource::Resource;
+    use crate::moveos_std::account::Account;
+    use crate::moveos_std::move_module::ModuleStore;
 
     #[test]
     fn test_address_to_object_id() {
@@ -251,9 +286,9 @@ mod tests {
             "0xae43e34e51db9c833ab50dd9aa8b27106519e5bbfd533737306e7b69ef253647",
         )
         .unwrap();
-        let resource_object_id = Resource::resource_object_id(addr);
-        let module_object_id = Module::module_object_id();
-        print!("{:?} {:?}", resource_object_id, module_object_id)
+        let account_object_id = Account::account_object_id(addr);
+        let module_object_id = ModuleStore::module_store_id();
+        print!("{:?} {:?}", account_object_id, module_object_id)
     }
 
     fn test_object_id_roundtrip(object_id: ObjectID) {
@@ -343,5 +378,13 @@ mod tests {
             )
             .unwrap()
         );
+    }
+
+    #[test]
+    fn test_from_runtime_value() {
+        let object_id = ObjectID::random();
+        let runtime_value = object_id.to_runtime_value();
+        let object_id2 = ObjectID::from_runtime_value(runtime_value).unwrap();
+        assert_eq!(object_id, object_id2);
     }
 }

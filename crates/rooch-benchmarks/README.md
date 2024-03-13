@@ -1,43 +1,46 @@
-#Benchmark
+# Benchmark
 
-1. run all benchmark
+## Run
+
+run all benchmark:
 
 ```shell
 cargo bench
 ```
 
-2. run a special benchmark
+run specific benchmark:
 
 ```shell
-cargo bench --bench bench_transaction
-cargo bench --bench bench_transaction  -- --verbose
+cargo bench --bench bench_tx
+cargo bench --bench bench_tx  -- --verbose
+cargo bench --bench bench_tx_query
+cargo bench --bench bench_tx_write
 ```
 
-3. run a special benchmark with pprof (on linux)
+### Run with Args
+
+#### bench_tx_write:
+
+pass by env var:
+
+1. PPROF_OUT: flamegraph(default), proto
+2. TX_SIZE: 0(default)
+3. TX_TYPE: empty(default), transfer, blog
+4. DATA_DIR: `<rand in tmp dir>` (default)
+
+for PPROF_OUT output location:
+
+1. flamegraph: `rooch/target/criterion/execute_tx/profile/flamegraph.svg`
+2. proto: `rooch/target/criterion/execute_tx/profile/profile.pb`
+
+for proto, run these to get svg:
+
 ```shell
-cargo bench --bench bench_transaction -- --profile-time=10
+pprof -svg profile.pb
 ```
 
-## On OSX
+## Profiling
 
-1. install xcode and command line tools
-
-2. install cargo instruments
 ```shell
-brew install cargo-instruments
-```
-
-3. install cargo flamegraph
-```shell
-cargo install flamegraph
-```
-
-4. install gnuplot
-```shell
-brew install gnuplot
-```
-
-5. run with profile
-```shell
-cargo instruments -t time --bench bench_transaction -- --bench
+cargo bench --bench bench_tx_write -- --profile-time=3
 ```

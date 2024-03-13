@@ -1,19 +1,19 @@
 processed 7 tasks
 
-task 1 'publish'. lines 3-63:
+task 1 'publish'. lines 3-64:
 status EXECUTED
 
-task 2 'run'. lines 65-79:
+task 2 'run'. lines 66-80:
 status EXECUTED
 
-task 3 'run'. lines 80-95:
+task 3 'run'. lines 81-96:
 status EXECUTED
 
-task 4 'run'. lines 96-111:
+task 4 'run'. lines 97-112:
 status EXECUTED
 
-task 5 'run'. lines 112-124:
-status ABORTED with code 4 in 0000000000000000000000000000000000000000000000000000000000000002::raw_table
+task 5 'run'. lines 113-125:
+status ABORTED with code 8 in 0000000000000000000000000000000000000000000000000000000000000002::object
 
-task 6 'run'. lines 125-138:
+task 6 'run'. lines 126-139:
 status EXECUTED

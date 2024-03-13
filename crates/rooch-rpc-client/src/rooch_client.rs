@@ -4,11 +4,8 @@
 use anyhow::Result;
 use jsonrpsee::http_client::HttpClient;
 use moveos_types::h256::H256;
-use moveos_types::{
-    access_path::AccessPath,
-    state::{MoveStructType, State},
-    transaction::FunctionCall,
-};
+use moveos_types::moveos_std::account::Account;
+use moveos_types::{access_path::AccessPath, state::State, transaction::FunctionCall};
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
 use rooch_rpc_api::jsonrpc_types::TransactionWithInfoPageView;
 use rooch_rpc_api::jsonrpc_types::{
@@ -19,7 +16,7 @@ use rooch_rpc_api::jsonrpc_types::{
     EventOptions, EventPageView, StateOptions, StatePageView, StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, StateView};
-use rooch_types::{account::Account, address::RoochAddress, transaction::rooch::RoochTransaction};
+use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]
@@ -42,7 +39,7 @@ impl RoochRpcClient {
     pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
         let tx_payload = bcs::to_bytes(&tx)?;
         self.http
-            .execute_raw_transaction(tx_payload.into())
+            .execute_raw_transaction(tx_payload.into(), None)
             .await
             .map_err(|e| anyhow::anyhow!(e))
     }
@@ -70,6 +67,19 @@ impl RoochRpcClient {
             .get_states(
                 access_path.into(),
                 Some(StateOptions::default().decode(true)),
+            )
+            .await?)
+    }
+
+    pub async fn get_decoded_states_with_display(
+        &self,
+        access_path: AccessPath,
+    ) -> Result<Vec<Option<StateView>>> {
+        Ok(self
+            .http
+            .get_states(
+                access_path.into(),
+                Some(StateOptions::default().decode(true).show_display(true)),
             )
             .await?)
     }
@@ -102,16 +112,18 @@ impl RoochRpcClient {
 
     pub async fn get_sequence_number(&self, sender: RoochAddress) -> Result<u64> {
         Ok(self
-            .get_states(AccessPath::resource(sender.into(), Account::struct_tag()))
+            .get_states(AccessPath::object(Account::account_object_id(
+                sender.into(),
+            )))
             .await?
             .pop()
             .flatten()
             .map(|state_view| {
                 let state = State::from(state_view);
-                state.cast::<Account>()
+                state.as_object_uncheck::<Account>()
             })
             .transpose()?
-            .map_or(0, |account| account.sequence_number))
+            .map_or(0, |account| account.value.sequence_number))
     }
 
     pub async fn get_events_by_event_handle(

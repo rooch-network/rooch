@@ -3,7 +3,7 @@
 //# publish
 module creator::test {
 
-    fun init( _: u8 ){
+    fun init(_: u8 ){
         
     }
 }
@@ -11,7 +11,7 @@ module creator::test {
 //# publish
 module creator::test {
 
-    fun init( _: u16 ){
+    fun init(_: u16 ){
         
     }
 }
@@ -19,7 +19,7 @@ module creator::test {
 //# publish
 module creator::test {
 
-    fun init( _: u32 ){
+    fun init(_: u32 ){
         
     }
 }
@@ -27,7 +27,7 @@ module creator::test {
 //# publish
 module creator::test {
 
-    fun init( _: u64 ){
+    fun init(_: u64 ){
         
     }
 }
@@ -35,7 +35,7 @@ module creator::test {
 //# publish
 module creator::test {
 
-    fun init( _: u128 ){
+    fun init(_: u128 ){
         
     }
 }
@@ -43,7 +43,7 @@ module creator::test {
 //# publish
 module creator::test {
 
-    fun init( _: u256 ){
+    fun init(_: u256 ){
         
     }
 }
@@ -56,7 +56,7 @@ module creator::test {
         x: u64,
     }
 
-    fun init( _foo: Foo ){
+    fun init(_foo: Foo){
         
     }
 }
@@ -65,7 +65,7 @@ module creator::test {
 module creator::test {
     use moveos_std::object_id;
 
-    fun init( _: object_id::ObjectID ){
+    fun init(_: object_id::ObjectID){
         
     }
 }
@@ -74,7 +74,7 @@ module creator::test {
 module creator::test {
     use std::string;
 
-    fun init( _: string::String ){
+    fun init(_: string::String){
         
     }
 }
@@ -83,7 +83,7 @@ module creator::test {
 module creator::test {
     use std::string;
 
-    fun init( _: string::String ){
+    fun init(_: string::String){
         
     }
 }
@@ -92,16 +92,7 @@ module creator::test {
 module creator::test {
     use std::ascii;
 
-    fun init( _: ascii::String ){
-        
-    }
-}
-
-//# publish
-module creator::test {
-    use moveos_std::context;
-
-    fun init( _ : & context::Context){
+    fun init(_: ascii::String){
         
     }
 }

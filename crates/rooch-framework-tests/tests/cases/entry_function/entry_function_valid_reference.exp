@@ -4,7 +4,7 @@ task 1 'publish'. lines 3-22:
 Error: error: type `&mut signer` is not supported as a parameter type
   ┌─ /tmp/tempfile:8:5
   │  
-8 │ ╭     entry public fun test_entry_function_valid_reference_mut_signer( _: &mut signer ){
+8 │ ╭     entry public fun test_entry_function_valid_reference_mut_signer(_: &mut signer){
 9 │ │     }
   │ ╰─────^
 

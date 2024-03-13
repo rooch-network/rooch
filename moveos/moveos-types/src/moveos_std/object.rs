@@ -1,14 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-use super::raw_table::TableInfo;
-use crate::moveos_std::move_module::Module;
+
+use super::table::TablePlaceholder;
+use crate::moveos_std::account::Account;
+use crate::moveos_std::move_module::ModuleStore;
 use crate::moveos_std::object_id::ObjectID;
-use crate::moveos_std::resource::Resource;
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     state::{MoveState, MoveStructState, MoveStructType, State},
 };
 use anyhow::{bail, ensure, Result};
+use move_core_types::language_storage::ModuleId;
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
@@ -18,23 +20,29 @@ use move_core_types::{
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use once_cell::sync::Lazy;
+use primitive_types::H256;
 use serde::{Deserialize, Serialize};
 use smt::SPARSE_MERKLE_PLACEHOLDER_HASH;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("object");
+pub static MODULE_ID: Lazy<ModuleId> =
+    Lazy::new(|| ModuleId::new(MOVEOS_STD_ADDRESS, MODULE_NAME.to_owned()));
 pub const OBJECT_ENTITY_STRUCT_NAME: &IdentStr = ident_str!("ObjectEntity");
 
 // New table's state_root should be the place holder hash.
-pub static GENESIS_STATE_ROOT: Lazy<AccountAddress> =
-    Lazy::new(|| AccountAddress::new((*SPARSE_MERKLE_PLACEHOLDER_HASH).into()));
+pub static GENESIS_STATE_ROOT: Lazy<H256> = Lazy::new(|| *SPARSE_MERKLE_PLACEHOLDER_HASH);
 
-#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
-pub struct TablePlaceholder {}
+#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Default)]
+pub struct Root {
+    // Move VM will auto add a bool field to the empty struct
+    // So we manually add a bool field to the struct
+    _placeholder: bool,
+}
 
-impl MoveStructType for TablePlaceholder {
+impl MoveStructType for Root {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("TablePlaceholder");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("Root");
 
     fn struct_tag() -> StructTag {
         StructTag {
@@ -46,15 +54,15 @@ impl MoveStructType for TablePlaceholder {
     }
 }
 
-impl MoveStructState for TablePlaceholder {
+impl MoveStructState for Root {
     fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![])
+        MoveStructLayout::new(vec![MoveTypeLayout::Bool])
     }
 }
 
 pub type TableObject = ObjectEntity<TablePlaceholder>;
-pub type ResourceObject = ObjectEntity<Resource>;
-pub type ModuleObject = ObjectEntity<Module>;
+pub type AccountObject = ObjectEntity<Account>;
+pub type ModuleStoreObject = ObjectEntity<ModuleStore>;
 
 /// The Entity of the Object<T>.
 /// The value must be the last field
@@ -63,9 +71,29 @@ pub struct ObjectEntity<T> {
     pub id: ObjectID,
     pub owner: AccountAddress,
     pub flag: u8,
+    /// The state tree root of the object dynamic fields
     pub state_root: AccountAddress,
     pub size: u64,
     pub value: T,
+}
+
+impl ObjectEntity<Root> {
+    pub fn genesis_root_object() -> RootObjectEntity {
+        Self::root_object(*GENESIS_STATE_ROOT, 0)
+    }
+
+    pub fn root_object(state_root: H256, size: u64) -> RootObjectEntity {
+        Self {
+            id: ObjectID::root(),
+            owner: MOVEOS_STD_ADDRESS,
+            flag: 0u8,
+            state_root: AccountAddress::new(state_root.into()),
+            size,
+            value: Root {
+                _placeholder: false,
+            },
+        }
+    }
 }
 
 impl<T> ObjectEntity<T> {
@@ -76,7 +104,7 @@ impl<T> ObjectEntity<T> {
         id: ObjectID,
         owner: AccountAddress,
         flag: u8,
-        state_root: AccountAddress,
+        state_root: H256,
         size: u64,
         value: T,
     ) -> ObjectEntity<T> {
@@ -84,10 +112,18 @@ impl<T> ObjectEntity<T> {
             id,
             owner,
             flag,
-            state_root,
+            state_root: AccountAddress::new(state_root.into()),
             size,
             value,
         }
+    }
+
+    pub fn state_root(&self) -> H256 {
+        self.state_root.into_bytes().into()
+    }
+
+    pub fn update_state_root(&mut self, new_state_root: H256) {
+        self.state_root = AccountAddress::new(new_state_root.into());
     }
 
     pub fn is_shared(&self) -> bool {
@@ -141,16 +177,15 @@ where
 }
 
 impl ObjectEntity<TablePlaceholder> {
-    pub fn new_table_object(id: ObjectID, table_info: TableInfo) -> TableObject {
-        Self {
+    pub fn new_table_object(id: ObjectID, state_root: H256, size: u64) -> TableObject {
+        Self::new(
             id,
-            owner: AccountAddress::ZERO,
-            flag: 0u8,
-            value: TablePlaceholder {},
-
-            state_root: table_info.state_root,
-            size: table_info.size,
-        }
+            AccountAddress::ZERO,
+            0u8,
+            state_root,
+            size,
+            TablePlaceholder::default(),
+        )
     }
 
     pub fn get_table_object_struct_tag() -> StructTag {
@@ -163,29 +198,29 @@ impl ObjectEntity<TablePlaceholder> {
     }
 }
 
-impl ObjectEntity<Resource> {
-    pub fn new_resource_object(account: AccountAddress) -> ResourceObject {
-        Self {
-            id: Resource::resource_object_id(account),
-            owner: account,
-            flag: 0u8,
-            state_root: *GENESIS_STATE_ROOT,
-            size: 0,
-            value: Resource {},
-        }
+impl ObjectEntity<Account> {
+    pub fn new_account_object(account: AccountAddress) -> AccountObject {
+        Self::new(
+            Account::account_object_id(account),
+            account,
+            0u8,
+            *GENESIS_STATE_ROOT,
+            0,
+            Account::default(),
+        )
     }
 }
 
-impl ObjectEntity<Module> {
-    pub fn new_module_object() -> ModuleObject {
-        Self {
-            id: Module::module_object_id(),
-            owner: MOVEOS_STD_ADDRESS,
-            flag: 0u8,
-            state_root: *GENESIS_STATE_ROOT,
-            size: 0,
-            value: Module {},
-        }
+impl ObjectEntity<ModuleStore> {
+    pub fn new_module_store() -> ModuleStoreObject {
+        Self::new(
+            ModuleStore::module_store_id(),
+            MOVEOS_STD_ADDRESS,
+            0u8,
+            *GENESIS_STATE_ROOT,
+            0,
+            ModuleStore::default(),
+        )
     }
 }
 
@@ -228,9 +263,11 @@ where
     }
 }
 
+//TODO rename to RawObjectEntity
 pub type RawObject = ObjectEntity<RawData>;
+pub type RootObjectEntity = ObjectEntity<Root>;
 
-#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
+#[derive(Eq, PartialEq, Debug, Clone, Hash)]
 pub struct RawData {
     pub struct_tag: StructTag,
     pub value: Vec<u8>,
@@ -240,17 +277,6 @@ impl RawObject {
     const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = OBJECT_ENTITY_STRUCT_NAME;
-
-    pub fn new_raw_object(id: ObjectID, value: RawData) -> RawObject {
-        Self {
-            id,
-            owner: AccountAddress::ZERO,
-            flag: 0u8,
-            state_root: *GENESIS_STATE_ROOT,
-            size: 0,
-            value,
-        }
-    }
 
     pub fn from_bytes(bytes: &[u8], struct_tag: StructTag) -> Result<Self> {
         ensure!(
@@ -283,15 +309,16 @@ impl RawObject {
             size,
         })
     }
-    pub fn to_bytes(&self) -> Result<Vec<u8>> {
+
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = vec![];
-        bytes.extend(bcs::to_bytes(&self.id)?);
-        bytes.extend(bcs::to_bytes(&self.owner)?);
+        bytes.extend(bcs::to_bytes(&self.id).unwrap());
+        bytes.extend(bcs::to_bytes(&self.owner).unwrap());
         bytes.push(self.flag);
-        bytes.extend(bcs::to_bytes(&self.state_root)?);
-        bytes.extend(bcs::to_bytes(&self.size)?);
+        bytes.extend(bcs::to_bytes(&self.state_root).unwrap());
+        bytes.extend(bcs::to_bytes(&self.size).unwrap());
         bytes.extend_from_slice(&self.value.value);
-        Ok(bytes)
+        bytes
     }
 
     fn struct_tag(&self) -> StructTag {
@@ -304,10 +331,28 @@ impl RawObject {
     }
 
     // The output must consistent with ObjectEntity<T> into state result
-    pub fn into_state(&self) -> Result<State> {
-        let value = self.to_bytes()?;
+    pub fn into_state(&self) -> State {
+        let value = self.to_bytes();
         let value_type = TypeTag::Struct(Box::new(self.struct_tag()));
-        Ok(State::new(value, value_type))
+        State::new(value, value_type)
+    }
+
+    pub fn into_object<T: MoveStructState>(self) -> Result<ObjectEntity<T>> {
+        let struct_tag = T::struct_tag();
+        ensure!(
+            self.value.struct_tag == struct_tag,
+            "RawObjectEntity value type should be {}",
+            struct_tag
+        );
+        let value = bcs::from_bytes(&self.value.value)?;
+        Ok(ObjectEntity {
+            id: self.id,
+            owner: self.owner,
+            flag: self.flag,
+            state_root: self.state_root,
+            size: self.size,
+            value,
+        })
     }
 }
 
@@ -330,7 +375,14 @@ impl AnnotatedObject {
         size: u64,
         value: AnnotatedMoveStruct,
     ) -> Self {
-        Self::new(id, owner, flag, state_root, size, value)
+        Self {
+            id,
+            owner,
+            flag,
+            state_root,
+            size,
+            value,
+        }
     }
 
     /// Create a new AnnotatedObject from a AnnotatedMoveStruct
@@ -425,6 +477,10 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
+    use move_vm_types::values::Value;
+
     use super::*;
 
     #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
@@ -453,15 +509,51 @@ mod tests {
             object_id,
             AccountAddress::random(),
             0u8,
-            AccountAddress::random(),
+            H256::random(),
             0,
             object_value,
         );
 
-        let raw_object: RawObject = object.to_raw();
+        let raw_object: RawObject =
+            RawObject::from_bytes(&object.to_bytes()?, TestStruct::struct_tag())?;
 
-        let object2 = bcs::from_bytes::<ObjectEntity<TestStruct>>(&raw_object.to_bytes()?).unwrap();
+        let object2 = bcs::from_bytes::<ObjectEntity<TestStruct>>(&raw_object.to_bytes()).unwrap();
         assert_eq!(object, object2);
+
+        let runtime_value = Value::simple_deserialize(
+            &raw_object.into_state().value,
+            &ObjectEntity::<TestStruct>::type_layout(),
+        )
+        .unwrap();
+        let object3 = ObjectEntity::<TestStruct>::from_runtime_value(runtime_value)?;
+        assert_eq!(object, object3);
         Ok(())
+    }
+
+    #[test]
+    fn test_root_object() {
+        let root_object = RootObjectEntity::genesis_root_object();
+        let raw_object: RawObject =
+            RawObject::from_bytes(&root_object.to_bytes().unwrap(), Root::struct_tag()).unwrap();
+        let state = raw_object.into_state();
+
+        let object = raw_object.into_object::<Root>().unwrap();
+        assert_eq!(root_object, object);
+        let runtime_value =
+            Value::simple_deserialize(&state.value, &RootObjectEntity::type_layout()).unwrap();
+        let object2 = RootObjectEntity::from_runtime_value(runtime_value).unwrap();
+        assert_eq!(root_object, object2);
+    }
+
+    #[test]
+    fn test_genesis_state_root() {
+        let genesis_state_root = *GENESIS_STATE_ROOT;
+        //println!("genesis_state_root: {:?}", genesis_state_root);
+        //ensure the genesis state root is not changed
+        assert_eq!(
+            genesis_state_root,
+            H256::from_str("0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000")
+                .unwrap()
+        );
     }
 }

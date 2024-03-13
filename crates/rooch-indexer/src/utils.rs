@@ -91,6 +91,7 @@ pub fn escape_sql_string(value: String) -> String {
 
 // For better generate sql index for indexer query
 pub fn format_struct_tag(sturct_tag: StructTag) -> String {
-    let address = format!("0x{}", sturct_tag.address.to_canonical_string());
+    // let address = format!("0x{}", sturct_tag.address.to_canonical_string());
+    let address = format!("0x{}", sturct_tag.address.short_str_lossless());
     format!("{}::{}::{}", address, sturct_tag.module, sturct_tag.name,)
 }

@@ -5,7 +5,6 @@ module bitcoin_move::network{
     use std::option;
     use std::string::{Self, String};
     use bitcoin_move::genesis;
-    use moveos_std::context::Context;
 
     const ErrorUnknownNetwork: u64 = 1;
 
@@ -42,8 +41,8 @@ module bitcoin_move::network{
         Self::network_bitcoin()
     }
 
-    public fun network(ctx: &Context) : u8 {
-        let network_opt = genesis::network(ctx);
+    public fun network() : u8 {
+        let network_opt = genesis::network();
         if(option::is_some(&network_opt)){
             *option::borrow(&network_opt)
         } else {

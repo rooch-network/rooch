@@ -23,7 +23,7 @@ Migrated from the account module for simplyfying the account module.
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="">0x2::context</a>;
+<b>use</b> <a href="">0x2::account</a>;
 <b>use</b> <a href="">0x2::type_table</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="auth_validator_registry.md#0x3_auth_validator_registry">0x3::auth_validator_registry</a>;
@@ -139,7 +139,7 @@ max authentication key length
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_init_authentication_keys">init_authentication_keys</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="account.md#0x3_account">account</a>: &<a href="">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_init_authentication_keys">init_authentication_keys</a>(<a href="">account</a>: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -150,7 +150,7 @@ max authentication key length
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_get_authentication_key">get_authentication_key</a>&lt;ValidatorType&gt;(ctx: &<a href="_Context">context::Context</a>, account_addr: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_get_authentication_key">get_authentication_key</a>&lt;ValidatorType&gt;(account_addr: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
 </code></pre>
 
 
@@ -163,7 +163,7 @@ This function is used to rotate a resource account's authentication key, only th
 
 
 <pre><code>#[private_generics(#[ValidatorType])]
-<b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key">rotate_authentication_key</a>&lt;ValidatorType&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, account_addr: <b>address</b>, new_auth_key: <a href="">vector</a>&lt;u8&gt;)
+<b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_rotate_authentication_key">rotate_authentication_key</a>&lt;ValidatorType&gt;(account_addr: <b>address</b>, new_auth_key: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -176,7 +176,7 @@ This function is used to remove a resource account's authentication key, only th
 
 
 <pre><code>#[private_generics(#[ValidatorType])]
-<b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key">remove_authentication_key</a>&lt;ValidatorType&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, account_addr: <b>address</b>): <a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">account_authentication::AuthenticationKey</a>&lt;ValidatorType&gt;
+<b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_remove_authentication_key">remove_authentication_key</a>&lt;ValidatorType&gt;(account_addr: <b>address</b>): <a href="account_authentication.md#0x3_account_authentication_AuthenticationKey">account_authentication::AuthenticationKey</a>&lt;ValidatorType&gt;
 </code></pre>
 
 
@@ -188,7 +188,7 @@ This function is used to remove a resource account's authentication key, only th
 Return if the authentication validator is installed for the account at <code>account_addr</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_is_auth_validator_installed">is_auth_validator_installed</a>(ctx: &<a href="_Context">context::Context</a>, account_addr: <b>address</b>, auth_validator_id: u64): bool
+<pre><code><b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_is_auth_validator_installed">is_auth_validator_installed</a>(account_addr: <b>address</b>, auth_validator_id: u64): bool
 </code></pre>
 
 
@@ -199,7 +199,7 @@ Return if the authentication validator is installed for the account at <code>acc
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_install_auth_validator">install_auth_validator</a>&lt;ValidatorType: store&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, account_signer: &<a href="">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_install_auth_validator">install_auth_validator</a>&lt;ValidatorType: store&gt;(account_signer: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -210,5 +210,5 @@ Return if the authentication validator is installed for the account at <code>acc
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_install_auth_validator_entry">install_auth_validator_entry</a>&lt;ValidatorType: store&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, account_signer: &<a href="">signer</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="account_authentication.md#0x3_account_authentication_install_auth_validator_entry">install_auth_validator_entry</a>&lt;ValidatorType: store&gt;(account_signer: &<a href="">signer</a>)
 </code></pre>

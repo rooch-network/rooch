@@ -2,7 +2,7 @@
 
 //# publish
 module creator::test {
-    use moveos_std::context::Context;
+    
 
     #[data_struct]
     struct Inner has copy,drop {
@@ -19,11 +19,11 @@ module creator::test {
     }
 
     #[data_struct(T)]
-    public fun f1<T>(_ctx: &mut Context) {
+    public fun f1<T>() {
     }
 
-    public fun f2(ctx: &mut Context) {
-        f1<AllowedStruct>(ctx);
+    public fun f2() {
+        f1<AllowedStruct>();
     }
 }
 

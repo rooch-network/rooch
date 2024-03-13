@@ -2,7 +2,7 @@
 
 //# publish
 module creator::test1 {
-    use moveos_std::context::Context;
+    
 
     struct DisallowedStruct has copy,drop {
         f_u8: u8,
@@ -12,7 +12,7 @@ module creator::test1 {
     public fun f1<T: copy+drop>(_data: T) {
     }
 
-    public fun f2(_ctx: &mut Context) {
+    public fun f2() {
         let disallowed_struct = DisallowedStruct {
             f_u8: 123,
         };

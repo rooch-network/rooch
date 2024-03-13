@@ -170,6 +170,14 @@ impl MoveState for RoochMultiChainID {
     fn type_layout() -> MoveTypeLayout {
         MoveTypeLayout::U64
     }
+
+    fn to_runtime_value(&self) -> move_vm_types::values::Value {
+        move_vm_types::values::Value::u64(*self as u64)
+    }
+
+    fn from_runtime_value(value: move_vm_types::values::Value) -> anyhow::Result<Self> {
+        RoochMultiChainID::try_from(value.value_as::<u64>()?)
+    }
 }
 
 impl RoochMultiChainID {

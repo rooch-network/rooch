@@ -1,5 +1,5 @@
 module rooch_examples::data_struct {
-    use moveos_std::context::Context;
+    
 
     #[data_struct]
     struct Inner has copy,drop{
@@ -16,12 +16,12 @@ module rooch_examples::data_struct {
     }
 
     #[data_struct(T)]
-    fun f1<T: drop>(_ctx: &Context, _inner: T): bool{
+    fun f1<T: drop>(__inner: T): bool{
         false
     }
 
-    fun f2(_ctx: &Context) {
+    fun f2() {
         let inner = Inner {f_u8: 1};
-        f1(_ctx, inner);
+        f1(inner);
     }
 }

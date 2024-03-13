@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module nft::collection{
-    use std::option;
-    use std::option::Option;
+    use std::option::{Self, Option};
     use std::string::{Self, String};
     use moveos_std::display;
     use moveos_std::object_id::{ObjectID};
     use moveos_std::event;
-    use moveos_std::context::{Self, Context};
+    
     use moveos_std::object;
 
     friend nft::nft;
@@ -19,6 +18,7 @@ module nft::collection{
         name: String,
         creator: address,
         supply:  Supply,
+        description: String,
     }
 
     struct Supply has store{
@@ -34,18 +34,18 @@ module nft::collection{
         description: String,
     }
 
-    fun init(ctx: &mut Context){
-        let collection_display_obj = display::object_display<Collection>(ctx); 
-        display::set_value(collection_display_obj, string::utf8(b"name"), string::utf8(b"{ value.name }"));
-        display::set_value(collection_display_obj, string::utf8(b"uri"), string::utf8(b"https:://base_url/{ id }"));
-        display::set_value(collection_display_obj, string::utf8(b"description"), string::utf8(b"{ value.description }"));
-        display::set_value(collection_display_obj, string::utf8(b"creator"), string::utf8(b"{ creator }"));
-        display::set_value(collection_display_obj, string::utf8(b"supply"), string::utf8(b"{ value.supply }"));
+    fun init(){
+        let collection_display_obj = display::object_display<Collection>(); 
+        display::set_value(collection_display_obj, string::utf8(b"name"), string::utf8(b"{value.name}"));
+        display::set_value(collection_display_obj, string::utf8(b"uri"), string::utf8(b"https:://base_url/{id}"));
+        display::set_value(collection_display_obj, string::utf8(b"description"), string::utf8(b"{value.description}"));
+        display::set_value(collection_display_obj, string::utf8(b"creator"), string::utf8(b"{value.creator}"));
+        display::set_value(collection_display_obj, string::utf8(b"supply"), string::utf8(b"{value.supply}"));
     }
 
     /// Create a new collection Object
     public fun create_collection(
-        ctx: &mut Context,
+        
         name: String,
         creator: address,
         description: String,
@@ -59,10 +59,11 @@ module nft::collection{
                 current: 0,
                 maximum: max_supply,
             },
+            description,
         };
 
-        let collection_obj = context::new_object(
-            ctx,
+        let collection_obj = object::new(
+            
             collection
         );
         let collection_id = object::id(&collection_obj);
@@ -77,6 +78,16 @@ module nft::collection{
         );
         object::to_shared(collection_obj);
         collection_id
+    }
+
+    entry fun create_collection_entry(
+        
+        name: String,
+        creator: address,
+        description: String,
+        max_supply: u64,
+    ) {
+        create_collection(name, creator, description, option::some(max_supply));
     }
 
     public(friend) fun increment_supply(collection: &mut Collection): Option<u64>{

@@ -13,8 +13,8 @@
 -  [Function `get_block`](#0x3_ethereum_light_client_get_block)
 
 
-<pre><code><b>use</b> <a href="">0x2::bcs</a>;
-<b>use</b> <a href="">0x2::context</a>;
+<pre><code><b>use</b> <a href="">0x2::account</a>;
+<b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="ethereum_address.md#0x3_ethereum_address">0x3::ethereum_address</a>;
@@ -66,7 +66,7 @@
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, genesis_account: &<a href="">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_genesis_init">genesis_init</a>(genesis_account: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -78,7 +78,7 @@
 The relay server submit a new Ethereum block to the light client.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_submit_new_block">submit_new_block</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, block_header_bytes: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b> entry <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_submit_new_block">submit_new_block</a>(block_header_bytes: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -90,5 +90,5 @@ The relay server submit a new Ethereum block to the light client.
 Get block via block_number
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_get_block">get_block</a>(ctx: &<a href="_Context">context::Context</a>, block_number: u64): &<a href="ethereum_light_client.md#0x3_ethereum_light_client_BlockHeader">ethereum_light_client::BlockHeader</a>
+<pre><code><b>public</b> <b>fun</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_get_block">get_block</a>(block_number: u64): &<a href="ethereum_light_client.md#0x3_ethereum_light_client_BlockHeader">ethereum_light_client::BlockHeader</a>
 </code></pre>
