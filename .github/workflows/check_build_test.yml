@@ -23,7 +23,8 @@ jobs:
   check_build_test:
     name: Check-Build-Test
     runs-on: self-hosted
-
+    strategy:
+      fail-fast: false
     steps:
       - uses: actions/checkout@v3
       - uses: rooch-network/rooch/.github/actions/rust-setup@main
