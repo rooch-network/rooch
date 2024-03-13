@@ -542,7 +542,7 @@ module moveos_std::account {
    }
 
    #[test(sender=@0x42)]
-   #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
+   #[expected_failure(abort_code = 2, location = moveos_std::object)]
    fun test_failure_borrow_resource_no_exists(sender: signer){
       let sender_addr = signer::address_of(&sender);
       create_account_object(sender_addr);
@@ -553,7 +553,7 @@ module moveos_std::account {
    }
 
    #[test(sender=@0x42)]
-   #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
+   #[expected_failure(abort_code = 2, location = moveos_std::object)]
    fun test_failure_borrow_mut_resource_no_exists(sender: signer){
       let sender_addr = signer::address_of(&sender);
       create_account_object(sender_addr);

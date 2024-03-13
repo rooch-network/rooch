@@ -6,7 +6,6 @@
 module moveos_std::object {
     use moveos_std::signer;
     use moveos_std::object_id::{Self, ObjectID};
-    use moveos_std::raw_table;
     use moveos_std::tx_context;
 
     friend moveos_std::account;
@@ -15,8 +14,10 @@ module moveos_std::object {
     friend moveos_std::table;
     friend moveos_std::type_table;
 
-    const ErrorObjectAlreadyExist: u64 = 1;
-    const ErrorObjectFrozen: u64 = 2;
+    /// The Object or dynamic field already exists
+    const ErrorAlreadyExists: u64 = 1;
+    /// Can not found the Object or dynamic field
+    const ErrorNotFound: u64 = 2; 
     const ErrorInvalidOwnerAddress:u64 = 3;
     const ErrorObjectOwnerNotMatch: u64 = 4;
     const ErrorObjectNotShared: u64 = 5;
@@ -24,6 +25,7 @@ module moveos_std::object {
     const ErrorObjectIsBound: u64 = 6;
     const ErrorObjectAlreadyBorrowed: u64 = 7;
     const ErrorObjectContainsDynamicFields: u64 = 8;
+    const ErrorObjectFrozen: u64 = 9;
 
     const SYSTEM_OWNER_ADDRESS: address = @0x0;
     
@@ -105,7 +107,7 @@ module moveos_std::object {
     }
 
     fun new_internal<T: key>(id: ObjectID, value: T): ObjectEntity<T> {
-        assert!(!contains_global(id), ErrorObjectAlreadyExist);
+        assert!(!contains_global(id), ErrorAlreadyExists);
         let owner = SYSTEM_OWNER_ADDRESS;
         
         ObjectEntity<T>{
@@ -414,7 +416,7 @@ module moveos_std::object {
     /// key already exists. The entry itself is not stored in the
     /// table, and cannot be discovered from it.
     public(friend) fun add_field_internal<T: key, K: copy + drop, V>(table_handle: ObjectID, key: K, val: V) {
-        raw_table::add<K,V>(table_handle, key, val);
+        raw_table_add<K,V>(table_handle, key, val);
         let object_entity = borrow_mut_from_global<T>(table_handle);
         object_entity.size = object_entity.size + 1;
     }
@@ -428,7 +430,7 @@ module moveos_std::object {
      /// Acquire an immutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public(friend) fun borrow_field_internal<K: copy + drop, V>(table_handle: ObjectID, key: K): &V {
-        raw_table::borrow<K, V>(table_handle, key)
+        raw_table_borrow<K, V>(table_handle, key)
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
@@ -457,7 +459,7 @@ module moveos_std::object {
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public(friend) fun borrow_mut_field_internal<K: copy + drop, V>(table_handle: ObjectID, key: K): &mut V {
-        raw_table::borrow_mut<K, V>(table_handle, key)
+        raw_table_borrow_mut<K, V>(table_handle, key)
     }
 
     #[private_generics(T)]
@@ -504,7 +506,7 @@ module moveos_std::object {
     /// Remove from `table` and return the value which `key` maps to.
     /// Aborts if there is no entry for `key`.
     public(friend) fun remove_field_internal<T: key, K: copy + drop, V>(table_handle: ObjectID, key: K): V {
-        let v = raw_table::remove<K, V>(table_handle, key);
+        let v = raw_table_remove<K, V>(table_handle, key);
         let object_entity = borrow_mut_from_global<T>(table_handle);
         object_entity.size = object_entity.size - 1;
         v
@@ -517,7 +519,7 @@ module moveos_std::object {
 
        /// Returns true if `table` contains an entry for `key`.
     public(friend) fun contains_field_internal<K: copy + drop>(table_handle: ObjectID, key: K): bool {
-        raw_table::contains<K>(table_handle, key)
+        raw_table_contains<K>(table_handle, key)
     }
 
     /// Returns the size of the table, the number of key-value pairs
@@ -529,6 +531,60 @@ module moveos_std::object {
         let object_entity = borrow_from_global<T>(object_id);
         object_entity.size
     }
+
+    // ===== Original raw_table APIs =====
+    // TODO refactor later
+
+    /// Add a new entry to the table. Aborts if an entry for this
+    /// key already exists. The entry itself is not stored in the
+    /// table, and cannot be discovered from it.
+    public(friend) fun raw_table_add<K: copy + drop, V>(table_handle: ObjectID, key: K, val: V) {
+        add_box<K, V, Box<V>>(table_handle, key, Box {val} );
+    }
+
+    /// Acquire an immutable reference to the value which `key` maps to.
+    /// Aborts if there is no entry for `key`.
+    public(friend) fun raw_table_borrow<K: copy + drop, V>(table_handle: ObjectID, key: K): &V {
+        &borrow_box<K, V, Box<V>>(table_handle, key).val
+    }
+
+    /// Acquire a mutable reference to the value which `key` maps to.
+    /// Aborts if there is no entry for `key`.
+    public(friend) fun raw_table_borrow_mut<K: copy + drop, V>(table_handle: ObjectID, key: K): &mut V {
+        &mut borrow_box_mut<K, V, Box<V>>(table_handle, key).val
+    }
+
+    /// Remove from `table` and return the value which `key` maps to.
+    /// Aborts if there is no entry for `key`.
+    public(friend) fun raw_table_remove<K: copy + drop, V>(table_handle: ObjectID, key: K): V {
+        let Box { val } = remove_box<K, V, Box<V>>(table_handle, key);
+        val
+    }
+
+    /// Returns true if `table` contains an entry for `key`.
+    public(friend) fun raw_table_contains<K: copy + drop>(table_handle: ObjectID, key: K): bool {
+        contains_box<K>(table_handle, key)
+    }
+
+
+    // ======================================================================================================
+    // Internal API
+    
+    /// Wrapper for values. Required for making values appear as resources in the implementation.
+    /// Because the GlobalValue in MoveVM must be a resource.
+    struct Box<V> has key, drop, store {
+        val: V
+    }
+
+    native fun add_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K, val: Box<V>);
+
+    native fun borrow_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K): &Box<V>;
+
+    native fun borrow_box_mut<K: copy + drop, V, B>(table_handle: ObjectID, key: K): &mut Box<V>;
+
+    native fun contains_box<K: copy + drop>(table_handle: ObjectID, key: K): bool;
+
+    native fun remove_box<K: copy + drop, V, B>(table_handle: ObjectID, key: K): Box<V>;
 
     #[test_only]
     /// Testing only: allows to drop a Object even if it's fields is not empty.
@@ -617,7 +673,7 @@ module moveos_std::object {
     }
 
     #[test]
-    #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
+    #[expected_failure(abort_code = 2, location = moveos_std::object)]
     fun test_borrow_not_exist_failure() {
         let obj = new(TestStruct { count: 1 });
         let object_id = obj.id;
@@ -626,7 +682,7 @@ module moveos_std::object {
     }
 
     #[test]
-    #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
+    #[expected_failure(abort_code = 2, location = moveos_std::object)]
     fun test_double_remove_failure() {
         
         let object_id = derive_object_id();
@@ -640,7 +696,7 @@ module moveos_std::object {
     }
 
     #[test]
-    #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
+    #[expected_failure(abort_code = 2, location = moveos_std::object)]
     fun test_type_mismatch() {
         
         let object_id = derive_object_id();
@@ -758,7 +814,7 @@ module moveos_std::object {
 
 
     #[test]
-    #[expected_failure(abort_code = 2, location = Self)]
+    #[expected_failure(abort_code = ErrorObjectFrozen, location = Self)]
     fun test_frozen_object_by_extend(){
         
         let obj = new(TestStruct{count: 1});

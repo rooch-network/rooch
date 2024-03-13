@@ -10,6 +10,7 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Resource `Root`](#0x2_object_Root)
 -  [Struct `ObjectEntity`](#0x2_object_ObjectEntity)
 -  [Resource `Object`](#0x2_object_Object)
+-  [Resource `Box`](#0x2_object_Box)
 -  [Struct `TestStructID`](#0x2_object_TestStructID)
 -  [Constants](#@Constants_0)
 -  [Function `new`](#0x2_object_new)
@@ -75,10 +76,14 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `contains_field_internal`](#0x2_object_contains_field_internal)
 -  [Function `field_size`](#0x2_object_field_size)
 -  [Function `field_size_internal`](#0x2_object_field_size_internal)
+-  [Function `raw_table_add`](#0x2_object_raw_table_add)
+-  [Function `raw_table_borrow`](#0x2_object_raw_table_borrow)
+-  [Function `raw_table_borrow_mut`](#0x2_object_raw_table_borrow_mut)
+-  [Function `raw_table_remove`](#0x2_object_raw_table_remove)
+-  [Function `raw_table_contains`](#0x2_object_raw_table_contains)
 
 
 <pre><code><b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
-<b>use</b> <a href="raw_table.md#0x2_raw_table">0x2::raw_table</a>;
 <b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 </code></pre>
@@ -123,6 +128,19 @@ Developers only need to use Object<T> related APIs and do not need to know the O
 
 
 
+<a name="0x2_object_Box"></a>
+
+## Resource `Box`
+
+Wrapper for values. Required for making values appear as resources in the implementation.
+Because the GlobalValue in MoveVM must be a resource.
+
+
+<pre><code><b>struct</b> <a href="object.md#0x2_object_Box">Box</a>&lt;V&gt; <b>has</b> drop, store, key
+</code></pre>
+
+
+
 <a name="0x2_object_TestStructID"></a>
 
 ## Struct `TestStructID`
@@ -148,6 +166,16 @@ Developers only need to use Object<T> related APIs and do not need to know the O
 
 
 
+<a name="0x2_object_ErrorAlreadyExists"></a>
+
+The Object or dynamic field already exists
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorAlreadyExists">ErrorAlreadyExists</a>: u64 = 1;
+</code></pre>
+
+
+
 <a name="0x2_object_ErrorInvalidOwnerAddress"></a>
 
 
@@ -157,20 +185,21 @@ Developers only need to use Object<T> related APIs and do not need to know the O
 
 
 
+<a name="0x2_object_ErrorNotFound"></a>
+
+Can not found the Object or dynamic field
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorNotFound">ErrorNotFound</a>: u64 = 2;
+</code></pre>
+
+
+
 <a name="0x2_object_ErrorObjectAlreadyBorrowed"></a>
 
 
 
 <pre><code><b>const</b> <a href="object.md#0x2_object_ErrorObjectAlreadyBorrowed">ErrorObjectAlreadyBorrowed</a>: u64 = 7;
-</code></pre>
-
-
-
-<a name="0x2_object_ErrorObjectAlreadyExist"></a>
-
-
-
-<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorObjectAlreadyExist">ErrorObjectAlreadyExist</a>: u64 = 1;
 </code></pre>
 
 
@@ -188,7 +217,7 @@ Developers only need to use Object<T> related APIs and do not need to know the O
 
 
 
-<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorObjectFrozen">ErrorObjectFrozen</a>: u64 = 2;
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorObjectFrozen">ErrorObjectFrozen</a>: u64 = 9;
 </code></pre>
 
 
@@ -1032,4 +1061,69 @@ Returns the size of the table, the number of key-value pairs
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_field_size_internal">field_size_internal</a>&lt;T: key&gt;(<a href="object_id.md#0x2_object_id">object_id</a>: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): u64
+</code></pre>
+
+
+
+<a name="0x2_object_raw_table_add"></a>
+
+## Function `raw_table_add`
+
+Add a new entry to the table. Aborts if an entry for this
+key already exists. The entry itself is not stored in the
+table, and cannot be discovered from it.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_raw_table_add">raw_table_add</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, key: K, val: V)
+</code></pre>
+
+
+
+<a name="0x2_object_raw_table_borrow"></a>
+
+## Function `raw_table_borrow`
+
+Acquire an immutable reference to the value which <code>key</code> maps to.
+Aborts if there is no entry for <code>key</code>.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_raw_table_borrow">raw_table_borrow</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, key: K): &V
+</code></pre>
+
+
+
+<a name="0x2_object_raw_table_borrow_mut"></a>
+
+## Function `raw_table_borrow_mut`
+
+Acquire a mutable reference to the value which <code>key</code> maps to.
+Aborts if there is no entry for <code>key</code>.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_raw_table_borrow_mut">raw_table_borrow_mut</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, key: K): &<b>mut</b> V
+</code></pre>
+
+
+
+<a name="0x2_object_raw_table_remove"></a>
+
+## Function `raw_table_remove`
+
+Remove from <code><a href="table.md#0x2_table">table</a></code> and return the value which <code>key</code> maps to.
+Aborts if there is no entry for <code>key</code>.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_raw_table_remove">raw_table_remove</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, key: K): V
+</code></pre>
+
+
+
+<a name="0x2_object_raw_table_contains"></a>
+
+## Function `raw_table_contains`
+
+Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an entry for <code>key</code>.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_raw_table_contains">raw_table_contains</a>&lt;K: <b>copy</b>, drop&gt;(table_handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>, key: K): bool
 </code></pre>
