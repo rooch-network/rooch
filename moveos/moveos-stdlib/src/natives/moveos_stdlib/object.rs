@@ -10,7 +10,7 @@ use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
 };
 use moveos_types::{
-    moveos_std::{object::Object, object_id::ObjectID},
+    moveos_std::{object::Object, object::ObjectID},
     state::{MoveState, PlaceholderStruct},
 };
 use smallvec::smallvec;

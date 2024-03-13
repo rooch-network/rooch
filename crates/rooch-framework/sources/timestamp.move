@@ -8,9 +8,7 @@
 /// * TickTransaction: update the timestamp via the time offset in the TickTransaction(TODO)
 module rooch_framework::timestamp {
 
-    use moveos_std::object_id;
     use moveos_std::object;
-    
     use moveos_std::signer;
     use moveos_std::core_addresses;
 
@@ -60,13 +58,13 @@ module rooch_framework::timestamp {
     }
 
     fun timestamp_mut(): &mut Timestamp {
-        let object_id = object_id::named_object_id<Timestamp>();
+        let object_id = object::named_object_id<Timestamp>();
         let obj = object::borrow_mut_object_extend<Timestamp>(object_id);
         object::borrow_mut(obj)
     }
 
     public fun timestamp(): &Timestamp {
-        let object_id = object_id::named_object_id<Timestamp>();
+        let object_id = object::named_object_id<Timestamp>();
         let obj = object::borrow_object<Timestamp>(object_id);
         object::borrow(obj)
     }

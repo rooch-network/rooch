@@ -21,7 +21,7 @@ use move_vm_types::{
     values::{GlobalValue, Struct, StructRef, Value},
 };
 use moveos_object_runtime::resolved_arg::ResolvedArg;
-use moveos_types::{moveos_std::object_id::ObjectID, state_resolver::StateResolver};
+use moveos_types::{moveos_std::object::ObjectID, state_resolver::StateResolver};
 use moveos_types::{
     moveos_std::{object, tx_context::TxContext},
     state::{KeyState, MoveState},

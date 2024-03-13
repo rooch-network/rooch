@@ -36,7 +36,6 @@
 <pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 </code></pre>
@@ -328,7 +327,7 @@ This function is for the <code>CoinType</code> module to extend
 
 
 <pre><code>#[private_generics(#[CoinType])]
-<b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_borrow_mut_coin_store_extend">borrow_mut_coin_store_extend</a>&lt;CoinType: key&gt;(<a href="">object_id</a>: <a href="_ObjectID">object_id::ObjectID</a>): &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;
+<b>public</b> <b>fun</b> <a href="coin_store.md#0x3_coin_store_borrow_mut_coin_store_extend">borrow_mut_coin_store_extend</a>&lt;CoinType: key&gt;(object_id: <a href="_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;
 </code></pre>
 
 
@@ -365,7 +364,7 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_account_coin_store">create_account_coin_store</a>&lt;CoinType: key&gt;(<a href="">account</a>: <b>address</b>): <a href="_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_create_account_coin_store">create_account_coin_store</a>&lt;CoinType: key&gt;(<a href="">account</a>: <b>address</b>): <a href="_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -376,7 +375,7 @@ Only the <code>CoinType</code> module can freeze or unfreeze a CoinStore by the 
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_borrow_mut_coin_store_internal">borrow_mut_coin_store_internal</a>&lt;CoinType: key&gt;(<a href="">object_id</a>: <a href="_ObjectID">object_id::ObjectID</a>): &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="coin_store.md#0x3_coin_store_borrow_mut_coin_store_internal">borrow_mut_coin_store_internal</a>&lt;CoinType: key&gt;(object_id: <a href="_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="coin_store.md#0x3_coin_store_CoinStore">coin_store::CoinStore</a>&lt;CoinType&gt;&gt;
 </code></pre>
 
 

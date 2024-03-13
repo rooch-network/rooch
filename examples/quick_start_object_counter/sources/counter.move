@@ -1,6 +1,6 @@
 module quick_start_object_counter::quick_start_object_counter {
     use std::signer;
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     use moveos_std::event;
     use moveos_std::object::{Self, Object};
     

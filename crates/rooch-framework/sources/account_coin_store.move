@@ -7,10 +7,7 @@ module rooch_framework::account_coin_store {
     use std::option;
     use std::option::Option;
     use moveos_std::account;
-    use moveos_std::object;
-    use moveos_std::object_id;
-    use moveos_std::object_id::ObjectID;
-    use moveos_std::object::{Object};
+    use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::table;
     use moveos_std::table::Table;
     
@@ -77,7 +74,7 @@ module rooch_framework::account_coin_store {
     /// Return the account CoinStore object id for addr
     /// the account CoinStore is a account named object, the id is determinate for each addr and CoinType
     public fun account_coin_store_id<CoinType: key>(addr: address): ObjectID {
-        object_id::account_named_object_id<CoinStore<CoinType>>(addr)
+        object::account_named_object_id<CoinStore<CoinType>>(addr)
     }
 
     /// Return CoinStores table handle for addr

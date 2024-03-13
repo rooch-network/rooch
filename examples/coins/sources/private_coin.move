@@ -4,9 +4,7 @@
 module coins::private_coin {
 
     use std::string;
-    use moveos_std::object_id;
     use moveos_std::signer;
-    
     use moveos_std::object::{Self, Object};
     use rooch_framework::coin::{Self, Coin, CoinInfo};
     use rooch_framework::coin_store::{Self, CoinStore};
@@ -59,7 +57,7 @@ module coins::private_coin {
     }
 
     fun deposit_to_treaury(coin: Coin<PRC>) {
-        let treasury_object_id = object_id::named_object_id<Treasury>();
+        let treasury_object_id = object::named_object_id<Treasury>();
         let treasury_obj = object::borrow_mut_object_extend<Treasury>(treasury_object_id);
         coin_store::deposit_extend(&mut object::borrow_mut(treasury_obj).coin_store, coin);
     }

@@ -44,7 +44,6 @@
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="core_addresses.md#0x2_core_addresses">0x2::core_addresses</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="type_table.md#0x2_type_table">0x2::type_table</a>;
 </code></pre>
 
@@ -384,7 +383,7 @@ A resource account can only be created once
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_object_id">account_object_id</a>(<a href="account.md#0x2_account">account</a>: <b>address</b>): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_object_id">account_object_id</a>(<a href="account.md#0x2_account">account</a>: <b>address</b>): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 

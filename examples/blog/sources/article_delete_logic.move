@@ -4,7 +4,7 @@
 module rooch_examples::article_delete_logic {
     use moveos_std::object::Object;
     
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     use rooch_examples::article::{Self, Article};
     use rooch_examples::blog_aggregate;
 

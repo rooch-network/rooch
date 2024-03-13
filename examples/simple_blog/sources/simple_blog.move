@@ -8,7 +8,7 @@ module simple_blog::simple_blog {
     use std::vector;
     use moveos_std::account;
     use moveos_std::object;
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     use moveos_std::object::{Object};
     
     use simple_blog::simple_article::{Self, Article};

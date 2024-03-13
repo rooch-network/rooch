@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 
 // use super::object::Object;
-use super::object_id::{self, ObjectID};
+use super::object::{self, ObjectID};
 use crate::{
     addresses::{MOVEOS_STD_ADDRESS, MOVE_STD_ADDRESS},
     move_std::string::MoveString,
@@ -35,7 +35,7 @@ pub fn get_object_display_id(value_type: TypeTag) -> ObjectID {
         module: MODULE_NAME.to_owned(),
         type_params: vec![object_type],
     };
-    object_id::named_object_id(&struct_tag)
+    object::named_object_id(&struct_tag)
 }
 
 pub fn get_resource_display_id(value_type: TypeTag) -> ObjectID {
@@ -45,7 +45,7 @@ pub fn get_resource_display_id(value_type: TypeTag) -> ObjectID {
         module: MODULE_NAME.to_owned(),
         type_params: vec![value_type],
     };
-    object_id::named_object_id(&struct_tag)
+    object::named_object_id(&struct_tag)
 }
 
 /// Convert 0x1::string::String to displayable string.
@@ -57,7 +57,7 @@ fn display_move_string(move_struct: &AnnotatedMoveStruct) -> Result<String> {
     }
 }
 
-/// Convert 0x2::object_id::ObjectID to displayable string.
+/// Convert 0x2::object::ObjectID to displayable string.
 fn display_object_id(move_struct: &AnnotatedMoveStruct) -> String {
     if let AnnotatedMoveValue::Address(address) = &move_struct.value[0].1 {
         address.to_canonical_string()
