@@ -1,0 +1,10 @@
+{
+  "on-chain-btc-indexer": {
+    "title": "On-chain Bitcoin indexer",
+    "display": "hidden"
+  },
+  "cryptographic-primitives": "Cryptographic primitives",
+  "timestamp": "Timestamp",
+  "private-generics": "Private generics",
+  "unit-test": "Unit test"
+}
