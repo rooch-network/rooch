@@ -19,7 +19,6 @@
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="context.md#0x2_context">0x2::context</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="simple_map.md#0x2_simple_map">0x2::simple_map</a>;
@@ -48,7 +47,7 @@ Only the module of <code>T</code> can call this function.
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="display.md#0x2_display_resource_display">resource_display</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;
+<b>public</b> <b>fun</b> <a href="display.md#0x2_display_resource_display">resource_display</a>&lt;T: key&gt;(): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;T&gt;&gt;
 </code></pre>
 
 
@@ -62,7 +61,7 @@ Only the module of <code>T</code> can call this function.
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="display.md#0x2_display_object_display">object_display</a>&lt;T: key&gt;(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;&gt;&gt;
+<b>public</b> <b>fun</b> <a href="display.md#0x2_display_object_display">object_display</a>&lt;T: key&gt;(): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="display.md#0x2_display_Display">display::Display</a>&lt;<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;&gt;&gt;
 </code></pre>
 
 

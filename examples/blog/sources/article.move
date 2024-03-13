@@ -10,7 +10,7 @@ module rooch_examples::article {
     use moveos_std::event;
     use moveos_std::object::{Self, Object};
     use moveos_std::object_id::ObjectID;
-    use moveos_std::context::{Self, Context};
+    
     use moveos_std::table::{Self, Table};
     use rooch_examples::comment::{Self, Comment};
     use std::option;
@@ -35,9 +35,9 @@ module rooch_examples::article {
         comment_seq_id: u64,
     }
 
-    public fun initialize(ctx: &mut Context, account: &signer) {
+    public fun initialize(account: &signer) {
         assert!(signer::address_of(account) == @rooch_examples, ErrorNotGenesisAccount);
-        let _ = ctx;
+        
         let _ = account;
     }
 
@@ -121,7 +121,7 @@ module rooch_examples::article {
     }
 
     fun new_article(
-        ctx: &mut Context,
+        
         title: String,
         body: String,
     ): Article {
@@ -131,7 +131,7 @@ module rooch_examples::article {
             version: 0,
             title,
             body,
-            comments: context::new_table<u64, Comment>(ctx),
+            comments: table::new<u64, Comment>(),
             comment_seq_id_generator: CommentSeqIdGenerator { sequence: 0, },
         }
     }
@@ -343,18 +343,18 @@ module rooch_examples::article {
 
 
     public(friend) fun create_article(
-        ctx: &mut Context,
+        
         title: String,
         body: String,
     ): Object<Article> {
         let article = new_article(
-            ctx,
+            
             title,
             body,
         );
         
-        let article_obj = context::new_object(
-            ctx,
+        let article_obj = object::new(
+            
             article,
         );
         article_obj
@@ -369,11 +369,11 @@ module rooch_examples::article {
         object::remove(article_obj)
     }
 
-    public fun get_article_mut(_ctx: &mut Context, obj_id: ObjectID): &mut Object<Article> {
+    public fun get_article_mut(obj_id: ObjectID): &mut Object<Article> {
         object::borrow_mut_object_extend<Article>(obj_id)
     }
 
-    public fun get_article(_ctx: &mut Context, obj_id: ObjectID): &Object<Article> {
+    public fun get_article(obj_id: ObjectID): &Object<Article> {
         object::borrow_object<Article>(obj_id)
     }
 

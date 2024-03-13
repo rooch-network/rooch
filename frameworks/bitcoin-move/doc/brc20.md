@@ -26,7 +26,6 @@
 <pre><code><b>use</b> <a href="">0x1::debug</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
@@ -151,7 +150,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="brc20.md#0x4_brc20_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _genesis_account: &<a href="">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="brc20.md#0x4_brc20_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -206,7 +205,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="brc20.md#0x4_brc20_process_utxo_op">process_utxo_op</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, op: <a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): bool
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="brc20.md#0x4_brc20_process_utxo_op">process_utxo_op</a>(op: <a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): bool
 </code></pre>
 
 
@@ -217,7 +216,7 @@ https://domo-2.gitbook.io/brc-20-experiment/
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="brc20.md#0x4_brc20_process_inscribe_op">process_inscribe_op</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, op: <a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): bool
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="brc20.md#0x4_brc20_process_inscribe_op">process_inscribe_op</a>(op: <a href="brc20.md#0x4_brc20_Op">brc20::Op</a>): bool
 </code></pre>
 
 

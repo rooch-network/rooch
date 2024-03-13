@@ -17,8 +17,7 @@
 -  [Function `is_main`](#0x3_chain_id_is_main)
 
 
-<pre><code><b>use</b> <a href="">0x2::context</a>;
-<b>use</b> <a href="">0x2::object</a>;
+<pre><code><b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::object_id</a>;
 </code></pre>
 
@@ -83,7 +82,7 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="chain_id.md#0x3_chain_id_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _genesis_account: &<a href="">signer</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="chain_id.md#0x3_chain_id_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>, <a href="chain_id.md#0x3_chain_id">chain_id</a>: u64)
 </code></pre>
 
 
@@ -105,7 +104,7 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_borrow">borrow</a>(_ctx: &<a href="_Context">context::Context</a>): &<a href="chain_id.md#0x3_chain_id_ChainID">chain_id::ChainID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_borrow">borrow</a>(): &<a href="chain_id.md#0x3_chain_id_ChainID">chain_id::ChainID</a>
 </code></pre>
 
 
@@ -116,7 +115,7 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id">chain_id</a>(ctx: &<a href="_Context">context::Context</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id">chain_id</a>(): u64
 </code></pre>
 
 
@@ -127,7 +126,7 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_local">is_local</a>(ctx: &<a href="_Context">context::Context</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_local">is_local</a>(): bool
 </code></pre>
 
 
@@ -138,7 +137,7 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_dev">is_dev</a>(ctx: &<a href="_Context">context::Context</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_dev">is_dev</a>(): bool
 </code></pre>
 
 
@@ -149,7 +148,7 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_test">is_test</a>(ctx: &<a href="_Context">context::Context</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_test">is_test</a>(): bool
 </code></pre>
 
 
@@ -160,5 +159,5 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_main">is_main</a>(ctx: &<a href="_Context">context::Context</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_main">is_main</a>(): bool
 </code></pre>

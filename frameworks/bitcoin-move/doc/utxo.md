@@ -31,7 +31,6 @@
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::simple_multimap</a>;
@@ -92,7 +91,7 @@ The UTXO Object
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x4_utxo_new">new</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, txid: <b>address</b>, vout: u32, value: u64): <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x4_utxo_new">new</a>(txid: <b>address</b>, vout: u32, value: u64): <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;
 </code></pre>
 
 
@@ -150,7 +149,7 @@ Get the UTXO's vout
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_exists_utxo">exists_utxo</a>(ctx: &<a href="_Context">context::Context</a>, txid: <b>address</b>, vout: u32): bool
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_exists_utxo">exists_utxo</a>(txid: <b>address</b>, vout: u32): bool
 </code></pre>
 
 
@@ -161,7 +160,7 @@ Get the UTXO's vout
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_borrow_utxo">borrow_utxo</a>(_ctx: &<a href="_Context">context::Context</a>, txid: <b>address</b>, vout: u32): &<a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_borrow_utxo">borrow_utxo</a>(txid: <b>address</b>, vout: u32): &<a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;
 </code></pre>
 
 
@@ -240,7 +239,7 @@ Seal the UTXO with a protocol, the T is the protocol object
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x4_utxo_take">take</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="">object_id</a>: <a href="_ObjectID">object_id::ObjectID</a>): (<b>address</b>, <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x4_utxo_take">take</a>(<a href="">object_id</a>: <a href="_ObjectID">object_id::ObjectID</a>): (<b>address</b>, <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;)
 </code></pre>
 
 

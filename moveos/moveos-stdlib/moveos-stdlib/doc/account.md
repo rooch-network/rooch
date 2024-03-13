@@ -13,8 +13,6 @@
 -  [Function `create_account_for_system`](#0x2_account_create_account_for_system)
 -  [Function `create_system_reserved_account`](#0x2_account_create_system_reserved_account)
 -  [Function `sequence_number`](#0x2_account_sequence_number)
--  [Function `sequence_number_for_sender`](#0x2_account_sequence_number_for_sender)
--  [Function `increment_sequence_number`](#0x2_account_increment_sequence_number)
 -  [Function `increment_sequence_number_for_system`](#0x2_account_increment_sequence_number_for_system)
 -  [Function `signer_address`](#0x2_account_signer_address)
 -  [Function `is_resource_account`](#0x2_account_is_resource_account)
@@ -44,7 +42,6 @@
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
-<b>use</b> <a href="context.md#0x2_context">0x2::context</a>;
 <b>use</b> <a href="core_addresses.md#0x2_core_addresses">0x2::core_addresses</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
@@ -236,7 +233,7 @@ is returned. This way, the caller of this function can publish additional resour
 <code>new_address</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x2_account_create_account">create_account</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, new_address: <b>address</b>): <a href="">signer</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x2_account_create_account">create_account</a>(new_address: <b>address</b>): <a href="">signer</a>
 </code></pre>
 
 
@@ -250,7 +247,7 @@ is returned. This way, the caller of this function can publish additional resour
 <code>new_address</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_account_for_system">create_account_for_system</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, system: &<a href="">signer</a>, new_address: <b>address</b>): <a href="">signer</a>
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_account_for_system">create_account_for_system</a>(system: &<a href="">signer</a>, new_address: <b>address</b>): <a href="">signer</a>
 </code></pre>
 
 
@@ -262,7 +259,7 @@ is returned. This way, the caller of this function can publish additional resour
 create the account for system reserved addresses
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_system_reserved_account">create_system_reserved_account</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, system: &<a href="">signer</a>, addr: <b>address</b>): (<a href="">signer</a>, <a href="account.md#0x2_account_SignerCapability">account::SignerCapability</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_system_reserved_account">create_system_reserved_account</a>(system: &<a href="">signer</a>, addr: <b>address</b>): (<a href="">signer</a>, <a href="account.md#0x2_account_SignerCapability">account::SignerCapability</a>)
 </code></pre>
 
 
@@ -274,29 +271,7 @@ create the account for system reserved addresses
 Return the current sequence number at <code>addr</code>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_sequence_number">sequence_number</a>(ctx: &<a href="context.md#0x2_context_Context">context::Context</a>, addr: <b>address</b>): u64
-</code></pre>
-
-
-
-<a name="0x2_account_sequence_number_for_sender"></a>
-
-## Function `sequence_number_for_sender`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_sequence_number_for_sender">sequence_number_for_sender</a>(ctx: &<a href="context.md#0x2_context_Context">context::Context</a>): u64
-</code></pre>
-
-
-
-<a name="0x2_account_increment_sequence_number"></a>
-
-## Function `increment_sequence_number`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x2_account_increment_sequence_number">increment_sequence_number</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_sequence_number">sequence_number</a>(addr: <b>address</b>): u64
 </code></pre>
 
 
@@ -307,7 +282,7 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_increment_sequence_number_for_system">increment_sequence_number_for_system</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, system: &<a href="">signer</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_increment_sequence_number_for_system">increment_sequence_number_for_system</a>(system: &<a href="">signer</a>, sender: <b>address</b>)
 </code></pre>
 
 
@@ -329,7 +304,7 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_is_resource_account">is_resource_account</a>(ctx: &<a href="context.md#0x2_context_Context">context::Context</a>, addr: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_is_resource_account">is_resource_account</a>(addr: <b>address</b>): bool
 </code></pre>
 
 
@@ -340,7 +315,7 @@ Return the current sequence number at <code>addr</code>
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_exists_at">exists_at</a>(ctx: &<a href="context.md#0x2_context_Context">context::Context</a>, addr: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_exists_at">exists_at</a>(addr: <b>address</b>): bool
 </code></pre>
 
 
@@ -376,7 +351,7 @@ In Rooch a resource account is created based upon the sha3 256 of the source's a
 A resource account can only be created once
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_resource_account">create_resource_account</a>(ctx: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, source: &<a href="">signer</a>): (<a href="">signer</a>, <a href="account.md#0x2_account_SignerCapability">account::SignerCapability</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_resource_account">create_resource_account</a>(source: &<a href="">signer</a>): (<a href="">signer</a>, <a href="account.md#0x2_account_SignerCapability">account::SignerCapability</a>)
 </code></pre>
 
 
@@ -500,7 +475,7 @@ Borrow a resource from the account's storage
 This function equates to <code><b>borrow_global</b>&lt;T&gt;(<b>address</b>)</code> instruction in Move
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_borrow_resource">borrow_resource</a>&lt;T: key&gt;(_self: &<a href="context.md#0x2_context_Context">context::Context</a>, <a href="account.md#0x2_account">account</a>: <b>address</b>): &T
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_borrow_resource">borrow_resource</a>&lt;T: key&gt;(<a href="account.md#0x2_account">account</a>: <b>address</b>): &T
 </code></pre>
 
 
@@ -514,7 +489,7 @@ This function equates to <code><b>borrow_global_mut</b>&lt;T&gt;(<b>address</b>)
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="account.md#0x2_account_borrow_mut_resource">borrow_mut_resource</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="account.md#0x2_account">account</a>: <b>address</b>): &<b>mut</b> T
+<b>public</b> <b>fun</b> <a href="account.md#0x2_account_borrow_mut_resource">borrow_mut_resource</a>&lt;T: key&gt;(<a href="account.md#0x2_account">account</a>: <b>address</b>): &<b>mut</b> T
 </code></pre>
 
 
@@ -528,7 +503,7 @@ This function equates to <code><b>move_to</b>&lt;T&gt;(&<a href="">signer</a>, r
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="account.md#0x2_account_move_resource_to">move_resource_to</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, resource: T)
+<b>public</b> <b>fun</b> <a href="account.md#0x2_account_move_resource_to">move_resource_to</a>&lt;T: key&gt;(<a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, resource: T)
 </code></pre>
 
 
@@ -542,7 +517,7 @@ This function equates to <code><b>move_from</b>&lt;T&gt;(<b>address</b>)</code> 
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="account.md#0x2_account_move_resource_from">move_resource_from</a>&lt;T: key&gt;(_self: &<b>mut</b> <a href="context.md#0x2_context_Context">context::Context</a>, <a href="account.md#0x2_account">account</a>: <b>address</b>): T
+<b>public</b> <b>fun</b> <a href="account.md#0x2_account_move_resource_from">move_resource_from</a>&lt;T: key&gt;(<a href="account.md#0x2_account">account</a>: <b>address</b>): T
 </code></pre>
 
 
@@ -556,5 +531,5 @@ This function equates to <code><b>exists</b>&lt;T&gt;(<b>address</b>)</code> ins
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="account.md#0x2_account_exists_resource">exists_resource</a>&lt;T: key&gt;(self: &<a href="context.md#0x2_context_Context">context::Context</a>, <a href="account.md#0x2_account">account</a>: <b>address</b>): bool
+<b>public</b> <b>fun</b> <a href="account.md#0x2_account_exists_resource">exists_resource</a>&lt;T: key&gt;(<a href="account.md#0x2_account">account</a>: <b>address</b>): bool
 </code></pre>

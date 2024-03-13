@@ -24,8 +24,7 @@ It interacts with the other modules in the following ways:
 -  [Function `fast_forward_seconds_for_local`](#0x3_timestamp_fast_forward_seconds_for_local)
 
 
-<pre><code><b>use</b> <a href="">0x2::context</a>;
-<b>use</b> <a href="">0x2::core_addresses</a>;
+<pre><code><b>use</b> <a href="">0x2::core_addresses</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::signer</a>;
@@ -86,7 +85,7 @@ Conversion factor between seconds and milliseconds
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x3_timestamp_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _genesis_account: &<a href="">signer</a>, initial_time_milliseconds: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x3_timestamp_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>, initial_time_milliseconds: u64)
 </code></pre>
 
 
@@ -98,7 +97,7 @@ Conversion factor between seconds and milliseconds
 Updates the global clock time, if the new time is smaller than the current time, aborts.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x3_timestamp_update_global_time">update_global_time</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, timestamp_milliseconds: u64)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="timestamp.md#0x3_timestamp_update_global_time">update_global_time</a>(timestamp_milliseconds: u64)
 </code></pre>
 
 
@@ -111,7 +110,7 @@ Tries to update the global clock time, if the new time is smaller than the curre
 Only the framework genesis account can update the global clock time.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x3_timestamp_try_update_global_time">try_update_global_time</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, genesis_account: &<a href="">signer</a>, timestamp_milliseconds: u64): bool
+<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x3_timestamp_try_update_global_time">try_update_global_time</a>(genesis_account: &<a href="">signer</a>, timestamp_milliseconds: u64): bool
 </code></pre>
 
 
@@ -122,7 +121,7 @@ Only the framework genesis account can update the global clock time.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x3_timestamp">timestamp</a>(_ctx: &<a href="_Context">context::Context</a>): &<a href="timestamp.md#0x3_timestamp_Timestamp">timestamp::Timestamp</a>
+<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x3_timestamp">timestamp</a>(): &<a href="timestamp.md#0x3_timestamp_Timestamp">timestamp::Timestamp</a>
 </code></pre>
 
 
@@ -156,7 +155,7 @@ Only the framework genesis account can update the global clock time.
 Gets the current time in milliseconds.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x3_timestamp_now_milliseconds">now_milliseconds</a>(ctx: &<a href="_Context">context::Context</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x3_timestamp_now_milliseconds">now_milliseconds</a>(): u64
 </code></pre>
 
 
@@ -168,7 +167,7 @@ Gets the current time in milliseconds.
 Gets the current time in seconds.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x3_timestamp_now_seconds">now_seconds</a>(ctx: &<a href="_Context">context::Context</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="timestamp.md#0x3_timestamp_now_seconds">now_seconds</a>(): u64
 </code></pre>
 
 
@@ -191,5 +190,5 @@ Gets the current time in seconds.
 Fast forwards the clock by the given number of seconds, but only if the chain is in local mode.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="timestamp.md#0x3_timestamp_fast_forward_seconds_for_local">fast_forward_seconds_for_local</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, timestamp_seconds: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="timestamp.md#0x3_timestamp_fast_forward_seconds_for_local">fast_forward_seconds_for_local</a>(timestamp_seconds: u64)
 </code></pre>

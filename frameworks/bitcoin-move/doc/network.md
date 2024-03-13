@@ -21,7 +21,6 @@
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="genesis.md#0x4_genesis">0x4::genesis</a>;
 </code></pre>
 
@@ -154,7 +153,7 @@ Bitcoin's testnet network.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network">network</a>(ctx: &<a href="_Context">context::Context</a>): u8
+<pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network">network</a>(): u8
 </code></pre>
 
 

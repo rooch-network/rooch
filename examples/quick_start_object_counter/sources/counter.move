@@ -3,7 +3,7 @@ module quick_start_object_counter::quick_start_object_counter {
     use moveos_std::object_id::ObjectID;
     use moveos_std::event;
     use moveos_std::object::{Self, Object};
-    use moveos_std::context::{Self, Context};
+    
 
     struct Counter has key, store {
         count_value: u64
@@ -13,21 +13,21 @@ module quick_start_object_counter::quick_start_object_counter {
         id: ObjectID
     }
 
-    fun init(ctx: &mut Context, owner: &signer) {
-        create_shared(ctx);
-        create_user(ctx, owner);
+    fun init(owner: &signer) {
+        create_shared();
+        create_user(owner);
     }
 
-    fun create_shared(ctx: &mut Context) {
+    fun create_shared() {
         let counter = Counter { count_value: 0 };
-        let counter_obj = context::new_named_object(ctx, counter);
+        let counter_obj = object::new_named_object(counter);
         object::to_shared(counter_obj);
     }
 
-    fun create_user(ctx: &mut Context, owner: &signer): ObjectID {
+    fun create_user(owner: &signer): ObjectID {
         let counter = Counter { count_value: 123 };
         let owner_addr = signer::address_of(owner);
-        let counter_obj = context::new_object(ctx, counter);
+        let counter_obj = object::new(counter);
         let counter_obj_id = object::id(&counter_obj);
         object::transfer(counter_obj, owner_addr);
         let user_counter_created_event = UserCounterCreatedEvent { id: counter_obj_id };

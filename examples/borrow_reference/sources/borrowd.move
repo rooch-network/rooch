@@ -3,7 +3,7 @@
 
 module rooch_examples::borrowd {
     use moveos_std::account;
-    use moveos_std::context::{Self, Context};
+    
 
     struct BorrowCapability has key, copy, store {}
 
@@ -22,19 +22,19 @@ module rooch_examples::borrowd {
     }
 
     public fun do_immutable_borrow(
-        ctx: &Context,
+        
         _borrow_cap: &BorrowCapability,
     ) {
-        let addr = context::sender(ctx);
-        account::exists_resource<BorrowCapability>(ctx, addr);
+        let addr = moveos_std::tx_context::sender();
+        account::exists_resource<BorrowCapability>(addr);
     }
 
     public fun do_mutable_borrow(
-        ctx: &mut Context,
+        
         addr: address,
         data_store: &mut DataStore,
     ) {
-        if (account::exists_resource<DataStore>(ctx, addr)) {
+        if (account::exists_resource<DataStore>(addr)) {
             data_store.v = data_store.v + 1
         }
     }

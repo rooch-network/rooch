@@ -3,7 +3,7 @@
 //# publish
 module creator::test {
     use std::string;
-    use moveos_std::context::{Context};
+    
     use moveos_std::account;
 
     struct Foo has key, store {
@@ -11,23 +11,23 @@ module creator::test {
     }
 
     #[private_generics(T1)]
-    fun publish_foo<T1: store>(ctx: &mut Context, s: &signer) {
-        account::move_resource_to<Foo>(ctx, s, Foo { x: 500 })
+    fun publish_foo<T1: store>(s: &signer) {
+        account::move_resource_to<Foo>(s, Foo { x: 500 })
     }
 
-    public fun run(ctx: &mut Context, s: &signer) {
+    public fun run(s: &signer) {
         let _ = string::utf8(b"resource_object");
-        publish_foo<Foo>(ctx, s)
+        publish_foo<Foo>(s)
     }
 }
 
 //# run --signers creator
 script {
     use creator::test;
-    use moveos_std::context::Context;
+    
 
-    fun main(ctx: &mut Context, s: &signer) {
-        test::run(ctx, s);
+    fun main(s: &signer) {
+        test::run(s);
     }
 }
 

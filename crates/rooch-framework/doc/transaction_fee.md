@@ -12,8 +12,7 @@
 -  [Function `deposit_fee`](#0x3_transaction_fee_deposit_fee)
 
 
-<pre><code><b>use</b> <a href="">0x2::context</a>;
-<b>use</b> <a href="">0x2::object</a>;
+<pre><code><b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="coin_store.md#0x3_coin_store">0x3::coin_store</a>;
@@ -39,7 +38,7 @@
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x3_transaction_fee_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _genesis_account: &<a href="">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x3_transaction_fee_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -51,7 +50,7 @@
 Returns the gas factor of gas.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x3_transaction_fee_get_gas_factor">get_gas_factor</a>(_ctx: &<a href="_Context">context::Context</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x3_transaction_fee_get_gas_factor">get_gas_factor</a>(): u64
 </code></pre>
 
 
@@ -62,7 +61,7 @@ Returns the gas factor of gas.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x3_transaction_fee_calculate_gas">calculate_gas</a>(ctx: &<a href="_Context">context::Context</a>, gas_amount: u64): u256
+<pre><code><b>public</b> <b>fun</b> <a href="transaction_fee.md#0x3_transaction_fee_calculate_gas">calculate_gas</a>(gas_amount: u64): u256
 </code></pre>
 
 
@@ -73,5 +72,5 @@ Returns the gas factor of gas.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x3_transaction_fee_deposit_fee">deposit_fee</a>(_ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="gas_coin.md#0x3_gas_coin">gas_coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">gas_coin::GasCoin</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_fee.md#0x3_transaction_fee_deposit_fee">deposit_fee</a>(<a href="gas_coin.md#0x3_gas_coin">gas_coin</a>: <a href="coin.md#0x3_coin_Coin">coin::Coin</a>&lt;<a href="gas_coin.md#0x3_gas_coin_GasCoin">gas_coin::GasCoin</a>&gt;)
 </code></pre>

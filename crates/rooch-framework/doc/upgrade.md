@@ -11,7 +11,6 @@
 
 
 <pre><code><b>use</b> <a href="">0x2::account</a>;
-<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::move_module</a>;
 <b>use</b> <a href="">0x2::signer</a>;
@@ -88,5 +87,5 @@ Event for framework upgrades
 
 
 
-<pre><code>entry <b>fun</b> <a href="upgrade.md#0x3_upgrade_upgrade_entry">upgrade_entry</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, <a href="">account</a>: &<a href="">signer</a>, move_std_bundles: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, moveos_std_bundles: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, rooch_framework_bundles: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, bitcoin_move_bundles: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
+<pre><code>entry <b>fun</b> <a href="upgrade.md#0x3_upgrade_upgrade_entry">upgrade_entry</a>(<a href="">account</a>: &<a href="">signer</a>, move_std_bundles: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, moveos_std_bundles: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, rooch_framework_bundles: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, bitcoin_move_bundles: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
 </code></pre>
