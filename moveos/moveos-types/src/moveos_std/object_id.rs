@@ -21,7 +21,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-use super::context::GLOBAL_OBJECT_STORAGE_HANDLE;
+use super::object::GLOBAL_OBJECT_STORAGE_HANDLE;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("object_id");
 

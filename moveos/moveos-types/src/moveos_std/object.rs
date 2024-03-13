@@ -5,6 +5,7 @@ use super::table::TablePlaceholder;
 use crate::moveos_std::account::Account;
 use crate::moveos_std::move_module::ModuleStore;
 use crate::moveos_std::object_id::ObjectID;
+use crate::state_resolver;
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     state::{MoveState, MoveStructState, MoveStructType, State},
@@ -28,6 +29,8 @@ pub const MODULE_NAME: &IdentStr = ident_str!("object");
 pub static MODULE_ID: Lazy<ModuleId> =
     Lazy::new(|| ModuleId::new(MOVEOS_STD_ADDRESS, MODULE_NAME.to_owned()));
 pub const OBJECT_ENTITY_STRUCT_NAME: &IdentStr = ident_str!("ObjectEntity");
+//TODO rename to ROOT_OBJECT_ID
+pub const GLOBAL_OBJECT_STORAGE_HANDLE: ObjectID = state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE;
 
 // New table's state_root should be the place holder hash.
 pub static GENESIS_STATE_ROOT: Lazy<H256> = Lazy::new(|| *SPARSE_MERKLE_PLACEHOLDER_HASH);

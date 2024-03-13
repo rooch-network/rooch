@@ -17,8 +17,7 @@ use move_core_types::effects::Op;
 use move_core_types::language_storage::TypeTag;
 use move_resource_viewer::MoveValueAnnotator;
 use moveos_store::MoveOSStore;
-use moveos_types::moveos_std::context;
-use moveos_types::moveos_std::object::RawObject;
+use moveos_types::moveos_std::object::{self, RawObject};
 use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::state::{KeyState, MoveStructType, SplitStateChangeSet, State};
 use moveos_types::state_resolver::{MoveOSResolverProxy, StateResolver};
@@ -142,7 +141,7 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
 
         for (table_handle, table_change) in state_change_set.changes.clone() {
             // handle global object
-            if table_handle == context::GLOBAL_OBJECT_STORAGE_HANDLE {
+            if table_handle == object::GLOBAL_OBJECT_STORAGE_HANDLE {
                 for (key, op) in table_change.entries.into_iter() {
                     match op {
                         Op::Modify(value) => {

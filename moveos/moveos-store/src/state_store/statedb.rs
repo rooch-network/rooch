@@ -4,15 +4,12 @@
 use crate::state_store::NodeDBStore;
 use anyhow::{Error, Result};
 use move_core_types::effects::Op;
-use moveos_types::moveos_std::object::RootObjectEntity;
+use moveos_types::moveos_std::object::{self, RootObjectEntity};
+use moveos_types::moveos_std::object::{ObjectEntity, RawObject};
 use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::state::KeyState;
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{h256::H256, state::State};
-use moveos_types::{
-    moveos_std::context,
-    moveos_std::object::{ObjectEntity, RawObject},
-};
 use moveos_types::{
     state::StateChangeSet,
     state_resolver::{self, StateResolver},
@@ -182,7 +179,7 @@ impl StateDBStore {
 
         let global_change = state_change_set
             .changes
-            .remove(&context::GLOBAL_OBJECT_STORAGE_HANDLE);
+            .remove(&object::GLOBAL_OBJECT_STORAGE_HANDLE);
         let mut global_size = self.root_object.entity.size;
         if let Some(global_change) = global_change {
             for change in global_change.entries {
@@ -323,7 +320,7 @@ impl StateDBStore {
     //     }
     //     table_state_set
     //         .table_state_sets
-    //         .insert(context::GLOBAL_OBJECT_STORAGE_HANDLE, golbal_table_state);
+    //         .insert(object::GLOBAL_OBJECT_STORAGE_HANDLE, golbal_table_state);
 
     //     Ok(table_state_set)
     // }
