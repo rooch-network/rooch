@@ -191,8 +191,7 @@ impl RocksDB {
 
     fn default_write_options() -> WriteOptions {
         let mut opts = WriteOptions::new();
-        // opts.set_sync(false);
-        opts.set_sync(true);
+        opts.set_sync(false);
         opts
     }
 
