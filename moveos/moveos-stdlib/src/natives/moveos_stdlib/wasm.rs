@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::collections::VecDeque;
+use std::ffi::CString;
 use std::ops::Deref;
 
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
-use move_core_types::vm_status::StatusCode;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::natives::function::NativeResult;
@@ -14,7 +14,6 @@ use move_vm_types::pop_arg;
 use move_vm_types::values::Value;
 use serde_json::Value as JSONValue;
 use smallvec::smallvec;
-use wasmer::MemoryAccessError;
 
 use moveos_wasm::wasm::{
     create_wasm_instance, get_instance_pool, insert_wasm_instance, put_data_on_stack,
@@ -23,7 +22,7 @@ use moveos_wasm::wasm::{
 use crate::natives::helpers::{make_module_natives, make_native};
 
 const E_INSTANCE_NO_EXISTS: u64 = 1;
-const E_ARG_NOT_U32: u64 = 2;
+// const E_ARG_NOT_U32: u64 = 2;
 const E_ARG_NOT_VECTOR_U8: u64 = 3;
 const E_JSON_MARSHAL_FAILED: u64 = 4;
 const E_WASM_EXECUTION_FAILED: u64 = 5;
@@ -177,7 +176,7 @@ fn native_create_wasm_args_in_memory(
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     let func_args_value = pop_arg!(args, Vec<Value>);
-    let func_name = pop_arg!(args, Vec<u8>);
+    let _func_name = pop_arg!(args, Vec<u8>); // TODO: check the length of function arguments
     let instance_id = pop_arg!(args, u64);
     let mut func_args = Vec::new();
     for arg_value in func_args_value.iter() {
@@ -213,9 +212,11 @@ fn native_create_wasm_args_in_memory(
                 .unwrap();
 
             for arg in func_args.iter() {
+                let c_arg = unsafe { CString::from_vec_unchecked(arg.clone()) };
+
                 let mut arg_buffer = Vec::new();
-                arg_buffer.append(&mut (arg.len() as u32).to_be_bytes().to_vec());
-                arg_buffer.append(&mut arg.clone());
+                // arg_buffer.append(&mut (arg.len() as u32).to_be_bytes().to_vec());
+                arg_buffer.append(&mut c_arg.into_bytes_with_nul());
                 let buffer_final_ptr =
                     put_data_on_stack(stack_alloc_func, &mut instance.store, arg_buffer.as_slice());
 
@@ -228,15 +229,7 @@ fn native_create_wasm_args_in_memory(
     let mut cost = gas_params.base_create_args;
     cost += gas_params.per_byte_args * NumBytes::new(args_bytes_total as u64);
 
-    println!(
-        "111111111 {:?} {:?} {:?} -> {:?}",
-        instance_id,
-        String::from_utf8_lossy(func_name.as_slice()),
-        func_args,
-        data_ptr_list
-    );
-
-    let mut return_value_list = Value::vector_u64(data_ptr_list);
+    let return_value_list = Value::vector_u64(data_ptr_list);
     Ok(NativeResult::Success {
         cost,
         ret_vals: smallvec![return_value_list],
@@ -285,7 +278,7 @@ fn native_execute_wasm_function(
                 Ok(calling_function) => {
                     let mut wasm_func_args = Vec::new();
                     for arg in func_args.iter() {
-                        wasm_func_args.push(wasmer::Value::I32(arg.clone() as i32));
+                        wasm_func_args.push(wasmer::Value::I32(*arg as i32));
                     }
 
                     // TODO: check the length of arguments for the function calling
@@ -347,32 +340,31 @@ fn native_read_data_length(
     let data_ptr = pop_arg!(args, u64);
     let instance_id = pop_arg!(args, u64);
 
-    let mut data_length = 0;
     let instance_pool = get_instance_pool();
-    match instance_pool.lock().unwrap().get_mut(&instance_id) {
-        None => {
-            return Ok(NativeResult::err(gas_params.base, E_INSTANCE_NO_EXISTS));
-        }
+    let ret = match instance_pool.lock().unwrap().get_mut(&instance_id) {
+        None => Ok(NativeResult::err(gas_params.base, E_INSTANCE_NO_EXISTS)),
         Some(instance) => {
             let memory = instance.instance.exports.get_memory("memory").unwrap();
             let memory_view = memory.view(&instance.store);
             let mut length_bytes: [u8; 4] = [0; 4];
             match memory_view.read(data_ptr, length_bytes.as_mut_slice()) {
-                Ok(_) => data_length = u32::from_be_bytes(length_bytes),
-                Err(_) => {
-                    return Ok(NativeResult::err(
-                        gas_params.base,
-                        E_WASM_MEMORY_ACCESS_FAILED,
-                    ));
+                Ok(_) => {
+                    let data_length = u32::from_be_bytes(length_bytes);
+                    let cost = gas_params.base;
+
+                    Ok(NativeResult::Success {
+                        cost,
+                        ret_vals: smallvec![Value::u32(data_length)],
+                    })
                 }
+                Err(_) => Ok(NativeResult::err(
+                    gas_params.base,
+                    E_WASM_MEMORY_ACCESS_FAILED,
+                )),
             }
         }
-    }
-
-    Ok(NativeResult::Success {
-        cost: gas_params.base,
-        ret_vals: smallvec![Value::u32(data_length)],
-    })
+    };
+    ret
 }
 
 #[derive(Debug, Clone)]

@@ -106,10 +106,10 @@ fn fd_write(env: FunctionEnvMut<Env>, _fd: i32, mut iov: i32, iovcnt: i32, pnum:
 
 fn convert_i32_pair_to_i53_checked(lo: i32, hi: i32) -> i32 {
     let p0 = if lo > 0 { 1 } else { 0 };
-    let p1 = (hi + 0x200000) >> 0 < (0x400001 - p0);
+    let p1 = (hi + 0x200000) >> p0 < (0x400001 - p0);
     if p1 {
         let (e0, _) = (hi as u32).overflowing_add_signed(429496729);
-        let (e1, _) = (lo >> 0).overflowing_add_unsigned(e0);
+        let (e1, _) = (lo >> 1).overflowing_add_unsigned(e0);
         e1
     } else {
         0
@@ -124,7 +124,7 @@ fn fd_seek(
     _whence: i32,
 ) -> i32 {
     let _offset = convert_i32_pair_to_i53_checked(offset_low as i32, offset_high);
-    return 70;
+    70
 }
 
 fn fd_close(_env: FunctionEnvMut<Env>, _fd: i32) -> i32 {
@@ -206,5 +206,5 @@ pub fn create_wasm_instance(bytecode: &Vec<u8>) -> WASMInstance {
     let memory = instance.exports.get_memory("memory").unwrap();
     unsafe { *GLOBAL_MEMORY = Some(Arc::new(Mutex::new(memory.clone()))) };
 
-    return WASMInstance::new(bytecode.clone(), instance, store);
+    WASMInstance::new(bytecode.clone(), instance, store)
 }
