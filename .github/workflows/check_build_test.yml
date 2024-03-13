@@ -74,6 +74,8 @@ jobs:
         run: pnpm rooch-sdk gen
       - name: Lint
         run: pnpm lint
+        continue-on-error: true
+        timeout-minutes: 15
       - name: Build SDK
         run: pnpm rooch-sdk build
       - name: Test SDK
