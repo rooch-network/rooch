@@ -4,7 +4,6 @@
 use super::data_cache::{into_change_set, MoveosDataCache};
 use crate::gas::table::{get_gas_schedule_entries, initial_cost_schedule, ClassifiedGasMeter};
 use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
-use crate::vm::tx_argument_resolver;
 use move_binary_format::compatibility::Compatibility;
 use move_binary_format::normalized;
 use move_binary_format::{
@@ -26,7 +25,7 @@ use move_vm_runtime::{
     move_vm::MoveVM,
     native_extensions::NativeContextExtensions,
     native_functions::NativeFunction,
-    session::{LoadedFunctionInstantiation, SerializedReturnValues, Session},
+    session::{LoadedFunctionInstantiation, Session},
 };
 use move_vm_types::loaded_data::runtime_types::{CachedStructIndex, StructType, Type};
 use moveos_stdlib::natives::moveos_stdlib::{
@@ -39,7 +38,6 @@ use moveos_types::{
     function_return_value::FunctionReturnValue,
     move_std::string::MoveString,
     move_types::FunctionId,
-    moveos_std::context::Context,
     moveos_std::copyable_any::Any,
     moveos_std::simple_map::SimpleMap,
     moveos_std::tx_context::TxContext,
@@ -267,7 +265,6 @@ where
                             ret.return_values.is_empty(),
                             "Script function should not return values"
                         );
-                        self.update_ctx_via_return_values(&loaded_function, &ret);
                     })
             }
             VerifiedMoveAction::Function { call } => {
@@ -292,7 +289,6 @@ where
                             ret.return_values.is_empty(),
                             "Entry function should not return values"
                         );
-                        self.update_ctx_via_return_values(&loaded_function, &ret);
                     })
             }
             VerifiedMoveAction::ModuleBundle {
@@ -420,56 +416,6 @@ where
         }
     }
 
-    // Because the Context can be mut argument, if the function change the Context,
-    // we need to update the Context via return values, and pass the updated Context to the next function.
-    fn update_ctx_via_return_values(
-        &mut self,
-        loaded_function: &LoadedFunctionInstantiation,
-        return_values: &SerializedReturnValues,
-    ) {
-        let mut_ref_arguments = loaded_function
-            .parameters
-            .iter()
-            .filter(|ty| matches!(ty, Type::MutableReference(_)))
-            .collect::<Vec<_>>();
-        debug_assert!(mut_ref_arguments.len() == return_values.mutable_reference_outputs.len(), "The number of mutable reference arguments should be equal to the number of mutable reference outputs");
-        for (arg_ty, (_index, value, _layout)) in mut_ref_arguments
-            .into_iter()
-            .zip(return_values.mutable_reference_outputs.iter())
-        {
-            match arg_ty {
-                Type::MutableReference(ty) => match ty.as_ref() {
-                    Type::Struct(struct_tag_index) => {
-                        let struct_type = self
-                            .session
-                            .get_struct_type(*struct_tag_index)
-                            .expect("The struct type should be in cache");
-                        if tx_argument_resolver::is_context(&struct_type) {
-                            let returned_ctx = Context::from_bytes(value.as_slice())
-                                .expect("The return mutable reference should be a Context");
-                            if log::log_enabled!(log::Level::Trace) {
-                                log::trace!("The returned storage context is {:?}", returned_ctx);
-                            }
-                            //We do not change the Context via arguments now.
-                            //TODO remove the Context arguments from entry function
-                            //self.ctx = returned_ctx;
-                            // self.table_data
-                            //     .write()
-                            //     .update_tx_context(returned_ctx.tx_context);
-                        }
-                    }
-                    _ => {
-                        //Do nothing
-                        if log::log_enabled!(log::Level::Trace) {
-                            log::trace!("Mut argument type: {:?}", arg_ty);
-                        }
-                    }
-                },
-                _ => unreachable!(),
-            }
-        }
-    }
-
     pub fn execute_function_bypass_visibility(
         &mut self,
         call: FunctionCall,
@@ -489,7 +435,6 @@ where
             serialized_args,
             &mut self.gas_meter,
         )?;
-        self.update_ctx_via_return_values(&loaded_function, &return_values);
         return_values
             .return_values
             .into_iter()

@@ -9,10 +9,8 @@ module moveos_std::object {
     use moveos_std::raw_table;
     use moveos_std::tx_context;
 
-    friend moveos_std::context;
     friend moveos_std::account;
     friend moveos_std::move_module;
-    friend moveos_std::storage_context;
     friend moveos_std::event;
     friend moveos_std::table;
     friend moveos_std::type_table;
