@@ -4,7 +4,7 @@ import { Sidebar } from './components/sidebar'
 
 export const DashboardLayout = () => {
   return (
-    <div className="h-full scroll-smooth">
+    <div className="h-full scroll-smooth font-sans">
       <div className="h-[56px] md:h-[64px] md:pl-60 fixed inset-y-0 w-full z-50">
         <Navbar />
       </div>
