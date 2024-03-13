@@ -2,11 +2,18 @@
   "fraud-proof": "Fraud Proof",
   "hybrid-security": "Hybrid Security with ZK Proof",
   "multi-chain-settlement": "Multi-Chain Settlement",
-  "on-chain-indexer": "On-chain Indexer",
+  "on-chain-indexer": {
+    "title": "On-chain Indexer",
+    "display": "hidden"
+  },
   "pipeline-transaction-processing": "Pipeline Transaction Processing",
   "sequence-proof": "Sequence Proof",
   "storage": {
     "title": "Storage"
   },
-  "hash": "Hash"
+  "hash": "Hash",
+  "p2p-state-channel": {
+    "title": "P2P Channel",
+    "display": "hidden"
+  }
 }
