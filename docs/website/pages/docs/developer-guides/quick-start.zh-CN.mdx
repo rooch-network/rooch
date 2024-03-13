@@ -24,24 +24,24 @@ rooch move new quick_start_counter
 
 ```move
 module quick_start_counter::quick_start_counter {
-    use moveos_std::context::{Self, Context};
+    use moveos_std::account;
 
     struct Counter has key {
         count_value: u64
     }
 
-    fun init(ctx: &mut Context, account: &signer) {
-        context::move_resource_to(ctx, account, Counter { count_value: 0 });
+    fun init(account: &signer) {
+        account::move_resource_to(account, Counter { count_value: 0 });
     }
 
-    entry fun increase(ctx: &mut Context) {
-        let counter = context::borrow_mut_resource<Counter>(ctx, @quick_start_counter);
+    entry fun increase() {
+        let counter = account::borrow_mut_resource<Counter>(@quick_start_counter);
         counter.count_value = counter.count_value + 1;
     }
 }
 ```
 
-通过简单的 17 行代码，就在 Rooch Move 上实现了简单的计数器功能。
+通过简单的 16 行代码，就在 Rooch Move 上实现了简单的计数器功能。
 
 接下来将详细介绍代码的每一行功能。
 
@@ -64,10 +64,10 @@ module quick_start_counter::quick_start_counter {
 ### 导入模块
 
 ```move
-use moveos_std::context::{Self, Context};
+use moveos_std::account;
 ```
 
-在第 2~3 行中，是导入模块的语句。要在 Rooch 上实现计数器合约，我们需要使用 Rooch 的某些功能库，此合约使用了 MoveOS 标准库提供 `context` 等功能模块。
+在第 2 行中，`use` 关键字修饰的是导入模块的语句。要在 Rooch 上实现计数器合约，我们需要使用 Rooch 的某些功能库，此合约使用了 MoveOS 标准库提供的 `account` 模块。
 
 ### 定义数据结构
 
@@ -84,8 +84,8 @@ struct Counter has key {
 ### 初始化函数
 
 ```move
-fun init(ctx: &mut Context, account: &signer) {
-    context::move_resource_to(ctx, account, Counter { value: 0 })
+fun init(account: &signer) {
+    account::move_resource_to(account, Counter { count_value: 0 });
 }
 ```
 
@@ -93,26 +93,26 @@ Move 中提供一个特定的初始化函数 `init` 来自动初始化合约，�
 
 例如，我们希望计数器合约一经发布，合约就自动为我们初始化好计数器，使它的计数值为 `0`。
 
-第 9 行是 `init` 函数的函数签名，接受两个参数 `ctx` 和 `account`。
+第 8 行是 `init` 函数的函数签名，接受一个 `account` 参数。
 
 ### 递增函数
 
 接下来，我们要定义一个递增函数，每执行一次，就让计数器的值递增 `1`。
 
 ```move
-entry fun increase(ctx: &mut Context) {
-    let counter = context::borrow_mut_resource<Counter>(ctx, @quick_start_counter);
+entry fun increase() {
+    let counter = account::borrow_mut_resource<Counter>(@quick_start_counter);
     counter.count_value = counter.count_value + 1;
 }
 ```
 
-第 13 行是 `increase` 函数的签名，接受一个上下文参数。
+第 12 行是 `increase` 函数的签名。
 
 在第 14 行中，调用 Rooch 提供的账户存储的 `borrow_mut_resource` 指令来获取 `Counter` 类型的可变引用，并将函数的返回值绑定到 `counter` 变量。借用到 `Counter` 的可变引用，我们就可以对他的值进行修改操作。
 
-`borrow_mut_resource` 函数接受一个上下文参数，和一个要借用 `Counter` 资源的地址参数，为了简单起见，我们直接使用发布计数器模块的地址作为借用方。
+`borrow_mut_resource` 函数一个要借用 `Counter` 资源的地址参数，为了简单起见，我们直接使用发布计数器模块的地址作为借用方。
 
-在第 15 行中，我们通过成员运算获取到 `Counter` 结构的字段值，并进行加一操作。
+在第 14 行中，我们通过成员运算获取到 `Counter` 结构的字段值，并进行加一操作。
 
 至此，我们就实现了计数器的递增逻辑。
 
@@ -124,9 +124,7 @@ entry fun increase(ctx: &mut Context) {
 
 > 注意：本例中演示的计数器合约，我们为了尽可能地精简，我们将逻辑操作和入口函数合并成了一个 `increase` 函数，在实际开发中，建议将逻辑和入口分开封装到不同的函数中。
 
-如你所见，第 13 行的 `increase` 函数被 `entry` 关键字修饰了，因此它便成为了一个入口函数。有了入口函数，我们就可以在命令行或其他客户端中执行计数器的递增操作了。
-
-> 特别注意，`increase` 函数的上下文参数是 Move VM 自动传递的参数，在合约编写中需要显式传递，而对外部调用而言，则不需要手动传递，所以在命令行中调用 `increase` 函数时，不需要传递任何参数。
+如你所见，第 12 行的 `increase` 函数被 `entry` 关键字修饰了，因此它便成为了一个入口函数。有了入口函数，我们就可以在命令行或其他客户端中执行计数器的递增操作了。
 
 ## 在 Rooch 的命令行界面中演示计数器程序
 
@@ -146,11 +144,8 @@ $ rooch env list
 2. 开启另一个终端，并切换到 `counter` 项目的根目录，编译合约：
 
 ```shell
-$ rooch move build
+[joe@mx quick_start_counter]$ rooch move build
 
-UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
-UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
-UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
 UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
 UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
 UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
@@ -164,11 +159,8 @@ Success
 3. 发布计数器合约到 Rooch 上：
 
 ```shell
-$ rooch move publish
+[joe@mx quick_start_counter]$ rooch move publish
 
-UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
-UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
-UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
 UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
 UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
 UPDATING GIT DEPENDENCY https://github.com/rooch-network/rooch.git
@@ -176,26 +168,28 @@ INCLUDING DEPENDENCY MoveStdlib
 INCLUDING DEPENDENCY MoveosStdlib
 INCLUDING DEPENDENCY RoochFramework
 BUILDING quick_start_counter
-Publish modules to address: 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81
+
+Publish modules to address: 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7
 {
   "sequence_info": {
-    "tx_order": "17128",
+    "tx_order": "997",
     "tx_order_signature": {
       "auth_validator_id": "0",
-      "payload": "0x00b5d56a8178299d628e0d341fff4b97904f7ff80f9e3e8aca10f0d1d9ac65e5736757caec9be17aa54b1da860b183a6d1574f1db9ba632910fb308c4d6283d30eca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
+      "payload": "0x00f77ea5b2c79f9d18813d1a355040cd0d7edeed0773cf8ec055c9bb7728b8858b2bb817c7f219544f488a9908ea6be3e5d0b01341920e755766ff1e287a866e03ca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
     },
-    "tx_accumulator_root": "0xb408f55b7e003f54fa37a87ccaa25937bedb7d04d3d8a06f745de4e30b25a3cf"
+    "tx_accumulator_root": "0xebb1ce9e45ad2122a7f6260275c5eec4fb0f8c827e8e3fcdbab3001aa0b66847"
   },
   "execution_info": {
-    "tx_hash": "0xa45998b0a7d979597d0ed4021c2ffbe778d2e0889d3151ad29493e3d91f177a6",
-    "state_root": "0x0a5f095123b459749938b4fc436c06c429066f6a48a8f014bba6360471b6d03b",
-    "event_root": "0x8be169d5a1b2bdace1ff085fae4753e37f69095ec543a83ef34cae23e9ebb747",
-    "gas_used": 1644906,
+    "tx_hash": "0x25e0647cf5d7b2824b7b7fa8ba561804869e8f097c18ae00d45da449bd9eaddd",
+    "state_root": "0x5689c932ff3383b4fd6f0bedaf454e0ac6d1c21e2a28b158749bb808c95160ab",
+    "event_root": "0x16bb2251e4ecb63bfa514b21cac7b2fff73a4ddac5174148b19eac4140636da4",
+    "gas_used": 1752492,
     "status": {
       "type": "executed"
     }
   },
-......
+  "output": null
+}
 ```
 
 看到输出结果的 `execution_info.status` 中出现 `executed`，说明计数器合约已经成功发布，并且初始化好了计数器。
@@ -205,18 +199,19 @@ Publish modules to address: 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf476
 语法是 `rooch resource --address 发布资源的地址 --resource 资源的类型`：
 
 ```shell
-$ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81 --resource 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter
+[joe@mx ~]$ rooch resource --address 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7 --resource 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::quick_start_counter::Counter
 
 {
   "value": "0x0000000000000000",
-  "value_type": "0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter",
+  "value_type": "0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::quick_start_counter::Counter",
   "decoded_value": {
     "abilities": 8,
-    "type": "0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter",
+    "type": "0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::quick_start_counter::Counter",
     "value": {
       "count_value": "0"
     }
-  }
+  },
+  "display_fields": null
 }
 ```
 
@@ -229,27 +224,28 @@ $ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762
 > 注意：区块链系统中，执行某些操作通常是通过向区块链系统中发送某个交易来执行相应的操作。
 
 ```shell
-$ rooch move run --function 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::increase --sender-account 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81
+[joe@mx ~]$ rooch move run --function 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::quick_start_counter::increase --sender-account 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7
 
 {
   "sequence_info": {
-    "tx_order": "17160",
+    "tx_order": "1010",
     "tx_order_signature": {
       "auth_validator_id": "0",
-      "payload": "0x00f3809e65ee7aef9d9f4f7f79820ad6a25d44aed583c74300f30a0550f8256e371546e4515125636646acb3e625bb5d02db933656218832103300861b4a2b9d07ca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
+      "payload": "0x00e49e8780b71610f7e5160b06b6481612547374a15af6a66e2d7e32a028443e907ab41ab068b4c83ba0253cc84dd9bc170e3ff09eced73b6564089b74a930c500ca2ecf17ab26b7c32ddba10913e6f74d43b5258905bef0f88b6d744d73bc9ce9"
     },
-    "tx_accumulator_root": "0x89ace9f8d15707a008f7237566761e28743a4c73d9f5b19622c65e4a072850bc"
+    "tx_accumulator_root": "0xfa6ad39423cc3070a46c5db5b20e6cdda3c1070afd9a81401ccaee1e4998b9fd"
   },
   "execution_info": {
-    "tx_hash": "0x19139e0f8779c43e7feb989553d66e41eab2840705417898dee376b3ea2ea3d0",
-    "state_root": "0xb876495e3c144700fb315cf2697a990d25578b4b832f9b34bb74e4f233d4faf2",
-    "event_root": "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
-    "gas_used": 12769,
+    "tx_hash": "0x2f5b18d14d31441ab48b683c8e7ea650363bf822f4e8721004884eda29c96440",
+    "state_root": "0x75f3cb5e0c14660db68280c67301adec769f59264f081d06c1ff92d493bbaa74",
+    "event_root": "0xc6b4ac8ed511911965caca540fdedeef87db64d6ae29f58a874161630d219d5e",
+    "gas_used": 670730,
     "status": {
       "type": "executed"
     }
   },
-......
+  "output": null
+}
 ```
 
 如果看到 `status` 中提示了 `executed`，证明 `increase` 函数调用成功了。
@@ -257,26 +253,24 @@ $ rooch move run --function 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf476
 6. 再次查看计数器的值是否是我们预期的值：
 
 ```shell
-$ rooch resource --address 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81 --resource 0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter
-
+[joe@mx ~]$ rooch resource --address 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7 --resource 0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::quick_start_counter::Counter
 {
   "value": "0x0100000000000000",
-  "value_type": "0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter",
+  "value_type": "0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::quick_start_counter::Counter",
   "decoded_value": {
     "abilities": 8,
-    "type": "0xc4a286bef174e126ef24363a0799c069504d0f132f713bf4762ad127c799df81::quick_start_counter::Counter",
+    "type": "0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::quick_start_counter::Counter",
     "value": {
       "count_value": "1"
     }
-  }
+  },
+  "display_fields": null
 }
 ```
 
 如你所见，`Counter` 的 `value` 字段的值确实已经更新为 `1` 了。
 
 至此，你已经了解了如何在 Rooch 中编写合约以及如何在命令行中调用合约了。
-
-接下来，我们增加一点点难度，我们将演示如何在前端中运行和使用计数器合约程序。
 
 ## 快速体验
 
