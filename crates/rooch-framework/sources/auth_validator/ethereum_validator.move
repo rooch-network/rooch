@@ -8,7 +8,7 @@ module rooch_framework::ethereum_validator {
     use std::option::{Self, Option};
     use std::signer;
     use moveos_std::hex;
-    use moveos_std::context::{Self, Context};
+    use moveos_std::tx_context; 
     use rooch_framework::auth_payload::AuthPayload;
     use rooch_framework::account_authentication;
     use rooch_framework::ecdsa_k1;
@@ -29,7 +29,7 @@ module rooch_framework::ethereum_validator {
     }
 
     public entry fun rotate_authentication_key_entry(
-        ctx: &mut Context,
+        
         account: &signer,
         public_key: vector<u8>
     ) {
@@ -42,15 +42,15 @@ module rooch_framework::ethereum_validator {
         // User can rotate the authentication key arbitrarily, so we do not need to check the new public key with the account address.
         let authentication_key = public_key_to_authentication_key(public_key);
         let account_addr = signer::address_of(account);
-        rotate_authentication_key(ctx, account_addr, authentication_key);
+        rotate_authentication_key(account_addr, authentication_key);
     }
 
-    fun rotate_authentication_key(ctx: &mut Context, account_addr: address, authentication_key: vector<u8>) {
-        account_authentication::rotate_authentication_key<EthereumValidator>(ctx, account_addr, authentication_key);
+    fun rotate_authentication_key(account_addr: address, authentication_key: vector<u8>) {
+        account_authentication::rotate_authentication_key<EthereumValidator>(account_addr, authentication_key);
     }
 
-    public entry fun remove_authentication_key_entry(ctx: &mut Context, account: &signer) {
-        account_authentication::remove_authentication_key<EthereumValidator>(ctx, signer::address_of(account));
+    public entry fun remove_authentication_key_entry(account: &signer) {
+        account_authentication::remove_authentication_key<EthereumValidator>(signer::address_of(account));
     }
 
     /// TODO: fix this
@@ -75,18 +75,18 @@ module rooch_framework::ethereum_validator {
     }
 
     /// Get the authentication key option of the given account.
-    public fun get_authentication_key_option_from_account(ctx: &Context, addr: address): Option<vector<u8>> {
-        account_authentication::get_authentication_key<EthereumValidator>(ctx, addr)
+    public fun get_authentication_key_option_from_account(addr: address): Option<vector<u8>> {
+        account_authentication::get_authentication_key<EthereumValidator>(addr)
     }
 
     /// The authentication key exists in account or not.
-    public fun is_authentication_key_in_account(ctx: &Context, addr: address): bool {
-        option::is_some(&get_authentication_key_option_from_account(ctx, addr))
+    public fun is_authentication_key_in_account(addr: address): bool {
+        option::is_some(&get_authentication_key_option_from_account(addr))
     }
 
     /// Extract the authentication key of the authentication key option.
-    public fun get_authentication_key_from_account(ctx: &Context, addr: address): vector<u8> {
-        option::extract(&mut get_authentication_key_option_from_account(ctx, addr))
+    public fun get_authentication_key_from_account(addr: address): vector<u8> {
+        option::extract(&mut get_authentication_key_option_from_account(addr))
     }
 
     /// Only validate the authenticator's signature.
@@ -129,8 +129,8 @@ module rooch_framework::ethereum_validator {
         );
     }
 
-    public fun validate(ctx: &Context, authenticator_payload: vector<u8>) {
-        let tx_hash = context::tx_hash(ctx);
+    public fun validate(authenticator_payload: vector<u8>) {
+        let tx_hash = tx_context::tx_hash();
 
         let payload = auth_payload::from_bytes(authenticator_payload);
 
@@ -139,16 +139,12 @@ module rooch_framework::ethereum_validator {
         // TODO compare the auth_key from lsthe payload with the auth_key from the account
     }
 
-    fun pre_execute(
-        _ctx: &mut Context,
-    ) {}
+    fun pre_execute() {}
 
-    fun post_execute(
-        _ctx: &mut Context,
-    ) {
-        // let account_addr = context::sender(ctx);
-        // if (is_authentication_key_in_account(ctx, account_addr)) {
-        //     let auth_key_in_account = get_authentication_key_from_account(ctx, account_addr);
+    fun post_execute() {
+        // let account_addr = tx_context::sender();
+        // if (is_authentication_key_in_account(account_addr)) {
+        //     let auth_key_in_account = get_authentication_key_from_account(account_addr);
         //     std::debug::print(&auth_key_in_account);
         // }
     }

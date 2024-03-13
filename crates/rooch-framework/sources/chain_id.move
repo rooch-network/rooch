@@ -4,7 +4,6 @@
 module rooch_framework::chain_id {
 
     use moveos_std::object_id;
-    use moveos_std::context::{Self, Context};
     use moveos_std::object;
 
     friend rooch_framework::genesis;
@@ -19,11 +18,11 @@ module rooch_framework::chain_id {
         id: u64
     }
 
-    public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer, chain_id: u64){
+    public(friend) fun genesis_init(_genesis_account: &signer, chain_id: u64){
         let chain_id = ChainID{
             id: chain_id
         };
-        let obj = context::new_named_object(ctx, chain_id);
+        let obj = object::new_named_object(chain_id);
         object::to_frozen(obj);
     }
 
@@ -31,30 +30,30 @@ module rooch_framework::chain_id {
         self.id
     }
 
-    public fun borrow(_ctx: &Context) : &ChainID {
+    public fun borrow() : &ChainID {
         let object_id = object_id::named_object_id<ChainID>();
         let obj = object::borrow_object<ChainID>(object_id);
         object::borrow(obj)
     }
 
-    public fun chain_id(ctx: &Context) : u64 {
-        let chain_id = borrow(ctx);
+    public fun chain_id() : u64 {
+        let chain_id = borrow();
         chain_id.id
     }
 
-    public fun is_local(ctx: &Context) : bool {
-        chain_id(ctx) == CHAIN_ID_LOCAL
+    public fun is_local() : bool {
+        chain_id() == CHAIN_ID_LOCAL
     }
 
-    public fun is_dev(ctx: &Context) : bool {
-        chain_id(ctx) == CHAIN_ID_DEV
+    public fun is_dev() : bool {
+        chain_id() == CHAIN_ID_DEV
     }
 
-    public fun is_test(ctx: &Context) : bool {
-        chain_id(ctx) == CHAIN_ID_TEST
+    public fun is_test() : bool {
+        chain_id() == CHAIN_ID_TEST
     }
 
-    public fun is_main(ctx: &Context) : bool {
-        chain_id(ctx) == CHAIN_ID_MAIN
+    public fun is_main() : bool {
+        chain_id() == CHAIN_ID_MAIN
     }
 }

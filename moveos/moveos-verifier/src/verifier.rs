@@ -71,19 +71,10 @@ pub fn verify_init_function(module: &CompiledModule) -> VMResult<bool> {
             let func_parameter_signatures = view.signature_at(fhandle.parameters);
             let func_parameter_vec = &func_parameter_signatures.0;
 
-            if func_parameter_vec.is_empty() {
+            if func_parameter_vec.len() > 1 {
                 return Err(vm_error_for_init_func_checking(
                     StatusCode::NUMBER_OF_TYPE_ARGUMENTS_MISMATCH,
-                    "The init function has no parameters and requires at least one parameter.",
-                    fdef,
-                    module.self_id(),
-                ));
-            }
-
-            if func_parameter_vec.len() != 1 && func_parameter_vec.len() != 2 {
-                return Err(vm_error_for_init_func_checking(
-                    StatusCode::NUMBER_OF_TYPE_ARGUMENTS_MISMATCH,
-                    "init function only should have two parameter with signer or storageContext",
+                    "init function only should have one parameter with signer",
                     fdef,
                     module.self_id(),
                 ));

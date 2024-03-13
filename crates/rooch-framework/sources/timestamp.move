@@ -10,7 +10,7 @@ module rooch_framework::timestamp {
 
     use moveos_std::object_id;
     use moveos_std::object;
-    use moveos_std::context::{Self, Context};
+    
     use moveos_std::signer;
     use moveos_std::core_addresses;
 
@@ -29,15 +29,15 @@ module rooch_framework::timestamp {
     const ErrorInvalidTimestamp: u64 = 1;
     const ErrorNotGenesisAddress: u64 = 2;
 
-    public(friend) fun genesis_init(ctx: &mut Context, _genesis_account: &signer, initial_time_milliseconds: u64) {
+    public(friend) fun genesis_init(_genesis_account: &signer, initial_time_milliseconds: u64) {
         let timestamp = Timestamp { milliseconds: initial_time_milliseconds };
-        let obj = context::new_named_object(ctx, timestamp);
+        let obj = object::new_named_object(timestamp);
         object::transfer_extend(obj, @rooch_framework);
     }
 
     /// Updates the global clock time, if the new time is smaller than the current time, aborts.
-    public(friend) fun update_global_time(ctx: &mut Context, timestamp_milliseconds: u64) {
-        let current_timestamp = timestamp_mut(ctx); 
+    public(friend) fun update_global_time(timestamp_milliseconds: u64) {
+        let current_timestamp = timestamp_mut(); 
         let now = current_timestamp.milliseconds;
         assert!(now < timestamp_milliseconds, ErrorInvalidTimestamp);
         current_timestamp.milliseconds = timestamp_milliseconds;
@@ -45,11 +45,11 @@ module rooch_framework::timestamp {
 
     /// Tries to update the global clock time, if the new time is smaller than the current time, ignores the update, and returns false.
     /// Only the framework genesis account can update the global clock time.
-    public fun try_update_global_time(ctx: &mut Context, genesis_account: &signer, timestamp_milliseconds: u64) : bool {
+    public fun try_update_global_time(genesis_account: &signer, timestamp_milliseconds: u64) : bool {
         let genesis_address = signer::address_of(genesis_account);
         assert!(core_addresses::is_system_reserved_address(genesis_address), ErrorNotGenesisAddress);
 
-        let current_timestamp = timestamp_mut(ctx); 
+        let current_timestamp = timestamp_mut(); 
         let now = current_timestamp.milliseconds;
         if(now < timestamp_milliseconds) {
             current_timestamp.milliseconds = timestamp_milliseconds;
@@ -59,13 +59,13 @@ module rooch_framework::timestamp {
         }
     }
 
-    fun timestamp_mut(_ctx: &mut Context): &mut Timestamp {
+    fun timestamp_mut(): &mut Timestamp {
         let object_id = object_id::named_object_id<Timestamp>();
         let obj = object::borrow_mut_object_extend<Timestamp>(object_id);
         object::borrow_mut(obj)
     }
 
-    public fun timestamp(_ctx: &Context): &Timestamp {
+    public fun timestamp(): &Timestamp {
         let object_id = object_id::named_object_id<Timestamp>();
         let obj = object::borrow_object<Timestamp>(object_id);
         object::borrow(obj)
@@ -80,14 +80,14 @@ module rooch_framework::timestamp {
     }
 
     /// Gets the current time in milliseconds.
-    public fun now_milliseconds(ctx: &Context): u64 {
-        let timestamp = timestamp(ctx);
+    public fun now_milliseconds(): u64 {
+        let timestamp = timestamp();
         timestamp.milliseconds
     }
 
     /// Gets the current time in seconds.
-    public fun now_seconds(ctx: &Context): u64 {
-        now_milliseconds(ctx) / MILLI_CONVERSION_FACTOR
+    public fun now_seconds(): u64 {
+        now_milliseconds() / MILLI_CONVERSION_FACTOR
     }
 
     public fun seconds_to_milliseconds(seconds: u64): u64 {
@@ -95,29 +95,29 @@ module rooch_framework::timestamp {
     }
 
     #[test_only]
-    public fun update_global_time_for_test(ctx: &mut Context, timestamp_milliseconds: u64){
-        update_global_time(ctx, timestamp_milliseconds);
+    public fun update_global_time_for_test(timestamp_milliseconds: u64){
+        update_global_time(timestamp_milliseconds);
     }
 
     #[test_only]
-    public fun update_global_time_for_test_secs(ctx: &mut Context, timestamp_seconds: u64) {
-        update_global_time(ctx, timestamp_seconds * MILLI_CONVERSION_FACTOR);
+    public fun update_global_time_for_test_secs(timestamp_seconds: u64) {
+        update_global_time(timestamp_seconds * MILLI_CONVERSION_FACTOR);
     }
 
     #[test_only]
-    public fun fast_forward_seconds_for_test(ctx: &mut Context, timestamp_seconds: u64) {
-        fast_forward_seconds(ctx, timestamp_seconds)
+    public fun fast_forward_seconds_for_test(timestamp_seconds: u64) {
+        fast_forward_seconds(timestamp_seconds)
     }
 
-    fun fast_forward_seconds(ctx: &mut Context, timestamp_seconds: u64) {
-        let now_milliseconds = now_milliseconds(ctx);
-        update_global_time(ctx, now_milliseconds + (timestamp_seconds * MILLI_CONVERSION_FACTOR));
+    fun fast_forward_seconds(timestamp_seconds: u64) {
+        let now_milliseconds = now_milliseconds();
+        update_global_time(now_milliseconds + (timestamp_seconds * MILLI_CONVERSION_FACTOR));
     }
 
     /// Fast forwards the clock by the given number of seconds, but only if the chain is in local mode.
     //TODO find a better way to do this, maybe some module that is only available in local chain?
-    public entry fun fast_forward_seconds_for_local(ctx: &mut Context, timestamp_seconds: u64) {
-        assert!(rooch_framework::chain_id::is_local(ctx), ErrorInvalidTimestamp);
-        fast_forward_seconds(ctx, timestamp_seconds);
+    public entry fun fast_forward_seconds_for_local(timestamp_seconds: u64) {
+        assert!(rooch_framework::chain_id::is_local(), ErrorInvalidTimestamp);
+        fast_forward_seconds(timestamp_seconds);
     }
 }

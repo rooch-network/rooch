@@ -4,8 +4,7 @@
 module bitcoin_move::genesis{
     use std::option;
     use std::option::Option;
-    use moveos_std::context;
-    use moveos_std::context::Context;
+    use moveos_std::tx_context;
     use moveos_std::signer;
     use bitcoin_move::light_client;
     use bitcoin_move::ord;
@@ -18,17 +17,15 @@ module bitcoin_move::genesis{
         network: u8,
     }
 
-    fun init(ctx: &mut Context){
-        //let genesis_account = &account::create_account(ctx, @bitcoin_move);
+    fun init(){
         let genesis_account = signer::module_signer<BitcoinGenesisContext>();
-        brc20::genesis_init(ctx, &genesis_account);
-        ord::genesis_init(ctx, &genesis_account);
-        light_client::genesis_init(ctx, &genesis_account);
-        
+        brc20::genesis_init(&genesis_account);
+        ord::genesis_init(&genesis_account);
+        light_client::genesis_init(&genesis_account);
     }
 
-    public(friend) fun network(ctx: &Context) : Option<u8> {
-        let genesis_context_option = context::get<BitcoinGenesisContext>(ctx);
+    public(friend) fun network() : Option<u8> {
+        let genesis_context_option = tx_context::get_attribute<BitcoinGenesisContext>();
         if(option::is_some(&genesis_context_option)){
             let network = option::borrow(&genesis_context_option).network;
             option::some(network)
