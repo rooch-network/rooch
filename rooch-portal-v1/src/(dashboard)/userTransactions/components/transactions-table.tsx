@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/pagination'
 
 // ** ROOCH SDK
-import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
+// import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 
 // ** ICONS
 import { MenuSquare, ExternalLink } from 'lucide-react'
@@ -226,27 +226,27 @@ export const TransactionsTable = () => {
   }
 
   // ** Fetch Transactions with SDK
-  const { data: transactionsData, isPending } = useRoochClientQuery(
-    'getTransactions',
-    {
-      cursor: 0,
-      limit: 10,
-      descending_order: false,
-    },
-    {
-      enabled: true,
-    },
-  )
+  // const { data: transactionsData, isPending } = useRoochClientQuery(
+  //   'getTransactions',
+  //   {
+  //     cursor: 0,
+  //     limit: 10,
+  //     descending_order: false,
+  //   },
+  //   {
+  //     enabled: true,
+  //   },
+  // )
 
-  if (isPending) {
-    return <div>Loading...</div>
-  }
+  // if (isPending) {
+  //   return <div>Loading...</div>
+  // }
 
-  if (!transactionsData) {
-    return <div>No transactions data available.</div>
-  }
+  // if (!transactionsData) {
+  //   return <div>No transactions data available.</div>
+  // }
 
-  console.log(transactionsData.data)
+  // console.log(transactionsData.data)
 
   return (
     <div>

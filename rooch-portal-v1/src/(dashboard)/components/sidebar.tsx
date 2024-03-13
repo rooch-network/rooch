@@ -12,7 +12,7 @@ interface SidebarProps {
 export const Sidebar = ({ onClose }: SidebarProps) => {
   return (
     <div className="h-full flex flex-col overflow-y-auto dark:bg-inherit bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="h-[85px] flex items-center justify-start px-4 py-12">
+      <div className="h-[85px] flex items-center justify-start px-6 py-12">
         <Logo />
       </div>
       <div className="flex flex-col w-full px-4">

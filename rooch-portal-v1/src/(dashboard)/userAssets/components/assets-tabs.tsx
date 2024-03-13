@@ -6,10 +6,19 @@ import { AssetsSft } from './assets-sft'
 export const AssetsTabs = () => {
   return (
     <Tabs defaultValue="coin">
-      <TabsList className="grid grid-cols-3 w-full transition-all">
-        <TabsTrigger value="coin">🪙 Coin</TabsTrigger>
-        <TabsTrigger value="nft">🎆 NFT</TabsTrigger>
-        <TabsTrigger value="sft">🎇 SFT</TabsTrigger>
+      <TabsList className="grid grid-cols-3 w-full transition-all h-10">
+        <TabsTrigger value="coin" className="h-full">
+          <div className="flex items-center justify-center">
+            <img src="/icon-coin.svg" alt="Coin" className="h-[1.2rem] w-[1.2rem] mr-1" />
+            <span className="font-semibold text-sm">Coin</span>
+          </div>
+        </TabsTrigger>
+        <TabsTrigger value="nft" className="h-full">
+          🎆 NFT
+        </TabsTrigger>
+        <TabsTrigger value="sft" className="h-full">
+          🎇 SFT
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="coin">
         <AssetsCoin />

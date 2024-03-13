@@ -8,7 +8,7 @@ export const SftDetailLayout = () => {
   const navigate = useNavigate()
 
   return (
-    <div className="h-full flex-1 flex-col space-y-4 flex p-4 rounded-lg shadow-custom">
+    <div className="h-full flex-1 flex-col space-y-4 flex p-4 rounded-lg shadow-custom dark:shadow-muted">
       <Button
         className="w-fit p-0 text-muted-foreground hover:text-muted-foreground/80 hover:no-underline"
         variant="link"
