@@ -408,20 +408,50 @@ fn native_read_data_from_heap(
         Some(instance) => {
             let memory = instance.instance.exports.get_memory("memory").unwrap();
             let memory_view = memory.view(&instance.store);
-            let mut data = vec![0; data_length as usize];
-            match memory_view.read((data_ptr + 4) as u64, &mut data) {
-                Ok(_) => {
-                    let mut cost = gas_params.base;
-                    cost += gas_params.per_byte * NumBytes::new(instance.bytecode.len() as u64);
-                    Ok(NativeResult::Success {
-                        cost,
-                        ret_vals: smallvec![Value::vector_u8(data)],
-                    })
+            if data_length > 0 {
+                let mut data = vec![0; data_length as usize];
+                match memory_view.read(data_ptr as u64, &mut data) {
+                    Ok(_) => {
+                        let mut cost = gas_params.base;
+                        cost += gas_params.per_byte * NumBytes::new(data_length as u64);
+                        Ok(NativeResult::Success {
+                            cost,
+                            ret_vals: smallvec![Value::vector_u8(data)],
+                        })
+                    }
+                    Err(_) => Ok(NativeResult::err(
+                        gas_params.base,
+                        E_WASM_MEMORY_ACCESS_FAILED,
+                    )),
                 }
-                Err(_) => Ok(NativeResult::err(
-                    gas_params.base,
-                    E_WASM_MEMORY_ACCESS_FAILED,
-                )),
+            } else {
+                let mut c_char_array = Vec::new();
+                let mut start_offset = data_ptr as u64;
+                let mut bytes_read = 0;
+                loop {
+                    match memory_view.read_u8(start_offset) {
+                        Ok(v) => {
+                            if v == b'\0' {
+                                let mut cost = gas_params.base;
+                                cost += gas_params.per_byte * NumBytes::new(bytes_read);
+
+                                return Ok(NativeResult::Success {
+                                    cost,
+                                    ret_vals: smallvec![Value::vector_u8(c_char_array)],
+                                });
+                            }
+                            c_char_array.push(v);
+                            start_offset += 1;
+                            bytes_read += 1;
+                        }
+                        Err(_) => {
+                            return Ok(NativeResult::err(
+                                gas_params.base,
+                                E_WASM_MEMORY_ACCESS_FAILED,
+                            ));
+                        }
+                    }
+                }
             }
         }
     };

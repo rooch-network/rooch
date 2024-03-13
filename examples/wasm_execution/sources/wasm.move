@@ -5,6 +5,7 @@ module rooch_examples::wasm_execution {
    use moveos_std::context::{Context};
    use moveos_std::wasm;
    use std::debug;
+   use std::string;
    use std::vector;
 
    entry public fun run(_ctx: &Context) {
@@ -33,6 +34,9 @@ module rooch_examples::wasm_execution {
       // 6. get the length of the data
 
       // 7. read the bytes dat of return value by pointer offset and data length
+      let ret_data = wasm::read_data_from_heap(wasm_instance_id, (ret_val as u32), 0);
+      let ret_string = string::utf8(ret_data);
+      debug::print(&ret_string);
 
       // 8. release the wasm VM instance (required step)
    }
