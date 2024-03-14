@@ -794,24 +794,7 @@ mod tests {
         let object_id = ObjectID::from(address);
         let object_id2 = ObjectID::from_str(&object_id.to_string()).unwrap();
         assert_eq!(object_id, object_id2);
-    }
-
-    #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
-    struct TestStruct {
-        count: u64,
-    }
-
-    impl MoveStructType for TestStruct {
-        const ADDRESS: AccountAddress = MOVEOS_STD_ADDRESS;
-        const MODULE_NAME: &'static IdentStr = ident_str!("object");
-        const STRUCT_NAME: &'static IdentStr = ident_str!("TestStruct");
-    }
-
-    impl MoveStructState for TestStruct {
-        fn struct_layout() -> MoveStructLayout {
-            MoveStructLayout::new(vec![MoveTypeLayout::U64])
-        }
-    }
+    } 
 
     #[test]
     fn test_resource_and_module_object_id() {
