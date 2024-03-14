@@ -5996,9 +5996,9 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "tempfile",
- "wasmer",
  "tracing",
  "tracing-subscriber",
+ "wasmer",
 ]
 
 [[package]]
