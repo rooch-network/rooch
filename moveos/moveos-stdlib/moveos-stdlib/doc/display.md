@@ -29,7 +29,7 @@
 
 ## Resource `Display`
 
-Display<T> is is used to define the display of the <code>T</code>
+Display<T> is used to define the display of the <code>T</code>
 
 
 <pre><code><b>struct</b> <a href="display.md#0x2_display_Display">Display</a>&lt;T&gt; <b>has</b> key
