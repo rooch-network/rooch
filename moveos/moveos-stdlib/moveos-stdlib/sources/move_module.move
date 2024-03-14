@@ -7,8 +7,7 @@
 module moveos_std::move_module {
     use std::vector;
     use std::string::{Self, String};
-    use moveos_std::object_id::{Self, ObjectID};
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::tx_context;
     use moveos_std::signer;
 
@@ -223,7 +222,7 @@ module moveos_std::move_module {
     }
 
     public fun module_store_id(): ObjectID {
-        object_id::named_object_id<ModuleStore>()
+        object::named_object_id<ModuleStore>()
     }
 
     /// Create a new module object space

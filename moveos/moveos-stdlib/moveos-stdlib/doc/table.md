@@ -30,7 +30,6 @@ struct itself, while the operations are implemented as native functions. No trav
 
 
 <pre><code><b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 </code></pre>
 
 
@@ -230,5 +229,5 @@ Usable only if the value type <code>V</code> has the <code>drop</code> ability
 Returns table handle of <code><a href="table.md#0x2_table">table</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_handle">handle</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_handle">handle</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>

@@ -7,10 +7,8 @@ module moveos_std::account {
    use std::signer;
    use moveos_std::core_addresses;
    use moveos_std::bcs;
-   use moveos_std::object_id::ObjectID;
-   use moveos_std::object_id;
    use moveos_std::type_table::{key};
-   use moveos_std::object::{Self, Object, borrow_object};
+   use moveos_std::object::{Self, ObjectID, Object, borrow_object};
    #[test_only]
    use moveos_std::object::{take_object, borrow_mut_object};
 
@@ -226,12 +224,12 @@ module moveos_std::account {
 
 
    public fun account_object_id(account: address): ObjectID {
-      object_id::address_to_object_id(account)
+      object::address_to_object_id(account)
    }
 
    /// Create a new account object space
    public(friend) fun create_account_object(account: address) {
-      let object_id = object_id::address_to_object_id(account);
+      let object_id = object::address_to_object_id(account);
       let obj = object::new_with_id(object_id, Account {sequence_number: 0});
       object::transfer_extend(obj, account)
    }
@@ -542,7 +540,7 @@ module moveos_std::account {
    }
 
    #[test(sender=@0x42)]
-   #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
+   #[expected_failure(abort_code = 2, location = moveos_std::object)]
    fun test_failure_borrow_resource_no_exists(sender: signer){
       let sender_addr = signer::address_of(&sender);
       create_account_object(sender_addr);
@@ -553,7 +551,7 @@ module moveos_std::account {
    }
 
    #[test(sender=@0x42)]
-   #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
+   #[expected_failure(abort_code = 2, location = moveos_std::object)]
    fun test_failure_borrow_mut_resource_no_exists(sender: signer){
       let sender_addr = signer::address_of(&sender);
       create_account_object(sender_addr);

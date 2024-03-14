@@ -3,8 +3,8 @@
 
 use move_core_types::{account_address::AccountAddress, value::MoveValue};
 use moveos_types::moveos_std::{
+    object::ObjectID,
     object::{ObjectEntity, RawData},
-    object_id::ObjectID,
 };
 
 #[derive(Debug, Clone)]

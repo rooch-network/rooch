@@ -22,7 +22,6 @@
 <pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 </code></pre>

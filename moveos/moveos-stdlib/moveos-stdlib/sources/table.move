@@ -9,7 +9,7 @@
 /// struct itself, while the operations are implemented as native functions. No traversal is provided.
 
 module moveos_std::table {
-    use moveos_std::object_id::{ObjectID};
+    use moveos_std::object::ObjectID;
     use moveos_std::object::{Self, Object};
 
     struct TablePlaceholder has key {

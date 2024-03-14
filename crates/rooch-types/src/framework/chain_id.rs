@@ -7,7 +7,7 @@ use move_core_types::{account_address::AccountAddress, ident_str, identifier::Id
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     moveos_std::{
-        object_id::{self, ObjectID},
+        object::{self, ObjectID},
         tx_context::TxContext,
     },
     state::{MoveStructState, MoveStructType},
@@ -24,7 +24,7 @@ pub struct ChainID {
 
 impl ChainID {
     pub fn chain_id_object_id() -> ObjectID {
-        object_id::named_object_id(&Self::struct_tag())
+        object::named_object_id(&Self::struct_tag())
     }
 }
 

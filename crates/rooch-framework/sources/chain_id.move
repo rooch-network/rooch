@@ -3,7 +3,6 @@
 
 module rooch_framework::chain_id {
 
-    use moveos_std::object_id;
     use moveos_std::object;
 
     friend rooch_framework::genesis;
@@ -31,7 +30,7 @@ module rooch_framework::chain_id {
     }
 
     public fun borrow() : &ChainID {
-        let object_id = object_id::named_object_id<ChainID>();
+        let object_id = object::named_object_id<ChainID>();
         let obj = object::borrow_object<ChainID>(object_id);
         object::borrow(obj)
     }

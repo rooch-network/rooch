@@ -34,7 +34,7 @@ use moveos_types::state::KeyState;
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
     move_types::FunctionId,
-    moveos_std::object_id::ObjectID,
+    moveos_std::object::ObjectID,
     moveos_std::tx_context::TxContext,
     state::State,
     state_resolver::StateResolver,

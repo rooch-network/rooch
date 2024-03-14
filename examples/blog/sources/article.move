@@ -9,7 +9,7 @@
 module rooch_examples::article {
     use moveos_std::event;
     use moveos_std::object::{Self, Object};
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     
     use moveos_std::table::{Self, Table};
     use rooch_examples::comment::{Self, Comment};

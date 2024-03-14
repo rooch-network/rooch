@@ -5,7 +5,7 @@
 
 module moveos_std::type_table {
     use std::ascii::String;
-    use moveos_std::object_id::{ObjectID};
+    use moveos_std::object::ObjectID;
     use moveos_std::object::{Self, Object};
 
     struct TablePlaceholder has key {

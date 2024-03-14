@@ -8,24 +8,20 @@
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::{
-    account_address::AccountAddress,
     effects::Op,
     gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
     language_storage::TypeTag,
     value::MoveTypeLayout,
     vm_status::StatusCode,
 };
-use move_vm_runtime::{
-    native_functions,
-    native_functions::{NativeContext, NativeFunction, NativeFunctionTable},
-};
+use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type,
     natives::function::NativeResult,
     values::{GlobalValue, Struct, StructRef, Value},
 };
 use moveos_object_runtime::resolved_arg::ResolvedArg;
-use moveos_types::{moveos_std::object_id::ObjectID, state_resolver::StateResolver};
+use moveos_types::{moveos_std::object::ObjectID, state_resolver::StateResolver};
 use moveos_types::{
     moveos_std::{object, tx_context::TxContext},
     state::{KeyState, MoveState},
@@ -47,11 +43,8 @@ pub struct NativeTableContext<'a> {
 }
 
 /// Ensure the error codes in this file is consistent with the error code in raw_table.move
-const E_ALREADY_EXISTS: u64 = 1;
-const E_NOT_FOUND: u64 = 2;
-const _E_DUPLICATE_OPERATION: u64 = 3;
-const _E_NOT_EMPTY: u64 = 4; // This is not used, just used to keep consistent with raw_table.move
-const _E_TABLE_ALREADY_EXISTS: u64 = 5;
+const E_ALREADY_EXISTS: u64 = super::object::ERROR_ALREADY_EXISTS;
+const E_NOT_FOUND: u64 = super::object::ERROR_NOT_FOUND;
 
 // ===========================================================================================
 // Private Data Structures and Constants
@@ -480,39 +473,6 @@ impl Table {
 // =========================================================================================
 // Native Function Implementations
 
-/// Returns all natives for tables.
-pub fn table_natives(table_addr: AccountAddress, gas_params: GasParameters) -> NativeFunctionTable {
-    let natives: [(&str, &str, NativeFunction); 5] = [
-        (
-            "raw_table",
-            "add_box",
-            make_native_add_box(gas_params.common.clone(), gas_params.add_box),
-        ),
-        (
-            "raw_table",
-            "borrow_box",
-            make_native_borrow_box(gas_params.common.clone(), gas_params.borrow_box.clone()),
-        ),
-        (
-            "raw_table",
-            "borrow_box_mut",
-            make_native_borrow_box(gas_params.common.clone(), gas_params.borrow_box),
-        ),
-        (
-            "raw_table",
-            "remove_box",
-            make_native_remove_box(gas_params.common.clone(), gas_params.remove_box),
-        ),
-        (
-            "raw_table",
-            "contains_box",
-            make_native_contains_box(gas_params.common, gas_params.contains_box),
-        ),
-    ];
-
-    native_functions::make_table_from_iter(table_addr, natives)
-}
-
 #[derive(Debug, Clone)]
 pub struct CommonGasParameters {
     pub load_base: InternalGas,
@@ -765,43 +725,6 @@ pub fn make_native_remove_box(
             native_remove_box(&common_gas_params, &gas_params, context, ty_args, args)
         },
     )
-}
-
-#[derive(Debug, Clone)]
-pub struct GasParameters {
-    pub common: CommonGasParameters,
-    pub add_box: AddBoxGasParameters,
-    pub borrow_box: BorrowBoxGasParameters,
-    pub contains_box: ContainsBoxGasParameters,
-    pub remove_box: RemoveGasParameters,
-}
-
-impl GasParameters {
-    pub fn zeros() -> Self {
-        Self {
-            common: CommonGasParameters {
-                load_base: 0.into(),
-                load_per_byte: 0.into(),
-                load_failure: 0.into(),
-            },
-            add_box: AddBoxGasParameters {
-                base: 0.into(),
-                per_byte_serialized: 0.into(),
-            },
-            borrow_box: BorrowBoxGasParameters {
-                base: 0.into(),
-                per_byte_serialized: 0.into(),
-            },
-            contains_box: ContainsBoxGasParameters {
-                base: 0.into(),
-                per_byte_serialized: 0.into(),
-            },
-            remove_box: RemoveGasParameters {
-                base: 0.into(),
-                per_byte_serialized: 0.into(),
-            },
-        }
-    }
 }
 
 // =========================================================================================

@@ -4,7 +4,7 @@
 //# run --signers test
 script {
     fun main() {
-        let object_id = moveos_std::object_id::named_object_id<rooch_framework::timestamp::Timestamp>();
+        let object_id = moveos_std::object::named_object_id<rooch_framework::timestamp::Timestamp>();
         std::debug::print(&object_id);
     }
 }

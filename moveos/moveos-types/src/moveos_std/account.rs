@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::addresses::MOVEOS_STD_ADDRESS;
-use crate::moveos_std::object_id::ObjectID;
+use crate::moveos_std::object::ObjectID;
 use crate::state::{MoveStructState, MoveStructType};
 use move_core_types::language_storage::StructTag;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};

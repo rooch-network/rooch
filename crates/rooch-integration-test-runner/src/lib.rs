@@ -26,7 +26,7 @@ use moveos_store::MoveOSStore;
 use moveos_types::{
     addresses::MOVEOS_STD_ADDRESS,
     move_types::FunctionId,
-    moveos_std::object_id::ObjectID,
+    moveos_std::object::ObjectID,
     state_resolver::AnnotatedStateReader,
     transaction::{MoveAction, MoveOSTransaction, TransactionOutput},
 };

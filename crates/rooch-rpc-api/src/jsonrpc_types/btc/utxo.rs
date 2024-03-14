@@ -8,8 +8,8 @@ use anyhow::Result;
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 use move_core_types::account_address::AccountAddress;
-use moveos_types::moveos_std::object_id;
-use moveos_types::moveos_std::object_id::ObjectID;
+use moveos_types::moveos_std::object;
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::MoveStructType;
 use rooch_types::bitcoin::utxo::{BitcoinOutputID, OutputID, UTXOState, UTXO};
 use rooch_types::indexer::state::GlobalStateFilter;
@@ -59,7 +59,7 @@ impl UTXOFilterView {
             UTXOFilterView::OutputId { txid, vout } => {
                 let txid = hex_to_txid(txid.as_str())?;
                 let output_id = OutputID::new(txid.into_address(), vout);
-                let object_id = object_id::custom_object_id(output_id, &UTXO::struct_tag());
+                let object_id = object::custom_object_id(output_id, &UTXO::struct_tag());
 
                 GlobalStateFilter::ObjectId(object_id)
             }

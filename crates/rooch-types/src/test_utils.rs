@@ -15,8 +15,8 @@ use moveos_types::move_types::{random_identity, random_struct_tag, random_type_t
 use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::event::{Event, EventID};
 use moveos_types::moveos_std::move_module::ModuleStore;
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::object::{self, ObjectEntity, GENESIS_STATE_ROOT};
-use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::moveos_std::table::TablePlaceholder;
 use moveos_types::state::{KeyState, State, StateChangeSet, TableChange};
 use moveos_types::transaction::{FunctionCall, MoveAction, ScriptCall, VerifiedMoveAction};

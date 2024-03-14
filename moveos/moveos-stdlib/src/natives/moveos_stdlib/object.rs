@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::raw_table;
 use crate::natives::{helpers::make_module_natives, moveos_stdlib::raw_table::NativeTableContext};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{gas_algebra::InternalGas, vm_status::StatusCode};
@@ -9,12 +10,15 @@ use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
 };
 use moveos_types::{
-    moveos_std::{object::Object, object_id::ObjectID},
+    moveos_std::{object::Object, object::ObjectID},
     state::{MoveState, PlaceholderStruct},
 };
 use smallvec::smallvec;
 use std::{collections::VecDeque, sync::Arc};
 
+/// Ensure the error codes in this file is consistent with the error code in raw_table.move
+pub(crate) const ERROR_ALREADY_EXISTS: u64 = 1;
+pub(crate) const ERROR_NOT_FOUND: u64 = 2;
 pub(crate) const ERROR_OBJECT_ALREADY_BORROWED: u64 = 7;
 
 #[derive(Debug, Clone)]
@@ -127,15 +131,41 @@ fn borrow_object_reference(
 
 #[derive(Debug, Clone)]
 pub struct GasParameters {
+    pub common: raw_table::CommonGasParameters,
     pub as_ref_inner: AsRefGasParameters,
     pub as_mut_ref_inner: AsMutRefGasParameters,
+    pub add_box: raw_table::AddBoxGasParameters,
+    pub borrow_box: raw_table::BorrowBoxGasParameters,
+    pub contains_box: raw_table::ContainsBoxGasParameters,
+    pub remove_box: raw_table::RemoveGasParameters,
 }
 
 impl GasParameters {
     pub fn zeros() -> Self {
         Self {
+            common: raw_table::CommonGasParameters {
+                load_base: 0.into(),
+                load_per_byte: 0.into(),
+                load_failure: 0.into(),
+            },
             as_ref_inner: AsRefGasParameters::zeros(),
             as_mut_ref_inner: AsMutRefGasParameters::zeros(),
+            add_box: raw_table::AddBoxGasParameters {
+                base: 0.into(),
+                per_byte_serialized: 0.into(),
+            },
+            borrow_box: raw_table::BorrowBoxGasParameters {
+                base: 0.into(),
+                per_byte_serialized: 0.into(),
+            },
+            contains_box: raw_table::ContainsBoxGasParameters {
+                base: 0.into(),
+                per_byte_serialized: 0.into(),
+            },
+            remove_box: raw_table::RemoveGasParameters {
+                base: 0.into(),
+                per_byte_serialized: 0.into(),
+            },
         }
     }
 }
@@ -149,6 +179,29 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         (
             "as_mut_ref_inner",
             make_native_as_mut_ref_inner(gas_params.as_mut_ref_inner),
+        ),
+        (
+            "add_box",
+            raw_table::make_native_add_box(gas_params.common.clone(), gas_params.add_box),
+        ),
+        (
+            "borrow_box",
+            raw_table::make_native_borrow_box(
+                gas_params.common.clone(),
+                gas_params.borrow_box.clone(),
+            ),
+        ),
+        (
+            "borrow_box_mut",
+            raw_table::make_native_borrow_box(gas_params.common.clone(), gas_params.borrow_box),
+        ),
+        (
+            "remove_box",
+            raw_table::make_native_remove_box(gas_params.common.clone(), gas_params.remove_box),
+        ),
+        (
+            "contains_box",
+            raw_table::make_native_contains_box(gas_params.common, gas_params.contains_box),
         ),
     ];
 
