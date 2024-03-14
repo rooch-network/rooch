@@ -3,7 +3,7 @@
 
 module rooch_examples::article_delete_logic {
     use moveos_std::object::Object;
-    use moveos_std::context::Context;
+    
     use moveos_std::object_id::ObjectID;
     use rooch_examples::article::{Self, Article};
     use rooch_examples::blog_aggregate;
@@ -21,13 +21,13 @@ module rooch_examples::article_delete_logic {
     }
 
     public(friend) fun mutate(
-        ctx: &mut Context,
+        
         _account: &signer,
         article_deleted: &article::ArticleDeleted,
         article_id: ObjectID,
     ) : Object<Article> {
         let _ = article_deleted;
-        blog_aggregate::remove_article(ctx, article_id)
+        blog_aggregate::remove_article(article_id)
     }
 
 }

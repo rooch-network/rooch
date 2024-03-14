@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, Result};
+use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::moveos_std::object::ObjectEntity;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::transaction::FunctionCall;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
@@ -14,11 +16,7 @@ use rooch_framework::natives::default_gas_schedule;
 use rooch_store::RoochStore;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
-use rooch_types::{
-    address::{RoochAddress, RoochSupportedAddress},
-    chain_id::RoochChainID,
-    transaction::AbstractTransaction,
-};
+use rooch_types::{chain_id::RoochChainID, transaction::AbstractTransaction};
 
 pub struct RustBindingTest {
     pub executor: ExecutorActor,
@@ -29,17 +27,21 @@ impl RustBindingTest {
     pub fn new() -> Result<Self> {
         let moveos_store = MoveOSStore::mock_moveos_store()?;
         let rooch_store = RoochStore::mock_rooch_store()?;
-        let sequencer = RoochAddress::random();
+        let sequencer = AccountAddress::ONE.into();
         let gas_schedule_blob = bcs::to_bytes(&default_gas_schedule())
             .expect("Failure serializing genesis gas schedule");
         let executor = ExecutorActor::new(
             RoochChainID::LOCAL.genesis_ctx(sequencer, gas_schedule_blob),
             BitcoinGenesisContext::new(Network::default().to_num()),
-            moveos_store.clone(),
-            rooch_store.clone(),
+            moveos_store,
+            rooch_store,
         )?;
-        let reader_executor =
-            ReaderExecutorActor::new(executor.genesis().clone(), moveos_store, rooch_store)?;
+
+        let reader_executor = ReaderExecutorActor::new(
+            executor.genesis().clone(),
+            executor.get_moveos_store(),
+            executor.get_rooch_store(),
+        )?;
         Ok(Self {
             executor,
             reader_executor,
@@ -67,7 +69,13 @@ impl RustBindingTest {
         tx: T,
     ) -> Result<ExecuteTransactionResult> {
         let verified_tx = self.executor.validate(tx)?;
-        self.executor.execute(verified_tx)
+        let result = self.executor.execute(verified_tx)?;
+        let root = ObjectEntity::root_object(
+            result.transaction_info.state_root,
+            result.transaction_info.size,
+        );
+        self.reader_executor.refresh_state(root, false)?;
+        Ok(result)
     }
 }
 

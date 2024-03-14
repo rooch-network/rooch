@@ -95,6 +95,7 @@ impl FromOnChainGasSchedule for MoveOSStdlibGasParameters {
             object: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             json: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             wasm: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
+            tx_context: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
         })
     }
 }
@@ -116,6 +117,7 @@ impl ToOnChainGasSchedule for MoveOSStdlibGasParameters {
         entires.extend(self.object.to_on_chain_gas_schedule());
         entires.extend(self.json.to_on_chain_gas_schedule());
         entires.extend(self.wasm.to_on_chain_gas_schedule());
+        entires.extend(self.tx_context.to_on_chain_gas_schedule());
         entires
     }
 }
@@ -137,6 +139,7 @@ impl InitialGasSchedule for MoveOSStdlibGasParameters {
             object: InitialGasSchedule::initial(),
             json: InitialGasSchedule::initial(),
             wasm: InitialGasSchedule::initial(),
+            tx_context: InitialGasSchedule::initial(),
         }
     }
 }

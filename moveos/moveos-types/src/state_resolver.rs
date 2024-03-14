@@ -4,7 +4,7 @@
 use crate::move_std::ascii::MoveAsciiString;
 use crate::move_std::string::MoveString;
 use crate::moveos_std::account::Account;
-use crate::moveos_std::move_module::Module;
+use crate::moveos_std::move_module::ModuleStore;
 use crate::moveos_std::object_id::ObjectID;
 use crate::state::{AnnotatedKeyState, KeyState, MoveStructType};
 use crate::{
@@ -105,7 +105,7 @@ where
     }
 
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Error> {
-        let module_object_id = Module::module_object_id();
+        let module_object_id = ModuleStore::module_store_id();
         let key = module_id_to_key(module_id);
         //We wrap the modules byte codes to `MoveModule` type when store the module.
         //So we need unwrap the MoveModule type.

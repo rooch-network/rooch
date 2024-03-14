@@ -6,7 +6,6 @@ module bitcoin_move::utxo{
     use std::string::String;
     use moveos_std::object_id;
     use moveos_std::object_id::ObjectID;
-    use moveos_std::context::{Self, Context};
     use moveos_std::object::{Self, Object};
     use moveos_std::simple_multimap::{Self, SimpleMultiMap};
     use moveos_std::type_info;
@@ -43,7 +42,7 @@ module bitcoin_move::utxo{
         object_id: ObjectID,
     }
 
-    public(friend) fun new(ctx: &mut Context, txid: address, vout: u32, value: u64) : Object<UTXO> {
+    public(friend) fun new(txid: address, vout: u32, value: u64) : Object<UTXO> {
         let id = OutputID{
             txid: txid,
             vout: vout,
@@ -54,7 +53,7 @@ module bitcoin_move::utxo{
             value: value,
             seals: simple_multimap::new(),
         };
-        context::new_custom_object(ctx, id, utxo)
+        object::new_custom_object(id, utxo)
     }
 
     public fun new_id(txid: address, vout: u32) : OutputID {
@@ -80,16 +79,16 @@ module bitcoin_move::utxo{
     }
 
 
-    public fun exists_utxo(ctx: &Context, txid: address, vout: u32): bool{
+    public fun exists_utxo(txid: address, vout: u32): bool{
         let id = OutputID{
             txid: txid,
             vout: vout,
         };
         let object_id = object_id::custom_object_id<OutputID,UTXO>(id);
-        context::exists_object<UTXO>(ctx, object_id)
+        object::exists_object_with_type<UTXO>(object_id)
     }
 
-    public fun borrow_utxo(_ctx: &Context, txid: address, vout: u32): &Object<UTXO>{
+    public fun borrow_utxo(txid: address, vout: u32): &Object<UTXO>{
         let id = OutputID{
             txid: txid,
             vout: vout,
@@ -145,8 +144,8 @@ module bitcoin_move::utxo{
         object::transfer_extend(utxo_obj, to);
     }
 
-    public(friend) fun take(ctx: &mut Context, object_id: ObjectID): (address, Object<UTXO>){
-        context::take_object_extend<UTXO>(ctx, object_id)
+    public(friend) fun take(object_id: ObjectID): (address, Object<UTXO>){
+        object::take_object_extend<UTXO>(object_id)
     }
 
     public(friend) fun remove(utxo_obj: Object<UTXO>): SimpleMultiMap<String, ObjectID>{

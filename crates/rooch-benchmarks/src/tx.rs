@@ -192,7 +192,7 @@ pub async fn setup_service(
     timers.push(proposer_timer);
 
     // Init indexer
-    let indexer_executor = IndexerActor::new(indexer_store.clone(), moveos_store.clone())?
+    let indexer_executor = IndexerActor::new(indexer_store.clone(), moveos_store.clone(), false)?
         .into_actor(Some("Indexer"), &actor_system)
         .await?;
     let indexer_reader_executor = IndexerReaderActor::new(indexer_reader)?

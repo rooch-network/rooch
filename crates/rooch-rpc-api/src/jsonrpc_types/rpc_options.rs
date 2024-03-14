@@ -46,3 +46,21 @@ impl EventOptions {
         self
     }
 }
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema, Eq, PartialEq, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct TxOptions {
+    /// If true, the TransactionOutput is returned in the response.
+    pub with_output: bool,
+}
+
+impl TxOptions {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn with_output(mut self, with_output: bool) -> Self {
+        self.with_output = with_output;
+        self
+    }
+}

@@ -1,11 +1,11 @@
 processed 2 tasks
 
-task 1 'publish'. lines 3-22:
+task 1 'publish'. lines 3-25:
 Error: error: type `&mut signer` is not supported as a parameter type
-  ┌─ /tmp/tempfile:8:5
-  │  
-8 │ ╭     entry public fun test_entry_function_valid_reference_mut_signer( _: &mut signer ){
-9 │ │     }
-  │ ╰─────^
+   ┌─ /tmp/tempfile:11:5
+   │  
+11 │ ╭     entry public fun test_entry_function_valid_reference_mut_signer(_: &mut signer){
+12 │ │     }
+   │ ╰─────^
 
 

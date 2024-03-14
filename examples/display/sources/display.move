@@ -6,7 +6,7 @@
 module display::display{
     use std::string::{Self, String};
     use moveos_std::display;
-    use moveos_std::context::{Self, Context};
+    
     use moveos_std::object;
     use moveos_std::account;
 
@@ -22,7 +22,7 @@ module display::display{
         description: String,
     }
 
-    fun init(ctx: &mut Context){
+    fun init(){
         // Template syntax
 
         // - `{var_name}`, no space between `{` with `var_name` and `var_name` with `}`.
@@ -32,7 +32,7 @@ module display::display{
         //       In this example, there are 3 fields: `name`, `creator` and `description` in a `ObjectType` object,
         //       so you can use templates: {value.name}, {value.creator}, {value.description} respectively.
         // - Supported type for object instance fields: primitive types, `0x1::string::String`, `0x2::object_id::ObjectID`. Other custom Move structs are not supported.      
-        let display_obj = display::object_display<ObjectType>(ctx); 
+        let display_obj = display::object_display<ObjectType>(); 
         display::set_value(display_obj, string::utf8(b"name"), string::utf8(b"{value.name}"));
         display::set_value(display_obj, string::utf8(b"uri"), string::utf8(b"https:://{owner}/{id}"));
         display::set_value(display_obj, string::utf8(b"description"), string::utf8(b"{value.description}"));
@@ -41,7 +41,7 @@ module display::display{
         // For resource display templates:
         // - there are no object meta fields. {id}, {owner}, {flag}, {state_root}, {size} are not available.
         // - prefix `value.` is no need any more.
-        let display_resource = display::resource_display<ResourceType>(ctx);
+        let display_resource = display::resource_display<ResourceType>();
         display::set_value(display_resource, string::utf8(b"name"), string::utf8(b"{name}"));
         display::set_value(display_resource, string::utf8(b"description"), string::utf8(b"{description}"));
         display::set_value(display_resource, string::utf8(b"creator"), string::utf8(b"{creator}"));
@@ -49,7 +49,7 @@ module display::display{
 
     /// Create a new ObjectType
     public entry fun create_object(
-        ctx: &mut Context,
+        
         name: String,
         creator: address,
         description: String,
@@ -61,18 +61,18 @@ module display::display{
             description,
         };
 
-        let obj = context::new_object(
-            ctx,
+        let obj = object::new(
+            
             obj_type
         );
 
-        let sender = context::sender(ctx);
+        let sender = moveos_std::tx_context::sender();
         object::transfer(obj, sender);
     }
 
     /// Create a new ResourceType
     public entry fun create_resource(
-        ctx: &mut Context,
+        
         sender: &signer,
         name: String,
         creator: address,
@@ -85,6 +85,6 @@ module display::display{
             description,
         };
 
-        account::move_resource_to(ctx, sender, resource);
+        account::move_resource_to(sender, resource);
     }
 }

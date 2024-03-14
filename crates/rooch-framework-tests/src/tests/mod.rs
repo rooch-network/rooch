@@ -3,6 +3,7 @@
 
 mod bitcoin_light_client_test;
 mod brc20_test;
+mod chain_id_test;
 mod empty_tests;
 mod ethereum_light_client_test;
 mod ethereum_validator_tests;

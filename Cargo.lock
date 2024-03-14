@@ -2438,6 +2438,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "data-verify"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "fastcrypto",
+ "log",
+ "moveos-config",
+ "moveos-types",
+ "once_cell",
+ "rooch-config",
+ "rooch-rpc-api",
+ "rooch-types",
+ "serde 1.0.195",
+ "serde_json",
+ "serde_yaml 0.9.25",
+]
+
+[[package]]
 name = "datatest-stable"
 version = "0.1.1"
 source = "git+https://github.com/rooch-network/diem-devtools?branch=feature/pub-test-opts#c65933ee5aa5721ca0e6602995f1464ce0a93a53"
@@ -5962,6 +5981,7 @@ dependencies = [
  "move-vm-runtime",
  "move-vm-test-utils",
  "move-vm-types",
+ "moveos-object-runtime",
  "moveos-stdlib",
  "moveos-stdlib-builder",
  "moveos-store",
@@ -5977,6 +5997,8 @@ dependencies = [
  "serde_json",
  "tempfile",
  "wasmer",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -6009,6 +6031,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "moveos-object-runtime"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "better_any",
+ "fastcrypto",
+ "hex",
+ "itertools",
+ "linked-hash-map",
+ "log",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-bytecode-verifier",
+ "move-command-line-common",
+ "move-core-types",
+ "move-package",
+ "move-prover",
+ "move-stdlib",
+ "move-unit-test",
+ "move-vm-runtime",
+ "move-vm-test-utils",
+ "move-vm-types",
+ "moveos-types",
+ "moveos-verifier",
+ "once_cell",
+ "parking_lot 0.12.1",
+ "petgraph 0.5.1",
+ "serde 1.0.195",
+ "serde_bytes",
+ "serde_json",
+ "sha3 0.9.1",
+ "smallvec 1.11.0",
+ "smt",
+]
+
+[[package]]
 name = "moveos-stdlib"
 version = "0.1.0"
 dependencies = [
@@ -6032,6 +6090,7 @@ dependencies = [
  "move-vm-runtime",
  "move-vm-test-utils",
  "move-vm-types",
+ "moveos-object-runtime",
  "moveos-stdlib-builder",
  "moveos-types",
  "moveos-verifier",
@@ -6095,6 +6154,7 @@ dependencies = [
  "bcs",
  "chrono",
  "hex",
+ "log",
  "move-core-types",
  "move-resource-viewer",
  "moveos-common",
@@ -6110,6 +6170,8 @@ dependencies = [
  "serde 1.0.195",
  "serde_bytes",
  "smt",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -7309,6 +7371,8 @@ dependencies = [
  "nix 0.26.4",
  "once_cell",
  "parking_lot 0.12.1",
+ "protobuf",
+ "protobuf-codegen-pure",
  "smallvec 1.11.0",
  "symbolic-demangle",
  "tempfile",
@@ -7607,6 +7671,25 @@ name = "protobuf"
 version = "2.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
+
+[[package]]
+name = "protobuf-codegen"
+version = "2.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "033460afb75cf755fcfc16dfaed20b86468082a2ea24e05ac35ab4a099a017d6"
+dependencies = [
+ "protobuf",
+]
+
+[[package]]
+name = "protobuf-codegen-pure"
+version = "2.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95a29399fc94bcd3eeaa951c715f7bea69409b2445356b00519740bcd6ddd865"
+dependencies = [
+ "protobuf",
+ "protobuf-codegen",
+]
 
 [[package]]
 name = "psutil"
@@ -8584,6 +8667,8 @@ dependencies = [
  "serde_bytes",
  "sha3 0.9.1",
  "smallvec 1.11.0",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -8705,6 +8790,8 @@ dependencies = [
  "rooch-types",
  "serde 1.0.195",
  "serde_bytes",
+ "tracing",
+ "tracing-subscriber",
  "walkdir",
 ]
 

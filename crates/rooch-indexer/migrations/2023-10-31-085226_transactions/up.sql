@@ -16,6 +16,7 @@ CREATE TABLE transactions (
     transaction_raw                     BLOB         NOT NULL,
 
     state_root                          VARCHAR      NOT NULL,
+    size                                BIGINT       NOT NULL,
     event_root                          VARCHAR      NOT NULL,
     gas_used                            BIGINT       NOT NULL,
     status                              VARCHAR      NOT NULL,

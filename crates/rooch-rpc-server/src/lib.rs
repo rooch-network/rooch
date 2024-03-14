@@ -14,6 +14,7 @@ use hyper::header::HeaderValue;
 use hyper::Method;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
+use moveos_types::moveos_std::object::ObjectEntity;
 use serde_json::json;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
@@ -77,10 +78,10 @@ pub struct ServerHandle {
 
 impl ServerHandle {
     fn stop(self) -> Result<()> {
-        self.handle.stop()?;
         for timer in self.timers {
             timer.stop();
         }
+        self.handle.stop()?;
         Ok(())
     }
 }
@@ -177,9 +178,8 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     // tracing_subscriber can only be inited once.
     let _ = tracing_subscriber::fmt::try_init();
 
-    let config = opt.port.map_or(ServerConfig::default(), |port| {
-        ServerConfig::new_with_port(port)
-    });
+    let config = ServerConfig::new_with_port(opt.port());
+
     let chain_id_opt = opt.chain_id.clone().unwrap_or_default();
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
@@ -284,7 +284,8 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     timers.push(proposer_timer);
 
     // Init indexer
-    let indexer_executor = IndexerActor::new(indexer_store, moveos_store)?
+    let data_verify_mode = opt.data_verify_mode.unwrap_or(false);
+    let indexer_executor = IndexerActor::new(indexer_store, moveos_store, data_verify_mode)?
         .into_actor(Some("Indexer"), &actor_system)
         .await?;
     let indexer_reader_executor = IndexerReaderActor::new(indexer_reader)?
@@ -417,15 +418,17 @@ fn init_storage(store_config: &StoreConfig) -> Result<(MoveOSStore, RoochStore)>
         store_config.rocksdb_config(),
         None,
     )?))?;
-    let lastest_state_root = moveosdb
-        .config_store
-        .get_startup_info()?
-        .map(|info| info.state_root_hash);
+    let startup_info = moveosdb.config_store.get_startup_info()?;
 
-    if let Some(latest_state_root) = lastest_state_root {
-        info!("Load latest state root {:?}", latest_state_root);
+    if let Some(ref startup_info) = startup_info {
+        info!("Load startup info {:?}", startup_info);
     }
-    let moveos_store = MoveOSStore::new_with_root(moveosdb, lastest_state_root)?;
+    let moveos_store = MoveOSStore::new_with_root(
+        moveosdb,
+        startup_info
+            .map(|s| s.into_root_object())
+            .unwrap_or(ObjectEntity::genesis_root_object()),
+    )?;
 
     let rooch_store = RoochStore::new(StoreInstance::new_db_instance(RocksDB::new(
         rooch_db_path,

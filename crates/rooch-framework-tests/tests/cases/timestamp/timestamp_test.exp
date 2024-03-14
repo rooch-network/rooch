@@ -9,5 +9,5 @@ status EXECUTED
 task 3 'run'. lines 26-37:
 status EXECUTED
 
-task 4 'run'. lines 38-56:
+task 4 'run'. lines 38-49:
 status EXECUTED

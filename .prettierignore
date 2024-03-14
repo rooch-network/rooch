@@ -3,6 +3,7 @@
 # Enable prettier for apps, dapps and sdk
 !/dashboard
 !/sdk
+!/rooch-portal-v1
 !/.config
 !/*.js
 

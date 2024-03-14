@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::metadata::{
-    check_metadata_format, check_storage_context_struct_tag, get_metadata_from_compiled_module,
-    is_allowed_input_struct, is_defined_or_allowed_in_current_module,
+    check_metadata_format, get_metadata_from_compiled_module, is_allowed_input_struct,
+    is_defined_or_allowed_in_current_module,
 };
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMError, VMResult};
@@ -71,44 +71,24 @@ pub fn verify_init_function(module: &CompiledModule) -> VMResult<bool> {
             let func_parameter_signatures = view.signature_at(fhandle.parameters);
             let func_parameter_vec = &func_parameter_signatures.0;
 
-            if func_parameter_vec.is_empty() {
+            if func_parameter_vec.len() > 1 {
                 return Err(vm_error_for_init_func_checking(
                     StatusCode::NUMBER_OF_TYPE_ARGUMENTS_MISMATCH,
-                    "The init function has no parameters and requires at least one parameter.",
-                    fdef,
-                    module.self_id(),
-                ));
-            }
-
-            if func_parameter_vec.len() != 1 && func_parameter_vec.len() != 2 {
-                return Err(vm_error_for_init_func_checking(
-                    StatusCode::NUMBER_OF_TYPE_ARGUMENTS_MISMATCH,
-                    "init function only should have two parameter with signer or storageContext",
+                    "init function only should have one parameter with signer",
                     fdef,
                     module.self_id(),
                 ));
             }
 
             for st in func_parameter_vec {
-                let (is_allowed, struct_name_opt) = is_allowed_init_func_param(&view, st);
+                let is_allowed = is_allowed_init_func_param(&view, st);
                 if !is_allowed {
                     return Err(vm_error_for_init_func_checking(
                         StatusCode::TYPE_MISMATCH,
-                        "init function should only enter signer or storageContext",
+                        "init function should only enter signer",
                         fdef,
                         module.self_id(),
                     ));
-                }
-
-                if let Some(struct_full_name) = struct_name_opt {
-                    if !check_storage_context_struct_tag(struct_full_name) {
-                        return Err(vm_error_for_init_func_checking(
-                            StatusCode::TYPE_MISMATCH,
-                            "init function should not input structures other than Context",
-                            fdef,
-                            module.self_id(),
-                        ));
-                    }
                 }
             }
 
@@ -118,41 +98,13 @@ pub fn verify_init_function(module: &CompiledModule) -> VMResult<bool> {
     Ok(false)
 }
 
-fn is_allowed_init_func_param(
-    module_view: &BinaryIndexedView,
-    st: &SignatureToken,
-) -> (bool, Option<String>) {
+fn is_allowed_init_func_param(_module_view: &BinaryIndexedView, st: &SignatureToken) -> bool {
     if st == &SignatureToken::Signer {
-        (true, None)
+        true
     } else {
         match st {
-            SignatureToken::MutableReference(inner_st) => {
-                is_allowed_init_func_param(module_view, inner_st.as_ref())
-            }
-            SignatureToken::Reference(inner_st) => {
-                if inner_st.as_ref() == &SignatureToken::Signer {
-                    (true, None)
-                } else {
-                    is_allowed_init_func_param(module_view, inner_st.as_ref())
-                }
-            }
-            SignatureToken::Struct(st_index) => {
-                let shandle = module_view.struct_handle_at(*st_index);
-                let module_handle = module_view.module_handle_at(shandle.module);
-                let struct_module_address = module_view
-                    .address_identifier_at(module_handle.address)
-                    .to_canonical_string();
-                let struct_module_name = module_view.identifier_at(module_handle.name).to_string();
-                let struct_name = module_view.identifier_at(shandle.name).to_string();
-                (
-                    true,
-                    Some(format!(
-                        "{}::{}::{}",
-                        struct_module_address, struct_module_name, struct_name
-                    )),
-                )
-            }
-            _ => (false, None),
+            SignatureToken::Reference(inner_st) => inner_st.as_ref() == &SignatureToken::Signer,
+            _ => false,
         }
     }
 }
@@ -901,19 +853,15 @@ fn check_if_function_exist(
 }
 
 fn check_gas_validate_function(
-    view: &BinaryIndexedView,
+    _view: &BinaryIndexedView,
     func_signature: &Signature,
     return_signature: &Signature,
 ) -> bool {
     // Content of the func_signature array has already been checked above, so unwrap directly here.
     let first_parameter = func_signature.0.get(0).unwrap();
 
-    let check_struct_type = |struct_handle_idx: &StructHandleIndex| -> bool {
-        let struct_name = struct_full_name_from_sid(struct_handle_idx, view);
-        if struct_name == "0x2::context::Context" {
-            return true;
-        }
-
+    let check_struct_type = |_struct_handle_idx: &StructHandleIndex| -> bool {
+        //TODO FIXME
         false
     };
 
@@ -940,19 +888,15 @@ fn check_gas_validate_function(
 }
 
 fn check_gas_charge_post_function(
-    view: &BinaryIndexedView,
+    _view: &BinaryIndexedView,
     func_signature: &Signature,
     return_signature: &Signature,
 ) -> bool {
     // Content of the func_signature array has already been checked above, so unwrap directly here.
     let first_parameter = func_signature.0.get(0).unwrap();
 
-    let check_struct_type = |struct_handle_idx: &StructHandleIndex| -> bool {
-        let struct_name = struct_full_name_from_sid(struct_handle_idx, view);
-        if struct_name == "0x2::context::Context" {
-            return true;
-        }
-
+    let check_struct_type = |_struct_handle_idx: &StructHandleIndex| -> bool {
+        //TODO FIXME
         false
     };
 

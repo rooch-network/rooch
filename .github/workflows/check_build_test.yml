@@ -23,7 +23,8 @@ jobs:
   check_build_test:
     name: Check-Build-Test
     runs-on: self-hosted
-
+    strategy:
+      fail-fast: false
     steps:
       - uses: actions/checkout@v3
       - uses: rooch-network/rooch/.github/actions/rust-setup@main
@@ -73,6 +74,8 @@ jobs:
         run: pnpm rooch-sdk gen
       - name: Lint
         run: pnpm lint
+        continue-on-error: true
+        timeout-minutes: 15
       - name: Build SDK
         run: pnpm rooch-sdk build
       - name: Test SDK

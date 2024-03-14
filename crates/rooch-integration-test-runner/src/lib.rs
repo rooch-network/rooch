@@ -158,7 +158,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             FunctionId::new(
                 ModuleId::new(
                     MOVEOS_STD_ADDRESS,
-                    Identifier::new("context".to_owned()).unwrap(),
+                    Identifier::new("move_module".to_owned()).unwrap(),
                 ),
                 Identifier::new("publish_modules_entry".to_owned()).unwrap(),
             ),
@@ -168,7 +168,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
 
         let tx = MoveOSTransaction::new_for_test(sender, action);
         let verified_tx = self.moveos.verify(tx)?;
-        let (_state_root, output) = self.moveos.execute_and_apply(verified_tx)?;
+        let (_state_root, _size, output) = self.moveos.execute_and_apply(verified_tx)?;
         Ok((Some(tx_output_to_str(output)), module))
     }
 
@@ -204,7 +204,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             MoveAction::new_script_call(script_bytes, type_args, args),
         );
         let verified_tx = self.moveos.verify(tx)?;
-        let (_state_root, output) = self.moveos.execute_and_apply(verified_tx)?;
+        let (_state_root, _size, output) = self.moveos.execute_and_apply(verified_tx)?;
         //TODO return values
         let value = SerializedReturnValues {
             mutable_reference_outputs: vec![],
@@ -243,7 +243,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             MoveAction::new_function_call(function_id, type_args, args),
         );
         let verified_tx = self.moveos.verify(tx)?;
-        let (_state_root, output) = self.moveos.execute_and_apply(verified_tx)?;
+        let (_state_root, _size, output) = self.moveos.execute_and_apply(verified_tx)?;
         debug_assert!(
             output.status == move_core_types::vm_status::KeptVMStatus::Executed,
             "{:?}",
@@ -302,6 +302,7 @@ pub fn run_test_impl<'a>(
     path: &Path,
     fully_compiled_program_opt: Option<&'a FullyCompiledProgram>,
 ) -> Result<(), Box<dyn std::error::Error + 'static>> {
+    let _ = tracing_subscriber::fmt::try_init();
     moveos::moveos_test_runner::run_test_impl::<MoveOSTestRunner>(
         path,
         fully_compiled_program_opt,

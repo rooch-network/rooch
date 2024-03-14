@@ -4,7 +4,7 @@
 module test::m {
     use std::string::String;
     use moveos_std::table::{Self, Table};
-    use moveos_std::context::{Self, Context};
+    
     use moveos_std::object_id::ObjectID;
     use moveos_std::object;
 
@@ -12,9 +12,9 @@ module test::m {
         table: Table<String,vector<u8>>,
     }
 
-    public fun make_kv_store(ctx: &mut Context): KVStore {
+    public fun make_kv_store(): KVStore {
         KVStore{
-            table: context::new_table(ctx),
+            table: table::new(),
         }
     }
 
@@ -30,8 +30,8 @@ module test::m {
         table::borrow(&store.table, key)
     }
 
-    public fun save_to_object_storage(ctx: &mut Context, kv: KVStore) : ObjectID {
-        let object = context::new_object(ctx, kv);
+    public fun save_to_object_storage(kv: KVStore) : ObjectID {
+        let object = object::new(kv);
         let object_id = object::id(&object);
         object::to_shared(object);
         object_id
@@ -41,19 +41,19 @@ module test::m {
 //# run --signers test
 script {
     use std::string;
-    use moveos_std::context::{Context};
+    
     use test::m;
 
-    fun main(ctx: &mut Context) {
-        let kv = m::make_kv_store(ctx);
+    fun main() {
+        let kv = m::make_kv_store();
         m::add(&mut kv, string::utf8(b"test"), b"value");
-        let object_id = m::save_to_object_storage(ctx, kv);
+        let object_id = m::save_to_object_storage(kv);
         std::debug::print(&110120);
         std::debug::print(&object_id);
     }
 }
 
-//# run --signers test --args @0x20190e28d7f8ca90e1b0d8cbf8d8a07f1de0f985a778138cf879aa9b10955aa4
+//# run --signers test --args @0x3a9b55b929a30c88bac41ad553a2ef54bfdbc05b795619189b3e7f435cbd0d98
 
 script {
     use std::string;

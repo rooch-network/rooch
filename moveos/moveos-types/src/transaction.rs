@@ -334,6 +334,9 @@ pub struct TransactionExecutionInfo {
     /// transaction.
     pub state_root: H256,
 
+    /// The root Object count of Sparse Merkle Tree describing the world state at the end of this transaction.
+    pub size: u64,
+
     /// The root hash of Merkle Accumulator storing all events emitted during this transaction.
     pub event_root: H256,
 
@@ -350,6 +353,7 @@ impl TransactionExecutionInfo {
     pub fn new(
         tx_hash: H256,
         state_root: H256,
+        size: u64,
         event_root: H256,
         gas_used: u64,
         status: KeptVMStatus,
@@ -357,6 +361,7 @@ impl TransactionExecutionInfo {
         TransactionExecutionInfo {
             tx_hash,
             state_root,
+            size,
             event_root,
             gas_used,
             status,

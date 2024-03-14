@@ -115,7 +115,10 @@ Feature: Rooch CLI integration tests
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
     Then cmd: "move run --function default::event_test::emit_event  --args 11u64"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-
+    
+    # because the indexer is async update, so sleep 5 seconds to wait indexer update.
+    Then sleep: "5"
+    
     Then cmd: "rpc request --method rooch_queryTransactions --params '[{"tx_order_range":{"from_order":0,"to_order":2}}, null, "1", true]'"
     Then assert: "{{$.rpc[-1].data[0].sequence_info.tx_order}} == 1"
     Then assert: "{{$.rpc[-1].next_cursor}} == 1"

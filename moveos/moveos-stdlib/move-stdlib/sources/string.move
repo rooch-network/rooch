@@ -34,6 +34,12 @@ module std::string {
         &s.bytes
     }
 
+    /// Unpack the `string` to get its backing bytes
+    public fun into_bytes(string: String): vector<u8> {
+       let String { bytes } = string;
+       bytes
+    }
+
     /// Checks whether this string is empty.
     public fun is_empty(s: &String): bool {
         vector::is_empty(&s.bytes)
