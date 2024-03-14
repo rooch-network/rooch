@@ -14,16 +14,13 @@ use crate::{ColumnFamilyName, WriteOp};
 use anyhow::{ensure, format_err, Error, Result};
 use moveos_common::utils::{check_open_fds_limit, from_bytes};
 use moveos_config::store_config::RocksdbConfig;
-use rocksdb::{
-    BoundColumnFamily, Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB,
-};
+use rocksdb::{Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB, ColumnFamily};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::collections::HashSet;
 use std::iter;
 use std::marker::PhantomData;
 use std::path::Path;
-use std::sync::Arc;
 
 pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
 pub const RES_FDS: u64 = 4096;
@@ -76,7 +73,7 @@ impl RocksDB {
             let mut remove_cf_vec = Vec::new();
             db_cfs_set.iter().for_each(|k| {
                 if !cfs_set.contains(&k.as_str()) {
-                    remove_cf_vec.push(<&std::string::String>::clone(k));
+                    remove_cf_vec.push(<&String>::clone(k));
                 }
             });
             ensure!(
@@ -111,11 +108,11 @@ impl RocksDB {
         path: impl AsRef<Path>,
         column_families: Vec<ColumnFamilyName>,
     ) -> Result<DB> {
-        let inner = rocksdb::DB::open_cf_descriptors(
+        let inner = DB::open_cf_descriptors(
             opts,
             path,
             column_families.iter().map(|cf_name| {
-                let mut cf_opts = rocksdb::Options::default();
+                let mut cf_opts = Options::default();
                 cf_opts.set_compression_type(rocksdb::DBCompressionType::Lz4);
                 rocksdb::ColumnFamilyDescriptor::new((*cf_name).to_string(), cf_opts)
             }),
@@ -129,7 +126,7 @@ impl RocksDB {
         column_families: Vec<ColumnFamilyName>,
     ) -> Result<DB> {
         let error_if_log_file_exists = false;
-        let inner = rocksdb::DB::open_cf_for_read_only(
+        let inner = DB::open_cf_for_read_only(
             db_opts,
             path,
             column_families,
@@ -172,7 +169,7 @@ impl RocksDB {
 
     /// List cf
     pub fn list_cf(path: impl AsRef<Path>) -> Result<Vec<String>, Error> {
-        Ok(rocksdb::DB::list_cf(&rocksdb::Options::default(), path)?)
+        Ok(DB::list_cf(&Options::default(), path)?)
     }
 
     fn db_exists(path: &Path) -> bool {
@@ -180,7 +177,7 @@ impl RocksDB {
         rocksdb_current_file.is_file()
     }
 
-    fn get_cf_handle(&self, cf_name: &str) -> Arc<BoundColumnFamily> {
+    fn get_cf_handle(&self, cf_name: &str) -> &ColumnFamily {
         self.db.cf_handle(cf_name).unwrap_or_else(|| {
             panic!(
                 "DB::cf_handle not found for column family name: {}",
