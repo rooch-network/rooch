@@ -5,6 +5,8 @@
 
 
 
+-  [Struct `WASMInstance`](#0x2_wasm_WASMInstance)
+-  [Function `get_instance_id`](#0x2_wasm_get_instance_id)
 -  [Function `create_wasm_instance`](#0x2_wasm_create_wasm_instance)
 -  [Function `create_cbor_values`](#0x2_wasm_create_cbor_values)
 -  [Function `add_length_with_data`](#0x2_wasm_add_length_with_data)
@@ -19,13 +21,35 @@
 
 
 
+<a name="0x2_wasm_WASMInstance"></a>
+
+## Struct `WASMInstance`
+
+
+
+<pre><code><b>struct</b> <a href="wasm.md#0x2_wasm_WASMInstance">WASMInstance</a>
+</code></pre>
+
+
+
+<a name="0x2_wasm_get_instance_id"></a>
+
+## Function `get_instance_id`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_get_instance_id">get_instance_id</a>(instance: &<a href="wasm.md#0x2_wasm_WASMInstance">wasm::WASMInstance</a>): u64
+</code></pre>
+
+
+
 <a name="0x2_wasm_create_wasm_instance"></a>
 
 ## Function `create_wasm_instance`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_create_wasm_instance">create_wasm_instance</a>(bytecode: <a href="">vector</a>&lt;u8&gt;): u64
+<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_create_wasm_instance">create_wasm_instance</a>(bytecode: <a href="">vector</a>&lt;u8&gt;): <a href="wasm.md#0x2_wasm_WASMInstance">wasm::WASMInstance</a>
 </code></pre>
 
 
@@ -102,5 +126,5 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_release_wasm_instance">release_wasm_instance</a>(instance_id: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_release_wasm_instance">release_wasm_instance</a>(instance: <a href="wasm.md#0x2_wasm_WASMInstance">wasm::WASMInstance</a>): bool
 </code></pre>

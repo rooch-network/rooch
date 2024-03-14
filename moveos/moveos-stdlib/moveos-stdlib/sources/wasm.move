@@ -1,6 +1,15 @@
 module moveos_std::wasm {
-    public fun create_wasm_instance(bytecode: vector<u8>): u64 {
-        native_create_wasm_instance(bytecode)
+    struct WASMInstance {
+        id: u64
+    }
+
+    public fun get_instance_id(instance: &WASMInstance): u64 {
+        instance.id
+    }
+
+    public fun create_wasm_instance(bytecode: vector<u8>): WASMInstance {
+        let instance_id = native_create_wasm_instance(bytecode);
+        WASMInstance {id: instance_id }
     }
 
     public fun create_cbor_values(value: vector<u8>): vector<u8> {
@@ -27,8 +36,8 @@ module moveos_std::wasm {
         native_read_data_from_heap(instance_id, data_ptr, data_length)
     }
 
-    public fun release_wasm_instance(instance_id: u64) {
-        native_release_wasm_instance(instance_id)
+    public fun release_wasm_instance(instance: WASMInstance): bool {
+        native_release_wasm_instance(instance)
     }
 
     native fun native_create_wasm_instance(bytecodes: vector<u8>): u64;
@@ -45,5 +54,5 @@ module moveos_std::wasm {
 
     native fun native_read_data_from_heap(instance_id: u64, data_ptr: u32, data_length: u32): vector<u8>;
 
-    native fun native_release_wasm_instance(instance_id: u64);
+    native fun native_release_wasm_instance(instance: WASMInstance): bool;
 }

@@ -4,14 +4,16 @@
 use std::collections::VecDeque;
 use std::ffi::CString;
 use std::ops::Deref;
+use std::vec;
 
-use move_binary_format::errors::PartialVMResult;
+use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
+use move_core_types::vm_status::StatusCode;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::natives::function::NativeResult;
 use move_vm_types::pop_arg;
-use move_vm_types::values::Value;
+use move_vm_types::values::{Struct, Value};
 use serde_json::Value as JSONValue;
 use smallvec::smallvec;
 
@@ -469,23 +471,27 @@ fn native_release_wasm_instance(
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    let instance_id = pop_arg!(args, u64);
+    let value = args.pop_back().unwrap();
+    let mut fiedls = value.value_as::<Struct>()?.unpack()?;
+    let val = fiedls.next().ok_or_else(|| {
+        PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE)
+            .with_message("There must have only one field".to_owned())
+    })?;
+
+    let instance_id = val.value_as::<u64>()?;
+
+    let instance_pool = get_instance_pool();
+    match instance_pool.lock().unwrap().get_mut(&instance_id) {
+        None => return Ok(NativeResult::err(gas_params.base, E_INSTANCE_NO_EXISTS)),
+        Some(_) => {}
+    };
 
     moveos_wasm::wasm::remove_instance(instance_id);
 
-    let instance_pool = get_instance_pool();
-    let ret = match instance_pool.lock().unwrap().get_mut(&instance_id) {
-        None => Ok(NativeResult::err(gas_params.base, E_INSTANCE_NO_EXISTS)),
-        Some(_) => {
-            moveos_wasm::wasm::remove_instance(instance_id);
-
-            Ok(NativeResult::Success {
-                cost: gas_params.base,
-                ret_vals: smallvec![Value::bool(true)],
-            })
-        }
-    };
-    ret
+    Ok(NativeResult::Success {
+        cost: gas_params.base,
+        ret_vals: smallvec![Value::bool(true)],
+    })
 }
 
 /***************************************************************************************************
