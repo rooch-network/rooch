@@ -13,7 +13,7 @@ script {
         _v_u256: u256,
         _v_address: address,
         _v_string: std::string::String,
-        _v_object_id: moveos_std::ObjectID,
+        _v_object_id: moveos_std::object::ObjectID,
         _v_object: &moveos_std::object::Object<rooch_framework::timestamp::Timestamp>,
         ) {
     }
@@ -32,7 +32,7 @@ script {
         _v_u256: u256,
         _v_address: address,
         _v_string: std::string::String,
-        _v_object_id: moveos_std::ObjectID,
+        _v_object_id: moveos_std::object::ObjectID,
         _v_object: &moveos_std::object::Object<rooch_framework::timestamp::Timestamp>,
         ) {
     }
@@ -52,7 +52,7 @@ script {
 //         _v_u256: vector<u256>,
 //         _v_address: vector<address>,
 //         _v_string: vector<std::string::String>,
-//         _v_object_id: vector<moveos_std::ObjectID>,
+//         _v_object_id: vector<moveos_std::object::ObjectID>,
 //         ) {
 //     }
 // }
