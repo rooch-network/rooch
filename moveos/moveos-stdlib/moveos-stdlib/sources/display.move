@@ -6,7 +6,7 @@ module moveos_std::display{
     use moveos_std::object::{Self, Object};
     use moveos_std::simple_map;
 
-    /// Display<T> is is used to define the display of the `T`
+    /// Display<T> is used to define the display of the `T`
     struct Display<phantom T> has key {
         sample_map: simple_map::SimpleMap<String, String>
     }

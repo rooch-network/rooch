@@ -21,7 +21,7 @@ use std::{fmt, str::FromStr};
 
 use crate::{crypto::Signature, framework::auth_validator::BuiltinAuthValidator};
 
-/// A `Authenticator` is an an abstraction of a account authenticator.
+/// A `Authenticator` is an abstraction of a account authenticator.
 /// It is a part of `AccountAbstraction`
 
 pub trait BuiltinAuthenticator {
