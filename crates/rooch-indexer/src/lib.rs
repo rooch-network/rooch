@@ -41,6 +41,7 @@ impl IndexerStore {
     pub fn new(db_url: &str) -> Result<Self> {
         let sqlite_cp = new_sqlite_connection_pool(db_url)?;
         let store = Self {
+            //TODO Split by talbe dimension
             sqlite_store: SqliteIndexerStore::new(sqlite_cp),
         };
         Ok(store)

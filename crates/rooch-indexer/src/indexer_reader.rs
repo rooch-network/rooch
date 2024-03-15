@@ -96,6 +96,7 @@ impl InnerIndexerReader {
 
 #[derive(Clone)]
 pub struct IndexerReader {
+    //TODO split by table dimension
     pub(crate) inner_indexer_reader: InnerIndexerReader,
 }
 
