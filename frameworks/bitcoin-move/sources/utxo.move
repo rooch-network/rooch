@@ -149,8 +149,10 @@ module bitcoin_move::utxo{
     }
 
     public(friend) fun remove(utxo_obj: Object<UTXO>): SimpleMultiMap<String, ObjectID>{
-        let temp_area = object::remove_field(&mut utxo_obj, TEMPORARY_AREA);
-        bag::drop(temp_area);
+        if(object::contains_field(&utxo_obj, TEMPORARY_AREA)){
+            let bag = object::remove_field(&mut utxo_obj, TEMPORARY_AREA);
+            bag::drop(bag);
+        };
         let utxo = object::remove(utxo_obj);
         let UTXO{txid:_, vout:_, value:_, seals} = utxo;
         seals
@@ -236,6 +238,15 @@ module bitcoin_move::utxo{
         let object_id = object::custom_object_id<OutputID,UTXO>(id);
         //std::debug::print(&object_id);
         assert!(std::bcs::to_bytes(&object_id) == x"b8fc937bf3c15abe49c95fa6906aff29087149f542b48db0cf25dce671a68a63", 1);
+    }
+
+    #[test]
+    fun test_remove(){
+        let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let vout = 0;
+        let utxo = new(txid, vout, 100);
+        let seals = remove(utxo);
+        simple_multimap::drop(seals);
     }
 
     struct TempState has store, copy, drop {
