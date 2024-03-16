@@ -215,7 +215,7 @@ Get block via block_height
 
 ## Function `get_latest_block_height`
 
-Get block via block_height
+Get latest block height
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="light_client.md#0x4_light_client_get_latest_block_height">get_latest_block_height</a>(btc_block_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinBlockStore">light_client::BitcoinBlockStore</a>&gt;): <a href="_Option">option::Option</a>&lt;u64&gt;
