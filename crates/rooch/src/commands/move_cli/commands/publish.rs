@@ -53,17 +53,6 @@ pub struct Publish {
     pub by_move_action: bool,
 }
 
-impl Publish {
-    pub fn order_modules(modules: Modules) -> anyhow::Result<Vec<CompiledModule>> {
-        //TODO ensure all module at same address.
-        //include all module and dependency modules
-        // let modules = self.package.all_modules_map();
-        let graph = DependencyGraph::new(modules.iter_modules());
-        let order_modules = graph.compute_topological_order()?;
-        Ok(order_modules.cloned().collect())
-    }
-}
-
 #[async_trait]
 impl CommandAction<ExecuteTransactionResponseView> for Publish {
     async fn execute(self) -> RoochResult<ExecuteTransactionResponseView> {
