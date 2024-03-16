@@ -29,13 +29,13 @@ module rooch_framework::account_coin_store {
 
     /// A resource that holds the AutoAcceptCoin config for all accounts.
     /// The main scenario is that the user can actively turn off the AutoAcceptCoin setting to avoid automatically receiving Coin
-    struct AutoAcceptCoins has key {
+    struct AutoAcceptCoins has key,store {
         auto_accept_coins: Table<address, bool>,
     }
 
     /// A resource that holds all the ids of Object<CoinStore<T>> for account.
     /// TODO after the indexer is ready, we can use the indexer to list all the CoinStore<T> objects for account
-    struct CoinStores has key {
+    struct CoinStores has key, store {
         coin_stores: Table<string::String, ObjectID>,
     }
 

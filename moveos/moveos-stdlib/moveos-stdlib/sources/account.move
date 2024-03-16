@@ -20,7 +20,7 @@ module moveos_std::account {
    }
 
    /// ResourceAccount can only be stored under address, not in other structs.
-   struct ResourceAccount has key {}
+   struct ResourceAccount has key, store {}
    /// SignerCapability can only be stored in other structs, not under address.
    /// So that the capability is always controlled by contracts, not by some EOA.
    struct SignerCapability has store { addr: address }
@@ -221,8 +221,6 @@ module moveos_std::account {
       capability.addr
    }
 
-
-
    public fun account_object_id(account: address): ObjectID {
       object::address_to_object_id(account)
    }
@@ -236,25 +234,25 @@ module moveos_std::account {
 
    // === Account Object Functions
 
-   public fun account_borrow_resource<T: key>(self: &Object<Account>): &T {
+   public fun account_borrow_resource<T: key + store>(self: &Object<Account>): &T {
       object::borrow_field(self, key<T>())
    }
 
-   public fun account_borrow_mut_resource<T: key>(self: &mut Object<Account>): &mut T {
+   public fun account_borrow_mut_resource<T: key + store>(self: &mut Object<Account>): &mut T {
       object::borrow_mut_field(self, key<T>())
    }
 
-   public fun account_move_resource_to<T: key>(self: &mut Object<Account>, resource: T){
+   public fun account_move_resource_to<T: key + store>(self: &mut Object<Account>, resource: T){
       assert!(!object::contains_field(self, key<T>()), ErrorResourceAlreadyExists);
       object::add_field(self, key<T>(), resource)
    }
 
-   public fun account_move_resource_from<T: key>(self: &mut Object<Account>): T {
+   public fun account_move_resource_from<T: key + store>(self: &mut Object<Account>): T {
       assert!(object::contains_field(self, key<T>()), ErrorResourceNotExists);
       object::remove_field(self, key<T>())
    }
 
-   public fun account_exists_resource<T: key>(self: &Object<Account>) : bool {
+   public fun account_exists_resource<T: key + store>(self: &Object<Account>) : bool {
       object::contains_field(self, key<T>())
    }
 
@@ -264,10 +262,10 @@ module moveos_std::account {
 
    // === Account Storage functions ===
 
-   // #[private_generics(T)]
    /// Borrow a resource from the account's storage
    /// This function equates to `borrow_global<T>(address)` instruction in Move
-   public fun borrow_resource<T: key>(account: address): &T {
+   /// But we remove the restriction of the caller must be the module of T
+   public fun borrow_resource<T: key + store>(account: address): &T {
       let obj = borrow_object<Account>(account_object_id(account));
       account_borrow_resource<T>(obj)
    }
@@ -275,7 +273,7 @@ module moveos_std::account {
    #[private_generics(T)]
    /// Borrow a mut resource from the account's storage
    /// This function equates to `borrow_global_mut<T>(address)` instruction in Move
-   public fun borrow_mut_resource<T: key>(account: address): &mut T {
+   public fun borrow_mut_resource<T: key + store>(account: address): &mut T {
       let object_id = account_object_id(account);
       let object_entity = object::borrow_mut_from_global<Account>(object_id);
       let obj_mut = object::as_mut_ref(object_entity);
@@ -285,7 +283,7 @@ module moveos_std::account {
    #[private_generics(T)]
    /// Move a resource to the account's resource object
    /// This function equates to `move_to<T>(&signer, resource)` instruction in Move
-   public fun move_resource_to<T: key>(account: &signer, resource: T){
+   public fun move_resource_to<T: key + store>(account: &signer, resource: T){
       let account_address = signer::address_of(account);
       //Auto create the resource object when move resource to the account
       //TODO should we auto create the account?
@@ -299,17 +297,17 @@ module moveos_std::account {
    #[private_generics(T)]
    /// Move a resource from the account's storage
    /// This function equates to `move_from<T>(address)` instruction in Move
-   public fun move_resource_from<T: key>(account: address): T {
+   public fun move_resource_from<T: key + store>(account: address): T {
       let object_id = account_object_id(account);
       let object_entity = object::borrow_mut_from_global<Account>(object_id);
       let obj_mut = object::as_mut_ref(object_entity);
       account_move_resource_from<T>(obj_mut)
    }
 
-   #[private_generics(T)]
    /// Check if the account has a resource of the given type
    /// This function equates to `exists<T>(address)` instruction in Move
-   public fun exists_resource<T: key>(account: address) : bool {
+   /// But we remove the restriction of the caller must be the module of T
+   public fun exists_resource<T: key + store>(account: address) : bool {
       if (exist_account_object(account)) {
          let obj = borrow_object<Account>(account_object_id(account));
          account_exists_resource<T>(obj)
@@ -360,7 +358,7 @@ module moveos_std::account {
    }
 
    #[test_only]
-   struct CapResponsbility has key {
+   struct CapResponsbility has key,store {
       cap: SignerCapability
    }
 
@@ -409,7 +407,7 @@ module moveos_std::account {
    }
 
    #[test_only]
-   struct Test has key{
+   struct Test has key, store {
       addr: address,
       version: u64
    }

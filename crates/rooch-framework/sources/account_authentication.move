@@ -32,18 +32,18 @@ module rooch_framework::account_authentication {
 
    /// A resource that holds the authentication key for this account.
    /// ValidatorType is a phantom type parameter that is used to distinguish between different auth validator types.
-   struct AuthenticationKey<phantom ValidatorType> has key, drop {
+   struct AuthenticationKey<phantom ValidatorType> has key, store, drop {
       authentication_key: vector<u8>
    }
 
    /// A resource that holds the authentication keys for this account.
-   struct AuthenticationKeys has key{
+   struct AuthenticationKeys has key, store{
       authentication_keys: TypeTable,
    }
 
    //TODO should we use the AuthenticationKeys to indecate the auth validator is installed for the account?
    /// A resource tha holds the auth validator ids for this account has installed.
-   struct InstalledAuthValidator has key {
+   struct InstalledAuthValidator has key,store {
       validators: vector<u64>,
    }
 

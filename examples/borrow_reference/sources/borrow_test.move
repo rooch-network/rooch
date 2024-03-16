@@ -10,16 +10,15 @@ module rooch_examples::borrow_test {
     #[test_only]
     use std::signer;
 
-    struct Capabilities has key {
+    struct Capabilities has key,store {
         borrow_cap: BorrowCapability,
     }
 
-    struct DataStoreWrapper has key {
+    struct DataStoreWrapper has key,store {
         data_store: DataStore,
     }
 
     public fun init_borrow(
-        
         account: &signer,
     ) {
         let borrow_cap = borrowd::new_borrow_cap();

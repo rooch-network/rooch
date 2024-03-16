@@ -10,7 +10,7 @@ module display::display{
     use moveos_std::object;
     use moveos_std::account;
 
-    struct ResourceType has key{
+    struct ResourceType has key, store{
         name: String,
         creator: address,
         description: String,
