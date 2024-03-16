@@ -40,11 +40,11 @@ module rooch_examples::rooch_examples {
     const ErrorBothPlayersDoNotHaveDecisionsSubmitted: u64 = 7;
     const ErrorPlayerHasDecisionSubmitted: u64 = 8;
 
-    struct ResouceAccountAddress has key {
+    struct ResouceAccountAddress has key, store {
         addr: address
     }
 
-    struct State has key {
+    struct State has key, store {
         next_game_id: u128,
         games: SimpleMap<u128, Game>,
         cap: SignerCapability,
@@ -107,7 +107,7 @@ module rooch_examples::rooch_examples {
         event_creation_timestamp_in_seconds: u64
     }
 
-    fun init(account: &signer, ) {
+    fun init(account: &signer) {
         // let source_addr = signer::address_of(account);
         let (signer, cap) = account_entry::create_resource_account(account);
         let resource_address = signer::address_of(&signer);
