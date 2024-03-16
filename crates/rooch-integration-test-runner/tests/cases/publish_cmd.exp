@@ -7,6 +7,6 @@ task 2 'run'. lines 17-25:
 status EXECUTED
 
 task 3 'view'. lines 27-29:
-key 0x42::test::Foo {
+store key 0x42::test::Foo {
     x: 500
 }
