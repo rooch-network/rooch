@@ -7,7 +7,7 @@ module test::m {
     use moveos_std::account;
     use moveos_std::signer as moveos_signer;
 
-    struct Test has key{
+    struct Test has key, store{
         addr: address,
         version: u64
     }
