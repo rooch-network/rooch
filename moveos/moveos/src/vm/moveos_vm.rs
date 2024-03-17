@@ -148,10 +148,6 @@ where
 
     /// Re spawn a new session with the same context.
     pub fn respawn(self, env: SimpleMap<MoveString, Any>) -> Self {
-        //FIXME
-        //The TxContext::spawn function will reset the ids_created and kv map.
-        //But we need some TxContext value in the pre_execute and post_execute function, such as the TxValidateResult.
-        //We need to find a solution.
         let new_ctx = self.table_data.read().tx_context().clone().spawn(env);
         let table_data = Arc::new(RwLock::new(TableData::new(new_ctx)));
         Self {

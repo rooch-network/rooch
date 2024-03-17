@@ -59,17 +59,10 @@ module moveos_std::account {
    const ErrorResourceNotExists: u64 = 9;
 
 
-   /// Publishes a new `Account` resource under `new_address`. A signer representing `new_address`
-   /// is returned. This way, the caller of this function can publish additional resources under
-   /// `new_address`.
-   public(friend) fun create_account(new_address: address): signer {
-      create_account_internal(new_address)
-   }
-
    /// Publishes a new `Account` resource under `new_address` via system. A signer representing `new_address`
    /// is returned. This way, the caller of this function can publish additional resources under
    /// `new_address`.
-   public fun create_account_for_system(system: &signer, new_address: address): signer {
+   public fun create_account_by_system(system: &signer, new_address: address): signer {
       core_addresses::assert_system_reserved(system);
       create_account_internal(new_address)
    }
