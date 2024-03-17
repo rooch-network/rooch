@@ -1,12 +1,12 @@
 [package]
-name = "wasm-execution"
+name = "wasm_execution"
 version = "0.0.1"
 
 [dependencies]
 MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
 
 [addresses]
-rooch_examples =  "0x159966c6a3830ac96700e547f08e578fa9a19c5a0d78708715e61c88546edc37"
+rooch_examples =  "_"
 moveos_std =  "0x2"
 rooch_framework =  "0x3"
 
