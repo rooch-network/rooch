@@ -7,7 +7,7 @@ module rooch_examples::timestamp {
 
     
 
-    struct CurrentTimeMicroseconds has key {
+    struct CurrentTimeMicroseconds has key, store {
         microseconds: u64,
     }
 

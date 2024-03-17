@@ -78,14 +78,10 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `remove_field`](#0x2_object_remove_field)
 -  [Function `remove_field_internal`](#0x2_object_remove_field_internal)
 -  [Function `contains_field`](#0x2_object_contains_field)
+-  [Function `contains_field_with_type`](#0x2_object_contains_field_with_type)
 -  [Function `contains_field_internal`](#0x2_object_contains_field_internal)
 -  [Function `field_size`](#0x2_object_field_size)
 -  [Function `field_size_internal`](#0x2_object_field_size_internal)
--  [Function `raw_table_add`](#0x2_object_raw_table_add)
--  [Function `raw_table_borrow`](#0x2_object_raw_table_borrow)
--  [Function `raw_table_borrow_mut`](#0x2_object_raw_table_borrow_mut)
--  [Function `raw_table_remove`](#0x2_object_raw_table_remove)
--  [Function `raw_table_contains`](#0x2_object_raw_table_contains)
 
 
 <pre><code><b>use</b> <a href="">0x1::hash</a>;
@@ -179,6 +175,16 @@ Because the GlobalValue in MoveVM must be a resource.
 ## Constants
 
 
+<a name="0x2_object_ErrorTypeMismatch"></a>
+
+The type of the object or field is mismatch
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorTypeMismatch">ErrorTypeMismatch</a>: u64 = 10;
+</code></pre>
+
+
+
 <a name="0x2_object_BOUND_OBJECT_FLAG_MASK"></a>
 
 
@@ -194,6 +200,16 @@ The Object or dynamic field already exists
 
 
 <pre><code><b>const</b> <a href="object.md#0x2_object_ErrorAlreadyExists">ErrorAlreadyExists</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x2_object_ErrorFieldsNotEmpty"></a>
+
+The dynamic fields is not empty
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorFieldsNotEmpty">ErrorFieldsNotEmpty</a>: u64 = 8;
 </code></pre>
 
 
@@ -222,15 +238,6 @@ Can not found the Object or dynamic field
 
 
 <pre><code><b>const</b> <a href="object.md#0x2_object_ErrorObjectAlreadyBorrowed">ErrorObjectAlreadyBorrowed</a>: u64 = 7;
-</code></pre>
-
-
-
-<a name="0x2_object_ErrorObjectContainsDynamicFields"></a>
-
-
-
-<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorObjectContainsDynamicFields">ErrorObjectContainsDynamicFields</a>: u64 = 8;
 </code></pre>
 
 
@@ -811,7 +818,7 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 ## Function `global_object_storage_handle`
 
-The global object storage's table handle should be <code>0x0</code>
+The global object storage's object id should be <code>0x0</code>
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_global_object_storage_handle">global_object_storage_handle</a>(): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
@@ -900,13 +907,13 @@ The global object storage's table handle should be <code>0x0</code>
 
 ## Function `add_field`
 
-Add a dynamic filed to the object. Aborts if an entry for this
-key already exists. The entry itself is not stored in the
-table, and cannot be discovered from it.
+Add a dynamic filed to the object. Aborts if an field for this
+key already exists. The field itself is not stored in the
+object, and cannot be discovered from it.
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="object.md#0x2_object_add_field">add_field</a>&lt;T: key, K: <b>copy</b>, drop, V&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K, val: V)
+<b>public</b> <b>fun</b> <a href="object.md#0x2_object_add_field">add_field</a>&lt;T: key, K: <b>copy</b>, drop, V: store&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K, val: V)
 </code></pre>
 
 
@@ -915,12 +922,12 @@ table, and cannot be discovered from it.
 
 ## Function `add_field_internal`
 
-Add a new entry to the table. Aborts if an entry for this
-key already exists. The entry itself is not stored in the
-table, and cannot be discovered from it.
+Add a new field to the object. Aborts if an field for this
+key already exists. The field itself is not stored in the
+object, and cannot be discovered from it.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_add_field_internal">add_field_internal</a>&lt;T: key, K: <b>copy</b>, drop, V&gt;(table_handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, val: V)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_add_field_internal">add_field_internal</a>&lt;T: key, K: <b>copy</b>, drop, V&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, val: V)
 </code></pre>
 
 
@@ -930,10 +937,10 @@ table, and cannot be discovered from it.
 ## Function `borrow_field`
 
 Acquire an immutable reference to the value which <code>key</code> maps to.
-Aborts if there is no entry for <code>key</code>.
+Aborts if there is no field for <code>key</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_field">borrow_field</a>&lt;T: key, K: <b>copy</b>, drop, V&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K): &V
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_field">borrow_field</a>&lt;T: key, K: <b>copy</b>, drop, V: store&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K): &V
 </code></pre>
 
 
@@ -943,10 +950,10 @@ Aborts if there is no entry for <code>key</code>.
 ## Function `borrow_field_internal`
 
 Acquire an immutable reference to the value which <code>key</code> maps to.
-Aborts if there is no entry for <code>key</code>.
+Aborts if there is no field for <code>key</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_field_internal">borrow_field_internal</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): &V
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_field_internal">borrow_field_internal</a>&lt;K: <b>copy</b>, drop, V&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): &V
 </code></pre>
 
 
@@ -956,10 +963,10 @@ Aborts if there is no entry for <code>key</code>.
 ## Function `borrow_field_with_default`
 
 Acquire an immutable reference to the value which <code>key</code> maps to.
-Returns specified default value if there is no entry for <code>key</code>.
+Returns specified default value if there is no field for <code>key</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_field_with_default">borrow_field_with_default</a>&lt;T: key, K: <b>copy</b>, drop, V&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K, default: &V): &V
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_field_with_default">borrow_field_with_default</a>&lt;T: key, K: <b>copy</b>, drop, V: store&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K, default: &V): &V
 </code></pre>
 
 
@@ -969,10 +976,10 @@ Returns specified default value if there is no entry for <code>key</code>.
 ## Function `borrow_field_with_default_internal`
 
 Acquire an immutable reference to the value which <code>key</code> maps to.
-Returns specified default value if there is no entry for <code>key</code>.
+Returns specified default value if there is no field for <code>key</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_field_with_default_internal">borrow_field_with_default_internal</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, default: &V): &V
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_field_with_default_internal">borrow_field_with_default_internal</a>&lt;K: <b>copy</b>, drop, V&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, default: &V): &V
 </code></pre>
 
 
@@ -982,11 +989,11 @@ Returns specified default value if there is no entry for <code>key</code>.
 ## Function `borrow_mut_field`
 
 Acquire a mutable reference to the value which <code>key</code> maps to.
-Aborts if there is no entry for <code>key</code>.
+Aborts if there is no field for <code>key</code>.
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut_field">borrow_mut_field</a>&lt;T: key, K: <b>copy</b>, drop, V&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K): &<b>mut</b> V
+<b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut_field">borrow_mut_field</a>&lt;T: key, K: <b>copy</b>, drop, V: store&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K): &<b>mut</b> V
 </code></pre>
 
 
@@ -996,10 +1003,10 @@ Aborts if there is no entry for <code>key</code>.
 ## Function `borrow_mut_field_internal`
 
 Acquire a mutable reference to the value which <code>key</code> maps to.
-Aborts if there is no entry for <code>key</code>.
+Aborts if there is no field for <code>key</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_mut_field_internal">borrow_mut_field_internal</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): &<b>mut</b> V
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_mut_field_internal">borrow_mut_field_internal</a>&lt;K: <b>copy</b>, drop, V&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): &<b>mut</b> V
 </code></pre>
 
 
@@ -1009,11 +1016,11 @@ Aborts if there is no entry for <code>key</code>.
 ## Function `borrow_mut_field_with_default`
 
 Acquire a mutable reference to the value which <code>key</code> maps to.
-Insert the pair (<code>key</code>, <code>default</code>) first if there is no entry for <code>key</code>.
+Insert the pair (<code>key</code>, <code>default</code>) first if there is no field for <code>key</code>.
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut_field_with_default">borrow_mut_field_with_default</a>&lt;T: key, K: <b>copy</b>, drop, V: drop&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K, default: V): &<b>mut</b> V
+<b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut_field_with_default">borrow_mut_field_with_default</a>&lt;T: key, K: <b>copy</b>, drop, V: drop, store&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K, default: V): &<b>mut</b> V
 </code></pre>
 
 
@@ -1023,10 +1030,10 @@ Insert the pair (<code>key</code>, <code>default</code>) first if there is no en
 ## Function `borrow_mut_field_with_default_internal`
 
 Acquire a mutable reference to the value which <code>key</code> maps to.
-Insert the pair (<code>key</code>, <code>default</code>) first if there is no entry for <code>key</code>.
+Insert the pair (<code>key</code>, <code>default</code>) first if there is no field for <code>key</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_mut_field_with_default_internal">borrow_mut_field_with_default_internal</a>&lt;T: key, K: <b>copy</b>, drop, V: drop&gt;(table_handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, default: V): &<b>mut</b> V
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_mut_field_with_default_internal">borrow_mut_field_with_default_internal</a>&lt;T: key, K: <b>copy</b>, drop, V: drop&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, default: V): &<b>mut</b> V
 </code></pre>
 
 
@@ -1035,12 +1042,12 @@ Insert the pair (<code>key</code>, <code>default</code>) first if there is no en
 
 ## Function `upsert_field`
 
-Insert the pair (<code>key</code>, <code>value</code>) if there is no entry for <code>key</code>.
-update the value of the entry for <code>key</code> to <code>value</code> otherwise
+Insert the pair (<code>key</code>, <code>value</code>) if there is no field for <code>key</code>.
+update the value of the field for <code>key</code> to <code>value</code> otherwise
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="object.md#0x2_object_upsert_field">upsert_field</a>&lt;T: key, K: <b>copy</b>, drop, V: drop&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K, value: V)
+<b>public</b> <b>fun</b> <a href="object.md#0x2_object_upsert_field">upsert_field</a>&lt;T: key, K: <b>copy</b>, drop, V: drop, store&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K, value: V)
 </code></pre>
 
 
@@ -1049,11 +1056,11 @@ update the value of the entry for <code>key</code> to <code>value</code> otherwi
 
 ## Function `upsert_field_internal`
 
-Insert the pair (<code>key</code>, <code>value</code>) if there is no entry for <code>key</code>.
-update the value of the entry for <code>key</code> to <code>value</code> otherwise
+Insert the pair (<code>key</code>, <code>value</code>) if there is no field for <code>key</code>.
+update the value of the field for <code>key</code> to <code>value</code> otherwise
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_upsert_field_internal">upsert_field_internal</a>&lt;T: key, K: <b>copy</b>, drop, V: drop&gt;(table_handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, value: V)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_upsert_field_internal">upsert_field_internal</a>&lt;T: key, K: <b>copy</b>, drop, V: drop&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, value: V)
 </code></pre>
 
 
@@ -1062,12 +1069,12 @@ update the value of the entry for <code>key</code> to <code>value</code> otherwi
 
 ## Function `remove_field`
 
-Remove from <code><a href="table.md#0x2_table">table</a></code> and return the value which <code>key</code> maps to.
-Aborts if there is no entry for <code>key</code>.
+Remove from <code><a href="object.md#0x2_object">object</a></code> and return the value which <code>key</code> maps to.
+Aborts if there is no field for <code>key</code>.
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="object.md#0x2_object_remove_field">remove_field</a>&lt;T: key, K: <b>copy</b>, drop, V&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K): V
+<b>public</b> <b>fun</b> <a href="object.md#0x2_object_remove_field">remove_field</a>&lt;T: key, K: <b>copy</b>, drop, V: store&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K): V
 </code></pre>
 
 
@@ -1076,11 +1083,11 @@ Aborts if there is no entry for <code>key</code>.
 
 ## Function `remove_field_internal`
 
-Remove from <code><a href="table.md#0x2_table">table</a></code> and return the value which <code>key</code> maps to.
-Aborts if there is no entry for <code>key</code>.
+Remove from <code><a href="object.md#0x2_object">object</a></code> and return the value which <code>key</code> maps to.
+Aborts if there is no field for <code>key</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_remove_field_internal">remove_field_internal</a>&lt;T: key, K: <b>copy</b>, drop, V&gt;(table_handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): V
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_remove_field_internal">remove_field_internal</a>&lt;T: key, K: <b>copy</b>, drop, V&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): V
 </code></pre>
 
 
@@ -1089,10 +1096,22 @@ Aborts if there is no entry for <code>key</code>.
 
 ## Function `contains_field`
 
-Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an entry for <code>key</code>.
+Returns true if <code><a href="object.md#0x2_object">object</a></code> contains an field for <code>key</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_contains_field">contains_field</a>&lt;T: key, K: <b>copy</b>, drop&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K): bool
+</code></pre>
+
+
+
+<a name="0x2_object_contains_field_with_type"></a>
+
+## Function `contains_field_with_type`
+
+Returns true if <code><a href="object.md#0x2_object">object</a></code> contains an field for <code>key</code> and the value type is <code>V</code>.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_contains_field_with_type">contains_field_with_type</a>&lt;T: key, K: <b>copy</b>, drop, V: store&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K): bool
 </code></pre>
 
 
@@ -1101,10 +1120,10 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 
 ## Function `contains_field_internal`
 
-Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an entry for <code>key</code>.
+Returns true if <code><a href="object.md#0x2_object">object</a></code> contains an field for <code>key</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_contains_field_internal">contains_field_internal</a>&lt;K: <b>copy</b>, drop&gt;(table_handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): bool
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_contains_field_internal">contains_field_internal</a>&lt;K: <b>copy</b>, drop&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): bool
 </code></pre>
 
 
@@ -1113,7 +1132,7 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 
 ## Function `field_size`
 
-Returns the size of the table, the number of key-value pairs
+Returns the size of the object fields, the number of key-value pairs
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_field_size">field_size</a>&lt;T: key&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): u64
@@ -1128,69 +1147,4 @@ Returns the size of the table, the number of key-value pairs
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_field_size_internal">field_size_internal</a>&lt;T: key&gt;(object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): u64
-</code></pre>
-
-
-
-<a name="0x2_object_raw_table_add"></a>
-
-## Function `raw_table_add`
-
-Add a new entry to the table. Aborts if an entry for this
-key already exists. The entry itself is not stored in the
-table, and cannot be discovered from it.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_raw_table_add">raw_table_add</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, val: V)
-</code></pre>
-
-
-
-<a name="0x2_object_raw_table_borrow"></a>
-
-## Function `raw_table_borrow`
-
-Acquire an immutable reference to the value which <code>key</code> maps to.
-Aborts if there is no entry for <code>key</code>.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_raw_table_borrow">raw_table_borrow</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): &V
-</code></pre>
-
-
-
-<a name="0x2_object_raw_table_borrow_mut"></a>
-
-## Function `raw_table_borrow_mut`
-
-Acquire a mutable reference to the value which <code>key</code> maps to.
-Aborts if there is no entry for <code>key</code>.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_raw_table_borrow_mut">raw_table_borrow_mut</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): &<b>mut</b> V
-</code></pre>
-
-
-
-<a name="0x2_object_raw_table_remove"></a>
-
-## Function `raw_table_remove`
-
-Remove from <code><a href="table.md#0x2_table">table</a></code> and return the value which <code>key</code> maps to.
-Aborts if there is no entry for <code>key</code>.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_raw_table_remove">raw_table_remove</a>&lt;K: <b>copy</b>, drop, V&gt;(table_handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): V
-</code></pre>
-
-
-
-<a name="0x2_object_raw_table_contains"></a>
-
-## Function `raw_table_contains`
-
-Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an entry for <code>key</code>.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_raw_table_contains">raw_table_contains</a>&lt;K: <b>copy</b>, drop&gt;(table_handle: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): bool
 </code></pre>

@@ -69,7 +69,7 @@ It is also used to store the account's resources
 ResourceAccount can only be stored under address, not in other structs.
 
 
-<pre><code><b>struct</b> <a href="account.md#0x2_account_ResourceAccount">ResourceAccount</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="account.md#0x2_account_ResourceAccount">ResourceAccount</a> <b>has</b> store, key
 </code></pre>
 
 
@@ -406,7 +406,7 @@ Create a new account object space
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_borrow_resource">account_borrow_resource</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): &T
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_borrow_resource">account_borrow_resource</a>&lt;T: store, key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): &T
 </code></pre>
 
 
@@ -417,7 +417,7 @@ Create a new account object space
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_borrow_mut_resource">account_borrow_mut_resource</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): &<b>mut</b> T
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_borrow_mut_resource">account_borrow_mut_resource</a>&lt;T: store, key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): &<b>mut</b> T
 </code></pre>
 
 
@@ -428,7 +428,7 @@ Create a new account object space
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_move_resource_to">account_move_resource_to</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;, resource: T)
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_move_resource_to">account_move_resource_to</a>&lt;T: store, key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;, resource: T)
 </code></pre>
 
 
@@ -439,7 +439,7 @@ Create a new account object space
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_move_resource_from">account_move_resource_from</a>&lt;T: key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): T
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_move_resource_from">account_move_resource_from</a>&lt;T: store, key&gt;(self: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): T
 </code></pre>
 
 
@@ -450,7 +450,7 @@ Create a new account object space
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_exists_resource">account_exists_resource</a>&lt;T: key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_account_exists_resource">account_exists_resource</a>&lt;T: store, key&gt;(self: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;): bool
 </code></pre>
 
 
@@ -472,9 +472,10 @@ Create a new account object space
 
 Borrow a resource from the account's storage
 This function equates to <code><b>borrow_global</b>&lt;T&gt;(<b>address</b>)</code> instruction in Move
+But we remove the restriction of the caller must be the module of T
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_borrow_resource">borrow_resource</a>&lt;T: key&gt;(<a href="account.md#0x2_account">account</a>: <b>address</b>): &T
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_borrow_resource">borrow_resource</a>&lt;T: store, key&gt;(<a href="account.md#0x2_account">account</a>: <b>address</b>): &T
 </code></pre>
 
 
@@ -488,7 +489,7 @@ This function equates to <code><b>borrow_global_mut</b>&lt;T&gt;(<b>address</b>)
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="account.md#0x2_account_borrow_mut_resource">borrow_mut_resource</a>&lt;T: key&gt;(<a href="account.md#0x2_account">account</a>: <b>address</b>): &<b>mut</b> T
+<b>public</b> <b>fun</b> <a href="account.md#0x2_account_borrow_mut_resource">borrow_mut_resource</a>&lt;T: store, key&gt;(<a href="account.md#0x2_account">account</a>: <b>address</b>): &<b>mut</b> T
 </code></pre>
 
 
@@ -502,7 +503,7 @@ This function equates to <code><b>move_to</b>&lt;T&gt;(&<a href="">signer</a>, r
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="account.md#0x2_account_move_resource_to">move_resource_to</a>&lt;T: key&gt;(<a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, resource: T)
+<b>public</b> <b>fun</b> <a href="account.md#0x2_account_move_resource_to">move_resource_to</a>&lt;T: store, key&gt;(<a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, resource: T)
 </code></pre>
 
 
@@ -516,7 +517,7 @@ This function equates to <code><b>move_from</b>&lt;T&gt;(<b>address</b>)</code> 
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="account.md#0x2_account_move_resource_from">move_resource_from</a>&lt;T: key&gt;(<a href="account.md#0x2_account">account</a>: <b>address</b>): T
+<b>public</b> <b>fun</b> <a href="account.md#0x2_account_move_resource_from">move_resource_from</a>&lt;T: store, key&gt;(<a href="account.md#0x2_account">account</a>: <b>address</b>): T
 </code></pre>
 
 
@@ -527,8 +528,8 @@ This function equates to <code><b>move_from</b>&lt;T&gt;(<b>address</b>)</code> 
 
 Check if the account has a resource of the given type
 This function equates to <code><b>exists</b>&lt;T&gt;(<b>address</b>)</code> instruction in Move
+But we remove the restriction of the caller must be the module of T
 
 
-<pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="account.md#0x2_account_exists_resource">exists_resource</a>&lt;T: key&gt;(<a href="account.md#0x2_account">account</a>: <b>address</b>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_exists_resource">exists_resource</a>&lt;T: store, key&gt;(<a href="account.md#0x2_account">account</a>: <b>address</b>): bool
 </code></pre>

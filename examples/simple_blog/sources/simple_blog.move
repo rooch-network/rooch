@@ -16,7 +16,7 @@ module simple_blog::simple_blog {
     const ErrorDataTooLong: u64 = 1;
     const ErrorNotFound: u64 = 2;
 
-    struct MyBlog has key {
+    struct MyBlog has key, store {
         name: String,
         articles: vector<ObjectID>,
     }
