@@ -38,6 +38,7 @@ This is the reference documentation of the MoveOS standard library.
 -  [`0x2::tx_result`](tx_result.md#0x2_tx_result)
 -  [`0x2::type_info`](type_info.md#0x2_type_info)
 -  [`0x2::type_table`](type_table.md#0x2_type_table)
+-  [`0x2::wasm`](wasm.md#0x2_wasm)
 
 
 
