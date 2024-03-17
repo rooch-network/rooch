@@ -10,6 +10,7 @@ module rooch_framework::account {
    use moveos_std::core_addresses;
 
    friend rooch_framework::genesis;
+   friend rooch_framework::transaction_validator;
 
    /// Just using to get Account module signer
    struct AccountPlaceholder {}
@@ -44,12 +45,6 @@ module rooch_framework::account {
    }
 
    public(friend) fun create_account_internal(new_address: address): signer {
-      // Make sure the Account is not already created.
-      assert!(!account::exists_at(new_address), ErrorAccountAlreadyExists);
-      create_account_unchecked(new_address)      
-   }
-
-   fun create_account_unchecked(new_address: address): signer {
       let system = module_signer<AccountPlaceholder>();
       let new_account = account::create_account_by_system(&system, new_address);
 

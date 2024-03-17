@@ -20,7 +20,7 @@ module rooch_framework::gas_coin {
     struct GasCoin has key, store {}
 
     /// Record the last time when faucet is called for each address.
-    struct FaucetRecord has key {
+    struct FaucetRecord has key, store {
         last_time: u64
     }
 

@@ -46,7 +46,7 @@ This module defines Rooch Gas Coin.
 Record the last time when faucet is called for each address.
 
 
-<pre><code><b>struct</b> <a href="gas_coin.md#0x3_gas_coin_FaucetRecord">FaucetRecord</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="gas_coin.md#0x3_gas_coin_FaucetRecord">FaucetRecord</a> <b>has</b> store, key
 </code></pre>
 
 
