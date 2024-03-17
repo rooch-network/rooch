@@ -4,9 +4,6 @@
 use async_trait::async_trait;
 use clap::Parser;
 
-use move_binary_format::file_format::CompiledModule;
-use move_bytecode_utils::dependency_graph::DependencyGraph;
-use move_bytecode_utils::Modules;
 use move_cli::Move;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use moveos_verifier::verifier;

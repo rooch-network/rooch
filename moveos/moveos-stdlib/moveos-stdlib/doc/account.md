@@ -9,8 +9,7 @@
 -  [Resource `ResourceAccount`](#0x2_account_ResourceAccount)
 -  [Struct `SignerCapability`](#0x2_account_SignerCapability)
 -  [Constants](#@Constants_0)
--  [Function `create_account`](#0x2_account_create_account)
--  [Function `create_account_for_system`](#0x2_account_create_account_for_system)
+-  [Function `create_account_by_system`](#0x2_account_create_account_by_system)
 -  [Function `create_system_reserved_account`](#0x2_account_create_system_reserved_account)
 -  [Function `sequence_number`](#0x2_account_sequence_number)
 -  [Function `increment_sequence_number_for_system`](#0x2_account_increment_sequence_number_for_system)
@@ -223,30 +222,16 @@ whose address matches an existing address of a MultiEd25519 wallet.
 
 
 
-<a name="0x2_account_create_account"></a>
+<a name="0x2_account_create_account_by_system"></a>
 
-## Function `create_account`
-
-Publishes a new <code><a href="account.md#0x2_account_Account">Account</a></code> resource under <code>new_address</code>. A signer representing <code>new_address</code>
-is returned. This way, the caller of this function can publish additional resources under
-<code>new_address</code>.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x2_account_create_account">create_account</a>(new_address: <b>address</b>): <a href="">signer</a>
-</code></pre>
-
-
-
-<a name="0x2_account_create_account_for_system"></a>
-
-## Function `create_account_for_system`
+## Function `create_account_by_system`
 
 Publishes a new <code><a href="account.md#0x2_account_Account">Account</a></code> resource under <code>new_address</code> via system. A signer representing <code>new_address</code>
 is returned. This way, the caller of this function can publish additional resources under
 <code>new_address</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_account_for_system">create_account_for_system</a>(system: &<a href="">signer</a>, new_address: <b>address</b>): <a href="">signer</a>
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_create_account_by_system">create_account_by_system</a>(system: &<a href="">signer</a>, new_address: <b>address</b>): <a href="">signer</a>
 </code></pre>
 
 
