@@ -137,6 +137,7 @@ pub struct GasParameters {
     pub add_box: raw_table::AddBoxGasParameters,
     pub borrow_box: raw_table::BorrowBoxGasParameters,
     pub contains_box: raw_table::ContainsBoxGasParameters,
+    pub contains_box_with_value_type: raw_table::ContainsBoxGasParameters,
     pub remove_box: raw_table::RemoveGasParameters,
 }
 
@@ -159,6 +160,10 @@ impl GasParameters {
                 per_byte_serialized: 0.into(),
             },
             contains_box: raw_table::ContainsBoxGasParameters {
+                base: 0.into(),
+                per_byte_serialized: 0.into(),
+            },
+            contains_box_with_value_type: raw_table::ContainsBoxGasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
@@ -201,7 +206,14 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         ),
         (
             "contains_box",
-            raw_table::make_native_contains_box(gas_params.common, gas_params.contains_box),
+            raw_table::make_native_contains_box(gas_params.common.clone(), gas_params.contains_box),
+        ),
+        (
+            "contains_box_with_value_type",
+            raw_table::make_native_contains_box_with_value_type(
+                gas_params.common,
+                gas_params.contains_box_with_value_type,
+            ),
         ),
     ];
 

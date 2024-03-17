@@ -564,13 +564,17 @@ module moveos_std::object {
 
     /// Returns true if `object` contains an field for `key` and the value type is `V`.
     public fun contains_field_with_type<T: key, K: copy + drop, V: store>(obj: &Object<T>, key: K): bool {
-        contains_field_internal<K>(obj.id, key)
-        //TODO check the Value type
+        contains_field_with_value_type_internal<K, V>(obj.id, key)
     }
 
     /// Returns true if `object` contains an field for `key`.
     public(friend) fun contains_field_internal<K: copy + drop>(obj_id: ObjectID, key: K): bool {
         contains_box<K>(obj_id, key)
+    }
+
+    /// Returns true if `object` contains an field for `key` and the value type is `V`.
+    public(friend) fun contains_field_with_value_type_internal<K: copy + drop, V: store>(obj_id: ObjectID, key: K): bool {
+        contains_box_with_value_type<K, V>(obj_id, key)
     }
 
     /// Returns the size of the object fields, the number of key-value pairs
@@ -599,6 +603,9 @@ module moveos_std::object {
     native fun borrow_box_mut<K: copy + drop, V, B>(obj_id: ObjectID, key: K): &mut Box<V>;
 
     native fun contains_box<K: copy + drop>(obj_id: ObjectID, key: K): bool;
+
+    /// If the Object contains a field for `key` with value type `V`.
+    native fun contains_box_with_value_type<K: copy + drop, V>(obj_id: ObjectID, key: K): bool;
 
     native fun remove_box<K: copy + drop, V, B>(obj_id: ObjectID, key: K): Box<V>;
 

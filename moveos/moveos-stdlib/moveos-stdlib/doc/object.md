@@ -80,6 +80,7 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `contains_field`](#0x2_object_contains_field)
 -  [Function `contains_field_with_type`](#0x2_object_contains_field_with_type)
 -  [Function `contains_field_internal`](#0x2_object_contains_field_internal)
+-  [Function `contains_field_with_value_type_internal`](#0x2_object_contains_field_with_value_type_internal)
 -  [Function `field_size`](#0x2_object_field_size)
 -  [Function `field_size_internal`](#0x2_object_field_size_internal)
 
@@ -1124,6 +1125,18 @@ Returns true if <code><a href="object.md#0x2_object">object</a></code> contains 
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_contains_field_internal">contains_field_internal</a>&lt;K: <b>copy</b>, drop&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): bool
+</code></pre>
+
+
+
+<a name="0x2_object_contains_field_with_value_type_internal"></a>
+
+## Function `contains_field_with_value_type_internal`
+
+Returns true if <code><a href="object.md#0x2_object">object</a></code> contains an field for <code>key</code> and the value type is <code>V</code>.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_contains_field_with_value_type_internal">contains_field_with_value_type_internal</a>&lt;K: <b>copy</b>, drop, V: store&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): bool
 </code></pre>
 
 
