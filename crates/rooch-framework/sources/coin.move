@@ -308,4 +308,9 @@ module rooch_framework::coin {
             value
         }
     }
+
+    #[test_only]
+    public fun destroy_for_testing<CoinType: key>(coin: Coin<CoinType>) {
+        let Coin { value:_ } = coin;
+    }
 }

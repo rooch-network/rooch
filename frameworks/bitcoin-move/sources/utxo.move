@@ -230,6 +230,17 @@ module bitcoin_move::utxo{
         bag::remove(bag, name)
     }
 
+    #[test_only]
+    public fun new_for_testing(txid: address, vout: u32, value: u64) : Object<UTXO> {
+        new(txid, vout, value)
+    }
+
+    #[test_only]
+    public fun drop_for_testing(utxo: Object<UTXO>){
+        let seals = remove(utxo);
+        simple_multimap::drop(seals);
+    }
+
     #[test]
     fun test_id(){
         let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
