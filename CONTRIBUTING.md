@@ -66,7 +66,7 @@ Rooch uses [GitHub issues](https://github.com/rooch-network/rooch/issues) to tra
 
 ## Documentations
 
-All developer documentation is published on the Rooch developer site, [rooch.network](https://rooch.network/docs/introduction).
+All developer documentation is published on the Rooch developer site, [rooch.network](https://rooch.network/learn/introduction).
 
 ## Code of Conduct
 
