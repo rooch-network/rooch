@@ -517,18 +517,12 @@ fn native_add_box(
     let key = args.pop_back().unwrap();
     let handle = get_table_handle(&mut args)?;
 
-    let mut cost = gas_params.base;
-
     let table = table_data.get_or_create_table(handle)?;
-
-    let key_layout = type_to_type_layout(context, &ty_args[0])?;
-    let key_type = type_to_type_tag(context, &ty_args[0])?;
-    let key_bytes = serialize(&key_layout, &key)?;
-    let table_key = TableKey::new(key_type, key_bytes.clone());
-    cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
-
-    let (tv, loaded) = table.get_or_create_global_value(context, table_context, table_key)?;
-    cost += common_gas_params.calculate_load_cost(loaded);
+    let (tv, loaded, _, key_bytes_len) =
+        get_table_runtime_value(context, table_context, table, &ty_args[0], key)?;
+    let cost = gas_params.base
+        + gas_params.per_byte_serialized * NumBytes::new(key_bytes_len)
+        + common_gas_params.calculate_load_cost(loaded);
     let value_layout = type_to_type_layout(context, &ty_args[1])?;
     let value_type = type_to_type_tag(context, &ty_args[1])?;
     match tv.move_to(val, value_layout, value_type) {
@@ -572,20 +566,13 @@ fn native_borrow_box(
 
     let key = args.pop_back().unwrap();
     let handle = get_table_handle(&mut args)?;
-
-    let key_layout = type_to_type_layout(context, &ty_args[0])?;
-    let key_type = type_to_type_tag(context, &ty_args[0])?;
     let table = table_data.get_or_create_table(handle)?;
+    let (tv, loaded, table_key, key_bytes_len) =
+        get_table_runtime_value(context, table_context, table, &ty_args[0], key)?;
 
-    let mut cost = gas_params.base;
-
-    let key_bytes = serialize(&key_layout, &key)?;
-    cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
-
-    let table_key = TableKey::new(key_type, key_bytes);
-    let (tv, loaded) =
-        table.get_or_create_global_value(context, table_context, table_key.clone())?;
-    cost += common_gas_params.calculate_load_cost(loaded);
+    let cost = gas_params.base
+        + gas_params.per_byte_serialized * NumBytes::new(key_bytes_len)
+        + common_gas_params.calculate_load_cost(loaded);
     let value_type = type_to_type_tag(context, &ty_args[1])?;
     match tv.borrow_global(value_type.clone()) {
         Ok(ref_val) => Ok(NativeResult::ok(cost, smallvec![ref_val])),
@@ -635,26 +622,21 @@ fn native_contains_box(
 
     let key = args.pop_back().unwrap();
     let handle = get_table_handle(&mut args)?;
-
-    let key_layout = type_to_type_layout(context, &ty_args[0])?;
-    let key_type = type_to_type_tag(context, &ty_args[0])?;
     let table = table_data.get_or_create_table(handle)?;
+    let (tv, loaded, table_key, key_bytes_len) =
+        get_table_runtime_value(context, table_context, table, &ty_args[0], key)?;
 
-    let mut cost = gas_params.base;
     if log::log_enabled!(log::Level::Trace) {
         log::trace!(
-            "[RawTable] contains: table_handle: {}, key_type: {}",
-            &&table.handle,
-            key_type
+            "[RawTable] contains: table_handle: {:?}, key: {:?}",
+            handle,
+            table_key
         );
     }
 
-    let key_bytes = serialize(&key_layout, &key)?;
-    cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
-
-    let table_key = TableKey::new(key_type, key_bytes);
-    let (tv, loaded) = table.get_or_create_global_value(context, table_context, table_key)?;
-    cost += common_gas_params.calculate_load_cost(loaded);
+    let cost = gas_params.base
+        + gas_params.per_byte_serialized * NumBytes::new(key_bytes_len)
+        + common_gas_params.calculate_load_cost(loaded);
 
     let exists = Value::bool(tv.exists()?);
 
@@ -668,6 +650,60 @@ pub fn make_native_contains_box(
     Arc::new(
         move |context, ty_args, args| -> PartialVMResult<NativeResult> {
             native_contains_box(&common_gas_params, &gas_params, context, ty_args, args)
+        },
+    )
+}
+
+fn native_contains_box_with_value_type(
+    common_gas_params: &CommonGasParameters,
+    gas_params: &ContainsBoxGasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    assert_eq!(ty_args.len(), 2);
+    assert_eq!(args.len(), 2);
+
+    let table_context = context.extensions().get::<NativeTableContext>();
+    let mut table_data = table_context.table_data.write();
+
+    let key = args.pop_back().unwrap();
+    let handle = get_table_handle(&mut args)?;
+    let table = table_data.get_or_create_table(handle)?;
+    let (tv, loaded, table_key, key_bytes_len) =
+        get_table_runtime_value(context, table_context, table, &ty_args[0], key)?;
+
+    if log::log_enabled!(log::Level::Trace) {
+        log::trace!(
+            "[RawTable] contains: table_handle: {:?}, key: {:?}",
+            handle,
+            table_key
+        );
+    }
+
+    let cost = gas_params.base
+        + gas_params.per_byte_serialized * NumBytes::new(key_bytes_len)
+        + common_gas_params.calculate_load_cost(loaded);
+
+    let value_type = type_to_type_tag(context, &ty_args[1])?;
+    let exists = Value::bool(tv.borrow_global(value_type).is_ok());
+
+    Ok(NativeResult::ok(cost, smallvec![exists]))
+}
+
+pub fn make_native_contains_box_with_value_type(
+    common_gas_params: CommonGasParameters,
+    gas_params: ContainsBoxGasParameters,
+) -> NativeFunction {
+    Arc::new(
+        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
+            native_contains_box_with_value_type(
+                &common_gas_params,
+                &gas_params,
+                context,
+                ty_args,
+                args,
+            )
         },
     )
 }
@@ -693,19 +729,14 @@ fn native_remove_box(
 
     let key = args.pop_back().unwrap();
     let handle = get_table_handle(&mut args)?;
-
-    let key_layout = type_to_type_layout(context, &ty_args[0])?;
-    let key_type = type_to_type_tag(context, &ty_args[0])?;
     let table = table_data.get_or_create_table(handle)?;
 
-    let mut cost = gas_params.base;
+    let (tv, loaded, _, key_bytes_len) =
+        get_table_runtime_value(context, table_context, table, &ty_args[0], key)?;
 
-    let key_bytes = serialize(&key_layout, &key)?;
-    cost += gas_params.per_byte_serialized * NumBytes::new(key_bytes.len() as u64);
-
-    let table_key = TableKey::new(key_type, key_bytes);
-    let (tv, loaded) = table.get_or_create_global_value(context, table_context, table_key)?;
-    cost += common_gas_params.calculate_load_cost(loaded);
+    let cost = gas_params.base
+        + gas_params.per_byte_serialized * NumBytes::new(key_bytes_len)
+        + common_gas_params.calculate_load_cost(loaded);
     let value_type = type_to_type_tag(context, &ty_args[1])?;
     match tv.move_from(value_type) {
         Ok(val) => {
@@ -777,4 +808,27 @@ fn get_type_layout(context: &NativeContext, type_tag: &TypeTag) -> PartialVMResu
     context
         .get_type_layout(type_tag)
         .map_err(|e| e.to_partial())
+}
+
+fn get_table_runtime_value<'a>(
+    context: &NativeContext,
+    table_context: &NativeTableContext,
+    table: &'a mut Table,
+    key_type: &Type,
+    key: Value,
+) -> PartialVMResult<(
+    &'a mut TableRuntimeValue,
+    Option<Option<NumBytes>>,
+    TableKey,
+    u64,
+)> {
+    let key_layout = type_to_type_layout(context, key_type)?;
+    let key_type = type_to_type_tag(context, key_type)?;
+    let key_bytes = serialize(&key_layout, &key)?;
+    let table_key = TableKey::new(key_type, key_bytes.clone());
+
+    let (tv, loaded) =
+        table.get_or_create_global_value(context, table_context, table_key.clone())?;
+
+    Ok((tv, loaded, table_key, key_bytes.len() as u64))
 }
