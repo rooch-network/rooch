@@ -16,10 +16,6 @@
     "title": "构建",
     "type": "page"
   },
-  "docs": {
-    "title": "文档（弃用）",
-    "type": "page"
-  },
   "blog": {
     "title": "博客",
     "type": "page",
