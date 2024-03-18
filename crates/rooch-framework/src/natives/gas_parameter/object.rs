@@ -16,6 +16,8 @@ crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasPar
     [.borrow_box.per_byte_serialized, "borrow_box.per_byte_serialized", 10 * MUL],
     [.contains_box.base, "contains_box.base", 500 * MUL],
     [.contains_box.per_byte_serialized, "contains_box.per_byte_serialized", 10 * MUL],
+    [.contains_box_with_value_type.base, "contains_box_with_value_type.base", 500 * MUL],
+    [.contains_box_with_value_type.per_byte_serialized, "contains_box_with_value_type.per_byte_serialized", 10 * MUL],
     [.remove_box.base, "remove_box.base", 500 * MUL],
     [.remove_box.per_byte_serialized, "remove_box.per_byte_serialized", 10 * MUL],
 ]);

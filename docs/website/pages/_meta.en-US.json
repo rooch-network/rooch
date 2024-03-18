@@ -8,8 +8,16 @@
       "layout": "raw"
     }
   },
+  "learn": {
+    "title": "Learn",
+    "type": "page"
+  },
+  "build": {
+    "title": "Build",
+    "type": "page"
+  },
   "docs": {
-    "title": "Docs",
+    "title": "Docs (deprecated)",
     "type": "page"
   },
   "blog": {

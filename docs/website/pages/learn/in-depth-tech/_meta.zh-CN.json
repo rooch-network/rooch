@@ -1,0 +1,19 @@
+{
+  "fraud-proof": "欺诈证明",
+  "hybrid-security": "基于零知识证明的混合安全机制",
+  "multi-chain-settlement": "多链结算",
+  "on-chain-indexer": {
+    "title": "链上索引器",
+    "display": "hidden"
+  },
+  "pipeline-transaction-processing": "基于流水线的并行交易处理",
+  "sequence-proof": "交易排序证明",
+  "storage": {
+    "title": "存储"
+  },
+  "hash": "哈希",
+  "p2p-state-channel": {
+    "title": "P2P 通道",
+    "display": "hidden"
+  }
+}

@@ -16,11 +16,11 @@ module rooch_framework::auth_validator_registry {
     const ErrorValidatorUnregistered: u64 = 1;
     const ErrorValidatorAlreadyRegistered: u64 = 2;
 
-    struct AuthValidatorWithType<phantom ValidatorType: store> has key {
+    struct AuthValidatorWithType<phantom ValidatorType: store> has key,store {
         id: u64,
     }
 
-    struct ValidatorRegistry has key {
+    struct ValidatorRegistry has key,store {
         /// Number of registered validators
         validator_num: u64,
         validators: Table<u64, AuthValidator>,

@@ -9,12 +9,10 @@ module rooch_examples::counter {
       value:u64,
    }
 
-   public fun init_for_test(account: &signer) {
-      account::move_resource_to(account, Counter { value: 0 });
-   }
-
-   fun init(account: &signer) {
-      account::move_resource_to(account, Counter { value: 0 });
+   fun init() {
+      // The signer of the module address(rooch_examples)
+      let signer = moveos_std::signer::module_signer<Counter>();
+      account::move_resource_to(&signer, Counter { value: 0 });
    }
 
    public fun increase_() {
@@ -29,5 +27,22 @@ module rooch_examples::counter {
    public fun value(): u64 {
       let counter = account::borrow_resource<Counter>(@rooch_examples);
       counter.value
+   }
+
+   #[test_only]
+   public fun init_for_test() {
+      Self::init()
+   }
+
+   #[test]
+   fun test_counter() {
+      init_for_test();
+      let value = Self::value();
+      assert!(value == 0, 1000);
+      
+      Self::increase_();
+      let value = Self::value();
+
+      assert!(value == 1, 1000);
    }
 }

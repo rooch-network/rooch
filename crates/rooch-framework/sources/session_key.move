@@ -53,7 +53,7 @@ module rooch_framework::session_key {
         max_inactive_interval: u64,
     }
 
-    struct SessionKeys has key {
+    struct SessionKeys has key,store {
         keys: Table<vector<u8>, SessionKey>,
     }
 

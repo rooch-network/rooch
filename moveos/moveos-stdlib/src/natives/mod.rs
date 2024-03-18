@@ -22,6 +22,7 @@ pub struct GasParameters {
     pub move_module: moveos_stdlib::move_module::GasParameters,
     pub object: moveos_stdlib::object::GasParameters,
     pub json: moveos_stdlib::json::GasParameters,
+    pub wasm: moveos_stdlib::wasm::GasParameters,
     pub tx_context: moveos_stdlib::tx_context::GasParameters,
 }
 
@@ -40,6 +41,7 @@ impl GasParameters {
             move_module: moveos_stdlib::move_module::GasParameters::zeros(),
             object: moveos_stdlib::object::GasParameters::zeros(),
             json: moveos_stdlib::json::GasParameters::zeros(),
+            wasm: moveos_stdlib::wasm::GasParameters::zeros(),
             tx_context: moveos_stdlib::tx_context::GasParameters::zeros(),
         }
     }
@@ -101,6 +103,7 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     );
     add_natives!("object", moveos_stdlib::object::make_all(gas_params.object));
     add_natives!("json", moveos_stdlib::json::make_all(gas_params.json));
+    add_natives!("wasm", moveos_stdlib::wasm::make_all(gas_params.wasm));
     add_natives!(
         "tx_context",
         moveos_stdlib::tx_context::make_all(gas_params.tx_context)

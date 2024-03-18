@@ -1,0 +1,38 @@
+# 账户抽象（Account Abstraction)
+
+账户抽象是 Ethereum 社区提出的，尝试统一外部账户（EOA）和合约账户的一系列解决方案。账户抽象的关键是让开发者可以通过自定义的代码逻辑来校验交易。
+
+账户抽象被认为是 Web3 被大规模采用的关键技术，它聚焦在降低用户的使用门槛，提高用户体验，同时也为开发者提供了更多的创新空间。
+
+而 Move 中的账户以及状态特性，天然有利于账户抽象的实现。Rooch 基于 Move 设计了账户抽象的解决方案，主要提供以下特性。
+
+## 多链地址映射（Multi-Chain Address Mapping）
+
+这点也是[多链结算](../../in-depth-tech/multi-chain-settlement/multi-chain-settlement.zh-CN.mdx)的基础，Rooch 支持将 L1 的地址自动映射成 Rooch 的地址，或者在已有 Rooch 地址上绑定 L1 的地址。 
+
+## 身份验证器（Authentication Validator) 
+
+开发者可以自定义身份验证器，可以用来实现 Web2 社交登陆，多重签名，多因素认证等功能。身份认证器是独立的模块，用户只需要添加身份认证器，就可以使用身份认证器提供的功能，而不需要部署合约。
+同一个账户支持多个身份验证器，用户可以通过交易来添加或者禁用身份验证器，而无需担心验证器切换带来的兼容性问题。
+
+## 会话私钥（SessionKey）
+
+会话私钥是一种临时的私钥，它可以用来签名交易，但保存在应用中，而不是钱包中。用户不需要每次发起交易都通过钱包签名，从而提高用户体验。
+会话私钥有过期时间，也有权限限制，比如只能用来发起针对特定应用的交易，从而兼顾易用性和安全性。
+
+## 免 Gas 交易（GasFree Transaction）
+
+Rooch 支持免 Gas 交易，开发者可以在合约中声明 Gas 由合约账户支付，从而让用户无需支付 Gas 费用，降低新用户的使用门槛。
+
+比如以下场景：
+
+1. DeFi 类应用（Dex，Swap），可以将 Gas 费包含在应用内的交易费中，从而让用户无需关心 Gas 费用。
+2. 游戏类应用，开发者可以设计机制，通过游戏内的道具或者货币来抵扣 Gas 费用。
+
+想了解更多关于 Rooch 账户抽象的实现细节，请参考 [账户抽象的设计与实现](./account-abstraction-implementaion.zh-CN.mdx)。
+
+## 参考资料
+
+1. [Ethereum 路线图账户抽象](https://ethereum.org/zh/roadmap/account-abstraction/)
+2. [EIP-2938: Account Abstraction](https://eips.ethereum.org/EIPS/eip-2938)
+3. [Account Abstraction: Past, Present, Future](https://metamask.io/news/latest/account-abstraction-past-present-future/)

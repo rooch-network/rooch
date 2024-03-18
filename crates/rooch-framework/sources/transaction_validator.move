@@ -124,7 +124,7 @@ module rooch_framework::transaction_validator {
         let sender = tx_context::sender();
         //Auto create account if not exist
         if (!account::exists_at(sender)) {
-            account_entry::create_account(sender);
+            account_entry::create_account_internal(sender);
             // Auto get gas coin from faucet if not enough
             // TODO remove this after we provide the gas faucet
             //100 RGC
