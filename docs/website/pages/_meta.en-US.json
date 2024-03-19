@@ -16,10 +16,6 @@
     "title": "Build",
     "type": "page"
   },
-  "docs": {
-    "title": "Docs (deprecated)",
-    "type": "page"
-  },
   "blog": {
     "title": "Blog",
     "type": "page",
