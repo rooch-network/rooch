@@ -6,17 +6,18 @@ module bitcoin_move::ord {
     use std::option::{Self, Option};
     use std::string;
     use std::string::String;
-    use moveos_std::object_id::ObjectID;
-    use moveos_std::object_id;
-    use rooch_framework::address_mapping;
-    use rooch_framework::multichain_address;
-    use rooch_framework::bitcoin_address::BitcoinAddress;
+   
     use moveos_std::bcs;
     use moveos_std::event;
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::json;
     use moveos_std::table_vec::{Self, TableVec};
+
+    use rooch_framework::address_mapping;
+    use rooch_framework::multichain_address;
+    use rooch_framework::bitcoin_address::BitcoinAddress;
+
     use bitcoin_move::types::{Self, Witness, Transaction};
     use bitcoin_move::utxo::{Self, UTXO, SealOut};
     use bitcoin_move::brc20;
@@ -82,7 +83,7 @@ module bitcoin_move::ord {
     // ==== Inscription ==== //
 
     fun record_to_inscription(txid: address, index: u32, input: u32, record: InscriptionRecord): Inscription{
-        let parent = option::map(record.parent, |e| object_id::custom_object_id<InscriptionID,Inscription>(e));
+        let parent = option::map(record.parent, |e| object::custom_object_id<InscriptionID,Inscription>(e));
         let json_body = parse_json_body(&record);
         Inscription{
             txid: txid,
@@ -104,7 +105,7 @@ module bitcoin_move::ord {
             txid: inscription.txid,
             index: inscription.index,
         };
-        let store_obj_id = object_id::named_object_id<InscriptionStore>();
+        let store_obj_id = object::named_object_id<InscriptionStore>();
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
         let store = object::borrow_mut(store_obj);
         table_vec::push_back(&mut store.inscriptions, id);
@@ -127,7 +128,7 @@ module bitcoin_move::ord {
             txid: txid,
             index: index,
         };
-        let object_id = object_id::custom_object_id<InscriptionID,Inscription>(id);
+        let object_id = object::custom_object_id<InscriptionID,Inscription>(id);
         object::exists_object_with_type<Inscription>(object_id)
     }
 
@@ -136,7 +137,7 @@ module bitcoin_move::ord {
             txid: txid,
             index: index,
         };
-        let object_id = object_id::custom_object_id<InscriptionID,Inscription>(id);
+        let object_id = object::custom_object_id<InscriptionID,Inscription>(id);
         object::borrow_object(object_id)
     }
 

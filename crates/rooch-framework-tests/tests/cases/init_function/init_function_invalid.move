@@ -63,9 +63,9 @@ module creator::test {
 
 //# publish
 module creator::test {
-    use moveos_std::object_id;
+    use moveos_std::object;
 
-    fun init(_: object_id::ObjectID){
+    fun init(_: object::ObjectID){
         
     }
 }

@@ -20,7 +20,6 @@
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="simple_map.md#0x2_simple_map">0x2::simple_map</a>;
 </code></pre>
 
@@ -30,7 +29,7 @@
 
 ## Resource `Display`
 
-Display<T> is is used to define the display of the <code>T</code>
+Display<T> is used to define the display of the <code>T</code>
 
 
 <pre><code><b>struct</b> <a href="display.md#0x2_display_Display">Display</a>&lt;T&gt; <b>has</b> key

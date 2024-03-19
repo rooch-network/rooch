@@ -5,7 +5,7 @@
 
 module moveos_std::type_table {
     use std::ascii::String;
-    use moveos_std::object_id::{ObjectID};
+    use moveos_std::object::ObjectID;
     use moveos_std::object::{Self, Object};
 
     struct TablePlaceholder has key {
@@ -32,30 +32,30 @@ module moveos_std::type_table {
 
     /// Add a new entry of `V` to the table. Aborts if an entry for
     /// entry of `V` type already exists.
-    public fun add<V: key>(table: &mut TypeTable, val: V) {
+    public fun add<V: key + store>(table: &mut TypeTable, val: V) {
         object::add_field(&mut table.handle, key<V>(), val);
     }
 
     /// Acquire an immutable reference to the value which type is `V`.
     /// Aborts if there is no entry for `V`.
-    public fun borrow<V: key>(table: &TypeTable): &V {
+    public fun borrow<V: key + store>(table: &TypeTable): &V {
         object::borrow_field(&table.handle, key<V>())
     }
 
     /// Acquire a mutable reference to the value which type is `V`.
     /// Aborts if there is no entry for `V`.
-    public fun borrow_mut<V: key>(table: &mut TypeTable): &mut V {
+    public fun borrow_mut<V: key + store>(table: &mut TypeTable): &mut V {
         object::borrow_mut_field(&mut table.handle, key<V>())
     }
 
     /// Remove from `table` and return the value which type is `V`.
     /// Aborts if there is no entry for `V`.
-    public fun remove<V: key>(table: &mut TypeTable): V {
+    public fun remove<V: key + store>(table: &mut TypeTable): V {
         object::remove_field(&mut table.handle, key<V>())
     }
 
     /// Returns true if `table` contains an entry for type `V`.
-    public fun contains<V: key>(table: &TypeTable): bool {
+    public fun contains<V: key + store>(table: &TypeTable): bool {
         object::contains_field(&table.handle, key<V>())
     }
 
@@ -78,7 +78,7 @@ module moveos_std::type_table {
     }
 
     #[test_only]
-    struct TestType has key {
+    struct TestType has key,store {
         val: u64,
     }
 

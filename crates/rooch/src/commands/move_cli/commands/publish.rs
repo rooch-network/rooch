@@ -4,9 +4,6 @@
 use async_trait::async_trait;
 use clap::Parser;
 
-use move_binary_format::file_format::CompiledModule;
-use move_bytecode_utils::dependency_graph::DependencyGraph;
-use move_bytecode_utils::Modules;
 use move_cli::Move;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use moveos_verifier::verifier;
@@ -51,17 +48,6 @@ pub struct Publish {
     /// `moveos_std::move_module::publish_modules_entry`
     #[clap(long)]
     pub by_move_action: bool,
-}
-
-impl Publish {
-    pub fn order_modules(modules: Modules) -> anyhow::Result<Vec<CompiledModule>> {
-        //TODO ensure all module at same address.
-        //include all module and dependency modules
-        // let modules = self.package.all_modules_map();
-        let graph = DependencyGraph::new(modules.iter_modules());
-        let order_modules = graph.compute_topological_order()?;
-        Ok(order_modules.cloned().collect())
-    }
 }
 
 #[async_trait]

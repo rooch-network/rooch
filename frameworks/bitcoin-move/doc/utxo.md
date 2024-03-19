@@ -9,6 +9,8 @@
 -  [Resource `UTXO`](#0x4_utxo_UTXO)
 -  [Struct `UTXOSeal`](#0x4_utxo_UTXOSeal)
 -  [Struct `SealOut`](#0x4_utxo_SealOut)
+-  [Struct `TempState`](#0x4_utxo_TempState)
+-  [Constants](#@Constants_0)
 -  [Function `new`](#0x4_utxo_new)
 -  [Function `new_id`](#0x4_utxo_new_id)
 -  [Function `value`](#0x4_utxo_value)
@@ -28,11 +30,16 @@
 -  [Function `unpack_utxo_seal`](#0x4_utxo_unpack_utxo_seal)
 -  [Function `new_seal_out`](#0x4_utxo_new_seal_out)
 -  [Function `unpack_seal_out`](#0x4_utxo_unpack_seal_out)
+-  [Function `add_temp_state`](#0x4_utxo_add_temp_state)
+-  [Function `contains_temp_state`](#0x4_utxo_contains_temp_state)
+-  [Function `borrow_temp_state`](#0x4_utxo_borrow_temp_state)
+-  [Function `borrow_mut_temp_state`](#0x4_utxo_borrow_mut_temp_state)
+-  [Function `remove_temp_state`](#0x4_utxo_remove_temp_state)
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x2::bag</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::simple_multimap</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 </code></pre>
@@ -81,6 +88,31 @@ The UTXO Object
 
 
 <pre><code><b>struct</b> <a href="utxo.md#0x4_utxo_SealOut">SealOut</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_utxo_TempState"></a>
+
+## Struct `TempState`
+
+
+
+<pre><code><b>struct</b> <a href="utxo.md#0x4_utxo_TempState">TempState</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x4_utxo_TEMPORARY_AREA"></a>
+
+
+
+<pre><code><b>const</b> <a href="utxo.md#0x4_utxo_TEMPORARY_AREA">TEMPORARY_AREA</a>: <a href="">vector</a>&lt;u8&gt; = [116, 101, 109, 112, 111, 114, 97, 114, 121, 95, 97, 114, 101, 97];
 </code></pre>
 
 
@@ -195,7 +227,7 @@ Seal the UTXO with a protocol, the T is the protocol object
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_get_seals">get_seals</a>&lt;T&gt;(<a href="utxo.md#0x4_utxo">utxo</a>: &<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>): <a href="">vector</a>&lt;<a href="_ObjectID">object_id::ObjectID</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_get_seals">get_seals</a>&lt;T&gt;(<a href="utxo.md#0x4_utxo">utxo</a>: &<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>): <a href="">vector</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
 </code></pre>
 
 
@@ -206,7 +238,7 @@ Seal the UTXO with a protocol, the T is the protocol object
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_remove_seals">remove_seals</a>&lt;T&gt;(<a href="utxo.md#0x4_utxo">utxo</a>: &<b>mut</b> <a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>): <a href="">vector</a>&lt;<a href="_ObjectID">object_id::ObjectID</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_remove_seals">remove_seals</a>&lt;T&gt;(<a href="utxo.md#0x4_utxo">utxo</a>: &<b>mut</b> <a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>): <a href="">vector</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
 </code></pre>
 
 
@@ -239,7 +271,7 @@ Seal the UTXO with a protocol, the T is the protocol object
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x4_utxo_take">take</a>(<a href="">object_id</a>: <a href="_ObjectID">object_id::ObjectID</a>): (<b>address</b>, <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x4_utxo_take">take</a>(object_id: <a href="_ObjectID">object::ObjectID</a>): (<b>address</b>, <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;)
 </code></pre>
 
 
@@ -250,7 +282,7 @@ Seal the UTXO with a protocol, the T is the protocol object
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x4_utxo_remove">remove</a>(utxo_obj: <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;): <a href="_SimpleMultiMap">simple_multimap::SimpleMultiMap</a>&lt;<a href="_String">string::String</a>, <a href="_ObjectID">object_id::ObjectID</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x4_utxo_remove">remove</a>(utxo_obj: <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;): <a href="_SimpleMultiMap">simple_multimap::SimpleMultiMap</a>&lt;<a href="_String">string::String</a>, <a href="_ObjectID">object::ObjectID</a>&gt;
 </code></pre>
 
 
@@ -261,7 +293,7 @@ Seal the UTXO with a protocol, the T is the protocol object
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_new_utxo_seal">new_utxo_seal</a>(protocol: <a href="_String">string::String</a>, <a href="">object_id</a>: <a href="_ObjectID">object_id::ObjectID</a>): <a href="utxo.md#0x4_utxo_UTXOSeal">utxo::UTXOSeal</a>
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_new_utxo_seal">new_utxo_seal</a>(protocol: <a href="_String">string::String</a>, object_id: <a href="_ObjectID">object::ObjectID</a>): <a href="utxo.md#0x4_utxo_UTXOSeal">utxo::UTXOSeal</a>
 </code></pre>
 
 
@@ -272,7 +304,7 @@ Seal the UTXO with a protocol, the T is the protocol object
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_unpack_utxo_seal">unpack_utxo_seal</a>(utxo_seal: <a href="utxo.md#0x4_utxo_UTXOSeal">utxo::UTXOSeal</a>): (<a href="_String">string::String</a>, <a href="_ObjectID">object_id::ObjectID</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_unpack_utxo_seal">unpack_utxo_seal</a>(utxo_seal: <a href="utxo.md#0x4_utxo_UTXOSeal">utxo::UTXOSeal</a>): (<a href="_String">string::String</a>, <a href="_ObjectID">object::ObjectID</a>)
 </code></pre>
 
 
@@ -283,7 +315,7 @@ Seal the UTXO with a protocol, the T is the protocol object
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_new_seal_out">new_seal_out</a>(output_index: u64, <a href="">object_id</a>: <a href="_ObjectID">object_id::ObjectID</a>): <a href="utxo.md#0x4_utxo_SealOut">utxo::SealOut</a>
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_new_seal_out">new_seal_out</a>(output_index: u64, object_id: <a href="_ObjectID">object::ObjectID</a>): <a href="utxo.md#0x4_utxo_SealOut">utxo::SealOut</a>
 </code></pre>
 
 
@@ -294,5 +326,63 @@ Seal the UTXO with a protocol, the T is the protocol object
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_unpack_seal_out">unpack_seal_out</a>(seal_out: <a href="utxo.md#0x4_utxo_SealOut">utxo::SealOut</a>): (u64, <a href="_ObjectID">object_id::ObjectID</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_unpack_seal_out">unpack_seal_out</a>(seal_out: <a href="utxo.md#0x4_utxo_SealOut">utxo::SealOut</a>): (u64, <a href="_ObjectID">object::ObjectID</a>)
+</code></pre>
+
+
+
+<a name="0x4_utxo_add_temp_state"></a>
+
+## Function `add_temp_state`
+
+
+
+<pre><code>#[private_generics(#[S])]
+<b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_add_temp_state">add_temp_state</a>&lt;S: drop, store&gt;(<a href="utxo.md#0x4_utxo">utxo</a>: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;, state: S)
+</code></pre>
+
+
+
+<a name="0x4_utxo_contains_temp_state"></a>
+
+## Function `contains_temp_state`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_contains_temp_state">contains_temp_state</a>&lt;S: drop, store&gt;(<a href="utxo.md#0x4_utxo">utxo</a>: &<a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;): bool
+</code></pre>
+
+
+
+<a name="0x4_utxo_borrow_temp_state"></a>
+
+## Function `borrow_temp_state`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_borrow_temp_state">borrow_temp_state</a>&lt;S: drop, store&gt;(<a href="utxo.md#0x4_utxo">utxo</a>: &<a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;): &S
+</code></pre>
+
+
+
+<a name="0x4_utxo_borrow_mut_temp_state"></a>
+
+## Function `borrow_mut_temp_state`
+
+
+
+<pre><code>#[private_generics(#[S])]
+<b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_borrow_mut_temp_state">borrow_mut_temp_state</a>&lt;S: drop, store&gt;(<a href="utxo.md#0x4_utxo">utxo</a>: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;): &<b>mut</b> S
+</code></pre>
+
+
+
+<a name="0x4_utxo_remove_temp_state"></a>
+
+## Function `remove_temp_state`
+
+
+
+<pre><code>#[private_generics(#[S])]
+<b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_remove_temp_state">remove_temp_state</a>&lt;S: drop, store&gt;(<a href="utxo.md#0x4_utxo">utxo</a>: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;): S
 </code></pre>

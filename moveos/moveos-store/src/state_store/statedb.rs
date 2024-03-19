@@ -4,9 +4,9 @@
 use crate::state_store::NodeDBStore;
 use anyhow::{Error, Result};
 use move_core_types::effects::Op;
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::object::{self, RootObjectEntity};
 use moveos_types::moveos_std::object::{ObjectEntity, RawObject};
-use moveos_types::moveos_std::object_id::ObjectID;
 use moveos_types::state::KeyState;
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{h256::H256, state::State};

@@ -1,7 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::natives::moveos_stdlib::raw_table;
 use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_functions::{make_table_from_iter, NativeFunctionTable};
 use moveos_types::addresses::{MOVEOS_STD_ADDRESS, MOVE_STD_ADDRESS};
@@ -13,7 +12,6 @@ pub mod moveos_stdlib;
 pub struct GasParameters {
     pub move_stdlib: move_stdlib::natives::GasParameters,
     pub move_nursery: move_stdlib::natives::NurseryGasParameters,
-    pub table_extension: raw_table::GasParameters,
     pub account: moveos_stdlib::account::GasParameters,
     pub type_info: moveos_stdlib::type_info::GasParameters,
     pub rlp: moveos_stdlib::rlp::GasParameters,
@@ -24,6 +22,7 @@ pub struct GasParameters {
     pub move_module: moveos_stdlib::move_module::GasParameters,
     pub object: moveos_stdlib::object::GasParameters,
     pub json: moveos_stdlib::json::GasParameters,
+    pub wasm: moveos_stdlib::wasm::GasParameters,
     pub tx_context: moveos_stdlib::tx_context::GasParameters,
 }
 
@@ -32,7 +31,6 @@ impl GasParameters {
         Self {
             move_stdlib: move_stdlib::natives::GasParameters::zeros(),
             move_nursery: move_stdlib::natives::NurseryGasParameters::zeros(),
-            table_extension: raw_table::GasParameters::zeros(),
             account: moveos_stdlib::account::GasParameters::zeros(),
             type_info: moveos_stdlib::type_info::GasParameters::zeros(),
             rlp: moveos_stdlib::rlp::GasParameters::zeros(),
@@ -43,6 +41,7 @@ impl GasParameters {
             move_module: moveos_stdlib::move_module::GasParameters::zeros(),
             object: moveos_stdlib::object::GasParameters::zeros(),
             json: moveos_stdlib::json::GasParameters::zeros(),
+            wasm: moveos_stdlib::wasm::GasParameters::zeros(),
             tx_context: moveos_stdlib::tx_context::GasParameters::zeros(),
         }
     }
@@ -104,6 +103,7 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     );
     add_natives!("object", moveos_stdlib::object::make_all(gas_params.object));
     add_natives!("json", moveos_stdlib::json::make_all(gas_params.json));
+    add_natives!("wasm", moveos_stdlib::wasm::make_all(gas_params.wasm));
     add_natives!(
         "tx_context",
         moveos_stdlib::tx_context::make_all(gas_params.tx_context)
@@ -111,10 +111,6 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
 
     let moveos_native_fun_table = make_table_from_iter(MOVEOS_STD_ADDRESS, natives);
     native_fun_table.extend(moveos_native_fun_table);
-
-    let raw_table_fun_table =
-        raw_table::table_natives(MOVEOS_STD_ADDRESS, gas_params.table_extension);
-    native_fun_table.extend(raw_table_fun_table);
 
     native_fun_table
 }

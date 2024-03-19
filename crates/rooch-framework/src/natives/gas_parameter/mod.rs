@@ -17,7 +17,7 @@ pub mod nursery;
 mod object;
 mod rlp;
 mod signer;
-mod table_extension;
 mod test_helper;
 mod tx_context;
 mod type_info;
+mod wasm;

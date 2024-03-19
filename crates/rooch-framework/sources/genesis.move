@@ -34,7 +34,7 @@ module rooch_framework::genesis {
 
     fun init(){
         //TODO genesis account should be a resource account?
-        let genesis_account = &account::create_account(@rooch_framework);
+        let genesis_account = &account::create_account_internal(@rooch_framework);
         let genesis_context_option = tx_context::get_attribute<GenesisContext>();
         assert!(option::is_some(&genesis_context_option), ErrorGenesisInit);
         let genesis_context = option::extract(&mut genesis_context_option);

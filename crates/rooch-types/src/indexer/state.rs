@@ -5,7 +5,7 @@ use crate::indexer::Filter;
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{StructTag, TypeTag};
-use moveos_types::moveos_std::object_id::ObjectID;
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::{StateChangeSet, TableChangeSet};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

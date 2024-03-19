@@ -594,7 +594,7 @@ pub fn is_allowed_input_struct(name: String, is_ref: bool) -> bool {
         name.as_str(),
         "0x1::string::String"
             | "0x1::ascii::String"
-            | "0x2::object_id::ObjectID"
+            | "0x2::object::ObjectID"
     ) ||
     // Object<T> only support passing argument by-ref, not by-value
      (is_ref && name.as_str() == "0x2::object::Object")
@@ -1054,7 +1054,7 @@ fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> b
 fn is_allowed_data_struct_type(full_struct_name: &str) -> bool {
     matches!(
         full_struct_name,
-        "0x1::string::String" | "0x1::ascii::String" | "0x2::object_id::ObjectID"
+        "0x1::string::String" | "0x1::ascii::String" | "0x2::object::ObjectID"
     )
 }
 

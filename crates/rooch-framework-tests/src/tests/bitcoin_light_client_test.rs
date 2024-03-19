@@ -9,7 +9,7 @@ use bitcoin::{Block, OutPoint, Transaction, TxOut};
 use hex::FromHex;
 use moveos_types::access_path::AccessPath;
 use moveos_types::module_binding::MoveFunctionCaller;
-use moveos_types::moveos_std::object_id;
+use moveos_types::moveos_std::object;
 use moveos_types::state::MoveStructType;
 use moveos_types::state_resolver::StateReader;
 use moveos_types::transaction::MoveAction;
@@ -202,7 +202,7 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
         );
 
         let output_id = OutputID::new(txid.into_address(), vout);
-        let object_id = object_id::custom_object_id(&output_id, &UTXO::struct_tag());
+        let object_id = object::custom_object_id(&output_id, &UTXO::struct_tag());
         let utxo_state = moveos_resolver
             .get_states(AccessPath::object(object_id))
             .unwrap()
@@ -240,7 +240,7 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
             txid_address, index
         );
         let inscription_id = InscriptionID::new(txid_address, index);
-        let object_id = object_id::custom_object_id(&inscription_id, &Inscription::struct_tag());
+        let object_id = object::custom_object_id(&inscription_id, &Inscription::struct_tag());
         let inscription_state = moveos_resolver
             .get_states(AccessPath::object(object_id))
             .unwrap()

@@ -36,7 +36,6 @@
 <b>use</b> <a href="">0x2::account</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
@@ -54,7 +53,7 @@ A resource that holds the AutoAcceptCoin config for all accounts.
 The main scenario is that the user can actively turn off the AutoAcceptCoin setting to avoid automatically receiving Coin
 
 
-<pre><code><b>struct</b> <a href="account_coin_store.md#0x3_account_coin_store_AutoAcceptCoins">AutoAcceptCoins</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="account_coin_store.md#0x3_account_coin_store_AutoAcceptCoins">AutoAcceptCoins</a> <b>has</b> store, key
 </code></pre>
 
 
@@ -67,7 +66,7 @@ A resource that holds all the ids of Object<CoinStore<T>> for account.
 TODO after the indexer is ready, we can use the indexer to list all the CoinStore<T> objects for account
 
 
-<pre><code><b>struct</b> <a href="account_coin_store.md#0x3_account_coin_store_CoinStores">CoinStores</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="account_coin_store.md#0x3_account_coin_store_CoinStores">CoinStores</a> <b>has</b> store, key
 </code></pre>
 
 
@@ -141,7 +140,7 @@ Return the account CoinStore object id for addr
 the account CoinStore is a account named object, the id is determinate for each addr and CoinType
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_account_coin_store_id">account_coin_store_id</a>&lt;CoinType: key&gt;(addr: <b>address</b>): <a href="_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_account_coin_store_id">account_coin_store_id</a>&lt;CoinType: key&gt;(addr: <b>address</b>): <a href="_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -153,7 +152,7 @@ the account CoinStore is a account named object, the id is determinate for each 
 Return CoinStores table handle for addr
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_coin_stores_handle">coin_stores_handle</a>(addr: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object_id::ObjectID</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="account_coin_store.md#0x3_account_coin_store_coin_stores_handle">coin_stores_handle</a>(addr: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
 </code></pre>
 
 

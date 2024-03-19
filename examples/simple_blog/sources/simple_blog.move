@@ -8,7 +8,7 @@ module simple_blog::simple_blog {
     use std::vector;
     use moveos_std::account;
     use moveos_std::object;
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     use moveos_std::object::{Object};
     
     use simple_blog::simple_article::{Self, Article};
@@ -16,7 +16,7 @@ module simple_blog::simple_blog {
     const ErrorDataTooLong: u64 = 1;
     const ErrorNotFound: u64 = 2;
 
-    struct MyBlog has key {
+    struct MyBlog has key, store {
         name: String,
         articles: vector<ObjectID>,
     }

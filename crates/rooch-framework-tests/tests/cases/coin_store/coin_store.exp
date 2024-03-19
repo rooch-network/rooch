@@ -1,10 +1,10 @@
 processed 4 tasks
 
-task 1 'run'. lines 4-20:
+task 1 'run'. lines 4-19:
 status EXECUTED
 
-task 2 'run'. lines 21-23:
+task 2 'run'. lines 20-22:
 status EXECUTED
 
-task 3 'run'. lines 24-35:
+task 3 'run'. lines 23-34:
 status EXECUTED

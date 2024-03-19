@@ -28,7 +28,6 @@
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::simple_multimap</a>;
 <b>use</b> <a href="">0x2::table</a>;
@@ -216,7 +215,7 @@ Get block via block_height
 
 ## Function `get_latest_block_height`
 
-Get block via block_height
+Get latest block height
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="light_client.md#0x4_light_client_get_latest_block_height">get_latest_block_height</a>(btc_block_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinBlockStore">light_client::BitcoinBlockStore</a>&gt;): <a href="_Option">option::Option</a>&lt;u64&gt;
@@ -231,5 +230,5 @@ Get block via block_height
 Get UTXO via txid and vout
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="light_client.md#0x4_light_client_get_utxo">get_utxo</a>(btc_utxo_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinUTXOStore">light_client::BitcoinUTXOStore</a>&gt;, txid: <b>address</b>, vout: u32): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object_id::ObjectID</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="light_client.md#0x4_light_client_get_utxo">get_utxo</a>(btc_utxo_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinUTXOStore">light_client::BitcoinUTXOStore</a>&gt;, txid: <b>address</b>, vout: u32): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
 </code></pre>

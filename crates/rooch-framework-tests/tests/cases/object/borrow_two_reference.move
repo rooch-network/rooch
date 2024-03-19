@@ -29,7 +29,7 @@ module test::m {
 //# run --signers test --args @0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
 script {
     use moveos_std::object;
-    use moveos_std::object_id::{ObjectID};
+    use moveos_std::object::ObjectID;
     use test::m::{Self, TestStruct};
 
     fun main(obj_id: ObjectID) {
@@ -44,7 +44,7 @@ script {
 //# run --signers test --args @0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
 script {
     use moveos_std::object;
-    use moveos_std::object_id::{ObjectID};
+    use moveos_std::object::ObjectID;
     use test::m::{Self, TestStruct};
 
     fun main(obj_id: ObjectID) {
@@ -63,7 +63,7 @@ script {
 //# run --signers test --args @0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
 script {
     use moveos_std::object;
-    use moveos_std::object_id::{ObjectID};
+    use moveos_std::object::ObjectID;
     use test::m::{Self, TestStruct};
 
     fun main(sender: &signer, obj_id: ObjectID) {

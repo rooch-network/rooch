@@ -26,7 +26,6 @@ It interacts with the other modules in the following ways:
 
 <pre><code><b>use</b> <a href="">0x2::core_addresses</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="chain_id.md#0x3_chain_id">0x3::chain_id</a>;
 </code></pre>

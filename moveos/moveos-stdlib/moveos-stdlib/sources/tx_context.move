@@ -20,7 +20,6 @@ module moveos_std::tx_context {
     use moveos_std::tx_result::{TxResult};
 
     friend moveos_std::object;
-    friend moveos_std::raw_table;
     friend moveos_std::account;
     friend moveos_std::event;
     friend moveos_std::move_module;

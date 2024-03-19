@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_framework::transfer {
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     
     use moveos_std::object::{Self};
     use moveos_std::account;

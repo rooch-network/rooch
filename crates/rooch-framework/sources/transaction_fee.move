@@ -3,8 +3,6 @@
 
 module rooch_framework::transaction_fee {
 
-    use moveos_std::object_id;
-    
     use moveos_std::object::{Self, Object};
     use rooch_framework::coin_store::{Self, CoinStore};
     use rooch_framework::coin::Coin;
@@ -36,7 +34,7 @@ module rooch_framework::transaction_fee {
     }
 
     public(friend) fun deposit_fee(gas_coin: Coin<GasCoin>) {
-        let object_id = object_id::named_object_id<TransactionFeePool>();
+        let object_id = object::named_object_id<TransactionFeePool>();
         let pool_object = object::borrow_mut_object_extend<TransactionFeePool>(object_id);
         let pool = object::borrow_mut(pool_object);
         coin_store::deposit<GasCoin>(&mut pool.fee, gas_coin);

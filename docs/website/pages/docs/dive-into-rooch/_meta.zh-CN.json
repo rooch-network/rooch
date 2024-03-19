@@ -1,7 +1,0 @@
-{
-  "storage-abstraction": "存储抽象",
-  "account-abstraction": "账户抽象",
-  "transaction-flow": "交易执行流",
-  "l1-to-l2-messaging": "L1 至 L2 的消息传递",
-  "l2-to-l1-messaging": "L2 至 L1 的消息传递"
-}

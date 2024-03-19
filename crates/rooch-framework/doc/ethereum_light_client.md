@@ -41,7 +41,7 @@
 
 
 
-<pre><code><b>struct</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_BlockStore">BlockStore</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="ethereum_light_client.md#0x3_ethereum_light_client_BlockStore">BlockStore</a> <b>has</b> store, key
 </code></pre>
 
 

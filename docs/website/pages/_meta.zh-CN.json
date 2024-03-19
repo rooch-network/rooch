@@ -8,8 +8,12 @@
       "layout": "raw"
     }
   },
-  "docs": {
-    "title": "文档",
+  "learn": {
+    "title": "学习",
+    "type": "page"
+  },
+  "build": {
+    "title": "构建",
     "type": "page"
   },
   "blog": {
