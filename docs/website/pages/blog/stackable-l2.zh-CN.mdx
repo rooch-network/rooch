@@ -1,0 +1,111 @@
+---
+title:  Stackable L2 — 一种新的区块链扩容方案
+description: "堆叠式 L2 指在 L2 中全量包含 L1 状态的一种 L2 扩容方案。"
+author: jolestar
+date: 2024/03/05
+category: Technology
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+一直以来，L2 和 L1 之间如何实现互操作，L2 如何读取 L1 上的状态，是 L2 方案设计上的一个挑战。一般的方案是通过状态证明，这种方案需要解决两个问题：
+
+1. L2 如何知道 L1 的状态根。
+2. 状态证明的表达形式，包括各种状态树或者 zk 证明，需要在成本便利性之间权衡。
+
+这个方案在 Vitalik 在他的文章 《Deeper dive on cross-L2 reading for wallets and other use cases》中有详细的探讨。Rooch 最早设计的多链结算方案中，也是用类似的技术，L2 嵌入 L1 的轻节点，验证 L1 的区块来获得 L1 的状态根。但这套方案用在 Bitcoin 上的时候，会遇到难题。
+
+1. Bitcoin 上的 UTXO 并没有状态树，不能之间证明某个 UTXO 在某个区块高度是否被消费了，只能通过交易证明，证明某个交易是否包含在某个区块中。
+2. 同时要支持 Bitcoin 上的 UTXO 附加的信息的证明，比如 RGB，铭文（Ordinals），还需要证明交易的 Input 和 Output 之间的关联关系，这个挑战更大。
+
+这里补充一下 Bitcoin 的一个基础知识，Bitcoin 的共识协议验证区块的时候，只检查 Input 和 Output 的 BTC amount 是否匹配，并不关心 Input 和 Output 的对应关系。
+
+![Bitcointransactions](https://en.bitcoin.it/w/images/en/f/f1/Bitcointransactions.JPG)
+
+(来源 https://en.bitcoin.it/wiki/File:Bitcointransactions.JPG)
+
+比如上图中的交易，Bitcoin 共识只验证 Sum(Input) = Sum(Output)+Fee。假如 Input 上携带了其他的信息，它会转移给哪个 Output 呢？这个就是 Bitcoin 上的扩展协议要解决的问题，它们各自发明了一种 Input 和 Output 的映射规则，比如 RGB/Runs 通过嵌入 OP_RETRUN 来指定，Ordinals 通过 SatPoint 指定。
+
+所以 L2 上的应用，如果想要读取 Bitcoin 上的状态，需要全量追踪 UTXO 的创建与消费，以及解析上面扩展协议的各种数据，于是有了堆叠式（Stackable） L2 的想法。
+
+## 堆叠式 L2
+
+堆叠式 L2 指在 L2 中全量包含 L1 状态的一种 L2 扩容方案。这种方案要求：
+
+1. L2 中包含 L1 的全量状态。相当于要求 L2 包含了 L1 的全节点并完整执行 L1 共识协议，L1 的状态是 L2 状态的一个子集。
+2. L2 可以拥有自己的交易，以及状态。这点上有区别于只读的索引器（Indexer）。
+3. L2 需要有一种机制实现 L2 状态和 L1 状态之间的原子化绑定，保证 L1 和 L2 的状态（资产）的所有权可以原子化转让。
+
+![Stackable L2](/blog/stackable-l2/rooch-stackable-layer2.svg)
+
+如上图所示，L1 在区块高度 T 时的状态是 State T，而该 Bock 会同时触发 L2 的交易 Y，生成 L2 的状态 State Y，State Y 中包含 State T。之后 L2 执行多个交易，其中 L2 的状态在改变，但 L1 State T 一直没有变化，直到 L1 Block T+1 触发新的 L2 交易 Y+n，产生新的 L1 和 L2 状态。
+
+这种方案下，由于 L1 的所有状态都是 L2 的状态，L2 的应用可以直接读取，不需要考虑复杂的状态证明，能提供更好的开发者以及用户体验。
+
+这个方向在业界也有类似的尝试，Ethereum 社区有个 Booster rollups 方案，是在 Ethereum 上堆叠一层，和 Rooch 的思路类似，不过解决方案上有所差异。
+
+### 堆叠式状态树
+
+既然 L2 包含了全量的 L1 的状态，以及 L2 自己的状态，需要有一种层级的状态树方案。这种方案需要保证 L1 的状态可以生成独立的状态树，以便做状态校验。
+
+![Stackable state](/blog/stackable-l2/rooch-stackable-state.svg)
+
+在 Rooch 中，第一层的状态树的叶子结点是 Object，而每个 Object 也携带着一个状态子树，子树中可以保存该 Object 的动态字段，或者子 Object。比如 BitcoinStore 是一个 Object，保存了 Bitcoin 链上的所有状态，UTXO 以及 Inscription 都是该 Object 的子 Object。 
+
+而这种模式也可以用在应用中，比如有一个游戏，它的状态表达为 Gameworld，游戏中的状态都在这个 Object 中，这样可以实现应用间的交易并行以及状态拆分。
+
+### Rollout Not Rollup
+
+堆叠式的 L2 的交易包含两部分，一部分是 L1 的区块，另外一部分是 L2 自己的交易。L1 的区块可用性由 L1 保证，那 L2 的交易如何保证它的可用性？
+
+![Rollout](/blog/stackable-l2/rooch-rollout.svg)
+
+在 L2 的 Rollup 模式中，L2 的交易会通过 Sequencer 批量 Rollup 到 L1。但这种模式的关键问题是 L1 本身的区块空间是有限的，所以 L2 的扩容效果会受限于 L1 的区块空间，如果有多个 Rollup L2 同时竞争同一个区块空间，会变成一种“内卷”模式，多个 L2 并没有叠加的扩容效果。
+ 
+
+在 Rooch 的堆叠式方案中， L1 的区块会包含在 L2 的交易中（实际上只需要包含区块 Hash），L2 会把交易写入另外的第三方 DA 的链上去，我们把这种模式可以叫作 Rollout。Rollout 模式下，L2 通过利用其他的 DA 来实现给源 L1 扩容，是一种模块化的思路，也更具有扩展性，这是 Rooch 最开始就坚持的方案。这样对 Bitcoin 区块空间的需求，会逐渐通过 Rooch 溢出到其他的链，促进整个区块链生态的融合。
+
+### 原子化状态绑定
+
+如果要实现 L1 状态和 L2 状态之间的原子化绑定，我们需要提供一种资产嵌套的表达模式，而 Move 语言本身非常适合表达嵌套模式的资产。
+
+![Atomic-binding UTXO](/blog/stackable-l2/rooch-atomic-binding-utxo.svg)
+
+比如上图中的 UTXO X 在 Move 中表达为一种 Object，它内置一个 Temporary 区域，嵌套放置在该区域的状态，在该 UTXO 被消费的时候会被清理掉。它类似于 RGB 的“一次性密封”，利用了 UTXO 只能被消费一次的特性。比如有个应用提供一种持有 Bitcoin 挖矿的特性，将用户的 Stake 信息存在该区域，一旦用户消费掉该 UTXO，则自动丢失 Stake 信息。而如果是支持 UTXO 映射追踪的协议的状态，则可以提供 Permanent Area，实现 L1 与 L2 的状态的原子化转让。
+
+![Atomic-binding Inscription](/blog/stackable-l2/rooch-atomic-binding-ord.svg)
+
+比如上图中，是通过 Move 表达的一种 Bitcoin 链上状态，比如 Ordinals Inscription（RGB 同理）。它里面的 Permanent Area 可以保存永久的状态，比如 Coin 或者 NFT。一旦该 Inscription 在 L1 被转让，Temporary Area 中的状态会被清空，而 Permanent Area 的状态会被保留，一并转让给新的所有者。 
+
+### 资产跨层（跨链）
+
+堆叠式 L2 的方案中，主要关注在 L2 继承 L1 的状态，而 L1 和 L2 之间的资产如何跨层流动，主要有几个探索的方向：
+
+1. L1 → L2 的桥模式：L1 和 L2 之间通过桥实现 L1 到 L2 的资产迁移。关键是这个桥如何通过 L1 和 L2 提供的特性来保证安全。而堆叠式 L2 中，可以通过 L2 的合约给桥增加额外的安全保证。
+2. 链下验证或客户端验证：RGB 或者 Ordinals 协议模式下，资产的合法性在链下校验，L1 只承担公布承诺（commitment）或者保证数据可用（DA）的作用，这种资产可以理解成一种介于 L1 和 L2 之间的资产，可以内置扩展协议来实现资产在 L1 和 L2 之间的互通。这种模式可以无缝和堆叠式 L2 集成。
+3. L2 → L1 ：如果是 L2 的原生资产，然后需要跨到 L1。这种情况有区别于 L1 → L2 的桥。由于 L2 原生资产的合法性由 L2 保证，它跨链的安全性要求低于 L1 → L2，不需要考虑逃生舱等机制，只需要保证 L2 提交给 L1 的状态根是正确的。
+
+### 去中心化与安全
+
+L2 的 Sequencer 如何去中心化，依然是业内探索的方向。在 Rooch 的方案中，通过以下方式来实现去中心化以及保证安全：
+
+1. Sequencer 会把交易公布到 DA，把 L2 状态树的根公布到 Bitcoin 上，保证 L2 状态的可验证。
+2. 如果 Sequencer 公布了错误的状态，当公布状态根的 Bitcoin 的交易重新在 L2 执行的时候，会触发惩罚。
+3. 通过 L1 区块提供的时间，实现 Sequencer 按时间片轮替，节点需要抵押资产成为 Sequencer 的候选节点。
+4. 如果 Sequencer 隐藏交易，可以通过[交易排序证明](https://rooch.network/zh-CN/learn/in-depth-tech/sequence-proof)进行惩罚。
+
+### 总结
+
+区块链扩容一直是业内最重要的问题之一，已有分层，分片等方向的实践。但层和片应该如何分，依然尚在摸索。本文提出了一种新的思路，基于状态堆叠的分层模式，让 L2 最大化的继承 L1 的数据和特性。这样 L2 启动时，并不是一个空白的世界，而是在 L1 的多年积累的状态世界之上构建应用。同时，这种分层模式下，每个应用其实也可以再堆叠一层，类似于一种基于应用的分片方案，这个待后文再做探讨。
+
+那状态堆叠模式能支持哪些类型的应用呢？这个尚待挖掘。举个简单的例子，比如在 Bitcoin 上有一个 Inscription 来表达一块地。然后 L2 可以在上面堆叠一个房子，它们整体形成了一种资产，它的价值就高于原始的地块。然后有人再把这个房子打造成一个展览馆，然后价值又不一样了。其实这个模式和现实世界中的资产增值模式是类似的。现实世界中的资产也是通过合成，组合，堆叠方式来实现增值的。
+
+期待开发者和用户一起来探索新的玩法。
+
+### 相关链接
+
+1. Deeper dive on cross-L2 reading for wallets and other use cases https://twitter.com/VitalikButerin/status/1671170970634317826 
+2. Rollup Layer2 的模块化演进之路 https://rooch.network/zh-CN/blog/modular-evolution-of-rollup-layer2 
+3. Booster rollups - scaling L1 directly https://ethresear.ch/t/booster-rollups-scaling-l1-directly/17125

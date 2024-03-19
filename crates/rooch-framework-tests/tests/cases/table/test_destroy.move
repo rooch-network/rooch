@@ -4,16 +4,16 @@
 module test::m {
     use std::string::String;
     use moveos_std::table::{Self, Table};
-    use moveos_std::context::{Self, Context};
+    
     use moveos_std::account;
 
     struct KVStore has store, key {
         table: Table<String,vector<u8>>,
     }
 
-    public fun make_kv_store(ctx: &mut Context): KVStore{
+    public fun make_kv_store(): KVStore{
         KVStore{
-            table: context::new_table(ctx),
+            table: table::new(),
         }
     }
 
@@ -33,20 +33,20 @@ module test::m {
         table::borrow(&store.table, key)
     }
     
-    public fun save_to_resource_object(ctx: &mut Context, account: &signer, store: KVStore){
-        account::move_resource_to(ctx, account, store);
+    public fun save_to_resource_object(account: &signer, store: KVStore){
+        account::move_resource_to(account, store);
     }
 
-    public fun borrow_from_resource_object(ctx: &Context, account: address) : &KVStore{
-        account::borrow_resource(ctx, account)
+    public fun borrow_from_resource_object(account: address) : &KVStore{
+        account::borrow_resource(account)
     }
 
-    public fun borrow_mut_from_resource_object(ctx: &mut Context, account: address) : &mut KVStore{
-        account::borrow_mut_resource(ctx, account)
+    public fun borrow_mut_from_resource_object(account: address) : &mut KVStore{
+        account::borrow_mut_resource(account)
     }
 
-    public fun move_from_resource_object(ctx: &mut Context, account: address) : KVStore{
-        account::move_resource_from(ctx, account)
+    public fun move_from_resource_object(account: address) : KVStore{
+        account::move_resource_from(account)
     }
 
     public fun length(kv: &KVStore): u64 {
@@ -66,14 +66,14 @@ module test::m {
 //# run --signers test
 script {
     use std::string;
-    use moveos_std::context::{Context};
+    
     use test::m;
 
-    fun main(ctx: &mut Context, sender: signer) {
-        let kv = m::make_kv_store(ctx);
+    fun main(sender: signer) {
+        let kv = m::make_kv_store();
         m::add(&mut kv, string::utf8(b"test"), b"value");
         assert!(m::length(&kv) == 1, 1000); // check length is correct when data in table cache
-        m::save_to_resource_object(ctx, &sender, kv);
+        m::save_to_resource_object(&sender, kv);
     }
 }
 
@@ -81,12 +81,12 @@ script {
 //# run --signers test
 script {
     use std::string;
-    use moveos_std::context::{Self, Context};
+    
     use test::m;
 
-    fun main(ctx: &mut Context) {
-        let sender = context::sender(ctx);
-        let kv = m::borrow_from_resource_object(ctx, sender);
+    fun main() {
+        let sender = moveos_std::tx_context::sender();
+        let kv = m::borrow_from_resource_object(sender);
         assert!(m::contains(kv, string::utf8(b"test")), 1001);
         let v = m::borrow(kv, string::utf8(b"test"));
         assert!(v == &b"value", 1002);
@@ -97,12 +97,12 @@ script {
 //# run --signers test
 script {
     use std::string;
-    use moveos_std::context::{Self, Context};
+    
     use test::m;
 
-    fun main(ctx: &mut Context) {
-        let sender = context::sender(ctx);
-        let kv = m::borrow_mut_from_resource_object(ctx, sender);
+    fun main() {
+        let sender = moveos_std::tx_context::sender();
+        let kv = m::borrow_mut_from_resource_object(sender);
         m::add(kv, string::utf8(b"test1"), b"value1");
         assert!(m::length(kv) == 2, 1003); 
         let _value = m::remove(kv, string::utf8(b"test1"));
@@ -112,12 +112,12 @@ script {
 // destroy none empty table, should failed.
 //# run --signers test
 script {
-    use moveos_std::context::{Self, Context};
+    
     use test::m;
 
-    fun main(ctx: &mut Context) {
-        let sender = context::sender(ctx);
-        let kv = m::move_from_resource_object(ctx, sender);
+    fun main() {
+        let sender = moveos_std::tx_context::sender();
+        let kv = m::move_from_resource_object(sender);
         m::destroy(kv);
     }
 }
@@ -126,12 +126,12 @@ script {
 //# run --signers test
 script {
     use std::string;
-    use moveos_std::context::{Self, Context};
+    
     use test::m;    
 
-    fun main(ctx: &mut Context) {
-        let sender = context::sender(ctx);
-        let kv = m::move_from_resource_object(ctx, sender);
+    fun main() {
+        let sender = moveos_std::tx_context::sender();
+        let kv = m::move_from_resource_object(sender);
         let v = m::remove(&mut kv, string::utf8(b"test"));
         assert!(v == b"value", 1004);
         m::destroy(kv);

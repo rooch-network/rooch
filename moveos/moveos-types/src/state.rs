@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::moveos_std::object::ObjectID;
 use crate::moveos_std::object::{AnnotatedObject, ObjectEntity, RawObject};
-use crate::moveos_std::object_id::ObjectID;
 use anyhow::{bail, ensure, Result};
 use core::str;
 use move_core_types::{

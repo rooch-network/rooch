@@ -3,18 +3,17 @@
 //# publish
 
 module test::m {
-    use moveos_std::context::{Self, Context};
+    
     use moveos_std::object;
 
     struct TestStruct has key, store{
         value: u64
     }
 
-    fun init(ctx: &mut Context){
-        let id = context::new_named_object_uid<TestStruct>(ctx);
-        let obj = object::new(id, TestStruct{value: 0});
+    fun init(){
+        let obj = object::new_named_object(TestStruct{value: 0});
         std::debug::print(&obj);
-        object::transfer(obj, context::sender(ctx));
+        object::transfer(obj, moveos_std::tx_context::sender());
     }
 
     public fun set_value(test: &mut TestStruct, value: u64){
@@ -30,7 +29,7 @@ module test::m {
 //# run --signers test --args @0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
 script {
     use moveos_std::object;
-    use moveos_std::object_id::{ObjectID};
+    use moveos_std::object::ObjectID;
     use test::m::{Self, TestStruct};
 
     fun main(obj_id: ObjectID) {
@@ -45,7 +44,7 @@ script {
 //# run --signers test --args @0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
 script {
     use moveos_std::object;
-    use moveos_std::object_id::{ObjectID};
+    use moveos_std::object::ObjectID;
     use test::m::{Self, TestStruct};
 
     fun main(obj_id: ObjectID) {
@@ -64,7 +63,7 @@ script {
 //# run --signers test --args @0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
 script {
     use moveos_std::object;
-    use moveos_std::object_id::{ObjectID};
+    use moveos_std::object::ObjectID;
     use test::m::{Self, TestStruct};
 
     fun main(sender: &signer, obj_id: ObjectID) {

@@ -6,8 +6,12 @@
 
 use crate::addresses::MOVEOS_STD_ADDRESS;
 use crate::h256;
-use crate::moveos_std::object_id::ObjectID;
+use crate::h256::H256;
+use crate::module_binding::{ModuleBinding, MoveFunctionCaller};
+use crate::moveos_std::object::{self, ObjectID};
+use crate::moveos_std::tx_context::TxContext;
 use crate::state::MoveStructType;
+use crate::transaction::FunctionCall;
 use anyhow::{ensure, Error, Result};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::IdentStr;
@@ -18,13 +22,6 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::str::FromStr;
-
-use crate::h256::H256;
-use crate::module_binding::{ModuleBinding, MoveFunctionCaller};
-use crate::moveos_std::tx_context::TxContext;
-use crate::transaction::FunctionCall;
-
-use super::object_id;
 
 /// Rust bindings for MoveosStd event module
 pub struct EventModule<'a> {
@@ -281,7 +278,7 @@ impl EventHandle {
     }
 
     pub fn derive_event_handle_id(event_handle_type: &StructTag) -> ObjectID {
-        object_id::named_object_id(event_handle_type)
+        object::named_object_id(event_handle_type)
     }
 }
 

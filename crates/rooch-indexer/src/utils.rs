@@ -33,7 +33,7 @@ pub fn create_all_tables_if_not_exists(
     // The fields and methods of EmbeddedMigrations in Diesel Lib are private.
     // There is no API support for filtering by tablename.
     // We may consider forking diesel to provide the corresponding API to implement the filtering function.
-    
+
     // let match_migration = &MIGRATIONS
     //     .migrations()?
     //     .into_iter()

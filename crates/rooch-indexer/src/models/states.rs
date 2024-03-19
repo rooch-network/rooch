@@ -8,7 +8,7 @@ use crate::types::{IndexedGlobalState, IndexedTableChangeSet, IndexedTableState}
 use diesel::prelude::*;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{StructTag, TypeTag};
-use moveos_types::moveos_std::object_id::ObjectID;
+use moveos_types::moveos_std::object::ObjectID;
 use rooch_rpc_api::jsonrpc_types::TableChangeSetView;
 use rooch_types::indexer::state::{IndexerGlobalState, IndexerTableChangeSet, IndexerTableState};
 use std::str::FromStr;

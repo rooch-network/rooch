@@ -1,0 +1,172 @@
+# 单元测试
+
+在 Move 中，编写单元测试跟编写正常的代码基本一样，区别只是在测试代码的上方使用下面的标注：
+
+- `#[test]`
+- `#[test_only]`
+- `#[expected_failure]`
+
+第一条标注将函数标记为测试。第二条标注将模块或模块成员（导入语句、函数或结构体）标记为仅用于测试。第三条标注预期测试失败的代码。
+
+这些注释可以放置在具有任何可见性的函数上。每当一个模块或模块成员被注释为 `#[test_only]` 或 `#[test]` 时，它不会包含在编译的字节码中，除非它被编译用于测试。
+
+使用 `#[test]` 和 `#[expected_failure]` 标注时，可以带参数或不带参数。
+
+没有参数的 `#[test]` 标注只能放在没有参数的函数上。
+
+```move
+#[test] // OK
+fun this_is_a_test() { ... }
+
+#[test] // Will fail to compile since the test takes an argument
+fun this_is_not_correct(arg: signer) { ... }
+```
+
+测试也可以标注为 `#[expected_failure]`。这个标注标志着测试应该会引发错误。可以通过使用 `#[expected_failure(abort_code = code)]` 对其进行注释来确保测试使用特定的中止代码中止，如果它随后因不同的中止代码或非中止错误而失败，则测试将失败。只有具有 `#[test]` 标注的函数也可以标注为 `#[expected_failure]`。
+
+```move
+#[test]
+#[expected_failure]
+public fun this_test_will_abort_and_pass() { abort 1 }
+
+#[test]
+#[expected_failure]
+public fun test_will_error_and_pass() { 1/0; }
+
+#[test]
+#[expected_failure(abort_code = 0)]
+public fun test_will_error_and_fail() { 1/0; }
+
+#[test, expected_failure] // Can have multiple in one attribute. This test will pass.
+public fun this_other_test_will_abort_and_pass() { abort 1 }
+```
+
+## 测试例子
+
+```move
+module unit_test::unit_test {
+    use moveos_std::signer;
+    use moveos_std::context::{Self, Context};
+    #[test_only]
+    use moveos_std::context::drop_test_context;
+
+    struct Counter has key {
+        count_value: u64
+    }
+
+    fun init(ctx: &mut Context, account: &signer) {
+        context::move_resource_to(ctx, account, Counter { count_value: 0 });
+    }
+
+    entry fun increase(ctx: &mut Context, account: &signer) {
+        let account_addr = signer::address_of(account);
+        let counter = context::borrow_mut_resource<Counter>(ctx, account_addr);
+        counter.count_value = counter.count_value + 1;
+    }
+
+    #[test(account = @0x42)]
+    fun test_counter(account: &signer) {
+        let account_addr = signer::address_of(account);
+        let ctx = context::new_test_context(account_addr);
+        context::move_resource_to(&mut ctx, account, Counter { count_value: 0 });
+
+        let counter = context::borrow_resource<Counter>(&ctx, account_addr);
+        assert!(counter.count_value == 0, 999);
+
+        increase(&mut ctx, account);
+        let counter = context::borrow_resource<Counter>(&ctx, account_addr);
+        assert!(counter.count_value == 1, 1000);
+
+        drop_test_context(ctx);
+    }
+}
+```
+
+我们使用[快速入门](../getting-started/first-contract/quick-start.zh-CN.mdx)中的计数器例子来演示。在快速入门中，我们已经编写了一个计数器程序，但是我们编写完成后，并不能保证所有的功能都如我们预期的那样工作。因此我们编写一个单测来检查当前模块的函数是否能达到预期效果。
+
+函数 `test_counter` 就是当前这个程序的单元测试函数。使用了 `#[test]` 标注，并传递了一个 `account` 参数。
+
+测试的时候，我们不经过命令行调用，不会产生正常情况下的上下文，因此我们需要为这个测试创建一个上下文。
+
+当地址和上下文都有了之后，我们就可以构建计数器了，构建好并将计数器资源移到 `0x42` 地址。
+
+1. 测试计数器是否正常创建出来：
+
+```move
+let counter = context::borrow_resource<Counter>(&ctx, account_addr);
+assert!(counter.count_value == 0, 999);
+```
+
+2. 检查 `increase` 函数的执行逻辑，并判断是否能正常递增：
+
+```move
+increase(&mut ctx, account);
+let counter = context::borrow_resource<Counter>(&ctx, account_addr);
+assert!(counter.count_value == 1, 1000);
+```
+
+3. 测试用的上下文使用完后，需要释放掉。
+
+> 由于上下文是测试创建的，不能将 `init` 和 `increase` 放在两个单测里，因此在单元测试中需要在一个函数作用域内完成测试。
+
+## 运行单元测试
+
+```shell
+rooch move test
+```
+
+```shell
+[joe@mx unit_test]$ rooch move test
+
+INCLUDING DEPENDENCY MoveStdlib
+INCLUDING DEPENDENCY MoveosStdlib
+INCLUDING DEPENDENCY RoochFramework
+BUILDING unit_test
+Running Move unit tests
+2023-12-21T13:57:07.014787Z  INFO moveos_common::utils: set max open fds 45056
+[ PASS    ] 0x42::unit_test::test_counter
+Test result: OK. Total tests: 1; passed: 1; failed: 0
+Success
+```
+
+可以看到，我们编写的单元测试通过了！证明我们的计数器逻辑是正确的。
+
+接下来，我们修改一下，看看断言失败的情形：
+
+```move
+let counter = context::borrow_resource<Counter>(&ctx, account_addr);
+assert!(counter.count_value == 2, 999);
+```
+
+```shell
+[joe@mx unit_test]$ rooch move test
+
+INCLUDING DEPENDENCY MoveStdlib
+INCLUDING DEPENDENCY MoveosStdlib
+INCLUDING DEPENDENCY RoochFramework
+BUILDING unit_test
+Running Move unit tests
+2023-12-21T14:10:07.413084Z  INFO moveos_common::utils: set max open fds 45056
+[ FAIL    ] 0x42::unit_test::test_counter
+
+Test failures:
+
+Failures in 0x42::unit_test:
+
+┌── test_counter ──────
+│ error[E11001]: test failure
+│    ┌─ ./sources/counter.move:28:9
+│    │
+│ 22 │     fun test_counter(account: &signer) {
+│    │         ------------ In this function in 0x42::unit_test
+│    ·
+│ 28 │         assert!(counter.count_value == 2, 999);
+│    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Test was not expected to error, but it aborted with code 999 originating in the module 0000000000000000000000000000000000000000000000000000000000000042::unit_test rooted here
+│
+│
+└──────────────────
+
+Test result: FAILED. Total tests: 1; passed: 0; failed: 1
+```
+
+可以看到，Move 编译器很清楚地指明了断言程序的位置，因此我们就能很容易地定位到我们测试程序的某个位置，进而知道某个函数的执行结果没有达到我们的预期。

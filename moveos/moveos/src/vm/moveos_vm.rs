@@ -4,7 +4,6 @@
 use super::data_cache::{into_change_set, MoveosDataCache};
 use crate::gas::table::{get_gas_schedule_entries, initial_cost_schedule, ClassifiedGasMeter};
 use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
-use crate::vm::tx_argument_resolver;
 use move_binary_format::compatibility::Compatibility;
 use move_binary_format::normalized;
 use move_binary_format::{
@@ -26,7 +25,7 @@ use move_vm_runtime::{
     move_vm::MoveVM,
     native_extensions::NativeContextExtensions,
     native_functions::NativeFunction,
-    session::{LoadedFunctionInstantiation, SerializedReturnValues, Session},
+    session::{LoadedFunctionInstantiation, Session},
 };
 use move_vm_types::loaded_data::runtime_types::{CachedStructIndex, StructType, Type};
 use moveos_stdlib::natives::moveos_stdlib::{
@@ -39,7 +38,6 @@ use moveos_types::{
     function_return_value::FunctionReturnValue,
     move_std::string::MoveString,
     move_types::FunctionId,
-    moveos_std::context::Context,
     moveos_std::copyable_any::Any,
     moveos_std::simple_map::SimpleMap,
     moveos_std::tx_context::TxContext,
@@ -119,7 +117,6 @@ pub struct MoveOSSession<'r, 'l, S, G> {
     pub(crate) vm: &'l MoveVM,
     pub(crate) remote: &'r S,
     pub(crate) session: Session<'r, 'l, MoveosDataCache<'r, 'l, S>>,
-    pub(crate) ctx: Context,
     pub(crate) table_data: Arc<RwLock<TableData>>,
     pub(crate) gas_meter: G,
     pub(crate) read_only: bool,
@@ -138,13 +135,11 @@ where
         gas_meter: G,
         read_only: bool,
     ) -> Self {
-        let ctx = Context::new(ctx);
-        let table_data = Arc::new(RwLock::new(TableData::default()));
+        let table_data = Arc::new(RwLock::new(TableData::new(ctx)));
         Self {
             vm,
             remote,
             session: Self::new_inner_session(vm, remote, table_data.clone()),
-            ctx,
             table_data,
             gas_meter,
             read_only,
@@ -153,15 +148,10 @@ where
 
     /// Re spawn a new session with the same context.
     pub fn respawn(self, env: SimpleMap<MoveString, Any>) -> Self {
-        //FIXME
-        //The TxContext::spawn function will reset the ids_created and kv map.
-        //But we need some TxContext value in the pre_execute and post_execute function, such as the TxValidateResult.
-        //We need to find a solution.
-        let ctx = Context::new(self.ctx.tx_context.spawn(env));
-        let table_data = Arc::new(RwLock::new(TableData::default()));
+        let new_ctx = self.table_data.read().tx_context().clone().spawn(env);
+        let table_data = Arc::new(RwLock::new(TableData::new(new_ctx)));
         Self {
             session: Self::new_inner_session(self.vm, self.remote, table_data.clone()),
-            ctx,
             table_data,
             ..self
         }
@@ -186,6 +176,10 @@ where
         let data_store: MoveosDataCache<'r, 'l, S> =
             MoveosDataCache::new(remote, loader, table_data);
         vm.new_session_with_cache_and_extensions(data_store, extensions)
+    }
+
+    pub(crate) fn tx_context(&self) -> TxContext {
+        self.table_data.read().tx_context().clone()
     }
 
     /// Verify a move action.
@@ -267,7 +261,6 @@ where
                             ret.return_values.is_empty(),
                             "Script function should not return values"
                         );
-                        self.update_storage_context_via_return_values(&loaded_function, &ret);
                     })
             }
             VerifiedMoveAction::Function { call } => {
@@ -292,14 +285,13 @@ where
                             ret.return_values.is_empty(),
                             "Entry function should not return values"
                         );
-                        self.update_storage_context_via_return_values(&loaded_function, &ret);
                     })
             }
             VerifiedMoveAction::ModuleBundle {
                 module_bundle,
                 init_function_modules,
             } => {
-                let sender = self.ctx.tx_context.sender();
+                let sender = self.tx_context().sender();
                 // Check if module is first published. Only the first published module can run init function
                 let modules_with_init = init_function_modules
                     .into_iter()
@@ -394,15 +386,11 @@ where
         self.resolve_pending_init_functions()?;
 
         // Check if there are modules upgrading
-        let module_flag = self
-            .ctx
-            .tx_context
-            .get::<ModuleUpgradeFlag>()
-            .map_err(|e| {
-                PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
-                    .with_message(e.to_string())
-                    .finish(Location::Undefined)
-            })?;
+        let module_flag = self.tx_context().get::<ModuleUpgradeFlag>().map_err(|e| {
+            PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
+                .with_message(e.to_string())
+                .finish(Location::Undefined)
+        })?;
         let is_upgrade = module_flag.map_or(false, |flag| flag.is_upgrade);
         if is_upgrade {
             self.vm.mark_loader_cache_as_invalid();
@@ -421,54 +409,6 @@ where
             self.execute_init_modules(init_functions.into_iter().collect())
         } else {
             Ok(())
-        }
-    }
-
-    // Because the Context can be mut argument, if the function change the Context,
-    // we need to update the Context via return values, and pass the updated Context to the next function.
-    fn update_storage_context_via_return_values(
-        &mut self,
-        loaded_function: &LoadedFunctionInstantiation,
-        return_values: &SerializedReturnValues,
-    ) {
-        let mut_ref_arguments = loaded_function
-            .parameters
-            .iter()
-            .filter(|ty| matches!(ty, Type::MutableReference(_)))
-            .collect::<Vec<_>>();
-        debug_assert!(mut_ref_arguments.len() == return_values.mutable_reference_outputs.len(), "The number of mutable reference arguments should be equal to the number of mutable reference outputs");
-        for (arg_ty, (_index, value, _layout)) in mut_ref_arguments
-            .into_iter()
-            .zip(return_values.mutable_reference_outputs.iter())
-        {
-            match arg_ty {
-                Type::MutableReference(ty) => match ty.as_ref() {
-                    Type::Struct(struct_tag_index) => {
-                        let struct_type = self
-                            .session
-                            .get_struct_type(*struct_tag_index)
-                            .expect("The struct type should be in cache");
-                        if tx_argument_resolver::is_context(&struct_type) {
-                            let returned_storage_context = Context::from_bytes(value.as_slice())
-                                .expect("The return mutable reference should be a Context");
-                            if log::log_enabled!(log::Level::Trace) {
-                                log::trace!(
-                                    "The returned storage context is {:?}",
-                                    returned_storage_context
-                                );
-                            }
-                            self.ctx = returned_storage_context;
-                        }
-                    }
-                    _ => {
-                        //Do nothing
-                        if log::log_enabled!(log::Level::Trace) {
-                            log::trace!("Mut argument type: {:?}", arg_ty);
-                        }
-                    }
-                },
-                _ => unreachable!(),
-            }
         }
     }
 
@@ -491,7 +431,6 @@ where
             serialized_args,
             &mut self.gas_meter,
         )?;
-        self.update_storage_context_via_return_values(&loaded_function, &return_values);
         return_values
             .return_values
             .into_iter()
@@ -541,7 +480,6 @@ where
             vm: _,
             remote: _,
             session,
-            ctx,
             table_data,
             mut gas_meter,
             read_only,
@@ -553,7 +491,7 @@ where
         let raw_events = event_context.into_events();
         drop(extensions);
 
-        let state_changeset =
+        let (ctx, state_changeset) =
             into_change_set(table_data).map_err(|e| e.finish(Location::Undefined))?;
 
         if read_only {
@@ -569,7 +507,7 @@ where
                     .finish(Location::Undefined));
             }
 
-            if ctx.tx_context.ids_created > 0 {
+            if ctx.ids_created > 0 {
                 return Err(PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
                     .with_message("TxContext::ids_created should be zero as never used.".to_owned())
                     .finish(Location::Undefined));
@@ -586,7 +524,7 @@ where
             .collect::<VMResult<_>>()?;
 
         // Check if there are modules upgrading
-        let module_flag = ctx.tx_context.get::<ModuleUpgradeFlag>().map_err(|e| {
+        let module_flag = ctx.get::<ModuleUpgradeFlag>().map_err(|e| {
             PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
                 .with_message(e.to_string())
                 .finish(Location::Undefined)
@@ -630,7 +568,7 @@ where
          */
 
         Ok((
-            ctx.tx_context,
+            ctx,
             RawTransactionOutput {
                 status,
                 changeset,
@@ -671,7 +609,7 @@ where
             //TODO calculate readonly function gas usage
             0
         } else {
-            let max_gas_amount = self.ctx.tx_context.max_gas_amount;
+            let max_gas_amount = self.tx_context().max_gas_amount;
             let gas_left: u64 = self.gas_meter.balance_internal().into();
             max_gas_amount.checked_sub(gas_left).unwrap_or_else(
                 || panic!("gas_left({gas_left}) should always be less than or equal to max gas amount({max_gas_amount})")
@@ -735,10 +673,6 @@ where
 
     pub fn runtime_session(&self) -> &Session<'r, 'l, MoveosDataCache<'r, 'l, S>> {
         self.session.borrow()
-    }
-
-    pub(crate) fn storage_context_mut(&mut self) -> &mut Context {
-        &mut self.ctx
     }
 }
 

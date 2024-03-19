@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::moveos_vm::MoveOSSession;
-use crate::gas::SwitchableGasMeter;
+use crate::gas::{table::ClassifiedGasMeter, SwitchableGasMeter};
 use move_binary_format::errors::{Location, PartialVMError, VMResult};
 use move_core_types::{
     language_storage::{StructTag, TypeTag},
@@ -14,10 +14,10 @@ use move_vm_types::loaded_data::runtime_types::{StructType, Type};
 use moveos_object_runtime::resolved_arg::ResolvedArg;
 use moveos_types::{
     move_std::{ascii::MoveAsciiString, string::MoveString},
-    moveos_std::object_id::ObjectID,
+    moveos_std::object::ObjectID,
 };
 use moveos_types::{
-    moveos_std::{context::Context, object::Object},
+    moveos_std::object::Object,
     state::{MoveStructType, PlaceholderStruct},
     state_resolver::MoveOSResolver,
 };
@@ -26,7 +26,7 @@ use std::sync::Arc;
 impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
 where
     S: MoveOSResolver,
-    G: SwitchableGasMeter,
+    G: SwitchableGasMeter + ClassifiedGasMeter + Clone,
 {
     pub fn resolve_argument(
         &self,
@@ -41,11 +41,9 @@ where
         //check object id
         for parameter in func.parameters.iter() {
             if is_signer(parameter) {
-                resolved_args.push(ResolvedArg::signer(self.ctx.tx_context.sender()));
+                resolved_args.push(ResolvedArg::signer(self.tx_context().sender()));
             } else if let Some(struct_arg_type) = as_struct_no_panic(&self.session, parameter) {
-                if is_context(&struct_arg_type) {
-                    resolved_args.push(ResolvedArg::context(self.ctx.clone()));
-                } else if is_object(&struct_arg_type) {
+                if is_object(&struct_arg_type) {
                     let object_type_tag =
                         get_type_tag(&self.session, parameter)?.ok_or_else(|| {
                             PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
@@ -115,12 +113,12 @@ where
                                     ))
                                     .finish(location.clone()));
                             }
-                            if !object.is_shared() && object.owner != self.ctx.tx_context.sender() {
+                            let sender = self.tx_context().sender();
+                            if !object.is_shared() && object.owner != sender {
                                 return Err(PartialVMError::new(StatusCode::NO_ACCOUNT_ROLE)
                                     .with_message(format!(
                                         "Object owner mismatch, object owner:{:?}, sender:{:?}",
-                                        object.owner,
-                                        self.ctx.tx_context.sender()
+                                        object.owner, sender
                                     ))
                                     .finish(location.clone()));
                             }
@@ -215,12 +213,6 @@ where
         Type::MutableReference(r) => get_type_tag(session, r),
         _ => Ok(None),
     }
-}
-
-pub(crate) fn is_context(t: &StructType) -> bool {
-    t.module.address() == &Context::ADDRESS
-        && t.module.name() == Context::module_identifier().as_ident_str()
-        && t.name == Context::struct_identifier()
 }
 
 pub(crate) fn is_object(t: &StructType) -> bool {

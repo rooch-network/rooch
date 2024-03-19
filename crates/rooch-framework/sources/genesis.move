@@ -4,7 +4,7 @@
 module rooch_framework::genesis {
 
     use std::option;
-    use moveos_std::context::{Self, Context};
+    use moveos_std::tx_context;
     use rooch_framework::account;
     use rooch_framework::auth_validator_registry;
     use rooch_framework::builtin_validators;
@@ -17,6 +17,7 @@ module rooch_framework::genesis {
     use rooch_framework::address_mapping;
     use rooch_framework::ethereum_light_client;
     use rooch_framework::onchain_config;
+
 
     const ErrorGenesisInit: u64 = 1;
 
@@ -31,23 +32,23 @@ module rooch_framework::genesis {
         gas_schedule_blob: vector<u8>
     }
 
-    fun init(ctx: &mut Context){
+    fun init(){
         //TODO genesis account should be a resource account?
-        let genesis_account = &account::create_account(ctx, @rooch_framework);
-        let genesis_context_option = context::get<GenesisContext>(ctx);
+        let genesis_account = &account::create_account_internal(@rooch_framework);
+        let genesis_context_option = tx_context::get_attribute<GenesisContext>();
         assert!(option::is_some(&genesis_context_option), ErrorGenesisInit);
         let genesis_context = option::extract(&mut genesis_context_option);
-        chain_id::genesis_init(ctx, genesis_account, genesis_context.chain_id);
-        auth_validator_registry::genesis_init(ctx, genesis_account);
-        builtin_validators::genesis_init(ctx, genesis_account);
-        coin::genesis_init(ctx, genesis_account);
-        account_coin_store::genesis_init(ctx, genesis_account);
-        gas_coin::genesis_init(ctx, genesis_account);
-        transaction_fee::genesis_init(ctx, genesis_account);
-        timestamp::genesis_init(ctx, genesis_account, genesis_context.timestamp);
-        address_mapping::genesis_init(ctx, genesis_account);
-        ethereum_light_client::genesis_init(ctx, genesis_account);
-        onchain_config::genesis_init(ctx, genesis_account, genesis_context.sequencer, genesis_context.gas_schedule_blob);
+        chain_id::genesis_init(genesis_account, genesis_context.chain_id);
+        auth_validator_registry::genesis_init(genesis_account);
+        builtin_validators::genesis_init(genesis_account);
+        coin::genesis_init(genesis_account);
+        account_coin_store::genesis_init(genesis_account);
+        gas_coin::genesis_init(genesis_account);
+        transaction_fee::genesis_init(genesis_account);
+        timestamp::genesis_init(genesis_account, genesis_context.timestamp);
+        address_mapping::genesis_init(genesis_account);
+        ethereum_light_client::genesis_init(genesis_account);
+        onchain_config::genesis_init(genesis_account, genesis_context.sequencer, genesis_context.gas_schedule_blob);
     }
 
 
@@ -56,11 +57,10 @@ module rooch_framework::genesis {
 
     #[test_only]
     /// init the genesis context for test, and return the Context with @rooch_framework genesis account
-    public fun init_for_test(): Context{
-        let ctx = moveos_std::context::new_test_context(@rooch_framework);
-        context::add(&mut ctx, GenesisContext{chain_id: 20230103, timestamp: 0, sequencer: @rooch_framework,
+    public fun init_for_test(){
+        let genesis_account = moveos_std::signer::module_signer<GenesisContext>();
+        tx_context::add_attribute_via_system(&genesis_account, GenesisContext{chain_id: 20230103, timestamp: 0, sequencer: @rooch_framework,
             gas_schedule_blob: vector::empty()});
-        init(&mut ctx);
-        ctx
+        init();
     }
 }

@@ -11,9 +11,7 @@
 
 
 <pre><code><b>use</b> <a href="">0x2::account</a>;
-<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="account.md#0x3_account">0x3::account</a>;
 <b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
 <b>use</b> <a href="address_mapping.md#0x3_address_mapping">0x3::address_mapping</a>;
@@ -30,7 +28,7 @@ Transfer <code>amount</code> of coins <code>CoinType</code> from <code>from</cod
 This public entry function requires the <code>CoinType</code> to have <code>key</code> and <code>store</code> abilities.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin">transfer_coin</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin">transfer_coin</a>&lt;CoinType: store, key&gt;(from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, amount: u256)
 </code></pre>
 
 
@@ -44,7 +42,7 @@ The MultiChainAddress is represented by <code>multichain_id</code> and <code>raw
 This public entry function requires the <code>CoinType</code> to have <code>key</code> and <code>store</code> abilities.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin_to_multichain_address">transfer_coin_to_multichain_address</a>&lt;CoinType: store, key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, from: &<a href="">signer</a>, multichain_id: u64, raw_address: <a href="">vector</a>&lt;u8&gt;, amount: u256)
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_coin_to_multichain_address">transfer_coin_to_multichain_address</a>&lt;CoinType: store, key&gt;(from: &<a href="">signer</a>, multichain_id: u64, raw_address: <a href="">vector</a>&lt;u8&gt;, amount: u256)
 </code></pre>
 
 
@@ -58,5 +56,5 @@ TODO: Currently, we can not pass the <code>Object&lt;T&gt;</code> argument by va
 After the <code>Object&lt;T&gt;</code> argument can be passed by value, we should change the argument type to <code>Object&lt;T&gt;</code>.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_object">transfer_object</a>&lt;T: store, key&gt;(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, <a href="">object_id</a>: <a href="_ObjectID">object_id::ObjectID</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_object">transfer_object</a>&lt;T: store, key&gt;(from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, object_id: <a href="_ObjectID">object::ObjectID</a>)
 </code></pre>

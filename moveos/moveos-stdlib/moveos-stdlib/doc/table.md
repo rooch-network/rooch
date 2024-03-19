@@ -14,7 +14,6 @@ struct itself, while the operations are implemented as native functions. No trav
 -  [Resource `TablePlaceholder`](#0x2_table_TablePlaceholder)
 -  [Struct `Table`](#0x2_table_Table)
 -  [Function `new`](#0x2_table_new)
--  [Function `new_with_id`](#0x2_table_new_with_id)
 -  [Function `add`](#0x2_table_add)
 -  [Function `borrow`](#0x2_table_borrow)
 -  [Function `borrow_with_default`](#0x2_table_borrow_with_default)
@@ -31,7 +30,6 @@ struct itself, while the operations are implemented as native functions. No trav
 
 
 <pre><code><b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 </code></pre>
 
 
@@ -66,19 +64,7 @@ Type of tables
 Create a new Table.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_new">new</a>&lt;K: <b>copy</b>, drop, V: store&gt;(id: <a href="object_id.md#0x2_object_id_UID">object_id::UID</a>): <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;
-</code></pre>
-
-
-
-<a name="0x2_table_new_with_id"></a>
-
-## Function `new_with_id`
-
-Create a table with a given handle.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="table.md#0x2_table_new_with_id">new_with_id</a>&lt;K: <b>copy</b>, drop, V: store&gt;(handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_new">new</a>&lt;K: <b>copy</b>, drop, V: store&gt;(): <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;
 </code></pre>
 
 
@@ -92,7 +78,7 @@ key already exists. The entry itself is not stored in the
 table, and cannot be discovered from it.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_add">add</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K, val: V)
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_add">add</a>&lt;K: <b>copy</b>, drop, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K, val: V)
 </code></pre>
 
 
@@ -105,7 +91,7 @@ Acquire an immutable reference to the value which <code>key</code> maps to.
 Aborts if there is no entry for <code>key</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_borrow">borrow</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K): &V
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_borrow">borrow</a>&lt;K: <b>copy</b>, drop, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K): &V
 </code></pre>
 
 
@@ -118,7 +104,7 @@ Acquire an immutable reference to the value which <code>key</code> maps to.
 Returns specified default value if there is no entry for <code>key</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_borrow_with_default">borrow_with_default</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K, default: &V): &V
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_borrow_with_default">borrow_with_default</a>&lt;K: <b>copy</b>, drop, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K, default: &V): &V
 </code></pre>
 
 
@@ -131,7 +117,7 @@ Acquire a mutable reference to the value which <code>key</code> maps to.
 Aborts if there is no entry for <code>key</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_borrow_mut">borrow_mut</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K): &<b>mut</b> V
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_borrow_mut">borrow_mut</a>&lt;K: <b>copy</b>, drop, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K): &<b>mut</b> V
 </code></pre>
 
 
@@ -144,7 +130,7 @@ Acquire a mutable reference to the value which <code>key</code> maps to.
 Insert the pair (<code>key</code>, <code>default</code>) first if there is no entry for <code>key</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_borrow_mut_with_default">borrow_mut_with_default</a>&lt;K: <b>copy</b>, drop, V: drop&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K, default: V): &<b>mut</b> V
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_borrow_mut_with_default">borrow_mut_with_default</a>&lt;K: <b>copy</b>, drop, V: drop, store&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K, default: V): &<b>mut</b> V
 </code></pre>
 
 
@@ -157,7 +143,7 @@ Insert the pair (<code>key</code>, <code>value</code>) if there is no entry for 
 update the value of the entry for <code>key</code> to <code>value</code> otherwise
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_upsert">upsert</a>&lt;K: <b>copy</b>, drop, V: drop&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K, value: V)
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_upsert">upsert</a>&lt;K: <b>copy</b>, drop, V: drop, store&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K, value: V)
 </code></pre>
 
 
@@ -170,7 +156,7 @@ Remove from <code><a href="table.md#0x2_table">table</a></code> and return the v
 Aborts if there is no entry for <code>key</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_remove">remove</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K): V
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_remove">remove</a>&lt;K: <b>copy</b>, drop, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K): V
 </code></pre>
 
 
@@ -182,7 +168,7 @@ Aborts if there is no entry for <code>key</code>.
 Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an entry for <code>key</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_contains">contains</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K): bool
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_contains">contains</a>&lt;K: <b>copy</b>, drop, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;, key: K): bool
 </code></pre>
 
 
@@ -194,7 +180,7 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 Destroy a table. Aborts if the table is not empty.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_destroy_empty">destroy_empty</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_destroy_empty">destroy_empty</a>&lt;K: <b>copy</b>, drop, V: store&gt;(<a href="table.md#0x2_table">table</a>: <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;)
 </code></pre>
 
 
@@ -206,7 +192,7 @@ Destroy a table. Aborts if the table is not empty.
 Returns the size of the table, the number of key-value pairs
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_length">length</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;): u64
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_length">length</a>&lt;K: <b>copy</b>, drop, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;): u64
 </code></pre>
 
 
@@ -218,7 +204,7 @@ Returns the size of the table, the number of key-value pairs
 Returns true iff the table is empty (if <code>length</code> returns <code>0</code>)
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_is_empty">is_empty</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_is_empty">is_empty</a>&lt;K: <b>copy</b>, drop, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;): bool
 </code></pre>
 
 
@@ -243,5 +229,5 @@ Usable only if the value type <code>V</code> has the <code>drop</code> ability
 Returns table handle of <code><a href="table.md#0x2_table">table</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_handle">handle</a>&lt;K: <b>copy</b>, drop, V&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_handle">handle</a>&lt;K: <b>copy</b>, drop, V: store&gt;(<a href="table.md#0x2_table">table</a>: &<a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>

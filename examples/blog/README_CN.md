@@ -630,7 +630,7 @@ singletonObjects:
 
 ```
 public(friend) fun verify(
-    _ctx: &mut Context, _account: &signer,
+    _account: &signer,
     article_id: ObjectID, blog: &blog::Blog,
 ): blog::ArticleAddedToBlog {
     blog::new_article_added_to_blog(
@@ -639,7 +639,7 @@ public(friend) fun verify(
 }
 
 public(friend) fun mutate(
-    _ctx: &mut Context, _account: &signer,
+    _account: &signer,
     article_added_to_blog: &blog::ArticleAddedToBlog,
     blog: blog::Blog,
 ): blog::Blog {
@@ -657,7 +657,7 @@ public(friend) fun mutate(
 
 ```
     public(friend) fun verify(
-        _ctx: &mut Context, _account: &signer,
+        _account: &signer,
         article_id: ObjectID, blog: &blog::Blog,
     ): blog::ArticleRemovedFromBlog {
         blog::new_article_removed_from_blog(
@@ -666,7 +666,7 @@ public(friend) fun mutate(
     }
 
     public(friend) fun mutate(
-        _ctx: &mut Context, _account: &signer,
+        _account: &signer,
         article_removed_from_blog: &blog::ArticleRemovedFromBlog,
         blog: blog::Blog,
     ): blog::Blog {
@@ -692,11 +692,11 @@ public(friend) fun mutate(
         let title = article_created::title(article_created);
         let body = article_created::body(article_created);
         let article_obj = article::create_article(
-            ctx,
+            
             title,
             body,
         );
-        blog_aggregate::add_article(ctx, _account, article::id(&article_obj));
+        blog_aggregate::add_article(_account, article::id(&article_obj));
         article_obj
     }
 ```
@@ -710,7 +710,7 @@ public(friend) fun mutate(
         //...
     ): Object<article::Article> {
         let _ = article_deleted;
-        blog_aggregate::remove_article(ctx, _account, article::id(&article_obj));
+        blog_aggregate::remove_article(_account, article::id(&article_obj));
         article_obj
     }
 ```
@@ -725,7 +725,7 @@ public(friend) fun mutate(
     public(friend) fun verify(
         //...
     ): article::ArticleUpdated {
-        let _ = ctx;
+        
         assert!(signer::address_of(account) == object::owner(article_obj), ENOT_OWNER_ACCOUNT);
         article::new_article_updated(
             article_obj,
@@ -745,7 +745,7 @@ public(friend) fun mutate(
     public(friend) fun verify(
         //...
     ): article::CommentUpdated {
-        let _ = ctx;
+        
         let comment = article::borrow_comment(article_obj, comment_seq_id);
         assert!(std::signer::address_of(account) == comment::owner(comment), ENOT_OWNER_ACCOUNT);
         article::new_comment_updated(
@@ -762,7 +762,7 @@ public(friend) fun mutate(
     public(friend) fun verify(
         //...
     ): article::CommentRemoved {
-        let _ = ctx;
+        
         let comment = article::borrow_comment(article_obj, comment_seq_id);
         assert!(std::signer::address_of(account) == comment::owner(comment), 111);
         article::new_comment_removed(
@@ -940,13 +940,13 @@ singletonObjects:
 打开文件 `article_create_logic.move`，将下面这行代码：
 
 ```
-        blog_aggregate::add_article(ctx, _account, article::id(&article_obj));
+        blog_aggregate::add_article(_account, article::id(&article_obj));
 ```
 
 修改为：
 
 ```
-        blog_aggregate::add_article(ctx, article::id(&article_obj));
+        blog_aggregate::add_article(article::id(&article_obj));
 ```
 
 ### 修改删除文章的逻辑
@@ -954,13 +954,13 @@ singletonObjects:
 打开文件 `article_delete_logic.move`，将下面这行代码：
 
 ```
-        blog_aggregate::remove_article(ctx, _account, article::id(&article_obj));
+        blog_aggregate::remove_article(_account, article::id(&article_obj));
 ```
 
 修改为：
 
 ```
-        blog_aggregate::remove_article(ctx, article::id(&article_obj));
+        blog_aggregate::remove_article(article::id(&article_obj));
 ```
 
 ### 测试再次改进后的应用

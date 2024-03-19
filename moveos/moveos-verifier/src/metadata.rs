@@ -20,8 +20,6 @@ use move_model::ast::{Attribute, AttributeValue};
 use move_model::model::{FunctionEnv, GlobalEnv, Loc, ModuleEnv, StructEnv};
 use move_model::ty::Type;
 use move_model::ty::{PrimitiveType, ReferenceKind};
-use moveos_types::moveos_std::context::Context;
-use moveos_types::state::MoveStructType;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -471,30 +469,19 @@ impl<'a> ExtendedChecker<'a> {
             }
 
             let arg_tys = &fun.get_parameter_types();
-            if arg_tys.len() != 1 && arg_tys.len() != 2 {
+            if arg_tys.len() > 1 {
                 self.env.error(
                     &fun.get_loc(),
-                    "module init function should have 1 or 2 parameters",
+                    "module init function can only have up to 1 signer parameters",
                 )
             }
             for ty in arg_tys {
                 match ty {
-                    Type::Reference(ReferenceKind::Mutable, bt) => {
-                        let struct_tag = bt.clone().into_struct_tag(self.env);
-                        if struct_tag.is_none() {
-                            self.env.error(
-                                &fun.get_loc(),
-                                "module init function should input a reference structure"
-                            );
-                            return;
-                        }
-
-                        if !check_storage_context_struct_tag(struct_tag.unwrap().to_canonical_string()){
-                            self.env.error(
-                                &fun.get_loc(),
-                                "module init function should not input reference structures other than Context"
-                            )
-                        }
+                    Type::Reference(ReferenceKind::Mutable, _bt) => {
+                        self.env.error(
+                            &fun.get_loc(),
+                            "module init function should not have mutable reference type as parameter",
+                        );
                     }
                     Type::Reference(ReferenceKind::Immutable, bt) => {
                         if bt.as_ref() == &Type::Primitive(PrimitiveType::Signer) {
@@ -517,7 +504,7 @@ impl<'a> ExtendedChecker<'a> {
 
                     _ => self.env.error(
                         &fun.get_loc(),
-                        "module init function only should have two parameter types with signer or storageContext",
+                        "module init function only should have one parameter types with signer",
                     ),
                 }
             }
@@ -607,8 +594,7 @@ pub fn is_allowed_input_struct(name: String, is_ref: bool) -> bool {
         name.as_str(),
         "0x1::string::String"
             | "0x1::ascii::String"
-            | "0x2::object_id::ObjectID"
-            | "0x2::context::Context"
+            | "0x2::object::ObjectID"
     ) ||
     // Object<T> only support passing argument by-ref, not by-value
      (is_ref && name.as_str() == "0x2::object::Object")
@@ -1068,7 +1054,7 @@ fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> b
 fn is_allowed_data_struct_type(full_struct_name: &str) -> bool {
     matches!(
         full_struct_name,
-        "0x1::string::String" | "0x1::ascii::String" | "0x2::object_id::ObjectID"
+        "0x1::string::String" | "0x1::ascii::String" | "0x2::object::ObjectID"
     )
 }
 
@@ -1386,7 +1372,7 @@ fn get_module_env_function<'a>(
     None
 }
 
-fn check_gas_validate_function(fenv: &FunctionEnv, global_env: &GlobalEnv) -> (bool, String) {
+fn check_gas_validate_function(fenv: &FunctionEnv, _global_env: &GlobalEnv) -> (bool, String) {
     let params_types = fenv.get_parameter_types();
     let return_type_count = fenv.get_return_count();
     let mut return_types = vec![];
@@ -1400,36 +1386,7 @@ fn check_gas_validate_function(fenv: &FunctionEnv, global_env: &GlobalEnv) -> (b
     if return_types.is_empty() {
         return (false, "return value length is less than 1".to_string());
     }
-
-    // Length of the params_types array has already been checked above, so unwrap directly here.
-    let storage_ctx_type = params_types.get(0).unwrap();
-    let parameter_checking_result = match storage_ctx_type {
-        Type::Struct(module_id, struct_id, _) => {
-            let struct_name = global_env
-                .get_struct(module_id.qualified(*struct_id))
-                .get_full_name_str();
-            if struct_name != "0x2::context::Context" {
-                (
-                    false,
-                    format!(
-                        "Type {} cannot be used as the first parameter.",
-                        struct_name
-                    ),
-                )
-            } else {
-                (true, "".to_string())
-            }
-        }
-        _ => (
-            false,
-            "Only type 0x2::storage_context::StorageContext can be used as the first parameter."
-                .to_string(),
-        ),
-    };
-
-    if !parameter_checking_result.0 {
-        return parameter_checking_result;
-    }
+    //TODO FIXME
 
     // Length of the return_types array has already been checked above, so unwrap directly here.
     let first_return_type = return_types.get(0).unwrap();
@@ -1439,7 +1396,7 @@ fn check_gas_validate_function(fenv: &FunctionEnv, global_env: &GlobalEnv) -> (b
     }
 }
 
-fn check_gas_charge_post_function(fenv: &FunctionEnv, global_env: &GlobalEnv) -> (bool, String) {
+fn check_gas_charge_post_function(fenv: &FunctionEnv, _global_env: &GlobalEnv) -> (bool, String) {
     let params_types = fenv.get_parameter_types();
     let return_type_count = fenv.get_return_count();
     let mut return_types = vec![];
@@ -1454,29 +1411,7 @@ fn check_gas_charge_post_function(fenv: &FunctionEnv, global_env: &GlobalEnv) ->
         return (false, "Length of return values is less than 1.".to_string());
     }
 
-    // Length of the params_types array has already been checked above, so unwrap directly here.
-    let storage_ctx_type = params_types.get(0).unwrap();
-    match storage_ctx_type {
-        Type::Struct(module_id, struct_id, _) => {
-            let struct_name = global_env
-                .get_struct(module_id.qualified(*struct_id))
-                .get_full_name_str();
-            if struct_name != "0x2::storage_context::StorageContext" {
-                return (
-                    false,
-                    format!(
-                        "Type {} cannot be used as the first parameter.",
-                        struct_name
-                    ),
-                );
-            }
-        }
-        _ => return (
-            false,
-            "Only type 0x2::storage_context::StorageContext can be used as the first parameter."
-                .to_string(),
-        ),
-    }
+    //TODO FIXME
 
     // Length of the params_types array has already been checked above, so unwrap directly here.
     let gas_used_type = params_types.get(1).unwrap();
@@ -1511,10 +1446,6 @@ fn has_attribute(global_env: &GlobalEnv, fun: &FunctionEnv, attr_name: &str) -> 
             false
         }
     })
-}
-
-pub fn check_storage_context_struct_tag(struct_full_name: String) -> bool {
-    struct_full_name == Context::struct_tag().to_canonical_string()
 }
 
 pub fn is_defined_or_allowed_in_current_module(

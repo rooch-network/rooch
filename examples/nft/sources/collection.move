@@ -5,9 +5,9 @@ module nft::collection{
     use std::option::{Self, Option};
     use std::string::{Self, String};
     use moveos_std::display;
-    use moveos_std::object_id::{ObjectID};
+    use moveos_std::object::ObjectID;
     use moveos_std::event;
-    use moveos_std::context::{Self, Context};
+    
     use moveos_std::object;
 
     friend nft::nft;
@@ -34,8 +34,8 @@ module nft::collection{
         description: String,
     }
 
-    fun init(ctx: &mut Context){
-        let collection_display_obj = display::object_display<Collection>(ctx); 
+    fun init(){
+        let collection_display_obj = display::object_display<Collection>(); 
         display::set_value(collection_display_obj, string::utf8(b"name"), string::utf8(b"{value.name}"));
         display::set_value(collection_display_obj, string::utf8(b"uri"), string::utf8(b"https:://base_url/{id}"));
         display::set_value(collection_display_obj, string::utf8(b"description"), string::utf8(b"{value.description}"));
@@ -45,7 +45,7 @@ module nft::collection{
 
     /// Create a new collection Object
     public fun create_collection(
-        ctx: &mut Context,
+        
         name: String,
         creator: address,
         description: String,
@@ -62,8 +62,8 @@ module nft::collection{
             description,
         };
 
-        let collection_obj = context::new_object(
-            ctx,
+        let collection_obj = object::new(
+            
             collection
         );
         let collection_id = object::id(&collection_obj);
@@ -81,13 +81,13 @@ module nft::collection{
     }
 
     entry fun create_collection_entry(
-        ctx: &mut Context,
+        
         name: String,
         creator: address,
         description: String,
         max_supply: u64,
     ) {
-        create_collection(ctx, name, creator, description, option::some(max_supply));
+        create_collection(name, creator, description, option::some(max_supply));
     }
 
     public(friend) fun increment_supply(collection: &mut Collection): Option<u64>{

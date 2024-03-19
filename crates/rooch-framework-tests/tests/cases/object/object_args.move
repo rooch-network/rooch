@@ -3,18 +3,17 @@
 //# publish
 
 module test::m {
-    use moveos_std::context::{Self, Context};
+    
     use moveos_std::object;
 
     struct TestStruct has key, store{
         value: u64
     }
 
-    fun init(ctx: &mut Context){
-        let id = context::new_named_object_uid<TestStruct>(ctx);
-        let obj1 = object::new(id, TestStruct{value: 1});
+    fun init(){
+        let obj1 = object::new_named_object(TestStruct{value: 1});
         std::debug::print(&obj1);
-        object::transfer(obj1, context::sender(ctx));
+        object::transfer(obj1, moveos_std::tx_context::sender());
     }
 
     public fun set_value(test: &mut TestStruct, value: u64){

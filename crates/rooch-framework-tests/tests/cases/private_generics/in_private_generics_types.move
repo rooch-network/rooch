@@ -13,7 +13,7 @@ module creator::foo {
 //# publish
 module creator::bar {
     use std::string::String;
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
 
     struct StructT has copy, drop {
         x: u64,
@@ -121,7 +121,7 @@ script {
     // creator::foo exists
     use creator::foo::{Self, T};
     use std::string::String;
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
 
     fun main(_s: signer) {
         foo::empty_foo<bool>();

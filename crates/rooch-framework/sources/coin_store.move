@@ -4,9 +4,9 @@
 module rooch_framework::coin_store {
 
     use std::string;
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     use moveos_std::object::{Self, Object};
-    use moveos_std::context::{Self, Context};
+    
     use moveos_std::type_info;
     use moveos_std::event;
     use rooch_framework::coin::{Self, Coin};
@@ -94,14 +94,14 @@ module rooch_framework::coin_store {
 
     /// Create a new CoinStore Object for `CoinType` and return the Object
     /// Anyone can create a CoinStore Object for public Coin<CoinType>, the `CoinType` must has `key` and `store` ability
-    public fun create_coin_store<CoinType: key + store>(ctx: &mut Context): Object<CoinStore<CoinType>> {
-        create_coin_store_internal<CoinType>(ctx)
+    public fun create_coin_store<CoinType: key + store>(): Object<CoinStore<CoinType>> {
+        create_coin_store_internal<CoinType>()
     }
 
     #[private_generics(CoinType)]
     /// This function is for the `CoinType` module to extend
-    public fun create_coin_store_extend<CoinType: key>(ctx: &mut Context): Object<CoinStore<CoinType>> {
-        create_coin_store_internal<CoinType>(ctx)
+    public fun create_coin_store_extend<CoinType: key>(): Object<CoinStore<CoinType>> {
+        create_coin_store_internal<CoinType>()
     }
 
     /// Remove the CoinStore Object, return the Coin<T> in balance 
@@ -178,10 +178,10 @@ module rooch_framework::coin_store {
     /// Borrow a mut CoinStore Object by the coin store id
     /// This function is for the `CoinType` module to extend
     public fun borrow_mut_coin_store_extend<CoinType: key>(
-        ctx: &mut Context,
+        
         object_id: ObjectID
     ): &mut Object<CoinStore<CoinType>> {
-        borrow_mut_coin_store_internal(ctx, object_id)
+        borrow_mut_coin_store_internal(object_id)
     }
 
     #[private_generics(CoinType)]
@@ -205,10 +205,10 @@ module rooch_framework::coin_store {
 
     // Internal functions
 
-    public(friend) fun create_coin_store_internal<CoinType: key>(ctx: &mut Context): Object<CoinStore<CoinType>> {
-        coin::check_coin_info_registered<CoinType>(ctx);
+    public(friend) fun create_coin_store_internal<CoinType: key>(): Object<CoinStore<CoinType>> {
+        coin::check_coin_info_registered<CoinType>();
         let coin_type = type_info::type_name<CoinType>();
-        let coin_store_obj = context::new_object(ctx, CoinStore<CoinType> {
+        let coin_store_obj = object::new(CoinStore<CoinType> {
             coin_type,
             balance: Balance { value: 0 },
             frozen: false,
@@ -220,10 +220,10 @@ module rooch_framework::coin_store {
         coin_store_obj
     }
 
-    public(friend) fun create_account_coin_store<CoinType: key>(ctx: &mut Context, account: address): ObjectID {
-        coin::check_coin_info_registered<CoinType>(ctx);
+    public(friend) fun create_account_coin_store<CoinType: key>(account: address): ObjectID {
+        coin::check_coin_info_registered<CoinType>();
         let coin_type = type_info::type_name<CoinType>();
-        let coin_store_obj = context::new_account_named_object(ctx, account, CoinStore<CoinType> {
+        let coin_store_obj = object::new_account_named_object(account, CoinStore<CoinType> {
             coin_type,
             balance: Balance { value: 0 },
             frozen: false,
@@ -238,10 +238,10 @@ module rooch_framework::coin_store {
     }
 
     public(friend) fun borrow_mut_coin_store_internal<CoinType: key>(
-        ctx: &mut Context,
+        
         object_id: ObjectID
     ): &mut Object<CoinStore<CoinType>> {
-        assert!(context::exists_object<CoinStore<CoinType>>(ctx, object_id), ErrorCoinStoreNotFound);
+        assert!(object::exists_object_with_type<CoinStore<CoinType>>(object_id), ErrorCoinStoreNotFound);
         object::borrow_mut_object_extend<CoinStore<CoinType>>(object_id)
     }
 

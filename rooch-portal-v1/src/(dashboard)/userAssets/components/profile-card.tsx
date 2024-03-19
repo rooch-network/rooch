@@ -1,11 +1,15 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { formatAddress } from '@/utils/format'
+import { useWalletStore } from '@roochnetwork/rooch-sdk-kit'
 import { Copy, RotateCcw } from 'lucide-react'
 
 export const ProfileCard = () => {
+  const account = useWalletStore((state) => state.currentAccount)
+
   return (
-    <Card className="relative overflow-hidden w-full border-border/40">
+    <Card className="relative overflow-hidden w-full border-none rounded-lg">
       <CardHeader className="absolute top-0 left-0 z-10 p-4 md:p-6 w-full">
         <div className="flex items-start justify-between">
           <div>
@@ -37,7 +41,7 @@ to-teal-500 dark:from-amber-600 dark:to-teal-600 object-cover w-full h-28 md:h-3
           />
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between relative pb-8 md:pb-14 px-4 md:px-6 dark:bg-primary-foreground shadow-md h-full">
+      <CardFooter className="flex justify-between relative pb-8 md:pb-12 px-4 md:px-6 dark:bg-primary-foreground h-full">
         <div className="absolute">
           <Avatar className="w-12 h-12 md:w-20 md:h-20">
             <AvatarImage src="https://github.com/shadcn.png" alt="Logic" />
@@ -46,11 +50,13 @@ to-teal-500 dark:from-amber-600 dark:to-teal-600 object-cover w-full h-28 md:h-3
         </div>
         <div className="absolute top-0 right-4 md:top-2 md:right-6">
           <div className="flex items-center justify-center gap-1 text-sm text-zinc-800/85 dark:text-white/85">
-            <span>BC1PR6MD...J5</span>
+            <span>
+              {account === null ? 'Wallet Address' : formatAddress(account?.getAddress())}
+            </span>
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full h-8 w-8 hover:bg-transparent/15 transition-all"
+              className="rounded-full h-8 w-8 hover:bg-border transition-all"
             >
               <Copy className="w-4 h-4" />
             </Button>

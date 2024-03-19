@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::moveos_std::object_id;
-use crate::moveos_std::object_id::ObjectID;
+use crate::moveos_std::object;
+use crate::moveos_std::object::ObjectID;
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     state::{MoveStructState, MoveStructType},
@@ -54,7 +54,7 @@ pub struct ModuleStore {
 
 impl ModuleStore {
     pub fn module_store_id() -> ObjectID {
-        object_id::named_object_id(&Self::struct_tag())
+        object::named_object_id(&Self::struct_tag())
     }
 }
 

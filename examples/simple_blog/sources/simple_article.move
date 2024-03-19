@@ -7,9 +7,9 @@ module simple_blog::simple_article {
     use std::signer;
     use std::string::String;
     use moveos_std::event;
-    use moveos_std::object_id::{ObjectID};
+    use moveos_std::object::ObjectID;
     use moveos_std::object::{Self, Object};
-    use moveos_std::context::{Self, Context};
+    
 
     const ErrorDataTooLong: u64 = 1;
     const ErrorNotOwnerAccount: u64 = 2;
@@ -38,7 +38,7 @@ module simple_blog::simple_article {
 
     /// Create article
     public fun create_article(
-        ctx: &mut Context,
+        
         owner: &signer,
         title: String,
         body: String,
@@ -52,8 +52,8 @@ module simple_blog::simple_article {
             body,
         };
         let owner_addr = signer::address_of(owner);
-        let article_obj = context::new_object(
-            ctx,
+        let article_obj = object::new(
+            
             article,
         );
         let id = object::id(&article_obj);

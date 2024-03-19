@@ -17,11 +17,11 @@ module test::m {
 //check module exists
 //# run --signers test
 script {
-    use moveos_std::context::{Self, Context};
+    
     use test::m;
 
-    fun main(ctx: &mut Context) {
-        let sender_addr = context::sender(ctx);
+    fun main() {
+        let sender_addr = moveos_std::tx_context::sender();
         m::emit_withdraw_event(sender_addr, 100);
     }
 }

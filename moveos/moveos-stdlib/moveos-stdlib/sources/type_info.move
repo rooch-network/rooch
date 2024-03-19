@@ -321,24 +321,24 @@ module moveos_std::type_info {
             vector::push_back(&mut vector_complex, copy null_element);
             i = i + 1; // Increment counter.
         };
-        assert!( // Vector base size is still 1 byte.
+        assert!(// Vector base size is still 1 byte.
             size_of_val(&vector_complex) - element_size * i == base_size_1, 0);
         // Add another element, exceeding the cutoff.
         vector::push_back(&mut vector_complex, null_element);
         i = i + 1; // Increment counter.
-        assert!( // Vector base size is now 2 bytes.
+        assert!(// Vector base size is now 2 bytes.
             size_of_val(&vector_complex) - element_size * i == base_size_2, 0);
         while (i < n_elems_cutoff_2) { // Iterate until second cutoff:
             // Add an element.
             vector::push_back(&mut vector_complex, copy null_element);
             i = i + 1; // Increment counter.
         };
-        assert!( // Vector base size is still 2 bytes.
+        assert!(// Vector base size is still 2 bytes.
             size_of_val(&vector_complex) - element_size * i == base_size_2, 0);
         // Add another element, exceeding the cutoff.
         vector::push_back(&mut vector_complex, null_element);
         i = i + 1; // Increment counter.
-        assert!( // Vector base size is now 3 bytes.
+        assert!(// Vector base size is now 3 bytes.
             size_of_val(&vector_complex) - element_size * i == base_size_3, 0);
     }
 

@@ -4,14 +4,14 @@
 module bitcoin_move::utxo{
     use std::vector;
     use std::string::String;
-    use moveos_std::object_id;
-    use moveos_std::object_id::ObjectID;
-    use moveos_std::context::{Self, Context};
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::simple_multimap::{Self, SimpleMultiMap};
     use moveos_std::type_info;
+    use moveos_std::bag;
 
     friend bitcoin_move::light_client;
+
+    const TEMPORARY_AREA: vector<u8> = b"temporary_area";
 
     /// The transaction output ID
     struct OutputID has store, copy, drop {
@@ -43,7 +43,7 @@ module bitcoin_move::utxo{
         object_id: ObjectID,
     }
 
-    public(friend) fun new(ctx: &mut Context, txid: address, vout: u32, value: u64) : Object<UTXO> {
+    public(friend) fun new(txid: address, vout: u32, value: u64) : Object<UTXO> {
         let id = OutputID{
             txid: txid,
             vout: vout,
@@ -54,7 +54,7 @@ module bitcoin_move::utxo{
             value: value,
             seals: simple_multimap::new(),
         };
-        context::new_custom_object(ctx, id, utxo)
+        object::new_custom_object(id, utxo)
     }
 
     public fun new_id(txid: address, vout: u32) : OutputID {
@@ -79,22 +79,21 @@ module bitcoin_move::utxo{
         utxo.vout
     }
 
-
-    public fun exists_utxo(ctx: &Context, txid: address, vout: u32): bool{
+    public fun exists_utxo(txid: address, vout: u32): bool{
         let id = OutputID{
             txid: txid,
             vout: vout,
         };
-        let object_id = object_id::custom_object_id<OutputID,UTXO>(id);
-        context::exists_object<UTXO>(ctx, object_id)
+        let object_id = object::custom_object_id<OutputID,UTXO>(id);
+        object::exists_object_with_type<UTXO>(object_id)
     }
 
-    public fun borrow_utxo(_ctx: &Context, txid: address, vout: u32): &Object<UTXO>{
+    public fun borrow_utxo(txid: address, vout: u32): &Object<UTXO>{
         let id = OutputID{
             txid: txid,
             vout: vout,
         };
-        let object_id = object_id::custom_object_id<OutputID,UTXO>(id);
+        let object_id = object::custom_object_id<OutputID,UTXO>(id);
         object::borrow_object(object_id)
     }
 
@@ -145,11 +144,15 @@ module bitcoin_move::utxo{
         object::transfer_extend(utxo_obj, to);
     }
 
-    public(friend) fun take(ctx: &mut Context, object_id: ObjectID): (address, Object<UTXO>){
-        context::take_object_extend<UTXO>(ctx, object_id)
+    public(friend) fun take(object_id: ObjectID): (address, Object<UTXO>){
+        object::take_object_extend<UTXO>(object_id)
     }
 
     public(friend) fun remove(utxo_obj: Object<UTXO>): SimpleMultiMap<String, ObjectID>{
+        if(object::contains_field(&utxo_obj, TEMPORARY_AREA)){
+            let bag = object::remove_field(&mut utxo_obj, TEMPORARY_AREA);
+            bag::drop(bag);
+        };
         let utxo = object::remove(utxo_obj);
         let UTXO{txid:_, vout:_, value:_, seals} = utxo;
         seals
@@ -181,13 +184,102 @@ module bitcoin_move::utxo{
         (output_index, object_id)
     }
 
+    // ==== Temporary Area ===
+
+    #[private_generics(S)]
+    public fun add_temp_state<S: store + drop>(utxo: &mut Object<UTXO>, state: S){
+        if(object::contains_field(utxo, TEMPORARY_AREA)){
+            let bag = object::borrow_mut_field(utxo, TEMPORARY_AREA);
+            let name = type_info::type_name<S>();
+            bag::add_dropable(bag, name, state);
+        }else{
+            let bag = bag::new_dropable();
+            let name = type_info::type_name<S>();
+            bag::add_dropable(&mut bag, name, state);
+            object::add_field(utxo, TEMPORARY_AREA, bag);
+        }
+    }
+
+    public fun contains_temp_state<S: store + drop>(utxo: &Object<UTXO>) : bool {
+        if(object::contains_field(utxo, TEMPORARY_AREA)){
+            let bag = object::borrow_field(utxo, TEMPORARY_AREA);
+            let name = type_info::type_name<S>();
+            bag::contains(bag, name)
+        }else{
+            false
+        }
+    }
+
+    public fun borrow_temp_state<S: store + drop>(utxo: &Object<UTXO>) : &S {
+        let bag = object::borrow_field(utxo, TEMPORARY_AREA);
+        let name = type_info::type_name<S>();
+        bag::borrow(bag, name)
+    }
+
+    #[private_generics(S)]
+    public fun borrow_mut_temp_state<S: store + drop>(utxo: &mut Object<UTXO>) : &mut S {
+        let bag = object::borrow_mut_field(utxo, TEMPORARY_AREA);
+        let name = type_info::type_name<S>();
+        bag::borrow_mut(bag, name)
+    }
+
+    #[private_generics(S)]
+    public fun remove_temp_state<S: store + drop>(utxo: &mut Object<UTXO>) : S {
+        let bag = object::borrow_mut_field(utxo, TEMPORARY_AREA);
+        let name = type_info::type_name<S>();
+        bag::remove(bag, name)
+    }
+
+    #[test_only]
+    public fun new_for_testing(txid: address, vout: u32, value: u64) : Object<UTXO> {
+        new(txid, vout, value)
+    }
+
+    #[test_only]
+    public fun drop_for_testing(utxo: Object<UTXO>){
+        let seals = remove(utxo);
+        simple_multimap::drop(seals);
+    }
+
     #[test]
     fun test_id(){
         let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
         let vout = 0;
         let id = new_id(txid, vout);
-        let object_id = object_id::custom_object_id<OutputID,UTXO>(id);
+        let object_id = object::custom_object_id<OutputID,UTXO>(id);
         //std::debug::print(&object_id);
         assert!(std::bcs::to_bytes(&object_id) == x"b8fc937bf3c15abe49c95fa6906aff29087149f542b48db0cf25dce671a68a63", 1);
+    }
+
+    #[test]
+    fun test_remove(){
+        let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let vout = 0;
+        let utxo = new(txid, vout, 100);
+        let seals = remove(utxo);
+        simple_multimap::drop(seals);
+    }
+
+    struct TempState has store, copy, drop {
+        value: u64,
+    }
+
+    #[test]
+    fun test_temporary_area(){
+        let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let vout = 0;
+        let utxo = new(txid, vout, 100);
+        add_temp_state(&mut utxo, TempState{value: 10});
+        assert!(contains_temp_state<TempState>(&utxo), 1000);
+        assert!(borrow_temp_state<TempState>(&utxo).value == 10, 1001);
+        {
+            let state = borrow_mut_temp_state<TempState>(&mut utxo);
+            state.value = 20;
+        };
+        let state = remove_temp_state<TempState>(&mut utxo);
+        assert!(state.value == 20, 1);
+        assert!(!contains_temp_state<TempState>(&utxo), 1002);
+        let seals = remove(utxo);
+        simple_multimap::drop(seals);
     }
 }

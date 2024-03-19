@@ -14,7 +14,7 @@ use move_core_types::language_storage::StructTag;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
 use moveos_types::move_types::{random_struct_tag, random_type_tag};
-use moveos_types::moveos_std::object_id::ObjectID;
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::{MoveStructType, SplitStateChangeSet};
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};

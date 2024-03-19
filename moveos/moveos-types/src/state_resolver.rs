@@ -5,7 +5,7 @@ use crate::move_std::ascii::MoveAsciiString;
 use crate::move_std::string::MoveString;
 use crate::moveos_std::account::Account;
 use crate::moveos_std::move_module::ModuleStore;
-use crate::moveos_std::object_id::ObjectID;
+use crate::moveos_std::object::ObjectID;
 use crate::state::{AnnotatedKeyState, KeyState, MoveStructType};
 use crate::{
     access_path::AccessPath,

@@ -3,12 +3,10 @@
 
 module moveos_std::display{
     use std::string::String;
-    use moveos_std::object_id;
     use moveos_std::object::{Self, Object};
-    use moveos_std::context::{Self, Context};
     use moveos_std::simple_map;
 
-    /// Display<T> is is used to define the display of the `T`
+    /// Display<T> is used to define the display of the `T`
     struct Display<phantom T> has key {
         sample_map: simple_map::SimpleMap<String, String>
     }
@@ -16,10 +14,10 @@ module moveos_std::display{
     #[private_generics(T)]
     /// Create or borrow_mut Display object for resource `T`
     /// Only the module of `T` can call this function.
-    public fun resource_display<T: key>(ctx: &mut Context): &mut Object<Display<T>> {
-        let object_id = object_id::named_object_id<Display<T>>();
-        if (!context::exists_object<Display<T>>(ctx, object_id)) {
-            let display_obj = context::new_named_object(ctx, Display<T> {
+    public fun resource_display<T: key>(): &mut Object<Display<T>> {
+        let object_id = object::named_object_id<Display<T>>();
+        if (!object::exists_object(object_id)) {
+            let display_obj = object::new_named_object(Display<T> {
                 sample_map: simple_map::create()
             });
             //We transfer the display object to the moveos_std
@@ -32,10 +30,10 @@ module moveos_std::display{
     #[private_generics(T)]
     /// Create or borrow_mut Display object for `Object<T>`
     /// Only the module of `T` can call this function.
-    public fun object_display<T: key>(ctx: &mut Context): &mut Object<Display<Object<T>>> {
-        let object_id = object_id::named_object_id<Display<Object<T>>>();
-        if (!context::exists_object<Display<Object<T>>>(ctx, object_id)) {
-            let display_obj = context::new_named_object(ctx, Display<Object<T>> {
+    public fun object_display<T: key>(): &mut Object<Display<Object<T>>> {
+        let object_id = object::named_object_id<Display<Object<T>>>();
+        if (!object::exists_object(object_id)) {
+            let display_obj = object::new_named_object(Display<Object<T>> {
                 sample_map: simple_map::create()
             });
             //We transfer the display object to the moveos_std

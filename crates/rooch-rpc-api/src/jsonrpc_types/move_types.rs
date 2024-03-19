@@ -12,7 +12,7 @@ use move_core_types::{
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types::parse_module_id;
-use moveos_types::moveos_std::object_id::ObjectID;
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::type_info::TypeInfo;
 use moveos_types::transaction::MoveAction;
 use moveos_types::{

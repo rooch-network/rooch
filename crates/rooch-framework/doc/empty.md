@@ -11,8 +11,7 @@ It is used to test or demo some use cases
 -  [Function `empty`](#0x3_empty_empty)
 
 
-<pre><code><b>use</b> <a href="">0x2::context</a>;
-<b>use</b> <a href="">0x2::object</a>;
+<pre><code><b>use</b> <a href="">0x2::object</a>;
 </code></pre>
 
 

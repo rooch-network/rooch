@@ -11,7 +11,7 @@ use move_core_types::effects::Op;
 use moveos_types::state::{AnnotatedKeyState, KeyState, TableChangeSet};
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
-    moveos_std::object_id::ObjectID,
+    moveos_std::object::ObjectID,
     state::{AnnotatedState, State, StateChangeSet, TableChange, TableTypeInfo},
 };
 use rooch_types::indexer::state::{

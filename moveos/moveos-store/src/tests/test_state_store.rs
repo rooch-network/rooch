@@ -9,9 +9,8 @@ use moveos_types::h256::H256;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types::random_type_tag;
 use moveos_types::moveos_std::account::Account;
-use moveos_types::moveos_std::context;
-use moveos_types::moveos_std::object::{ObjectEntity, GENESIS_STATE_ROOT};
-use moveos_types::moveos_std::object_id::ObjectID;
+use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::object::{self, ObjectEntity, GENESIS_STATE_ROOT};
 use moveos_types::state::{KeyState, MoveState, MoveType, State, StateChangeSet, TableChange};
 use rand::{thread_rng, Rng};
 use smt::NodeStore;
@@ -78,7 +77,7 @@ fn random_state_change_set() -> StateChangeSet {
 
     state_change_set
         .changes
-        .insert(context::GLOBAL_OBJECT_STORAGE_HANDLE, global_change);
+        .insert(object::GLOBAL_OBJECT_STORAGE_HANDLE, global_change);
 
     state_change_set
 }
@@ -96,7 +95,7 @@ fn test_statedb() {
     );
     table_change_set
         .changes
-        .insert(context::GLOBAL_OBJECT_STORAGE_HANDLE, global_change);
+        .insert(object::GLOBAL_OBJECT_STORAGE_HANDLE, global_change);
     let mut table_change = TableChange::default();
     let key = KeyState::new(
         MoveString::from_str("test_key").unwrap().to_bytes(),

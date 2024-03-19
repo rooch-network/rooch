@@ -4,10 +4,8 @@
 /// This module provides the foundation for typesafe Coins.
 module rooch_framework::coin {
     use std::string;
-    use moveos_std::object_id;
-    use moveos_std::object_id::ObjectID;
-    use moveos_std::object::{Self, Object};
-    use moveos_std::context::{Self, Context};
+    use moveos_std::object::{Self, ObjectID, Object};
+    
     use moveos_std::event;
     use moveos_std::type_info::Self;
 
@@ -105,7 +103,7 @@ module rooch_framework::coin {
         amount: u256,
     }
 
-    public(friend) fun genesis_init(_ctx: &mut Context, _genesis_account: &signer) {}
+    public(friend) fun genesis_init(__genesis_account: &signer) {}
 
     //
     // Public functions
@@ -118,19 +116,19 @@ module rooch_framework::coin {
     }
 
     /// A helper function that check the `CoinType` is registered, if not, abort.
-    public fun check_coin_info_registered<CoinType: key>(ctx: &Context) {
-        assert!(is_registered<CoinType>(ctx), ErrorCoinInfoNotRegistered);
+    public fun check_coin_info_registered<CoinType: key>() {
+        assert!(is_registered<CoinType>(), ErrorCoinInfoNotRegistered);
     }
 
     /// Returns `true` if the type `CoinType` is an registered coin.
-    public fun is_registered<CoinType: key>(ctx: &Context): bool {
+    public fun is_registered<CoinType: key>(): bool {
         let object_id = coin_info_id<CoinType>();
-        context::exists_object<CoinInfo<CoinType>>(ctx, object_id)
+        object::exists_object_with_type<CoinInfo<CoinType>>(object_id)
     }
 
     /// Return the ObjectID of Object<CoinInfo<CoinType>>
     public fun coin_info_id<CoinType: key>(): ObjectID {
-        object_id::named_object_id<CoinInfo<CoinType>>()
+        object::named_object_id<CoinInfo<CoinType>>()
     }
 
     /// Returns the name of the coin.
@@ -201,9 +199,9 @@ module rooch_framework::coin {
     }
 
     /// Borrow the CoinInfo<CoinType>
-    public fun coin_info<CoinType: key>(ctx: &Context): &CoinInfo<CoinType> {
+    public fun coin_info<CoinType: key>(): &CoinInfo<CoinType> {
         let coin_info_id = coin_info_id<CoinType>();
-        assert!(context::exists_object<CoinInfo<CoinType>>(ctx, coin_info_id), ErrorCoinInfosNotFound);
+        assert!(object::exists_object_with_type<CoinInfo<CoinType>>(coin_info_id), ErrorCoinInfosNotFound);
         let coin_info_obj = object::borrow_object<CoinInfo<CoinType>>(coin_info_id);
         object::borrow(coin_info_obj)
     }
@@ -216,13 +214,13 @@ module rooch_framework::coin {
     /// Creates a new Coin with given `CoinType`
     /// This function is protected by `private_generics`, so it can only be called by the `CoinType` module.
     public fun register_extend<CoinType: key>(
-        ctx: &mut Context,
+        
         name: string::String,
         symbol: string::String,
         decimals: u8,
     ): Object<CoinInfo<CoinType>> {
         assert!(
-            !is_registered<CoinType>(ctx),
+            !is_registered<CoinType>(),
             ErrorCoinInfoAlreadyRegistered,
         );
 
@@ -238,7 +236,7 @@ module rooch_framework::coin {
             decimals,
             supply: 0u256,
         };
-        context::new_named_object(ctx, coin_info)
+        object::new_named_object(coin_info)
     }
 
     /// Public coin can mint by anyone with the mutable Object<CoinInfo<CoinType>>
@@ -309,5 +307,10 @@ module rooch_framework::coin {
         Coin<CoinType> {
             value
         }
+    }
+
+    #[test_only]
+    public fun destroy_for_testing<CoinType: key>(coin: Coin<CoinType>) {
+        let Coin { value:_ } = coin;
     }
 }

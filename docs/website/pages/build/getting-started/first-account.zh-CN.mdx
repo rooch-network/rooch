@@ -1,0 +1,43 @@
+# First account
+
+这篇教程主要介绍获取 Rooch 账户的方法。
+
+## 使用 CLI 获取 Rooch 账户
+
+使用命令行获取 Rooch 的方式有两个：默认初始化时自动创建一个默认账户，手动调用创建账户的命令来生成新的账户。
+
+1. 默认账户
+
+```bash
+[joe@mx ~]$ rooch init
+Rooch server config file generated at /home/joe/.rooch/rooch_config/server.yaml
+Creating client config file ["/home/joe/.rooch/rooch_config/rooch.yaml"] with rooch native validator.
+Enter a password to encrypt the keys. Press enter to leave it an empty password:
+Generated new keypair for address [0xd1d967e18284e5289adccf4df9b9f2c9f60c4ea8872d3027df7a8c3972460a75]
+Secret Recovery Phrase : [trust please grit chief ankle brick bean level infant embark chronic zebra]
+Rooch client config file generated at /home/joe/.rooch/rooch_config/rooch.yaml
+null
+```
+
+这里生成了一个 `0xd1d967e18284e5289adccf4df9b9f2c9f60c4ea8872d3027df7a8c3972460a75` 账户，以及它的恢复短语（助记词）。
+
+这个是使用 `rooch init` 初始化 Rooch 配置时生成的账户，账户存储在 `$HOME/.rooch/rooch_config/rooch.keystore` 里。
+
+2. 手动创建
+
+```bash
+[joe@mx ~]$ rooch account create
+Generated new keypair for address with key pair type [0xaecf8918b5ffc84a4bf4a8710220e70d1ec47beda53534f0c57689f82548048a]
+Secret Recovery Phrase : [trust please grit chief ankle brick bean level infant embark chronic zebra]
+"0xaecf8918b5ffc84a4bf4a8710220e70d1ec47beda53534f0c57689f82548048a"
+```
+
+这里手动创建了一个新的账户，`0xaecf8918b5ffc84a4bf4a8710220e70d1ec47beda53534f0c57689f82548048a`。
+
+这个账户地址属于同一套助记词派生而来，因此也可以使用相同的助记词来恢复。
+
+## 使用 DashBoard 关联 Rooch 账户
+
+使用 UniSat 或 Metamask 登陆时，自动关联一个 Rooch 账户地址。
+
+TODO: The display function need to implement!

@@ -21,13 +21,13 @@ module test::m {
 //check private_generics verify
 //# run --signers A
 script {
-    use moveos_std::context::{Self, Context};
+    
     use moveos_std::object;
     use test::m::{Self, TestStruct};
 
-    fun main(ctx: &mut Context) {
+    fun main() {
         let object = m::new_test_struct(12);
-        let obj_ref = context::new_object<TestStruct>(ctx, object);
+        let obj_ref = object::new<TestStruct>(object);
         let test_struct = object::remove(obj_ref);
         m::destroy_test_struct(test_struct);
     }

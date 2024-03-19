@@ -15,7 +15,6 @@ pub fn query_inscription(
     txid: String,
     index: String,
 ) -> Result<Option<InscriptionStateView>> {
-    // let index = index.parse::<u32>()?;
     let query_param = format!(
         "{{\"inscription_id\":{{\"txid\":\"{}\", \"index\":{} }} }}",
         txid, index

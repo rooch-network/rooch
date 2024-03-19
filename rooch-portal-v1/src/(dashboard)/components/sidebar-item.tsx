@@ -31,7 +31,7 @@ export const SidebarItem = ({ icon: Icon, label, href, onClose }: SidebarItemPro
       variant="ghost"
       size="lg"
       className={cn(
-        'flex items-center justify-start text-zinc-500 dark:text-zinc-200 hover:dark-white text-sm font-[500] transition-all hover:text-zinc-600 dark:hover:text-white hover:bg-zinc-300/20 dark:hover:bg-zinc-800/50 px-2',
+        'flex items-center justify-start text-zinc-500 dark:text-muted-foreground hover:dark-white text-sm font-[500] transition-all hover:text-zinc-600 dark:hover:text-white hover:bg-zinc-300/20 dark:hover:bg-zinc-800/50 px-2',
         isActive &&
           'text-zinc-700 dark:text-white bg-zinc-200/50 dark:bg-zinc-800/90 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/90 hover:text-zinc-700 dark:hover:text-white',
       )}
@@ -40,7 +40,7 @@ export const SidebarItem = ({ icon: Icon, label, href, onClose }: SidebarItemPro
         <Icon
           size={22}
           className={cn(
-            'text-zinc-500 dark:text-zinc-200',
+            'text-zinc-500 dark:text-muted-foreground',
             isActive && 'text-zinc-700 dark:text-white',
           )}
         />

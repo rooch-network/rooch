@@ -22,7 +22,7 @@ use move_core_types::language_storage::StructTag;
 use moveos_config::store_config::RocksdbConfig;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{Event, EventID, TransactionEvent};
-use moveos_types::moveos_std::object_id::ObjectID;
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{KeyState, State};
 use moveos_types::state_resolver::StateResolver;

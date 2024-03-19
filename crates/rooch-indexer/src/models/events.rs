@@ -8,7 +8,7 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::EventID;
-use moveos_types::moveos_std::object_id::ObjectID;
+use moveos_types::moveos_std::object::ObjectID;
 use rooch_types::indexer::event_filter::{IndexerEvent, IndexerEventID};
 use std::str::FromStr;
 

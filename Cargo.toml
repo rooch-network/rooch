@@ -14,6 +14,7 @@ members = [
     "moveos/raw-store",
     "moveos/metrics",
     "moveos/moveos-config",
+    "moveos/moveos-wasm",
     "moveos/moveos-object-runtime",
     "crates/rooch-key",
     "crates/rooch-types",
@@ -80,6 +81,7 @@ moveos-verifier = { path = "moveos/moveos-verifier" }
 raw-store = { path = "moveos/raw-store" }
 metrics = { path = "moveos/metrics" }
 moveos-config = { path = "moveos/moveos-config" }
+moveos-wasm = { path = "moveos/moveos-wasm" }
 moveos-object-runtime = { path = "moveos/moveos-object-runtime" }
 
 # crates for Rooch
@@ -250,6 +252,8 @@ criterion = { version = "0.5.1", features = [
 xxhash-rust = "0.8.8"
 base64 = "0.21.3"
 #criterion-cpu-time = "0.1.0"
+wasmer = "4.2.5"
+ciborium = "0.2.1"
 pprof = { version = "0.13.0", features = ["flamegraph", "criterion", "cpp", "frame-pointer", "protobuf-codec"] }
 
 

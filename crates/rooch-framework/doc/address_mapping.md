@@ -27,10 +27,8 @@
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
-<b>use</b> <a href="">0x2::context</a>;
 <b>use</b> <a href="">0x2::core_addresses</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="multichain_address.md#0x3_multichain_address">0x3::multichain_address</a>;
 </code></pre>
@@ -68,7 +66,7 @@
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_genesis_init">genesis_init</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, _genesis_account: &<a href="">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -80,7 +78,7 @@
 Return AddressMapping table handle, including mapping and reverse_mapping table handle
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_address_mapping_handle">address_mapping_handle</a>(_ctx: &<a href="_Context">context::Context</a>): (<a href="_ObjectID">object_id::ObjectID</a>, <a href="_ObjectID">object_id::ObjectID</a>, <a href="_ObjectID">object_id::ObjectID</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_address_mapping_handle">address_mapping_handle</a>(): (<a href="_ObjectID">object::ObjectID</a>, <a href="_ObjectID">object::ObjectID</a>, <a href="_ObjectID">object::ObjectID</a>)
 </code></pre>
 
 
@@ -92,7 +90,7 @@ Return AddressMapping table handle, including mapping and reverse_mapping table 
 Borrow the address mapping object
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_borrow">borrow</a>(_ctx: &<a href="_Context">context::Context</a>): &<a href="_Object">object::Object</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">address_mapping::AddressMapping</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_borrow">borrow</a>(): &<a href="_Object">object::Object</a>&lt;<a href="address_mapping.md#0x3_address_mapping_AddressMapping">address_mapping::AddressMapping</a>&gt;
 </code></pre>
 
 
@@ -161,7 +159,7 @@ Return the first multi chain address for the rooch address with the same multich
 Resolve a multi-chain address to a rooch address
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve">resolve</a>(ctx: &<a href="_Context">context::Context</a>, maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve">resolve</a>(maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;
 </code></pre>
 
 
@@ -173,7 +171,7 @@ Resolve a multi-chain address to a rooch address
 Resolve a multi-chain address to a rooch address, if not exists, generate a new rooch address
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_or_generate">resolve_or_generate</a>(ctx: &<a href="_Context">context::Context</a>, maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_resolve_or_generate">resolve_or_generate</a>(maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): <b>address</b>
 </code></pre>
 
 
@@ -185,7 +183,7 @@ Resolve a multi-chain address to a rooch address, if not exists, generate a new 
 Check if a multi-chain address is bound to a rooch address
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_exists_mapping">exists_mapping</a>(ctx: &<a href="_Context">context::Context</a>, maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_exists_mapping">exists_mapping</a>(maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>): bool
 </code></pre>
 
 
@@ -198,7 +196,7 @@ Bind a multi-chain address to the sender's rooch address
 The caller need to ensure the relationship between the multi-chain address and the rooch address
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind">bind</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, sender: &<a href="">signer</a>, maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind">bind</a>(sender: &<a href="">signer</a>, maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>)
 </code></pre>
 
 
@@ -211,7 +209,7 @@ Bind a multi-chain address to the rooch address
 Called by system
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_by_system">bind_by_system</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, system: &<a href="">signer</a>, rooch_address: <b>address</b>, maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_by_system">bind_by_system</a>(system: &<a href="">signer</a>, rooch_address: <b>address</b>, maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>)
 </code></pre>
 
 
@@ -223,5 +221,5 @@ Called by system
 Bind a rooch address to a multi-chain address
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_no_check">bind_no_check</a>(ctx: &<b>mut</b> <a href="_Context">context::Context</a>, rooch_address: <b>address</b>, maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="address_mapping.md#0x3_address_mapping_bind_no_check">bind_no_check</a>(rooch_address: <b>address</b>, maddress: <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>)
 </code></pre>

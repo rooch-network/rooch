@@ -6,7 +6,7 @@ use crate::moveos_std::move_module::ModuleStore;
 use crate::state::KeyState;
 use crate::{
     move_types::{random_identity, random_struct_tag},
-    moveos_std::object_id::ObjectID,
+    moveos_std::object::ObjectID,
     state_resolver::{self, module_id_to_key, resource_tag_to_key},
 };
 use anyhow::Result;

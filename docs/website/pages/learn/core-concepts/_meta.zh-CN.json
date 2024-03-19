@@ -1,0 +1,11 @@
+{
+  "accounts": "账户",
+  "transaction": "交易",
+  "objects": "对象",
+  "token": "代币",
+  "move-contracts": "Move 概念",
+  "token": {
+    "title": "Token",
+    "display": "hidden"
+  }
+}

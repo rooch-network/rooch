@@ -9,7 +9,6 @@ TypeTable is a table use struct Type as Key, struct as Value
 -  [Resource `TablePlaceholder`](#0x2_type_table_TablePlaceholder)
 -  [Struct `TypeTable`](#0x2_type_table_TypeTable)
 -  [Function `new`](#0x2_type_table_new)
--  [Function `new_with_id`](#0x2_type_table_new_with_id)
 -  [Function `key`](#0x2_type_table_key)
 -  [Function `add`](#0x2_type_table_add)
 -  [Function `borrow`](#0x2_type_table_borrow)
@@ -23,7 +22,6 @@ TypeTable is a table use struct Type as Key, struct as Value
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
 <b>use</b> <a href="">0x1::type_name</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 </code></pre>
 
 
@@ -57,19 +55,7 @@ TypeTable is a table use struct Type as Key, struct as Value
 Create a new Table.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_new">new</a>(id: <a href="object_id.md#0x2_object_id_UID">object_id::UID</a>): <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>
-</code></pre>
-
-
-
-<a name="0x2_type_table_new_with_id"></a>
-
-## Function `new_with_id`
-
-Create a new Table with a given handle.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="type_table.md#0x2_type_table_new_with_id">new_with_id</a>(handle: <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>): <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_new">new</a>(): <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>
 </code></pre>
 
 
@@ -94,7 +80,7 @@ Add a new entry of <code>V</code> to the table. Aborts if an entry for
 entry of <code>V</code> type already exists.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_add">add</a>&lt;V: key&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>, val: V)
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_add">add</a>&lt;V: store, key&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>, val: V)
 </code></pre>
 
 
@@ -107,7 +93,7 @@ Acquire an immutable reference to the value which type is <code>V</code>.
 Aborts if there is no entry for <code>V</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_borrow">borrow</a>&lt;V: key&gt;(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>): &V
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_borrow">borrow</a>&lt;V: store, key&gt;(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>): &V
 </code></pre>
 
 
@@ -120,7 +106,7 @@ Acquire a mutable reference to the value which type is <code>V</code>.
 Aborts if there is no entry for <code>V</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_borrow_mut">borrow_mut</a>&lt;V: key&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>): &<b>mut</b> V
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_borrow_mut">borrow_mut</a>&lt;V: store, key&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>): &<b>mut</b> V
 </code></pre>
 
 
@@ -133,7 +119,7 @@ Remove from <code><a href="table.md#0x2_table">table</a></code> and return the v
 Aborts if there is no entry for <code>V</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_remove">remove</a>&lt;V: key&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>): V
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_remove">remove</a>&lt;V: store, key&gt;(<a href="table.md#0x2_table">table</a>: &<b>mut</b> <a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>): V
 </code></pre>
 
 
@@ -145,7 +131,7 @@ Aborts if there is no entry for <code>V</code>.
 Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an entry for type <code>V</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_contains">contains</a>&lt;V: key&gt;(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_contains">contains</a>&lt;V: store, key&gt;(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>): bool
 </code></pre>
 
 
@@ -157,7 +143,7 @@ Returns true if <code><a href="table.md#0x2_table">table</a></code> contains an 
 Returns table handle of <code><a href="table.md#0x2_table">table</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_handle">handle</a>(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="type_table.md#0x2_type_table_handle">handle</a>(<a href="table.md#0x2_table">table</a>: &<a href="type_table.md#0x2_type_table_TypeTable">type_table::TypeTable</a>): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 

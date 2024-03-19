@@ -1,0 +1,116 @@
+---
+title:  Stackable L2 — A New Scaling Solution
+description: "Stackable L2 refers to an L2 scaling solution that fully include the state of L1 within L2."
+author: jolestar
+date: 2024/03/05
+category: Technology
+---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
+
+The interoperability between Layer 2 (L2) and Layer 1 (L1), and how L2 can read the state on L1, has always been a challenge in the design of L2 solutions. The general approach is through state proofs, which need to address two issues:
+
+1. How does L2 know the state root of L1?
+2. The expression of the state proof, including various state trees or zk proofs, needs to trade-off between cost and convenience.
+
+This approach has been discussed in detail in Vitalik's article "Deeper dive on cross-L2 reading for wallets and other use cases." Rooch's original multi-chain settlement solution also used similar technology, where L2 embeds a light node of L1 to verify L1 blocks to obtain the L1 state root. However, this solution encounters challenges when applied to Bitcoin:
+
+1. Bitcoin's UTXO does not have a state tree, so it's not possible to directly prove whether a UTXO was spent at a certain block height; it can only be proven through transaction proofs that confirm whether a transaction is included in a block.
+2. To also support the proof of additional information attached to Bitcoin's UTXO, such as RGB, inscriptions (Ordinals), there is an even greater challenge to prove the association between the transaction's inputs and outputs.
+
+Here's a bit of foundational knowledge about Bitcoin: when Bitcoin's consensus protocol verifies blocks, it only checks whether the BTC amounts in the inputs and outputs match and does not concern itself with the relationship between the inputs and outputs.
+
+![Bitcointransactions](https://en.bitcoin.it/w/images/en/f/f1/Bitcointransactions.JPG)
+
+(source https://en.bitcoin.it/wiki/File:Bitcointransactions.JPG)
+
+For example, in the above transaction, Bitcoin consensus only verifies that sum(input) = sum(output) + fee. If the input carries additional information, which output does it transfer to? This is the problem that extended protocols on Bitcoin need to solve, and they each have devised a rule for mapping between input and output, such as RGB/Runs specifying via embedding OP_RETURN, and Ordinals specifying through SatPoint.
+
+Therefore, if L2 applications want to read the state on Bitcoin, they need to track the creation and consumption of UTXOs in full and parse various data from the extended protocols, leading to the idea of stackable L2.
+
+## Stackable L2
+
+Stackable L2 refers to an L2 scaling solution that fully include the state of L1 within L2. This solution requires:
+
+1. L2 to include the complete state of L1. In essence, L2 includes a full node of L1 and executes the L1 consensus protocol in its entirety, making the L1 state a subset of the L2 state.
+2. L2 to have its own transactions and states. This differs from a read-only indexer.
+3. L2 to have a mechanism that ensures atomic binding between L2 and L1 states, guaranteeing that the ownership of states (assets) can be transferred atomically between L1 and L2.
+
+![Stackable L2](/blog/stackable-l2/rooch-stackable-layer2.svg)
+
+As shown in the diagram, the state of L1 at block height T is State T, which simultaneously triggers transaction Y on L2, generating L2's State Y that includes State T. Subsequently, L2 performs multiple transactions, with L2's state changing, but L1 State T remains unchanged until L1 Block T+1 triggers a new L2 transaction Y+n, generating new L1 and L2 states.
+
+Under this solution, since all states of L1 are also states of L2, L2 applications can directly access them without complex state proofs, providing a better experience for developers and users.
+
+There have been similar attempts in the industry; the Ethereum community has a Booster rollups proposal, which stacks an additional layer on Ethereum and shares a similar philosophy to Rooch, though with different solutions.
+
+### Stackable State Tree
+
+Since L2 contains the entirety of L1's state, as well as its own state, there is a need for a hierarchical state tree approach. This approach must ensure that the state of L1 can generate an independent state tree to facilitate state verification.
+
+![Stackable state](/blog/stackable-l2/rooch-stackable-state.svg)
+
+In Rooch, the first layer of the state tree consists of Objects, and each Object carries a sub-tree that can store the Object's dynamic fields or sub-Objects. For example, a BitcoinStore is an Object that holds all the states of the Bitcoin chain; UTXOs and Inscriptions are sub-Objects of that Object.
+
+This model can also be used in applications, such as a game expressed as a Gameworld, where all the states of the game are within this Object, allowing for parallel transactions and state splitting between applications.
+
+### Rollout Not Rollup
+
+Stackable L2 transactions consist of two parts: one part is the block from L1, and the other part is L2's own transactions. The availability of L1 blocks is ensured by L1, but how can the availability of L2's transactions be guaranteed?
+
+![Rollout](/blog/stackable-l2/rooch-rollout.svg)
+
+In L2's Rollup mode, L2 transactions are batched through a Sequencer and rollup to L1. However, the key issue with this model is that the block space of L1 itself is limited, so the scaling effect of L2 is constrained by the block space of L1. If multiple Rollup L2s compete for the same block space, it can become a "neijuan" without additive scaling effects.
+
+> The term "neijuan" (内卷), originating from Chinese, refers to a counterproductive phenomenon where intense internal competition leads to excessive work without proportional gains, often manifesting in industries or sectors as a self-perpetuating cycle of inefficiency.
+
+In Rooch's stackable solution, L1 blocks are included in L2's transactions (in reality, only the block hash is needed), and L2 writes the transactions to another third-party Data Availability (DA) chain, which we can call the Rollout mode. In Rollout mode, L2 scales the original L1 by utilizing other DAs, offering a modular approach with greater scalability, which has been a steadfast part of Rooch's architecture. The demand for Bitcoin block space will gradually overflow through Rooch to other chains, fostering integration in the entire blockchain ecosystem.
+
+### Atomic State Binding
+
+To achieve atomic binding between L1 and L2 states, we need to provide a mode of expression for nested assets, and the Move language is particularly suited for expressing nested asset structures.
+
+![Atomic-binding UTXO](/blog/stackable-l2/rooch-atomic-binding-utxo.svg)
+
+For instance, the UTXO X in the above diagram is expressed as an Object in Move, with a built-in Temporary area. The states nested in this area are cleared once the UTXO is spent, akin to RGB's "one-time seal" utilizing the property that a UTXO can only be spent once. For example, if an application offers a Bitcoin mining feature, the user's Stake information is stored in this area, and once the user spends that UTXO, the Stake information is automatically lost. 
+
+However, for states supporting UTXO mapping tracking protocols, a Permanent Area can be provided, achieving atomic state transfer between L1 and L2.
+
+![Atomic-binding Inscription](/blog/stackable-l2/rooch-atomic-binding-ord.svg)
+
+As shown in the diagram above, it represents a Bitcoin chain state expressed through Move, such as an Ordinals Inscription (similarly for RGB). The Permanent Area within it can preserve permanent states, such as a Coin or an NFT. Once the Inscription on L1 is transferred, the states in the Temporary Area are cleared, but the states in the Permanent Area are retained and transferred to the new owner along with the L1 state.
+
+### Cross-Layer (Cross-Chain) Asset Movement
+
+In the stackable L2 solution, the main focus is on L2 inheriting the state of L1, and the directions explored for asset movement between L1 and L2 include:
+
+1. L1 → L2 Bridge Mode: Asset migration from L1 to L2 is achieved through a bridge between L1 and L2. The key is how this bridge can ensure security through the features offered by L1 and L2. In the stackable L2, additional security guarantees can be added to the bridge through L2 contracts.
+2. Off-chain or Client-side Verification: In the protocol modes of RGB or Ordinals, asset legitimacy is verified off-chain, and L1 only undertakes the role of publishing commitments or ensuring data availability (DA). Such assets can be considered a hybrid between L1 and L2, with extended protocols built-in to enable asset interoperation between L1 and L2. This model can seamlessly integrate with stackable L2.
+3. L2 → L1: If the native assets of L2 need to cross over to L1, this differs from the L1 → L2 bridge. Since the legitimacy of L2's native assets is ensured by L2, their cross-chain security requirements are lower than those for L1 → L2. There is no need to consider lifeboat mechanisms; it's only necessary to ensure the correctness of the state root submitted by L2 to L1.
+
+### Decentralization and Security
+
+The decentralization of L2's Sequencer is still a direction explored within the industry. In Rooch's scheme, decentralization and security are achieved in the following ways:
+
+1. The Sequencer publishes transactions to DA and the root of L2's state tree to Bitcoin, ensuring the verifiability of L2's state.
+2. If the Sequencer publishes an incorrect state, slashs are triggered when the Bitcoin transaction that published the state root is re-executed on L2.
+3. Using the time provided by L1 blocks, the Sequencer rotates in time slots, and nodes must stake assets to become candidate Sequencers.
+4. If the Sequencer hides transactions, slashs can be imposed through [transaction sequence proofs](https://rooch.network/learn/in-depth-tech/sequence-proof).
+
+### Conclusion
+
+Blockchain scaling remains one of the most important issues within the industry, with practices in layering and sharding. However, how layers and shards should be divided is still being explored. This article proposes a new approach based on a state stackable layering model, allowing L2 to maximize the inheritance of L1's data and features. Thus, when L2 starts, it's not a blank slate but an application built upon the accumulated state world of L1. Additionally, under this layering model, each application can also stack another layer, similar to
+
+ an application-based sharding solution, which will be discussed in future articles.
+
+What types of applications can the state stacking model support? This remains to be unearthed. For a simple example, suppose there is an Inscription on Bitcoin that represents a piece of land. Then, L2 can stack a house on top, forming an asset collectively more valuable than the original plot of land. Then someone transforms the house into an exhibition hall, changing its value again. In fact, this model is similar to the asset appreciation model in the real world, where assets are also enhanced through synthesis, combination, and stacking.
+
+We look forward to developers and users exploring new ways to play together.
+
+### Related Links
+
+1. Deeper dive on cross-L2 reading for wallets and other use cases: https://twitter.com/VitalikButerin/status/1671170970634317826 
+2. The modular evolution of Rollup Layer2: https://rooch.network/blog/modular-evolution-of-rollup-layer2 
+3. Booster rollups - scaling L1 directly: https://ethresear.ch/t/booster-rollups-scaling-l1-directly/17125

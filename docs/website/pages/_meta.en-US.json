@@ -8,8 +8,12 @@
       "layout": "raw"
     }
   },
-  "docs": {
-    "title": "Docs",
+  "learn": {
+    "title": "Learn",
+    "type": "page"
+  },
+  "build": {
+    "title": "Build",
     "type": "page"
   },
   "blog": {
