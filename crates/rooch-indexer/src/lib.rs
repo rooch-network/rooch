@@ -227,7 +227,7 @@ pub struct SqliteConnectionPoolConfig {
 }
 
 impl SqliteConnectionPoolConfig {
-    const DEFAULT_POOL_SIZE: u32 = 100;
+    const DEFAULT_POOL_SIZE: u32 = 30;
     const DEFAULT_CONNECTION_TIMEOUT: u64 = 30;
 
     fn connection_config(&self) -> SqliteConnectionConfig {
