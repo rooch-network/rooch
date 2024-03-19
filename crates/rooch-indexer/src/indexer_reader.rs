@@ -3,13 +3,18 @@
 
 use crate::types::IndexerResult;
 use crate::{
-    errors::IndexerError, SqliteConnectionConfig, SqliteConnectionPoolConfig, SqlitePoolConnection,
+    errors::IndexerError, IndexerStoreMeta, SqliteConnectionConfig, SqliteConnectionPoolConfig,
+    SqlitePoolConnection, INDEXER_EVENTS_TABLE_NAME, INDEXER_GLOBAL_STATES_TABLE_NAME,
+    INDEXER_TABLE_CHANGE_SETS_TABLE_NAME, INDEXER_TABLE_STATES_TABLE_NAME,
+    INDEXER_TRANSACTIONS_TABLE_NAME,
 };
 use anyhow::{anyhow, Result};
 use diesel::{
     r2d2::ConnectionManager, Connection, ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection,
 };
+use std::collections::HashMap;
 use std::ops::DerefMut;
+use std::path::PathBuf;
 
 use crate::models::events::StoredEvent;
 use crate::models::states::{StoredGlobalState, StoredTableChangeSet, StoredTableState};
@@ -49,11 +54,6 @@ pub(crate) struct InnerIndexerReader {
 }
 
 impl InnerIndexerReader {
-    pub fn new<T: Into<String>>(db_url: T) -> Result<Self> {
-        let config = SqliteConnectionPoolConfig::default();
-        Self::new_with_config(db_url, config)
-    }
-
     pub fn new_with_config<T: Into<String>>(
         db_url: T,
         config: SqliteConnectionPoolConfig,
@@ -96,26 +96,42 @@ impl InnerIndexerReader {
 
 #[derive(Clone)]
 pub struct IndexerReader {
-    //TODO split by table dimension
-    pub(crate) inner_indexer_reader: InnerIndexerReader,
+    pub(crate) inner_indexer_reader_mapping: HashMap<String, InnerIndexerReader>,
 }
 
 impl IndexerReader {
-    pub fn new<T: Into<String>>(db_url: T) -> Result<Self> {
-        let inner_indexer_reader = InnerIndexerReader::new(db_url)?;
+    pub fn new(db_path: PathBuf) -> Result<Self> {
+        let config = SqliteConnectionPoolConfig::default();
+        Self::new_with_config(db_path, config)
+    }
+
+    pub fn new_with_config(db_path: PathBuf, config: SqliteConnectionPoolConfig) -> Result<Self> {
+        let tables = IndexerStoreMeta::get_indexer_table_names().to_vec();
+
+        let mut inner_indexer_reader_mapping = HashMap::<String, InnerIndexerReader>::new();
+        for table in tables {
+            let indexer_db_url = db_path
+                .clone()
+                .join(table)
+                .to_str()
+                .ok_or(anyhow::anyhow!("Invalid indexer db path"))?
+                .to_string();
+
+            let inner_indexer_reader = InnerIndexerReader::new_with_config(indexer_db_url, config)?;
+            inner_indexer_reader_mapping.insert(table.to_string(), inner_indexer_reader);
+        }
+
         Ok(IndexerReader {
-            inner_indexer_reader,
+            inner_indexer_reader_mapping,
         })
     }
 
-    pub fn new_with_config<T: Into<String>>(
-        db_url: T,
-        config: SqliteConnectionPoolConfig,
-    ) -> Result<Self> {
-        let inner_indexer_reader = InnerIndexerReader::new_with_config(db_url, config)?;
-        Ok(IndexerReader {
-            inner_indexer_reader,
-        })
+    fn get_inner_indexer_reader(&self, table_name: &str) -> Result<InnerIndexerReader> {
+        Ok(self
+            .inner_indexer_reader_mapping
+            .get(table_name)
+            .ok_or(anyhow::anyhow!("Inner indexer reader not exist"))?
+            .clone())
     }
 
     pub fn query_transactions_with_filter(
@@ -128,12 +144,14 @@ impl IndexerReader {
         let tx_order = if let Some(cursor) = cursor {
             cursor as i64
         } else if descending_order {
-            let max_tx_order: i64 = self.inner_indexer_reader.run_query(|conn| {
-                transactions::dsl::transactions
-                    .select(transactions::tx_order)
-                    .order_by(transactions::tx_order.desc())
-                    .first::<i64>(conn)
-            })?;
+            let max_tx_order: i64 = self
+                .get_inner_indexer_reader(INDEXER_TRANSACTIONS_TABLE_NAME)?
+                .run_query(|conn| {
+                    transactions::dsl::transactions
+                        .select(transactions::tx_order)
+                        .order_by(transactions::tx_order.desc())
+                        .first::<i64>(conn)
+                })?;
             max_tx_order + 1
         } else {
             -1
@@ -197,7 +215,7 @@ impl IndexerReader {
 
         tracing::debug!("query transactions: {}", query);
         let stored_transactions = self
-            .inner_indexer_reader
+            .get_inner_indexer_reader(INDEXER_TRANSACTIONS_TABLE_NAME)?
             .run_query(|conn| diesel::sql_query(query).load::<StoredTransaction>(conn))?;
 
         let result = stored_transactions
@@ -225,8 +243,9 @@ impl IndexerReader {
             } = cursor;
             (tx_order as i64, event_index as i64)
         } else if descending_order {
-            let (max_tx_order, event_index): (i64, i64) =
-                self.inner_indexer_reader.run_query(|conn| {
+            let (max_tx_order, event_index): (i64, i64) = self
+                .get_inner_indexer_reader(INDEXER_EVENTS_TABLE_NAME)?
+                .run_query(|conn| {
                     events::dsl::events
                         .select((events::tx_order, events::event_index))
                         .order_by((events::tx_order.desc(), events::event_index.desc()))
@@ -298,7 +317,7 @@ impl IndexerReader {
 
         tracing::debug!("query events: {}", query);
         let stored_events = self
-            .inner_indexer_reader
+            .get_inner_indexer_reader(INDEXER_EVENTS_TABLE_NAME)?
             .run_query(|conn| diesel::sql_query(query).load::<StoredEvent>(conn))?;
 
         let result = stored_events
@@ -326,8 +345,9 @@ impl IndexerReader {
             } = cursor;
             (tx_order as i64, state_index as i64)
         } else if descending_order {
-            let (max_tx_order, state_index): (i64, i64) =
-                self.inner_indexer_reader.run_query(|conn| {
+            let (max_tx_order, state_index): (i64, i64) = self
+                .get_inner_indexer_reader(INDEXER_GLOBAL_STATES_TABLE_NAME)?
+                .run_query(|conn| {
                     global_states::dsl::global_states
                         .select((global_states::tx_order, global_states::state_index))
                         .order_by((
@@ -391,7 +411,7 @@ impl IndexerReader {
 
         tracing::debug!("query global states: {}", query);
         let stored_states = self
-            .inner_indexer_reader
+            .get_inner_indexer_reader(INDEXER_GLOBAL_STATES_TABLE_NAME)?
             .run_query(|conn| diesel::sql_query(query).load::<StoredGlobalState>(conn))?;
 
         let result = stored_states
@@ -419,8 +439,9 @@ impl IndexerReader {
             } = cursor;
             (tx_order as i64, state_index as i64)
         } else if descending_order {
-            let (max_tx_order, state_index): (i64, i64) =
-                self.inner_indexer_reader.run_query(|conn| {
+            let (max_tx_order, state_index): (i64, i64) = self
+                .get_inner_indexer_reader(INDEXER_TABLE_STATES_TABLE_NAME)?
+                .run_query(|conn| {
                     table_states::dsl::table_states
                         .select((table_states::tx_order, table_states::state_index))
                         .order_by((
@@ -469,7 +490,7 @@ impl IndexerReader {
 
         tracing::debug!("query table states: {}", query);
         let stored_states = self
-            .inner_indexer_reader
+            .get_inner_indexer_reader(INDEXER_TABLE_STATES_TABLE_NAME)?
             .run_query(|conn| diesel::sql_query(query).load::<StoredTableState>(conn))?;
 
         let result = stored_states
@@ -498,8 +519,9 @@ impl IndexerReader {
             } = cursor;
             (tx_order as i64, state_index as i64)
         } else if descending_order {
-            let (max_tx_order, state_index): (i64, i64) =
-                self.inner_indexer_reader.run_query(|conn| {
+            let (max_tx_order, state_index): (i64, i64) = self
+                .get_inner_indexer_reader(INDEXER_TABLE_CHANGE_SETS_TABLE_NAME)?
+                .run_query(|conn| {
                     table_change_sets::dsl::table_change_sets
                         .select((table_change_sets::tx_order, table_change_sets::state_index))
                         .order_by((
@@ -552,7 +574,7 @@ impl IndexerReader {
 
         tracing::debug!("sync states: {}", query);
         let stored_table_change_sets = self
-            .inner_indexer_reader
+            .get_inner_indexer_reader(INDEXER_TABLE_CHANGE_SETS_TABLE_NAME)?
             .run_query(|conn| diesel::sql_query(query).load::<StoredTableChangeSet>(conn))?;
 
         let result = stored_table_change_sets
