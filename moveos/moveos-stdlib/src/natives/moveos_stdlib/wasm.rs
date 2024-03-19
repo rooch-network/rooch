@@ -26,10 +26,12 @@ use crate::natives::helpers::{make_module_natives, make_native};
 const E_INSTANCE_NO_EXISTS: u64 = 1;
 // const E_ARG_NOT_U32: u64 = 2;
 const E_ARG_NOT_VECTOR_U8: u64 = 3;
-const E_JSON_MARSHAL_FAILED: u64 = 4;
+// const E_JSON_MARSHAL_FAILED: u64 = 4;
 const E_WASM_EXECUTION_FAILED: u64 = 5;
 const E_WASM_FUNCTION_NOT_FOUND: u64 = 6;
 const E_WASM_MEMORY_ACCESS_FAILED: u64 = 7;
+const E_JSON_UNMARSHAL_FAILED: u64 = 8;
+pub const E_CBOR_MARSHAL_FAILED: u64 = 9;
 
 #[derive(Debug, Clone)]
 pub struct WASMCreateInstanceGasParameters {
@@ -90,18 +92,40 @@ fn native_create_cbor_values(
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    let data = pop_arg!(args, Vec<u8>);
-    let data_string = String::from_utf8_lossy(data.as_slice()).to_string();
+    let value_list = pop_arg!(args, Vec<Value>);
 
-    let data_json: JSONValue = match serde_json::from_str(data_string.as_str()) {
-        Ok(json_value) => json_value,
-        Err(_) => {
-            return Ok(NativeResult::err(gas_params.base, E_JSON_MARSHAL_FAILED));
+    let mut func_args = Vec::new();
+    for arg_value in value_list.iter() {
+        let value = arg_value.copy_value()?;
+        match value.value_as::<Vec<u8>>() {
+            Ok(v) => func_args.push(String::from_utf8_lossy(v.as_slice()).to_string()),
+            Err(_) => {
+                return Ok(NativeResult::err(gas_params.base, E_ARG_NOT_VECTOR_U8));
+            }
         }
-    };
+    }
 
+    let mut mint_args_json: Vec<JSONValue> = vec![];
+
+    for arg in func_args.iter() {
+        let arg_json_opt = serde_json::from_str(arg.as_str());
+        let arg_json: JSONValue = match arg_json_opt {
+            Ok(v) => v,
+            Err(_) => {
+                return Ok(NativeResult::err(gas_params.base, E_JSON_UNMARSHAL_FAILED));
+            }
+        };
+        mint_args_json.push(arg_json);
+    }
+
+    let mint_args_array = JSONValue::Array(mint_args_json);
     let mut cbor_buffer = Vec::new();
-    ciborium::into_writer(&data_json, &mut cbor_buffer).expect("ciborium marshal failed");
+    match ciborium::into_writer(&mint_args_array, &mut cbor_buffer) {
+        Ok(_) => {}
+        Err(_) => {
+            return Ok(NativeResult::err(gas_params.base, E_CBOR_MARSHAL_FAILED));
+        }
+    }
 
     let ret_vec = Value::vector_u8(cbor_buffer.clone());
 

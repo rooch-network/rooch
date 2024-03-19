@@ -12,7 +12,7 @@ module moveos_std::wasm {
         WASMInstance {id: instance_id }
     }
 
-    public fun create_cbor_values(value: vector<u8>): vector<u8> {
+    public fun create_cbor_values(value: vector<vector<u8>>): vector<u8> {
         native_create_cbor_values(value)
     }
 
@@ -42,7 +42,7 @@ module moveos_std::wasm {
 
     native fun native_create_wasm_instance(bytecodes: vector<u8>): u64;
 
-    native fun native_create_cbor_values(value: vector<u8>): vector<u8>;
+    native fun native_create_cbor_values(value: vector<vector<u8>>): vector<u8>;
 
     native fun native_add_length_with_data(value: vector<u8>): vector<u8>;
 
