@@ -1761,15 +1761,7 @@
         }
       },
       "ObjectID": {
-        "type": "object",
-        "required": [
-          "value"
-        ],
-        "properties": {
-          "value": {
-            "$ref": "#/components/schemas/Hex"
-          }
-        }
+        "$ref": "#/components/schemas/Hex"
       },
       "OpView_for_StateView": {
         "oneOf": [

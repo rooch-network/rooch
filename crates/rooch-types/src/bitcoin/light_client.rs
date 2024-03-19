@@ -275,14 +275,3 @@ impl<'a> ModuleBinding<'a> for BitcoinLightClientModule<'a> {
         Self { caller }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_object_id() {
-        let bitcoin_store_object_id = BitcoinBlockStore::object_id();
-        println!("bitcoin_store_object_id: {:?}", bitcoin_store_object_id);
-    }
-}

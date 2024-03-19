@@ -1,7 +1,7 @@
 //# init --addresses tester=0x42
 
 //call function use move value style argument
-//# run --signers tester --args 1u8 1u16 1u32 1u64 1u128 1u256 @0x42 b"hello" @0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3 @0x711ab0301fd517b135b88f57e84f254c94758998a602596be8ae7ba56a0d14b3
+//# run --signers tester --args 1u8 1u16 1u32 1u64 1u128 1u256 @0x42 b"hello"
 script {
     
     fun main(
@@ -13,8 +13,6 @@ script {
         _v_u256: u256,
         _v_address: address,
         _v_string: std::string::String,
-        _v_object_id: moveos_std::object::ObjectID,
-        _v_object: &moveos_std::object::Object<rooch_framework::timestamp::Timestamp>,
         ) {
     }
 }

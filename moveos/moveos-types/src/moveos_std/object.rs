@@ -80,6 +80,19 @@ impl ObjectID {
         hex::encode(bytes)
     }
 
+    pub fn from_hex(hex: &str) -> Result<Self> {
+        let bytes = hex::decode(hex)?;
+        bytes
+            .chunks_exact(AccountAddress::LENGTH)
+            .map(|chunk| {
+                let mut addr = [0u8; AccountAddress::LENGTH];
+                addr.copy_from_slice(chunk);
+                Ok(AccountAddress::new(addr))
+            })
+            .collect::<Result<Vec<AccountAddress>>>()
+            .map(Self)
+    }
+
     pub fn from_hex_literal(literal: &str) -> Result<Self> {
         let literal = literal.strip_prefix("0x").unwrap_or(literal);
         let hex_len = literal.len();
@@ -94,11 +107,6 @@ impl ObjectID {
         } else {
             Self::from_hex(literal)
         }
-    }
-
-    pub fn from_hex(hex: &str) -> Result<Self> {
-        let bytes = hex::decode(hex)?;
-        Self::from_bytes(bytes)
     }
 }
 
@@ -158,7 +166,7 @@ impl<'de> Deserialize<'de> for ObjectID {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         if deserializer.is_human_readable() {
             let s = String::deserialize(deserializer)?;
-            Ok(ObjectID::from_str(s.as_str()).map_err(serde::de::Error::custom)?)
+            Ok(ObjectID::from_hex_literal(s.as_str()).map_err(serde::de::Error::custom)?)
         } else {
             Ok(ObjectID(Vec::<AccountAddress>::deserialize(deserializer)?))
         }
@@ -933,11 +941,17 @@ mod tests {
     }
 
     #[test]
+    fn test_to_move_value() {
+        let object_id = ObjectID::random();
+        let move_value = object_id.to_move_value();
+        let object_id2 = ObjectID::from_bytes(move_value.simple_serialize().unwrap()).unwrap();
+        assert_eq!(object_id, object_id2);
+    }
+
+    #[test]
     fn test_root_object_id() {
         let root_object_id = ObjectID::root();
         let bytes = root_object_id.to_bytes();
-        assert!(bytes.is_empty());
-        let key = root_object_id.to_key();
-        println!("key: {:?}", key);
+        assert!(bytes == vec![0u8]);
     }
 }

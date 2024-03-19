@@ -15,6 +15,9 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Struct `TestStructID`](#0x2_object_TestStructID)
 -  [Constants](#@Constants_0)
 -  [Function `has_parent`](#0x2_object_has_parent)
+-  [Function `parent_id`](#0x2_object_parent_id)
+-  [Function `is_parent`](#0x2_object_is_parent)
+-  [Function `is_root`](#0x2_object_is_root)
 -  [Function `address_to_object_id`](#0x2_object_address_to_object_id)
 -  [Function `named_object_id`](#0x2_object_named_object_id)
 -  [Function `account_named_object_id`](#0x2_object_account_named_object_id)
@@ -56,33 +59,22 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `as_ref`](#0x2_object_as_ref)
 -  [Function `as_mut_ref`](#0x2_object_as_mut_ref)
 -  [Function `mut_entity_as_object`](#0x2_object_mut_entity_as_object)
--  [Function `add_to_global`](#0x2_object_add_to_global)
--  [Function `borrow_root_object`](#0x2_object_borrow_root_object)
--  [Function `borrow_from_global`](#0x2_object_borrow_from_global)
--  [Function `borrow_mut_root_object`](#0x2_object_borrow_mut_root_object)
--  [Function `borrow_mut_from_global`](#0x2_object_borrow_mut_from_global)
--  [Function `remove_from_global`](#0x2_object_remove_from_global)
--  [Function `contains_global`](#0x2_object_contains_global)
 -  [Function `add_field`](#0x2_object_add_field)
+-  [Function `add_object_field`](#0x2_object_add_object_field)
 -  [Function `add_field_internal`](#0x2_object_add_field_internal)
 -  [Function `borrow_field`](#0x2_object_borrow_field)
--  [Function `borrow_field_internal`](#0x2_object_borrow_field_internal)
+-  [Function `borrow_object_field`](#0x2_object_borrow_object_field)
 -  [Function `borrow_field_with_default`](#0x2_object_borrow_field_with_default)
--  [Function `borrow_field_with_default_internal`](#0x2_object_borrow_field_with_default_internal)
 -  [Function `borrow_mut_field`](#0x2_object_borrow_mut_field)
--  [Function `borrow_mut_field_internal`](#0x2_object_borrow_mut_field_internal)
+-  [Function `borrow_mut_object_field`](#0x2_object_borrow_mut_object_field)
 -  [Function `borrow_mut_field_with_default`](#0x2_object_borrow_mut_field_with_default)
--  [Function `borrow_mut_field_with_default_internal`](#0x2_object_borrow_mut_field_with_default_internal)
 -  [Function `upsert_field`](#0x2_object_upsert_field)
--  [Function `upsert_field_internal`](#0x2_object_upsert_field_internal)
 -  [Function `remove_field`](#0x2_object_remove_field)
--  [Function `remove_field_internal`](#0x2_object_remove_field_internal)
+-  [Function `remove_object_field`](#0x2_object_remove_object_field)
 -  [Function `contains_field`](#0x2_object_contains_field)
+-  [Function `contains_object_field`](#0x2_object_contains_object_field)
 -  [Function `contains_field_with_type`](#0x2_object_contains_field_with_type)
--  [Function `contains_field_internal`](#0x2_object_contains_field_internal)
--  [Function `contains_field_with_value_type_internal`](#0x2_object_contains_field_with_value_type_internal)
 -  [Function `field_size`](#0x2_object_field_size)
--  [Function `field_size_internal`](#0x2_object_field_size_internal)
 
 
 <pre><code><b>use</b> <a href="">0x1::hash</a>;
@@ -290,6 +282,26 @@ Can not take out the object which is bound to the account
 
 
 
+<a name="0x2_object_ErrorParentNotMatch"></a>
+
+The parent object is not match
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorParentNotMatch">ErrorParentNotMatch</a>: u64 = 13;
+</code></pre>
+
+
+
+<a name="0x2_object_ErrorWithoutParent"></a>
+
+The object has no parent
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorWithoutParent">ErrorWithoutParent</a>: u64 = 12;
+</code></pre>
+
+
+
 <a name="0x2_object_FROZEN_OBJECT_FLAG_MASK"></a>
 
 
@@ -330,9 +342,45 @@ Can not take out the object which is bound to the account
 
 ## Function `has_parent`
 
+Check if the object_id has parent
+The object_id has parent means the object_id is not the root object_id
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_has_parent">has_parent</a>(object_id: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
+</code></pre>
+
+
+
+<a name="0x2_object_parent_id"></a>
+
+## Function `parent_id`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_parent_id">parent_id</a>(object_id: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+</code></pre>
+
+
+
+<a name="0x2_object_is_parent"></a>
+
+## Function `is_parent`
+
+Check if the <code>parent</code> is the parent of the <code>child</code>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_is_parent">is_parent</a>(parent: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, child: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
+</code></pre>
+
+
+
+<a name="0x2_object_is_root"></a>
+
+## Function `is_root`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_is_root">is_root</a>(object_id: &<a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
 </code></pre>
 
 
@@ -827,83 +875,6 @@ This function is for the module of <code>T</code> to extend the <code>transfer</
 
 
 
-<a name="0x2_object_add_to_global"></a>
-
-## Function `add_to_global`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_add_to_global">add_to_global</a>&lt;T: key&gt;(obj: <a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;T&gt;)
-</code></pre>
-
-
-
-<a name="0x2_object_borrow_root_object"></a>
-
-## Function `borrow_root_object`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_root_object">borrow_root_object</a>(): &<a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;<a href="object.md#0x2_object_Root">object::Root</a>&gt;
-</code></pre>
-
-
-
-<a name="0x2_object_borrow_from_global"></a>
-
-## Function `borrow_from_global`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_from_global">borrow_from_global</a>&lt;T: key&gt;(object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;T&gt;
-</code></pre>
-
-
-
-<a name="0x2_object_borrow_mut_root_object"></a>
-
-## Function `borrow_mut_root_object`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_mut_root_object">borrow_mut_root_object</a>(): &<b>mut</b> <a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;<a href="object.md#0x2_object_Root">object::Root</a>&gt;
-</code></pre>
-
-
-
-<a name="0x2_object_borrow_mut_from_global"></a>
-
-## Function `borrow_mut_from_global`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_mut_from_global">borrow_mut_from_global</a>&lt;T: key&gt;(object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;T&gt;
-</code></pre>
-
-
-
-<a name="0x2_object_remove_from_global"></a>
-
-## Function `remove_from_global`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_remove_from_global">remove_from_global</a>&lt;T: key&gt;(object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): <a href="object.md#0x2_object_ObjectEntity">object::ObjectEntity</a>&lt;T&gt;
-</code></pre>
-
-
-
-<a name="0x2_object_contains_global"></a>
-
-## Function `contains_global`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_contains_global">contains_global</a>(object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
-</code></pre>
-
-
-
 <a name="0x2_object_add_field"></a>
 
 ## Function `add_field`
@@ -915,6 +886,20 @@ object, and cannot be discovered from it.
 
 <pre><code>#[private_generics(#[T])]
 <b>public</b> <b>fun</b> <a href="object.md#0x2_object_add_field">add_field</a>&lt;T: key, K: <b>copy</b>, drop, V: store&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K, val: V)
+</code></pre>
+
+
+
+<a name="0x2_object_add_object_field"></a>
+
+## Function `add_object_field`
+
+Add a object field to the object. return the child object
+The parent object must be a shared object
+
+
+<pre><code>#[private_generics(#[T], #[V])]
+<b>public</b> <b>fun</b> <a href="object.md#0x2_object_add_object_field">add_object_field</a>&lt;T: key, V: key&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, v: V): <a href="object.md#0x2_object_Object">object::Object</a>&lt;V&gt;
 </code></pre>
 
 
@@ -946,15 +931,14 @@ Aborts if there is no field for <code>key</code>.
 
 
 
-<a name="0x2_object_borrow_field_internal"></a>
+<a name="0x2_object_borrow_object_field"></a>
 
-## Function `borrow_field_internal`
+## Function `borrow_object_field`
 
-Acquire an immutable reference to the value which <code>key</code> maps to.
-Aborts if there is no field for <code>key</code>.
+Borrow the child object by <code>key</code>
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_field_internal">borrow_field_internal</a>&lt;K: <b>copy</b>, drop, V&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): &V
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_object_field">borrow_object_field</a>&lt;T: key, V: key&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;V&gt;
 </code></pre>
 
 
@@ -968,19 +952,6 @@ Returns specified default value if there is no field for <code>key</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_field_with_default">borrow_field_with_default</a>&lt;T: key, K: <b>copy</b>, drop, V: store&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K, default: &V): &V
-</code></pre>
-
-
-
-<a name="0x2_object_borrow_field_with_default_internal"></a>
-
-## Function `borrow_field_with_default_internal`
-
-Acquire an immutable reference to the value which <code>key</code> maps to.
-Returns specified default value if there is no field for <code>key</code>.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_field_with_default_internal">borrow_field_with_default_internal</a>&lt;K: <b>copy</b>, drop, V&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, default: &V): &V
 </code></pre>
 
 
@@ -999,15 +970,15 @@ Aborts if there is no field for <code>key</code>.
 
 
 
-<a name="0x2_object_borrow_mut_field_internal"></a>
+<a name="0x2_object_borrow_mut_object_field"></a>
 
-## Function `borrow_mut_field_internal`
+## Function `borrow_mut_object_field`
 
-Acquire a mutable reference to the value which <code>key</code> maps to.
-Aborts if there is no field for <code>key</code>.
+Borrow the child object by <code>key</code>
+Because the parent object must be a shared object, so we do not require the #[private_generics(T)] here
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_mut_field_internal">borrow_mut_field_internal</a>&lt;K: <b>copy</b>, drop, V&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): &<b>mut</b> V
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut_object_field">borrow_mut_object_field</a>&lt;T: key, V: key&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;V&gt;
 </code></pre>
 
 
@@ -1026,19 +997,6 @@ Insert the pair (<code>key</code>, <code>default</code>) first if there is no fi
 
 
 
-<a name="0x2_object_borrow_mut_field_with_default_internal"></a>
-
-## Function `borrow_mut_field_with_default_internal`
-
-Acquire a mutable reference to the value which <code>key</code> maps to.
-Insert the pair (<code>key</code>, <code>default</code>) first if there is no field for <code>key</code>.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_mut_field_with_default_internal">borrow_mut_field_with_default_internal</a>&lt;T: key, K: <b>copy</b>, drop, V: drop&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, default: V): &<b>mut</b> V
-</code></pre>
-
-
-
 <a name="0x2_object_upsert_field"></a>
 
 ## Function `upsert_field`
@@ -1049,19 +1007,6 @@ update the value of the field for <code>key</code> to <code>value</code> otherwi
 
 <pre><code>#[private_generics(#[T])]
 <b>public</b> <b>fun</b> <a href="object.md#0x2_object_upsert_field">upsert_field</a>&lt;T: key, K: <b>copy</b>, drop, V: drop, store&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K, value: V)
-</code></pre>
-
-
-
-<a name="0x2_object_upsert_field_internal"></a>
-
-## Function `upsert_field_internal`
-
-Insert the pair (<code>key</code>, <code>value</code>) if there is no field for <code>key</code>.
-update the value of the field for <code>key</code> to <code>value</code> otherwise
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_upsert_field_internal">upsert_field_internal</a>&lt;T: key, K: <b>copy</b>, drop, V: drop&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, value: V)
 </code></pre>
 
 
@@ -1080,15 +1025,14 @@ Aborts if there is no field for <code>key</code>.
 
 
 
-<a name="0x2_object_remove_field_internal"></a>
+<a name="0x2_object_remove_object_field"></a>
 
-## Function `remove_field_internal`
-
-Remove from <code><a href="object.md#0x2_object">object</a></code> and return the value which <code>key</code> maps to.
-Aborts if there is no field for <code>key</code>.
+## Function `remove_object_field`
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_remove_field_internal">remove_field_internal</a>&lt;T: key, K: <b>copy</b>, drop, V&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): V
+
+<pre><code>#[private_generics(#[T])]
+<b>public</b> <b>fun</b> <a href="object.md#0x2_object_remove_object_field">remove_object_field</a>&lt;T: key, V: key&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, child: <a href="object.md#0x2_object_Object">object::Object</a>&lt;V&gt;): V
 </code></pre>
 
 
@@ -1105,6 +1049,18 @@ Returns true if <code><a href="object.md#0x2_object">object</a></code> contains 
 
 
 
+<a name="0x2_object_contains_object_field"></a>
+
+## Function `contains_object_field`
+
+Returns true if <code><a href="object.md#0x2_object">object</a></code> contains an Object field for <code>key</code> and the value type is <code>V</code>.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_contains_object_field">contains_object_field</a>&lt;T: key, V: key&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
+</code></pre>
+
+
+
 <a name="0x2_object_contains_field_with_type"></a>
 
 ## Function `contains_field_with_type`
@@ -1117,30 +1073,6 @@ Returns true if <code><a href="object.md#0x2_object">object</a></code> contains 
 
 
 
-<a name="0x2_object_contains_field_internal"></a>
-
-## Function `contains_field_internal`
-
-Returns true if <code><a href="object.md#0x2_object">object</a></code> contains an field for <code>key</code>.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_contains_field_internal">contains_field_internal</a>&lt;K: <b>copy</b>, drop&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): bool
-</code></pre>
-
-
-
-<a name="0x2_object_contains_field_with_value_type_internal"></a>
-
-## Function `contains_field_with_value_type_internal`
-
-Returns true if <code><a href="object.md#0x2_object">object</a></code> contains an field for <code>key</code> and the value type is <code>V</code>.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_contains_field_with_value_type_internal">contains_field_with_value_type_internal</a>&lt;K: <b>copy</b>, drop, V: store&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): bool
-</code></pre>
-
-
-
 <a name="0x2_object_field_size"></a>
 
 ## Function `field_size`
@@ -1149,15 +1081,4 @@ Returns the size of the object fields, the number of key-value pairs
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_field_size">field_size</a>&lt;T: key&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;): u64
-</code></pre>
-
-
-
-<a name="0x2_object_field_size_internal"></a>
-
-## Function `field_size_internal`
-
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_field_size_internal">field_size_internal</a>&lt;T: key&gt;(object_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): u64
 </code></pre>
