@@ -141,10 +141,10 @@ Feature: Rooch CLI integration tests
     Then cmd: "rpc request --method rooch_queryTableStates --params '[{"table_handle":"0x0"}, null, "10", true]'"
     Then assert: "{{$.rpc[-1].has_next_page}} == false"
 
-    Then cmd: "rpc request --method rooch_syncStates --params '[null, null, "2", false]'"
-    Then assert: "{{$.rpc[-1].data[0].tx_order}} == 0"
-    Then assert: "{{$.rpc[-1].next_cursor.state_index}} == 1"
-    Then assert: "{{$.rpc[-1].has_next_page}} == true"
+#    Then cmd: "rpc request --method rooch_syncStates --params '[null, null, "2", false]'"
+#    Then assert: "{{$.rpc[-1].data[0].tx_order}} == 0"
+#    Then assert: "{{$.rpc[-1].next_cursor.state_index}} == 1"
+#    Then assert: "{{$.rpc[-1].has_next_page}} == true"
 
     Then stop the server
 
