@@ -20,6 +20,7 @@ use std::{collections::VecDeque, sync::Arc};
 pub(crate) const ERROR_ALREADY_EXISTS: u64 = 1;
 pub(crate) const ERROR_NOT_FOUND: u64 = 2;
 pub(crate) const ERROR_OBJECT_ALREADY_BORROWED: u64 = 7;
+pub(crate) const ERROR_TYPE_MISMATCH: u64 = 10;
 
 #[derive(Debug, Clone)]
 pub struct AsRefGasParameters {
