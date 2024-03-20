@@ -62,7 +62,6 @@ impl InscriptionFilterView {
                 let inscription_id = InscriptionID::new(txid.into_address(), index);
                 let object_id =
                     object::custom_object_id(inscription_id, &Inscription::struct_tag());
-
                 GlobalStateFilter::ObjectId(object_id)
             }
             InscriptionFilterView::ObjectId(object_id) => GlobalStateFilter::ObjectId(object_id),

@@ -896,4 +896,19 @@ mod test {
 
         Ok(())
     }
+
+    #[test]
+    pub fn test_bitcoin_address_from_str() -> Result<()> {
+        let bitcoin_address_str = "3MSqmLCmL5XW1PbUnabyLtkYdLXePGokCu";
+        let bitcoin_address = BitcoinAddress::from_str(bitcoin_address_str)?;
+        let bitcoin_address_format =
+            bitcoin_address.format(network::Network::NetworkBitcoin.to_num())?;
+        println!(
+            "test_bitcoin_address_from_str bitcoin address format {} ",
+            bitcoin_address_format
+        );
+
+        assert_eq!(bitcoin_address_str, bitcoin_address_format);
+        Ok(())
+    }
 }

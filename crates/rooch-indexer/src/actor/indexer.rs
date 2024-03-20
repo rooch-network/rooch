@@ -284,10 +284,12 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         {
             let table_change_set =
                 IndexedTableChangeSet::new(tx_order, index as u64, item.0, item.1)?;
+
             indexed_table_change_sets.push(table_change_set);
         }
-        self.indexer_store
-            .persist_table_change_sets(indexed_table_change_sets)?;
+        // TODO First temporarily close StateChangeSet Indexer writing and wait for the function to be turned on.
+        // self.indexer_store
+        //     .persist_table_change_sets(indexed_table_change_sets)?;
         Ok(())
     }
 }
@@ -309,7 +311,11 @@ impl Handler<IndexerTransactionMessage> for IndexerActor {
         let indexed_transaction =
             IndexedTransaction::new(transaction, sequence_info, execution_info, moveos_tx)?;
         let transactions = vec![indexed_transaction];
-        self.indexer_store.persist_transactions(transactions)?;
+
+        // just for data verify mode, don't write transaction indexer
+        if !self.data_verify_mode {
+            self.indexer_store.persist_transactions(transactions)?;
+        }
         Ok(())
     }
 }

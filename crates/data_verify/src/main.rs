@@ -7,9 +7,9 @@ use data_verify::{data_export, ord_verify};
 //flight
 fn main() {
     let config = DataConfig::default();
-    let ord_export_data_path = format!("{}ord_export_100.tsv", config.ord_data_path);
+    let ord_export_data_path = format!("{}ord_export_1000.tsv", config.ord_data_path);
     // data_export::export_ord_index_data(&config, &ord_export_data_path.as_str());
-    let ord_tx_json = format!("{}/ord_tx_100.json", config.ord_data_path);
+    let ord_tx_json = format!("{}/ord_tx_1000.json", config.ord_data_path);
     if let Err(err) = data_export::read_ord_export_data(&ord_export_data_path, &ord_tx_json) {
         eprintln!(
             "Error read ord export data {}, error: {}",

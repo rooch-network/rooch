@@ -60,7 +60,6 @@ impl UTXOFilterView {
                 let txid = hex_to_txid(txid.as_str())?;
                 let output_id = OutputID::new(txid.into_address(), vout);
                 let object_id = object::custom_object_id(output_id, &UTXO::struct_tag());
-
                 GlobalStateFilter::ObjectId(object_id)
             }
             UTXOFilterView::ObjectId(object_id) => GlobalStateFilter::ObjectId(object_id),
