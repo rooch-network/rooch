@@ -1,8 +1,10 @@
 {
   "install-unisat": "Install UniSat",
   "dashboard": "Dashboard",
+  "faucet": "Faucet",
   "get-test-btc": "Get BTC test coin",
   "inscription": "Inscription",
   "install-metamask": "Install MetaMask",
-  "interact-with-metamask": "Interact with MetaMask"
+  "interact-with-metamask": "Interact with MetaMask",
+  "faq": "FAQ"
 }
