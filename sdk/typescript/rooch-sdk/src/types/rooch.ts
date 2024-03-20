@@ -18,6 +18,7 @@ export type AuthenticationKey = string
 export type MultiEd25519PublicKey = string
 export type MultiEd25519Signature = string
 export type EventKey = string
+export type ObjectID = string
 
 export type ModuleId = string | { address: AccountAddress; name: Identifier }
 export type FunctionId =
