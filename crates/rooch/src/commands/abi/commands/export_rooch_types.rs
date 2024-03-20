@@ -9,9 +9,9 @@ use move_core_types::{
     identifier::Identifier,
     language_storage::{StructTag, TypeTag},
 };
-use moveos_types::move_std::ascii::MoveAsciiString;
 use moveos_types::move_std::string::MoveString;
 use moveos_types::transaction::MoveAction;
+use moveos_types::{move_std::ascii::MoveAsciiString, moveos_std::object::ObjectID};
 use rooch_types::error::RoochResult;
 use rooch_types::transaction::rooch::RoochTransaction;
 use serde_reflection::{Samples, Tracer, TracerConfig};
@@ -67,10 +67,20 @@ fn convert_enum(yaml_value: &mut Value) {
 }
 
 fn export_rooch_types_yaml(file_path: &String) -> RoochResult<()> {
-    let mut tracer = Tracer::new(TracerConfig::default());
+    let mut tracer = Tracer::new(
+        TracerConfig::default()
+            .record_samples_for_structs(true)
+            .record_samples_for_newtype_structs(true),
+    );
 
     // Predefine StructTag to prevent recursive definitions from reporting errors.
     let mut samples = Samples::new();
+
+    tracer
+        .trace_value(&mut samples, &ObjectID::random())
+        .unwrap();
+    tracer.trace_type::<ObjectID>(&samples).unwrap();
+
     let example_struct_tag = StructTag {
         address: AccountAddress::random(),
         module: Identifier::new("Module").unwrap(),

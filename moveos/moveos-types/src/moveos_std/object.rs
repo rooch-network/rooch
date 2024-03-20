@@ -157,7 +157,8 @@ impl Serialize for ObjectID {
         if serializer.is_human_readable() {
             serializer.serialize_str(self.to_string().as_str())
         } else {
-            self.0.serialize(serializer)
+            // See comment in deserialize.
+            serializer.serialize_newtype_struct("ObjectID", &self.0)
         }
     }
 }
@@ -168,7 +169,15 @@ impl<'de> Deserialize<'de> for ObjectID {
             let s = String::deserialize(deserializer)?;
             Ok(ObjectID::from_hex_literal(s.as_str()).map_err(serde::de::Error::custom)?)
         } else {
-            Ok(ObjectID(Vec::<AccountAddress>::deserialize(deserializer)?))
+            // In order to preserve the Serde data model and help analysis tools,
+            // make sure to wrap our value in a container with the same name
+            // as the original type.
+            #[derive(::serde::Deserialize)]
+            #[serde(rename = "ObjectID")]
+            struct Value(Vec<AccountAddress>);
+
+            let value = Value::deserialize(deserializer)?;
+            Ok(Self(value.0))
         }
     }
 }
