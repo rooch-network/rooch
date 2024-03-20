@@ -45,6 +45,7 @@ pub struct NativeTableContext<'a> {
 /// Ensure the error codes in this file is consistent with the error code in raw_table.move
 const E_ALREADY_EXISTS: u64 = super::object::ERROR_ALREADY_EXISTS;
 const E_NOT_FOUND: u64 = super::object::ERROR_NOT_FOUND;
+const E_TYPE_MISMATCH: u64 = super::object::ERROR_TYPE_MISMATCH;
 
 // ===========================================================================================
 // Private Data Structures and Constants
@@ -574,19 +575,30 @@ fn native_borrow_box(
         + gas_params.per_byte_serialized * NumBytes::new(key_bytes_len)
         + common_gas_params.calculate_load_cost(loaded);
     let value_type = type_to_type_tag(context, &ty_args[1])?;
-    match tv.borrow_global(value_type.clone()) {
-        Ok(ref_val) => Ok(NativeResult::ok(cost, smallvec![ref_val])),
-        Err(_) => {
-            if log::log_enabled!(log::Level::Debug) {
-                log::warn!(
-                    "[RawTable] borrow_box: handle: {}, value_type: {} key:{:?} not found.",
-                    &table.handle,
-                    value_type.to_canonical_string(),
-                    table_key
-                );
+    if tv.exists()? {
+        match tv.borrow_global(value_type.clone()) {
+            Ok(ref_val) => Ok(NativeResult::ok(cost, smallvec![ref_val])),
+            Err(_) => {
+                if log::log_enabled!(log::Level::Debug) {
+                    log::warn!(
+                        "[RawTable] borrow_box type mismatch: handle: {:?}, value_type: {:?} key:{:?}.",
+                        &table.handle,
+                        value_type.to_canonical_string(),
+                        table_key
+                    );
+                }
+                Ok(NativeResult::err(cost, E_TYPE_MISMATCH))
             }
-            Ok(NativeResult::err(cost, E_NOT_FOUND))
         }
+    } else {
+        if log::log_enabled!(log::Level::Debug) {
+            log::warn!(
+                "[RawTable] borrow_box not found: handle: {:?}, key:{:?} not found.",
+                &table.handle,
+                table_key
+            );
+        }
+        Ok(NativeResult::err(cost, E_NOT_FOUND))
     }
 }
 
@@ -738,12 +750,16 @@ fn native_remove_box(
         + gas_params.per_byte_serialized * NumBytes::new(key_bytes_len)
         + common_gas_params.calculate_load_cost(loaded);
     let value_type = type_to_type_tag(context, &ty_args[1])?;
-    match tv.move_from(value_type) {
-        Ok(val) => {
-            table.size_increment -= 1;
-            Ok(NativeResult::ok(cost, smallvec![val]))
+    if tv.exists()? {
+        match tv.move_from(value_type) {
+            Ok(val) => {
+                table.size_increment -= 1;
+                Ok(NativeResult::ok(cost, smallvec![val]))
+            }
+            Err(_) => Ok(NativeResult::err(cost, E_TYPE_MISMATCH)),
         }
-        Err(_) => Ok(NativeResult::err(cost, E_NOT_FOUND)),
+    } else {
+        Ok(NativeResult::err(cost, E_NOT_FOUND))
     }
 }
 
