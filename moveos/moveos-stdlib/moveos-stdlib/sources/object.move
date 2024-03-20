@@ -719,7 +719,7 @@ module moveos_std::object {
     }
 
     #[test]
-    #[expected_failure(abort_code = 2, location = moveos_std::object)]
+    #[expected_failure(abort_code = 10, location = moveos_std::object)]
     fun test_type_mismatch() {
         
         let object_id = derive_object_id();
