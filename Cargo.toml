@@ -203,7 +203,7 @@ unescape = "0.1.0"
 tempfile = "3.2.0"
 regex = "1.8.4"
 walkdir = "2.3.3"
-rocksdb = { version = "0.21.0", features = ["snappy", "lz4", "zstd", "zlib", "multi-threaded-cf"], default-features = false }
+rocksdb = { version = "0.22.0", features = ["snappy", "lz4", "zstd", "zlib"], default-features = false }
 prometheus = "0.13.3"
 coarsetime = "0.1.22"
 hyper = { version = "0.14.12", features = ["full"] }
