@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module basic_object::child_object{
     use std::string::String;
     use moveos_std::object::{Self, Object, ObjectID};

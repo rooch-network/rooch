@@ -41,7 +41,7 @@ bytes = { workspace = true }
 open-fastrlp = { workspace = true }
 const-hex = { workspace = true }
 bitcoin = { workspace = true }
-bitcoincore-rpc = { workspace = true }
+ord-bitcoincore-rpc = { workspace = true }
 
 move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }

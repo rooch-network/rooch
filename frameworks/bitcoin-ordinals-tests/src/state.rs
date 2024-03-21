@@ -1,6 +1,17 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::collections::{BTreeMap, BTreeSet};
+
+use bitcoin::{
+    absolute::LockTime,
+    block::{Header, Version},
+    script, Address, Amount, Block, BlockHash, CompactTarget, Network, OutPoint, ScriptBuf,
+    Sequence, Transaction, TxIn, TxMerkleNode, TxOut, Txid, Witness,
+};
+
+use crate::TransactionTemplate;
+
 pub(crate) struct State {
     pub(crate) blocks: BTreeMap<BlockHash, Block>,
     pub(crate) change_addresses: Vec<Address>,

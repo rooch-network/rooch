@@ -1,10 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{FundRawTransactionOptions, FundRawTransactionResult, HashMap};
-use bitcoin::{address::NetworkUnchecked, Address, BlockHash, Txid};
+use std::collections::HashMap;
+
+use bitcoincore_rpc::bitcoin::address::NetworkUnchecked;
+use bitcoincore_rpc::bitcoin::{Address, BlockHash, Txid};
 use bitcoincore_rpc::json::{
-    CreateRawTransactionInput, EstimateMode, FinalizePsbtResult, GetBalancesResult,
+    AddressType, CreateRawTransactionInput, EstimateMode, FinalizePsbtResult,
+    FundRawTransactionOptions, FundRawTransactionResult, GetBalancesResult,
     GetBlockchainInfoResult, GetDescriptorInfoResult, GetNetworkInfoResult, GetTxOutResult,
     GetWalletInfoResult, ImportDescriptors, ImportMultiResult, ListDescriptorsResult,
     ListTransactionResult, ListUnspentResultEntry, ListWalletDirResult, LoadWalletResult,
@@ -28,6 +31,9 @@ pub trait OrdinalAPI {
 
     #[method(name = "getbalances")]
     fn get_balances(&self) -> RpcResult<GetBalancesResult>;
+
+    #[method(name = "getbestblockhash")]
+    fn get_best_block_hash(&self) -> RpcResult<BlockHash>;
 
     #[method(name = "getblockhash")]
     fn get_block_hash(&self, height: usize) -> RpcResult<BlockHash>;
@@ -131,10 +137,7 @@ pub trait OrdinalAPI {
     fn list_lock_unspent(&self) -> RpcResult<Vec<JsonOutPoint>>;
 
     #[method(name = "getrawchangeaddress")]
-    fn get_raw_change_address(
-        &self,
-        address_type: Option<bitcoincore_rpc::json::AddressType>,
-    ) -> RpcResult<Address>;
+    fn get_raw_change_address(&self, address_type: Option<AddressType>) -> RpcResult<Address>;
 
     #[method(name = "getdescriptorinfo")]
     fn get_descriptor_info(&self, desc: String) -> RpcResult<GetDescriptorInfoResult>;
@@ -146,7 +149,7 @@ pub trait OrdinalAPI {
     fn get_new_address(
         &self,
         label: Option<String>,
-        address_type: Option<bitcoincore_rpc::json::AddressType>,
+        address_type: Option<AddressType>,
     ) -> RpcResult<Address>;
 
     #[method(name = "listtransactions")]

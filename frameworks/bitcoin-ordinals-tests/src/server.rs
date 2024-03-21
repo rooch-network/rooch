@@ -3,6 +3,7 @@
 
 use crate::deserialize;
 use crate::serialize;
+use crate::state::State;
 use crate::FundRawTransactionOptions;
 use crate::FundRawTransactionResult;
 use crate::LockTime;
@@ -43,7 +44,6 @@ use bitcoincore_rpc::json::{
 };
 use bitcoincore_rpc::JsonOutPoint;
 use jsonrpsee::core::RpcResult;
-use serde_json::ser::State;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::io::Cursor;
@@ -85,6 +85,13 @@ impl OrdinalAPI for Server {
             },
             watchonly: None,
         })
+    }
+
+    fn get_best_block_hash(&self) -> Result<bitcoin::BlockHash, jsonrpc_core::Error> {
+        match self.state().hashes.last() {
+            Some(block_hash) => Ok(*block_hash),
+            None => Err(Self::not_found()),
+        }
     }
 
     fn get_blockchain_info(&self) -> RpcResult<GetBlockchainInfoResult> {
@@ -357,7 +364,9 @@ impl OrdinalAPI for Server {
                 .find(|(value, outpoint)| {
                     value.to_sat() >= shortfall && !state.locked.contains(outpoint)
                 })
-                .ok_or_else(Self::not_found)?;
+                .ok_or_else(|| {
+                    jsonrpc_core::Error::new(jsonrpc_core::types::error::ErrorCode::ServerError(-6))
+                })?;
 
             transaction.input.push(TxIn {
                 previous_output: *outpoint,

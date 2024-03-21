@@ -33,7 +33,6 @@ use {
     tempfile::TempDir,
 };
 
-mod ordinal_api;
 mod server;
 mod state;
 
