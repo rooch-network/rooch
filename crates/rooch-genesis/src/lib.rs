@@ -350,7 +350,7 @@ mod tests {
         let module_store_state = moveos
             .moveos_store()
             .get_state_store()
-            .get(ModuleStore::module_store_id())
+            .get(&ModuleStore::module_store_id())
             .unwrap();
         assert!(module_store_state.is_some());
         let _module_store_obj = module_store_state
@@ -360,7 +360,7 @@ mod tests {
         let chain_id_state = moveos
             .moveos_store()
             .get_state_store()
-            .get(rooch_types::framework::chain_id::ChainID::chain_id_object_id())
+            .get(&rooch_types::framework::chain_id::ChainID::chain_id_object_id())
             .unwrap();
         assert!(chain_id_state.is_some());
     }
