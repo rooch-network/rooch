@@ -12,7 +12,7 @@ use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::option::MoveOption,
     moveos_std::{
-        object_id::{self, ObjectID},
+        object::{self, ObjectID},
         tx_context::TxContext,
     },
     state::MoveStructType,
@@ -36,7 +36,7 @@ pub struct BitcoinBlockStore {
 
 impl BitcoinBlockStore {
     pub fn object_id() -> ObjectID {
-        object_id::named_object_id(&Self::struct_tag())
+        object::named_object_id(&Self::struct_tag())
     }
 }
 
@@ -67,7 +67,7 @@ pub struct BitcoinUTXOStore {
 
 impl BitcoinUTXOStore {
     pub fn object_id() -> ObjectID {
-        object_id::named_object_id(&Self::struct_tag())
+        object::named_object_id(&Self::struct_tag())
     }
 }
 
@@ -110,7 +110,7 @@ impl<'a> BitcoinLightClientModule<'a> {
             Self::GET_BLOCK_FUNCTION_NAME,
             vec![],
             vec![
-                MoveValue::Address(BitcoinBlockStore::object_id().into()),
+                BitcoinBlockStore::object_id().to_move_value(),
                 MoveValue::Address(block_hash.into_address()),
             ],
         );
@@ -132,7 +132,7 @@ impl<'a> BitcoinLightClientModule<'a> {
             Self::GET_BLOCK_BY_HEIGHT_FUNCTION_NAME,
             vec![],
             vec![
-                MoveValue::Address(BitcoinBlockStore::object_id().into()),
+                BitcoinBlockStore::object_id().to_move_value(),
                 MoveValue::U64(block_height),
             ],
         );
@@ -154,7 +154,7 @@ impl<'a> BitcoinLightClientModule<'a> {
             Self::GET_BLOCK_HEIGHT_FUNCTION_NAME,
             vec![],
             vec![
-                MoveValue::Address(BitcoinBlockStore::object_id().into()),
+                BitcoinBlockStore::object_id().to_move_value(),
                 MoveValue::Address(block_hash.into_address()),
             ],
         );
@@ -175,7 +175,7 @@ impl<'a> BitcoinLightClientModule<'a> {
         let call = Self::create_function_call(
             Self::GET_LATEST_BLOCK_HEIGHT_FUNCTION_NAME,
             vec![],
-            vec![MoveValue::Address(BitcoinBlockStore::object_id().into())],
+            vec![BitcoinBlockStore::object_id().to_move_value()],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
         let height = self
@@ -195,7 +195,7 @@ impl<'a> BitcoinLightClientModule<'a> {
             Self::GET_UTXO_FUNCTION_NAME,
             vec![],
             vec![
-                MoveValue::Address(BitcoinUTXOStore::object_id().into()),
+                BitcoinUTXOStore::object_id().to_move_value(),
                 MoveValue::Address(tx_id.into_address()),
                 MoveValue::U32(vout),
             ],
@@ -218,8 +218,8 @@ impl<'a> BitcoinLightClientModule<'a> {
             Self::REMAINING_TX_COUNT_FUNCTION_NAME,
             vec![],
             vec![
-                MoveValue::Address(BitcoinBlockStore::object_id().into()),
-                MoveValue::Address(BitcoinUTXOStore::object_id().into()),
+                BitcoinBlockStore::object_id().to_move_value(),
+                BitcoinUTXOStore::object_id().to_move_value(),
             ],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
@@ -241,7 +241,7 @@ impl<'a> BitcoinLightClientModule<'a> {
             Self::SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME,
             vec![],
             vec![
-                MoveValue::Address(BitcoinBlockStore::object_id().into()),
+                BitcoinBlockStore::object_id().to_move_value(),
                 MoveValue::U64(block_height),
                 MoveValue::Address(block_hash.into_address()),
                 MoveValue::vector_u8(
@@ -256,8 +256,8 @@ impl<'a> BitcoinLightClientModule<'a> {
             Self::PROCESS_UTXOS_ENTRY_FUNCTION_NAME,
             vec![],
             vec![
-                MoveValue::Address(BitcoinBlockStore::object_id().into()),
-                MoveValue::Address(BitcoinUTXOStore::object_id().into()),
+                BitcoinBlockStore::object_id().to_move_value(),
+                BitcoinUTXOStore::object_id().to_move_value(),
                 MoveValue::U64(batch_size),
             ],
         )

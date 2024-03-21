@@ -4,9 +4,7 @@
 /// This module provides the foundation for typesafe Coins.
 module rooch_framework::coin {
     use std::string;
-    use moveos_std::object_id;
-    use moveos_std::object_id::ObjectID;
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object::{Self, ObjectID, Object};
     
     use moveos_std::event;
     use moveos_std::type_info::Self;
@@ -130,7 +128,7 @@ module rooch_framework::coin {
 
     /// Return the ObjectID of Object<CoinInfo<CoinType>>
     public fun coin_info_id<CoinType: key>(): ObjectID {
-        object_id::named_object_id<CoinInfo<CoinType>>()
+        object::named_object_id<CoinInfo<CoinType>>()
     }
 
     /// Returns the name of the coin.
@@ -309,5 +307,10 @@ module rooch_framework::coin {
         Coin<CoinType> {
             value
         }
+    }
+
+    #[test_only]
+    public fun destroy_for_testing<CoinType: key>(coin: Coin<CoinType>) {
+        let Coin { value:_ } = coin;
     }
 }

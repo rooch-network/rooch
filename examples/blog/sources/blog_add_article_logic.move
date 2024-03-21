@@ -4,7 +4,7 @@
 module rooch_examples::blog_add_article_logic {
 
     use moveos_std::object::Object;
-    use moveos_std::object_id::ObjectID;
+    use moveos_std::object::ObjectID;
     use moveos_std::table;
     use rooch_examples::article_added_to_blog;
     use rooch_examples::blog;

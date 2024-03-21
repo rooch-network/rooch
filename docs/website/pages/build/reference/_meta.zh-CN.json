@@ -1,0 +1,13 @@
+{
+  "rooch-cli-new": "Rooch CLI",
+  "rooch-cli": {
+    "title": "Rooch CLI",
+    "display": "hidden"
+  },
+  "rooch-framework": {
+    "title": "Rooch Framework",
+    "display": "hidden"
+  },
+  "sdk": "SDK",
+  "rpc": "RPC"
+}

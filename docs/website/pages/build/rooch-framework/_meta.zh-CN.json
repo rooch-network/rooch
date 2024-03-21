@@ -1,0 +1,10 @@
+{
+  "on-chain-btc-indexer": {
+    "title": "链上比特币索引器",
+    "display": "hidden"
+  },
+  "cryptographic-primitives": "密码原语",
+  "timestamp": "时间戳",
+  "private-generics": "私有泛型",
+  "unit-test": "单元测试"
+}

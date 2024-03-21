@@ -1,0 +1,11 @@
+{
+  "accounts": "Account",
+  "transaction": "Transaction",
+  "objects": "Object",
+  "token": "Token",
+  "move-contracts": "Move concepts",
+  "token": {
+    "title": "Token",
+    "display": "hidden"
+  }
+}

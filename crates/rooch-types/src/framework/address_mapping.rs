@@ -5,7 +5,7 @@ use crate::address::{MultiChainAddress, RoochAddress};
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::{Ok, Result};
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
-use moveos_types::moveos_std::object_id::ObjectID;
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::option::MoveOption,
@@ -98,15 +98,17 @@ impl<'a> AddressMapping<'a> {
                 let value2 = values.get(2).ok_or(anyhow::anyhow!(
                     "Address mapping handle expected return value"
                 ))?;
-                let address_mapping_handle = ObjectID::from_bytes(&value0.value).map_err(|e| {
+                let address_mapping_handle =
+                    ObjectID::from_bytes(value0.value.clone()).map_err(|e| {
+                        anyhow::anyhow!("Address mapping handle convert error {}", e.to_string())
+                    })?;
+                let mapping_handle = ObjectID::from_bytes(value1.value.clone()).map_err(|e| {
                     anyhow::anyhow!("Address mapping handle convert error {}", e.to_string())
                 })?;
-                let mapping_handle = ObjectID::from_bytes(&value1.value).map_err(|e| {
-                    anyhow::anyhow!("Address mapping handle convert error {}", e.to_string())
-                })?;
-                let reverse_mapping_handle = ObjectID::from_bytes(&value2.value).map_err(|e| {
-                    anyhow::anyhow!("Address mapping handle convert error {}", e.to_string())
-                })?;
+                let reverse_mapping_handle =
+                    ObjectID::from_bytes(value2.value.clone()).map_err(|e| {
+                        anyhow::anyhow!("Address mapping handle convert error {}", e.to_string())
+                    })?;
                 Ok((
                     address_mapping_handle,
                     mapping_handle,

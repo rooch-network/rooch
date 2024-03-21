@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::moveos_std::object::ObjectID;
 use crate::moveos_std::object::{AnnotatedObject, ObjectEntity, RawObject};
-use crate::moveos_std::object_id::ObjectID;
 use anyhow::{bail, ensure, Result};
 use core::str;
 use move_core_types::{
@@ -194,11 +194,11 @@ pub trait MoveState: MoveType + DeserializeOwned + Serialize {
         let self_layout = Self::type_layout();
         type_layout_match(&self_layout, other_type_layout)
     }
-    fn from_bytes(bytes: &[u8]) -> Result<Self>
+    fn from_bytes<T: AsRef<Vec<u8>>>(bytes: T) -> Result<Self>
     where
         Self: Sized,
     {
-        bcs::from_bytes(bytes)
+        bcs::from_bytes(bytes.as_ref())
             .map_err(|e| anyhow::anyhow!("Deserialize the MoveState error: {:?}", e))
     }
     fn to_bytes(&self) -> Vec<u8> {
@@ -479,7 +479,7 @@ pub trait MoveStructState: MoveState + MoveStructType + DeserializeOwned + Seria
                     Self::type_tag()
                 )
             })?;
-        Self::from_bytes(&blob)
+        Self::from_bytes(blob)
     }
 }
 
@@ -751,17 +751,17 @@ impl SplitStateChangeSet {
     }
 
     pub fn add_new_table(&mut self, table_handle: ObjectID) {
-        let table_change_set = self.get_or_insert_table_change_set(table_handle);
+        let table_change_set = self.get_or_insert_table_change_set(table_handle.clone());
         table_change_set.new_tables.insert(table_handle);
     }
 
     pub fn add_table_change(&mut self, table_handle: ObjectID, table_change: TableChange) {
-        let table_change_set = self.get_or_insert_table_change_set(table_handle);
+        let table_change_set = self.get_or_insert_table_change_set(table_handle.clone());
         table_change_set.changes.insert(table_handle, table_change);
     }
 
     pub fn add_remove_table(&mut self, table_handle: ObjectID) {
-        let table_change_set = self.get_or_insert_table_change_set(table_handle);
+        let table_change_set = self.get_or_insert_table_change_set(table_handle.clone());
         table_change_set.removed_tables.insert(table_handle);
     }
 }

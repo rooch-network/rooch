@@ -3,14 +3,13 @@
 //check the account coin store object id
 //# run --signers test
 script {
-    use moveos_std::object_id;
     
     use rooch_framework::coin_store::CoinStore;
     use rooch_framework::gas_coin::GasCoin;
 
     fun main(sender: &signer) {
         let account_addr = moveos_std::signer::address_of(sender);
-        let object_id = object_id::account_named_object_id<CoinStore<GasCoin>>(account_addr);
+        let object_id = moveos_std::object::account_named_object_id<CoinStore<GasCoin>>(account_addr);
         std::debug::print(&object_id);
         std::debug::print(&rooch_framework::coin::is_registered<GasCoin>());
         std::debug::print(&rooch_framework::account_coin_store::balance<GasCoin>(account_addr));
@@ -21,7 +20,7 @@ script {
 //# run rooch_framework::gas_coin::faucet_entry --signers test 
 
 //Transfer via coin store
-//# run --signers test --args @0xd073508b9582eff4e01078dc2e62489c15bbef91b6a2e568ac8fb33f0cf54daa
+//# run --signers test --args object:0xd073508b9582eff4e01078dc2e62489c15bbef91b6a2e568ac8fb33f0cf54daa
 script {
     use moveos_std::object::{Object};
     

@@ -1,0 +1,172 @@
+# Unit test
+
+In Move, writing unit tests is basically the same as writing normal code. The only difference is that the following annotation is used above the test code:
+
+- `#[test]`
+- `#[test_only]`
+- `#[expected_failure]`
+
+The first annotation marks the function as a test. The second annotation marks the module or module member (use statement, function, or structure) as being used only for testing. The third line marks code that is expected to fail the test.
+
+These annotations can be placed on functions with any visibility. Whenever a module or module member is annotated as `#[test_only]` or `#[test]`, it will not be included in the compiled bytecode unless it is compiled for testing.
+
+The `#[test]` and `#[expected_failure]` annotations can be used with or without parameters.
+
+The `#[test]` annotation without parameters can only be placed on functions without parameters.
+
+```move
+#[test] // OK
+fun this_is_a_test() { ... }
+
+#[test] // Will fail to compile since the test takes an argument
+fun this_is_not_correct(arg: signer) { ... }
+```
+
+Tests can also be annotated with `#[expected_failure]`. This annotation indicates that the test should throw an error. You can ensure that a test aborts with a specific abort code by annotating it with `#[expected_failure(abort_code = code)]` and if it subsequently fails with a different abort code or a non-abort error, the test will fail. Only functions annotated with `#[test]` can also be annotated with `#[expected_failure]`.
+
+```move
+#[test]
+#[expected_failure]
+public fun this_test_will_abort_and_pass() { abort 1 }
+
+#[test]
+#[expected_failure]
+public fun test_will_error_and_pass() { 1/0; }
+
+#[test]
+#[expected_failure(abort_code = 0)]
+public fun test_will_error_and_fail() { 1/0; }
+
+#[test, expected_failure] // Can have multiple in one attribute. This test will pass.
+public fun this_other_test_will_abort_and_pass() { abort 1 }
+```
+
+## Test example
+
+```move
+module unit_test::unit_test {
+    use moveos_std::signer;
+    use moveos_std::context::{Self, Context};
+    #[test_only]
+    use moveos_std::context::drop_test_context;
+
+    struct Counter has key {
+        count_value: u64
+    }
+
+    fun init(ctx: &mut Context, account: &signer) {
+        context::move_resource_to(ctx, account, Counter { count_value: 0 });
+    }
+
+    entry fun increase(ctx: &mut Context, account: &signer) {
+        let account_addr = signer::address_of(account);
+        let counter = context::borrow_mut_resource<Counter>(ctx, account_addr);
+        counter.count_value = counter.count_value + 1;
+    }
+
+    #[test(account = @0x42)]
+    fun test_counter(account: &signer) {
+        let account_addr = signer::address_of(account);
+        let ctx = context::new_test_context(account_addr);
+        context::move_resource_to(&mut ctx, account, Counter { count_value: 0 });
+
+        let counter = context::borrow_resource<Counter>(&ctx, account_addr);
+        assert!(counter.count_value == 0, 999);
+
+        increase(&mut ctx, account);
+        let counter = context::borrow_resource<Counter>(&ctx, account_addr);
+        assert!(counter.count_value == 1, 1000);
+
+        drop_test_context(ctx);
+    }
+}
+```
+
+We use the counter example in the [Quick start](../getting-started/first-contract/quick-start.en-US.mdx) to demonstrate. In the quick start, we have written a counter program, but after we finish writing, there is no guarantee that all functions will work as we expected. Therefore, we write a unit test to check whether the function of the current module can achieve the expected effect.
+
+The function `test_counter` is the unit test function of the current program. The `#[test]` annotation is used and an `account` parameter is passed.
+
+When testing, we do not call the command line and will not generate a normal context, so we need to create a context for this test.
+
+Once the address and context are available, we can construct the counter, build it and move the counter resource to the `0x42` address.
+
+1. Test whether the counter is created normally:
+
+```move
+let counter = context::borrow_resource<Counter>(&ctx, account_addr);
+assert!(counter.count_value == 0, 999);
+```
+
+2. Check the execution logic of the `increase` function and determine whether it can be incremented normally:
+
+```move
+increase(&mut ctx, account);
+let counter = context::borrow_resource<Counter>(&ctx, account_addr);
+assert!(counter.count_value == 1, 1000);
+```
+
+3. After the test context is used, it needs to be released.
+
+> Since the context is created by testing, `init` and `increase` cannot be placed in two unit tests, so testing needs to be completed within a function scope in unit testing.
+
+## Run unit test
+
+```shell
+rooch move test
+```
+
+```shell
+[joe@mx unit_test]$ rooch move test
+
+INCLUDING DEPENDENCY MoveStdlib
+INCLUDING DEPENDENCY MoveosStdlib
+INCLUDING DEPENDENCY RoochFramework
+BUILDING unit_test
+Running Move unit tests
+2023-12-21T13:57:07.014787Z  INFO moveos_common::utils: set max open fds 45056
+[ PASS    ] 0x42::unit_test::test_counter
+Test result: OK. Total tests: 1; passed: 1; failed: 0
+Success
+```
+
+As you can see, the unit test we wrote passed! Prove that our counter logic is correct.
+
+Next, let’s modify it to see what happens when the assertion fails:
+
+```move
+let counter = context::borrow_resource<Counter>(&ctx, account_addr);
+assert!(counter.count_value == 2, 999);
+```
+
+```shell
+[joe@mx unit_test]$ rooch move test
+
+INCLUDING DEPENDENCY MoveStdlib
+INCLUDING DEPENDENCY MoveosStdlib
+INCLUDING DEPENDENCY RoochFramework
+BUILDING unit_test
+Running Move unit tests
+2023-12-21T14:10:07.413084Z  INFO moveos_common::utils: set max open fds 45056
+[ FAIL    ] 0x42::unit_test::test_counter
+
+Test failures:
+
+Failures in 0x42::unit_test:
+
+┌── test_counter ──────
+│ error[E11001]: test failure
+│    ┌─ ./sources/counter.move:28:9
+│    │
+│ 22 │     fun test_counter(account: &signer) {
+│    │         ------------ In this function in 0x42::unit_test
+│    ·
+│ 28 │         assert!(counter.count_value == 2, 999);
+│    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Test was not expected to error, but it aborted with code 999 originating in the module 0000000000000000000000000000000000000000000000000000000000000042::unit_test rooted here
+│
+│
+└──────────────────
+
+Test result: FAILED. Total tests: 1; passed: 0; failed: 1
+```
+
+As you can see, the Move compiler clearly indicates the location of the assertion program, so we can easily locate a certain location in our test program and know that the execution result of a certain function does not meet our expectations.

@@ -5,7 +5,7 @@ use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::Result;
 use move_core_types::language_storage::StructTag;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
-use moveos_types::moveos_std::object_id::{self, ObjectID};
+use moveos_types::moveos_std::object::{self, ObjectID};
 use moveos_types::state::{MoveState, PlaceholderStruct};
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
@@ -53,7 +53,7 @@ impl<'a> AccountCoinStoreModule<'a> {
     pub fn account_coin_store_id(addr: AccountAddress, coin_type: StructTag) -> ObjectID {
         let coin_store_struct_tag =
             CoinStore::<PlaceholderStruct>::struct_tag_with_coin_type(coin_type);
-        object_id::account_named_object_id(addr, &coin_store_struct_tag)
+        object::account_named_object_id(addr, &coin_store_struct_tag)
     }
 }
 

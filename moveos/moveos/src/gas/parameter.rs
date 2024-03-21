@@ -494,6 +494,7 @@ static G_NATIVE_STRS: Lazy<Vec<&str>> = Lazy::new(|| {
         "table.borrow_box.per_byte_serialized",
         "table.remove_box.per_byte_serialized",
         "table.contains_box.per_byte_serialized",
+        "table.contains_box_with_value_type.per_byte_serialized",
         "table.destroy_empty_box.base",
         "table.drop_unchecked_box.base",
         "table.box_length.base",

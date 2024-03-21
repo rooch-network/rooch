@@ -4,7 +4,7 @@
 import { hexlify } from '@ethersproject/bytes'
 import { fromHexString } from './hex'
 import { ROOCH_ADDRESS_LENGTH } from '../constants'
-import { AccountAddress, FunctionId, TypeTag, StructTag, Arg } from '../types'
+import { AccountAddress, FunctionId, TypeTag, StructTag, Arg, ObjectID } from '../types'
 import * as rooch_types from '../types/bcs'
 import {
   bytes as Bytes,
@@ -96,6 +96,26 @@ export function addressToSCS(addr: AccountAddress): rooch_types.AccountAddress {
     data.push([bytes[i]])
   }
   return new rooch_types.AccountAddress(data)
+}
+
+// The account address in Move is 32 bytes
+const ACCOUNT_ADDRESS_LENGTH = 32
+
+export function encodeObjectID(objectId: ObjectID): rooch_types.ObjectID {
+  let bytes = fromHexString(objectId)
+  let addresses = []
+  for (let i = 0; i < bytes.length; i += ACCOUNT_ADDRESS_LENGTH) {
+    let chunk = bytes.slice(i, i + ACCOUNT_ADDRESS_LENGTH)
+    if (chunk.length !== ACCOUNT_ADDRESS_LENGTH) {
+      throw new Error('Invalid chunk size')
+    }
+    const data: [number][] = []
+    for (let i = 0; i < chunk.length; i++) {
+      data.push([chunk[i]])
+    }
+    addresses.push(new rooch_types.AccountAddress(data))
+  }
+  return new rooch_types.ObjectID(addresses)
 }
 
 export function encodeStructTypeTags(typeArgsString: string[]): TypeTag[] {
@@ -217,14 +237,13 @@ function serializeValue(value: any, type: TypeTag, se: BcsSerializer) {
     const serializable = value as Serializable
     serializable.serialize(se)
   } else if (type === 'ObjectID') {
-    const list = addressToListTuple(normalizeRoochAddress(value as string))
-    const accountAddress = new rooch_types.AccountAddress(list)
-    accountAddress.serialize(se)
+    let objectIdStr = normalizeRoochAddress(value as string)
+    const objectId = encodeObjectID(objectIdStr as ObjectID)
+    objectId.serialize(se)
   } else if (type === 'Object') {
-    const objectId = structTagToObjectID(value as StructTag)
-    const list = addressToListTuple(normalizeRoochAddress(objectId))
-    const accountAddress = new rooch_types.AccountAddress(list)
-    accountAddress.serialize(se)
+    const objectIdStr = structTagToObjectID(value as StructTag)
+    const objectId = encodeObjectID(objectIdStr as ObjectID)
+    objectId.serialize(se)
   } else if (type === 'Raw') {
     const vectorValues = value as Uint8Array
     se.serializeLen(vectorValues.length)

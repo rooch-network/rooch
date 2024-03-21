@@ -6,7 +6,7 @@ module nft::nft {
     use nft::collection;
     use moveos_std::display;
     use moveos_std::object::{Self, Object};
-    use moveos_std::object_id::{ObjectID};
+    use moveos_std::object::ObjectID;
     #[test_only]
     use std::option;
 

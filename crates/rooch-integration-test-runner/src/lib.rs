@@ -26,7 +26,7 @@ use moveos_store::MoveOSStore;
 use moveos_types::{
     addresses::MOVEOS_STD_ADDRESS,
     move_types::FunctionId,
-    moveos_std::object_id::ObjectID,
+    moveos_std::object::ObjectID,
     state_resolver::AnnotatedStateReader,
     transaction::{MoveAction, MoveOSTransaction, TransactionOutput},
 };
@@ -282,7 +282,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             MoveOSSubcommands::ViewObject { object_id } => {
                 let resoler = self.moveos.moveos_resolver();
                 let object = resoler
-                    .get_annotated_object(object_id)?
+                    .get_annotated_object(object_id.clone())?
                     .ok_or_else(|| anyhow::anyhow!("Object with id {} not found", object_id))?;
                 //TODO should we bring the AnnotatedObjectView from jsonrpc to test adapter for better json output formatting?
                 Ok(Some(format!("{:?}", object)))

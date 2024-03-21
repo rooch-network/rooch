@@ -1,13 +1,13 @@
 module quick_start_counter::quick_start_counter {
     use moveos_std::account;
-    
 
-    struct Counter has key {
+    struct Counter has key,store {
         count_value: u64
     }
 
-    fun init(account: &signer) {
-        account::move_resource_to(account, Counter { count_value: 0 });
+    fun init() {
+        let signer = moveos_std::signer::module_signer<Counter>();
+        account::move_resource_to(&signer, Counter { count_value: 0 });
     }
 
     entry fun increase() {

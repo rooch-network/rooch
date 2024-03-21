@@ -1,0 +1,5 @@
+{
+  "run-local-testnet": "Run local network",
+  "connect-devnet": "Connect to devnet",
+  "connect-testnet": "Connect to testnet"
+}

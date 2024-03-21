@@ -158,7 +158,7 @@ module rooch_framework::account_coin_store_test{
     }
 
     #[test(source = @rooch_framework, destination = @0x55)]
-    #[expected_failure(abort_code = 2, location = moveos_std::raw_table)]
+    #[expected_failure(abort_code = 2, location = moveos_std::object)]
     fun test_fail_transfer(
         source: signer,
         destination: signer,

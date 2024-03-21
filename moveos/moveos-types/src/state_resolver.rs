@@ -5,7 +5,7 @@ use crate::move_std::ascii::MoveAsciiString;
 use crate::move_std::string::MoveString;
 use crate::moveos_std::account::Account;
 use crate::moveos_std::move_module::ModuleStore;
-use crate::moveos_std::object_id::ObjectID;
+use crate::moveos_std::object::ObjectID;
 use crate::state::{AnnotatedKeyState, KeyState, MoveStructType};
 use crate::{
     access_path::AccessPath,
@@ -22,14 +22,12 @@ use move_core_types::{
 };
 use move_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
 
-pub const GLOBAL_OBJECT_STORAGE_HANDLE: ObjectID = ObjectID::ZERO;
-
 pub type StateKV = (KeyState, State);
 pub type AnnotatedStateKV = (AnnotatedKeyState, AnnotatedState);
 
 /// A global state resolver which needs to be provided by the environment.
 /// This allows to lookup data in remote storage.
-/// If the handle is GLOBAL_OBJECT_STORAGE_HANDLE, it will get the data from the global state tree,
+/// If the handle is ObjectID::root(), it will get the data from the global state tree,
 /// otherwise it will get the data from the table state tree.
 /// The key can be an ObjectID or an arbitrary key of a table.
 pub trait StateResolver {
@@ -48,7 +46,7 @@ pub trait StateResolver {
 
     // get object data from global state tree.
     fn resolve_object_state(&self, object: &ObjectID) -> Result<Option<State>, anyhow::Error> {
-        self.resolve_table_item(&GLOBAL_OBJECT_STORAGE_HANDLE, &object.to_key())
+        self.resolve_table_item(&ObjectID::root(), &object.to_key())
     }
 }
 

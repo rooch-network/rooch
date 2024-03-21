@@ -12,7 +12,6 @@
 
 <pre><code><b>use</b> <a href="">0x2::account</a>;
 <b>use</b> <a href="">0x2::object</a>;
-<b>use</b> <a href="">0x2::object_id</a>;
 <b>use</b> <a href="account.md#0x3_account">0x3::account</a>;
 <b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
 <b>use</b> <a href="address_mapping.md#0x3_address_mapping">0x3::address_mapping</a>;
@@ -57,5 +56,5 @@ TODO: Currently, we can not pass the <code>Object&lt;T&gt;</code> argument by va
 After the <code>Object&lt;T&gt;</code> argument can be passed by value, we should change the argument type to <code>Object&lt;T&gt;</code>.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_object">transfer_object</a>&lt;T: store, key&gt;(from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, <a href="">object_id</a>: <a href="_ObjectID">object_id::ObjectID</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="transfer.md#0x3_transfer_transfer_object">transfer_object</a>&lt;T: store, key&gt;(from: &<a href="">signer</a>, <b>to</b>: <b>address</b>, object_id: <a href="_ObjectID">object::ObjectID</a>)
 </code></pre>

@@ -14,7 +14,8 @@ use move_vm_types::loaded_data::runtime_types::{StructType, Type};
 use moveos_object_runtime::resolved_arg::ResolvedArg;
 use moveos_types::{
     move_std::{ascii::MoveAsciiString, string::MoveString},
-    moveos_std::object_id::ObjectID,
+    moveos_std::object::ObjectID,
+    state::MoveState,
 };
 use moveos_types::{
     moveos_std::object::Object,

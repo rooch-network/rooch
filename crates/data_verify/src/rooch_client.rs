@@ -16,7 +16,7 @@ pub fn query_inscription(
     index: String,
 ) -> Result<Option<InscriptionStateView>> {
     let query_param = format!(
-        "{{\"inscription_id\":{{\"txid\":{}, \"index\":{} }} }}",
+        "{{\"inscription_id\":{{\"txid\":\"{}\", \"index\":{} }} }}",
         txid, index
     );
 

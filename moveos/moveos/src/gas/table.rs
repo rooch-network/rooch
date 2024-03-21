@@ -22,7 +22,7 @@ use move_resource_viewer::AnnotatedMoveValue;
 use move_vm_types::gas::{GasMeter, SimpleInstruction};
 use move_vm_types::views::{TypeView, ValueView};
 use moveos_types::moveos_std::event::TransactionEvent;
-use moveos_types::moveos_std::object_id;
+use moveos_types::moveos_std::object;
 use moveos_types::state::{MoveStructState, MoveStructType, StateChangeSet};
 use moveos_types::state_resolver::{AnnotatedStateReader, MoveOSResolver};
 use moveos_types::transaction::GasStatement;
@@ -1406,7 +1406,7 @@ pub fn get_gas_schedule_entries<Resolver: MoveOSResolver>(
         }
     }
 
-    let id = object_id::named_object_id(&gas_schedule_struct());
+    let id = object::named_object_id(&gas_schedule_struct());
     let gas_schedule_vec_result = db.get_annotated_object(id);
 
     let mut gas_schedule_entries = BTreeMap::new();

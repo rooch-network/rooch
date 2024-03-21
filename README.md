@@ -23,7 +23,7 @@
 * ChainID: 20230103
 * RPC: https://dev-seed.rooch.network/
 
-Please refer to [Connect to Developer Test Network](https://rooch.network/docs/developer-guides/connect-devnet) for more information.
+Please refer to [Connect to Developer Test Network](https://rooch.network/build/getting-started/connect-to-rooch/connect-devnet) for more information.
 
 ## MoveStd & MoveosStd & RoochFramework documentation
 
@@ -31,7 +31,7 @@ Please refer to [Connect to Developer Test Network](https://rooch.network/docs/d
 * moveos_std: 0x2 [MoveosStdlib](./moveos/moveos-stdlib/moveos-stdlib/doc)
 * rooch_framework: 0x3 [RoochFramework](./crates/rooch-framework/doc/)
 
-Please refer to [Rooch's built-in library](https://rooch.network/docs/developer-guides/library) for more information.
+Please refer to [Rooch's built-in library](https://rooch.network/learn/core-concepts/move-contracts/built-in-library) for more information.
 
 ## Getting Started
 
@@ -73,7 +73,7 @@ Please refer to [Rooch's built-in library](https://rooch.network/docs/developer-
 <details>
 <summary>Storage Abstraction</summary>
 
-- [Docs](https://rooch.network/docs/dive-into-rooch/storage-abstraction)
+- [Docs](https://rooch.network/learn/core-concepts/objects/storage-abstraction)
 
 - Overview:
 
@@ -92,7 +92,7 @@ Please refer to [Rooch's built-in library](https://rooch.network/docs/developer-
 <details>
 <summary>Transaction Flow</summary>
 
-- [Docs](https://rooch.network/docs/dive-into-rooch/transaction-flow)
+- [Docs](https://rooch.network/learn/core-concepts/transaction/transaction-flow)
 - Overview:
 ![Rooch Transaction Flow](./docs/website/public/docs/rooch-design-transaction-flow-functional-perspective.svg)
 

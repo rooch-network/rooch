@@ -29,6 +29,7 @@ hex = { workspace = true }
 petgraph = { workspace = true }
 parking_lot = { workspace = true }
 itertools = { workspace = true }
+ciborium = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }
@@ -46,6 +47,8 @@ move-prover = { workspace = true }
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-stdlib-builder = { workspace = true }
+moveos-wasm = { workspace = true }
+wasmer = { workspace = true }
 moveos-object-runtime = { workspace = true }
 
 smt = { workspace = true }

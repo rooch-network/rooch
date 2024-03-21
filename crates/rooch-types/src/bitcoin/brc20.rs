@@ -6,8 +6,8 @@ use anyhow::Result;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, u256::U256, value::MoveValue,
 };
-use moveos_types::moveos_std::object_id;
-use moveos_types::moveos_std::object_id::ObjectID;
+use moveos_types::moveos_std::object;
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::{option::MoveOption, string::MoveString},
@@ -34,7 +34,7 @@ pub struct BRC20Store {
 
 impl BRC20Store {
     pub fn object_id() -> ObjectID {
-        object_id::named_object_id(&Self::struct_tag())
+        object::named_object_id(&Self::struct_tag())
     }
 }
 
@@ -83,7 +83,7 @@ impl<'a> BRC20Module<'a> {
             Self::GET_TICK_INFO_FUNCTION_NAME,
             vec![],
             vec![
-                MoveValue::Address(BRC20Store::object_id().into()),
+                BRC20Store::object_id().to_move_value(),
                 MoveValue::vector_u8(MoveString::from(tick).to_bytes()),
             ],
         );
@@ -105,7 +105,7 @@ impl<'a> BRC20Module<'a> {
             Self::GET_BALANCE_FUNCTION_NAME,
             vec![],
             vec![
-                MoveValue::Address(BRC20Store::object_id().into()),
+                BRC20Store::object_id().to_move_value(),
                 MoveValue::vector_u8(MoveString::from(tick).to_bytes()),
                 MoveValue::Address(addr),
             ],

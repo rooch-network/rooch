@@ -6,8 +6,8 @@ use crate::moveos_std::move_module::ModuleStore;
 use crate::state::KeyState;
 use crate::{
     move_types::{random_identity, random_struct_tag},
-    moveos_std::object_id::ObjectID,
-    state_resolver::{self, module_id_to_key, resource_tag_to_key},
+    moveos_std::object::ObjectID,
+    state_resolver::{module_id_to_key, resource_tag_to_key},
 };
 use anyhow::Result;
 use move_core_types::language_storage::ModuleId;
@@ -256,7 +256,7 @@ impl AccessPath {
         match self.0 {
             Path::Table { table_handle, keys } => (table_handle, keys),
             Path::Object { object_ids } => {
-                let table_handle = state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE;
+                let table_handle = ObjectID::root().clone();
                 let keys = Some(
                     object_ids
                         .iter()

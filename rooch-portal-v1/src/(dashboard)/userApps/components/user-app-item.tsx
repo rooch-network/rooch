@@ -32,7 +32,7 @@ export const UserAppItem = ({
   return (
     <Card
       key={id}
-      className="h-full w-full transition-all dark:bg-zinc-800/90 dark:hover:border-primary/70 hover:shadow-md overflow-hidden"
+      className="h-full w-full transition-all border-border/40 dark:bg-zinc-800/90 dark:hover:border-primary/20 hover:shadow-md overflow-hidden"
     >
       <CardHeader className="p-4">
         <div className="flex items-center justify-start gap-x-3">
@@ -57,7 +57,7 @@ export const UserAppItem = ({
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="mx-4 border rounded-lg overflow-hidden">
+        <div className="mx-4 border-none rounded-lg overflow-hidden">
           <AspectRatio
             ratio={16 / 9}
             className="flex items-center justify-center overflow-hidden cursor-pointer"

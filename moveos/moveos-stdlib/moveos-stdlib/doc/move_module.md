@@ -47,7 +47,6 @@ It is used to store the modules
 <pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="object_id.md#0x2_object_id">0x2::object_id</a>;
 <b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 </code></pre>
@@ -299,7 +298,7 @@ Replace given u256 constant to the new ones
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_module_store_id">module_store_id</a>(): <a href="object_id.md#0x2_object_id_ObjectID">object_id::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_module_store_id">module_store_id</a>(): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
 </code></pre>
 
 

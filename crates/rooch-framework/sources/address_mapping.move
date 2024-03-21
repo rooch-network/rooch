@@ -7,12 +7,9 @@ module rooch_framework::address_mapping{
     use std::signer;
     use std::vector;
     use moveos_std::core_addresses;
-    use moveos_std::object_id::ObjectID;
-    use moveos_std::object_id;
     use moveos_std::bcs;
-    
     use moveos_std::table::{Self, Table};
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object::{Self, Object, ObjectID};
     use rooch_framework::multichain_address::{Self, MultiChainAddress};
 
     friend rooch_framework::genesis;
@@ -38,7 +35,7 @@ module rooch_framework::address_mapping{
 
     /// Return AddressMapping table handle, including mapping and reverse_mapping table handle
     public fun address_mapping_handle(): (ObjectID, ObjectID, ObjectID) {
-        let object_id = object_id::named_object_id<AddressMapping>();
+        let object_id = object::named_object_id<AddressMapping>();
         let address_mapping_obj = object::borrow_object<AddressMapping>(object_id);
         let address_mapping = object::borrow<AddressMapping>(address_mapping_obj);
         (object_id, table::handle(&address_mapping.mapping), table::handle(&address_mapping.reverse_mapping))
@@ -46,12 +43,12 @@ module rooch_framework::address_mapping{
 
     /// Borrow the address mapping object
     public fun borrow() : &Object<AddressMapping> {
-        let object_id = object_id::named_object_id<AddressMapping>();
+        let object_id = object::named_object_id<AddressMapping>();
         object::borrow_object<AddressMapping>(object_id)
     }
 
     fun borrow_mut() : &mut Object<AddressMapping> {
-        let object_id = object_id::named_object_id<AddressMapping>();
+        let object_id = object::named_object_id<AddressMapping>();
         object::borrow_mut_object_extend<AddressMapping>(object_id)
     }
 
