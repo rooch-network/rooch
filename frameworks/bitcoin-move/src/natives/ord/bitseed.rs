@@ -30,7 +30,7 @@ impl ArgsPackingGasParameters {
 
 /// Rust implementation of native_pack_inscribe_generate_args
 #[inline]
-pub(crate) fn native_pack_inscribe_generate_args(
+pub fn native_pack_inscribe_generate_args(
     gas_params: &ArgsPackingGasParameters,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,

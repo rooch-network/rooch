@@ -119,6 +119,7 @@ fn native_create_cbor_values(
     }
 
     let mint_args_array = JSONValue::Array(mint_args_json);
+    log::debug!("native_create_cbor_values -> mint_args_array {:?}", mint_args_array);
     let mut cbor_buffer = Vec::new();
     match ciborium::into_writer(&mint_args_array, &mut cbor_buffer) {
         Ok(_) => {}
@@ -126,6 +127,10 @@ fn native_create_cbor_values(
             return Ok(NativeResult::err(gas_params.base, E_CBOR_MARSHAL_FAILED));
         }
     }
+
+    let cbor_value: ciborium::Value =
+        ciborium::from_reader(cbor_buffer.as_slice()).expect("cbor unmarshal failed");
+    log::debug!("native_create_cbor_values -> mint_args_array {:?}", cbor_value);
 
     let ret_vec = Value::vector_u8(cbor_buffer.clone());
 
