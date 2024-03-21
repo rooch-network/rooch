@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use std::collections::VecDeque;
 
 use move_binary_format::errors::PartialVMResult;
