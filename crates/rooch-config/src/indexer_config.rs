@@ -14,7 +14,8 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
 
-pub const ROOCH_INDEXER_DB_FILENAME: &str = "indexer.sqlite";
+// pub const ROOCH_INDEXER_DB_FILENAME: &str = "indexer.sqlite";
+pub const ROOCH_INDEXER_DB_DIR: &str = "indexer";
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize, Parser)]
 #[clap(name = "Rooch indexer")]
@@ -42,14 +43,8 @@ impl IndexerConfig {
 
     pub fn init(&self) -> Result<()> {
         let indexer_db = self.clone().get_indexer_db();
-        let indexer_db_parent_dir = indexer_db
-            .parent()
-            .ok_or(anyhow::anyhow!("Invalid indexer db dir"))?;
-        if !indexer_db_parent_dir.exists() {
-            std::fs::create_dir_all(indexer_db_parent_dir)?;
-        }
         if !indexer_db.exists() {
-            std::fs::File::create(indexer_db.clone())?;
+            std::fs::create_dir_all(indexer_db.clone())?;
         }
         println!("IndexerConfig init store dir {:?}", indexer_db);
         Ok(())
@@ -66,14 +61,14 @@ impl IndexerConfig {
     pub fn get_indexer_db(&self) -> PathBuf {
         self.data_dir()
             .join(R_DEFAULT_DB_DIR.as_path())
-            .join(ROOCH_INDEXER_DB_FILENAME)
+            .join(ROOCH_INDEXER_DB_DIR)
     }
 
     pub fn get_mock_indexer_db(data_dir: &DataDirPath) -> PathBuf {
         data_dir
             .path()
             .join(R_DEFAULT_DB_DIR.as_path())
-            .join(ROOCH_INDEXER_DB_FILENAME)
+            .join(ROOCH_INDEXER_DB_DIR)
     }
 }
 

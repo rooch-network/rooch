@@ -13,6 +13,7 @@ const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 /// creates all the tables by applying all migrations.
 pub fn create_all_tables_if_not_exists(
     conn: &mut SqlitePoolConnection,
+    _table_name: String,
 ) -> Result<(), anyhow::Error> {
     info!("Indexer creates all tables in the db ...");
     let migration = MIGRATIONS;
@@ -27,6 +28,22 @@ pub fn create_all_tables_if_not_exists(
     ",
     )
     .execute(conn)?;
+
+    // TODO need filter by talbe name.
+    // The fields and methods of EmbeddedMigrations in Diesel Lib are private.
+    // There is no API support for filtering by tablename.
+    // We may consider forking diesel to provide the corresponding API to implement the filtering function.
+
+    // let match_migration = &MIGRATIONS
+    //     .migrations()?
+    //     .into_iter()
+    //     .map(|v| {
+    //         if v.name().version().to_string().ends_with(table_name) {
+    //             v.clone()
+    //         }
+    //     })
+    //     // .collect::<Vec<Box<dyn Migration<Sqlite>>>>();
+    //     .collect::<Vec<_>>();
 
     conn.run_pending_migrations(migration)
         .map_err(|e| anyhow!("Failed to run migrations {e}"))?;

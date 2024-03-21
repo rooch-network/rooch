@@ -45,6 +45,7 @@ pub struct NativeTableContext<'a> {
 /// Ensure the error codes in this file is consistent with the error code in raw_table.move
 const E_ALREADY_EXISTS: u64 = super::object::ERROR_ALREADY_EXISTS;
 const E_NOT_FOUND: u64 = super::object::ERROR_NOT_FOUND;
+const E_TYPE_MISMATCH: u64 = super::object::ERROR_TYPE_MISMATCH;
 
 // ===========================================================================================
 // Private Data Structures and Constants
@@ -288,16 +289,16 @@ impl TableData {
         // _context: &NativeContext,
         handle: ObjectID,
     ) -> PartialVMResult<&mut Table> {
-        match self.tables.entry(handle) {
+        match self.tables.entry(handle.clone()) {
             Entry::Vacant(e) => {
+                if log::log_enabled!(log::Level::Trace) {
+                    log::trace!("[RawTable] creating table {}", handle);
+                }
                 let table = Table {
                     handle,
                     content: Default::default(),
                     size_increment: 0,
                 };
-                if log::log_enabled!(log::Level::Trace) {
-                    log::trace!("[RawTable] creating table {}", handle);
-                }
                 Ok(e.insert(table))
             }
             Entry::Occupied(e) => Ok(e.into_mut()),
@@ -315,13 +316,15 @@ impl TableData {
     }
 
     pub fn load_object(&mut self, object_id: &ObjectID) -> VMResult<()> {
-        self.object_reference.entry(*object_id).or_insert_with(|| {
-            //TODO we should load the ObjectEntity<T> from the resolver
-            //Then cache the Object<T>
-            let object_id_value = object_id.to_runtime_value();
-            GlobalValue::cached(Value::struct_(Struct::pack(vec![object_id_value])))
-                .expect("Failed to cache the Struct")
-        });
+        self.object_reference
+            .entry(object_id.clone())
+            .or_insert_with(|| {
+                //TODO we should load the ObjectEntity<T> from the resolver
+                //Then cache the Object<T>
+                let object_id_value = object_id.to_runtime_value();
+                GlobalValue::cached(Value::struct_(Struct::pack(vec![object_id_value])))
+                    .expect("Failed to cache the Struct")
+            });
         Ok(())
     }
 
@@ -351,7 +354,7 @@ impl TableData {
                 let ref_value = self.borrow_object(object_id)?;
                 //We cache the object reference in the object_ref_in_args
                 //Ensure the reference count and the object can not be borrowed in Move
-                self.object_ref_in_args.insert(*object_id, ref_value);
+                self.object_ref_in_args.insert(object_id.clone(), ref_value);
             }
         }
         Ok(())
@@ -515,7 +518,7 @@ fn native_add_box(
 
     let val = args.pop_back().unwrap();
     let key = args.pop_back().unwrap();
-    let handle = get_table_handle(&mut args)?;
+    let handle = get_object_id(&mut args)?;
 
     let table = table_data.get_or_create_table(handle)?;
     let (tv, loaded, _, key_bytes_len) =
@@ -565,7 +568,7 @@ fn native_borrow_box(
     let mut table_data = table_context.table_data.write();
 
     let key = args.pop_back().unwrap();
-    let handle = get_table_handle(&mut args)?;
+    let handle = get_object_id(&mut args)?;
     let table = table_data.get_or_create_table(handle)?;
     let (tv, loaded, table_key, key_bytes_len) =
         get_table_runtime_value(context, table_context, table, &ty_args[0], key)?;
@@ -574,19 +577,31 @@ fn native_borrow_box(
         + gas_params.per_byte_serialized * NumBytes::new(key_bytes_len)
         + common_gas_params.calculate_load_cost(loaded);
     let value_type = type_to_type_tag(context, &ty_args[1])?;
-    match tv.borrow_global(value_type.clone()) {
-        Ok(ref_val) => Ok(NativeResult::ok(cost, smallvec![ref_val])),
-        Err(_) => {
-            if log::log_enabled!(log::Level::Debug) {
-                log::warn!(
-                    "[RawTable] borrow_box: handle: {}, value_type: {} key:{:?} not found.",
-                    &table.handle,
-                    value_type.to_canonical_string(),
-                    table_key
-                );
+    if tv.exists()? {
+        match tv.borrow_global(value_type.clone()) {
+            Ok(ref_val) => Ok(NativeResult::ok(cost, smallvec![ref_val])),
+            Err(err) => {
+                if log::log_enabled!(log::Level::Debug) {
+                    log::warn!(
+                        "[RawTable] borrow_box type mismatch: handle: {:?}, value_type: {:?} key:{:?}, err: {:?}",
+                        &table.handle,
+                        value_type.to_canonical_string(),
+                        table_key,
+                    err
+                    );
+                }
+                Ok(NativeResult::err(cost, E_TYPE_MISMATCH))
             }
-            Ok(NativeResult::err(cost, E_NOT_FOUND))
         }
+    } else {
+        if log::log_enabled!(log::Level::Debug) {
+            log::warn!(
+                "[RawTable] borrow_box not found: handle: {:?}, key:{:?} not found.",
+                &table.handle,
+                table_key
+            );
+        }
+        Ok(NativeResult::err(cost, E_NOT_FOUND))
     }
 }
 
@@ -621,8 +636,8 @@ fn native_contains_box(
     let mut table_data = table_context.table_data.write();
 
     let key = args.pop_back().unwrap();
-    let handle = get_table_handle(&mut args)?;
-    let table = table_data.get_or_create_table(handle)?;
+    let handle = get_object_id(&mut args)?;
+    let table = table_data.get_or_create_table(handle.clone())?;
     let (tv, loaded, table_key, key_bytes_len) =
         get_table_runtime_value(context, table_context, table, &ty_args[0], key)?;
 
@@ -668,8 +683,8 @@ fn native_contains_box_with_value_type(
     let mut table_data = table_context.table_data.write();
 
     let key = args.pop_back().unwrap();
-    let handle = get_table_handle(&mut args)?;
-    let table = table_data.get_or_create_table(handle)?;
+    let handle = get_object_id(&mut args)?;
+    let table = table_data.get_or_create_table(handle.clone())?;
     let (tv, loaded, table_key, key_bytes_len) =
         get_table_runtime_value(context, table_context, table, &ty_args[0], key)?;
 
@@ -728,7 +743,7 @@ fn native_remove_box(
     let mut table_data = table_context.table_data.write();
 
     let key = args.pop_back().unwrap();
-    let handle = get_table_handle(&mut args)?;
+    let handle = get_object_id(&mut args)?;
     let table = table_data.get_or_create_table(handle)?;
 
     let (tv, loaded, _, key_bytes_len) =
@@ -738,12 +753,16 @@ fn native_remove_box(
         + gas_params.per_byte_serialized * NumBytes::new(key_bytes_len)
         + common_gas_params.calculate_load_cost(loaded);
     let value_type = type_to_type_tag(context, &ty_args[1])?;
-    match tv.move_from(value_type) {
-        Ok(val) => {
-            table.size_increment -= 1;
-            Ok(NativeResult::ok(cost, smallvec![val]))
+    if tv.exists()? {
+        match tv.move_from(value_type) {
+            Ok(val) => {
+                table.size_increment -= 1;
+                Ok(NativeResult::ok(cost, smallvec![val]))
+            }
+            Err(_) => Ok(NativeResult::err(cost, E_TYPE_MISMATCH)),
         }
-        Err(_) => Ok(NativeResult::err(cost, E_NOT_FOUND)),
+    } else {
+        Ok(NativeResult::err(cost, E_NOT_FOUND))
     }
 }
 
@@ -761,9 +780,12 @@ pub fn make_native_remove_box(
 // =========================================================================================
 // Helpers
 
-fn get_table_handle(args: &mut VecDeque<Value>) -> PartialVMResult<ObjectID> {
+fn get_object_id(args: &mut VecDeque<Value>) -> PartialVMResult<ObjectID> {
     let handle = args.pop_back().unwrap();
     ObjectID::from_runtime_value(handle).map_err(|e| {
+        if log::log_enabled!(log::Level::Debug) {
+            log::warn!("[RawTable] get_object_id: {:?}", e);
+        }
         PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
     })
 }

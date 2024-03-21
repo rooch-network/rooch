@@ -8,14 +8,11 @@ module moveos_std::account {
    use moveos_std::core_addresses;
    use moveos_std::bcs;
    use moveos_std::type_table::{key};
-   use moveos_std::object::{Self, ObjectID, Object, borrow_object};
-   #[test_only]
-   use moveos_std::object::{take_object, borrow_mut_object};
+   use moveos_std::object::{Self, ObjectID, Object};
 
-   //FIXME remove the store ability from Account
    /// Account is part of the StorageAbstraction
    /// It is also used to store the account's resources
-   struct Account has key,store {
+   struct Account has key {
       sequence_number: u64,
    }
 
@@ -123,11 +120,8 @@ module moveos_std::account {
 
    fun increment_sequence_number_internal(sender: address) {
       let tx_sequence_number = sequence_number(sender);
-
-      let object_id = account_object_id(sender);
-      let object_entity = object::borrow_mut_from_global<Account>(object_id);
-      let obj_mut = object::as_mut_ref(object_entity);
-      let account = object::borrow_mut<Account>(obj_mut);
+      let account_obj = borrow_mut_account_internal(sender);
+      let account = object::borrow_mut(account_obj);
 
       assert!(
          (account.sequence_number as u128) < MAX_U64,
@@ -255,22 +249,28 @@ module moveos_std::account {
 
    // === Account Storage functions ===
 
+   public fun borrow_account(account: address): &Object<Account>{
+      object::borrow_object<Account>(account_object_id(account))
+   }
+
+   fun borrow_mut_account_internal(account: address): &mut Object<Account>{
+      object::borrow_mut_object_extend<Account>(account_object_id(account))
+   }
+
    /// Borrow a resource from the account's storage
    /// This function equates to `borrow_global<T>(address)` instruction in Move
    /// But we remove the restriction of the caller must be the module of T
    public fun borrow_resource<T: key + store>(account: address): &T {
-      let obj = borrow_object<Account>(account_object_id(account));
-      account_borrow_resource<T>(obj)
+      let account_obj = borrow_account(account);
+      account_borrow_resource<T>(account_obj)
    }
 
    #[private_generics(T)]
    /// Borrow a mut resource from the account's storage
    /// This function equates to `borrow_global_mut<T>(address)` instruction in Move
    public fun borrow_mut_resource<T: key + store>(account: address): &mut T {
-      let object_id = account_object_id(account);
-      let object_entity = object::borrow_mut_from_global<Account>(object_id);
-      let obj_mut = object::as_mut_ref(object_entity);
-      account_borrow_mut_resource<T>(obj_mut)
+      let account_obj = borrow_mut_account_internal(account); 
+      account_borrow_mut_resource<T>(account_obj)
    }
 
    #[private_generics(T)]
@@ -281,20 +281,16 @@ module moveos_std::account {
       //Auto create the resource object when move resource to the account
       //TODO should we auto create the account?
       ensure_account_object(account_address);
-      let object_id = account_object_id(account_address);
-      let object_entity = object::borrow_mut_from_global<Account>(object_id);
-      let obj_mut = object::as_mut_ref(object_entity);
-      account_move_resource_to(obj_mut, resource);
+      let account_obj = borrow_mut_account_internal(account_address); 
+      account_move_resource_to(account_obj, resource);
    }
 
    #[private_generics(T)]
    /// Move a resource from the account's storage
    /// This function equates to `move_from<T>(address)` instruction in Move
    public fun move_resource_from<T: key + store>(account: address): T {
-      let object_id = account_object_id(account);
-      let object_entity = object::borrow_mut_from_global<Account>(object_id);
-      let obj_mut = object::as_mut_ref(object_entity);
-      account_move_resource_from<T>(obj_mut)
+      let account_obj = borrow_mut_account_internal(account); 
+      account_move_resource_from<T>(account_obj)
    }
 
    /// Check if the account has a resource of the given type
@@ -302,8 +298,8 @@ module moveos_std::account {
    /// But we remove the restriction of the caller must be the module of T
    public fun exists_resource<T: key + store>(account: address) : bool {
       if (exist_account_object(account)) {
-         let obj = borrow_object<Account>(account_object_id(account));
-         account_exists_resource<T>(obj)
+         let account_obj = borrow_account(account);
+         account_exists_resource<T>(account_obj)
       }else{
          false
       }
@@ -409,33 +405,29 @@ module moveos_std::account {
    fun test_account_object(sender: signer){
       let sender_addr = signer::address_of(&sender);
       create_account_object(sender_addr);
-      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      let obj_mut = object::borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
       account_move_resource_to(obj_mut, Test{
          addr: sender_addr,
          version: 1,
       });
-      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
-      Self::drop_account_object(obj);
    }
 
    #[test(sender=@0x42)]
    fun test_move_to_account_object(sender: signer){
       let sender_addr = signer::address_of(&sender);
       create_account_object(sender_addr);
-      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      let obj_mut = object::borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
       account_move_resource_to(obj_mut, Test{
          addr: sender_addr,
          version: 1,
       });
-      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
-      Self::drop_account_object(obj);
    }
 
    #[test(sender=@0x42)]
    fun test_move_from_account_object(sender: signer){
       let sender_addr = signer::address_of(&sender);
       create_account_object(sender_addr);
-      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      let obj_mut = object::borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
       account_move_resource_to(obj_mut, Test{
          addr: sender_addr,
          version: 1,
@@ -446,8 +438,6 @@ module moveos_std::account {
       } = account_move_resource_from<Test>(obj_mut);
       assert!(addr == sender_addr, 0x10);
       assert!(version == 1, 0x11);
-      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
-      Self::drop_account_object(obj);
    }
 
    #[test(sender=@0x42)]
@@ -455,7 +445,7 @@ module moveos_std::account {
    fun test_failure_repeatedly_move_to_account_object(sender: signer){
       let sender_addr = signer::address_of(&sender);
       create_account_object(sender_addr);
-      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      let obj_mut = object::borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
       account_move_resource_to(obj_mut, Test{
          addr: sender_addr,
          version: 1,
@@ -464,8 +454,6 @@ module moveos_std::account {
          addr: sender_addr,
          version: 1,
       });
-      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
-      Self::drop_account_object(obj);
    }
 
    #[test(sender=@0x42)]
@@ -473,7 +461,7 @@ module moveos_std::account {
    fun test_failure_repeatedly_move_from_account_object(sender: signer){
       let sender_addr = signer::address_of(&sender);
       create_account_object(sender_addr);
-      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      let obj_mut = object::borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
       account_move_resource_to(obj_mut, Test{
          addr: sender_addr,
          version: 1,
@@ -486,15 +474,13 @@ module moveos_std::account {
          addr: _,
          version: _
       } = account_move_resource_from<Test>(obj_mut);
-      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
-      Self::drop_account_object(obj);
    }
 
    #[test(sender=@0x42)]
    fun test_borrow_resource(sender: signer){
       let sender_addr = signer::address_of(&sender);
       create_account_object(sender_addr);
-      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      let obj_mut = object::borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
       account_move_resource_to(obj_mut, Test{
          addr: sender_addr,
          version: 1,
@@ -503,15 +489,13 @@ module moveos_std::account {
       let ref_test = account_borrow_resource<Test>(obj_mut);
       assert!(ref_test.version == 1, 1);
       assert!(ref_test.addr == sender_addr, 2);
-      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
-      Self::drop_account_object(obj);
    }
 
    #[test(sender=@0x42)]
    fun test_borrow_mut_resource(sender: signer){
       let sender_addr = signer::address_of(&sender);
       create_account_object(sender_addr);
-      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      let obj_mut = object::borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
       account_move_resource_to(obj_mut, Test{
          addr: sender_addr,
          version: 1,
@@ -526,8 +510,6 @@ module moveos_std::account {
          let ref_test = account_borrow_resource<Test>(obj_mut);
          assert!(ref_test.version == 2, 3);
       };
-      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
-      Self::drop_account_object(obj);
    }
 
    #[test(sender=@0x42)]
@@ -535,10 +517,8 @@ module moveos_std::account {
    fun test_failure_borrow_resource_no_exists(sender: signer){
       let sender_addr = signer::address_of(&sender);
       create_account_object(sender_addr);
-      let obj_ref = borrow_object<Account>(account_object_id(sender_addr));
+      let obj_ref = object::borrow_object<Account>(account_object_id(sender_addr));
       account_borrow_resource<Test>(obj_ref);
-      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
-      Self::drop_account_object(obj);
    }
 
    #[test(sender=@0x42)]
@@ -546,17 +526,15 @@ module moveos_std::account {
    fun test_failure_borrow_mut_resource_no_exists(sender: signer){
       let sender_addr = signer::address_of(&sender);
       create_account_object(sender_addr);
-      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      let obj_mut = object::borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
       account_borrow_mut_resource<Test>(obj_mut);
-      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
-      Self::drop_account_object(obj);
    }
 
    #[test(sender=@0x42)]
    fun test_ensure_move_from_and_exists(sender: signer){
       let sender_addr = signer::address_of(&sender);
       create_account_object(sender_addr);
-      let obj_mut = borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
+      let obj_mut = object::borrow_mut_object<Account>(&sender, account_object_id(sender_addr));
       let test_exists = account_exists_resource<Test>(obj_mut);
       assert!(!test_exists, 1);
       account_move_resource_to(obj_mut, Test{
@@ -572,8 +550,6 @@ module moveos_std::account {
          addr: _,
          version: _
       } = test;
-      let obj = take_object<Account>(&sender, account_object_id(sender_addr));
-      Self::drop_account_object(obj);
    }
 
    #[test(sender=@0x42)]

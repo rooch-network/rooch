@@ -19,7 +19,7 @@ use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::{MoveStructType, SplitStateChangeSet};
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rand::{random, thread_rng, Rng};
-use rooch_config::indexer_config::ROOCH_INDEXER_DB_FILENAME;
+use rooch_config::indexer_config::ROOCH_INDEXER_DB_DIR;
 use rooch_types::framework::coin::CoinInfo;
 use rooch_types::framework::gas_coin::GasCoin;
 use rooch_types::indexer::event_filter::EventFilter;
@@ -141,17 +141,13 @@ fn random_remove_table_states() -> Vec<(String, String)> {
 #[test]
 fn test_transaction_store() -> Result<()> {
     let tmpdir = moveos_config::temp_dir();
-    let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_FILENAME);
+    let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_DIR);
     if !indexer_db.exists() {
-        std::fs::File::create(indexer_db.clone())?;
+        std::fs::create_dir_all(indexer_db.clone())?;
     }
-    let indexer_db_url = indexer_db
-        .as_path()
-        .to_str()
-        .ok_or(anyhow::anyhow!("Invalid mock indexer db dir"))?;
-    let indexer_store = IndexerStore::new(indexer_db_url)?;
+    let indexer_store = IndexerStore::new(indexer_db.clone())?;
     indexer_store.create_all_tables_if_not_exists()?;
-    let indexer_reader = IndexerReader::new(indexer_db_url)?;
+    let indexer_reader = IndexerReader::new(indexer_db)?;
 
     let random_transaction = random_typed_transaction();
 
@@ -196,17 +192,13 @@ fn test_transaction_store() -> Result<()> {
 #[test]
 fn test_event_store() -> Result<()> {
     let tmpdir = moveos_config::temp_dir();
-    let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_FILENAME);
+    let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_DIR);
     if !indexer_db.exists() {
-        std::fs::File::create(indexer_db.clone())?;
+        std::fs::create_dir_all(indexer_db.clone())?;
     }
-    let indexer_db_url = indexer_db
-        .as_path()
-        .to_str()
-        .ok_or(anyhow::anyhow!("Invalid mock indexer db dir"))?;
-    let indexer_store = IndexerStore::new(indexer_db_url)?;
+    let indexer_store = IndexerStore::new(indexer_db.clone())?;
     indexer_store.create_all_tables_if_not_exists()?;
-    let indexer_reader = IndexerReader::new(indexer_db_url)?;
+    let indexer_reader = IndexerReader::new(indexer_db)?;
 
     let random_event = random_event();
     let random_transaction = random_typed_transaction();
@@ -242,17 +234,13 @@ fn test_event_store() -> Result<()> {
 #[test]
 fn test_state_store() -> Result<()> {
     let tmpdir = moveos_config::temp_dir();
-    let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_FILENAME);
+    let indexer_db = tmpdir.path().join(ROOCH_INDEXER_DB_DIR);
     if !indexer_db.exists() {
-        std::fs::File::create(indexer_db.clone())?;
+        std::fs::create_dir_all(indexer_db.clone())?;
     }
-    let indexer_db_url = indexer_db
-        .as_path()
-        .to_str()
-        .ok_or(anyhow::anyhow!("Invalid mock indexer db dir"))?;
-    let indexer_store = IndexerStore::new(indexer_db_url)?;
+    let indexer_store = IndexerStore::new(indexer_db.clone())?;
     indexer_store.create_all_tables_if_not_exists()?;
-    let indexer_reader = IndexerReader::new(indexer_db_url)?;
+    let indexer_reader = IndexerReader::new(indexer_db)?;
 
     let mut new_global_states = random_new_global_states()?;
     let mut update_global_states = random_update_global_states(new_global_states.clone());

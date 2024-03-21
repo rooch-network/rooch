@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::raw_table;
-use crate::natives::{helpers::make_module_natives, moveos_stdlib::raw_table::NativeTableContext};
+use crate::natives::{
+    helpers::make_module_natives, helpers::make_native,
+    moveos_stdlib::raw_table::NativeTableContext,
+};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{gas_algebra::InternalGas, vm_status::StatusCode};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -20,6 +23,7 @@ use std::{collections::VecDeque, sync::Arc};
 pub(crate) const ERROR_ALREADY_EXISTS: u64 = 1;
 pub(crate) const ERROR_NOT_FOUND: u64 = 2;
 pub(crate) const ERROR_OBJECT_ALREADY_BORROWED: u64 = 7;
+pub(crate) const ERROR_TYPE_MISMATCH: u64 = 10;
 
 #[derive(Debug, Clone)]
 pub struct AsRefGasParameters {
@@ -179,11 +183,11 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
     let natives = [
         (
             "as_ref_inner",
-            make_native_as_ref_inner(gas_params.as_ref_inner),
+            make_native(gas_params.as_ref_inner, native_as_ref_inner),
         ),
         (
             "as_mut_ref_inner",
-            make_native_as_mut_ref_inner(gas_params.as_mut_ref_inner),
+            make_native(gas_params.as_mut_ref_inner, native_as_mut_ref_inner),
         ),
         (
             "add_box",

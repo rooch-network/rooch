@@ -245,21 +245,12 @@ pub fn init_storage(datadir: &DataDirPath) -> Result<(MoveOSStore, RoochStore)> 
 
 pub fn init_indexer(datadir: &DataDirPath) -> Result<(IndexerStore, IndexerReader)> {
     let indexer_db_path = IndexerConfig::get_mock_indexer_db(datadir);
-    let indexer_db_parent_dir = indexer_db_path
-        .parent()
-        .ok_or(anyhow::anyhow!("Invalid indexer db dir"))?;
-    if !indexer_db_parent_dir.exists() {
-        std::fs::create_dir_all(indexer_db_parent_dir)?;
-    }
     if !indexer_db_path.exists() {
-        std::fs::File::create(indexer_db_path.clone())?;
-    };
-    let indexer_db_url = indexer_db_path
-        .to_str()
-        .ok_or(anyhow::anyhow!("Invalid indexer db path"))?;
-    let indexer_store = IndexerStore::new(indexer_db_url)?;
+        std::fs::create_dir_all(indexer_db_path.clone())?;
+    }
+    let indexer_store = IndexerStore::new(indexer_db_path.clone())?;
     indexer_store.create_all_tables_if_not_exists()?;
-    let indexer_reader = IndexerReader::new(indexer_db_url)?;
+    let indexer_reader = IndexerReader::new(indexer_db_path)?;
 
     Ok((indexer_store, indexer_reader))
 }

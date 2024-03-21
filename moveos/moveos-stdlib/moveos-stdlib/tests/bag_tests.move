@@ -39,7 +39,6 @@ module moveos_std::bag_tests {
     #[test]
     #[expected_failure(abort_code = moveos_std::object::ErrorAlreadyExists)]
     fun add_duplicate() {
-        
         let bag = bag::new();
         add(&mut bag, b"hello", 0u8);
         add(&mut bag, b"hello", 1u8);
@@ -49,7 +48,6 @@ module moveos_std::bag_tests {
     #[test]
     #[expected_failure(abort_code = moveos_std::object::ErrorAlreadyExists)]
     fun add_duplicate_mismatched_type() {
-        
         let bag = bag::new();
         add(&mut bag, b"hello", 0u128);
         add(&mut bag, b"hello", 1u8);
@@ -59,71 +57,57 @@ module moveos_std::bag_tests {
     #[test]
     #[expected_failure(abort_code = moveos_std::object::ErrorNotFound)]
     fun borrow_missing() {
-        
         let bag = bag::new();
         borrow<u64, u64>(&bag, 0);
         bag::drop_unchecked(bag)
     }
 
-    //TODO FIXME
-    // #[test]
-    // #[expected_failure(abort_code = moveos_std::object::ErrorTypeMismatch)]
-    // fun borrow_wrong_type() {
-        
-    //     let bag = bag::new();
-    //     add(&mut bag, 0, 0);
-    //     borrow<u64, u8>(&bag, 0);
-    //     bag::drop_unchecked(bag)
-    // }
+    #[test]
+    #[expected_failure(abort_code = moveos_std::object::ErrorTypeMismatch)]
+    fun borrow_wrong_type() {
+        let bag = bag::new();
+        add(&mut bag, 0, 0);
+        borrow<u64, u8>(&bag, 0);
+        bag::drop_unchecked(bag)
+    }
 
     #[test]
     #[expected_failure(abort_code = moveos_std::object::ErrorNotFound)]
     fun borrow_mut_missing() {
-        
-        
         let bag = bag::new();
         borrow_mut<u64, u64>(&mut bag, 0);
         bag::drop_unchecked(bag)
     }
     //TODO FIXME
-    // #[test]
-    // #[expected_failure(abort_code = moveos_std::object::ErrorTypeMismatch)]
-    // fun borrow_mut_wrong_type() {
-        
-        
-    //     let bag = bag::new();
-    //     add(&mut bag, 0, 0);
-    //     borrow_mut<u64, u8>(&mut bag, 0);
-    //     bag::drop_unchecked(bag)
-    // }
+    #[test]
+    #[expected_failure(abort_code = moveos_std::object::ErrorTypeMismatch)]
+    fun borrow_mut_wrong_type() {        
+        let bag = bag::new();
+        add(&mut bag, 0, 0);
+        borrow_mut<u64, u8>(&mut bag, 0);
+        bag::drop_unchecked(bag)
+    }
 
     #[test]
     #[expected_failure(abort_code = moveos_std::object::ErrorNotFound)]
     fun remove_missing() {
-        
-        
         let bag = bag::new();
         remove<u64, u64>(&mut bag, 0);
         bag::drop_unchecked(bag)
     }
 
-    //TODO FIXME
-    // #[test]
-    // #[expected_failure(abort_code = moveos_std::object::ErrorTypeMismatch)]
-    // fun remove_wrong_type() {
-        
-        
-    //     let bag = bag::new();
-    //     add(&mut bag, 0, 0);
-    //     remove<u64, u8>(&mut bag, 0);
-    //     bag::drop_unchecked(bag)
-    // }
+    #[test]
+    #[expected_failure(abort_code = moveos_std::object::ErrorTypeMismatch)]
+    fun remove_wrong_type() {
+        let bag = bag::new();
+        add(&mut bag, 0, 0);
+        remove<u64, u8>(&mut bag, 0);
+        bag::drop_unchecked(bag)
+    }
 
     #[test]
     #[expected_failure(abort_code = moveos_std::object::ErrorFieldsNotEmpty)]
     fun destroy_non_empty() {
-        
-        
         let bag = bag::new();
         add(&mut bag, 0, 0);
         bag::destroy_empty(bag);
@@ -132,8 +116,6 @@ module moveos_std::bag_tests {
 
     #[test]
     fun sanity_check_contains() {
-        
-        
         let bag = bag::new();
         assert!(!contains_with_type<u64, u64>(&bag, 0), 0);
         add(&mut bag, 0, 0);
@@ -146,8 +128,6 @@ module moveos_std::bag_tests {
 
     #[test]
     fun sanity_check_size() {
-        
-        
         let bag = bag::new();
         assert!(bag::is_empty(&bag), 0);
         assert!(bag::length(&bag) == 0, 0);

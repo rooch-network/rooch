@@ -7,13 +7,13 @@ task 2 'run'. lines 38-38:
 status EXECUTED
 
 task 3 'view_object'. lines 40-42:
-ObjectEntity { id: ObjectID(8f684aa792b9b1058aeccd3941849e9662132d81c974b826a9c6bddae8880bd6), owner: 0000000000000000000000000000000000000000000000000000000000000043, flag: 0, state_root: 5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000, size: 0, value: AnnotatedMoveStruct { abilities: [Store, Key, ], type_: StructTag { address: 0000000000000000000000000000000000000000000000000000000000000042, module: Identifier("m"), name: Identifier("S"), type_params: [] }, value: [(Identifier("v"), U8(1))] } }
+ObjectEntity { id: 0x8f684aa792b9b1058aeccd3941849e9662132d81c974b826a9c6bddae8880bd6, owner: 0000000000000000000000000000000000000000000000000000000000000043, flag: 0, state_root: 5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000, size: 0, value: AnnotatedMoveStruct { abilities: [Store, Key, ], type_: StructTag { address: 0000000000000000000000000000000000000000000000000000000000000042, module: Identifier("m"), name: Identifier("S"), type_params: [] }, value: [(Identifier("v"), U8(1))] } }
 
 task 4 'run'. lines 43-43:
 status EXECUTED
 
 task 5 'view_object'. lines 45-47:
-ObjectEntity { id: ObjectID(8f684aa792b9b1058aeccd3941849e9662132d81c974b826a9c6bddae8880bd6), owner: 0000000000000000000000000000000000000000000000000000000000000043, flag: 0, state_root: 5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000, size: 0, value: AnnotatedMoveStruct { abilities: [Store, Key, ], type_: StructTag { address: 0000000000000000000000000000000000000000000000000000000000000042, module: Identifier("m"), name: Identifier("S"), type_params: [] }, value: [(Identifier("v"), U8(2))] } }
+ObjectEntity { id: 0x8f684aa792b9b1058aeccd3941849e9662132d81c974b826a9c6bddae8880bd6, owner: 0000000000000000000000000000000000000000000000000000000000000043, flag: 0, state_root: 5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000, size: 0, value: AnnotatedMoveStruct { abilities: [Store, Key, ], type_: StructTag { address: 0000000000000000000000000000000000000000000000000000000000000042, module: Identifier("m"), name: Identifier("S"), type_params: [] }, value: [(Identifier("v"), U8(2))] } }
 
 task 6 'run'. lines 48-50:
 status EXECUTED

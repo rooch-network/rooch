@@ -26,7 +26,7 @@ module test::m {
 }
 
 // test two ref: will fail
-//# run --signers test --args @0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+//# run --signers test --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
 script {
     use moveos_std::object;
     use moveos_std::object::ObjectID;
@@ -41,7 +41,7 @@ script {
 }
 
 // test two ref in different scope: should be allowed
-//# run --signers test --args @0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+//# run --signers test --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
 script {
     use moveos_std::object;
     use moveos_std::object::ObjectID;
@@ -60,7 +60,7 @@ script {
 }
 
 // test two mut ref : will fail
-//# run --signers test --args @0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
+//# run --signers test --args object_id:0xdbac1380a14940361115d51f5d89871c502556428d4eed8d44cd66abd5e0700c
 script {
     use moveos_std::object;
     use moveos_std::object::ObjectID;
