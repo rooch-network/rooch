@@ -45,8 +45,9 @@ pub trait StateResolver {
     ) -> Result<Vec<StateKV>, anyhow::Error>;
 
     // get object data from global state tree.
-    fn resolve_object_state(&self, object: &ObjectID) -> Result<Option<State>, anyhow::Error> {
-        self.resolve_table_item(&ObjectID::root(), &object.to_key())
+    fn resolve_object_state(&self, object_id: &ObjectID) -> Result<Option<State>, anyhow::Error> {
+        let parent_id = object_id.parent().unwrap_or(ObjectID::root());
+        self.resolve_table_item(&parent_id, &object_id.to_key())
     }
 }
 

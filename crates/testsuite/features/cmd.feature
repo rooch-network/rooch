@@ -307,6 +307,15 @@ Feature: Rooch CLI integration tests
       Then cmd: "event get-events-by-event-handle -t default::child_object::NewChildEvent"
       Then cmd: "state --access-path /object/{{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.state[-1][0].decoded_value.value.value.value.name}} == alice"
+
+      Then cmd: "move run --function default::third_party_module_for_child_object::update_child_name --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --args string:bob"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
       
+      Then cmd: "state --access-path /object/{{$.event[-1].data[0].decoded_event_data.value.id}}"
+      Then assert: "{{$.state[-1][0].decoded_value.value.value.value.name}} == bob"
+
+      Then cmd: "move run --function default::third_party_module_for_child_object::remove_child_via_id --args object_id:{{$.event[-1].data[0].decoded_event_data.value.id}}"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
       Then stop the server
   
