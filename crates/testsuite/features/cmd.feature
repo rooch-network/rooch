@@ -295,3 +295,27 @@ Feature: Rooch CLI integration tests
     Then assert: "'{{$.rpc[-1].balance}}' != '0'"
     Then stop the server
   
+  @serial
+  Scenario: basic_object example
+      Given a server for basic_object
+      Then cmd: "account create"
+      Then cmd: "move publish -p ../../examples/basic_object  --named-addresses basic_object=default"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      Then cmd: "move run --function default::third_party_module_for_child_object::create_child --args string:alice"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      
+      Then cmd: "event get-events-by-event-handle -t default::child_object::NewChildEvent"
+      Then cmd: "state --access-path /object/{{$.event[-1].data[0].decoded_event_data.value.id}}"
+      Then assert: "{{$.state[-1][0].decoded_value.value.value.value.name}} == alice"
+
+      Then cmd: "move run --function default::third_party_module_for_child_object::update_child_name --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --args string:bob"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+      
+      Then cmd: "state --access-path /object/{{$.event[-1].data[0].decoded_event_data.value.id}}"
+      Then assert: "{{$.state[-1][0].decoded_value.value.value.value.name}} == bob"
+
+      Then cmd: "move run --function default::third_party_module_for_child_object::remove_child_via_id --args object_id:{{$.event[-1].data[0].decoded_event_data.value.id}}"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      Then stop the server
+  

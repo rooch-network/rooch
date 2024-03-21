@@ -45,8 +45,9 @@ pub trait StateResolver {
     ) -> Result<Vec<StateKV>, anyhow::Error>;
 
     // get object data from global state tree.
-    fn resolve_object_state(&self, object: &ObjectID) -> Result<Option<State>, anyhow::Error> {
-        self.resolve_table_item(&ObjectID::root(), &object.to_key())
+    fn resolve_object_state(&self, object_id: &ObjectID) -> Result<Option<State>, anyhow::Error> {
+        let parent_id = object_id.parent().unwrap_or(ObjectID::root());
+        self.resolve_table_item(&parent_id, &object_id.to_key())
     }
 }
 
@@ -161,10 +162,10 @@ pub fn module_id_to_key(module_id: &ModuleId) -> KeyState {
 pub trait StateReader: StateResolver {
     /// Get states by AccessPath
     fn get_states(&self, path: AccessPath) -> Result<Vec<Option<State>>> {
-        let (handle, keys) = path.into_table_query();
-        let keys = keys.ok_or_else(|| anyhow::anyhow!("AccessPath invalid path"))?;
-        keys.into_iter()
-            .map(|key| self.resolve_table_item(&handle, &key))
+        let query = path.into_state_query().into_fields_query()?;
+        query
+            .into_iter()
+            .map(|(object_id, key)| self.resolve_table_item(&object_id, &key))
             .collect()
     }
 
@@ -175,8 +176,8 @@ pub trait StateReader: StateResolver {
         cursor: Option<KeyState>,
         limit: usize,
     ) -> Result<Vec<StateKV>> {
-        let (handle, _keys) = path.into_table_query();
-        self.list_table_items(&handle, cursor, limit)
+        let query = path.into_state_query().into_list_query()?;
+        self.list_table_items(&query, cursor, limit)
     }
 }
 

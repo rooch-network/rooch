@@ -9,7 +9,7 @@ use crate::{
     moveos_std::object::ObjectID,
     state_resolver::{module_id_to_key, resource_tag_to_key},
 };
-use anyhow::Result;
+use anyhow::{bail, ensure, Result};
 use move_core_types::language_storage::ModuleId;
 use move_core_types::{
     account_address::AccountAddress, identifier::Identifier, language_storage::StructTag,
@@ -24,18 +24,62 @@ pub enum Path {
     /// Get account resources
     Resource {
         account: AccountAddress,
-        resource_types: Option<Vec<StructTag>>,
+        resource_types: Vec<StructTag>,
     },
     /// Get account modules
     Module {
         account: AccountAddress,
-        module_names: Option<Vec<Identifier>>,
+        module_names: Vec<Identifier>,
     },
+    /// TODO rename to Fields: Get object dynamic fields
     /// Get table values by keys
     Table {
         table_handle: ObjectID,
-        keys: Option<Vec<KeyState>>,
+        keys: Vec<KeyState>,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum StateQuery {
+    Objects(Vec<ObjectID>),
+    Fields(ObjectID, Vec<KeyState>),
+}
+
+impl StateQuery {
+    pub fn into_list_query(self) -> Result<ObjectID> {
+        match self {
+            StateQuery::Objects(object_ids) => {
+                ensure!(
+                    object_ids.is_empty(),
+                    "List query does not support specific object id"
+                );
+                Ok(ObjectID::root())
+            }
+            StateQuery::Fields(object_id, fields) => {
+                ensure!(fields.is_empty(), "List query does not support fields");
+                Ok(object_id)
+            }
+        }
+    }
+
+    pub fn into_fields_query(self) -> Result<Vec<(ObjectID, KeyState)>> {
+        match self {
+            StateQuery::Objects(object_ids) => {
+                ensure!(!object_ids.is_empty(), "Please specify object id");
+                Ok(object_ids
+                    .into_iter()
+                    .map(|id| (id.parent().unwrap_or(ObjectID::root()), id.to_key()))
+                    .collect())
+            }
+            StateQuery::Fields(object_id, fields) => {
+                ensure!(!fields.is_empty(), "Please specify fields");
+                Ok(fields
+                    .into_iter()
+                    .map(|field| (object_id.clone(), field))
+                    .collect())
+            }
+        }
+    }
 }
 
 impl std::fmt::Display for Path {
@@ -61,8 +105,6 @@ impl std::fmt::Display for Path {
                     "/resource/{}/{}",
                     account.to_hex_literal(),
                     resource_types
-                        .clone()
-                        .unwrap_or(vec![])
                         .iter()
                         .map(|struct_tag| struct_tag.to_string())
                         .collect::<Vec<_>>()
@@ -78,8 +120,6 @@ impl std::fmt::Display for Path {
                     "/module/{}/{}",
                     account.to_hex_literal(),
                     module_names
-                        .clone()
-                        .unwrap_or(vec![])
                         .iter()
                         .map(|module_name| module_name.to_string())
                         .collect::<Vec<_>>()
@@ -91,9 +131,7 @@ impl std::fmt::Display for Path {
                     f,
                     "/table/{}/{}",
                     table_handle,
-                    keys.clone()
-                        .unwrap_or(vec![])
-                        .iter()
+                    keys.iter()
                         .map(|key| key.to_string())
                         .collect::<Vec<_>>()
                         .join(",")
@@ -115,9 +153,7 @@ impl FromStr for Path {
             .ok_or_else(|| anyhow::anyhow!("Invalid access path"))?;
         match path_type {
             "object" => {
-                let object_ids = iter
-                    .next()
-                    .ok_or_else(|| anyhow::anyhow!("Invalid access path"))?;
+                let object_ids = iter.next().unwrap_or("");
                 let object_ids = object_ids
                     .split(',')
                     .map(ObjectID::from_str)
@@ -130,12 +166,11 @@ impl FromStr for Path {
                     .ok_or_else(|| anyhow::anyhow!("Invalid access path"))?;
                 let account = AccountAddress::from_hex_literal(account)?;
                 let resource_types = match iter.next() {
-                    Some(v) => Some(
-                        v.split(',')
-                            .map(StructTag::from_str)
-                            .collect::<Result<Vec<_>, _>>()?,
-                    ),
-                    None => None,
+                    Some(v) => v
+                        .split(',')
+                        .map(StructTag::from_str)
+                        .collect::<Result<Vec<_>, _>>()?,
+                    None => vec![],
                 };
 
                 Ok(Path::Resource {
@@ -149,12 +184,14 @@ impl FromStr for Path {
                     .ok_or_else(|| anyhow::anyhow!("Invalid access path"))?;
                 let account = AccountAddress::from_hex_literal(account)?;
                 let module_names = match iter.next() {
-                    Some(v) => Some(
-                        v.split(',')
-                            .map(Identifier::from_str)
-                            .collect::<Result<Vec<_>, _>>()?,
-                    ),
-                    None => None,
+                    Some(v) => v
+                        .split(',')
+                        .map(Identifier::from_str)
+                        .collect::<Result<Vec<_>, _>>()?,
+
+                    None => {
+                        bail!("Invalid access path, require module name")
+                    }
                 };
 
                 Ok(Path::Module {
@@ -169,16 +206,14 @@ impl FromStr for Path {
                 let table_handle = ObjectID::from_str(table_handle)?;
 
                 let keys = match iter.next() {
-                    Some(v) => Some(
-                        v.split(',')
-                            .map(|key| {
-                                KeyState::from_str(key).map_err(|_| {
-                                    anyhow::anyhow!("Invalid access path key: {}", key)
-                                })
-                            })
-                            .collect::<Result<Vec<_>, _>>()?,
-                    ),
-                    None => None,
+                    Some(v) => v
+                        .split(',')
+                        .map(|key| {
+                            KeyState::from_str(key)
+                                .map_err(|_| anyhow::anyhow!("Invalid access path key: {}", key))
+                        })
+                        .collect::<Result<Vec<_>, _>>()?,
+                    None => vec![],
                 };
 
                 Ok(Path::Table { table_handle, keys })
@@ -211,75 +246,66 @@ impl AccessPath {
     pub fn resource(account: AccountAddress, resource_type: StructTag) -> Self {
         AccessPath(Path::Resource {
             account,
-            resource_types: Some(vec![resource_type]),
+            resource_types: vec![resource_type],
         })
     }
 
     pub fn resources(account: AccountAddress, resource_types: Vec<StructTag>) -> Self {
         AccessPath(Path::Resource {
             account,
-            resource_types: Some(resource_types),
+            resource_types,
         })
     }
 
     pub fn module(account: AccountAddress, module_name: Identifier) -> Self {
         AccessPath(Path::Module {
             account,
-            module_names: Some(vec![module_name]),
+            module_names: vec![module_name],
         })
     }
 
     pub fn modules(account: AccountAddress, module_names: Vec<Identifier>) -> Self {
         AccessPath(Path::Module {
             account,
-            module_names: Some(module_names),
+            module_names,
         })
     }
 
     pub fn table(table_handle: ObjectID, keys: Vec<KeyState>) -> Self {
-        AccessPath(Path::Table {
-            table_handle,
-            keys: Some(keys),
-        })
+        AccessPath(Path::Table { table_handle, keys })
     }
 
     pub fn table_without_keys(table_handle: ObjectID) -> Self {
         AccessPath(Path::Table {
             table_handle,
-            keys: None,
+            keys: vec![],
         })
     }
 
-    /// Convert AccessPath to TableQuery, return the table handle and keys
-    /// All other AccessPath is a shortcut for TableQuery
-    pub fn into_table_query(self) -> (ObjectID, Option<Vec<KeyState>>) {
+    /// Convert AccessPath to StateQuery, return the ObjectID and field keys
+    pub fn into_state_query(self) -> StateQuery {
         match self.0 {
-            Path::Table { table_handle, keys } => (table_handle, keys),
+            Path::Table { table_handle, keys } => StateQuery::Fields(table_handle, keys),
             Path::Object { object_ids } => {
-                let table_handle = ObjectID::root().clone();
-                let keys = Some(
-                    object_ids
-                        .iter()
-                        .map(|object_id| object_id.to_key())
-                        .collect(),
-                );
-                (table_handle, keys)
+                if object_ids.is_empty() {
+                    StateQuery::Fields(ObjectID::root(), vec![])
+                } else {
+                    StateQuery::Objects(object_ids)
+                }
             }
             Path::Module {
                 account,
                 module_names,
             } => {
                 let module_object_id = ModuleStore::module_store_id();
-                let keys = module_names.map(|s| {
-                    s.into_iter()
-                        .map(|name| {
-                            let module_id = ModuleId::new(account, name);
-                            module_id_to_key(&module_id)
-                        })
-                        .collect()
-                });
-
-                (module_object_id, keys)
+                let keys = module_names
+                    .into_iter()
+                    .map(|name| {
+                        let module_id = ModuleId::new(account, name);
+                        module_id_to_key(&module_id)
+                    })
+                    .collect();
+                StateQuery::Fields(module_object_id, keys)
             }
             Path::Resource {
                 account,
@@ -287,9 +313,10 @@ impl AccessPath {
             } => {
                 let account_object_id = Account::account_object_id(account);
                 let keys = resource_types
-                    .map(|s| s.into_iter().map(|tag| resource_tag_to_key(&tag)).collect());
-
-                (account_object_id, keys)
+                    .into_iter()
+                    .map(|tag| resource_tag_to_key(&tag))
+                    .collect();
+                StateQuery::Fields(account_object_id, keys)
             }
         }
     }
