@@ -69,6 +69,25 @@ impl ObjectID {
         Self::new(h256::sha3_256_of(&buffer).into())
     }
 
+    /// Get the parent ObjectID of the current ObjectID
+    pub fn parent(&self) -> Option<Self> {
+        if self.0.is_empty() {
+            None
+        } else {
+            let mut parent = self.0.clone();
+            parent.pop();
+            Some(Self(parent))
+        }
+    }
+
+    pub fn is_root(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn has_parent(&self) -> bool {
+        !self.is_root()
+    }
+
     pub fn to_key(&self) -> KeyState {
         let key_type = TypeTag::Struct(Box::new(Self::struct_tag()));
         //We should use the bcs::to_bytes(ObjectID) as the key
