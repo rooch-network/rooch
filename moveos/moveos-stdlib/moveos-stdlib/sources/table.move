@@ -251,11 +251,4 @@ module moveos_std::table {
         destroy_empty(t);
     }
 
-    #[test]
-    fun test_table_object(){
-        let t = new<u64, u8>();
-        let _t_obj_entity = object::borrow_from_global<TablePlaceholder>(object::id(&t.handle));
-        drop_unchecked(t);
-    }
-
 }

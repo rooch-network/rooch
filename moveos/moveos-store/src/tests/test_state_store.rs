@@ -10,7 +10,7 @@ use moveos_types::move_std::string::MoveString;
 use moveos_types::move_types::random_type_tag;
 use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::moveos_std::object::{self, ObjectEntity, GENESIS_STATE_ROOT};
+use moveos_types::moveos_std::object::{ObjectEntity, GENESIS_STATE_ROOT};
 use moveos_types::state::{KeyState, MoveState, MoveType, State, StateChangeSet, TableChange};
 use rand::{thread_rng, Rng};
 use smt::NodeStore;
@@ -55,7 +55,7 @@ fn random_state_change_set() -> StateChangeSet {
         let handle = ObjectID::from(AccountAddress::random());
         state_change_set
             .changes
-            .insert(handle, random_table_change());
+            .insert(handle.clone(), random_table_change());
         global_change.entries.insert(
             handle.to_key(),
             Op::New(ObjectEntity::new_table_object(handle, *GENESIS_STATE_ROOT, 0).into_state()),
@@ -68,7 +68,7 @@ fn random_state_change_set() -> StateChangeSet {
         let account_object_id = Account::account_object_id(account);
         state_change_set
             .changes
-            .insert(account_object_id, random_table_change());
+            .insert(account_object_id.clone(), random_table_change());
         global_change.entries.insert(
             account_object_id.to_key(),
             Op::New(ObjectEntity::new_account_object(account).into_state()),
@@ -77,7 +77,7 @@ fn random_state_change_set() -> StateChangeSet {
 
     state_change_set
         .changes
-        .insert(object::GLOBAL_OBJECT_STORAGE_HANDLE, global_change);
+        .insert(ObjectID::root(), global_change);
 
     state_change_set
 }
@@ -88,14 +88,17 @@ fn test_statedb() {
 
     let mut table_change_set = StateChangeSet::default();
     let mut global_change = TableChange::default();
-    let table_handle = ObjectID::ONE;
+    let table_handle = ObjectID::random();
     global_change.entries.insert(
         table_handle.to_key(),
-        Op::New(ObjectEntity::new_table_object(table_handle, *GENESIS_STATE_ROOT, 0).into_state()),
+        Op::New(
+            ObjectEntity::new_table_object(table_handle.clone(), *GENESIS_STATE_ROOT, 0)
+                .into_state(),
+        ),
     );
     table_change_set
         .changes
-        .insert(object::GLOBAL_OBJECT_STORAGE_HANDLE, global_change);
+        .insert(ObjectID::root(), global_change);
     let mut table_change = TableChange::default();
     let key = KeyState::new(
         MoveString::from_str("test_key").unwrap().to_bytes(),
@@ -107,7 +110,9 @@ fn test_statedb() {
         .entries
         .insert(key.clone(), Op::New(value.clone().into()));
 
-    table_change_set.changes.insert(table_handle, table_change);
+    table_change_set
+        .changes
+        .insert(table_handle.clone(), table_change);
     moveos_store
         .get_state_store_mut()
         .apply_change_set(table_change_set)

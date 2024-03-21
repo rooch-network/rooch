@@ -19,6 +19,7 @@ use move_core_types::{
 use moveos_types::{
     move_types::FunctionId,
     moveos_std::object::{self, ObjectID},
+    state::MoveState,
 };
 use std::{
     fmt::{Display, Formatter},
@@ -296,7 +297,7 @@ impl FunctionArg {
             FunctionArg::Bool(arg) => MoveValue::Bool(arg),
             FunctionArg::ObjectID(parsed_object_id) | FunctionArg::Object(parsed_object_id) => {
                 let object_id = parsed_object_id.into_object_id(mapping)?;
-                MoveValue::Address(object_id.into())
+                object_id.to_move_value()
             }
             FunctionArg::String(arg) => MoveValue::vector_u8(arg.as_bytes().to_vec()),
             FunctionArg::U8(arg) => MoveValue::U8(arg),

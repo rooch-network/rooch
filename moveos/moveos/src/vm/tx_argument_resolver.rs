@@ -15,6 +15,7 @@ use moveos_object_runtime::resolved_arg::ResolvedArg;
 use moveos_types::{
     move_std::{ascii::MoveAsciiString, string::MoveString},
     moveos_std::object::ObjectID,
+    state::MoveState,
 };
 use moveos_types::{
     moveos_std::object::Object,

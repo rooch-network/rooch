@@ -88,7 +88,7 @@ pub trait AnyTrait {
                 T::type_tag().to_canonical_string()
             );
         }
-        T::from_bytes(&data)
+        T::from_bytes(data)
     }
 }
 

@@ -264,7 +264,35 @@ export class Account implements IAccount {
     const state = await this.client.getStates(accessPath)
     if (state) {
       const stateView = state as any
-      const tableId = stateView[0].value
+      //TODO decode the SessionKeys struct
+      //Return stateView example
+      // [
+      //   {
+      //     "value": "0x01870b722363e5b32c8cf65be3791e45901d6a01cdc12f15c9ea94bc6a606b6e9a",
+      //     "value_type": "0x3::session_key::SessionKeys",
+      //     "decoded_value": {
+      //       "abilities": 12,
+      //       "type": "0x3::session_key::SessionKeys",
+      //       "value": {
+      //         "keys": {
+      //           "abilities": 4,
+      //           "type": "0x2::table::Table<vector<u8>, 0x3::session_key::SessionKey>",
+      //           "value": {
+      //             "handle": {
+      //               "abilities": 12,
+      //               "type": "0x2::object::Object<0x2::table::TablePlaceholder>",
+      //               "value": {
+      //                 "id": "0x870b722363e5b32c8cf65be3791e45901d6a01cdc12f15c9ea94bc6a606b6e9a"
+      //               }
+      //             }
+      //           }
+      //         }
+      //       }
+      //     },
+      //     "display_fields": null
+      //   }
+      // ]
+      const tableId = stateView[0].decoded_value.value.keys.value.handle.value.id
 
       const accessPath = `/table/${tableId}`
       const pageView = await this.client.listStates({

@@ -29,6 +29,7 @@
 -  [Function `account_move_resource_from`](#0x2_account_account_move_resource_from)
 -  [Function `account_exists_resource`](#0x2_account_account_exists_resource)
 -  [Function `transfer`](#0x2_account_transfer)
+-  [Function `borrow_account`](#0x2_account_borrow_account)
 -  [Function `borrow_resource`](#0x2_account_borrow_resource)
 -  [Function `borrow_mut_resource`](#0x2_account_borrow_mut_resource)
 -  [Function `move_resource_to`](#0x2_account_move_resource_to)
@@ -56,7 +57,7 @@ Account is part of the StorageAbstraction
 It is also used to store the account's resources
 
 
-<pre><code><b>struct</b> <a href="account.md#0x2_account_Account">Account</a> <b>has</b> store, key
+<pre><code><b>struct</b> <a href="account.md#0x2_account_Account">Account</a> <b>has</b> key
 </code></pre>
 
 
@@ -447,6 +448,17 @@ Create a new account object space
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x2_account_transfer">transfer</a>(obj: <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;, <a href="account.md#0x2_account">account</a>: <b>address</b>)
+</code></pre>
+
+
+
+<a name="0x2_account_borrow_account"></a>
+
+## Function `borrow_account`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x2_account_borrow_account">borrow_account</a>(<a href="account.md#0x2_account">account</a>: <b>address</b>): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="account.md#0x2_account_Account">account::Account</a>&gt;
 </code></pre>
 
 

@@ -81,7 +81,7 @@ impl<'a> ModuleBinding<'a> for EventModule<'a> {
 /// the Unique ID is a combination of event handle id and event seq number.
 /// the ID is local to this particular fullnode and will be different from other fullnode.
 #[derive(
-    Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize, JsonSchema,
+    Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize, Deserialize, JsonSchema,
 )]
 pub struct EventID {
     /// each event handle corresponds to a unique event handle id. event handler id equal to guid.

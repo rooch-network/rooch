@@ -5,15 +5,12 @@ use crate::state_store::NodeDBStore;
 use anyhow::{Error, Result};
 use move_core_types::effects::Op;
 use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::moveos_std::object::{self, RootObjectEntity};
+use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::moveos_std::object::{ObjectEntity, RawObject};
 use moveos_types::state::KeyState;
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{h256::H256, state::State};
-use moveos_types::{
-    state::StateChangeSet,
-    state_resolver::{self, StateResolver},
-};
+use moveos_types::{state::StateChangeSet, state_resolver::StateResolver};
 use smt::{SMTIterator, SMTree, UpdateSet};
 use std::collections::BTreeMap;
 
@@ -40,7 +37,7 @@ impl TreeObject {
         self.smt.get(key.clone())
     }
 
-    pub fn get_field_as_object(&self, id: ObjectID) -> Result<Option<RawObject>> {
+    pub fn get_field_as_object(&self, id: &ObjectID) -> Result<Option<RawObject>> {
         self.get_field(id.to_key())?
             .map(|state| state.as_raw_object())
             .transpose()
@@ -137,7 +134,7 @@ impl StateDBStore {
         }
     }
 
-    pub fn get(&self, id: ObjectID) -> Result<Option<State>> {
+    pub fn get(&self, id: &ObjectID) -> Result<Option<State>> {
         self.root_object.get_field(id.to_key())
     }
 
@@ -145,21 +142,21 @@ impl StateDBStore {
         self.root_object.list_fields(cursor, limit)
     }
 
-    fn get_object(&self, id: ObjectID) -> Result<Option<TreeObject>> {
+    fn get_object(&self, id: &ObjectID) -> Result<Option<TreeObject>> {
         Ok(self
             .root_object
             .get_field_as_object(id)?
             .map(|obj| TreeObject::new(self.node_store.clone(), obj)))
     }
 
-    pub fn get_field(&self, id: ObjectID, key: KeyState) -> Result<Option<State>> {
+    pub fn get_field(&self, id: &ObjectID, key: KeyState) -> Result<Option<State>> {
         self.get_object(id)
             .and_then(|res| res.map(|obj| obj.get_field(key)).unwrap_or(Ok(None)))
     }
 
     pub fn list_fields(
         &self,
-        id: ObjectID,
+        id: &ObjectID,
         cursor: Option<KeyState>,
         limit: usize,
     ) -> Result<Vec<StateKV>> {
@@ -177,9 +174,7 @@ impl StateDBStore {
 
         let mut update_set = UpdateSet::new();
 
-        let global_change = state_change_set
-            .changes
-            .remove(&object::GLOBAL_OBJECT_STORAGE_HANDLE);
+        let global_change = state_change_set.changes.remove(&ObjectID::root());
         let mut global_size = self.root_object.entity.size;
         if let Some(global_change) = global_change {
             for change in global_change.entries {
@@ -209,7 +204,7 @@ impl StateDBStore {
             let mut obj = match changed_objects.remove(&key) {
                 Some(obj) => obj,
                 None => self
-                    .get_object(object_id)?
+                    .get_object(&object_id)?
                     .ok_or_else(|| anyhow::format_err!("Object with id {} not found", object_id))?,
             };
 
@@ -239,14 +234,14 @@ impl StateDBStore {
     }
 
     pub fn resolve_state(&self, handle: &ObjectID, key: &KeyState) -> Result<Option<State>, Error> {
-        if handle == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
+        if handle == &ObjectID::root() {
             //TODO provide a better way to get global object
-            if key == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE.to_key() {
+            if key == &ObjectID::root().to_key() {
                 return Ok(Some(self.root_object.entity.into_state()));
             }
             self.root_object.get_field(key.clone())
         } else {
-            self.get_field(*handle, key.clone())
+            self.get_field(handle, key.clone())
         }
     }
 
@@ -256,10 +251,10 @@ impl StateDBStore {
         cursor: Option<KeyState>,
         limit: usize,
     ) -> Result<Vec<StateKV>, Error> {
-        if handle == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
+        if handle == &ObjectID::root() {
             self.root_object.list_fields(cursor, limit)
         } else {
-            self.list_fields(*handle, cursor, limit)
+            self.list_fields(handle, cursor, limit)
         }
     }
 
@@ -269,7 +264,7 @@ impl StateDBStore {
     // pub fn apply(&self, table_state_set: TableStateSet) -> Result<H256> {
     //     let mut state_root = H256::zero();
     //     for (k, v) in table_state_set.table_state_sets.into_iter() {
-    //         if k == state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
+    //         if k == ObjectID::root() {
     //             state_root = self.root_object.puts(v.entries)?
     //         } else {
     //             // must force create table
@@ -284,10 +279,10 @@ impl StateDBStore {
     //     &self,
     //     handle: &ObjectID,
     // ) -> Result<Option<SMTIterator<Vec<u8>, State, NodeDBStore>>> {
-    //     if handle == &state_resolver::GLOBAL_OBJECT_STORAGE_HANDLE {
+    //     if handle == &ObjectID::root() {
     //         self.root_object.iter().map(|v| Some(v))
     //     } else {
-    //         self.get_as_table(*handle)
+    //         self.get_as_table(handle.clone())
     //             .and_then(|res| res.map_or(Ok(None), |(_, table)| table.iter().map(|v| Some(v))))
     //     }
     // }
@@ -320,7 +315,7 @@ impl StateDBStore {
     //     }
     //     table_state_set
     //         .table_state_sets
-    //         .insert(object::GLOBAL_OBJECT_STORAGE_HANDLE, golbal_table_state);
+    //         .insert(ObjectID::root(), golbal_table_state);
 
     //     Ok(table_state_set)
     // }

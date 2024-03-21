@@ -6,7 +6,7 @@ spec:
   template:
     spec:
       nodeSelector:
-        cloud.google.com/gke-nodepool: ci-pool
+        cloud.google.com/gke-nodepool: ci-pool-200g
       image: nada9527/actions-runner-dind:v2.311.0-ubuntu-22.04-8e48463
       repository: rooch-network/rooch
       ephemeral: true

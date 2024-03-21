@@ -17,6 +17,7 @@ pub struct CleanCommand {
     opt: RoochOpt,
 }
 
+#[allow(dead_code)]
 impl CleanCommand {
     pub fn execute(self) -> RoochResult<()> {
         let base_config = BaseConfig::load_with_opt(&self.opt)?;
@@ -35,7 +36,7 @@ impl CleanCommand {
 
         self.remove_store_dir(&rooch_store_dir, "Rooch")?;
         self.remove_store_dir(&moveos_store_dir, "MoveOS")?;
-        self.remove_store_file(&indexer_store_file, "Indexer")?;
+        self.remove_store_dir(&indexer_store_file, "Indexer")?;
         self.remove_store_dir(&openda_fs_dir, "OpenDA")?;
 
         println!("Rooch server storage successfully cleaned");
