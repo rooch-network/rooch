@@ -4,7 +4,6 @@ import { Callout, FileTree } from 'nextra/components'
 
 Rooch 中的 Object 是一种箱子（Box）模式的 Object。创建一个 Object 相当于在 Object Storage 空间中创建了一个箱子，可以将类型 `T` 的实例封装在箱子中，`ObjectID` 是这个箱子的地址。
 
-
 ## Object 的所有权
 
 `Object` 的 `owner` 代表 Object 属于哪个账户地址，通过 `owner` 可以将 Object 分为两种：
@@ -24,6 +23,7 @@ module moveos_std::object {
     public fun new<T: key>(value: T): Object<T>;
 }
 ```
+
 * 该方法受 `private_generics(T)` 保护，所以只有 `T` 所在的模块才能调用该方法。`T` 模块的开发者可以决定是否提供将 `T` 封装到 `Object` 中的方法。
 * `T` 必须拥有 `key` ability。
 * 该 Object 的 ObjectID 是系统自动分配的全局唯一 ID。
@@ -76,7 +76,7 @@ module moveos_std::object {
 }
 ```
 
-`take_object_extend` 方法都受 `private_generics(T)` 保护，只有 `T` 所在的模块才能调用，开发者可以决定是否提供将 `PrivateObject` 转让给其他用户的方法。
+`take_object_extend` 方法受 `private_generics(T)` 保护，只有 `T` 所在的模块才能调用，开发者可以决定是否提供将 `PrivateObject` 转让给其他用户的方法。
 
 #### Object 的引用
 
@@ -130,8 +130,6 @@ module moveos_std::object {
 ```move
 module moveos_std::object {
     public fun to_shared<T: key>(self: Object<T>);
-
-    public fun to_frozen<T: key>(self: Object<T>);
 }
 ```
 

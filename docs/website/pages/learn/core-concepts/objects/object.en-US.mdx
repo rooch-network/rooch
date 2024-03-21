@@ -15,14 +15,15 @@ The `owner` field of `ObjectEntity` signifies which account address owns the Obj
 
 ### Creating an Object
 
-An Object of type `T` can be created by invoking `context::new_object` method.
+An Object of type `T` can be created by invoking `object::new` method.
 
 ```move
-module moveos_std::context{
+module moveos_std::object {
     #[private_generics(T)]
-    public fun new_object<T: key>(&mut Context, value: T): Object<T>; 
+    public fun new<T: key>(value: T): Object<T>;
 }
 ```
+
 * This method is protected by `private_generics(T)`, hence, it can only be invoked by the module where `T` is located. The developer of  `T` module gets to decide whether to provide the methods to encapsulate `T` into the `Object`.
 * `T` must has the `key` ability.
 * The ObjectID of this Object is a globally unique ID automatically assigned by the system.
@@ -30,12 +31,12 @@ module moveos_std::context{
 In addition to the above normal Objects, two special Object creation methods are provided that do not automatically assign IDs; instead, they generate IDs through a predetermined algorithm, called Named Object.
 
 ```move
-module moveos_std::context{
+module moveos_std::object {
     #[private_generics(T)]
-    public fun new_named_object<T: key>(&mut Context, value: T): Object<T>;
+    public fun new_named_object<T: key>(value: T): Object<T>;
 
     #[private_generics(T)]
-    public fun new_account_named_object<T: key>(&mut Context, account: address, value: T): Object<T>;
+    public fun new_account_named_object<T: key>(account: address, value: T): Object<T>;
 }
 ```
 
@@ -49,18 +50,19 @@ module moveos_std::context{
 Transfer the Object to `new_owner`:
 
 ```move
-module moveos_std::object{
-    public fun transfer<T: key + store>(obj: Object<T>, new_owner: address);
+module moveos_std::object {
+    public fun transfer<T: key + store>(self: Object<T>, new_owner: address);
 }
 ```
 
 The `owner` retrieves their Object through `object_id`:
 
 ```move
-module moveos_std::context{
-    public fun take_object<T: key + store>(&mut Context, owner: &signer, object_id: ObjectID): Object<T>;
+module moveos_std::object {
+    public fun take_object<T: key + store>(owner: &signer, object_id: ObjectID): Object<T>;
 }
 ```
+
 > Note: Once the Object is retrieved, the `owner` is set to `0x0`, at which point the Object becomes a `SystemOwnedObject`.
 
 For the above methods, `T` must has `key + store` ability. Such types of Object are called `PublicObject`, and the user can transfer the ownership of `PublicObject` on their own.
@@ -68,43 +70,37 @@ For the above methods, `T` must has `key + store` ability. Such types of Object 
 If it is the type of Object that only has `key` ability, we can call it `PrivateObject`. Users cannot directly transfer the ownership of `PrivateObject`, and the ownership transfer of `PrivateObject` must be assisted by the API provided by the module where `T` is located.
 
 ```move
-module moveos_std::object{
+module moveos_std::object {
     #[private_generics(T)]
-    public fun transfer_extend<T: key>(obj: Object<T>, new_owner: address);
-}
-
-module moveos_std::context{
-    #[private_generics(T)]
-    public fun take_object_extend<T: key>(&mut Context, object_id: ObjectID): Object<T>;
+    public fun take_object_extend<T: key>(object_id: ObjectID): (address, Object<T>);
 }
 ```
 
-The above two methods are protected by `private_generics(T)`, and can only be invoked by modules where `T` is located. The developer gets to decide whether to provide the method to transfer `PrivateObject` to other users.
+The `take_object_extend` method is protected by `private_generics(T)`, and can only be invoked by modules where `T` is located. The developer gets to decide whether to provide the method to transfer `PrivateObject` to other users.
 
 #### Object Reference
 
 `Object<T>` can be referenced in two ways, one is read-only reference `&Object<T>`, the other one is mutable reference `&mut Object<T>`.
-We can get `&T` through `object::borrow(&Object<T>)` method, and `&mut T` through `object::borrow_mut(&mut Object<T>)`.
-The opertaions we can perform on obtained `&T` and `&mut T` are defined by the `T` module.
+
+We can get `&T` through `object::borrow(&Object<T>)` method, and `&mut T` through `object::borrow_mut(&mut Object<T>)`. As for what operations can be performed after obtaining `&T` and `&mut<T>`, this is defined by `T`'s module.
 
 There are two ways to get the Object reference:
 
 1. Passed in through the `entry` method.
 
 ```move
-entry fun my_entry(obj: &Object<MyStruct>, obj_mut: &mut Object<MyStruct>){
-    //do something 
+entry fun my_entry(obj: &Object<MyStruct>, obj_mut: &mut Object<MyStruct>) {
+    // do something 
 }
 ```
 
-2. Obtained through the method provided by `context`.
+2. Obtained through `borrow_object` and `borrow_mut_object` methods.
 
 ```move
-module moveos_std::context{
+module moveos_std::object {
+    public fun borrow_object<T: key>(object_id: ObjectID): &Object<T>;
 
-    public fun borrow_object<T: key>(&Context, object_id: ObjectID): &Object<T>;
-
-    public fun borrow_mut_object<T: key>(&mut Context, &signer, object_id: ObjectID): &mut Object<T>;
+    public fun borrow_mut_object<T: key>(owner: &signer, object_id: ObjectID): &mut Object<T>;
 }
 ```
 
@@ -114,9 +110,9 @@ module moveos_std::context{
 Method extension for developers:
 
 ```move
-module moveos_std::context{
+module moveos_std::object {
     #[private_generics(T)]
-    public fun borrow_mut_object_extend<T: key>(&mut Context, object_id: ObjectID): &mut Object<T>;
+    public fun borrow_mut_object_extend<T: key>(object_id: ObjectID): &mut Object<T>;
 }
 ```
 
@@ -132,55 +128,53 @@ module moveos_std::context{
 Following method can shift `Object<T>` to `SharedObject`.
 
 ```move
-module moveos_std::object{
-    public fun to_frozen<T: key>(obj: Object<T>);
+module moveos_std::object {
+    public fun to_shared<T: key>(self: Object<T>);
 }
 ```
 
-To get the mutable reference of SharedObject, it must be passed through `entry` parameters or obtained via the method provided by `context`:
+To get the mutable reference of SharedObject, it must be passed through `entry` parameters or obtained via the method provided by `object`:
 
 ```move
-module moveos_std::context{
-    public fun borrow_mut_object_shared<T: key>(&mut Context, object_id: ObjectID): &mut Object<T>;
+module moveos_std::object {
+    public fun borrow_mut_object_shared<T: key>(object_id: ObjectID): &mut Object<T>;
 }
 ```
 
 Following method can shift `Object<T>` to `FrozenObject`.
 
 ```move
-module moveos_std::object{
-    public fun to_frozen<T: key>(obj: Object<T>);
+module moveos_std::object {
+    public fun to_frozen<T: key>(self: Object<T>);
 }
 ```
 
 > Note: Once Object becomes `frozen` or `shared`, it automatically become `SystemOwnedObject`; no one can directly get the instance of `Object<T>`, only the operations on the Object are feasible through the reference.
-
 
 #### Nested Object
 
 Given `Object<T>` itself has `store` ability, it can be nested in other structures as fields or be saved in containers like `vector`, `Table`, etc.
 
 ```move
-struct Avatar has key{
+struct Avatar has key {
     head: Object<Head>,
     body: Object<Body>,
 }
 ```
 
-In the above example, `Object<Head>`, and `Object<Body>` can be understood as belonging to the `Avatar` structure. If `Object<Avatar>` is transferred to another user, then `Object<Head>` and `Object<Body>` will be transferred to the other user with the `Object<Avatar>`.
+In the above example, `Object<Head>` and `Object<Body>` are fields of the `Avatar` structure. These two objects belong to the `Avatar` structure. If the `Object<Avatar>` is transferred to other user, then the `Object<Head>` and `Object<Body>` will be transferred to the other user with the `Object<Avatar>`.
 
 * Even in a nested state, Objects will still exist in Object Storage and can be accessed through the reference retrieval method described earlier.
 * Nested Objects will always be `SystemOwnedObject`.
-
 
 #### Deleting an Object
 
 The following method can be used to delete Object:
 
 ```move
-module moveos_std::object{
+module moveos_std::object {
     #[private_generics(T)]
-    public fun remove<T: key>(obj: Object<T>): T;
+    public fun remove<T: key>(self: Object<T>): T;
 }
 ```
 
@@ -229,42 +223,47 @@ https://dev-seed.rooch.network
 
 The `context` and `object` modules provide the following functions that can operate on `Object`:
 
-|Object Function                                                                                 |`#[private_generics<T>]` |Details|
-|------------------------------------------------------------------------------------------------|-------------------------|-------------------------------------------------------|
-|`context::new_object<T: key>(&mut Context, T): Object<T>`                                       | true |Create `Object` that encapsulates `T` within, return `Object<T>`|
-|`context::new_named_object<T: key>(&mut Context, T): Object<T>`                                 | true |The `ObjectID` of this `Object` is generated using `T` type|
-|`context::new_account_named_object<T: key>(&mut Context, address, T): Object<T>`                | true |The `ObjectID` of this  `Object` is generated using the address and `T` type|
-|`context::borrow_object<T: key>(&Context, ObjectID): &Object<T>`                                | false |Borrow read-only reference of `Object<T>` through ID|
-|`context::borrow_mut_object<T: key>(&mut Context, &signer, ObjectID): &mut Object<T>`           | false |owner(&signer) borrows mutable reference of `Object<T>` through ID|
-|`context::borrow_mut_object_shared<T: key>(&mut Context, ObjectID): &mut Object<T>`             | false |Borrow mutable reference of a shared `Object<T>` through ID|
-|`context::borrow_mut_object_extend<T: key>(&mut Context, ObjectID): &mut Object<T>`             | true |Extension method for developers, the module where `T` located can get any `&mut Object<T>` through ObjectID|
-|`context::exist_object<T: key>(&Context, ObjectID): bool`                                       | false |Check if the Object exists through its ObjectID|
-|`object::id<T: key>(&Object<T>): ObjectID`                                                      | false | Get ObjectID|
-|`object::owner<T: key>(&Object<T>): address`                                                    | false | Get `owner` address|
-|`object::borrow<T: key>(&Object<T>): &T`                                                        | false |Borrow read-only reference of `T` through `&Object`|
-|`object::borrow_mut<T: key>(&mut Object<T>): &mut T`                                            | false |Borrow mutable reference of `T`  through `&mut Object`|
-|`object::transfer<T: key+store>(Object<T>,address)`                                             | false |Transfer ownership of `Object<T>` to `address`|
-|`object::transfer_extend<T: key>(Object<T>,address)`                                            | true |Extension method for developers, transfer ownership of `Object<T>` to `address`|
-|`object::to_shared<T: key>(Object<T>)`                                                          | false |Turn `Object<T>` to a `SharedObject`, where anyone can get its `&mut Object<T>`| 
-|`object::is_shared<T: key>(&Object<T>): bool`                                                   | false |Check if `Object<T>` is `SharedObject`|
-|`object::to_frozen<T: key>(Object<T>)`                                                          | false |Turn `Object<T>` to a `FrozenObject`, where no one can get its `&mut Object<T>`| 
-|`object::is_frozen<T: key>(&Object<T>): bool`                                                   | false |Check if `Object<T>` is `FrozenObject`|
-|`object::remove<T: key>(Object<T>): T`                                                          | true |Remove `Object<T>`, and return the `T` within. Only the module where `T` is located can delete`Object<T>`|
+| Object Function                                                        | `#[private_generics<T>]` | Details                                                                                                     |
+|------------------------------------------------------------------------|--------------------------|-------------------------------------------------------------------------------------------------------------|
+| `object::new<T: key>(T): Object<T>`                                    | true                     | Create `Object` that encapsulates `T` within, return `Object<T>`                                            |
+| `object::new_named_object<T: key>(T): Object<T>`                       | true                     | The `ObjectID` of this `Object` is generated using `T` type                                                 |
+| `object::new_account_named_object<T: key>(address, T): Object<T>`      | true                     | The `ObjectID` of this  `Object` is generated using the address and `T` type                                |
+| `object::borrow_object<T: key>(ObjectID): &Object<T>`                  | false                    | Borrow read-only reference of `Object<T>` through ID                                                        |
+| `object::borrow_mut_object<T: key>(&signer, ObjectID): &mut Object<T>` | false                    | owner(&signer) borrows mutable reference of `Object<T>` through ID                                          |
+| `object::borrow_mut_object_shared<T: key>(ObjectID): &mut Object<T>`   | false                    | Borrow mutable reference of a shared `Object<T>` through ID                                                 |
+| `object::borrow_mut_object_extend<T: key>(ObjectID): &mut Object<T>`   | true                     | Extension method for developers, the module where `T` located can get any `&mut Object<T>` through ObjectID |
+| `object::exists_object(ObjectID): bool`                                | false                    | Check if the Object exists through its ObjectID                                                             |
+| `object::id<T>(&Object<T>): ObjectID`                                  | false                    | Get ObjectID                                                                                                |
+| `object::owner<T: key>(&Object<T>): address`                           | false                    | Get `owner` address                                                                                         |
+| `object::borrow<T: key>(&Object<T>): &T`                               | false                    | Borrow read-only reference of `T` through `&Object`                                                         |
+| `object::borrow_mut<T: key>(&mut Object<T>): &mut T`                   | false                    | Borrow mutable reference of `T`  through `&mut Object`                                                      |
+| `object::transfer<T: key + store>(Object<T>, address)`                 | false                    | Transfer ownership of `Object<T>` to `address`                                                              |
+| `object::transfer_extend<T: key>(Object<T>, address)`                  | true                     | Extension method for developers, transfer ownership of `Object<T>` to `address`                             |
+| `object::to_shared<T: key>(Object<T>)`                                 | false                    | Turn `Object<T>` to a `SharedObject`, where anyone can get its `&mut Object<T>`                             |
+| `object::is_shared<T: key>(&Object<T>): bool`                          | false                    | Check if `Object<T>` is `SharedObject`                                                                      |
+| `object::to_frozen<T: key>(Object<T>)`                                 | false                    | Turn `Object<T>` to a `FrozenObject`, where no one can get its `&mut Object<T>`                             |
+| `object::is_frozen<T: key>(&Object<T>): bool`                          | false                    | Check if `Object<T>` is `FrozenObject`                                                                      |
+| `object::remove<T: key>(Object<T>): T`                                 | true                     | Remove `Object<T>`, and return the `T` within. Only the module where `T` is located can delete`Object<T>`   |
 
 In the above functions, if the `#[private_generics<T>]` column is `true`, it indicates that only the module where `T` is located can call the function.
-
 
 ### Comparison between Rooch Object, Sui Object, and Aptos Object
 
 #### Sui Object
+
 * Sui Object is a special kind of `struct` that requires the `struct` to has a `key` ability, and UID must be its first field. An Object is provided by the VM and storage, and there's no Object type in Move. In Rooch, Object is a type defined in Move itself.
 * Sui Object is indexed by the external system, and there's no method provided in the contract to retrieve the Object using ID; it can only be passed through parameters. Rooch provides both methods.
 * If a Sui Object gets nested or saved into other containers, it will become invisible in the global Object Storage. However, even when nested or saved into other containers, the Rooch Object can still be accessed in the global Object Storage.
 
 #### Aptos Object
+
 * At the base level, an Aptos Object is a special account, where the `address` is the `ObjectID`.
 * `Object<T>` represents the reference to an Object that can be `copy`,`drop`, whereas in Rooch, `Object<T>` is a single instance and cannot be `copy`, `drop`.
 * Aptos Object uses `DeleteRef`, `ExtendRef`, `TransferRef` to indicate different operation permissions on Object. But Rooch Object differentiates different permissions using read-only reference, mutable reference, and instance.
+
+<Callout>
+TODO: This part of this document needs to be improved
+</Callout>
 
 ### References
 
