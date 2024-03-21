@@ -36,6 +36,6 @@ impl TxSubmiter for Client {
         self.rooch.get_sequence_number(address).await
     }
     async fn submit_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
-        self.rooch.execute_tx(tx).await
+        self.rooch.execute_tx(tx, None).await
     }
 }

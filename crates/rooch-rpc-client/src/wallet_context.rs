@@ -14,7 +14,7 @@ use rooch_config::{rooch_config_dir, ROOCH_CLIENT_CONFIG, ROOCH_SERVER_CONFIG};
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::file_keystore::FileBasedKeystore;
 use rooch_key::keystore::Keystore;
-use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView};
+use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, KeptVMStatusView, TxOptions};
 use rooch_types::address::RoochAddress;
 use rooch_types::addresses;
 use rooch_types::crypto::Signature;
@@ -193,7 +193,7 @@ impl WalletContext {
         let client = self.get_client().await?;
         client
             .rooch
-            .execute_tx(tx)
+            .execute_tx(tx, Some(TxOptions { with_output: true }))
             .await
             .map_err(|e| RoochError::TransactionError(e.to_string()))
     }

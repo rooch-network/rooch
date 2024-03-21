@@ -7,7 +7,6 @@ use moveos_types::h256::H256;
 use moveos_types::moveos_std::account::Account;
 use moveos_types::{access_path::AccessPath, state::State, transaction::FunctionCall};
 use rooch_rpc_api::api::rooch_api::RoochAPIClient;
-use rooch_rpc_api::jsonrpc_types::TransactionWithInfoPageView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, transaction_view::TransactionWithInfoView,
 };
@@ -16,6 +15,7 @@ use rooch_rpc_api::jsonrpc_types::{
     EventOptions, EventPageView, StateOptions, StatePageView, StructTagView,
 };
 use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponseView, StateView};
+use rooch_rpc_api::jsonrpc_types::{TransactionWithInfoPageView, TxOptions};
 use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
 use std::sync::Arc;
 
@@ -36,10 +36,14 @@ impl RoochRpcClient {
         Ok(self.http.get_chain_id().await?.0)
     }
 
-    pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
+    pub async fn execute_tx(
+        &self,
+        tx: RoochTransaction,
+        tx_option: Option<TxOptions>,
+    ) -> Result<ExecuteTransactionResponseView> {
         let tx_payload = bcs::to_bytes(&tx)?;
         self.http
-            .execute_raw_transaction(tx_payload.into(), None)
+            .execute_raw_transaction(tx_payload.into(), tx_option)
             .await
             .map_err(|e| anyhow::anyhow!(e))
     }
