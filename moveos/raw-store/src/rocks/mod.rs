@@ -14,7 +14,7 @@ use crate::{ColumnFamilyName, WriteOp};
 use anyhow::{ensure, format_err, Error, Result};
 use moveos_common::utils::{check_open_fds_limit, from_bytes};
 use moveos_config::store_config::RocksdbConfig;
-use rocksdb::{Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB, ColumnFamily};
+use rocksdb::{ColumnFamily, Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::collections::HashSet;
@@ -126,12 +126,8 @@ impl RocksDB {
         column_families: Vec<ColumnFamilyName>,
     ) -> Result<DB> {
         let error_if_log_file_exists = false;
-        let inner = DB::open_cf_for_read_only(
-            db_opts,
-            path,
-            column_families,
-            error_if_log_file_exists,
-        )?;
+        let inner =
+            DB::open_cf_for_read_only(db_opts, path, column_families, error_if_log_file_exists)?;
         Ok(inner)
     }
 
