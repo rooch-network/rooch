@@ -4,7 +4,7 @@
 use crate::actor::indexer::IndexerActor;
 use crate::actor::messages::{
     IndexerEventsMessage, IndexerStatesMessage, IndexerTransactionMessage,
-    QueryIndexerEventsMessage, QueryIndexerGlobalStatesMessage, QueryIndexerTableStatesMessage,
+    QueryIndexerEventsMessage, QueryIndexerFieldStatesMessage, QueryIndexerObjectStatesMessage,
     QueryIndexerTransactionsMessage, SyncIndexerStatesMessage,
 };
 use crate::actor::reader_indexer::IndexerReaderActor;
@@ -15,8 +15,8 @@ use moveos_types::state::StateChangeSet;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
-    GlobalStateFilter, IndexerGlobalState, IndexerStateID, IndexerTableChangeSet,
-    IndexerTableState, StateSyncFilter, TableStateFilter,
+    FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, IndexerTableChangeSet,
+    ObjectStateFilter, StateSyncFilter,
 };
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::transaction::LedgerTransaction;
@@ -115,16 +115,16 @@ impl IndexerProxy {
             .await?
     }
 
-    pub async fn query_global_states(
+    pub async fn query_object_states(
         &self,
-        filter: GlobalStateFilter,
+        filter: ObjectStateFilter,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: usize,
         descending_order: bool,
-    ) -> Result<Vec<IndexerGlobalState>> {
+    ) -> Result<Vec<IndexerObjectState>> {
         self.reader_actor
-            .send(QueryIndexerGlobalStatesMessage {
+            .send(QueryIndexerObjectStatesMessage {
                 filter,
                 cursor,
                 limit,
@@ -133,16 +133,16 @@ impl IndexerProxy {
             .await?
     }
 
-    pub async fn query_table_states(
+    pub async fn query_field_states(
         &self,
-        filter: TableStateFilter,
+        filter: FieldStateFilter,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: usize,
         descending_order: bool,
-    ) -> Result<Vec<IndexerTableState>> {
+    ) -> Result<Vec<IndexerFieldState>> {
         self.reader_actor
-            .send(QueryIndexerTableStatesMessage {
+            .send(QueryIndexerFieldStatesMessage {
                 filter,
                 cursor,
                 limit,

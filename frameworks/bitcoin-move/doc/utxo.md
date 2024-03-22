@@ -99,15 +99,6 @@ The UTXO Object
 ## Constants
 
 
-<a name="0x4_utxo_PROTOCOL_AREA"></a>
-
-
-
-<pre><code><b>const</b> <a href="utxo.md#0x4_utxo_PROTOCOL_AREA">PROTOCOL_AREA</a>: <a href="">vector</a>&lt;u8&gt; = [112, 114, 111, 116, 111, 99, 111, 108, 95, 97, 114, 101, 97];
-</code></pre>
-
-
-
 <a name="0x4_utxo_TEMPORARY_AREA"></a>
 
 

@@ -4,7 +4,7 @@
 use super::types::{OutPoint, Transaction};
 use crate::address::BitcoinAddress;
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
-use crate::indexer::state::IndexerGlobalState;
+use crate::indexer::state::IndexerObjectState;
 use crate::into_address::IntoAddress;
 use anyhow::Result;
 use move_core_types::language_storage::StructTag;
@@ -230,7 +230,7 @@ pub struct InscriptionState {
 
 impl InscriptionState {
     pub fn new_from_global_state(
-        state: IndexerGlobalState,
+        state: IndexerObjectState,
         inscription: Inscription,
         owner_bitcoin_address: Option<BitcoinAddress>,
     ) -> Self {

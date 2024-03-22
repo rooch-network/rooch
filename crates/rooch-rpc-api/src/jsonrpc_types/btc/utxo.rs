@@ -11,7 +11,7 @@ use move_core_types::account_address::AccountAddress;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::MoveStructType;
 use rooch_types::bitcoin::utxo::{self, UTXOState, UTXO};
-use rooch_types::indexer::state::GlobalStateFilter;
+use rooch_types::indexer::state::ObjectStateFilter;
 use rooch_types::into_address::IntoAddress;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -45,9 +45,9 @@ impl UTXOFilterView {
     pub fn into_global_state_filter(
         filter_opt: UTXOFilterView,
         resolve_address: AccountAddress,
-    ) -> Result<GlobalStateFilter> {
+    ) -> Result<ObjectStateFilter> {
         Ok(match filter_opt {
-            UTXOFilterView::Owner(_owner) => GlobalStateFilter::ObjectTypeWithOwner {
+            UTXOFilterView::Owner(_owner) => ObjectStateFilter::ObjectTypeWithOwner {
                 object_type: UTXO::struct_tag(),
                 owner: resolve_address,
             },
@@ -56,10 +56,10 @@ impl UTXOFilterView {
                 let outpoint =
                     rooch_types::bitcoin::types::OutPoint::new(txid.into_address(), vout);
                 let utxo_id = utxo::derive_utxo_id(&outpoint);
-                GlobalStateFilter::ObjectId(utxo_id)
+                ObjectStateFilter::ObjectId(utxo_id)
             }
-            UTXOFilterView::ObjectId(object_id) => GlobalStateFilter::ObjectId(object_id),
-            UTXOFilterView::All => GlobalStateFilter::ObjectType(UTXO::struct_tag()),
+            UTXOFilterView::ObjectId(object_id) => ObjectStateFilter::ObjectId(object_id),
+            UTXOFilterView::All => ObjectStateFilter::ObjectType(UTXO::struct_tag()),
         })
     }
 }

@@ -8,11 +8,11 @@ use tracing::log;
 
 use crate::errors::{Context, IndexerError};
 use crate::models::events::StoredEvent;
-use crate::models::states::{StoredGlobalState, StoredTableChangeSet, StoredTableState};
+use crate::models::states::{StoredFieldState, StoredObjectState, StoredTableChangeSet};
 use crate::models::transactions::StoredTransaction;
-use crate::schema::{events, global_states, table_change_sets, table_states, transactions};
+use crate::schema::{events, field_states, object_states, table_change_sets, transactions};
 use crate::types::{
-    IndexedEvent, IndexedGlobalState, IndexedTableChangeSet, IndexedTableState, IndexedTransaction,
+    IndexedEvent, IndexedFieldState, IndexedObjectState, IndexedTableChangeSet, IndexedTransaction,
 };
 use crate::utils::escape_sql_string;
 use crate::{get_sqlite_pool_connection, SqliteConnectionPool};
@@ -27,9 +27,9 @@ impl SqliteIndexerStore {
         Self { connection_pool }
     }
 
-    pub fn persist_or_update_global_states(
+    pub fn persist_or_update_object_states(
         &self,
-        states: Vec<IndexedGlobalState>,
+        states: Vec<IndexedObjectState>,
     ) -> Result<(), IndexerError> {
         if states.is_empty() {
             return Ok(());
@@ -38,7 +38,7 @@ impl SqliteIndexerStore {
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
         let states = states
             .into_iter()
-            .map(StoredGlobalState::from)
+            .map(StoredObjectState::from)
             .collect::<Vec<_>>();
 
         // Diesel for SQLite don't support batch update yet, so implements batch update directly via raw SQL
@@ -64,7 +64,7 @@ impl SqliteIndexerStore {
             .join(",");
         let query = format!(
             "
-                INSERT INTO global_states (object_id, owner, flag, value, object_type, state_root, size, tx_order, state_index, created_at, updated_at) \
+                INSERT INTO object_states (object_id, owner, flag, value, object_type, state_root, size, tx_order, state_index, created_at, updated_at) \
                 VALUES {} \
                 ON CONFLICT (object_id) DO UPDATE SET \
                 owner = excluded.owner, \
@@ -80,16 +80,16 @@ impl SqliteIndexerStore {
         );
 
         // // Perform multi-insert with ON CONFLICT update
-        // diesel::insert_into(global_states::table)
+        // diesel::insert_into(object_states::table)
         //     .values(states.as_slice())
-        //     .on_conflict(global_states::object_id)
+        //     .on_conflict(object_states::object_id)
         //     .do_update()
         //     .set((
-        //         global_states::owner.eq(excluded(global_states::owner)),
-        //         global_states::flag.eq(excluded(global_states::flag)),
-        //         global_states::value.eq(excluded(global_states::value)),
-        //         global_states::size.eq(excluded(global_states::size)),
-        //         global_states::updated_at.eq(excluded(global_states::updated_at)),
+        //         object_states::owner.eq(excluded(object_states::owner)),
+        //         object_states::flag.eq(excluded(object_states::flag)),
+        //         object_states::value.eq(excluded(object_states::value)),
+        //         object_states::size.eq(excluded(object_states::size)),
+        //         object_states::updated_at.eq(excluded(object_states::updated_at)),
         //     ))
         //     .execute(&mut connection)
         //     .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
@@ -107,7 +107,7 @@ impl SqliteIndexerStore {
         Ok(())
     }
 
-    pub fn delete_global_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
+    pub fn delete_object_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError> {
         if state_pks.is_empty() {
             return Ok(());
         }
@@ -115,7 +115,7 @@ impl SqliteIndexerStore {
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
 
         diesel::delete(
-            global_states::table.filter(global_states::object_id.eq_any(state_pks.as_slice())),
+            object_states::table.filter(object_states::object_id.eq_any(state_pks.as_slice())),
         )
         .execute(&mut connection)
         .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
@@ -124,9 +124,9 @@ impl SqliteIndexerStore {
         Ok(())
     }
 
-    pub fn persist_or_update_table_states(
+    pub fn persist_or_update_field_states(
         &self,
-        states: Vec<IndexedTableState>,
+        states: Vec<IndexedFieldState>,
     ) -> Result<(), IndexerError> {
         if states.is_empty() {
             return Ok(());
@@ -135,7 +135,7 @@ impl SqliteIndexerStore {
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
         let states = states
             .into_iter()
-            .map(StoredTableState::from)
+            .map(StoredFieldState::from)
             .collect::<Vec<_>>();
 
         // Diesel for SQLite don't support batch update yet, so implements batch update directly via raw SQL
@@ -144,7 +144,7 @@ impl SqliteIndexerStore {
             .map(|state| {
                 format!(
                     "('{}', '{}', '{}', '{}', '{}', '{}', {}, {}, {}, {})",
-                    escape_sql_string(state.table_handle),
+                    escape_sql_string(state.object_id),
                     escape_sql_string(state.key_hex),
                     escape_sql_string(state.key_str),
                     escape_sql_string(state.value),
@@ -160,9 +160,9 @@ impl SqliteIndexerStore {
             .join(",");
         let query = format!(
             "
-                INSERT INTO table_states (table_handle, key_hex, key_str, value, key_type, value_type, tx_order, state_index, created_at, updated_at) \
+                INSERT INTO field_states (object_id, key_hex, key_str, value, key_type, value_type, tx_order, state_index, created_at, updated_at) \
                 VALUES {} \
-                ON CONFLICT (table_handle, key_hex) DO UPDATE SET \
+                ON CONFLICT (object_id, key_hex) DO UPDATE SET \
                 value = excluded.value, \
                 value_type = excluded.value_type, \
                 tx_order = excluded.tx_order, \
@@ -184,7 +184,7 @@ impl SqliteIndexerStore {
         Ok(())
     }
 
-    pub fn delete_table_states(
+    pub fn delete_field_states(
         &self,
         state_pks: Vec<(String, String)>,
     ) -> Result<(), IndexerError> {
@@ -208,8 +208,8 @@ impl SqliteIndexerStore {
 
         let query = format!(
             "
-                DELETE FROM table_states \
-                WHERE (table_handle, key_hex) IN ({})
+                DELETE FROM field_states \
+                WHERE (object_id, key_hex) IN ({})
             ",
             values_clause
         );
@@ -218,25 +218,25 @@ impl SqliteIndexerStore {
         diesel::sql_query(query.clone())
             .execute(&mut connection)
             .map_err(|e| {
-                log::error!("Delete table states Executing Query error: {}", query);
+                log::error!("Delete field states Executing Query error: {}", query);
                 IndexerError::SQLiteWriteError(e.to_string())
             })
-            .context("Failed to delete table states to SQLiteDB")?;
+            .context("Failed to delete field states to SQLiteDB")?;
 
         Ok(())
     }
 
-    pub fn delete_table_states_by_table_handle(
+    pub fn delete_field_states_by_object_id(
         &self,
-        table_handles: Vec<String>,
+        object_ids: Vec<String>,
     ) -> Result<(), IndexerError> {
-        if table_handles.is_empty() {
+        if object_ids.is_empty() {
             return Ok(());
         }
 
         let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
         diesel::delete(
-            table_states::table.filter(table_states::table_handle.eq_any(table_handles.as_slice())),
+            field_states::table.filter(field_states::object_id.eq_any(object_ids.as_slice())),
         )
         .execute(&mut connection)
         .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))

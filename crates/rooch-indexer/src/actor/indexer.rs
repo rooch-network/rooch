@@ -5,7 +5,7 @@ use crate::actor::messages::{
     IndexerEventsMessage, IndexerStatesMessage, IndexerTransactionMessage,
 };
 use crate::store::traits::IndexerStoreTrait;
-use crate::types::{IndexedEvent, IndexedGlobalState, IndexedTableState, IndexedTransaction};
+use crate::types::{IndexedEvent, IndexedFieldState, IndexedObjectState, IndexedTransaction};
 use crate::utils::format_struct_tag;
 use crate::IndexerStore;
 use anyhow::Result;
@@ -51,8 +51,8 @@ impl IndexerActor {
         Ok(annotator_state_json)
     }
 
-    pub fn resolve_object_state(&self, table_handle: &ObjectID) -> Result<Option<State>> {
-        self.moveos_store.resolve_object_state(table_handle)
+    pub fn resolve_object_state(&self, object_id: &ObjectID) -> Result<Option<State>> {
+        self.moveos_store.resolve_object_state(object_id)
     }
 
     pub fn is_utxo_object(&self, state_opt: Option<State>) -> bool {
@@ -62,17 +62,17 @@ impl IndexerActor {
         }
     }
 
-    pub fn new_global_state_from_raw_object(
+    pub fn new_object_state_from_raw_object(
         &self,
         value: State,
         tx_order: u64,
         state_index: u64,
-    ) -> Result<IndexedGlobalState> {
+    ) -> Result<IndexedObjectState> {
         let raw_object = value.as_raw_object()?;
         let obj_value_json = self.resolve_raw_object_value_to_json(&raw_object)?;
         let object_type = format_struct_tag(raw_object.value.struct_tag.clone());
 
-        let state = IndexedGlobalState::new_from_raw_object(
+        let state = IndexedObjectState::new_from_raw_object(
             raw_object,
             obj_value_json,
             object_type,
@@ -82,19 +82,19 @@ impl IndexerActor {
         Ok(state)
     }
 
-    pub fn new_table_state(
+    pub fn new_field_state(
         &self,
         key: KeyState,
         value: State,
-        table_handle: ObjectID,
+        object_id: ObjectID,
         tx_order: u64,
         state_index: u64,
-    ) -> Result<IndexedTableState> {
+    ) -> Result<IndexedFieldState> {
         let key_hex = key.to_string();
         let key_state_json = self.resolve_state_to_json(&key.key_type, key.key.as_slice())?;
         let state_json = self.resolve_state_to_json(&value.value_type, value.value.as_slice())?;
-        let state = IndexedTableState::new(
-            table_handle,
+        let state = IndexedFieldState::new(
+            object_id,
             key_hex,
             key_state_json,
             state_json,
@@ -112,13 +112,13 @@ impl IndexerActor {
         &self,
         mut state_index_generator: u64,
         tx_order: u64,
-        new_global_states: &mut Vec<IndexedGlobalState>,
-        update_global_states: &mut Vec<IndexedGlobalState>,
-        remove_global_states: &mut Vec<String>,
-        remove_table_states_by_table_handle: &mut Vec<String>,
-        new_table_states: &mut Vec<IndexedTableState>,
-        update_table_states: &mut Vec<IndexedTableState>,
-        remove_table_states: &mut Vec<(String, String)>,
+        new_object_states: &mut Vec<IndexedObjectState>,
+        update_object_states: &mut Vec<IndexedObjectState>,
+        remove_object_states: &mut Vec<String>,
+        remove_field_states_by_object_id: &mut Vec<String>,
+        new_field_states: &mut Vec<IndexedFieldState>,
+        update_field_states: &mut Vec<IndexedFieldState>,
+        remove_field_states: &mut Vec<(String, String)>,
         object_id: ObjectID,
         object_change: ObjectChange,
     ) -> Result<u64> {
@@ -128,25 +128,25 @@ impl IndexerActor {
             match op {
                 Op::Modify(value) => {
                     debug_assert!(value.is_object());
-                    let state = self.new_global_state_from_raw_object(
+                    let state = self.new_object_state_from_raw_object(
                         value,
                         tx_order,
                         state_index_generator,
                     )?;
-                    update_global_states.push(state);
+                    update_object_states.push(state);
                 }
                 Op::Delete => {
-                    remove_global_states.push(object_id.to_string());
-                    remove_table_states_by_table_handle.push(object_id.to_string());
+                    remove_object_states.push(object_id.to_string());
+                    remove_field_states_by_object_id.push(object_id.to_string());
                 }
                 Op::New(value) => {
                     debug_assert!(value.is_object());
-                    let state = self.new_global_state_from_raw_object(
+                    let state = self.new_object_state_from_raw_object(
                         value,
                         tx_order,
                         state_index_generator,
                     )?;
-                    new_global_states.push(state);
+                    new_object_states.push(state);
                 }
             }
         }
@@ -157,27 +157,27 @@ impl IndexerActor {
                 FieldChange::Normal(normal_change) => {
                     match normal_change.op {
                         Op::Modify(value) => {
-                            let state = self.new_table_state(
+                            let state = self.new_field_state(
                                 key,
                                 value,
                                 object_id.clone(),
                                 tx_order,
                                 state_index_generator,
                             )?;
-                            update_table_states.push(state);
+                            update_field_states.push(state);
                         }
                         Op::Delete => {
-                            remove_table_states.push((object_id.to_string(), key.to_string()));
+                            remove_field_states.push((object_id.to_string(), key.to_string()));
                         }
                         Op::New(value) => {
-                            let state = self.new_table_state(
+                            let state = self.new_field_state(
                                 key,
                                 value,
                                 object_id.clone(),
                                 tx_order,
                                 state_index_generator,
                             )?;
-                            new_table_states.push(state);
+                            new_field_states.push(state);
                         }
                     }
                     state_index_generator += 1;
@@ -186,13 +186,13 @@ impl IndexerActor {
                     state_index_generator = self.handle_object_change(
                         state_index_generator,
                         tx_order,
-                        new_global_states,
-                        update_global_states,
-                        remove_global_states,
-                        remove_table_states_by_table_handle,
-                        new_table_states,
-                        update_table_states,
-                        remove_table_states,
+                        new_object_states,
+                        update_object_states,
+                        remove_object_states,
+                        remove_field_states_by_object_id,
+                        new_field_states,
+                        update_field_states,
+                        remove_field_states,
                         key.as_object_id()?,
                         object_change,
                     )?;
@@ -215,56 +215,56 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
 
         // indexer state index generator
         let mut state_index_generator = 0u64;
-        let mut new_global_states = vec![];
-        let mut update_global_states = vec![];
-        let mut remove_global_states = vec![];
+        let mut new_object_states = vec![];
+        let mut update_object_states = vec![];
+        let mut remove_object_states = vec![];
 
-        let mut new_table_states = vec![];
-        let mut update_table_states = vec![];
-        let mut remove_table_states = vec![];
+        let mut new_field_states = vec![];
+        let mut update_field_states = vec![];
+        let mut remove_field_states = vec![];
 
         // When remove table handle, first delete table handle from global states,
-        // then delete all states which belongs to the table_handle from table states
-        let mut remove_table_states_by_table_handle = vec![];
+        // then delete all states which belongs to the object_id from table states
+        let mut remove_field_states_by_object_id = vec![];
 
         for (object_id, object_change) in state_change_set.changes {
             state_index_generator = self.handle_object_change(
                 state_index_generator,
                 tx_order,
-                &mut new_global_states,
-                &mut update_global_states,
-                &mut remove_global_states,
-                &mut remove_table_states_by_table_handle,
-                &mut new_table_states,
-                &mut update_table_states,
-                &mut remove_table_states,
+                &mut new_object_states,
+                &mut update_object_states,
+                &mut remove_object_states,
+                &mut remove_field_states_by_object_id,
+                &mut new_field_states,
+                &mut update_field_states,
+                &mut remove_field_states,
                 object_id,
                 object_change,
             )?;
         }
 
-        //Merge new global states and update global states
-        new_global_states.append(&mut update_global_states);
+        //Merge new object states and update object states
+        new_object_states.append(&mut update_object_states);
         self.indexer_store
-            .persist_or_update_global_states(new_global_states)?;
+            .persist_or_update_object_states(new_object_states)?;
         self.indexer_store
-            .delete_global_states(remove_global_states)?;
+            .delete_object_states(remove_object_states)?;
 
-        //Merge new table states and update table states
-        new_table_states.append(&mut update_table_states);
+        //Merge new field states and update field states
+        new_field_states.append(&mut update_field_states);
         self.indexer_store
-            .persist_or_update_table_states(new_table_states)?;
+            .persist_or_update_field_states(new_field_states)?;
         self.indexer_store
-            .delete_table_states(remove_table_states)?;
+            .delete_field_states(remove_field_states)?;
         self.indexer_store
-            .delete_table_states_by_table_handle(remove_table_states_by_table_handle)?;
+            .delete_field_states_by_object_id(remove_field_states_by_object_id)?;
 
-        // TODO First temporarily close StateChangeSet Indexer writing and wait for the function to be turned on.
+        // TODO Temporarily close StateChangeSet Indexer writing and wait for the function to be turned on.
         // Store table change set for state sync
         // let mut split_state_change_set = SplitStateChangeSet::default();
 
-        // for (table_handle, table_change) in state_change_set.changes.clone() {
-        //     split_state_change_set.add_table_change(table_handle, table_change);
+        // for (object_id, table_change) in state_change_set.changes.clone() {
+        //     split_state_change_set.add_table_change(object_id, table_change);
         // }
 
         // let mut indexed_table_change_sets = vec![];

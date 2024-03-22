@@ -14,7 +14,7 @@ use moveos_types::{moveos_std::object::ObjectID, state::MoveStructType};
 use rooch_types::bitcoin::ord::{
     BitcoinInscriptionID, Inscription, InscriptionID, InscriptionState,
 };
-use rooch_types::indexer::state::GlobalStateFilter;
+use rooch_types::indexer::state::ObjectStateFilter;
 use rooch_types::into_address::IntoAddress;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -51,9 +51,9 @@ impl InscriptionFilterView {
     pub fn into_global_state_filter(
         filter: InscriptionFilterView,
         resolve_address: AccountAddress,
-    ) -> Result<GlobalStateFilter> {
+    ) -> Result<ObjectStateFilter> {
         Ok(match filter {
-            InscriptionFilterView::Owner(_owner) => GlobalStateFilter::ObjectTypeWithOwner {
+            InscriptionFilterView::Owner(_owner) => ObjectStateFilter::ObjectTypeWithOwner {
                 object_type: Inscription::struct_tag(),
                 owner: resolve_address,
             },
@@ -62,10 +62,10 @@ impl InscriptionFilterView {
                 let inscription_id = InscriptionID::new(txid.into_address(), index);
                 let object_id =
                     object::custom_object_id(&inscription_id, &Inscription::struct_tag());
-                GlobalStateFilter::ObjectId(object_id)
+                ObjectStateFilter::ObjectId(object_id)
             }
-            InscriptionFilterView::ObjectId(object_id) => GlobalStateFilter::ObjectId(object_id),
-            InscriptionFilterView::All => GlobalStateFilter::ObjectType(Inscription::struct_tag()),
+            InscriptionFilterView::ObjectId(object_id) => ObjectStateFilter::ObjectId(object_id),
+            InscriptionFilterView::All => ObjectStateFilter::ObjectType(Inscription::struct_tag()),
         })
     }
 }

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::actor::messages::{
-    QueryIndexerEventsMessage, QueryIndexerGlobalStatesMessage, QueryIndexerTableStatesMessage,
+    QueryIndexerEventsMessage, QueryIndexerFieldStatesMessage, QueryIndexerObjectStatesMessage,
     QueryIndexerTransactionsMessage, SyncIndexerStatesMessage,
 };
 use crate::indexer_reader::IndexerReader;
@@ -10,7 +10,7 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use rooch_types::indexer::event_filter::IndexerEvent;
-use rooch_types::indexer::state::{IndexerGlobalState, IndexerTableChangeSet, IndexerTableState};
+use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState, IndexerTableChangeSet};
 use rooch_types::transaction::TransactionWithInfo;
 
 pub struct IndexerReaderActor {
@@ -64,39 +64,39 @@ impl Handler<QueryIndexerEventsMessage> for IndexerReaderActor {
 }
 
 #[async_trait]
-impl Handler<QueryIndexerGlobalStatesMessage> for IndexerReaderActor {
+impl Handler<QueryIndexerObjectStatesMessage> for IndexerReaderActor {
     async fn handle(
         &mut self,
-        msg: QueryIndexerGlobalStatesMessage,
+        msg: QueryIndexerObjectStatesMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<IndexerGlobalState>> {
-        let QueryIndexerGlobalStatesMessage {
+    ) -> Result<Vec<IndexerObjectState>> {
+        let QueryIndexerObjectStatesMessage {
             filter,
             cursor,
             limit,
             descending_order,
         } = msg;
         self.indexer_reader
-            .query_global_states_with_filter(filter, cursor, limit, descending_order)
+            .query_object_states_with_filter(filter, cursor, limit, descending_order)
             .map_err(|e| anyhow!(format!("Failed to query indexer global states: {:?}", e)))
     }
 }
 
 #[async_trait]
-impl Handler<QueryIndexerTableStatesMessage> for IndexerReaderActor {
+impl Handler<QueryIndexerFieldStatesMessage> for IndexerReaderActor {
     async fn handle(
         &mut self,
-        msg: QueryIndexerTableStatesMessage,
+        msg: QueryIndexerFieldStatesMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<IndexerTableState>> {
-        let QueryIndexerTableStatesMessage {
+    ) -> Result<Vec<IndexerFieldState>> {
+        let QueryIndexerFieldStatesMessage {
             filter,
             cursor,
             limit,
             descending_order,
         } = msg;
         self.indexer_reader
-            .query_table_states_with_filter(filter, cursor, limit, descending_order)
+            .query_field_states_with_filter(filter, cursor, limit, descending_order)
             .map_err(|e| anyhow!(format!("Failed to query indexer table states: {:?}", e)))
     }
 }
