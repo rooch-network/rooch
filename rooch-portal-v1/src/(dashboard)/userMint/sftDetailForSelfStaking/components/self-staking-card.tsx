@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { UTXO } from '../common/utxo-interface'
 import { cn } from '@/lib/utils'
+import { CheckCircle2 } from 'lucide-react'
 
 const SAMPLE_UTXOS: UTXO[] = [
   { id: 0, amount: 1000, isStaked: false, isSelected: false },
@@ -77,10 +78,11 @@ export const SelfStakingCard = () => {
                   key={utxo.id}
                   onClick={() => isSwitchOn && toggleUTXOSelected(utxo.id)}
                   className={cn(
-                    'rounded-lg border border-border/40 dark:bg-zinc-800/90 overflow-hidden select-none',
+                    'relative rounded-lg border border-border/40 dark:bg-zinc-800/90 overflow-hidden select-none',
                     utxo.isSelected
                       ? 'border-teal-400 dark:border-teal-500 bg-teal-50 dark:bg-teal-800/60'
                       : '',
+                    isSwitchOn && utxo.isStaked ? 'opacity-50' : 'opacity-100',
                   )}
                 >
                   <CardHeader className="flex items-center justify-center">
@@ -89,6 +91,16 @@ export const SelfStakingCard = () => {
                   <CardContent className="flex items-center justify-center">
                     Amount {utxo.amount}
                   </CardContent>
+                  {isSwitchOn && !utxo.isStaked && (
+                    <div className="absolute top-2 right-2">
+                      <CheckCircle2
+                        className={cn(
+                          'w-5 h-5 text-muted-foreground',
+                          utxo.isSelected ? 'text-teal-400' : '',
+                        )}
+                      />
+                    </div>
+                  )}
                 </Card>
               ))}
             </div>
