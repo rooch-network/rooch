@@ -276,14 +276,8 @@ fn test_state_store() -> Result<()> {
     // test state sync
     let state_change_set = random_state_change_set();
     let mut split_state_change_set = SplitStateChangeSet::default();
-    for table_handle in state_change_set.new_tables {
-        split_state_change_set.add_new_table(table_handle);
-    }
     for (table_handle, table_change) in state_change_set.changes.clone() {
         split_state_change_set.add_table_change(table_handle, table_change);
-    }
-    for table_handle in state_change_set.removed_tables.clone() {
-        split_state_change_set.add_remove_table(table_handle);
     }
 
     let mut indexed_table_change_sets = vec![];

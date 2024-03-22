@@ -209,16 +209,12 @@ impl From<TableTypeInfoView> for TableTypeInfo {
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct StateChangeSetView {
-    pub new_tables: BTreeSet<ObjectID>,
-    pub removed_tables: BTreeSet<ObjectID>,
     pub changes: BTreeMap<ObjectID, TableChangeView>,
 }
 
 impl From<StateChangeSet> for StateChangeSetView {
     fn from(table_change_set: StateChangeSet) -> Self {
         Self {
-            new_tables: table_change_set.new_tables,
-            removed_tables: table_change_set.removed_tables,
             changes: table_change_set
                 .changes
                 .into_iter()
@@ -272,7 +268,6 @@ impl DynamicFieldView {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TableChangeView {
     pub entries: Vec<DynamicFieldView>,
-    pub size_increment: i64,
 }
 
 impl From<TableChange> for TableChangeView {
@@ -283,7 +278,6 @@ impl From<TableChange> for TableChangeView {
                 .into_iter()
                 .map(|(k, v)| DynamicFieldView::new(k.into(), v.into()))
                 .collect::<Vec<_>>(),
-            size_increment: table_change.size_increment,
         }
     }
 }
@@ -296,7 +290,6 @@ impl From<TableChangeView> for TableChange {
                 .into_iter()
                 .map(|kv| (kv.k.into(), kv.v.into()))
                 .collect(),
-            size_increment: table_change.size_increment,
         }
     }
 }
@@ -304,8 +297,6 @@ impl From<TableChangeView> for TableChange {
 impl From<StateChangeSetView> for StateChangeSet {
     fn from(table_change_set: StateChangeSetView) -> Self {
         Self {
-            new_tables: table_change_set.new_tables,
-            removed_tables: table_change_set.removed_tables,
             changes: table_change_set
                 .changes
                 .into_iter()
