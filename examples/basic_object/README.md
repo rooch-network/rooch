@@ -1,6 +1,5 @@
 # A Basic Object Example
 
-TODO
 
-1. A Show different between `T: key+store` + `T: key` 
-2. Show different code style between use ObjectRef<T> as argument of entry function or borrow it from context.
+1. `basic_object.move` A simple object example to show the difference between `T: key+store` and `T: key`, how to define custom transfer rules.
+2. `child_object.move` A simple object example to show how to define a child object and how to use it.

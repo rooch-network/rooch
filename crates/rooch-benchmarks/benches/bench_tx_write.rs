@@ -4,7 +4,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use pprof::criterion::{Output, PProfProfiler};
 use rooch_benchmarks::helper::{PProfOut, PPROF_OUT};
-use rooch_benchmarks::tx::TxType::{Blog, Empty};
+use rooch_benchmarks::tx::TxType::{Blog, Empty, Transfer};
 use rooch_benchmarks::tx::{
     create_publish_transaction, create_transaction, setup_service, DATA_DIR, TX_TYPE,
 };
@@ -29,6 +29,11 @@ pub fn transaction_write_benchmark(c: &mut Criterion) {
         let tx = create_publish_transaction(&test_transaction_builder, &keystore).unwrap();
         let _publish_result = rt.block_on(async { rpc_service.execute_tx(tx).await.unwrap() });
     }
+
+    if *TX_TYPE == Transfer {
+        tx_cnt = 1500;
+    }
+
     if *TX_TYPE == Empty {
         tx_cnt = 2500;
     }
