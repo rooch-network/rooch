@@ -138,7 +138,7 @@ pub fn verify_entry_function_at_publish(module: &CompiledModule) -> VMResult<boo
         for (idx, ty) in func_parameters_types.iter().enumerate() {
             if !check_transaction_input_type_at_publish(ty, &module_bin_view) {
                 return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
-                    .with_message(format!("The type of the {} paramter is not allowed", idx))
+                    .with_message(format!("The type of the {} parameter is not allowed", idx))
                     .at_index(IndexKind::FunctionDefinition, fdef.function.0)
                     .finish(Location::Module(module.self_id())));
             }
@@ -165,7 +165,7 @@ where
     for (idx, ty) in func.parameters.iter().enumerate() {
         if !check_transaction_input_type(ty, session) {
             return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
-                .with_message(format!("The type of the {} paramter is not allowed", idx)));
+                .with_message(format!("The type of the {} parameter is not allowed", idx)));
         }
     }
 
