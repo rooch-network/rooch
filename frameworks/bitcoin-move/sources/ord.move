@@ -353,6 +353,17 @@ module bitcoin_move::ord {
 
     native fun from_witness(witness: &Witness): vector<InscriptionRecord>;
 
+    public fun pack_inscribe_generate_args(deploy_args: vector<u8>, seed: vector<u8>, user_input: vector<u8>): vector<u8>{
+        native_pack_inscribe_generate_args(deploy_args, b"attrs", seed, b"seed",
+            user_input, b"user_input")
+    }
+
+    native fun native_pack_inscribe_generate_args(
+        deploy_args: vector<u8>, deploy_args_key: vector<u8>,
+        seed: vector<u8>, seed_key: vector<u8>,
+        user_input: vector<u8>, user_input_key: vector<u8>,
+    ): vector<u8>;
+
     public(friend) fun bind_multichain_address(rooch_address: address, bitcoin_address_opt: Option<BitcoinAddress>) {
         //Auto create address mapping if not exist
         if(option::is_some(&bitcoin_address_opt)) {

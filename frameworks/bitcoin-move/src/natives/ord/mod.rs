@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+pub mod bitseed;
 #[allow(dead_code)]
 pub mod envelope;
 #[allow(dead_code)]
@@ -12,6 +13,7 @@ pub mod media;
 #[allow(dead_code)]
 pub(crate) mod test;
 
+use crate::natives::ord::bitseed::{native_pack_inscribe_generate_args, ArgsPackingGasParameters};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::InternalGas;
 use move_core_types::vm_status::StatusCode;
@@ -83,21 +85,32 @@ pub(crate) fn native_from_witness(
 #[derive(Debug, Clone)]
 pub struct GasParameters {
     pub from_witness: FromWitnessGasParameters,
+    pub bitseed_pack_inscribe_generate_args: ArgsPackingGasParameters,
 }
 
 impl GasParameters {
     pub fn zeros() -> Self {
         Self {
             from_witness: FromWitnessGasParameters::zeros(),
+            bitseed_pack_inscribe_generate_args: ArgsPackingGasParameters::zeros(),
         }
     }
 }
 
 pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, NativeFunction)> {
-    let natives = [(
-        "from_witness",
-        make_native(gas_params.from_witness, native_from_witness),
-    )];
+    let natives = [
+        (
+            "from_witness",
+            make_native(gas_params.from_witness, native_from_witness),
+        ),
+        (
+            "native_pack_inscribe_generate_args",
+            make_native(
+                gas_params.bitseed_pack_inscribe_generate_args,
+                native_pack_inscribe_generate_args,
+            ),
+        ),
+    ];
 
     make_module_natives(natives)
 }

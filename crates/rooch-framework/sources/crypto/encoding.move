@@ -41,7 +41,7 @@ module rooch_framework::encoding {
    }
 
    #[test]
-   /// base58check encoding adds 2 digits (1 bytes) checksum to the begining of the hex string and 12 digits (6 bytes) checksum to the end of the hex string.
+   /// base58check encoding adds 2 digits (1 bytes) checksum to the beginning of the hex string and 12 digits (6 bytes) checksum to the end of the hex string.
    fun test_base58check_encoding() {
       use std::vector;
       let address_bytes = x"0062e907b15cbf27d5425399ebf6f0fb50ebb88f18";
