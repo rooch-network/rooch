@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::natives::ord::bitseed::ArgsPackingGasParameters;
 use rooch_framework::natives::gas_parameter::native::MUL;
 
