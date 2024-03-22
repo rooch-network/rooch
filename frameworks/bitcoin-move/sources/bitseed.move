@@ -6,16 +6,14 @@ module bitcoin_move::bitseed {
     use bitcoin_move::ord::pack_inscribe_generate_args;
     use moveos_std::wasm;
 
-    public fun inscribe_generate(wasm_bytes: vector<u8>, deploy_args: vector<vector<u8>>,
+    public fun inscribe_generate(wasm_bytes: vector<u8>, deploy_args: vector<u8>,
                                  seed: vector<u8>, user_input: vector<u8>): vector<u8> {
         let wasm_instance = wasm::create_wasm_instance(wasm_bytes);
         let wasm_instance_id = wasm::get_instance_id(&wasm_instance);
 
         let function_name = b"inscribe_generate";
 
-        let deploy_args_cbor = wasm::create_cbor_values(deploy_args);
-        let arg = pack_inscribe_generate_args(deploy_args_cbor, seed, user_input);
-
+        let arg = pack_inscribe_generate_args(deploy_args, seed, user_input);
         let arg_with_length = wasm::add_length_with_data(arg);
 
         let arg_list = vector::empty<vector<u8>>();

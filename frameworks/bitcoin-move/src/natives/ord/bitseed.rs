@@ -3,6 +3,7 @@
 
 use std::collections::VecDeque;
 
+use ciborium::value::Integer;
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::NativeContext;
@@ -10,11 +11,7 @@ use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::natives::function::NativeResult;
 use move_vm_types::pop_arg;
 use move_vm_types::values::Value;
-use serde_json::Number;
-use serde_json::Value as JSONValue;
 use smallvec::smallvec;
-
-use moveos_stdlib::natives::moveos_stdlib::wasm::E_CBOR_MARSHAL_FAILED;
 
 #[derive(Debug, Clone)]
 pub struct ArgsPackingGasParameters {
@@ -51,39 +48,34 @@ pub fn native_pack_inscribe_generate_args(
     let deploy_args_key_string = String::from_utf8_lossy(deploy_args_key.as_slice()).to_string();
 
     // the top level cbor map
-    let mut buffer_map = serde_json::Map::new();
+    let mut cbor_buffer_map_pair: Vec<(ciborium::Value, ciborium::Value)> = Vec::new();
 
-    // attrs
+    // attrs cbor
     let mut attrs_buffer_vec = Vec::new();
     for byte in deploy_args.iter() {
-        attrs_buffer_vec.push(serde_json::Value::Number(Number::from(byte.clone())));
+        attrs_buffer_vec.push(ciborium::Value::Integer(Integer::from(*byte)));
     }
+    cbor_buffer_map_pair.push((
+        ciborium::Value::Text(deploy_args_key_string),
+        ciborium::Value::Array(attrs_buffer_vec),
+    ));
 
-    buffer_map.insert(
-        deploy_args_key_string,
-        serde_json::Value::Array(attrs_buffer_vec),
-    );
-
-    // seed
+    // seed cbor
     let seed_string = String::from_utf8_lossy(seed.as_slice()).to_string();
-    buffer_map.insert(seed_key_string, serde_json::Value::String(seed_string));
+    cbor_buffer_map_pair.push((
+        ciborium::Value::Text(seed_key_string),
+        ciborium::Value::Text(seed_string),
+    ));
 
-    // user_input
+    // user_input cbor
     let user_input_string = String::from_utf8_lossy(user_input.as_slice()).to_string();
-    buffer_map.insert(
-        user_input_key_string,
-        serde_json::Value::String(user_input_string),
-    );
+    cbor_buffer_map_pair.push((
+        ciborium::Value::Text(user_input_key_string),
+        ciborium::Value::Text(user_input_string),
+    ));
 
-    // marshal the cbor map to bytes
-    let top_buffer_map = JSONValue::Object(buffer_map);
     let mut top_buffer = Vec::new();
-    match ciborium::into_writer(&top_buffer_map, &mut top_buffer) {
-        Ok(_) => {}
-        Err(_) => {
-            return Ok(NativeResult::err(gas_params.base, E_CBOR_MARSHAL_FAILED));
-        }
-    }
+    ciborium::into_writer(&ciborium::Value::Map(cbor_buffer_map_pair), &mut top_buffer).expect("");
 
     let mut cost = gas_params.base;
     let total_length = user_input_key.len()
