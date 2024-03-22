@@ -32,6 +32,7 @@ export function SftDetailForSelfStaking() {
 
       {/* My Bitcoin UTXO */}
       <SelfStakingCard />
+
       <Button className="rounded-lg w-full mt-4 mb-2 md:mt-8 md:mb-6 h-12 dark:bg-teal-500 dark:hover:bg-teal-600 text-white font-semibold">
         Mint
       </Button>
