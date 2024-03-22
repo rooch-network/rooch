@@ -53,6 +53,7 @@ module rooch_examples::wasm_execution {
       let seed = b"seed";
       let user_input = b"user_input";
       let ret_val = inscribe_generate(bitseed_generator_wasm_bytes, arg_in_cbor, seed, user_input);
-      debug::print(&ret_val);
+      // Map([(Text("amount"), Integer(Integer(1))), (Text("attributes"), Map([(Text("id"), Text("user_input")), (Text("power"), Integer(Integer(44607)))])), (Text("content"), Map([]))])
+      assert!(ret_val == x"a366616d6f756e74016a61747472696275746573a26269646a757365725f696e70757465706f77657219ae3f67636f6e74656e74a0", 1)
    }
 }
