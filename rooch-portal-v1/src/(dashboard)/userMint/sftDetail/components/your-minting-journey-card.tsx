@@ -10,7 +10,15 @@ export const YourMintingJourneyCard = () => {
             Deploy your new project in one-click.
           </CardDescription>
         </CardHeader>
-        <CardContent className="text-sm dark:text-primary grid md:grid-cols-1 gap-6 w-full px-6 md:px-0">
+        <CardContent className="text-sm dark:text-primary grid md:grid-cols-2 gap-6 w-full px-6 md:px-0">
+          <div className="flex flex-row-reverse md:flex-col items-center justify-between md:justify-center gap-2 w-full md:h-28 dark:text-teal-50">
+            <span className="text-4xl font-medium md:text-5xl">12,333</span>
+            <span className="text-base md:text-sm">Distribution Type</span>
+          </div>
+          <div className="flex flex-row-reverse md:flex-col items-center justify-between md:justify-center gap-2 w-full md:h-28 dark:text-teal-50">
+            <span className="text-4xl font-medium md:text-5xl">12,333</span>
+            <span className="text-base md:text-sm">Distribution Type</span>
+          </div>
           <div className="flex flex-row-reverse md:flex-col items-center justify-between md:justify-center gap-2 w-full md:h-28 dark:text-teal-50">
             <span className="text-4xl font-medium md:text-5xl">12,333</span>
             <span className="text-base md:text-sm">Distribution Type</span>
