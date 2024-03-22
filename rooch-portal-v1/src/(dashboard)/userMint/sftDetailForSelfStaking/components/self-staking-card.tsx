@@ -13,7 +13,8 @@ import { ToastAction } from '@/components/ui/toast'
 const SAMPLE_UTXOS: UTXO[] = [
   { id: 0, amount: 1000, isStaked: false, isSelected: false },
   { id: 1, amount: 2000, isStaked: false, isSelected: false },
-  { id: 2, amount: 1500, isStaked: true, isSelected: false },
+  { id: 2, amount: 2000, isStaked: false, isSelected: false },
+  { id: 3, amount: 1500, isStaked: true, isSelected: false },
 ]
 
 export const SelfStakingCard = () => {
@@ -61,7 +62,9 @@ export const SelfStakingCard = () => {
       toast({
         title: 'Self-staking successful ✅',
         description: (
-          <a className="text-muted-foreground hover:underline">See the transaction on explorer</a>
+          <a className="text-muted-foreground hover:underline cursor-pointer">
+            See the transaction on explorer
+          </a>
         ),
         action: <ToastAction altText="Confirm">Confirm</ToastAction>,
       })
