@@ -48,7 +48,18 @@ export const FeaturedSfts = () => {
 
   const handleMint = (sft: SftsProps) => {
     console.log('Minting SFT with ID:', sft.id)
-    navigate(`/mint/sft/${sft.id}`)
+
+    let path = '/mint/sft/'
+    switch (sft.distribution) {
+      case 'Self-Staking Mint':
+        path += `self-staking/${sft.id}`
+        break
+      // other cases to be added:
+      default:
+        path += `${sft.id}`
+    }
+
+    navigate(path)
   }
 
   useEffect(() => {
