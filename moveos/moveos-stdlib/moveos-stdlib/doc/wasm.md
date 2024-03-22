@@ -60,7 +60,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_create_cbor_values">create_cbor_values</a>(value: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_create_cbor_values">create_cbor_values</a>(value: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
