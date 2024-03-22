@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { UTXO } from '../common/utxo-interface'
 import { cn } from '@/lib/utils'
 import { CheckCircle2 } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
+import { ToastAction } from '@/components/ui/toast'
 
 const SAMPLE_UTXOS: UTXO[] = [
   { id: 0, amount: 1000, isStaked: false, isSelected: false },
@@ -15,6 +17,7 @@ const SAMPLE_UTXOS: UTXO[] = [
 ]
 
 export const SelfStakingCard = () => {
+  const { toast } = useToast()
   const [isSwitchOn, setIsSwitchOn] = useState(false)
   const [utxos, setUtxos] = useState<UTXO[]>(SAMPLE_UTXOS)
 
@@ -42,6 +45,29 @@ export const SelfStakingCard = () => {
     )
   }
 
+  const handleSelfStake = () => {
+    const hasSelectedUTXOs = utxos.some((utxo) => utxo.isSelected) // For displaying "success" message
+
+    setUtxos(
+      utxos.map((utxo) => {
+        if (utxo.isSelected) {
+          return { ...utxo, isStaked: true, isSelected: false }
+        }
+        return utxo
+      }),
+    )
+
+    if (hasSelectedUTXOs) {
+      toast({
+        title: 'Self-staking successful ✅',
+        description: (
+          <a className="text-muted-foreground hover:underline">See the transaction on explorer</a>
+        ),
+        action: <ToastAction altText="Confirm">Confirm</ToastAction>,
+      })
+    }
+  }
+
   return (
     <div className="mt-6">
       <div className="h-full w-full">
@@ -66,7 +92,7 @@ export const SelfStakingCard = () => {
                   Batch Mode
                 </Label>
               </div>
-              <Button size="default" className="rounded-lg">
+              <Button size="default" className="rounded-lg" onClick={handleSelfStake}>
                 Self-stake
               </Button>
             </div>
