@@ -148,10 +148,10 @@ fn test_reopen() {
 #[test]
 fn test_statedb_state_root() -> Result<()> {
     let mut moveos_store = MoveOSStore::mock_moveos_store().expect("moveos store mock should succ");
-    let (state_root, size) = moveos_store
+    let (state_root, _size) = moveos_store
         .get_state_store_mut()
         .apply_change_set(random_state_change_set())?;
-    let (new_state_root, new_size) = moveos_store
+    let (new_state_root, _new_size) = moveos_store
         .get_state_store_mut()
         .apply_change_set(random_state_change_set())?;
     assert_ne!(state_root, new_state_root);
