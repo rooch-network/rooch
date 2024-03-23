@@ -20,14 +20,10 @@ module moveos_std::big_vector {
 
     /// A scalable vector implementation based on tables where elements are grouped into buckets.
     /// Each bucket has a capacity of `bucket_size` elements.
-    struct BigVector<T> has store {
-        buckets: Table<u64, VectorWrapper<T>>,
+    struct BigVector<T: store> has store {
+        buckets: Table<u64, vector<T>>,
         end_index: u64,
         bucket_size: u64
-    }
-
-    struct VectorWrapper<T> has store {
-        data: vector<T>,
     }
 
     /// Regular Vector API
@@ -51,14 +47,14 @@ module moveos_std::big_vector {
 
     /// Destroy the vector `v`.
     /// Aborts if `v` is not empty.
-    public fun destroy_empty<T>(v: BigVector<T>) {
+    public fun destroy_empty<T: store>(v: BigVector<T>) {
         assert!(is_empty(&v), ErrorVectorNotEmpty);
         let BigVector { buckets, end_index: _, bucket_size: _ } = v;
         table::destroy_empty(buckets);
     }
 
     /// Destroy the vector `v` if T has `drop`
-    public fun destroy<T: drop>(v: BigVector<T>) {
+    public fun destroy<T: store + drop>(v: BigVector<T>) {
         let BigVector { buckets, end_index, bucket_size: _ } = v;
         let i = 0;
         while (end_index > 0) {
@@ -71,14 +67,14 @@ module moveos_std::big_vector {
 
     /// Acquire an immutable reference to the `i`th element of the vector `v`.
     /// Aborts if `i` is out of bounds.
-    public fun borrow<T>(v: &BigVector<T>, i: u64): &T {
+    public fun borrow<T: store>(v: &BigVector<T>, i: u64): &T {
         assert!(i < length(v), ErrorIndexOutOfBound);
         vector::borrow(table::borrow(&v.buckets, i / v.bucket_size), i % v.bucket_size)
     }
 
     /// Return a mutable reference to the `i`th element in the vector `v`.
     /// Aborts if `i` is out of bounds.
-    public fun borrow_mut<T>(v: &mut BigVector<T>, i: u64): &mut T {
+    public fun borrow_mut<T: store>(v: &mut BigVector<T>, i: u64): &mut T {
         assert!(i < length(v), ErrorIndexOutOfBound);
         vector::borrow_mut(table::borrow_mut(&mut v.buckets, i / v.bucket_size), i % v.bucket_size)
     }
@@ -117,7 +113,7 @@ module moveos_std::big_vector {
     /// Pop an element from the end of vector `v`. It doesn't shrink the buckets even if they're empty.
     /// Call `shrink_to_fit` explicity to deallocate empty buckets.
     /// Aborts if `v` is empty.
-    public fun pop_back<T>(v: &mut BigVector<T>): T {
+    public fun pop_back<T: store>(v: &mut BigVector<T>): T {
         assert!(!is_empty(v), ErrorVectorEmpty);
         let num_buckets = table::length(&v.buckets);
         let last_bucket = table::borrow_mut(&mut v.buckets, num_buckets - 1);
@@ -133,7 +129,7 @@ module moveos_std::big_vector {
     /// Remove the element at index i in the vector v and return the owned value that was previously stored at i in v.
     /// All elements occurring at indices greater than i will be shifted down by 1. Will abort if i is out of bounds.
     /// Disclaimer: This function is costly. Use it at your own discretion.
-    public fun remove<T>(v: &mut BigVector<T>, i: u64): T {
+    public fun remove<T: store>(v: &mut BigVector<T>, i: u64): T {
         let len = length(v);
         assert!(i < len, ErrorIndexOutOfBound);
         let num_buckets = table::length(&v.buckets);
@@ -163,7 +159,7 @@ module moveos_std::big_vector {
     /// Swap the `i`th element of the vector `v` with the last element and then pop the vector.
     /// This is O(1), but does not preserve ordering of elements in the vector.
     /// Aborts if `i` is out of bounds.
-    public fun swap_remove<T>(v: &mut BigVector<T>, i: u64): T {
+    public fun swap_remove<T: store>(v: &mut BigVector<T>, i: u64): T {
         assert!(i < length(v), ErrorIndexOutOfBound);
         let last_val = pop_back(v);
         // if the requested value is the last one, return it
@@ -182,7 +178,7 @@ module moveos_std::big_vector {
 
     /// Swap the elements at the i'th and j'th indices in the vector v. Will abort if either of i or j are out of bounds
     /// for v.
-    public fun swap<T>(v: &mut BigVector<T>, i: u64, j: u64) {
+    public fun swap<T: store>(v: &mut BigVector<T>, i: u64, j: u64) {
         assert!(i < length(v) && j < length(v), ErrorIndexOutOfBound);
         let i_bucket_index = i / v.bucket_size;
         let j_bucket_index = j / v.bucket_size;
@@ -213,7 +209,7 @@ module moveos_std::big_vector {
 
     /// Reverse the order of the elements in the vector v in-place.
     /// Disclaimer: This function is costly. Use it at your own discretion.
-    public fun reverse<T>(v: &mut BigVector<T>) {
+    public fun reverse<T: store>(v: &mut BigVector<T>) {
         let new_buckets = vector[];
         let push_bucket = vector[];
         let num_buckets = table::length(&v.buckets);
@@ -250,7 +246,7 @@ module moveos_std::big_vector {
     /// Return the index of the first occurrence of an element in v that is equal to e. Returns (true, index) if such an
     /// element was found, and (false, 0) otherwise.
     /// Disclaimer: This function is costly. Use it at your own discretion.
-    public fun index_of<T>(v: &BigVector<T>, val: &T): (bool, u64) {
+    public fun index_of<T: store>(v: &BigVector<T>, val: &T): (bool, u64) {
         let num_buckets = table::length(&v.buckets);
         let bucket_index = 0;
         while (bucket_index < num_buckets) {
@@ -266,7 +262,7 @@ module moveos_std::big_vector {
 
     /// Return if an element equal to e exists in the vector v.
     /// Disclaimer: This function is costly. Use it at your own discretion.
-    public fun contains<T>(v: &BigVector<T>, val: &T): bool {
+    public fun contains<T: store>(v: &BigVector<T>, val: &T): bool {
         if (is_empty(v)) return false;
         let (exist, _) = index_of(v, val);
         exist
@@ -275,7 +271,7 @@ module moveos_std::big_vector {
     /// Convert a big vector to a native vector, which is supposed to be called mostly by view functions to get an
     /// atomic view of the whole vector.
     /// Disclaimer: This function may be costly as the big vector may be huge in size. Use it at your own discretion.
-    public fun to_vector<T: copy>(v: &BigVector<T>): vector<T> {
+    public fun to_vector<T: store + copy>(v: &BigVector<T>): vector<T> {
         let res = vector[];
         let num_buckets = table::length(&v.buckets);
         let i = 0;
@@ -287,12 +283,12 @@ module moveos_std::big_vector {
     }
 
     /// Return the length of the vector.
-    public fun length<T>(v: &BigVector<T>): u64 {
+    public fun length<T: store>(v: &BigVector<T>): u64 {
         v.end_index
     }
 
     /// Return `true` if the vector `v` has no elements and `false` otherwise.
-    public fun is_empty<T>(v: &BigVector<T>): bool {
+    public fun is_empty<T: store>(v: &BigVector<T>): bool {
         length(v) == 0
     }
 
