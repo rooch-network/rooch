@@ -3,8 +3,6 @@
 // Copyright (c) The Move Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-/// A native Table implementation for save any type of value.
-/// Refactor from https://github.com/rooch-network/move/blob/c7d8c2b0cdd06dbd90e0ab306932356620b5648a/language/extensions/move-table-extension/src/lib.rs#L4
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::{
@@ -33,16 +31,16 @@ use std::{
     sync::Arc,
 };
 
-/// The native table context extension. This needs to be attached to the NativeContextExtensions
+/// The native Object runtime context extension. This needs to be attached to the NativeContextExtensions
 /// value which is passed into session functions, so its accessible from natives of this
 /// extension.
 #[derive(Tid)]
-pub struct NativeTableContext<'a> {
+pub struct ObjectRuntimeContext<'a> {
     resolver: &'a dyn StateResolver,
-    table_data: Arc<RwLock<TableData>>,
+    object_runtime: Arc<RwLock<ObjectRuntime>>,
 }
 
-/// Ensure the error codes in this file is consistent with the error code in raw_table.move
+/// Ensure the error codes in this file is consistent with the error code in object.move
 const E_ALREADY_EXISTS: u64 = super::object::ERROR_ALREADY_EXISTS;
 const E_NOT_FOUND: u64 = super::object::ERROR_NOT_FOUND;
 const E_TYPE_MISMATCH: u64 = super::object::ERROR_TYPE_MISMATCH;
@@ -82,42 +80,18 @@ impl TxContextValue {
     }
 }
 
-//TODO change to ObjectRuntime and migrate to moveos-object-runtime crate
-/// A structure representing mutable data of the NativeTableContext. This is in a RefCell
+//TODO migrate to moveos-object-runtime crate
+/// A structure representing mutable data of the ObjectRuntimeContext. This is in a RefCell
 /// of the overall context so we can mutate while still accessing the overall context.
-pub struct TableData {
+pub struct ObjectRuntime {
     pub(crate) tx_context: TxContextValue,
-    tables: BTreeMap<ObjectID, Table>,
+    objects: BTreeMap<ObjectID, RuntimeObject>,
     object_ref_in_args: BTreeMap<ObjectID, Value>,
     object_reference: BTreeMap<ObjectID, GlobalValue>,
 }
 
-/// A structure representing table key.
-#[derive(Clone, Ord, PartialOrd, PartialEq, Eq)]
-pub struct TableKey {
-    pub key_type: TypeTag,
-    pub key: Vec<u8>,
-}
-
-impl TableKey {
-    pub fn new(key_type: TypeTag, key: Vec<u8>) -> Self {
-        Self { key_type, key }
-    }
-}
-
-impl std::fmt::Debug for TableKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "TableKey {{ key_type: {:?}, key: {:?} }}",
-            self.key_type,
-            hex::encode(&self.key)
-        )
-    }
-}
-
-/// A structure representing runtime table value.
-pub struct TableRuntimeValue {
+/// A structure representing runtime field.
+pub struct RuntimeField {
     /// This is the Layout and TypeTag of the value stored in Box<V>
     /// If the value is GlobalValue::None, the Layout and TypeTag are not known
     value_layout_and_type: Option<(MoveTypeLayout, TypeTag)>,
@@ -126,7 +100,7 @@ pub struct TableRuntimeValue {
     box_value: GlobalValue,
 }
 
-impl TableRuntimeValue {
+impl RuntimeField {
     pub fn new(value_layout: MoveTypeLayout, value_type: TypeTag, box_value: GlobalValue) -> Self {
         debug_assert!(box_value.exists().unwrap());
         Self {
@@ -228,35 +202,38 @@ impl TableRuntimeValue {
     }
 }
 
-/// A structure representing a single table.
-pub struct Table {
-    handle: ObjectID,
-    content: BTreeMap<TableKey, TableRuntimeValue>,
+/// A structure representing a single runtime object.
+pub struct RuntimeObject {
+    id: ObjectID,
+    fields: BTreeMap<KeyState, RuntimeField>,
 }
 
 // =========================================================================================
-// Implementation of Native Table Context
+// Implementation of ObjectRuntimeContext
 
-impl<'a> NativeTableContext<'a> {
-    /// Create a new instance of a native table context. This must be passed in via an
+impl<'a> ObjectRuntimeContext<'a> {
+    /// Create a new instance of a object runtime context. This must be passed in via an
     /// extension into VM session functions.
-    pub fn new(resolver: &'a dyn StateResolver, table_data: Arc<RwLock<TableData>>) -> Self {
+    pub fn new(
+        resolver: &'a dyn StateResolver,
+        object_runtime: Arc<RwLock<ObjectRuntime>>,
+    ) -> Self {
         Self {
             resolver,
-            table_data,
+            object_runtime,
         }
     }
 
-    pub fn table_data(&self) -> Arc<RwLock<TableData>> {
-        self.table_data.clone()
+    pub fn object_runtime(&self) -> Arc<RwLock<ObjectRuntime>> {
+        self.object_runtime.clone()
     }
 }
 
-impl TableData {
+impl ObjectRuntime {
     pub fn new(tx_context: TxContext) -> Self {
         Self {
             tx_context: TxContextValue::new(tx_context),
-            tables: Default::default(),
+            objects: Default::default(),
             object_reference: Default::default(),
             object_ref_in_args: Default::default(),
         }
@@ -277,36 +254,35 @@ impl TableData {
         Ok(())
     }
 
-    /// Gets or creates a new table in the TableData. This initializes information about
-    /// the table, like the type layout for keys and values.
-    pub fn get_or_create_table(
+    /// Gets or creates a new object in the ObjectRuntime.
+    pub fn get_or_create_object(
         &mut self,
         // _context: &NativeContext,
         handle: ObjectID,
-    ) -> PartialVMResult<&mut Table> {
-        match self.tables.entry(handle.clone()) {
+    ) -> PartialVMResult<&mut RuntimeObject> {
+        match self.objects.entry(handle.clone()) {
             Entry::Vacant(e) => {
                 if log::log_enabled!(log::Level::Trace) {
-                    log::trace!("[RawTable] creating table {}", handle);
+                    log::trace!("[ObjectRuntime] creating object {}", handle);
                 }
-                let table = Table {
-                    handle,
-                    content: Default::default(),
+                let object = RuntimeObject {
+                    id: handle,
+                    fields: Default::default(),
                 };
-                Ok(e.insert(table))
+                Ok(e.insert(object))
             }
             Entry::Occupied(e) => Ok(e.into_mut()),
         }
     }
 
-    pub fn borrow_table(&self, handle: &ObjectID) -> PartialVMResult<&Table> {
-        self.tables
+    pub fn borrow_object(&self, handle: &ObjectID) -> PartialVMResult<&RuntimeObject> {
+        self.objects
             .get(handle)
             .ok_or_else(|| PartialVMError::new(StatusCode::STORAGE_ERROR))
     }
 
-    pub fn exist_table(&self, handle: &ObjectID) -> bool {
-        self.tables.contains_key(handle)
+    pub fn exist_object(&self, handle: &ObjectID) -> bool {
+        self.objects.contains_key(handle)
     }
 
     pub fn load_object(&mut self, object_id: &ObjectID) -> VMResult<()> {
@@ -322,7 +298,8 @@ impl TableData {
         Ok(())
     }
 
-    pub fn borrow_object(&mut self, object_id: &ObjectID) -> VMResult<Value> {
+    /// Borrow &Object<T> or &mut Object<T>
+    pub fn borrow_object_reference(&mut self, object_id: &ObjectID) -> VMResult<Value> {
         let gv = self.object_reference.get(object_id).ok_or_else(|| {
             PartialVMError::new(StatusCode::STORAGE_ERROR).finish(Location::Undefined)
         })?;
@@ -345,7 +322,7 @@ impl TableData {
             if let ResolvedArg::Object(object_arg) = resolved_arg {
                 let object_id = object_arg.object_id();
                 self.load_object(object_id)?;
-                let ref_value = self.borrow_object(object_id)?;
+                let ref_value = self.borrow_object_reference(object_id)?;
                 //We cache the object reference in the object_ref_in_args
                 //Ensure the reference count and the object can not be borrowed in Move
                 self.object_ref_in_args.insert(object_id.clone(), ref_value);
@@ -355,40 +332,40 @@ impl TableData {
     }
 
     /// into inner
-    pub fn into_inner(self) -> (TxContext, BTreeMap<ObjectID, Table>) {
-        let TableData {
+    pub fn into_inner(self) -> (TxContext, BTreeMap<ObjectID, RuntimeObject>) {
+        let ObjectRuntime {
             tx_context,
-            tables,
+            objects,
             object_reference: _,
             object_ref_in_args: _,
         } = self;
-        (tx_context.into_inner(), tables)
+        (tx_context.into_inner(), objects)
     }
 }
 
-impl Table {
+impl RuntimeObject {
     fn get_or_create_global_value(
         &mut self,
         native_context: &NativeContext,
-        table_context: &NativeTableContext,
-        key: TableKey,
-    ) -> PartialVMResult<(&mut TableRuntimeValue, Option<Option<NumBytes>>)> {
-        Ok(match self.content.entry(key.clone()) {
+        object_context: &ObjectRuntimeContext,
+        key: KeyState,
+    ) -> PartialVMResult<(&mut RuntimeField, Option<Option<NumBytes>>)> {
+        Ok(match self.fields.entry(key.clone()) {
             Entry::Vacant(entry) => {
-                let (tv, loaded) = match table_context
+                let (tv, loaded) = match object_context
                     .resolver
                     .resolve_table_item(
-                        &self.handle,
+                        &self.id,
                         &KeyState::new(key.clone().key, key.clone().key_type),
                     )
                     .map_err(|err| {
-                        partial_extension_error(format!("remote table resolver failure: {}", err))
+                        partial_extension_error(format!("remote object resolver failure: {}", err))
                     })? {
                     Some(value_box) => {
                         let value_layout = get_type_layout(native_context, &value_box.value_type)?;
                         let val = deserialize_and_box(&value_layout, &value_box.value)?;
                         (
-                            TableRuntimeValue::new(
+                            RuntimeField::new(
                                 value_layout,
                                 value_box.value_type,
                                 GlobalValue::cached(val)?,
@@ -396,7 +373,7 @@ impl Table {
                             Some(NumBytes::new(value_box.value.len() as u64)),
                         )
                     }
-                    None => (TableRuntimeValue::none(), None),
+                    None => (RuntimeField::none(), None),
                 };
                 (entry.insert(tv), Some(loaded))
             }
@@ -407,24 +384,24 @@ impl Table {
     pub fn get_or_create_global_value_with_layout_fn(
         &mut self,
         resolver: &dyn StateResolver,
-        key: TableKey,
+        key: KeyState,
         f: impl FnOnce(&TypeTag) -> PartialVMResult<MoveTypeLayout>,
-    ) -> PartialVMResult<(&mut TableRuntimeValue, Option<Option<NumBytes>>)> {
-        Ok(match self.content.entry(key.clone()) {
+    ) -> PartialVMResult<(&mut RuntimeField, Option<Option<NumBytes>>)> {
+        Ok(match self.fields.entry(key.clone()) {
             Entry::Vacant(entry) => {
                 let (tv, loaded) = match resolver
                     .resolve_table_item(
-                        &self.handle,
+                        &self.id,
                         &KeyState::new(key.key.clone(), key.key_type.clone()),
                     )
                     .map_err(|err| {
-                        partial_extension_error(format!("remote table resolver failure: {}", err))
+                        partial_extension_error(format!("remote object resolver failure: {}", err))
                     })? {
                     Some(value_box) => {
                         let value_layout = f(&value_box.value_type)?;
                         let val = deserialize_and_box(&value_layout, &value_box.value)?;
                         (
-                            TableRuntimeValue::new(
+                            RuntimeField::new(
                                 value_layout,
                                 value_box.value_type,
                                 GlobalValue::cached(val)?,
@@ -432,7 +409,7 @@ impl Table {
                             Some(NumBytes::new(value_box.value.len() as u64)),
                         )
                     }
-                    None => (TableRuntimeValue::none(), None),
+                    None => (RuntimeField::none(), None),
                 };
                 (entry.insert(tv), Some(loaded))
             }
@@ -440,16 +417,19 @@ impl Table {
         })
     }
 
-    pub fn get_global_value(&self, key: &TableKey) -> Option<&TableRuntimeValue> {
-        self.content.get(key)
+    pub fn get_global_value(&self, key: &KeyState) -> Option<&RuntimeField> {
+        self.fields.get(key)
     }
 
-    pub fn contains_key(&self, key: &TableKey) -> bool {
-        self.content.contains_key(key)
+    pub fn contains_key(&self, key: &KeyState) -> bool {
+        self.fields.contains_key(key)
     }
 
-    pub fn into_inner(self) -> (ObjectID, BTreeMap<TableKey, TableRuntimeValue>) {
-        let Table { handle, content } = self;
+    pub fn into_inner(self) -> (ObjectID, BTreeMap<KeyState, RuntimeField>) {
+        let RuntimeObject {
+            id: handle,
+            fields: content,
+        } = self;
         (handle, content)
     }
 }
@@ -494,16 +474,16 @@ fn native_add_box(
     assert_eq!(ty_args.len(), 3);
     assert_eq!(args.len(), 3);
 
-    let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.write();
+    let object_context = context.extensions().get::<ObjectRuntimeContext>();
+    let mut object_runtime = object_context.object_runtime.write();
 
     let val = args.pop_back().unwrap();
     let key = args.pop_back().unwrap();
     let handle = get_object_id(&mut args)?;
 
-    let table = table_data.get_or_create_table(handle)?;
+    let object = object_runtime.get_or_create_object(handle)?;
     let (tv, loaded, _, key_bytes_len) =
-        get_table_runtime_value(context, table_context, table, &ty_args[0], key)?;
+        get_field_runtime_value(context, object_context, object, &ty_args[0], key)?;
     let cost = gas_params.base
         + gas_params.per_byte_serialized * NumBytes::new(key_bytes_len)
         + common_gas_params.calculate_load_cost(loaded);
@@ -542,14 +522,14 @@ fn native_borrow_box(
     assert_eq!(ty_args.len(), 3);
     assert_eq!(args.len(), 2);
 
-    let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.write();
+    let object_context = context.extensions().get::<ObjectRuntimeContext>();
+    let mut object_runtime = object_context.object_runtime.write();
 
     let key = args.pop_back().unwrap();
     let handle = get_object_id(&mut args)?;
-    let table = table_data.get_or_create_table(handle)?;
-    let (tv, loaded, table_key, key_bytes_len) =
-        get_table_runtime_value(context, table_context, table, &ty_args[0], key)?;
+    let object = object_runtime.get_or_create_object(handle)?;
+    let (tv, loaded, field_key, key_bytes_len) =
+        get_field_runtime_value(context, object_context, object, &ty_args[0], key)?;
 
     let cost = gas_params.base
         + gas_params.per_byte_serialized * NumBytes::new(key_bytes_len)
@@ -561,10 +541,10 @@ fn native_borrow_box(
             Err(err) => {
                 if log::log_enabled!(log::Level::Debug) {
                     log::warn!(
-                        "[RawTable] borrow_box type mismatch: handle: {:?}, value_type: {:?} key:{:?}, err: {:?}",
-                        &table.handle,
+                        "[ObjectRuntime] borrow_box type mismatch: handle: {:?}, value_type: {:?} key:{:?}, err: {:?}",
+                        &object.id,
                         value_type.to_canonical_string(),
-                        table_key,
+                        field_key,
                     err
                     );
                 }
@@ -574,9 +554,9 @@ fn native_borrow_box(
     } else {
         if log::log_enabled!(log::Level::Debug) {
             log::warn!(
-                "[RawTable] borrow_box not found: handle: {:?}, key:{:?} not found.",
-                &table.handle,
-                table_key
+                "[ObjectRuntime] borrow_box not found: handle: {:?}, key:{:?} not found.",
+                &object.id,
+                field_key
             );
         }
         Ok(NativeResult::err(cost, E_NOT_FOUND))
@@ -610,20 +590,20 @@ fn native_contains_box(
     assert_eq!(ty_args.len(), 1);
     assert_eq!(args.len(), 2);
 
-    let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.write();
+    let object_context = context.extensions().get::<ObjectRuntimeContext>();
+    let mut object_runtime = object_context.object_runtime.write();
 
     let key = args.pop_back().unwrap();
     let handle = get_object_id(&mut args)?;
-    let table = table_data.get_or_create_table(handle.clone())?;
-    let (tv, loaded, table_key, key_bytes_len) =
-        get_table_runtime_value(context, table_context, table, &ty_args[0], key)?;
+    let object = object_runtime.get_or_create_object(handle.clone())?;
+    let (tv, loaded, field_key, key_bytes_len) =
+        get_field_runtime_value(context, object_context, object, &ty_args[0], key)?;
 
     if log::log_enabled!(log::Level::Trace) {
         log::trace!(
-            "[RawTable] contains: table_handle: {:?}, key: {:?}",
+            "[ObjectRuntime] contains: object_id: {:?}, field key: {:?}",
             handle,
-            table_key
+            field_key
         );
     }
 
@@ -657,20 +637,20 @@ fn native_contains_box_with_value_type(
     assert_eq!(ty_args.len(), 2);
     assert_eq!(args.len(), 2);
 
-    let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.write();
+    let object_context = context.extensions().get::<ObjectRuntimeContext>();
+    let mut object_runtime = object_context.object_runtime.write();
 
     let key = args.pop_back().unwrap();
     let handle = get_object_id(&mut args)?;
-    let table = table_data.get_or_create_table(handle.clone())?;
-    let (tv, loaded, table_key, key_bytes_len) =
-        get_table_runtime_value(context, table_context, table, &ty_args[0], key)?;
+    let object = object_runtime.get_or_create_object(handle.clone())?;
+    let (tv, loaded, field_key, key_bytes_len) =
+        get_field_runtime_value(context, object_context, object, &ty_args[0], key)?;
 
     if log::log_enabled!(log::Level::Trace) {
         log::trace!(
-            "[RawTable] contains: table_handle: {:?}, key: {:?}",
+            "[ObjectRuntime] contains: object_id: {:?}, key: {:?}",
             handle,
-            table_key
+            field_key
         );
     }
 
@@ -717,15 +697,15 @@ fn native_remove_box(
     assert_eq!(ty_args.len(), 3);
     assert_eq!(args.len(), 2);
 
-    let table_context = context.extensions().get::<NativeTableContext>();
-    let mut table_data = table_context.table_data.write();
+    let object_context = context.extensions().get::<ObjectRuntimeContext>();
+    let mut object_runtime = object_context.object_runtime.write();
 
     let key = args.pop_back().unwrap();
     let handle = get_object_id(&mut args)?;
-    let table = table_data.get_or_create_table(handle)?;
+    let object = object_runtime.get_or_create_object(handle)?;
 
     let (tv, loaded, _, key_bytes_len) =
-        get_table_runtime_value(context, table_context, table, &ty_args[0], key)?;
+        get_field_runtime_value(context, object_context, object, &ty_args[0], key)?;
 
     let cost = gas_params.base
         + gas_params.per_byte_serialized * NumBytes::new(key_bytes_len)
@@ -759,7 +739,7 @@ fn get_object_id(args: &mut VecDeque<Value>) -> PartialVMResult<ObjectID> {
     let handle = args.pop_back().unwrap();
     ObjectID::from_runtime_value(handle).map_err(|e| {
         if log::log_enabled!(log::Level::Debug) {
-            log::warn!("[RawTable] get_object_id: {:?}", e);
+            log::warn!("[ObjectRuntime] get_object_id: {:?}", e);
         }
         PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
     })
@@ -768,7 +748,7 @@ fn get_object_id(args: &mut VecDeque<Value>) -> PartialVMResult<ObjectID> {
 pub fn serialize(layout: &MoveTypeLayout, val: &Value) -> PartialVMResult<Vec<u8>> {
     val.simple_serialize(layout).ok_or_else(|| {
         partial_extension_error(format!(
-            "cannot serialize table key or value, layout:{:?}, val:{:?}",
+            "cannot serialize object field or value, layout:{:?}, val:{:?}",
             layout, val
         ))
     })
@@ -778,7 +758,7 @@ pub fn serialize(layout: &MoveTypeLayout, val: &Value) -> PartialVMResult<Vec<u8
 fn deserialize_and_box(layout: &MoveTypeLayout, bytes: &[u8]) -> PartialVMResult<Value> {
     let value = Value::simple_deserialize(bytes, layout).ok_or_else(|| {
         partial_extension_error(format!(
-            "cannot deserialize table key or value, layout:{:?}, bytes:{:?}",
+            "cannot deserialize object field or value, layout:{:?}, bytes:{:?}",
             layout,
             hex::encode(bytes)
         ))
@@ -807,25 +787,25 @@ fn get_type_layout(context: &NativeContext, type_tag: &TypeTag) -> PartialVMResu
         .map_err(|e| e.to_partial())
 }
 
-fn get_table_runtime_value<'a>(
+fn get_field_runtime_value<'a>(
     context: &NativeContext,
-    table_context: &NativeTableContext,
-    table: &'a mut Table,
+    object_context: &ObjectRuntimeContext,
+    object: &'a mut RuntimeObject,
     key_type: &Type,
     key: Value,
 ) -> PartialVMResult<(
-    &'a mut TableRuntimeValue,
+    &'a mut RuntimeField,
     Option<Option<NumBytes>>,
-    TableKey,
+    KeyState,
     u64,
 )> {
     let key_layout = type_to_type_layout(context, key_type)?;
     let key_type = type_to_type_tag(context, key_type)?;
     let key_bytes = serialize(&key_layout, &key)?;
-    let table_key = TableKey::new(key_type, key_bytes.clone());
+    let field_key = KeyState::new(key_bytes.clone(), key_type);
 
     let (tv, loaded) =
-        table.get_or_create_global_value(context, table_context, table_key.clone())?;
+        object.get_or_create_global_value(context, object_context, field_key.clone())?;
 
-    Ok((tv, loaded, table_key, key_bytes.len() as u64))
+    Ok((tv, loaded, field_key, key_bytes.len() as u64))
 }

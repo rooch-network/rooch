@@ -11,20 +11,19 @@ use move_command_line_common::parser::NumberFormat;
 use move_package::BuildConfig;
 use move_unit_test::extensions::set_extension_hook;
 use move_vm_runtime::native_extensions::NativeContextExtensions;
-use once_cell::sync::Lazy;
-use parking_lot::RwLock;
-use termcolor::Buffer;
-
 use moveos_stdlib::natives::moveos_stdlib::{
     event::NativeEventContext,
     move_module::NativeModuleContext,
-    raw_table::{NativeTableContext, TableData},
+    raw_table::{ObjectRuntime, ObjectRuntimeContext},
 };
 use moveos_store::MoveOSStore;
 use moveos_types::{moveos_std::tx_context::TxContext, state_resolver::MoveOSResolverProxy};
 use moveos_verifier::build::build_model_with_test_attr;
 use moveos_verifier::metadata::run_extended_checks;
+use once_cell::sync::Lazy;
+use parking_lot::RwLock;
 use rooch_framework::natives::{all_natives, NativeGasParameters};
+use termcolor::Buffer;
 
 use crate::cli_types::WalletContextOptions;
 
@@ -111,10 +110,10 @@ static MOVEOSSTORE: Lazy<Box<MoveOSResolverProxy<MoveOSStore>>> = Lazy::new(|| {
 #[allow(clippy::arc_with_non_send_sync)]
 fn new_moveos_natives_runtime(ext: &mut NativeContextExtensions) {
     let statedb = Lazy::force(&MOVEOSSTORE).as_ref();
-    let table_data = Arc::new(RwLock::new(TableData::new(
+    let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(
         TxContext::random_for_testing_only(),
     )));
-    let table_ext = NativeTableContext::new(statedb, table_data);
+    let table_ext = ObjectRuntimeContext::new(statedb, object_runtime);
     let module_ext = NativeModuleContext::new(statedb);
     let event_ext = NativeEventContext::default();
     ext.add(table_ext);
