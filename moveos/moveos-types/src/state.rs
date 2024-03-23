@@ -70,6 +70,23 @@ impl KeyState {
         bcs::to_bytes(self).map_err(|e| anyhow::anyhow!("Serialize the KeyState error: {:?}", e))
     }
 
+    pub fn is_object_id(&self) -> bool {
+        match &self.key_type {
+            TypeTag::Struct(struct_tag) => ObjectID::struct_tag_match(struct_tag.as_ref()),
+            _ => false,
+        }
+    }
+
+    pub fn as_object_id(&self) -> Result<ObjectID> {
+        ensure!(
+            self.is_object_id(),
+            "Expect key type is ObjectID but found {:?}",
+            self.key_type
+        );
+        let object_id = ObjectID::from_bytes(&self.key)?;
+        Ok(object_id)
+    }
+
     pub fn into_annotated_state<T: MoveResolver + ?Sized>(
         self,
         annotator: &MoveValueAnnotator<T>,
@@ -675,31 +692,13 @@ impl std::fmt::Display for TableTypeInfo {
 /// Global State change set.
 #[derive(Default, Clone, Debug)]
 pub struct StateChangeSet {
-    pub new_tables: BTreeSet<ObjectID>,
-    pub removed_tables: BTreeSet<ObjectID>,
     pub changes: BTreeMap<ObjectID, TableChange>,
-}
-
-impl StateChangeSet {
-    pub fn get_or_insert_table_change(&mut self, object_id: ObjectID) -> &mut TableChange {
-        match self.changes.entry(object_id) {
-            btree_map::Entry::Occupied(entry) => entry.into_mut(),
-            btree_map::Entry::Vacant(entry) => entry.insert(TableChange::default()),
-        }
-    }
-
-    pub fn add_op(&mut self, handle: ObjectID, key: KeyState, op: Op<State>) {
-        let table_change = self.get_or_insert_table_change(handle);
-        table_change.entries.insert(key, op);
-    }
 }
 
 /// A change of a single table.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct TableChange {
     pub entries: BTreeMap<KeyState, Op<State>>,
-    /// The size increment of the table, may be negtive which means more deleting than inserting.
-    pub size_increment: i64,
 }
 
 /// A change of a single table.

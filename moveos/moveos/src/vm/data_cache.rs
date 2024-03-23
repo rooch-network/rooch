@@ -247,10 +247,10 @@ pub fn into_change_set(
             .with_message("TableData is referenced more than once".to_owned())
     })?;
     let data = table_data.into_inner();
-    let (tx_context, new_tables, removed_tables, tables) = data.into_inner();
+    let (tx_context, tables) = data.into_inner();
     let mut changes = BTreeMap::new();
     for (handle, table) in tables {
-        let (_, content, size_increment) = table.into_inner();
+        let (_, content) = table.into_inner();
         let mut entries = BTreeMap::new();
         for (key, table_value) in content {
             let (value_layout, value_type, op) = match table_value.into_effect() {
@@ -284,25 +284,10 @@ pub fn into_change_set(
             }
         }
         if !entries.is_empty() {
-            changes.insert(
-                handle,
-                TableChange {
-                    entries,
-                    size_increment,
-                },
-            );
-        } else {
-            debug_assert!(size_increment == 0);
+            changes.insert(handle, TableChange { entries });
         }
     }
-    Ok((
-        tx_context,
-        StateChangeSet {
-            new_tables,
-            removed_tables,
-            changes,
-        },
-    ))
+    Ok((tx_context, StateChangeSet { changes }))
 }
 
 // Unbox a value of `moveos_std::raw_table::Box<V>` to V and serialize it.

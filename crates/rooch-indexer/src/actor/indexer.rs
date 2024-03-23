@@ -5,9 +5,7 @@ use crate::actor::messages::{
     IndexerEventsMessage, IndexerStatesMessage, IndexerTransactionMessage,
 };
 use crate::store::traits::IndexerStoreTrait;
-use crate::types::{
-    IndexedEvent, IndexedGlobalState, IndexedTableChangeSet, IndexedTableState, IndexedTransaction,
-};
+use crate::types::{IndexedEvent, IndexedGlobalState, IndexedTableState, IndexedTransaction};
 use crate::utils::format_struct_tag;
 use crate::IndexerStore;
 use anyhow::Result;
@@ -19,7 +17,7 @@ use move_resource_viewer::MoveValueAnnotator;
 use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::object::RawObject;
-use moveos_types::state::{KeyState, MoveState, MoveStructType, SplitStateChangeSet, State};
+use moveos_types::state::{KeyState, MoveStructType, State};
 use moveos_types::state_resolver::{MoveOSResolverProxy, StateResolver};
 use rooch_rpc_api::jsonrpc_types::{AnnotatedMoveStructView, AnnotatedMoveValueView};
 use rooch_types::bitcoin::utxo::UTXO;
@@ -143,109 +141,86 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
             // handle global object
             if table_handle == ObjectID::root() {
                 for (key, op) in table_change.entries.into_iter() {
+                    debug_assert!(key.is_object_id());
+                    let object_id = key.as_object_id()?;
+
                     match op {
                         Op::Modify(value) => {
-                            if value.is_object() {
-                                let state = self.new_global_state_from_raw_object(
-                                    value,
-                                    tx_order,
-                                    state_index_generator,
-                                )?;
-                                //just for data verify mode, don't write utxo object indexer
-                                if self.data_verify_mode && state.is_utxo_object_state() {
-                                    continue;
-                                }
-                                update_global_states.push(state);
-                            } else {
-                                log::warn!(
-                                    "Unexpected state type for op modify, table handle {:?}, value {:?}",
-                                    table_handle,
-                                    value
-                                );
-                            }
+                            debug_assert!(value.is_object());
+                            let state = self.new_global_state_from_raw_object(
+                                value,
+                                tx_order,
+                                state_index_generator,
+                            )?;
+                            update_global_states.push(state);
                         }
                         Op::Delete => {
-                            let table_handle = ObjectID::from_bytes(key.key)?;
-                            remove_global_states.push(table_handle.to_string());
+                            remove_global_states.push(object_id.to_string());
+                            remove_table_states_by_table_handle.push(object_id.to_string());
                         }
                         Op::New(value) => {
-                            if value.is_object() {
-                                let state = self.new_global_state_from_raw_object(
-                                    value,
-                                    tx_order,
-                                    state_index_generator,
-                                )?;
-                                //just for data verify mode, don't write utxo object indexer
-                                if self.data_verify_mode && state.is_utxo_object_state() {
-                                    continue;
-                                }
-                                new_global_states.push(state);
-                            } else {
-                                log::warn!(
-                                    "Unexpected state type for op new, table handle {:?}, value {:?}",
-                                    table_handle,
-                                    value
-                                );
-                            }
+                            debug_assert!(value.is_object());
+                            let state = self.new_global_state_from_raw_object(
+                                value,
+                                tx_order,
+                                state_index_generator,
+                            )?;
+                            new_global_states.push(state);
                         }
                     }
                     state_index_generator += 1;
                 }
             } else {
-                // TODO update table size if ObjectID is table hanlde
                 for (key, op) in table_change.entries.into_iter() {
                     match op {
                         Op::Modify(value) => {
-                            let state = self.new_table_state(
-                                key,
-                                value,
-                                table_handle.clone(),
-                                tx_order,
-                                state_index_generator,
-                            )?;
+                            //If value is a child object, write to global states
+                            if value.is_object() {
+                                let state = self.new_global_state_from_raw_object(
+                                    value,
+                                    tx_order,
+                                    state_index_generator,
+                                )?;
 
-                            //just for data verify mode, don't write utxo object indexer
-                            if self.data_verify_mode {
-                                let object_state = self.resolve_object_state(&table_handle)?;
-                                if self.is_utxo_object(object_state) {
-                                    continue;
-                                };
-                            };
+                                update_global_states.push(state);
+                            } else {
+                                let state = self.new_table_state(
+                                    key,
+                                    value,
+                                    table_handle.clone(),
+                                    tx_order,
+                                    state_index_generator,
+                                )?;
 
-                            update_table_states.push(state);
+                                update_table_states.push(state);
+                            }
                         }
                         Op::Delete => {
                             remove_table_states.push((table_handle.to_string(), key.to_string()));
                         }
                         Op::New(value) => {
-                            let state = self.new_table_state(
-                                key,
-                                value,
-                                table_handle.clone(),
-                                tx_order,
-                                state_index_generator,
-                            )?;
-
-                            //just for data verify mode, don't write utxo object indexer
-                            if self.data_verify_mode {
-                                let object_state = self.resolve_object_state(&table_handle)?;
-                                if self.is_utxo_object(object_state) {
-                                    continue;
-                                };
-                            };
-
-                            new_table_states.push(state);
+                            if value.is_object() {
+                                let state = self.new_global_state_from_raw_object(
+                                    value,
+                                    tx_order,
+                                    state_index_generator,
+                                )?;
+                                new_global_states.push(state);
+                            } else {
+                                let state = self.new_table_state(
+                                    key,
+                                    value,
+                                    table_handle.clone(),
+                                    tx_order,
+                                    state_index_generator,
+                                )?;
+                                new_table_states.push(state);
+                            }
                         }
                     }
                     state_index_generator += 1;
                 }
             }
-        }
-
-        for table_handle in state_change_set.removed_tables.clone() {
-            remove_global_states.push(table_handle.to_string());
-            remove_table_states_by_table_handle.push(table_handle.to_string());
-            state_index_generator += 1;
         }
 
         //Merge new global states and update global states
@@ -264,30 +239,26 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         self.indexer_store
             .delete_table_states_by_table_handle(remove_table_states_by_table_handle)?;
 
-        // Store table change set for state sync
-        let mut split_state_change_set = SplitStateChangeSet::default();
-        for table_handle in state_change_set.new_tables {
-            split_state_change_set.add_new_table(table_handle);
-        }
-        for (table_handle, table_change) in state_change_set.changes.clone() {
-            split_state_change_set.add_table_change(table_handle, table_change);
-        }
-        for table_handle in state_change_set.removed_tables {
-            split_state_change_set.add_remove_table(table_handle);
-        }
-
-        let mut indexed_table_change_sets = vec![];
-        for (index, item) in split_state_change_set
-            .table_change_sets
-            .into_iter()
-            .enumerate()
-        {
-            let table_change_set =
-                IndexedTableChangeSet::new(tx_order, index as u64, item.0, item.1)?;
-
-            indexed_table_change_sets.push(table_change_set);
-        }
         // TODO First temporarily close StateChangeSet Indexer writing and wait for the function to be turned on.
+        // Store table change set for state sync
+        // let mut split_state_change_set = SplitStateChangeSet::default();
+
+        // for (table_handle, table_change) in state_change_set.changes.clone() {
+        //     split_state_change_set.add_table_change(table_handle, table_change);
+        // }
+
+        // let mut indexed_table_change_sets = vec![];
+        // for (index, item) in split_state_change_set
+        //     .table_change_sets
+        //     .into_iter()
+        //     .enumerate()
+        // {
+        //     let table_change_set =
+        //         IndexedTableChangeSet::new(tx_order, index as u64, item.0, item.1)?;
+
+        //     indexed_table_change_sets.push(table_change_set);
+        // }
+
         // self.indexer_store
         //     .persist_table_change_sets(indexed_table_change_sets)?;
         Ok(())

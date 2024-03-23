@@ -155,7 +155,6 @@ fn test_statedb_state_root() -> Result<()> {
         .get_state_store_mut()
         .apply_change_set(random_state_change_set())?;
     assert_ne!(state_root, new_state_root);
-    assert_ne!(size, new_size);
     Ok(())
 }
 
