@@ -10,6 +10,7 @@ import { TESTNetwork } from '@roochnetwork/rooch-sdk'
 import { WalletProvider, RoochClientProvider, SupportChain } from '@roochnetwork/rooch-sdk-kit'
 
 import { DashboardLayout } from './(dashboard)/dashboard-layout'
+import { ToastProvider } from './providers/toast-provider'
 
 const clientSideEmotionCache = createEmotionCache()
 
@@ -22,7 +23,8 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <RoochClientProvider defaultNetwork={TESTNetwork}>
             <WalletProvider chain={SupportChain.BITCOIN}>
-              <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+              <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+                <ToastProvider />
                 <DashboardLayout />
               </ThemeProvider>
             </WalletProvider>

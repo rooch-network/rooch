@@ -8,7 +8,7 @@ export const ChainToggle = () => {
 
   const ChainIcon = () => {
     const iconMap: Record<SupportChain, string> = {
-      [SupportChain.BITCOIN]: '/icon-bitcoin.svg',
+      [SupportChain.BITCOIN]: '/icon-btc.svg',
       [SupportChain.ETH]: '/icon-eth.svg',
     }
     return (
