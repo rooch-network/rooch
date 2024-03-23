@@ -1,12 +1,40 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatAddress } from '@/utils/format'
-import { useWalletStore } from '@roochnetwork/rooch-sdk-kit'
+import toast from 'react-hot-toast'
 import { Copy, RotateCcw } from 'lucide-react'
 
+import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+
+import { formatAddress } from '@/utils/format'
+import { useWalletStore } from '@roochnetwork/rooch-sdk-kit'
+import { useNavigate } from 'react-router-dom'
+
 export const ProfileCard = () => {
+  const navigate = useNavigate()
   const account = useWalletStore((state) => state.currentAccount)
+
+  const handleClickCopy = () => {
+    if (!account) {
+      toast('Please connect your wallet', {
+        icon: '✨',
+      })
+    } else {
+      navigator.clipboard
+        .writeText(account.getAddress())
+        .then(() => {
+          toast('Copied to clipboard!', {
+            icon: '🌟',
+          })
+        })
+        .catch((err) => {
+          console.error('Failed to copy:', err)
+        })
+    }
+  }
+
+  const handleRefreshPage = () => {
+    navigate(0)
+  }
 
   return (
     <Card className="relative overflow-hidden w-full border-none rounded-lg">
@@ -26,6 +54,8 @@ export const ProfileCard = () => {
             <Button
               variant="ghost"
               size="icon"
+              // TODO: Improvement: only refresh the profile card
+              onClick={handleRefreshPage}
               className="rounded-full h-8 w-8 hover:bg-transparent/15 transition-all"
             >
               <RotateCcw className="w-4 h-4 text-white" />
@@ -56,6 +86,7 @@ to-teal-500 dark:from-amber-600 dark:to-teal-600 object-cover w-full h-28 md:h-3
             <Button
               variant="ghost"
               size="icon"
+              onClick={handleClickCopy}
               className="rounded-full h-8 w-8 hover:bg-border transition-all"
             >
               <Copy className="w-4 h-4" />

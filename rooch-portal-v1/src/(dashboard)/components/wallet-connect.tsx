@@ -54,6 +54,13 @@ export const WalletConnect = () => {
   const { mutateAsync: connectWallet } = useConnectWallet()
   const account = useWalletStore((state) => state.currentAccount)
 
+  // TEST
+  // const wallet = useCurrentWallet()
+  // const walletStore = useWalletStore((state) => state.accounts)
+
+  // console.log(wallet)
+  // console.log(walletStore)
+
   // ** TODO: Get rooch account
 
   // ** Connect wallet
@@ -79,6 +86,7 @@ export const WalletConnect = () => {
     if (!account) {
       try {
         await connectWallet()
+        setIsDialogOpen(false)
         toast.success('Connected to the wallet')
       } catch (error) {
         toast.error('Please download the wallet on Chrome Extensions Store')
