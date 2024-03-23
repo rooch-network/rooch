@@ -1,7 +1,7 @@
 import { ChainToggle } from './chain-toggle'
-import { WalletConnect } from './wallet-connect'
 import { NetworkToggle } from './network-toggle'
 import { Separator } from '@/components/ui/separator'
+import { WalletConnect } from './wallet-connect'
 
 export const NavbarItem = () => {
   return (
