@@ -10,9 +10,11 @@ export const SftTabs = () => {
         <TabsTrigger value="all">All SFTs</TabsTrigger>
       </TabsList>
       <TabsContent value="featured">
+        {/* Featured SFTs */}
         <FeaturedSfts />
       </TabsContent>
       <TabsContent value="all">
+        {/* All SFTs */}
         <AllSfts />
       </TabsContent>
     </Tabs>

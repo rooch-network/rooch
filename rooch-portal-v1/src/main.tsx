@@ -15,6 +15,7 @@ const router = createBrowserRouter([
       { path: '/', element: <App /> },
       { path: '/mint', element: <App /> },
       { path: '/mint/sft/:sftId', element: <App /> },
+      { path: '/mint/sft/self-staking/:sftId', element: <App /> },
       { path: '/apps', element: <App /> },
       { path: '/transactions', element: <App /> },
       { path: '/settings', element: <App /> },

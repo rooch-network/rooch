@@ -7,19 +7,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { ToastAction } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/use-toast'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 import { Wallet } from 'lucide-react'
 
 import { formatAddress } from '@/utils/format'
 import { useConnectWallet, useWalletStore } from '@roochnetwork/rooch-sdk-kit'
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ToastAction } from '@/components/ui/toast'
-import { useToast } from '@/components/ui/use-toast'
 
 export const WalletConnectButton = () => {
   const { toast } = useToast()
   const { mutateAsync: connectWallet } = useConnectWallet()
   const account = useWalletStore((state) => state.currentAccount)
+
+  // TODO: get rooch account
 
   const handleWalletConnect = async () => {
     try {

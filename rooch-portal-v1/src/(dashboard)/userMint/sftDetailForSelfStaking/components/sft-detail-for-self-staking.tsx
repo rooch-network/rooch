@@ -1,10 +1,11 @@
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { useEffect, useState } from 'react'
+import { SelfStakingCard } from './self-staking-card'
 import { OverviewCard } from './overview-card'
 import { YourMintingJourneyCard } from './your-minting-journey-card'
 
-export function SftDetails() {
+export function SftDetailForSelfStaking() {
   const [progress, setProgress] = useState(0)
 
   useEffect(() => {
@@ -23,12 +24,16 @@ export function SftDetails() {
         </span>
       </div>
 
+      {/* Overview & Your Minting Journey */}
       <div className="grid md:grid-cols-2 gap-x-6 w-full mt-6 gap-4 md:gap-6">
         <OverviewCard />
         <YourMintingJourneyCard />
       </div>
 
-      <Button className="rounded-lg w-full mt-4 mb-2 md:mt-8 md:mb-6 h-12 dark:bg-teal-500 dark:hover:bg-teal-400 text-white bg-teal-500 hover:bg-teal-600 font-semibold">
+      {/* My Bitcoin UTXO */}
+      <SelfStakingCard />
+
+      <Button className="rounded-lg w-full mt-4 mb-2 md:mt-8 md:mb-6 h-12 dark:bg-teal-500 dark:hover:bg-teal-600 text-white font-semibold">
         Mint
       </Button>
     </>

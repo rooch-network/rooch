@@ -7,6 +7,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { UserSettingsLayout } from '../userSettings/user-settings-layout'
 import { SftDetailLayout } from '../userMint/sftDetail/sft-detail-layout'
 import { Foot } from '@/components/foot'
+import { SftDetailLayoutForSelfStaking } from '../userMint/sftDetailForSelfStaking/sft-detail-layout-for-self-staking'
 
 export const MainContent = () => {
   return (
@@ -18,6 +19,10 @@ export const MainContent = () => {
             <Route path="/" element={<UserAssetsLayout />} />
             <Route path="/mint" element={<UserMintLayout />} />
             <Route path="/mint/sft/:sftId" element={<SftDetailLayout />} />
+            <Route
+              path="/mint/sft/self-staking/:sftId"
+              element={<SftDetailLayoutForSelfStaking />}
+            />
             <Route path="/apps" element={<UserAppsLayout />} />
             <Route path="/transactions" element={<UserTransactionsLayout />} />
             <Route path="/settings" element={<UserSettingsLayout />} />
