@@ -29,7 +29,7 @@ use moveos_types::{
 use parking_lot::RwLock;
 use smallvec::smallvec;
 use std::{
-    collections::{btree_map::Entry, BTreeMap, BTreeSet, VecDeque},
+    collections::{btree_map::Entry, BTreeMap, VecDeque},
     sync::Arc,
 };
 
@@ -87,8 +87,6 @@ impl TxContextValue {
 /// of the overall context so we can mutate while still accessing the overall context.
 pub struct TableData {
     pub(crate) tx_context: TxContextValue,
-    new_tables: BTreeSet<ObjectID>,
-    removed_tables: BTreeSet<ObjectID>,
     tables: BTreeMap<ObjectID, Table>,
     object_ref_in_args: BTreeMap<ObjectID, Value>,
     object_reference: BTreeMap<ObjectID, GlobalValue>,
@@ -234,7 +232,6 @@ impl TableRuntimeValue {
 pub struct Table {
     handle: ObjectID,
     content: BTreeMap<TableKey, TableRuntimeValue>,
-    size_increment: i64,
 }
 
 // =========================================================================================
@@ -259,8 +256,6 @@ impl TableData {
     pub fn new(tx_context: TxContext) -> Self {
         Self {
             tx_context: TxContextValue::new(tx_context),
-            new_tables: Default::default(),
-            removed_tables: Default::default(),
             tables: Default::default(),
             object_reference: Default::default(),
             object_ref_in_args: Default::default(),
@@ -297,7 +292,6 @@ impl TableData {
                 let table = Table {
                     handle,
                     content: Default::default(),
-                    size_increment: 0,
                 };
                 Ok(e.insert(table))
             }
@@ -361,23 +355,14 @@ impl TableData {
     }
 
     /// into inner
-    pub fn into_inner(
-        self,
-    ) -> (
-        TxContext,
-        BTreeSet<ObjectID>,
-        BTreeSet<ObjectID>,
-        BTreeMap<ObjectID, Table>,
-    ) {
+    pub fn into_inner(self) -> (TxContext, BTreeMap<ObjectID, Table>) {
         let TableData {
             tx_context,
-            new_tables,
-            removed_tables,
             tables,
             object_reference: _,
             object_ref_in_args: _,
         } = self;
-        (tx_context.into_inner(), new_tables, removed_tables, tables)
+        (tx_context.into_inner(), tables)
     }
 }
 
@@ -463,13 +448,9 @@ impl Table {
         self.content.contains_key(key)
     }
 
-    pub fn into_inner(self) -> (ObjectID, BTreeMap<TableKey, TableRuntimeValue>, i64) {
-        let Table {
-            handle,
-            content,
-            size_increment,
-        } = self;
-        (handle, content, size_increment)
+    pub fn into_inner(self) -> (ObjectID, BTreeMap<TableKey, TableRuntimeValue>) {
+        let Table { handle, content } = self;
+        (handle, content)
     }
 }
 
@@ -529,10 +510,7 @@ fn native_add_box(
     let value_layout = type_to_type_layout(context, &ty_args[1])?;
     let value_type = type_to_type_tag(context, &ty_args[1])?;
     match tv.move_to(val, value_layout, value_type) {
-        Ok(_) => {
-            table.size_increment += 1;
-            Ok(NativeResult::ok(cost, smallvec![]))
-        }
+        Ok(_) => Ok(NativeResult::ok(cost, smallvec![])),
         Err(_) => Ok(NativeResult::err(cost, E_ALREADY_EXISTS)),
     }
 }
@@ -755,10 +733,7 @@ fn native_remove_box(
     let value_type = type_to_type_tag(context, &ty_args[1])?;
     if tv.exists()? {
         match tv.move_from(value_type) {
-            Ok(val) => {
-                table.size_increment -= 1;
-                Ok(NativeResult::ok(cost, smallvec![val]))
-            }
+            Ok(val) => Ok(NativeResult::ok(cost, smallvec![val])),
             Err(_) => Ok(NativeResult::err(cost, E_TYPE_MISMATCH)),
         }
     } else {

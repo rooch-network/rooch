@@ -2185,9 +2185,7 @@
       "StateChangeSetView": {
         "type": "object",
         "required": [
-          "changes",
-          "new_tables",
-          "removed_tables"
+          "changes"
         ],
         "properties": {
           "changes": {
@@ -2195,20 +2193,6 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/TableChangeView"
             }
-          },
-          "new_tables": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ObjectID"
-            },
-            "uniqueItems": true
-          },
-          "removed_tables": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ObjectID"
-            },
-            "uniqueItems": true
           }
         }
       },
@@ -2327,8 +2311,7 @@
       "TableChangeView": {
         "type": "object",
         "required": [
-          "entries",
-          "size_increment"
+          "entries"
         ],
         "properties": {
           "entries": {
@@ -2336,10 +2319,6 @@
             "items": {
               "$ref": "#/components/schemas/DynamicFieldView"
             }
-          },
-          "size_increment": {
-            "type": "integer",
-            "format": "int64"
           }
         }
       },

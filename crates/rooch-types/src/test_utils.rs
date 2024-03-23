@@ -296,18 +296,7 @@ pub fn random_table_change() -> TableChange {
 pub fn random_state_change_set() -> StateChangeSet {
     let mut state_change_set = StateChangeSet::default();
 
-    // generate new tables
     let mut rng = thread_rng();
-    for _n in 0..rng.gen_range(1..=5) {
-        let handle = ObjectID::from(AccountAddress::random());
-        state_change_set.new_tables.insert(handle);
-    }
-
-    // generate remove tables
-    for _n in 0..rng.gen_range(1..=5) {
-        let handle = ObjectID::from(AccountAddress::random());
-        state_change_set.removed_tables.insert(handle);
-    }
 
     // generate change tables
     for _n in 0..rng.gen_range(1..=5) {

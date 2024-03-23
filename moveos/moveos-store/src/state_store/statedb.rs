@@ -177,31 +177,43 @@ impl StateDBStore {
         let global_change = state_change_set.changes.remove(&ObjectID::root());
         let mut global_size = self.root_object.entity.size;
         if let Some(global_change) = global_change {
-            for change in global_change.entries {
-                match change {
-                    (key, Op::New(state)) => {
+            for (key, op) in global_change.entries {
+                debug_assert!(key.is_object_id());
+                let object_id = key.as_object_id()?;
+                //TODO refactor root object logic
+                if object_id.is_root() {
+                    match op {
+                        Op::Modify(state) => {
+                            global_size = state.as_raw_object().expect("Invalid root object").size;
+                        }
+                        _ => {
+                            debug_assert!(false, "Invalid operation on root object");
+                            return Err(anyhow::format_err!("Invalid operation on root object"));
+                        }
+                    }
+                    continue;
+                }
+                match op {
+                    Op::New(state) => {
                         changed_objects.insert(
-                            key.clone(),
+                            object_id,
                             TreeObject::new(self.node_store.clone(), state.as_raw_object()?),
                         );
-                        global_size += 1;
                     }
-                    (key, Op::Modify(state)) => {
+                    Op::Modify(state) => {
                         changed_objects.insert(
-                            key,
+                            object_id,
                             TreeObject::new(self.node_store.clone(), state.as_raw_object()?),
                         );
                     }
-                    (key, Op::Delete) => {
+                    Op::Delete => {
                         update_set.remove(key);
-                        global_size -= 1;
                     }
                 }
             }
         }
         for (object_id, object_change) in state_change_set.changes {
-            let key = object_id.to_key();
-            let mut obj = match changed_objects.remove(&key) {
+            let mut obj = match changed_objects.remove(&object_id) {
                 Some(obj) => obj,
                 None => self
                     .get_object(&object_id)?
@@ -209,15 +221,11 @@ impl StateDBStore {
             };
 
             obj.put_changes(object_change.entries.into_iter())?;
-            update_set.put(key, obj.entity.into_state())
+            update_set.put(object_id.to_key(), obj.entity.into_state())
         }
 
-        for table_handle in state_change_set.removed_tables {
-            update_set.remove(table_handle.to_key());
-        }
-
-        for (key, value) in changed_objects {
-            update_set.put(key, value.entity.into_state());
+        for (object_id, value) in changed_objects {
+            update_set.put(object_id.to_key(), value.entity.into_state());
         }
 
         let update_set_size = update_set.len();
