@@ -4,7 +4,7 @@
 use super::raw_table;
 use crate::natives::{
     helpers::make_module_natives, helpers::make_native,
-    moveos_stdlib::raw_table::NativeTableContext,
+    moveos_stdlib::raw_table::ObjectRuntimeContext,
 };
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{gas_algebra::InternalGas, vm_status::StatusCode};
@@ -120,16 +120,16 @@ fn borrow_object_reference(
 
     let object_id = ObjectID::from_runtime_value(object_id_value)
         .map_err(|_e| partial_extension_error("Invalid object id argument"))?;
-    let table_context = context.extensions_mut().get_mut::<NativeTableContext>();
+    let object_context = context.extensions_mut().get_mut::<ObjectRuntimeContext>();
 
-    let data = table_context.table_data();
-    let mut table_data = data.write();
+    let data = object_context.object_runtime();
+    let mut object_runtime = data.write();
     //TODO remove load_object, the object should loaded when load ObjectEntity
-    table_data
+    object_runtime
         .load_object(&object_id)
         .map_err(|e| e.to_partial())?;
-    table_data
-        .borrow_object(&object_id)
+    object_runtime
+        .borrow_object_reference(&object_id)
         .map_err(|e| e.to_partial())
 }
 

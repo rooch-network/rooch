@@ -18,9 +18,7 @@ use move_vm_types::{
     loaded_data::runtime_types::Type,
     values::{GlobalValue, Reference, Struct, Value},
 };
-use moveos_stdlib::natives::moveos_stdlib::raw_table::{
-    serialize, TableData, TableKey, TableRuntimeValue,
-};
+use moveos_stdlib::natives::moveos_stdlib::raw_table::{serialize, ObjectRuntime, RuntimeField};
 use moveos_types::{
     move_std::string::MoveString,
     moveos_std::{move_module::MoveModule, tx_context::TxContext},
@@ -53,18 +51,22 @@ pub struct MoveosDataCache<'r, 'l, S> {
     resolver: &'r S,
     loader: &'l Loader,
     event_data: Vec<(Vec<u8>, u64, Type, MoveTypeLayout, Value)>,
-    table_data: Arc<RwLock<TableData>>,
+    object_runtime: Arc<RwLock<ObjectRuntime>>,
 }
 
 impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
     /// Create a `MoveosDataCache` with a `RemoteCache` that provides access to data
     /// not updated in the transaction.
-    pub fn new(resolver: &'r S, loader: &'l Loader, table_data: Arc<RwLock<TableData>>) -> Self {
+    pub fn new(
+        resolver: &'r S,
+        loader: &'l Loader,
+        object_runtime: Arc<RwLock<ObjectRuntime>>,
+    ) -> Self {
         MoveosDataCache {
             resolver,
             loader,
             event_data: vec![],
-            table_data,
+            object_runtime,
         }
     }
 
@@ -78,10 +80,9 @@ impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
         (key_typetag, value_typetag)
     }
 
-    fn module_id_to_table_key(&self, module_id: &ModuleId) -> VMResult<TableKey> {
+    fn module_id_to_key(&self, module_id: &ModuleId) -> VMResult<KeyState> {
         let key_state = module_id_to_key(module_id);
-        let table_key = TableKey::new(key_state.key_type, key_state.key);
-        Ok(table_key)
+        Ok(key_state)
     }
 }
 
@@ -123,16 +124,16 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
 
     /// Get the serialized format of a `CompiledModule` given a `ModuleId`.
     fn load_module(&self, module_id: &ModuleId) -> VMResult<Vec<u8>> {
-        let table_data = self.table_data.read();
+        let object_runtime = self.object_runtime.read();
         let module_object_id = ModuleStore::module_store_id();
         let (_, value_type) = Self::module_table_typetag();
         // TODO: check or ensure the module table exists.
-        if table_data.exist_table(&module_object_id) {
-            let table = table_data
-                .borrow_table(&module_object_id)
+        if object_runtime.exist_object(&module_object_id) {
+            let table = object_runtime
+                .borrow_object(&module_object_id)
                 .map_err(|e| e.finish(Location::Undefined))?;
 
-            let table_key = self.module_id_to_table_key(module_id)?;
+            let table_key = self.module_id_to_key(module_id)?;
             if let Some(global_value) = table.get_global_value(&table_key) {
                 let byte_codes = load_module_from_table_runtime_value(global_value, value_type)
                     .map_err(|e| e.finish(Location::Undefined))?;
@@ -170,12 +171,12 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
         let (_key_type, value_type) = Self::module_table_typetag();
 
         // let key_layout = MoveTypeLayout::Struct(MoveString::struct_layout());
-        let mut table_data = self.table_data.write();
-        let table = table_data
-            .get_or_create_table(module_object_id)
+        let mut object_runtime = self.object_runtime.write();
+        let table = object_runtime
+            .get_or_create_object(module_object_id)
             .map_err(|e| e.finish(Location::Module(module_id.clone())))?;
 
-        let table_key = self.module_id_to_table_key(module_id)?;
+        let table_key = self.module_id_to_key(module_id)?;
         let (tv, _) = table
             .get_or_create_global_value_with_layout_fn(self.resolver, table_key, |t| {
                 self.loader.get_type_layout(t, self).map_err(|e| {
@@ -200,14 +201,14 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
 
     /// Check if this module exists.
     fn exists_module(&self, module_id: &ModuleId) -> VMResult<bool> {
-        let table_data = self.table_data.read();
+        let object_runtime = self.object_runtime.read();
         let module_object_id = ModuleStore::module_store_id();
-        if table_data.exist_table(&module_object_id) {
-            let table = table_data
-                .borrow_table(&module_object_id)
+        if object_runtime.exist_object(&module_object_id) {
+            let table = object_runtime
+                .borrow_object(&module_object_id)
                 .map_err(|e| e.finish(Location::Undefined))?;
 
-            let table_key = self.module_id_to_table_key(module_id)?;
+            let table_key = self.module_id_to_key(module_id)?;
             if table.contains_key(&table_key) {
                 return Ok(true);
             }
@@ -240,13 +241,13 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
 }
 
 pub fn into_change_set(
-    table_data: Arc<RwLock<TableData>>,
+    object_runtime: Arc<RwLock<ObjectRuntime>>,
 ) -> PartialVMResult<(TxContext, StateChangeSet)> {
-    let table_data = Arc::try_unwrap(table_data).map_err(|_| {
+    let object_runtime = Arc::try_unwrap(object_runtime).map_err(|_| {
         PartialVMError::new(StatusCode::STORAGE_ERROR)
-            .with_message("TableData is referenced more than once".to_owned())
+            .with_message("ObjectRuntime is referenced more than once".to_owned())
     })?;
-    let data = table_data.into_inner();
+    let data = object_runtime.into_inner();
     let (tx_context, tables) = data.into_inner();
     let mut changes = BTreeMap::new();
     for (handle, table) in tables {
@@ -302,7 +303,7 @@ fn unbox_and_serialize(layout: &MoveTypeLayout, box_val: Value) -> PartialVMResu
 
 // load module bytes stored in `moveos_std::raw_table::Box<moveos_std::moveos_std::move_module::MoveModule>`
 fn load_module_from_table_runtime_value(
-    global_value: &TableRuntimeValue,
+    global_value: &RuntimeField,
     value_type: TypeTag,
 ) -> PartialVMResult<Vec<u8>> {
     let blob = global_value.borrow_global(value_type)?;

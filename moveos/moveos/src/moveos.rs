@@ -594,7 +594,7 @@ impl MoveOS {
         //TODO is it a good approach to add tx_result to TxContext?
         let tx_result = TxResult::new(&kept_status, gas_used);
         session
-            .table_data
+            .object_runtime
             .write()
             .add_to_tx_context(tx_result)
             .expect("Add tx_result to TxContext should always success");
