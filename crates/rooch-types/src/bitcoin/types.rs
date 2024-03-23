@@ -8,6 +8,8 @@ use bitcoincore_rpc::bitcoincore_rpc_json::GetBlockHeaderResult;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::state::{MoveState, MoveStructState, MoveStructType};
 use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::fmt::{Display, Formatter};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("types");
 
@@ -238,7 +240,7 @@ impl MoveStructState for Witness {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Ord, PartialOrd, PartialEq, Eq)]
 pub struct OutPoint {
     /// The referenced transaction's txid.
     /// Use address to represent sha256d hash
@@ -268,6 +270,12 @@ impl MoveStructState for OutPoint {
             AccountAddress::type_layout(),
             u32::type_layout(),
         ])
+    }
+}
+
+impl Display for OutPoint {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}:{}", self.txid, self.vout)
     }
 }
 

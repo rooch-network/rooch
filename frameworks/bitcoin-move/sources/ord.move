@@ -6,7 +6,9 @@ module bitcoin_move::ord {
     use std::option::{Self, Option};
     use std::string;
     use std::string::String;
-   
+    use moveos_std::table;
+    use moveos_std::table::Table;
+
     use moveos_std::bcs;
     use moveos_std::event;
     use moveos_std::object::{Self, ObjectID, Object};
@@ -18,7 +20,7 @@ module bitcoin_move::ord {
     use rooch_framework::multichain_address;
     use rooch_framework::bitcoin_address::BitcoinAddress;
 
-    use bitcoin_move::types::{Self, Witness, Transaction};
+    use bitcoin_move::types::{Self, Witness, Transaction, OutPoint};
     use bitcoin_move::utxo::{Self, UTXO, SealOut};
     use bitcoin_move::brc20;
 
@@ -69,12 +71,21 @@ module bitcoin_move::ord {
 
     struct InscriptionStore has key{
         inscriptions: TableVec<InscriptionID>,
+        satpoint_to_inscription: Table<SatPoint, InscriptionID>
+    }
+
+    #[data_struct]
+    struct SatPoint has store, copy, drop {
+        outpoint: OutPoint,
+        offset: u64,
     }
 
     public(friend) fun genesis_init(_genesis_account: &signer){
         let inscriptions = table_vec::new<InscriptionID>();
+        let satpoint_to_inscription = table::new<SatPoint, InscriptionID>();
         let store = InscriptionStore{
-            inscriptions: inscriptions,
+            inscriptions,
+            satpoint_to_inscription,
         };
         let store_obj = object::new_named_object(store);
         object::to_shared(store_obj);
@@ -150,6 +161,9 @@ module bitcoin_move::ord {
         };
         let outputs = types::tx_output(tx);
         //TODO we should track the Inscription via SatPoint, but now we just use the first output for simplicity.
+
+
+
         let output_index = 0;
         let first_output = vector::borrow(outputs, output_index);
         let address = types::txout_object_address(first_output);
@@ -166,6 +180,7 @@ module bitcoin_move::ord {
                 brc20::process_utxo_op(op);
                 //TODO record the execution result
             };
+            // TODO handle curse inscription
             object::transfer_extend(inscription_obj, to_address);
             vector::push_back(&mut seal_outs, utxo::new_seal_out(output_index, seal_object_id));
             j = j + 1;
@@ -196,6 +211,19 @@ module bitcoin_move::ord {
         //reverse inscriptions and pop from the end
         vector::reverse(&mut inscriptions);
         while(idx < inscriptions_len){
+
+            // Bad case: https://github.com/rooch-network/rooch/issues/1447
+
+            // // find existing inscriptions on input (transfers of inscriptions)
+            // for (old_satpoint, inscription_id) in Index::inscriptions_on_output(
+            //     self.satpoint_to_sequence_number,
+            //     self.sequence_number_to_entry,
+            //     tx_in.previous_output,
+            // )? {
+            //
+            // }
+
+
             let output_index = if(is_separate_outputs){
                 idx
             }else{
