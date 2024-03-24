@@ -227,6 +227,10 @@ impl ExecutorActor {
 
         if let Some(pay_gas) = can_pay_gas {
             if pay_gas {
+                // TODO: We disable gas free function for now.
+                // Remove it when it's ready.
+                anyhow::bail!("Gas free functions are not supported yet");
+
                 let account_balance = self.get_account_balance(&moveos_tx)?;
                 let module_account = {
                     match &moveos_tx.action {
