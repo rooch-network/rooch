@@ -64,8 +64,6 @@ fn native_type_of(
 ) -> PartialVMResult<NativeResult> {
     debug_assert!(ty_args.len() == 1);
     debug_assert!(arguments.is_empty());
-    //TODO
-    //context.charge(gas_params.base)?;
 
     let type_tag = context.type_to_type_tag(&ty_args[0])?;
 

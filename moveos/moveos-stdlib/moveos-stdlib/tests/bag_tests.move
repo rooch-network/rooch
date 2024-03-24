@@ -78,7 +78,7 @@ module moveos_std::bag_tests {
         borrow_mut<u64, u64>(&mut bag, 0);
         bag::drop_unchecked(bag)
     }
-    //TODO FIXME
+
     #[test]
     #[expected_failure(abort_code = moveos_std::object::ErrorTypeMismatch)]
     fun borrow_mut_wrong_type() {        
