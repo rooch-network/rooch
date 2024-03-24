@@ -1,10 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::move_std::ascii::MoveAsciiString;
 use crate::moveos_std::object::ObjectID;
 use crate::moveos_std::object::{AnnotatedObject, ObjectEntity, RawObject};
 use anyhow::{bail, ensure, Result};
 use core::str;
+use move_core_types::language_storage::ModuleId;
 use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
@@ -56,6 +58,21 @@ impl std::fmt::Debug for KeyState {
 impl KeyState {
     pub fn new(key: Vec<u8>, key_type: TypeTag) -> Self {
         Self { key, key_type }
+    }
+
+    pub fn from_module_id(module_id: &ModuleId) -> Self {
+        // The key is the moduleId string in bcs serialize format, not String::into_bytes.
+        // bcs::to_bytes(&String) same as bcs::to_bytes(&MoveAsciiString)
+        let key = bcs::to_bytes(&module_id.short_str_lossless())
+            .expect("bcs to_bytes String must success.");
+        KeyState::new(key, MoveAsciiString::type_tag())
+    }
+
+    pub fn from_struct_tag(struct_tag: &StructTag) -> Self {
+        // The resource key is struct_tag to_canonical_string in bcs serialize format string, not String::into_bytes.
+        let key = bcs::to_bytes(&struct_tag.to_canonical_string())
+            .expect("bcs to_bytes String must success.");
+        KeyState::new(key, MoveAsciiString::type_tag())
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self>
@@ -112,6 +129,24 @@ impl FromStr for KeyState {
         let key = hex::decode(s.strip_prefix("0x").unwrap_or(s))
             .map_err(|_| anyhow::anyhow!("Invalid key state str: {}", s))?;
         KeyState::from_bytes(key.as_slice())
+    }
+}
+
+impl From<ObjectID> for KeyState {
+    fn from(object_id: ObjectID) -> Self {
+        object_id.to_key()
+    }
+}
+
+impl From<ModuleId> for KeyState {
+    fn from(module_id: ModuleId) -> Self {
+        KeyState::from_module_id(&module_id)
+    }
+}
+
+impl From<StructTag> for KeyState {
+    fn from(tag: StructTag) -> Self {
+        KeyState::from_struct_tag(&tag)
     }
 }
 

@@ -5,7 +5,7 @@ use super::table::TablePlaceholder;
 use crate::h256;
 use crate::moveos_std::account::Account;
 use crate::moveos_std::move_module::ModuleStore;
-use crate::state::KeyState;
+use crate::state::{KeyState, PlaceholderStruct};
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     state::{MoveState, MoveStructState, MoveStructType, State},
@@ -758,6 +758,21 @@ where
 {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![ObjectID::type_layout()])
+    }
+}
+
+pub fn is_object_struct(t: &StructTag) -> bool {
+    Object::<PlaceholderStruct>::struct_tag_match_without_type_param(t)
+}
+
+pub fn is_object_entity_struct(t: &StructTag) -> bool {
+    ObjectEntity::<PlaceholderStruct>::struct_tag_match_without_type_param(t)
+}
+
+pub fn is_object_entity_type(t: &TypeTag) -> bool {
+    match t {
+        TypeTag::Struct(t) => is_object_entity_struct(t),
+        _ => false,
     }
 }
 

@@ -24,6 +24,7 @@ pub(crate) const ERROR_ALREADY_EXISTS: u64 = 1;
 pub(crate) const ERROR_NOT_FOUND: u64 = 2;
 pub(crate) const ERROR_OBJECT_ALREADY_BORROWED: u64 = 7;
 pub(crate) const ERROR_TYPE_MISMATCH: u64 = 10;
+pub(crate) const ERROR_OBJECT_RUNTIME_ERROR: u64 = 14;
 
 #[derive(Debug, Clone)]
 pub struct AsRefGasParameters {
@@ -126,7 +127,7 @@ fn borrow_object_reference(
     let mut object_runtime = data.write();
     //TODO remove load_object, the object should loaded when load ObjectEntity
     object_runtime
-        .load_object(&object_id)
+        .load_object_reference(&object_id)
         .map_err(|e| e.to_partial())?;
     object_runtime
         .borrow_object_reference(&object_id)

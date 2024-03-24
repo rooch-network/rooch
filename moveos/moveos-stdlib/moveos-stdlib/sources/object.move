@@ -40,6 +40,8 @@ module moveos_std::object {
     const ErrorWithoutParent: u64 = 12;
     /// The parent object is not match
     const ErrorParentNotMatch: u64 = 13;
+    /// The object runtime error
+    const ErrorObjectRuntimeError: u64 = 14;
 
     const SYSTEM_OWNER_ADDRESS: address = @0x0;
 
