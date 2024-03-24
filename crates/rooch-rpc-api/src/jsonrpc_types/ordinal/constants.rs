@@ -1,12 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::fmt::{self, Display};
+
+use bitcoin::hashes::Hash;
 use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 use super::{hash_types::BlockHashView, network::NetworkView};
 
 /// The uniquely identifying hash of the target blockchain.
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, JsonSchema)]
+#[derive(
+    Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
+)]
 pub struct ChainHashView([u8; 32]);
 
 impl ChainHashView {
@@ -43,6 +49,23 @@ impl ChainHashView {
 
     /// Converts genesis block hash into `ChainHash`.
     pub fn from_genesis_block_hash(block_hash: BlockHashView) -> Self {
-        ChainHashView(block_hash.to_byte_array())
+        ChainHashView(block_hash.0 .0.to_byte_array())
+    }
+}
+
+/// Error in parsing network from chain hash.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct UnknownChainHashErrorView(pub ChainHashView);
+
+impl Display for UnknownChainHashErrorView {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "unknown chain hash: {:?}", self.0)
+    }
+}
+
+impl std::error::Error for UnknownChainHashErrorView {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
     }
 }

@@ -4,10 +4,16 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use super::{constants::ChainHashView, p2p::MagicView};
+use crate::jsonrpc_types::StrView;
+
+use super::{
+    amount::AmountView,
+    constants::{ChainHashView, UnknownChainHashErrorView},
+    p2p::{MagicView, UnknownMagicErrorView},
+};
 
 /// An error in parsing network string.
-#[derive(Debug, Clone, PartialEq, Eq, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 #[non_exhaustive]
 pub struct ParseNetworkErrorView(String);
 
@@ -136,4 +142,117 @@ impl NetworkView {
     pub fn from_chain_hash(chain_hash: ChainHashView) -> Option<NetworkView> {
         NetworkView::try_from(chain_hash).ok()
     }
+}
+
+impl TryFrom<MagicView> for NetworkView {
+    type Error = UnknownMagicErrorView;
+
+    fn try_from(magic: MagicView) -> Result<Self, Self::Error> {
+        match magic {
+            // Note: any new network entries must be matched against here.
+            MagicView::BITCOIN => Ok(NetworkView::Bitcoin),
+            MagicView::TESTNET => Ok(NetworkView::Testnet),
+            MagicView::SIGNET => Ok(NetworkView::Signet),
+            MagicView::REGTEST => Ok(NetworkView::Regtest),
+            _ => Err(UnknownMagicErrorView(magic)),
+        }
+    }
+}
+
+impl TryFrom<ChainHashView> for NetworkView {
+    type Error = UnknownChainHashErrorView;
+
+    fn try_from(chain_hash: ChainHashView) -> Result<Self, Self::Error> {
+        match chain_hash {
+            // Note: any new network entries must be matched against here.
+            ChainHashView::BITCOIN => Ok(NetworkView::Bitcoin),
+            ChainHashView::TESTNET => Ok(NetworkView::Testnet),
+            ChainHashView::SIGNET => Ok(NetworkView::Signet),
+            ChainHashView::REGTEST => Ok(NetworkView::Regtest),
+            _ => Err(UnknownChainHashErrorView(chain_hash)),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, JsonSchema)]
+pub struct GetNetworkInfoResultNetworkView {
+    pub name: String,
+    pub limited: bool,
+    pub reachable: bool,
+    pub proxy: String,
+    pub proxy_randomize_credentials: bool,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, JsonSchema)]
+pub struct GetNetworkInfoResultAddressView {
+    pub address: String,
+    pub port: StrView<usize>,
+    pub score: StrView<usize>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize, JsonSchema)]
+pub struct GetNetworkInfoResultView {
+    pub version: StrView<usize>,
+    pub subversion: String,
+    #[serde(rename = "protocolversion")]
+    pub protocol_version: StrView<usize>,
+    #[serde(rename = "localservices")]
+    pub local_services: String,
+    #[serde(rename = "localrelay")]
+    pub local_relay: bool,
+    #[serde(rename = "timeoffset")]
+    pub time_offset: isize,
+    pub connections: StrView<usize>,
+    /// The number of inbound connections
+    /// Added in Bitcoin Core v0.21
+    pub connections_in: Option<StrView<usize>>,
+    /// The number of outbound connections
+    /// Added in Bitcoin Core v0.21
+    pub connections_out: Option<StrView<usize>>,
+    #[serde(rename = "networkactive")]
+    pub network_active: bool,
+    pub networks: Vec<GetNetworkInfoResultNetworkView>,
+    #[serde(rename = "relayfee")]
+    pub relay_fee: AmountView,
+    #[serde(rename = "incrementalfee")]
+    pub incremental_fee: AmountView,
+    #[serde(rename = "localaddresses")]
+    pub local_addresses: Vec<GetNetworkInfoResultAddressView>,
+    pub warnings: String,
+}
+
+mod sealed {
+    pub trait NetworkValidationView {}
+    impl NetworkValidationView for super::NetworkCheckedView {}
+    impl NetworkValidationView for super::NetworkUncheckedView {}
+}
+
+/// Marker of status of address's network validation. See section [*Parsing addresses*](Address#parsing-addresses)
+/// on [`Address`] for details.
+pub trait NetworkValidationView:
+    sealed::NetworkValidationView + Sync + Send + Sized + Unpin
+{
+    /// Indicates whether this `NetworkValidation` is `NetworkChecked` or not.
+    const IS_CHECKED: bool;
+}
+
+/// Marker that address's network has been successfully validated. See section [*Parsing addresses*](Address#parsing-addresses)
+/// on [`Address`] for details.
+#[derive(
+    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize, JsonSchema,
+)]
+pub enum NetworkCheckedView {}
+
+/// Marker that address's network has not yet been validated. See section [*Parsing addresses*](Address#parsing-addresses)
+/// on [`Address`] for details.
+#[derive(
+    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize, JsonSchema,
+)]
+pub enum NetworkUncheckedView {}
+
+impl NetworkValidationView for NetworkCheckedView {
+    const IS_CHECKED: bool = true;
+}
+impl NetworkValidationView for NetworkUncheckedView {
+    const IS_CHECKED: bool = false;
 }

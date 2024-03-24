@@ -13,7 +13,7 @@ use super::{hash_types::BlockHashView, network::NetworkView, rpc::SoftforkView};
 /// Models the result of "getblockchaininfo"
 #[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
-pub struct GetBlockchainInfoResult {
+pub struct GetBlockchainInfoResultView {
     /// Current network name as defined in BIP70 (main, test, signet, regtest)
     pub chain: NetworkView,
     /// The current number of blocks processed in the server
@@ -23,11 +23,11 @@ pub struct GetBlockchainInfoResult {
     /// The hash of the currently best block
     pub best_block_hash: BlockHashView,
     /// The current difficulty
-    pub difficulty: StrView<f64>,
+    pub difficulty: f64,
     /// Median time for the current best block
     pub median_time: StrView<u64>,
     /// Estimate of verification progress [0..1]
-    pub verification_progress: StrView<f64>,
+    pub verification_progress: f64,
     /// Estimate of whether this node is in Initial Block Download mode
     pub initial_block_download: bool,
     /// Total amount of work in active chain, in hexadecimal
