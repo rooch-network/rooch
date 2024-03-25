@@ -28,9 +28,9 @@ export class UniSatWallet extends BitcoinWallet {
     const walletAccounts = accounts.map((value, index) => {
       if (index === 0) {
         // unisat only supports the current account to get publicKey
-        return new WalletAccount(value, SupportChain.BITCOIN, publicKey)
+        return new WalletAccount(value, '', SupportChain.BITCOIN, publicKey)
       } else {
-        return new WalletAccount(value, SupportChain.BITCOIN)
+        return new WalletAccount(value, '', SupportChain.BITCOIN)
       }
     })
 
@@ -43,15 +43,15 @@ export class UniSatWallet extends BitcoinWallet {
     this.getTarget().switchNetwork()
   }
   getNetwork(): string {
-    throw new Error('Method not implemented.')
+    return this.getTarget().getNetwork()
   }
   getSupportNetworks(): string[] {
     return UNISAT_SUPPORT_NETWORKS
   }
-  onAccountsChanged(callback: (account: string[]) => void): void {
+  onAccountsChanged(callback: (account: WalletAccount[]) => void): void {
     this.getTarget().on('accountsChanged', callback)
   }
-  removeAccountsChanged(callback: (account: string[]) => void): void {
+  removeAccountsChanged(callback: (account: WalletAccount[]) => void): void {
     this.getTarget().removeListener('accountsChanged', callback)
   }
   onNetworkChanged(callback: (network: string) => void): void {

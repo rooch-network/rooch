@@ -80,7 +80,9 @@ const StateList = () => {
     [Actions.List]: <StateListView />,
   }
 
-  return (
+  return !activeTab ? (
+    <></>
+  ) : (
     <TabContext value={activeTab}>
       <Grid>
         <Grid item xs={12}>

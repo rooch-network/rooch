@@ -5,12 +5,11 @@ import { createContext, useEffect, useRef, useState, ReactElement } from 'react'
 import type { StateStorage } from 'zustand/middleware'
 
 import { createWalletStore, WalletStore } from '../walletStore'
-import { useAutoConnectWallet, useWalletStore } from '../hooks'
+import { useAutoConnectWallet, useRoochClient, useWalletStore } from '../hooks'
 import { getInstalledWallets } from '../utils/walletUtils'
-import { BaseWallet } from '../types'
+import { BaseWallet, UniSatWallet, WalletAccount } from '../types'
 import { SupportChain } from '../feature'
-
-// TODO: use web3modal ?
+import { chain2MultiChainID } from '../utils/chain2MultiChainID'
 
 type WalletProviderProps = {
   chain?: SupportChain
@@ -46,52 +45,68 @@ export function WalletProvider({
   const storeRef = useRef<ReturnType<typeof createWalletStore>>()
 
   useEffect(() => {
-    getInstalledWallets(chain).then((v) => setWallets(v))
+    getInstalledWallets().then((v) => setWallets(v))
   }, [chain])
 
   useEffect(() => {
     if (wallets && wallets.length !== 0) {
       storeRef.current = createWalletStore({
-        supportWallets: wallets,
-        currentWallet: wallets[0],
+        chain,
+        installedWallets: wallets,
+        currentWallet: wallets.find((v) => v.isSupportChain(chain)) ?? new UniSatWallet(), // default use unisat
         autoConnectEnabled: autoConnect,
         storage: storage ?? localStorage,
         storageKey,
       })
       setLoading(false)
     }
-  }, [wallets, autoConnect, storageKey, storage])
+  }, [wallets, autoConnect, storageKey, storage, chain])
 
   return !loading ? (
     <WalletContext.Provider value={storeRef.current!}>
-      <WalletConnectionManager>{children}</WalletConnectionManager>
+      <WalletConnectionManager chain={chain}>{children}</WalletConnectionManager>
     </WalletContext.Provider>
   ) : fallback ? (
     fallback
   ) : null
 }
 
-type WalletConnectionManagerProps = Required<Pick<WalletProviderProps, 'children'>>
+type WalletConnectionManagerProps = Required<Pick<WalletProviderProps, 'children' | 'chain'>>
 
-function WalletConnectionManager({ children }: WalletConnectionManagerProps) {
+function WalletConnectionManager({ children, chain }: WalletConnectionManagerProps) {
   useAutoConnectWallet()
 
   const connectionStatus = useWalletStore((store) => store.connectionStatus)
   const currentWallet = useWalletStore((store) => store.currentWallet)
   const setWalletDisconnected = useWalletStore((store) => store.setWalletDisconnected)
+  const setConnectionStatus = useWalletStore((state) => state.setConnectionStatus)
   const setAccountSwitched = useWalletStore((store) => store.setAccountSwitched)
   const currentAccount = useWalletStore((state) => state.currentAccount)
+  const roochClient = useRoochClient()
 
-  const accountsChangedHandler = (accounts: string[]) => {
+  const accountsChangedHandler = async (accounts: WalletAccount[]) => {
     if (accounts.length === 0) {
       setWalletDisconnected()
     } else {
-      if (accounts[0] !== currentAccount?.getAddress()) {
-        setAccountSwitched(currentWallet.account!)
+      setConnectionStatus('connecting')
+      const selectedAccount = accounts[0]
+      if (selectedAccount.address !== currentAccount?.address) {
+        let roochAddress = await roochClient.resoleRoochAddress({
+          address: selectedAccount.address,
+          multiChainID: chain2MultiChainID(chain),
+        })
+        setAccountSwitched(
+          new WalletAccount(
+            selectedAccount.address,
+            roochAddress,
+            selectedAccount.walletType,
+            selectedAccount.publicKey,
+            selectedAccount.compressedPublicKey,
+          ),
+        )
       }
     }
   }
-
   useEffect(() => {
     if (connectionStatus === 'connected') {
       currentWallet.onAccountsChanged(accountsChangedHandler)

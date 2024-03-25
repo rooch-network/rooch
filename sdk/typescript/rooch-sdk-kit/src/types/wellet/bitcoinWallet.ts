@@ -6,6 +6,7 @@ import { RoochMultiChainID, SerializedSignature } from '@roochnetwork/rooch-sdk'
 import { Buffer } from 'buffer'
 import { MultiChainAddress } from '../address'
 import { AuthenticatorPayload } from '../AuthenticatorPayload'
+import { SupportChain } from '../../feature'
 
 const BITCOIN_MAGIC_SIGN_PREFIX = 'Bitcoin Signed Message:\n'
 
@@ -49,5 +50,9 @@ export abstract class BitcoinWallet extends BaseWallet {
     }
 
     return normalizeV
+  }
+
+  isSupportChain(chain: SupportChain): boolean {
+    return chain === SupportChain.BITCOIN
   }
 }

@@ -2,29 +2,33 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { SupportChain, SupportChains } from '../feature'
-import { Metamask, UniSatWallet } from '../types/wellet'
-import { BaseWallet } from '../types/wellet/baseWallet'
+import { BaseWallet, Metamask, UniSatWallet } from '../types'
 
 export async function getInstalledWallets(filter?: SupportChain) {
-  const wallets = SupportChains.filter((v) => {
-    if (filter) {
-      return filter === v
-    } else {
-      return false
-    }
-  }).map((w) => {
-    let wallet: BaseWallet
+  const wallets: BaseWallet[] = []
+  SupportChains.filter((v) => !filter || filter === v).forEach((w) => {
     switch (w) {
       case SupportChain.ETH:
-        wallet = new Metamask()
+        wallets.push(new Metamask())
         break
       case SupportChain.BITCOIN:
-        wallet = new UniSatWallet()
+        wallets.push(new UniSatWallet())
+        break
+      case SupportChain.Rooch:
+        wallets.push(new Metamask(), new UniSatWallet())
         break
     }
-
-    return wallet
   })
 
-  return wallets.filter(async (w) => await w.checkInstalled())
+  const installWallets = await Promise.all(
+    wallets.map(async (w) => {
+      if (await w.checkInstalled()) {
+        w.installed = true
+        return w
+      }
+      return undefined
+    }),
+  )
+
+  return installWallets.filter((w): w is BaseWallet => w !== undefined)
 }

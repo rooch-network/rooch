@@ -9,7 +9,6 @@ import { useWalletStore } from './useWalletStore'
 export function useCurrentWallet() {
   const currentWallet = useWalletStore((state) => state.currentWallet)
   const connectionStatus = useWalletStore((state) => state.connectionStatus)
-
   switch (connectionStatus) {
     case 'connecting':
       return {

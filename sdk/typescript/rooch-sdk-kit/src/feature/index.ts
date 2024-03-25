@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export enum SupportChain {
+  Rooch = 'ROOCH',
   BITCOIN = 'BITCOIN',
   ETH = 'ETH',
 }
@@ -14,7 +15,7 @@ export enum SupportWallet {
 export const SupportWallets = [SupportWallet.Metamask, SupportWallet.Unisat]
 export const SupportChains = [SupportChain.BITCOIN, SupportChain.ETH]
 
-// TODO: multi wallet support
+// TODO: wallet support multi chain
 // export class SupportNetWork {
 //   static get Bitcoin(): BitcoinWallets {
 //     return new BitcoinWallets()

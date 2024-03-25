@@ -55,15 +55,14 @@ export function RoochClientProvider<T extends Network>(props: RoochClientProvide
     })
 
     const { lastConnectedNetwork, setLastConnectedNetwork } = storeRef.current!.getState()
-    if (lastConnectedNetwork) {
+    if (lastConnectedNetwork && lastConnectedNetwork.id !== currentNetwork.id) {
       setCurrentNetwork(lastConnectedNetwork)
     } else {
       setLastConnectedNetwork(defaultNetwork)
     }
 
     setInitializing(false)
-    console.log(storeRef.current)
-  }, [defaultNetwork, storage, storageKey])
+  }, [defaultNetwork, storage, storageKey, currentNetwork])
 
   const networks = useMemo(() => {
     const networks = supportNetworks ?? AllNetwork
@@ -76,6 +75,7 @@ export function RoochClientProvider<T extends Network>(props: RoochClientProvide
   }, [storeRef, supportNetworks])
 
   const client = useMemo(() => {
+    console.log('当前网络变化', currentNetwork)
     return createClient(currentNetwork.name, currentNetwork)
   }, [createClient, currentNetwork])
 
@@ -88,6 +88,7 @@ export function RoochClientProvider<T extends Network>(props: RoochClientProvide
         if (currentNetwork === newNetwork) {
           return
         }
+        console.log('-设置新网络')
         setCurrentNetwork(newNetwork)
       },
       addNetwork: (network) => {

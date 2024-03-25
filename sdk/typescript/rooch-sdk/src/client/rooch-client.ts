@@ -7,12 +7,15 @@ import { JsonRpcClient } from '../generated/client'
 import { ChainInfo, Network, DevNetwork } from '../constants'
 import {
   AnnotatedFunctionResultView,
+  BalanceInfoView,
   bcsTypes,
   Bytes,
   EventOptions,
   EventPageView,
   GlobalStateView,
   InscriptionStatePageView,
+  BalanceInfoPageView,
+  EventWithIndexerPageView,
   StateOptions,
   StatePageView,
   StateView,
@@ -39,6 +42,10 @@ import {
   QueryUTXOsParams,
   ResoleRoochAddressParams,
   ListStatesParams,
+  QueryTransactionParams,
+  QueryEventParams,
+  GetBalanceParams,
+  GetBalancesParams,
 } from './types.ts'
 
 export const ROOCH_CLIENT_BRAND = Symbol.for('@roochnetwork/rooch-sdk')
@@ -94,6 +101,8 @@ export class RoochClient implements IClient {
         }),
       ]),
     )
+    console.log(network)
+    console.log(this.client)
   }
 
   switchChain(network: Network) {
@@ -229,6 +238,53 @@ export class RoochClient implements IClient {
       params.limit.toString(),
       params.descending_order,
     )
+  }
+
+  async queryTransactions(params: QueryTransactionParams): Promise<TransactionWithInfoPageView> {
+    return await this.client.rooch_queryTransactions(
+      params.filter,
+      params.cursor,
+      params.limit,
+      params.descending_order,
+    )
+  }
+
+  async queryEvents(params: QueryEventParams): Promise<EventWithIndexerPageView> {
+    return await this.client.rooch_queryEvents(
+      params.filter,
+      params.cursor,
+      params.limit,
+      params.descending_order,
+    )
+  }
+
+  async getBalance(params: GetBalanceParams): Promise<BalanceInfoView> {
+    return await this.client.rooch_getBalance(params.address, params.coinType)
+  }
+
+  async getBalances(params: GetBalancesParams): Promise<BalanceInfoPageView> {
+    return await this.client.rooch_getBalances(params.address, params.cursor, params.limit)
+  }
+
+  /// contract func
+
+  async gasCoinBalance(address: string): Promise<bigint> {
+    const result = await this.executeViewFunction({
+      funcId: '0x3::gas_coin::balance',
+      tyArgs: [],
+      args: [
+        {
+          type: 'Address',
+          value: address,
+        },
+      ],
+    })
+
+    if (result && result.vm_status !== 'Executed') {
+      throw new Error('view 0x3::gas_coin::balance fail')
+    }
+
+    return BigInt(result.return_values![0].decoded_value as string)
   }
 
   // Resolve the rooch address

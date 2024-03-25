@@ -48,7 +48,6 @@ export function useCreateSessionKey({
   )
   // TODO: save session with account & scope
   const sessionKey = useWalletStore((state) => state.sessionAccount)
-  const setSessionAccountStatus = useWalletStore((state) => state.setSessionAccountStatus)
   const setSessionAccount = useWalletStore((state) => state.setSessionAccount)
 
   return useMutation({
@@ -67,19 +66,14 @@ export function useCreateSessionKey({
       //   'No wallet account is selected to sign the personal message with.',
       // );
 
-      setSessionAccountStatus('creating')
-
       let scope = args.scope ?? defaultScope
       let maxInactiveInterval = args.maxInactiveInterval ?? 1200
-
-      console.log(roochAddress)
 
       let acc = new Account(
         rooch,
         roochAddress.data!,
         new WalletAuth(
           currentWallet.currentWallet,
-          currentAccount!,
           `Welcome to ${window.location.hostname}\nYou will authorize session:\n${
             'Scope:\n' +
             scope
@@ -103,7 +97,6 @@ export function useCreateSessionKey({
         return sessionKey
       } catch (e: any) {
         console.log(e.toString())
-        setSessionAccountStatus('invalid')
       }
 
       return null

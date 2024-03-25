@@ -8,6 +8,8 @@ import { useWalletStore } from './useWalletStore'
 import { useCurrentWallet } from './useCurrentWallet'
 import { WalletAccount } from '../../types'
 import { walletMutationKeys } from '../../constants/walletMutationKeys'
+import { useRoochClient } from '../../hooks/useRoochClient'
+import { chain2MultiChainID } from '../../utils/chain2MultiChainID'
 
 type ConnectWalletArgs = void
 type ConnectWalletResult = WalletAccount[]
@@ -31,7 +33,10 @@ export function useConnectWallet({
 > {
   const setWalletConnected = useWalletStore((state) => state.setWalletConnected)
   const setConnectionStatus = useWalletStore((state) => state.setConnectionStatus)
+  const currentAccount = useWalletStore((state) => state.currentAccount)
+  const chain = useWalletStore((state) => state.currentChain)
   const { currentWallet } = useCurrentWallet()
+  const client = useRoochClient()
 
   return useMutation({
     mutationKey: walletMutationKeys.connectWallet(mutationKey),
@@ -39,11 +44,32 @@ export function useConnectWallet({
       try {
         setConnectionStatus('connecting')
 
-        const accounts = await currentWallet.connect()
+        const connectAccounts = await currentWallet!.connect()
+        const selectedAccount = connectAccounts[0]
 
-        setWalletConnected(accounts, accounts[0])
+        // use cache date
+        if (selectedAccount.address === currentAccount?.address) {
+          setWalletConnected(connectAccounts, currentAccount)
+          return connectAccounts
+        }
 
-        return accounts
+        let selectedAccountRoochAddress = await client.resoleRoochAddress({
+          address: selectedAccount.address,
+          multiChainID: chain2MultiChainID(chain),
+        })
+
+        setWalletConnected(
+          connectAccounts,
+          new WalletAccount(
+            selectedAccount.address,
+            selectedAccountRoochAddress,
+            selectedAccount.walletType,
+            selectedAccount.publicKey,
+            selectedAccount.compressedPublicKey,
+          ),
+        )
+
+        return connectAccounts
       } catch (error) {
         setConnectionStatus('disconnected')
         throw error

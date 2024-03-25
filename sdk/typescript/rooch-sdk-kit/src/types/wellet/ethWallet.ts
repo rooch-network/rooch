@@ -5,6 +5,8 @@ import { ChainInfo, SerializedSignature } from '@roochnetwork/rooch-sdk'
 import { BaseWallet } from './baseWallet'
 import { AuthenticatorPayload } from '../AuthenticatorPayload'
 import { Buffer } from 'buffer'
+import { SupportChain } from '../../feature'
+import { WalletAccount } from '../../types'
 
 // TODO: eip6963 Discovered Wallets
 // interface ETHWalletInfo {
@@ -57,10 +59,10 @@ export abstract class ETHWallet extends BaseWallet {
     }
   }
 
-  onAccountsChanged(callback: (account: Array<string>) => void) {
+  onAccountsChanged(callback: (account: Array<WalletAccount>) => void) {
     this.getTarget().on('accountsChanged', callback)
   }
-  removeAccountsChanged(callback: (account: Array<string>) => void) {
+  removeAccountsChanged(callback: (account: Array<WalletAccount>) => void) {
     this.getTarget().removeListener('accountsChanged', callback)
   }
 
@@ -113,5 +115,9 @@ export abstract class ETHWallet extends BaseWallet {
     console.log(authPayload)
 
     return authPayload.toBytes()
+  }
+
+  isSupportChain(chain: SupportChain): boolean {
+    return chain === SupportChain.ETH || chain === SupportChain.Rooch
   }
 }
