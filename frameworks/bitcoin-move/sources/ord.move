@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module bitcoin_move::ord {
+    use std::debug;
     use std::vector;
     use std::option::{Self, Option};
     use std::string;
     use std::string::String;
+    use moveos_std::big_vector::BigVector;
     use moveos_std::table;
     use moveos_std::table::Table;
 
@@ -27,6 +29,8 @@ module bitcoin_move::ord {
     friend bitcoin_move::genesis;
 
     friend bitcoin_move::light_client;
+
+    const OUTPOINT_TO_SATPOINT_BUCKET_SIZE: u64 = 1000;
 
     struct InscriptionID has store, copy, drop {
         txid: address,
@@ -71,7 +75,8 @@ module bitcoin_move::ord {
 
     struct InscriptionStore has key{
         inscriptions: TableVec<InscriptionID>,
-        satpoint_to_inscription: Table<SatPoint, InscriptionID>
+        satpoint_to_inscription: Table<SatPoint, InscriptionID>,
+        outpoint_to_satpoint: Table<OutPoint, BigVector<SatPoint>>,
     }
 
     #[data_struct]
@@ -83,9 +88,11 @@ module bitcoin_move::ord {
     public(friend) fun genesis_init(_genesis_account: &signer){
         let inscriptions = table_vec::new<InscriptionID>();
         let satpoint_to_inscription = table::new<SatPoint, InscriptionID>();
+        let outpoint_to_satpoint = table::new<OutPoint, BigVector<SatPoint>>();
         let store = InscriptionStore{
             inscriptions,
             satpoint_to_inscription,
+            outpoint_to_satpoint
         };
         let store_obj = object::new_named_object(store);
         object::to_shared(store_obj);
@@ -162,8 +169,6 @@ module bitcoin_move::ord {
         let outputs = types::tx_output(tx);
         //TODO we should track the Inscription via SatPoint, but now we just use the first output for simplicity.
 
-
-
         let output_index = 0;
         let first_output = vector::borrow(outputs, output_index);
         let address = types::txout_object_address(first_output);
@@ -174,7 +179,7 @@ module bitcoin_move::ord {
         while(j < objects_len){
             let seal_object_id = *vector::borrow(&mut seal_object_ids, j);
             let (origin_owner, inscription_obj) = object::take_object_extend<Inscription>(seal_object_id);
-            let inscription = object::borrow(&inscription_obj); 
+            let inscription = object::borrow(&inscription_obj);
             if(brc20::is_brc20(&inscription.json_body)){
                 let op = brc20::new_op(origin_owner, to_address, simple_map::clone(&inscription.json_body));
                 brc20::process_utxo_op(op);
@@ -187,6 +192,7 @@ module bitcoin_move::ord {
         };
         //Auto create address mapping if not exist
         bind_multichain_address(address, bitcoin_address_opt);
+
         seal_outs
     }
 
@@ -202,6 +208,9 @@ module bitcoin_move::ord {
 
         let tx_outputs = types::tx_output(tx);
         let output_len = vector::length(tx_outputs);
+
+        // debug::print(&300000);
+        // debug::print(&inscriptions_len);
 
         // ord has three mode for Inscribe:   SameSat,SeparateOutputs,SharedOutput,
         //https://github.com/ordinals/ord/blob/master/src/subcommand/wallet/inscribe/batch.rs#L533
@@ -222,13 +231,14 @@ module bitcoin_move::ord {
             // )? {
             //
             // }
-
-
             let output_index = if(is_separate_outputs){
                 idx
             }else{
                 0  
             };
+
+
+            //TODO calculate offset
 
             let output = vector::borrow(tx_outputs, output_index);
             let to_address = types::txout_object_address(output);
@@ -237,6 +247,9 @@ module bitcoin_move::ord {
             let inscription = vector::pop_back(&mut inscriptions);
             //Because the previous output of inscription input is a witness program address, so we simply use the output address as the from address.
             let from = to_address;
+
+            // TODO Since the brc20 transfer protocol corresponds to two transactions, `inscribe transfer` and `transfer`,
+            // There is no definite receiver when inscribe transfer, so the transfer logic needs to be completed in spend UTXO flow.
             process_inscribe_protocol(from, to_address, &inscription);
             let inscription_obj = create_obj(inscription);
             let object_id = object::id(&inscription_obj);
@@ -392,5 +405,6 @@ module bitcoin_move::ord {
             };
         };
     }
+
 
 }

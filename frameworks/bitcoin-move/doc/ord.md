@@ -11,6 +11,7 @@
 -  [Struct `InvalidInscriptionEvent`](#0x4_ord_InvalidInscriptionEvent)
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
 -  [Struct `SatPoint`](#0x4_ord_SatPoint)
+-  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_ord_genesis_init)
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
 -  [Function `borrow_inscription`](#0x4_ord_borrow_inscription)
@@ -35,6 +36,7 @@
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
+<b>use</b> <a href="">0x2::big_vector</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::json</a>;
 <b>use</b> <a href="">0x2::object</a>;
@@ -115,6 +117,20 @@
 
 <pre><code>#[data_struct]
 <b>struct</b> <a href="ord.md#0x4_ord_SatPoint">SatPoint</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x4_ord_OUTPOINT_TO_SATPOINT_BUCKET_SIZE"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_OUTPOINT_TO_SATPOINT_BUCKET_SIZE">OUTPOINT_TO_SATPOINT_BUCKET_SIZE</a>: u64 = 1000;
 </code></pre>
 
 

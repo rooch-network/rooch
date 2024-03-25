@@ -155,9 +155,11 @@ module bitcoin_move::light_client{
         //TODO confirm this
         if(simple_multimap::length(&output_seals) == 0){
             let ord_seals = ord::process_transaction(tx);
+
+            let ord_seals_len = vector::length(&ord_seals);
             let idx = 0;
             let protocol = type_info::type_name<Inscription>();
-            while(idx < vector::length(&ord_seals)){
+            while(idx < ord_seals_len){
                 let seal_out = vector::pop_back(&mut ord_seals);
                 let (output_index, object_id) = utxo::unpack_seal_out(seal_out);
                 let utxo_seal = utxo::new_utxo_seal(protocol, object_id);
