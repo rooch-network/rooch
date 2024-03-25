@@ -327,4 +327,8 @@ impl StateResolver for MoveOSStore {
     ) -> std::result::Result<Vec<(KeyState, State)>, Error> {
         self.statedb.list_table_items(handle, cursor, limit)
     }
+
+    fn root_object(&self) -> RootObjectEntity {
+        self.statedb.root_object()
+    }
 }

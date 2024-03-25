@@ -23,12 +23,9 @@ use move_vm_types::{
 use moveos_stdlib::natives::moveos_stdlib::raw_table::{
     serialize, ObjectRuntime, TypeLayoutLoader,
 };
-use moveos_types::state::{KeyState, MoveStructType};
+use moveos_types::state::KeyState;
 use moveos_types::{
-    move_std::string::MoveString,
-    moveos_std::{move_module::MoveModule, tx_context::TxContext},
-    state::StateChangeSet,
-    state_resolver::{module_id_to_key, MoveOSResolver},
+    moveos_std::tx_context::TxContext, state::StateChangeSet, state_resolver::MoveOSResolver,
 };
 use parking_lot::RwLock;
 use std::sync::Arc;
@@ -67,21 +64,6 @@ impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
             event_data: vec![],
             object_runtime,
         }
-    }
-
-    /// Returns the key and value type tag of Rooch module table.
-    fn module_table_typetag() -> (TypeTag, TypeTag) {
-        // Key type: std::string::String
-        let key_typetag = TypeTag::Struct(Box::new(MoveString::struct_tag()));
-
-        // value type: moveos_std::moveos_std::move_module::MoveModule
-        let value_typetag = TypeTag::Struct(Box::new(MoveModule::struct_tag()));
-        (key_typetag, value_typetag)
-    }
-
-    fn module_id_to_key(&self, module_id: &ModuleId) -> VMResult<KeyState> {
-        let key_state = module_id_to_key(module_id);
-        Ok(key_state)
     }
 }
 
@@ -123,19 +105,42 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
 
     /// Get the serialized format of a `CompiledModule` given a `ModuleId`.
     fn load_module(&self, module_id: &ModuleId) -> VMResult<Vec<u8>> {
-        let mut object_runtime = self.object_runtime.write();
-        match object_runtime.load_module(self, self.resolver, module_id) {
-            Ok(Some(bytes)) => Ok(bytes),
-            Ok(None) => Err(PartialVMError::new(StatusCode::LINKER_ERROR)
-                .with_message(format!("Cannot find {:?} in data cache", module_id))
-                .finish(Location::Undefined)),
-            Err(err) => {
-                let msg = format!("Unexpected storage error: {:?}", err);
-                Err(
+        //if we use object_runtime.write() here, it will cause a deadlock
+        //TODO refactor DataCache and ObjectRuntime to avoid this deadlock
+        let object_runtime = self.object_runtime.read();
+
+        let result = object_runtime
+            .get_loaded_module(module_id)
+            .and_then(|module| match module {
+                Some(move_module) => {
+                    if log::log_enabled!(log::Level::Trace) {
+                        log::trace!("Loaded module {:?} from ObjectRuntime", module_id);
+                    }
+                    Ok(Some(move_module.byte_codes))
+                }
+                None => self.resolver.get_module(module_id).map_err(|e| {
+                    let msg = format!("Unexpected storage error: {:?}", e);
                     PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
                         .with_message(msg)
-                        .finish(Location::Undefined),
-                )
+                }),
+            });
+
+        match result {
+            Ok(Some(code)) => Ok(code),
+            Ok(None) => {
+                let key_state = KeyState::from_module_id(module_id);
+                Err(PartialVMError::new(StatusCode::LINKER_ERROR)
+                    .with_message(format!(
+                        "Cannot find module {:?}(key:{:?}) in ObjectRuntime and Storage",
+                        module_id, key_state,
+                    ))
+                    .finish(Location::Undefined))
+            }
+            Err(err) => {
+                if log::log_enabled!(log::Level::Debug) {
+                    log::warn!("Error loading module {:?}: {:?}", module_id, err);
+                }
+                Err(err.finish(Location::Undefined))
             }
         }
     }
@@ -155,10 +160,21 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
 
     /// Check if this module exists.
     fn exists_module(&self, module_id: &ModuleId) -> VMResult<bool> {
-        let mut object_runtime = self.object_runtime.write();
-        object_runtime
-            .exists_module(self, self.resolver, module_id)
-            .map_err(|e| e.finish(Location::Module(module_id.clone())))
+        let object_runtime = self.object_runtime.read();
+        if object_runtime
+            .exists_loaded_module(module_id)
+            .map_err(|e| e.finish(Location::Module(module_id.clone())))?
+        {
+            return Ok(true);
+        }
+
+        Ok(self
+            .resolver
+            .get_module(module_id)
+            .map_err(|_| {
+                PartialVMError::new(StatusCode::STORAGE_ERROR).finish(Location::Undefined)
+            })?
+            .is_some())
     }
 
     fn emit_event(
@@ -187,7 +203,7 @@ pub fn into_change_set(
             .with_message("ObjectRuntime is referenced more than once".to_owned())
     })?;
     let data = object_runtime.into_inner();
-    let (tx_context, root) = data.into_inner();
+    let (tx_context, change_set) = data.into_change_set()?;
     // let mut changes = BTreeMap::new();
     // for (handle, table) in tables {
     //     let (_, content) = table.into_inner();
@@ -227,12 +243,7 @@ pub fn into_change_set(
     //         changes.insert(handle, TableChange { entries });
     //     }
     // }
-    Ok((
-        tx_context,
-        StateChangeSet {
-            changes: Default::default(),
-        },
-    ))
+    Ok((tx_context, change_set))
 }
 
 // Unbox a value of `moveos_std::raw_table::Box<V>` to V and serialize it.

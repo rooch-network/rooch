@@ -988,6 +988,59 @@
           }
         }
       },
+      "FieldChangeView": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "fields",
+              "type"
+            ],
+            "properties": {
+              "fields": {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/FieldChangeView"
+                }
+              },
+              "op": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/OpView_for_StateView"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "object"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "op",
+              "type"
+            ],
+            "properties": {
+              "op": {
+                "$ref": "#/components/schemas/OpView_for_StateView"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "nomarl"
+                ]
+              }
+            }
+          }
+        ]
+      },
       "FunctionCallView": {
         "type": "object",
         "required": [
@@ -1760,6 +1813,30 @@
           }
         }
       },
+      "ObjectChangeView": {
+        "type": "object",
+        "required": [
+          "fields"
+        ],
+        "properties": {
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldChangeView"
+            }
+          },
+          "op": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpView_for_StateView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "ObjectID": {
         "$ref": "#/components/schemas/Hex"
       },
@@ -2185,14 +2262,20 @@
       "StateChangeSetView": {
         "type": "object",
         "required": [
-          "changes"
+          "changes",
+          "global_size"
         ],
         "properties": {
           "changes": {
             "type": "object",
             "additionalProperties": {
-              "$ref": "#/components/schemas/TableChangeView"
+              "$ref": "#/components/schemas/ObjectChangeView"
             }
+          },
+          "global_size": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
           }
         }
       },

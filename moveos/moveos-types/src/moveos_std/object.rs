@@ -336,7 +336,7 @@ impl ObjectEntity<Root> {
         Self {
             id: ObjectID::root(),
             owner: MOVEOS_STD_ADDRESS,
-            flag: 0u8,
+            flag: Self::SHARED_OBJECT_FLAG_MASK,
             state_root: AccountAddress::new(state_root.into()),
             size,
             value: Root {
@@ -380,8 +380,16 @@ impl<T> ObjectEntity<T> {
         self.flag & Self::SHARED_OBJECT_FLAG_MASK == Self::SHARED_OBJECT_FLAG_MASK
     }
 
+    pub fn to_shared(&mut self) {
+        self.flag |= Self::SHARED_OBJECT_FLAG_MASK;
+    }
+
     pub fn is_frozen(&self) -> bool {
         self.flag & Self::FROZEN_OBJECT_FLAG_MASK == Self::FROZEN_OBJECT_FLAG_MASK
+    }
+
+    pub fn to_frozen(&mut self) {
+        self.flag |= Self::FROZEN_OBJECT_FLAG_MASK;
     }
 }
 
@@ -462,11 +470,11 @@ impl ObjectEntity<Account> {
 }
 
 impl ObjectEntity<ModuleStore> {
-    pub fn new_module_store() -> ModuleStoreObject {
+    pub fn genesis_module_store() -> ModuleStoreObject {
         Self::new(
             ModuleStore::module_store_id(),
             MOVEOS_STD_ADDRESS,
-            0u8,
+            Self::SHARED_OBJECT_FLAG_MASK,
             *GENESIS_STATE_ROOT,
             0,
             ModuleStore::default(),
@@ -773,6 +781,15 @@ pub fn is_object_entity_type(t: &TypeTag) -> bool {
     match t {
         TypeTag::Struct(t) => is_object_entity_struct(t),
         _ => false,
+    }
+}
+
+pub fn object_entity_struct_tag(value_type: StructTag) -> StructTag {
+    StructTag {
+        address: MOVEOS_STD_ADDRESS,
+        module: MODULE_NAME.to_owned(),
+        name: OBJECT_ENTITY_STRUCT_NAME.to_owned(),
+        type_params: vec![value_type.into()],
     }
 }
 

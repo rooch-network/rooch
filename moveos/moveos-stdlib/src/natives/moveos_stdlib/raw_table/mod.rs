@@ -25,9 +25,12 @@ use moveos_types::{
     addresses::MOVEOS_STD_ADDRESS,
     moveos_std::{
         move_module::{ModuleStore, MoveModule},
-        object::{ObjectID, RootObjectEntity},
+        object::{ModuleStoreObject, ObjectEntity, ObjectID, Root, RootObjectEntity},
     },
-    state::{MoveStructState, MoveStructType, MoveType, State},
+    state::{
+        FieldChange, MoveStructState, MoveStructType, MoveType, NormalFieldChange, ObjectChange,
+        State, StateChangeSet,
+    },
     state_resolver::StateResolver,
 };
 use moveos_types::{
@@ -77,7 +80,7 @@ pub struct ObjectRuntime {
 /// A wrapper of Object dynamic field value, mirroring `FieldValue<V>` in `object.move`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct FieldValue<V> {
-    v: V,
+    val: V,
 }
 
 pub struct RuntimeNormalField {
@@ -169,6 +172,11 @@ impl<'a> ObjectRuntimeContext<'a> {
         resolver: &'a dyn StateResolver,
         object_runtime: Arc<RwLock<ObjectRuntime>>,
     ) -> Self {
+        //We need to init or load the module store before verify and execute tx
+        object_runtime
+            .write()
+            .init_module_store(resolver)
+            .expect("Failed to init module store");
         Self {
             resolver,
             object_runtime,
@@ -190,6 +198,15 @@ where
     const ADDRESS: move_core_types::account_address::AccountAddress = MOVEOS_STD_ADDRESS;
     const MODULE_NAME: &'static IdentStr = object::MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = FIELD_VALUE_STRUCT_NAME;
+
+    fn struct_tag() -> StructTag {
+        StructTag {
+            address: Self::ADDRESS,
+            module: Self::MODULE_NAME.to_owned(),
+            name: Self::STRUCT_NAME.to_owned(),
+            type_params: vec![V::type_tag()],
+        }
+    }
 }
 
 impl<V> MoveStructState for FieldValue<V>
@@ -208,7 +225,7 @@ where
         debug_assert!(fields.len() == 1, "Fields of FieldValue struct must be 1");
         let v = fields.pop().unwrap();
         Ok(FieldValue {
-            v: V::from_runtime_value(v)?,
+            val: V::from_runtime_value(v)?,
         })
     }
 }
@@ -217,9 +234,14 @@ where
 // Implementation of ObjectRuntime
 
 impl ObjectRuntime {
-    pub fn new(tx_context: TxContext) -> Self {
-        //TODO add root argument
-        let root = RootObjectEntity::genesis_root_object();
+    pub fn new(tx_context: TxContext, root: RootObjectEntity) -> Self {
+        if log::log_enabled!(log::Level::Trace) {
+            log::trace!(
+                "Init ObjectRuntime with tx_hash: {:?}, state_root: {}",
+                tx_context.tx_hash(),
+                root.state_root()
+            );
+        }
         Self {
             tx_context: TxContextValue::new(tx_context),
             root: RuntimeObject::load(
@@ -233,10 +255,68 @@ impl ObjectRuntime {
         }
     }
 
+    /// Initialize or load the module store Object into the ObjectRuntime.
+    /// Because the module store is required when publishing genesis modules,
+    /// So we can not initialize it in Move.
+    pub fn init_module_store(&mut self, resolver: &dyn StateResolver) -> PartialVMResult<()> {
+        let module_store_id = ModuleStore::module_store_id();
+        let state = resolver
+            .resolve_object_state(&module_store_id)
+            .map_err(|e| {
+                partial_extension_error(format!(
+                    "Failed to resolve module store object state: {:?}",
+                    e
+                ))
+            })?;
+        let global_value = match state {
+            Some(state) => {
+                let value = state
+                    .as_object::<ModuleStore>()
+                    .map_err(|e| {
+                        partial_extension_error(format!(
+                            "Failed to resolve module store object: {:?}",
+                            e
+                        ))
+                    })?
+                    .to_runtime_value();
+                // If we load the module store object, we should cache it
+                GlobalValue::cached(value).expect("Cache the ModuleStore Object should success")
+            }
+            None => {
+                // If the module store object is not found, we should create a new one(before genesis).
+                // Init none GlobalValue and move value to it, make the data status is dirty
+                // The change will apart of the state change set
+                let value = ModuleStoreObject::genesis_module_store().to_runtime_value();
+                let mut global_value = GlobalValue::none();
+                global_value
+                    .move_to(value)
+                    .expect("Move value to GlobalValue none should success");
+                global_value
+            }
+        };
+        let module_store_runtime = RuntimeObject::init(
+            module_store_id.clone(),
+            ObjectEntity::<ModuleStore>::type_layout(),
+            ObjectEntity::<ModuleStore>::type_tag(),
+            global_value,
+        )?;
+        self.root.fields.insert(
+            module_store_id.to_key(),
+            RuntimeField::Object(module_store_runtime),
+        );
+        Ok(())
+    }
+
     pub fn tx_context(&self) -> TxContext {
         self.tx_context
             .as_tx_context()
             .expect("Failed to get tx_context")
+    }
+
+    pub fn root(&self) -> RootObjectEntity {
+        self.root
+            .as_object_entity::<Root>()
+            .expect("Failed to get root object")
     }
 
     pub fn add_to_tx_context<T: MoveState>(&mut self, value: T) -> PartialVMResult<()> {
@@ -256,7 +336,7 @@ impl ObjectRuntime {
         object_id: &ObjectID,
     ) -> PartialVMResult<(&mut RuntimeObject, Option<Option<NumBytes>>)> {
         if object_id.is_root() {
-            return Ok((&mut self.root, None));
+            Ok((&mut self.root, None))
         } else {
             let parent_id = object_id.parent().expect("expect parent id");
             let (parent, parent_load_gas) =
@@ -267,6 +347,35 @@ impl ObjectRuntime {
         }
     }
 
+    pub fn get_loaded_object(
+        &self,
+        object_id: &ObjectID,
+    ) -> PartialVMResult<Option<&RuntimeObject>> {
+        if object_id.is_root() {
+            Ok(Some(&self.root))
+        } else {
+            let parent_id = object_id.parent().expect("expect parent id");
+            let parent = self.get_loaded_object(&parent_id)?;
+            match parent {
+                Some(parent) => parent.get_loaded_object_field(object_id),
+                None => Ok(None),
+            }
+        }
+    }
+
+    pub fn get_loaded_module(&self, module_id: &ModuleId) -> PartialVMResult<Option<MoveModule>> {
+        let module_store_id = ModuleStore::module_store_id();
+        let module_store_obj = self
+            .get_loaded_object(&module_store_id)?
+            .expect("module store object must exist");
+        let key = KeyState::from_module_id(module_id);
+        let module_field = module_store_obj.get_loaded_field(&key);
+        match module_field {
+            Some(field) => field.as_move_module(),
+            None => Ok(None),
+        }
+    }
+
     pub fn load_module(
         &mut self,
         layout_loader: &dyn TypeLayoutLoader,
@@ -274,11 +383,24 @@ impl ObjectRuntime {
         module_id: &ModuleId,
     ) -> PartialVMResult<Option<Vec<u8>>> {
         let module_store_id = ModuleStore::module_store_id();
-        let (module_store_obj, _) = self.load_object(layout_loader, resolver, &module_store_id)?;
-        let key = KeyState::from_module_id(module_id);
-        let (module_field, _loaded) = module_store_obj.load_field(layout_loader, resolver, key)?;
-        let move_module = module_field.as_move_module()?;
-        Ok(move_module.map(|m| m.byte_codes))
+        match self.load_object(layout_loader, resolver, &module_store_id) {
+            Ok((module_store_obj, _)) => {
+                let key = KeyState::from_module_id(module_id);
+                let (module_field, _loaded) =
+                    module_store_obj.load_field(layout_loader, resolver, key)?;
+                let move_module = module_field.as_move_module()?;
+                Ok(move_module.map(|m| m.byte_codes))
+            }
+            Err(e) => {
+                print!("load_module error: {:?}", e);
+                // convert the error to StatusCode::MISSING_DATA if the module is not found
+                if e.major_status() == StatusCode::MISSING_DATA {
+                    Ok(None)
+                } else {
+                    Err(e)
+                }
+            }
+        }
     }
 
     pub fn publish_module(
@@ -298,7 +420,7 @@ impl ObjectRuntime {
         let value_layout = FieldValue::<MoveModule>::type_layout();
 
         let move_module = MoveModule::new(blob);
-        let field_value = FieldValue { v: move_module };
+        let field_value = FieldValue { val: move_module };
         let runtime_field_value = field_value.to_runtime_value();
         if is_republishing {
             let _old_value = module_field.move_from(value_type.clone())?;
@@ -309,17 +431,8 @@ impl ObjectRuntime {
         Ok(())
     }
 
-    pub fn exists_module(
-        &mut self,
-        layout_loader: &dyn TypeLayoutLoader,
-        resolver: &dyn StateResolver,
-        module_id: &ModuleId,
-    ) -> PartialVMResult<bool> {
-        let module_store_id = ModuleStore::module_store_id();
-        let (module_store_obj, _) = self.load_object(layout_loader, resolver, &module_store_id)?;
-        let key = KeyState::from_module_id(module_id);
-        let (field, _) = module_store_obj.load_field(layout_loader, resolver, key)?;
-        Ok(field.exists_with_type(FieldValue::<MoveModule>::type_tag())?)
+    pub fn exists_loaded_module(&self, module_id: &ModuleId) -> PartialVMResult<bool> {
+        self.get_loaded_module(module_id).map(|m| m.is_some())
     }
 
     pub fn load_object_reference(&mut self, object_id: &ObjectID) -> VMResult<()> {
@@ -369,7 +482,7 @@ impl ObjectRuntime {
     }
 
     // into inner
-    pub fn into_inner(self) -> (TxContext, RuntimeObject) {
+    fn into_inner(self) -> (TxContext, RuntimeObject) {
         let ObjectRuntime {
             tx_context,
             root,
@@ -377,6 +490,30 @@ impl ObjectRuntime {
             object_ref_in_args: _,
         } = self;
         (tx_context.into_inner(), root)
+    }
+
+    pub fn into_change_set(self) -> PartialVMResult<(TxContext, StateChangeSet)> {
+        let (tx_context, root) = self.into_inner();
+        let root_entity = root.as_object_entity::<Root>()?;
+        let root_change = root.into_change()?;
+        let mut changes = BTreeMap::new();
+        if let Some(root_change) = root_change {
+            for (k, field_change) in root_change.fields {
+                let obj_change = field_change
+                    .into_object_change()
+                    .expect("root object's field must be object");
+                changes.insert(
+                    k.as_object_id()
+                        .expect("object change's key must be ObjectID"),
+                    obj_change,
+                );
+            }
+        }
+        let change_set = StateChangeSet {
+            global_size: root_entity.size,
+            changes,
+        };
+        Ok((tx_context, change_set))
     }
 }
 
@@ -411,13 +548,13 @@ impl RuntimeNormalField {
         key: KeyState,
         value_layout: MoveTypeLayout,
         value_type: TypeTag,
-        value: Value,
+        value: GlobalValue,
     ) -> PartialVMResult<Self> {
         Ok(Self {
             key,
             value_layout,
             value_type,
-            value: GlobalValue::cached(value)?,
+            value,
         })
     }
 
@@ -464,7 +601,7 @@ impl RuntimeNormalField {
                         e
                     ))
                 })?;
-            Ok(Some(field_value.v))
+            Ok(Some(field_value.val))
         }
     }
 
@@ -490,17 +627,42 @@ impl RuntimeNormalField {
             _ => unreachable!("expect FieldValue<V> to be a struct"),
         };
         let unwraped_type = match self.value_type {
-            TypeTag::Struct(mut tag) => tag
-                .type_params
-                .pop()
-                .expect("expect FieldValue<V> must have one type param"),
+            TypeTag::Struct(mut tag) => tag.type_params.pop().unwrap_or_else(|| {
+                panic!(
+                    "expect FieldValue<V> must have one type param, value_type:{:?}",
+                    tag
+                )
+            }),
             _ => unreachable!("expect FieldValue<V> to be a struct"),
         };
         (unwraped_layout, unwraped_type, unwraped_op)
     }
+
+    pub fn into_change(self) -> PartialVMResult<Option<NormalFieldChange>> {
+        let (layout, value_type, op) = self.into_effect();
+        Ok(match op {
+            Some(op) => {
+                let change = op.and_then(|v| {
+                    let bytes = serialize(&layout, &v)?;
+                    let state = State::new(bytes, value_type);
+                    Ok(state)
+                })?;
+                Some(NormalFieldChange { op: change })
+            }
+            None => None,
+        })
+    }
 }
 
 impl RuntimeField {
+    pub fn field_type(&self) -> String {
+        match self {
+            RuntimeField::None(_) => "None".to_string(),
+            RuntimeField::Object(f) => f.value_type.to_string(),
+            RuntimeField::Normal(f) => f.value_type.to_string(),
+        }
+    }
+
     /// Load field from state
     pub fn load(
         key: KeyState,
@@ -529,6 +691,12 @@ impl RuntimeField {
         value_type: TypeTag,
         value: Value,
     ) -> PartialVMResult<Self> {
+        // Init none GlobalValue and move value to it, make the data status is dirty
+        let mut global_value = GlobalValue::none();
+        global_value
+            .move_to(value)
+            .expect("Move value to GlobalValue none should success");
+
         Ok(if object::is_object_entity_type(&value_type) {
             let object = RuntimeObject::init(
                 key.as_object_id().map_err(|e| {
@@ -536,11 +704,11 @@ impl RuntimeField {
                 })?,
                 value_layout,
                 value_type,
-                value,
+                global_value,
             )?;
             RuntimeField::Object(object)
         } else {
-            let normal = RuntimeNormalField::init(key, value_layout, value_type, value)?;
+            let normal = RuntimeNormalField::init(key, value_layout, value_type, global_value)?;
             RuntimeField::Normal(normal)
         })
     }
@@ -587,14 +755,11 @@ impl RuntimeField {
 
     pub fn borrow_value(&self, expect_value_type: TypeTag) -> PartialVMResult<Value> {
         match self {
-            RuntimeField::None(_) => {
-                return Err(
-                    PartialVMError::new(StatusCode::MISSING_DATA).with_message(format!(
-                        "Cannot borrow value of None as type {}",
-                        expect_value_type
-                    )),
-                );
-            }
+            RuntimeField::None(_) => Err(PartialVMError::new(StatusCode::MISSING_DATA)
+                .with_message(format!(
+                    "Cannot borrow value of None as type {}",
+                    expect_value_type
+                ))),
             RuntimeField::Object(obj) => obj.borrow_value(expect_value_type),
             RuntimeField::Normal(normal) => normal.borrow_value(expect_value_type),
         }
@@ -602,14 +767,11 @@ impl RuntimeField {
 
     pub fn move_from(&mut self, expect_value_type: TypeTag) -> PartialVMResult<Value> {
         match self {
-            RuntimeField::None(_) => {
-                return Err(
-                    PartialVMError::new(StatusCode::MISSING_DATA).with_message(format!(
-                        "Cannot move value of unknown type as type {}",
-                        expect_value_type
-                    )),
-                );
-            }
+            RuntimeField::None(_) => Err(PartialVMError::new(StatusCode::MISSING_DATA)
+                .with_message(format!(
+                    "Cannot move value of unknown type as type {}",
+                    expect_value_type
+                ))),
             RuntimeField::Object(obj) => obj.move_from(expect_value_type),
             RuntimeField::Normal(normal) => normal.move_from(expect_value_type),
         }
@@ -637,6 +799,16 @@ impl RuntimeField {
             }
         }
     }
+
+    pub fn into_change(self) -> PartialVMResult<Option<FieldChange>> {
+        match self {
+            RuntimeField::None(_) => Ok(None),
+            RuntimeField::Object(obj) => obj.into_change().map(|op| op.map(FieldChange::Object)),
+            RuntimeField::Normal(normal) => {
+                normal.into_change().map(|op| op.map(FieldChange::Normal))
+            }
+        }
+    }
 }
 
 // =========================================================================================
@@ -658,13 +830,13 @@ impl RuntimeObject {
         id: ObjectID,
         value_layout: MoveTypeLayout,
         value_type: TypeTag,
-        value: Value,
+        value: GlobalValue,
     ) -> PartialVMResult<Self> {
         Ok(Self {
             id,
             value_layout,
             value_type,
-            value: GlobalValue::cached(value)?,
+            value,
             fields: Default::default(),
         })
     }
@@ -705,6 +877,10 @@ impl RuntimeObject {
         })
     }
 
+    pub fn get_loaded_field(&self, key: &KeyState) -> Option<&RuntimeField> {
+        self.fields.get(key)
+    }
+
     pub fn load_object_field(
         &mut self,
         layout_loader: &dyn TypeLayoutLoader,
@@ -718,6 +894,27 @@ impl RuntimeObject {
                 .with_message(format!("Can not load Object with id: {}", object_id))),
             _ => Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
                 .with_message(format!("Not Object Field with key {}", object_id))),
+        }
+    }
+
+    pub fn get_loaded_object_field(
+        &self,
+        object_id: &ObjectID,
+    ) -> PartialVMResult<Option<&RuntimeObject>> {
+        let field = self.get_loaded_field(&object_id.to_key());
+        match field {
+            Some(RuntimeField::Object(obj)) => Ok(Some(obj)),
+            Some(RuntimeField::None(_)) => Ok(None),
+            None => Ok(None),
+            Some(RuntimeField::Normal(field)) => {
+                debug_assert!(
+                    false,
+                    "expect object field, but got {:?}, this should not happend",
+                    field.value_type
+                );
+                Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
+                    .with_message(format!("Not Object Field with key {}", object_id)))
+            }
         }
     }
 
@@ -753,29 +950,47 @@ impl RuntimeObject {
         })
     }
 
-    /// Get a loaded field from the object, do not check the storage.
-    pub fn get_loaded_field(&self, key: &KeyState) -> Option<&RuntimeField> {
-        self.fields.get(key)
-    }
-
-    /// Check if a field is loaded in the object.
-    pub fn contains_loaded_field(&self, key: &KeyState) -> bool {
-        self.fields.contains_key(key)
-    }
-
     pub fn into_effect(self) -> (MoveTypeLayout, TypeTag, Option<Op<Value>>) {
         let op = self.value.into_effect();
         (self.value_layout, self.value_type, op)
     }
 
-    // pub fn into_inner(self) -> (ObjectID, BTreeMap<KeyState, RuntimeField>) {
-    //     let RuntimeObject {
-    //         id: handle,
-    //         value,
-    //         fields: content,
-    //     } = self;
-    //     (handle, content)
-    // }
+    pub fn into_change(self) -> PartialVMResult<Option<ObjectChange>> {
+        let op = self.value.into_effect();
+        let change = match op {
+            Some(op) => {
+                let change = op.and_then(|v| {
+                    let bytes = serialize(&self.value_layout, &v)?;
+                    let state = State::new(bytes, self.value_type);
+                    Ok(state)
+                })?;
+                Some(change)
+            }
+            None => None,
+        };
+        let mut fields_change = BTreeMap::new();
+        for (key, field) in self.fields.into_iter() {
+            let field_change = field.into_change()?;
+            if let Some(change) = field_change {
+                fields_change.insert(key, change);
+            }
+        }
+        if change.is_none() && fields_change.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(ObjectChange {
+                op: change,
+                fields: fields_change,
+            }))
+        }
+    }
+
+    pub fn as_object_entity<T: MoveStructState>(&self) -> PartialVMResult<ObjectEntity<T>> {
+        let obj_value = self.value.borrow_global()?;
+        let value_ref = obj_value.value_as::<StructRef>()?;
+        ObjectEntity::<T>::from_runtime_value(value_ref.read_ref()?)
+            .map_err(|_e| partial_extension_error("Convert value to ObjectEntity failed"))
+    }
 }
 
 // =========================================================================================
@@ -967,7 +1182,7 @@ fn native_borrow_field(
         field_key,
         |layout_loader, field| {
             let value_type = layout_loader.type_to_type_tag(&ty_args[1])?;
-            field.borrow_value(value_type).map(|v| Some(v))
+            field.borrow_value(value_type).map(Some)
         },
     )
 }
@@ -1102,7 +1317,7 @@ fn native_remove_field(
         field_key,
         |layout_loader, field| {
             let value_type = layout_loader.type_to_type_tag(&ty_args[1])?;
-            field.move_from(value_type).map(|v| Some(v))
+            field.move_from(value_type).map(Some)
         },
     )
 }

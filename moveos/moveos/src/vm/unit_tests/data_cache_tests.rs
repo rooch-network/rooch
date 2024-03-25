@@ -6,7 +6,7 @@ use std::sync::Arc;
 use move_binary_format::file_format::{Signature, SignatureToken};
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::move_vm::MoveVM;
-use moveos_types::moveos_std::tx_context::TxContext;
+use moveos_types::moveos_std::{object::RootObjectEntity, tx_context::TxContext};
 use parking_lot::RwLock;
 
 use moveos_stdlib::natives::moveos_stdlib::raw_table::ObjectRuntime;
@@ -30,6 +30,7 @@ fn publish_and_load_module() {
     let loader = move_vm.runtime.loader();
     let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(
         TxContext::random_for_testing_only(),
+        RootObjectEntity::genesis_root_object(),
     )));
 
     let mut data_cache = MoveosDataCache::new(&remote_view, loader, object_runtime.clone());
