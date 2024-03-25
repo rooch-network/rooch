@@ -23,7 +23,7 @@ use smt::UpdateSet;
 use std::collections::{btree_map, BTreeMap, BTreeSet};
 use std::str::FromStr;
 
-/// `State` is represent state in MoveOS statedb, it can be a Move module or a Move Object or a Move resource or a Table value
+/// `State` is represented state in MoveOS statedb, it can be a Move module or a Move Object or a Move resource or a Table value
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct State {
     /// the bytes of state
@@ -32,7 +32,7 @@ pub struct State {
     pub value_type: TypeTag,
 }
 
-/// `KeyState` is represent key state
+/// `KeyState` is represented key state
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct KeyState {
     /// the bytes of key state

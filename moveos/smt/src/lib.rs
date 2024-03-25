@@ -114,13 +114,13 @@ where
     /// Put a kv pair into tree and generate new state_root.
     /// If need to put many kvs, please use `puts` method.
     pub fn put(&self, key: K, value: V) -> Result<H256> {
-        self.puts((key, Some(value)))
+        self.puts((key, Some(value)), None)
     }
 
     /// Remove key_hash's data.
     /// Same as put(K,None)
     pub fn remove(&self, key: K) -> Result<H256> {
-        self.puts((key, None))
+        self.puts((key, None), None)
     }
 
     /// Get the value of the key from the tree.
@@ -175,11 +175,19 @@ where
     }
 
     /// Put kv pairs into tree and generate new state_root.
-    pub fn puts<I: Into<UpdateSet<K, V>>>(&self, update_set: I) -> Result<H256> {
-        self.updates(update_set)
+    pub fn puts<I: Into<UpdateSet<K, V>>>(
+        &self,
+        update_set: I,
+        node_map: Option<&mut BTreeMap<H256, Vec<u8>>>,
+    ) -> Result<H256> {
+        self.updates(update_set, node_map)
     }
 
-    fn updates<I: Into<UpdateSet<K, V>>>(&self, updates: I) -> Result<H256> {
+    fn updates<I: Into<UpdateSet<K, V>>>(
+        &self,
+        updates: I,
+        node_map: Option<&mut BTreeMap<H256, Vec<u8>>>,
+    ) -> Result<H256> {
         let updates: UpdateSet<K, V> = updates.into();
         let cur_root_hash = self.root_hash();
         if updates.is_empty() {
@@ -190,15 +198,23 @@ where
         let (new_state_root, change_set) =
             tree.updates(Some(cur_root_hash.into()), updates.into_updates())?;
 
-        let mut node_map: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
-
-        for (nk, n) in change_set.node_batch.into_iter() {
-            node_map.insert(nk.into(), n.encode()?);
+        match node_map {
+            Some(map) => {
+                for (nk, n) in change_set.node_batch.into_iter() {
+                    map.insert(nk.into(), n.encode()?);
+                }
+            }
+            None => {
+                let mut node_map: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
+                for (nk, n) in change_set.node_batch.into_iter() {
+                    node_map.insert(nk.into(), n.encode()?);
+                }
+                self.node_store.write_nodes(node_map)?;
+            }
         }
 
-        self.node_store.write_nodes(node_map)?;
         let new_state_root: H256 = new_state_root.into();
-        //TODO handle change_set's state_node_index
+        // TODO handle change_set's state_node_index
         *self.root_hash.write() = new_state_root;
 
         Ok(new_state_root)

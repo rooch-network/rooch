@@ -34,10 +34,10 @@ fn test_smt() {
     let value3 = "value3".to_owned();
 
     let state_root = smt
-        .puts(vec![
-            (key2.clone(), Some(value2.clone())),
-            (key3, Some(value3)),
-        ])
+        .puts(
+            vec![(key2.clone(), Some(value2.clone())), (key3, Some(value3))],
+            None,
+        )
         .unwrap();
 
     let (result, proof) = smt.get_with_proof("key2".to_owned()).unwrap();

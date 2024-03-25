@@ -11,7 +11,7 @@ use moveos_types::state::KeyState;
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{h256::H256, state::State};
 use moveos_types::{state::StateChangeSet, state_resolver::StateResolver};
-use smt::{SMTIterator, SMTree, UpdateSet};
+use smt::{NodeStore, SMTIterator, SMTree, UpdateSet};
 use std::collections::BTreeMap;
 
 /// ObjectEntity with fields State Tree
@@ -48,11 +48,15 @@ impl TreeObject {
         self.smt.list(cursor, limit)
     }
 
-    pub fn update_fields<I>(&mut self, update_set: I) -> Result<H256>
+    pub fn update_fields<I>(
+        &mut self,
+        update_set: I,
+        node_map: Option<&mut BTreeMap<H256, Vec<u8>>>,
+    ) -> Result<H256>
     where
         I: Into<UpdateSet<KeyState, State>>,
     {
-        let state_root = self.smt.puts(update_set)?;
+        let state_root = self.smt.puts(update_set, node_map)?;
         self.entity.update_state_root(state_root);
         Ok(state_root)
     }
@@ -88,6 +92,7 @@ impl TreeObject {
     pub fn put_changes<I: IntoIterator<Item = (KeyState, Op<State>)>>(
         &mut self,
         changes: I,
+        node_map: Option<&mut BTreeMap<H256, Vec<u8>>>,
     ) -> Result<H256> {
         let mut update_set = UpdateSet::new();
         for (key, op) in changes {
@@ -103,7 +108,7 @@ impl TreeObject {
                 }
             }
         }
-        self.update_fields(update_set)
+        self.update_fields(update_set, node_map)
     }
 
     pub fn dump(&self) -> Result<Vec<(KeyState, State)>> {
@@ -212,6 +217,9 @@ impl StateDBStore {
                 }
             }
         }
+
+        let mut node_map: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
+
         for (object_id, object_change) in state_change_set.changes {
             let mut obj = match changed_objects.remove(&object_id) {
                 Some(obj) => obj,
@@ -220,7 +228,7 @@ impl StateDBStore {
                     .ok_or_else(|| anyhow::format_err!("Object with id {} not found", object_id))?,
             };
 
-            obj.put_changes(object_change.entries.into_iter())?;
+            obj.put_changes(object_change.entries.into_iter(), Some(&mut node_map))?;
             update_set.put(object_id.to_key(), obj.entity.into_state())
         }
 
@@ -229,11 +237,14 @@ impl StateDBStore {
         }
 
         let update_set_size = update_set.len();
-        let state_root = self.root_object.update_fields(update_set)?;
-        if log::log_enabled!(log::Level::Debug) {
-            log::debug!("apply_change_set state_root: {:?}, update_set_size: {}, pre_global_size: {}, new_global_size: {}", state_root, update_set_size, self.root_object.entity.size, global_size);
-        }
+        let state_root = self
+            .root_object
+            .update_fields(update_set, Some(&mut node_map))?;
+        log::debug!("apply_change_set state_root: {:?}, update_set_size: {}, pre_global_size: {}, new_global_size: {}", state_root, update_set_size, self.root_object.entity.size, global_size);
         self.root_object.entity.size = global_size;
+
+        self.node_store.write_nodes(node_map)?;
+
         Ok((state_root, global_size))
     }
 
