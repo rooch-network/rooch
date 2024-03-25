@@ -123,7 +123,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
 
     /// Get the serialized format of a `CompiledModule` given a `ModuleId`.
     fn load_module(&self, module_id: &ModuleId) -> VMResult<Vec<u8>> {
-        let object_runtime = self.object_runtime.read();
+        let mut object_runtime = self.object_runtime.write();
         match object_runtime.load_module(self, self.resolver, module_id) {
             Ok(Some(bytes)) => Ok(bytes),
             Ok(None) => Err(PartialVMError::new(StatusCode::LINKER_ERROR)
@@ -138,36 +138,6 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
                 )
             }
         }
-        // let module_object_id = ModuleStore::module_store_id();
-        // let (_, value_type) = Self::module_table_typetag();
-        // // TODO: check or ensure the module table exists.
-        // if object_runtime.exist_object(&module_object_id) {
-        //     let table = object_runtime
-        //         .borrow_object(&module_object_id)
-        //         .map_err(|e| e.finish(Location::Undefined))?;
-
-        //     let table_key = self.module_id_to_key(module_id)?;
-        //     if let Some(global_value) = table.get_loaded_field(&table_key) {
-        //         let byte_codes = load_module_from_table_runtime_value(global_value, value_type)
-        //             .map_err(|e| e.finish(Location::Undefined))?;
-        //         return Ok(byte_codes);
-        //     }
-        // }
-
-        // match self.resolver.get_module(module_id) {
-        //     Ok(Some(bytes)) => Ok(bytes),
-        //     Ok(None) => Err(PartialVMError::new(StatusCode::LINKER_ERROR)
-        //         .with_message(format!("Cannot find {:?} in data cache", module_id))
-        //         .finish(Location::Undefined)),
-        //     Err(err) => {
-        //         let msg = format!("Unexpected storage error: {:?}", err);
-        //         Err(
-        //             PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-        //                 .with_message(msg)
-        //                 .finish(Location::Undefined),
-        //         )
-        //     }
-        // }
     }
 
     /// Publish a module.
@@ -181,42 +151,11 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
         object_runtime
             .publish_module(self, self.resolver, module_id, blob, is_republishing)
             .map_err(|e| e.finish(Location::Module(module_id.clone())))
-        // // Key type: std::string::String
-        // // value type: moveos_std::moveos_std::move_module::MoveModule
-        // let (_key_type, value_type) = Self::module_table_typetag();
-
-        // // let key_layout = MoveTypeLayout::Struct(MoveString::struct_layout());
-        // let mut object_runtime = self.object_runtime.write();
-        // let table = object_runtime
-        //     .load_object(module_object_id)
-        //     .map_err(|e| e.finish(Location::Module(module_id.clone())))?;
-
-        // let table_key = self.module_id_to_key(module_id)?;
-        // let (tv, _) = table
-        //     .load_field_with_layout_fn(self.resolver, table_key, |t| {
-        //         self.loader.get_type_layout(t, self).map_err(|e| {
-        //             PartialVMError::new(StatusCode::STORAGE_ERROR).with_message(e.to_string())
-        //         })
-        //     })
-        //     .map_err(|e| e.finish(Location::Module(module_id.clone())))?;
-        // let module_layout = MoveTypeLayout::Struct(MoveModule::struct_layout());
-
-        // let byte_codes = Value::vector_u8(blob);
-        // let module_value = Value::struct_(Struct::pack(vec![byte_codes]));
-        // // wrap with moveos_std::raw_table::Box
-        // let box_value = Value::struct_(Struct::pack(vec![module_value]));
-        // if is_republishing {
-        //     let _old_value = tv
-        //         .move_from(value_type.clone())
-        //         .map_err(|e: PartialVMError| e.finish(Location::Module(module_id.clone())))?;
-        // }
-        // tv.move_to(box_value, module_layout, value_type)
-        //     .map_err(|(err, _value)| err.finish(Location::Module(module_id.clone())))
     }
 
     /// Check if this module exists.
     fn exists_module(&self, module_id: &ModuleId) -> VMResult<bool> {
-        let object_runtime = self.object_runtime.read();
+        let mut object_runtime = self.object_runtime.write();
         object_runtime
             .exists_module(self, self.resolver, module_id)
             .map_err(|e| e.finish(Location::Module(module_id.clone())))

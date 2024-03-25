@@ -194,7 +194,6 @@ module moveos_std::object {
     }
 
     fun new_internal<T: key>(id: ObjectID, value: T): ObjectEntity<T> {
-        assert!(!contains_global(id), ErrorAlreadyExists);
         let owner = SYSTEM_OWNER_ADDRESS;
 
         ObjectEntity<T> {
@@ -221,13 +220,12 @@ module moveos_std::object {
 
     /// Check if the object with `object_id` exists in the global object storage
     public fun exists_object(object_id: ObjectID): bool {
-        contains_global(object_id)
+        contains_field_internal(parent_id(&object_id), object_id)
     }
 
     /// Check if the object exists in the global object storage and the type of the object is `T`
     public fun exists_object_with_type<T: key>(object_id: ObjectID): bool {
-        //TODO check the type of the object
-        contains_global(object_id)
+        contains_object_field_internal<T>(parent_id(&object_id), object_id)
     }
 
     /// Borrow Object from object store by object_id
@@ -295,13 +293,17 @@ module moveos_std::object {
     /// This function is only can be called by the module of `T`.
     /// The caller must ensure that the dynamic fields are empty before delete the Object
     public fun remove<T: key>(self: Object<T>): T {
-        remove_object_field_internal<Root, T>(root_object_id(), self, true)
+        let Object{id} = self;
+        // Currently, we only support to remove the object from the root object
+        // If we want to remove the child object, we need to call the `remove_object_field` function
+        remove_object_field_internal<Root, T>(root_object_id(), id, true)
     }
 
     /// Remove the object from the global storage, and return the object value
     /// Do not check if the dynamic fields are empty 
     public(friend) fun remove_unchecked<T: key>(self: Object<T>): T {
-        remove_object_field_internal<Root, T>(root_object_id(), self, false)
+        let Object{id} = self;
+        remove_object_field_internal<Root, T>(root_object_id(), id, false)
     }
 
     /// Directly drop the Object
@@ -456,37 +458,12 @@ module moveos_std::object {
     }
 
     fun borrow_from_global<T: key>(object_id: ObjectID): &ObjectEntity<T> {
-        let parent_id = if (has_parent(&object_id)) {
-            parent_id(&object_id)
-        }else {
-            //root object
-            object_id
-        };
-        borrow_field_internal<ObjectID, ObjectEntity<T>>(parent_id, object_id)
+        borrow_object_field_internal<T>(parent_id(&object_id), object_id)
     }
 
     fun borrow_mut_from_global<T: key>(object_id: ObjectID): &mut ObjectEntity<T> {
-        let parent_id = if (has_parent(&object_id)) {
-            parent_id(&object_id)
-        }else {
-            //root object
-            object_id
-        };
-        let object_entity = borrow_mut_field_internal<ObjectID, ObjectEntity<T>>(parent_id, object_id);
-        assert!(!is_frozen_internal(object_entity), ErrorObjectFrozen);
-        object_entity
+        borrow_mut_object_field_internal<T>(parent_id(&object_id), object_id)
     }
-
-    fun remove_from_global<T: key>(object_id: ObjectID): ObjectEntity<T> {
-        // Currently, we only support to remove the object from the root object
-        // If we want to remove the child object, we need to call the `remove_object_field` function
-        remove_field_internal<Root, ObjectID, ObjectEntity<T>>(root_object_id(), object_id)
-    }
-
-    fun contains_global(object_id: ObjectID): bool {
-        contains_field_internal(parent_id(&object_id), object_id)
-    }
-
 
     // === Object Raw Dynamic Fields ===
 
@@ -495,7 +472,13 @@ module moveos_std::object {
     /// key already exists. The field itself is not stored in the
     /// object, and cannot be discovered from it.
     public fun add_field<T: key, K: copy + drop, V: store>(obj: &mut Object<T>, key: K, val: V) {
-        add_field_internal<T, K, V>(obj.id, key, val)
+        add_field_internal<T, K, V>(obj.id, key, val);
+    }
+
+    // Add field and wrap the value to FieldValue
+    fun add_field_internal<T: key, K: copy + drop, V>(obj_id: ObjectID, key: K, val: V) {
+        native_add_field<K, FieldValue<V>>(obj_id, key, FieldValue{val});
+        increment_size<T>(obj_id);
     }
 
     #[private_generics(T, V)]
@@ -512,17 +495,9 @@ module moveos_std::object {
 
     fun add_object_field_internal<T: key, V: key>(parent_id: ObjectID, child_id: ObjectID, v: V): Object<V> {
         let child_entity = new_internal(child_id, v);
-        add_field_internal<T, ObjectID, ObjectEntity<V>>(parent_id, child_id, child_entity);
+        native_add_field<ObjectID, ObjectEntity<V>>(parent_id, child_id, child_entity);
+        increment_size<T>(parent_id);
         Object { id: child_id }
-    }
-
-    /// Add a new field to the object. Aborts if an field for this
-    /// key already exists. The field itself is not stored in the
-    /// object, and cannot be discovered from it.
-    public(friend) fun add_field_internal<T: key, K: copy + drop, V>(obj_id: ObjectID, key: K, val: V) {
-        add_box<K, V, Box<V>>(obj_id, key, Box { val });
-        let object_entity = borrow_mut_from_global<T>(obj_id);
-        object_entity.size = object_entity.size + 1;
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
@@ -533,19 +508,18 @@ module moveos_std::object {
 
     /// Borrow the child object by `key`
     public fun borrow_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): &Object<V> {
-        borrow_object_field_internal<T, V>(obj.id, key)
-    }
-
-    fun borrow_object_field_internal<T: key, V: key>(parent_id: ObjectID, key: ObjectID): &Object<V> {
-        assert!(is_parent(&parent_id, &key), ErrorParentNotMatch);
-        let object_entity = borrow_field_internal<ObjectID, ObjectEntity<V>>(parent_id, key);
+        let object_entity = borrow_object_field_internal<V>(obj.id, key);
         as_ref(object_entity)
     }
 
-    /// Acquire an immutable reference to the value which `key` maps to.
-    /// Aborts if there is no field for `key`.
+    fun borrow_object_field_internal<V: key>(parent_id: ObjectID, key: ObjectID): &ObjectEntity<V> {
+        assert!(is_parent(&parent_id, &key), ErrorParentNotMatch);
+        native_borrow_field<ObjectID, ObjectEntity<V>>(parent_id, key)
+    }
+
+    /// Borrow FieldValue and return the val of FieldValue
     fun borrow_field_internal<K: copy + drop, V>(obj_id: ObjectID, key: K): &V {
-        &borrow_box<K, V, Box<V>>(obj_id, key).val
+        &native_borrow_field<K, FieldValue<V>>(obj_id, key).val
     }
 
     /// Acquire an immutable reference to the value which `key` maps to.
@@ -571,18 +545,10 @@ module moveos_std::object {
         borrow_mut_field_internal<K, V>(obj.id, key)
     }
 
-    /// Borrow the child object by `key`
-    /// Because the parent object must be a shared object, so we do not require the #[private_generics(T)] here
-    public fun borrow_mut_object_field<T: key, V: key>(obj: &mut Object<T>, key: ObjectID): &mut Object<V> {
-        assert!(is_parent(&obj.id, &key), ErrorParentNotMatch);
-        let object_entity = borrow_mut_field_internal<ObjectID, ObjectEntity<V>>(obj.id, key);
-        as_mut_ref(object_entity)
-    }
-
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Aborts if there is no field for `key`.
     fun borrow_mut_field_internal<K: copy + drop, V>(obj_id: ObjectID, key: K): &mut V {
-        &mut borrow_box_mut<K, V, Box<V>>(obj_id, key).val
+        &mut native_borrow_mut_field<K, FieldValue<V>>(obj_id, key).val
     }
 
     #[private_generics(T)]
@@ -596,8 +562,6 @@ module moveos_std::object {
         borrow_mut_field_with_default_internal<T, K, V>(obj.id, key, default)
     }
 
-    /// Acquire a mutable reference to the value which `key` maps to.
-    /// Insert the pair (`key`, `default`) first if there is no field for `key`.
     fun borrow_mut_field_with_default_internal<T: key, K: copy + drop, V: drop>(
         obj_id: ObjectID,
         key: K,
@@ -609,6 +573,20 @@ module moveos_std::object {
         borrow_mut_field_internal(obj_id, key)
     }
 
+    /// Borrow the child object by `key`
+    /// Because the parent object must be a shared object, so we do not require the #[private_generics(T)] here
+    public fun borrow_mut_object_field<T: key, V: key>(obj: &mut Object<T>, key: ObjectID): &mut Object<V> {
+        let object_entity = borrow_mut_object_field_internal<V>(obj.id, key);
+        as_mut_ref(object_entity)
+    }
+
+    fun borrow_mut_object_field_internal<V: key>(parent_id: ObjectID, key: ObjectID): &mut ObjectEntity<V> {
+        assert!(is_parent(&parent_id, &key), ErrorParentNotMatch);
+        let object_entity = native_borrow_mut_field<ObjectID, ObjectEntity<V>>(parent_id, key);
+        assert!(!is_frozen_internal(object_entity), ErrorObjectFrozen);
+        object_entity
+    }
+
     #[private_generics(T)]
     /// Insert the pair (`key`, `value`) if there is no field for `key`.
     /// update the value of the field for `key` to `value` otherwise
@@ -616,8 +594,6 @@ module moveos_std::object {
         upsert_field_internal<T, K, V>(obj.id, key, value)
     }
 
-    /// Insert the pair (`key`, `value`) if there is no field for `key`.
-    /// update the value of the field for `key` to `value` otherwise
     fun upsert_field_internal<T: key, K: copy + drop, V: drop>(obj_id: ObjectID, key: K, value: V) {
         if (!contains_field_internal<K>(obj_id, copy key)) {
             add_field_internal<T, K, V>(obj_id, key, value)
@@ -634,59 +610,81 @@ module moveos_std::object {
         remove_field_internal<T, K, V>(obj.id, key)
     }
 
-    #[private_generics(T)]
-    public fun remove_object_field<T: key, V: key>(obj: &mut Object<T>, child: Object<V>): V {
-        remove_object_field_internal<T, V>(obj.id, child, true)
+    fun remove_field_internal<T: key, K: copy + drop, V>(obj_id: ObjectID, key: K): V {
+        let FieldValue { val } = native_remove_field<K, FieldValue<V>>(obj_id, key);
+        decreases_size<T>(obj_id);
+        val
     }
 
-    fun remove_object_field_internal<T: key, V: key>(parent_id: ObjectID, child: Object<V>, check_size: bool): V {
+    fun increment_size<T: key>(obj_id: ObjectID) {
+        if(has_parent(&obj_id)) {
+            let object_entity = borrow_mut_from_global<T>(obj_id);
+            object_entity.size = object_entity.size + 1;
+        }else{
+            let root = native_borrow_root();
+            root.size = root.size + 1;
+        }
+    }
+
+    fun decreases_size<T: key>(obj_id: ObjectID) {
+        if(has_parent(&obj_id)) {
+            let object_entity = borrow_mut_from_global<T>(obj_id);
+            object_entity.size = object_entity.size - 1;
+        }else{
+            let root = native_borrow_root();
+            root.size = root.size - 1;
+        }
+    }
+
+
+    #[private_generics(T)]
+    public fun remove_object_field<T: key, V: key>(obj: &mut Object<T>, child: Object<V>): V {
         let Object { id: child_id } = child;
+        remove_object_field_internal<T, V>(obj.id, child_id, true)
+    }
+
+    fun remove_object_field_internal<T: key, V: key>(parent_id: ObjectID, child_id: ObjectID, check_size: bool): V {
         assert!(is_parent(&parent_id, &child_id), ErrorParentNotMatch);
-        let object_entity = remove_field_internal<T, ObjectID, ObjectEntity<V>>(parent_id, child_id);
+        let object_entity = native_remove_field<ObjectID, ObjectEntity<V>>(parent_id, child_id);
         let ObjectEntity { id: _, owner: _, flag: _, value, state_root: _, size: size } = object_entity;
         if (check_size) {
             // Need to ensure that the Fields is empty before delete the Object
             assert!(size == 0, ErrorFieldsNotEmpty);
         };
+        decreases_size<T>(parent_id);
         value
     }
 
-    /// Remove from `object` and return the value which `key` maps to.
-    /// Aborts if there is no field for `key`.
-    fun remove_field_internal<T: key, K: copy + drop, V>(obj_id: ObjectID, key: K): V {
-        let Box { val } = remove_box<K, V, Box<V>>(obj_id, key);
-        let object_entity = borrow_mut_from_global<T>(obj_id);
-        object_entity.size = object_entity.size - 1;
-        val
-    }
-
-    /// Returns true if `object` contains an field for `key`.
+   
+    /// Returns true if `object` contains an field for `key`, include normal field and object field
     public fun contains_field<T: key, K: copy + drop>(obj: &Object<T>, key: K): bool {
         contains_field_internal<K>(obj.id, key)
     }
 
-    /// Returns true if `object` contains an Object field for `key` and the value type is `V`.
-    public fun contains_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): bool {
-        if (is_parent(&obj.id, &key)) {
-            contains_field_with_value_type_internal<ObjectID, ObjectEntity<V>>(obj.id, key)
-        }else {
-            false
-        }
+    fun contains_field_internal<K: copy + drop>(obj_id: ObjectID, key: K): bool {
+        native_contains_field<K>(obj_id, key)
     }
 
-    /// Returns true if `object` contains an field for `key` and the value type is `V`.
+    /// Returns true if `object` contains an field for `key` and the value type is `V`. only for normal field
     public fun contains_field_with_type<T: key, K: copy + drop, V: store>(obj: &Object<T>, key: K): bool {
         contains_field_with_value_type_internal<K, V>(obj.id, key)
     }
 
-    /// Returns true if `object` contains an field for `key`.
-    fun contains_field_internal<K: copy + drop>(obj_id: ObjectID, key: K): bool {
-        contains_box<K>(obj_id, key)
+    fun contains_field_with_value_type_internal<K: copy + drop, V>(obj_id: ObjectID, key: K): bool {
+        native_contains_field_with_value_type<K, FieldValue<V>>(obj_id, key)
     }
 
-    /// Returns true if `object` contains an field for `key` and the value type is `V`.
-    fun contains_field_with_value_type_internal<K: copy + drop, V>(obj_id: ObjectID, key: K): bool {
-        contains_box_with_value_type<K, V>(obj_id, key)
+    /// Returns true if `object` contains an Object field for `key` and the value type is `V`.
+    public fun contains_object_field<T: key, V: key>(obj: &Object<T>, key: ObjectID): bool {
+        contains_object_field_internal<V>(obj.id, key)
+    }
+
+    fun contains_object_field_internal<V: key>(parent: ObjectID, key: ObjectID): bool {
+        if (is_parent(&parent, &key)) {
+            native_contains_field_with_value_type<ObjectID, ObjectEntity<V>>(parent, key)
+        }else {
+            false
+        }
     }
 
     /// Returns the size of the object fields, the number of key-value pairs
@@ -702,24 +700,26 @@ module moveos_std::object {
     // ======================================================================================================
     // Internal API
 
-    /// Wrapper for values. Required for making values appear as resources in the implementation.
-    /// Because the GlobalValue in MoveVM must be a resource.
-    struct Box<V> has key, drop, store {
+    /// Wrapper for file values. Required for making values appear as struct in the implementation.
+    /// Because the GlobalValue in MoveVM must be a struct.
+    struct FieldValue<V> has key, drop, store {
         val: V
     }
 
-    native fun add_box<K: copy + drop, V, B>(obj_id: ObjectID, key: K, val: Box<V>);
+    native fun native_borrow_root(): &mut ObjectEntity<Root>;
 
-    native fun borrow_box<K: copy + drop, V, B>(obj_id: ObjectID, key: K): &Box<V>;
+    native fun native_add_field<K: copy + drop, V>(obj_id: ObjectID, key: K, val: V);
 
-    native fun borrow_box_mut<K: copy + drop, V, B>(obj_id: ObjectID, key: K): &mut Box<V>;
+    native fun native_borrow_field<K: copy + drop, V>(obj_id: ObjectID, key: K): &V;
 
-    native fun contains_box<K: copy + drop>(obj_id: ObjectID, key: K): bool;
+    native fun native_borrow_mut_field<K: copy + drop, V>(obj_id: ObjectID, key: K): &mut V;
+
+    native fun native_contains_field<K: copy + drop>(obj_id: ObjectID, key: K): bool;
 
     /// If the Object contains a field for `key` with value type `V`.
-    native fun contains_box_with_value_type<K: copy + drop, V>(obj_id: ObjectID, key: K): bool;
+    native fun native_contains_field_with_value_type<K: copy + drop, V>(obj_id: ObjectID, key: K): bool;
 
-    native fun remove_box<K: copy + drop, V, B>(obj_id: ObjectID, key: K): Box<V>;
+    native fun native_remove_field<K: copy + drop, V>(obj_id: ObjectID, key: K): V;
 
     #[test_only]
     /// Testing only: allows to drop a Object even if it's fields is not empty.
@@ -807,7 +807,7 @@ module moveos_std::object {
     }
 
     #[test]
-    #[expected_failure(abort_code = 2, location = moveos_std::object)]
+    #[expected_failure(abort_code = ErrorNotFound, location = moveos_std::object)]
     fun test_borrow_not_exist_failure() {
         let obj = new(TestStruct { count: 1 });
         let object_id = obj.id;
@@ -816,21 +816,17 @@ module moveos_std::object {
     }
 
     #[test]
-    #[expected_failure(abort_code = 2, location = moveos_std::object)]
+    #[expected_failure(abort_code = ErrorNotFound, location = moveos_std::object)]
     fun test_double_remove_failure() {
-        let object_id = derive_object_id();
-        let object = new_with_id(object_id, TestStruct { count: 1 });
+        let obj = new(TestStruct { count: 1 });
+        let obj_id = id(&obj);
 
-        let ObjectEntity { id: _, owner: _, flag: _, value: test_struct1, state_root: _, size: _ } = remove_from_global<TestStruct>(
-            object_id
-        );
-        let test_struct2 = remove(object);
-        let TestStruct { count : _ } = test_struct1;
-        let TestStruct { count : _ } = test_struct2;
+        let TestStruct { count : _ } = remove_object_field_internal<Root, TestStruct>(root_object_id(), obj_id, true);
+        let TestStruct { count : _ } = remove(obj);
     }
 
     #[test]
-    #[expected_failure(abort_code = 10, location = moveos_std::object)]
+    #[expected_failure(abort_code = ErrorTypeMismatch, location = moveos_std::object)]
     fun test_type_mismatch() {
         let object_id = derive_object_id();
         let obj = new_with_id(object_id, TestStruct { count: 1 });

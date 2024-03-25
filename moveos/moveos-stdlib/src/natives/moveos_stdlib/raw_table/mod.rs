@@ -265,20 +265,6 @@ impl ObjectRuntime {
             let total_gas = CommonGasParameters::sum_load_cost(parent_load_gas, load_gas);
             Ok((obj, total_gas))
         }
-        // match self.objects.entry(object_id.clone()) {
-        //     Entry::Vacant(e) => {
-        //         if log::log_enabled!(log::Level::Trace) {
-        //             log::trace!("[ObjectRuntime] creating object {}", object_id);
-        //         }
-        //         let object = RuntimeObject {
-        //             id: object_id,
-        //             value: GlobalValue::none(),
-        //             fields: Default::default(),
-        //         };
-        //         Ok(e.insert(object))
-        //     }
-        //     Entry::Occupied(e) => Ok(e.into_mut()),
-        // }
     }
 
     pub fn load_module(
@@ -321,28 +307,6 @@ impl ObjectRuntime {
         module_field.move_to(runtime_field_value, value_layout, value_type)?;
 
         Ok(())
-
-        // let table_key = self.module_id_to_key(module_id)?;
-        // let (tv, _) = table
-        //     .load_field_with_layout_fn(self.resolver, table_key, |t| {
-        //         self.loader.get_type_layout(t, self).map_err(|e| {
-        //             PartialVMError::new(StatusCode::STORAGE_ERROR).with_message(e.to_string())
-        //         })
-        //     })
-        //     .map_err(|e| e.finish(Location::Module(module_id.clone())))?;
-        // let module_layout = MoveTypeLayout::Struct(MoveModule::struct_layout());
-
-        // let byte_codes = Value::vector_u8(blob);
-        // let module_value = Value::struct_(Struct::pack(vec![byte_codes]));
-        // // wrap with moveos_std::raw_table::Box
-        // let box_value = Value::struct_(Struct::pack(vec![module_value]));
-        // if is_republishing {
-        //     let _old_value = tv
-        //         .move_from(value_type.clone())
-        //         .map_err(|e: PartialVMError| e.finish(Location::Module(module_id.clone())))?;
-        // }
-        // tv.move_to(box_value, module_layout, value_type)
-        //     .map_err(|(err, _value)| err.finish(Location::Module(module_id.clone())))
     }
 
     pub fn exists_module(
@@ -467,6 +431,10 @@ impl RuntimeNormalField {
         _value_layout: MoveTypeLayout,
         value_type: TypeTag,
     ) -> PartialVMResult<()> {
+        if self.value.exists()? {
+            return Err(PartialVMError::new(StatusCode::RESOURCE_ALREADY_EXISTS)
+                .with_message("Field already exists".to_string()));
+        }
         check_type(&self.value_type, &value_type)?;
         self.value.move_to(val).map_err(|(e, _)| e)
     }
@@ -707,6 +675,10 @@ impl RuntimeObject {
         _value_layout: MoveTypeLayout,
         value_type: TypeTag,
     ) -> PartialVMResult<()> {
+        if self.value.exists()? {
+            return Err(PartialVMError::new(StatusCode::RESOURCE_ALREADY_EXISTS)
+                .with_message("Object Field already exists".to_string()));
+        }
         check_type(&self.value_type, &value_type)?;
         self.value.move_to(val).map_err(|(e, _)| e)
     }
@@ -889,15 +861,40 @@ fn native_fn_dispatch(
     }
 }
 
+fn native_borrow_root(
+    common_gas_params: &CommonGasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert_eq!(ty_args.len(), 0);
+    debug_assert_eq!(args.len(), 0);
+    let object_context = context.extensions().get::<ObjectRuntimeContext>();
+    let object_runtime = object_context.object_runtime.write();
+    let value = object_runtime
+        .root
+        .borrow_value(RootObjectEntity::type_tag())?;
+    let gas_cost = common_gas_params.load_base;
+    Ok(NativeResult::ok(gas_cost, smallvec![value]))
+}
+
+pub fn make_native_borrow_root(common_gas_params: CommonGasParameters) -> NativeFunction {
+    Arc::new(
+        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
+            native_borrow_root(&common_gas_params, context, ty_args, args)
+        },
+    )
+}
+
 #[derive(Debug, Clone)]
-pub struct AddBoxGasParameters {
+pub struct AddFieldGasParameters {
     pub base: InternalGas,
     pub per_byte_serialized: InternalGasPerByte,
 }
 
-fn native_add_box(
+fn native_add_field(
     common_gas_params: &CommonGasParameters,
-    gas_params: &AddBoxGasParameters,
+    gas_params: &AddFieldGasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -927,35 +924,28 @@ fn native_add_box(
             field.move_to(val, value_layout, value_type).map(|_| None)
         },
     )
-
-    // let value_layout = layout_loader.type_to_type_layout( &ty_args[1])?;
-    // let value_type = layout_loader.type_to_type_tag( &ty_args[1])?;
-    // match tv.move_to(val, value_layout, value_type) {
-    //     Ok(_) => Ok(NativeResult::ok(cost, smallvec![])),
-    //     Err(_) => Ok(NativeResult::err(cost, E_ALREADY_EXISTS)),
-    // }
 }
 
-pub fn make_native_add_box(
+pub fn make_native_add_field(
     common_gas_params: CommonGasParameters,
-    gas_params: AddBoxGasParameters,
+    gas_params: AddFieldGasParameters,
 ) -> NativeFunction {
     Arc::new(
         move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_add_box(&common_gas_params, &gas_params, context, ty_args, args)
+            native_add_field(&common_gas_params, &gas_params, context, ty_args, args)
         },
     )
 }
 
 #[derive(Debug, Clone)]
-pub struct BorrowBoxGasParameters {
+pub struct BorrowFieldGasParameters {
     pub base: InternalGas,
     pub per_byte_serialized: InternalGasPerByte,
 }
 
-fn native_borrow_box(
+fn native_borrow_field(
     common_gas_params: &CommonGasParameters,
-    gas_params: &BorrowBoxGasParameters,
+    gas_params: &BorrowFieldGasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -980,55 +970,28 @@ fn native_borrow_box(
             field.borrow_value(value_type).map(|v| Some(v))
         },
     )
-    // let value_type = layout_loader.type_to_type_tag( &ty_args[1])?;
-    // if tv.exists()? {
-    //     match tv.borrow_value(value_type.clone()) {
-    //         Ok(ref_val) => Ok(NativeResult::ok(cost, smallvec![ref_val])),
-    //         Err(err) => {
-    //             if log::log_enabled!(log::Level::Debug) {
-    //                 log::warn!(
-    //                     "[ObjectRuntime] borrow_box type mismatch: handle: {:?}, value_type: {:?} key:{:?}, err: {:?}",
-    //                     &object.id,
-    //                     value_type.to_canonical_string(),
-    //                     field_key,
-    //                 err
-    //                 );
-    //             }
-    //             Ok(NativeResult::err(cost, E_TYPE_MISMATCH))
-    //         }
-    //     }
-    // } else {
-    //     if log::log_enabled!(log::Level::Debug) {
-    //         log::warn!(
-    //             "[ObjectRuntime] borrow_box not found: handle: {:?}, key:{:?} not found.",
-    //             &object.id,
-    //             field_key
-    //         );
-    //     }
-    //     Ok(NativeResult::err(cost, E_NOT_FOUND))
-    // }
 }
 
-pub fn make_native_borrow_box(
+pub fn make_native_borrow_field(
     common_gas_params: CommonGasParameters,
-    gas_params: BorrowBoxGasParameters,
+    gas_params: BorrowFieldGasParameters,
 ) -> NativeFunction {
     Arc::new(
         move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_borrow_box(&common_gas_params, &gas_params, context, ty_args, args)
+            native_borrow_field(&common_gas_params, &gas_params, context, ty_args, args)
         },
     )
 }
 
 #[derive(Debug, Clone)]
-pub struct ContainsBoxGasParameters {
+pub struct ContainsFieldGasParameters {
     pub base: InternalGas,
     pub per_byte_serialized: InternalGasPerByte,
 }
 
-fn native_contains_box(
+fn native_contains_field(
     common_gas_params: &CommonGasParameters,
-    gas_params: &ContainsBoxGasParameters,
+    gas_params: &ContainsFieldGasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -1050,47 +1013,22 @@ fn native_contains_box(
         field_key,
         |_layout_loader, field| Ok(Some(Value::bool(field.exists()?))),
     )
-
-    // let object_context = context.extensions().get::<ObjectRuntimeContext>();
-    // let mut object_runtime = object_context.object_runtime.write();
-
-    // let key = args.pop_back().unwrap();
-    // let handle = pop_object_id(&mut args)?;
-    // let object = object_runtime.load_object(handle.clone())?;
-    // let (tv, loaded, field_key, key_bytes_len) =
-    //     get_field_runtime_value(context, object_context, object, &ty_args[0], key)?;
-
-    // if log::log_enabled!(log::Level::Trace) {
-    //     log::trace!(
-    //         "[ObjectRuntime] contains: object_id: {:?}, field key: {:?}",
-    //         handle,
-    //         field_key
-    //     );
-    // }
-
-    // let cost = gas_params.base
-    //     + gas_params.per_byte_serialized * NumBytes::new(key_bytes_len)
-    //     + common_gas_params.calculate_load_cost(loaded);
-
-    // let exists = Value::bool(tv.exists()?);
-
-    // Ok(NativeResult::ok(cost, smallvec![exists]))
 }
 
-pub fn make_native_contains_box(
+pub fn make_native_contains_field(
     common_gas_params: CommonGasParameters,
-    gas_params: ContainsBoxGasParameters,
+    gas_params: ContainsFieldGasParameters,
 ) -> NativeFunction {
     Arc::new(
         move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_contains_box(&common_gas_params, &gas_params, context, ty_args, args)
+            native_contains_field(&common_gas_params, &gas_params, context, ty_args, args)
         },
     )
 }
 
-fn native_contains_box_with_value_type(
+fn native_contains_field_with_value_type(
     common_gas_params: &CommonGasParameters,
-    gas_params: &ContainsBoxGasParameters,
+    gas_params: &ContainsFieldGasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -1115,19 +1053,15 @@ fn native_contains_box_with_value_type(
             Ok(Some(Value::bool(field.exists_with_type(value_type)?)))
         },
     )
-
-    // let exists = Value::bool(tv.borrow_value(value_type).is_ok());
-
-    // Ok(NativeResult::ok(cost, smallvec![exists]))
 }
 
-pub fn make_native_contains_box_with_value_type(
+pub fn make_native_contains_field_with_value_type(
     common_gas_params: CommonGasParameters,
-    gas_params: ContainsBoxGasParameters,
+    gas_params: ContainsFieldGasParameters,
 ) -> NativeFunction {
     Arc::new(
         move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_contains_box_with_value_type(
+            native_contains_field_with_value_type(
                 &common_gas_params,
                 &gas_params,
                 context,
@@ -1139,14 +1073,14 @@ pub fn make_native_contains_box_with_value_type(
 }
 
 #[derive(Debug, Clone)]
-pub struct RemoveGasParameters {
+pub struct RemoveFieldGasParameters {
     pub base: InternalGas,
     pub per_byte_serialized: InternalGasPerByte,
 }
 
-fn native_remove_box(
+fn native_remove_field(
     common_gas_params: &CommonGasParameters,
-    gas_params: &RemoveGasParameters,
+    gas_params: &RemoveFieldGasParameters,
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -1171,38 +1105,15 @@ fn native_remove_box(
             field.move_from(value_type).map(|v| Some(v))
         },
     )
-
-    // let object_context = context.extensions().get::<ObjectRuntimeContext>();
-    // let mut object_runtime = object_context.object_runtime.write();
-
-    // let key = args.pop_back().unwrap();
-    // let handle = pop_object_id(&mut args)?;
-    // let object = object_runtime.load_object(handle)?;
-
-    // let (tv, loaded, _, key_bytes_len) =
-    //     get_field_runtime_value(context, object_context, object, &ty_args[0], key)?;
-
-    // let cost = gas_params.base
-    //     + gas_params.per_byte_serialized * NumBytes::new(key_bytes_len)
-    //     + common_gas_params.calculate_load_cost(loaded);
-    // let value_type = layout_loader.type_to_type_tag( &ty_args[1])?;
-    // if tv.exists()? {
-    //     match tv.move_from(value_type) {
-    //         Ok(val) => Ok(NativeResult::ok(cost, smallvec![val])),
-    //         Err(_) => Ok(NativeResult::err(cost, E_TYPE_MISMATCH)),
-    //     }
-    // } else {
-    //     Ok(NativeResult::err(cost, E_NOT_FOUND))
-    // }
 }
 
-pub fn make_native_remove_box(
+pub fn make_native_remove_field(
     common_gas_params: CommonGasParameters,
-    gas_params: RemoveGasParameters,
+    gas_params: RemoveFieldGasParameters,
 ) -> NativeFunction {
     Arc::new(
         move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_remove_box(&common_gas_params, &gas_params, context, ty_args, args)
+            native_remove_field(&common_gas_params, &gas_params, context, ty_args, args)
         },
     )
 }
@@ -1240,18 +1151,6 @@ fn deserialize(layout: &MoveTypeLayout, bytes: &[u8]) -> PartialVMResult<Value> 
     Ok(value)
 }
 
-// Deserialize a value and box it to `moveos_std::raw_table::Box<V>`.
-// fn deserialize_and_box(layout: &MoveTypeLayout, bytes: &[u8]) -> PartialVMResult<Value> {
-//     let value = Value::simple_deserialize(bytes, layout).ok_or_else(|| {
-//         partial_extension_error(format!(
-//             "cannot deserialize object field or value, layout:{:?}, bytes:{:?}",
-//             layout,
-//             hex::encode(bytes)
-//         ))
-//     })?;
-//     Ok(Value::struct_(Struct::pack(vec![value])))
-// }
-
 fn partial_extension_error(msg: impl ToString) -> PartialVMError {
     log::debug!("PartialVMError: {}", msg.to_string());
     PartialVMError::new(StatusCode::VM_EXTENSION_ERROR).with_message(msg.to_string())
@@ -1262,16 +1161,6 @@ fn type_to_type_layout(context: &NativeContext, ty: &Type) -> PartialVMResult<Mo
         .type_to_type_layout(ty)?
         .ok_or_else(|| partial_extension_error("cannot determine type layout"))
 }
-
-// fn type_to_type_tag(context: &NativeContext, ty: &Type) -> PartialVMResult<TypeTag> {
-//     context.type_to_type_tag(ty)
-// }
-
-// fn get_type_layout(context: &NativeContext, type_tag: &TypeTag) -> PartialVMResult<MoveTypeLayout> {
-//     context
-//         .get_type_layout(type_tag)
-//         .map_err(|e| e.to_partial())
-// }
 
 fn serialize_key(
     context: &NativeContext,
@@ -1284,29 +1173,6 @@ fn serialize_key(
     Ok(KeyState::new(key_bytes, key_type_tag))
 }
 
-// fn get_field_runtime_value<'a>(
-//     context: &NativeContext,
-//     object_context: &ObjectRuntimeContext,
-//     object: &'a mut RuntimeObject,
-//     key_type: &Type,
-//     key: Value,
-// ) -> PartialVMResult<(
-//     &'a mut RuntimeField,
-//     Option<Option<NumBytes>>,
-//     KeyState,
-//     u64,
-// )> {
-//     let key_layout = layout_loader.type_to_type_layout( key_type)?;
-//     let key_type = layout_loader.type_to_type_tag( key_type)?;
-//     let key_bytes = serialize(&key_layout, &key)?;
-//     let field_key = KeyState::new(key_bytes.clone(), key_type);
-
-//     let (tv, loaded) =
-//         object.get_or_create_global_value(context, object_context, field_key.clone())?;
-
-//     Ok((tv, loaded, field_key, key_bytes.len() as u64))
-// }
-
 fn check_type(actual_type: &TypeTag, expect_type: &TypeTag) -> PartialVMResult<()> {
     if expect_type != actual_type {
         return Err(
@@ -1318,32 +1184,3 @@ fn check_type(actual_type: &TypeTag, expect_type: &TypeTag) -> PartialVMResult<(
     }
     Ok(())
 }
-
-// // load module bytes stored in `moveos_std::raw_table::FieldValue<moveos_std::moveos_std::move_module::MoveModule>`
-// fn load_module_from_table_runtime_value(
-//     field: &RuntimeField,
-//     value_type: TypeTag,
-// ) -> PartialVMResult<Vec<u8>> {
-//     let blob = field.borrow_value(value_type)?;
-//     let box_value = blob
-//         .value_as::<Reference>()?
-//         .read_ref()?
-//         .value_as::<Struct>()?;
-
-//     let mut fields = box_value.unpack()?.collect::<Vec<Value>>();
-//     debug_assert!(fields.len() == 1, "Fields of Box struct must be 1");
-//     let module_value = fields.pop().unwrap();
-//     let mut module_fields = module_value
-//         .value_as::<Struct>()?
-//         .unpack()?
-//         .collect::<Vec<Value>>();
-//     debug_assert!(
-//         module_fields.len() == 1,
-//         "Fields of Module struct must be 1, actual: {}",
-//         module_fields.len()
-//     );
-//     let module = module_fields.pop().unwrap();
-
-//     let byte_codes = module.value_as::<Vec<u8>>()?;
-//     Ok(byte_codes)
-// }
