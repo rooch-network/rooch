@@ -31,7 +31,7 @@ use move_vm_types::loaded_data::runtime_types::{CachedStructIndex, StructType, T
 use moveos_stdlib::natives::moveos_stdlib::{
     event::NativeEventContext,
     move_module::NativeModuleContext,
-    raw_table::{NativeTableContext, TableData},
+    raw_table::{ObjectRuntime, ObjectRuntimeContext},
 };
 use moveos_types::{addresses, transaction::RawTransactionOutput};
 use moveos_types::{
@@ -117,7 +117,7 @@ pub struct MoveOSSession<'r, 'l, S, G> {
     pub(crate) vm: &'l MoveVM,
     pub(crate) remote: &'r S,
     pub(crate) session: Session<'r, 'l, MoveosDataCache<'r, 'l, S>>,
-    pub(crate) table_data: Arc<RwLock<TableData>>,
+    pub(crate) object_runtime: Arc<RwLock<ObjectRuntime>>,
     pub(crate) gas_meter: G,
     pub(crate) read_only: bool,
 }
@@ -135,12 +135,12 @@ where
         gas_meter: G,
         read_only: bool,
     ) -> Self {
-        let table_data = Arc::new(RwLock::new(TableData::new(ctx)));
+        let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(ctx)));
         Self {
             vm,
             remote,
-            session: Self::new_inner_session(vm, remote, table_data.clone()),
-            table_data,
+            session: Self::new_inner_session(vm, remote, object_runtime.clone()),
+            object_runtime,
             gas_meter,
             read_only,
         }
@@ -148,11 +148,11 @@ where
 
     /// Re spawn a new session with the same context.
     pub fn respawn(self, env: SimpleMap<MoveString, Any>) -> Self {
-        let new_ctx = self.table_data.read().tx_context().clone().spawn(env);
-        let table_data = Arc::new(RwLock::new(TableData::new(new_ctx)));
+        let new_ctx = self.object_runtime.read().tx_context().clone().spawn(env);
+        let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(new_ctx)));
         Self {
-            session: Self::new_inner_session(self.vm, self.remote, table_data.clone()),
-            table_data,
+            session: Self::new_inner_session(self.vm, self.remote, object_runtime.clone()),
+            object_runtime,
             ..self
         }
     }
@@ -160,11 +160,11 @@ where
     fn new_inner_session(
         vm: &'l MoveVM,
         remote: &'r S,
-        table_data: Arc<RwLock<TableData>>,
+        object_runtime: Arc<RwLock<ObjectRuntime>>,
     ) -> Session<'r, 'l, MoveosDataCache<'r, 'l, S>> {
         let mut extensions = NativeContextExtensions::default();
 
-        extensions.add(NativeTableContext::new(remote, table_data.clone()));
+        extensions.add(ObjectRuntimeContext::new(remote, object_runtime.clone()));
         extensions.add(NativeModuleContext::new(remote));
         extensions.add(NativeEventContext::default());
 
@@ -174,12 +174,12 @@ where
         vm.flush_loader_cache_if_invalidated();
         let loader = vm.runtime.loader();
         let data_store: MoveosDataCache<'r, 'l, S> =
-            MoveosDataCache::new(remote, loader, table_data);
+            MoveosDataCache::new(remote, loader, object_runtime);
         vm.new_session_with_cache_and_extensions(data_store, extensions)
     }
 
     pub(crate) fn tx_context(&self) -> TxContext {
-        self.table_data.read().tx_context().clone()
+        self.object_runtime.read().tx_context().clone()
     }
 
     /// Verify a move action.
@@ -480,7 +480,7 @@ where
             vm: _,
             remote: _,
             session,
-            table_data,
+            object_runtime,
             mut gas_meter,
             read_only,
         } = self;
@@ -492,7 +492,7 @@ where
         drop(extensions);
 
         let (ctx, state_changeset) =
-            into_change_set(table_data).map_err(|e| e.finish(Location::Undefined))?;
+            into_change_set(object_runtime).map_err(|e| e.finish(Location::Undefined))?;
 
         if read_only {
             if !changeset.accounts().is_empty() {

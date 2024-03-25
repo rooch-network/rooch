@@ -179,8 +179,8 @@ where
     }
 
     pub fn load_arguments(&mut self, resovled_args: Vec<ResolvedArg>) -> VMResult<Vec<Vec<u8>>> {
-        let mut table_data = self.table_data.write();
-        table_data.load_arguments(&resovled_args)?;
+        let mut object_runtime = self.object_runtime.write();
+        object_runtime.load_arguments(&resovled_args)?;
         Ok(resovled_args
             .into_iter()
             .map(|arg| arg.into_serialized_arg())

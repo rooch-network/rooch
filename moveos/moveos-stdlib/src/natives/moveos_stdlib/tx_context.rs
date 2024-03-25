@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::natives::{helpers::make_module_natives, moveos_stdlib::raw_table::NativeTableContext};
+use crate::natives::{
+    helpers::make_module_natives, moveos_stdlib::raw_table::ObjectRuntimeContext,
+};
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -86,11 +88,11 @@ pub fn make_native_borrow_mut(gas_params: BorrowMutGasParameters) -> NativeFunct
 }
 
 fn borrow_tx_context(context: &mut NativeContext) -> PartialVMResult<Value> {
-    let table_context = context.extensions_mut().get_mut::<NativeTableContext>();
+    let object_context = context.extensions_mut().get_mut::<ObjectRuntimeContext>();
 
-    let data = table_context.table_data();
-    let table_data = data.read();
-    table_data.tx_context.borrow_global()
+    let data = object_context.object_runtime();
+    let object_runtime = data.read();
+    object_runtime.tx_context.borrow_global()
 }
 
 #[derive(Debug, Clone)]

@@ -1,5 +1,5 @@
 //# init --addresses creator=0x42
-
+// temparay disable this for https://github.com/rooch-network/rooch/issues/1462
 //# publish
 module creator::test {
     
