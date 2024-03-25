@@ -54,12 +54,15 @@ export const WalletConnect = () => {
   const { mutateAsync: connectWallet } = useConnectWallet()
   const account = useWalletStore((state) => state.currentAccount)
 
-  // TEST
+  // - TEST
   // const wallet = useCurrentWallet()
   // const walletStore = useWalletStore((state) => state.accounts)
 
-  // console.log(wallet)
-  // console.log(walletStore)
+  // console.log('Wallet', wallet)
+  // console.log('Wallet Store', walletStore)
+  // - TEST
+
+  // `createSessionAccount()` in account.ts
 
   // ** TODO: Get rooch account
 
@@ -82,10 +85,24 @@ export const WalletConnect = () => {
   }
 
   // ** Connect specific wallet
-  const handleConnectSpecificWallet = async () => {
+  const handleConnectSpecificWallet = async (walletName: string) => {
     if (!account) {
       try {
-        await connectWallet()
+        switch (walletName) {
+          case 'Unisat':
+            // 1. Connect to Unisat
+            await connectWallet()
+            break
+          // case 'MetaMask':
+          // 2. Connect to MetaMask
+          // break
+          // case 'OKX':
+          // 3. Connect to OKX
+          // break
+          default:
+            await connectWallet()
+        }
+
         setIsDialogOpen(false)
         toast.success('Connected to the wallet')
       } catch (error) {
@@ -123,7 +140,7 @@ export const WalletConnect = () => {
           {walletsList.map((wallet) => (
             <Card
               key={wallet.name}
-              onClick={handleConnectSpecificWallet}
+              onClick={() => handleConnectSpecificWallet(wallet.name)}
               className="bg-secondary cursor-pointer hover:border-primary/20 transition-all"
             >
               <CardHeader className="p-4">

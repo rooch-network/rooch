@@ -112,8 +112,14 @@ export const SelfStakingCard = () => {
                       ? 'border-teal-400 dark:border-teal-500 bg-teal-50 dark:bg-teal-800/60'
                       : '',
                     isSwitchOn && utxo.isStaked ? 'opacity-50' : 'opacity-100',
+                    utxo.isStaked ? 'opacity-50 dark:bg-zinc-900' : '',
                   )}
                 >
+                  {utxo.isStaked && (
+                    <div className="absolute top-0 left-0 px-5 py-0.5 bg-teal-600 text-white text-xs font-semibold transform -rotate-45 -translate-x-6 translate-y-2">
+                      Staked
+                    </div>
+                  )}
                   <CardHeader className="flex items-center justify-center">
                     <h3 className="text-2xl">UTXO #{utxo.id}</h3>
                   </CardHeader>
