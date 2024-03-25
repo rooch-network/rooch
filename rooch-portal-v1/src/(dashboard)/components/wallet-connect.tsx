@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
+  // DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -30,7 +30,7 @@ const walletsList: WalletsListProps[] = [
     name: 'Unisat',
     icon: '/icon-unisat.svg',
     description: 'Unisat wallet',
-    types: ['btc', 'bsc'],
+    types: ['btc'],
     link: 'https://chromewebstore.google.com/detail/unisat-wallet/ppbibelpcjmhbdihakflkdcoccbgbkpo',
   },
   {
@@ -44,7 +44,7 @@ const walletsList: WalletsListProps[] = [
     name: 'OKX',
     icon: '/icon-okx.svg',
     description: 'OKX wallet',
-    types: ['eth', 'btc', 'bsc'],
+    types: ['eth', 'btc'],
     link: 'https://chromewebstore.google.com/detail/okx-wallet/mcohilncbfahbmgdjkbpemcciiolgcge',
   },
 ]
@@ -59,12 +59,15 @@ export const WalletConnect = () => {
   // const walletStore = useWalletStore((state) => state.accounts)
 
   // console.log('Wallet', wallet)
-  // console.log('Wallet Store', walletStore)
+  // console.log('Wallet Store', walletStore)3
   // - TEST
 
   // `createSessionAccount()` in account.ts
 
+  // ** TODO: isWalletInstalled
+
   // ** TODO: Get rooch account
+  // account.getRoochAddress()
 
   // ** Connect wallet
   const handleConnectWallet = () => {
@@ -90,15 +93,15 @@ export const WalletConnect = () => {
       try {
         switch (walletName) {
           case 'Unisat':
-            // 1. Connect to Unisat
+            // 1. Handle connect to Unisat
             await connectWallet()
             break
-          // case 'MetaMask':
-          // 2. Connect to MetaMask
-          // break
-          // case 'OKX':
-          // 3. Connect to OKX
-          // break
+          case 'MetaMask':
+            // 2. Handle connect to MetaMask
+            break
+          case 'OKX':
+            // 3. Handle connect to OKX
+            break
           default:
             await connectWallet()
         }
@@ -119,14 +122,14 @@ export const WalletConnect = () => {
     <>
       <Button
         variant="default"
-        size="sm"
+        size="default"
         className="md:p-3 rounded-lg ml-2 h-auto md:h-9 p-2"
         onClick={handleConnectWallet}
       >
         <div className="flex items-center justify-center gap-x-2">
           <Wallet className="h-[1rem] w-[1rem] md:h-[1.2rem] md:w-[1.2rem] rotate-0 scale-100 transition-all" />
           <div className="flex items-center justify-center gap-x-1">
-            {account === null ? 'Connect' : formatAddress(account?.getAddress())}
+            {account === null ? 'Connect Wallet' : formatAddress(account?.getAddress())}
           </div>
         </div>
       </Button>
@@ -170,14 +173,6 @@ export const WalletConnect = () => {
               </CardHeader>
             </Card>
           ))}
-          <DialogFooter className="sm:justify-center">
-            <span className="text-xs">
-              Don't have a wallet?{' '}
-              <span className="text-blue-400 font-medium hover:underline cursor-pointer hover:text-blue-300 transition-all">
-                <a href="">Download Rooch</a>
-              </span>
-            </span>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
