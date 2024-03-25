@@ -121,14 +121,14 @@ export const WalletConnect = () => {
   return (
     <>
       <Button
-        variant="default"
+        variant="secondary"
         size="default"
         className="md:p-3 rounded-lg ml-2 h-auto md:h-9 p-2"
         onClick={handleConnectWallet}
       >
-        <div className="flex items-center justify-center gap-x-2">
-          <Wallet className="h-[1rem] w-[1rem] md:h-[1.2rem] md:w-[1.2rem] rotate-0 scale-100 transition-all" />
-          <div className="flex items-center justify-center gap-x-1">
+        <div className="flex items-center justify-center gap-x-2 ">
+          <Wallet className="h-[1rem] w-[1rem] md:h-[1.2rem] md:w-[1.2rem] rotate-0 scale-100 transition-all text-teal-600" />
+          <div className="flex items-center justify-center gap-x-1 bg-gradient-to-r bg-clip-text font-black dark:from-teal-500 dark:via-purple-500 dark:to-orange-500 text-transparent from-teal-600 via-purple-600 to-orange-600">
             {account === null ? 'Connect Wallet' : formatAddress(account?.getAddress())}
           </div>
         </div>

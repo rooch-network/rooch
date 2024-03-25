@@ -93,7 +93,7 @@ export const SftTabHeader = () => {
           id="batch-mode"
           checked={isSwitchOn}
           onCheckedChange={handleSwitchChange}
-          className="data-[state=checked]:bg-teal-600 dark:data-[state=checked]:bg-teal-400"
+          className="data-[state=checked]:bg-blue-600 dark:data-[state=checked]:bg-blue-500"
         />
         <Label htmlFor="batch-mode">Batch Mode</Label>
       </div>

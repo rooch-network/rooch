@@ -47,7 +47,7 @@ export const UserAppItem = ({
               <CardTitle>{name}</CardTitle>
               <Badge
                 variant="outline"
-                className="rounded-full border-teal-500 text-teal-500 dark:border-teal-300 dark:text-teal-300 hover:bg-teal-500/10"
+                className="rounded-full border-sky-500 text-sky-500 dark:border-sky-300 dark:text-sky-300 hover:bg-sky-500/10"
               >
                 {type}
               </Badge>
@@ -70,7 +70,7 @@ export const UserAppItem = ({
         <Button
           variant="default"
           size="default"
-          className="w-full dark:bg-teal-500 dark:hover:bg-teal-400 text-white bg-teal-500 hover:bg-teal-600 font-semibold"
+          className="w-full text-white bg-blue-500 hover:bg-blue-600 font-semibold"
         >
           <div className="flex items-center justify-center gap-x-2">
             <Send className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />

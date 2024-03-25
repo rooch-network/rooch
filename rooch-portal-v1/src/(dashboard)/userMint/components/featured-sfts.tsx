@@ -96,11 +96,13 @@ export const FeaturedSfts = () => {
                 <Button
                   variant="link"
                   size="sm"
-                  className="dark:text-teal-400 dark:hover:text-teal-300 text-teal-500 hover:text-teal-600 font-semibold"
+                  className="hover:no-underline"
                   onClick={() => handleMint(sft)}
                 >
-                  <MousePointer2 className="w-4 h-4 mr-1" />
-                  Mint
+                  <span className="flex font-semibold bg-gradient-to-r bg-clip-text from-teal-500 via-purple-500 to-orange-500 text-transparent">
+                    <MousePointer2 className="w-4 h-4 mr-1 text-indigo-600" />
+                    Mint
+                  </span>
                 </Button>
               </TableCell>
             </TableRow>
