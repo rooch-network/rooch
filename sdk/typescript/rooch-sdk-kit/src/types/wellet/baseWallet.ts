@@ -29,9 +29,14 @@ export abstract class BaseWallet {
 
   /**
    * Switches the network.
+   */
+  abstract switchNetwork(network: string): void
+
+  /**
+   * Switches the account.
    * Note: Wallets with Bitcoin chain are not currently supported.
    */
-  abstract switchNetwork(): void
+  abstract switchAccount(address: string): void
 
   /**
    * Retrieves the current network of the wallet.

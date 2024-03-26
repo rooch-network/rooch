@@ -44,8 +44,8 @@ export class UniSatWallet extends BitcoinWallet {
     return walletAccounts
   }
 
-  switchNetwork(): void {
-    this.getTarget().switchNetwork()
+  switchNetwork(network: string): void {
+    this.getTarget().switchNetwork(network)
   }
   getNetwork(): string {
     return this.getTarget().getNetwork()

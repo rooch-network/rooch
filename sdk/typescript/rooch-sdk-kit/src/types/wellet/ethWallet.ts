@@ -25,9 +25,14 @@ import { WalletAccount } from '../../types'
 const ETH_MAGIC_SIGN_PREFIX = '\u0019Ethereum Signed Message:\n'
 
 export abstract class ETHWallet extends BaseWallet {
-  switchNetwork(): void {
+  switchNetwork(_: string): void {
     throw new Error('Method not implemented.')
   }
+
+  switchAccount(_: string) {
+    throw new Error('Method not implemented.')
+  }
+
   getNetwork(): string {
     throw new Error('Method not implemented.')
   }

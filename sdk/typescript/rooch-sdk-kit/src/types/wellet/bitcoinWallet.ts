@@ -52,6 +52,10 @@ export abstract class BitcoinWallet extends BaseWallet {
     return normalizeV
   }
 
+  switchAccount(): void {
+    throw new Error('Method not implemented.')
+  }
+
   isSupportChain(chain: SupportChain): boolean {
     return chain === SupportChain.BITCOIN
   }

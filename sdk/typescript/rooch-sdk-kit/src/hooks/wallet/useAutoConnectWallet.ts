@@ -6,8 +6,10 @@ import { useLayoutEffect, useState } from 'react'
 
 import { useWalletStore } from './useWalletStore'
 import { useConnectWallet } from './useConnectWallet'
-import { useSupportWallets } from '../../hooks/wallet/useWallets'
+import { useWallets } from '../../hooks/wallet/useWallets'
 import { useCurrentWallet } from '../../hooks/wallet/useCurrentWallet'
+import { useCurrentAccount } from '../../hooks/wallet/useCurrentAccount'
+import { SupportChain } from '../../feature'
 
 export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
   const { mutateAsync: connectWallet } = useConnectWallet()
@@ -15,8 +17,9 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
   const lastConnectedWalletName = useWalletStore((state) => state.lastConnectedWalletName)
   const lastConnectedAccountAddress = useWalletStore((state) => state.lastConnectedAccountAddress)
   const { isConnected } = useCurrentWallet()
-  const wallets = useSupportWallets()
+  const wallets = useWallets()
   const [clientOnly, setClientOnly] = useState(false)
+  const currentAccount = useCurrentAccount()
 
   useLayoutEffect(() => {
     setClientOnly(true)
@@ -48,7 +51,13 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
         await connectWallet({ wallet })
       }
 
-      // TODO: switch lastConnectedAccount
+      // bitcoin wallet is not support switch account
+      if (
+        !wallet!.isSupportChain(SupportChain.BITCOIN) &&
+        currentAccount?.address !== lastConnectedAccountAddress
+      ) {
+        wallet!.switchAccount(lastConnectedAccountAddress)
+      }
 
       return 'attempted'
     },

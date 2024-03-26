@@ -1,7 +1,7 @@
 # Rooch TypeScript SDK Kit
 
 The rooch-sdk-kit is a set of React components, hooks, and utilities that make it easy to build a
-dApp for the Rooch ecosystem. It provides hooks and components for querying data from the rooch
+dApp should be better. It provides hooks and components for querying data from the rooch
 blockchain, and connecting to wallets.
 
 ### Core Features
@@ -10,7 +10,7 @@ blockchain, and connecting to wallets.
   making it easy to load any information needed for your dApp.
 - **Automatic Wallet State Management:** rooch-sdk-kit removes the complexity of state management related
   to wallet connections. You can focus on building your dApp.
-- **Supports wallets:** bitcoin: unisat,okx. eth: matamask. All support wallets are supported rooch chain.
+- **Supports wallets:** bitcoin: unisat, okx. eth: matamask. All support wallets are supported rooch chain.
 - **Flexible:** rooch-sdk-kit ships lower level hooks that you can use to build your own custom components.
 
 ## Installation
@@ -51,6 +51,22 @@ The rooch-sdk-kit provides a set of hooks for making RPC calls to the rooch bloc
 wrappers around `useQuery` from `@tanstack/react-query`. For more comprehensive documentation on how
 these query hooks can be used, check out the
 [react-query docs](https://tanstack.com/query/latest/docs/react/overview).
+
+```tsx
+import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
+
+function MyComponent() {
+  let { data, isPending, error } = useRoochClientQuery('getStates', '/object/0x1')
+
+  if (isPending) {
+    return <div>Loading...</div>
+  }
+
+  return <pre>{JSON.stringify(data, null, 2)}</pre>
+}
+```
+
+## Use session key
 
 ```tsx
 import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'

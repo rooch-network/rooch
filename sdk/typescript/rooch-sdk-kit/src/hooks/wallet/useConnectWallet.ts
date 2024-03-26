@@ -5,14 +5,13 @@ import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-quer
 import { useMutation } from '@tanstack/react-query'
 
 import { useWalletStore } from './useWalletStore'
-import { useCurrentWallet } from './useCurrentWallet'
 import { BaseWallet, WalletAccount } from '../../types'
 import { walletMutationKeys } from '../../constants/walletMutationKeys'
 import { useRoochClient } from '../../hooks/useRoochClient'
 import { chain2MultiChainID } from '../../utils/chain2MultiChainID'
 
 type ConnectWalletArgs = {
-  wallet?: BaseWallet
+  wallet: BaseWallet
 }
 type ConnectWalletResult = WalletAccount[]
 
@@ -37,7 +36,6 @@ export function useConnectWallet({
   const setConnectionStatus = useWalletStore((state) => state.setConnectionStatus)
   // const currentAccount = useWalletStore((state) => state.currentAccount)
   const chain = useWalletStore((state) => state.currentChain)
-  const { currentWallet } = useCurrentWallet()
   const client = useRoochClient()
 
   return useMutation({
@@ -46,9 +44,7 @@ export function useConnectWallet({
       try {
         setConnectionStatus('connecting')
 
-        const finalWallet = wallet ?? currentWallet
-
-        const connectAccounts = await finalWallet!.connect()
+        const connectAccounts = await wallet.connect()
         const selectedAccount = connectAccounts[0]
 
         // use cache date
@@ -63,7 +59,7 @@ export function useConnectWallet({
         })
 
         setWalletConnected(
-          finalWallet,
+          wallet,
           connectAccounts,
           new WalletAccount(
             selectedAccount.address,

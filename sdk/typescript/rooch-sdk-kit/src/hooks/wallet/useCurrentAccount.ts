@@ -6,6 +6,6 @@ import { useWalletStore } from './index'
 /**
  * Retrieves all wallets
  */
-export function useWallets() {
-  return useWalletStore((state) => state.supportWallets)
+export function useCurrentAccount() {
+  return useWalletStore((state) => state.currentAccount)
 }

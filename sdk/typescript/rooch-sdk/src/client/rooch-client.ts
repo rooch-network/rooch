@@ -21,7 +21,8 @@ import {
   TableStateView,
   TransactionWithInfoPageView,
   TransactionWithInfoView,
-  UTXOStatePageView, BalanceInfoPageView,
+  UTXOStatePageView,
+  BalanceInfoPageView,
 } from '../types'
 import {
   addressToSeqNumber,

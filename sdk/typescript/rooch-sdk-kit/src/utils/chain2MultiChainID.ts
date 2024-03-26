@@ -18,4 +18,3 @@ export function chain2MultiChainID(chain: SupportChain) {
 // rooch 多链
 
 // rooch 多网络
-
