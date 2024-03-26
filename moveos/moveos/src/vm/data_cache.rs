@@ -127,7 +127,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
         let object_runtime = self.object_runtime.read();
         let module_object_id = ModuleStore::module_store_id();
         let (_, value_type) = Self::module_table_typetag();
-        // TODO: check or ensure the module table exists.
+
         if object_runtime.exist_object(&module_object_id) {
             let table = object_runtime
                 .borrow_object(&module_object_id)

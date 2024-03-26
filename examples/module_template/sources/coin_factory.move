@@ -43,48 +43,49 @@ module rooch_examples::coin_factory {
       register_template(name, template_bytes);
    }
 
-   public entry fun issue_fixed_supply_coin(account: &signer, 
-      module_name: String, coin_name: String, 
-      coin_symbol: String, total_supply: u256, decimals: u8
-   ) {
-      let template_store = account::borrow_mut_resource<TemplateStore>(@rooch_examples);
-      let template_bytes = *table::borrow(&template_store.templates, string::utf8(b"fixed_supply_coin"));
-      let template_module = move_module::new(template_bytes);
+   // TODO: uncomment this once move_module::binding_module_address is ready
+   // public entry fun issue_fixed_supply_coin(account: &signer, 
+   //    module_name: String, coin_name: String, 
+   //    coin_symbol: String, total_supply: u256, decimals: u8
+   // ) {
+   //    let template_store = account::borrow_mut_resource<TemplateStore>(@rooch_examples);
+   //    let template_bytes = *table::borrow(&template_store.templates, string::utf8(b"fixed_supply_coin"));
+   //    let template_module = move_module::new(template_bytes);
 
-      let sender = signer::address_of(account);
-      let modules = vector::singleton(template_module);
-      let modules = move_module::binding_module_address(modules, TEMPLATE_MODULE_ADDRESS, sender);
-      let modules = move_module::replace_module_identiner(
-         modules, 
-         vector::singleton(string::utf8(TEMPLATE_MODULE_IDENTIFIER)), 
-         vector::singleton(module_name)
-      );
-      let modules = move_module::replace_struct_identifier(
-         modules,
-         vector::singleton(string::utf8(TEMPLATE_COIN_STRUCT_IDENTIFIER_PLACEHOLDER)),
-         vector::singleton(coin_symbol)
-      );
+   //    let sender = signer::address_of(account);
+   //    let modules = vector::singleton(template_module);
+   //    let modules = move_module::binding_module_address(modules, TEMPLATE_MODULE_ADDRESS, sender);
+   //    let modules = move_module::replace_module_identiner(
+   //       modules, 
+   //       vector::singleton(string::utf8(TEMPLATE_MODULE_IDENTIFIER)), 
+   //       vector::singleton(module_name)
+   //    );
+   //    let modules = move_module::replace_struct_identifier(
+   //       modules,
+   //       vector::singleton(string::utf8(TEMPLATE_COIN_STRUCT_IDENTIFIER_PLACEHOLDER)),
+   //       vector::singleton(coin_symbol)
+   //    );
 
-      let old_strings = vector::singleton(string::utf8(TEMPLATE_COIN_NAME_PLACEHOLDER));
-      vector::push_back(&mut old_strings, string::utf8(TEMPLATE_COIN_SYMBOL_PLACEHOLDER));
-      let new_strings = vector::singleton(coin_name);
-      vector::push_back(&mut new_strings, coin_symbol);
-      let modules = move_module::replace_constant_string(
-         modules,
-         old_strings,
-         new_strings
-      );
+   //    let old_strings = vector::singleton(string::utf8(TEMPLATE_COIN_NAME_PLACEHOLDER));
+   //    vector::push_back(&mut old_strings, string::utf8(TEMPLATE_COIN_SYMBOL_PLACEHOLDER));
+   //    let new_strings = vector::singleton(coin_name);
+   //    vector::push_back(&mut new_strings, coin_symbol);
+   //    let modules = move_module::replace_constant_string(
+   //       modules,
+   //       old_strings,
+   //       new_strings
+   //    );
 
-      let new_supply = vector::singleton(total_supply);
-      let old_supply = vector::singleton(TEMPLATE_COIN_SUPPLY_PLACEHOLDER);
-      let modules = move_module::replace_constant_u256(modules, old_supply, new_supply);
+   //    let new_supply = vector::singleton(total_supply);
+   //    let old_supply = vector::singleton(TEMPLATE_COIN_SUPPLY_PLACEHOLDER);
+   //    let modules = move_module::replace_constant_u256(modules, old_supply, new_supply);
 
-      let new_decimal = vector::singleton(decimals);
-      let old_decimal = vector::singleton(TEMPLATE_COIN_DECIMALS);
-      let modules = move_module::replace_constant_u8(modules, old_decimal, new_decimal);
+   //    let new_decimal = vector::singleton(decimals);
+   //    let old_decimal = vector::singleton(TEMPLATE_COIN_DECIMALS);
+   //    let modules = move_module::replace_constant_u8(modules, old_decimal, new_decimal);
 
-      let module_store = move_module::borrow_mut_module_store();
-      // publish modules
-      move_module::publish_modules(module_store, account, modules);
-   }
+   //    let module_store = move_module::borrow_mut_module_store();
+   //    // publish modules
+   //    move_module::publish_modules(module_store, account, modules);
+   // }
 }
