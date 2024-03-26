@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Wallet } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -15,7 +15,11 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 import toast from 'react-hot-toast'
 
 import { formatAddress } from '@/utils/format'
+
 import { useConnectWallet, useWalletStore } from '@roochnetwork/rooch-sdk-kit'
+import { BaseWallet } from '@roochnetwork/rooch-sdk-kit/src/types/wellet/baseWallet'
+import { getInstalledWallets } from '@roochnetwork/rooch-sdk-kit/src/utils/walletUtils'
+import { SupportChain } from '@roochnetwork/rooch-sdk-kit/src/feature'
 
 interface WalletsListProps {
   name: string
@@ -50,9 +54,15 @@ const walletsList: WalletsListProps[] = [
 ]
 
 export const WalletConnect = () => {
+  const [wallets, setWallets] = useState<BaseWallet[]>() // Get installed wallets
+  const [chain] = useState(SupportChain.BITCOIN) // 目前默认只有 BITCOIN
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const { mutateAsync: connectWallet } = useConnectWallet()
   const account = useWalletStore((state) => state.currentAccount)
+
+  useEffect(() => {
+    getInstalledWallets(chain).then((v) => setWallets(v))
+  }, [chain])
 
   // - TEST
   // const wallet = useCurrentWallet()
