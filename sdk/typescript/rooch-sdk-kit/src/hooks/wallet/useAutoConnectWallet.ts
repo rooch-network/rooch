@@ -6,14 +6,20 @@ import { useLayoutEffect, useState } from 'react'
 
 import { useWalletStore } from './useWalletStore'
 import { useConnectWallet } from './useConnectWallet'
+import { useWallets } from '../../hooks/wallet/useWallets'
+import { useCurrentWallet } from '../../hooks/wallet/useCurrentWallet'
+import { useCurrentAccount } from '../../hooks/wallet/useCurrentAccount'
+import { SupportChain } from '../../feature'
 
 export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
   const { mutateAsync: connectWallet } = useConnectWallet()
   const autoConnectEnabled = useWalletStore((state) => state.autoConnectEnabled)
   const lastConnectedWalletName = useWalletStore((state) => state.lastConnectedWalletName)
   const lastConnectedAccountAddress = useWalletStore((state) => state.lastConnectedAccountAddress)
-
+  const { isConnected } = useCurrentWallet()
+  const wallets = useWallets()
   const [clientOnly, setClientOnly] = useState(false)
+  const currentAccount = useCurrentAccount()
 
   useLayoutEffect(() => {
     setClientOnly(true)
@@ -24,6 +30,7 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
       '@rooch/sdk-kit',
       'autoconnect',
       {
+        isConnected,
         autoConnectEnabled,
         lastConnectedWalletName,
         lastConnectedAccountAddress,
@@ -34,7 +41,23 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
         return 'disabled'
       }
 
-      await connectWallet()
+      if (!lastConnectedWalletName || !lastConnectedAccountAddress || isConnected) {
+        return 'attempted'
+      }
+
+      let wallet = wallets.find((wallet) => wallet.name === lastConnectedWalletName)
+
+      if (wallet) {
+        await connectWallet({ wallet })
+      }
+
+      // bitcoin wallet is not support switch account
+      if (
+        !wallet!.isSupportChain(SupportChain.BITCOIN) &&
+        currentAccount?.address !== lastConnectedAccountAddress
+      ) {
+        wallet!.switchAccount(lastConnectedAccountAddress)
+      }
 
       return 'attempted'
     },

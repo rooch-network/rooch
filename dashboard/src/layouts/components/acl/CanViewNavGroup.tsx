@@ -14,7 +14,15 @@ interface Props {
 
 const CanViewNavGroup = (props: Props) => {
   // ** Props
-  const { children } = props
+  const { children, navGroup } = props
+
+  if (navGroup?.domain) {
+    if (navGroup.domain === window.location.host) {
+      return <>{children}</>
+    }
+
+    return <></>
+  }
 
   return <>{children}</>
 }
