@@ -64,6 +64,9 @@ export const WalletConnect = () => {
     getInstalledWallets(chain).then((v) => setWallets(v))
   }, [chain])
 
+  // using `wallets` to pass the compiling
+  console.log(wallets)
+
   // - TEST
   // const wallet = useCurrentWallet()
   // const walletStore = useWalletStore((state) => state.accounts)

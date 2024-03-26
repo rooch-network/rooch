@@ -1,6 +1,7 @@
 packages:
   - 'dashboard/**'
   - 'rooch-portal-v1/**'
+  - 'grow-rooch-v1/**'
   # TODO: sdk/** There is a compilation conflict with dashboard
   - 'sdk/typescript/build-scripts'
   - 'sdk/typescript/rooch-sdk'
