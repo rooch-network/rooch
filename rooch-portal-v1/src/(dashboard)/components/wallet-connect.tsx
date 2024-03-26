@@ -6,6 +6,7 @@ import {
   Dialog,
   DialogContent,
   // DialogFooter,
+  // DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -64,20 +65,12 @@ export const WalletConnect = () => {
     getInstalledWallets(chain).then((v) => setWallets(v))
   }, [chain])
 
-  // - TEST
-  // const wallet = useCurrentWallet()
-  // const walletStore = useWalletStore((state) => state.accounts)
+  // using `wallets` to pass the compiling
+  console.log(wallets)
 
-  // console.log('Wallet', wallet)
-  // console.log('Wallet Store', walletStore)3
-  // - TEST
+  // 1. Check installed wallets
 
-  // `createSessionAccount()` in account.ts
-
-  // ** TODO: isWalletInstalled
-
-  // ** TODO: Get rooch account
-  // account.getRoochAddress()
+  // 2. Get rooch account
 
   // ** Connect wallet
   const handleConnectWallet = () => {

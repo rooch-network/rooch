@@ -6,11 +6,10 @@ module simple_blog::simple_blog {
     use std::signer;
     use std::string::{Self, String};
     use std::vector;
+
     use moveos_std::account;
-    use moveos_std::object;
-    use moveos_std::object::ObjectID;
-    use moveos_std::object::{Object};
-    
+    use moveos_std::object::{Self, Object, ObjectID};
+
     use simple_blog::simple_article::{Self, Article};
 
     const ErrorDataTooLong: u64 = 1;
@@ -24,7 +23,7 @@ module simple_blog::simple_blog {
     /// This init function is called when the module is published
     /// The owner is the address of the account that publishes the module
     fun init(owner: &signer) {
-        // auto create blog for module publisher 
+        // auto create blog for module publisher
         create_blog(owner);
     }
 
@@ -65,7 +64,6 @@ module simple_blog::simple_blog {
     }
 
     public entry fun create_article(
-        
         owner: signer,
         title: String,
         body: String,
@@ -91,7 +89,6 @@ module simple_blog::simple_blog {
     }
 
     public entry fun delete_article(
-        
         owner: &signer,
         article_id: ObjectID,
     ) {

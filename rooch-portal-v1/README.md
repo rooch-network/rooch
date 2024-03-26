@@ -30,21 +30,25 @@ git clone https://github.com/TwilightLogic/rooch-portal-v1.git
 
 2. Navigate to the project directory:
 
-```bash
-cd rooch-portal
-```
 
-3. Install dependencies:
+## Run Locally
 
-```bash
-yarn install
-```
-
-4. Start the application:
+To get started you need to install [pnpm](https://pnpm.io/), then run the following command:
 
 ```bash
-yarn start
+# Install all dependencies
+pnpm install
+# Run the build for the TypeScript SDK
+pnpm rooch-sdk gen
+pnpm rooch-sdk build
+# Run the build for the TypeScript SDK Kit
+pnpm rooch-sdk-kit build
+# Run the build for the
+pnpm rooch-portal-v1 dev
+
 ```
+
+> All `pnpm` commands are intended to be run in the root of the Rooch repo. You can also run them within the `sdk/typescript` directory, and remove change `pnpm sdk` to just `pnpm` when running commands.
 
 ## Usage
 
