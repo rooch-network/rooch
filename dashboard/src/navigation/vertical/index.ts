@@ -56,20 +56,17 @@ const navigation = (): VerticalNavItemsType => {
         },
       ],
     },
+    {
+      sectionTitle: 'Tutorial',
+      domain: 'https://dev-dashboard.rooch.network',
+    },
+    {
+      title: 'Counter Example',
+      icon: 'bxs-package',
+      path: '/tutorial/counter',
+      domain: 'https://dev-dashboard.rooch.network',
+    },
 
-    // {
-    //   sectionTitle: 'Tutorial',
-    // },
-    // {
-    //   title: 'Publish Package',
-    //   icon: 'bxs-package',
-    //   path: '/tutorial/publish/package',
-    // },
-    // {
-    //   title: 'Counter Example',
-    //   icon: 'bxs-package',
-    //   path: '/tutorial/counter',
-    // },
     // {
     //   sectionTitle: 'Authentication',
     // },

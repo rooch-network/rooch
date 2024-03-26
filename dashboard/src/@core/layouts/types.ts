@@ -38,6 +38,7 @@ export type NavSectionTitle = {
   action?: string
   subject?: string
   sectionTitle: string
+  domain?: string
 }
 
 export type NavGroup = {
@@ -47,6 +48,7 @@ export type NavGroup = {
   action?: string
   subject?: string
   badgeContent?: string
+  domain?: string
   children?: (NavGroup | NavLink)[]
   badgeColor?: 'default' | 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info'
 }
@@ -62,6 +64,7 @@ export type NavLink = {
   badgeContent?: string
   externalLink?: boolean
   openInNewTab?: boolean
+  domain?: string
   badgeColor?: 'default' | 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info'
 }
 

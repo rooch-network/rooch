@@ -25,7 +25,7 @@ const CounterPage = () => {
   const [loading, setLoading] = useState(false)
   const client = useRoochClient()
   const active = () => {
-    return client.network === DevNetwork
+    return client.network.id === DevNetwork.id
   }
 
   let { data, isPending, refetch } = useRoochClientQuery('executeViewFunction', {
@@ -40,7 +40,6 @@ const CounterPage = () => {
     //
     //   return
     // }
-
     if (loading) {
       return
     }

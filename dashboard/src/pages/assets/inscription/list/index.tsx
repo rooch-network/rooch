@@ -115,7 +115,7 @@ const InscriptionGrad = () => {
     'queryInscriptions',
     {
       filter: {
-        owner: account?.getAddress() ?? '',
+        owner: account?.address ?? '',
       },
       cursor: cursor,
       limit: paginationModel.pageSize,

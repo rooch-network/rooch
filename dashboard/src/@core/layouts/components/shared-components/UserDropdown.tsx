@@ -4,7 +4,7 @@
 // ** React Imports
 import { useState } from 'react'
 
-import { useConnectWallet, useWalletStore } from '@roochnetwork/rooch-sdk-kit'
+import { useConnectWallet, useWallets, useWalletStore } from '@roochnetwork/rooch-sdk-kit'
 
 // ** MUI Imports
 import Button from '@mui/material/Button'
@@ -24,11 +24,12 @@ const UserDropdown = (_: Props) => {
   // ** Hooks
   const account = useWalletStore((state) => state.currentAccount)
   const { mutateAsync: connectWallet } = useConnectWallet()
+  const wallets = useWallets().filter((w) => w.installed)
 
   const handleConnect = async () => {
     setLoading(true)
-    if (account === null) {
-      await connectWallet()
+    if (account === null && wallets.length > 0) {
+      await connectWallet({ wallet: wallets[0] })
     }
 
     setLoading(false)
@@ -44,7 +45,7 @@ const UserDropdown = (_: Props) => {
         color: 'theme.palette.primary.main',
       }}
     >
-      {account === null ? 'connect' : formatAddress(account?.getAddress())}
+      {account === null ? 'connect' : formatAddress(account?.address)}
     </Button>
   )
 }
