@@ -5,6 +5,7 @@
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "dashboard": "pnpm --filter ./dashboard",
+    "rooch-portal-v1": "pnpm --filter ./rooch-portal-v1",
     "rooch-create": "pnpm --filter ./sdk/typescript/rooch-create/",
     "rooch-sdk": "pnpm --filter ./sdk/typescript/rooch-sdk/",
     "rooch-sdk-kit": "pnpm --filter ./sdk/typescript/rooch-sdk-kit/",
