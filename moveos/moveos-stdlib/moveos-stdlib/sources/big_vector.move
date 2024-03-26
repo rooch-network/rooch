@@ -29,7 +29,7 @@ module moveos_std::big_vector {
     /// Regular Vector API
 
     /// Create an empty vector.
-    public(friend) fun empty<T: store>(bucket_size: u64): BigVector<T> {
+    public fun empty<T: store>(bucket_size: u64): BigVector<T> {
         assert!(bucket_size > 0, ErrorBucketSizeIllegal);
         BigVector {
             buckets: table::new(),
@@ -39,7 +39,7 @@ module moveos_std::big_vector {
     }
 
     /// Create a vector of length 1 containing the passed in element.
-    public(friend) fun singleton<T: store>(element: T, bucket_size: u64): BigVector<T> {
+    public fun singleton<T: store>(element: T, bucket_size: u64): BigVector<T> {
         let v = empty(bucket_size);
         push_back(&mut v, element);
         v

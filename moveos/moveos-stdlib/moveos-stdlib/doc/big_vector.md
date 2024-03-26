@@ -99,7 +99,7 @@ Regular Vector API
 Create an empty vector.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="big_vector.md#0x2_big_vector_empty">empty</a>&lt;T: store&gt;(bucket_size: u64): <a href="big_vector.md#0x2_big_vector_BigVector">big_vector::BigVector</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="big_vector.md#0x2_big_vector_empty">empty</a>&lt;T: store&gt;(bucket_size: u64): <a href="big_vector.md#0x2_big_vector_BigVector">big_vector::BigVector</a>&lt;T&gt;
 </code></pre>
 
 
@@ -111,7 +111,7 @@ Create an empty vector.
 Create a vector of length 1 containing the passed in element.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="big_vector.md#0x2_big_vector_singleton">singleton</a>&lt;T: store&gt;(element: T, bucket_size: u64): <a href="big_vector.md#0x2_big_vector_BigVector">big_vector::BigVector</a>&lt;T&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="big_vector.md#0x2_big_vector_singleton">singleton</a>&lt;T: store&gt;(element: T, bucket_size: u64): <a href="big_vector.md#0x2_big_vector_BigVector">big_vector::BigVector</a>&lt;T&gt;
 </code></pre>
 
 
