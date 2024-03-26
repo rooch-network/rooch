@@ -7,6 +7,8 @@ module bitcoin_move::ord {
     use std::option::{Self, Option};
     use std::string;
     use std::string::String;
+    use moveos_std::simple_multimap;
+    use moveos_std::big_vector;
     use moveos_std::big_vector::BigVector;
     use moveos_std::table;
     use moveos_std::table::Table;
@@ -22,8 +24,8 @@ module bitcoin_move::ord {
     use rooch_framework::multichain_address;
     use rooch_framework::bitcoin_address::BitcoinAddress;
 
-    use bitcoin_move::types::{Self, Witness, Transaction, OutPoint};
-    use bitcoin_move::utxo::{Self, UTXO, SealOut};
+    use bitcoin_move::types::{Self, Witness, Transaction, OutPoint, new_outpoint, TxOut};
+    use bitcoin_move::utxo::{Self, UTXO, SealOut, UTXOSeal};
     use bitcoin_move::brc20;
 
     friend bitcoin_move::genesis;
@@ -77,6 +79,7 @@ module bitcoin_move::ord {
         inscriptions: TableVec<InscriptionID>,
         satpoint_to_inscription: Table<SatPoint, InscriptionID>,
         outpoint_to_satpoint: Table<OutPoint, BigVector<SatPoint>>,
+        // outpoint_to_satpoint: Table<OutPoint, vector<SatPoint>>,
     }
 
     #[data_struct]
@@ -85,10 +88,23 @@ module bitcoin_move::ord {
         offset: u64,
     }
 
+    struct SatPointRange has store, copy, drop {
+        txid: address,
+        /// The index of the referenced output in its transaction's vout.
+        vout: u32,
+        offset: u64,
+    }
+
+    struct SatPointMapping has store, copy, drop {
+        old_satpoint: SatPoint,
+        new_satpoint: SatPoint,
+    }
+
     public(friend) fun genesis_init(_genesis_account: &signer){
         let inscriptions = table_vec::new<InscriptionID>();
         let satpoint_to_inscription = table::new<SatPoint, InscriptionID>();
         let outpoint_to_satpoint = table::new<OutPoint, BigVector<SatPoint>>();
+        // let outpoint_to_satpoint = table::new<OutPoint, vector<SatPoint>>();
         let store = InscriptionStore{
             inscriptions,
             satpoint_to_inscription,
@@ -96,6 +112,44 @@ module bitcoin_move::ord {
         };
         let store_obj = object::new_named_object(store);
         object::to_shared(store_obj);
+    }
+
+    fun borrow_mut_inscription_store() : &mut InscriptionStore {
+        let inscription_store_object_id = object::named_object_id<InscriptionStore>();
+        let inscription_store_obj = object::borrow_mut_object_shared<InscriptionStore>(inscription_store_object_id);
+        object::borrow_mut(inscription_store_obj)
+    }
+
+
+    fun borrow_inscription_store() : &InscriptionStore {
+        let inscription_store_object_id = object::named_object_id<InscriptionStore>();
+        let inscription_store_obj = object::borrow_object<InscriptionStore>(inscription_store_object_id);
+        object::borrow(inscription_store_obj)
+    }
+
+    public fun new_satpoint(txid: address, vout: u32, offset: u64) : SatPoint {
+        let outpoint = new_outpoint(txid, vout);
+        SatPoint{
+            outpoint,
+            offset,
+        }
+    }
+
+    /// Get the SatPoint's offset
+    public fun satpoint_offset(satpoint: &SatPoint): u64 {
+        satpoint.offset
+    }
+
+    public fun new_satpoint_mapping(old_satpoint: SatPoint, new_satpoint: SatPoint) : SatPointMapping {
+        SatPointMapping{
+            old_satpoint,
+            new_satpoint,
+        }
+    }
+
+    /// Get the SatPoint's mapping
+    public fun satpoint_mapping(satpoint_mapping: &SatPointMapping): (SatPoint, SatPoint) {
+        (satpoint_mapping.old_satpoint, satpoint_mapping.new_satpoint)
     }
 
     // ==== Inscription ==== //
@@ -161,6 +215,59 @@ module bitcoin_move::ord {
 
     public fun spend_utxo(utxo_obj: &mut Object<UTXO>, tx: &Transaction): vector<SealOut>{
         let utxo = object::borrow_mut(utxo_obj);
+
+        let txid = types::tx_id(tx);
+        let txinput = types::tx_input(tx);
+        let idx = 0;
+        let output_seals = simple_multimap::new<u64, UTXOSeal>();
+        while(idx < vector::length(txinput)){
+            let txin = vector::borrow(txinput, idx);
+            let outpoint = *types::txin_previous_output(txin);
+            if(table::contains(&btc_utxo_store.utxo, outpoint)){
+                let object_id = table::remove(&mut btc_utxo_store.utxo, outpoint);
+                let (_owner, utxo_obj) = utxo::take(object_id);
+                let seal_outs = ord::spend_utxo(&mut utxo_obj, tx);
+                if(!vector::is_empty(&seal_outs)){
+                    let protocol = type_info::type_name<Inscription>();
+                    let j = 0;
+                    let seal_outs_len = vector::length(&seal_outs);
+                    while(j < seal_outs_len){
+                        let seal_out = vector::pop_back(&mut seal_outs);
+                        let (output_index, object_id) = utxo::unpack_seal_out(seal_out);
+                        let utxo_seal = utxo::new_utxo_seal(protocol, object_id);
+                        simple_multimap::add(&mut output_seals, output_index, utxo_seal);
+                        j = j + 1;
+                    };
+                };
+                let seals = utxo::remove(utxo_obj);
+                //The seals should be empty after utxo is spent
+                simple_multimap::destroy_empty(seals);
+            }else{
+                //We allow the utxo not exists in the utxo store, because we may not sync the block from genesis
+            };
+
+            idx = idx + 1;
+        };
+
+        let tx_output = types::tx_output(tx);
+        // TODO Track the Inscription via SatPoint
+
+        let output_index = 0;
+        let idx = 0;
+        let txoutput_len = vector::length(tx_output);
+        while(idx < txoutput_len){
+            let txout = vector::borrow(tx_output, idx);
+            let vout = (idx as u32);
+            let outpoint = types::new_outpoint(txid, vout);
+            let value = types::txout_value(txout);
+
+        };
+
+
+
+
+
+
         let seal_object_ids = utxo::remove_seals<Inscription>(utxo);
         let seal_outs = vector::empty();
         if(vector::is_empty(&seal_object_ids)){
@@ -194,6 +301,104 @@ module bitcoin_move::ord {
         bind_multichain_address(address, bitcoin_address_opt);
 
         seal_outs
+    }
+
+    public fun update_inscription_index(txout: &TxOut, outpoint: OutPoint, old_satpoint: SatPoint, new_satpoint: SatPoint, tx: &Transaction): vector<SealOut>{
+        // let utxo = object::borrow_mut(utxo_obj);
+
+        let output_seals = simple_multimap::new<u64, UTXOSeal>();
+        let seal_outs = vector[];
+        // TODO Track the Inscription via SatPoint
+        // let output_index = 0;
+        // let first_output = vector::borrow(outputs, output_index);
+        let txid = types::tx_id(tx);
+        let address = types::txout_object_address(txout);
+        let bitcoin_address_opt = types::txout_address(txout);
+        let to_address = types::txout_object_address(txout);
+        // let j = 0;
+        // let objects_len = vector::length(&seal_object_ids);
+        // while(j < objects_len){
+        //     let seal_object_id = *vector::borrow(&mut seal_object_ids, j);
+
+        let inscription_store = borrow_mut_inscription_store();
+        let inscription_id = table::borrow(&inscription_store.satpoint_to_inscription, old_satpoint);
+        let inscription_obj_id = object::custom_object_id<InscriptionID,Inscription>(*inscription_id);
+
+        let (origin_owner, inscription_obj) = object::take_object_extend<Inscription>(inscription_obj_id);
+        let inscription = object::borrow(&inscription_obj);
+        if(brc20::is_brc20(&inscription.json_body)){
+            let op = brc20::new_op(origin_owner, to_address, simple_map::clone(&inscription.json_body));
+            brc20::process_utxo_op(op);
+            //TODO record the execution result
+        };
+        // TODO handle curse inscription
+        object::transfer_extend(inscription_obj, to_address);
+        // vector::push_back(&mut seal_outs, utxo::new_seal_out(output_index, seal_object_id));
+        // j = j + 1;
+
+        // struct InscriptionStore has key{
+        // inscriptions: TableVec<InscriptionID>,
+        // satpoint_to_inscription: Table<SatPoint, InscriptionID>,
+        // outpoint_to_satpoint: Table<OutPoint, BigVector<SatPoint>>,
+        // // outpoint_to_satpoint: Table<OutPoint, vector<SatPoint>>,
+        // }
+
+        table::remove(&mut inscription_store.satpoint_to_inscription, old_satpoint);
+        table::add(&mut inscription_store.satpoint_to_inscription, new_satpoint, *inscription_id);
+
+        if(table::contains(&inscription_store.outpoint_to_satpoint, outpoint)) {
+            let satpoints = table::borrow_mut(&mut inscription_store.outpoint_to_satpoint, outpoint);
+            big_vector::push_back(satpoints, new_satpoint);
+        } else {
+            let satpoints = big_vector::singleton(new_satpoint, OUTPOINT_TO_SATPOINT_BUCKET_SIZE);
+            table::add(&mut inscription_store.outpoint_to_satpoint, outpoint, satpoints);
+        };
+        // };
+        //Auto create address mapping if not exist
+        bind_multichain_address(address, bitcoin_address_opt);
+
+        // seal_outs
+    }
+
+    public fun remove_inscription_index(outpoint: OutPoint) {
+        let inscription_store = borrow_mut_inscription_store();
+        if(table::contains(&inscription_store.outpoint_to_satpoint, outpoint)) {
+            let satpoints= table::remove(&mut inscription_store.outpoint_to_satpoint, outpoint);
+            big_vector::destroy(satpoints)
+        }
+    }
+
+        /// Find existing inscriptions on input (transfers of inscriptions)
+    public fun inscriptions_on_output(outpoint: &OutPoint) : vector<SatPoint>{
+        let inscription_store = borrow_inscription_store();
+        if (table::contains(&inscription_store.outpoint_to_satpoint, *outpoint)){
+            let outpoint_to_satpoint = table::borrow(&inscription_store.outpoint_to_satpoint, *outpoint);
+            let all_satpoint = big_vector::to_vector(outpoint_to_satpoint);
+            // vector::for_each(all_satpoint, |sat_point| {
+            // });
+            // *outpoint_to_satpoint
+            all_satpoint
+        } else {
+            vector[]
+        }
+
+        // for (old_satpoint, inscription_id) in Index::inscriptions_on_output(
+        //     self.satpoint_to_sequence_number,
+        //     self.sequence_number_to_entry,
+        //     tx_in.previous_output,
+        // )? {
+        //     let offset = total_input_value + old_satpoint.offset;
+        //     floating_inscriptions.push(Flotsam {
+        //         offset,
+        //         inscription_id,
+        //         origin: Origin::Old { old_satpoint },
+        //     });
+        //
+        //     inscribed_offsets
+        //         .entry(offset)
+        //         .or_insert((inscription_id, 0))
+        //         .1 += 1;
+        // }
     }
 
     public fun process_transaction(tx: &Transaction): vector<SealOut>{
