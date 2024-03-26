@@ -15,7 +15,7 @@ export function SftDetailForSelfStaking() {
 
   return (
     <>
-      <div className="flex items-center justify-start w-full gap-2 text-muted-foreground dark:text-teal-50 mt-2">
+      <div className="flex items-center justify-start w-full gap-2 text-muted-foreground dark:text-blue-50 mt-2">
         <span className="text-sm">Process</span>
         <Progress value={progress} />
         <span className="text-sm flex items-center gap-1">
@@ -33,7 +33,7 @@ export function SftDetailForSelfStaking() {
       {/* My Bitcoin UTXO */}
       <SelfStakingCard />
 
-      <Button className="rounded-lg w-full mt-4 mb-2 md:mt-8 md:mb-6 h-12 dark:bg-teal-500 dark:hover:bg-teal-600 text-white font-semibold">
+      <Button className="rounded-lg w-full mt-4 mb-2 md:mt-8 md:mb-6 h-12 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold">
         Mint
       </Button>
     </>
