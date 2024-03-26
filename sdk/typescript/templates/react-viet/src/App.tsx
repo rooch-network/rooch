@@ -3,7 +3,7 @@
 
 import "./App.css";
 import {Box, Container, Flex, Heading} from "@radix-ui/themes";
-import {useWalletStore, useCurrentWallet} from "@roochnetwork/rooch-sdk-kit";
+import {useWalletStore, useCurrentWallet} from '@roochnetwork/rooch-sdk-kit';
 
 function App() {
 

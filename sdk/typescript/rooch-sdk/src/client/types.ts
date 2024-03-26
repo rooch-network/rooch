@@ -8,8 +8,12 @@ import {
   GlobalStateFilterView,
   IndexerStateID,
   InscriptionFilterView,
+  RoochAccountAddress,
   TableStateFilterView,
+  TransactionFilterView,
   TypeTag,
+  u64,
+  usize,
   UTXOFilterView,
 } from '../types'
 
@@ -69,4 +73,43 @@ export interface GetEventsParams {
   cursor: number
   limit: number
   descending_order: boolean
+}
+
+export type QueryTransactionFilterParams =
+  | { sender: RoochAccountAddress }
+  | { original_address: string }
+  | { tx_hashes: string[] }
+  | { time_range: { end_time: number; start_time: number } }
+  | { tx_order_range: { from_order: number; to_order: number } }
+
+export interface QueryTransactionParams {
+  filter: TransactionFilterView
+  cursor: u64
+  limit: usize
+  descending_order: boolean
+}
+
+export type QueryEventFilterParams =
+  | { event_type: string }
+  | { sender: string }
+  | { tx_hash: string }
+  | { time_range: { end_time: number; start_time: number } }
+  | { tx_order_range: { from_order: number; to_order: number } }
+
+export interface QueryEventParams {
+  filter: QueryEventFilterParams
+  cursor: { event_index: number; tx_order: number }
+  limit: usize
+  descending_order: boolean
+}
+
+export interface GetBalanceParams {
+  address: string
+  coinType: string
+}
+
+export interface GetBalancesParams {
+  address: string
+  cursor: string
+  limit: usize
 }

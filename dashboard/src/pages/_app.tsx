@@ -50,7 +50,7 @@ import '../../styles/globals.css'
 
 import { GoogleAnalytics } from 'nextjs-google-analytics'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { TESTNetwork } from '@roochnetwork/rooch-sdk'
+import { DevNetwork } from '@roochnetwork/rooch-sdk'
 import { WalletProvider, RoochClientProvider, SupportChain } from '@roochnetwork/rooch-sdk-kit'
 import Spinner from 'src/@core/components/spinner'
 
@@ -110,7 +110,7 @@ const App = (props: ExtendedAppProps) => {
       </Head>
 
       <QueryClientProvider client={queryClient}>
-        <RoochClientProvider defaultNetwork={TESTNetwork}>
+        <RoochClientProvider defaultNetwork={DevNetwork}>
           <WalletProvider chain={SupportChain.BITCOIN} autoConnect fallback={<Spinner />}>
             <SettingsProvider {...(setConfig ? { pageSettings: setConfig() } : {})}>
               <SettingsConsumer>
