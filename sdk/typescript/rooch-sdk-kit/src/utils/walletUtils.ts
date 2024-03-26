@@ -3,6 +3,7 @@
 
 import { SupportChain, SupportChains } from '../feature'
 import { BaseWallet, Metamask, UniSatWallet } from '../types'
+import { OkxWallet } from '../types/wellet/okx'
 
 export async function getInstalledWallets(filter?: SupportChain) {
   const wallets: BaseWallet[] = []
@@ -12,7 +13,7 @@ export async function getInstalledWallets(filter?: SupportChain) {
         wallets.push(new Metamask())
         break
       case SupportChain.BITCOIN:
-        wallets.push(new UniSatWallet())
+        wallets.push(new UniSatWallet(), new OkxWallet())
         break
       case SupportChain.Rooch:
         wallets.push(new Metamask(), new UniSatWallet())

@@ -6,6 +6,11 @@ import { WalletAccount } from '../WalletAccount'
 import { SupportChain } from '../../feature'
 
 export class Metamask extends ETHWallet {
+  constructor() {
+    super()
+    this.name = 'metamask'
+  }
+
   getTarget(): any {
     return (window as any).ethereum
   }
@@ -17,7 +22,7 @@ export class Metamask extends ETHWallet {
   async sign(msg: string): Promise<string> {
     return await this.getTarget().request({
       method: 'personal_sign',
-      params: [msg, this.account?.getAddress()],
+      params: [msg, this.account?.address],
     })
   }
 

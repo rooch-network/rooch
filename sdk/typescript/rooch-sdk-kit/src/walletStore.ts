@@ -16,6 +16,7 @@ export type WalletActions = {
   setAccountSwitched: (selectedAccount: WalletAccount) => void
   setConnectionStatus: (connectionStatus: WalletConnectionStatus) => void
   setWalletConnected: (
+    wallet: BaseWallet,
     connectedAccounts: readonly WalletAccount[],
     selectedAccount: WalletAccount | null,
   ) => void
@@ -31,7 +32,7 @@ export type StoreState = {
   currentChain: SupportChain
   sessionAccount: IAccount | null
   currentWallet: BaseWallet
-  installedWallets: BaseWallet[]
+  supportWallets: BaseWallet[]
   accounts: readonly WalletAccount[]
   currentAccount: WalletAccount | null
   lastConnectedAccountAddress: string | null
@@ -43,7 +44,7 @@ type WalletConfiguration = {
   autoConnectEnabled: boolean
   chain: SupportChain
   currentWallet: BaseWallet
-  installedWallets: BaseWallet[]
+  supportWallets: BaseWallet[]
   storage: StateStorage
   storageKey: string
 }
@@ -51,7 +52,7 @@ type WalletConfiguration = {
 export function createWalletStore({
   chain,
   currentWallet,
-  installedWallets,
+  supportWallets,
   storage,
   storageKey,
   autoConnectEnabled,
@@ -63,7 +64,7 @@ export function createWalletStore({
         autoConnectEnabled,
         sessionAccount: null,
         currentWallet,
-        installedWallets,
+        supportWallets,
         accounts: [],
         currentAccount: null,
         lastConnectedAccountAddress: null,
@@ -79,7 +80,7 @@ export function createWalletStore({
             currentChain: chain,
             accounts: [],
             // currentAccount: null,
-            // currentWallet: installedWallets.find((v) => v.getSupportNetworks()),
+            // currentWallet: supportWallets.find((v) => v.getSupportNetworks()),
             sessionAccount: null,
             connectionStatus: 'disconnected',
           }))
@@ -89,11 +90,13 @@ export function createWalletStore({
             connectionStatus,
           }))
         },
-        setWalletConnected(connectedAccounts, selectedAccount) {
+        setWalletConnected(wallet, connectedAccounts, selectedAccount) {
           set(() => ({
+            currentWallet: wallet,
             accounts: connectedAccounts,
             currentAccount: selectedAccount,
-            lastConnectedAccountAddress: selectedAccount?.getAddress(),
+            lastConnectedWalletName: wallet.name ?? '',
+            lastConnectedAccountAddress: selectedAccount?.address ?? '',
             connectionStatus: 'connected',
           }))
         },
@@ -109,7 +112,7 @@ export function createWalletStore({
         setAccountSwitched(selectedAccount) {
           set(() => ({
             currentAccount: selectedAccount,
-            lastConnectedAccountAddress: selectedAccount.getAddress(),
+            lastConnectedAccountAddress: selectedAccount.address ?? '',
           }))
         },
         updateWalletAccounts(accounts) {
@@ -118,7 +121,7 @@ export function createWalletStore({
           set(() => ({
             currentAccount:
               (currentAccount &&
-                accounts.find((account) => account.getAddress() === currentAccount.getAddress())) ||
+                accounts.find((account) => account.address === currentAccount.address)) ||
               accounts[0],
           }))
         },

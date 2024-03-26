@@ -12,6 +12,7 @@ export const RoochSignPrefix = 'Rooch tx hash:\n'
 export abstract class BaseWallet {
   account?: WalletAccount
   installed: boolean | undefined
+  name: string | undefined
 
   /**
    * Connects the wallet.

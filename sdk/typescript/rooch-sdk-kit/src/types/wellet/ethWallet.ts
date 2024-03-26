@@ -109,7 +109,7 @@ export abstract class ETHWallet extends BaseWallet {
       Array.from(signatureInfoBytes),
       [],
       [],
-      Array.from(Buffer.from(this.account!.getAddress().substring(2), 'hex')),
+      Array.from(Buffer.from(this.account!.address.substring(2), 'hex')),
     )
 
     console.log(authPayload)

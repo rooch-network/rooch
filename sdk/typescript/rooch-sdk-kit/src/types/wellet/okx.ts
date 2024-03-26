@@ -6,9 +6,14 @@ import { BitcoinWallet } from './bitcoinWallet'
 import { SupportChain } from '../../feature'
 
 export class OkxWallet extends BitcoinWallet {
+  constructor() {
+    super()
+    this.name = 'okx'
+  }
+
   async sign(msg: string): Promise<string> {
     return this.getTarget().signMessage(msg, {
-      from: this.account?.getAddress(),
+      from: this.account?.address,
     })
   }
 

@@ -23,13 +23,13 @@ export abstract class BitcoinWallet extends BaseWallet {
     // remove recover id
     const normalizeSignBuffer = signBuffer.subarray(1)
 
-    let multiAddress = new MultiChainAddress(RoochMultiChainID.Bitcoin, walletAccount.getAddress())
+    let multiAddress = new MultiChainAddress(RoochMultiChainID.Bitcoin, walletAccount.address)
     let multiAddressBytes = multiAddress.toBytes()
     let bitcoinMagicSignPrefixBytes = Array.from(BITCOIN_MAGIC_SIGN_PREFIX, (char) =>
       char.charCodeAt(0),
     )
     let signatureInfoBytes = Array.from(signatureInfo, (char) => char.charCodeAt(0))
-    let publicKey = Buffer.from(walletAccount.getInfo().publicKey!, 'hex')
+    let publicKey = Buffer.from(walletAccount.publicKey!, 'hex')
 
     let authPayload = new AuthenticatorPayload(
       Array.from(normalizeSignBuffer),

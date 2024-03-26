@@ -6,13 +6,16 @@ import { useLayoutEffect, useState } from 'react'
 
 import { useWalletStore } from './useWalletStore'
 import { useConnectWallet } from './useConnectWallet'
+import { useSupportWallets } from '../../hooks/wallet/useWallets'
+import { useCurrentWallet } from '../../hooks/wallet/useCurrentWallet'
 
 export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
   const { mutateAsync: connectWallet } = useConnectWallet()
   const autoConnectEnabled = useWalletStore((state) => state.autoConnectEnabled)
   const lastConnectedWalletName = useWalletStore((state) => state.lastConnectedWalletName)
   const lastConnectedAccountAddress = useWalletStore((state) => state.lastConnectedAccountAddress)
-
+  const { isConnected } = useCurrentWallet()
+  const wallets = useSupportWallets()
   const [clientOnly, setClientOnly] = useState(false)
 
   useLayoutEffect(() => {
@@ -24,6 +27,7 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
       '@rooch/sdk-kit',
       'autoconnect',
       {
+        isConnected,
         autoConnectEnabled,
         lastConnectedWalletName,
         lastConnectedAccountAddress,
@@ -34,7 +38,17 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
         return 'disabled'
       }
 
-      await connectWallet()
+      if (!lastConnectedWalletName || !lastConnectedAccountAddress || isConnected) {
+        return 'attempted'
+      }
+
+      let wallet = wallets.find((wallet) => wallet.name === lastConnectedWalletName)
+
+      if (wallet) {
+        await connectWallet({ wallet })
+      }
+
+      // TODO: switch lastConnectedAccount
 
       return 'attempted'
     },

@@ -52,7 +52,7 @@ export function WalletProvider({
     if (wallets && wallets.length !== 0) {
       storeRef.current = createWalletStore({
         chain,
-        installedWallets: wallets,
+        supportWallets: wallets,
         currentWallet: wallets.find((v) => v.isSupportChain(chain)) ?? new UniSatWallet(), // default use unisat
         autoConnectEnabled: autoConnect,
         storage: storage ?? localStorage,

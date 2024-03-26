@@ -14,3 +14,8 @@ export function chain2MultiChainID(chain: SupportChain) {
       return RoochMultiChainID.Rooch
   }
 }
+
+// rooch 多链
+
+// rooch 多网络
+

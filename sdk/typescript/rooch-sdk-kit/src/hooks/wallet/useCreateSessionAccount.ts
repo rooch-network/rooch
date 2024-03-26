@@ -43,7 +43,7 @@ export function useCreateSessionKey({
   const currentWallet = useCurrentWallet()
   const currentAccount = useWalletStore((state) => state.currentAccount)
   let roochAddress = useResolveRoochAddress(
-    currentAccount?.getAddress() ?? '',
+    currentAccount?.address ?? '',
     RoochMultiChainID.Bitcoin,
   )
   // TODO: save session with account & scope

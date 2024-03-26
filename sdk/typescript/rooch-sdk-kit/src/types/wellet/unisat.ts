@@ -8,6 +8,11 @@ import { SupportChain } from '../../feature'
 const UNISAT_SUPPORT_NETWORKS = ['livenet', 'testnet']
 
 export class UniSatWallet extends BitcoinWallet {
+  constructor() {
+    super()
+    this.name = 'unisat'
+  }
+
   getTarget(): any {
     return (window as any).unisat
   }

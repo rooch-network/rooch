@@ -75,7 +75,6 @@ export function RoochClientProvider<T extends Network>(props: RoochClientProvide
   }, [storeRef, supportNetworks])
 
   const client = useMemo(() => {
-    console.log('当前网络变化', currentNetwork)
     return createClient(currentNetwork.name, currentNetwork)
   }, [createClient, currentNetwork])
 
@@ -88,7 +87,6 @@ export function RoochClientProvider<T extends Network>(props: RoochClientProvide
         if (currentNetwork === newNetwork) {
           return
         }
-        console.log('-设置新网络')
         setCurrentNetwork(newNetwork)
       },
       addNetwork: (network) => {

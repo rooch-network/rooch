@@ -6,12 +6,14 @@ import { useMutation } from '@tanstack/react-query'
 
 import { useWalletStore } from './useWalletStore'
 import { useCurrentWallet } from './useCurrentWallet'
-import { WalletAccount } from '../../types'
+import { BaseWallet, WalletAccount } from '../../types'
 import { walletMutationKeys } from '../../constants/walletMutationKeys'
 import { useRoochClient } from '../../hooks/useRoochClient'
 import { chain2MultiChainID } from '../../utils/chain2MultiChainID'
 
-type ConnectWalletArgs = void
+type ConnectWalletArgs = {
+  wallet?: BaseWallet
+}
 type ConnectWalletResult = WalletAccount[]
 
 type UseConnectWalletMutationOptions = Omit<
@@ -33,25 +35,27 @@ export function useConnectWallet({
 > {
   const setWalletConnected = useWalletStore((state) => state.setWalletConnected)
   const setConnectionStatus = useWalletStore((state) => state.setConnectionStatus)
-  const currentAccount = useWalletStore((state) => state.currentAccount)
+  // const currentAccount = useWalletStore((state) => state.currentAccount)
   const chain = useWalletStore((state) => state.currentChain)
   const { currentWallet } = useCurrentWallet()
   const client = useRoochClient()
 
   return useMutation({
     mutationKey: walletMutationKeys.connectWallet(mutationKey),
-    mutationFn: async () => {
+    mutationFn: async ({ wallet }) => {
       try {
         setConnectionStatus('connecting')
 
-        const connectAccounts = await currentWallet!.connect()
+        const finalWallet = wallet ?? currentWallet
+
+        const connectAccounts = await finalWallet!.connect()
         const selectedAccount = connectAccounts[0]
 
         // use cache date
-        if (selectedAccount.address === currentAccount?.address) {
-          setWalletConnected(connectAccounts, currentAccount)
-          return connectAccounts
-        }
+        // if (selectedAccount.address === currentAccount?.address) {
+        //   setWalletConnected(connectAccounts, currentAccount)
+        //   return connectAccounts
+        // }
 
         let selectedAccountRoochAddress = await client.resoleRoochAddress({
           address: selectedAccount.address,
@@ -59,6 +63,7 @@ export function useConnectWallet({
         })
 
         setWalletConnected(
+          finalWallet,
           connectAccounts,
           new WalletAccount(
             selectedAccount.address,

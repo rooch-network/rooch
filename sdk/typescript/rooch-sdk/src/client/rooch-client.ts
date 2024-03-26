@@ -14,7 +14,6 @@ import {
   EventPageView,
   GlobalStateView,
   InscriptionStatePageView,
-  BalanceInfoPageView,
   EventWithIndexerPageView,
   StateOptions,
   StatePageView,
@@ -22,7 +21,7 @@ import {
   TableStateView,
   TransactionWithInfoPageView,
   TransactionWithInfoView,
-  UTXOStatePageView,
+  UTXOStatePageView, BalanceInfoPageView,
 } from '../types'
 import {
   addressToSeqNumber,
