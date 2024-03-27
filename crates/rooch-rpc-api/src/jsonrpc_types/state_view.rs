@@ -228,19 +228,6 @@ impl From<StateChangeSet> for StateChangeSetView {
     }
 }
 
-// impl From<StateChangeSetView> for StateChangeSet {
-//     fn from(state_change_set: StateChangeSetView) -> Self {
-//         Self {
-//             global_size: state_change_set.global_size,
-//             changes: state_change_set
-//                 .changes
-//                 .into_iter()
-//                 .map(|(k, v)| (k, v.into()))
-//                 .collect(),
-//         }
-//     }
-// }
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum OpView<T> {

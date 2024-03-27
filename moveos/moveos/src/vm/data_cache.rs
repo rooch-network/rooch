@@ -204,45 +204,6 @@ pub fn into_change_set(
     })?;
     let data = object_runtime.into_inner();
     let (tx_context, change_set) = data.into_change_set()?;
-    // let mut changes = BTreeMap::new();
-    // for (handle, table) in tables {
-    //     let (_, content) = table.into_inner();
-    //     let mut entries = BTreeMap::new();
-    //     for (key, table_value) in content {
-    //         let (value_layout, value_type, op) = match table_value.into_effect() {
-    //             Some((value_layout, value_type, op)) => (value_layout, value_type, op),
-    //             None => continue,
-    //         };
-    //         match op {
-    //             Op::New(box_val) => {
-    //                 let bytes = unbox_and_serialize(&value_layout, box_val)?;
-    //                 entries.insert(
-    //                     KeyState::new(key.key, key.key_type),
-    //                     Op::New(State {
-    //                         value_type,
-    //                         value: bytes,
-    //                     }),
-    //                 );
-    //             }
-    //             Op::Modify(val) => {
-    //                 let bytes = unbox_and_serialize(&value_layout, val)?;
-    //                 entries.insert(
-    //                     KeyState::new(key.key, key.key_type),
-    //                     Op::Modify(State {
-    //                         value_type,
-    //                         value: bytes,
-    //                     }),
-    //                 );
-    //             }
-    //             Op::Delete => {
-    //                 entries.insert(KeyState::new(key.key, key.key_type), Op::Delete);
-    //             }
-    //         }
-    //     }
-    //     if !entries.is_empty() {
-    //         changes.insert(handle, TableChange { entries });
-    //     }
-    // }
     Ok((tx_context, change_set))
 }
 

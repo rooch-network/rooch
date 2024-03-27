@@ -755,14 +755,11 @@ impl RuntimeField {
 
     pub fn borrow_value(&self, expect_value_type: TypeTag) -> PartialVMResult<Value> {
         match self {
-            RuntimeField::None(_) => {
-                Err(
-                    PartialVMError::new(StatusCode::MISSING_DATA).with_message(format!(
-                        "Cannot borrow value of None as type {}",
-                        expect_value_type
-                    )),
-                );
-            }
+            RuntimeField::None(_) => Err(PartialVMError::new(StatusCode::MISSING_DATA)
+                .with_message(format!(
+                    "Cannot borrow value of None as type {}",
+                    expect_value_type
+                ))),
             RuntimeField::Object(obj) => obj.borrow_value(expect_value_type),
             RuntimeField::Normal(normal) => normal.borrow_value(expect_value_type),
         }

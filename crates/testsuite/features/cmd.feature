@@ -317,9 +317,13 @@ Feature: Rooch CLI integration tests
       Then cmd: "rpc request --method rooch_queryGlobalStates --params '[{"object_type":"{{$.address_mapping.default}}::child_object::Child"}, null, "10", true]'"
       Then assert: "{{$.rpc[-1].data[0].object_id}} == {{$.event[-1].data[0].decoded_event_data.value.id}}"
 
-      #TODO fix child dynamic field
-      #Then cmd: "move run --function default::third_party_module_for_child_object::update_child_age --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --args u64:10"
-      
+      Then cmd: "move run --function default::third_party_module_for_child_object::update_child_age --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --args u64:10"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      Then cmd: "move view --function default::child_object::get_age --args object:{{$.event[-1].data[0].decoded_event_data.value.id}}"
+      Then assert: "{{$.move[-1].vm_status}} == Executed"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 10" 
+       
       Then cmd: "move run --function default::third_party_module_for_child_object::remove_child_via_id --args object_id:{{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
