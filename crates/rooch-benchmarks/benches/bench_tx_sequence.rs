@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use criterion::{criterion_group, criterion_main, Criterion};
 use rooch_benchmarks::helper::profiled;
 use rooch_benchmarks::tx::{create_transaction, gen_sequencer};
