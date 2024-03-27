@@ -5,7 +5,8 @@ import { ChainInfo, SerializedSignature } from '@roochnetwork/rooch-sdk'
 import { BaseWallet } from './baseWallet'
 import { AuthenticatorPayload } from '../AuthenticatorPayload'
 import { Buffer } from 'buffer'
-import { WalletAccount } from '../WalletAccount'
+import { SupportChain } from '../../feature'
+import { WalletAccount } from '../../types'
 
 // TODO: eip6963 Discovered Wallets
 // interface ETHWalletInfo {
@@ -24,6 +25,21 @@ import { WalletAccount } from '../WalletAccount'
 const ETH_MAGIC_SIGN_PREFIX = '\u0019Ethereum Signed Message:\n'
 
 export abstract class ETHWallet extends BaseWallet {
+  switchNetwork(_: string): void {
+    throw new Error('Method not implemented.')
+  }
+
+  switchAccount(_: string) {
+    throw new Error('Method not implemented.')
+  }
+
+  getNetwork(): string {
+    throw new Error('Method not implemented.')
+  }
+  getSupportNetworks(): string[] {
+    throw new Error('Method not implemented.')
+  }
+
   async addChain(chain: ChainInfo) {
     await this.getTarget().request({
       method: 'wallet_addEthereumChain',
@@ -48,11 +64,35 @@ export abstract class ETHWallet extends BaseWallet {
     }
   }
 
+  onAccountsChanged(callback: (account: Array<WalletAccount>) => void) {
+    this.getTarget().on('accountsChanged', callback)
+  }
+  removeAccountsChanged(callback: (account: Array<WalletAccount>) => void) {
+    this.getTarget().removeListener('accountsChanged', callback)
+  }
+
+  onNetworkChanged(callback: (network: string) => void) {
+    this.getTarget().on('chainChanged', callback)
+  }
+
+  removeNetworkChanged(callback: (network: string) => void) {
+    this.getTarget().removeListener('chainChanged', callback)
+  }
+
+  normalize_recovery_id(recoveryID: number, chainId?: number): number {
+    if (recoveryID === 0 || recoveryID === 1) return recoveryID
+
+    if (chainId === undefined) {
+      return recoveryID - 27
+    }
+
+    return recoveryID - (chainId * 2 + 35)
+  }
+
   protected toSerializedSignature(
     msg: string,
     signature: string,
     signatureInfo: string,
-    walletAccount: WalletAccount,
   ): SerializedSignature {
     let signBuffer = Buffer.from(signature.slice(2), 'hex')
 
@@ -74,7 +114,7 @@ export abstract class ETHWallet extends BaseWallet {
       Array.from(signatureInfoBytes),
       [],
       [],
-      Array.from(Buffer.from(walletAccount.getAddress().substring(2), 'hex')),
+      Array.from(Buffer.from(this.account!.address.substring(2), 'hex')),
     )
 
     console.log(authPayload)
@@ -82,13 +122,7 @@ export abstract class ETHWallet extends BaseWallet {
     return authPayload.toBytes()
   }
 
-  normalize_recovery_id(recoveryID: number, chainId?: number): number {
-    if (recoveryID === 0 || recoveryID === 1) return recoveryID
-
-    if (chainId === undefined) {
-      return recoveryID - 27
-    }
-
-    return recoveryID - (chainId * 2 + 35)
+  isSupportChain(chain: SupportChain): boolean {
+    return chain === SupportChain.ETH || chain === SupportChain.Rooch
   }
 }

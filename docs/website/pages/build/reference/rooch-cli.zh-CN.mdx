@@ -4,34 +4,34 @@
 
 ## 安装
 
-安装 Rooch 时，将安装 Rooch CLI。有关先决条件和安装说明，请参阅[安装](./installation.zh-CN.mdx)主题。
+安装 Rooch 时，将安装 Rooch CLI。有关先决条件和安装说明，请参阅[安装](../getting-started/installation.zh-CN.mdx)主题。
 
-## 使用 Rooch 的命令行界面
+Rooch CLI 支持以下命令：
 
-Rooch CLI 支持以下命令:
+```bash
+[joe@mx rooch]$ rooch --help
 
-```shell
-rooch 0.1.0
-Rooch Contributors <opensource@rooch.network>
+Usage: rooch <COMMAND>
 
-USAGE:
-rooch <SUBCOMMAND>
+Commands:
+  account      Tool for interacting with accounts
+  init         Tool for init with rooch
+  move         CLI frontend for the Move compiler and VM
+  server       Start Rooch network
+  state        Get states by accessPath
+  object       Get object by object id
+  resource     Get account resource by tag
+  transaction  Tool for interacting with transaction
+  event        Tool for interacting with event
+  abi
+  env          Interface for managing multiple environments
+  session-key  Session key Commands
+  rpc
+  help         Print this message or the help of the given subcommand(s)
 
-    OPTIONS:
-    -h, --help       Print help information
-    -V, --version    Print version information
-
-    SUBCOMMANDS:
-    account        Tool for interacting with accounts
-    event          Tool for interacting with event
-    help           Print this message or the help of the given subcommand(s)
-    init           Tool for init with rooch
-    move           CLI frontend for the Move compiler and VM
-    object         Get object by object id
-    resource       Get account resource by tag
-    server         Start Rooch network
-    state          Get states by accessPath
-    transaction    Tool for interacting with transaction
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
 ```
 
 使用 `rooch -h` 来查看支持的命令列表。
@@ -46,14 +46,125 @@ rooch <SUBCOMMAND>
 
 响应类似于以下内容：
 
-```shell
-Creating config file ["/Users/sven/.rooch/rooch_config/rooch.yaml"] with default (local) server and ed25519 key scheme.
-Generated new keypair for address with scheme "ed25519" [0xeb417f9091c77c8c1a9c6a7683ee1eb5883fbae5128eae5ab414c0de5f050d08]
-Secret Recovery Phrase : [grab infant behave ugly erosion grief file arrange unit ship iron garage]
-"Rooch config file generated at /Users/sven/.rooch/rooch_config/rooch.yaml"
+```bash
+[joe@mx rooch]$ rooch init
+
+Rooch server config file generated at /home/joe/.rooch/rooch_config/server.yaml
+Creating client config file ["/home/joe/.rooch/rooch_config/rooch.yaml"] with rooch native validator.
+Enter a password to encrypt the keys. Press enter to leave it an empty password:
+Generated new keypair for address [0x270b27b9bb269adc0e8ed45ae19fec12d4b9f913e59bc394284c342b43e88d28]
+Secret Recovery Phrase : [student cute patrol habit garage suffer eye aunt biology frost tuna sentence]
+Rooch client config file generated at /home/joe/.rooch/rooch_config/rooch.yaml
+null
 ```
 
-## 启动本地服务
+> 提示：在提示设置加码密钥的密码时，如果直接`回车`，表示不设置密码！
+
+## 更多示例
+
+### 账户管理
+
+可以使用这个命令来创建新账户，列出当前管理的所有账户，切换账户，删除账户，查看账户余额。
+
+```bash
+[joe@mx rooch]$ rooch account
+
+Tool for interacting with accounts
+
+Usage: rooch account [OPTIONS] <COMMAND>
+
+Commands:
+  create   Create a new account off-chain. If an account not exist on-chain, contract will auto create the account on-chain
+  list     List all keys by its Rooch address, Base64 encoded public key
+  switch   Switch the active Rooch account
+  nullify  Nullify a keypair from a selected coin id with a Rooch address in rooch.keystore
+  balance  Show account balance, only the accounts managed by the current node are supported
+  help     Print this message or the help of the given subcommand(s)
+
+Options:
+      --client.config <CONFIG>  Sets the file storing the state of our user accounts (an empty one will be created if missing)
+  -h, --help                    Print help
+```
+
+### Move 客户端
+
+操作 Move 编译器和 Move 虚拟机的客户端程序。
+
+```bash
+[joe@mx rooch]$ rooch help move
+
+CLI frontend for the Move compiler and VM
+
+Usage: rooch move [OPTIONS] <COMMAND>
+
+Commands:
+  build              Build the package at `path`. If no path is provided defaults to current directory
+  coverage           Inspect test coverage for this package. A previous test run with the `--coverage` flag must have previously been run
+  disassemble        Disassemble the Move bytecode pointed to
+  docgen             Generate javadoc style documentation for Move packages
+  errmap             Generate error map for the package and its dependencies at `path` for use by the Move explanation tool
+  info               Print address information
+  new
+  prove              Run the Move Prover on the package at `path`. If no path is provided defaults to current directory. Use `.. prove .. -- <options>` to pass on options to the prover
+  test               Run Move unit tests in this package
+  publish            Common options for interacting with an account for a validator
+  run                Run a Move function
+  view               Run a Move function
+  integration-test   Integration test
+  explain            Explain Move abort codes. Errors are defined as a global category + module-specific reason for the error
+  framework-upgrade  Common options for interacting with an account for a validator
+  help               Print this message or the help of the given subcommand(s)
+
+Options:
+  -p, --path <PACKAGE_PATH>
+          Path to a package which the command should be run with respect to
+  -v
+          Print additional diagnostics if available
+  -d, --dev
+          Compile in 'dev' mode. The 'dev-addresses' and 'dev-dependencies' fields will be used if this flag is set. This flag is useful for development of packages that expose named addresses that are not set to a specific value
+      --test
+          Compile in 'test' mode. The 'dev-addresses' and 'dev-dependencies' fields will be used along with any code in the 'tests' directory
+      --doc
+          Generate documentation for packages
+      --abi
+          Generate ABIs for packages
+      --install-dir <INSTALL_DIR>
+          Installation directory for compiled artifacts. Defaults to current directory
+      --force
+          Force recompilation of all packages
+      --arch <ARCHITECTURE>
+
+      --fetch-deps-only
+          Only fetch dependency repos to MOVE_HOME
+      --skip-fetch-latest-git-deps
+          Skip fetching latest git dependencies
+      --bytecode-version <BYTECODE_VERSION>
+          Bytecode version to compile move code
+  -h, --help
+          Print help
+  -V, --version
+          Print version
+```
+
+### 本地网络服务
+
+在本地启动一个服务节点模拟链的服务，通常用于本地测试，提供启动和清理本地数据的命令。
+
+```bash
+[joe@mx rooch]$ rooch server
+
+Start Rooch network
+
+Usage: rooch server <COMMAND>
+
+Commands:
+  start  Start service
+  clean  Clean the Rooch server storage
+  help   Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help  Print help
+```
 
 使用 `rooch server start` 来启动一个本地服务。
 
@@ -67,475 +178,168 @@ Documentation generation successful!
 2023-07-17T05:34:49.963893Z  INFO rooch_rpc_server: Available JSON-RPC methods : ["wallet_accounts", "eth_blockNumber", "eth_getBalance", "eth_gasPrice", "net_version", "eth_getTransactionCount", "eth_sendTransaction", "rooch_sendRawTransaction", "rooch_getAnnotatedStates", "eth_sendRawTransaction", "rooch_getTransactions", "rooch_executeRawTransaction", "rooch_getEventsByEventHandle", "rooch_getTransactionByHash", "rooch_executeViewFunction", "eth_getBlockByNumber", "rooch_getEvents", "eth_feeHistory", "eth_getTransactionByHash", "eth_getBlockByHash", "eth_getTransactionReceipt", "rooch_getTransactionInfosByTxOrder", "eth_estimateGas", "eth_chainId", "rooch_getTransactionInfosByTxHash", "wallet_sign", "rooch_getStates"]
 ```
 
-## 更多示例
+### 状态查询
 
-### 账户
+通过 Access Path 来查询对象的状态信息。
 
-Rooch 账户相关的命令通过 `rooch account` 调用，账户命令支持以下子命令：
+```bash
+[joe@mx rooch]$ rooch help state
 
-```shell
-rooch-account 
-Tool for interacting with accounts
+Get states by accessPath
 
-USAGE:
-    rooch account [OPTIONS] <SUBCOMMAND>
+Usage: rooch state [OPTIONS] --access-path <ACCESS_PATH>
 
-OPTIONS:
-        --client.config <CONFIG>    Sets the file storing the state of our user accounts (an empty
-                                    one will be created if missing)
-    -h, --help                      Print help information
-
-SUBCOMMANDS:
-    create     Create a new account on-chain
-    help       Print this message or the help of the given subcommand(s)
-    import     Add a new key to rooch.keystore based on the input mnemonic phrase
-    list       List all keys by its Rooch address, Base64 encoded public key
-    nullify    Nullify a keypair from a selected scheme with a Ed25519 generated address in
-                   rooch.keystore
-    switch     Switch the active Rooch account
-    update     Update an address with a new keypair from scheme to rooch.keystore
+Options:
+  -a, --access-path <ACCESS_PATH>  /object/$object_id1[,$object_id2] /resource/$account_address/$resource_type1[,$resource_type2] /module/$account_address/$module_name1[,$module_name2] /table/$table_handle/$key1[,$key2]
+      --config-dir <CONFIG_DIR>    rooch config path
+  -h, --help                       Print help
 ```
 
-使用 `rooch account -h` 查看支持的子命令列表。
+### 对象查询
 
-使用 `rooch account help <SUBCOMMAND>` 查看指定子命令的更多信息。
+通过对象 ID 来查询对象的信息。
 
-#### 创建账户
+```bash
+[joe@mx rooch]$ rooch help object
 
-使用 `rooch account create` 命令在 Rooch 网络上创建账户。
+Get object by object id
 
-Rooch CLI 创建账户的命令支持以下选项：
+Usage: rooch object [OPTIONS] --id <ID>
 
-```shell
-rooch-account-create 
-Create a new account on-chain
-
-An account can be created by transferring coins, or by making an explicit call to create an account.
-This will create an account with no coins, and any coins will have to transferred afterwards.
-
-USAGE:
-    rooch account create [OPTIONS]
-
-OPTIONS:
-        --config-dir <CONFIG_DIR>
-            rooch config path
-
-    -h, --help
-            Print help information
+Options:
+      --id <ID>                  Object id
+      --config-dir <CONFIG_DIR>  rooch config path
+      --show-display
+  -h, --help                     Print help
 ```
 
-如果不通过 `--config-dir` 选项来指定路径，则账户将在默认的本地文件路径下创建，当前路径为 `~/.rooch/rooch_config/`。
+### 资源查询
 
-值得注意的是，要创建账户，配置文件 `rooch.yaml` 必须存在。`rooch.yaml` 文件可以通过 `rooch init` 命令创建。
+通过 `--resource` 选项来指定查询资源的类型。
 
-以下是创建账户时使用和不使用 `--config-dir` 选项的示例：
+```bash
+[joe@mx rooch]$ rooch help resource
 
-```shell
-rooch account create
+Get account resource by tag
+
+Usage: rooch resource [OPTIONS] --address <ADDRESS> --resource <RESOURCE>
+
+Options:
+      --address <ADDRESS>        Account address where the resource stored
+      --resource <RESOURCE>      Struct name as `<ADDRESS>::<MODULE_ID>::<STRUCT_NAME><TypeParam1?, TypeParam2?>` Example: `0x123::counter::Counter`, `0x123::counter::Box<0x123::counter::Counter>`
+      --config-dir <CONFIG_DIR>  rooch config path
+  -h, --help                     Print help
 ```
 
-```shell
-0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a
-Generated new keypair for address with scheme "ed25519" [0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a]
-Secret Recovery Phrase : [desert hedgehog moral long cost husband timber someone lunar knee clever brave]
-{
-  "sequence_info": {
-    "tx_order": "1",
-    "tx_order_signature": {
-      "scheme": "0",
-      "payload": "0x0027f6c2510a540a9cf615c784b1532138ee4b2e48788bc12965711f29ca6ab0a8bb0bc00e839e757583acbe6fa3cab41f521d820f7cded452aa9ea4fd2813ae0e6c8de62390c89dcb353892770164fd2cd449b5956193fa1d1759d196c666735f"
-    },
-    "tx_accumulator_root": "0x955bf43aaa654d7a4ae6e2f4a7f09d7537975eff8483fbdb1c0a1126e3e81e24"
-  },
-  "execution_info": {
-    "tx_hash": "0x6e7cd40300f2721a88719a4027ed7873daa28c22204d800fa85ee11e5569a9bf",
-    "state_root": "0xab5e6745a8c5d6a634e6b77bf95700bf7912d172ec02c641748a8237827f79f9",
-    "event_root": "0x414343554d554c41544f525f504c414345484f4c4445525f4841534800000000",
-    "gas_used": 0,
-    "status": {
-      "type": "moveabort",
-      "location": "0000000000000000000000000000000000000000000000000000000000000003::account",
-      "abort_code": "524289"
-    }
-  },
-  "output": {
-    "status": {
-      "type": "moveabort",
-      "location": "0000000000000000000000000000000000000000000000000000000000000003::account",
-      "abort_code": "524289"
-    },
-    "table_changeset": {
-      "new_tables": {},
-      "removed_tables": [],
-      "changes": {
-        "0x0000000000000000000000000000000000000000000000000000000000000000": {
-          "entries": {
-            "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a": {
-              "type": "new",
-              "value": "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998ad2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998ac7d14a2ff97ecf1df90bb5698654817688e24107d9dde0ec7c703bfdab65f9256c97b072e626eda50af11f602437d06ffbf454fafec0f84afaecfbdcac00b9d7",
-              "value_type": "0x2::object::Object<0x2::account_storage::AccountStorage>"
-            }
-          }
-        },
-        "0xc7d14a2ff97ecf1df90bb5698654817688e24107d9dde0ec7c703bfdab65f925": {
-          "entries": {
-            "0x52303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e743a3a4163636f756e74": {
-              "type": "new",
-              "value": "0x0100000000000000",
-              "value_type": "0x3::account::Account"
-            }
-          }
-        }
-      }
-    },
-    "events": [],
-    "gas_used": 0
-  }
-}
+### 交易查询
+
+目前可以通过交易顺序或者交易哈希来查询交易信息。
+
+```bash
+[joe@mx rooch]$ rooch help transaction
+
+Tool for interacting with transaction
+
+Usage: rooch transaction <COMMAND>
+
+Commands:
+  get-transactions-by-order  Get transactions by order
+  get-transactions-by-hash   Get transactions by hashes
+  help                       Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help  Print help
 ```
 
-在第 1-2 行，`rooch account create` 命令将生成一个新的密钥对，并根据 `ed25519` 方案创建一个地址。
+### 事件查询
 
-在第 3 行，打印了一个与上面地址关联的秘密恢复短语或助记符短语，用于恢复地址。助记词相当于账户的密码，拥有了助记词就能控制整个账户。
+通过指定事件句柄来查询相关的事件信息。
 
-在第 4-57 行，向 Rooch 区块链 RPC 服务器发送交易，并在此返回相应的响应。
+```bash
+[joe@mx rooch]$ rooch help event
 
-该交易所做的更改如下：
+Tool for interacting with event
 
-```shell
-"0x0000000000000000000000000000000000000000000000000000000000000000": {
-    "entries": {
-        "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a": {
-            "type": "new",
-            "value": "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998ad2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998ac7d14a2ff97ecf1df90bb5698654817688e24107d9dde0ec7c703bfdab65f9256c97b072e626eda50af11f602437d06ffbf454fafec0f84afaecfbdcac00b9d7",
-            "value_type": "0x2::object::Object<0x2::account_storage::AccountStorage>"
-        }
-    }
-},
+Usage: rooch event <COMMAND>
+
+Commands:
+  get-events-by-event-handle  Retrieves events based on their event handle
+  help                        Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help  Print help
 ```
 
-第一个变化表示已为刚刚创建的地址分配了账户存储。
+### Rooch ABI
 
-```shell
-"0xc7d14a2ff97ecf1df90bb5698654817688e24107d9dde0ec7c703bfdab65f925": {
-    "entries": {
-        "0x52303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030333a3a6163636f756e743a3a4163636f756e74": {
-            "type": "new",
-            "value": "0x0100000000000000",
-            "value_type": "0x3::account::Account"
-        }
-    }
-}
+```bash
+[joe@mx rooch]$ rooch help abi
+Usage: rooch abi [OPTIONS] <COMMAND>
+
+Commands:
+  export-rooch-types
+  help                Print this message or the help of the given subcommand(s)
+
+Options:
+      --client.config <CONFIG>  Sets the file storing the state of our user accounts (an empty one will be created if missing)
+  -h, --help                    Print help
 ```
 
-第二个变化表示为刚刚创建的地址创建了一个账户。
+### 网络管理
 
-还可以为账户创建命令指定 `--config-dir` 选项，以指定配置目录。
+可以使用这个命令来管理网络环境，包括：添加网络，列出当前客户端存在的网络，切换网络，删除网络。
 
-```shell
-rooch account create --config-dir ~/.rooch/rooch_config/
+```bash
+[joe@mx rooch]$ rooch help env
+
+Interface for managing multiple environments
+
+Usage: rooch env [OPTIONS] <COMMAND>
+
+Commands:
+  add     Add a new Rooch environment
+  list
+  switch
+  remove
+  help    Print this message or the help of the given subcommand(s)
+
+Options:
+      --client.config <CONFIG>  Sets the file storing the state of our user accounts (an empty one will be created if missing)
+  -h, --help                    Print help
 ```
 
-请注意，如果 Rooch 区块链 RPC 服务器尚未启动，账户创建将以 HTTP 错误失败：
+### Session key
 
-```shell
-Error: Networking or low-level protocol error: HTTP error: error trying to connect: tcp connect error: Connection refused (os error 61)
+可以使用这个命令来创建 Session key。
+
+```bash
+[joe@mx rooch]$ rooch help session-key
+
+Session key Commands
+
+Usage: rooch session-key <COMMAND>
+
+Commands:
+  create  Create a new session key on-chain
+  help    Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help  Print help
 ```
 
-#### 切换账户
+### Rooch RPC
 
-在 `rooch init` 命令后会创建一个默认的账户，使用 `rooch account create` 创建了另一个账户，此时 `rooch.keystore` 保存有两个可用账户。
+这个命令用来发送 RPC 请求。
 
-使用 `rooch account switch` 命令可在两个账户间切换。
+```bash
+[joe@mx rooch]$ rooch help rpc
 
-Rooch CLI 切换账户的命令支持以下选项：
+Usage: rooch rpc <COMMAND>
 
-```shell
-rooch-account-switch 
-Switch the active Rooch account
+Commands:
+  request  Send a RPC request
+  help     Print this message or the help of the given subcommand(s)
 
-USAGE:
-    rooch account switch [OPTIONS] --address <ADDRESS>
-
-OPTIONS:
-    -a, --address <ADDRESS>          The address of the Rooch account to be set as active
-        --config-dir <CONFIG_DIR>    rooch config path
-    -h, --help                       Print help information
+Options:
+  -h, --help  Print help
 ```
-
-使用 `--address` 或 `-a` 选项指定要切换到的地址。
-
-下面是切换到创建的地址的示例：
-
-```shell
-rooch account switch --address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a
-```
-
-成功切换的提示信息：
-
-```shell
-The active account was successfully switched to `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a`
-```
-
-#### 列出账户
-
-使用 `rooch account list` 命令检查账户状态。
-
-`rooch account list` 命令支持以下选项：
-
-```shell
-rooch-account-list 
-List all keys by its Rooch address, Base64 encoded public key
-
-USAGE:
-    rooch account list [OPTIONS]
-
-OPTIONS:
-        --config-dir <CONFIG_DIR>    rooch config path
-    -h, --help                       Print help information
-```
-
-使用帐户列表检查地址是否已成功切换为 `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a`。
-
-```shell
-rooch account list
-```
-
-```shell
-                     Rooch Address (Ed25519)                       |               Public Key (Base64)                |      Scheme      | Active Address
----------------------------------------------------------------------------------------------------------------------------------------------------------
-0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed |   AGBscM9xRoM6ErRRpUfx/PXGQE0HvbW3pVku0fNTcPq3   |     ed25519      |             
-0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a |   AITD/sv7fsNvqwtT53l0PpsLjJdR6LIo1lVqy+PKL1Aa   |     ed25519      |     True    
-```
-
-由于 Rooch 地址 `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` 的 Active Address 显示为 `True`，因此地址切换操作已得到确认。
-
-#### 导入账户
-
-使用 `rooch account import` 命令从助记符短语中导入账户。
-
-Rooch CLI 账户导入的命令支持以下选项：
-
-```shell
-rooch-account-import 
-Add a new key to rooch.keystore based on the input mnemonic phrase
-
-USAGE:
-    rooch account import [OPTIONS] --mnemonic-phrase <MNEMONIC_PHRASE>
-
-OPTIONS:
-        --config-dir <CONFIG_DIR>              rooch config path
-    -h, --help                                 Print help information
-    -m, --mnemonic-phrase <MNEMONIC_PHRASE>
-```
-
-使用 `--mnemonic-phrase` 或 `-m` 选项指定一个助记符短语来导入账户。账户地址将从助记符短语生成一个 ed25519 地址，并生成一个 ed25519 密钥对。
-
-从助记符短语导入账户。助记符短语由 `rooch init` 或 `rooch account create` 命令生成：
-
-```shell
-rooch account import --mnemonic-phrase "misery surprise pupil skull acid pretty loud tray wolf pride head adapt"
-```
-
-导入成功的提示信息：
-
-```shell
-"misery surprise pupil skull acid pretty loud tray wolf pride head adapt"
-Key imported for address on scheme Ed25519: [0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33]
-```
-
-第 1 行是助记符短语本身。
-
-在第 2 行，从助记符短语导入一对密钥，并用默认方案 ed25519 从一对密钥生成一个地址。
-
-现在，使用 `rooch account list` 检查新导入的地址 `0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33` 是否在账户中：
-
-```shell
-rooch account list
-```
-
-```shell
-                     Rooch Address (Ed25519)                       |               Public Key (Base64)                |      Scheme      | Active Address
----------------------------------------------------------------------------------------------------------------------------------------------------------
-0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33 |   AMtU2I8OF3ArnnPJ2Yvcj11++cIWh+EbhZz4sMmGENZ7   |     ed25519      |             
-0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed |   AGBscM9xRoM6ErRRpUfx/PXGQE0HvbW3pVku0fNTcPq3   |     ed25519      |             
-0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a |   AITD/sv7fsNvqwtT53l0PpsLjJdR6LIo1lVqy+PKL1Aa   |     ed25519      |     True    
-```
-
-命令行输出显示，地址 `0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33` 已成功从助记符短语导入，并且已在账户中。
-
-值得注意的是，在使用 `rooch account import` 命令时，助记符短语应加引号，因为单词之间有空格。
-
-#### 更新账户
-
-使用 `rooch account update` 命令用来自助记符短语和方案的新密钥对更新地址。
-
-Rooch CLI 账户更新的命令支持以下选项：
-
-```shell
-rooch-account-update 
-Update an address with a new keypair from scheme to rooch.keystore
-
-USAGE:
-    rooch account update [OPTIONS] --address <ADDRESS> --mnemonic-phrase <MNEMONIC_PHRASE> --scheme <CRYPTO_SCHEMES>
-
-OPTIONS:
-    -a, --address <ADDRESS>
-            Rooch address in string format
-
-        --config-dir <CONFIG_DIR>
-            rooch config path
-
-    -h, --help
-            Print help information
-
-    -m, --mnemonic-phrase <MNEMONIC_PHRASE>
-            
-
-    -s, --scheme <CRYPTO_SCHEMES>
-            Command line input of crypto schemes (ed25519, multi-ed25519, ecdsa, ecdsa-recoverable
-            or schnorr) [possible values: ed25519, multi-ed25519, ecdsa, ecdsa-recoverable, schnorr]
-```
-
-使用 `--address` 或 `-a`、`-mnemonic-phrase` 或 `-m`、`-scheme` 或 `-s` 选项组合更新帐户地址。
-
-`<ADDRESS>` 可以取自现有地址。同样，`<MNEMONIC_PHRASE>` 也可以取自现有助记符短语。
-
-应在可能的取值范围内选择 `<CRYPTO_SCHEMES>`。
-
-下面是更新地址 `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` 的示例，其中使用了 `ecdsa` 方案和用于生成地址的相应助记符短语 `desert hedgehog moral long cost husband timber someone lunar knee clever brave`：
-
-```shell
-rooch account update --address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a --scheme ecdsa --mnemonic-phrase "desert hedgehog moral long cost husband timber someone lunar knee clever brave"
-```
-
-```shell
-"desert hedgehog moral long cost husband timber someone lunar knee clever brave"
-0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a
-Generated a new keypair for an existing address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a on scheme Ecdsa
-```
-
-第 1 行是输入的助记符短语。
-
-第 2 行是输入的现有地址。
-
-在第 3 行，它表示在方案 ecdsa 上为地址 `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` 生成了一个新的密钥对。
-
-使用 `rooch account list` 检查方案 ecdsa 上的新配对密钥是否已成功添加到账户。
-
-```shell
-rooch account list
-```
-
-```shell
-                     Rooch Address (Ed25519)                       |               Public Key (Base64)                |      Scheme      | Active Address
----------------------------------------------------------------------------------------------------------------------------------------------------------
-0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33 |   AMtU2I8OF3ArnnPJ2Yvcj11++cIWh+EbhZz4sMmGENZ7   |     ed25519      |             
-0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed |   AGBscM9xRoM6ErRRpUfx/PXGQE0HvbW3pVku0fNTcPq3   |     ed25519      |             
-0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a |   AITD/sv7fsNvqwtT53l0PpsLjJdR6LIo1lVqy+PKL1Aa   |     ed25519      |     True    
-0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a | AgKbPp8/Aryextky10gULBTs/sdL9Flh2qpxtyXuXjj3Kg== |      ecdsa       |     True    
-```
-
-命令行输出显示，已在地址 `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` 中添加了一个新的 base64 编码公钥，其方案为 ecdsa，并已激活。
-
-公钥对应的私钥可在 `rooch.keystore` 中找到。例如：
-
-```shell
-{
-  "0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33": {
-    "Ed25519": "AC4b1o0kj1/f0P2NWnYnMsZgglk4OxzOIo7xTUbr2vIY"
-  },
-  "0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed": {
-    "Ed25519": "AAbtuAUtIVgoYjMVru/fY0Ck42ZsgM3N3BUm/6BVFV+p"
-  },
-  "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a": {
-    "Ed25519": "AHLz7D8uDvc/16MljntLfl0WGDoqgyK6bOUNyGbZW414",
-    "Ecdsa": "At/6j9jqKsdhNSzJqMiT5knBNT7mwKGiF+mwmt2Qt6fF"
-  }
-}
-```
-
-它们都属于一个地址，而一个地址可以拥有来自不同方案的多个密钥对。多亏了 `rooch account update` 命令。
-
-除了上述功能外，`rooch account update` 还将向 Rooch 区块链 RPC 服务器发起交易，以轮换指定方案的认证密钥。
-
-目前，认证密钥是由每个方案的公钥生成的地址，每次只存在一个认证密钥。
-
-#### 废弃账户地址
-
-使用 `rooch account nullify` 命令从账户地址中的方案中删除现有密钥对。
-
-Rooch CLI 的作废账户地址命令支持以下选项：
-
-```shell
-rooch-account-nullify 
-Nullify a keypair from a selected scheme with a Ed25519 generated address in rooch.keystore
-
-USAGE:
-    rooch account nullify [OPTIONS] --address <ADDRESS> --scheme <CRYPTO_SCHEMES>
-
-OPTIONS:
-    -a, --address <ADDRESS>          Rooch address in string format
-        --config-dir <CONFIG_DIR>    rooch config path
-    -h, --help                       Print help information
-    -s, --scheme <CRYPTO_SCHEMES>    Command line input of crypto schemes (ed25519, multied25519,
-                                     ecdsa, ecdsa-recoverable or schnorr) [possible values: ed25519, multi-ed25519,
-                                     ecdsa, ecdsa-recoverable, schnorr]
-```
-
-使用 `--address` 或 `-a`、`--scheme` 或 `-s` 选项组合来作废账户地址中的密钥对。
-
-同样，`<ADDRESS>` 应是账户中现有的地址，`<CRYPTO_SCHEMES>` 应在可能的值中选择。
-
-下面是一个示例，作废使用 ecdsa 方案添加的密钥对：
-
-```shell
-rooch account nullify --address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a --scheme ecdsa
-```
-
-```shell
-0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a
-Dropped a keypair from an existing address 0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a on scheme Ecdsa
-```
-
-第 1 行是输入的地址。
-
-第 2 行显示，地址为 `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` 的 ecdsa 方案配对密钥已被删除。
-
-使用 `rooch account list` 查看 ecdsa 方案中的配对密钥是否已丢失：
-
-```shell
-rooch account list
-```
-
-```shell
-                     Rooch Address (Ed25519)                       |               Public Key (Base64)                |      Scheme      | Active Address
----------------------------------------------------------------------------------------------------------------------------------------------------------
-0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33 |   AMtU2I8OF3ArnnPJ2Yvcj11++cIWh+EbhZz4sMmGENZ7   |     ed25519      |             
-0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed |   AGBscM9xRoM6ErRRpUfx/PXGQE0HvbW3pVku0fNTcPq3   |     ed25519      |             
-0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a |   AITD/sv7fsNvqwtT53l0PpsLjJdR6LIo1lVqy+PKL1Aa   |     ed25519      |     True    
-```
-
-命令行输出显示，通过向 Rooch 区块链 RPC 服务器发送交易，ecdsa 方案已从账户地址中删除，ecdsa 方案的认证密钥也已从发送者的账户存储中删除。
-
-同时，检查私钥是否已成功从 `rooch.keystore` 中删除：
-
-```shell
-cat ~/.rooch/rooch_config/rooch.keystore
-```
-
-```shell
-{
-  "0x3e1e8fbb603e0576dc16eb48fd70c389d52dc1a2867c21b7b98ad1ab8cc8fd33": {
-    "Ed25519": "AC4b1o0kj1/f0P2NWnYnMsZgglk4OxzOIo7xTUbr2vIY"
-  },
-  "0x526793be899b13834a3df14a60003554232dc2886af71296a1a4e46edae814ed": {
-    "Ed25519": "AAbtuAUtIVgoYjMVru/fY0Ck42ZsgM3N3BUm/6BVFV+p"
-  },
-  "0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a": {
-    "Ed25519": "AHLz7D8uDvc/16MljntLfl0WGDoqgyK6bOUNyGbZW414"
-  }
-}
-```
-
-输出结果显示，账户地址 `0xd2dfe9f6f61058a73353c904646ccc90104f06d9fb5711a8356bb2c2a222998a` 中不存在方案 ecdsa 及其私钥。

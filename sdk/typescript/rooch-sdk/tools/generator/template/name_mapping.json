@@ -12,5 +12,7 @@
     "PageView_for_IndexerGlobalStateView_and_IndexerStateID": "GlobalStateView",
     "PageView_for_IndexerTableStateView_and_IndexerStateID": "TableStateView",
     "PageView_for_UTXOStateView_and_IndexerStateID": "UTXOStatePageView",
-    "PageView_for_InscriptionStateView_and_IndexerStateID": "InscriptionStatePageView"
+    "PageView_for_InscriptionStateView_and_IndexerStateID": "InscriptionStatePageView",
+    "PageView_for_IndexerEventView_and_IndexerEventID": "EventWithIndexerPageView",
+    "PageView_for_BalanceInfoView_and_String": "BalanceInfoPageView"
 }

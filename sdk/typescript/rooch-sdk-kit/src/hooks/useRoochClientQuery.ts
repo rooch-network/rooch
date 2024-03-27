@@ -52,7 +52,7 @@ export function useRoochClientQuery<T extends keyof RpcMethods, TData = RpcMetho
 
   return useQuery({
     ...options,
-    queryKey: [roochContext.network, method, params, ...queryKey],
+    queryKey: [roochContext.currentNetwork, method, params, ...queryKey],
     queryFn: async () => {
       return await roochContext.client[method](params as never)
     },

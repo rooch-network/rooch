@@ -65,10 +65,7 @@ export const ProfileCard = () => {
       </CardHeader>
       <CardContent className="p-0">
         <div>
-          <div
-            className="bg-gradient-to-r from-amber-500
-to-teal-500 dark:from-amber-600 dark:to-teal-600 object-cover w-full h-28 md:h-32 opacity-80 select-none"
-          />
+          <div className="bg-gradient-to-r bg-clip-padding font-black from-teal-500 via-purple-500 to-orange-500 text-white object-cover w-full h-28 md:h-32 opacity-80 select-none" />
         </div>
       </CardContent>
       <CardFooter className="flex justify-between relative pb-8 md:pb-12 px-4 md:px-6 dark:bg-primary-foreground h-full">

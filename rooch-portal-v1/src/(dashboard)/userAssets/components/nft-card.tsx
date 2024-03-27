@@ -109,7 +109,7 @@ export const NftCard = () => {
             <CardDescription>{nft.price}</CardDescription>
           </CardHeader>
           <CardFooter className="px-4 md:px-6">
-            <Button className="w-full dark:bg-teal-500 dark:hover:bg-teal-400 text-white bg-teal-500 hover:bg-teal-600 font-semibold">
+            <Button variant="default" size="default" className="w-full font-bold">
               Transfer
             </Button>
           </CardFooter>

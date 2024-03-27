@@ -75,10 +75,10 @@ export const SelfStakingCard = () => {
     <div className="mt-6">
       <div className="h-full w-full">
         <Card className="h-full border-border/40 shadow-inner bg-border/10 dark:bg-border/60">
-          <CardHeader className="dark:text-teal-100 flex flex-row items-center justify-between">
+          <CardHeader className="dark:text-blue-100 flex flex-row items-center justify-between">
             <div>
               <CardTitle>My Bitcoin UTXO</CardTitle>
-              <CardDescription className="dark:text-teal-50/70">
+              <CardDescription className="dark:text-blue-50/70">
                 Stake your UTXO below
               </CardDescription>
             </div>
@@ -89,13 +89,13 @@ export const SelfStakingCard = () => {
                   id="batch-mode"
                   checked={isSwitchOn}
                   onCheckedChange={handleSwitchChange}
-                  className="data-[state=checked]:bg-teal-600 dark:data-[state=checked]:bg-teal-400"
+                  className="data-[state=checked]:bg-blue-600 dark:data-[state=checked]:bg-blue-500"
                 />
                 <Label htmlFor="batch-mode" className="text-muted-foreground">
                   Batch Mode
                 </Label>
               </div>
-              <Button size="default" className="rounded-lg" onClick={handleSelfStake}>
+              <Button size="sm" className="rounded-lg" onClick={handleSelfStake}>
                 Self-stake
               </Button>
             </div>
@@ -109,11 +109,17 @@ export const SelfStakingCard = () => {
                   className={cn(
                     'relative rounded-lg border border-border/40 dark:bg-zinc-800/90 overflow-hidden select-none',
                     utxo.isSelected
-                      ? 'border-teal-400 dark:border-teal-500 bg-teal-50 dark:bg-teal-800/60'
+                      ? 'border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-800/60'
                       : '',
                     isSwitchOn && utxo.isStaked ? 'opacity-50' : 'opacity-100',
+                    utxo.isStaked ? 'opacity-50 dark:bg-zinc-900' : '',
                   )}
                 >
+                  {utxo.isStaked && (
+                    <div className="absolute top-0 left-0 px-5 py-0.5 bg-gradient-to-r bg-clip-padding from-teal-500 via-purple-500 to-orange-500 text-white text-xs font-semibold transform -rotate-45 -translate-x-6 translate-y-2">
+                      Staked
+                    </div>
+                  )}
                   <CardHeader className="flex items-center justify-center">
                     <h3 className="text-2xl">UTXO #{utxo.id}</h3>
                   </CardHeader>
@@ -125,7 +131,7 @@ export const SelfStakingCard = () => {
                       <CheckCircle2
                         className={cn(
                           'w-5 h-5 text-muted-foreground',
-                          utxo.isSelected ? 'text-teal-400' : '',
+                          utxo.isSelected ? 'text-blue-400' : '',
                         )}
                       />
                     </div>

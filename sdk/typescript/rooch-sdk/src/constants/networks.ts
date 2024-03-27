@@ -72,8 +72,8 @@ export const DevNetwork = new Network(DEV_NETWORK_ID, 'dev', {
   url: DevNetworkURL,
 })
 
-export const TESTNetwork = new Network(TEST_NETWORK_ID, 'test', {
+export const TestNetwork = new Network(TEST_NETWORK_ID, 'test', {
   url: TestNetworkURL,
 })
 
-export const AllNetwork = [LocalNetwork, DevNetwork, TESTNetwork]
+export const AllNetwork = [LocalNetwork, DevNetwork, TestNetwork]
