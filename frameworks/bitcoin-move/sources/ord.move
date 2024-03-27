@@ -6,6 +6,8 @@ module bitcoin_move::ord {
     use std::option::{Self, Option};
     use std::string;
     use std::string::String;
+    use moveos_std::bcs::to_address;
+    use moveos_std::core_addresses;
     use bitcoin_move::bitseed;
 
     const BIT_SEED_DEPLOY: vector<u8> = b"bitseed_deploy";
@@ -127,7 +129,9 @@ module bitcoin_move::ord {
                 object::add_field(&mut object, BIT_SEED_DEPLOY, deploy_op)
             } else if (bitseed::is_bitseed_mint(&cloned_json_map)) {
                 let mint_op = bitseed::inscription_to_bitseed_mint(from, to, &cloned_json_map);
-                object::add_field(&mut object, BIT_SEED_MINT, mint_op)
+                let address_bytes = bcs::to_bytes(&from);
+                vector::append(&mut address_bytes, bcs::to_bytes(&to));
+                object::add_field(&mut object, address_bytes, mint_op)
             };
         };
 
