@@ -30,7 +30,7 @@ use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::transaction::{
-    FunctionCall, MoveAction, MoveOSTransaction, TransactionExecutionInfo, VerifiedMoveAction,
+    FunctionCall, MoveOSTransaction, TransactionExecutionInfo, VerifiedMoveAction,
 };
 use moveos_verifier::metadata::load_module_metadata;
 use rooch_framework::natives::gas_parameter::gas_member::FromOnChainGasSchedule;
@@ -222,29 +222,33 @@ impl ExecutorActor {
 
         let can_pay_gas = self.validate_gas_function(&moveos_tx)?;
 
-        let mut pay_by_module_account = false;
-        let mut gas_payment_account = moveos_tx.ctx.sender;
+        let pay_by_module_account = false;
+        let gas_payment_account = moveos_tx.ctx.sender;
 
         if let Some(pay_gas) = can_pay_gas {
             if pay_gas {
-                let account_balance = self.get_account_balance(&moveos_tx)?;
-                let module_account = {
-                    match &moveos_tx.action {
-                        MoveAction::Function(call) => Some(*call.function_id.module_id.address()),
-                        _ => None,
-                    }
-                };
+                // TODO: We disable gas free function for now.
+                // Remove it when it's ready.
+                anyhow::bail!("Gas free functions are not supported yet");
 
-                let gas_payment_address = {
-                    if account_balance >= moveos_tx.ctx.max_gas_amount as u128 {
-                        pay_by_module_account = true;
-                        module_account.unwrap()
-                    } else {
-                        moveos_tx.ctx.sender
-                    }
-                };
+                // let account_balance = self.get_account_balance(&moveos_tx)?;
+                // let module_account = {
+                //     match &moveos_tx.action {
+                //         MoveAction::Function(call) => Some(*call.function_id.module_id.address()),
+                //         _ => None,
+                //     }
+                // };
 
-                gas_payment_account = gas_payment_address;
+                // let gas_payment_address = {
+                //     if account_balance >= moveos_tx.ctx.max_gas_amount as u128 {
+                //         pay_by_module_account = true;
+                //         module_account.unwrap()
+                //     } else {
+                //         moveos_tx.ctx.sender
+                //     }
+                // };
+
+                // gas_payment_account = gas_payment_address;
             }
         }
 

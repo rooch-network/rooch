@@ -164,7 +164,6 @@ pub struct RawDisplay {
 
 impl RawDisplay {
     /// Render the display with given MoveStruct instance.
-    // pub fn render(&self, annotated_obj: &AnnotatedObject) -> BTreeMap<String, String> {
     pub fn render(&self, annotated_obj: &AnnotatedMoveValue) -> BTreeMap<String, String> {
         let fields = self.to_btree_map().into_iter().map(|entry| {
             match parse_template(&entry.1, annotated_obj) {
