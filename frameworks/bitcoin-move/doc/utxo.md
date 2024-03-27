@@ -9,15 +9,20 @@
 -  [Resource `UTXO`](#0x4_utxo_UTXO)
 -  [Struct `UTXOSeal`](#0x4_utxo_UTXOSeal)
 -  [Struct `SealOut`](#0x4_utxo_SealOut)
+-  [Struct `UTXORange`](#0x4_utxo_UTXORange)
 -  [Struct `TempState`](#0x4_utxo_TempState)
 -  [Constants](#@Constants_0)
 -  [Function `new`](#0x4_utxo_new)
 -  [Function `new_id`](#0x4_utxo_new_id)
+-  [Function `new_utxo_range`](#0x4_utxo_new_utxo_range)
 -  [Function `value`](#0x4_utxo_value)
 -  [Function `txid`](#0x4_utxo_txid)
 -  [Function `vout`](#0x4_utxo_vout)
 -  [Function `exists_utxo`](#0x4_utxo_exists_utxo)
 -  [Function `borrow_utxo`](#0x4_utxo_borrow_utxo)
+-  [Function `utxo_range_txid`](#0x4_utxo_utxo_range_txid)
+-  [Function `utxo_range_vout`](#0x4_utxo_utxo_range_vout)
+-  [Function `utxo_range_range`](#0x4_utxo_utxo_range_range)
 -  [Function `seal`](#0x4_utxo_seal)
 -  [Function `has_seal`](#0x4_utxo_has_seal)
 -  [Function `get_seals`](#0x4_utxo_get_seals)
@@ -92,6 +97,17 @@ The UTXO Object
 
 
 
+<a name="0x4_utxo_UTXORange"></a>
+
+## Struct `UTXORange`
+
+
+
+<pre><code><b>struct</b> <a href="utxo.md#0x4_utxo_UTXORange">UTXORange</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
 <a name="0x4_utxo_TempState"></a>
 
 ## Struct `TempState`
@@ -135,6 +151,17 @@ The UTXO Object
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_new_id">new_id</a>(txid: <b>address</b>, vout: u32): <a href="utxo.md#0x4_utxo_OutputID">utxo::OutputID</a>
+</code></pre>
+
+
+
+<a name="0x4_utxo_new_utxo_range"></a>
+
+## Function `new_utxo_range`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_new_utxo_range">new_utxo_range</a>(txid: <b>address</b>, vout: u32, start_offset: u64, end_offset: u64): <a href="utxo.md#0x4_utxo_UTXORange">utxo::UTXORange</a>
 </code></pre>
 
 
@@ -193,6 +220,42 @@ Get the UTXO's vout
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_borrow_utxo">borrow_utxo</a>(txid: <b>address</b>, vout: u32): &<a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_utxo_utxo_range_txid"></a>
+
+## Function `utxo_range_txid`
+
+Get the UTXORange's txid
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_utxo_range_txid">utxo_range_txid</a>(utxo_range: &<a href="utxo.md#0x4_utxo_UTXORange">utxo::UTXORange</a>): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x4_utxo_utxo_range_vout"></a>
+
+## Function `utxo_range_vout`
+
+Get the UTXORange's vout
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_utxo_range_vout">utxo_range_vout</a>(utxo_range: &<a href="utxo.md#0x4_utxo_UTXORange">utxo::UTXORange</a>): u32
+</code></pre>
+
+
+
+<a name="0x4_utxo_utxo_range_range"></a>
+
+## Function `utxo_range_range`
+
+Get the UTXORange's value range
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_utxo_range_range">utxo_range_range</a>(utxo_range: &<a href="utxo.md#0x4_utxo_UTXORange">utxo::UTXORange</a>): (u64, u64)
 </code></pre>
 
 
@@ -315,7 +378,7 @@ Seal the UTXO with a protocol, the T is the protocol object
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_new_seal_out">new_seal_out</a>(output_index: u64, object_id: <a href="_ObjectID">object::ObjectID</a>): <a href="utxo.md#0x4_utxo_SealOut">utxo::SealOut</a>
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_new_seal_out">new_seal_out</a>(output_index: u32, object_id: <a href="_ObjectID">object::ObjectID</a>): <a href="utxo.md#0x4_utxo_SealOut">utxo::SealOut</a>
 </code></pre>
 
 
@@ -326,7 +389,7 @@ Seal the UTXO with a protocol, the T is the protocol object
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_unpack_seal_out">unpack_seal_out</a>(seal_out: <a href="utxo.md#0x4_utxo_SealOut">utxo::SealOut</a>): (u64, <a href="_ObjectID">object::ObjectID</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_unpack_seal_out">unpack_seal_out</a>(seal_out: <a href="utxo.md#0x4_utxo_SealOut">utxo::SealOut</a>): (u32, <a href="_ObjectID">object::ObjectID</a>)
 </code></pre>
 
 

@@ -39,19 +39,28 @@ module bitcoin_move::utxo{
     }
 
     struct SealOut has store, copy, drop {
-        output_index: u64,
+        output_index: u32,
         object_id: ObjectID,
+    }
+
+    //
+    struct UTXORange has store, copy, drop {
+        txid: address,
+        vout: u32,
+        /// [start_offset, end_offset)
+        start_offset: u64,
+        end_offset: u64,
     }
 
     public(friend) fun new(txid: address, vout: u32, value: u64) : Object<UTXO> {
         let id = OutputID{
-            txid: txid,
-            vout: vout,
+            txid,
+            vout,
         };
         let utxo = UTXO{
-            txid: txid,
-            vout: vout,
-            value: value,
+            txid,
+            vout,
+            value,
             seals: simple_multimap::new(),
         };
         object::new_custom_object(id, utxo)
@@ -59,8 +68,17 @@ module bitcoin_move::utxo{
 
     public fun new_id(txid: address, vout: u32) : OutputID {
         OutputID{
-            txid: txid,
-            vout: vout,
+            txid,
+            vout,
+        }
+    }
+
+    public fun new_utxo_range(txid: address, vout: u32, start_offset: u64, end_offset: u64) : UTXORange {
+        UTXORange{
+            txid,
+            vout,
+            start_offset,
+            end_offset,
         }
     }
 
@@ -81,8 +99,8 @@ module bitcoin_move::utxo{
 
     public fun exists_utxo(txid: address, vout: u32): bool{
         let id = OutputID{
-            txid: txid,
-            vout: vout,
+            txid,
+            vout,
         };
         let object_id = object::custom_object_id<OutputID,UTXO>(id);
         object::exists_object_with_type<UTXO>(object_id)
@@ -90,14 +108,30 @@ module bitcoin_move::utxo{
 
     public fun borrow_utxo(txid: address, vout: u32): &Object<UTXO>{
         let id = OutputID{
-            txid: txid,
-            vout: vout,
+            txid,
+            vout,
         };
         let object_id = object::custom_object_id<OutputID,UTXO>(id);
         object::borrow_object(object_id)
     }
 
-     #[private_generics(T)]
+    /// Get the UTXORange's txid
+    public fun utxo_range_txid(utxo_range: &UTXORange): address {
+        utxo_range.txid
+    }
+
+    /// Get the UTXORange's vout
+    public fun utxo_range_vout(utxo_range: &UTXORange): u32 {
+        utxo_range.vout
+    }
+
+    /// Get the UTXORange's value range
+    public fun utxo_range_range(utxo_range: &UTXORange): (u64, u64) {
+        (utxo_range.start_offset, utxo_range.end_offset)
+    }
+
+
+    #[private_generics(T)]
     /// Seal the UTXO with a protocol, the T is the protocol object
     public fun seal<T>(utxo: &mut UTXO, seal_obj: &Object<T>){
         let protocol = type_info::type_name<T>();
@@ -161,8 +195,8 @@ module bitcoin_move::utxo{
     // === UTXOSeal ===
     public fun new_utxo_seal(protocol: String, object_id: ObjectID) : UTXOSeal {
         UTXOSeal{
-            protocol: protocol,
-            object_id: object_id
+            protocol,
+            object_id
         }
     }
 
@@ -172,14 +206,14 @@ module bitcoin_move::utxo{
     }
 
     // === SealOut ===
-    public fun new_seal_out(output_index: u64, object_id: ObjectID) : SealOut {
+    public fun new_seal_out(output_index: u32, object_id: ObjectID) : SealOut {
         SealOut{
-            output_index: output_index,
-            object_id: object_id
+            output_index,
+            object_id
         }
     }
 
-    public fun unpack_seal_out(seal_out: SealOut) : (u64, ObjectID) {
+    public fun unpack_seal_out(seal_out: SealOut) : (u32, ObjectID) {
         let SealOut{output_index, object_id} = seal_out;
         (output_index, object_id)
     }
