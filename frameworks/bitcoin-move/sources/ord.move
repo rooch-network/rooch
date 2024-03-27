@@ -6,7 +6,11 @@ module bitcoin_move::ord {
     use std::option::{Self, Option};
     use std::string;
     use std::string::String;
-   
+    use bitcoin_move::bitseed;
+
+    const BIT_SEED_DEPLOY: vector<u8> = b"bitseed_deploy";
+    const BIT_SEED_MINT: vector<u8> = b"bitseed_mint";
+
     use moveos_std::bcs;
     use moveos_std::event;
     use moveos_std::object::{Self, ObjectID, Object};
@@ -100,7 +104,13 @@ module bitcoin_move::ord {
         }
     }
 
-    fun create_obj(inscription: Inscription): Object<Inscription> {
+    fun process_bitseed() {
+
+    }
+
+    fun create_obj(from: address, to: address, inscription: Inscription): Object<Inscription> {
+        let cloned_json_map = simple_map::clone(&inscription.json_body);
+
         let id = InscriptionID{
             txid: inscription.txid,
             index: inscription.index,
@@ -109,7 +119,21 @@ module bitcoin_move::ord {
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
         let store = object::borrow_mut(store_obj);
         table_vec::push_back(&mut store.inscriptions, id);
-        object::new_custom_object(id, inscription)
+        let object = object::new_custom_object(id, inscription);
+
+        if (bitseed::is_bitseed(&cloned_json_map)) {
+            if (bitseed::is_bitseed_deploy(&cloned_json_map)) {
+                let deploy_op = bitseed::inscription_to_bitseed_deploy(from, to, &cloned_json_map);
+                object::add_field(&mut object, BIT_SEED_DEPLOY, deploy_op)
+            } else if (bitseed::is_bitseed_mint(&cloned_json_map)) {
+                let mint_op = bitseed::inscription_to_bitseed_mint(from, to, &cloned_json_map);
+                object::add_field(&mut object, BIT_SEED_MINT, mint_op)
+            };
+        };
+
+        simple_map::drop(cloned_json_map);
+
+        object
     }
     
     fun parse_json_body(record: &InscriptionRecord) : SimpleMap<String,String> {
@@ -210,7 +234,7 @@ module bitcoin_move::ord {
             //Because the previous output of inscription input is a witness program address, so we simply use the output address as the from address.
             let from = to_address;
             process_inscribe_protocol(from, to_address, &inscription);
-            let inscription_obj = create_obj(inscription);
+            let inscription_obj = create_obj(from, to_address, inscription);
             let object_id = object::id(&inscription_obj);
 
             object::transfer_extend(inscription_obj, to_address);
@@ -352,17 +376,6 @@ module bitcoin_move::ord {
     }
 
     native fun from_witness(witness: &Witness): vector<InscriptionRecord>;
-
-    public fun pack_inscribe_generate_args(deploy_args: vector<u8>, seed: vector<u8>, user_input: vector<u8>): vector<u8>{
-        native_pack_inscribe_generate_args(deploy_args, b"attrs", seed, b"seed",
-            user_input, b"user_input")
-    }
-
-    native fun native_pack_inscribe_generate_args(
-        deploy_args: vector<u8>, deploy_args_key: vector<u8>,
-        seed: vector<u8>, seed_key: vector<u8>,
-        user_input: vector<u8>, user_input_key: vector<u8>,
-    ): vector<u8>;
 
     public(friend) fun bind_multichain_address(rooch_address: address, bitcoin_address_opt: Option<BitcoinAddress>) {
         //Auto create address mapping if not exist

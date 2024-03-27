@@ -10,6 +10,7 @@
 -  [Struct `InscriptionRecord`](#0x4_ord_InscriptionRecord)
 -  [Struct `InvalidInscriptionEvent`](#0x4_ord_InvalidInscriptionEvent)
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
+-  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_ord_genesis_init)
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
 -  [Function `borrow_inscription`](#0x4_ord_borrow_inscription)
@@ -27,7 +28,6 @@
 -  [Function `unpack_record`](#0x4_ord_unpack_record)
 -  [Function `from_transaction`](#0x4_ord_from_transaction)
 -  [Function `from_transaction_bytes`](#0x4_ord_from_transaction_bytes)
--  [Function `pack_inscribe_generate_args`](#0x4_ord_pack_inscribe_generate_args)
 -  [Function `bind_multichain_address`](#0x4_ord_bind_multichain_address)
 
 
@@ -44,6 +44,7 @@
 <b>use</b> <a href="">0x3::address_mapping</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="">0x3::multichain_address</a>;
+<b>use</b> <a href="bitseed.md#0x4_bitseed">0x4::bitseed</a>;
 <b>use</b> <a href="brc20.md#0x4_brc20">0x4::brc20</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 <b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
@@ -102,6 +103,29 @@
 
 
 <pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionStore">InscriptionStore</a> <b>has</b> key
+</code></pre>
+
+
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x4_ord_BIT_SEED_DEPLOY"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_BIT_SEED_DEPLOY">BIT_SEED_DEPLOY</a>: <a href="">vector</a>&lt;u8&gt; = [98, 105, 116, 115, 101, 101, 100, 95, 100, 101, 112, 108, 111, 121];
+</code></pre>
+
+
+
+<a name="0x4_ord_BIT_SEED_MINT"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_BIT_SEED_MINT">BIT_SEED_MINT</a>: <a href="">vector</a>&lt;u8&gt; = [98, 105, 116, 115, 101, 101, 100, 95, 109, 105, 110, 116];
 </code></pre>
 
 
@@ -289,17 +313,6 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_from_transaction_bytes">from_transaction_bytes</a>(transaction_bytes: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;
-</code></pre>
-
-
-
-<a name="0x4_ord_pack_inscribe_generate_args"></a>
-
-## Function `pack_inscribe_generate_args`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_pack_inscribe_generate_args">pack_inscribe_generate_args</a>(deploy_args: <a href="">vector</a>&lt;u8&gt;, seed: <a href="">vector</a>&lt;u8&gt;, user_input: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
