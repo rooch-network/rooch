@@ -11,11 +11,21 @@
 -  [Struct `InvalidInscriptionEvent`](#0x4_ord_InvalidInscriptionEvent)
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
 -  [Struct `SatPoint`](#0x4_ord_SatPoint)
+-  [Struct `SatPointRange`](#0x4_ord_SatPointRange)
+-  [Struct `SatPointMapping`](#0x4_ord_SatPointMapping)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_ord_genesis_init)
+-  [Function `new_inscription_id`](#0x4_ord_new_inscription_id)
+-  [Function `new_satpoint`](#0x4_ord_new_satpoint)
+-  [Function `satpoint_offset`](#0x4_ord_satpoint_offset)
+-  [Function `new_satpoint_mapping`](#0x4_ord_new_satpoint_mapping)
+-  [Function `satpoint_mapping`](#0x4_ord_satpoint_mapping)
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
 -  [Function `borrow_inscription`](#0x4_ord_borrow_inscription)
 -  [Function `spend_utxo`](#0x4_ord_spend_utxo)
+-  [Function `update_inscription_index`](#0x4_ord_update_inscription_index)
+-  [Function `remove_inscription_index`](#0x4_ord_remove_inscription_index)
+-  [Function `inscriptions_on_output`](#0x4_ord_inscriptions_on_output)
 -  [Function `process_transaction`](#0x4_ord_process_transaction)
 -  [Function `txid`](#0x4_ord_txid)
 -  [Function `index`](#0x4_ord_index)
@@ -121,6 +131,28 @@
 
 
 
+<a name="0x4_ord_SatPointRange"></a>
+
+## Struct `SatPointRange`
+
+
+
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_SatPointRange">SatPointRange</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_ord_SatPointMapping"></a>
+
+## Struct `SatPointMapping`
+
+
+
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_SatPointMapping">SatPointMapping</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -142,6 +174,63 @@
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>)
+</code></pre>
+
+
+
+<a name="0x4_ord_new_inscription_id"></a>
+
+## Function `new_inscription_id`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_new_inscription_id">new_inscription_id</a>(txid: <b>address</b>, index: u32): <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_new_satpoint"></a>
+
+## Function `new_satpoint`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_new_satpoint">new_satpoint</a>(txid: <b>address</b>, vout: u32, offset: u64): <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_satpoint_offset"></a>
+
+## Function `satpoint_offset`
+
+Get the SatPoint's offset
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_satpoint_offset">satpoint_offset</a>(satpoint: &<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>): u64
+</code></pre>
+
+
+
+<a name="0x4_ord_new_satpoint_mapping"></a>
+
+## Function `new_satpoint_mapping`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_new_satpoint_mapping">new_satpoint_mapping</a>(old_satpoint: <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>, new_satpoint: <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>): <a href="ord.md#0x4_ord_SatPointMapping">ord::SatPointMapping</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_satpoint_mapping"></a>
+
+## Function `satpoint_mapping`
+
+Get the SatPoint's mapping
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_satpoint_mapping">satpoint_mapping</a>(satpoint_mapping: &<a href="ord.md#0x4_ord_SatPointMapping">ord::SatPointMapping</a>): (<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>, <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>)
 </code></pre>
 
 
@@ -175,6 +264,40 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_spend_utxo">spend_utxo</a>(utxo_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;, tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>): <a href="">vector</a>&lt;<a href="utxo.md#0x4_utxo_SealOut">utxo::SealOut</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_update_inscription_index"></a>
+
+## Function `update_inscription_index`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_update_inscription_index">update_inscription_index</a>(txout: &<a href="types.md#0x4_types_TxOut">types::TxOut</a>, outpoint: <a href="types.md#0x4_types_OutPoint">types::OutPoint</a>, old_satpoint: <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>, new_satpoint: <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>, _tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>): <a href="utxo.md#0x4_utxo_SealOut">utxo::SealOut</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_remove_inscription_index"></a>
+
+## Function `remove_inscription_index`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_remove_inscription_index">remove_inscription_index</a>(outpoint: <a href="types.md#0x4_types_OutPoint">types::OutPoint</a>)
+</code></pre>
+
+
+
+<a name="0x4_ord_inscriptions_on_output"></a>
+
+## Function `inscriptions_on_output`
+
+Find existing inscriptions on input (transfers of inscriptions)
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_inscriptions_on_output">inscriptions_on_output</a>(outpoint: &<a href="types.md#0x4_types_OutPoint">types::OutPoint</a>): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>&gt;
 </code></pre>
 
 

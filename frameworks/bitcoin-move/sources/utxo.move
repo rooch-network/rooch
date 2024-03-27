@@ -4,7 +4,6 @@
 module bitcoin_move::utxo{
     use std::vector;
     use std::string::String;
-    use bitcoin_move::types::OutPoint;
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::simple_multimap::{Self, SimpleMultiMap};
     use moveos_std::type_info;
@@ -40,7 +39,7 @@ module bitcoin_move::utxo{
     }
 
     struct SealOut has store, copy, drop {
-        output_index: u64,
+        output_index: u32,
         object_id: ObjectID,
     }
 
@@ -196,8 +195,8 @@ module bitcoin_move::utxo{
     // === UTXOSeal ===
     public fun new_utxo_seal(protocol: String, object_id: ObjectID) : UTXOSeal {
         UTXOSeal{
-            protocol: protocol,
-            object_id: object_id
+            protocol,
+            object_id
         }
     }
 
@@ -207,14 +206,14 @@ module bitcoin_move::utxo{
     }
 
     // === SealOut ===
-    public fun new_seal_out(output_index: u64, object_id: ObjectID) : SealOut {
+    public fun new_seal_out(output_index: u32, object_id: ObjectID) : SealOut {
         SealOut{
-            output_index: output_index,
-            object_id: object_id
+            output_index,
+            object_id
         }
     }
 
-    public fun unpack_seal_out(seal_out: SealOut) : (u64, ObjectID) {
+    public fun unpack_seal_out(seal_out: SealOut) : (u32, ObjectID) {
         let SealOut{output_index, object_id} = seal_out;
         (output_index, object_id)
     }

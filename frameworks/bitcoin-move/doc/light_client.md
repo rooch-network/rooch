@@ -29,6 +29,7 @@
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::signer</a>;
+<b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::simple_multimap</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::table_vec</a>;
