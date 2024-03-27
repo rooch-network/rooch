@@ -20,7 +20,7 @@ export const ProfileCard = () => {
       })
     } else {
       navigator.clipboard
-        .writeText(account.getAddress())
+        .writeText(account.address)
         .then(() => {
           toast('Copied to clipboard!', {
             icon: '🌟',
@@ -77,9 +77,7 @@ export const ProfileCard = () => {
         </div>
         <div className="absolute top-0 right-4 md:top-2 md:right-6">
           <div className="flex items-center justify-center gap-1 text-sm text-zinc-800/85 dark:text-white/85">
-            <span>
-              {account === null ? 'Wallet Address' : formatAddress(account?.getAddress())}
-            </span>
+            <span>{account === null ? 'Wallet Address' : formatAddress(account?.address)}</span>
             <Button
               variant="ghost"
               size="icon"

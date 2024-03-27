@@ -1,12 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Wallet } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
-  // DialogFooter,
-  // DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -17,10 +15,7 @@ import toast from 'react-hot-toast'
 
 import { formatAddress } from '@/utils/format'
 
-import { useConnectWallet, useWalletStore } from '@roochnetwork/rooch-sdk-kit'
-import { BaseWallet } from '@roochnetwork/rooch-sdk-kit/src/types/wellet/baseWallet'
-import { getInstalledWallets } from '@roochnetwork/rooch-sdk-kit/src/utils/walletUtils'
-import { SupportChain } from '@roochnetwork/rooch-sdk-kit/src/feature'
+import { useConnectWallet, useWalletStore, useWallets } from '@roochnetwork/rooch-sdk-kit'
 
 interface WalletsListProps {
   name: string
@@ -55,18 +50,10 @@ const walletsList: WalletsListProps[] = [
 ]
 
 export const WalletConnect = () => {
-  const [wallets, setWallets] = useState<BaseWallet[]>() // Get installed wallets
-  const [chain] = useState(SupportChain.BITCOIN) // 目前默认只有 BITCOIN
+  const wallets = useWallets()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const { mutateAsync: connectWallet } = useConnectWallet()
   const account = useWalletStore((state) => state.currentAccount)
-
-  useEffect(() => {
-    getInstalledWallets(chain).then((v) => setWallets(v))
-  }, [chain])
-
-  // using `wallets` to pass the compiling
-  console.log(wallets)
 
   // 1. Check installed wallets
 
@@ -78,7 +65,7 @@ export const WalletConnect = () => {
       setIsDialogOpen(true)
     } else {
       navigator.clipboard
-        .writeText(account.getAddress())
+        .writeText(account.address)
         .then(() => {
           toast('Copied to clipboard!', {
             icon: '🌟',
@@ -92,32 +79,35 @@ export const WalletConnect = () => {
 
   // ** Connect specific wallet
   const handleConnectSpecificWallet = async (walletName: string) => {
-    if (!account) {
-      try {
-        switch (walletName) {
-          case 'Unisat':
-            // 1. Handle connect to Unisat
-            await connectWallet()
-            break
-          case 'MetaMask':
-            // 2. Handle connect to MetaMask
-            break
-          case 'OKX':
-            // 3. Handle connect to OKX
-            break
-          default:
-            await connectWallet()
-        }
-
-        setIsDialogOpen(false)
-        toast.success('Connected to the wallet')
-      } catch (error) {
-        toast.error('Please download the wallet on Chrome Extensions Store')
-      }
-    } else {
+    if (account) {
       toast("You've already connected to the wallet!", {
         icon: '✨',
       })
+      return
+    }
+
+    // Find the matching wallet by name
+    const walletToConnect = wallets.find(
+      (wallet) => wallet.name?.toLowerCase() === walletName.toLowerCase(),
+    )
+
+    if (!walletToConnect) {
+      toast.error(`Wallet '${walletName}' not found.`)
+      return
+    }
+
+    console.log(walletToConnect)
+
+    try {
+      await connectWallet({ wallet: walletToConnect })
+
+      setIsDialogOpen(false)
+      toast.success(`Connected to the wallet ${walletName}`)
+    } catch (error) {
+      // Assuming the error is an object with a message property
+      const errorMessage =
+        error instanceof Error ? error.message : 'An error occurred while connecting to the wallet.'
+      toast.error(errorMessage)
     }
   }
 
@@ -132,7 +122,7 @@ export const WalletConnect = () => {
         <div className="flex items-center justify-center gap-x-2 ">
           <Wallet className="h-[1rem] w-[1rem] md:h-[1.2rem] md:w-[1.2rem] rotate-0 scale-100 transition-all text-teal-600" />
           <div className="flex items-center justify-center gap-x-1 bg-gradient-to-r bg-clip-text font-black dark:from-teal-500 dark:via-purple-500 dark:to-orange-500 text-transparent from-teal-600 via-purple-600 to-orange-600">
-            {account === null ? 'Connect Wallet' : formatAddress(account?.getAddress())}
+            {account === null ? 'Connect Wallet' : formatAddress(account.address)}
           </div>
         </div>
       </Button>
