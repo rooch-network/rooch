@@ -129,8 +129,12 @@ module bitcoin_move::ord {
                 object::add_field(&mut object, BIT_SEED_DEPLOY, deploy_op)
             } else if (bitseed::is_bitseed_mint(&cloned_json_map)) {
                 let mint_op = bitseed::inscription_to_bitseed_mint(from, to, &cloned_json_map);
+
                 let address_bytes = bcs::to_bytes(&from);
+                let tick = *simple_map::borrow(&cloned_json_map, &string::utf8(b"tick"));
+                vector::append(&mut address_bytes, string::into_bytes(tick));
                 vector::append(&mut address_bytes, bcs::to_bytes(&to));
+
                 object::add_field(&mut object, address_bytes, mint_op)
             };
         };
