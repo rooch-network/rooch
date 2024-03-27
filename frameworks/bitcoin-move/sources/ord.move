@@ -6,12 +6,8 @@ module bitcoin_move::ord {
     use std::option::{Self, Option};
     use std::string;
     use std::string::String;
-    use moveos_std::bcs::to_address;
-    use moveos_std::core_addresses;
+    use bitcoin_move::bitseed::{bitseed_deploy_key, bitseed_mint_key};
     use bitcoin_move::bitseed;
-
-    const BIT_SEED_DEPLOY: vector<u8> = b"bitseed_deploy";
-    const BIT_SEED_MINT: vector<u8> = b"bitseed_mint";
 
     use moveos_std::bcs;
     use moveos_std::event;
@@ -88,6 +84,13 @@ module bitcoin_move::ord {
 
     // ==== Inscription ==== //
 
+    public fun get_inscription_id_by_index(index: u64) : &InscriptionID {
+        let store_obj_id = object::named_object_id<InscriptionStore>();
+        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
+        let store = object::borrow_mut(store_obj);
+        table_vec::borrow(& store.inscriptions, index)
+    }
+
     fun record_to_inscription(txid: address, index: u32, input: u32, record: InscriptionRecord): Inscription{
         let parent = option::map(record.parent, |e| object::custom_object_id<InscriptionID,Inscription>(e));
         let json_body = parse_json_body(&record);
@@ -106,10 +109,6 @@ module bitcoin_move::ord {
         }
     }
 
-    fun process_bitseed() {
-
-    }
-
     fun create_obj(from: address, to: address, inscription: Inscription): Object<Inscription> {
         let cloned_json_map = simple_map::clone(&inscription.json_body);
 
@@ -126,16 +125,10 @@ module bitcoin_move::ord {
         if (bitseed::is_bitseed(&cloned_json_map)) {
             if (bitseed::is_bitseed_deploy(&cloned_json_map)) {
                 let deploy_op = bitseed::inscription_to_bitseed_deploy(from, to, &cloned_json_map);
-                object::add_field(&mut object, BIT_SEED_DEPLOY, deploy_op)
+                object::add_field(&mut object, bitseed_deploy_key(), deploy_op)
             } else if (bitseed::is_bitseed_mint(&cloned_json_map)) {
                 let mint_op = bitseed::inscription_to_bitseed_mint(from, to, &cloned_json_map);
-
-                let address_bytes = bcs::to_bytes(&from);
-                let tick = *simple_map::borrow(&cloned_json_map, &string::utf8(b"tick"));
-                vector::append(&mut address_bytes, string::into_bytes(tick));
-                vector::append(&mut address_bytes, bcs::to_bytes(&to));
-
-                object::add_field(&mut object, address_bytes, mint_op)
+                object::add_field(&mut object, bitseed_mint_key(), mint_op)
             };
         };
 
@@ -293,6 +286,10 @@ module bitcoin_move::ord {
 
     public fun body(self: &Inscription): vector<u8>{
         self.body
+    }
+
+    public fun json_body(self: &Inscription): SimpleMap<String, String>{
+        simple_map::clone(&self.json_body)
     }
 
     public fun content_encoding(self: &Inscription): Option<String>{

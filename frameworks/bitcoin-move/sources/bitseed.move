@@ -6,10 +6,12 @@ module bitcoin_move::bitseed {
     use std::string::String;
     use std::vector;
     use moveos_std::string_utils::{parse_u64, parse_u8};
-    use moveos_std::bcs::to_address;
     use moveos_std::simple_map;
     use moveos_std::simple_map::SimpleMap;
     use moveos_std::wasm;
+
+    const BIT_SEED_DEPLOY: vector<u8> = b"bitseed_deploy";
+    const BIT_SEED_MINT: vector<u8> = b"bitseed_mint";
 
     struct DeployOp has store,copy,drop {
         is_valid: u8,
@@ -18,7 +20,7 @@ module bitcoin_move::bitseed {
         tick: String,
         amount: u64,
         attributes_repeat: u8,
-        attributes_generator: String,   // object id
+        attributes_generator: String,
         attributes_has_user_input: u8,
         attributes_deploy_args: vector<u8>
     }
@@ -32,6 +34,14 @@ module bitcoin_move::bitseed {
         attributes: vector<u8>,
         content_type: vector<u8>,
         body: vector<u8>
+    }
+
+    public fun bitseed_deploy_key(): vector<u8> {
+        BIT_SEED_DEPLOY
+    }
+
+    public fun bitseed_mint_key(): vector<u8> {
+        BIT_SEED_MINT
     }
 
     public fun is_bitseed(json_map: &SimpleMap<String,String>) : bool {
@@ -117,6 +127,22 @@ module bitcoin_move::bitseed {
 
         wasm::release_wasm_instance(wasm_instance);
         ret_data
+    }
+
+    public fun mint_op_is_valid(mint_op: &MintOp): u8 {
+        mint_op.is_valid
+    }
+
+    public fun mint_op_attributes(mint_op: &MintOp): vector<u8> {
+        mint_op.attributes
+    }
+
+    public fun deploy_op_generator(deploy_op: &DeployOp): String {
+        deploy_op.attributes_generator
+    }
+
+    public fun deploy_op_args(deploy_op: &DeployOp): vector<u8> {
+        deploy_op.attributes_deploy_args
     }
 
     fun pack_inscribe_generate_args(deploy_args: vector<u8>, seed: vector<u8>, user_input: vector<u8>): vector<u8>{
