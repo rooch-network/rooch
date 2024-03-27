@@ -30,6 +30,8 @@ hex = { workspace = true }
 bcs = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+lazy_static = { workspace = true }
+tempfile = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }
@@ -48,6 +50,7 @@ moveos = { workspace = true }
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-store = { workspace = true }
+moveos-config = { workspace = true }
 
 rooch-framework = { workspace = true }
 rooch-genesis = { workspace = true }
@@ -55,8 +58,9 @@ rooch-types = { workspace = true }
 rooch-key = { workspace = true }
 rooch-executor = { workspace = true }
 rooch-store = { workspace = true }
+rooch-config = { workspace = true }
 
-bitcoin-move ={ workspace = true  }
+bitcoin-move = { workspace = true }
 
 [dev-dependencies]
 rooch-integration-test-runner = { workspace = true }

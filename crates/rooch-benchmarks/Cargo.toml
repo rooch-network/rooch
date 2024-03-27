@@ -71,6 +71,7 @@ rooch-da = { workspace = true }
 rooch-rpc-server = { workspace = true }
 rooch-test-transaction-builder = { workspace = true }
 rooch-framework = { workspace = true }
+rooch-framework-tests = { workspace = true }
 
 [dev-dependencies]
 
@@ -79,7 +80,15 @@ bench = false
 
 [[bench]]
 harness = false
-name = "bench_tx_write"
+name = "bench_tx_validate"
+
+[[bench]]
+harness = false
+name = "bench_tx_sequence"
+
+[[bench]]
+harness = false
+name = "bench_tx_exec"
 
 [[bench]]
 harness = false
