@@ -74,12 +74,15 @@ module rooch_examples::bitseed_runner {
       let runner = object::borrow_mut(bitseed_runner_store);
       let index = runner.index;
 
+      // get a Inscription by InscriptionId
       let inscription_id = ord::get_inscription_id_by_index(index);
+      // let id = object::account_named_object_id<Inscription>(to_address);
       let object_id = object::custom_object_id<InscriptionID, Inscription>(*inscription_id);
       let inscription_obj = object::borrow_object<Inscription>(object_id);
 
       let bitseed_mint_key = bitseed::bitseed_mint_key();
       if (object::contains_field(inscription_obj, bitseed_mint_key)) {
+         // get MintOp from the child fields of the Inscription
          let bitseed_mint_op = object::borrow_field<Inscription, vector<u8>, MintOp>(inscription_obj, bitseed_mint_key);
          if (bitseed::mint_op_is_valid(bitseed_mint_op) == 0) {
             let minted_attributes = bitseed::mint_op_attributes(bitseed_mint_op);
@@ -103,7 +106,11 @@ module rooch_examples::bitseed_runner {
 
             // execute the verify_generate function
             if (vector::length(&generator_bytes)>0 && vector::length(&deploy_args)>0) {
-               bitseed::inscribe_generate(generator_bytes, deploy_args, seed, string::into_bytes(user_input_id_string));
+               let verify_result = bitseed::inscribe_verify(generator_bytes, deploy_args, seed,
+                  string::into_bytes(user_input_id_string), minted_attributes);
+               if (verify_result) {
+                  // Update the valid status of MintOp or save the MintOp to another store.
+               }
             };
 
             simple_map::drop(minted_attributes_map);

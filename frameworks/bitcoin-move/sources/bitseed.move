@@ -129,6 +129,31 @@ module bitcoin_move::bitseed {
         ret_data
     }
 
+    public fun inscribe_verify(wasm_bytes: vector<u8>, deploy_args: vector<u8>,
+                               seed: vector<u8>, user_input: vector<u8>, attributes_output: vector<u8>): bool {
+        let wasm_instance = wasm::create_wasm_instance(wasm_bytes);
+        let wasm_instance_id = wasm::get_instance_id(&wasm_instance);
+
+        let function_name = b"inscribe_verify";
+
+        let buffer = pack_inscribe_generate_args(deploy_args, seed, user_input);
+        let arg_with_length = wasm::add_length_with_data(buffer);
+
+        let arg_list = vector::empty<vector<u8>>();
+        vector::push_back(&mut arg_list, arg_with_length);
+        vector::push_back(&mut arg_list, attributes_output);
+        let memory_args_list = wasm::create_memory_wasm_args(wasm_instance_id, function_name, arg_list);
+
+        let ret_val = wasm::execute_wasm_function(wasm_instance_id, function_name, memory_args_list);
+
+        wasm::release_wasm_instance(wasm_instance);
+        if (ret_val == 0 ) {
+            true
+        } else {
+            false
+        }
+    }
+
     public fun mint_op_is_valid(mint_op: &MintOp): u8 {
         mint_op.is_valid
     }
