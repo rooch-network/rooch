@@ -17,6 +17,14 @@ module rooch_examples::bitseed_runner {
       index: u64
    }
 
+   fun init() {
+      let store = BitseedRunnerStore {
+         index: 0
+      };
+      let store_obj = object::new_named_object(store);
+      object::to_shared(store_obj);
+   }
+
    fun hash_string_to_u32(str_bytes: vector<u8>): u32 {
       let hash: u32 = 0x811c9dc5;
       let prime: u32 = 0x1000193;
@@ -69,7 +77,6 @@ module rooch_examples::bitseed_runner {
       let inscription_id = ord::get_inscription_id_by_index(index);
       let object_id = object::custom_object_id<InscriptionID, Inscription>(*inscription_id);
       let inscription_obj = object::borrow_object<Inscription>(object_id);
-      // let inscrption = object::borrow(inscription_obj);
 
       let bitseed_mint_key = bitseed::bitseed_mint_key();
       if (object::contains_field(inscription_obj, bitseed_mint_key)) {
@@ -81,9 +88,6 @@ module rooch_examples::bitseed_runner {
             let inner_attributes_map = json::to_map(string::into_bytes(inner_attributes_string));
             let user_input_id_string = *simple_map::borrow(&inner_attributes_map, &string::utf8(b"id"));
 
-            let hash_content = vector::empty<u8>();
-            vector::append(&mut hash_content, seed);
-            vector::append(&mut hash_content, string::into_bytes(user_input_id_string));
 
             // Find the deploy_args and the generator bytes that matched the current MintOp
             let generator_bytes = vector::empty<u8>();
@@ -99,12 +103,18 @@ module rooch_examples::bitseed_runner {
 
             // execute the verify_generate function
             if (vector::length(&generator_bytes)>0 && vector::length(&deploy_args)>0) {
-
+               bitseed::inscribe_generate(generator_bytes, deploy_args, seed, string::into_bytes(user_input_id_string));
             };
-
 
             simple_map::drop(minted_attributes_map);
             simple_map::drop(inner_attributes_map);
+
+            index = index + 1;
+            let store = BitseedRunnerStore {
+               index
+            };
+            let store_obj = object::new_named_object(store);
+            object::to_shared(store_obj);
          }
       }
    }
