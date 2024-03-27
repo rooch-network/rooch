@@ -462,10 +462,10 @@ where
         for module_id in init_function_modules {
             let function_id = FunctionId::new(module_id.clone(), INIT_FN_NAME_IDENTIFIER.clone());
             let call = FunctionCall::new(function_id, vec![], vec![]);
-            if log::log_enabled!(log::Level::Debug) {
-                log::debug!(
+            if log::log_enabled!(log::Level::Trace) {
+                log::trace!(
                     "Execute init function for module: {:?}",
-                    module_id.address().to_string()
+                    module_id.to_string()
                 );
             }
             self.execute_function_bypass_visibility(call)

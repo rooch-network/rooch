@@ -958,13 +958,70 @@ module moveos_std::object {
         };
     }
 
-    #[test_only]
+    #[test]
     fun test_new_with_parent() {
         let parent = new(TestStruct { count: 1 });
         let parent_id = id(&parent);
         to_shared(parent);
         let parent = borrow_mut_object_shared<TestStruct>(parent_id);
         let child = add_object_field(parent, TestStruct { count: 2 });
+        let TestStruct { count: _ } = remove_object_field(parent, child);
+    }
+
+    #[test]
+    fun test_child_field(){
+        let parent = new(TestStruct { count: 1 });
+        let parent_id = id(&parent);
+        to_shared(parent);
+        let parent = borrow_mut_object_shared<TestStruct>(parent_id);
+        let child = add_object_field(parent, TestStruct { count: 2 });
+        add_field(&mut child, b"key", 1u64);
+        {
+            let v = borrow_mut_field(&mut child, b"key");
+            *v = 2u64;
+        };
+        assert!(*borrow_field(&child, b"key") == 2u64, 1000);
+        let _v:u64 = remove_field(&mut child, b"key");
+        let TestStruct { count: _ } = remove_object_field(parent, child);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ErrorObjectNotShared, location = moveos_std::object)]
+    fun test_parent_not_shared(){
+        let parent = new(TestStruct { count: 1 });
+        //let parent_id = id(&parent);
+        let child = add_object_field(&mut parent, TestStruct { count: 2 });
+        let TestStruct { count: _ } = remove_object_field(&mut parent, child);
+        let TestStruct{ count: _} = remove(parent);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = ErrorChildObjectTooDeep, location = moveos_std::object)]
+    fun test_child_too_deep(){
+        let parent = new(TestStruct { count: 1 });
+        let parent_id = id(&parent);
+        to_shared(parent);
+        let parent = borrow_mut_object_shared<TestStruct>(parent_id);
+        let child = add_object_field(parent, TestStruct { count: 2 });
+        let child_id = id(&child);
+        to_shared(child);
+        let child = borrow_mut_object_shared<TestStruct>(child_id);
+        let grand_child = add_object_field(child, TestStruct { count: 3 });
+        let TestStruct { count: _ } = remove_object_field(child, grand_child);
+    }
+
+    #[test]
+    fun test_child_field_upsert(){
+        let parent = new(TestStruct { count: 1 });
+        let parent_id = id(&parent);
+        to_shared(parent);
+        let parent = borrow_mut_object_shared<TestStruct>(parent_id);
+        let child = add_object_field(parent, TestStruct { count: 2 });
+        upsert_field(&mut child, b"key", 1u64);
+        assert!(*borrow_field(&child, b"key") == 1u64, 1000);
+        upsert_field(&mut child, b"key", 2u64);
+        assert!(*borrow_field(&child, b"key") == 2u64, 1000);
+        let _v:u64 = remove_field(&mut child, b"key");
         let TestStruct { count: _ } = remove_object_field(parent, child);
     }
 }

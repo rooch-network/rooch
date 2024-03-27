@@ -755,11 +755,14 @@ impl RuntimeField {
 
     pub fn borrow_value(&self, expect_value_type: TypeTag) -> PartialVMResult<Value> {
         match self {
-            RuntimeField::None(_) => Err(PartialVMError::new(StatusCode::MISSING_DATA)
-                .with_message(format!(
-                    "Cannot borrow value of None as type {}",
-                    expect_value_type
-                ))),
+            RuntimeField::None(_) => {
+                Err(
+                    PartialVMError::new(StatusCode::MISSING_DATA).with_message(format!(
+                        "Cannot borrow value of None as type {}",
+                        expect_value_type
+                    )),
+                );
+            }
             RuntimeField::Object(obj) => obj.borrow_value(expect_value_type),
             RuntimeField::Normal(normal) => normal.borrow_value(expect_value_type),
         }
@@ -926,24 +929,20 @@ impl RuntimeObject {
     ) -> PartialVMResult<(&mut RuntimeField, Option<Option<NumBytes>>)> {
         Ok(match self.fields.entry(key.clone()) {
             Entry::Vacant(entry) => {
-                let (tv, loaded) = match resolver
-                    .resolve_table_item(
-                        &self.id,
-                        &KeyState::new(key.clone().key, key.clone().key_type),
-                    )
-                    .map_err(|err| {
+                let (tv, loaded) =
+                    match resolver.resolve_table_item(&self.id, &key).map_err(|err| {
                         partial_extension_error(format!("remote object resolver failure: {}", err))
                     })? {
-                    Some(state) => {
-                        let value_layout = f(&state.value_type)?;
-                        let state_bytes_len = state.value.len() as u64;
-                        (
-                            RuntimeField::load(key, value_layout, state)?,
-                            Some(NumBytes::new(state_bytes_len)),
-                        )
-                    }
-                    None => (RuntimeField::none(key), None),
-                };
+                        Some(state) => {
+                            let value_layout = f(&state.value_type)?;
+                            let state_bytes_len = state.value.len() as u64;
+                            (
+                                RuntimeField::load(key, value_layout, state)?,
+                                Some(NumBytes::new(state_bytes_len)),
+                            )
+                        }
+                        None => (RuntimeField::none(key), None),
+                    };
                 (entry.insert(tv), Some(loaded))
             }
             Entry::Occupied(entry) => (entry.into_mut(), None),
@@ -1064,7 +1063,7 @@ fn native_fn_dispatch(
             };
             if log::log_enabled!(log::Level::Debug) {
                 log::warn!(
-                    "[ObjectRuntime] native_function error: object_id: {:?}, key:{}, err: {:?}, abort: {}",
+                    "[ObjectRuntime] native_function error: object_id: {:?}, key:{:?}, err: {:?}, abort: {}",
                     object_id,
                     field_key,
                     err,

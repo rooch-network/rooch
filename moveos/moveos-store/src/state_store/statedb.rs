@@ -36,10 +36,16 @@ impl TreeObject {
         if self.smt.is_genesis() {
             return Ok(None);
         }
+        if key.is_object_id() {
+            debug_assert!(
+                key.as_object_id().unwrap().parent().unwrap() == self.entity.id,
+                "Child object key not match parent object id"
+            );
+        }
         let result = self.smt.get(key.clone());
         if log::log_enabled!(log::Level::Trace) {
             let result_info = match &result {
-                Ok(Some(state)) => format!("Some({:?})", state.value_type),
+                Ok(Some(state)) => format!("Some({})", state.value_type),
                 Ok(None) => "None".to_string(),
                 Err(e) => format!("Error({:?})", e),
             };
@@ -180,10 +186,19 @@ impl StateDBStore {
     }
 
     fn get_object(&self, id: &ObjectID) -> Result<Option<TreeObject>> {
-        Ok(self
-            .root_object
-            .get_field_as_object(id)?
-            .map(|obj| TreeObject::new(self.node_store.clone(), obj)))
+        if id.is_root() {
+            return Ok(Some(self.root_object.clone()));
+        } else {
+            let parent_id = id.parent().expect("ObjectID parent should not be None");
+            let parent = self.get_object(&parent_id)?;
+            match parent {
+                Some(parent) => {
+                    let obj = parent.get_field_as_object(id)?;
+                    Ok(obj.map(|obj| TreeObject::new(self.node_store.clone(), obj)))
+                }
+                None => Ok(None),
+            }
+        }
     }
 
     pub fn get_field(&self, id: &ObjectID, key: KeyState) -> Result<Option<State>> {

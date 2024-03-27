@@ -32,6 +32,10 @@ fn publish_and_load_module() {
         TxContext::random_for_testing_only(),
         RootObjectEntity::genesis_root_object(),
     )));
+    object_runtime
+        .write()
+        .init_module_store(&remote_view)
+        .unwrap();
 
     let mut data_cache = MoveosDataCache::new(&remote_view, loader, object_runtime.clone());
 
