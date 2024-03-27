@@ -3,13 +3,11 @@
 
 /// Name the module to `simple_article` for avoid name conflict with `examples/blog`
 module simple_blog::simple_article {
-
     use std::signer;
     use std::string::String;
+
     use moveos_std::event;
-    use moveos_std::object::ObjectID;
-    use moveos_std::object::{Self, Object};
-    
+    use moveos_std::object::{Self, Object, ObjectID};
 
     const ErrorDataTooLong: u64 = 1;
     const ErrorNotOwnerAccount: u64 = 2;
@@ -35,10 +33,8 @@ module simple_blog::simple_article {
         version: u64,
     }
 
-
     /// Create article
     public fun create_article(
-        
         owner: &signer,
         title: String,
         body: String,
@@ -52,15 +48,12 @@ module simple_blog::simple_article {
             body,
         };
         let owner_addr = signer::address_of(owner);
-        let article_obj = object::new(
-            
-            article,
-        );
+        let article_obj = object::new(article);
         let id = object::id(&article_obj);
-
         let article_created_event = ArticleCreatedEvent {
             id,
         };
+
         event::emit(article_created_event);
         object::transfer(article_obj, owner_addr);
         id
@@ -112,7 +105,6 @@ module simple_blog::simple_article {
     }
 
     /// Read function of article
-
 
     /// get article version
     public fun version(article: &Article): u64 {

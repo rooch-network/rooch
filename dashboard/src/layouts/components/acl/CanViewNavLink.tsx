@@ -14,7 +14,15 @@ interface Props {
 
 const CanViewNavLink = (props: Props) => {
   // ** Props
-  const { children } = props
+  const { children, navLink } = props
+
+  if (navLink?.domain) {
+    if (navLink.domain === window.location.host) {
+      return <>{children}</>
+    }
+
+    return <></>
+  }
 
   return <>{children}</>
 }

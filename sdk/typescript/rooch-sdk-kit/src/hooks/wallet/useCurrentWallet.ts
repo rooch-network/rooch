@@ -7,9 +7,8 @@ import { useWalletStore } from './useWalletStore'
  * Retrieves the wallet that is currently connected to the dApp, if one exists.
  */
 export function useCurrentWallet() {
-  const currentWallet = useWalletStore((state) => state.wallet)
+  const currentWallet = useWalletStore((state) => state.currentWallet)
   const connectionStatus = useWalletStore((state) => state.connectionStatus)
-
   switch (connectionStatus) {
     case 'connecting':
       return {

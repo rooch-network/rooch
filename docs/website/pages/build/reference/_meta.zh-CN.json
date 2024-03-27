@@ -1,9 +1,5 @@
 {
-  "rooch-cli-new": "Rooch CLI",
-  "rooch-cli": {
-    "title": "Rooch CLI",
-    "display": "hidden"
-  },
+  "rooch-cli": "Rooch CLI",
   "rooch-framework": {
     "title": "Rooch Framework",
     "display": "hidden"

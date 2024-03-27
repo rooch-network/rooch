@@ -9,7 +9,8 @@ module rooch_examples::gas_payer {
         true
     }
 
-    #[gas_free(gas_validate=gas_validate_function, gas_charge_post=gas_charge_post_function)]
-    public entry fun play(__sender: &signer){
-    }
+    // TODO: Gas free functions are not supported yet.
+    // #[gas_free(gas_validate=gas_validate_function, gas_charge_post=gas_charge_post_function)]
+    // public entry fun play(__sender: &signer){
+    // }
 }

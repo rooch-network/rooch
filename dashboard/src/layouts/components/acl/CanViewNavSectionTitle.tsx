@@ -14,7 +14,15 @@ interface Props {
 
 const CanViewNavSectionTitle = (props: Props) => {
   // ** Props
-  const { children } = props
+  const { children, navTitle } = props
+
+  if (navTitle?.domain) {
+    if (navTitle.domain === window.location.host) {
+      return <>{children}</>
+    }
+
+    return <></>
+  }
 
   return <>{children}</>
 }

@@ -91,8 +91,9 @@ module moveos_std::move_module {
         check_compatibililty_inner(new_module.byte_codes, old_module.byte_codes);
     }
 
+    // TODO: make it public once we have exhaustive tests
     /// Binding given module's address to the new address
-    public fun binding_module_address(
+    public(friend) fun binding_module_address(
         modules: vector<MoveModule>,
         old_address: address,
         new_address: address,
@@ -108,8 +109,9 @@ module moveos_std::move_module {
         new_batch(rebinded_bytes)
     }
 
+    // TODO: make it public once we have exhaustive tests
     /// Replace given module's identifier to the new ones
-    public fun replace_module_identiner (
+    public(friend) fun replace_module_identiner (
         modules: vector<MoveModule>,
         old_names: vector<String>,
         new_names: vector<String>,
@@ -123,8 +125,9 @@ module moveos_std::move_module {
         new_batch(rebinded_bytes)
     }
 
+    // TODO: make it public once we have exhaustive tests
     /// Replace given struct's identifier to the new ones
-    public fun replace_struct_identifier(
+    public(friend) fun replace_struct_identifier(
         modules: vector<MoveModule>,
         old_names: vector<String>,
         new_names: vector<String>,
@@ -132,8 +135,9 @@ module moveos_std::move_module {
         replace_module_identiner(modules, old_names, new_names)
     }
 
+    // TODO: make it public once we have exhaustive tests
     /// Replace given string constant to the new ones
-    public fun replace_constant_string(
+    public(friend) fun replace_constant_string(
         modules: vector<MoveModule>,
         old_strings: vector<String>,
         new_strings: vector<String>,
@@ -157,8 +161,9 @@ module moveos_std::move_module {
         new_batch(rebinded_bytes)
     }
 
+    // TODO: make it public once we have exhaustive tests
     /// Replace given address constant to the new ones
-    public fun replace_constant_address(
+    public(friend) fun replace_constant_address(
         modules: vector<MoveModule>,
         old_addresses: vector<address>,
         new_addresses: vector<address>,
@@ -172,8 +177,9 @@ module moveos_std::move_module {
         new_batch(rebinded_bytes)
     }
 
+    // TODO: make it public once we have exhaustive tests
     /// Replace given u8 constant to the new ones
-    public fun replace_constant_u8(
+    public(friend) fun replace_constant_u8(
         modules: vector<MoveModule>,
         old_u8s: vector<u8>,
         new_u8s: vector<u8>,
@@ -187,8 +193,9 @@ module moveos_std::move_module {
         new_batch(rebinded_bytes)
     }
 
+    // TODO: make it public once we have exhaustive tests
     /// Replace given u64 constant to the new ones
-    public fun replace_constant_u64(
+    public(friend) fun replace_constant_u64(
         modules: vector<MoveModule>,
         old_u64s: vector<u64>,
         new_u64s: vector<u64>,
@@ -202,8 +209,9 @@ module moveos_std::move_module {
         new_batch(rebinded_bytes)
     }
 
+    // TODO: make it public once we have exhaustive tests
     /// Replace given u256 constant to the new ones
-    public fun replace_constant_u256(
+    public(friend) fun replace_constant_u256(
         modules: vector<MoveModule>,
         old_u256s: vector<u256>,
         new_u256s: vector<u256>,

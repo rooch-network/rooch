@@ -246,7 +246,7 @@ where
                 let loaded_function = self
                     .session
                     .load_script(call.code.as_slice(), call.ty_args.clone())?;
-                let location = Location::Script;
+                let location: Location = Location::Script;
                 let resolved_args = self.resolve_argument(&loaded_function, call.args, location)?;
                 let serialized_args = self.load_arguments(resolved_args)?;
                 self.session
@@ -590,13 +590,21 @@ where
         }
         for function_call in functions {
             let result = self.execute_function_bypass_visibility(function_call);
-            if let Err(e) = result {
-                if !meter_gas {
-                    self.gas_meter.start_metering();
+            match result {
+                Ok(return_values) => {
+                    // This function is only used in crates. No return values are expected.
+                    assert!(
+                        return_values.is_empty(),
+                        "Function should not return values"
+                    )
                 }
-                return Err(e);
+                Err(e) => {
+                    if !meter_gas {
+                        self.gas_meter.start_metering();
+                    }
+                    return Err(e);
+                }
             }
-            // TODO: how to handle function call with returned values?
         }
         if !meter_gas {
             self.gas_meter.start_metering();
