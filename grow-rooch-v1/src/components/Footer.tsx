@@ -66,7 +66,7 @@ const navigation = {
 
 export const Footer = () => {
   return (
-    <footer className="mt-auto bg-white" aria-labelledby="footer-heading">
+    <footer className="mt-auto bg-transparent z-10" aria-labelledby="footer-heading">
       <div className="mx-auto max-w-7xl px-6 pb-8 pt-16 sm:pt-24 lg:px-8 lg:pt-32">
         <div className="mt-8 border-t border-gray-900/10 pt-8 md:flex md:items-center md:justify-between">
           <div className="flex space-x-6 md:order-2">

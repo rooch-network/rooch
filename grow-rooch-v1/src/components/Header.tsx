@@ -10,7 +10,6 @@ interface HeaderProps {
 
 const navigation: HeaderProps[] = [
   { name: 'Home', href: '#' },
-  { name: 'Dashboard', href: '#' },
   { name: 'Leaderboard', href: '#' },
   { name: 'Share to X', href: '#' },
 ]
@@ -53,7 +52,7 @@ export const Header = () => {
               href={item.href}
               className={cn(
                 'text-sm font-semibold leading-6 text-gray-900 hover:opacity-75 transition-all',
-                activeItem === item.name ? 'text-blue-800 hover:opacity-100' : '',
+                activeItem === item.name ? 'shadow-underline' : '',
               )}
               onClick={() => handleItemClick(item.name)}
             >
