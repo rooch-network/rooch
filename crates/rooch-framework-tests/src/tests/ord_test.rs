@@ -53,7 +53,6 @@ fn test_from_transaction() {
     let _inscriptions_from_move = decode_inscription(btc_tx_hex);
 }
 
-
 //RUST_LOG=debug cargo test test_from_tx -- --nocapture
 #[test]
 fn test_from_tx() {
