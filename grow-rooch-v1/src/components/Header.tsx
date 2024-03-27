@@ -95,7 +95,9 @@ export const Header = () => {
                     href={item.href}
                     className={cn(
                       '-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 transition-all',
-                      activeItem === item.name ? 'text-blue-800 bg-blue-50' : 'hover:bg-gray-50',
+                      activeItem === item.name
+                        ? 'text-indigo-800 bg-indigo-50'
+                        : 'hover:bg-gray-50',
                     )}
                     onClick={() => handleItemClick(item.name)}
                   >
