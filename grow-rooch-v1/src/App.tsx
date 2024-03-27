@@ -1,12 +1,11 @@
-import '../app/globals.css'
-import { WalletConnect } from './components/wallet-connect'
+import '@/styles/globals.css'
+import { Layout } from './components/Layout'
+import { Contents } from './pages/contents'
 
 export const App = () => {
   return (
-    <>
-      <div>
-        <WalletConnect />
-      </div>
-    </>
+    <Layout>
+      <Contents />
+    </Layout>
   )
 }
