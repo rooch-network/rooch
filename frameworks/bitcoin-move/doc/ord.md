@@ -18,11 +18,11 @@
 -  [Function `new_inscription_id`](#0x4_ord_new_inscription_id)
 -  [Function `new_satpoint`](#0x4_ord_new_satpoint)
 -  [Function `satpoint_offset`](#0x4_ord_satpoint_offset)
+-  [Function `satpoint_txid`](#0x4_ord_satpoint_txid)
 -  [Function `new_satpoint_mapping`](#0x4_ord_new_satpoint_mapping)
--  [Function `satpoint_mapping`](#0x4_ord_satpoint_mapping)
+-  [Function `unpack_satpoint_mapping`](#0x4_ord_unpack_satpoint_mapping)
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
 -  [Function `borrow_inscription`](#0x4_ord_borrow_inscription)
--  [Function `spend_utxo`](#0x4_ord_spend_utxo)
 -  [Function `update_inscription_index`](#0x4_ord_update_inscription_index)
 -  [Function `remove_inscription_index`](#0x4_ord_remove_inscription_index)
 -  [Function `inscriptions_on_output`](#0x4_ord_inscriptions_on_output)
@@ -42,7 +42,8 @@
 -  [Function `bind_multichain_address`](#0x4_ord_bind_multichain_address)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::debug</a>;
+<b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
@@ -212,6 +213,18 @@ Get the SatPoint's offset
 
 
 
+<a name="0x4_ord_satpoint_txid"></a>
+
+## Function `satpoint_txid`
+
+Get the SatPoint's offset
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_satpoint_txid">satpoint_txid</a>(satpoint: &<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>): <b>address</b>
+</code></pre>
+
+
+
 <a name="0x4_ord_new_satpoint_mapping"></a>
 
 ## Function `new_satpoint_mapping`
@@ -223,14 +236,14 @@ Get the SatPoint's offset
 
 
 
-<a name="0x4_ord_satpoint_mapping"></a>
+<a name="0x4_ord_unpack_satpoint_mapping"></a>
 
-## Function `satpoint_mapping`
+## Function `unpack_satpoint_mapping`
 
 Get the SatPoint's mapping
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_satpoint_mapping">satpoint_mapping</a>(satpoint_mapping: &<a href="ord.md#0x4_ord_SatPointMapping">ord::SatPointMapping</a>): (<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>, <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_unpack_satpoint_mapping">unpack_satpoint_mapping</a>(satpoint_mapping: &<a href="ord.md#0x4_ord_SatPointMapping">ord::SatPointMapping</a>): (<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>, <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>)
 </code></pre>
 
 
@@ -253,17 +266,6 @@ Get the SatPoint's mapping
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_inscription">borrow_inscription</a>(txid: <b>address</b>, index: u32): &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;
-</code></pre>
-
-
-
-<a name="0x4_ord_spend_utxo"></a>
-
-## Function `spend_utxo`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_spend_utxo">spend_utxo</a>(utxo_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;, tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>): <a href="">vector</a>&lt;<a href="utxo.md#0x4_utxo_SealOut">utxo::SealOut</a>&gt;
 </code></pre>
 
 

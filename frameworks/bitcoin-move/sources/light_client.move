@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module bitcoin_move::light_client{
-
+    use std::debug;
     use std::option::{Self, Option};
     use std::vector;
     use std::string::{String};
@@ -16,12 +16,9 @@ module bitcoin_move::light_client{
     use moveos_std::simple_multimap;
     use moveos_std::signer;
     use rooch_framework::timestamp;
-    use bitcoin_move::types::{Self, Block, Header, Transaction, OutPoint, outpoint_txid, outpoint_vout, new_outpoint};
-    use bitcoin_move::ord::{Self, Inscription, bind_multichain_address, SatPoint, inscriptions_on_output,
-        satpoint_offset, new_satpoint, update_inscription_index, new_satpoint_mapping, satpoint_mapping,
-        remove_inscription_index
-    };
-    use bitcoin_move::utxo::{Self, UTXOSeal, utxo_range_vout, utxo_range_txid, utxo_range_range};
+    use bitcoin_move::types::{Self, Block, Header, Transaction, OutPoint};
+    use bitcoin_move::ord::{Self, Inscription, bind_multichain_address, SatPoint};
+    use bitcoin_move::utxo::{Self, UTXOSeal};
     
 
     friend bitcoin_move::genesis;
@@ -133,7 +130,7 @@ module bitcoin_move::light_client{
             vector::push_back(&mut previous_outputs, outpoint);
         });
 
-        // match utxo
+        // Match utxo, utxo spent follows "First in First out"
         let previous_output_idx = 0;
         let previous_output_next_offset :u64 = 0;
         let previous_output_len = vector::length(&previous_outputs);
@@ -149,8 +146,8 @@ module bitcoin_move::light_client{
             let utxo_value_accumulator: u64 = 0;
             while(previous_output_idx < previous_output_len){
                 let previous_out = vector::borrow(&previous_outputs, previous_output_idx);
-                let previous_txid = outpoint_txid(previous_out);
-                let previous_vout = outpoint_vout(previous_out);
+                let previous_txid = types::outpoint_txid(previous_out);
+                let previous_vout = types::outpoint_vout(previous_out);
 
                 let previous_utxo_value = 0;
                 let previous_utxo_avaliable_value = 0;
@@ -195,68 +192,76 @@ module bitcoin_move::light_client{
             output_idx = output_idx + 1;
         };
 
-        // match satpoint mapping
-        let output_utxo_mapping_idx = 0;
-        let output_utxo_mapping_len = vector::length(&output_utxo_mapping);
-        let output_satpoint_mapping = vector[];
-
+        // Match satpoint mapping for inscription
         let previous_output_to_satpoint_mapping = simple_map::new<OutPoint, vector<SatPoint>>();
         vector::for_each(previous_outputs, |output| {
-            let satpoints = inscriptions_on_output(&output);
+            let satpoints = ord::inscriptions_on_output(&output);
             simple_map::add(&mut previous_output_to_satpoint_mapping, output, satpoints);
         });
-        while(output_utxo_mapping_idx < output_utxo_mapping_len) {
-            let satpoint_mapping = vector[];
-            let vout = (output_utxo_mapping_idx as u32);
 
-            let input_to_output_mapping = *vector::borrow(&output_utxo_mapping, output_utxo_mapping_idx);
+        let idx = 0;
+        let output_utxo_mapping_len = vector::length(&output_utxo_mapping);
+        let output_satpoint_mapping = vector[];
+        while(idx < output_utxo_mapping_len) {
+            let satpoint_mapping = vector[];
+            let vout = (idx as u32);
+
+            let input_to_output_mapping = *vector::borrow(&output_utxo_mapping, idx);
             let offset_accumulator: u64 = 0;
+
             vector::for_each(input_to_output_mapping, |utxo_range| {
-                let utxo_outpint = new_outpoint(utxo_range_txid(&utxo_range), utxo_range_vout(&utxo_range));
+                let utxo_outpint = types::new_outpoint(utxo::utxo_range_txid(&utxo_range), utxo::utxo_range_vout(&utxo_range));
                 let previous_output_to_satpoint = simple_map::borrow(&previous_output_to_satpoint_mapping, &utxo_outpint);
 
-                let previous_output_to_satpoint_idx = 0;
+                let j = 0;
                 let previous_output_to_satpoint_len = vector::length(previous_output_to_satpoint);
-                let (range_start_offset, range_end_offset) = utxo_range_range(&utxo_range);
-                while(previous_output_to_satpoint_idx < previous_output_to_satpoint_len) {
-                    let previous_satpoint = vector::borrow(previous_output_to_satpoint, previous_output_to_satpoint_idx);
-                    let previous_satpoint_offset = satpoint_offset(previous_satpoint);
+                let (range_start_offset, range_end_offset) = utxo::utxo_range_range(&utxo_range);
+                while(j < previous_output_to_satpoint_len) {
+                    let previous_satpoint = vector::borrow(previous_output_to_satpoint, j);
+                    let previous_satpoint_offset = ord::satpoint_offset(previous_satpoint);
+
                     if(previous_satpoint_offset >= range_start_offset && previous_satpoint_offset < range_end_offset) {
                         let new_offset = offset_accumulator + (previous_satpoint_offset - range_start_offset);
-                        let new_satpoint = new_satpoint(txid, vout, new_offset);
-                        let satpoint_mapping_item = new_satpoint_mapping(*previous_satpoint, new_satpoint);
+                        let new_satpoint = ord::new_satpoint(txid, vout, new_offset);
+                        let satpoint_mapping_item = ord::new_satpoint_mapping(*previous_satpoint, new_satpoint);
                         vector::push_back(&mut satpoint_mapping, satpoint_mapping_item);
+
+                        let txid = ord::satpoint_txid(previous_satpoint);
+                        if (txid == @0xcc415c5b2556fd49599a84fe5a39d77fcce8821979ab053f5f02a882e8112109) {
+                            debug::print(&200500);
+                            debug::print(previous_satpoint);
+                            debug::print(&new_satpoint);
+                        };
                     } else {
                     };
 
-                    previous_output_to_satpoint_idx = previous_output_to_satpoint_idx + 1;
+                    j = j + 1;
                 };
                 offset_accumulator = offset_accumulator + (range_end_offset - range_start_offset);
             });
 
             vector::push_back(&mut output_satpoint_mapping, satpoint_mapping);
-            output_utxo_mapping_idx = output_utxo_mapping_idx + 1;
+            idx = idx + 1;
         };
         simple_map::drop(previous_output_to_satpoint_mapping);
 
-        // spend utxo and update satpoint mapping
-        // let output_seals = simple_multimap::new<u32, UTXOSeal>();
+        // Spend utxo and update satpoint mapping
         let protocol = type_info::type_name<Inscription>();
-        let output_satpoint_mapping_idx = 0;
+        let idx = 0;
         let output_satpoint_mapping_len = vector::length(&output_satpoint_mapping);
-        while(output_satpoint_mapping_idx < output_satpoint_mapping_len) {
-            let output_satpoint_mapping_item = vector::borrow(&output_satpoint_mapping, output_satpoint_mapping_idx);
-            let txout = vector::borrow(txoutput, output_satpoint_mapping_idx);
-            let outpoint = types::new_outpoint(txid, (output_satpoint_mapping_idx as u32));
+        while(idx < output_satpoint_mapping_len) {
+            let output_satpoint_mapping_item = vector::borrow(&output_satpoint_mapping, idx);
+            let txout = vector::borrow(txoutput, idx);
+            let outpoint = types::new_outpoint(txid, (idx as u32));
             vector::for_each(*output_satpoint_mapping_item, |satpoint_mapping_item| {
-                let (old_satpoint, new_satpoint) = satpoint_mapping(&satpoint_mapping_item);
-                let seal_out = update_inscription_index(txout, outpoint, old_satpoint, new_satpoint, tx);
+                let (old_satpoint, new_satpoint) = ord::unpack_satpoint_mapping(&satpoint_mapping_item);
+                let seal_out = ord::update_inscription_index(txout, outpoint, old_satpoint, new_satpoint, tx);
 
                 let (output_index, object_id) = utxo::unpack_seal_out(seal_out);
                 let utxo_seal = utxo::new_utxo_seal(protocol, object_id);
                 simple_multimap::add(&mut output_seals, output_index, utxo_seal);
             });
-            output_satpoint_mapping_idx = output_satpoint_mapping_idx + 1;
+            idx = idx + 1;
         };
         vector::for_each(previous_outputs, |outpoint| {
             // spent utxo
@@ -264,15 +269,13 @@ module bitcoin_move::light_client{
                 let object_id = table::remove(&mut btc_utxo_store.utxo, outpoint);
                 let (_owner, utxo_obj) = utxo::take(object_id);
                 let seals = utxo::remove(utxo_obj);
-                //The seals should be empty after utxo is spent
-                simple_multimap::destroy_empty(seals);
+                simple_multimap::drop(seals);
             };
 
-            remove_inscription_index(outpoint);
+            ord::remove_inscription_index(outpoint);
         });
 
-
-        //If a utxo is spend seal assets, it should not seal new assets
+        // If a utxo is spend seal assets, it should not seal new assets
         if(simple_multimap::length(&output_seals) == 0){
             let ord_seals = ord::process_transaction(tx);
 
