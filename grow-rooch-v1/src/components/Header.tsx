@@ -11,7 +11,6 @@ interface HeaderProps {
 const navigation: HeaderProps[] = [
   { name: 'Home', href: '#' },
   { name: 'Leaderboard', href: '#' },
-  { name: 'Share to X', href: '#' },
 ]
 
 export const Header = () => {
@@ -21,6 +20,10 @@ export const Header = () => {
   // Update active item
   const handleItemClick = (itemName: string) => {
     setActiveItem(itemName)
+  }
+
+  const handleJumpToX = () => {
+    window.open('https://twitter.com/home', '_blank')
   }
 
   return (
@@ -59,6 +62,16 @@ export const Header = () => {
               {item.name}
             </a>
           ))}
+          <a
+            href="https://twitter.com/home"
+            className="text-sm font-semibold leading-6 text-gray-900 hover:opacity-75 transition-all"
+            onClick={() => handleJumpToX}
+          >
+            <span className="flex items-center justify-center gap-1">
+              Share to
+              <img src="/icon-x.svg" alt="" className="w-4" />
+            </span>
+          </a>
         </div>
         <div className="hidden lg:flex lg:flex-1 lg:justify-end">
           <a
