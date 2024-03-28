@@ -115,14 +115,14 @@ module rooch_examples::bitseed_runner {
 
             simple_map::drop(minted_attributes_map);
             simple_map::drop(inner_attributes_map);
-
-            index = index + 1;
-            let store = BitseedRunnerStore {
-               index
-            };
-            let store_obj = object::new_named_object(store);
-            object::to_shared(store_obj);
          }
-      }
+      };
+
+      index = index + 1;
+      let store = BitseedRunnerStore {
+         index
+      };
+      let store_obj = object::new_named_object(store);
+      object::to_shared(store_obj);
    }
 }
