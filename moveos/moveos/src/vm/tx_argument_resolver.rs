@@ -54,7 +54,11 @@ where
                             .with_message("Resolve object type failed".to_string())
                             .finish(location.clone())
                     })?;
-                    let arg = args.next().expect("argument length mismatch");
+                    let arg = args.next().ok_or_else(|| {
+                        PartialVMError::new(StatusCode::NUMBER_OF_ARGUMENTS_MISMATCH)
+                            .with_message("Argument length mismatch".to_string())
+                            .finish(location.clone())
+                    })?;
                     let object_id = ObjectID::from_bytes(arg).map_err(|e| {
                         PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
                             .with_message(format!("Invalid object id: {:?}", e))
