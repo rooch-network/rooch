@@ -25,18 +25,11 @@ import {
 // ** ROOCH SDK
 // import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 
+// ** INTERFACE
+import { TransactionsProps } from '@/common/interface'
+
 // ** ICONS
 import { MenuSquare, ExternalLink } from 'lucide-react'
-
-interface TransactionsProps {
-  type: string
-  txHash: string
-  from: string
-  to: string
-  amount: number
-  asset: string
-  date: string
-}
 
 const txs: TransactionsProps[] = [
   {

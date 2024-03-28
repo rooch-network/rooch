@@ -4,11 +4,12 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { UTXO } from '../common/utxo-interface'
+
 import { cn } from '@/lib/utils'
 import { CheckCircle2 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { ToastAction } from '@/components/ui/toast'
+import { UTXO } from '@/common/interface'
 
 const SAMPLE_UTXOS: UTXO[] = [
   { id: 0, amount: 1000, isStaked: false, isSelected: false },

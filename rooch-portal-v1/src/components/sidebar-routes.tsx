@@ -1,10 +1,9 @@
-import { Bitcoin, Compass, LayoutGrid, Scroll, UserCog } from 'lucide-react'
-import { SidebarItem } from './sidebar-item'
 import { useTranslation } from 'react-i18next'
 
-interface SidebarRoutesProps {
-  onClose: () => void
-}
+import { Bitcoin, Compass, LayoutGrid, Scroll, UserCog } from 'lucide-react'
+
+import { SidebarItem } from './sidebar-item'
+import { SidebarRoutesProps } from '@/common/interface'
 
 export const SidebarRoutes = ({ onClose }: SidebarRoutesProps) => {
   const { t } = useTranslation()

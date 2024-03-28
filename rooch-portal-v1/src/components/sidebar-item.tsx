@@ -1,14 +1,9 @@
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import { LucideIcon } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-interface SidebarItemProps {
-  icon: LucideIcon
-  label: string
-  href: string
-  onClose?: () => void
-}
+import { Button } from '@/components/ui/button'
+import { SidebarItemProps } from '@/common/interface'
+
+import { cn } from '@/lib/utils'
 
 export const SidebarItem = ({ icon: Icon, label, href, onClose }: SidebarItemProps) => {
   const { pathname } = useLocation()
@@ -20,7 +15,7 @@ export const SidebarItem = ({ icon: Icon, label, href, onClose }: SidebarItemPro
   const onClick = () => {
     navigate(href)
     if (onClose) {
-      onClose() // 在导航之后调用关闭函数
+      onClose()
     }
   }
 

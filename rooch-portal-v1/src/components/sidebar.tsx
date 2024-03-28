@@ -4,10 +4,7 @@ import { SidebarRoutes } from './sidebar-routes'
 import { ModeToggle } from '@/components/mode-toggle'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { Separator } from '@/components/ui/separator'
-
-interface SidebarProps {
-  onClose: () => void
-}
+import { SidebarProps } from '@/common/interface'
 
 export const Sidebar = ({ onClose }: SidebarProps) => {
   return (

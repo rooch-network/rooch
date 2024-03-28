@@ -8,9 +8,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { SftsProps } from '../common/mint-interface'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
+import { SftsProps } from '@/common/interface'
 
 import { useNavigate } from 'react-router-dom'
 import { MousePointer2 } from 'lucide-react'

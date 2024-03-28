@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { SftsProps } from '../common/mint-interface'
+import { SftsProps } from '@/common/interface'
 import { Progress } from '@/components/ui/progress'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'

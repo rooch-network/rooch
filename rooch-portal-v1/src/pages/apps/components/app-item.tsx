@@ -1,3 +1,4 @@
+import { AppItemProps } from '@/common/interface'
 import { AspectRatio } from '@/components/ui/aspect-ratio'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -11,15 +12,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Send } from 'lucide-react'
-
-interface AppItemProps {
-  id: number
-  name: string
-  description: string
-  profileUrl: string
-  logoUrl: string
-  type: string
-}
 
 export const AppItem = ({ id, name, description, profileUrl, logoUrl, type }: AppItemProps) => {
   return (
