@@ -39,16 +39,6 @@ export interface SftsProps {
   totalSupply: number
 }
 
-export interface TransactionsProps {
-  type: string
-  txHash: string
-  from: string
-  to: string
-  amount: number
-  asset: string
-  date: string
-}
-
 export interface UTXO {
   id: number
   amount: number
