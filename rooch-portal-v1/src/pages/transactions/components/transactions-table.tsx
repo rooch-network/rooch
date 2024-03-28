@@ -28,6 +28,7 @@ import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 // ** ICONS
 import { MenuSquare, ExternalLink } from 'lucide-react'
 import { TransactionWithInfoView } from '@roochnetwork/rooch-sdk'
+import { SkeletonList } from '@/components/skeleton-list'
 
 export const TransactionsTable = () => {
   const [txs, setTxs] = useState<TransactionWithInfoView[]>([])
@@ -73,7 +74,7 @@ export const TransactionsTable = () => {
   }, [transactionsData])
 
   if (isPending) {
-    return <div>Loading...</div>
+    return <SkeletonList />
   }
 
   if (!txs || txs.length === 0) {
