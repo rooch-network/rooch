@@ -40,24 +40,74 @@ module.exports = withNextra({
         destination: "/learn/core-concepts/accounts/account-abstraction",
       },
       {
-        source: "",
+        source: "/docs/developer-guides/access-path",
         permanent: false,
-        destination: "",
+        destination: "/learn/core-concepts/accounts/address-space",
       },
       {
-        source: "",
+        source: "/docs/dive-into-rooch/transaction-flow",
         permanent: false,
-        destination: "",
+        destination: "/learn/core-concepts/transaction/transaction-flow",
       },
       {
-        source: "",
+        source: "/docs/dive-into-rooch/storage-abstraction",
         permanent: false,
-        destination: "",
+        destination: "/learn/core-concepts/objects/storage-abstraction",
       },
       {
-        source: "",
+        source: "/docs/developer-guides/move-on-rooch",
         permanent: false,
-        destination: "",
+        destination: "/learn/core-concepts/move-contracts/move-on-rooch",
+      },
+      {
+        source: "/docs/developer-guides/library",
+        permanent: false,
+        destination: "/learn/core-concepts/move-contracts/built-in-library",
+      },
+      {
+        source: "/docs/tech-highlights/move-language",
+        permanent: false,
+        destination: "/learn/core-concepts/move-contracts/move-language",
+      },
+      {
+        source: "/docs/tech-highlights/fraud-proof",
+        permanent: false,
+        destination: "/learn/in-depth-tech/fraud-proof",
+      },
+      {
+        source: "/docs/tech-highlights/hybrid-security",
+        permanent: false,
+        destination: "/learn/in-depth-tech/hybrid-security",
+      },
+      {
+        source: "/docs/dive-into-rooch/l1-to-l2-messaging",
+        permanent: false,
+        destination: "/learn/in-depth-tech/multi-chain-settlement/l1-to-l2-messaging",
+      },
+      {
+        source: "/docs/dive-into-rooch/l2-to-l1-messaging",
+        permanent: false,
+        destination: "/learn/in-depth-tech/multi-chain-settlement/l2-to-l1-messaging",
+      },
+      {
+        source: "/docs/tech-highlights/multi-chain-settlement",
+        permanent: false,
+        destination: "/learn/in-depth-tech/multi-chain-settlement/multi-chain-settlement",
+      },
+      {
+        source: "/docs/tech-highlights/pipeline-transaction-processing",
+        permanent: false,
+        destination: "/learn/in-depth-tech/pipeline-transaction-processing",
+      },
+      {
+        source: "/docs/tech-highlights/sequence-proof",
+        permanent: false,
+        destination: "/learn/in-depth-tech/sequence-proof",
+      },
+      {
+        source: "/docs/tech-highlights/storage",
+        permanent: false,
+        destination: "/learn/in-depth-tech/storage",
       },
       {
         source: "/docs/why-rooch",
