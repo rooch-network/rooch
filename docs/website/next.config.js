@@ -20,6 +20,46 @@ module.exports = withNextra({
         destination: "/docs/introduction",
       },
       {
+        source: "/docs/introduction",
+        permanent: false,
+        destination: "/learn/introduction",
+      },
+      {
+        source: "/docs/rooch",
+        permanent: false,
+        destination: "/learn/architecture",
+      },
+      {
+        source: "/docs/rooch-network",
+        permanent: false,
+        destination: "/learn/architecture",
+      },
+      {
+        source: "/docs/tech-highlights/account-abstraction",
+        permanent: false,
+        destination: "/learn/core-concepts/accounts/account-abstraction",
+      },
+      {
+        source: "",
+        permanent: false,
+        destination: "",
+      },
+      {
+        source: "",
+        permanent: false,
+        destination: "",
+      },
+      {
+        source: "",
+        permanent: false,
+        destination: "",
+      },
+      {
+        source: "",
+        permanent: false,
+        destination: "",
+      },
+      {
         source: "/docs/why-rooch",
         permanent: false,
         destination: "/docs/rooch",
