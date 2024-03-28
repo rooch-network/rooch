@@ -1,13 +1,13 @@
 import { Routes, Route } from 'react-router-dom'
-import { UserAssetsLayout } from '../userAssets/user-assets-layout'
-import { UserTransactionsLayout } from '../userTransactions/user-transactions-layout'
-import { UserMintLayout } from '../userMint/user-mint-layout'
-import { UserAppsLayout } from '../userApps/user-apps-layout'
+import { UserAssetsLayout } from '../pages/userAssets/user-assets-layout'
+import { UserTransactionsLayout } from '../pages/userTransactions/user-transactions-layout'
+import { UserMintLayout } from '../pages/userMint/user-mint-layout'
+import { UserAppsLayout } from '../pages/userApps/user-apps-layout'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
-import { UserSettingsLayout } from '../userSettings/user-settings-layout'
-import { SftDetailLayout } from '../userMint/sftDetail/sft-detail-layout'
+import { UserSettingsLayout } from '../pages/userSettings/user-settings-layout'
+import { SftDetailLayout } from '../pages/userMint/sftDetail/sft-detail-layout'
 import { Foot } from '@/components/foot'
-import { SftDetailLayoutForSelfStaking } from '../userMint/sftDetailForSelfStaking/sft-detail-layout-for-self-staking'
+import { SftDetailLayoutForSelfStaking } from '../pages/userMint/sftDetailForSelfStaking/sft-detail-layout-for-self-staking'
 
 export const MainContent = () => {
   return (

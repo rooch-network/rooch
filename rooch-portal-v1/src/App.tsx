@@ -9,7 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { TestNetwork } from '@roochnetwork/rooch-sdk'
 import { WalletProvider, RoochClientProvider, SupportChain } from '@roochnetwork/rooch-sdk-kit'
 
-import { DashboardLayout } from './(dashboard)/dashboard-layout'
+import { DashboardLayout } from './dashboard-layout'
 import { ToastProvider } from './providers/toast-provider'
 
 const clientSideEmotionCache = createEmotionCache()
