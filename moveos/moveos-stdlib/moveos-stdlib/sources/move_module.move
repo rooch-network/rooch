@@ -234,9 +234,14 @@ module moveos_std::move_module {
     }
 
     /// Create a new module object space
-    public(friend) fun create_module_store() {
-        let obj = object::new_with_id(module_store_id(), ModuleStore {});
-        object::to_shared(obj)
+    public(friend) fun init_module_store() {
+        let module_store_id = module_store_id();
+        // The ModuleStore object will initialize before the genesis.
+        // It should be exists, we add this for the test case.
+        if (!object::exists_object(module_store_id)) {
+            let obj = object::new_with_id(module_store_id, ModuleStore {});
+            object::to_shared(obj)
+        }
     }
 
     public fun borrow_module_store(): &Object<ModuleStore> {
@@ -481,7 +486,7 @@ module moveos_std::move_module {
  
     #[test(sender=@0x42)]
     fun test_publish_modules(sender: address) {
-        create_module_store();
+        init_module_store();
         let module_object = borrow_mut_module_store();
         let module_bytes = COUNTER_MV_BYTES;
         let m: MoveModule = Self::new(module_bytes);

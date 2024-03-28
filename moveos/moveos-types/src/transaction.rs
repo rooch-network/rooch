@@ -9,7 +9,6 @@ use crate::{
 use move_core_types::gas_algebra::InternalGas;
 use move_core_types::{
     account_address::AccountAddress,
-    effects::ChangeSet,
     language_storage::{ModuleId, TypeTag},
     vm_status::KeptVMStatus,
 };
@@ -279,8 +278,7 @@ pub struct VerifiedMoveOSTransaction {
 #[derive(Debug, Clone)]
 pub struct RawTransactionOutput {
     pub status: KeptVMStatus,
-    pub changeset: ChangeSet,
-    pub state_changeset: StateChangeSet,
+    pub changeset: StateChangeSet,
     pub events: Vec<TransactionEvent>,
     pub gas_used: u64,
     pub is_upgrade: bool,
@@ -291,8 +289,7 @@ pub struct RawTransactionOutput {
 #[derive(Debug, Clone)]
 pub struct TransactionOutput {
     pub status: KeptVMStatus,
-    pub changeset: ChangeSet,
-    pub state_changeset: StateChangeSet,
+    pub changeset: StateChangeSet,
     pub events: Vec<Event>,
     pub gas_used: u64,
     pub is_upgrade: bool,
@@ -316,7 +313,6 @@ impl TransactionOutput {
         TransactionOutput {
             status: transaction_output.status,
             changeset: transaction_output.changeset,
-            state_changeset: transaction_output.state_changeset,
             events,
             gas_used: transaction_output.gas_used,
             is_upgrade: transaction_output.is_upgrade,

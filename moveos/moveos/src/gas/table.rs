@@ -9,7 +9,6 @@ use crate::gas::r#abstract::{
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_binary_format::file_format::CodeOffset;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::effects::Op;
 use move_core_types::gas_algebra::{
     AbstractMemorySize, GasQuantity, InternalGas, InternalGasPerArg, InternalGasPerByte, NumArgs,
     NumBytes,
@@ -21,9 +20,8 @@ use move_core_types::vm_status::StatusCode;
 use move_resource_viewer::AnnotatedMoveValue;
 use move_vm_types::gas::{GasMeter, SimpleInstruction};
 use move_vm_types::views::{TypeView, ValueView};
-use moveos_types::moveos_std::event::TransactionEvent;
 use moveos_types::moveos_std::object;
-use moveos_types::state::{MoveStructState, MoveStructType, StateChangeSet};
+use moveos_types::state::{MoveStructState, MoveStructType};
 use moveos_types::state_resolver::{AnnotatedStateReader, MoveOSResolver};
 use moveos_types::transaction::GasStatement;
 use once_cell::sync::Lazy;
@@ -716,8 +714,8 @@ pub trait ClassifiedGasMeter {
     fn charge_execution(&mut self, gas_cost: u64) -> PartialVMResult<()>;
     // fn charge_io_read(&mut self);
     fn charge_io_write(&mut self, data_size: u64) -> PartialVMResult<()>;
-    fn charge_event(&mut self, events: &[TransactionEvent]) -> PartialVMResult<()>;
-    fn charge_change_set(&mut self, change_set: &StateChangeSet) -> PartialVMResult<()>;
+    //fn charge_event(&mut self, events: &[TransactionEvent]) -> PartialVMResult<()>;
+    //fn charge_change_set(&mut self, change_set: &StateChangeSet) -> PartialVMResult<()>;
     fn check_constrains(&self, max_gas_amount: u64) -> PartialVMResult<()>;
     fn gas_statement(&self) -> GasStatement;
 }
@@ -752,64 +750,64 @@ impl ClassifiedGasMeter for MoveOSGasMeter {
         *self.storage_gas_used.borrow_mut() = new_value;
         self.deduct_gas(InternalGas::from(fee))
     }
+    //TODO cleanup
+    // fn charge_event(&mut self, events: &[TransactionEvent]) -> PartialVMResult<()> {
+    //     if !self.charge {
+    //         return Ok(());
+    //     }
 
-    fn charge_event(&mut self, events: &[TransactionEvent]) -> PartialVMResult<()> {
-        if !self.charge {
-            return Ok(());
-        }
+    //     let mut total_event_fee = 0;
+    //     for event in events {
+    //         let fee = event.event_data.len() as u64
+    //             * self
+    //                 .cost_table
+    //                 .storage_gas_parameter
+    //                 .storage_fee_per_event_byte;
+    //         let new_value = self.storage_gas_used.borrow().add(InternalGas::from(fee));
+    //         *self.storage_gas_used.borrow_mut() = new_value;
+    //         total_event_fee += fee;
+    //     }
+    //     self.deduct_gas(InternalGas::from(total_event_fee))
+    // }
 
-        let mut total_event_fee = 0;
-        for event in events {
-            let fee = event.event_data.len() as u64
-                * self
-                    .cost_table
-                    .storage_gas_parameter
-                    .storage_fee_per_event_byte;
-            let new_value = self.storage_gas_used.borrow().add(InternalGas::from(fee));
-            *self.storage_gas_used.borrow_mut() = new_value;
-            total_event_fee += fee;
-        }
-        self.deduct_gas(InternalGas::from(total_event_fee))
-    }
+    // fn charge_change_set(&mut self, change_set: &StateChangeSet) -> PartialVMResult<()> {
+    //     if !self.charge {
+    //         return Ok(());
+    //     }
 
-    fn charge_change_set(&mut self, change_set: &StateChangeSet) -> PartialVMResult<()> {
-        if !self.charge {
-            return Ok(());
-        }
-
-        let mut total_change_set_fee = 0;
-        for (_, table_change) in change_set.changes.iter() {
-            for (key, op) in table_change.entries.iter() {
-                let fee = {
-                    match op {
-                        Op::Modify(value) => {
-                            (key.key.len() + value.value.len()) as u64
-                                * self
-                                    .cost_table
-                                    .storage_gas_parameter
-                                    .storage_fee_per_op_modify_byte
-                        }
-                        Op::Delete => {
-                            self.cost_table
-                                .storage_gas_parameter
-                                .storage_fee_per_op_delete
-                        }
-                        Op::New(value) => {
-                            (key.key.len() + value.value.len()) as u64
-                                * self
-                                    .cost_table
-                                    .storage_gas_parameter
-                                    .storage_fee_per_op_new_byte
-                        }
-                    }
-                };
-                let new_value = self.storage_gas_used.borrow().add(InternalGas::from(fee));
-                *self.storage_gas_used.borrow_mut() = new_value;
-                total_change_set_fee += fee;
-            }
-        }
-        self.deduct_gas(InternalGas::from(total_change_set_fee))
-    }
+    //     let mut total_change_set_fee = 0;
+    //     for (_, table_change) in change_set.changes.iter() {
+    //         for (key, op) in table_change.entries.iter() {
+    //             let fee = {
+    //                 match op {
+    //                     Op::Modify(value) => {
+    //                         (key.key.len() + value.value.len()) as u64
+    //                             * self
+    //                                 .cost_table
+    //                                 .storage_gas_parameter
+    //                                 .storage_fee_per_op_modify_byte
+    //                     }
+    //                     Op::Delete => {
+    //                         self.cost_table
+    //                             .storage_gas_parameter
+    //                             .storage_fee_per_op_delete
+    //                     }
+    //                     Op::New(value) => {
+    //                         (key.key.len() + value.value.len()) as u64
+    //                             * self
+    //                                 .cost_table
+    //                                 .storage_gas_parameter
+    //                                 .storage_fee_per_op_new_byte
+    //                     }
+    //                 }
+    //             };
+    //             let new_value = self.storage_gas_used.borrow().add(InternalGas::from(fee));
+    //             *self.storage_gas_used.borrow_mut() = new_value;
+    //             total_change_set_fee += fee;
+    //         }
+    //     }
+    //     self.deduct_gas(InternalGas::from(total_change_set_fee))
+    // }
 
     fn check_constrains(&self, max_gas_amount: u64) -> PartialVMResult<()> {
         let gas_left: u64 = self.balance_internal().into();
