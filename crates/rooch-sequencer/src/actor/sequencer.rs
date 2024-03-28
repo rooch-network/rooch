@@ -47,18 +47,8 @@ impl SequencerActor {
             rooch_store,
         })
     }
-}
 
-impl Actor for SequencerActor {}
-
-#[async_trait]
-impl Handler<TransactionSequenceMessage> for SequencerActor {
-    async fn handle(
-        &mut self,
-        msg: TransactionSequenceMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<TransactionSequenceInfo> {
-        let tx = msg.tx;
+    pub fn sequence(&mut self, tx: TypedTransaction) -> Result<TransactionSequenceInfo> {
         let tx_order = if self.last_order == 0 {
             let last_order_opt = self
                 .rooch_store
@@ -97,6 +87,19 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
         self.rooch_store
             .save_tx_sequence_info(tx_sequence_info.clone())?;
         Ok(tx_sequence_info)
+    }
+}
+
+impl Actor for SequencerActor {}
+
+#[async_trait]
+impl Handler<TransactionSequenceMessage> for SequencerActor {
+    async fn handle(
+        &mut self,
+        msg: TransactionSequenceMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<TransactionSequenceInfo> {
+        self.sequence(msg.tx)
     }
 }
 

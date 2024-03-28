@@ -40,6 +40,7 @@ use rooch_types::address::RoochAddress;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::chain_id::RoochChainID;
+use rooch_types::crypto::RoochKeyPair;
 use rooch_types::transaction::TypedTransaction;
 use std::env;
 use std::fmt::Display;
@@ -83,27 +84,31 @@ impl Display for TxType {
 
 lazy_static! {
     pub static ref TX_SIZE: usize = {
-        env::var("TX_SIZE")
+        env::var("ROOCH_BENCH_TX_SIZE")
             .unwrap_or_else(|_| String::from("0"))
             .parse::<usize>()
             .unwrap_or(0usize)
     };
     pub static ref TX_TYPE: TxType = {
-        let tx_type_str = env::var("TX_TYPE").unwrap_or_else(|_| String::from("empty"));
+        let tx_type_str = env::var("ROOCH_BENCH_TX_TYPE").unwrap_or_else(|_| String::from("empty"));
         tx_type_str.parse::<TxType>().unwrap_or(TxType::Empty)
     };
     pub static ref DATA_DIR: DataDirPath = get_data_dir();
 }
 
 pub fn get_data_dir() -> DataDirPath {
-    match env::var("DATA_DIR") {
-        Ok(pure_mem) => {
-            let temp_dir = TempDir::new_in(pure_mem)
+    match env::var("ROOCH_TEST_DATA_DIR") {
+        Ok(path_str) => {
+            let temp_dir = TempDir::new_in(path_str)
                 .expect("Failed to create temp dir in provided data dir path");
             DataDirPath::TempPath(Arc::from(temp_dir))
         }
         Err(_) => moveos_config::temp_dir(),
     }
+}
+
+pub fn gen_sequencer(keypair: RoochKeyPair, rooch_store: RoochStore) -> Result<SequencerActor> {
+    SequencerActor::new(keypair, rooch_store.clone(), true) // is_genesis is useless for sequencer in present
 }
 
 pub async fn setup_service(
