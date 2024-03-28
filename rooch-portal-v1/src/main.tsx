@@ -2,7 +2,7 @@ import React from 'react'
 import './lib/i18n.ts'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
-import '../app/globals.css'
+import './styles/globals.css'
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import ErrorPage from './components/error-page.tsx'
 

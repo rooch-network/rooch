@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { PaymentTypes } from './types'
+import { PaymentTypes } from '@/common/interface'
 
 export const formatAddress = (address: string) => {
   let shortAddress = address.substring(0, 6)

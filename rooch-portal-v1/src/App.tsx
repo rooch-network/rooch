@@ -6,10 +6,10 @@ import { createEmotionCache } from '@/utils/create-emotion-cache'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-import { TESTNetwork } from '@roochnetwork/rooch-sdk'
+import { TestNetwork } from '@roochnetwork/rooch-sdk'
 import { WalletProvider, RoochClientProvider, SupportChain } from '@roochnetwork/rooch-sdk-kit'
 
-import { DashboardLayout } from './(dashboard)/dashboard-layout'
+import { DashboardLayout } from './pages/dashboard-layout'
 import { ToastProvider } from './providers/toast-provider'
 
 const clientSideEmotionCache = createEmotionCache()
@@ -21,9 +21,9 @@ function App() {
     <>
       <CacheProvider value={clientSideEmotionCache}>
         <QueryClientProvider client={queryClient}>
-          <RoochClientProvider defaultNetwork={TESTNetwork}>
-            <WalletProvider chain={SupportChain.BITCOIN}>
-              <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+          <RoochClientProvider defaultNetwork={TestNetwork}>
+            <WalletProvider chain={SupportChain.BITCOIN} autoConnect>
+              <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
                 <ToastProvider />
                 <DashboardLayout />
               </ThemeProvider>

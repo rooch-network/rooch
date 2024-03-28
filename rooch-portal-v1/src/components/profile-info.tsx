@@ -40,7 +40,7 @@ export const ProfileInfo = () => {
                 Rooch Network
               </h3>
               <p className="text-zinc-400 dark:text-zinc-500">
-                {account === null ? 'Wallet Address' : formatAddress(account?.getAddress())}
+                {account === null ? 'Wallet Address' : formatAddress(account.address)}
               </p>
             </div>
           </div>
