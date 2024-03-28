@@ -30,7 +30,6 @@ git clone https://github.com/TwilightLogic/rooch-portal-v1.git
 
 2. Navigate to the project directory:
 
-
 ## Run Locally
 
 To get started you need to install [pnpm](https://pnpm.io/), then run the following command:
