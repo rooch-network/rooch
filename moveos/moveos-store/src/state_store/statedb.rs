@@ -187,7 +187,7 @@ impl StateDBStore {
 
     fn get_object(&self, id: &ObjectID) -> Result<Option<TreeObject>> {
         if id.is_root() {
-            return Ok(Some(self.root_object.clone()));
+            Ok(Some(self.root_object.clone()))
         } else {
             let parent_id = id.parent().expect("ObjectID parent should not be None");
             let parent = self.get_object(&parent_id)?;

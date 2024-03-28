@@ -994,14 +994,18 @@
             "type": "object",
             "required": [
               "fields",
+              "key",
               "type"
             ],
             "properties": {
               "fields": {
-                "type": "object",
-                "additionalProperties": {
+                "type": "array",
+                "items": {
                   "$ref": "#/components/schemas/FieldChangeView"
                 }
+              },
+              "key": {
+                "$ref": "#/components/schemas/KeyStateView"
               },
               "op": {
                 "anyOf": [
@@ -1024,10 +1028,14 @@
           {
             "type": "object",
             "required": [
+              "key",
               "op",
               "type"
             ],
             "properties": {
+              "key": {
+                "$ref": "#/components/schemas/KeyStateView"
+              },
               "op": {
                 "$ref": "#/components/schemas/OpView_for_StateView"
               },
@@ -1820,8 +1828,8 @@
         ],
         "properties": {
           "fields": {
-            "type": "object",
-            "additionalProperties": {
+            "type": "array",
+            "items": {
               "$ref": "#/components/schemas/FieldChangeView"
             }
           },
@@ -2562,13 +2570,16 @@
       "TransactionOutputView": {
         "type": "object",
         "required": [
+          "changeset",
           "events",
           "gas_used",
           "is_upgrade",
-          "status",
-          "table_changeset"
+          "status"
         ],
         "properties": {
+          "changeset": {
+            "$ref": "#/components/schemas/StateChangeSetView"
+          },
           "events": {
             "type": "array",
             "items": {
@@ -2585,9 +2596,6 @@
           },
           "status": {
             "$ref": "#/components/schemas/KeptVMStatusView"
-          },
-          "table_changeset": {
-            "$ref": "#/components/schemas/StateChangeSetView"
           }
         }
       },
