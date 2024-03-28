@@ -1,6 +1,6 @@
-import { MainContent } from './components/main-content'
-import { Navbar } from './components/navbar'
-import { Sidebar } from './components/sidebar'
+import { MainContent } from '../components/main-content'
+import { Navbar } from '../components/navbar'
+import { Sidebar } from '../components/sidebar'
 
 export const DashboardLayout = () => {
   return (

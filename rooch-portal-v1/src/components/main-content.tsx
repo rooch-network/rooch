@@ -1,13 +1,15 @@
 import { Routes, Route } from 'react-router-dom'
-import { UserAssetsLayout } from '../pages/userAssets/user-assets-layout'
-import { UserTransactionsLayout } from '../pages/userTransactions/user-transactions-layout'
-import { UserMintLayout } from '../pages/userMint/user-mint-layout'
-import { UserAppsLayout } from '../pages/userApps/user-apps-layout'
+
+import { AppsLayout } from '@/pages/apps/apps-layout'
+import { MintLayout } from '@/pages/mint/mint-layout'
+import { AssetsLayout } from '@/pages/assets/assets-layout'
+import { SettingsLayout } from '@/pages/settings/settings-layout'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
-import { UserSettingsLayout } from '../pages/userSettings/user-settings-layout'
-import { SftDetailLayout } from '../pages/userMint/sftDetail/sft-detail-layout'
+import { SftDetailLayout } from '@/pages/mint/sftDetail/sft-detail-layout'
+import { TransactionsLayout } from '@/pages/transactions/transactions-layout'
+import { SftDetailLayoutForSelfStaking } from '@/pages/mint/sftDetailForSelfStaking/sft-detail-layout-for-self-staking'
+
 import { Foot } from '@/components/foot'
-import { SftDetailLayoutForSelfStaking } from '../pages/userMint/sftDetailForSelfStaking/sft-detail-layout-for-self-staking'
 
 export const MainContent = () => {
   return (
@@ -16,16 +18,16 @@ export const MainContent = () => {
         <ScrollBar orientation="horizontal" />
         <div className="h-full w-full p-4 md:p-6">
           <Routes>
-            <Route path="/" element={<UserAssetsLayout />} />
-            <Route path="/mint" element={<UserMintLayout />} />
+            <Route path="/" element={<AssetsLayout />} />
+            <Route path="/mint" element={<MintLayout />} />
             <Route path="/mint/sft/:sftId" element={<SftDetailLayout />} />
             <Route
               path="/mint/sft/self-staking/:sftId"
               element={<SftDetailLayoutForSelfStaking />}
             />
-            <Route path="/apps" element={<UserAppsLayout />} />
-            <Route path="/transactions" element={<UserTransactionsLayout />} />
-            <Route path="/settings" element={<UserSettingsLayout />} />
+            <Route path="/apps" element={<AppsLayout />} />
+            <Route path="/transactions" element={<TransactionsLayout />} />
+            <Route path="/settings" element={<SettingsLayout />} />
           </Routes>
         </div>
       </ScrollArea>

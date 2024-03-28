@@ -1,7 +1,7 @@
 import { ConnectedAccount } from './components/connected-account'
 import { ConnectedSites } from './components/connected-sites'
 
-export const UserSettingsLayout = () => {
+export const SettingsLayout = () => {
   return (
     <div className="h-full flex-1 flex-col space-y-6 flex rounded-lg md:shadow-custom md:p-4 md:dark:shadow-muted">
       {/* Connected Account section */}

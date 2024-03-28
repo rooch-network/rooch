@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/card'
 import { Send } from 'lucide-react'
 
-interface UserAppItemProps {
+interface AppItemProps {
   id: number
   name: string
   description: string
@@ -21,14 +21,7 @@ interface UserAppItemProps {
   type: string
 }
 
-export const UserAppItem = ({
-  id,
-  name,
-  description,
-  profileUrl,
-  logoUrl,
-  type,
-}: UserAppItemProps) => {
+export const AppItem = ({ id, name, description, profileUrl, logoUrl, type }: AppItemProps) => {
   return (
     <Card
       key={id}

@@ -1,6 +1,6 @@
 import { SftTabs } from './components/sft-tabs'
 
-export const UserMintLayout = () => {
+export const MintLayout = () => {
   return (
     <div className="h-full flex-1 flex-col space-y-6 flex rounded-lg md:shadow-custom md:p-4 md:dark:shadow-muted">
       <div className="flex items-center justify-between space-y-2">

@@ -1,4 +1,4 @@
-import { UserAppItem } from './components/user-app-item'
+import { AppItem } from './components/app-item'
 
 const mockApps = [
   {
@@ -57,7 +57,7 @@ const mockApps = [
   },
 ]
 
-export const UserAppsLayout = () => {
+export const AppsLayout = () => {
   return (
     <div className="h-full flex-1 flex-col space-y-6 flex rounded-lg md:shadow-custom md:p-4 md:dark:shadow-muted">
       <div className="flex items-center justify-between space-y-2">
@@ -68,10 +68,10 @@ export const UserAppsLayout = () => {
           </p>
         </span>
       </div>
-      {/* UserAppItem */}
+      {/* AppItem */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full place-items-center">
         {mockApps.map((app) => (
-          <UserAppItem
+          <AppItem
             key={app.id}
             id={app.id}
             name={app.name}
