@@ -10,7 +10,6 @@
 -  [Struct `InscriptionRecord`](#0x4_ord_InscriptionRecord)
 -  [Struct `InvalidInscriptionEvent`](#0x4_ord_InvalidInscriptionEvent)
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
--  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_ord_genesis_init)
 -  [Function `get_inscription_id_by_index`](#0x4_ord_get_inscription_id_by_index)
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
@@ -20,6 +19,7 @@
 -  [Function `txid`](#0x4_ord_txid)
 -  [Function `index`](#0x4_ord_index)
 -  [Function `body`](#0x4_ord_body)
+-  [Function `json_body`](#0x4_ord_json_body)
 -  [Function `content_encoding`](#0x4_ord_content_encoding)
 -  [Function `content_type`](#0x4_ord_content_type)
 -  [Function `metadata`](#0x4_ord_metadata)
@@ -104,29 +104,6 @@
 
 
 <pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionStore">InscriptionStore</a> <b>has</b> key
-</code></pre>
-
-
-
-<a name="@Constants_0"></a>
-
-## Constants
-
-
-<a name="0x4_ord_BIT_SEED_DEPLOY"></a>
-
-
-
-<pre><code><b>const</b> <a href="ord.md#0x4_ord_BIT_SEED_DEPLOY">BIT_SEED_DEPLOY</a>: <a href="">vector</a>&lt;u8&gt; = [98, 105, 116, 115, 101, 101, 100, 95, 100, 101, 112, 108, 111, 121];
-</code></pre>
-
-
-
-<a name="0x4_ord_BIT_SEED_MINT"></a>
-
-
-
-<pre><code><b>const</b> <a href="ord.md#0x4_ord_BIT_SEED_MINT">BIT_SEED_MINT</a>: <a href="">vector</a>&lt;u8&gt; = [98, 105, 116, 115, 101, 101, 100, 95, 109, 105, 110, 116];
 </code></pre>
 
 
@@ -226,6 +203,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_body">body</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_json_body"></a>
+
+## Function `json_body`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_json_body">json_body</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="_String">string::String</a>&gt;
 </code></pre>
 
 
