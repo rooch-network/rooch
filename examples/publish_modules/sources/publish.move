@@ -9,7 +9,6 @@
 /// 3. Copy the bytecode of the compiled module from the output of the above command, and update the `module_bytes` variable in the tests below.
 module rooch_examples::publish {
     use std::vector;
-    use std::signer;
     use moveos_std::move_module::{Self, MoveModule};
     
 
