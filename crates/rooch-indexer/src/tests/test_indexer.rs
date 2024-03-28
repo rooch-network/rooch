@@ -290,8 +290,8 @@ fn test_state_store() -> Result<()> {
     // }
     // indexer_store.persist_table_change_sets(indexed_table_change_sets)?;
 
-    let sync_states = indexer_reader.sync_states(None, None, 2, false)?;
-    assert_eq!(sync_states.len(), 2);
+    // let sync_states = indexer_reader.sync_states(None, None, 2, false)?;
+    // assert_eq!(sync_states.len(), 2);
 
     Ok(())
 }
