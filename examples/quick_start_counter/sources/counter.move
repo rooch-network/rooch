@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module quick_start_counter::quick_start_counter {
     use moveos_std::account;
 

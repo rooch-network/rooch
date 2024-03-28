@@ -5,6 +5,7 @@ use jsonrpsee::RpcModule;
 
 pub mod btc_api;
 pub mod eth_api;
+pub mod ordinal_api;
 pub mod rooch_api;
 
 pub const DEFAULT_RESULT_LIMIT: u64 = 50;

@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 #[test_only]
 /// This test module is used to test the account_coin_store module.
 module rooch_framework::account_coin_store_test{

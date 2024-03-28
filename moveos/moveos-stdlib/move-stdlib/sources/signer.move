@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module std::signer {
     /// Borrows the address of the signer
     /// Conceptually, you can think of the `signer` as being a struct wrapper around an

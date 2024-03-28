@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// Defines a fixed-point numeric type with a 32-bit integer part and
 /// a 32-bit fractional part.
 

@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 module quick_start_object_counter::quick_start_object_counter {
     use std::signer;
     use moveos_std::event;

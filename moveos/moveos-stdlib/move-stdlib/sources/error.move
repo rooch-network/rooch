@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 /// This module defines a set of canonical error codes which are optional to use by applications for the
 /// `abort` and `assert!` features.
 ///
