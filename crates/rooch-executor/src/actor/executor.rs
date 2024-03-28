@@ -68,8 +68,7 @@ impl ExecutorActor {
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
     ) -> Result<Self> {
-        let mut genesis: RoochGenesis =
-            rooch_genesis::RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
+        let mut genesis: RoochGenesis = RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
 
         let gas_schedule_entries =
             get_gas_schedule_entries(&MoveOSResolverProxy(moveos_store.clone()));

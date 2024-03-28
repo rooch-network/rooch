@@ -5,7 +5,6 @@ use crate::meta_store::{MetaDBStore, MetaStore};
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
 use anyhow::Result;
 use moveos_config::store_config::RocksdbConfig;
-use moveos_config::temp_dir;
 use moveos_types::h256::H256;
 use once_cell::sync::Lazy;
 use raw_store::rocks::RocksDB;
@@ -15,6 +14,7 @@ use rooch_types::transaction::{
     TransactionSequenceInfo, TransactionSequenceInfoMapping, TypedTransaction,
 };
 use std::fmt::{Debug, Display, Formatter};
+use std::path::Path;
 
 pub mod meta_store;
 pub mod transaction_store;
@@ -65,9 +65,9 @@ impl RoochStore {
     }
 
     //TODO implement a memory mock store
-    pub fn mock_rooch_store() -> Result<Self> {
+    pub fn mock_rooch_store(data_dir: &Path) -> Result<Self> {
         Self::new(StoreInstance::new_db_instance(RocksDB::new(
-            temp_dir().path(),
+            data_dir,
             moveos_store::StoreMeta::get_column_family_names().to_vec(),
             RocksdbConfig::default(),
             None,
