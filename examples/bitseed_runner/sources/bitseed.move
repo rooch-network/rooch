@@ -25,18 +25,6 @@ module rooch_examples::bitseed_runner {
       object::to_shared(store_obj);
    }
 
-   fun hash_string_to_u32(str_bytes: vector<u8>): u32 {
-      let hash: u32 = 0x811c9dc5;
-      let prime: u32 = 0x1000193;
-
-      vector::for_each(str_bytes, |u8_byte| {
-         hash = hash ^ (u8_byte as u32);
-         hash = hash * prime;
-      });
-
-      hash
-   }
-
    fun get_generator_bytes(inscription_index: u64): vector<u8> {
       let ret_bytes = vector::empty<u8>();
 
