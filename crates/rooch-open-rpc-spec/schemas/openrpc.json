@@ -1554,6 +1554,7 @@
           "body",
           "index",
           "metadata",
+          "offset",
           "txid"
         ],
         "properties": {
@@ -1600,6 +1601,11 @@
                 "type": "null"
               }
             ]
+          },
+          "offset": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
           },
           "parent": {
             "anyOf": [
