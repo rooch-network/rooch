@@ -15,4 +15,5 @@ pub mod serde;
 pub mod startup_info;
 pub mod state;
 pub mod state_resolver;
+pub mod test_utils;
 pub mod transaction;

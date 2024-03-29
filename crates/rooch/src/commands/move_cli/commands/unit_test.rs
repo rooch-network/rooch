@@ -17,7 +17,10 @@ use moveos_stdlib::natives::moveos_stdlib::{
     raw_table::{ObjectRuntime, ObjectRuntimeContext},
 };
 use moveos_store::MoveOSStore;
-use moveos_types::{moveos_std::tx_context::TxContext, state_resolver::MoveOSResolverProxy};
+use moveos_types::{
+    moveos_std::{object::RootObjectEntity, tx_context::TxContext},
+    state_resolver::MoveOSResolverProxy,
+};
 use moveos_verifier::build::build_model_with_test_attr;
 use moveos_verifier::metadata::run_extended_checks;
 use once_cell::sync::Lazy;
@@ -112,6 +115,7 @@ fn new_moveos_natives_runtime(ext: &mut NativeContextExtensions) {
     let statedb = Lazy::force(&MOVEOSSTORE).as_ref();
     let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(
         TxContext::random_for_testing_only(),
+        RootObjectEntity::genesis_root_object(),
     )));
     let table_ext = ObjectRuntimeContext::new(statedb, object_runtime);
     let module_ext = NativeModuleContext::new(statedb);

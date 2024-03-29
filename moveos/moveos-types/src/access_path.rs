@@ -7,7 +7,6 @@ use crate::state::KeyState;
 use crate::{
     move_types::{random_identity, random_struct_tag},
     moveos_std::object::ObjectID,
-    state_resolver::{module_id_to_key, resource_tag_to_key},
 };
 use anyhow::{bail, ensure, Result};
 use move_core_types::language_storage::ModuleId;
@@ -302,7 +301,7 @@ impl AccessPath {
                     .into_iter()
                     .map(|name| {
                         let module_id = ModuleId::new(account, name);
-                        module_id_to_key(&module_id)
+                        KeyState::from_module_id(&module_id)
                     })
                     .collect();
                 StateQuery::Fields(module_object_id, keys)
@@ -314,7 +313,7 @@ impl AccessPath {
                 let account_object_id = Account::account_object_id(account);
                 let keys = resource_types
                     .into_iter()
-                    .map(|tag| resource_tag_to_key(&tag))
+                    .map(|tag| KeyState::from_struct_tag(&tag))
                     .collect();
                 StateQuery::Fields(account_object_id, keys)
             }

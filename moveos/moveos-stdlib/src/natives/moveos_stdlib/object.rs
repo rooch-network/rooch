@@ -24,6 +24,7 @@ pub(crate) const ERROR_ALREADY_EXISTS: u64 = 1;
 pub(crate) const ERROR_NOT_FOUND: u64 = 2;
 pub(crate) const ERROR_OBJECT_ALREADY_BORROWED: u64 = 7;
 pub(crate) const ERROR_TYPE_MISMATCH: u64 = 10;
+pub(crate) const ERROR_OBJECT_RUNTIME_ERROR: u64 = 14;
 
 #[derive(Debug, Clone)]
 pub struct AsRefGasParameters {
@@ -126,7 +127,7 @@ fn borrow_object_reference(
     let mut object_runtime = data.write();
     //TODO remove load_object, the object should loaded when load ObjectEntity
     object_runtime
-        .load_object(&object_id)
+        .load_object_reference(&object_id)
         .map_err(|e| e.to_partial())?;
     object_runtime
         .borrow_object_reference(&object_id)
@@ -138,11 +139,11 @@ pub struct GasParameters {
     pub common: raw_table::CommonGasParameters,
     pub as_ref_inner: AsRefGasParameters,
     pub as_mut_ref_inner: AsMutRefGasParameters,
-    pub add_box: raw_table::AddBoxGasParameters,
-    pub borrow_box: raw_table::BorrowBoxGasParameters,
-    pub contains_box: raw_table::ContainsBoxGasParameters,
-    pub contains_box_with_value_type: raw_table::ContainsBoxGasParameters,
-    pub remove_box: raw_table::RemoveGasParameters,
+    pub native_add_field: raw_table::AddFieldGasParameters,
+    pub native_borrow_field: raw_table::BorrowFieldGasParameters,
+    pub native_contains_field: raw_table::ContainsFieldGasParameters,
+    pub native_contains_field_with_value_type: raw_table::ContainsFieldGasParameters,
+    pub native_remove_field: raw_table::RemoveFieldGasParameters,
 }
 
 impl GasParameters {
@@ -155,23 +156,23 @@ impl GasParameters {
             },
             as_ref_inner: AsRefGasParameters::zeros(),
             as_mut_ref_inner: AsMutRefGasParameters::zeros(),
-            add_box: raw_table::AddBoxGasParameters {
+            native_add_field: raw_table::AddFieldGasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
-            borrow_box: raw_table::BorrowBoxGasParameters {
+            native_borrow_field: raw_table::BorrowFieldGasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
-            contains_box: raw_table::ContainsBoxGasParameters {
+            native_contains_field: raw_table::ContainsFieldGasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
-            contains_box_with_value_type: raw_table::ContainsBoxGasParameters {
+            native_contains_field_with_value_type: raw_table::ContainsFieldGasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
-            remove_box: raw_table::RemoveGasParameters {
+            native_remove_field: raw_table::RemoveFieldGasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
@@ -190,33 +191,49 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             make_native(gas_params.as_mut_ref_inner, native_as_mut_ref_inner),
         ),
         (
-            "add_box",
-            raw_table::make_native_add_box(gas_params.common.clone(), gas_params.add_box),
+            "native_borrow_root",
+            raw_table::make_native_borrow_root(gas_params.common.clone()),
         ),
         (
-            "borrow_box",
-            raw_table::make_native_borrow_box(
+            "native_add_field",
+            raw_table::make_native_add_field(
                 gas_params.common.clone(),
-                gas_params.borrow_box.clone(),
+                gas_params.native_add_field,
             ),
         ),
         (
-            "borrow_box_mut",
-            raw_table::make_native_borrow_box(gas_params.common.clone(), gas_params.borrow_box),
+            "native_borrow_field",
+            raw_table::make_native_borrow_field(
+                gas_params.common.clone(),
+                gas_params.native_borrow_field.clone(),
+            ),
         ),
         (
-            "remove_box",
-            raw_table::make_native_remove_box(gas_params.common.clone(), gas_params.remove_box),
+            "native_borrow_mut_field",
+            raw_table::make_native_borrow_field(
+                gas_params.common.clone(),
+                gas_params.native_borrow_field,
+            ),
         ),
         (
-            "contains_box",
-            raw_table::make_native_contains_box(gas_params.common.clone(), gas_params.contains_box),
+            "native_remove_field",
+            raw_table::make_native_remove_field(
+                gas_params.common.clone(),
+                gas_params.native_remove_field,
+            ),
         ),
         (
-            "contains_box_with_value_type",
-            raw_table::make_native_contains_box_with_value_type(
+            "native_contains_field",
+            raw_table::make_native_contains_field(
+                gas_params.common.clone(),
+                gas_params.native_contains_field,
+            ),
+        ),
+        (
+            "native_contains_field_with_value_type",
+            raw_table::make_native_contains_field_with_value_type(
                 gas_params.common,
-                gas_params.contains_box_with_value_type,
+                gas_params.native_contains_field_with_value_type,
             ),
         ),
     ];

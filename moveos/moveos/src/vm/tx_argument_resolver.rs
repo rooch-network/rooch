@@ -4,17 +4,14 @@
 use super::moveos_vm::MoveOSSession;
 use crate::gas::{table::ClassifiedGasMeter, SwitchableGasMeter};
 use move_binary_format::errors::{Location, PartialVMError, VMResult};
-use move_core_types::{
-    language_storage::{StructTag, TypeTag},
-    vm_status::StatusCode,
-};
+use move_core_types::{language_storage::TypeTag, vm_status::StatusCode};
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::loaded_data::runtime_types::{StructType, Type};
 use moveos_object_runtime::resolved_arg::ResolvedArg;
 use moveos_types::{
     move_std::{ascii::MoveAsciiString, string::MoveString},
-    moveos_std::object::ObjectID,
+    moveos_std::object::{is_object_struct, ObjectID},
     state::MoveState,
 };
 use moveos_types::{
@@ -220,10 +217,6 @@ pub(crate) fn is_object(t: &StructType) -> bool {
     t.module.address() == &Object::<PlaceholderStruct>::ADDRESS
         && t.module.name() == Object::<PlaceholderStruct>::module_identifier().as_ident_str()
         && t.name == Object::<PlaceholderStruct>::struct_identifier()
-}
-
-fn is_object_struct(t: &StructTag) -> bool {
-    Object::<PlaceholderStruct>::struct_tag_match_without_type_param(t)
 }
 
 pub fn get_object_type(type_tag: &TypeTag) -> Option<TypeTag> {
