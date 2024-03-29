@@ -9,6 +9,7 @@ module bitcoin_move::genesis{
     use bitcoin_move::light_client;
     use bitcoin_move::ord;
     use bitcoin_move::brc20;
+    use bitcoin_move::utxo;
 
     friend bitcoin_move::network;
 
@@ -19,6 +20,7 @@ module bitcoin_move::genesis{
 
     fun init(){
         let genesis_account = signer::module_signer<BitcoinGenesisContext>();
+        utxo::genesis_init();
         brc20::genesis_init(&genesis_account);
         ord::genesis_init(&genesis_account);
         light_client::genesis_init(&genesis_account);

@@ -15,6 +15,7 @@
 <b>use</b> <a href="brc20.md#0x4_brc20">0x4::brc20</a>;
 <b>use</b> <a href="light_client.md#0x4_light_client">0x4::light_client</a>;
 <b>use</b> <a href="ord.md#0x4_ord">0x4::ord</a>;
+<b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
 </code></pre>
 
 
