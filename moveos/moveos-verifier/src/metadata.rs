@@ -102,7 +102,7 @@ pub fn get_metadata_from_compiled_module(
     if let Some(data) = find_metadata(module, ROOCH_METADATA_KEY) {
         bcs::from_bytes::<RuntimeModuleMetadataV1>(&data.value).ok()
     } else {
-        None
+        Some(RuntimeModuleMetadataV1::default())
     }
 }
 
