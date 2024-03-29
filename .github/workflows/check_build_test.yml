@@ -44,7 +44,6 @@ jobs:
       - name: Run CLI integration test
         # cargo-nextest does not support the CLI integration test powered by Cucumber Rust.
         # Use cargo test to run CLI integration tests.
-        # TODO: FIXME
         run: cargo test -p testsuite --test integration
       - name: Run Rooch init
         run: cargo run --bin rooch init --skip-password
