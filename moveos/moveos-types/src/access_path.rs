@@ -72,7 +72,7 @@ impl StateQuery {
                     .collect())
             }
             StateQuery::Fields(object_id, fields) => {
-                ensure!(!fields.is_empty(), "Please specify fields");
+                // ensure!(!fields.is_empty(), "Please specify fields");
                 Ok(fields
                     .into_iter()
                     .map(|field| (object_id.clone(), field))
