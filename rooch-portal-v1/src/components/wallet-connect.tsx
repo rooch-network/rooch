@@ -41,6 +41,11 @@ export const WalletConnect = () => {
     setIsDialogOpen(true)
   }
 
+  // ** Handle create session key
+  const handleCreateSessionKey = async () => {
+    await createSessionKey({ scope: [], maxInactiveInterval: 100000 })
+  }
+
   // ** Connect specific wallet
   const handleConnectSpecificWallet = async (wallet: BaseWallet) => {
     try {
@@ -49,7 +54,7 @@ export const WalletConnect = () => {
       await connectWallet({ wallet: wallet })
       setCurrentWallet(wallet)
 
-      await createSessionKey({ scope: [], maxInactiveInterval: 100000 })
+      handleCreateSessionKey()
 
       setIsLoading(false)
       setIsDialogOpen(false)
