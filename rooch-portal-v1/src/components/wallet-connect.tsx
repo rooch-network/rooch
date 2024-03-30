@@ -21,6 +21,7 @@ import {
   BaseWallet,
   SupportChain,
   useConnectWallet,
+  useCreateSessionKey,
   useWallets,
   useWalletStore,
 } from '@roochnetwork/rooch-sdk-kit'
@@ -33,6 +34,7 @@ export const WalletConnect = () => {
   const account = useWalletStore((state) => state.currentAccount)
   const [currentWallet, setCurrentWallet] = useState<BaseWallet | null>(null)
   const wallets = useWallets().filter((wallet) => wallet.isSupportChain(SupportChain.BITCOIN))
+  const { mutate: createSessionKey, isSuccess } = useCreateSessionKey()
 
   // ** Connect wallet
   const handleConnectWallet = () => {
@@ -43,16 +45,22 @@ export const WalletConnect = () => {
   const handleConnectSpecificWallet = async (wallet: BaseWallet) => {
     try {
       setIsLoading(true)
-      await connectWallet({ wallet: wallet })
 
+      await connectWallet({ wallet: wallet })
       setCurrentWallet(wallet)
+
+      await createSessionKey({ scope: [], maxInactiveInterval: 100000 })
+
+      setIsLoading(false)
       setIsDialogOpen(false)
+
+      console.log(isSuccess)
 
       toast.success(`${wallet?.name} wallet connected`)
     } catch (error) {
-      toast.error('Connection failed')
-    } finally {
       setIsLoading(false)
+      setIsDialogOpen(false)
+      toast.error('Connection failed')
     }
   }
 

@@ -92,7 +92,6 @@ export const TransactionsTable = () => {
             <TableRow>
               <TableHead className="w-[100px]">TXs</TableHead>
               <TableHead>TX Hash</TableHead>
-              <TableHead>Sender</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Gas</TableHead>
               <TableHead className="text-center">Action</TableHead>
@@ -118,17 +117,8 @@ export const TransactionsTable = () => {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-start gap-1">
-                    <span className="hover:no-underline text-blue-400 hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200 transition-all cursor-pointer flex items-center justify-start gap-1">
-                      {/* 前八位和后八位，中间用...省略 */}
-                      {tx.transaction.sender.substring(0, 5)}...
-                      {tx.transaction.sender.substring(tx.transaction.sender.length - 5)}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
                   <Badge variant="outline" className="text-muted-foreground">
-                    {tx.transaction.transaction_type}
+                    {tx.transaction.action_type.toUpperCase()}
                   </Badge>
                 </TableCell>
                 <TableCell>

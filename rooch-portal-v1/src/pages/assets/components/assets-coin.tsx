@@ -22,6 +22,7 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { GripVerticalIcon } from 'lucide-react'
+import { useRoochClientQuery, useWalletStore } from '@roochnetwork/rooch-sdk-kit'
 
 const coins = [
   {
@@ -47,6 +48,16 @@ const coins = [
 ]
 
 export const AssetsCoin = () => {
+  const account = useWalletStore((state) => state.currentAccount)
+
+  const { data } = useRoochClientQuery('getBalances', {
+    address: account?.roochAddress ?? '',
+    cursor: '0',
+    limit: '10',
+  })
+
+  console.log(data)
+
   return (
     <div className="rounded-lg border overflow-hidden">
       <Table>
