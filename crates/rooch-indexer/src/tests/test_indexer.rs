@@ -24,7 +24,8 @@ use rooch_types::indexer::event_filter::EventFilter;
 use rooch_types::indexer::state::{GlobalStateFilter, TableStateFilter};
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::test_utils::{
-    random_bytes, random_event, random_function_calls, random_rooch_transaction, random_string, random_table_object, random_verified_move_action
+    random_bytes, random_event, random_function_calls, random_rooch_transaction, random_string,
+    random_table_object, random_verified_move_action,
 };
 use rooch_types::transaction::authenticator::Authenticator;
 use rooch_types::transaction::TransactionSequenceInfo;

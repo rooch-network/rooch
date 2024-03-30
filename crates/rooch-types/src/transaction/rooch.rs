@@ -152,7 +152,9 @@ impl RoochTransaction {
         use crate::address::RoochSupportedAddress;
         use fastcrypto::ed25519::Ed25519KeyPair;
         use fastcrypto::traits::KeyPair;
-        use move_core_types::{account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId};
+        use move_core_types::{
+            account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
+        };
         use moveos_types::move_types::FunctionId;
 
         let sender: RoochAddress = RoochAddress::random();
