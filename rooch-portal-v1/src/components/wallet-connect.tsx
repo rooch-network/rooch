@@ -22,7 +22,6 @@ import {
   SupportChain,
   useConnectWallet,
   useCreateSessionKey,
-  useCreateSessionKey,
   useWallets,
   useWalletStore,
 } from '@roochnetwork/rooch-sdk-kit'
@@ -35,7 +34,6 @@ export const WalletConnect = () => {
   const account = useWalletStore((state) => state.currentAccount)
   const [currentWallet, setCurrentWallet] = useState<BaseWallet | null>(null)
   const wallets = useWallets().filter((wallet) => wallet.isSupportChain(SupportChain.BITCOIN))
-  const { mutate: createSessionKey, isSuccess } = useCreateSessionKey()
   const { mutate: createSessionKey, isSuccess } = useCreateSessionKey()
 
   // ** Connect wallet
