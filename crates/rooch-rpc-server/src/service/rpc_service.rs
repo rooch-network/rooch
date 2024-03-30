@@ -99,10 +99,7 @@ impl RpcService {
 
         tokio::spawn(async move {
             let result = indexer
-                .indexer_states(
-                    sequence_info_clone.tx_order,
-                    output_clone.state_changeset.clone(),
-                )
+                .indexer_states(sequence_info_clone.tx_order, output_clone.changeset.clone())
                 .await;
             match result {
                 Ok(_) => {}

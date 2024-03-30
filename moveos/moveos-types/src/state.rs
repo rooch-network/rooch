@@ -1,10 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::move_std::ascii::MoveAsciiString;
+use crate::move_std::string::MoveString;
 use crate::moveos_std::object::ObjectID;
 use crate::moveos_std::object::{AnnotatedObject, ObjectEntity, RawObject};
 use anyhow::{bail, ensure, Result};
 use core::str;
+use move_core_types::language_storage::ModuleId;
 use move_core_types::{
     account_address::AccountAddress,
     effects::Op,
@@ -56,6 +59,22 @@ impl std::fmt::Debug for KeyState {
 impl KeyState {
     pub fn new(key: Vec<u8>, key_type: TypeTag) -> Self {
         Self { key, key_type }
+    }
+
+    pub fn from_module_id(module_id: &ModuleId) -> Self {
+        // The key is the moduleId string in bcs serialize format, not String::into_bytes.
+        // bcs::to_bytes(&String) same as bcs::to_bytes(&MoveString)
+        let key = bcs::to_bytes(&module_id.short_str_lossless())
+            .expect("bcs to_bytes String must success.");
+        //TODO should we use MoveAsciiString here? unify with resource key
+        KeyState::new(key, MoveString::type_tag())
+    }
+
+    pub fn from_struct_tag(struct_tag: &StructTag) -> Self {
+        // The resource key is struct_tag to_canonical_string in bcs serialize format string, not String::into_bytes.
+        let key = bcs::to_bytes(&struct_tag.to_canonical_string())
+            .expect("bcs to_bytes String must success.");
+        KeyState::new(key, MoveAsciiString::type_tag())
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self>
@@ -112,6 +131,24 @@ impl FromStr for KeyState {
         let key = hex::decode(s.strip_prefix("0x").unwrap_or(s))
             .map_err(|_| anyhow::anyhow!("Invalid key state str: {}", s))?;
         KeyState::from_bytes(key.as_slice())
+    }
+}
+
+impl From<ObjectID> for KeyState {
+    fn from(object_id: ObjectID) -> Self {
+        object_id.to_key()
+    }
+}
+
+impl From<ModuleId> for KeyState {
+    fn from(module_id: ModuleId) -> Self {
+        KeyState::from_module_id(&module_id)
+    }
+}
+
+impl From<StructTag> for KeyState {
+    fn from(tag: StructTag) -> Self {
+        KeyState::from_struct_tag(&tag)
     }
 }
 
@@ -689,10 +726,104 @@ impl std::fmt::Display for TableTypeInfo {
     }
 }
 
+#[derive(Clone, Debug, Default)]
+pub struct ObjectChange {
+    pub op: Option<Op<State>>,
+    pub fields: BTreeMap<KeyState, FieldChange>,
+}
+
+impl ObjectChange {
+    pub fn new(op: Op<State>) -> Self {
+        Self {
+            op: Some(op),
+            fields: BTreeMap::new(),
+        }
+    }
+
+    pub fn new_empty() -> Self {
+        Self {
+            op: None,
+            fields: BTreeMap::new(),
+        }
+    }
+
+    pub fn add_field_change(&mut self, key: KeyState, field_change: FieldChange) {
+        self.fields.insert(key, field_change);
+    }
+
+    pub fn get_field_change(&self, key: &KeyState) -> Option<&FieldChange> {
+        self.fields.get(key)
+    }
+
+    pub fn get_field_change_mut(&mut self, key: &KeyState) -> Option<&mut FieldChange> {
+        self.fields.get_mut(key)
+    }
+
+    pub fn remove_field_change(&mut self, key: &KeyState) -> Option<FieldChange> {
+        self.fields.remove(key)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.op.is_none() && self.fields.is_empty()
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct NormalFieldChange {
+    pub op: Op<State>,
+}
+
+#[derive(Clone, Debug)]
+pub enum FieldChange {
+    Object(ObjectChange),
+    Normal(NormalFieldChange),
+}
+
+impl std::fmt::Display for FieldChange {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FieldChange::Object(object_change) => {
+                write!(f, "{:?}", object_change)
+            }
+            FieldChange::Normal(normal_change) => {
+                write!(f, "{:?}", normal_change)
+            }
+        }
+    }
+}
+
+impl std::error::Error for FieldChange {}
+
+impl FieldChange {
+    pub fn new_normal(op: Op<State>) -> Self {
+        FieldChange::Normal(NormalFieldChange { op })
+    }
+
+    pub fn new_object(object_change: ObjectChange) -> Self {
+        FieldChange::Object(object_change)
+    }
+
+    pub fn into_object_change(self) -> Result<ObjectChange, FieldChange> {
+        match self {
+            FieldChange::Object(object_change) => Ok(object_change),
+            _ => Err(self),
+        }
+    }
+
+    pub fn into_normal_change(self) -> Result<NormalFieldChange, FieldChange> {
+        match self {
+            FieldChange::Normal(normal_change) => Ok(normal_change),
+            _ => Err(self),
+        }
+    }
+}
+
 /// Global State change set.
-#[derive(Default, Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct StateChangeSet {
-    pub changes: BTreeMap<ObjectID, TableChange>,
+    /// The root Object field size
+    pub global_size: u64,
+    pub changes: BTreeMap<ObjectID, ObjectChange>,
 }
 
 /// A change of a single table.

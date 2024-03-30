@@ -11,7 +11,7 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Resource `Root`](#0x2_object_Root)
 -  [Struct `ObjectEntity`](#0x2_object_ObjectEntity)
 -  [Resource `Object`](#0x2_object_Object)
--  [Resource `Box`](#0x2_object_Box)
+-  [Resource `FieldValue`](#0x2_object_FieldValue)
 -  [Struct `TestStructID`](#0x2_object_TestStructID)
 -  [Constants](#@Constants_0)
 -  [Function `has_parent`](#0x2_object_has_parent)
@@ -61,19 +61,18 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `mut_entity_as_object`](#0x2_object_mut_entity_as_object)
 -  [Function `add_field`](#0x2_object_add_field)
 -  [Function `add_object_field`](#0x2_object_add_object_field)
--  [Function `add_field_internal`](#0x2_object_add_field_internal)
 -  [Function `borrow_field`](#0x2_object_borrow_field)
 -  [Function `borrow_object_field`](#0x2_object_borrow_object_field)
 -  [Function `borrow_field_with_default`](#0x2_object_borrow_field_with_default)
 -  [Function `borrow_mut_field`](#0x2_object_borrow_mut_field)
--  [Function `borrow_mut_object_field`](#0x2_object_borrow_mut_object_field)
 -  [Function `borrow_mut_field_with_default`](#0x2_object_borrow_mut_field_with_default)
+-  [Function `borrow_mut_object_field`](#0x2_object_borrow_mut_object_field)
 -  [Function `upsert_field`](#0x2_object_upsert_field)
 -  [Function `remove_field`](#0x2_object_remove_field)
 -  [Function `remove_object_field`](#0x2_object_remove_object_field)
 -  [Function `contains_field`](#0x2_object_contains_field)
--  [Function `contains_object_field`](#0x2_object_contains_object_field)
 -  [Function `contains_field_with_type`](#0x2_object_contains_field_with_type)
+-  [Function `contains_object_field`](#0x2_object_contains_object_field)
 -  [Function `field_size`](#0x2_object_field_size)
 
 
@@ -139,15 +138,15 @@ Developers only need to use Object<T> related APIs and do not need to know the O
 
 
 
-<a name="0x2_object_Box"></a>
+<a name="0x2_object_FieldValue"></a>
 
-## Resource `Box`
+## Resource `FieldValue`
 
-Wrapper for values. Required for making values appear as resources in the implementation.
-Because the GlobalValue in MoveVM must be a resource.
+Wrapper for file values. Required for making values appear as struct in the implementation.
+Because the GlobalValue in MoveVM must be a struct.
 
 
-<pre><code><b>struct</b> <a href="object.md#0x2_object_Box">Box</a>&lt;V&gt; <b>has</b> drop, store, key
+<pre><code><b>struct</b> <a href="object.md#0x2_object_FieldValue">FieldValue</a>&lt;V&gt; <b>has</b> drop, store, key
 </code></pre>
 
 
@@ -278,6 +277,16 @@ Can not take out the object which is bound to the account
 
 
 <pre><code><b>const</b> <a href="object.md#0x2_object_ErrorObjectOwnerNotMatch">ErrorObjectOwnerNotMatch</a>: u64 = 4;
+</code></pre>
+
+
+
+<a name="0x2_object_ErrorObjectRuntimeError"></a>
+
+The object runtime error
+
+
+<pre><code><b>const</b> <a href="object.md#0x2_object_ErrorObjectRuntimeError">ErrorObjectRuntimeError</a>: u64 = 14;
 </code></pre>
 
 
@@ -904,20 +913,6 @@ The parent object must be a shared object
 
 
 
-<a name="0x2_object_add_field_internal"></a>
-
-## Function `add_field_internal`
-
-Add a new field to the object. Aborts if an field for this
-key already exists. The field itself is not stored in the
-object, and cannot be discovered from it.
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_add_field_internal">add_field_internal</a>&lt;T: key, K: <b>copy</b>, drop, V&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, val: V)
-</code></pre>
-
-
-
 <a name="0x2_object_borrow_field"></a>
 
 ## Function `borrow_field`
@@ -970,19 +965,6 @@ Aborts if there is no field for <code>key</code>.
 
 
 
-<a name="0x2_object_borrow_mut_object_field"></a>
-
-## Function `borrow_mut_object_field`
-
-Borrow the child object by <code>key</code>
-Because the parent object must be a shared object, so we do not require the #[private_generics(T)] here
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut_object_field">borrow_mut_object_field</a>&lt;T: key, V: key&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;V&gt;
-</code></pre>
-
-
-
 <a name="0x2_object_borrow_mut_field_with_default"></a>
 
 ## Function `borrow_mut_field_with_default`
@@ -993,6 +975,19 @@ Insert the pair (<code>key</code>, <code>default</code>) first if there is no fi
 
 <pre><code>#[private_generics(#[T])]
 <b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut_field_with_default">borrow_mut_field_with_default</a>&lt;T: key, K: <b>copy</b>, drop, V: drop, store&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K, default: V): &<b>mut</b> V
+</code></pre>
+
+
+
+<a name="0x2_object_borrow_mut_object_field"></a>
+
+## Function `borrow_mut_object_field`
+
+Borrow the child object by <code>key</code>
+Because the parent object must be a shared object, so we do not require the #[private_generics(T)] here
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut_object_field">borrow_mut_object_field</a>&lt;T: key, V: key&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;V&gt;
 </code></pre>
 
 
@@ -1041,10 +1036,22 @@ Aborts if there is no field for <code>key</code>.
 
 ## Function `contains_field`
 
-Returns true if <code><a href="object.md#0x2_object">object</a></code> contains an field for <code>key</code>.
+Returns true if <code><a href="object.md#0x2_object">object</a></code> contains an field for <code>key</code>, include normal field and object field
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_contains_field">contains_field</a>&lt;T: key, K: <b>copy</b>, drop&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K): bool
+</code></pre>
+
+
+
+<a name="0x2_object_contains_field_with_type"></a>
+
+## Function `contains_field_with_type`
+
+Returns true if <code><a href="object.md#0x2_object">object</a></code> contains an field for <code>key</code> and the value type is <code>V</code>. only for normal field
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_contains_field_with_type">contains_field_with_type</a>&lt;T: key, K: <b>copy</b>, drop, V: store&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K): bool
 </code></pre>
 
 
@@ -1057,18 +1064,6 @@ Returns true if <code><a href="object.md#0x2_object">object</a></code> contains 
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_contains_object_field">contains_object_field</a>&lt;T: key, V: key&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): bool
-</code></pre>
-
-
-
-<a name="0x2_object_contains_field_with_type"></a>
-
-## Function `contains_field_with_type`
-
-Returns true if <code><a href="object.md#0x2_object">object</a></code> contains an field for <code>key</code> and the value type is <code>V</code>.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_contains_field_with_type">contains_field_with_type</a>&lt;T: key, K: <b>copy</b>, drop, V: store&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K): bool
 </code></pre>
 
 

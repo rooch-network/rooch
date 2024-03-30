@@ -5,14 +5,16 @@ use crate::state_store::NodeDBStore;
 use anyhow::{Error, Result};
 use move_core_types::effects::Op;
 use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::object::Root;
 use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::moveos_std::object::{ObjectEntity, RawObject};
+use moveos_types::state::FieldChange;
 use moveos_types::state::KeyState;
+use moveos_types::state::ObjectChange;
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{h256::H256, state::State};
 use moveos_types::{state::StateChangeSet, state_resolver::StateResolver};
 use smt::{SMTIterator, SMTree, UpdateSet};
-use std::collections::BTreeMap;
 
 /// ObjectEntity with fields State Tree
 #[derive(Clone)]
@@ -34,7 +36,28 @@ impl TreeObject {
         if self.smt.is_genesis() {
             return Ok(None);
         }
-        self.smt.get(key.clone())
+        if key.is_object_id() {
+            debug_assert!(
+                key.as_object_id().unwrap().parent().unwrap() == self.entity.id,
+                "Child object key not match parent object id"
+            );
+        }
+        let result = self.smt.get(key.clone());
+        if log::log_enabled!(log::Level::Trace) {
+            let result_info = match &result {
+                Ok(Some(state)) => format!("Some({})", state.value_type),
+                Ok(None) => "None".to_string(),
+                Err(e) => format!("Error({:?})", e),
+            };
+            log::trace!(
+                "get_field object_id:{}, state_root: {} key: {:?}, result: {:?}",
+                self.entity.id,
+                self.entity.state_root(),
+                key,
+                result_info
+            );
+        }
+        result
     }
 
     pub fn get_field_as_object(&self, id: &ObjectID) -> Result<Option<RawObject>> {
@@ -52,8 +75,28 @@ impl TreeObject {
     where
         I: Into<UpdateSet<KeyState, State>>,
     {
+        let pre_state_root = self.entity.state_root();
+        let update_set: UpdateSet<KeyState, State> = update_set.into();
+        let keys = if log::log_enabled!(log::Level::Trace) {
+            let keys = update_set
+                .iter()
+                .map(|(k, _)| format!("{:?}", k))
+                .collect::<Vec<_>>();
+            Some(keys)
+        } else {
+            None
+        };
         let state_root = self.smt.puts(update_set)?;
         self.entity.update_state_root(state_root);
+        if log::log_enabled!(log::Level::Trace) {
+            log::trace!(
+                "update_fields object_id:{}, pre_state_root: {}, new_state_root: {}, keys: {:?}",
+                self.entity.id,
+                pre_state_root,
+                state_root,
+                keys,
+            );
+        }
         Ok(state_root)
     }
 
@@ -143,10 +186,19 @@ impl StateDBStore {
     }
 
     fn get_object(&self, id: &ObjectID) -> Result<Option<TreeObject>> {
-        Ok(self
-            .root_object
-            .get_field_as_object(id)?
-            .map(|obj| TreeObject::new(self.node_store.clone(), obj)))
+        if id.is_root() {
+            Ok(Some(self.root_object.clone()))
+        } else {
+            let parent_id = id.parent().expect("ObjectID parent should not be None");
+            let parent = self.get_object(&parent_id)?;
+            match parent {
+                Some(parent) => {
+                    let obj = parent.get_field_as_object(id)?;
+                    Ok(obj.map(|obj| TreeObject::new(self.node_store.clone(), obj)))
+                }
+                None => Ok(None),
+            }
+        }
     }
 
     pub fn get_field(&self, id: &ObjectID, key: KeyState) -> Result<Option<State>> {
@@ -166,67 +218,60 @@ impl StateDBStore {
         obj.list_fields(cursor, limit)
     }
 
-    pub fn apply_change_set(
-        &mut self,
-        mut state_change_set: StateChangeSet,
-    ) -> Result<(H256, u64)> {
-        let mut changed_objects = BTreeMap::new();
-
-        let mut update_set = UpdateSet::new();
-
-        let global_change = state_change_set.changes.remove(&ObjectID::root());
-        let mut global_size = self.root_object.entity.size;
-        if let Some(global_change) = global_change {
-            for (key, op) in global_change.entries {
-                debug_assert!(key.is_object_id());
-                let object_id = key.as_object_id()?;
-                //TODO refactor root object logic
-                if object_id.is_root() {
-                    match op {
-                        Op::Modify(state) => {
-                            global_size = state.as_raw_object().expect("Invalid root object").size;
-                        }
-                        _ => {
-                            debug_assert!(false, "Invalid operation on root object");
-                            return Err(anyhow::format_err!("Invalid operation on root object"));
-                        }
-                    }
-                    continue;
+    fn apply_object_change(
+        &self,
+        update_set: &mut UpdateSet<KeyState, State>,
+        object_id: ObjectID,
+        obj_change: ObjectChange,
+    ) -> Result<()> {
+        let mut tree_obj = match obj_change.op {
+            Some(op) => match op {
+                Op::New(state) | Op::Modify(state) => {
+                    TreeObject::new(self.node_store.clone(), state.as_raw_object()?)
                 }
-                match op {
-                    Op::New(state) => {
-                        changed_objects.insert(
-                            object_id,
-                            TreeObject::new(self.node_store.clone(), state.as_raw_object()?),
-                        );
-                    }
-                    Op::Modify(state) => {
-                        changed_objects.insert(
-                            object_id,
-                            TreeObject::new(self.node_store.clone(), state.as_raw_object()?),
-                        );
+                Op::Delete => {
+                    //TODO clean up the removed object fields
+                    update_set.remove(object_id.to_key());
+                    return Ok(());
+                }
+            },
+            None => {
+                // The VM do not change the value of ObjectEntity
+                self.get_object(&object_id)?
+                    .ok_or_else(|| anyhow::format_err!("Object with id {} not found", object_id))?
+            }
+        };
+        let mut field_update_set = UpdateSet::new();
+        for (key, change) in obj_change.fields {
+            match change {
+                FieldChange::Normal(field) => match field.op {
+                    Op::New(state) | Op::Modify(state) => {
+                        field_update_set.put(key, state);
                     }
                     Op::Delete => {
-                        update_set.remove(key);
+                        field_update_set.remove(key);
                     }
+                },
+                FieldChange::Object(obj_change) => {
+                    self.apply_object_change(
+                        &mut field_update_set,
+                        key.as_object_id()?,
+                        obj_change,
+                    )?;
                 }
             }
         }
-        for (object_id, object_change) in state_change_set.changes {
-            let mut obj = match changed_objects.remove(&object_id) {
-                Some(obj) => obj,
-                None => self
-                    .get_object(&object_id)?
-                    .ok_or_else(|| anyhow::format_err!("Object with id {} not found", object_id))?,
-            };
+        tree_obj.update_fields(field_update_set)?;
+        update_set.put(object_id.to_key(), tree_obj.entity.into_state());
+        Ok(())
+    }
 
-            obj.put_changes(object_change.entries.into_iter())?;
-            update_set.put(object_id.to_key(), obj.entity.into_state())
+    pub fn apply_change_set(&mut self, state_change_set: StateChangeSet) -> Result<(H256, u64)> {
+        let mut update_set = UpdateSet::new();
+        for (object_id, obj_change) in state_change_set.changes {
+            self.apply_object_change(&mut update_set, object_id, obj_change)?;
         }
-
-        for (object_id, value) in changed_objects {
-            update_set.put(object_id.to_key(), value.entity.into_state());
-        }
+        let global_size = state_change_set.global_size;
 
         let update_set_size = update_set.len();
         let state_root = self.root_object.update_fields(update_set)?;
@@ -243,10 +288,6 @@ impl StateDBStore {
 
     pub fn resolve_state(&self, handle: &ObjectID, key: &KeyState) -> Result<Option<State>, Error> {
         if handle == &ObjectID::root() {
-            //TODO provide a better way to get global object
-            if key == &ObjectID::root().to_key() {
-                return Ok(Some(self.root_object.entity.into_state()));
-            }
             self.root_object.get_field(key.clone())
         } else {
             self.get_field(handle, key.clone())
@@ -351,5 +392,13 @@ impl StateResolver for StateDBStore {
         limit: usize,
     ) -> std::result::Result<Vec<StateKV>, Error> {
         self.resolve_list_state(handle, cursor, limit)
+    }
+
+    fn root_object(&self) -> RootObjectEntity {
+        self.root_object
+            .entity
+            .clone()
+            .into_object::<Root>()
+            .expect("Cast to ObjectEntity<Root> should success.")
     }
 }

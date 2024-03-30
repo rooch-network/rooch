@@ -26,7 +26,7 @@ It is used to store the modules
 -  [Function `replace_constant_u64`](#0x2_move_module_replace_constant_u64)
 -  [Function `replace_constant_u256`](#0x2_move_module_replace_constant_u256)
 -  [Function `module_store_id`](#0x2_move_module_module_store_id)
--  [Function `create_module_store`](#0x2_move_module_create_module_store)
+-  [Function `init_module_store`](#0x2_move_module_init_module_store)
 -  [Function `borrow_module_store`](#0x2_move_module_borrow_module_store)
 -  [Function `borrow_mut_module_store`](#0x2_move_module_borrow_mut_module_store)
 -  [Function `exists_module`](#0x2_move_module_exists_module)
@@ -303,14 +303,14 @@ Replace given u256 constant to the new ones
 
 
 
-<a name="0x2_move_module_create_module_store"></a>
+<a name="0x2_move_module_init_module_store"></a>
 
-## Function `create_module_store`
+## Function `init_module_store`
 
 Create a new module object space
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_create_module_store">create_module_store</a>()
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_init_module_store">init_module_store</a>()
 </code></pre>
 
 
