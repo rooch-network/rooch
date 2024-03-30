@@ -24,8 +24,7 @@ use rooch_types::indexer::event_filter::EventFilter;
 use rooch_types::indexer::state::{GlobalStateFilter, TableStateFilter};
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::test_utils::{
-    random_bytes, random_event, random_function_calls, random_string, random_table_object,
-    random_typed_transaction, random_verified_move_action,
+    random_bytes, random_event, random_function_calls, random_rooch_transaction, random_string, random_table_object, random_verified_move_action
 };
 use rooch_types::transaction::authenticator::Authenticator;
 use rooch_types::transaction::TransactionSequenceInfo;
@@ -147,7 +146,7 @@ fn test_transaction_store() -> Result<()> {
     indexer_store.create_all_tables_if_not_exists()?;
     let indexer_reader = IndexerReader::new(indexer_db)?;
 
-    let random_transaction = random_typed_transaction();
+    let random_transaction = random_rooch_transaction();
 
     let tx_order_signature = Authenticator::new(rand::random(), random_bytes());
     let random_sequence_info =
@@ -199,7 +198,7 @@ fn test_event_store() -> Result<()> {
     let indexer_reader = IndexerReader::new(indexer_db)?;
 
     let random_event = random_event();
-    let random_transaction = random_typed_transaction();
+    let random_transaction = random_rooch_transaction();
 
     let tx_order_signature = Authenticator::new(rand::random(), random_bytes());
     let random_sequence_info =

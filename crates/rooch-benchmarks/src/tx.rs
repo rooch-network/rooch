@@ -41,7 +41,7 @@ use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::crypto::RoochKeyPair;
-use rooch_types::transaction::TypedTransaction;
+use rooch_types::transaction::rooch::RoochTransaction;
 use std::env;
 use std::fmt::Display;
 use std::str::FromStr;
@@ -263,7 +263,7 @@ pub fn init_indexer(datadir: &DataDirPath) -> Result<(IndexerStore, IndexerReade
 pub fn create_publish_transaction(
     test_transaction_builder: &TestTransactionBuilder,
     keystore: &InMemKeystore,
-) -> Result<TypedTransaction> {
+) -> Result<RoochTransaction> {
     let publish_action = test_transaction_builder.new_publish_examples(
         EXAMPLE_SIMPLE_BLOG_PACKAGE_NAME,
         Some(EXAMPLE_SIMPLE_BLOG_NAMED_ADDRESS.to_string()),
@@ -271,14 +271,14 @@ pub fn create_publish_transaction(
     let tx_data = test_transaction_builder.build(publish_action);
     let rooch_tx =
         keystore.sign_transaction(&test_transaction_builder.sender.into(), tx_data, None)?;
-    Ok(TypedTransaction::Rooch(rooch_tx))
+    Ok(rooch_tx)
 }
 
 pub fn create_transaction(
     test_transaction_builder: &mut TestTransactionBuilder,
     keystore: &InMemKeystore,
     sequence_number: u64,
-) -> Result<TypedTransaction> {
+) -> Result<RoochTransaction> {
     test_transaction_builder.update_sequence_number(sequence_number);
 
     let action = match *TX_TYPE {
@@ -290,5 +290,5 @@ pub fn create_transaction(
     let tx_data = test_transaction_builder.build(action);
     let rooch_tx =
         keystore.sign_transaction(&test_transaction_builder.sender.into(), tx_data, None)?;
-    Ok(TypedTransaction::Rooch(rooch_tx))
+    Ok(rooch_tx)
 }

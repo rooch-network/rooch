@@ -2618,13 +2618,6 @@
           }
         }
       },
-      "TransactionTypeView": {
-        "type": "string",
-        "enum": [
-          "rooch",
-          "ethereum"
-        ]
-      },
       "TransactionView": {
         "type": "object",
         "required": [
@@ -2632,8 +2625,7 @@
           "action_type",
           "raw",
           "sender",
-          "sequence_number",
-          "transaction_type"
+          "sequence_number"
         ],
         "properties": {
           "action": {
@@ -2652,9 +2644,6 @@
             "type": "integer",
             "format": "uint64",
             "minimum": 0.0
-          },
-          "transaction_type": {
-            "$ref": "#/components/schemas/TransactionTypeView"
           }
         }
       },

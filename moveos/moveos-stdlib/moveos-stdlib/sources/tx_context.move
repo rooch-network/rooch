@@ -25,13 +25,7 @@ module moveos_std::tx_context {
     friend moveos_std::move_module;
 
     const ErrorInvalidContext: u64 = 1;
-
-    /// An account address for paying gas during the transaction validation stage.
-    struct GasPaymentAccount has copy, store, drop {
-        account: address,
-        pay_by_module_account: bool,
-    }
-
+ 
     /// Information about the transaction currently being executed.
     struct TxContext {
         /// The address of the user that signed the current transaction
@@ -152,11 +146,12 @@ module moveos_std::tx_context {
         option::extract(&mut meta)
     }
 
+    /// Get the gas payment account of the transaction
+    /// Currently, the gas payment account is the sender of the transaction.
+    /// In the future, the gas payment account may be different from the sender.
     public fun tx_gas_payment_account(): address {
         let ctx = borrow();
-        let gas_payment_account = get<GasPaymentAccount>(ctx);
-        assert!(option::is_some(&gas_payment_account), ErrorInvalidContext);
-        option::extract(&mut gas_payment_account).account
+        ctx.sender
     }
 
     /// The result is only available in the `post_execute` function.

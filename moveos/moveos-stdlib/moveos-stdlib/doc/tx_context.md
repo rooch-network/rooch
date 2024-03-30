@@ -5,7 +5,6 @@
 
 
 
--  [Struct `GasPaymentAccount`](#0x2_tx_context_GasPaymentAccount)
 -  [Struct `TxContext`](#0x2_tx_context_TxContext)
 -  [Struct `ModuleUpgradeFlag`](#0x2_tx_context_ModuleUpgradeFlag)
 -  [Constants](#@Constants_0)
@@ -36,18 +35,6 @@
 <b>use</b> <a href="tx_meta.md#0x2_tx_meta">0x2::tx_meta</a>;
 <b>use</b> <a href="tx_result.md#0x2_tx_result">0x2::tx_result</a>;
 <b>use</b> <a href="type_info.md#0x2_type_info">0x2::type_info</a>;
-</code></pre>
-
-
-
-<a name="0x2_tx_context_GasPaymentAccount"></a>
-
-## Struct `GasPaymentAccount`
-
-An account address for paying gas during the transaction validation stage.
-
-
-<pre><code><b>struct</b> <a href="tx_context.md#0x2_tx_context_GasPaymentAccount">GasPaymentAccount</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -214,6 +201,9 @@ The meta data is only available when executing or validating a transaction, othe
 
 ## Function `tx_gas_payment_account`
 
+Get the gas payment account of the transaction
+Currently, the gas payment account is the sender of the transaction.
+In the future, the gas payment account may be different from the sender.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="tx_context.md#0x2_tx_context_tx_gas_payment_account">tx_gas_payment_account</a>(): <b>address</b>

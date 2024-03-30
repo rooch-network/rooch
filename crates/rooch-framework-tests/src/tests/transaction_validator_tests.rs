@@ -17,10 +17,7 @@ use rooch_types::framework::session_key::SessionKeyModule;
 use rooch_types::framework::timestamp::TimestampModule;
 use rooch_types::transaction::ethereum::EthereumTransaction;
 use rooch_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, framework::empty::Empty};
-use rooch_types::{
-    framework::session_key::SessionScope,
-    transaction::{rooch::RoochTransactionData, AbstractTransaction},
-};
+use rooch_types::{framework::session_key::SessionScope, transaction::rooch::RoochTransactionData};
 
 #[test]
 fn test_validate_rooch() {

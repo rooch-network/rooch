@@ -19,7 +19,8 @@ use rooch_framework::natives::default_gas_schedule;
 use rooch_store::RoochStore;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
-use rooch_types::{chain_id::RoochChainID, transaction::AbstractTransaction};
+use rooch_types::chain_id::RoochChainID;
+use rooch_types::transaction::RoochTransaction;
 use std::env;
 use std::path::Path;
 use std::sync::Arc;
@@ -94,7 +95,7 @@ impl RustBindingTest {
     }
 
     //TODO let the module bundle to execute the function
-    pub fn execute<T: AbstractTransaction>(&mut self, tx: T) -> Result<()> {
+    pub fn execute(&mut self, tx: RoochTransaction) -> Result<()> {
         let execute_result = self.execute_as_result(tx)?;
         if execute_result.transaction_info.status != KeptVMStatus::Executed {
             bail!(
@@ -105,10 +106,7 @@ impl RustBindingTest {
         Ok(())
     }
 
-    pub fn execute_as_result<T: AbstractTransaction>(
-        &mut self,
-        tx: T,
-    ) -> Result<ExecuteTransactionResult> {
+    pub fn execute_as_result(&mut self, tx: RoochTransaction) -> Result<ExecuteTransactionResult> {
         let verified_tx = self.executor.validate(tx)?;
         let result = self.executor.execute(verified_tx)?;
         let root = ObjectEntity::root_object(

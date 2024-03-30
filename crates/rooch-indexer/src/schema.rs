@@ -62,11 +62,7 @@ diesel::table! {
     transactions (tx_order) {
         tx_order -> BigInt,
         tx_hash -> Text,
-        transaction_type -> Text,
         sequence_number -> BigInt,
-        multichain_id -> BigInt,
-        multichain_address -> Text,
-        multichain_original_address -> Text,
         sender -> Text,
         action -> Text,
         action_type -> SmallInt,

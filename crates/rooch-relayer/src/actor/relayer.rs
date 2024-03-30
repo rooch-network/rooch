@@ -17,9 +17,7 @@ use rooch_executor::proxy::ExecutorProxy;
 use rooch_rpc_api::jsonrpc_types::KeptVMStatusView;
 use rooch_rpc_client::ClientBuilder;
 use rooch_types::{
-    address::RoochAddress,
-    crypto::RoochKeyPair,
-    transaction::{rooch::RoochTransactionData, AbstractTransaction},
+    address::RoochAddress, crypto::RoochKeyPair, transaction::rooch::RoochTransactionData,
 };
 use tracing::{info, warn};
 

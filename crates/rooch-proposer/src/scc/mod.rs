@@ -3,14 +3,12 @@
 
 use std::collections::BTreeMap;
 
+use crate::actor::messages::TransactionProposeMessage;
 use moveos_types::h256;
 use moveos_types::h256::H256;
 use rooch_da::messages::Batch;
 use rooch_da::proxy::DAProxy;
 use rooch_types::block::Block;
-use rooch_types::transaction::AbstractTransaction;
-
-use crate::actor::messages::TransactionProposeMessage;
 
 /// State Commitment Chain(SCC) is a chain of transaction state root
 /// This SCC is a mirror of the on-chain SCC

@@ -4,7 +4,6 @@
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{StructTag, TypeTag};
-
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::object::ObjectID;
@@ -13,10 +12,7 @@ use moveos_types::state::{MoveStructType, TableChangeSet};
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_rpc_api::jsonrpc_types::TableChangeSetView;
 use rooch_types::bitcoin::utxo::UTXO;
-use rooch_types::multichain_id::MultiChainID;
-use rooch_types::transaction::{
-    AbstractTransaction, TransactionSequenceInfo, TransactionType, TypedTransaction,
-};
+use rooch_types::transaction::{rooch::RoochTransaction, TransactionSequenceInfo};
 
 use crate::errors::IndexerError;
 use crate::utils::format_struct_tag;
@@ -30,12 +26,7 @@ pub struct IndexedTransaction {
     // The tx order of this transaction.
     pub tx_order: u64,
 
-    pub transaction_type: TransactionType,
     pub sequence_number: u64,
-    pub multichain_id: MultiChainID,
-    pub multichain_address: String,
-    // the orginal address str
-    pub multichain_original_address: String,
     // the account address of sender who send the transaction
     pub sender: AccountAddress,
     pub action: MoveAction,
@@ -62,7 +53,7 @@ pub struct IndexedTransaction {
 
 impl IndexedTransaction {
     pub fn new(
-        transaction: TypedTransaction,
+        transaction: RoochTransaction,
         sequence_info: TransactionSequenceInfo,
         execution_info: TransactionExecutionInfo,
         moveos_tx: VerifiedMoveOSTransaction,
@@ -77,11 +68,7 @@ impl IndexedTransaction {
             // The tx order of this transaction.
             tx_order: sequence_info.tx_order,
 
-            transaction_type: transaction.transaction_type(),
             sequence_number: moveos_tx.ctx.sequence_number,
-            multichain_id: transaction.multi_chain_id(),
-            multichain_address: transaction.sender().to_string(),
-            multichain_original_address: transaction.original_address_str(),
             // the account address of sender who send the transaction
             sender: moveos_tx.ctx.sender,
             action: move_action.clone(),
@@ -139,7 +126,7 @@ pub struct IndexedEvent {
 impl IndexedEvent {
     pub fn new(
         event: Event,
-        transaction: TypedTransaction,
+        transaction: RoochTransaction,
         sequence_info: TransactionSequenceInfo,
         moveos_tx: VerifiedMoveOSTransaction,
     ) -> Self {
