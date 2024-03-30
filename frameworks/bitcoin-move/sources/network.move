@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module bitcoin_move::network{
-    use std::option;
     use std::string::{Self, String};
-    use bitcoin_move::genesis;
 
     const ErrorUnknownNetwork: u64 = 1;
 
@@ -42,12 +40,8 @@ module bitcoin_move::network{
     }
 
     public fun network() : u8 {
-        let network_opt = genesis::network();
-        if(option::is_some(&network_opt)){
-            *option::borrow(&network_opt)
-        } else {
-            Self::default_network()
-        }
+        //TODO load from storage
+        Self::default_network()
     }
 
     public fun from_str(network: &String): u8 {

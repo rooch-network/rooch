@@ -19,9 +19,7 @@
 -  [Function `network_magic`](#0x4_network_network_magic)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
-<b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="genesis.md#0x4_genesis">0x4::genesis</a>;
+<pre><code><b>use</b> <a href="">0x1::string</a>;
 </code></pre>
 
 
