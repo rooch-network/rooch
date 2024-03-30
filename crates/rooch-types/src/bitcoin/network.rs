@@ -1,9 +1,17 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::addresses::BITCOIN_MOVE_ADDRESS;
+use move_core_types::{ident_str, identifier::IdentStr};
+use moveos_types::{
+    moveos_std::object::{self, ObjectID},
+    state::{MoveStructState, MoveStructType},
+};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use serde::{Deserialize, Serialize};
+
+pub const MODULE_NAME: &IdentStr = ident_str!("network");
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
@@ -101,5 +109,31 @@ impl From<Network> for bitcoin::Network {
             Network::NetworkSignet => bitcoin::Network::Signet,
             Network::NetworkRegtest => bitcoin::Network::Regtest,
         }
+    }
+}
+
+/// The Bitcoin network onchain configuration.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BitcoinNetwork {
+    pub network: u8,
+}
+
+impl MoveStructType for BitcoinNetwork {
+    const ADDRESS: move_core_types::account_address::AccountAddress = BITCOIN_MOVE_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("BitcoinNetwork");
+}
+
+impl MoveStructState for BitcoinNetwork {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            move_core_types::value::MoveTypeLayout::U8,
+        ])
+    }
+}
+
+impl BitcoinNetwork {
+    pub fn object_id() -> ObjectID {
+        object::named_object_id(&Self::struct_tag())
     }
 }
