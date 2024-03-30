@@ -49,14 +49,11 @@ module bitcoin_move::utxo{
     struct BitcoinUTXOStore has key{
         /// The next tx index to be processed
         next_tx_index: u64,
-        // outpoint -> txout
-        //utxo: Table<OutPoint, ObjectID>,
     }
 
     public(friend) fun genesis_init(){
         let btc_utxo_store = BitcoinUTXOStore{
             next_tx_index: 0,
-            //utxo: table::new(),
         };
         let obj = object::new_named_object(btc_utxo_store);
         object::to_shared(obj);
@@ -309,6 +306,7 @@ module bitcoin_move::utxo{
 
     #[test]
     fun test_remove(){
+        genesis_init();
         let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
         let vout = 0;
         let utxo = new(txid, vout, 100);
