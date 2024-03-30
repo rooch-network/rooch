@@ -199,7 +199,7 @@ module bitcoin_move::ord {
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
         let store = object::borrow_mut(store_obj);
         table_vec::push_back(&mut store.inscriptions, id);
-        object::new_custom_object(id, inscription)
+        object::new_with_id(id, inscription)
     }
     
     fun parse_json_body(record: &InscriptionRecord) : SimpleMap<String,String> {
@@ -516,8 +516,8 @@ module bitcoin_move::ord {
             let input = vector::borrow(inputs, input_idx);
             let witness = types::txin_witness(input);
             let previous_output = types::txin_previous_output(input);
-            let input_value = if(utxo::exists_utxo(types::outpoint_txid(previous_output), types::outpoint_vout(previous_output))) {
-                let previous_utxo = utxo::borrow_utxo(types::outpoint_txid(previous_output), types::outpoint_vout(previous_output));
+            let input_value = if(utxo::exists_utxo(*previous_output)) {
+                let previous_utxo = utxo::borrow_utxo(*previous_output);
                 utxo::value(object::borrow(previous_utxo))
             } else {
                 0

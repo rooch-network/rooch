@@ -21,6 +21,7 @@ use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::{chain_id::RoochChainID, transaction::AbstractTransaction};
 use std::env;
+use std::path::Path;
 use std::sync::Arc;
 use tempfile::TempDir;
 
@@ -40,15 +41,18 @@ pub fn get_data_dir() -> DataDirPath {
 }
 
 pub struct RustBindingTest {
+    //we should keep data_dir to make sure the temp dir is not deleted.
+    data_dir: DataDirPath,
     pub executor: ExecutorActor,
     pub reader_executor: ReaderExecutorActor,
 }
 
 impl RustBindingTest {
     pub fn new() -> Result<Self> {
+        let data_dir = get_data_dir();
         let (rooch_db_path, moveos_db_path) = (
-            StoreConfig::get_mock_moveos_store_dir(&DATA_DIR),
-            StoreConfig::get_mock_rooch_store_dir(&DATA_DIR),
+            StoreConfig::get_mock_moveos_store_dir(&data_dir),
+            StoreConfig::get_mock_rooch_store_dir(&data_dir),
         );
         if !rooch_db_path.exists() {
             std::fs::create_dir_all(rooch_db_path.clone())?;
@@ -75,6 +79,7 @@ impl RustBindingTest {
             executor.get_rooch_store(),
         )?;
         Ok(Self {
+            data_dir,
             executor,
             reader_executor,
         })
@@ -82,6 +87,10 @@ impl RustBindingTest {
 
     pub fn executor(&self) -> &ExecutorActor {
         &self.executor
+    }
+
+    pub fn data_dir(&self) -> &Path {
+        self.data_dir.path()
     }
 
     //TODO let the module bundle to execute the function

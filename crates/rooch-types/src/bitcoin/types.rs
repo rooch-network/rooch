@@ -249,6 +249,12 @@ pub struct OutPoint {
     pub vout: u32,
 }
 
+impl OutPoint {
+    pub fn new(txid: AccountAddress, vout: u32) -> Self {
+        Self { txid, vout }
+    }
+}
+
 impl From<bitcoin::OutPoint> for OutPoint {
     fn from(out_point: bitcoin::OutPoint) -> Self {
         Self {

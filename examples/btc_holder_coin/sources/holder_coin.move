@@ -77,8 +77,9 @@ module btc_holder_coin::holder_coin {
 
     #[test]
     fun test_stake_claim() {
-        init();
         rooch_framework::genesis::init_for_test();
+        bitcoin_move::genesis::init_for_test();
+        init();
         let seconds = 100;
         let tx_id = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
         let sat_value = 100000000;

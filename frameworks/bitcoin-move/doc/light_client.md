@@ -7,7 +7,6 @@
 
 -  [Struct `TxProgressErrorLogEvent`](#0x4_light_client_TxProgressErrorLogEvent)
 -  [Resource `BitcoinBlockStore`](#0x4_light_client_BitcoinBlockStore)
--  [Resource `BitcoinUTXOStore`](#0x4_light_client_BitcoinUTXOStore)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_light_client_genesis_init)
 -  [Function `submit_new_block`](#0x4_light_client_submit_new_block)
@@ -20,7 +19,6 @@
 -  [Function `get_block_height`](#0x4_light_client_get_block_height)
 -  [Function `get_block_by_height`](#0x4_light_client_get_block_by_height)
 -  [Function `get_latest_block_height`](#0x4_light_client_get_latest_block_height)
--  [Function `get_utxo`](#0x4_light_client_get_utxo)
 
 
 <pre><code><b>use</b> <a href="">0x1::debug</a>;
@@ -62,17 +60,6 @@
 
 
 <pre><code><b>struct</b> <a href="light_client.md#0x4_light_client_BitcoinBlockStore">BitcoinBlockStore</a> <b>has</b> key
-</code></pre>
-
-
-
-<a name="0x4_light_client_BitcoinUTXOStore"></a>
-
-## Resource `BitcoinUTXOStore`
-
-
-
-<pre><code><b>struct</b> <a href="light_client.md#0x4_light_client_BitcoinUTXOStore">BitcoinUTXOStore</a> <b>has</b> key
 </code></pre>
 
 
@@ -129,7 +116,7 @@ The relay server submit a new Bitcoin block to the light client.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="light_client.md#0x4_light_client_remaining_tx_count">remaining_tx_count</a>(btc_block_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinBlockStore">light_client::BitcoinBlockStore</a>&gt;, btc_utxo_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinUTXOStore">light_client::BitcoinUTXOStore</a>&gt;): u64
+<pre><code><b>public</b> <b>fun</b> <a href="light_client.md#0x4_light_client_remaining_tx_count">remaining_tx_count</a>(btc_block_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinBlockStore">light_client::BitcoinBlockStore</a>&gt;): u64
 </code></pre>
 
 
@@ -140,7 +127,7 @@ The relay server submit a new Bitcoin block to the light client.
 
 
 
-<pre><code>entry <b>fun</b> <a href="light_client.md#0x4_light_client_process_utxos">process_utxos</a>(btc_block_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinBlockStore">light_client::BitcoinBlockStore</a>&gt;, btc_utxo_store_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinUTXOStore">light_client::BitcoinUTXOStore</a>&gt;, batch_size: u64)
+<pre><code>entry <b>fun</b> <a href="light_client.md#0x4_light_client_process_utxos">process_utxos</a>(btc_block_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinBlockStore">light_client::BitcoinBlockStore</a>&gt;, batch_size: u64)
 </code></pre>
 
 
@@ -221,16 +208,4 @@ Get latest block height
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="light_client.md#0x4_light_client_get_latest_block_height">get_latest_block_height</a>(btc_block_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinBlockStore">light_client::BitcoinBlockStore</a>&gt;): <a href="_Option">option::Option</a>&lt;u64&gt;
-</code></pre>
-
-
-
-<a name="0x4_light_client_get_utxo"></a>
-
-## Function `get_utxo`
-
-Get UTXO via txid and vout
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="light_client.md#0x4_light_client_get_utxo">get_utxo</a>(btc_utxo_store_obj: &<a href="_Object">object::Object</a>&lt;<a href="light_client.md#0x4_light_client_BitcoinUTXOStore">light_client::BitcoinUTXOStore</a>&gt;, txid: <b>address</b>, vout: u32): <a href="_Option">option::Option</a>&lt;<a href="_ObjectID">object::ObjectID</a>&gt;
 </code></pre>

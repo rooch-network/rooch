@@ -1,15 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::types;
 use crate::address::BitcoinAddress;
+use crate::addresses::BITCOIN_MOVE_ADDRESS;
 use crate::indexer::state::IndexerGlobalState;
-use move_core_types::language_storage::StructTag;
-
 use anyhow::Result;
-use bitcoin::Txid;
-use move_core_types::{
-    account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
-};
+use move_core_types::language_storage::StructTag;
+use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
+use moveos_types::moveos_std::object;
 use moveos_types::state::MoveStructState;
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
@@ -19,35 +18,28 @@ use moveos_types::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{addresses::BITCOIN_MOVE_ADDRESS, into_address::IntoAddress};
-
 pub const MODULE_NAME: &IdentStr = ident_str!("utxo");
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OutputID {
-    /// The txid of the UTXO
-    pub txid: AccountAddress,
-    /// The vout of the UTXO
-    pub vout: u32,
+pub struct BitcoinUTXOStore {
+    pub next_tx_index: u64,
 }
 
-impl OutputID {
-    pub fn new(txid: AccountAddress, vout: u32) -> Self {
-        Self { txid, vout }
+impl BitcoinUTXOStore {
+    pub fn object_id() -> ObjectID {
+        object::named_object_id(&Self::struct_tag())
     }
 }
 
-impl MoveStructType for OutputID {
+impl MoveStructType for BitcoinUTXOStore {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("OutputID");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("BitcoinUTXOStore");
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
 }
 
-impl MoveStructState for OutputID {
+impl MoveStructState for BitcoinUTXOStore {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
-        move_core_types::value::MoveStructLayout::new(vec![
-            AccountAddress::type_layout(),
-            u32::type_layout(),
-        ])
+        move_core_types::value::MoveStructLayout::new(vec![u64::type_layout()])
     }
 }
 
@@ -92,6 +84,10 @@ impl UTXO {
             seals,
         }
     }
+}
+
+pub fn derive_utxo_id(outpoint: &types::OutPoint) -> ObjectID {
+    object::custom_child_object_id(BitcoinUTXOStore::object_id(), outpoint, &UTXO::struct_tag())
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -140,14 +136,11 @@ pub struct UTXOModule<'a> {
 impl UTXOModule<'_> {
     pub const EXISTS_UTXO_FUNCTION_NAME: &'static IdentStr = ident_str!("exists_utxo");
 
-    pub fn exists_utxo(&self, txid: Txid, vout: u32) -> Result<bool> {
+    pub fn exists_utxo(&self, outpoint: &types::OutPoint) -> Result<bool> {
         let call = Self::create_function_call(
             Self::EXISTS_UTXO_FUNCTION_NAME,
             vec![],
-            vec![
-                MoveValue::Address(txid.into_address()),
-                MoveValue::U32(vout),
-            ],
+            vec![outpoint.to_move_value()],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ONE);
         let exists = self
@@ -174,50 +167,27 @@ impl<'a> ModuleBinding<'a> for UTXOModule<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq)]
-pub struct BitcoinOutputID {
-    pub txid: bitcoin::Txid,
-    pub vout: u32,
-}
-
-impl BitcoinOutputID {
-    pub fn new(txid: bitcoin::Txid, vout: u32) -> Self {
-        Self { txid, vout }
-    }
-}
-
-impl From<BitcoinOutputID> for OutputID {
-    fn from(output_id: BitcoinOutputID) -> Self {
-        OutputID {
-            txid: output_id.txid.into_address(),
-            vout: output_id.vout,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use move_core_types::account_address::AccountAddress;
-    use moveos_types::moveos_std::object;
-    use std::str::FromStr;
 
     #[test]
     fn test_id() {
-        let id = crate::bitcoin::utxo::OutputID::new(
+        let outpoint = crate::bitcoin::types::OutPoint::new(
             AccountAddress::from_hex_literal(
                 "0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21",
             )
             .unwrap(),
             0,
         );
-        let object_id = object::custom_object_id(id, &UTXO::struct_tag());
-        //println!("{}", object_id);
+        let object_id = derive_utxo_id(&outpoint);
+        //println!("{}", hex::encode(object_id.to_bytes()));
         //ensure the object id is same as utxo.move
         assert_eq!(
             object_id,
-            ObjectID::from_str(
-                "0xb8fc937bf3c15abe49c95fa6906aff29087149f542b48db0cf25dce671a68a63"
+            ObjectID::from_bytes(
+                hex::decode("02826a5e56581ba5ab84c39976f27cf3578cf524308b4ffc123922dfff507e514db8fc937bf3c15abe49c95fa6906aff29087149f542b48db0cf25dce671a68a63").unwrap()
             )
             .unwrap()
         );

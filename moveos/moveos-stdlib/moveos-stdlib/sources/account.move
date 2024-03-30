@@ -215,7 +215,7 @@ module moveos_std::account {
    /// Create a new account object space
    public(friend) fun create_account_object(account: address) {
       let object_id = object::address_to_object_id(account);
-      let obj = object::new_with_id(object_id, Account {sequence_number: 0});
+      let obj = object::new_with_object_id(object_id, Account {sequence_number: 0});
       object::transfer_extend(obj, account)
    }
 

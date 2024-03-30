@@ -275,11 +275,22 @@ pub fn account_named_object_id(account: AccountAddress, struct_tag: &StructTag) 
     AccountAddress::new(struct_tag_hash.0).into()
 }
 
-pub fn custom_object_id<ID: Serialize>(id: ID, struct_tag: &StructTag) -> ObjectID {
-    let mut buffer = bcs::to_bytes(&id).expect("ID to bcs should success");
+pub fn custom_object_id<ID: Serialize>(id: &ID, struct_tag: &StructTag) -> ObjectID {
+    custom_child_object_id(ObjectID::root(), id, struct_tag)
+}
+
+pub fn custom_child_object_id<ID: Serialize>(
+    parent_id: ObjectID,
+    id: &ID,
+    struct_tag: &StructTag,
+) -> ObjectID {
+    let mut buffer = bcs::to_bytes(id).expect("ID to bcs should success");
     buffer.extend_from_slice(struct_tag.to_canonical_string().as_bytes());
     let struct_tag_hash = h256::sha3_256_of(&buffer);
-    AccountAddress::new(struct_tag_hash.0).into()
+    let child_part = AccountAddress::new(struct_tag_hash.0);
+    let ObjectID(mut parent_path) = parent_id;
+    parent_path.push(child_part);
+    ObjectID(parent_path)
 }
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Default)]
@@ -980,7 +991,7 @@ mod tests {
     #[test]
     fn test_custom_object_id() {
         let id = TestStructID { id: 1 };
-        let custom_object_id = custom_object_id(id, &TestStruct::struct_tag());
+        let custom_object_id = custom_object_id(&id, &TestStruct::struct_tag());
         //println!("custom_object_id: {:?}", custom_object_id);
         //Ensure the generated object id is same as the object id in object.move
         assert_eq!(

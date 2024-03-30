@@ -5,15 +5,20 @@
 
 
 
--  [Struct `OutputID`](#0x4_utxo_OutputID)
 -  [Resource `UTXO`](#0x4_utxo_UTXO)
 -  [Struct `UTXOSeal`](#0x4_utxo_UTXOSeal)
 -  [Struct `SealOut`](#0x4_utxo_SealOut)
 -  [Struct `UTXORange`](#0x4_utxo_UTXORange)
+-  [Resource `BitcoinUTXOStore`](#0x4_utxo_BitcoinUTXOStore)
 -  [Struct `TempState`](#0x4_utxo_TempState)
 -  [Constants](#@Constants_0)
+-  [Function `genesis_init`](#0x4_utxo_genesis_init)
+-  [Function `borrow_utxo_store`](#0x4_utxo_borrow_utxo_store)
+-  [Function `borrow_mut_utxo_store`](#0x4_utxo_borrow_mut_utxo_store)
+-  [Function `next_tx_index`](#0x4_utxo_next_tx_index)
+-  [Function `update_next_tx_index`](#0x4_utxo_update_next_tx_index)
 -  [Function `new`](#0x4_utxo_new)
--  [Function `new_id`](#0x4_utxo_new_id)
+-  [Function `derive_utxo_id`](#0x4_utxo_derive_utxo_id)
 -  [Function `new_utxo_range`](#0x4_utxo_new_utxo_range)
 -  [Function `value`](#0x4_utxo_value)
 -  [Function `txid`](#0x4_utxo_txid)
@@ -47,18 +52,7 @@
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_multimap</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
-</code></pre>
-
-
-
-<a name="0x4_utxo_OutputID"></a>
-
-## Struct `OutputID`
-
-The transaction output ID
-
-
-<pre><code><b>struct</b> <a href="utxo.md#0x4_utxo_OutputID">OutputID</a> <b>has</b> <b>copy</b>, drop, store
+<b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 </code></pre>
 
 
@@ -108,6 +102,17 @@ The UTXO Object
 
 
 
+<a name="0x4_utxo_BitcoinUTXOStore"></a>
+
+## Resource `BitcoinUTXOStore`
+
+
+
+<pre><code><b>struct</b> <a href="utxo.md#0x4_utxo_BitcoinUTXOStore">BitcoinUTXOStore</a> <b>has</b> key
+</code></pre>
+
+
+
 <a name="0x4_utxo_TempState"></a>
 
 ## Struct `TempState`
@@ -133,6 +138,61 @@ The UTXO Object
 
 
 
+<a name="0x4_utxo_genesis_init"></a>
+
+## Function `genesis_init`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x4_utxo_genesis_init">genesis_init</a>()
+</code></pre>
+
+
+
+<a name="0x4_utxo_borrow_utxo_store"></a>
+
+## Function `borrow_utxo_store`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_borrow_utxo_store">borrow_utxo_store</a>(): &<a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_BitcoinUTXOStore">utxo::BitcoinUTXOStore</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_utxo_borrow_mut_utxo_store"></a>
+
+## Function `borrow_mut_utxo_store`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x4_utxo_borrow_mut_utxo_store">borrow_mut_utxo_store</a>(): &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_BitcoinUTXOStore">utxo::BitcoinUTXOStore</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_utxo_next_tx_index"></a>
+
+## Function `next_tx_index`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x4_utxo_next_tx_index">next_tx_index</a>(): u64
+</code></pre>
+
+
+
+<a name="0x4_utxo_update_next_tx_index"></a>
+
+## Function `update_next_tx_index`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="utxo.md#0x4_utxo_update_next_tx_index">update_next_tx_index</a>(next_tx_index: u64)
+</code></pre>
+
+
+
 <a name="0x4_utxo_new"></a>
 
 ## Function `new`
@@ -144,13 +204,13 @@ The UTXO Object
 
 
 
-<a name="0x4_utxo_new_id"></a>
+<a name="0x4_utxo_derive_utxo_id"></a>
 
-## Function `new_id`
+## Function `derive_utxo_id`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_new_id">new_id</a>(txid: <b>address</b>, vout: u32): <a href="utxo.md#0x4_utxo_OutputID">utxo::OutputID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_derive_utxo_id">derive_utxo_id</a>(outpoint: <a href="types.md#0x4_types_OutPoint">types::OutPoint</a>): <a href="_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
@@ -208,7 +268,7 @@ Get the UTXO's vout
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_exists_utxo">exists_utxo</a>(txid: <b>address</b>, vout: u32): bool
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_exists_utxo">exists_utxo</a>(outpoint: <a href="types.md#0x4_types_OutPoint">types::OutPoint</a>): bool
 </code></pre>
 
 
@@ -219,7 +279,7 @@ Get the UTXO's vout
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_borrow_utxo">borrow_utxo</a>(txid: <b>address</b>, vout: u32): &<a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="utxo.md#0x4_utxo_borrow_utxo">borrow_utxo</a>(outpoint: <a href="types.md#0x4_types_OutPoint">types::OutPoint</a>): &<a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;
 </code></pre>
 
 
