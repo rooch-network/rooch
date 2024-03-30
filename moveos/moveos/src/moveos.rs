@@ -164,7 +164,11 @@ impl MoveOS {
         ctx.add(genesis_ctx)?;
         ctx.add(bitcoin_genesis_ctx)?;
         let mut session = self.vm.new_genesis_session(&self.db, ctx);
-        let verified_action = session.verify_move_action(action)?;
+
+        let verified_action = session.verify_move_action(action).map_err(|e| {
+            log::error!("verify_genesis_tx error:{:?}", e);
+            e
+        })?;
 
         // execute main tx
         let execute_result = session.execute_move_action(verified_action);
@@ -270,7 +274,6 @@ impl MoveOS {
 
         // Temporary behavior, will enable this in the future.
         // gas_meter.charge_io_write(ctx.tx_size)?;
-
         let mut session = self.vm.new_session(&self.db, ctx, gas_meter);
 
         // system pre_execute
@@ -431,18 +434,16 @@ impl MoveOS {
         let RawTransactionOutput {
             status: _,
             changeset,
-            state_changeset,
             events,
             gas_used: _,
             is_upgrade: _,
         } = output;
-        debug_assert!(changeset.accounts().is_empty());
 
         let (new_state_root, size) = self
             .db
             .0
             .get_state_store_mut()
-            .apply_change_set(state_changeset)
+            .apply_change_set(changeset)
             .map_err(|e| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR)
                     .with_message(e.to_string())

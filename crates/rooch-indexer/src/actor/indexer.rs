@@ -17,7 +17,7 @@ use move_resource_viewer::MoveValueAnnotator;
 use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::object::RawObject;
-use moveos_types::state::{KeyState, MoveStructType, State};
+use moveos_types::state::{FieldChange, KeyState, MoveStructType, ObjectChange, State};
 use moveos_types::state_resolver::{MoveOSResolverProxy, StateResolver};
 use rooch_rpc_api::jsonrpc_types::{AnnotatedMoveStructView, AnnotatedMoveValueView};
 use rooch_types::bitcoin::utxo::UTXO;
@@ -111,6 +111,102 @@ impl IndexerActor {
         );
         Ok(state)
     }
+
+    //TODO wrap the arguments to a struct
+    #[allow(clippy::too_many_arguments)]
+    fn handle_object_change(
+        &self,
+        mut state_index_generator: u64,
+        tx_order: u64,
+        new_global_states: &mut Vec<IndexedGlobalState>,
+        update_global_states: &mut Vec<IndexedGlobalState>,
+        remove_global_states: &mut Vec<String>,
+        remove_table_states_by_table_handle: &mut Vec<String>,
+        new_table_states: &mut Vec<IndexedTableState>,
+        update_table_states: &mut Vec<IndexedTableState>,
+        remove_table_states: &mut Vec<(String, String)>,
+        object_id: ObjectID,
+        object_change: ObjectChange,
+    ) -> Result<u64> {
+        let ObjectChange { op, fields } = object_change;
+
+        if let Some(op) = op {
+            match op {
+                Op::Modify(value) => {
+                    debug_assert!(value.is_object());
+                    let state = self.new_global_state_from_raw_object(
+                        value,
+                        tx_order,
+                        state_index_generator,
+                    )?;
+                    update_global_states.push(state);
+                }
+                Op::Delete => {
+                    remove_global_states.push(object_id.to_string());
+                    remove_table_states_by_table_handle.push(object_id.to_string());
+                }
+                Op::New(value) => {
+                    debug_assert!(value.is_object());
+                    let state = self.new_global_state_from_raw_object(
+                        value,
+                        tx_order,
+                        state_index_generator,
+                    )?;
+                    new_global_states.push(state);
+                }
+            }
+        }
+
+        state_index_generator += 1;
+        for (key, change) in fields {
+            match change {
+                FieldChange::Normal(normal_change) => {
+                    match normal_change.op {
+                        Op::Modify(value) => {
+                            let state = self.new_table_state(
+                                key,
+                                value,
+                                object_id.clone(),
+                                tx_order,
+                                state_index_generator,
+                            )?;
+                            update_table_states.push(state);
+                        }
+                        Op::Delete => {
+                            remove_table_states.push((object_id.to_string(), key.to_string()));
+                        }
+                        Op::New(value) => {
+                            let state = self.new_table_state(
+                                key,
+                                value,
+                                object_id.clone(),
+                                tx_order,
+                                state_index_generator,
+                            )?;
+                            new_table_states.push(state);
+                        }
+                    }
+                    state_index_generator += 1;
+                }
+                FieldChange::Object(object_change) => {
+                    state_index_generator = self.handle_object_change(
+                        state_index_generator,
+                        tx_order,
+                        new_global_states,
+                        update_global_states,
+                        remove_global_states,
+                        remove_table_states_by_table_handle,
+                        new_table_states,
+                        update_table_states,
+                        remove_table_states,
+                        key.as_object_id()?,
+                        object_change,
+                    )?;
+                }
+            }
+        }
+        Ok(state_index_generator)
+    }
 }
 
 impl Actor for IndexerActor {}
@@ -137,90 +233,20 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         // then delete all states which belongs to the table_handle from table states
         let mut remove_table_states_by_table_handle = vec![];
 
-        for (table_handle, table_change) in state_change_set.changes.clone() {
-            // handle global object
-            if table_handle == ObjectID::root() {
-                for (key, op) in table_change.entries.into_iter() {
-                    debug_assert!(key.is_object_id());
-                    let object_id = key.as_object_id()?;
-
-                    match op {
-                        Op::Modify(value) => {
-                            debug_assert!(value.is_object());
-                            let state = self.new_global_state_from_raw_object(
-                                value,
-                                tx_order,
-                                state_index_generator,
-                            )?;
-                            update_global_states.push(state);
-                        }
-                        Op::Delete => {
-                            remove_global_states.push(object_id.to_string());
-                            remove_table_states_by_table_handle.push(object_id.to_string());
-                        }
-                        Op::New(value) => {
-                            debug_assert!(value.is_object());
-                            let state = self.new_global_state_from_raw_object(
-                                value,
-                                tx_order,
-                                state_index_generator,
-                            )?;
-                            new_global_states.push(state);
-                        }
-                    }
-                    state_index_generator += 1;
-                }
-            } else {
-                for (key, op) in table_change.entries.into_iter() {
-                    match op {
-                        Op::Modify(value) => {
-                            //If value is a child object, write to global states
-                            if value.is_object() {
-                                let state = self.new_global_state_from_raw_object(
-                                    value,
-                                    tx_order,
-                                    state_index_generator,
-                                )?;
-
-                                update_global_states.push(state);
-                            } else {
-                                let state = self.new_table_state(
-                                    key,
-                                    value,
-                                    table_handle.clone(),
-                                    tx_order,
-                                    state_index_generator,
-                                )?;
-
-                                update_table_states.push(state);
-                            }
-                        }
-                        Op::Delete => {
-                            remove_table_states.push((table_handle.to_string(), key.to_string()));
-                        }
-                        Op::New(value) => {
-                            if value.is_object() {
-                                let state = self.new_global_state_from_raw_object(
-                                    value,
-                                    tx_order,
-                                    state_index_generator,
-                                )?;
-                                new_global_states.push(state);
-                            } else {
-                                let state = self.new_table_state(
-                                    key,
-                                    value,
-                                    table_handle.clone(),
-                                    tx_order,
-                                    state_index_generator,
-                                )?;
-                                new_table_states.push(state);
-                            }
-                        }
-                    }
-                    state_index_generator += 1;
-                }
-            }
+        for (object_id, object_change) in state_change_set.changes {
+            state_index_generator = self.handle_object_change(
+                state_index_generator,
+                tx_order,
+                &mut new_global_states,
+                &mut update_global_states,
+                &mut remove_global_states,
+                &mut remove_table_states_by_table_handle,
+                &mut new_table_states,
+                &mut update_table_states,
+                &mut remove_table_states,
+                object_id,
+                object_change,
+            )?;
         }
 
         //Merge new global states and update global states

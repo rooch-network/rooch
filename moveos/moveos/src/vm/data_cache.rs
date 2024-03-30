@@ -6,33 +6,29 @@
 use move_vm_runtime::loader::Loader;
 
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
+use move_core_types::language_storage::TypeTag;
 use move_core_types::{
     account_address::AccountAddress,
-    effects::{ChangeSet, Event, Op},
+    effects::{ChangeSet, Event},
     gas_algebra::NumBytes,
     language_storage::ModuleId,
     value::MoveTypeLayout,
     vm_status::StatusCode,
 };
+use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_types::{
     loaded_data::runtime_types::Type,
-    values::{GlobalValue, Reference, Struct, Value},
+    values::{GlobalValue, Struct, Value},
 };
-use moveos_stdlib::natives::moveos_stdlib::raw_table::{serialize, ObjectRuntime, RuntimeField};
+use moveos_stdlib::natives::moveos_stdlib::raw_table::{
+    serialize, ObjectRuntime, TypeLayoutLoader,
+};
+use moveos_types::state::KeyState;
 use moveos_types::{
-    move_std::string::MoveString,
-    moveos_std::{move_module::MoveModule, tx_context::TxContext},
-    state::{MoveStructState, State, StateChangeSet, TableChange},
-    state_resolver::{module_id_to_key, MoveOSResolver},
+    moveos_std::tx_context::TxContext, state::StateChangeSet, state_resolver::MoveOSResolver,
 };
 use parking_lot::RwLock;
-use std::collections::btree_map::BTreeMap;
 use std::sync::Arc;
-
-use move_core_types::language_storage::TypeTag;
-use move_vm_runtime::data_cache::TransactionCache;
-use moveos_types::moveos_std::move_module::ModuleStore;
-use moveos_types::state::{KeyState, MoveStructType};
 
 /// Transaction data cache. Keep updates within a transaction so they can all be published at
 /// once when the transaction succeeds.
@@ -68,21 +64,6 @@ impl<'r, 'l, S: MoveOSResolver> MoveosDataCache<'r, 'l, S> {
             event_data: vec![],
             object_runtime,
         }
-    }
-
-    /// Returns the key and value type tag of Rooch module table.
-    fn module_table_typetag() -> (TypeTag, TypeTag) {
-        // Key type: std::string::String
-        let key_typetag = TypeTag::Struct(Box::new(MoveString::struct_tag()));
-
-        // value type: moveos_std::moveos_std::move_module::MoveModule
-        let value_typetag = TypeTag::Struct(Box::new(MoveModule::struct_tag()));
-        (key_typetag, value_typetag)
-    }
-
-    fn module_id_to_key(&self, module_id: &ModuleId) -> VMResult<KeyState> {
-        let key_state = module_id_to_key(module_id);
-        Ok(key_state)
     }
 }
 
@@ -124,35 +105,42 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
 
     /// Get the serialized format of a `CompiledModule` given a `ModuleId`.
     fn load_module(&self, module_id: &ModuleId) -> VMResult<Vec<u8>> {
+        //if we use object_runtime.write() here, it will cause a deadlock
+        //TODO refactor DataCache and ObjectRuntime to avoid this deadlock
         let object_runtime = self.object_runtime.read();
-        let module_object_id = ModuleStore::module_store_id();
-        let (_, value_type) = Self::module_table_typetag();
 
-        if object_runtime.exist_object(&module_object_id) {
-            let table = object_runtime
-                .borrow_object(&module_object_id)
-                .map_err(|e| e.finish(Location::Undefined))?;
-
-            let table_key = self.module_id_to_key(module_id)?;
-            if let Some(global_value) = table.get_global_value(&table_key) {
-                let byte_codes = load_module_from_table_runtime_value(global_value, value_type)
-                    .map_err(|e| e.finish(Location::Undefined))?;
-                return Ok(byte_codes);
-            }
-        }
-
-        match self.resolver.get_module(module_id) {
-            Ok(Some(bytes)) => Ok(bytes),
-            Ok(None) => Err(PartialVMError::new(StatusCode::LINKER_ERROR)
-                .with_message(format!("Cannot find {:?} in data cache", module_id))
-                .finish(Location::Undefined)),
-            Err(err) => {
-                let msg = format!("Unexpected storage error: {:?}", err);
-                Err(
+        let result = object_runtime
+            .get_loaded_module(module_id)
+            .and_then(|module| match module {
+                Some(move_module) => {
+                    if log::log_enabled!(log::Level::Trace) {
+                        log::trace!("Loaded module {:?} from ObjectRuntime", module_id);
+                    }
+                    Ok(Some(move_module.byte_codes))
+                }
+                None => self.resolver.get_module(module_id).map_err(|e| {
+                    let msg = format!("Unexpected storage error: {:?}", e);
                     PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
                         .with_message(msg)
-                        .finish(Location::Undefined),
-                )
+                }),
+            });
+
+        match result {
+            Ok(Some(code)) => Ok(code),
+            Ok(None) => {
+                let key_state = KeyState::from_module_id(module_id);
+                Err(PartialVMError::new(StatusCode::LINKER_ERROR)
+                    .with_message(format!(
+                        "Cannot find module {:?}(key:{:?}) in ObjectRuntime and Storage",
+                        module_id, key_state,
+                    ))
+                    .finish(Location::Undefined))
+            }
+            Err(err) => {
+                if log::log_enabled!(log::Level::Debug) {
+                    log::warn!("Error loading module {:?}: {:?}", module_id, err);
+                }
+                Err(err.finish(Location::Undefined))
             }
         }
     }
@@ -164,55 +152,22 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
         blob: Vec<u8>,
         is_republishing: bool,
     ) -> VMResult<()> {
-        let module_object_id = ModuleStore::module_store_id();
-
-        // Key type: std::string::String
-        // value type: moveos_std::moveos_std::move_module::MoveModule
-        let (_key_type, value_type) = Self::module_table_typetag();
-
-        // let key_layout = MoveTypeLayout::Struct(MoveString::struct_layout());
         let mut object_runtime = self.object_runtime.write();
-        let table = object_runtime
-            .get_or_create_object(module_object_id)
-            .map_err(|e| e.finish(Location::Module(module_id.clone())))?;
-
-        let table_key = self.module_id_to_key(module_id)?;
-        let (tv, _) = table
-            .get_or_create_global_value_with_layout_fn(self.resolver, table_key, |t| {
-                self.loader.get_type_layout(t, self).map_err(|e| {
-                    PartialVMError::new(StatusCode::STORAGE_ERROR).with_message(e.to_string())
-                })
-            })
-            .map_err(|e| e.finish(Location::Module(module_id.clone())))?;
-        let module_layout = MoveTypeLayout::Struct(MoveModule::struct_layout());
-
-        let byte_codes = Value::vector_u8(blob);
-        let module_value = Value::struct_(Struct::pack(vec![byte_codes]));
-        // wrap with moveos_std::raw_table::Box
-        let box_value = Value::struct_(Struct::pack(vec![module_value]));
-        if is_republishing {
-            let _old_value = tv
-                .move_from(value_type.clone())
-                .map_err(|e: PartialVMError| e.finish(Location::Module(module_id.clone())))?;
-        }
-        tv.move_to(box_value, module_layout, value_type)
-            .map_err(|(err, _value)| err.finish(Location::Module(module_id.clone())))
+        object_runtime
+            .publish_module(self, self.resolver, module_id, blob, is_republishing)
+            .map_err(|e| e.finish(Location::Module(module_id.clone())))
     }
 
     /// Check if this module exists.
     fn exists_module(&self, module_id: &ModuleId) -> VMResult<bool> {
         let object_runtime = self.object_runtime.read();
-        let module_object_id = ModuleStore::module_store_id();
-        if object_runtime.exist_object(&module_object_id) {
-            let table = object_runtime
-                .borrow_object(&module_object_id)
-                .map_err(|e| e.finish(Location::Undefined))?;
-
-            let table_key = self.module_id_to_key(module_id)?;
-            if table.contains_key(&table_key) {
-                return Ok(true);
-            }
+        if object_runtime
+            .exists_loaded_module(module_id)
+            .map_err(|e| e.finish(Location::Module(module_id.clone())))?
+        {
+            return Ok(true);
         }
+
         Ok(self
             .resolver
             .get_module(module_id)
@@ -248,47 +203,8 @@ pub fn into_change_set(
             .with_message("ObjectRuntime is referenced more than once".to_owned())
     })?;
     let data = object_runtime.into_inner();
-    let (tx_context, tables) = data.into_inner();
-    let mut changes = BTreeMap::new();
-    for (handle, table) in tables {
-        let (_, content) = table.into_inner();
-        let mut entries = BTreeMap::new();
-        for (key, table_value) in content {
-            let (value_layout, value_type, op) = match table_value.into_effect() {
-                Some((value_layout, value_type, op)) => (value_layout, value_type, op),
-                None => continue,
-            };
-            match op {
-                Op::New(box_val) => {
-                    let bytes = unbox_and_serialize(&value_layout, box_val)?;
-                    entries.insert(
-                        KeyState::new(key.key, key.key_type),
-                        Op::New(State {
-                            value_type,
-                            value: bytes,
-                        }),
-                    );
-                }
-                Op::Modify(val) => {
-                    let bytes = unbox_and_serialize(&value_layout, val)?;
-                    entries.insert(
-                        KeyState::new(key.key, key.key_type),
-                        Op::Modify(State {
-                            value_type,
-                            value: bytes,
-                        }),
-                    );
-                }
-                Op::Delete => {
-                    entries.insert(KeyState::new(key.key, key.key_type), Op::Delete);
-                }
-            }
-        }
-        if !entries.is_empty() {
-            changes.insert(handle, TableChange { entries });
-        }
-    }
-    Ok((tx_context, StateChangeSet { changes }))
+    let (tx_context, change_set) = data.into_change_set()?;
+    Ok((tx_context, change_set))
 }
 
 // Unbox a value of `moveos_std::raw_table::Box<V>` to V and serialize it.
@@ -301,31 +217,18 @@ fn unbox_and_serialize(layout: &MoveTypeLayout, box_val: Value) -> PartialVMResu
     serialize(layout, &val)
 }
 
-// load module bytes stored in `moveos_std::raw_table::Box<moveos_std::moveos_std::move_module::MoveModule>`
-fn load_module_from_table_runtime_value(
-    global_value: &RuntimeField,
-    value_type: TypeTag,
-) -> PartialVMResult<Vec<u8>> {
-    let blob = global_value.borrow_global(value_type)?;
-    let box_value = blob
-        .value_as::<Reference>()?
-        .read_ref()?
-        .value_as::<Struct>()?;
+impl<'r, 'l, S: MoveOSResolver> TypeLayoutLoader for MoveosDataCache<'r, 'l, S> {
+    fn get_type_layout(&self, type_tag: &TypeTag) -> PartialVMResult<MoveTypeLayout> {
+        self.loader
+            .get_type_layout(type_tag, self)
+            .map_err(|e| e.to_partial())
+    }
 
-    let mut fields = box_value.unpack()?.collect::<Vec<Value>>();
-    debug_assert!(fields.len() == 1, "Fields of Box struct must be 1");
-    let module_value = fields.pop().unwrap();
-    let mut module_fields = module_value
-        .value_as::<Struct>()?
-        .unpack()?
-        .collect::<Vec<Value>>();
-    debug_assert!(
-        module_fields.len() == 1,
-        "Fields of Module struct must be 1, actual: {}",
-        module_fields.len()
-    );
-    let module = module_fields.pop().unwrap();
+    fn type_to_type_layout(&self, ty: &Type) -> PartialVMResult<MoveTypeLayout> {
+        self.loader.type_to_type_layout(ty)
+    }
 
-    let byte_codes = module.value_as::<Vec<u8>>()?;
-    Ok(byte_codes)
+    fn type_to_type_tag(&self, ty: &Type) -> PartialVMResult<TypeTag> {
+        self.loader.type_to_type_tag(ty)
+    }
 }

@@ -3,12 +3,9 @@
 
 module rooch_examples::coin_factory {
    use std::string::{Self, String};
-   use std::vector;
    use moveos_std::account;
    use moveos_std::signer;
    use moveos_std::table::{Self, Table};
-   
-   use moveos_std::move_module;
 
    const TEMPLATE_MODULE_ADDRESS: address = @0xdeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadead;
    const TEMPLATE_MODULE_IDENTIFIER: vector<u8> = b"coin_module_identifier_placeholder";

@@ -8,7 +8,9 @@ use super::{
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
-use moveos_types::state::{AnnotatedKeyState, KeyState, TableChangeSet};
+use moveos_types::state::{
+    AnnotatedKeyState, FieldChange, KeyState, NormalFieldChange, ObjectChange, TableChangeSet,
+};
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
     moveos_std::object::ObjectID,
@@ -23,7 +25,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::str::FromStr;
 
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, JsonSchema)]
 pub struct DisplayFieldsView {
     pub fields: BTreeMap<String, String>,
 }
@@ -34,7 +36,7 @@ impl DisplayFieldsView {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, JsonSchema)]
 pub struct StateView {
     pub value: BytesView,
     pub value_type: TypeTagView,
@@ -207,15 +209,17 @@ impl From<TableTypeInfoView> for TableTypeInfo {
     }
 }
 
-#[derive(Default, Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct StateChangeSetView {
-    pub changes: BTreeMap<ObjectID, TableChangeView>,
+    pub global_size: u64,
+    pub changes: BTreeMap<ObjectID, ObjectChangeView>,
 }
 
 impl From<StateChangeSet> for StateChangeSetView {
-    fn from(table_change_set: StateChangeSet) -> Self {
+    fn from(state_change_set: StateChangeSet) -> Self {
         Self {
-            changes: table_change_set
+            global_size: state_change_set.global_size,
+            changes: state_change_set
                 .changes
                 .into_iter()
                 .map(|(k, v)| (k, v.into()))
@@ -224,7 +228,7 @@ impl From<StateChangeSet> for StateChangeSetView {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, JsonSchema)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum OpView<T> {
     New(T),
@@ -265,6 +269,86 @@ impl DynamicFieldView {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum FieldChangeView {
+    Object {
+        key: KeyStateView,
+        #[serde(flatten)]
+        change: ObjectChangeView,
+    },
+    Nomarl {
+        key: KeyStateView,
+        #[serde(flatten)]
+        change: NormalFieldChangeView,
+    },
+}
+
+impl From<(KeyState, FieldChange)> for FieldChangeView {
+    fn from((key, field_change): (KeyState, FieldChange)) -> Self {
+        match field_change {
+            FieldChange::Object(object_change) => Self::Object {
+                key: key.into(),
+                change: object_change.into(),
+            },
+            FieldChange::Normal(normal_field_change) => Self::Nomarl {
+                key: key.into(),
+                change: normal_field_change.into(),
+            },
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
+pub struct NormalFieldChangeView {
+    pub op: OpView<StateView>,
+}
+
+impl From<NormalFieldChange> for NormalFieldChangeView {
+    fn from(normal_field_change: NormalFieldChange) -> Self {
+        Self {
+            op: normal_field_change.op.into(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, JsonSchema)]
+pub struct ObjectChangeView {
+    pub op: Option<OpView<StateView>>,
+    pub fields: Vec<FieldChangeView>,
+}
+
+impl From<ObjectChange> for ObjectChangeView {
+    fn from(object_change: ObjectChange) -> Self {
+        Self {
+            op: object_change.op.map(|op| op.into()),
+            fields: object_change
+                .fields
+                .into_iter()
+                .map(|(k, v)| (k, v).into())
+                .collect(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+pub struct IndexerStateChangeSetView {
+    pub tx_order: u64,
+    pub state_change_set: StateChangeSetView,
+    pub created_at: u64,
+}
+
+impl From<IndexerStateChangeSet> for IndexerStateChangeSetView {
+    fn from(state_change_set: IndexerStateChangeSet) -> Self {
+        IndexerStateChangeSetView {
+            tx_order: state_change_set.tx_order,
+            state_change_set: state_change_set.state_change_set.into(),
+            created_at: state_change_set.created_at,
+        }
+    }
+}
+
+//TODO clean and remove TableChange
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TableChangeView {
     pub entries: Vec<DynamicFieldView>,
@@ -293,36 +377,6 @@ impl From<TableChangeView> for TableChange {
         }
     }
 }
-
-impl From<StateChangeSetView> for StateChangeSet {
-    fn from(table_change_set: StateChangeSetView) -> Self {
-        Self {
-            changes: table_change_set
-                .changes
-                .into_iter()
-                .map(|(k, v)| (k, v.into()))
-                .collect(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct IndexerStateChangeSetView {
-    pub tx_order: u64,
-    pub state_change_set: StateChangeSetView,
-    pub created_at: u64,
-}
-
-impl From<IndexerStateChangeSet> for IndexerStateChangeSetView {
-    fn from(state_change_set: IndexerStateChangeSet) -> Self {
-        IndexerStateChangeSetView {
-            tx_order: state_change_set.tx_order,
-            state_change_set: state_change_set.state_change_set.into(),
-            created_at: state_change_set.created_at,
-        }
-    }
-}
-
 #[derive(Default, Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TableChangeSetView {
     pub new_tables: BTreeSet<ObjectID>,

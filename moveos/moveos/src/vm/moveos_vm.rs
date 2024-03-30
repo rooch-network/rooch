@@ -135,7 +135,8 @@ where
         gas_meter: G,
         read_only: bool,
     ) -> Self {
-        let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(ctx)));
+        let root = remote.root_object();
+        let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(ctx, root)));
         Self {
             vm,
             remote,
@@ -148,8 +149,9 @@ where
 
     /// Re spawn a new session with the same context.
     pub fn respawn(self, env: SimpleMap<MoveString, Any>) -> Self {
-        let new_ctx = self.object_runtime.read().tx_context().clone().spawn(env);
-        let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(new_ctx)));
+        let new_ctx = self.object_runtime.read().tx_context().spawn(env);
+        let root = self.object_runtime.read().root();
+        let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(new_ctx, root)));
         Self {
             session: Self::new_inner_session(self.vm, self.remote, object_runtime.clone()),
             object_runtime,
@@ -460,7 +462,12 @@ where
         for module_id in init_function_modules {
             let function_id = FunctionId::new(module_id.clone(), INIT_FN_NAME_IDENTIFIER.clone());
             let call = FunctionCall::new(function_id, vec![], vec![]);
-
+            if log::log_enabled!(log::Level::Trace) {
+                log::trace!(
+                    "Execute init function for module: {:?}",
+                    module_id.to_string()
+                );
+            }
             self.execute_function_bypass_visibility(call)
                 .map(|result| {
                     debug_assert!(result.is_empty(), "Init function must not return value")
@@ -481,12 +488,17 @@ where
             remote: _,
             session,
             object_runtime,
-            mut gas_meter,
+            gas_meter: _,
             read_only,
         } = self;
         let (changeset, raw_events, mut extensions) = session.finish_with_extensions()?;
         //We do not use the event API from data_cache. Instead, we use the NativeEventContext
         debug_assert!(raw_events.is_empty());
+        //We do not use the account, resource, and module API from data_cache. Instead, we use the ObjectRuntimeContext
+        debug_assert!(changeset.accounts().is_empty());
+        drop(changeset);
+        drop(raw_events);
+
         let event_context = extensions.remove::<NativeEventContext>();
         let raw_events = event_context.into_events();
         drop(extensions);
@@ -495,15 +507,12 @@ where
             into_change_set(object_runtime).map_err(|e| e.finish(Location::Undefined))?;
 
         if read_only {
-            if !changeset.accounts().is_empty() {
-                return Err(PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
-                    .with_message("ChangeSet should be empty as never used.".to_owned())
-                    .finish(Location::Undefined));
-            }
-
             if !state_changeset.changes.is_empty() {
                 return Err(PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
-                    .with_message("Table change set should be empty as never used.".to_owned())
+                    .with_message(
+                        "State change set should be empty when execute readonly function."
+                            .to_owned(),
+                    )
                     .finish(Location::Undefined));
             }
 
@@ -531,16 +540,17 @@ where
         })?;
         let is_upgrade = module_flag.map_or(false, |flag| flag.is_upgrade);
 
-        match gas_meter.charge_change_set(&state_changeset) {
-            Ok(_) => {}
-            Err(partial_vm_error) => {
-                return Err(partial_vm_error
-                    .with_message(
-                        "An error occurred during the charging of the change set".to_owned(),
-                    )
-                    .finish(Location::Undefined));
-            }
-        }
+        //TODO cleanup
+        // match gas_meter.charge_change_set(&state_changeset) {
+        //     Ok(_) => {}
+        //     Err(partial_vm_error) => {
+        //         return Err(partial_vm_error
+        //             .with_message(
+        //                 "An error occurred during the charging of the change set".to_owned(),
+        //             )
+        //             .finish(Location::Undefined));
+        //     }
+        // }
 
         // Temporary behavior, will enable this in the future.
         /*
@@ -571,8 +581,7 @@ where
             ctx,
             RawTransactionOutput {
                 status,
-                changeset,
-                state_changeset,
+                changeset: state_changeset,
                 events,
                 gas_used,
                 is_upgrade,

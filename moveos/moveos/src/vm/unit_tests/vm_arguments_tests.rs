@@ -3,43 +3,41 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Error;
-use std::collections::HashMap;
-
-use crate::vm::moveos_vm::MoveOSVM;
-use move_vm_runtime::config::VMConfig;
-
 use crate::gas::table::{initial_cost_schedule, MoveOSGasMeter};
+use crate::vm::moveos_vm::MoveOSVM;
+use anyhow::Error;
+use move_binary_format::file_format::empty_module;
 use move_binary_format::{
     errors::VMResult,
     file_format::{
-        empty_module, AbilitySet, AddressIdentifierIndex, Bytecode, CodeUnit, CompiledModule,
-        CompiledScript, FieldDefinition, FunctionDefinition, FunctionHandle, FunctionHandleIndex,
-        IdentifierIndex, ModuleHandle, ModuleHandleIndex, Signature, SignatureIndex,
-        SignatureToken, StructDefinition, StructFieldInformation, StructHandle, StructHandleIndex,
-        TableIndex, TypeSignature, Visibility,
+        AbilitySet, AddressIdentifierIndex, Bytecode, CodeUnit, CompiledModule, CompiledScript,
+        FieldDefinition, FunctionDefinition, FunctionHandle, FunctionHandleIndex, IdentifierIndex,
+        ModuleHandle, ModuleHandleIndex, Signature, SignatureIndex, SignatureToken,
+        StructDefinition, StructFieldInformation, StructHandle, StructHandleIndex, TableIndex,
+        TypeSignature, Visibility,
     },
 };
+use move_core_types::identifier::{IdentStr, Identifier};
 use move_core_types::metadata::Metadata;
+use move_core_types::vm_status::StatusType;
 use move_core_types::{
     account_address::AccountAddress,
-    identifier::{IdentStr, Identifier},
     language_storage::{ModuleId, StructTag, TypeTag},
     resolver::{ModuleResolver, ResourceResolver},
     u256::U256,
     value::{serialize_values, MoveValue},
-    vm_status::{StatusCode, StatusType},
+    vm_status::StatusCode,
 };
+use move_vm_runtime::config::VMConfig;
+use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::state::KeyState;
 use moveos_types::state_resolver::StateKV;
+use moveos_types::transaction::FunctionCall;
 use moveos_types::{
-    move_types::FunctionId,
-    moveos_std::object::ObjectID,
-    moveos_std::tx_context::TxContext,
-    state::State,
-    state_resolver::StateResolver,
-    transaction::{FunctionCall, MoveAction},
+    move_types::FunctionId, moveos_std::object::ObjectID, moveos_std::tx_context::TxContext,
+    state::State, state_resolver::StateResolver, transaction::MoveAction,
 };
+use std::collections::HashMap;
 
 // make a script with a given signature for main.
 fn make_script(parameters: Signature) -> Vec<u8> {
@@ -300,6 +298,9 @@ impl StateResolver for RemoteStore {
         _limit: usize,
     ) -> anyhow::Result<Vec<StateKV>, anyhow::Error> {
         todo!()
+    }
+    fn root_object(&self) -> RootObjectEntity {
+        RootObjectEntity::genesis_root_object()
     }
 }
 
@@ -727,7 +728,9 @@ fn check_script() {
 }
 
 #[test]
+#[allow(dead_code)]
 fn check_script_function() {
+    let _ = tracing_subscriber::fmt::try_init();
     //
     // Bad signatures
     //
@@ -738,7 +741,7 @@ fn check_script_function() {
         let res = call_script_function(module, function_name, serialize_values(&dummy_args))
             .err()
             .unwrap();
-        assert!(res.major_status() == StatusCode::TYPE_MISMATCH)
+        assert_eq!(res.major_status(), StatusCode::TYPE_MISMATCH)
     }
 
     //
@@ -838,8 +841,10 @@ fn check_script_function() {
     );
 }
 
+//TODO directly use MoveOS to test this
 #[test]
 fn call_missing_item() {
+    let _ = tracing_subscriber::fmt::try_init();
     let module = empty_module();
     let id = &module.self_id();
     let function_name = IdentStr::new("foo").unwrap();
