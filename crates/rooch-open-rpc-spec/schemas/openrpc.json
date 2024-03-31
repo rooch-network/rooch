@@ -2709,13 +2709,13 @@
             "additionalProperties": false
           },
           {
-            "description": "Query by bitcoin output id, represent by bitcoin txid and vout",
+            "description": "Query by bitcoin outpoint, represent by bitcoin txid and vout",
             "type": "object",
             "required": [
-              "output_id"
+              "out_point"
             ],
             "properties": {
-              "output_id": {
+              "out_point": {
                 "type": "object",
                 "required": [
                   "txid",

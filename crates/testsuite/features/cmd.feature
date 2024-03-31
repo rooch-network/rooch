@@ -316,6 +316,9 @@ Feature: Rooch CLI integration tests
       Then cmd: "state --access-path /object/{{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.state[-1][0].decoded_value.value.value.value.name}} == bob"
 
+      # because the indexer is async update, so sleep 2 seconds to wait indexer update.
+      Then sleep: "2"
+
       Then cmd: "rpc request --method rooch_queryGlobalStates --params '[{"object_type":"{{$.address_mapping.default}}::child_object::Child"}, null, "10", true]'"
       Then assert: "{{$.rpc[-1].data[0].object_id}} == {{$.event[-1].data[0].decoded_event_data.value.id}}"
 

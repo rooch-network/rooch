@@ -16,8 +16,8 @@ use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
 use rooch_types::bitcoin::ord::{Inscription, InscriptionID};
-use rooch_types::bitcoin::types::Header;
-use rooch_types::bitcoin::utxo::{OutputID, UTXO};
+use rooch_types::bitcoin::types::{self, Header};
+use rooch_types::bitcoin::utxo::{self, UTXO};
 use rooch_types::into_address::IntoAddress;
 use rooch_types::transaction::rooch::RoochTransactionData;
 use tracing::debug;
@@ -173,51 +173,34 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
         }
     }
 
-    let bitcoin_light_client_module = binding_test
-        .as_module_binding::<rooch_types::bitcoin::light_client::BitcoinLightClientModule>(
-    );
     let utxo_module = binding_test.as_module_binding::<rooch_types::bitcoin::utxo::UTXOModule>();
 
     let moveos_resolver = binding_test.executor().moveos().moveos_resolver();
 
     for (outpoint, tx_out) in utxo_set.into_iter() {
-        let txid = outpoint.txid;
-        let tx_id_address = txid.into_address();
-        let vout = outpoint.vout;
-        debug!("check utxo: txid: {}, vout: {}", tx_id_address, vout);
+        let outpoint: types::OutPoint = outpoint.into();
+        debug!("check utxo: outpoint {}", outpoint);
         assert!(
-            utxo_module.exists_utxo(txid, vout).unwrap(),
-            "Can not find utxo: txid: {}, vout: {} from utxo_module",
-            tx_id_address,
-            vout
-        );
-        assert!(
-            bitcoin_light_client_module
-                .get_utxo(txid, vout)
-                .unwrap()
-                .is_some(),
-            "Can not find tx_out: txid: {}, vout: {}",
-            tx_id_address,
-            vout
+            utxo_module.exists_utxo(&outpoint).unwrap(),
+            "Can not find utxo: outpoint {} from utxo_module",
+            outpoint
         );
 
-        let output_id = OutputID::new(txid.into_address(), vout);
-        let object_id = object::custom_object_id(&output_id, &UTXO::struct_tag());
+        let utxo_id = utxo::derive_utxo_id(&outpoint);
         let utxo_state = moveos_resolver
-            .get_states(AccessPath::object(object_id))
+            .get_states(AccessPath::object(utxo_id))
             .unwrap()
             .pop()
             .unwrap();
         assert!(
             utxo_state.is_some(),
-            "Can not find utxo: txid: {}, vout: {}",
-            txid,
-            vout
+            "Can not find utxo object for outpoint: {}",
+            outpoint,
         );
         let utxo_state = utxo_state.unwrap();
         let utxo_object = utxo_state.as_object::<UTXO>().unwrap();
-        assert_eq!(utxo_object.value.txid, txid.into_address());
-        assert_eq!(utxo_object.value.vout, vout);
+        assert_eq!(utxo_object.value.txid, outpoint.txid);
+        assert_eq!(utxo_object.value.vout, outpoint.vout);
         assert_eq!(utxo_object.value.value, tx_out.value.to_sat());
     }
 

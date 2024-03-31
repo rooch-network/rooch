@@ -239,7 +239,7 @@ module moveos_std::move_module {
         // The ModuleStore object will initialize before the genesis.
         // It should be exists, we add this for the test case.
         if (!object::exists_object(module_store_id)) {
-            let obj = object::new_with_id(module_store_id, ModuleStore {});
+            let obj = object::new_named_object(ModuleStore {});
             object::to_shared(obj)
         }
     }

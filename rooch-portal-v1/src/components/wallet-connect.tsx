@@ -46,13 +46,13 @@ export const WalletConnect = () => {
       await connectWallet({ wallet: wallet })
 
       setCurrentWallet(wallet)
-      setIsDialogOpen(false)
 
       toast.success(`${wallet?.name} wallet connected`)
     } catch (error) {
       toast.error('Connection failed')
     } finally {
       setIsLoading(false)
+      setIsDialogOpen(false)
     }
   }
 

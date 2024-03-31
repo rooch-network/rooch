@@ -8,20 +8,13 @@ module bitcoin_move::utxo{
     use moveos_std::simple_multimap::{Self, SimpleMultiMap};
     use moveos_std::type_info;
     use moveos_std::bag;
+    use bitcoin_move::types::{Self, OutPoint};
 
     friend bitcoin_move::genesis;
     friend bitcoin_move::ord;
     friend bitcoin_move::light_client;
 
     const TEMPORARY_AREA: vector<u8> = b"temporary_area";
-
-    /// The transaction output ID
-    struct OutputID has store, copy, drop {
-        /// The txid of the UTXO
-        txid: address,
-        /// The vout of the UTXO
-        vout: u32,
-    }
 
     /// The UTXO Object
     struct UTXO has key {
@@ -46,25 +39,58 @@ module bitcoin_move::utxo{
         object_id: ObjectID,
     }
 
-    public(friend) fun new(txid: address, vout: u32, value: u64) : Object<UTXO> {
-        let id = OutputID{
-            txid,
-            vout,
+    struct BitcoinUTXOStore has key{
+        /// The next tx index to be processed
+        next_tx_index: u64,
+    }
+
+    public(friend) fun genesis_init(){
+        let btc_utxo_store = BitcoinUTXOStore{
+            next_tx_index: 0,
         };
+        let obj = object::new_named_object(btc_utxo_store);
+        object::to_shared(obj);
+    }
+
+    // ======= UTOXStore =========
+
+    public fun borrow_utxo_store(): &Object<BitcoinUTXOStore>{
+        let id = object::named_object_id<BitcoinUTXOStore>();
+        object::borrow_object(id)
+    }
+
+    public(friend) fun borrow_mut_utxo_store() : &mut Object<BitcoinUTXOStore> {
+        let id = object::named_object_id<BitcoinUTXOStore>();
+        let obj = object::borrow_mut_object_shared(id);
+        obj
+    }
+
+    public(friend) fun next_tx_index(): u64 {
+        let utxo_store = borrow_utxo_store();
+        object::borrow(utxo_store).next_tx_index
+    }
+
+    public(friend) fun update_next_tx_index(next_tx_index: u64){
+        let utxo_store = borrow_mut_utxo_store();
+        object::borrow_mut(utxo_store).next_tx_index = next_tx_index;
+    }
+
+    // ======= UTXO =========
+    public(friend) fun new(txid: address, vout: u32, value: u64) : Object<UTXO> {
+        let id = types::new_outpoint(txid, vout);
         let utxo = UTXO{
             txid,
             vout,
             value,
             seals: simple_multimap::new(),
         };
-        object::new_custom_object(id, utxo)
+        let uxto_store = borrow_mut_utxo_store();
+        object::add_object_field_with_id(uxto_store, id, utxo)
     }
 
-    public fun new_id(txid: address, vout: u32) : OutputID {
-        OutputID{
-            txid,
-            vout,
-        }
+    public fun derive_utxo_id(outpoint: OutPoint) : ObjectID {
+        let parent_id = object::named_object_id<BitcoinUTXOStore>();
+        object::custom_child_object_id<OutPoint, UTXO>(parent_id, outpoint)
     }
 
     /// Get the UTXO's value
@@ -82,21 +108,13 @@ module bitcoin_move::utxo{
         utxo.vout
     }
 
-    public fun exists_utxo(txid: address, vout: u32): bool{
-        let id = OutputID{
-            txid,
-            vout,
-        };
-        let object_id = object::custom_object_id<OutputID,UTXO>(id);
+    public fun exists_utxo(outpoint: OutPoint): bool{
+        let object_id = derive_utxo_id(outpoint);
         object::exists_object_with_type<UTXO>(object_id)
     }
 
-    public fun borrow_utxo(txid: address, vout: u32): &Object<UTXO>{
-        let id = OutputID{
-            txid,
-            vout,
-        };
-        let object_id = object::custom_object_id<OutputID,UTXO>(id);
+    public fun borrow_utxo(outpoint: OutPoint): &Object<UTXO>{
+        let object_id = derive_utxo_id(outpoint);
         object::borrow_object(object_id)
     }
 
@@ -177,7 +195,8 @@ module bitcoin_move::utxo{
             let bag = object::remove_field(&mut utxo_obj, TEMPORARY_AREA);
             bag::drop(bag);
         };
-        let utxo = object::remove(utxo_obj);
+        let uxto_store = borrow_mut_utxo_store();
+        let utxo = object::remove_object_field(uxto_store, utxo_obj);
         let UTXO{txid:_, vout:_, value:_, seals} = utxo;
         seals
     }
@@ -270,14 +289,14 @@ module bitcoin_move::utxo{
     fun test_id(){
         let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
         let vout = 0;
-        let id = new_id(txid, vout);
-        let object_id = object::custom_object_id<OutputID,UTXO>(id);
-        //std::debug::print(&object_id);
-        assert!(std::bcs::to_bytes(&object_id) == x"b8fc937bf3c15abe49c95fa6906aff29087149f542b48db0cf25dce671a68a63", 1);
+        let object_id = derive_utxo_id(types::new_outpoint(txid, vout));
+        std::debug::print(&std::bcs::to_bytes(&object_id));
+        assert!(std::bcs::to_bytes(&object_id) == x"02826a5e56581ba5ab84c39976f27cf3578cf524308b4ffc123922dfff507e514db8fc937bf3c15abe49c95fa6906aff29087149f542b48db0cf25dce671a68a63", 1);
     }
 
     #[test]
     fun test_remove(){
+        genesis_init();
         let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
         let vout = 0;
         let utxo = new(txid, vout, 100);
@@ -291,6 +310,7 @@ module bitcoin_move::utxo{
 
     #[test]
     fun test_temporary_area(){
+        genesis_init();
         let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
         let vout = 0;
         let utxo = new(txid, vout, 100);

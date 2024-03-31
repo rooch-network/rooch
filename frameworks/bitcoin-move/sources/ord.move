@@ -136,7 +136,7 @@ module bitcoin_move::ord {
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
         let store = object::borrow_mut(store_obj);
         table_vec::push_back(&mut store.inscriptions, id);
-        object::new_custom_object(id, inscription)
+        object::new_with_id(id, inscription)
     }
     
     fun parse_json_body(record: &InscriptionRecord) : SimpleMap<String,String> {
