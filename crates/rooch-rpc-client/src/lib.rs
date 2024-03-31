@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use eth_client::EthRpcClient;
 use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use move_core_types::language_storage::ModuleId;
@@ -20,7 +19,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 pub mod client_config;
-pub mod eth_client;
 pub mod rooch_client;
 pub mod wallet_context;
 
@@ -60,7 +58,6 @@ impl ClientBuilder {
         Ok(Client {
             http: http_client.clone(),
             rooch: RoochRpcClient::new(http_client.clone()),
-            eth: EthRpcClient::new(http_client),
         })
     }
 }
@@ -79,7 +76,6 @@ impl Default for ClientBuilder {
 pub struct Client {
     http: Arc<HttpClient>,
     pub rooch: RoochRpcClient,
-    pub eth: EthRpcClient,
 }
 
 impl std::fmt::Debug for Client {

@@ -11,7 +11,7 @@ use raw_store::rocks::RocksDB;
 use raw_store::{ColumnFamilyName, StoreInstance};
 use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::{
-    TransactionSequenceInfo, TransactionSequenceInfoMapping, TypedTransaction,
+    RoochTransaction, TransactionSequenceInfo, TransactionSequenceInfoMapping,
 };
 use std::fmt::{Debug, Display, Formatter};
 use std::path::Path;
@@ -20,7 +20,7 @@ pub mod meta_store;
 pub mod transaction_store;
 
 // pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
-pub const TYPED_TRANSACTION_PREFIX_NAME: ColumnFamilyName = "typed_transaction";
+pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
 pub const TX_SEQUENCE_INFO_PREFIX_NAME: ColumnFamilyName = "tx_sequence_info";
 pub const TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME: ColumnFamilyName = "tx_sequence_info_mapping";
 pub const TX_SEQUENCE_INFO_REVERSE_MAPPING_PREFIX_NAME: ColumnFamilyName =
@@ -32,7 +32,7 @@ pub const META_SEQUENCER_ORDER_PREFIX_NAME: ColumnFamilyName = "meta_sequencer_o
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
 static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     vec![
-        TYPED_TRANSACTION_PREFIX_NAME,
+        TRANSACTION_PREFIX_NAME,
         TX_SEQUENCE_INFO_PREFIX_NAME,
         TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME,
         META_SEQUENCER_ORDER_PREFIX_NAME,
@@ -95,18 +95,18 @@ impl Debug for RoochStore {
 }
 
 impl TransactionStore for RoochStore {
-    fn save_transaction(&mut self, transaction: TypedTransaction) -> Result<()> {
+    fn save_transaction(&mut self, transaction: RoochTransaction) -> Result<()> {
         self.transaction_store.save_transaction(transaction)
     }
 
-    fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>> {
+    fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<RoochTransaction>> {
         self.transaction_store.get_transaction_by_hash(hash)
     }
 
     fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256>,
-    ) -> Result<Vec<Option<TypedTransaction>>> {
+    ) -> Result<Vec<Option<RoochTransaction>>> {
         self.transaction_store.get_transactions(tx_hashes)
     }
 

@@ -130,7 +130,7 @@ module rooch_framework::transaction_validator {
             //100 RGC
             let init_gas = 100_000_000_000_000_000_000u256;
             gas_coin::faucet(sender, init_gas); 
-        };
+        }; 
         //the transaction validator will put the multi chain address into the context
         let multichain_address = tx_context::get_attribute<MultiChainAddress>();
         if (option::is_some(&multichain_address)) {

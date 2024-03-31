@@ -6,7 +6,6 @@ mod brc20_test;
 mod chain_id_test;
 mod empty_tests;
 mod ethereum_light_client_test;
-mod ethereum_validator_tests;
 mod native_validator_tests;
 mod ord_test;
 mod transaction_validator_tests;

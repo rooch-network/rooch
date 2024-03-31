@@ -1,11 +1,7 @@
 CREATE TABLE transactions (
     tx_order                            BIGINT       NOT NULL      PRIMARY KEY,
     tx_hash                             VARCHAR      NOT NULL,
-    transaction_type                    VARCHAR      NOT NULL,
     sequence_number                     BIGINT       NOT NULL,
-    multichain_id                       BIGINT       NOT NULL,
-    multichain_address                  VARCHAR      NOT NULL,
-    multichain_original_address         VARCHAR      NOT NULL,
     sender                              VARCHAR      NOT NULL,
     action                              VARCHAR      NOT NULL,
     action_type                         SMALLINT     NOT NULL,

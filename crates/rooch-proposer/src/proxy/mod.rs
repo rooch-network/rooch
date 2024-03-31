@@ -5,7 +5,7 @@ use anyhow::Result;
 use coerce::actor::ActorRef;
 
 use moveos_types::transaction::TransactionExecutionInfo;
-use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
+use rooch_types::transaction::{rooch::RoochTransaction, TransactionSequenceInfo};
 
 use crate::actor::{
     messages::{TransactionProposeMessage, TransactionProposeResult},
@@ -24,7 +24,7 @@ impl ProposerProxy {
 
     pub async fn propose_transaction(
         &self,
-        tx: TypedTransaction,
+        tx: RoochTransaction,
         tx_execution_info: TransactionExecutionInfo,
         tx_sequence_info: TransactionSequenceInfo,
     ) -> Result<TransactionProposeResult> {

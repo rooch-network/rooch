@@ -35,7 +35,7 @@ use moveos_types::{
     state::{AnnotatedState, State},
 };
 use rooch_types::address::MultiChainAddress;
-use rooch_types::transaction::AbstractTransaction;
+use rooch_types::transaction::RoochTransaction;
 use tokio::runtime::Handle;
 
 #[derive(Clone)]
@@ -55,10 +55,10 @@ impl ExecutorProxy {
         }
     }
 
-    pub async fn validate_transaction<T>(&self, tx: T) -> Result<VerifiedMoveOSTransaction>
-    where
-        T: 'static + AbstractTransaction + Send + Sync,
-    {
+    pub async fn validate_transaction(
+        &self,
+        tx: RoochTransaction,
+    ) -> Result<VerifiedMoveOSTransaction> {
         self.actor.send(ValidateTransactionMessage { tx }).await?
     }
 

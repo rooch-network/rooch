@@ -1,18 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::schema::transactions;
+use crate::types::IndexedTransaction;
 use diesel::prelude::*;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
-use std::str::FromStr;
-
-use crate::schema::transactions;
-use crate::types::IndexedTransaction;
-
 use moveos_types::transaction::TransactionExecutionInfo;
 use rooch_types::transaction::authenticator::Authenticator;
-use rooch_types::transaction::{RawTransaction, TransactionType, TransactionWithInfo};
-use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
+use rooch_types::transaction::{rooch::RoochTransaction, TransactionSequenceInfo};
+use rooch_types::transaction::{RawTransaction, TransactionWithInfo};
+use std::str::FromStr;
 
 #[derive(Clone, Debug, Queryable, Insertable, QueryableByName)]
 #[diesel(table_name = transactions)]
@@ -25,16 +23,8 @@ pub struct StoredTransaction {
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub tx_order: i64,
 
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    pub transaction_type: String,
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub sequence_number: i64,
-    #[diesel(sql_type = diesel::sql_types::BigInt)]
-    pub multichain_id: i64,
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    pub multichain_address: String,
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    pub multichain_original_address: String,
     /// the rooch address of sender who send the transaction
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub sender: String,
@@ -81,11 +71,7 @@ impl From<IndexedTransaction> for StoredTransaction {
         StoredTransaction {
             tx_hash: format!("{:?}", transaction.tx_hash),
             tx_order: transaction.tx_order as i64,
-            transaction_type: transaction.transaction_type.transaction_type_name(),
             sequence_number: transaction.sequence_number as i64,
-            multichain_id: transaction.multichain_id.id() as i64,
-            multichain_address: transaction.multichain_address,
-            multichain_original_address: transaction.multichain_original_address,
             sender: transaction.sender.to_hex_literal(),
             action: transaction.action.action_name(),
             action_type: transaction.action.action_type() as i16,
@@ -111,10 +97,9 @@ impl From<IndexedTransaction> for StoredTransaction {
 impl StoredTransaction {
     pub fn try_into_transaction_with_info(self) -> Result<TransactionWithInfo, anyhow::Error> {
         let raw_transaction = RawTransaction {
-            transaction_type: TransactionType::from_str(self.transaction_type.as_str())?,
             raw: self.transaction_raw,
         };
-        let transaction = TypedTransaction::try_from(raw_transaction)?;
+        let transaction = RoochTransaction::try_from(raw_transaction)?;
         let sequence_info = TransactionSequenceInfo {
             tx_order: self.tx_order as u64,
             tx_order_signature: Authenticator {

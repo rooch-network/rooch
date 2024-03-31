@@ -6,13 +6,13 @@ use coerce::actor::message::Message;
 use moveos_types::h256::H256;
 use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::TransactionSequenceInfoMapping;
-use rooch_types::transaction::{TransactionSequenceInfo, TypedTransaction};
+use rooch_types::transaction::{RoochTransaction, TransactionSequenceInfo};
 use serde::{Deserialize, Serialize};
 
 /// Transaction Sequence Message
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TransactionSequenceMessage {
-    pub tx: TypedTransaction,
+    pub tx: RoochTransaction,
 }
 
 impl Message for TransactionSequenceMessage {
@@ -26,7 +26,7 @@ pub struct GetTransactionByHashMessage {
 }
 
 impl Message for GetTransactionByHashMessage {
-    type Result = Result<Option<TypedTransaction>>;
+    type Result = Result<Option<RoochTransaction>>;
 }
 
 /// Get Transactions By Hash Message
@@ -36,7 +36,7 @@ pub struct GetTransactionsByHashMessage {
 }
 
 impl Message for GetTransactionsByHashMessage {
-    type Result = Result<Vec<Option<TypedTransaction>>>;
+    type Result = Result<Vec<Option<RoochTransaction>>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

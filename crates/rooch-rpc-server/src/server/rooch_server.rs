@@ -44,7 +44,6 @@ use rooch_rpc_api::{
 use rooch_types::indexer::event_filter::IndexerEventID;
 use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::rooch::RoochTransaction;
-use rooch_types::transaction::{AbstractTransaction, TypedTransaction};
 use rooch_types::{address::MultiChainAddress, multichain_id::RoochMultiChainID};
 use std::cmp::min;
 use std::str::FromStr;
@@ -132,9 +131,7 @@ impl RoochAPIServer for RoochServer {
         info!("send_raw_transaction tx: {:?}", tx);
 
         let hash = tx.tx_hash();
-        self.rpc_service
-            .quene_tx(TypedTransaction::Rooch(tx))
-            .await?;
+        self.rpc_service.quene_tx(tx).await?;
         Ok(hash.into())
     }
 
@@ -145,10 +142,7 @@ impl RoochAPIServer for RoochServer {
     ) -> RpcResult<ExecuteTransactionResponseView> {
         let tx_options = tx_options.unwrap_or_default();
         let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
-        let tx_response = self
-            .rpc_service
-            .execute_tx(TypedTransaction::Rooch(tx))
-            .await?;
+        let tx_response = self.rpc_service.execute_tx(tx).await?;
 
         let result = if tx_options.with_output {
             ExecuteTransactionResponseView::from(tx_response)
