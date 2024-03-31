@@ -42,6 +42,7 @@ pub struct RpcService {
     pub(crate) sequencer: SequencerProxy,
     pub(crate) proposer: ProposerProxy,
     pub(crate) indexer: IndexerProxy,
+    pub(crate) data_verify_mode: bool,
 }
 
 impl RpcService {
@@ -51,6 +52,7 @@ impl RpcService {
         sequencer: SequencerProxy,
         proposer: ProposerProxy,
         indexer: IndexerProxy,
+        data_verify_mode: bool,
     ) -> Self {
         Self {
             chain_id,
@@ -58,6 +60,7 @@ impl RpcService {
             sequencer,
             proposer,
             indexer,
+            data_verify_mode,
         }
     }
 }
@@ -97,39 +100,42 @@ impl RpcService {
         let execution_info_clone = execution_info.clone();
         let output_clone = output.clone();
 
-        tokio::spawn(async move {
-            let result = indexer
-                .indexer_states(sequence_info_clone.tx_order, output_clone.changeset.clone())
-                .await;
-            match result {
-                Ok(_) => {}
-                Err(error) => log::error!("indexer states error: {}", error),
-            };
-            let result = indexer
-                .indexer_transaction(
-                    tx.clone(),
-                    sequence_info_clone.clone(),
-                    execution_info_clone.clone(),
-                    moveos_tx_clone.clone(),
-                )
-                .await;
-            match result {
-                Ok(_) => {}
-                Err(error) => log::error!("indexer transactions error: {}", error),
-            };
-            let result = indexer
-                .indexer_events(
-                    output_clone.events.clone(),
-                    tx,
-                    sequence_info_clone.clone(),
-                    moveos_tx_clone,
-                )
-                .await;
-            match result {
-                Ok(_) => {}
-                Err(error) => log::error!("indexer events error: {}", error),
-            };
-        });
+        // If data verify mode, don't write all indexer
+        if !self.data_verify_mode {
+            tokio::spawn(async move {
+                let result = indexer
+                    .indexer_states(sequence_info_clone.tx_order, output_clone.changeset.clone())
+                    .await;
+                match result {
+                    Ok(_) => {}
+                    Err(error) => log::error!("indexer states error: {}", error),
+                };
+                let result = indexer
+                    .indexer_transaction(
+                        tx.clone(),
+                        sequence_info_clone.clone(),
+                        execution_info_clone.clone(),
+                        moveos_tx_clone.clone(),
+                    )
+                    .await;
+                match result {
+                    Ok(_) => {}
+                    Err(error) => log::error!("indexer transactions error: {}", error),
+                };
+                let result = indexer
+                    .indexer_events(
+                        output_clone.events.clone(),
+                        tx,
+                        sequence_info_clone.clone(),
+                        moveos_tx_clone,
+                    )
+                    .await;
+                match result {
+                    Ok(_) => {}
+                    Err(error) => log::error!("indexer events error: {}", error),
+                };
+            });
+        };
 
         Ok(ExecuteTransactionResponse {
             sequence_info,
