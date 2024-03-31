@@ -309,8 +309,8 @@ mod tests {
     use moveos_types::moveos_std::move_module::ModuleStore;
     use rooch_framework::natives::{all_natives, default_gas_schedule};
     use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
-    use rooch_types::bitcoin::network::Network;
-    use rooch_types::chain_id::RoochChainID;
+    use rooch_types::bitcoin::network::{BitcoinNetwork, Network};
+    use rooch_types::chain_id::{BuiltinChainID, RoochChainID};
 
     #[test]
     fn test_genesis_init() {
@@ -363,5 +363,24 @@ mod tests {
             .get(&rooch_types::framework::chain_id::ChainID::chain_id_object_id())
             .unwrap();
         assert!(chain_id_state.is_some());
+        let chain_id = chain_id_state
+            .unwrap()
+            .as_object::<rooch_types::framework::chain_id::ChainID>()
+            .unwrap();
+        assert_eq!(chain_id.value.id, BuiltinChainID::Local.chain_id().id());
+        let bitcoin_network_state = moveos
+            .moveos_store()
+            .get_state_store()
+            .get(&rooch_types::bitcoin::network::BitcoinNetwork::object_id())
+            .unwrap();
+        assert!(bitcoin_network_state.is_some());
+        let bitcoin_network = bitcoin_network_state
+            .unwrap()
+            .as_object::<BitcoinNetwork>()
+            .unwrap();
+        assert_eq!(
+            bitcoin_network.value.network,
+            Network::NetworkRegtest.to_num()
+        );
     }
 }

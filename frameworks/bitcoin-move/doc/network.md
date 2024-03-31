@@ -5,14 +5,15 @@
 
 
 
+-  [Resource `BitcoinNetwork`](#0x4_network_BitcoinNetwork)
 -  [Constants](#@Constants_0)
+-  [Function `genesis_init`](#0x4_network_genesis_init)
+-  [Function `network`](#0x4_network_network)
 -  [Function `network_bitcoin`](#0x4_network_network_bitcoin)
 -  [Function `network_testnet`](#0x4_network_network_testnet)
 -  [Function `network_signet`](#0x4_network_network_signet)
 -  [Function `network_regtest`](#0x4_network_network_regtest)
 -  [Function `is_mainnet`](#0x4_network_is_mainnet)
--  [Function `default_network`](#0x4_network_default_network)
--  [Function `network`](#0x4_network_network)
 -  [Function `from_str`](#0x4_network_from_str)
 -  [Function `network_name`](#0x4_network_network_name)
 -  [Function `bech32_hrp`](#0x4_network_bech32_hrp)
@@ -20,6 +21,19 @@
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x2::object</a>;
+</code></pre>
+
+
+
+<a name="0x4_network_BitcoinNetwork"></a>
+
+## Resource `BitcoinNetwork`
+
+Bitcoin network onchain configuration.
+
+
+<pre><code><b>struct</b> <a href="network.md#0x4_network_BitcoinNetwork">BitcoinNetwork</a> <b>has</b> key
 </code></pre>
 
 
@@ -79,6 +93,29 @@ Bitcoin's testnet network.
 
 
 
+<a name="0x4_network_genesis_init"></a>
+
+## Function `genesis_init`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="network.md#0x4_network_genesis_init">genesis_init</a>(<a href="network.md#0x4_network">network</a>: u8)
+</code></pre>
+
+
+
+<a name="0x4_network_network"></a>
+
+## Function `network`
+
+Get the current network from the onchain configuration.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network">network</a>(): u8
+</code></pre>
+
+
+
 <a name="0x4_network_network_bitcoin"></a>
 
 ## Function `network_bitcoin`
@@ -130,28 +167,6 @@ Bitcoin's testnet network.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network_is_mainnet">is_mainnet</a>(<a href="network.md#0x4_network">network</a>: u8): bool
-</code></pre>
-
-
-
-<a name="0x4_network_default_network"></a>
-
-## Function `default_network`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network_default_network">default_network</a>(): u8
-</code></pre>
-
-
-
-<a name="0x4_network_network"></a>
-
-## Function `network`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network">network</a>(): u8
 </code></pre>
 
 
