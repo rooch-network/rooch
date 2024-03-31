@@ -5,6 +5,7 @@ use super::data_cache::{into_change_set, MoveosDataCache};
 use crate::gas::table::{get_gas_schedule_entries, initial_cost_schedule, ClassifiedGasMeter};
 use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
 use move_binary_format::compatibility::Compatibility;
+use move_binary_format::file_format::CompiledScript;
 use move_binary_format::normalized;
 use move_binary_format::{
     access::ModuleAccess,
@@ -19,6 +20,7 @@ use move_core_types::{
     value::MoveTypeLayout,
     vm_status::{KeptVMStatus, StatusCode},
 };
+use move_model::script_into_module;
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::{
     config::VMConfig,
@@ -198,6 +200,19 @@ where
                     .map_err(|e| e.finish(location.clone()))?;
                 let _resolved_args =
                     self.resolve_argument(&loaded_function, call.args.clone(), location)?;
+
+                let compiled_script_opt = CompiledScript::deserialize(call.code.as_slice());
+                let compiled_script = match compiled_script_opt {
+                    Ok(v) => v,
+                    Err(err) => return Err(err.finish(Location::Undefined)),
+                };
+                let script_module = script_into_module(compiled_script);
+                let result = moveos_verifier::verifier::verify_module(&script_module, self.remote);
+                match result {
+                    Ok(_) => {}
+                    Err(err) => return Err(err),
+                }
+
                 Ok(VerifiedMoveAction::Script { call })
             }
             MoveAction::Function(call) => {
