@@ -9,6 +9,8 @@ module bitcoin_move::utxo{
     use moveos_std::type_info;
     use moveos_std::bag;
 
+    friend bitcoin_move::genesis;
+    friend bitcoin_move::ord;
     friend bitcoin_move::light_client;
 
     const TEMPORARY_AREA: vector<u8> = b"temporary_area";
@@ -204,7 +206,7 @@ module bitcoin_move::utxo{
 
     public fun unpack_seal_point(seal_point: SealPoint) : (u32, u64, ObjectID) {
         let SealPoint{output_index, offset, object_id} = seal_point;
-        (output_index,offset, object_id)
+        (output_index, offset, object_id)
     }
 
     // ==== Temporary Area ===

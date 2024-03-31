@@ -174,7 +174,7 @@ module bitcoin_move::ord {
         let seal_points = utxo::remove_seals<Inscription>(utxo);
         let new_seal_points = vector::empty();
         if(vector::is_empty(&seal_points)){
-            return seal_points
+            return new_seal_points
         };
         let outputs = types::tx_output(tx);
 
@@ -200,13 +200,6 @@ module bitcoin_move::ord {
                 //TODO record the execution result
             };
 
-            // if (inscription.txid == @0xcc415c5b2556fd49599a84fe5a39d77fcce8821979ab053f5f02a882e8112109) {
-            //     std::debug::print(&200500);
-            //     std::debug::print(&inscription.txid);
-            //     std::debug::print(&inscription.index);
-            //     std::debug::print(&new_seal_point);
-            // };
-
             // TODO handle curse inscription
             object::transfer_extend(inscription_obj, to_address);
             vector::push_back(&mut new_seal_points, new_seal_point);
@@ -215,7 +208,7 @@ module bitcoin_move::ord {
             j = j + 1;
         };
 
-        seal_points
+        new_seal_points
     }
 
     /// Match UTXO, generate new SealPoint, UTXO spent follows "First in First out"
@@ -257,10 +250,10 @@ module bitcoin_move::ord {
         utxo::new_seal_point((new_output_index as u32), new_offset, seal_object_id)
     }
 
-    public fun process_transaction(tx: &Transaction): vector<SealPoint>{
+    public fun process_transaction(tx: &Transaction, input_utxo_values: vector<u64>): vector<SealPoint>{
         let output_seals = vector::empty();
 
-        let inscriptions = from_transaction(tx);
+        let inscriptions = from_transaction(tx, option::some(input_utxo_values));
         let inscriptions_len = vector::length(&inscriptions);
         if(inscriptions_len == 0){
             vector::destroy_empty(inscriptions);
@@ -416,7 +409,7 @@ module bitcoin_move::ord {
         (body, content_encoding, content_type, metadata, metaprotocol, parent, pointer)
     }
 
-    public fun from_transaction(tx: &Transaction): vector<Inscription>{
+    public fun from_transaction(tx: &Transaction, input_utxo_values: Option<vector<u64>>): vector<Inscription>{
         let tx_id = types::tx_id(tx);
         let inscriptions = vector::empty();
         let inputs = types::tx_input(tx);
@@ -427,16 +420,9 @@ module bitcoin_move::ord {
         while(input_idx < len){
             let input = vector::borrow(inputs, input_idx);
             let witness = types::txin_witness(input);
-            let previous_output = types::txin_previous_output(input);
-            // UTXO must synced and stored before resolve inscription from transaction, otherwise Otherwise the offset will be abnormal
-            let input_value = if(utxo::exists_utxo(types::outpoint_txid(previous_output), types::outpoint_vout(previous_output))) {
-                let previous_utxo = utxo::borrow_utxo(types::outpoint_txid(previous_output), types::outpoint_vout(previous_output));
-                utxo::value(object::borrow(previous_utxo))
+            let input_value = if(option::is_some(&input_utxo_values)){
+                *vector::borrow(option::borrow(&input_utxo_values), input_idx)
             } else {
-                if (tx_id == @0xcc415c5b2556fd49599a84fe5a39d77fcce8821979ab053f5f02a882e8112109) {
-                    std::debug::print(&string::utf8(b"error, previous_output utxo not exist"));
-                    std::debug::print(previous_output);
-                };
                 0
             };
 
@@ -451,21 +437,8 @@ module bitcoin_move::ord {
                 let first_record_index = 0;
                 let first_record = vector::borrow(&inscription_records_from_witness, first_record_index);
 
-                // let _pointer:u64 = if(option::is_some(&record.pointer)) {
-                //     *option::borrow(&record.pointer)
-                // } else {
-                //     0
-                // };
                 let offset = next_offset;
-
                 let inscription = record_to_inscription(tx_id, (index_counter as u32), (input_idx as u32), offset, *first_record);
-                if (inscription.txid == @0xcc415c5b2556fd49599a84fe5a39d77fcce8821979ab053f5f02a882e8112109) {
-                    std::debug::print(&300300);
-                    std::debug::print(&inscription.txid);
-                    std::debug::print(&inscription.index);
-                    std::debug::print(&input_value);
-                    std::debug::print(&offset);
-                };
 
                 vector::push_back(&mut inscriptions, inscription);
                 index_counter = index_counter + 1;
@@ -478,7 +451,7 @@ module bitcoin_move::ord {
 
     public fun from_transaction_bytes(transaction_bytes: vector<u8>): vector<Inscription>{
         let transaction = bcs::from_bytes<Transaction>(transaction_bytes);
-        from_transaction(&transaction)
+        from_transaction(&transaction, option::none())
     }
 
     native fun from_witness(witness: &Witness): vector<InscriptionRecord>;

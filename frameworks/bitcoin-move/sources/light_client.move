@@ -29,7 +29,6 @@ module bitcoin_move::light_client{
         message: String,
     }
 
-    
     struct BitcoinBlockStore has key{
         latest_block_height: Option<u64>,
         /// block hash -> block header
@@ -121,7 +120,7 @@ module bitcoin_move::light_client{
         let txid = types::tx_id(tx);
         let txinput = types::tx_input(tx);
 
-        let previous_outputs = vector[];
+        let previous_outputs = vector::empty();
         vector::for_each(*txinput, |txin| {
             let outpoint = *types::txin_previous_output(&txin);
             vector::push_back(&mut previous_outputs, outpoint);
@@ -146,6 +145,7 @@ module bitcoin_move::light_client{
                 let object_id = table::remove(&mut btc_utxo_store.utxo, outpoint);
                 let (_owner, utxo_obj) = utxo::take(object_id);
                 let seal_points = ord::spend_utxo(&mut utxo_obj, tx, input_utxo_values, idx);
+
                 if(!vector::is_empty(&seal_points)){
                     let protocol = type_info::type_name<Inscription>();
                     let j = 0;
@@ -158,6 +158,7 @@ module bitcoin_move::light_client{
                         j = j + 1;
                     };
                 };
+
                 let seals = utxo::remove(utxo_obj);
                 //The seals should be empty after utxo is spent
                 simple_multimap::destroy_empty(seals);
@@ -170,7 +171,7 @@ module bitcoin_move::light_client{
 
         //If a utxo is spend seal assets, it should not seal new assets
         if(simple_multimap::length(&output_seals) == 0){
-            let seal_points = ord::process_transaction(tx);
+            let seal_points = ord::process_transaction(tx, input_utxo_values);
             let idx = 0;
             let protocol = type_info::type_name<Inscription>();
             let seal_points_len = vector::length(&seal_points);
