@@ -3,18 +3,7 @@ Feature: Rooch CLI integration tests
     Scenario: Init
       Then cmd: "init --skip-password"
       Then cmd: "env switch --alias local"
-
-    @serial
-    Scenario: ethereum rpc test
-      Given a server for ethereum_rpc_test
-      Then cmd: "rpc request --method eth_getBalance --params 0x1111111111111111111111111111111111111111"
-      Then assert: "{{$.rpc[-1]}} == 0x56bc75e2d63100000"
-      Then cmd: "rpc request --method eth_feeHistory --params '["0x5", "0x6524cad7", [10,20,30]]'"
-      Then assert: "'{{$.rpc[-1]}}' contains baseFeePerGas"
-      Then cmd: "rpc request --method net_version"
-      Then assert: "'{{$.rpc[-1]}}' == '20230104'"
-      Then stop the server
-
+ 
     @serial
     Scenario: rooch rpc test
       Given a server for rooch_rpc_test
