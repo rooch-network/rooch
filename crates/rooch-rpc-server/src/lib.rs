@@ -283,8 +283,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     timers.push(proposer_timer);
 
     // Init indexer
-    let data_verify_mode = opt.data_verify_mode.unwrap_or(false);
-    let indexer_executor = IndexerActor::new(indexer_store, moveos_store, data_verify_mode)?
+    let indexer_executor = IndexerActor::new(indexer_store, moveos_store)?
         .into_actor(Some("Indexer"), &actor_system)
         .await?;
     let indexer_reader_executor = IndexerReaderActor::new(indexer_reader)?
@@ -292,12 +291,14 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         .await?;
     let indexer_proxy = IndexerProxy::new(indexer_executor.into(), indexer_reader_executor.into());
 
+    let data_verify_mode = opt.data_verify_mode.unwrap_or(false);
     let rpc_service = RpcService::new(
         chain_id_opt.chain_id().id(),
         executor_proxy.clone(),
         sequencer_proxy,
         proposer_proxy,
         indexer_proxy,
+        data_verify_mode,
     );
     let aggregate_service = AggregateService::new(rpc_service.clone());
 

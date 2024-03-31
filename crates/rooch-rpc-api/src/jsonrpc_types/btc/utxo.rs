@@ -80,8 +80,8 @@ pub struct UTXOView {
 
 impl UTXOView {
     pub fn try_new_from_utxo(utxo: UTXO) -> Result<UTXOView, anyhow::Error> {
-        let bitcoin_txid = Txid::from_byte_array(utxo.txid.into_bytes());
         // reversed bytes of txid
+        let bitcoin_txid = Txid::from_byte_array(utxo.txid.into_bytes());
         let seals_str = serde_json::to_string(&utxo.seals)?;
 
         Ok(UTXOView {

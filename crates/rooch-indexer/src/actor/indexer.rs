@@ -25,19 +25,13 @@ use rooch_types::bitcoin::utxo::UTXO;
 pub struct IndexerActor {
     indexer_store: IndexerStore,
     moveos_store: MoveOSResolverProxy<MoveOSStore>,
-    data_verify_mode: bool,
 }
 
 impl IndexerActor {
-    pub fn new(
-        indexer_store: IndexerStore,
-        moveos_store: MoveOSStore,
-        data_verify_mode: bool,
-    ) -> Result<Self> {
+    pub fn new(indexer_store: IndexerStore, moveos_store: MoveOSStore) -> Result<Self> {
         Ok(Self {
             indexer_store,
             moveos_store: MoveOSResolverProxy(moveos_store),
-            data_verify_mode,
         })
     }
 
@@ -310,9 +304,7 @@ impl Handler<IndexerTransactionMessage> for IndexerActor {
         let transactions = vec![indexed_transaction];
 
         // just for data verify mode, don't write transaction indexer
-        if !self.data_verify_mode {
-            self.indexer_store.persist_transactions(transactions)?;
-        }
+        self.indexer_store.persist_transactions(transactions)?;
         Ok(())
     }
 }

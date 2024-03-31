@@ -197,7 +197,7 @@ pub async fn setup_service(
     timers.push(proposer_timer);
 
     // Init indexer
-    let indexer_executor = IndexerActor::new(indexer_store.clone(), moveos_store.clone(), false)?
+    let indexer_executor = IndexerActor::new(indexer_store.clone(), moveos_store.clone())?
         .into_actor(Some("Indexer"), &actor_system)
         .await?;
     let indexer_reader_executor = IndexerReaderActor::new(indexer_reader)?
@@ -211,6 +211,7 @@ pub async fn setup_service(
         sequencer_proxy,
         proposer_proxy,
         indexer_proxy,
+        false,
     );
     let aggregate_service = AggregateService::new(rpc_service.clone());
 
