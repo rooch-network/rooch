@@ -9,5 +9,5 @@
     "allowImportingTsExtensions": true, // TODO: option gen utils, remove this
     "rootDir": "src",
     "isolatedModules": true
-  },
+  }
 }

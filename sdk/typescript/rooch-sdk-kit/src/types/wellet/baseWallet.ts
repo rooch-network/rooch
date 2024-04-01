@@ -3,16 +3,29 @@
 
 import { sha3_256 } from '@noble/hashes/sha3'
 import { WalletAccount } from '../WalletAccount'
-import { SerializedSignature } from '@roochnetwork/rooch-sdk'
+import {
+  IAuthorizer,
+  RoochClient,
+  SerializedSignature,
+  runtime,
+  uint8Array2SeqNumber,
+} from '@roochnetwork/rooch-sdk'
 import { Buffer } from 'buffer'
 import { SupportChain } from '../../feature'
+import { chain2MultiChainID } from '../../utils/chain2MultiChainID'
 
 export const RoochSignPrefix = 'Rooch tx hash:\n'
 
-export abstract class BaseWallet {
+export abstract class BaseWallet implements IAuthorizer {
   account?: WalletAccount
   installed: boolean | undefined
   name: string | undefined
+  client: RoochClient
+  roochAddress?: string
+
+  constructor(client: RoochClient) {
+    this.client = client
+  }
 
   /**
    * Connects the wallet.
@@ -88,9 +101,8 @@ export abstract class BaseWallet {
 
   /**
    * Check whether the wallet supports a chain
-   * @param chain
    */
-  abstract isSupportChain(chain: SupportChain): boolean
+  abstract getChain(): SupportChain
 
   /**
    * Normalizes the recovery ID.
@@ -144,6 +156,13 @@ export abstract class BaseWallet {
     return this.toSerializedSignature(msgHex, sign, msgInfo)
   }
 
+  async auth(payload: Uint8Array, authInfo?: string): Promise<runtime.Authenticator> {
+    return new runtime.Authenticator(
+      BigInt(this.getScheme()),
+      uint8Array2SeqNumber(await this.signMessage(payload, authInfo)),
+    )
+  }
+
   /**
    * Checks if the wallet is installed.
    * @returns A promise that resolves to true if the wallet is installed, otherwise false.
@@ -153,5 +172,16 @@ export abstract class BaseWallet {
       await new Promise((resolve) => setTimeout(resolve, 100 * i))
     }
     return Promise.resolve(this.getTarget() !== undefined)
+  }
+
+  async getRoochAddress(): Promise<string> {
+    if (!this.roochAddress) {
+      this.roochAddress = await this.client?.resoleRoochAddress({
+        address: this.account?.address ?? '',
+        multiChainID: chain2MultiChainID(this.getChain()),
+      })
+    }
+
+    return this.roochAddress
   }
 }

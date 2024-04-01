@@ -4,7 +4,6 @@
 import { createStore } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { StateStorage } from 'zustand/middleware'
-import { IAccount } from '@roochnetwork/rooch-sdk'
 
 import { BaseWallet, WalletAccount } from './types'
 import { SupportChain } from './feature'
@@ -22,7 +21,6 @@ export type WalletActions = {
   ) => void
   updateWalletAccounts: (accounts: readonly WalletAccount[]) => void
   setWalletDisconnected: () => void
-  setSessionAccount: (session: IAccount) => void
 }
 
 export type WalletStore = ReturnType<typeof createWalletStore>
@@ -30,9 +28,8 @@ export type WalletStore = ReturnType<typeof createWalletStore>
 export type StoreState = {
   autoConnectEnabled: boolean
   currentChain: SupportChain
-  sessionAccount: IAccount | null
   currentWallet: BaseWallet
-  supportWallets: BaseWallet[]
+  wallets: BaseWallet[]
   accounts: readonly WalletAccount[]
   currentAccount: WalletAccount | null
   lastConnectedAccountAddress: string | null
@@ -44,7 +41,7 @@ type WalletConfiguration = {
   autoConnectEnabled: boolean
   chain: SupportChain
   currentWallet: BaseWallet
-  supportWallets: BaseWallet[]
+  wallets: BaseWallet[]
   storage: StateStorage
   storageKey: string
 }
@@ -52,7 +49,7 @@ type WalletConfiguration = {
 export function createWalletStore({
   chain,
   currentWallet,
-  supportWallets,
+  wallets,
   storage,
   storageKey,
   autoConnectEnabled,
@@ -62,9 +59,8 @@ export function createWalletStore({
       (set, get) => ({
         currentChain: chain,
         autoConnectEnabled,
-        sessionAccount: null,
         currentWallet,
-        supportWallets,
+        wallets,
         accounts: [],
         currentAccount: null,
         lastConnectedAccountAddress: null,
@@ -79,7 +75,6 @@ export function createWalletStore({
           set(() => ({
             currentChain: chain,
             accounts: [],
-            // currentAccount: null,
             // currentWallet: supportWallets.find((v) => v.getSupportNetworks()),
             sessionAccount: null,
             connectionStatus: 'disconnected',
@@ -117,7 +112,6 @@ export function createWalletStore({
         },
         updateWalletAccounts(accounts) {
           const currentAccount = get().currentAccount
-
           set(() => ({
             currentAccount:
               (currentAccount &&
@@ -125,26 +119,13 @@ export function createWalletStore({
               accounts[0],
           }))
         },
-        setSessionAccount(sessionAccount) {
-          set(() => ({
-            sessionAccount,
-            sessionKeyStatus: 'valid',
-          }))
-        },
       }),
       {
         name: storageKey,
         storage: createJSONStorage(() => storage),
-        partialize: ({
+        partialize: ({ lastConnectedWalletName, lastConnectedAccountAddress }) => ({
           lastConnectedWalletName,
           lastConnectedAccountAddress,
-          currentAccount,
-          sessionAccount,
-        }) => ({
-          lastConnectedWalletName,
-          lastConnectedAccountAddress,
-          currentAccount,
-          sessionAccount,
         }),
       },
     ),

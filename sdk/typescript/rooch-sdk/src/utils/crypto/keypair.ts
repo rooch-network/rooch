@@ -39,10 +39,6 @@ export abstract class BaseSigner {
     }
   }
 
-  toRoochAddress(): string {
-    return this.getPublicKey().toRoochAddress()
-  }
-
   /**
    * Return the signature for the data.
    * Prefer the async verion {@link sign}, as this method will be deprecated in a future release.
