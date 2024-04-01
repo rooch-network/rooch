@@ -6,59 +6,41 @@ use super::ethereum_relayer::EthereumRelayer;
 use super::messages::RelayTick;
 use crate::actor::bitcoin_client::BitcoinClientActor;
 use crate::actor::bitcoin_client_proxy::BitcoinClientProxy;
-use crate::{Relayer, TxSubmiter};
+use crate::Relayer;
 use anyhow::Result;
 use async_trait::async_trait;
 use coerce::actor::system::ActorSystem;
 use coerce::actor::{context::ActorContext, message::Handler, Actor, IntoActor};
-use moveos_types::{gas_config::GasConfig, transaction::MoveAction};
+use move_core_types::account_address::AccountAddress;
+use move_core_types::vm_status::KeptVMStatus;
+use moveos_types::gas_config::GasConfig;
+use moveos_types::moveos_std::tx_context::TxContext;
 use rooch_config::{BitcoinRelayerConfig, EthereumRelayerConfig};
 use rooch_executor::proxy::ExecutorProxy;
-use rooch_rpc_api::jsonrpc_types::KeptVMStatusView;
-use rooch_rpc_client::ClientBuilder;
-use rooch_types::{
-    address::RoochAddress, crypto::RoochKeyPair, transaction::rooch::RoochTransactionData,
-};
-use tracing::{info, warn};
+use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
+use rooch_types::crypto::RoochKeyPair;
+use tracing::{error, info, warn};
 
 pub struct RelayerActor {
     chain_id: u64,
-    relayer_address: RoochAddress,
+    relayer_address: AccountAddress,
     max_gas_amount: u64,
     relayer_key: RoochKeyPair,
-    tx_submiter: Box<dyn TxSubmiter>,
     relayers: Vec<Box<dyn Relayer>>,
+    executor: ExecutorProxy,
+    processor: PipelineProcessorProxy,
 }
 
 impl RelayerActor {
-    /// Create a new RelayerActor, use rooch_rpc_client::Client as TxSubmiter
-    pub async fn new_for_client(
+    pub async fn new(
         executor: ExecutorProxy,
+        processor: PipelineProcessorProxy,
         relayer_key: RoochKeyPair,
         ethereum_config: Option<EthereumRelayerConfig>,
         bitcoin_config: Option<BitcoinRelayerConfig>,
-        rooch_rpc_url: &str,
     ) -> Result<Self> {
-        let rooch_rpc_client = ClientBuilder::default().build(rooch_rpc_url).await?;
-        Self::new(
-            executor,
-            relayer_key,
-            ethereum_config,
-            bitcoin_config,
-            rooch_rpc_client,
-        )
-        .await
-    }
-
-    pub async fn new<T: TxSubmiter + 'static>(
-        executor: ExecutorProxy,
-        relayer_key: RoochKeyPair,
-        ethereum_config: Option<EthereumRelayerConfig>,
-        bitcoin_config: Option<BitcoinRelayerConfig>,
-        tx_submiter: T,
-    ) -> Result<Self> {
-        let chain_id = tx_submiter.get_chain_id().await?;
-        let relayer_address = relayer_key.public().address();
+        let chain_id = executor.chain_id().await?.id;
+        let relayer_address = relayer_key.public().address().into();
         let mut relayers: Vec<Box<dyn Relayer>> = vec![];
         if let Some(ethereum_config) = ethereum_config {
             let eth_relayer = EthereumRelayer::new(ethereum_config)?;
@@ -72,7 +54,7 @@ impl RelayerActor {
                 .await?;
             let bitcoin_client_proxy = BitcoinClientProxy::new(bitcoin_client_actor.into());
             let bitcoin_relayer =
-                BitcoinRelayer::new(bitcoin_config, bitcoin_client_proxy, executor)?;
+                BitcoinRelayer::new(bitcoin_config, bitcoin_client_proxy, executor.clone())?;
             relayers.push(Box::new(bitcoin_relayer));
         }
 
@@ -82,7 +64,8 @@ impl RelayerActor {
             max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT * 200,
             relayer_key,
             relayers,
-            tx_submiter: Box::new(tx_submiter),
+            executor,
+            processor,
         })
     }
 
@@ -91,30 +74,35 @@ impl RelayerActor {
             let relayer_name = relayer.name();
             loop {
                 match relayer.relay().await {
-                    Ok(Some(function_call)) => {
+                    Ok(Some(l1_block)) => {
                         let sequence_number = self
-                            .tx_submiter
+                            .executor
                             .get_sequence_number(self.relayer_address)
                             .await?;
-                        let action = MoveAction::Function(function_call);
-                        let tx_data = RoochTransactionData::new(
+                        let tx_hash = l1_block.block.tx_hash();
+                        let ctx = TxContext::new(
                             self.relayer_address,
                             sequence_number,
-                            self.chain_id,
                             self.max_gas_amount,
-                            action,
+                            tx_hash,
+                            l1_block.block.tx_size(),
                         );
-                        let tx = tx_data.clone().sign(&self.relayer_key);
-                        let tx_hash = tx.tx_hash();
-                        let result = self.tx_submiter.submit_tx(tx).await?;
+                        let block_hash = hex::encode(&l1_block.block.block_hash);
+                        let block_height = l1_block.block.block_height;
+                        let result = self.processor.execute_l1_block(ctx, l1_block).await?;
+
                         match result.execution_info.status {
-                            KeptVMStatusView::Executed => {
-                                info!("Relayer execute relay tx({:?}) success", tx_hash);
+                            KeptVMStatus::Executed => {
+                                info!(
+                                    "Relayer execute relay block(hash: {}, height: {}) success",
+                                    block_hash, block_height
+                                );
                             }
                             _ => {
-                                warn!(
-                                    "Relayer execute relay tx({:?}) failed, tx_data: {:?},  status: {:?}",
-                                    tx_hash, tx_data, result.execution_info.status
+                                //TODO should we stop the service if the relayer failed
+                                error!(
+                                    "Relayer execute relay block(hash: {}, height: {}) failed, status: {:?}",
+                                    block_hash, block_height, result.execution_info.status
                                 );
                                 break;
                             }

@@ -5,12 +5,17 @@ use crate::actor::bitcoin_client_proxy::BitcoinClientProxy;
 use crate::Relayer;
 use anyhow::Result;
 use async_trait::async_trait;
+use bitcoin::hashes::Hash;
 use bitcoin::Block;
 use bitcoincore_rpc::bitcoincore_rpc_json::GetBlockHeaderResult;
 use moveos_types::{module_binding::MoveFunctionCaller, transaction::FunctionCall};
 use rooch_config::BitcoinRelayerConfig;
 use rooch_executor::proxy::ExecutorProxy;
-use rooch_types::bitcoin::light_client::BitcoinLightClientModule;
+use rooch_types::{
+    bitcoin::light_client::BitcoinLightClientModule,
+    multichain_id::RoochMultiChainID,
+    transaction::{L1Block, L1BlockWithBody},
+};
 use std::cmp::max;
 use tracing::{debug, info};
 
@@ -141,7 +146,7 @@ impl BitcoinRelayer {
         Ok(())
     }
 
-    fn pop_buffer(&mut self) -> Result<Option<FunctionCall>> {
+    fn pop_buffer(&mut self) -> Result<Option<L1BlockWithBody>> {
         if self.buffer.is_empty() {
             Ok(None)
         } else {
@@ -154,8 +159,18 @@ impl BitcoinRelayer {
                 block_height, block_hash, time
             );
             debug!("GetBlockHeaderResult: {:?}", block_result);
-            let call = block_result_to_call(block_result)?;
-            Ok(Some(call))
+
+            let block_height = block_result.header_info.height;
+            let block_body = rooch_types::bitcoin::types::Block::try_from(block_result.block)?;
+
+            Ok(Some(L1BlockWithBody {
+                block: L1Block {
+                    chain_id: RoochMultiChainID::Bitcoin.multichain_id(),
+                    block_height: block_height as u64,
+                    block_hash: block_hash.to_byte_array().to_vec(),
+                },
+                block_body: block_body.encode(),
+            }))
         }
     }
 
@@ -179,23 +194,8 @@ impl BitcoinRelayer {
 
 #[async_trait]
 impl Relayer for BitcoinRelayer {
-    async fn relay(&mut self) -> Result<Option<FunctionCall>> {
-        if let Some(call) = self.check_utxo_progress()? {
-            return Ok(Some(call));
-        }
+    async fn relay(&mut self) -> Result<Option<L1BlockWithBody>> {
         self.sync_block().await?;
-        if let Some(call) = self.pop_buffer()? {
-            return Ok(Some(call));
-        }
-        Ok(None)
+        self.pop_buffer()
     }
-}
-
-fn block_result_to_call(block_result: BlockResult) -> Result<FunctionCall> {
-    let block_height = block_result.header_info.height;
-    let call = BitcoinLightClientModule::create_submit_new_block_call(
-        block_height as u64,
-        block_result.block,
-    );
-    Ok(call)
 }

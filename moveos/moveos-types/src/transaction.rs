@@ -164,7 +164,10 @@ impl From<VerifiedMoveAction> for MoveAction {
     fn from(verified_action: VerifiedMoveAction) -> Self {
         match verified_action {
             VerifiedMoveAction::Script { call } => MoveAction::Script(call),
-            VerifiedMoveAction::Function { call } => MoveAction::Function(call),
+            VerifiedMoveAction::Function {
+                call,
+                bypass_visibility: _,
+            } => MoveAction::Function(call),
             VerifiedMoveAction::ModuleBundle {
                 module_bundle,
                 init_function_modules: _init_function_modules,
@@ -181,6 +184,7 @@ pub enum VerifiedMoveAction {
     },
     Function {
         call: FunctionCall,
+        bypass_visibility: bool,
     },
     ModuleBundle {
         module_bundle: Vec<Vec<u8>>,
@@ -194,8 +198,15 @@ impl Display for VerifiedMoveAction {
             VerifiedMoveAction::Script { call: _ } => {
                 write!(f, "ScriptCall")
             }
-            VerifiedMoveAction::Function { call } => {
-                write!(f, "FunctionCall(function_id: {})", call.function_id)
+            VerifiedMoveAction::Function {
+                call,
+                bypass_visibility,
+            } => {
+                write!(
+                    f,
+                    "FunctionCall(function_id: {}, bypass_visibility:{})",
+                    call.function_id, bypass_visibility
+                )
             }
             VerifiedMoveAction::ModuleBundle {
                 module_bundle,
@@ -271,6 +282,17 @@ pub struct VerifiedMoveOSTransaction {
     pub action: VerifiedMoveAction,
     pub pre_execute_functions: Vec<FunctionCall>,
     pub post_execute_functions: Vec<FunctionCall>,
+}
+
+impl VerifiedMoveOSTransaction {
+    pub fn new(ctx: TxContext, action: VerifiedMoveAction) -> Self {
+        Self {
+            ctx,
+            action,
+            pre_execute_functions: vec![],
+            post_execute_functions: vec![],
+        }
+    }
 }
 
 /// RawTransactionOutput is the execution result of a MoveOS transaction

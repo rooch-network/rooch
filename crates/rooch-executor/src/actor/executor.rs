@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::messages::{
-    ExecuteTransactionMessage, ExecuteTransactionResult, ResolveMessage, ValidateTransactionMessage,
+    ExecuteTransactionMessage, ExecuteTransactionResult, ResolveMessage, ValidateL1BlockMessage,
+    ValidateL2TxMessage,
 };
 use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::Result;
@@ -38,12 +39,15 @@ use rooch_genesis::RoochGenesis;
 use rooch_store::RoochStore;
 use rooch_types::address::MultiChainAddress;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
+use rooch_types::bitcoin::light_client::BitcoinLightClientModule;
 use rooch_types::framework::address_mapping::AddressMapping;
 use rooch_types::framework::auth_validator::{AuthValidatorCaller, TxValidateResult};
+use rooch_types::framework::ethereum_light_client::EthereumLightClientModule;
 use rooch_types::framework::genesis::GenesisContext;
 use rooch_types::framework::transaction_validator::TransactionValidator;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
-use rooch_types::transaction::{AuthenticatorInfo, RoochTransaction};
+use rooch_types::multichain_id::RoochMultiChainID;
+use rooch_types::transaction::{AuthenticatorInfo, L1Block, L1BlockWithBody, RoochTransaction};
 
 pub struct ExecutorActor {
     genesis: RoochGenesis,
@@ -209,7 +213,45 @@ impl ExecutorActor {
         })
     }
 
-    pub fn validate(&self, tx: RoochTransaction) -> Result<VerifiedMoveOSTransaction> {
+    pub fn validate_l1_block(
+        &self,
+        ctx: TxContext,
+        l1_block: L1BlockWithBody,
+    ) -> Result<VerifiedMoveOSTransaction> {
+        //In the future, we should verify the block PoW difficulty or PoS validator signature before the sequencer decentralized
+        let L1BlockWithBody {
+            block:
+                L1Block {
+                    chain_id,
+                    block_height,
+                    block_hash,
+                },
+            block_body,
+        } = l1_block;
+        match RoochMultiChainID::try_from(chain_id.id())? {
+            RoochMultiChainID::Bitcoin => {
+                let action = VerifiedMoveAction::Function {
+                    call: BitcoinLightClientModule::create_submit_new_block_call_bytes(
+                        block_height,
+                        block_hash,
+                        block_body,
+                    )?,
+                    bypass_visibility: true,
+                };
+                Ok(VerifiedMoveOSTransaction::new(ctx, action))
+            }
+            RoochMultiChainID::Ether => {
+                let action = VerifiedMoveAction::Function {
+                    call: EthereumLightClientModule::create_submit_new_block_call_bytes(block_body),
+                    bypass_visibility: true,
+                };
+                Ok(VerifiedMoveOSTransaction::new(ctx, action))
+            }
+            id => Err(anyhow::anyhow!("Chain {} not supported yet", id)),
+        }
+    }
+
+    pub fn validate_l2_tx(&self, tx: RoochTransaction) -> Result<VerifiedMoveOSTransaction> {
         let sender = tx.sender();
 
         let authenticator = tx.authenticator_info()?;
@@ -321,7 +363,10 @@ impl ExecutorActor {
         let verified_action = verified_moveos_action.action;
 
         match verified_action {
-            VerifiedMoveAction::Function { call } => {
+            VerifiedMoveAction::Function {
+                call,
+                bypass_visibility: _,
+            } => {
                 let module_id = &call.function_id.module_id;
                 let loaded_module_bytes_result =
                     self.moveos().moveos_resolver().get_module(module_id);
@@ -440,7 +485,10 @@ impl ExecutorActor {
         let verified_action = verified_moveos_action.action;
 
         match verified_action {
-            VerifiedMoveAction::Function { call } => {
+            VerifiedMoveAction::Function {
+                call,
+                bypass_visibility: _,
+            } => {
                 let module_address = call.function_id.module_id.address();
 
                 let gas_coin_module_id = ModuleId::new(
@@ -491,13 +539,24 @@ impl Handler<ResolveMessage> for ExecutorActor {
 }
 
 #[async_trait]
-impl Handler<ValidateTransactionMessage> for ExecutorActor {
+impl Handler<ValidateL2TxMessage> for ExecutorActor {
     async fn handle(
         &mut self,
-        msg: ValidateTransactionMessage,
+        msg: ValidateL2TxMessage,
         _ctx: &mut ActorContext,
     ) -> Result<VerifiedMoveOSTransaction> {
-        self.validate(msg.tx)
+        self.validate_l2_tx(msg.tx)
+    }
+}
+
+#[async_trait]
+impl Handler<ValidateL1BlockMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        msg: ValidateL1BlockMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<VerifiedMoveOSTransaction> {
+        self.validate_l1_block(msg.ctx, msg.l1_block)
     }
 }
 

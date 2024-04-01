@@ -196,6 +196,24 @@ impl<'a> BitcoinLightClientModule<'a> {
         )
     }
 
+    pub fn create_submit_new_block_call_bytes(
+        block_height: u64,
+        block_hash: Vec<u8>,
+        block_body: Vec<u8>,
+    ) -> Result<FunctionCall> {
+        let block_hash = AccountAddress::from_bytes(block_hash)?;
+        Ok(Self::create_function_call(
+            Self::SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME,
+            vec![],
+            vec![
+                BitcoinBlockStore::object_id().to_move_value(),
+                MoveValue::U64(block_height),
+                MoveValue::Address(block_hash),
+                MoveValue::vector_u8(block_body),
+            ],
+        ))
+    }
+
     pub fn create_process_utxos_call(batch_size: u64) -> FunctionCall {
         Self::create_function_call(
             Self::PROCESS_UTXOS_ENTRY_FUNCTION_NAME,

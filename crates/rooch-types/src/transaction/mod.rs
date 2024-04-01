@@ -1,14 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use self::authenticator::Authenticator;
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::{h256::H256, transaction::TransactionOutput};
 use serde::{Deserialize, Serialize};
 
 pub mod authenticator;
+mod ledger_transaction;
 pub mod rooch;
 
+pub use authenticator::Authenticator;
+pub use ledger_transaction::{L1Block, L1BlockWithBody, LedgerTransaction, LedgerTxData};
 pub use rooch::{RoochTransaction, RoochTransactionData};
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]

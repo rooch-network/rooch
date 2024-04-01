@@ -11,7 +11,8 @@ use raw_store::rocks::RocksDB;
 use raw_store::{ColumnFamilyName, StoreInstance};
 use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::{
-    RoochTransaction, TransactionSequenceInfo, TransactionSequenceInfoMapping,
+    LedgerTransaction, LedgerTxData, RoochTransaction, TransactionSequenceInfo,
+    TransactionSequenceInfoMapping,
 };
 use std::fmt::{Debug, Display, Formatter};
 use std::path::Path;
@@ -95,8 +96,21 @@ impl Debug for RoochStore {
 }
 
 impl TransactionStore for RoochStore {
-    fn save_transaction(&mut self, transaction: RoochTransaction) -> Result<()> {
-        self.transaction_store.save_transaction(transaction)
+    fn save_transaction(&mut self, tx: LedgerTransaction) -> Result<()> {
+        let LedgerTransaction {
+            data,
+            sequence_info,
+        } = tx;
+        match data {
+            LedgerTxData::L2Tx(tx) => {
+                self.transaction_store.save_transaction(tx)?;
+            }
+            LedgerTxData::L1Block(block) => {
+                //TODO save L1Block
+                log::info!("save L1Block {:?}", block.block_height);
+            }
+        }
+        self.transaction_store.save_tx_sequence_info(sequence_info)
     }
 
     fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<RoochTransaction>> {

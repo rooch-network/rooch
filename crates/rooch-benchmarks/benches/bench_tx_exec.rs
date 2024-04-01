@@ -30,7 +30,7 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
     let transactions: Vec<_> = (0..tx_cnt)
         .map(|n| {
             let tx = create_transaction(&mut test_transaction_builder, &keystore, n).unwrap();
-            binding_test.executor.validate(tx.clone()).unwrap()
+            binding_test.executor.validate_l2_tx(tx.clone()).unwrap()
         })
         .collect();
     let mut transactions_iter = transactions.into_iter().cycle();

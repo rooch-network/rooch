@@ -5,18 +5,18 @@ use anyhow::Result;
 use coerce::actor::message::Message;
 use moveos_types::h256::H256;
 use rooch_types::sequencer::SequencerOrder;
-use rooch_types::transaction::TransactionSequenceInfoMapping;
+use rooch_types::transaction::{LedgerTransaction, LedgerTxData, TransactionSequenceInfoMapping};
 use rooch_types::transaction::{RoochTransaction, TransactionSequenceInfo};
 use serde::{Deserialize, Serialize};
 
 /// Transaction Sequence Message
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TransactionSequenceMessage {
-    pub tx: RoochTransaction,
+    pub tx: LedgerTxData,
 }
 
 impl Message for TransactionSequenceMessage {
-    type Result = Result<TransactionSequenceInfo>;
+    type Result = Result<LedgerTransaction>;
 }
 
 /// Get Transaction By Hash Message

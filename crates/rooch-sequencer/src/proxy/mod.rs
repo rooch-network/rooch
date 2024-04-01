@@ -11,7 +11,7 @@ use anyhow::Result;
 use coerce::actor::ActorRef;
 use moveos_types::h256::H256;
 use rooch_types::sequencer::SequencerOrder;
-use rooch_types::transaction::TransactionSequenceInfo;
+use rooch_types::transaction::{LedgerTransaction, LedgerTxData, TransactionSequenceInfo};
 use rooch_types::transaction::{RoochTransaction, TransactionSequenceInfoMapping};
 
 #[derive(Clone)]
@@ -24,10 +24,7 @@ impl SequencerProxy {
         Self { actor }
     }
 
-    pub async fn sequence_transaction(
-        &self,
-        tx: RoochTransaction,
-    ) -> Result<TransactionSequenceInfo> {
+    pub async fn sequence_transaction(&self, tx: LedgerTxData) -> Result<LedgerTransaction> {
         self.actor.send(TransactionSequenceMessage { tx }).await?
     }
 

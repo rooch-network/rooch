@@ -107,7 +107,7 @@ impl RustBindingTest {
     }
 
     pub fn execute_as_result(&mut self, tx: RoochTransaction) -> Result<ExecuteTransactionResult> {
-        let verified_tx = self.executor.validate(tx)?;
+        let verified_tx = self.executor.validate_l2_tx(tx)?;
         let result = self.executor.execute(verified_tx)?;
         let root = ObjectEntity::root_object(
             result.transaction_info.state_root,

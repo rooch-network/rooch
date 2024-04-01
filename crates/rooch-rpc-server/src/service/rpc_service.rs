@@ -15,10 +15,8 @@ use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
-use rooch_relayer::TxSubmiter;
-use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::address::{MultiChainAddress, RoochAddress};
+use rooch_types::address::MultiChainAddress;
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
     GlobalStateFilter, IndexerGlobalState, IndexerStateID, IndexerTableChangeSet,
@@ -72,7 +70,7 @@ impl RpcService {
     }
 
     pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponse> {
-        self.pipeline_processor.execute_tx(tx).await
+        self.pipeline_processor.execute_l2_tx(tx).await
     }
 
     pub async fn execute_view_function(
@@ -311,29 +309,5 @@ impl RpcService {
             .sync_states(filter, cursor, limit, descending_order)
             .await?;
         Ok(resp)
-    }
-}
-
-//TODO we need to make the RpcService to an Actor, and implement TxSubmiter for it's actor proxy.
-#[async_trait::async_trait]
-impl TxSubmiter for RpcService {
-    async fn get_chain_id(&self) -> Result<u64> {
-        self.get_chain_id().await
-    }
-    //TODO provide a trait to abstract the async state reader, elemiate the duplicated code bwteen RpcService and Client
-    async fn get_sequence_number(&self, address: RoochAddress) -> Result<u64> {
-        Ok(self
-            .get_states(AccessPath::object(Account::account_object_id(
-                address.into(),
-            )))
-            .await?
-            .pop()
-            .flatten()
-            .map(|state| state.as_object_uncheck::<Account>())
-            .transpose()?
-            .map_or(0, |account| account.value.sequence_number))
-    }
-    async fn submit_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
-        Ok(self.execute_tx(tx).await?.into())
     }
 }

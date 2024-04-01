@@ -10,6 +10,7 @@ use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
 use moveos_types::moveos_std::object::RootObjectEntity;
+use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::{AnnotatedState, KeyState, State};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::FunctionCall;
@@ -17,15 +18,25 @@ use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use rooch_types::address::MultiChainAddress;
-use rooch_types::transaction::RoochTransaction;
+use rooch_types::transaction::{L1BlockWithBody, RoochTransaction};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
-pub struct ValidateTransactionMessage {
+pub struct ValidateL2TxMessage {
     pub tx: RoochTransaction,
 }
 
-impl Message for ValidateTransactionMessage {
+impl Message for ValidateL2TxMessage {
+    type Result = Result<VerifiedMoveOSTransaction>;
+}
+
+#[derive(Debug)]
+pub struct ValidateL1BlockMessage {
+    pub ctx: TxContext,
+    pub l1_block: L1BlockWithBody,
+}
+
+impl Message for ValidateL1BlockMessage {
     type Result = Result<VerifiedMoveOSTransaction>;
 }
 

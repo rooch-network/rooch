@@ -226,7 +226,10 @@ where
                     .map_err(|e| e.finish(location.clone()))?;
                 let _resolved_args =
                     self.resolve_argument(&loaded_function, call.args.clone(), location)?;
-                Ok(VerifiedMoveAction::Function { call })
+                Ok(VerifiedMoveAction::Function {
+                    call,
+                    bypass_visibility: false,
+                })
             }
             MoveAction::ModuleBundle(module_bundle) => {
                 let compiled_modules = deserialize_modules(&module_bundle)?;
@@ -280,7 +283,10 @@ where
                         );
                     })
             }
-            VerifiedMoveAction::Function { call } => {
+            VerifiedMoveAction::Function {
+                call,
+                bypass_visibility,
+            } => {
                 let loaded_function = self.session.load_function(
                     &call.function_id.module_id,
                     &call.function_id.function_name,
@@ -289,20 +295,37 @@ where
                 let location = Location::Module(call.function_id.module_id.clone());
                 let resolved_args = self.resolve_argument(&loaded_function, call.args, location)?;
                 let serialized_args = self.load_arguments(resolved_args)?;
-                self.session
-                    .execute_entry_function(
-                        &call.function_id.module_id,
-                        &call.function_id.function_name,
-                        call.ty_args.clone(),
-                        serialized_args,
-                        &mut self.gas_meter,
-                    )
-                    .map(|ret| {
-                        debug_assert!(
-                            ret.return_values.is_empty(),
-                            "Entry function should not return values"
-                        );
-                    })
+                if bypass_visibility {
+                    self.session
+                        .execute_function_bypass_visibility(
+                            &call.function_id.module_id,
+                            &call.function_id.function_name,
+                            call.ty_args.clone(),
+                            serialized_args,
+                            &mut self.gas_meter,
+                        )
+                        .map(|ret| {
+                            debug_assert!(
+                                ret.return_values.is_empty(),
+                                "Function should not return values"
+                            );
+                        })
+                } else {
+                    self.session
+                        .execute_entry_function(
+                            &call.function_id.module_id,
+                            &call.function_id.function_name,
+                            call.ty_args.clone(),
+                            serialized_args,
+                            &mut self.gas_meter,
+                        )
+                        .map(|ret| {
+                            debug_assert!(
+                                ret.return_values.is_empty(),
+                                "Entry function should not return values"
+                            );
+                        })
+                }
             }
             VerifiedMoveAction::ModuleBundle {
                 module_bundle,

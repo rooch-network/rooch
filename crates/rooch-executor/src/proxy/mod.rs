@@ -4,14 +4,14 @@
 use crate::actor::messages::{
     GetAnnotatedStatesByStateMessage, GetEventsByEventHandleMessage, GetEventsByEventIDsMessage,
     GetTxExecutionInfosByHashMessage, ListAnnotatedStatesMessage, ListStatesMessage,
-    RefreshStateMessage,
+    RefreshStateMessage, ValidateL1BlockMessage,
 };
 use crate::actor::reader_executor::ReaderExecutorActor;
 use crate::actor::{
     executor::ExecutorActor,
     messages::{
         AnnotatedStatesMessage, ExecuteViewFunctionMessage, GetAnnotatedEventsByEventHandleMessage,
-        ResolveMessage, StatesMessage, ValidateTransactionMessage,
+        ResolveMessage, StatesMessage, ValidateL2TxMessage,
     },
 };
 use anyhow::Result;
@@ -21,6 +21,7 @@ use move_core_types::language_storage::StructTag;
 use moveos_types::function_return_value::{AnnotatedFunctionResult, FunctionResult};
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::event::{Event, EventID};
 use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::moveos_std::tx_context::TxContext;
@@ -37,7 +38,7 @@ use moveos_types::{
 use rooch_types::address::MultiChainAddress;
 use rooch_types::bitcoin::network::BitcoinNetwork;
 use rooch_types::framework::chain_id::ChainID;
-use rooch_types::transaction::RoochTransaction;
+use rooch_types::transaction::{L1BlockWithBody, RoochTransaction};
 use tokio::runtime::Handle;
 
 #[derive(Clone)]
@@ -57,11 +58,18 @@ impl ExecutorProxy {
         }
     }
 
-    pub async fn validate_transaction(
+    pub async fn validate_l2_tx(&self, tx: RoochTransaction) -> Result<VerifiedMoveOSTransaction> {
+        self.actor.send(ValidateL2TxMessage { tx }).await?
+    }
+
+    pub async fn validate_l1_block(
         &self,
-        tx: RoochTransaction,
+        ctx: TxContext,
+        l1_block: L1BlockWithBody,
     ) -> Result<VerifiedMoveOSTransaction> {
-        self.actor.send(ValidateTransactionMessage { tx }).await?
+        self.actor
+            .send(ValidateL1BlockMessage { ctx, l1_block })
+            .await?
     }
 
     //TODO ensure the execute result
@@ -219,6 +227,18 @@ impl ExecutorProxy {
             .ok_or_else(|| anyhow::anyhow!("bitcoin network not found"))
             .and_then(|state| state.ok_or_else(|| anyhow::anyhow!("bitcoin network not found")))
             .and_then(|state| Ok(state.as_object::<BitcoinNetwork>()?.value))
+    }
+
+    //TODO provide a trait to abstract the async state reader, elemiate the duplicated code bwteen RpcService and Client
+    pub async fn get_sequence_number(&self, address: AccountAddress) -> Result<u64> {
+        Ok(self
+            .get_states(AccessPath::object(Account::account_object_id(address)))
+            .await?
+            .pop()
+            .flatten()
+            .map(|state| state.as_object::<Account>())
+            .transpose()?
+            .map_or(0, |account| account.value.sequence_number))
     }
 }
 
