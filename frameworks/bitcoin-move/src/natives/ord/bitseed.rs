@@ -6,12 +6,14 @@ use std::collections::VecDeque;
 use ciborium::value::Integer;
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
-use move_vm_runtime::native_functions::NativeContext;
+use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::loaded_data::runtime_types::Type;
 use move_vm_types::natives::function::NativeResult;
 use move_vm_types::pop_arg;
 use move_vm_types::values::Value;
 use smallvec::smallvec;
+
+use moveos_stdlib::natives::helpers::{make_module_natives, make_native};
 
 #[derive(Debug, Clone)]
 pub struct ArgsPackingGasParameters {
@@ -88,4 +90,15 @@ pub fn native_pack_inscribe_generate_args(
 
     let ret = Value::vector_u8(top_buffer);
     Ok(NativeResult::ok(cost, smallvec![ret]))
+}
+
+pub fn make_all(
+    gas_params: ArgsPackingGasParameters,
+) -> impl Iterator<Item = (String, NativeFunction)> {
+    let natives = [(
+        "native_pack_inscribe_generate_args",
+        make_native(gas_params, native_pack_inscribe_generate_args),
+    )];
+
+    make_module_natives(natives)
 }
