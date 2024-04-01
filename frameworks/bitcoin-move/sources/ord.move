@@ -146,7 +146,7 @@ module bitcoin_move::ord {
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
         let store = object::borrow_mut(store_obj);
         table_vec::push_back(&mut store.inscriptions, id);
-        let object = object::new_custom_object(id, inscription);
+        let object = object::new_with_id(id, inscription);
 
         if (bitseed::is_bitseed(&cloned_json_map)) {
             if (bitseed::is_bitseed_deploy(&cloned_json_map)) {
@@ -160,7 +160,7 @@ module bitcoin_move::ord {
 
         simple_map::drop(cloned_json_map);
 
-        object::new_with_id(id, inscription)
+        object
     }
     
     fun parse_json_body(record: &InscriptionRecord) : SimpleMap<String,String> {

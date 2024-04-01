@@ -11,8 +11,8 @@
 -  [Struct `InvalidInscriptionEvent`](#0x4_ord_InvalidInscriptionEvent)
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
 -  [Function `genesis_init`](#0x4_ord_genesis_init)
--  [Function `get_inscription_id_by_index`](#0x4_ord_get_inscription_id_by_index)
 -  [Function `new_inscription_id`](#0x4_ord_new_inscription_id)
+-  [Function `get_inscription_id_by_index`](#0x4_ord_get_inscription_id_by_index)
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
 -  [Function `borrow_inscription`](#0x4_ord_borrow_inscription)
 -  [Function `spend_utxo`](#0x4_ord_spend_utxo)
@@ -121,14 +121,6 @@
 
 
 
-<a name="0x4_ord_get_inscription_id_by_index"></a>
-
-## Function `get_inscription_id_by_index`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_get_inscription_id_by_index">get_inscription_id_by_index</a>(index: u64): &<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>
-
 <a name="0x4_ord_new_inscription_id"></a>
 
 ## Function `new_inscription_id`
@@ -136,6 +128,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_new_inscription_id">new_inscription_id</a>(txid: <b>address</b>, index: u32): <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_get_inscription_id_by_index"></a>
+
+## Function `get_inscription_id_by_index`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_get_inscription_id_by_index">get_inscription_id_by_index</a>(index: u64): &<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>
 </code></pre>
 
 
