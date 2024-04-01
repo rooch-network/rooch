@@ -2,11 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module bitcoin_move::light_client{
-
     use std::option::{Self, Option};
     use std::vector;
     use std::string::{String};
-    use moveos_std::object::ObjectID;
     use moveos_std::type_info;
     use moveos_std::table::{Self, Table};
     use moveos_std::bcs;
@@ -15,7 +13,7 @@ module bitcoin_move::light_client{
     use moveos_std::simple_multimap;
     use moveos_std::signer;
     use rooch_framework::timestamp;
-    use bitcoin_move::types::{Self, Block, Header, Transaction, OutPoint};    
+    use bitcoin_move::types::{Self, Block, Header, Transaction};
     use bitcoin_move::ord::{Self, Inscription, bind_multichain_address};
     use bitcoin_move::utxo::{Self, UTXOSeal};
     
@@ -30,7 +28,6 @@ module bitcoin_move::light_client{
         message: String,
     }
 
-    
     struct BitcoinBlockStore has key{
         latest_block_height: Option<u64>,
         /// block hash -> block header
@@ -45,13 +42,6 @@ module bitcoin_move::light_client{
         tx_ids: TableVec<address>,
     }
 
-    struct BitcoinUTXOStore has key{
-        /// The next tx index to be processed
-        next_tx_index: u64,
-        /// outpoint -> txout
-        utxo: Table<OutPoint, ObjectID>,
-    }
-
     public(friend) fun genesis_init(_genesis_account: &signer){
         let btc_block_store = BitcoinBlockStore{
             latest_block_height: option::none(),
@@ -63,17 +53,9 @@ module bitcoin_move::light_client{
         };
         let obj = object::new_named_object(btc_block_store);
         object::to_shared(obj);
-
-        let btc_utxo_store = BitcoinUTXOStore{
-            next_tx_index: 0,
-            utxo: table::new(),
-        };
-        let obj = object::new_named_object(btc_utxo_store);
-        object::to_shared(obj);
     }
 
     fun process_block(btc_block_store_obj: &mut Object<BitcoinBlockStore>, block_height: u64, block_hash: address, block_bytes: vector<u8>):u32{
-        
         let btc_block_store = object::borrow_mut(btc_block_store_obj);
         //already processed
         assert!(!table::contains(&btc_block_store.hash_to_height, block_hash), ErrorBlockAlreadyProcessed);
@@ -118,30 +100,49 @@ module bitcoin_move::light_client{
         table_vec::push_back(&mut btc_block_store.tx_ids, txid);
     }
 
-    fun process_utxo(btc_utxo_store: &mut BitcoinUTXOStore, tx: &Transaction){
+    fun process_utxo(tx: &Transaction){
         let txid = types::tx_id(tx);
         let txinput = types::tx_input(tx);
+
+        let previous_outputs = vector::empty();
+        vector::for_each(*txinput, |txin| {
+            let outpoint = *types::txin_previous_output(&txin);
+            vector::push_back(&mut previous_outputs, outpoint);
+        });
+        let input_utxo_values = vector::empty();
+        vector::for_each(previous_outputs, |output| {
+            let utxo_value = if(utxo::exists_utxo(output)){
+                let utxo = utxo::borrow_utxo(output);
+                utxo::value(object::borrow(utxo))
+            } else {
+                0
+            };
+            vector::push_back(&mut input_utxo_values, utxo_value);
+        });
+
         let idx = 0;
-        let output_seals = simple_multimap::new<u64, UTXOSeal>();
+        let output_seals = simple_multimap::new<u32, UTXOSeal>();
         while(idx < vector::length(txinput)){
             let txin = vector::borrow(txinput, idx);
             let outpoint = *types::txin_previous_output(txin);
-            if(table::contains(&btc_utxo_store.utxo, outpoint)){
-                let object_id = table::remove(&mut btc_utxo_store.utxo, outpoint);
+            if(utxo::exists_utxo(outpoint)){
+                let object_id = utxo::derive_utxo_id(outpoint);
                 let (_owner, utxo_obj) = utxo::take(object_id);
-                let seal_outs = ord::spend_utxo(&mut utxo_obj, tx);
-                if(!vector::is_empty(&seal_outs)){
+                let seal_points = ord::spend_utxo(&mut utxo_obj, tx, input_utxo_values, idx);
+
+                if(!vector::is_empty(&seal_points)){
                     let protocol = type_info::type_name<Inscription>();
                     let j = 0;
-                    let seal_outs_len = vector::length(&seal_outs);
-                    while(j < seal_outs_len){
-                        let seal_out = vector::pop_back(&mut seal_outs);
-                        let (output_index, object_id) = utxo::unpack_seal_out(seal_out);
-                        let utxo_seal = utxo::new_utxo_seal(protocol, object_id);
+                    let seal_points_len = vector::length(&seal_points);
+                    while(j < seal_points_len){
+                        let seal_point = vector::pop_back(&mut seal_points);
+                        let (output_index, _offset, _object_id) = utxo::unpack_seal_point(seal_point);
+                        let utxo_seal = utxo::new_utxo_seal(protocol, seal_point);
                         simple_multimap::add(&mut output_seals, output_index, utxo_seal);
                         j = j + 1;
                     };
                 };
+
                 let seals = utxo::remove(utxo_obj);
                 //The seals should be empty after utxo is spent
                 simple_multimap::destroy_empty(seals);
@@ -151,32 +152,35 @@ module bitcoin_move::light_client{
 
             idx = idx + 1;
         };
+
         //If a utxo is spend seal assets, it should not seal new assets
-        //TODO confirm this
         if(simple_multimap::length(&output_seals) == 0){
-            let ord_seals = ord::process_transaction(tx);
+            let seal_points = ord::process_transaction(tx, input_utxo_values);
             let idx = 0;
             let protocol = type_info::type_name<Inscription>();
-            while(idx < vector::length(&ord_seals)){
-                let seal_out = vector::pop_back(&mut ord_seals);
-                let (output_index, object_id) = utxo::unpack_seal_out(seal_out);
-                let utxo_seal = utxo::new_utxo_seal(protocol, object_id);
+            let seal_points_len = vector::length(&seal_points);
+            while(idx < seal_points_len){
+                let seal_point = vector::pop_back(&mut seal_points);
+                let output_index = utxo::seal_point_output_index(&seal_point);
+                let utxo_seal = utxo::new_utxo_seal(protocol, seal_point);
                 simple_multimap::add(&mut output_seals, output_index, utxo_seal);
                 idx = idx + 1;
             };
         };
+
+        // create new utxo
         let txoutput = types::tx_output(tx);
         let idx = 0;
-        let txoutput_len = vector::length(txoutput); 
+        let txoutput_len = vector::length(txoutput);
         while(idx < txoutput_len){
             let txout = vector::borrow(txoutput, idx);
             let vout = (idx as u32);
-            let outpoint = types::new_outpoint(txid, vout);
             let value = types::txout_value(txout);
             let utxo_obj = utxo::new(txid, vout, value);
             let utxo = object::borrow_mut(&mut utxo_obj);
-            if(simple_multimap::contains_key(&output_seals, &idx)){
-                let utxo_seals = simple_multimap::borrow_mut(&mut output_seals, &idx);
+            let seal_index = (idx as u32);
+            if(simple_multimap::contains_key(&output_seals, &seal_index)){
+                let utxo_seals = simple_multimap::borrow_mut(&mut output_seals, &seal_index);
                 let j = 0;
                 let utxo_seals_len = vector::length(utxo_seals);
                 while(j < utxo_seals_len){
@@ -185,8 +189,6 @@ module bitcoin_move::light_client{
                     j = j + 1;
                 };
             };
-            let object_id = object::id(&utxo_obj);
-            table::add(&mut btc_utxo_store.utxo, outpoint, object_id);
             let owner_address = types::txout_object_address(txout);
             utxo::transfer(utxo_obj, owner_address);
 
@@ -209,10 +211,9 @@ module bitcoin_move::light_client{
         timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));      
     }
 
-    public fun remaining_tx_count(btc_block_store_obj: &Object<BitcoinBlockStore>, btc_utxo_store_obj: &Object<BitcoinUTXOStore>): u64{
+    public fun remaining_tx_count(btc_block_store_obj: &Object<BitcoinBlockStore>): u64{
         let btc_block_store = object::borrow(btc_block_store_obj);
-        let btc_utxo_store = object::borrow(btc_utxo_store_obj);
-        let start_tx_index = btc_utxo_store.next_tx_index;
+        let start_tx_index = utxo::next_tx_index();
         let max_tx_count = table_vec::length(&btc_block_store.tx_ids);
         if(start_tx_index < max_tx_count){
             max_tx_count - start_tx_index
@@ -221,10 +222,9 @@ module bitcoin_move::light_client{
         }
     }
     
-    entry fun process_utxos(btc_block_store_obj: &Object<BitcoinBlockStore>, btc_utxo_store_obj: &mut Object<BitcoinUTXOStore>, batch_size: u64){
+    entry fun process_utxos(btc_block_store_obj: &Object<BitcoinBlockStore>, batch_size: u64){
         let btc_block_store = object::borrow(btc_block_store_obj);
-        let btc_utxo_store = object::borrow_mut(btc_utxo_store_obj);
-        let start_tx_index = btc_utxo_store.next_tx_index;
+        let start_tx_index = utxo::next_tx_index();
         let max_tx_count = table_vec::length(&btc_block_store.tx_ids);
         if (start_tx_index >= max_tx_count){
             return
@@ -234,11 +234,11 @@ module bitcoin_move::light_client{
         while(processed_tx_count < batch_size && process_tx_index < max_tx_count){
             let txid = *table_vec::borrow(&btc_block_store.tx_ids, process_tx_index);
             let tx = table::borrow(&btc_block_store.txs, txid);
-            process_utxo(btc_utxo_store, tx);
+            process_utxo(tx);
             processed_tx_count = processed_tx_count + 1;
             process_tx_index = process_tx_index + 1;
         };
-        btc_utxo_store.next_tx_index = process_tx_index;
+        utxo::update_next_tx_index(process_tx_index);
     }
 
     public fun txs(btc_block_store_obj: &Object<BitcoinBlockStore>): &Table<address, Transaction>{
@@ -294,17 +294,6 @@ module bitcoin_move::light_client{
     public fun get_latest_block_height(btc_block_store_obj: &Object<BitcoinBlockStore>): Option<u64> {
         let btc_block_store = object::borrow(btc_block_store_obj);
         btc_block_store.latest_block_height
-    }
-
-    /// Get UTXO via txid and vout
-    public fun get_utxo(btc_utxo_store_obj: &Object<BitcoinUTXOStore>, txid: address, vout: u32): Option<ObjectID>{
-        let outpoint = types::new_outpoint(txid, vout);
-        let btc_utxo_store = object::borrow(btc_utxo_store_obj);
-        if(table::contains(&btc_utxo_store.utxo, outpoint)){
-            option::some(*table::borrow(&btc_utxo_store.utxo, outpoint))
-        }else{
-            option::none()
-        }
-    }
+    } 
     
 }

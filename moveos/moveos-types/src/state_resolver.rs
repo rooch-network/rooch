@@ -1,12 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::move_std::ascii::MoveAsciiString;
-use crate::move_std::string::MoveString;
 use crate::moveos_std::account::Account;
 use crate::moveos_std::move_module::ModuleStore;
-use crate::moveos_std::object::ObjectID;
-use crate::state::{AnnotatedKeyState, KeyState, MoveStructType};
+use crate::moveos_std::object::{ObjectID, RootObjectEntity};
+use crate::state::{AnnotatedKeyState, KeyState};
 use crate::{
     access_path::AccessPath,
     moveos_std::move_module::MoveModule,
@@ -49,6 +47,8 @@ pub trait StateResolver {
         let parent_id = object_id.parent().unwrap_or(ObjectID::root());
         self.resolve_table_item(&parent_id, &object_id.to_key())
     }
+
+    fn root_object(&self) -> RootObjectEntity;
 }
 
 /// A proxy type for proxy the StateResolver to MoveResolver
@@ -67,7 +67,7 @@ where
     ) -> Result<(Option<Vec<u8>>, usize), Error> {
         let account_object_id = Account::account_object_id(*address);
 
-        let key = resource_tag_to_key(tag);
+        let key = KeyState::from_struct_tag(tag);
         let result = self
             .0
             .resolve_table_item(&account_object_id, &key)?
@@ -105,7 +105,7 @@ where
 
     fn get_module(&self, module_id: &ModuleId) -> Result<Option<Vec<u8>>, Error> {
         let module_object_id = ModuleStore::module_store_id();
-        let key = module_id_to_key(module_id);
+        let key = KeyState::from_module_id(module_id);
         //We wrap the modules byte codes to `MoveModule` type when store the module.
         //So we need unwrap the MoveModule type.
         self.0
@@ -135,28 +135,15 @@ where
     ) -> Result<Vec<StateKV>, anyhow::Error> {
         self.0.list_table_items(handle, cursor, limit)
     }
+
+    fn root_object(&self) -> RootObjectEntity {
+        self.0.root_object()
+    }
 }
 
 pub trait MoveOSResolver: MoveResolver + StateResolver {}
 
 impl<T> MoveOSResolver for T where T: MoveResolver + StateResolver {}
-
-//TODO define a ResourceKey trait to unify the resource key type, and auto impl it for ObjectID and StructTag.
-pub fn resource_tag_to_key(tag: &StructTag) -> KeyState {
-    // The resource key is struct_tag to_canonical_string in bcs serialize format string, not String::into_bytes.
-    let key = bcs::to_bytes(&tag.to_canonical_string()).expect("bcs to_bytes String must success.");
-    let key_type = TypeTag::Struct(Box::new(MoveAsciiString::struct_tag()));
-    KeyState::new(key, key_type)
-}
-
-// pub fn module_id_to_key(module_id: &IdentStr) -> KeyState {
-pub fn module_id_to_key(module_id: &ModuleId) -> KeyState {
-    // The key is the module name in bcs serialize format string, not String::into_bytes.
-    let key =
-        bcs::to_bytes(&module_id.short_str_lossless()).expect("bcs to_bytes String must success.");
-    let key_type = TypeTag::Struct(Box::new(MoveString::struct_tag()));
-    KeyState::new(key, key_type)
-}
 
 /// StateReader provide an unify State API with AccessPath
 pub trait StateReader: StateResolver {

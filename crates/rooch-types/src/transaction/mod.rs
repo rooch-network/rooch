@@ -1,58 +1,18 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use self::{authenticator::Authenticator, ethereum::EthereumTransaction, rooch::RoochTransaction};
-use crate::address::MultiChainAddress;
-use crate::multichain_id::{MultiChainID, ETHER, ROOCH};
-use anyhow::{format_err, Result};
-use move_core_types::account_address::AccountAddress;
+use self::authenticator::Authenticator;
+use moveos_types::h256::H256;
 use moveos_types::transaction::TransactionExecutionInfo;
-use moveos_types::{h256::H256, transaction::MoveOSTransaction};
 use serde::{Deserialize, Serialize};
-use std::fmt;
-use std::fmt::{Display, Formatter};
-use std::str::FromStr;
 
 pub mod authenticator;
-pub mod ethereum;
 pub mod rooch;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
-pub enum TransactionType {
-    Rooch,
-    Ethereum,
-}
-
-impl TransactionType {
-    pub fn transaction_type_name(&self) -> String {
-        self.to_string()
-    }
-}
-
-impl Display for TransactionType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            TransactionType::Rooch => write!(f, "Rooch"),
-            TransactionType::Ethereum => write!(f, "Ethereum"),
-        }
-    }
-}
-
-impl FromStr for TransactionType {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "Rooch" => Ok(TransactionType::Rooch),
-            "Ethereum" => Ok(TransactionType::Ethereum),
-            s => Err(format_err!("Unknown transaction type: {}", s)),
-        }
-    }
-}
+pub use rooch::{RoochTransaction, RoochTransactionData};
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct RawTransaction {
-    pub transaction_type: TransactionType,
     pub raw: Vec<u8>,
 }
 
@@ -78,127 +38,6 @@ impl AuthenticatorInfo {
 impl From<AuthenticatorInfo> for Vec<u8> {
     fn from(info: AuthenticatorInfo) -> Self {
         info.to_bytes()
-    }
-}
-
-pub trait AbstractTransaction {
-    fn transaction_type(&self) -> TransactionType;
-
-    fn decode(bytes: &[u8]) -> Result<Self>
-    where
-        Self: std::marker::Sized;
-    fn encode(&self) -> Vec<u8>;
-
-    fn sender(&self) -> MultiChainAddress;
-
-    fn original_address_str(&self) -> String;
-
-    fn tx_hash(&self) -> H256;
-
-    fn authenticator_info(&self) -> Result<AuthenticatorInfo>;
-
-    fn construct_moveos_transaction(
-        self,
-        resolved_sender: AccountAddress,
-    ) -> Result<MoveOSTransaction>;
-
-    fn multi_chain_id(&self) -> MultiChainID;
-    fn tx_size(&self) -> u64;
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub enum TypedTransaction {
-    Rooch(RoochTransaction),
-    Ethereum(EthereumTransaction),
-}
-
-impl TryFrom<RawTransaction> for TypedTransaction {
-    type Error = anyhow::Error;
-
-    fn try_from(raw: RawTransaction) -> Result<Self> {
-        match raw.transaction_type {
-            TransactionType::Rooch => {
-                let tx = rooch::RoochTransaction::decode(&raw.raw)?;
-                Ok(TypedTransaction::Rooch(tx))
-            }
-            TransactionType::Ethereum => {
-                let tx = EthereumTransaction::decode(&raw.raw)?;
-                Ok(TypedTransaction::Ethereum(tx))
-            }
-        }
-    }
-}
-
-impl AbstractTransaction for TypedTransaction {
-    fn transaction_type(&self) -> TransactionType {
-        match self {
-            TypedTransaction::Rooch(_) => TransactionType::Rooch,
-            TypedTransaction::Ethereum(_) => TransactionType::Ethereum,
-        }
-    }
-
-    fn decode(bytes: &[u8]) -> Result<Self>
-    where
-        Self: std::marker::Sized,
-    {
-        let raw = bcs::from_bytes::<RawTransaction>(bytes)?;
-        Self::try_from(raw)
-    }
-
-    fn encode(&self) -> Vec<u8> {
-        match self {
-            TypedTransaction::Rooch(tx) => tx.encode(),
-            TypedTransaction::Ethereum(tx) => tx.encode(),
-        }
-    }
-
-    fn sender(&self) -> MultiChainAddress {
-        match self {
-            TypedTransaction::Rooch(tx) => AbstractTransaction::sender(tx),
-            TypedTransaction::Ethereum(tx) => tx.sender(),
-        }
-    }
-
-    fn original_address_str(&self) -> String {
-        match self {
-            TypedTransaction::Rooch(tx) => tx.original_address_str(),
-            TypedTransaction::Ethereum(tx) => tx.original_address_str(),
-        }
-    }
-
-    fn tx_hash(&self) -> H256 {
-        match self {
-            TypedTransaction::Rooch(tx) => tx.tx_hash(),
-            TypedTransaction::Ethereum(tx) => tx.tx_hash(),
-        }
-    }
-
-    fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
-        match self {
-            TypedTransaction::Rooch(tx) => tx.authenticator_info(),
-            TypedTransaction::Ethereum(tx) => tx.authenticator_info(),
-        }
-    }
-
-    fn construct_moveos_transaction(
-        self,
-        resolved_sender: AccountAddress,
-    ) -> Result<moveos_types::transaction::MoveOSTransaction> {
-        match self {
-            TypedTransaction::Rooch(tx) => tx.construct_moveos_transaction(resolved_sender),
-            TypedTransaction::Ethereum(tx) => tx.construct_moveos_transaction(resolved_sender),
-        }
-    }
-
-    fn multi_chain_id(&self) -> MultiChainID {
-        match self {
-            TypedTransaction::Rooch(_tx) => MultiChainID::from(ROOCH),
-            TypedTransaction::Ethereum(_tx) => MultiChainID::from(ETHER),
-        }
-    }
-
-    fn tx_size(&self) -> u64 {
-        self.encode().len() as u64
     }
 }
 
@@ -230,7 +69,7 @@ impl TransactionSequenceInfo {
 /// Transaction with sequence info and execution info.
 #[derive(Debug, Clone)]
 pub struct TransactionWithInfo {
-    pub transaction: TypedTransaction,
+    pub transaction: RoochTransaction,
     pub sequence_info: TransactionSequenceInfo,
     pub execution_info: TransactionExecutionInfo,
 }
@@ -253,12 +92,9 @@ impl TransactionSequenceInfoMapping {
 mod tests {
     use super::rooch::RoochTransaction;
 
-    fn test_serialize_deserialize_roundtrip<T>(tx: T)
-    where
-        T: super::AbstractTransaction + std::fmt::Debug + PartialEq,
-    {
+    fn test_serialize_deserialize_roundtrip(tx: RoochTransaction) {
         let bytes = tx.encode();
-        let tx2 = T::decode(&bytes).unwrap();
+        let tx2 = RoochTransaction::decode(&bytes).unwrap();
         assert_eq!(tx, tx2);
     }
 

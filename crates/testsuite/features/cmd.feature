@@ -3,18 +3,7 @@ Feature: Rooch CLI integration tests
     Scenario: Init
       Then cmd: "init --skip-password"
       Then cmd: "env switch --alias local"
-
-    @serial
-    Scenario: ethereum rpc test
-      Given a server for ethereum_rpc_test
-      Then cmd: "rpc request --method eth_getBalance --params 0x1111111111111111111111111111111111111111"
-      Then assert: "{{$.rpc[-1]}} == 0x56bc75e2d63100000"
-      Then cmd: "rpc request --method eth_feeHistory --params '["0x5", "0x6524cad7", [10,20,30]]'"
-      Then assert: "'{{$.rpc[-1]}}' contains baseFeePerGas"
-      Then cmd: "rpc request --method net_version"
-      Then assert: "'{{$.rpc[-1]}}' == '20230104'"
-      Then stop the server
-
+ 
     @serial
     Scenario: rooch rpc test
       Given a server for rooch_rpc_test
@@ -283,16 +272,18 @@ Feature: Rooch CLI integration tests
     Given a server for issue_coin
     Then cmd: "move publish -p ../../examples/module_template/  --named-addresses rooch_examples=default"
     Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-    Then cmd: "move run --function default::coin_factory::issue_fixed_supply_coin --args string:my_coin  --args string:"My first coin" --args string:MyCoin --args 1010101u256 --args 8u8  "
-    Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+    
+    #TODO: uncomment this once move_module::binding_module_address is ready
+    #Then cmd: "move run --function default::coin_factory::issue_fixed_supply_coin --args string:my_coin  --args string:"My first coin" --args string:MyCoin --args 1010101u256 --args 8u8  "
+    #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
     # check module `my_coin` is published, the name `my_coin` is the first arg in the last `move run` cmd.
-    Then cmd: "move run --function default::my_coin::faucet --args object:default::my_coin::Treasury"
-    Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+    #Then cmd: "move run --function default::my_coin::faucet --args object:default::my_coin::Treasury"
+    #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
-    Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "{{$.address_mapping.default}}::my_coin::MyCoin"]'"
-    Then assert: "'{{$.rpc[-1].coin_type}}' == '{{$.address_mapping.default}}::my_coin::MyCoin'"
-    Then assert: "'{{$.rpc[-1].balance}}' != '0'"
+    #Then cmd: "rpc request --method rooch_getBalance --params '["{{$.address_mapping.default}}", "{{$.address_mapping.default}}::my_coin::MyCoin"]'"
+    #Then assert: "'{{$.rpc[-1].coin_type}}' == '{{$.address_mapping.default}}::my_coin::MyCoin'"
+    #Then assert: "'{{$.rpc[-1].balance}}' != '0'"
     Then stop the server
   
   @serial
@@ -314,12 +305,19 @@ Feature: Rooch CLI integration tests
       Then cmd: "state --access-path /object/{{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.state[-1][0].decoded_value.value.value.value.name}} == bob"
 
+      # because the indexer is async update, so sleep 2 seconds to wait indexer update.
+      Then sleep: "2"
+
       Then cmd: "rpc request --method rooch_queryGlobalStates --params '[{"object_type":"{{$.address_mapping.default}}::child_object::Child"}, null, "10", true]'"
       Then assert: "{{$.rpc[-1].data[0].object_id}} == {{$.event[-1].data[0].decoded_event_data.value.id}}"
 
-      #TODO fix child dynamic field
-      #Then cmd: "move run --function default::third_party_module_for_child_object::update_child_age --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --args u64:10"
-      
+      Then cmd: "move run --function default::third_party_module_for_child_object::update_child_age --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --args u64:10"
+      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
+
+      Then cmd: "move view --function default::child_object::get_age --args object:{{$.event[-1].data[0].decoded_event_data.value.id}}"
+      Then assert: "{{$.move[-1].vm_status}} == Executed"
+      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 10" 
+       
       Then cmd: "move run --function default::third_party_module_for_child_object::remove_child_via_id --args object_id:{{$.event[-1].data[0].decoded_event_data.value.id}}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 

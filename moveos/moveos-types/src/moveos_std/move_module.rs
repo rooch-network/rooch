@@ -16,6 +16,7 @@ use move_core_types::{
     identifier::IdentStr,
     value::{MoveStructLayout, MoveTypeLayout},
 };
+use move_vm_types::values::{Struct, Value};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -42,6 +43,22 @@ impl MoveStructType for MoveModule {
 impl MoveStructState for MoveModule {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         MoveStructLayout::new(vec![MoveTypeLayout::Vector(Box::new(MoveTypeLayout::U8))])
+    }
+
+    fn from_runtime_value_struct(value: Struct) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut module_fields = value.unpack()?.collect::<Vec<Value>>();
+        debug_assert!(
+            module_fields.len() == 1,
+            "Fields of Module struct must be 1, actual: {}",
+            module_fields.len()
+        );
+        let module = module_fields.pop().unwrap();
+
+        let byte_codes = module.value_as::<Vec<u8>>()?;
+        Ok(Self { byte_codes })
     }
 }
 

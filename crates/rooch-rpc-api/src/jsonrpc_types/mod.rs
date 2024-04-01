@@ -15,7 +15,6 @@ mod tests;
 mod transaction_argument_view;
 
 pub mod account_view;
-pub mod eth;
 pub mod event_view;
 pub mod transaction_view;
 

@@ -8,28 +8,23 @@ use anyhow::Result;
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 use move_core_types::account_address::AccountAddress;
-use moveos_types::moveos_std::object;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state::MoveStructType;
-use rooch_types::bitcoin::utxo::{BitcoinOutputID, OutputID, UTXOState, UTXO};
+use rooch_types::bitcoin::utxo::{self, UTXOState, UTXO};
 use rooch_types::indexer::state::GlobalStateFilter;
 use rooch_types::into_address::IntoAddress;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, JsonSchema)]
-pub struct BitcoinOutputIDView {
-    // pub txid: AccountAddress,
+pub struct BitcoinOutPointView {
     pub txid: TxidView,
     pub vout: u32,
 }
 
-impl From<BitcoinOutputIDView> for BitcoinOutputID {
-    fn from(inscription: BitcoinOutputIDView) -> Self {
-        BitcoinOutputID {
-            txid: inscription.txid.into(),
-            vout: inscription.vout,
-        }
+impl From<BitcoinOutPointView> for bitcoin::OutPoint {
+    fn from(view: BitcoinOutPointView) -> Self {
+        bitcoin::OutPoint::new(view.txid.into(), view.vout)
     }
 }
 
@@ -38,8 +33,8 @@ impl From<BitcoinOutputIDView> for BitcoinOutputID {
 pub enum UTXOFilterView {
     /// Query by owner, represent by bitcoin address
     Owner(BitcoinAddressView),
-    /// Query by bitcoin output id, represent by bitcoin txid and vout
-    OutputId { txid: String, vout: u32 },
+    /// Query by bitcoin outpoint, represent by bitcoin txid and vout
+    OutPoint { txid: String, vout: u32 },
     /// Query by object id.
     ObjectId(ObjectID),
     /// Query all.
@@ -56,11 +51,12 @@ impl UTXOFilterView {
                 object_type: UTXO::struct_tag(),
                 owner: resolve_address,
             },
-            UTXOFilterView::OutputId { txid, vout } => {
+            UTXOFilterView::OutPoint { txid, vout } => {
                 let txid = hex_to_txid(txid.as_str())?;
-                let output_id = OutputID::new(txid.into_address(), vout);
-                let object_id = object::custom_object_id(output_id, &UTXO::struct_tag());
-                GlobalStateFilter::ObjectId(object_id)
+                let outpoint =
+                    rooch_types::bitcoin::types::OutPoint::new(txid.into_address(), vout);
+                let utxo_id = utxo::derive_utxo_id(&outpoint);
+                GlobalStateFilter::ObjectId(utxo_id)
             }
             UTXOFilterView::ObjectId(object_id) => GlobalStateFilter::ObjectId(object_id),
             UTXOFilterView::All => GlobalStateFilter::ObjectType(UTXO::struct_tag()),
@@ -84,8 +80,8 @@ pub struct UTXOView {
 
 impl UTXOView {
     pub fn try_new_from_utxo(utxo: UTXO) -> Result<UTXOView, anyhow::Error> {
-        let bitcoin_txid = Txid::from_byte_array(utxo.txid.into_bytes());
         // reversed bytes of txid
+        let bitcoin_txid = Txid::from_byte_array(utxo.txid.into_bytes());
         let seals_str = serde_json::to_string(&utxo.seals)?;
 
         Ok(UTXOView {

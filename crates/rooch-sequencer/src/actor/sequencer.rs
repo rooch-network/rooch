@@ -13,13 +13,10 @@ use moveos_types::h256::{self, H256};
 use rooch_store::meta_store::MetaStore;
 use rooch_store::transaction_store::TransactionStore;
 use rooch_store::RoochStore;
+use rooch_types::crypto::{RoochKeyPair, Signature};
 use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::{
-    TransactionSequenceInfo, TransactionSequenceInfoMapping, TypedTransaction,
-};
-use rooch_types::{
-    crypto::{RoochKeyPair, Signature},
-    transaction::AbstractTransaction,
+    RoochTransaction, TransactionSequenceInfo, TransactionSequenceInfoMapping,
 };
 use tracing::info;
 
@@ -47,18 +44,8 @@ impl SequencerActor {
             rooch_store,
         })
     }
-}
 
-impl Actor for SequencerActor {}
-
-#[async_trait]
-impl Handler<TransactionSequenceMessage> for SequencerActor {
-    async fn handle(
-        &mut self,
-        msg: TransactionSequenceMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<TransactionSequenceInfo> {
-        let tx = msg.tx;
+    pub fn sequence(&mut self, tx: RoochTransaction) -> Result<TransactionSequenceInfo> {
         let tx_order = if self.last_order == 0 {
             let last_order_opt = self
                 .rooch_store
@@ -100,13 +87,26 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
     }
 }
 
+impl Actor for SequencerActor {}
+
+#[async_trait]
+impl Handler<TransactionSequenceMessage> for SequencerActor {
+    async fn handle(
+        &mut self,
+        msg: TransactionSequenceMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<TransactionSequenceInfo> {
+        self.sequence(msg.tx)
+    }
+}
+
 #[async_trait]
 impl Handler<GetTransactionByHashMessage> for SequencerActor {
     async fn handle(
         &mut self,
         msg: GetTransactionByHashMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Option<TypedTransaction>> {
+    ) -> Result<Option<RoochTransaction>> {
         self.rooch_store.get_transaction_by_hash(msg.hash)
     }
 }
@@ -117,7 +117,7 @@ impl Handler<GetTransactionsByHashMessage> for SequencerActor {
         &mut self,
         msg: GetTransactionsByHashMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<Vec<Option<TypedTransaction>>> {
+    ) -> Result<Vec<Option<RoochTransaction>>> {
         self.rooch_store.get_transactions_by_hash(msg.tx_hashes)
     }
 }

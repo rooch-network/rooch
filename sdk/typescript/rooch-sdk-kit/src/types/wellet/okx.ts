@@ -6,9 +6,14 @@ import { BitcoinWallet } from './bitcoinWallet'
 import { SupportChain } from '../../feature'
 
 export class OkxWallet extends BitcoinWallet {
-  async sign(msg: string, fromAddress: string): Promise<string> {
+  constructor() {
+    super()
+    this.name = 'okx'
+  }
+
+  async sign(msg: string): Promise<string> {
     return this.getTarget().signMessage(msg, {
-      from: fromAddress,
+      from: this.account?.address,
     })
   }
 
@@ -31,5 +36,27 @@ export class OkxWallet extends BitcoinWallet {
         account.compressedPublicKey,
       ),
     ]
+  }
+
+  switchNetwork(): void {
+    this.getTarget().switchNetwork()
+  }
+  getNetwork(): string {
+    return this.getTarget().getNetwork()
+  }
+  getSupportNetworks(): string[] {
+    return ['livenet']
+  }
+  onAccountsChanged(callback: (account: WalletAccount[]) => void): void {
+    this.getTarget().on('accountsChanged', callback)
+  }
+  removeAccountsChanged(callback: (account: WalletAccount[]) => void): void {
+    this.getTarget().removeListener('accountsChanged', callback)
+  }
+  onNetworkChanged(callback: (network: string) => void): void {
+    this.getTarget().on('networkChanged', callback)
+  }
+  removeNetworkChanged(callback: (network: string) => void): void {
+    this.getTarget().removeListener('networkChanged', callback)
   }
 }

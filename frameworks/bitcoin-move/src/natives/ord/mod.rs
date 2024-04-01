@@ -14,7 +14,7 @@ pub mod media;
 pub(crate) mod test;
 
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
-use move_core_types::gas_algebra::InternalGas;
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_core_types::vm_status::StatusCode;
 use move_vm_runtime::native_functions::NativeContext;
 use move_vm_runtime::native_functions::NativeFunction;
@@ -35,11 +35,15 @@ use {envelope::ParsedEnvelope, envelope::RawEnvelope, inscription::Inscription};
 #[derive(Debug, Clone)]
 pub struct FromWitnessGasParameters {
     pub base: InternalGas,
+    pub per_byte: InternalGasPerByte,
 }
 
 impl FromWitnessGasParameters {
     pub fn zeros() -> Self {
-        Self { base: 0.into() }
+        Self {
+            base: 0.into(),
+            per_byte: 0.into(),
+        }
     }
 }
 
@@ -54,15 +58,22 @@ pub(crate) fn native_from_witness(
     debug_assert_eq!(ty_args.len(), 0);
     debug_assert_eq!(args.len(), 1);
 
-    let cost = gas_params.base;
+    let mut cost = gas_params.base;
 
-    // TODO(gas): charge gas
     let witness_ref = pop_arg!(args, StructRef);
     let wintness_value = witness_ref.read_ref()?;
     let witness = Witness::from_runtime_value(wintness_value).map_err(|e| {
         PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
             .with_message(format!("Failed to parse witness: {}", e))
     })?;
+    cost += gas_params.per_byte
+        * NumBytes::new(
+            witness
+                .witness
+                .iter()
+                .map(|inner_vec| inner_vec.len())
+                .sum::<usize>() as u64,
+        );
     let bitcoin_witness = bitcoin::Witness::from_slice(witness.witness.as_slice());
     let inscriptions = from_witness(&bitcoin_witness);
     let inscription_vm_type = context

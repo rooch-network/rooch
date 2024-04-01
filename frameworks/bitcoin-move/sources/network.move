@@ -2,11 +2,28 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module bitcoin_move::network{
-    use std::option;
     use std::string::{Self, String};
-    use bitcoin_move::genesis;
+    use moveos_std::object;
 
     const ErrorUnknownNetwork: u64 = 1;
+
+    friend bitcoin_move::genesis;
+
+    /// Bitcoin network onchain configuration.
+    struct BitcoinNetwork has key{
+        network: u8
+    }
+
+    public(friend) fun genesis_init(network: u8){
+        let obj = object::new_named_object(BitcoinNetwork{network: network});
+        object::to_shared(obj);
+    }
+
+    /// Get the current network from the onchain configuration.
+    public fun network() : u8 {
+        let id = object::named_object_id<BitcoinNetwork>();
+        object::borrow(object::borrow_object<BitcoinNetwork>(id)).network 
+    }
 
     ///Currently, Move does not support enum types, so we use constants to represent the network type.    
     /// Mainnet Bitcoin.
@@ -35,19 +52,6 @@ module bitcoin_move::network{
 
     public fun is_mainnet(network: u8): bool {
         network == NETWORK_BITCOIN
-    }
-
-    public fun default_network() : u8 {
-        Self::network_bitcoin()
-    }
-
-    public fun network() : u8 {
-        let network_opt = genesis::network();
-        if(option::is_some(&network_opt)){
-            *option::borrow(&network_opt)
-        } else {
-            Self::default_network()
-        }
     }
 
     public fun from_str(network: &String): u8 {
@@ -105,4 +109,5 @@ module bitcoin_move::network{
             abort ErrorUnknownNetwork
         }
     }
+
 }

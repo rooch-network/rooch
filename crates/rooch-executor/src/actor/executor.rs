@@ -17,7 +17,7 @@ use move_core_types::resolver::ModuleResolver;
 use move_core_types::value::MoveValue;
 use move_core_types::vm_status::{StatusCode, VMStatus};
 use moveos::gas::table::{get_gas_schedule_entries, initial_cost_schedule, MoveOSGasMeter};
-use moveos::moveos::{GasPaymentAccount, MoveOS};
+use moveos::moveos::MoveOS;
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
@@ -30,7 +30,7 @@ use moveos_types::state_resolver::MoveOSResolverProxy;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::transaction::{
-    FunctionCall, MoveAction, MoveOSTransaction, TransactionExecutionInfo, VerifiedMoveAction,
+    FunctionCall, MoveOSTransaction, TransactionExecutionInfo, VerifiedMoveAction,
 };
 use moveos_verifier::metadata::load_module_metadata;
 use rooch_framework::natives::gas_parameter::gas_member::FromOnChainGasSchedule;
@@ -43,7 +43,7 @@ use rooch_types::framework::auth_validator::{AuthValidatorCaller, TxValidateResu
 use rooch_types::framework::genesis::GenesisContext;
 use rooch_types::framework::transaction_validator::TransactionValidator;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
-use rooch_types::transaction::{AbstractTransaction, AuthenticatorInfo};
+use rooch_types::transaction::{AuthenticatorInfo, RoochTransaction};
 
 pub struct ExecutorActor {
     genesis: RoochGenesis,
@@ -68,8 +68,7 @@ impl ExecutorActor {
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
     ) -> Result<Self> {
-        let mut genesis: RoochGenesis =
-            rooch_genesis::RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
+        let mut genesis: RoochGenesis = RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
 
         let gas_schedule_entries =
             get_gas_schedule_entries(&MoveOSResolverProxy(moveos_store.clone()));
@@ -210,51 +209,14 @@ impl ExecutorActor {
         })
     }
 
-    pub fn validate<T: AbstractTransaction>(&self, tx: T) -> Result<VerifiedMoveOSTransaction> {
-        let multi_chain_address_sender = tx.sender();
+    pub fn validate(&self, tx: RoochTransaction) -> Result<VerifiedMoveOSTransaction> {
+        let sender = tx.sender();
 
-        let resolved_sender = self.resolve_or_generate(multi_chain_address_sender.clone())?;
         let authenticator = tx.authenticator_info()?;
 
-        let mut moveos_tx = tx.construct_moveos_transaction(resolved_sender)?;
+        let mut moveos_tx: MoveOSTransaction = tx.into();
 
         let vm_result = self.validate_authenticator(&moveos_tx.ctx, authenticator)?;
-
-        let can_pay_gas = self.validate_gas_function(&moveos_tx)?;
-
-        let mut pay_by_module_account = false;
-        let mut gas_payment_account = moveos_tx.ctx.sender;
-
-        if let Some(pay_gas) = can_pay_gas {
-            if pay_gas {
-                let account_balance = self.get_account_balance(&moveos_tx)?;
-                let module_account = {
-                    match &moveos_tx.action {
-                        MoveAction::Function(call) => Some(*call.function_id.module_id.address()),
-                        _ => None,
-                    }
-                };
-
-                let gas_payment_address = {
-                    if account_balance >= moveos_tx.ctx.max_gas_amount as u128 {
-                        pay_by_module_account = true;
-                        module_account.unwrap()
-                    } else {
-                        moveos_tx.ctx.sender
-                    }
-                };
-
-                gas_payment_account = gas_payment_address;
-            }
-        }
-
-        moveos_tx
-            .ctx
-            .add(GasPaymentAccount {
-                account: gas_payment_account,
-                pay_gas_by_module_account: pay_by_module_account,
-            })
-            .expect("adding GasPaymentAccount to tx context failed.");
 
         match vm_result {
             Ok((
@@ -266,7 +228,7 @@ impl ExecutorActor {
                 // Add the original multichain address to the context
                 moveos_tx
                     .ctx
-                    .add(multi_chain_address.unwrap_or(multi_chain_address_sender))
+                    .add(multi_chain_address.unwrap_or(sender.into()))
                     .expect("add sender to context failed");
 
                 // Add the tx_validate_result to the context
@@ -529,13 +491,10 @@ impl Handler<ResolveMessage> for ExecutorActor {
 }
 
 #[async_trait]
-impl<T> Handler<ValidateTransactionMessage<T>> for ExecutorActor
-where
-    T: 'static + AbstractTransaction + Send + Sync,
-{
+impl Handler<ValidateTransactionMessage> for ExecutorActor {
     async fn handle(
         &mut self,
-        msg: ValidateTransactionMessage<T>,
+        msg: ValidateTransactionMessage,
         _ctx: &mut ActorContext,
     ) -> Result<VerifiedMoveOSTransaction> {
         self.validate(msg.tx)

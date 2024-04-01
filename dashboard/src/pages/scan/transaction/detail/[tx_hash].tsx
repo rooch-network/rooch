@@ -166,14 +166,6 @@ const TransactionDetail = () => {
                 </TableRow>
                 <TableRow>
                   <MUITableCell sx={{ pb: '0 !important', whiteSpace: 'nowrap' }}>
-                    Transaction Type:
-                  </MUITableCell>
-                  <MUITableCell sx={{ pb: '0 !important', textTransform: 'uppercase' }}>
-                    {data.data[0].transaction.transaction_type}
-                  </MUITableCell>
-                </TableRow>
-                <TableRow>
-                  <MUITableCell sx={{ pb: '0 !important', whiteSpace: 'nowrap' }}>
                     <Divider sx={{ mt: 2, mb: 2 }} />{' '}
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important', whiteSpace: 'nowrap' }}>

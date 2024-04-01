@@ -11,6 +11,7 @@ use once_cell::sync::Lazy;
 use raw_store::{ColumnFamilyName, StoreInstance};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
+use std::path::Path;
 use std::sync::Arc;
 
 use crate::config_store::{ConfigDBStore, ConfigStore};
@@ -77,11 +78,12 @@ pub struct MoveOSDB {
 }
 
 impl MoveOSDB {
-    pub fn mock_store_instance() -> StoreInstance {
+    pub fn mock_store_instance(data_dir: Option<&Path>) -> StoreInstance {
         let tmpdir = moveos_config::temp_dir();
+        let db_path = data_dir.unwrap_or(tmpdir.path());
         StoreInstance::new_db_instance(
             RocksDB::new(
-                tmpdir.path(),
+                db_path,
                 StoreMeta::get_column_family_names().to_vec(),
                 RocksdbConfig::default(),
                 None,
@@ -91,7 +93,11 @@ impl MoveOSDB {
     }
 
     pub fn mock_moveosdb() -> Result<Self> {
-        Self::new(Self::mock_store_instance())
+        Self::new(Self::mock_store_instance(None))
+    }
+
+    pub fn mock_moveosdb_with_data_dir(data_dir: &Path) -> Result<Self> {
+        Self::new(Self::mock_store_instance(Some(data_dir)))
     }
 
     pub fn new(instance: StoreInstance) -> Result<Self> {
@@ -114,6 +120,11 @@ pub struct MoveOSStore {
 impl MoveOSStore {
     pub fn mock_moveos_store() -> Result<Self> {
         let moveosdb = MoveOSDB::mock_moveosdb()?;
+        Self::new(moveosdb)
+    }
+
+    pub fn mock_moveos_store_with_data_dir(data_dir: &Path) -> Result<Self> {
+        let moveosdb = MoveOSDB::mock_moveosdb_with_data_dir(data_dir)?;
         Self::new(moveosdb)
     }
 
@@ -315,5 +326,9 @@ impl StateResolver for MoveOSStore {
         limit: usize,
     ) -> std::result::Result<Vec<(KeyState, State)>, Error> {
         self.statedb.list_table_items(handle, cursor, limit)
+    }
+
+    fn root_object(&self) -> RootObjectEntity {
+        self.statedb.root_object()
     }
 }

@@ -5,6 +5,7 @@ use super::data_cache::{into_change_set, MoveosDataCache};
 use crate::gas::table::{get_gas_schedule_entries, initial_cost_schedule, ClassifiedGasMeter};
 use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
 use move_binary_format::compatibility::Compatibility;
+use move_binary_format::file_format::CompiledScript;
 use move_binary_format::normalized;
 use move_binary_format::{
     access::ModuleAccess,
@@ -19,6 +20,7 @@ use move_core_types::{
     value::MoveTypeLayout,
     vm_status::{KeptVMStatus, StatusCode},
 };
+use move_model::script_into_module;
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::{
     config::VMConfig,
@@ -135,7 +137,8 @@ where
         gas_meter: G,
         read_only: bool,
     ) -> Self {
-        let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(ctx)));
+        let root = remote.root_object();
+        let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(ctx, root)));
         Self {
             vm,
             remote,
@@ -148,8 +151,9 @@ where
 
     /// Re spawn a new session with the same context.
     pub fn respawn(self, env: SimpleMap<MoveString, Any>) -> Self {
-        let new_ctx = self.object_runtime.read().tx_context().clone().spawn(env);
-        let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(new_ctx)));
+        let new_ctx = self.object_runtime.read().tx_context().spawn(env);
+        let root = self.object_runtime.read().root();
+        let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(new_ctx, root)));
         Self {
             session: Self::new_inner_session(self.vm, self.remote, object_runtime.clone()),
             object_runtime,
@@ -196,6 +200,19 @@ where
                     .map_err(|e| e.finish(location.clone()))?;
                 let _resolved_args =
                     self.resolve_argument(&loaded_function, call.args.clone(), location)?;
+
+                let compiled_script_opt = CompiledScript::deserialize(call.code.as_slice());
+                let compiled_script = match compiled_script_opt {
+                    Ok(v) => v,
+                    Err(err) => return Err(err.finish(Location::Undefined)),
+                };
+                let script_module = script_into_module(compiled_script);
+                let result = moveos_verifier::verifier::verify_module(&script_module, self.remote);
+                match result {
+                    Ok(_) => {}
+                    Err(err) => return Err(err),
+                }
+
                 Ok(VerifiedMoveAction::Script { call })
             }
             MoveAction::Function(call) => {
@@ -246,7 +263,7 @@ where
                 let loaded_function = self
                     .session
                     .load_script(call.code.as_slice(), call.ty_args.clone())?;
-                let location = Location::Script;
+                let location: Location = Location::Script;
                 let resolved_args = self.resolve_argument(&loaded_function, call.args, location)?;
                 let serialized_args = self.load_arguments(resolved_args)?;
                 self.session
@@ -460,7 +477,12 @@ where
         for module_id in init_function_modules {
             let function_id = FunctionId::new(module_id.clone(), INIT_FN_NAME_IDENTIFIER.clone());
             let call = FunctionCall::new(function_id, vec![], vec![]);
-
+            if log::log_enabled!(log::Level::Trace) {
+                log::trace!(
+                    "Execute init function for module: {:?}",
+                    module_id.to_string()
+                );
+            }
             self.execute_function_bypass_visibility(call)
                 .map(|result| {
                     debug_assert!(result.is_empty(), "Init function must not return value")
@@ -481,12 +503,17 @@ where
             remote: _,
             session,
             object_runtime,
-            mut gas_meter,
+            gas_meter: _,
             read_only,
         } = self;
         let (changeset, raw_events, mut extensions) = session.finish_with_extensions()?;
         //We do not use the event API from data_cache. Instead, we use the NativeEventContext
         debug_assert!(raw_events.is_empty());
+        //We do not use the account, resource, and module API from data_cache. Instead, we use the ObjectRuntimeContext
+        debug_assert!(changeset.accounts().is_empty());
+        drop(changeset);
+        drop(raw_events);
+
         let event_context = extensions.remove::<NativeEventContext>();
         let raw_events = event_context.into_events();
         drop(extensions);
@@ -495,15 +522,12 @@ where
             into_change_set(object_runtime).map_err(|e| e.finish(Location::Undefined))?;
 
         if read_only {
-            if !changeset.accounts().is_empty() {
-                return Err(PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
-                    .with_message("ChangeSet should be empty as never used.".to_owned())
-                    .finish(Location::Undefined));
-            }
-
             if !state_changeset.changes.is_empty() {
                 return Err(PartialVMError::new(StatusCode::UNKNOWN_VALIDATION_STATUS)
-                    .with_message("Table change set should be empty as never used.".to_owned())
+                    .with_message(
+                        "State change set should be empty when execute readonly function."
+                            .to_owned(),
+                    )
                     .finish(Location::Undefined));
             }
 
@@ -531,16 +555,17 @@ where
         })?;
         let is_upgrade = module_flag.map_or(false, |flag| flag.is_upgrade);
 
-        match gas_meter.charge_change_set(&state_changeset) {
-            Ok(_) => {}
-            Err(partial_vm_error) => {
-                return Err(partial_vm_error
-                    .with_message(
-                        "An error occurred during the charging of the change set".to_owned(),
-                    )
-                    .finish(Location::Undefined));
-            }
-        }
+        //TODO cleanup
+        // match gas_meter.charge_change_set(&state_changeset) {
+        //     Ok(_) => {}
+        //     Err(partial_vm_error) => {
+        //         return Err(partial_vm_error
+        //             .with_message(
+        //                 "An error occurred during the charging of the change set".to_owned(),
+        //             )
+        //             .finish(Location::Undefined));
+        //     }
+        // }
 
         // Temporary behavior, will enable this in the future.
         /*
@@ -571,8 +596,7 @@ where
             ctx,
             RawTransactionOutput {
                 status,
-                changeset,
-                state_changeset,
+                changeset: state_changeset,
                 events,
                 gas_used,
                 is_upgrade,
@@ -590,13 +614,21 @@ where
         }
         for function_call in functions {
             let result = self.execute_function_bypass_visibility(function_call);
-            if let Err(e) = result {
-                if !meter_gas {
-                    self.gas_meter.start_metering();
+            match result {
+                Ok(return_values) => {
+                    // This function is only used in crates. No return values are expected.
+                    assert!(
+                        return_values.is_empty(),
+                        "Function should not return values"
+                    )
                 }
-                return Err(e);
+                Err(e) => {
+                    if !meter_gas {
+                        self.gas_meter.start_metering();
+                    }
+                    return Err(e);
+                }
             }
-            // TODO: how to handle function call with returned values?
         }
         if !meter_gas {
             self.gas_meter.start_metering();

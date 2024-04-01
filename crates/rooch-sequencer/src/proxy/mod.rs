@@ -12,7 +12,7 @@ use coerce::actor::ActorRef;
 use moveos_types::h256::H256;
 use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::TransactionSequenceInfo;
-use rooch_types::transaction::{TransactionSequenceInfoMapping, TypedTransaction};
+use rooch_types::transaction::{RoochTransaction, TransactionSequenceInfoMapping};
 
 #[derive(Clone)]
 pub struct SequencerProxy {
@@ -26,12 +26,12 @@ impl SequencerProxy {
 
     pub async fn sequence_transaction(
         &self,
-        tx: TypedTransaction,
+        tx: RoochTransaction,
     ) -> Result<TransactionSequenceInfo> {
         self.actor.send(TransactionSequenceMessage { tx }).await?
     }
 
-    pub async fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>> {
+    pub async fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<RoochTransaction>> {
         self.actor
             .send(GetTransactionByHashMessage { hash })
             .await?
@@ -40,7 +40,7 @@ impl SequencerProxy {
     pub async fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256>,
-    ) -> Result<Vec<Option<TypedTransaction>>> {
+    ) -> Result<Vec<Option<RoochTransaction>>> {
         self.actor
             .send(GetTransactionsByHashMessage { tx_hashes })
             .await?

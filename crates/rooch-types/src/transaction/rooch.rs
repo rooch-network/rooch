@@ -1,14 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{
-    authenticator::Authenticator, AbstractTransaction, AuthenticatorInfo, TransactionType,
-};
+use super::RawTransaction;
+use super::{authenticator::Authenticator, AuthenticatorInfo};
 use crate::crypto::{Ed25519RoochSignature, RoochKeyPair, Signature};
-use crate::multichain_id::{MultiChainID, ROOCH};
 use crate::{address::RoochAddress, chain_id::RoochChainID};
 use anyhow::Result;
-use move_core_types::account_address::AccountAddress;
 use moveos_types::gas_config::GasConfig;
 use moveos_types::h256::H256;
 use moveos_types::{
@@ -16,7 +13,6 @@ use moveos_types::{
     transaction::{MoveAction, MoveOSTransaction},
 };
 use serde::{Deserialize, Serialize};
-use std::debug_assert;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct RoochTransactionData {
@@ -122,13 +118,43 @@ impl RoochTransaction {
         &self.data.action
     }
 
+    pub fn decode(bytes: &[u8]) -> Result<Self>
+    where
+        Self: std::marker::Sized,
+    {
+        bcs::from_bytes::<Self>(bytes).map_err(Into::into)
+    }
+
+    pub fn encode(&self) -> Vec<u8> {
+        bcs::to_bytes(self).expect("encode transaction should success")
+    }
+
+    //TODO unify the hash function
+    pub fn tx_hash(&self) -> H256 {
+        //TODO cache the hash
+        self.data.hash()
+    }
+
+    pub fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
+        Ok(AuthenticatorInfo::new(
+            self.chain_id(),
+            self.authenticator.clone(),
+        ))
+    }
+
+    pub fn tx_size(&self) -> u64 {
+        self.encode().len() as u64
+    }
+
     //TODO use protest Arbitrary to generate mock data
     #[cfg(test)]
     pub fn mock() -> RoochTransaction {
         use crate::address::RoochSupportedAddress;
         use fastcrypto::ed25519::Ed25519KeyPair;
         use fastcrypto::traits::KeyPair;
-        use move_core_types::{identifier::Identifier, language_storage::ModuleId};
+        use move_core_types::{
+            account_address::AccountAddress, identifier::Identifier, language_storage::ModuleId,
+        };
         use moveos_types::move_types::FunctionId;
 
         let sender: RoochAddress = RoochAddress::random();
@@ -166,56 +192,11 @@ impl From<RoochTransaction> for MoveOSTransaction {
     }
 }
 
-impl AbstractTransaction for RoochTransaction {
-    fn transaction_type(&self) -> super::TransactionType {
-        TransactionType::Rooch
-    }
+impl TryFrom<RawTransaction> for RoochTransaction {
+    type Error = anyhow::Error;
 
-    fn decode(bytes: &[u8]) -> Result<Self>
-    where
-        Self: std::marker::Sized,
-    {
-        bcs::from_bytes::<Self>(bytes).map_err(Into::into)
-    }
-
-    fn encode(&self) -> Vec<u8> {
-        bcs::to_bytes(self).expect("encode transaction should success")
-    }
-
-    //TODO unify the hash function
-    fn tx_hash(&self) -> H256 {
-        //TODO cache the hash
-        self.data.hash()
-    }
-
-    fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
-        Ok(AuthenticatorInfo::new(
-            self.chain_id(),
-            self.authenticator.clone(),
-        ))
-    }
-
-    fn construct_moveos_transaction(
-        self,
-        resolved_sender: AccountAddress,
-    ) -> Result<MoveOSTransaction> {
-        debug_assert!(self.sender() == resolved_sender.into());
-        Ok(self.into())
-    }
-
-    fn sender(&self) -> crate::address::MultiChainAddress {
-        self.sender().into()
-    }
-
-    fn original_address_str(&self) -> String {
-        self.data.sender.to_string()
-    }
-
-    fn multi_chain_id(&self) -> MultiChainID {
-        MultiChainID::from(ROOCH)
-    }
-
-    fn tx_size(&self) -> u64 {
-        self.encode().len() as u64
+    fn try_from(raw: RawTransaction) -> Result<Self> {
+        let tx = RoochTransaction::decode(raw.raw.as_slice())?;
+        Ok(tx)
     }
 }

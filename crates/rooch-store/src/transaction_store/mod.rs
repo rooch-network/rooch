@@ -1,24 +1,23 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::{
+    TRANSACTION_PREFIX_NAME, TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME, TX_SEQUENCE_INFO_PREFIX_NAME,
+    TX_SEQUENCE_INFO_REVERSE_MAPPING_PREFIX_NAME,
+};
 use anyhow::Result;
 use moveos_types::h256::H256;
 use raw_store::CodecKVStore;
-use rooch_types::transaction::{
-    AbstractTransaction, TransactionSequenceInfo, TransactionSequenceInfoMapping, TypedTransaction,
-};
-
-use crate::{
-    TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME, TX_SEQUENCE_INFO_PREFIX_NAME,
-    TX_SEQUENCE_INFO_REVERSE_MAPPING_PREFIX_NAME, TYPED_TRANSACTION_PREFIX_NAME,
-};
 use raw_store::{derive_store, StoreInstance};
+use rooch_types::transaction::{
+    RoochTransaction, TransactionSequenceInfo, TransactionSequenceInfoMapping,
+};
 
 derive_store!(
-    TypedTransactionStore,
+    RoochTransactionStore,
     H256,
-    TypedTransaction,
-    TYPED_TRANSACTION_PREFIX_NAME
+    RoochTransaction,
+    TRANSACTION_PREFIX_NAME
 );
 
 derive_store!(
@@ -43,12 +42,12 @@ derive_store!(
 );
 
 pub trait TransactionStore {
-    fn save_transaction(&mut self, transaction: TypedTransaction) -> Result<()>;
-    fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>>;
+    fn save_transaction(&mut self, transaction: RoochTransaction) -> Result<()>;
+    fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<RoochTransaction>>;
     fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256>,
-    ) -> Result<Vec<Option<TypedTransaction>>>;
+    ) -> Result<Vec<Option<RoochTransaction>>>;
 
     fn save_tx_sequence_info(&self, tx_sequence_info: TransactionSequenceInfo) -> Result<()>;
     fn get_tx_sequence_infos_by_order(
@@ -71,7 +70,7 @@ pub trait TransactionStore {
 
 #[derive(Clone)]
 pub struct TransactionDBStore {
-    tx_store: TypedTransactionStore,
+    tx_store: RoochTransactionStore,
     tx_sequence_info_store: TxSequenceInfoStore,
     tx_sequence_info_mapping_store: TxSequenceInfoMappingStore,
     tx_sequence_info_reverse_mapping_store: TxSequenceInfoReverseMappingStore,
@@ -80,7 +79,7 @@ pub struct TransactionDBStore {
 impl TransactionDBStore {
     pub fn new(instance: StoreInstance) -> Self {
         TransactionDBStore {
-            tx_store: TypedTransactionStore::new(instance.clone()),
+            tx_store: RoochTransactionStore::new(instance.clone()),
             tx_sequence_info_store: TxSequenceInfoStore::new(instance.clone()),
             tx_sequence_info_mapping_store: TxSequenceInfoMappingStore::new(instance.clone()),
             tx_sequence_info_reverse_mapping_store: TxSequenceInfoReverseMappingStore::new(
@@ -89,15 +88,15 @@ impl TransactionDBStore {
         }
     }
 
-    pub fn save_transaction(&mut self, transaction: TypedTransaction) -> Result<()> {
+    pub fn save_transaction(&mut self, transaction: RoochTransaction) -> Result<()> {
         self.tx_store.kv_put(transaction.tx_hash(), transaction)
     }
 
-    pub fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<TypedTransaction>> {
+    pub fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<RoochTransaction>> {
         self.tx_store.kv_get(hash)
     }
 
-    pub fn get_transactions(&self, tx_hashes: Vec<H256>) -> Result<Vec<Option<TypedTransaction>>> {
+    pub fn get_transactions(&self, tx_hashes: Vec<H256>) -> Result<Vec<Option<RoochTransaction>>> {
         self.tx_store.multiple_get(tx_hashes)
     }
 

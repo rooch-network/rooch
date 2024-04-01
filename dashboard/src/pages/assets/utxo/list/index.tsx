@@ -99,7 +99,7 @@ const UTXOList = () => {
     'queryUTXOs',
     {
       filter: {
-        owner: account?.getAddress() ?? '',
+        owner: account?.address ?? '',
       },
       cursor: cursor,
       limit: paginationModel.pageSize,

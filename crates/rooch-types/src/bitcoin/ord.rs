@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::types::Transaction;
+use super::types::{OutPoint, Transaction};
 use crate::address::BitcoinAddress;
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
 use crate::indexer::state::IndexerGlobalState;
@@ -22,6 +22,8 @@ use moveos_types::{
     state::{MoveState, MoveStructState, MoveStructType},
 };
 use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::fmt::{Display, Formatter};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("ord");
 
@@ -57,6 +59,7 @@ pub struct Inscription {
     pub txid: AccountAddress,
     pub index: u32,
     pub input: u32,
+    pub offset: u64,
     pub body: Vec<u8>,
     pub content_encoding: MoveOption<MoveString>,
     pub content_type: MoveOption<MoveString>,
@@ -79,6 +82,7 @@ impl MoveStructState for Inscription {
             AccountAddress::type_layout(),
             u32::type_layout(),
             u32::type_layout(),
+            u64::type_layout(),
             Vec::<u8>::type_layout(),
             MoveOption::<MoveString>::type_layout(),
             MoveOption::<MoveString>::type_layout(),
@@ -157,6 +161,18 @@ impl MoveStructState for InscriptionStore {
             ObjectID::type_layout(),
             ObjectID::type_layout(),
         ])
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Eq, PartialOrd, Ord)]
+pub struct SatPoint {
+    pub outpoint: OutPoint,
+    pub offset: u64,
+}
+
+impl Display for SatPoint {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}:{}", self.outpoint, self.offset)
     }
 }
 

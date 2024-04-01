@@ -988,6 +988,67 @@
           }
         }
       },
+      "FieldChangeView": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "fields",
+              "key",
+              "type"
+            ],
+            "properties": {
+              "fields": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FieldChangeView"
+                }
+              },
+              "key": {
+                "$ref": "#/components/schemas/KeyStateView"
+              },
+              "op": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/OpView_for_StateView"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "object"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "key",
+              "op",
+              "type"
+            ],
+            "properties": {
+              "key": {
+                "$ref": "#/components/schemas/KeyStateView"
+              },
+              "op": {
+                "$ref": "#/components/schemas/OpView_for_StateView"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "nomarl"
+                ]
+              }
+            }
+          }
+        ]
+      },
       "FunctionCallView": {
         "type": "object",
         "required": [
@@ -1493,6 +1554,7 @@
           "body",
           "index",
           "metadata",
+          "offset",
           "txid"
         ],
         "properties": {
@@ -1539,6 +1601,11 @@
                 "type": "null"
               }
             ]
+          },
+          "offset": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
           },
           "parent": {
             "anyOf": [
@@ -1757,6 +1824,30 @@
               "format": "uint8",
               "minimum": 0.0
             }
+          }
+        }
+      },
+      "ObjectChangeView": {
+        "type": "object",
+        "required": [
+          "fields"
+        ],
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldChangeView"
+            }
+          },
+          "op": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpView_for_StateView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -2185,14 +2276,20 @@
       "StateChangeSetView": {
         "type": "object",
         "required": [
-          "changes"
+          "changes",
+          "global_size"
         ],
         "properties": {
           "changes": {
             "type": "object",
             "additionalProperties": {
-              "$ref": "#/components/schemas/TableChangeView"
+              "$ref": "#/components/schemas/ObjectChangeView"
             }
+          },
+          "global_size": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
           }
         }
       },
@@ -2479,13 +2576,16 @@
       "TransactionOutputView": {
         "type": "object",
         "required": [
+          "changeset",
           "events",
           "gas_used",
           "is_upgrade",
-          "status",
-          "table_changeset"
+          "status"
         ],
         "properties": {
+          "changeset": {
+            "$ref": "#/components/schemas/StateChangeSetView"
+          },
           "events": {
             "type": "array",
             "items": {
@@ -2502,9 +2602,6 @@
           },
           "status": {
             "$ref": "#/components/schemas/KeptVMStatusView"
-          },
-          "table_changeset": {
-            "$ref": "#/components/schemas/StateChangeSetView"
           }
         }
       },
@@ -2527,13 +2624,6 @@
           }
         }
       },
-      "TransactionTypeView": {
-        "type": "string",
-        "enum": [
-          "rooch",
-          "ethereum"
-        ]
-      },
       "TransactionView": {
         "type": "object",
         "required": [
@@ -2541,8 +2631,7 @@
           "action_type",
           "raw",
           "sender",
-          "sequence_number",
-          "transaction_type"
+          "sequence_number"
         ],
         "properties": {
           "action": {
@@ -2561,9 +2650,6 @@
             "type": "integer",
             "format": "uint64",
             "minimum": 0.0
-          },
-          "transaction_type": {
-            "$ref": "#/components/schemas/TransactionTypeView"
           }
         }
       },
@@ -2612,13 +2698,13 @@
             "additionalProperties": false
           },
           {
-            "description": "Query by bitcoin output id, represent by bitcoin txid and vout",
+            "description": "Query by bitcoin outpoint, represent by bitcoin txid and vout",
             "type": "object",
             "required": [
-              "output_id"
+              "out_point"
             ],
             "properties": {
-              "output_id": {
+              "out_point": {
                 "type": "object",
                 "required": [
                   "txid",

@@ -6,7 +6,7 @@ import { RoochMultiChainID, SerializedSignature } from '@roochnetwork/rooch-sdk'
 import { Buffer } from 'buffer'
 import { MultiChainAddress } from '../address'
 import { AuthenticatorPayload } from '../AuthenticatorPayload'
-import { WalletAccount } from '../WalletAccount'
+import { SupportChain } from '../../feature'
 
 const BITCOIN_MAGIC_SIGN_PREFIX = 'Bitcoin Signed Message:\n'
 
@@ -15,20 +15,21 @@ export abstract class BitcoinWallet extends BaseWallet {
     _: string,
     signature: string,
     signatureInfo: string,
-    walletAccount: WalletAccount,
   ): SerializedSignature {
+    const walletAccount = this.account!
+
     let signBuffer = Buffer.from(signature, 'base64')
 
     // remove recover id
     const normalizeSignBuffer = signBuffer.subarray(1)
 
-    let multiAddress = new MultiChainAddress(RoochMultiChainID.Bitcoin, walletAccount.getAddress())
+    let multiAddress = new MultiChainAddress(RoochMultiChainID.Bitcoin, walletAccount.address)
     let multiAddressBytes = multiAddress.toBytes()
     let bitcoinMagicSignPrefixBytes = Array.from(BITCOIN_MAGIC_SIGN_PREFIX, (char) =>
       char.charCodeAt(0),
     )
     let signatureInfoBytes = Array.from(signatureInfo, (char) => char.charCodeAt(0))
-    let publicKey = Buffer.from(walletAccount.getInfo().publicKey!, 'hex')
+    let publicKey = Buffer.from(walletAccount.publicKey!, 'hex')
 
     let authPayload = new AuthenticatorPayload(
       Array.from(normalizeSignBuffer),
@@ -49,5 +50,13 @@ export abstract class BitcoinWallet extends BaseWallet {
     }
 
     return normalizeV
+  }
+
+  switchAccount(): void {
+    throw new Error('Method not implemented.')
+  }
+
+  isSupportChain(chain: SupportChain): boolean {
+    return chain === SupportChain.BITCOIN
   }
 }

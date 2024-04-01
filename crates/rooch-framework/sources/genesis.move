@@ -56,7 +56,7 @@ module rooch_framework::genesis {
     use std::vector;
 
     #[test_only]
-    /// init the genesis context for test, and return the Context with @rooch_framework genesis account
+    /// init the genesis context for test
     public fun init_for_test(){
         let genesis_account = moveos_std::signer::module_signer<GenesisContext>();
         tx_context::add_attribute_via_system(&genesis_account, GenesisContext{chain_id: 20230103, timestamp: 0, sequencer: @rooch_framework,

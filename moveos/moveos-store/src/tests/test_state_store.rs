@@ -3,119 +3,48 @@
 
 use crate::MoveOSStore;
 use anyhow::Result;
-use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
 use moveos_types::h256::H256;
 use moveos_types::move_std::string::MoveString;
-use moveos_types::move_types::random_type_tag;
-use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::object::{ObjectEntity, GENESIS_STATE_ROOT};
-use moveos_types::state::{KeyState, MoveState, MoveType, State, StateChangeSet, TableChange};
-use rand::{thread_rng, Rng};
+use moveos_types::state::{
+    FieldChange, KeyState, MoveState, MoveType, ObjectChange, StateChangeSet,
+};
+use moveos_types::test_utils::random_state_change_set;
 use smt::NodeStore;
 use std::str::FromStr;
-
-fn random_bytes() -> Vec<u8> {
-    H256::random().0.to_vec()
-}
-
-fn random_table_change() -> TableChange {
-    let mut table_change = TableChange::default();
-
-    let mut rng = thread_rng();
-    for _n in 0..rng.gen_range(1..=10) {
-        table_change.entries.insert(
-            KeyState::new(random_bytes(), random_type_tag()),
-            Op::New(State::new(random_bytes(), random_type_tag())),
-        );
-    }
-    table_change
-}
-
-fn random_state_change_set() -> StateChangeSet {
-    let mut state_change_set = StateChangeSet::default();
-    let mut global_change = TableChange::default();
-    let mut rng = thread_rng();
-    //TODO do we need the new_tables ?
-    // generate new tables
-    // for _n in 0..rng.gen_range(1..=5) {
-    //     let handle = ObjectID::from(AccountAddress::random());
-    //     state_change_set.new_tables.insert(handle);
-    // }
-
-    // // generate remove tables
-    // for _n in 0..rng.gen_range(1..=5) {
-    //     let handle = ObjectID::from(AccountAddress::random());
-    //     state_change_set.removed_tables.insert(handle);
-    // }
-
-    // generate change tables
-    for _n in 0..rng.gen_range(1..=5) {
-        let handle = ObjectID::from(AccountAddress::random());
-        state_change_set
-            .changes
-            .insert(handle.clone(), random_table_change());
-        global_change.entries.insert(
-            handle.to_key(),
-            Op::New(ObjectEntity::new_table_object(handle, *GENESIS_STATE_ROOT, 0).into_state()),
-        );
-    }
-
-    // generate resources change tables
-    for _n in 0..rng.gen_range(1..=10) {
-        let account = AccountAddress::random();
-        let account_object_id = Account::account_object_id(account);
-        state_change_set
-            .changes
-            .insert(account_object_id.clone(), random_table_change());
-        global_change.entries.insert(
-            account_object_id.to_key(),
-            Op::New(ObjectEntity::new_account_object(account).into_state()),
-        );
-    }
-
-    state_change_set
-        .changes
-        .insert(ObjectID::root(), global_change);
-
-    state_change_set
-}
 
 #[test]
 fn test_statedb() {
     let mut moveos_store = MoveOSStore::mock_moveos_store().unwrap();
 
-    let mut table_change_set = StateChangeSet::default();
-    let mut global_change = TableChange::default();
+    let mut state_change_set = StateChangeSet::default();
+
     let table_handle = ObjectID::random();
-    global_change.entries.insert(
-        table_handle.to_key(),
-        Op::New(
-            ObjectEntity::new_table_object(table_handle.clone(), *GENESIS_STATE_ROOT, 0)
-                .into_state(),
-        ),
-    );
-    table_change_set
-        .changes
-        .insert(ObjectID::root(), global_change);
-    let mut table_change = TableChange::default();
+
+    let mut object_change = ObjectChange::new(Op::New(
+        ObjectEntity::new_table_object(table_handle.clone(), *GENESIS_STATE_ROOT, 0).into_state(),
+    ));
+
     let key = KeyState::new(
         MoveString::from_str("test_key").unwrap().to_bytes(),
         MoveString::type_tag(),
     );
     let value = MoveString::from_str("test_value").unwrap();
 
-    table_change
-        .entries
-        .insert(key.clone(), Op::New(value.clone().into()));
+    object_change.add_field_change(
+        key.clone(),
+        FieldChange::new_normal(Op::New(value.clone().into())),
+    );
 
-    table_change_set
+    state_change_set
         .changes
-        .insert(table_handle.clone(), table_change);
+        .insert(table_handle.clone(), object_change);
+
     moveos_store
         .get_state_store_mut()
-        .apply_change_set(table_change_set)
+        .apply_change_set(state_change_set)
         .unwrap();
 
     let state = moveos_store
@@ -148,9 +77,10 @@ fn test_reopen() {
 #[test]
 fn test_statedb_state_root() -> Result<()> {
     let mut moveos_store = MoveOSStore::mock_moveos_store().expect("moveos store mock should succ");
+    let change_set = random_state_change_set();
     let (state_root, _size) = moveos_store
         .get_state_store_mut()
-        .apply_change_set(random_state_change_set())?;
+        .apply_change_set(change_set)?;
     let (new_state_root, _new_size) = moveos_store
         .get_state_store_mut()
         .apply_change_set(random_state_change_set())?;

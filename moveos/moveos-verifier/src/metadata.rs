@@ -102,7 +102,7 @@ pub fn get_metadata_from_compiled_module(
     if let Some(data) = find_metadata(module, ROOCH_METADATA_KEY) {
         bcs::from_bytes::<RuntimeModuleMetadataV1>(&data.value).ok()
     } else {
-        None
+        Some(RuntimeModuleMetadataV1::default())
     }
 }
 
@@ -719,6 +719,10 @@ impl<'a> ExtendedChecker<'a> {
     fn check_gas_free_function(&mut self, module: &ModuleEnv) {
         for fenv in module.get_functions() {
             if has_attribute(self.env, &fenv, GAS_FREE_ATTRIBUTE) {
+                // TODO: gas_free attribute is not supported yet.
+                // Remove this when it's ready
+                self.env
+                    .error(&fenv.get_loc(), "Unsupported attribute 'gas_free'.");
                 let attributes = fenv.get_attributes();
                 let mut attribute_gas_validate_found = false;
                 let mut attribute_gas_charge_post_found = false;

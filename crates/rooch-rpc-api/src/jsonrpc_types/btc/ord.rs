@@ -61,7 +61,7 @@ impl InscriptionFilterView {
                 let txid = hex_to_txid(txid.as_str())?;
                 let inscription_id = InscriptionID::new(txid.into_address(), index);
                 let object_id =
-                    object::custom_object_id(inscription_id, &Inscription::struct_tag());
+                    object::custom_object_id(&inscription_id, &Inscription::struct_tag());
                 GlobalStateFilter::ObjectId(object_id)
             }
             InscriptionFilterView::ObjectId(object_id) => GlobalStateFilter::ObjectId(object_id),
@@ -81,6 +81,7 @@ pub struct InscriptionView {
     pub txid: AccountAddressView,
     pub bitcoin_txid: TxidView,
     pub index: u32,
+    pub offset: u64,
     pub body: BytesView,
     pub content_encoding: Option<MoveStringView>,
     pub content_type: Option<MoveStringView>,
@@ -96,6 +97,7 @@ impl From<Inscription> for InscriptionView {
             txid: inscription.txid.into(),
             bitcoin_txid: StrView(Txid::from_byte_array(inscription.txid.into_bytes())),
             index: inscription.index,
+            offset: inscription.offset,
             body: StrView(inscription.body),
             content_encoding: Option::<MoveString>::from(inscription.content_encoding).map(StrView),
             content_type: Option::<MoveString>::from(inscription.content_type).map(StrView),

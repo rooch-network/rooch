@@ -6,7 +6,7 @@
 
 
 -  [Struct `BitcoinGenesisContext`](#0x4_genesis_BitcoinGenesisContext)
--  [Function `network`](#0x4_genesis_network)
+-  [Constants](#@Constants_0)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -14,7 +14,9 @@
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="brc20.md#0x4_brc20">0x4::brc20</a>;
 <b>use</b> <a href="light_client.md#0x4_light_client">0x4::light_client</a>;
+<b>use</b> <a href="network.md#0x4_network">0x4::network</a>;
 <b>use</b> <a href="ord.md#0x4_ord">0x4::ord</a>;
+<b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
 </code></pre>
 
 
@@ -31,11 +33,14 @@ BitcoinGenesisContext is a genesis init config in the TxContext.
 
 
 
-<a name="0x4_genesis_network"></a>
+<a name="@Constants_0"></a>
 
-## Function `network`
+## Constants
+
+
+<a name="0x4_genesis_ErrorGenesisInit"></a>
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="network.md#0x4_network">network</a>(): <a href="_Option">option::Option</a>&lt;u8&gt;
+<pre><code><b>const</b> <a href="genesis.md#0x4_genesis_ErrorGenesisInit">ErrorGenesisInit</a>: u64 = 1;
 </code></pre>

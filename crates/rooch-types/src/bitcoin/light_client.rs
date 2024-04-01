@@ -4,7 +4,7 @@
 use super::types::Header;
 use crate::{addresses::BITCOIN_MOVE_ADDRESS, into_address::IntoAddress};
 use anyhow::Result;
-use bitcoin::{BlockHash, Txid};
+use bitcoin::BlockHash;
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, value::MoveValue,
 };
@@ -51,35 +51,6 @@ impl MoveStructState for BitcoinBlockStore {
         move_core_types::value::MoveStructLayout::new(vec![
             MoveOption::<u64>::type_layout(),
             ObjectID::type_layout(),
-            ObjectID::type_layout(),
-            ObjectID::type_layout(),
-        ])
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BitcoinUTXOStore {
-    /// Outpoint -> TxOut table id
-    pub utxo: ObjectID,
-    /// Bitcoin address -> balance table id
-    pub balance: ObjectID,
-}
-
-impl BitcoinUTXOStore {
-    pub fn object_id() -> ObjectID {
-        object::named_object_id(&Self::struct_tag())
-    }
-}
-
-impl MoveStructType for BitcoinUTXOStore {
-    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("BitcoinUTXOStore");
-    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
-}
-
-impl MoveStructState for BitcoinUTXOStore {
-    fn struct_layout() -> move_core_types::value::MoveStructLayout {
-        move_core_types::value::MoveStructLayout::new(vec![
             ObjectID::type_layout(),
             ObjectID::type_layout(),
         ])
@@ -190,37 +161,11 @@ impl<'a> BitcoinLightClientModule<'a> {
         Ok(height.into())
     }
 
-    pub fn get_utxo(&self, tx_id: Txid, vout: u32) -> Result<Option<ObjectID>> {
-        let call = Self::create_function_call(
-            Self::GET_UTXO_FUNCTION_NAME,
-            vec![],
-            vec![
-                BitcoinUTXOStore::object_id().to_move_value(),
-                MoveValue::Address(tx_id.into_address()),
-                MoveValue::U32(vout),
-            ],
-        );
-        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
-        let tx_out = self
-            .caller
-            .call_function(&ctx, call)?
-            .into_result()
-            .map(|mut values| {
-                let value = values.pop().expect("should have one return value");
-                bcs::from_bytes::<MoveOption<ObjectID>>(&value.value)
-                    .expect("should be a valid MoveOption<ObjectID>")
-            })?;
-        Ok(tx_out.into())
-    }
-
     pub fn remaining_tx_count(&self) -> Result<u64> {
         let call = Self::create_function_call(
             Self::REMAINING_TX_COUNT_FUNCTION_NAME,
             vec![],
-            vec![
-                BitcoinBlockStore::object_id().to_move_value(),
-                BitcoinUTXOStore::object_id().to_move_value(),
-            ],
+            vec![BitcoinBlockStore::object_id().to_move_value()],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
         let remaining_count =
@@ -257,7 +202,6 @@ impl<'a> BitcoinLightClientModule<'a> {
             vec![],
             vec![
                 BitcoinBlockStore::object_id().to_move_value(),
-                BitcoinUTXOStore::object_id().to_move_value(),
                 MoveValue::U64(batch_size),
             ],
         )

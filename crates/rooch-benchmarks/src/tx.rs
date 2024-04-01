@@ -40,7 +40,8 @@ use rooch_types::address::RoochAddress;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::chain_id::RoochChainID;
-use rooch_types::transaction::TypedTransaction;
+use rooch_types::crypto::RoochKeyPair;
+use rooch_types::transaction::rooch::RoochTransaction;
 use std::env;
 use std::fmt::Display;
 use std::str::FromStr;
@@ -83,27 +84,31 @@ impl Display for TxType {
 
 lazy_static! {
     pub static ref TX_SIZE: usize = {
-        env::var("TX_SIZE")
+        env::var("ROOCH_BENCH_TX_SIZE")
             .unwrap_or_else(|_| String::from("0"))
             .parse::<usize>()
             .unwrap_or(0usize)
     };
     pub static ref TX_TYPE: TxType = {
-        let tx_type_str = env::var("TX_TYPE").unwrap_or_else(|_| String::from("empty"));
+        let tx_type_str = env::var("ROOCH_BENCH_TX_TYPE").unwrap_or_else(|_| String::from("empty"));
         tx_type_str.parse::<TxType>().unwrap_or(TxType::Empty)
     };
     pub static ref DATA_DIR: DataDirPath = get_data_dir();
 }
 
 pub fn get_data_dir() -> DataDirPath {
-    match env::var("DATA_DIR") {
-        Ok(pure_mem) => {
-            let temp_dir = TempDir::new_in(pure_mem)
+    match env::var("ROOCH_TEST_DATA_DIR") {
+        Ok(path_str) => {
+            let temp_dir = TempDir::new_in(path_str)
                 .expect("Failed to create temp dir in provided data dir path");
             DataDirPath::TempPath(Arc::from(temp_dir))
         }
         Err(_) => moveos_config::temp_dir(),
     }
+}
+
+pub fn gen_sequencer(keypair: RoochKeyPair, rooch_store: RoochStore) -> Result<SequencerActor> {
+    SequencerActor::new(keypair, rooch_store.clone(), true) // is_genesis is useless for sequencer in present
 }
 
 pub async fn setup_service(
@@ -192,7 +197,7 @@ pub async fn setup_service(
     timers.push(proposer_timer);
 
     // Init indexer
-    let indexer_executor = IndexerActor::new(indexer_store.clone(), moveos_store.clone(), false)?
+    let indexer_executor = IndexerActor::new(indexer_store.clone(), moveos_store.clone())?
         .into_actor(Some("Indexer"), &actor_system)
         .await?;
     let indexer_reader_executor = IndexerReaderActor::new(indexer_reader)?
@@ -206,6 +211,7 @@ pub async fn setup_service(
         sequencer_proxy,
         proposer_proxy,
         indexer_proxy,
+        false,
     );
     let aggregate_service = AggregateService::new(rpc_service.clone());
 
@@ -258,7 +264,7 @@ pub fn init_indexer(datadir: &DataDirPath) -> Result<(IndexerStore, IndexerReade
 pub fn create_publish_transaction(
     test_transaction_builder: &TestTransactionBuilder,
     keystore: &InMemKeystore,
-) -> Result<TypedTransaction> {
+) -> Result<RoochTransaction> {
     let publish_action = test_transaction_builder.new_publish_examples(
         EXAMPLE_SIMPLE_BLOG_PACKAGE_NAME,
         Some(EXAMPLE_SIMPLE_BLOG_NAMED_ADDRESS.to_string()),
@@ -266,14 +272,14 @@ pub fn create_publish_transaction(
     let tx_data = test_transaction_builder.build(publish_action);
     let rooch_tx =
         keystore.sign_transaction(&test_transaction_builder.sender.into(), tx_data, None)?;
-    Ok(TypedTransaction::Rooch(rooch_tx))
+    Ok(rooch_tx)
 }
 
 pub fn create_transaction(
     test_transaction_builder: &mut TestTransactionBuilder,
     keystore: &InMemKeystore,
     sequence_number: u64,
-) -> Result<TypedTransaction> {
+) -> Result<RoochTransaction> {
     test_transaction_builder.update_sequence_number(sequence_number);
 
     let action = match *TX_TYPE {
@@ -285,5 +291,5 @@ pub fn create_transaction(
     let tx_data = test_transaction_builder.build(action);
     let rooch_tx =
         keystore.sign_transaction(&test_transaction_builder.sender.into(), tx_data, None)?;
-    Ok(TypedTransaction::Rooch(rooch_tx))
+    Ok(rooch_tx)
 }

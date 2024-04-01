@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use moveos_types::module_binding::MoveFunctionCaller;
-use moveos_types::transaction::MoveAction;
+use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
 use rooch_types::framework::empty::Empty;
-use rooch_types::transaction::{rooch::RoochTransactionData, AbstractTransaction};
+use rooch_types::transaction::rooch::RoochTransactionData;
 
 use crate::binding_test;
 
@@ -24,7 +24,7 @@ fn test_validate() {
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
     let auth_info = tx.authenticator_info().unwrap();
-    let move_tx = tx.construct_moveos_transaction(sender.into()).unwrap();
+    let move_tx: MoveOSTransaction = tx.into();
 
     native_validator
         .validate(&move_tx.ctx, auth_info.authenticator.payload)

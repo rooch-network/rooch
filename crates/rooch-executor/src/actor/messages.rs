@@ -17,18 +17,15 @@ use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use rooch_types::address::MultiChainAddress;
-use rooch_types::transaction::AbstractTransaction;
+use rooch_types::transaction::RoochTransaction;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
-pub struct ValidateTransactionMessage<T> {
-    pub tx: T,
+pub struct ValidateTransactionMessage {
+    pub tx: RoochTransaction,
 }
 
-impl<T> Message for ValidateTransactionMessage<T>
-where
-    T: 'static + AbstractTransaction + Send + Sync,
-{
+impl Message for ValidateTransactionMessage {
     type Result = Result<VerifiedMoveOSTransaction>;
 }
 

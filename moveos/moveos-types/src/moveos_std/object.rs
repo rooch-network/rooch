@@ -5,7 +5,7 @@ use super::table::TablePlaceholder;
 use crate::h256;
 use crate::moveos_std::account::Account;
 use crate::moveos_std::move_module::ModuleStore;
-use crate::state::KeyState;
+use crate::state::{KeyState, PlaceholderStruct};
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,
     state::{MoveState, MoveStructState, MoveStructType, State},
@@ -275,11 +275,22 @@ pub fn account_named_object_id(account: AccountAddress, struct_tag: &StructTag) 
     AccountAddress::new(struct_tag_hash.0).into()
 }
 
-pub fn custom_object_id<ID: Serialize>(id: ID, struct_tag: &StructTag) -> ObjectID {
-    let mut buffer = bcs::to_bytes(&id).expect("ID to bcs should success");
+pub fn custom_object_id<ID: Serialize>(id: &ID, struct_tag: &StructTag) -> ObjectID {
+    custom_child_object_id(ObjectID::root(), id, struct_tag)
+}
+
+pub fn custom_child_object_id<ID: Serialize>(
+    parent_id: ObjectID,
+    id: &ID,
+    struct_tag: &StructTag,
+) -> ObjectID {
+    let mut buffer = bcs::to_bytes(id).expect("ID to bcs should success");
     buffer.extend_from_slice(struct_tag.to_canonical_string().as_bytes());
     let struct_tag_hash = h256::sha3_256_of(&buffer);
-    AccountAddress::new(struct_tag_hash.0).into()
+    let child_part = AccountAddress::new(struct_tag_hash.0);
+    let ObjectID(mut parent_path) = parent_id;
+    parent_path.push(child_part);
+    ObjectID(parent_path)
 }
 
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Default)]
@@ -336,7 +347,7 @@ impl ObjectEntity<Root> {
         Self {
             id: ObjectID::root(),
             owner: MOVEOS_STD_ADDRESS,
-            flag: 0u8,
+            flag: Self::SHARED_OBJECT_FLAG_MASK,
             state_root: AccountAddress::new(state_root.into()),
             size,
             value: Root {
@@ -380,8 +391,16 @@ impl<T> ObjectEntity<T> {
         self.flag & Self::SHARED_OBJECT_FLAG_MASK == Self::SHARED_OBJECT_FLAG_MASK
     }
 
+    pub fn to_shared(&mut self) {
+        self.flag |= Self::SHARED_OBJECT_FLAG_MASK;
+    }
+
     pub fn is_frozen(&self) -> bool {
         self.flag & Self::FROZEN_OBJECT_FLAG_MASK == Self::FROZEN_OBJECT_FLAG_MASK
+    }
+
+    pub fn to_frozen(&mut self) {
+        self.flag |= Self::FROZEN_OBJECT_FLAG_MASK;
     }
 }
 
@@ -462,11 +481,11 @@ impl ObjectEntity<Account> {
 }
 
 impl ObjectEntity<ModuleStore> {
-    pub fn new_module_store() -> ModuleStoreObject {
+    pub fn genesis_module_store() -> ModuleStoreObject {
         Self::new(
             ModuleStore::module_store_id(),
             MOVEOS_STD_ADDRESS,
-            0u8,
+            Self::SHARED_OBJECT_FLAG_MASK,
             *GENESIS_STATE_ROOT,
             0,
             ModuleStore::default(),
@@ -761,6 +780,30 @@ where
     }
 }
 
+pub fn is_object_struct(t: &StructTag) -> bool {
+    Object::<PlaceholderStruct>::struct_tag_match_without_type_param(t)
+}
+
+pub fn is_object_entity_struct(t: &StructTag) -> bool {
+    ObjectEntity::<PlaceholderStruct>::struct_tag_match_without_type_param(t)
+}
+
+pub fn is_object_entity_type(t: &TypeTag) -> bool {
+    match t {
+        TypeTag::Struct(t) => is_object_entity_struct(t),
+        _ => false,
+    }
+}
+
+pub fn object_entity_struct_tag(value_type: StructTag) -> StructTag {
+    StructTag {
+        address: MOVEOS_STD_ADDRESS,
+        module: MODULE_NAME.to_owned(),
+        name: OBJECT_ENTITY_STRUCT_NAME.to_owned(),
+        type_params: vec![value_type.into()],
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
@@ -948,7 +991,7 @@ mod tests {
     #[test]
     fn test_custom_object_id() {
         let id = TestStructID { id: 1 };
-        let custom_object_id = custom_object_id(id, &TestStruct::struct_tag());
+        let custom_object_id = custom_object_id(&id, &TestStruct::struct_tag());
         //println!("custom_object_id: {:?}", custom_object_id);
         //Ensure the generated object id is same as the object id in object.move
         assert_eq!(
