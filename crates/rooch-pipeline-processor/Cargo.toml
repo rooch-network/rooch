@@ -1,5 +1,5 @@
 [package]
-name = "rooch-rpc-server"
+name = "rooch-pipeline-processor"
 version = "0.1.0"
 
 # Workspace inherited keys
@@ -19,50 +19,31 @@ chrono = { workspace = true }
 clap = { workspace = true }
 coerce = { workspace = true }
 derive_builder = { workspace = true }
-ethers = { workspace = true }
 futures = { workspace = true }
-hex = { workspace = true }
-rustc-hex = { workspace = true }
 jsonrpsee = { workspace = true }
+log = { workspace = true }
 serde = { workspace = true }
 serde_yaml = { workspace = true }
 serde_json = { workspace = true }
-tower = { workspace = true }
-tower-http = { workspace = true }
+schemars = { workspace = true }
+serde_with = { workspace = true }
 thiserror = { workspace = true }
 tokio = { features = ["full"], workspace = true }
 tonic = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-schemars = { workspace = true }
-serde_with = { workspace = true }
-rand = { workspace = true }
-fastcrypto = { workspace = true, features = ["copy_key"] }
-hyper = { workspace = true }
-log = { workspace = true }
-lazy_static = { workspace = true }
-rpassword = { workspace = true }
 
 move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }
-move-binary-format = { workspace = true }
 
+moveos = { workspace = true }
 moveos-store = { workspace = true }
 moveos-types = { workspace = true }
-move-bytecode-utils = { workspace = true }
-raw-store = { workspace = true }
-moveos-config = { workspace = true }
 
-rooch-config = { workspace = true }
 rooch-types = { workspace = true }
-rooch-executor = { workspace = true }
-rooch-sequencer = { workspace = true }
-rooch-proposer = { workspace = true }
-rooch-pipeline-processor = { workspace = true }
-rooch-key = { workspace = true }
-rooch-store = { workspace = true }
-rooch-rpc-api = { workspace = true }
-rooch-relayer = { workspace = true }
-rooch-indexer = { workspace = true }
 rooch-da = { workspace = true }
-rooch-framework = { workspace = true }
+rooch-sequencer = { workspace = true }
+rooch-executor = { workspace = true }
+rooch-config = { workspace = true }
+rooch-proposer = { workspace = true }
+rooch-indexer = { workspace = true }

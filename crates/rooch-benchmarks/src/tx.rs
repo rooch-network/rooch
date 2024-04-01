@@ -111,6 +111,7 @@ pub fn gen_sequencer(keypair: RoochKeyPair, rooch_store: RoochStore) -> Result<S
     SequencerActor::new(keypair, rooch_store.clone(), true) // is_genesis is useless for sequencer in present
 }
 
+//TODO reuse the rpc run_start_server function
 pub async fn setup_service(
     datadir: &DataDirPath,
     keystore: &InMemKeystore,
@@ -205,13 +206,22 @@ pub async fn setup_service(
         .await?;
     let indexer_proxy = IndexerProxy::new(indexer_executor.into(), indexer_reader_executor.into());
 
+    let processor = PipelineProcessorActor::new(
+        executor_proxy.clone(),
+        sequencer_proxy.clone(),
+        proposer_proxy.clone(),
+        indexer_proxy.clone(),
+        true,
+    )
+    .into_actor(Some("PipelineProcessor"), &actor_system)
+    .await?;
+    let processor_proxy = PipelineProcessorProxy::new(processor.into());
+
     let rpc_service = RpcService::new(
-        chain_id.chain_id().id(),
         executor_proxy.clone(),
         sequencer_proxy,
-        proposer_proxy,
+        processor_proxy,
         indexer_proxy,
-        false,
     );
     let aggregate_service = AggregateService::new(rpc_service.clone());
 

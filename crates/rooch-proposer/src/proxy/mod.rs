@@ -1,16 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
-use coerce::actor::ActorRef;
-
-use moveos_types::transaction::TransactionExecutionInfo;
-use rooch_types::transaction::{rooch::RoochTransaction, TransactionSequenceInfo};
-
 use crate::actor::{
     messages::{TransactionProposeMessage, TransactionProposeResult},
     proposer::ProposerActor,
 };
+use anyhow::Result;
+use coerce::actor::ActorRef;
+use moveos_types::transaction::TransactionExecutionInfo;
+use rooch_types::transaction::{rooch::RoochTransaction, TransactionSequenceInfo};
 
 #[derive(Clone)]
 pub struct ProposerProxy {

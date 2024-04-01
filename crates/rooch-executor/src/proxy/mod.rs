@@ -35,6 +35,8 @@ use moveos_types::{
     state::{AnnotatedState, State},
 };
 use rooch_types::address::MultiChainAddress;
+use rooch_types::bitcoin::network::BitcoinNetwork;
+use rooch_types::framework::chain_id::ChainID;
 use rooch_types::transaction::RoochTransaction;
 use tokio::runtime::Handle;
 
@@ -197,6 +199,26 @@ impl ExecutorProxy {
         self.reader_actor
             .send(RefreshStateMessage { root, is_upgrade })
             .await?
+    }
+
+    pub async fn chain_id(&self) -> Result<ChainID> {
+        self.get_states(AccessPath::object(ChainID::chain_id_object_id()))
+            .await?
+            .into_iter()
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("chain id not found"))
+            .and_then(|state| state.ok_or_else(|| anyhow::anyhow!("chain id not found")))
+            .and_then(|state| Ok(state.as_object::<ChainID>()?.value))
+    }
+
+    pub async fn bitcoin_network(&self) -> Result<BitcoinNetwork> {
+        self.get_states(AccessPath::object(BitcoinNetwork::object_id()))
+            .await?
+            .into_iter()
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("bitcoin network not found"))
+            .and_then(|state| state.ok_or_else(|| anyhow::anyhow!("bitcoin network not found")))
+            .and_then(|state| Ok(state.as_object::<BitcoinNetwork>()?.value))
     }
 }
 

@@ -1,12 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::env;
-use std::fmt::Debug;
-use std::net::SocketAddr;
-use std::sync::Arc;
-use std::time::Duration;
-
+use crate::server::btc_server::BtcServer;
+use crate::server::rooch_server::RoochServer;
+use crate::service::aggregate_service::AggregateService;
+use crate::service::rpc_logger::RpcLogger;
+use crate::service::rpc_service::RpcService;
 use anyhow::{Error, Result};
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
@@ -14,13 +13,8 @@ use hyper::header::HeaderValue;
 use hyper::Method;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
-use moveos_types::moveos_std::object::ObjectEntity;
-use serde_json::json;
-use tower_http::cors::{AllowOrigin, CorsLayer};
-use tower_http::trace::TraceLayer;
-use tracing::info;
-
 use moveos_store::{MoveOSDB, MoveOSStore};
+use moveos_types::moveos_std::object::ObjectEntity;
 use raw_store::errors::RawStoreError;
 use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
@@ -41,6 +35,8 @@ use rooch_indexer::indexer_reader::IndexerReader;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_indexer::IndexerStore;
 use rooch_key::key_derive::{generate_new_key_pair, retrieve_key_pair};
+use rooch_pipeline_processor::actor::processor::PipelineProcessorActor;
+use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
 use rooch_proposer::proxy::ProposerProxy;
@@ -55,12 +51,15 @@ use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{GenesisError, RoochError};
-
-use crate::server::btc_server::BtcServer;
-use crate::server::rooch_server::RoochServer;
-use crate::service::aggregate_service::AggregateService;
-use crate::service::rpc_logger::RpcLogger;
-use crate::service::rpc_service::RpcService;
+use serde_json::json;
+use std::env;
+use std::fmt::Debug;
+use std::net::SocketAddr;
+use std::sync::Arc;
+use std::time::Duration;
+use tower_http::cors::{AllowOrigin, CorsLayer};
+use tower_http::trace::TraceLayer;
+use tracing::info;
 
 pub mod server;
 pub mod service;
@@ -181,7 +180,6 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
 
     let chain_id_opt = opt.chain_id.clone().unwrap_or_default();
 
-    let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
     let actor_system = ActorSystem::global_system();
 
     //Init store
@@ -292,13 +290,22 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     let indexer_proxy = IndexerProxy::new(indexer_executor.into(), indexer_reader_executor.into());
 
     let data_verify_mode = opt.data_verify_mode.unwrap_or(false);
+    let processor = PipelineProcessorActor::new(
+        executor_proxy.clone(),
+        sequencer_proxy.clone(),
+        proposer_proxy.clone(),
+        indexer_proxy.clone(),
+        data_verify_mode,
+    )
+    .into_actor(Some("PipelineProcessor"), &actor_system)
+    .await?;
+    let processor_proxy = PipelineProcessorProxy::new(processor.into());
+
     let rpc_service = RpcService::new(
-        chain_id_opt.chain_id().id(),
         executor_proxy.clone(),
         sequencer_proxy,
-        proposer_proxy,
         indexer_proxy,
-        data_verify_mode,
+        processor_proxy,
     );
     let aggregate_service = AggregateService::new(rpc_service.clone());
 
@@ -351,6 +358,8 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         .layer(TraceLayer::new_for_http())
         .layer(cors);
 
+    let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
+
     // Build server
     let server = ServerBuilder::default()
         .set_logger(RpcLogger)
@@ -363,11 +372,8 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         rpc_service.clone(),
         aggregate_service.clone(),
     ))?;
-    rpc_module_builder.register_module(BtcServer::new(
-        rpc_service.clone(),
-        aggregate_service.clone(),
-        btc_network,
-    ))?;
+    rpc_module_builder
+        .register_module(BtcServer::new(rpc_service.clone(), aggregate_service.clone()).await?)?;
 
     // let rpc_api = build_rpc_api(rpc_api);
     let methods_names = rpc_module_builder.module.method_names().collect::<Vec<_>>();

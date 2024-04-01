@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::service::{aggregate_service::AggregateService, rpc_service::RpcService};
+use anyhow::Result;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     RpcModule,
@@ -24,16 +25,13 @@ pub struct BtcServer {
 }
 
 impl BtcServer {
-    pub fn new(
-        rpc_service: RpcService,
-        aggregate_service: AggregateService,
-        btc_network: u8,
-    ) -> Self {
-        Self {
+    pub async fn new(rpc_service: RpcService, aggregate_service: AggregateService) -> Result<Self> {
+        let btc_network = rpc_service.get_bitcoin_network().await?;
+        Ok(Self {
             rpc_service,
             aggregate_service,
             btc_network,
-        }
+        })
     }
 }
 
