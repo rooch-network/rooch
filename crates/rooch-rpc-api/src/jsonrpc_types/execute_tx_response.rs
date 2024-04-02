@@ -8,6 +8,7 @@ use crate::jsonrpc_types::H256View;
 use move_core_types::vm_status::{AbortLocation, KeptVMStatus};
 use moveos_types::transaction::TransactionExecutionInfo;
 use moveos_types::transaction::TransactionOutput;
+use rooch_types::transaction::ExecuteTransactionResponse;
 use rooch_types::transaction::{authenticator::Authenticator, TransactionSequenceInfo};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -157,13 +158,6 @@ impl From<TransactionOutput> for TransactionOutputView {
             is_upgrade: tx_output.is_upgrade,
         }
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct ExecuteTransactionResponse {
-    pub sequence_info: TransactionSequenceInfo,
-    pub execution_info: TransactionExecutionInfo,
-    pub output: TransactionOutput,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]

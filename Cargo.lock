@@ -8415,6 +8415,7 @@ dependencies = [
  "rooch-framework-tests",
  "rooch-indexer",
  "rooch-key",
+ "rooch-pipeline-processor",
  "rooch-proposer",
  "rooch-relayer",
  "rooch-rpc-api",
@@ -8901,6 +8902,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "rooch-pipeline-processor"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bcs",
+ "chrono",
+ "clap 4.4.1",
+ "coerce",
+ "derive_builder",
+ "futures",
+ "jsonrpsee 0.16.3",
+ "log",
+ "move-core-types",
+ "move-resource-viewer",
+ "moveos",
+ "moveos-store",
+ "moveos-types",
+ "rooch-config",
+ "rooch-da",
+ "rooch-executor",
+ "rooch-indexer",
+ "rooch-proposer",
+ "rooch-sequencer",
+ "rooch-types",
+ "schemars",
+ "serde 1.0.195",
+ "serde_json",
+ "serde_with",
+ "serde_yaml 0.9.25",
+ "thiserror",
+ "tokio",
+ "tonic",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "rooch-proposer"
 version = "0.1.0"
 dependencies = [
@@ -9084,6 +9123,7 @@ dependencies = [
  "rooch-framework",
  "rooch-indexer",
  "rooch-key",
+ "rooch-pipeline-processor",
  "rooch-proposer",
  "rooch-relayer",
  "rooch-rpc-api",

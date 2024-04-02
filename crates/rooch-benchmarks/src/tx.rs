@@ -27,6 +27,9 @@ use rooch_indexer::proxy::IndexerProxy;
 use rooch_indexer::IndexerStore;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
+use rooch_pipeline_processor::{
+    actor::processor::PipelineProcessorActor, proxy::PipelineProcessorProxy,
+};
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
 use rooch_proposer::proxy::ProposerProxy;
@@ -111,6 +114,7 @@ pub fn gen_sequencer(keypair: RoochKeyPair, rooch_store: RoochStore) -> Result<S
     SequencerActor::new(keypair, rooch_store.clone(), true) // is_genesis is useless for sequencer in present
 }
 
+//TODO reuse the rpc run_start_server function
 pub async fn setup_service(
     datadir: &DataDirPath,
     keystore: &InMemKeystore,
@@ -205,13 +209,22 @@ pub async fn setup_service(
         .await?;
     let indexer_proxy = IndexerProxy::new(indexer_executor.into(), indexer_reader_executor.into());
 
+    let processor = PipelineProcessorActor::new(
+        executor_proxy.clone(),
+        sequencer_proxy.clone(),
+        proposer_proxy.clone(),
+        indexer_proxy.clone(),
+        true,
+    )
+    .into_actor(Some("PipelineProcessor"), &actor_system)
+    .await?;
+    let processor_proxy = PipelineProcessorProxy::new(processor.into());
+
     let rpc_service = RpcService::new(
-        chain_id.chain_id().id(),
         executor_proxy.clone(),
         sequencer_proxy,
-        proposer_proxy,
         indexer_proxy,
-        false,
+        processor_proxy,
     );
     let aggregate_service = AggregateService::new(rpc_service.clone());
 

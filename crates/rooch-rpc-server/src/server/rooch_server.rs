@@ -121,7 +121,7 @@ impl RoochServer {
 #[async_trait]
 impl RoochAPIServer for RoochServer {
     async fn get_chain_id(&self) -> RpcResult<StrView<u64>> {
-        let chain_id = self.rpc_service.get_chain_id();
+        let chain_id = self.rpc_service.get_chain_id().await?;
         Ok(StrView(chain_id))
     }
 
