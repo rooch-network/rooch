@@ -6,6 +6,8 @@ module bitcoin_move::ord {
     use std::option::{Self, Option};
     use std::string;
     use std::string::String;
+    use bitcoin_move::bitseed::{bitseed_deploy_key, bitseed_mint_key};
+    use bitcoin_move::bitseed;
 
     use moveos_std::bcs;
     use moveos_std::event;
@@ -107,6 +109,12 @@ module bitcoin_move::ord {
     }
 
     // ==== Inscription ==== //
+    public fun get_inscription_id_by_index(index: u64) : &InscriptionID {
+        let store_obj_id = object::named_object_id<InscriptionStore>();
+        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
+        let store = object::borrow_mut(store_obj);
+        table_vec::borrow(& store.inscriptions, index)
+    }
 
     fun record_to_inscription(txid: address, index: u32, input: u32, offset: u64, record: InscriptionRecord): Inscription{
         let parent = option::map(record.parent, |e| object::custom_object_id<InscriptionID,Inscription>(e));
@@ -127,7 +135,9 @@ module bitcoin_move::ord {
         }
     }
 
-    fun create_obj(inscription: Inscription): Object<Inscription> {
+    fun create_obj(from: address, to: address, inscription: Inscription): Object<Inscription> {
+        let cloned_json_map = simple_map::clone(&inscription.json_body);
+
         let id = InscriptionID{
             txid: inscription.txid,
             index: inscription.index,
@@ -136,7 +146,21 @@ module bitcoin_move::ord {
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
         let store = object::borrow_mut(store_obj);
         table_vec::push_back(&mut store.inscriptions, id);
-        object::new_with_id(id, inscription)
+        let object = object::new_with_id(id, inscription);
+
+        if (bitseed::is_bitseed(&cloned_json_map)) {
+            if (bitseed::is_bitseed_deploy(&cloned_json_map)) {
+                let deploy_op = bitseed::inscription_to_bitseed_deploy(from, to, &cloned_json_map);
+                object::add_field(&mut object, bitseed_deploy_key(), deploy_op)
+            } else if (bitseed::is_bitseed_mint(&cloned_json_map)) {
+                let mint_op = bitseed::inscription_to_bitseed_mint(from, to, &cloned_json_map);
+                object::add_field(&mut object, bitseed_mint_key(), mint_op)
+            };
+        };
+
+        simple_map::drop(cloned_json_map);
+
+        object
     }
     
     fun parse_json_body(record: &InscriptionRecord) : SimpleMap<String,String> {
@@ -293,7 +317,7 @@ module bitcoin_move::ord {
             // TODO Since the brc20 transfer protocol corresponds to two transactions, `inscribe transfer` and `transfer`,
             // There is no definite receiver when inscribe transfer, so the transfer logic needs to be completed in spend UTXO flow.
             process_inscribe_protocol(from, to_address, &inscription);
-            let inscription_obj = create_obj(inscription);
+            let inscription_obj = create_obj(from, to_address, inscription);
             let object_id = object::id(&inscription_obj);
             object::transfer_extend(inscription_obj, to_address);
 
@@ -346,6 +370,10 @@ module bitcoin_move::ord {
 
     public fun body(self: &Inscription): vector<u8>{
         self.body
+    }
+
+    public fun json_body(self: &Inscription): SimpleMap<String, String>{
+        simple_map::clone(&self.json_body)
     }
 
     public fun content_encoding(self: &Inscription): Option<String>{
@@ -455,17 +483,6 @@ module bitcoin_move::ord {
     }
 
     native fun from_witness(witness: &Witness): vector<InscriptionRecord>;
-
-    public fun pack_inscribe_generate_args(deploy_args: vector<u8>, seed: vector<u8>, user_input: vector<u8>): vector<u8>{
-        native_pack_inscribe_generate_args(deploy_args, b"attrs", seed, b"seed",
-            user_input, b"user_input")
-    }
-
-    native fun native_pack_inscribe_generate_args(
-        deploy_args: vector<u8>, deploy_args_key: vector<u8>,
-        seed: vector<u8>, seed_key: vector<u8>,
-        user_input: vector<u8>, user_input_key: vector<u8>,
-    ): vector<u8>;
 
     public(friend) fun bind_multichain_address(rooch_address: address, bitcoin_address_opt: Option<BitcoinAddress>) {
         //Auto create address mapping if not exist

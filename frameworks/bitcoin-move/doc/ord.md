@@ -12,6 +12,7 @@
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
 -  [Function `genesis_init`](#0x4_ord_genesis_init)
 -  [Function `new_inscription_id`](#0x4_ord_new_inscription_id)
+-  [Function `get_inscription_id_by_index`](#0x4_ord_get_inscription_id_by_index)
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
 -  [Function `borrow_inscription`](#0x4_ord_borrow_inscription)
 -  [Function `spend_utxo`](#0x4_ord_spend_utxo)
@@ -19,6 +20,7 @@
 -  [Function `txid`](#0x4_ord_txid)
 -  [Function `index`](#0x4_ord_index)
 -  [Function `body`](#0x4_ord_body)
+-  [Function `json_body`](#0x4_ord_json_body)
 -  [Function `content_encoding`](#0x4_ord_content_encoding)
 -  [Function `content_type`](#0x4_ord_content_type)
 -  [Function `metadata`](#0x4_ord_metadata)
@@ -28,7 +30,6 @@
 -  [Function `unpack_record`](#0x4_ord_unpack_record)
 -  [Function `from_transaction`](#0x4_ord_from_transaction)
 -  [Function `from_transaction_bytes`](#0x4_ord_from_transaction_bytes)
--  [Function `pack_inscribe_generate_args`](#0x4_ord_pack_inscribe_generate_args)
 -  [Function `bind_multichain_address`](#0x4_ord_bind_multichain_address)
 
 
@@ -46,6 +47,7 @@
 <b>use</b> <a href="">0x3::address_mapping</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="">0x3::multichain_address</a>;
+<b>use</b> <a href="bitseed.md#0x4_bitseed">0x4::bitseed</a>;
 <b>use</b> <a href="brc20.md#0x4_brc20">0x4::brc20</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 <b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
@@ -130,6 +132,17 @@
 
 
 
+<a name="0x4_ord_get_inscription_id_by_index"></a>
+
+## Function `get_inscription_id_by_index`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_get_inscription_id_by_index">get_inscription_id_by_index</a>(index: u64): &<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>
+</code></pre>
+
+
+
 <a name="0x4_ord_exists_inscription"></a>
 
 ## Function `exists_inscription`
@@ -203,6 +216,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_body">body</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_json_body"></a>
+
+## Function `json_body`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_json_body">json_body</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="_String">string::String</a>&gt;
 </code></pre>
 
 
@@ -302,17 +326,6 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_from_transaction_bytes">from_transaction_bytes</a>(transaction_bytes: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;
-</code></pre>
-
-
-
-<a name="0x4_ord_pack_inscribe_generate_args"></a>
-
-## Function `pack_inscribe_generate_args`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_pack_inscribe_generate_args">pack_inscribe_generate_args</a>(deploy_args: <a href="">vector</a>&lt;u8&gt;, seed: <a href="">vector</a>&lt;u8&gt;, user_input: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 

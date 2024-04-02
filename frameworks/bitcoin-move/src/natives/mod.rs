@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::natives::ord::bitseed;
 use move_vm_runtime::native_functions::make_table_from_iter;
 use move_vm_runtime::native_functions::NativeFunctionTable;
 use rooch_framework::natives::gas_parameter::gas_member::InitialGasSchedule;
@@ -16,12 +17,14 @@ pub mod ord;
 #[derive(Debug, Clone)]
 pub struct GasParameters {
     ord: ord::GasParameters,
+    bitseed: bitseed::ArgsPackingGasParameters,
 }
 
 impl FromOnChainGasSchedule for GasParameters {
     fn from_on_chain_gas_schedule(gas_schedule: &BTreeMap<String, u64>) -> Option<Self> {
         Some(Self {
             ord: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
+            bitseed: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
         })
     }
 }
@@ -36,6 +39,7 @@ impl InitialGasSchedule for GasParameters {
     fn initial() -> Self {
         Self {
             ord: InitialGasSchedule::initial(),
+            bitseed: InitialGasSchedule::initial(),
         }
     }
 }
@@ -49,6 +53,7 @@ impl GasParameters {
     pub fn zeros() -> Self {
         Self {
             ord: ord::GasParameters::zeros(),
+            bitseed: bitseed::ArgsPackingGasParameters::zeros(),
         }
     }
 }
@@ -65,6 +70,7 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     }
 
     add_natives!("ord", ord::make_all(gas_params.ord));
+    add_natives!("bitseed", bitseed::make_all(gas_params.bitseed));
 
     make_table_from_iter(BITCOIN_MOVE_ADDRESS, natives)
 }
