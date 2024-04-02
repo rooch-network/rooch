@@ -67,6 +67,7 @@ rooch-store = { workspace = true }
 rooch-rpc-api = { workspace = true }
 rooch-relayer = { workspace = true }
 rooch-indexer = { workspace = true }
+rooch-pipeline-processor = { workspace = true }
 rooch-da = { workspace = true }
 rooch-rpc-server = { workspace = true }
 rooch-test-transaction-builder = { workspace = true }

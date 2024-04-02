@@ -8415,6 +8415,7 @@ dependencies = [
  "rooch-framework-tests",
  "rooch-indexer",
  "rooch-key",
+ "rooch-pipeline-processor",
  "rooch-proposer",
  "rooch-relayer",
  "rooch-rpc-api",

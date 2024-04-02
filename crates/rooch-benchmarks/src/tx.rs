@@ -27,6 +27,9 @@ use rooch_indexer::proxy::IndexerProxy;
 use rooch_indexer::IndexerStore;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
+use rooch_pipeline_processor::{
+    actor::processor::PipelineProcessorActor, proxy::PipelineProcessorProxy,
+};
 use rooch_proposer::actor::messages::ProposeBlock;
 use rooch_proposer::actor::proposer::ProposerActor;
 use rooch_proposer::proxy::ProposerProxy;
@@ -220,8 +223,8 @@ pub async fn setup_service(
     let rpc_service = RpcService::new(
         executor_proxy.clone(),
         sequencer_proxy,
-        processor_proxy,
         indexer_proxy,
+        processor_proxy,
     );
     let aggregate_service = AggregateService::new(rpc_service.clone());
 
