@@ -55,7 +55,7 @@ Rooch 在 Move 基础上实现了存储抽象，同时提供了 `ObjectStorage` 
 
 同时，为了保证状态存储的安全性，让 `AccountStorage` 和 `ObjectStorage` 的方法遵循和 Move 全局状态指令一样类型安全规则，Rooch 引入了 `#[private_generics(T)]` 注解（annotation）。这个注解可以加在方法上，表示该方法的泛型参数 `T` 必须定义在调用方的当前合约中，遵循 Move 全局存储指令一样的约束。
 
-关于状态存储的详细设计请参看：[存储抽象](/docs/dive-into-rooch/storage-abstraction)。
+关于状态存储的详细设计请参看：[存储抽象](../learn/core-concepts/objects/storage-abstraction.zh-CN.mdx)。
 
 ### Rooch 的 JSON RPC
 
