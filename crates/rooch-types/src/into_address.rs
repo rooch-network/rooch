@@ -65,6 +65,7 @@ impl IntoAddress for H256 {
 
 #[cfg(test)]
 mod tests {
+    use crate::into_address::IntoAddress;
     use bitcoin::hashes::Hash;
     use move_core_types::account_address::AccountAddress;
 
@@ -81,5 +82,15 @@ mod tests {
             "69d52ccb5eb80372b7fc6c4fc3feb17038dd2f58313c5d16302d70f7ef0fff7f",
             txid.to_string()
         );
+
+        let txid_zero = bitcoin::Txid::all_zeros();
+        let addr_zero = txid_zero.into_address();
+        // println!("{}", txid_zero);
+        // println!("{}", addr_zero);
+        assert_eq!(
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            addr_zero.to_string()
+        );
+        assert_eq!(AccountAddress::ZERO, addr_zero);
     }
 }

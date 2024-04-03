@@ -17,6 +17,8 @@ module moveos_std::address {
     // The largest integer that can be represented with 32 bytes
     const MAX: u256 = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
+    const ZERO: address = @0x0000000000000000000000000000000000000000000000000000000000000000;
+
     /// Error from `from_bytes` when it is supplied too many or too few bytes.
     const ErrorAddressParseError: u64 = 1;
 
@@ -66,4 +68,8 @@ module moveos_std::address {
         MAX
     }
 
+    /// all zeros addreess
+    public fun zero(): address {
+        ZERO
+    }
 }

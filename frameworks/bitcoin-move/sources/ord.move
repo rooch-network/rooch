@@ -26,11 +26,14 @@ module bitcoin_move::ord {
 
     friend bitcoin_move::light_client;
 
-    // const OUTPOINT_TO_SATPOINT_BUCKET_SIZE: u64 = 1000;
-
     struct InscriptionID has store, copy, drop {
         txid: address,
         index: u32,
+    }
+
+    struct Flotsam has store, copy, drop {
+        inscription_id: InscriptionID,
+        offset: u64,
     }
 
     struct Inscription has key{

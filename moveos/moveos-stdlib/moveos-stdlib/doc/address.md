@@ -11,6 +11,7 @@
 -  [Function `to_ascii_string`](#0x2_address_to_ascii_string)
 -  [Function `length`](#0x2_address_length)
 -  [Function `max`](#0x2_address_max)
+-  [Function `zero`](#0x2_address_zero)
 
 
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
@@ -60,6 +61,15 @@ The length of an address, in bytes
 
 
 <pre><code><b>const</b> <a href="address.md#0x2_address_MAX">MAX</a>: u256 = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
+</code></pre>
+
+
+
+<a name="0x2_address_ZERO"></a>
+
+
+
+<pre><code><b>const</b> <a href="address.md#0x2_address_ZERO">ZERO</a>: <b>address</b> = 0x0;
 </code></pre>
 
 
@@ -126,4 +136,16 @@ Largest possible address
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_max">max</a>(): u256
+</code></pre>
+
+
+
+<a name="0x2_address_zero"></a>
+
+## Function `zero`
+
+all zeros addreess
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_zero">zero</a>(): <b>address</b>
 </code></pre>

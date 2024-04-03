@@ -6,6 +6,7 @@
 
 
 -  [Struct `InscriptionID`](#0x4_ord_InscriptionID)
+-  [Struct `Flotsam`](#0x4_ord_Flotsam)
 -  [Resource `Inscription`](#0x4_ord_Inscription)
 -  [Struct `InscriptionRecord`](#0x4_ord_InscriptionRecord)
 -  [Struct `InvalidInscriptionEvent`](#0x4_ord_InvalidInscriptionEvent)
@@ -60,6 +61,17 @@
 
 
 <pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionID">InscriptionID</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_ord_Flotsam"></a>
+
+## Struct `Flotsam`
+
+
+
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_Flotsam">Flotsam</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 

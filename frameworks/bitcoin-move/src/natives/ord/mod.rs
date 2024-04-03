@@ -4,6 +4,8 @@
 pub mod bitseed;
 #[allow(dead_code)]
 pub mod envelope;
+pub mod epoch;
+pub mod height;
 #[allow(dead_code)]
 pub mod inscription;
 #[allow(dead_code)]
