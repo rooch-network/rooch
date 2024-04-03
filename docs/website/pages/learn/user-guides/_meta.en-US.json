@@ -1,10 +1,17 @@
 {
   "install-unisat": "Install UniSat",
   "dashboard": "Dashboard",
-  "faucet": "Faucet",
+  "faucet": {
+    "title": "Faucet",
+    "display": "hidden"
+  },
   "get-test-btc": "Get BTC test coin",
   "inscription": "Inscription",
   "install-metamask": "Install MetaMask",
   "interact-with-metamask": "Interact with MetaMask",
+  "interact-with-ethereum": {
+    "title": "Interacti with Ethereum",
+    "display": "hidden"
+  },
   "faq": "FAQ"
 }
