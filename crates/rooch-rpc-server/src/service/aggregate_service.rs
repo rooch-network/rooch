@@ -22,7 +22,7 @@ use rooch_types::framework::coin::{CoinInfo, CoinModule};
 use rooch_types::framework::coin_store::CoinStore;
 use rooch_types::indexer::state::IndexerGlobalState;
 use rooch_types::multichain_id::RoochMultiChainID;
-use rooch_types::transaction::{TransactionSequenceInfoMapping, TransactionWithInfo};
+use rooch_types::transaction::TransactionWithInfo;
 use std::collections::HashMap;
 
 /// AggregateService is aggregate RPC service and MoveFunctionCaller.
@@ -186,24 +186,10 @@ impl AggregateService {
     pub async fn get_transaction_with_info(
         &self,
         tx_hashes: Vec<H256>,
-        tx_sequence_info_mapping: Vec<Option<TransactionSequenceInfoMapping>>,
     ) -> Result<Vec<Option<TransactionWithInfo>>> {
-        // If the tx hash is invalid, filled None when returned.
-        let tx_orders = tx_sequence_info_mapping
-            .clone()
-            .iter()
-            .flatten()
-            .map(|m| m.tx_order)
-            .collect();
-
         let transactions = self
             .rpc_service
             .get_transactions_by_hash(tx_hashes.clone())
-            .await?;
-
-        let sequence_infos = self
-            .rpc_service
-            .get_transaction_sequence_infos(tx_orders)
             .await?;
 
         let execution_infos = self
@@ -211,42 +197,17 @@ impl AggregateService {
             .get_transaction_execution_infos_by_hash(tx_hashes.clone())
             .await?;
 
-        debug_assert!(
-            transactions.len() >= sequence_infos.len()
-                && transactions.len() == execution_infos.len()
-        );
-        let sequence_info_map = sequence_infos
-            .into_iter()
-            .flatten()
-            .map(|sequence_info| (sequence_info.tx_order, sequence_info))
-            .collect::<HashMap<_, _>>(); // collect into a hashmap
+        debug_assert!(transactions.len() == execution_infos.len());
 
-        tx_sequence_info_mapping
-            .iter()
-            .enumerate()
-            .map(|(index, tx_mapping_opt)| {
-                match tx_mapping_opt {
-                    Some(tx_mapping) => {
-                        let sequence_info = match sequence_info_map.get(&tx_mapping.tx_order) {
-                            Some(v) => v.clone(),
-                            None => {
-                                return Err(anyhow::anyhow!(
-                                    "TransactionSequenceInfo should exist when construct TransactionWithInfo"
-                                ))
-                            }
-                        };
-                        Ok(Some(TransactionWithInfo {
-                            transaction: transactions[index].clone().ok_or(anyhow::anyhow!(
-                                "Transaction should exist when construct TransactionWithInfo"
-                            ))?,
-                            sequence_info,
-                            execution_info: execution_infos[index].clone().ok_or(anyhow::anyhow!(
-                                "TransactionExecutionInfo should exist when construct TransactionWithInfo"
-                            ))?,
-                        }))
-                    },
-                    None => Ok(None),
-                }
+        transactions
+            .into_iter()
+            .zip(execution_infos)
+            .map(|(tx_opt, exec_info_opt)| match (tx_opt, exec_info_opt) {
+                (Some(tx), Some(exec_info)) => Ok(Some(TransactionWithInfo {
+                    transaction: tx,
+                    execution_info: exec_info,
+                })),
+                _ => Ok(None),
             })
             .collect::<Result<Vec<_>>>()
     }

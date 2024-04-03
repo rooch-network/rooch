@@ -3,6 +3,7 @@
 
 use super::{RoochTransaction, TransactionSequenceInfo};
 use crate::multichain_id::MultiChainID;
+use anyhow::Result;
 use ethers::types::H256;
 use serde::{Deserialize, Serialize};
 
@@ -93,5 +94,9 @@ impl LedgerTransaction {
 
     pub fn encode(&self) -> Vec<u8> {
         bcs::to_bytes(self).expect("encode transaction should success")
+    }
+
+    pub fn decode(bytes: &[u8]) -> Result<Self> {
+        Ok(bcs::from_bytes(bytes)?)
     }
 }
