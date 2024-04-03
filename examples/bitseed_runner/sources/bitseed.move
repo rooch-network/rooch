@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::bitseed_runner {
-   use std::string;
+   use std::string::{Self, String};
    use std::vector;
    use moveos_std::string_utils::parse_u64;
-   use moveos_std::simple_map;
+   use moveos_std::simple_map::{Self, SimpleMap};
    use moveos_std::json;
    use bitcoin_move::bitseed;
    use bitcoin_move::bitseed::{MintOp, DeployOp};
@@ -25,6 +25,10 @@ module rooch_examples::bitseed_runner {
       object::to_shared(store_obj);
    }
 
+   fun parse_generator(_inscription: &Inscription): SimpleMap<String,String>{
+      simple_map::new()
+   }
+
    fun get_generator_bytes(inscription_index: u64): vector<u8> {
       let ret_bytes = vector::empty<u8>();
 
@@ -32,7 +36,8 @@ module rooch_examples::bitseed_runner {
       let object_id = object::custom_object_id<InscriptionID, Inscription>(*inscription_id);
       let inscription_obj = object::borrow_object<Inscription>(object_id);
       let inscrption = object::borrow(inscription_obj);
-      let generator_json_map = ord::json_body(inscrption);
+      //FIXME the bitseed generator should parse from metadata, not body.
+      let generator_json_map = parse_generator(inscrption);//ord::json_body(inscrption);
 
       let tick = *simple_map::borrow(&generator_json_map, &string::utf8(b"tick"));
       let op = *simple_map::borrow(&generator_json_map, &string::utf8(b"op"));

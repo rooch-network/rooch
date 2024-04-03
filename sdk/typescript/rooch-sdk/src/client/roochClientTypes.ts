@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { RoochMultiChainID } from '../constants'
+
 import {
   Arg,
   FunctionId,
@@ -17,58 +18,85 @@ import {
   UTXOFilterView,
 } from '../types'
 
-export interface ExecuteViewFunctionParams {
+import { RoochTransactionData } from '../generated/runtime/rooch_types/mod'
+
+import { IAuthorizer } from '../auth'
+
+export type SendRawTransactionOpts = {
+  maxGasAmount?: number
+}
+
+export type SendTransactionParams = {
+  address: string
+  authorizer: IAuthorizer
+  funcId: FunctionId
+  args?: Arg[]
+  tyArgs?: TypeTag[]
+  opts?: SendRawTransactionOpts
+}
+
+export type SendTransactionDataParams = {
+  authorizer: IAuthorizer
+  data: RoochTransactionData
+}
+
+export type SendRawTransactionParams =
+  | SendTransactionParams
+  | SendTransactionDataParams
+  | Uint8Array
+
+export type ExecuteViewFunctionParams = {
   funcId: FunctionId
   tyArgs?: TypeTag[]
   args?: Arg[]
 }
 
-export interface ResoleRoochAddressParams {
+export type ResoleRoochAddressParams = {
   address: string
   multiChainID: RoochMultiChainID
 }
 
-export interface ListStatesParams {
+export type ListStatesParams = {
   accessPath: string
   cursor: string | null
   limit: number
 }
 
-export interface QueryGlobalStatesParams {
+export type QueryGlobalStatesParams = {
   filter: GlobalStateFilterView
   cursor: IndexerStateID | null
   limit: number
   descending_order: boolean
 }
 
-export interface QueryTableStatesParams {
+export type QueryTableStatesParams = {
   filter: TableStateFilterView
   cursor?: IndexerStateID | null
   limit: number
   descending_order: boolean
 }
 
-export interface QueryInscriptionsParams {
+export type QueryInscriptionsParams = {
   filter?: InscriptionFilterView | null
   cursor?: IndexerStateID | null
   limit: number
   descending_order: boolean
 }
 
-export interface QueryUTXOsParams {
+export type QueryUTXOsParams = {
   filter?: UTXOFilterView | null
   cursor?: IndexerStateID | null
   limit: number
   descending_order: boolean
 }
 
-export interface GetTransactionsParams {
+export type GetTransactionsParams = {
   cursor: number
   limit: number
   descending_order: boolean
 }
 
-export interface GetEventsParams {
+export type GetEventsParams = {
   eventHandleType: string
   cursor: number
   limit: number
@@ -82,7 +110,7 @@ export type QueryTransactionFilterParams =
   | { time_range: { end_time: number; start_time: number } }
   | { tx_order_range: { from_order: number; to_order: number } }
 
-export interface QueryTransactionParams {
+export type QueryTransactionParams = {
   filter: TransactionFilterView
   cursor: u64
   limit: usize
@@ -96,20 +124,28 @@ export type QueryEventFilterParams =
   | { time_range: { end_time: number; start_time: number } }
   | { tx_order_range: { from_order: number; to_order: number } }
 
-export interface QueryEventParams {
+export type QueryEventParams = {
   filter: QueryEventFilterParams
   cursor: { event_index: number; tx_order: number }
   limit: usize
   descending_order: boolean
 }
 
-export interface GetBalanceParams {
+export type GetBalanceParams = {
   address: string
   coinType: string
 }
 
-export interface GetBalancesParams {
+export type GetBalancesParams = {
   address: string
   cursor: string
-  limit: usize
+  limit: string
+}
+
+export type SessionInfo = {
+  authentication_key: string
+  scopes: Array<string>
+  create_time: number
+  last_active_time: number
+  max_inactive_interval: number
 }

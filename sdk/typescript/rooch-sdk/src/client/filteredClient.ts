@@ -4,7 +4,7 @@
 import { AnnotatedFunctionResultView, StatePageView, StateView } from '../types'
 import { IClient } from './interface'
 
-import { ExecuteViewFunctionParams, ListStatesParams } from './types.ts'
+import { ExecuteViewFunctionParams, ListStatesParams } from './roochClientTypes'
 
 export interface ITransactionFilterChain {
   doFilter(request: any): Promise<any>

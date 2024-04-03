@@ -4,8 +4,8 @@
 import { describe, it, expect, vi } from 'vitest'
 import fetchMock from 'fetch-mock'
 import { DevNetwork } from '../constants'
-import { RoochClient } from './rooch-client'
-import { ListStatesParams } from './types.ts'
+import { RoochClient } from './roochClient'
+import { ListStatesParams } from './roochClientTypes'
 
 describe('provider', () => {
   it('should create JsonRpcProvider ok ', async () => {

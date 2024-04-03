@@ -294,13 +294,11 @@ impl Handler<IndexerTransactionMessage> for IndexerActor {
     ) -> Result<()> {
         let IndexerTransactionMessage {
             transaction,
-            sequence_info,
             execution_info,
             moveos_tx,
         } = msg;
 
-        let indexed_transaction =
-            IndexedTransaction::new(transaction, sequence_info, execution_info, moveos_tx)?;
+        let indexed_transaction = IndexedTransaction::new(transaction, execution_info, moveos_tx)?;
         let transactions = vec![indexed_transaction];
 
         // just for data verify mode, don't write transaction indexer
@@ -315,20 +313,12 @@ impl Handler<IndexerEventsMessage> for IndexerActor {
         let IndexerEventsMessage {
             events,
             transaction,
-            sequence_info,
             moveos_tx,
         } = msg;
 
         let events: Vec<_> = events
             .into_iter()
-            .map(|event| {
-                IndexedEvent::new(
-                    event,
-                    transaction.clone(),
-                    sequence_info.clone(),
-                    moveos_tx.clone(),
-                )
-            })
+            .map(|event| IndexedEvent::new(event, transaction.clone(), moveos_tx.clone()))
             .collect();
         self.indexer_store.persist_events(events)?;
         Ok(())

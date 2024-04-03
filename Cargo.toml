@@ -35,6 +35,7 @@ members = [
     "crates/rooch-sequencer",
     "crates/rooch-executor",
     "crates/rooch-proposer",
+    "crates/rooch-pipeline-processor",
     "crates/rooch-open-rpc",
     "crates/rooch-open-rpc-spec",
     "crates/rooch-open-rpc-spec-builder",
@@ -102,6 +103,7 @@ rooch-config = { path = "crates/rooch-config" }
 rooch-sequencer = { path = "crates/rooch-sequencer" }
 rooch-executor = { path = "crates/rooch-executor" }
 rooch-proposer = { path = "crates/rooch-proposer" }
+rooch-pipeline-processor = { path = "crates/rooch-pipeline-processor" }
 rooch-open-rpc = { path = "crates/rooch-open-rpc" }
 rooch-open-rpc-spec = { path = "crates/rooch-open-rpc-spec" }
 rooch-open-rpc-spec-builder = { path = "crates/rooch-open-rpc-spec-builder" }

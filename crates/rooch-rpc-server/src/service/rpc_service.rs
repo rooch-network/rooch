@@ -4,23 +4,19 @@
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::StructTag;
-
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::account::Account;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event, EventID};
-use moveos_types::moveos_std::object::ObjectEntity;
 use moveos_types::state::{AnnotatedState, KeyState, MoveStructType, State};
 use moveos_types::state_resolver::{AnnotatedStateKV, StateKV};
 use moveos_types::transaction::{FunctionCall, TransactionExecutionInfo};
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_indexer::proxy::IndexerProxy;
-use rooch_proposer::proxy::ProposerProxy;
-use rooch_relayer::TxSubmiter;
-use rooch_rpc_api::jsonrpc_types::{ExecuteTransactionResponse, ExecuteTransactionResponseView};
+use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::address::{MultiChainAddress, RoochAddress};
+use rooch_types::address::MultiChainAddress;
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
     GlobalStateFilter, IndexerGlobalState, IndexerStateID, IndexerTableChangeSet,
@@ -28,45 +24,44 @@ use rooch_types::indexer::state::{
 };
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::sequencer::SequencerOrder;
-use rooch_types::transaction::{RoochTransaction, TransactionWithInfo};
-use rooch_types::transaction::{TransactionSequenceInfo, TransactionSequenceInfoMapping};
+use rooch_types::transaction::{
+    ExecuteTransactionResponse, LedgerTransaction, RoochTransaction, TransactionWithInfo,
+};
 
 /// RpcService is the implementation of the RPC service.
 /// It is the glue between the RPC server(EthAPIServer,RoochApiServer) and the rooch's actors.
 /// The RpcService encapsulates the logic of the functions, and the RPC server handle the response format.
 #[derive(Clone)]
 pub struct RpcService {
-    pub(crate) chain_id: u64,
     pub(crate) executor: ExecutorProxy,
     pub(crate) sequencer: SequencerProxy,
-    pub(crate) proposer: ProposerProxy,
     pub(crate) indexer: IndexerProxy,
-    pub(crate) data_verify_mode: bool,
+    pub(crate) pipeline_processor: PipelineProcessorProxy,
 }
 
 impl RpcService {
     pub fn new(
-        chain_id: u64,
         executor: ExecutorProxy,
         sequencer: SequencerProxy,
-        proposer: ProposerProxy,
         indexer: IndexerProxy,
-        data_verify_mode: bool,
+        pipeline_processor: PipelineProcessorProxy,
     ) -> Self {
         Self {
-            chain_id,
             executor,
             sequencer,
-            proposer,
             indexer,
-            data_verify_mode,
+            pipeline_processor,
         }
     }
 }
 
 impl RpcService {
-    pub fn get_chain_id(&self) -> u64 {
-        self.chain_id
+    pub async fn get_chain_id(&self) -> Result<u64> {
+        Ok(self.executor.chain_id().await?.id)
+    }
+
+    pub async fn get_bitcoin_network(&self) -> Result<u8> {
+        Ok(self.executor.bitcoin_network().await?.network)
     }
 
     pub async fn quene_tx(&self, tx: RoochTransaction) -> Result<()> {
@@ -76,71 +71,7 @@ impl RpcService {
     }
 
     pub async fn execute_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponse> {
-        // First, validate the transaction
-        let moveos_tx = self.executor.validate_transaction(tx.clone()).await?;
-        let sequence_info = self.sequencer.sequence_transaction(tx.clone()).await?;
-        // Then execute
-        let (output, execution_info) = self.executor.execute_transaction(moveos_tx.clone()).await?;
-        self.proposer
-            .propose_transaction(tx.clone(), execution_info.clone(), sequence_info.clone())
-            .await?;
-
-        // Sync latest state root from writer executor to reader executor
-        self.executor
-            .refresh_state(
-                ObjectEntity::root_object(execution_info.state_root, execution_info.size),
-                output.is_upgrade,
-            )
-            .await?;
-
-        let indexer = self.indexer.clone();
-        let sequence_info_clone = sequence_info.clone();
-        let moveos_tx_clone = moveos_tx.clone();
-        let execution_info_clone = execution_info.clone();
-        let output_clone = output.clone();
-
-        // If data verify mode, don't write all indexer
-        if !self.data_verify_mode {
-            tokio::spawn(async move {
-                let result = indexer
-                    .indexer_states(sequence_info_clone.tx_order, output_clone.changeset.clone())
-                    .await;
-                match result {
-                    Ok(_) => {}
-                    Err(error) => log::error!("indexer states error: {}", error),
-                };
-                let result = indexer
-                    .indexer_transaction(
-                        tx.clone(),
-                        sequence_info_clone.clone(),
-                        execution_info_clone.clone(),
-                        moveos_tx_clone.clone(),
-                    )
-                    .await;
-                match result {
-                    Ok(_) => {}
-                    Err(error) => log::error!("indexer transactions error: {}", error),
-                };
-                let result = indexer
-                    .indexer_events(
-                        output_clone.events.clone(),
-                        tx,
-                        sequence_info_clone.clone(),
-                        moveos_tx_clone,
-                    )
-                    .await;
-                match result {
-                    Ok(_) => {}
-                    Err(error) => log::error!("indexer events error: {}", error),
-                };
-            });
-        };
-
-        Ok(ExecuteTransactionResponse {
-            sequence_info,
-            execution_info,
-            output,
-        })
+        self.pipeline_processor.execute_l2_tx(tx).await
     }
 
     pub async fn execute_view_function(
@@ -234,7 +165,7 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<RoochTransaction>> {
+    pub async fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<LedgerTransaction>> {
         let resp = self.sequencer.get_transaction_by_hash(hash).await?;
         Ok(resp)
     }
@@ -242,41 +173,13 @@ impl RpcService {
     pub async fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256>,
-    ) -> Result<Vec<Option<RoochTransaction>>> {
+    ) -> Result<Vec<Option<LedgerTransaction>>> {
         let resp = self.sequencer.get_transactions_by_hash(tx_hashes).await?;
         Ok(resp)
     }
 
-    pub async fn get_transaction_sequence_infos(
-        &self,
-        orders: Vec<u64>,
-    ) -> Result<Vec<Option<TransactionSequenceInfo>>> {
-        let resp = self
-            .sequencer
-            .get_transaction_sequence_infos(orders)
-            .await?;
-        Ok(resp)
-    }
-
-    pub async fn get_tx_sequence_info_mapping_by_order(
-        &self,
-        tx_orders: Vec<u64>,
-    ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
-        let resp = self
-            .sequencer
-            .get_transaction_sequence_info_mapping_by_order(tx_orders)
-            .await?;
-        Ok(resp)
-    }
-
-    pub async fn get_tx_sequence_info_mapping_by_hash(
-        &self,
-        tx_hashes: Vec<H256>,
-    ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
-        let resp = self
-            .sequencer
-            .get_transaction_sequence_info_mapping_by_hash(tx_hashes)
-            .await?;
+    pub async fn get_tx_hashs(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>> {
+        let resp = self.sequencer.get_tx_hashs(tx_orders).await?;
         Ok(resp)
     }
 
@@ -379,29 +282,5 @@ impl RpcService {
             .sync_states(filter, cursor, limit, descending_order)
             .await?;
         Ok(resp)
-    }
-}
-
-//TODO we need to make the RpcService to an Actor, and implement TxSubmiter for it's actor proxy.
-#[async_trait::async_trait]
-impl TxSubmiter for RpcService {
-    async fn get_chain_id(&self) -> Result<u64> {
-        Ok(self.get_chain_id())
-    }
-    //TODO provide a trait to abstract the async state reader, elemiate the duplicated code bwteen RpcService and Client
-    async fn get_sequence_number(&self, address: RoochAddress) -> Result<u64> {
-        Ok(self
-            .get_states(AccessPath::object(Account::account_object_id(
-                address.into(),
-            )))
-            .await?
-            .pop()
-            .flatten()
-            .map(|state| state.as_object_uncheck::<Account>())
-            .transpose()?
-            .map_or(0, |account| account.value.sequence_number))
-    }
-    async fn submit_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
-        Ok(self.execute_tx(tx).await?.into())
     }
 }

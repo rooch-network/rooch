@@ -2,6 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export * from './interface'
-export * from './rooch-client'
-export * from './filtered-client'
-export * from './types'
+export * from './roochClient'
+export * from './filteredClient'
+export * from './roochClientTypes'

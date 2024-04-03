@@ -58,6 +58,7 @@ rooch-types = { workspace = true }
 rooch-executor = { workspace = true }
 rooch-sequencer = { workspace = true }
 rooch-proposer = { workspace = true }
+rooch-pipeline-processor = { workspace = true }
 rooch-key = { workspace = true }
 rooch-store = { workspace = true }
 rooch-rpc-api = { workspace = true }

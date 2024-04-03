@@ -12,24 +12,24 @@ export function useCurrentWallet() {
   switch (connectionStatus) {
     case 'connecting':
       return {
-        connectionStatus,
-        currentWallet: currentWallet,
+        status: connectionStatus,
+        wallet: currentWallet,
         isDisconnected: false,
         isConnecting: true,
         isConnected: false,
       } as const
     case 'disconnected':
       return {
-        connectionStatus,
-        currentWallet: currentWallet,
+        status: connectionStatus,
+        wallet: currentWallet,
         isDisconnected: true,
         isConnecting: false,
         isConnected: false,
       } as const
     case 'connected': {
       return {
-        connectionStatus,
-        currentWallet: currentWallet!,
+        status: connectionStatus,
+        wallet: currentWallet,
         isDisconnected: false,
         isConnecting: false,
         isConnected: true,

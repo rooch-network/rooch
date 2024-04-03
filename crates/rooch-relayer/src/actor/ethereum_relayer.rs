@@ -5,9 +5,12 @@ use crate::Relayer;
 use anyhow::Result;
 use async_trait::async_trait;
 use ethers::prelude::*;
-use moveos_types::transaction::FunctionCall;
 use rooch_config::EthereumRelayerConfig;
-use rooch_types::framework::ethereum_light_client::{BlockHeader, EthereumLightClientModule};
+use rooch_types::{
+    framework::ethereum_light_client::BlockHeader,
+    multichain_id::RoochMultiChainID,
+    transaction::{L1Block, L1BlockWithBody},
+};
 use std::collections::HashSet;
 use tracing::info;
 
@@ -26,7 +29,7 @@ impl EthereumRelayer {
         })
     }
 
-    async fn relay_ethereum(&mut self) -> Result<Option<FunctionCall>> {
+    async fn relay_ethereum(&mut self) -> Result<Option<L1BlockWithBody>> {
         let block = self
             .rpc_client
             .get_block(BlockId::Number(BlockNumber::Latest))
@@ -41,13 +44,20 @@ impl EthereumRelayer {
                     return Ok(None);
                 }
                 let block_header = BlockHeader::try_from(&block)?;
-                let call = EthereumLightClientModule::create_submit_new_block_call(&block_header);
                 info!(
                     "EthereumRelayer process block, hash: {}, number: {}, timestamp: {}",
                     block_hash, block_header.number, block_header.timestamp
                 );
+                let l1_block = L1BlockWithBody {
+                    block: L1Block {
+                        chain_id: RoochMultiChainID::Ether.multichain_id(),
+                        block_height: block_header.number,
+                        block_hash: block_hash.as_bytes().to_vec(),
+                    },
+                    block_body: block_header.encode(),
+                };
                 self.processed_blocks.insert(block_hash);
-                Ok(Some(call))
+                Ok(Some(l1_block))
             }
             None => {
                 info!("The RPC returned no block");
@@ -60,7 +70,7 @@ impl EthereumRelayer {
 
 #[async_trait]
 impl Relayer for EthereumRelayer {
-    async fn relay(&mut self) -> Result<Option<FunctionCall>> {
+    async fn relay(&mut self) -> Result<Option<L1BlockWithBody>> {
         self.relay_ethereum().await
     }
 }

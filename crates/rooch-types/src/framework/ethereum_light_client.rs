@@ -56,6 +56,12 @@ pub struct BlockHeader {
     pub extra_data: Vec<u8>,
 }
 
+impl BlockHeader {
+    pub fn encode(&self) -> Vec<u8> {
+        bcs::to_bytes(self).expect("encode block header should success")
+    }
+}
+
 impl<T> TryFrom<&Block<T>> for BlockHeader {
     type Error = anyhow::Error;
 
@@ -126,6 +132,14 @@ impl<'a> EthereumLightClientModule<'a> {
             vec![MoveValue::vector_u8(
                 bcs::to_bytes(&block_header).expect("Serialize BlockHeader should success."),
             )],
+        )
+    }
+
+    pub fn create_submit_new_block_call_bytes(block_header: Vec<u8>) -> FunctionCall {
+        Self::create_function_call(
+            Self::SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME,
+            vec![],
+            vec![MoveValue::vector_u8(block_header)],
         )
     }
 }

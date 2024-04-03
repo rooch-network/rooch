@@ -4,6 +4,8 @@
 use crate::address::{RoochAddress, RoochSupportedAddress};
 use crate::transaction::authenticator::Authenticator;
 use crate::transaction::rooch::{RoochTransaction, RoochTransactionData};
+use crate::transaction::{LedgerTransaction, TransactionSequenceInfo};
+use ethers::types::H256;
 use rand::{thread_rng, Rng};
 
 pub use moveos_types::test_utils::*;
@@ -11,6 +13,15 @@ pub use moveos_types::test_utils::*;
 pub fn random_rooch_transaction() -> RoochTransaction {
     let move_action_type = random_move_action_type();
     random_rooch_transaction_with_move_action(move_action_type)
+}
+
+pub fn random_ledger_transaction() -> LedgerTransaction {
+    let rooch_transaction = random_rooch_transaction();
+
+    let tx_order_signature = Authenticator::new(rand::random(), random_bytes());
+    let random_sequence_info =
+        TransactionSequenceInfo::new(rand::random(), tx_order_signature, H256::random());
+    LedgerTransaction::new_l2_tx(rooch_transaction, random_sequence_info)
 }
 
 pub fn random_rooch_transaction_with_move_action(move_action: MoveActionType) -> RoochTransaction {

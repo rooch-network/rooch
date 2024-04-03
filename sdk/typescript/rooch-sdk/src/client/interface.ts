@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { AnnotatedFunctionResultView, StatePageView, StateView, Bytes } from '../types'
 
-import { ExecuteViewFunctionParams, ListStatesParams } from './types.ts'
+import { ExecuteViewFunctionParams, ListStatesParams } from './roochClientTypes'
 
 export interface IClient {
   getRpcApiVersion(): Promise<string | undefined>

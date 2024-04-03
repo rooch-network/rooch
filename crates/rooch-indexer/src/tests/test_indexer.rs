@@ -24,11 +24,9 @@ use rooch_types::indexer::event_filter::EventFilter;
 use rooch_types::indexer::state::{GlobalStateFilter, TableStateFilter};
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::test_utils::{
-    random_bytes, random_event, random_function_calls, random_rooch_transaction, random_string,
+    random_event, random_function_calls, random_ledger_transaction, random_string,
     random_table_object, random_verified_move_action,
 };
-use rooch_types::transaction::authenticator::Authenticator;
-use rooch_types::transaction::TransactionSequenceInfo;
 use std::str::FromStr;
 
 fn random_update_global_states(states: Vec<IndexedGlobalState>) -> Vec<IndexedGlobalState> {
@@ -147,11 +145,7 @@ fn test_transaction_store() -> Result<()> {
     indexer_store.create_all_tables_if_not_exists()?;
     let indexer_reader = IndexerReader::new(indexer_db)?;
 
-    let random_transaction = random_rooch_transaction();
-
-    let tx_order_signature = Authenticator::new(rand::random(), random_bytes());
-    let random_sequence_info =
-        TransactionSequenceInfo::new(rand::random(), tx_order_signature, H256::random());
+    let random_transaction = random_ledger_transaction();
 
     let random_execution_info = TransactionExecutionInfo::new(
         H256::random(),
@@ -173,7 +167,6 @@ fn test_transaction_store() -> Result<()> {
 
     let indexed_transaction = IndexedTransaction::new(
         random_transaction,
-        random_sequence_info,
         random_execution_info,
         random_moveos_tx.clone(),
     )?;
@@ -199,11 +192,7 @@ fn test_event_store() -> Result<()> {
     let indexer_reader = IndexerReader::new(indexer_db)?;
 
     let random_event = random_event();
-    let random_transaction = random_rooch_transaction();
-
-    let tx_order_signature = Authenticator::new(rand::random(), random_bytes());
-    let random_sequence_info =
-        TransactionSequenceInfo::new(rand::random(), tx_order_signature, H256::random());
+    let random_transaction = random_ledger_transaction();
 
     let tx_context = TxContext::new_readonly_ctx(AccountAddress::random());
     let move_action = random_verified_move_action();
@@ -214,12 +203,8 @@ fn test_event_store() -> Result<()> {
         post_execute_functions: random_function_calls(),
     };
 
-    let indexed_event = IndexedEvent::new(
-        random_event,
-        random_transaction,
-        random_sequence_info,
-        random_moveos_tx.clone(),
-    );
+    let indexed_event =
+        IndexedEvent::new(random_event, random_transaction, random_moveos_tx.clone());
     let events = vec![indexed_event];
     let _ = indexer_store.persist_events(events)?;
 

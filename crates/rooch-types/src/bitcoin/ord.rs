@@ -16,7 +16,6 @@ use moveos_types::{
     move_std::{option::MoveOption, string::MoveString},
     moveos_std::{
         object::{self, ObjectID},
-        simple_map::SimpleMap,
         tx_context::TxContext,
     },
     state::{MoveState, MoveStructState, MoveStructType},
@@ -67,7 +66,6 @@ pub struct Inscription {
     pub metaprotocol: MoveOption<MoveString>,
     pub parent: MoveOption<ObjectID>,
     pub pointer: MoveOption<u64>,
-    pub json_body: SimpleMap<MoveString, MoveString>,
 }
 
 impl MoveStructType for Inscription {
@@ -90,7 +88,6 @@ impl MoveStructState for Inscription {
             MoveOption::<MoveString>::type_layout(),
             MoveOption::<ObjectID>::type_layout(),
             MoveOption::<u64>::type_layout(),
-            SimpleMap::<MoveString, MoveString>::type_layout(),
         ])
     }
 }

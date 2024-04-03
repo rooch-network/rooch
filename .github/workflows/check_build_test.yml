@@ -40,11 +40,11 @@ jobs:
       - name: Execute rust tests
         run: cargo nextest run --workspace --all-features --exclude rooch-framework-tests --exclude rooch-integration-test-runner -v
       - name: Execute the framework test with 1 thread
-        run: cargo clean && cargo test run -p rooch-framework-tests -p rooch-integration-test-runner
+        run: cargo test --release run -p rooch-framework-tests -p rooch-integration-test-runner
       - name: Run CLI integration test
         # cargo-nextest does not support the CLI integration test powered by Cucumber Rust.
         # Use cargo test to run CLI integration tests.
-        run: cargo test -p testsuite --test integration
+        run: cargo test --release -p testsuite --test integration
       - name: Run Rooch init
         run: cargo run --bin rooch init --skip-password
       - name: Execute Move stdlib and framework tests
