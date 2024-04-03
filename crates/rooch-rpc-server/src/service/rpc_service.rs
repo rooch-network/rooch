@@ -24,8 +24,9 @@ use rooch_types::indexer::state::{
 };
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::sequencer::SequencerOrder;
-use rooch_types::transaction::{ExecuteTransactionResponse, RoochTransaction, TransactionWithInfo};
-use rooch_types::transaction::{TransactionSequenceInfo, TransactionSequenceInfoMapping};
+use rooch_types::transaction::{
+    ExecuteTransactionResponse, LedgerTransaction, RoochTransaction, TransactionWithInfo,
+};
 
 /// RpcService is the implementation of the RPC service.
 /// It is the glue between the RPC server(EthAPIServer,RoochApiServer) and the rooch's actors.
@@ -164,7 +165,7 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<RoochTransaction>> {
+    pub async fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<LedgerTransaction>> {
         let resp = self.sequencer.get_transaction_by_hash(hash).await?;
         Ok(resp)
     }
@@ -172,41 +173,13 @@ impl RpcService {
     pub async fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256>,
-    ) -> Result<Vec<Option<RoochTransaction>>> {
+    ) -> Result<Vec<Option<LedgerTransaction>>> {
         let resp = self.sequencer.get_transactions_by_hash(tx_hashes).await?;
         Ok(resp)
     }
 
-    pub async fn get_transaction_sequence_infos(
-        &self,
-        orders: Vec<u64>,
-    ) -> Result<Vec<Option<TransactionSequenceInfo>>> {
-        let resp = self
-            .sequencer
-            .get_transaction_sequence_infos(orders)
-            .await?;
-        Ok(resp)
-    }
-
-    pub async fn get_tx_sequence_info_mapping_by_order(
-        &self,
-        tx_orders: Vec<u64>,
-    ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
-        let resp = self
-            .sequencer
-            .get_transaction_sequence_info_mapping_by_order(tx_orders)
-            .await?;
-        Ok(resp)
-    }
-
-    pub async fn get_tx_sequence_info_mapping_by_hash(
-        &self,
-        tx_hashes: Vec<H256>,
-    ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
-        let resp = self
-            .sequencer
-            .get_transaction_sequence_info_mapping_by_hash(tx_hashes)
-            .await?;
+    pub async fn get_tx_hashs(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>> {
+        let resp = self.sequencer.get_tx_hashs(tx_orders).await?;
         Ok(resp)
     }
 

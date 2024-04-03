@@ -1,19 +1,67 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::BytesView;
 use crate::jsonrpc_types::{
     AccountAddressView, H256View, TransactionExecutionInfoView, TransactionSequenceInfoView,
     TransactionView,
 };
 use rooch_types::indexer::transaction_filter::TransactionFilter;
-use rooch_types::transaction::TransactionWithInfo;
+use rooch_types::transaction::{L1Block, LedgerTransaction, LedgerTxData, TransactionWithInfo};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct TransactionWithInfoView {
-    pub transaction: TransactionView,
+pub struct L1BlockView {
+    pub chain_id: u64,
+    pub block_height: u64,
+    pub block_hash: BytesView,
+}
+
+impl From<L1Block> for L1BlockView {
+    fn from(block: L1Block) -> Self {
+        Self {
+            chain_id: block.chain_id.id(),
+            block_height: block.block_height,
+            block_hash: block.block_hash.into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum LedgerTxDataView {
+    L1Block(L1BlockView),
+    L2Tx(TransactionView),
+}
+
+impl From<LedgerTxData> for LedgerTxDataView {
+    fn from(data: LedgerTxData) -> Self {
+        match data {
+            LedgerTxData::L1Block(block) => LedgerTxDataView::L1Block(block.into()),
+            LedgerTxData::L2Tx(tx) => LedgerTxDataView::L2Tx(tx.into()),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct LedgerTransactionView {
+    pub data: LedgerTxDataView,
     pub sequence_info: TransactionSequenceInfoView,
+}
+
+impl From<LedgerTransaction> for LedgerTransactionView {
+    fn from(tx: LedgerTransaction) -> Self {
+        Self {
+            data: tx.data.into(),
+            sequence_info: tx.sequence_info.into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct TransactionWithInfoView {
+    pub transaction: LedgerTransactionView,
     pub execution_info: TransactionExecutionInfoView,
 }
 
@@ -21,7 +69,6 @@ impl From<TransactionWithInfo> for TransactionWithInfoView {
     fn from(tx: TransactionWithInfo) -> Self {
         Self {
             transaction: tx.transaction.into(),
-            sequence_info: tx.sequence_info.into(),
             execution_info: tx.execution_info.into(),
         }
     }

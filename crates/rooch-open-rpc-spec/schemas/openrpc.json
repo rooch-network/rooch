@@ -1753,6 +1753,91 @@
           }
         }
       },
+      "LedgerTransactionView": {
+        "type": "object",
+        "required": [
+          "data",
+          "sequence_info"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LedgerTxDataView"
+          },
+          "sequence_info": {
+            "$ref": "#/components/schemas/TransactionSequenceInfoView"
+          }
+        }
+      },
+      "LedgerTxDataView": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "block_hash",
+              "block_height",
+              "chain_id",
+              "type"
+            ],
+            "properties": {
+              "block_hash": {
+                "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+              },
+              "block_height": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "chain_id": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "l1_block"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "action",
+              "action_type",
+              "raw",
+              "sender",
+              "sequence_number",
+              "type"
+            ],
+            "properties": {
+              "action": {
+                "$ref": "#/components/schemas/MoveActionView"
+              },
+              "action_type": {
+                "$ref": "#/components/schemas/MoveActionTypeView"
+              },
+              "raw": {
+                "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
+              },
+              "sender": {
+                "type": "string"
+              },
+              "sequence_number": {
+                "type": "integer",
+                "format": "uint64",
+                "minimum": 0.0
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "l2_tx"
+                ]
+              }
+            }
+          }
+        ]
+      },
       "MoveActionTypeView": {
         "type": "string",
         "enum": [
@@ -2624,51 +2709,18 @@
           }
         }
       },
-      "TransactionView": {
-        "type": "object",
-        "required": [
-          "action",
-          "action_type",
-          "raw",
-          "sender",
-          "sequence_number"
-        ],
-        "properties": {
-          "action": {
-            "$ref": "#/components/schemas/MoveActionView"
-          },
-          "action_type": {
-            "$ref": "#/components/schemas/MoveActionTypeView"
-          },
-          "raw": {
-            "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
-          },
-          "sender": {
-            "type": "string"
-          },
-          "sequence_number": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          }
-        }
-      },
       "TransactionWithInfoView": {
         "type": "object",
         "required": [
           "execution_info",
-          "sequence_info",
           "transaction"
         ],
         "properties": {
           "execution_info": {
             "$ref": "#/components/schemas/TransactionExecutionInfoView"
           },
-          "sequence_info": {
-            "$ref": "#/components/schemas/TransactionSequenceInfoView"
-          },
           "transaction": {
-            "$ref": "#/components/schemas/TransactionView"
+            "$ref": "#/components/schemas/LedgerTransactionView"
           }
         }
       },

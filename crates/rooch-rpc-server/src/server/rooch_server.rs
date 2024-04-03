@@ -5,7 +5,7 @@ use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_service::RpcService;
 use anyhow::Result;
 use jsonrpsee::{
-    core::{async_trait, Error as JsonRpcError, RpcResult},
+    core::{async_trait, RpcResult},
     RpcModule,
 };
 use move_core_types::account_address::AccountAddress;
@@ -350,14 +350,9 @@ impl RoochAPIServer for RoochServer {
     ) -> RpcResult<Vec<Option<TransactionWithInfoView>>> {
         let tx_hashes: Vec<H256> = tx_hashes.iter().map(|m| (*m).into()).collect::<Vec<_>>();
 
-        let tx_sequence_info_mapping = self
-            .rpc_service
-            .get_tx_sequence_info_mapping_by_hash(tx_hashes.clone())
-            .await?;
-
         let data = self
             .aggregate_service
-            .get_transaction_with_info(tx_hashes, tx_sequence_info_mapping)
+            .get_transaction_with_info(tx_hashes)
             .await?
             .into_iter()
             .map(|item| item.map(TransactionWithInfoView::from))
@@ -382,7 +377,7 @@ impl RoochAPIServer for RoochServer {
         let descending_order = descending_order.unwrap_or(true);
         let cursor = cursor.map(|v| v.0);
 
-        let mut tx_orders = if descending_order {
+        let tx_orders = if descending_order {
             let start = cursor.unwrap_or(last_sequencer_order + 1);
             let end = if start >= limit_of {
                 start - limit_of
@@ -396,33 +391,27 @@ impl RoochAPIServer for RoochServer {
             (start..end).collect::<Vec<_>>()
         };
 
-        // Since tx order is strictly incremental, traversing the SMT Tree can be optimized into a multi get query to improve query performance.
-        let mut tx_sequence_info_mapping = self
-            .rpc_service
-            .get_tx_sequence_info_mapping_by_order(tx_orders.clone())
-            .await?;
+        let tx_hashs = self.rpc_service.get_tx_hashs(tx_orders.clone()).await?;
 
-        let has_next_page = (tx_sequence_info_mapping.len() as u64) > limit_of;
-        tx_sequence_info_mapping.truncate(limit_of as usize);
-        tx_orders.truncate(limit_of as usize);
-        let next_cursor = tx_sequence_info_mapping
-            .last()
-            .map_or(cursor, |m| m.clone().map(|v| v.tx_order));
+        let mut hash_order_pair = tx_hashs
+            .into_iter()
+            .zip(tx_orders)
+            .filter_map(|(h, o)| h.map(|h| (h, o)))
+            .collect::<Vec<_>>();
 
-        let mut tx_hashes = vec![];
-        for item in tx_sequence_info_mapping.clone() {
-            if item.is_none() {
-                return Err(JsonRpcError::Custom(String::from(
-                    "The tx hash corresponding to tx order does not exist",
-                )));
-            }
-            tx_hashes.push(item.unwrap().tx_hash);
-        }
-        assert_eq!(tx_hashes.len(), tx_orders.len());
+        let has_next_page = (hash_order_pair.len() as u64) > limit_of;
+        hash_order_pair.truncate(limit_of as usize);
+
+        let next_cursor = hash_order_pair.last().map_or(cursor, |(_h, o)| Some(*o));
 
         let data = self
             .aggregate_service
-            .get_transaction_with_info(tx_hashes, tx_sequence_info_mapping)
+            .get_transaction_with_info(
+                hash_order_pair
+                    .into_iter()
+                    .map(|(h, _o)| h)
+                    .collect::<Vec<_>>(),
+            )
             .await?
             .into_iter()
             .flatten()
@@ -512,7 +501,7 @@ impl RoochAPIServer for RoochServer {
         let next_cursor = data
             .last()
             .cloned()
-            .map_or(cursor, |t| Some(t.sequence_info.tx_order));
+            .map_or(cursor, |t| Some(t.transaction.sequence_info.tx_order));
 
         Ok(TransactionWithInfoPageView {
             data: data

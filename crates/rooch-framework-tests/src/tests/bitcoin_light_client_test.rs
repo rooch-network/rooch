@@ -13,8 +13,6 @@ use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::object;
 use moveos_types::state::MoveStructType;
 use moveos_types::state_resolver::StateReader;
-use rooch_key::keystore::account_keystore::AccountKeystore;
-use rooch_key::keystore::memory_keystore::InMemKeystore;
 use rooch_types::bitcoin::ord::{Inscription, InscriptionID};
 use rooch_types::bitcoin::types::{self, Header};
 use rooch_types::bitcoin::utxo::{self, UTXO};
@@ -90,10 +88,8 @@ fn test_submit_block() {
     assert_eq!(now_milliseconds, duration.as_millis() as u64);
 }
 
-//we temporarily ignore this test because it takes too long time
-//to run this test, use command:
+//this test takes too long time in debug mod run it in release mod, use command:
 //RUST_LOG=debug cargo test --release --package rooch-framework-tests --lib -- --include-ignored tests::bitcoin_light_client_test::test_utxo_progress
-#[ignore]
 #[test]
 fn test_utxo_progress() {
     let _ = tracing_subscriber::fmt::try_init();

@@ -71,23 +71,8 @@ impl TransactionSequenceInfo {
 /// Transaction with sequence info and execution info.
 #[derive(Debug, Clone)]
 pub struct TransactionWithInfo {
-    pub transaction: RoochTransaction,
-    pub sequence_info: TransactionSequenceInfo,
+    pub transaction: LedgerTransaction,
     pub execution_info: TransactionExecutionInfo,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct TransactionSequenceInfoMapping {
-    /// The tx order
-    pub tx_order: u64,
-    /// The tx hash.
-    pub tx_hash: H256,
-}
-
-impl TransactionSequenceInfoMapping {
-    pub fn new(tx_order: u64, tx_hash: H256) -> TransactionSequenceInfoMapping {
-        TransactionSequenceInfoMapping { tx_order, tx_hash }
-    }
 }
 
 #[derive(Debug, Clone)]
