@@ -289,13 +289,13 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         .await?;
     let indexer_proxy = IndexerProxy::new(indexer_executor.into(), indexer_reader_executor.into());
 
-    let data_verify_mode = opt.data_verify_mode.unwrap_or(false);
+    let data_import_mode = opt.data_import_mode.unwrap_or(false);
     let processor = PipelineProcessorActor::new(
         executor_proxy.clone(),
         sequencer_proxy.clone(),
         proposer_proxy.clone(),
         indexer_proxy.clone(),
-        data_verify_mode,
+        data_import_mode,
     )
     .into_actor(Some("PipelineProcessor"), &actor_system)
     .await?;

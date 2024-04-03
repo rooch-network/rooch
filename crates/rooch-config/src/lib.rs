@@ -141,8 +141,8 @@ pub struct RoochOpt {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long)]
-    /// The data verify flag. If true, may be ignore some indexer write
-    pub data_verify_mode: Option<bool>,
+    /// The data import flag. If true, may be ignore the indexer write
+    pub data_import_mode: Option<bool>,
 }
 
 impl std::fmt::Display for RoochOpt {
@@ -173,7 +173,7 @@ impl RoochOpt {
             proposer_account: None,
             relayer_account: None,
             da: None,
-            data_verify_mode: None,
+            data_import_mode: None,
         }
     }
 

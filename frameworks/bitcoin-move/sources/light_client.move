@@ -93,6 +93,8 @@ module bitcoin_move::light_client{
             process_tx(btc_block_store, tx);
             idx = idx + 1;
         }
+
+        // handle coinbase tx
     }
 
     fun process_tx(btc_block_store: &mut BitcoinBlockStore, tx: &Transaction){

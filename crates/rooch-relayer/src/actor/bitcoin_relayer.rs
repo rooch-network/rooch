@@ -21,7 +21,7 @@ use tracing::{debug, info};
 
 pub struct BitcoinRelayer {
     start_block_height: Option<u64>,
-    // only for data verify
+    // only for data import
     end_block_height: Option<u64>,
     rpc_client: BitcoinClientProxy,
     //TODO if we want make the relayer to an independent process, we need to replace the executor proxy with a rooch rpc client
@@ -114,7 +114,7 @@ impl BitcoinRelayer {
 
         let batch_size: usize = 10;
         let mut next_block_hash = start_block_header_info.next_block_hash;
-        // only for data verify mode
+        // only for bitcoin block data import
         if !(end_block_height > 0 && start_block_height_usize > end_block_height) {
             self.buffer.push(BlockResult {
                 header_info: start_block_header_info,
@@ -127,7 +127,7 @@ impl BitcoinRelayer {
             next_block_hash = header_info.next_block_hash;
             let next_block_height = header_info.height;
 
-            // only for data verify mode
+            // only for bitcoin block data import
             if (end_block_height > 0 && next_block_height > end_block_height)
                 || next_block_height < start_block_height_usize
             {
