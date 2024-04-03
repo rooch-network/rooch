@@ -1,4 +1,9 @@
 {
-  "account-abstraction": "Account abstraction",
-  "address-space": "Address space"
+  "account-abstraction": "账户抽象",
+  "account-abstraction-implementation": "账户抽象的设计与实现",
+  "address-space": "地址空间",
+  "multi-chain-account": {
+    "title": "多链账户",
+    "display": "hidden"
+  }
 }

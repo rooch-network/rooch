@@ -7,26 +7,30 @@ import { Network } from '@roochnetwork/rooch-sdk'
 
 export type ClientActions = {
   addNetwork: (network: Network) => void
+  switchNetwork: (network: Network) => void
   removeNetwork: (network: Network) => void
-  setLastConnectedNetwork: (network: Network) => void
 }
 
 export type ClientStore = {
   networks: Network[]
-  lastConnectedNetwork: Network | null
+  currentNetwork: Network
+  // lastConnectedNetwork: Network | null
 } & ClientActions
 
 type ClientConfiguration = {
   storage: StateStorage
   storageKey: string
+  networks: Network[]
+  currentNetwork: Network
 }
 
-export function createClientStore({ storage, storageKey }: ClientConfiguration) {
+export function createClientStore({ storage, storageKey, currentNetwork }: ClientConfiguration) {
   return createStore<ClientStore>()(
     persist(
       (set, get) => ({
         networks: [],
-        lastConnectedNetwork: null,
+        currentNetwork: currentNetwork,
+        // lastConnectedNetwork: null,
         addNetwork(network) {
           const cache = get().networks
           set(() => ({
@@ -40,17 +44,20 @@ export function createClientStore({ storage, storageKey }: ClientConfiguration) 
             networks: networks,
           }))
         },
-        setLastConnectedNetwork(network) {
+        switchNetwork(network) {
           set(() => ({
-            lastConnectedNetwork: network,
+            currentNetwork: network,
+            // lastConnectedNetwork: network,
           }))
         },
       }),
       {
         name: storageKey,
         storage: createJSONStorage(() => storage),
-        partialize: ({ lastConnectedNetwork }) => ({
-          lastConnectedNetwork,
+        partialize: ({ networks, currentNetwork }) => ({
+          networks,
+          currentNetwork,
+          // lastConnectedNetwork,
         }),
       },
     ),

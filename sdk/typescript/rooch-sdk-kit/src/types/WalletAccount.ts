@@ -1,38 +1,66 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { RoochMultiChainID } from '@roochnetwork/rooch-sdk'
+import { IAccount, IAuthorizer, RoochClient, RoochMultiChainID } from '@roochnetwork/rooch-sdk'
 
 import { MultiChainAddress } from './address'
 import { SupportChain } from '../feature'
+import { chain2MultiChainID } from '../utils/chain2MultiChainID'
 
-export class WalletAccount {
+export class WalletAccount implements IAccount {
   public readonly address: string
   public readonly publicKey?: string
   public readonly compressedPublicKey?: string
-  // TODO: add network info
-  public readonly walletType: SupportChain
-  public readonly roochAddress: string
+
+  private chain: SupportChain
+  private authorization: IAuthorizer
+  private client?: RoochClient
+  private roochAddress?: string
 
   public constructor(
+    chain: SupportChain,
+    authorization: IAuthorizer,
     address: string,
-    roochAddress: string,
-    walletType: SupportChain,
+    client?: RoochClient,
     publicKey?: string,
     compressedPublicKey?: string,
   ) {
+    this.chain = chain
+    this.client = client
+    this.authorization = authorization
     this.address = address
-    this.roochAddress = roochAddress
     this.publicKey = publicKey
-    this.walletType = walletType
     this.compressedPublicKey = compressedPublicKey
   }
 
   public toMultiChainAddress(): MultiChainAddress | null {
-    if (this.walletType !== SupportChain.ETH) {
+    if (this.chain !== SupportChain.ETH) {
       return new MultiChainAddress(RoochMultiChainID.Bitcoin, this.address)
     }
 
     return null
+  }
+
+  getAddress(): string | undefined {
+    return this.address
+  }
+
+  async getRoochAddress(): Promise<string> {
+    if (!this.client) {
+      throw new Error()
+    }
+
+    if (!this.roochAddress) {
+      this.roochAddress = await this.client?.resoleRoochAddress({
+        address: this.address,
+        multiChainID: chain2MultiChainID(this.chain),
+      })
+    }
+
+    return this.roochAddress
+  }
+
+  getAuthorizer(): IAuthorizer {
+    return this.authorization
   }
 }

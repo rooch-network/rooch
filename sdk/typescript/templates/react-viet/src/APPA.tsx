@@ -4,22 +4,38 @@
 import {
   useConnectWallet,
   useCreateSessionKey,
-  useCurrentSessionAccount,
   useWalletStore,
+  useCurrentSession,
   useWallets
 } from '@roochnetwork/rooch-sdk-kit';
 import {Button} from '@radix-ui/themes';
 
 import './App.css'
+import {useEffect, useState} from 'react';
 
 export function App() {
 
   const account = useWalletStore((state) => state.currentAccount)
   const connectionStatus = useWalletStore((state) => state.connectionStatus)
-  const sessionAccount = useCurrentSessionAccount()
+  const sessionAccount = useCurrentSession()
   const {mutateAsync: connectWallet} = useConnectWallet()
   const wallets = useWallets()
   const installedWallets = wallets.filter((w) => w.installed === true)
+  const [roochAddress, setRoochAddress] = useState('');
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const address = await sessionAccount?.getRoochAddress();
+        setRoochAddress(address || '');
+      } catch (error) {
+        // 处理错误
+        console.error('Failed to fetch Rooch address:', error);
+      }
+    }
+
+    fetchData();
+  }, [sessionAccount]);
 
   return (
     <div className="App">
@@ -57,7 +73,7 @@ export function App() {
             </div>
             <div style={{textAlign: 'left', marginTop: 10}}>
               <div style={{fontWeight: 'bold'}}>Session Account Address:</div>
-              <div style={{wordWrap: 'break-word'}}>{sessionAccount?.getAddress()}</div>
+              <div style={{wordWrap: 'break-word'}}>{roochAddress}</div>
             </div>
           </div>
           <CreateSessionCard/>

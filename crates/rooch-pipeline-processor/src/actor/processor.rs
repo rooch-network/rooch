@@ -97,7 +97,7 @@ impl PipelineProcessorActor {
         let output_clone = output.clone();
 
         // If bitcoin block data import, don't write all indexer
-        //TODO put all indexer data into a single message
+        // TODO put all indexer data into a single message
         if !self.data_import_mode {
             tokio::spawn(async move {
                 let result = indexer

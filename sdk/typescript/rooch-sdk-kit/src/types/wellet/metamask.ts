@@ -3,11 +3,11 @@
 
 import { ETHWallet } from './ethWallet'
 import { WalletAccount } from '../WalletAccount'
-import { SupportChain } from '../../feature'
+import { RoochClient } from '@roochnetwork/rooch-sdk'
 
 export class Metamask extends ETHWallet {
-  constructor() {
-    super()
+  constructor(client: RoochClient) {
+    super(client)
     this.name = 'metamask'
   }
 
@@ -35,6 +35,6 @@ export class Metamask extends ETHWallet {
         return accounts
       })
 
-    return accounts.map((v) => new WalletAccount(v, '', SupportChain.ETH))
+    return accounts.map((v) => new WalletAccount(this.getChain(), this, v, this.client))
   }
 }

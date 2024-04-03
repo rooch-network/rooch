@@ -53,7 +53,7 @@ export function useAutoConnectWallet(): 'disabled' | 'idle' | 'attempted' {
 
       // bitcoin wallet is not support switch account
       if (
-        !wallet!.isSupportChain(SupportChain.BITCOIN) &&
+        wallet!.getChain() !== SupportChain.BITCOIN &&
         currentAccount?.address !== lastConnectedAccountAddress
       ) {
         wallet!.switchAccount(lastConnectedAccountAddress)

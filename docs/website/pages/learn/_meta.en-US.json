@@ -3,5 +3,7 @@
   "architecture": "Architecture",
   "core-concepts": "Core Concepts",
   "in-depth-tech": "In-Depth-Tech",
-  "contribution-guides": "Contributing Guides"
+  "user-guides": "User guides",
+  "contribution-guides": "Contributing Guides",
+  "miscellaneous": "Miscellaneous"
 }

@@ -4,9 +4,9 @@
 import { getAddressInfo } from './bitcoinAddress'
 import { bech32 } from 'bech32'
 import { RoochMultiChainID, RoochMultiChainIDToString } from '@roochnetwork/rooch-sdk'
-import { bcsTypes } from '@roochnetwork/rooch-sdk'
+import { bcs } from '@roochnetwork/rooch-sdk'
 
-export class MultiChainAddress implements bcsTypes.Serializable {
+export class MultiChainAddress implements bcs.Serializable {
   private readonly multiChainId: RoochMultiChainID
   private readonly rawAddress: Uint8Array
 
@@ -18,9 +18,9 @@ export class MultiChainAddress implements bcsTypes.Serializable {
   }
 
   toBytes(): Uint8Array {
-    let bcs = new bcsTypes.BcsSerializer()
-    this.serialize(bcs)
-    return bcs.getBytes()
+    let bs = new bcs.BcsSerializer()
+    this.serialize(bs)
+    return bs.getBytes()
   }
 
   // TODO: remove this, add toString
@@ -30,8 +30,8 @@ export class MultiChainAddress implements bcsTypes.Serializable {
     return address
   }
 
-  serialize(se: bcsTypes.BcsSerializer) {
+  serialize(se: bcs.BcsSerializer) {
     se.serializeU64(this.multiChainId)
-    bcsTypes.Helpers.serializeVectorU8(Array.from(this.rawAddress), se)
+    bcs.Helpers.serializeVectorU8(Array.from(this.rawAddress), se)
   }
 }

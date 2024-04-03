@@ -6,7 +6,7 @@ import type { UseQueryOptions, UseQueryResult } from '@tanstack/react-query'
 import { useQuery } from '@tanstack/react-query'
 
 import type { PartialBy } from '../types'
-import { useRoochClientContext } from './useRoochClient'
+import { useRoochContext } from './index'
 
 export type RpcMethodName = {
   [K in keyof RoochClient]: RoochClient[K] extends
@@ -48,7 +48,7 @@ export function useRoochClientQuery<T extends keyof RpcMethods, TData = RpcMetho
     options?: UseRoochClientQueryOptions<T, TData>,
   ]
 
-  const roochContext = useRoochClientContext()
+  const roochContext = useRoochContext()
 
   return useQuery({
     ...options,
