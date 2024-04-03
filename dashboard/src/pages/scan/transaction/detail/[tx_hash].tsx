@@ -112,7 +112,7 @@ const TransactionDetail = () => {
                     Order:
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important' }}>
-                    {data.data[0].sequence_info.tx_order}
+                    {data.data[0].transaction.sequence_info.tx_order}
                   </MUITableCell>
                 </TableRow>
                 <TableRow>
@@ -120,7 +120,7 @@ const TransactionDetail = () => {
                     Auth Validator ID:
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important' }}>
-                    {data.data[0].sequence_info.tx_order_signature.auth_validator_id}
+                    {data.data[0].transaction.sequence_info.tx_order_signature.auth_validator_id}
                   </MUITableCell>
                 </TableRow>
                 <TableRow>
@@ -128,7 +128,7 @@ const TransactionDetail = () => {
                     Accumulator Root:
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important' }}>
-                    {data.data[0].sequence_info.tx_accumulator_root}
+                    {data.data[0].transaction.sequence_info.tx_accumulator_root}
                   </MUITableCell>
                 </TableRow>
                 <TableRow>
@@ -136,7 +136,7 @@ const TransactionDetail = () => {
                     Signature Payload:{' '}
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important' }}>
-                    {formatAddress(data.data[0].sequence_info.tx_order_signature.payload as any)}
+                    {formatAddress(data.data[0].transaction.sequence_info.tx_order_signature.payload as any)}
                   </MUITableCell>
                 </TableRow>
                 <TableRow>

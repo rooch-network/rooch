@@ -59,12 +59,12 @@ impl RoochTransactionData {
         bcs::to_bytes(self).expect("encode transaction should success")
     }
 
-    pub fn hash(&self) -> H256 {
+    pub fn tx_hash(&self) -> H256 {
         moveos_types::h256::sha3_256_of(self.encode().as_slice())
     }
 
     pub fn sign(self, kp: &RoochKeyPair) -> RoochTransaction {
-        let signature = Signature::new_hashed(self.hash().as_bytes(), kp);
+        let signature = Signature::new_hashed(self.tx_hash().as_bytes(), kp);
         //TODO implement Signature into Authenticator
         let authenticator = Authenticator::rooch(signature);
         RoochTransaction::new(self, authenticator)
@@ -132,7 +132,7 @@ impl RoochTransaction {
     //TODO unify the hash function
     pub fn tx_hash(&self) -> H256 {
         //TODO cache the hash
-        self.data.hash()
+        self.data.tx_hash()
     }
 
     pub fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
@@ -142,7 +142,12 @@ impl RoochTransaction {
         ))
     }
 
+    pub fn authenticator(&self) -> &Authenticator {
+        &self.authenticator
+    }
+
     pub fn tx_size(&self) -> u64 {
+        //TODO optimize the size calculation
         self.encode().len() as u64
     }
 
@@ -172,7 +177,7 @@ impl RoochTransaction {
         let mut rng = rand::thread_rng();
         let ed25519_keypair: Ed25519KeyPair = Ed25519KeyPair::generate(&mut rng);
         let auth =
-            Signature::new_hashed(transaction_data.hash().as_bytes(), &ed25519_keypair).into();
+            Signature::new_hashed(transaction_data.tx_hash().as_bytes(), &ed25519_keypair).into();
         RoochTransaction::new(transaction_data, auth)
     }
 }

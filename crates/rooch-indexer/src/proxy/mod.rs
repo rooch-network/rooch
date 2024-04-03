@@ -19,9 +19,8 @@ use rooch_types::indexer::state::{
     IndexerTableState, StateSyncFilter, TableStateFilter,
 };
 use rooch_types::indexer::transaction_filter::TransactionFilter;
-use rooch_types::transaction::{
-    rooch::RoochTransaction, TransactionSequenceInfo, TransactionWithInfo,
-};
+use rooch_types::transaction::LedgerTransaction;
+use rooch_types::transaction::TransactionWithInfo;
 
 #[derive(Clone)]
 pub struct IndexerProxy {
@@ -52,15 +51,13 @@ impl IndexerProxy {
 
     pub async fn indexer_transaction(
         &self,
-        transaction: RoochTransaction,
-        sequence_info: TransactionSequenceInfo,
+        transaction: LedgerTransaction,
         execution_info: TransactionExecutionInfo,
         moveos_tx: VerifiedMoveOSTransaction,
     ) -> Result<()> {
         self.actor
             .send(IndexerTransactionMessage {
                 transaction,
-                sequence_info,
                 execution_info,
                 moveos_tx,
             })
@@ -70,15 +67,13 @@ impl IndexerProxy {
     pub async fn indexer_events(
         &self,
         events: Vec<Event>,
-        transaction: RoochTransaction,
-        sequence_info: TransactionSequenceInfo,
+        transaction: LedgerTransaction,
         moveos_tx: VerifiedMoveOSTransaction,
     ) -> Result<()> {
         self.actor
             .send(IndexerEventsMessage {
                 events,
                 transaction,
-                sequence_info,
                 moveos_tx,
             })
             .await?

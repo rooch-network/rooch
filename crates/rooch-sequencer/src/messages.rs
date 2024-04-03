@@ -5,18 +5,17 @@ use anyhow::Result;
 use coerce::actor::message::Message;
 use moveos_types::h256::H256;
 use rooch_types::sequencer::SequencerOrder;
-use rooch_types::transaction::TransactionSequenceInfoMapping;
-use rooch_types::transaction::{RoochTransaction, TransactionSequenceInfo};
+use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
 use serde::{Deserialize, Serialize};
 
 /// Transaction Sequence Message
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TransactionSequenceMessage {
-    pub tx: RoochTransaction,
+    pub tx: LedgerTxData,
 }
 
 impl Message for TransactionSequenceMessage {
-    type Result = Result<TransactionSequenceInfo>;
+    type Result = Result<LedgerTransaction>;
 }
 
 /// Get Transaction By Hash Message
@@ -26,7 +25,7 @@ pub struct GetTransactionByHashMessage {
 }
 
 impl Message for GetTransactionByHashMessage {
-    type Result = Result<Option<RoochTransaction>>;
+    type Result = Result<Option<LedgerTransaction>>;
 }
 
 /// Get Transactions By Hash Message
@@ -36,34 +35,16 @@ pub struct GetTransactionsByHashMessage {
 }
 
 impl Message for GetTransactionsByHashMessage {
-    type Result = Result<Vec<Option<RoochTransaction>>>;
+    type Result = Result<Vec<Option<LedgerTransaction>>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct GetTxSequenceInfoMappingByOrderMessage {
+pub struct GetTxHashsMessage {
     pub tx_orders: Vec<u64>,
 }
 
-impl Message for GetTxSequenceInfoMappingByOrderMessage {
-    type Result = Result<Vec<Option<TransactionSequenceInfoMapping>>>;
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetTxSequenceInfoMappingByHashMessage {
-    pub tx_hashes: Vec<H256>,
-}
-
-impl Message for GetTxSequenceInfoMappingByHashMessage {
-    type Result = Result<Vec<Option<TransactionSequenceInfoMapping>>>;
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetTxSequenceInfosMessage {
-    pub orders: Vec<u64>,
-}
-
-impl Message for GetTxSequenceInfosMessage {
-    type Result = Result<Vec<Option<TransactionSequenceInfo>>>;
+impl Message for GetTxHashsMessage {
+    type Result = Result<Vec<Option<H256>>>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]

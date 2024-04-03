@@ -7,9 +7,7 @@ use diesel::prelude::*;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
 use moveos_types::transaction::TransactionExecutionInfo;
-use rooch_types::transaction::authenticator::Authenticator;
-use rooch_types::transaction::{rooch::RoochTransaction, TransactionSequenceInfo};
-use rooch_types::transaction::{RawTransaction, TransactionWithInfo};
+use rooch_types::transaction::{LedgerTransaction, TransactionWithInfo};
 use std::str::FromStr;
 
 #[derive(Clone, Debug, Queryable, Insertable, QueryableByName)]
@@ -96,18 +94,7 @@ impl From<IndexedTransaction> for StoredTransaction {
 
 impl StoredTransaction {
     pub fn try_into_transaction_with_info(self) -> Result<TransactionWithInfo, anyhow::Error> {
-        let raw_transaction = RawTransaction {
-            raw: self.transaction_raw,
-        };
-        let transaction = RoochTransaction::try_from(raw_transaction)?;
-        let sequence_info = TransactionSequenceInfo {
-            tx_order: self.tx_order as u64,
-            tx_order_signature: Authenticator {
-                auth_validator_id: self.tx_order_auth_validator_id as u64,
-                payload: self.tx_order_authenticator_payload,
-            },
-            tx_accumulator_root: H256::from_str(self.tx_accumulator_root.as_str())?,
-        };
+        let transaction = LedgerTransaction::decode(&self.transaction_raw)?;
 
         let status: KeptVMStatus = serde_json::from_str(self.status.as_str())?;
         let execution_info = TransactionExecutionInfo {
@@ -120,7 +107,6 @@ impl StoredTransaction {
         };
         Ok(TransactionWithInfo {
             transaction,
-            sequence_info,
             execution_info,
         })
     }

@@ -3,13 +3,24 @@
 
 use anyhow::Result;
 use coerce::actor::message::Message;
-use rooch_types::transaction::{ExecuteTransactionResponse, RoochTransaction};
+use moveos_types::moveos_std::tx_context::TxContext;
+use rooch_types::transaction::{ExecuteTransactionResponse, L1BlockWithBody, RoochTransaction};
 
 #[derive(Clone)]
-pub struct ExecuteTransactionMessage {
+pub struct ExecuteL2TxMessage {
     pub tx: RoochTransaction,
 }
 
-impl Message for ExecuteTransactionMessage {
+impl Message for ExecuteL2TxMessage {
+    type Result = Result<ExecuteTransactionResponse>;
+}
+
+#[derive(Clone)]
+pub struct ExecuteL1BlockMessage {
+    pub ctx: TxContext,
+    pub tx: L1BlockWithBody,
+}
+
+impl Message for ExecuteL1BlockMessage {
     type Result = Result<ExecuteTransactionResponse>;
 }

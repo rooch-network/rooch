@@ -329,13 +329,18 @@ impl MoveOS {
         }
     }
 
+    //TODO gasfree
+    #[allow(dead_code)]
     fn execute_gas_charge_post(
         &self,
         session: &mut MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
         action: &VerifiedMoveAction,
     ) -> VMResult<Option<bool>> {
         match action {
-            VerifiedMoveAction::Function { call } => {
+            VerifiedMoveAction::Function {
+                call,
+                bypass_visibility: _,
+            } => {
                 let module_id = &call.function_id.module_id;
                 let loaded_module_bytes = session.get_data_store().load_module(module_id);
 
@@ -572,7 +577,7 @@ impl MoveOS {
         &self,
         mut session: MoveOSSession<'_, '_, MoveOSResolverProxy<MoveOSStore>, MoveOSGasMeter>,
         status: VMStatus,
-        action_opt: Option<VerifiedMoveAction>,
+        _action_opt: Option<VerifiedMoveAction>,
     ) -> Result<RawTransactionOutput> {
         let kept_status = match status.keep_or_discard() {
             Ok(kept_status) => kept_status,
@@ -583,12 +588,13 @@ impl MoveOS {
             }
         };
 
-        let mut pay_gas = false;
-        let gas_payment_account_opt = session.tx_context().get::<GasPaymentAccount>()?;
+        //TODO gas_free
+        // let mut pay_gas = false;
+        // let gas_payment_account_opt = session.tx_context().get::<GasPaymentAccount>()?;
 
-        if let Some(gas_payment_account) = gas_payment_account_opt {
-            pay_gas = gas_payment_account.pay_gas_by_module_account;
-        }
+        // if let Some(gas_payment_account) = gas_payment_account_opt {
+        //     pay_gas = gas_payment_account.pay_gas_by_module_account;
+        // }
 
         // update txn result to TxContext
         let gas_used = session.query_gas_used();
@@ -606,9 +612,10 @@ impl MoveOS {
             .execute_function_call(self.system_post_execute_functions.clone(), false)
             .expect("system_post_execute should not fail.");
 
-        if pay_gas {
-            self.execute_gas_charge_post(&mut session, &action_opt.unwrap())?;
-        }
+        //TODO gas_free
+        // if pay_gas {
+        //     self.execute_gas_charge_post(&mut session, &action_opt.unwrap())?;
+        // }
 
         let gas_schedule_updated = session.tx_context().get::<GasScheduleUpdated>()?;
         if let Some(updated) = gas_schedule_updated {

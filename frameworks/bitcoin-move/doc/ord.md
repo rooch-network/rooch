@@ -20,7 +20,6 @@
 -  [Function `txid`](#0x4_ord_txid)
 -  [Function `index`](#0x4_ord_index)
 -  [Function `body`](#0x4_ord_body)
--  [Function `json_body`](#0x4_ord_json_body)
 -  [Function `content_encoding`](#0x4_ord_content_encoding)
 -  [Function `content_type`](#0x4_ord_content_type)
 -  [Function `metadata`](#0x4_ord_metadata)
@@ -47,8 +46,6 @@
 <b>use</b> <a href="">0x3::address_mapping</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="">0x3::multichain_address</a>;
-<b>use</b> <a href="bitseed.md#0x4_bitseed">0x4::bitseed</a>;
-<b>use</b> <a href="brc20.md#0x4_brc20">0x4::brc20</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 <b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
 </code></pre>
@@ -216,17 +213,6 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_body">body</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
-<a name="0x4_ord_json_body"></a>
-
-## Function `json_body`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_json_body">json_body</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="_String">string::String</a>&gt;
 </code></pre>
 
 

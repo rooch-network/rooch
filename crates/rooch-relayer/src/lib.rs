@@ -3,11 +3,7 @@
 
 use anyhow::Result;
 use async_trait::async_trait;
-
-use moveos_types::transaction::FunctionCall;
-use rooch_rpc_api::jsonrpc_types::ExecuteTransactionResponseView;
-use rooch_rpc_client::Client;
-use rooch_types::{address::RoochAddress, transaction::rooch::RoochTransaction};
+use rooch_types::transaction::L1BlockWithBody;
 
 pub mod actor;
 
@@ -17,25 +13,5 @@ pub trait Relayer: Send + Sync {
         std::any::type_name::<Self>()
     }
 
-    async fn relay(&mut self) -> Result<Option<FunctionCall>>;
-}
-
-#[async_trait]
-pub trait TxSubmiter: Send + Sync {
-    async fn get_chain_id(&self) -> Result<u64>;
-    async fn get_sequence_number(&self, address: RoochAddress) -> Result<u64>;
-    async fn submit_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView>;
-}
-
-#[async_trait]
-impl TxSubmiter for Client {
-    async fn get_chain_id(&self) -> Result<u64> {
-        self.rooch.get_chain_id().await
-    }
-    async fn get_sequence_number(&self, address: RoochAddress) -> Result<u64> {
-        self.rooch.get_sequence_number(address).await
-    }
-    async fn submit_tx(&self, tx: RoochTransaction) -> Result<ExecuteTransactionResponseView> {
-        self.rooch.execute_tx(tx, None).await
-    }
+    async fn relay(&mut self) -> Result<Option<L1BlockWithBody>>;
 }

@@ -10,9 +10,7 @@ use once_cell::sync::Lazy;
 use raw_store::rocks::RocksDB;
 use raw_store::{ColumnFamilyName, StoreInstance};
 use rooch_types::sequencer::SequencerOrder;
-use rooch_types::transaction::{
-    RoochTransaction, TransactionSequenceInfo, TransactionSequenceInfoMapping,
-};
+use rooch_types::transaction::LedgerTransaction;
 use std::fmt::{Debug, Display, Formatter};
 use std::path::Path;
 
@@ -21,10 +19,7 @@ pub mod transaction_store;
 
 // pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
 pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
-pub const TX_SEQUENCE_INFO_PREFIX_NAME: ColumnFamilyName = "tx_sequence_info";
 pub const TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME: ColumnFamilyName = "tx_sequence_info_mapping";
-pub const TX_SEQUENCE_INFO_REVERSE_MAPPING_PREFIX_NAME: ColumnFamilyName =
-    "tx_sequence_info_reverse_mapping";
 
 pub const META_SEQUENCER_ORDER_PREFIX_NAME: ColumnFamilyName = "meta_sequencer_order";
 
@@ -33,10 +28,8 @@ pub const META_SEQUENCER_ORDER_PREFIX_NAME: ColumnFamilyName = "meta_sequencer_o
 static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
     vec![
         TRANSACTION_PREFIX_NAME,
-        TX_SEQUENCE_INFO_PREFIX_NAME,
         TX_SEQUENCE_INFO_MAPPING_PREFIX_NAME,
         META_SEQUENCER_ORDER_PREFIX_NAME,
-        TX_SEQUENCE_INFO_REVERSE_MAPPING_PREFIX_NAME,
     ]
 });
 
@@ -95,58 +88,23 @@ impl Debug for RoochStore {
 }
 
 impl TransactionStore for RoochStore {
-    fn save_transaction(&mut self, transaction: RoochTransaction) -> Result<()> {
-        self.transaction_store.save_transaction(transaction)
+    fn save_transaction(&mut self, tx: LedgerTransaction) -> Result<()> {
+        self.transaction_store.save_transaction(tx)
     }
 
-    fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<RoochTransaction>> {
+    fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<LedgerTransaction>> {
         self.transaction_store.get_transaction_by_hash(hash)
     }
 
     fn get_transactions_by_hash(
         &self,
         tx_hashes: Vec<H256>,
-    ) -> Result<Vec<Option<RoochTransaction>>> {
+    ) -> Result<Vec<Option<LedgerTransaction>>> {
         self.transaction_store.get_transactions(tx_hashes)
     }
 
-    fn save_tx_sequence_info(&self, tx_sequence_info: TransactionSequenceInfo) -> Result<()> {
-        self.transaction_store
-            .save_tx_sequence_info(tx_sequence_info)
-    }
-
-    fn get_tx_sequence_infos_by_order(
-        &self,
-        cursor: Option<u64>,
-        limit: u64,
-    ) -> Result<Vec<Option<TransactionSequenceInfo>>> {
-        self.transaction_store
-            .get_tx_sequence_infos_by_order(cursor, limit)
-    }
-
-    fn save_tx_sequence_info_mapping(&self, tx_order: u64, tx_hash: H256) -> Result<()> {
-        self.transaction_store
-            .save_tx_sequence_info_mapping(tx_order, tx_hash)
-    }
-
-    fn get_tx_sequence_info_mapping_by_order(
-        &self,
-        tx_orders: Vec<u64>,
-    ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
-        self.transaction_store
-            .get_tx_sequence_info_mapping_by_order(tx_orders)
-    }
-
-    fn save_tx_sequence_info_reverse_mapping(&self, tx_hash: H256, tx_order: u64) -> Result<()> {
-        self.transaction_store
-            .save_tx_sequence_info_reverse_mapping(tx_hash, tx_order)
-    }
-    fn multi_get_tx_sequence_info_mapping_by_hash(
-        &self,
-        tx_hashes: Vec<H256>,
-    ) -> Result<Vec<Option<TransactionSequenceInfoMapping>>> {
-        self.transaction_store
-            .multi_get_tx_sequence_info_mapping_by_hash(tx_hashes)
+    fn get_tx_hashs(&self, tx_orders: Vec<u64>) -> Result<Vec<Option<H256>>> {
+        self.transaction_store.get_tx_hashs(tx_orders)
     }
 }
 

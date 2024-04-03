@@ -179,7 +179,7 @@ impl WalletContext {
             })?;
 
         let tx_data = self.build_tx_data(sender, action).await?;
-        let signature = Signature::new_hashed(tx_data.hash().as_bytes(), &kp);
+        let signature = Signature::new_hashed(tx_data.tx_hash().as_bytes(), &kp);
         Ok(RoochTransaction::new(
             tx_data,
             Authenticator::rooch(signature),

@@ -12,16 +12,14 @@ use rooch_types::indexer::state::{
     IndexerTableState, StateSyncFilter, TableStateFilter,
 };
 use rooch_types::indexer::transaction_filter::TransactionFilter;
-use rooch_types::transaction::{
-    rooch::RoochTransaction, TransactionSequenceInfo, TransactionWithInfo,
-};
+use rooch_types::transaction::LedgerTransaction;
+use rooch_types::transaction::TransactionWithInfo;
 use serde::{Deserialize, Serialize};
 
 /// Indexer Transaction write Message
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IndexerTransactionMessage {
-    pub transaction: RoochTransaction,
-    pub sequence_info: TransactionSequenceInfo,
+    pub transaction: LedgerTransaction,
     pub execution_info: TransactionExecutionInfo,
     pub moveos_tx: VerifiedMoveOSTransaction,
 }
@@ -34,8 +32,7 @@ impl Message for IndexerTransactionMessage {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IndexerEventsMessage {
     pub events: Vec<Event>,
-    pub transaction: RoochTransaction,
-    pub sequence_info: TransactionSequenceInfo,
+    pub transaction: LedgerTransaction,
     pub moveos_tx: VerifiedMoveOSTransaction,
 }
 

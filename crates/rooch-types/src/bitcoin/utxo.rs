@@ -44,13 +44,36 @@ impl MoveStructState for BitcoinUTXOStore {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SealPoint {
+    pub output_index: u32,
+    pub offset: u64,
+    pub object_id: ObjectID,
+}
+
+impl MoveStructType for SealPoint {
+    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
+    const STRUCT_NAME: &'static IdentStr = ident_str!("SealPoint");
+}
+
+impl MoveStructState for SealPoint {
+    fn struct_layout() -> move_core_types::value::MoveStructLayout {
+        move_core_types::value::MoveStructLayout::new(vec![
+            u32::type_layout(),
+            u64::type_layout(),
+            ObjectID::type_layout(),
+        ])
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct UTXO {
     /// The txid of the UTXO
     pub txid: AccountAddress,
     /// The vout of the UTXO
     pub vout: u32,
     pub value: u64,
-    pub seals: SimpleMultiMap<MoveString, ObjectID>,
+    pub seals: SimpleMultiMap<MoveString, SealPoint>,
 }
 
 impl MoveStructType for UTXO {
@@ -75,7 +98,7 @@ impl UTXO {
         txid: AccountAddress,
         vout: u32,
         value: u64,
-        seals: SimpleMultiMap<MoveString, ObjectID>,
+        seals: SimpleMultiMap<MoveString, SealPoint>,
     ) -> Self {
         Self {
             txid,

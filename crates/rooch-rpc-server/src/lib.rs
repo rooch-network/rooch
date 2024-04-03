@@ -305,7 +305,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         executor_proxy.clone(),
         sequencer_proxy,
         indexer_proxy,
-        processor_proxy,
+        processor_proxy.clone(),
     );
     let aggregate_service = AggregateService::new(rpc_service.clone());
 
@@ -318,10 +318,10 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         info!("RPC Server relayer address: {:?}", relayer_account);
         let relayer = RelayerActor::new(
             executor_proxy,
+            processor_proxy.clone(),
             relayer_keypair,
             ethereum_relayer_config,
             bitcoin_relayer_config,
-            rpc_service.clone(),
         )
         .await?
         .into_actor(Some("Relayer"), &actor_system)

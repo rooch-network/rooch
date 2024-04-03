@@ -47,7 +47,7 @@ const defaultColumns: GridColDef[] = [
     headerName: 'Sequence Order',
     renderCell: ({ row }: CellType) => (
       <Typography sx={{ color: 'text.secondary' }}>
-        {row.transactionWithInfoView.sequence_info.tx_order}
+        {row.transactionWithInfoView.transaction.sequence_info.tx_order}
       </Typography>
     ),
   },
