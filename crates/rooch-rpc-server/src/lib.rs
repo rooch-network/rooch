@@ -305,7 +305,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         executor_proxy.clone(),
         sequencer_proxy,
         indexer_proxy,
-        processor_proxy,
+        processor_proxy.clone(),
     );
     let aggregate_service = AggregateService::new(rpc_service.clone());
 

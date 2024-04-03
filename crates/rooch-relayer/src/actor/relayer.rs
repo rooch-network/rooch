@@ -22,10 +22,8 @@ use rooch_types::crypto::RoochKeyPair;
 use tracing::{error, info, warn};
 
 pub struct RelayerActor {
-    chain_id: u64,
     relayer_address: AccountAddress,
     max_gas_amount: u64,
-    relayer_key: RoochKeyPair,
     relayers: Vec<Box<dyn Relayer>>,
     executor: ExecutorProxy,
     processor: PipelineProcessorProxy,
@@ -39,7 +37,6 @@ impl RelayerActor {
         ethereum_config: Option<EthereumRelayerConfig>,
         bitcoin_config: Option<BitcoinRelayerConfig>,
     ) -> Result<Self> {
-        let chain_id = executor.chain_id().await?.id;
         let relayer_address = relayer_key.public().address().into();
         let mut relayers: Vec<Box<dyn Relayer>> = vec![];
         if let Some(ethereum_config) = ethereum_config {
@@ -59,10 +56,8 @@ impl RelayerActor {
         }
 
         Ok(Self {
-            chain_id,
             relayer_address,
-            max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT * 200,
-            relayer_key,
+            max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT * 1000,
             relayers,
             executor,
             processor,

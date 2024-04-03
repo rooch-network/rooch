@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use bitcoin::hashes::Hash;
 use bitcoin::Block;
 use bitcoincore_rpc::bitcoincore_rpc_json::GetBlockHeaderResult;
-use moveos_types::{module_binding::MoveFunctionCaller, transaction::FunctionCall};
+use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_config::BitcoinRelayerConfig;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_types::{
@@ -27,7 +27,6 @@ pub struct BitcoinRelayer {
     //TODO if we want make the relayer to an independent process, we need to replace the executor proxy with a rooch rpc client
     move_caller: ExecutorProxy,
     buffer: Vec<BlockResult>,
-    tx_batch_size: u64,
     sync_block_interval: u64,
     latest_sync_timestamp: u64,
     sync_to_latest: bool,
@@ -51,7 +50,6 @@ impl BitcoinRelayer {
             rpc_client,
             move_caller: executor,
             buffer: vec![],
-            tx_batch_size: 1000u64,
             sync_block_interval: 60u64,
             latest_sync_timestamp: 0u64,
             sync_to_latest: false,
@@ -171,23 +169,6 @@ impl BitcoinRelayer {
                 },
                 block_body: block_body.encode(),
             }))
-        }
-    }
-
-    fn check_utxo_progress(&self) -> Result<Option<FunctionCall>> {
-        let bitcoin_light_client = self
-            .move_caller
-            .as_module_binding::<BitcoinLightClientModule>();
-        let remaining_tx_count = bitcoin_light_client.remaining_tx_count()?;
-        if remaining_tx_count > 0 {
-            let call = BitcoinLightClientModule::create_process_utxos_call(self.tx_batch_size);
-            info!(
-                "BitcoinRelayer process utxo, remaining tx count: {}",
-                remaining_tx_count
-            );
-            Ok(Some(call))
-        } else {
-            Ok(None)
         }
     }
 }
