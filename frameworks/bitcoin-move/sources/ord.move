@@ -6,26 +6,19 @@ module bitcoin_move::ord {
     use std::option::{Self, Option};
     use std::string;
     use std::string::String;
-    use bitcoin_move::bitseed::{bitseed_deploy_key, bitseed_mint_key};
-    use bitcoin_move::bitseed;
-
     use moveos_std::bcs;
     use moveos_std::event;
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::json;
     use moveos_std::table_vec::{Self, TableVec};
-
     use rooch_framework::address_mapping;
     use rooch_framework::multichain_address;
     use rooch_framework::bitcoin_address::BitcoinAddress;
-
     use bitcoin_move::types::{Self, Witness, Transaction};
     use bitcoin_move::utxo::{Self, SealPoint, UTXO};
-    use bitcoin_move::brc20;
 
     friend bitcoin_move::genesis;
-
     friend bitcoin_move::light_client;
 
     // const OUTPOINT_TO_SATPOINT_BUCKET_SIZE: u64 = 1000;
@@ -50,9 +43,6 @@ module bitcoin_move::ord {
         metaprotocol: Option<String>,
         parent: Option<ObjectID>,
         pointer: Option<u64>,
-        /// If the Inscription body is a JSON object, this field contains the parsed JSON object as a map.
-        /// Otherwise, this field is empty map
-        json_body: SimpleMap<String,String>,
     }
 
     struct InscriptionRecord has store, copy, drop {
@@ -118,7 +108,6 @@ module bitcoin_move::ord {
 
     fun record_to_inscription(txid: address, index: u32, input: u32, offset: u64, record: InscriptionRecord): Inscription{
         let parent = option::map(record.parent, |e| object::custom_object_id<InscriptionID,Inscription>(e));
-        let json_body = parse_json_body(&record);
         Inscription{
             txid,
             index,
@@ -131,12 +120,10 @@ module bitcoin_move::ord {
             metaprotocol: record.metaprotocol,
             parent,
             pointer: record.pointer,
-            json_body,
         }
     }
 
-    fun create_obj(from: address, to: address, inscription: Inscription): Object<Inscription> {
-        let cloned_json_map = simple_map::clone(&inscription.json_body);
+    fun create_obj(inscription: Inscription): Object<Inscription> {
 
         let id = InscriptionID{
             txid: inscription.txid,
@@ -147,19 +134,6 @@ module bitcoin_move::ord {
         let store = object::borrow_mut(store_obj);
         table_vec::push_back(&mut store.inscriptions, id);
         let object = object::new_with_id(id, inscription);
-
-        if (bitseed::is_bitseed(&cloned_json_map)) {
-            if (bitseed::is_bitseed_deploy(&cloned_json_map)) {
-                let deploy_op = bitseed::inscription_to_bitseed_deploy(from, to, &cloned_json_map);
-                object::add_field(&mut object, bitseed_deploy_key(), deploy_op)
-            } else if (bitseed::is_bitseed_mint(&cloned_json_map)) {
-                let mint_op = bitseed::inscription_to_bitseed_mint(from, to, &cloned_json_map);
-                object::add_field(&mut object, bitseed_mint_key(), mint_op)
-            };
-        };
-
-        simple_map::drop(cloned_json_map);
-
         object
     }
     
@@ -215,15 +189,10 @@ module bitcoin_move::ord {
             let to_address = types::txout_object_address(match_output);
 
             let seal_object_id = utxo::seal_point_object_id(&new_seal_point);
-            let (origin_owner, inscription_obj) = object::take_object_extend<Inscription>(seal_object_id);
+            let (_origin_owner, inscription_obj) = object::take_object_extend<Inscription>(seal_object_id);
             let inscription = object::borrow_mut(&mut inscription_obj);
             inscription.offset = utxo::seal_point_offset(&new_seal_point);
-            if(brc20::is_brc20(&inscription.json_body)){
-                let op = brc20::new_op(origin_owner, to_address, simple_map::clone(&inscription.json_body));
-                brc20::process_utxo_op(op);
-                //TODO record the execution result
-            };
-
+            
             // TODO handle curse inscription
             object::transfer_extend(inscription_obj, to_address);
             vector::push_back(&mut new_seal_points, new_seal_point);
@@ -306,18 +275,13 @@ module bitcoin_move::ord {
             let bitcoin_address_opt = types::txout_address(output);
 
             let inscription = vector::pop_back(&mut inscriptions);
-            //Because the previous output of inscription input is a witness program address, so we simply use the output address as the from address.
-            let from = to_address;
             let offset = if(is_separate_outputs){
                 0
             }else{
                 inscription.offset
             };
-
-            // TODO Since the brc20 transfer protocol corresponds to two transactions, `inscribe transfer` and `transfer`,
-            // There is no definite receiver when inscribe transfer, so the transfer logic needs to be completed in spend UTXO flow.
-            process_inscribe_protocol(from, to_address, &inscription);
-            let inscription_obj = create_obj(from, to_address, inscription);
+            
+            let inscription_obj = create_obj(inscription);
             let object_id = object::id(&inscription_obj);
             object::transfer_extend(inscription_obj, to_address);
 
@@ -331,15 +295,7 @@ module bitcoin_move::ord {
         vector::destroy_empty(inscriptions);
         output_seals
     }
-
-    fun process_inscribe_protocol(from: address, to: address, inscription: &Inscription){
-        if (brc20::is_brc20(&inscription.json_body)){
-            let op = brc20::new_op(from, to, simple_map::clone(&inscription.json_body));
-            brc20::process_inscribe_op(op);
-            //TODO record the execution result
-        };
-    }
-
+ 
     fun validate_inscription_records(tx_id: address, input_index: u64, record: vector<InscriptionRecord>): vector<InscriptionRecord>{
         let len = vector::length(&record);
         let idx = 0;
@@ -370,10 +326,6 @@ module bitcoin_move::ord {
 
     public fun body(self: &Inscription): vector<u8>{
         self.body
-    }
-
-    public fun json_body(self: &Inscription): SimpleMap<String, String>{
-        simple_map::clone(&self.json_body)
     }
 
     public fun content_encoding(self: &Inscription): Option<String>{
@@ -413,9 +365,7 @@ module bitcoin_move::ord {
             metaprotocol: _,
             parent: _,
             pointer: _,
-            json_body,
         } = self;
-        simple_map::drop(json_body);
     }
 
     // ==== InscriptionRecord ==== //

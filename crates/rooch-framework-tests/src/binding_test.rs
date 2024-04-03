@@ -8,6 +8,7 @@ use move_core_types::vm_status::KeptVMStatus;
 use moveos_config::DataDirPath;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
+use moveos_types::gas_config::GasConfig;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::moveos_std::object::ObjectEntity;
 use moveos_types::moveos_std::tx_context::TxContext;
@@ -17,10 +18,11 @@ use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::actor::{executor::ExecutorActor, messages::ExecuteTransactionResult};
 use rooch_framework::natives::default_gas_schedule;
 use rooch_store::RoochStore;
+use rooch_types::address::RoochAddress;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::chain_id::RoochChainID;
-use rooch_types::transaction::RoochTransaction;
+use rooch_types::transaction::{L1BlockWithBody, RoochTransaction};
 use std::env;
 use std::path::Path;
 use std::sync::Arc;
@@ -44,6 +46,7 @@ pub fn get_data_dir() -> DataDirPath {
 pub struct RustBindingTest {
     //we should keep data_dir to make sure the temp dir is not deleted.
     data_dir: DataDirPath,
+    sequencer: RoochAddress,
     pub executor: ExecutorActor,
     pub reader_executor: ReaderExecutorActor,
 }
@@ -81,6 +84,7 @@ impl RustBindingTest {
         )?;
         Ok(Self {
             data_dir,
+            sequencer,
             executor,
             reader_executor,
         })
@@ -106,15 +110,27 @@ impl RustBindingTest {
         Ok(())
     }
 
+    pub fn execute_l1_block(&mut self, l1_block: L1BlockWithBody) -> Result<()> {
+        //TODO get the sequence_number from state
+        let sequence_number = 0;
+        let max_gas_amount = GasConfig::DEFAULT_MAX_GAS_AMOUNT * 1000;
+        let tx_hash = l1_block.block.tx_hash();
+        let tx_size = l1_block.block.tx_size();
+        let ctx = TxContext::new(
+            self.sequencer.into(),
+            sequence_number,
+            max_gas_amount,
+            tx_hash,
+            tx_size,
+        );
+        let verified_tx: VerifiedMoveOSTransaction =
+            self.executor.validate_l1_block(ctx, l1_block)?;
+        self.execute_verified_tx(verified_tx)
+    }
+
     pub fn execute_as_result(&mut self, tx: RoochTransaction) -> Result<ExecuteTransactionResult> {
         let verified_tx = self.executor.validate_l2_tx(tx)?;
-        let result = self.executor.execute(verified_tx)?;
-        let root = ObjectEntity::root_object(
-            result.transaction_info.state_root,
-            result.transaction_info.size,
-        );
-        self.reader_executor.refresh_state(root, false)?;
-        Ok(result)
+        self.execute_verified_tx_as_result(verified_tx)
     }
 
     pub fn execute_verified_tx(&mut self, tx: VerifiedMoveOSTransaction) -> Result<()> {

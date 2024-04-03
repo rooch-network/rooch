@@ -70,8 +70,6 @@ impl<'a> BitcoinLightClientModule<'a> {
     pub const GET_LATEST_BLOCK_HEIGHT_FUNCTION_NAME: &'static IdentStr =
         ident_str!("get_latest_block_height");
     pub const GET_UTXO_FUNCTION_NAME: &'static IdentStr = ident_str!("get_utxo");
-    pub const REMAINING_TX_COUNT_FUNCTION_NAME: &'static IdentStr =
-        ident_str!("remaining_tx_count");
     pub const SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("submit_new_block");
     pub const PROCESS_UTXOS_ENTRY_FUNCTION_NAME: &'static IdentStr = ident_str!("process_utxos");
@@ -80,10 +78,7 @@ impl<'a> BitcoinLightClientModule<'a> {
         let call = Self::create_function_call(
             Self::GET_BLOCK_FUNCTION_NAME,
             vec![],
-            vec![
-                BitcoinBlockStore::object_id().to_move_value(),
-                MoveValue::Address(block_hash.into_address()),
-            ],
+            vec![MoveValue::Address(block_hash.into_address())],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
         let block_header =
@@ -102,10 +97,7 @@ impl<'a> BitcoinLightClientModule<'a> {
         let call = Self::create_function_call(
             Self::GET_BLOCK_BY_HEIGHT_FUNCTION_NAME,
             vec![],
-            vec![
-                BitcoinBlockStore::object_id().to_move_value(),
-                MoveValue::U64(block_height),
-            ],
+            vec![MoveValue::U64(block_height)],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
         let block_header =
@@ -124,10 +116,7 @@ impl<'a> BitcoinLightClientModule<'a> {
         let call = Self::create_function_call(
             Self::GET_BLOCK_HEIGHT_FUNCTION_NAME,
             vec![],
-            vec![
-                BitcoinBlockStore::object_id().to_move_value(),
-                MoveValue::Address(block_hash.into_address()),
-            ],
+            vec![MoveValue::Address(block_hash.into_address())],
         );
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
         let height = self
@@ -143,11 +132,8 @@ impl<'a> BitcoinLightClientModule<'a> {
     }
 
     pub fn get_latest_block_height(&self) -> Result<Option<u64>> {
-        let call = Self::create_function_call(
-            Self::GET_LATEST_BLOCK_HEIGHT_FUNCTION_NAME,
-            vec![],
-            vec![BitcoinBlockStore::object_id().to_move_value()],
-        );
+        let call =
+            Self::create_function_call(Self::GET_LATEST_BLOCK_HEIGHT_FUNCTION_NAME, vec![], vec![]);
         let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
         let height = self
             .caller
@@ -161,24 +147,6 @@ impl<'a> BitcoinLightClientModule<'a> {
         Ok(height.into())
     }
 
-    pub fn remaining_tx_count(&self) -> Result<u64> {
-        let call = Self::create_function_call(
-            Self::REMAINING_TX_COUNT_FUNCTION_NAME,
-            vec![],
-            vec![BitcoinBlockStore::object_id().to_move_value()],
-        );
-        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
-        let remaining_count =
-            self.caller
-                .call_function(&ctx, call)?
-                .into_result()
-                .map(|mut values| {
-                    let value = values.pop().expect("should have one return value");
-                    bcs::from_bytes::<u64>(&value.value).expect("should be a valid bool")
-                })?;
-        Ok(remaining_count)
-    }
-
     pub fn create_submit_new_block_call(block_height: u64, block: bitcoin::Block) -> FunctionCall {
         let block_hash = block.block_hash();
         let block = crate::bitcoin::types::Block::from(block);
@@ -186,7 +154,6 @@ impl<'a> BitcoinLightClientModule<'a> {
             Self::SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME,
             vec![],
             vec![
-                BitcoinBlockStore::object_id().to_move_value(),
                 MoveValue::U64(block_height),
                 MoveValue::Address(block_hash.into_address()),
                 MoveValue::vector_u8(
@@ -206,23 +173,11 @@ impl<'a> BitcoinLightClientModule<'a> {
             Self::SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME,
             vec![],
             vec![
-                BitcoinBlockStore::object_id().to_move_value(),
                 MoveValue::U64(block_height),
                 MoveValue::Address(block_hash),
                 MoveValue::vector_u8(block_body),
             ],
         ))
-    }
-
-    pub fn create_process_utxos_call(batch_size: u64) -> FunctionCall {
-        Self::create_function_call(
-            Self::PROCESS_UTXOS_ENTRY_FUNCTION_NAME,
-            vec![],
-            vec![
-                BitcoinBlockStore::object_id().to_move_value(),
-                MoveValue::U64(batch_size),
-            ],
-        )
     }
 }
 
