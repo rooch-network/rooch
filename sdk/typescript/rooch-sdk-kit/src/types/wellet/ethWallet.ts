@@ -122,7 +122,7 @@ export abstract class ETHWallet extends BaseWallet {
     return authPayload.toBytes()
   }
 
-  isSupportChain(chain: SupportChain): boolean {
-    return chain === SupportChain.ETH || chain === SupportChain.Rooch
+  getChain(): SupportChain {
+    return SupportChain.ETH
   }
 }

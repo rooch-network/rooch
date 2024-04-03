@@ -3,13 +3,13 @@
 
 import { WalletAccount } from '../WalletAccount'
 import { BitcoinWallet } from './bitcoinWallet'
-import { SupportChain } from '../../feature'
+import { RoochClient } from '@roochnetwork/rooch-sdk'
 
 const UNISAT_SUPPORT_NETWORKS = ['livenet', 'testnet']
 
 export class UniSatWallet extends BitcoinWallet {
-  constructor() {
-    super()
+  constructor(client: RoochClient) {
+    super(client)
     this.name = 'unisat'
   }
 
@@ -30,12 +30,12 @@ export class UniSatWallet extends BitcoinWallet {
     }
     let publicKey = await this.getTarget().getPublicKey()
 
-    const walletAccounts = accounts.map((value, index) => {
+    const walletAccounts = accounts.map((address, index) => {
       if (index === 0) {
         // unisat only supports the current account to get publicKey
-        return new WalletAccount(value, '', SupportChain.BITCOIN, publicKey)
+        return new WalletAccount(this.getChain(), this, address, this.client, publicKey)
       } else {
-        return new WalletAccount(value, '', SupportChain.BITCOIN)
+        return new WalletAccount(this.getChain(), this, address, this.client)
       }
     })
 

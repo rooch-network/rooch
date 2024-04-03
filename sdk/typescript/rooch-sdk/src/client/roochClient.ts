@@ -4,12 +4,11 @@
 import fetch from 'isomorphic-fetch'
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
-import { ChainInfo, Network, DevNetwork } from '../constants'
+import { ChainInfo, Network, DevNetwork, DEFAULT_MAX_GAS_AMOUNT } from '../constants'
 import {
   AnnotatedFunctionResultView,
   BalanceInfoView,
-  bcsTypes,
-  Bytes,
+  bcs,
   EventOptions,
   EventPageView,
   GlobalStateView,
@@ -23,16 +22,20 @@ import {
   TransactionWithInfoView,
   UTXOStatePageView,
   BalanceInfoPageView,
+  IPage,
 } from '../types'
 import {
+  addressToListTuple,
   addressToSeqNumber,
   encodeArg,
+  encodeFunctionCall,
   functionIdToStirng,
   toHexString,
   typeTagToString,
 } from '../utils'
-import { IClient } from './interface'
 import {
+  SendRawTransactionParams,
+  SendTransactionParams,
   ExecuteViewFunctionParams,
   GetEventsParams,
   GetTransactionsParams,
@@ -46,7 +49,17 @@ import {
   QueryEventParams,
   GetBalanceParams,
   GetBalancesParams,
-} from './types.ts'
+  SessionInfo,
+  SendTransactionDataParams,
+} from './roochClientTypes'
+
+import {
+  AccountAddress as BCSAccountAddress,
+  RoochTransaction,
+  RoochTransactionData,
+} from '../generated/runtime/rooch_types/mod'
+
+import { BcsSerializer } from '../generated/runtime/bcs/bcsSerializer'
 
 export const ROOCH_CLIENT_BRAND = Symbol.for('@roochnetwork/rooch-sdk')
 
@@ -76,7 +89,7 @@ const DEFAULT_OPTIONS: RpcProviderOptions = {
   versionCacheTimeoutInSeconds: 600,
 }
 
-export class RoochClient implements IClient {
+export class RoochClient {
   public network: Network
 
   private client: JsonRpcClient
@@ -93,7 +106,7 @@ export class RoochClient implements IClient {
 
     this.client = new JsonRpcClient(
       new RequestManager([
-        new HTTPTransport(network.url, {
+        new HTTPTransport(network.options.url, {
           headers: {
             'Content-Type': 'application/json',
           },
@@ -101,8 +114,6 @@ export class RoochClient implements IClient {
         }),
       ]),
     )
-    console.log(network)
-    console.log(this.client)
   }
 
   switchChain(network: Network) {
@@ -158,10 +169,59 @@ export class RoochClient implements IClient {
     })
   }
 
-  // Send the signed transaction in bcs hex format
-  // This method does not block waiting for the transaction to be executed.
-  async sendRawTransaction(playload: Bytes): Promise<string> {
-    return this.client.rooch_sendRawTransaction(playload)
+  async sendRawTransaction(params: SendRawTransactionParams) {
+    if (params instanceof Uint8Array) {
+      return this.client.rooch_sendRawTransaction(params)
+    }
+
+    if (
+      typeof params === 'object' &&
+      params !== null &&
+      'authenticator' in params &&
+      'data' in params
+    ) {
+      const { data, authorizer } = params as SendTransactionDataParams
+      const transactionDataPayload = (() => {
+        const se = new BcsSerializer()
+        data.serialize(se)
+        return se.getBytes()
+      })()
+      const auth = await authorizer.auth(transactionDataPayload)
+      const transaction = new RoochTransaction(data, auth)
+      const transactionPayload = (() => {
+        const se = new BcsSerializer()
+        transaction.serialize(se)
+        return se.getBytes()
+      })()
+
+      return this.client.rooch_sendRawTransaction(transactionPayload)
+    }
+
+    const { address, authorizer, args, funcId, tyArgs, opts } = params as SendTransactionParams
+    const number = await this.getSequenceNumber(address)
+    const bcsArgs = args?.map((arg) => encodeArg(arg)) ?? []
+    const scriptFunction = encodeFunctionCall(funcId, tyArgs ?? [], bcsArgs)
+    const txData = new RoochTransactionData(
+      new BCSAccountAddress(addressToListTuple(address)),
+      BigInt(number),
+      BigInt(this.getChainId()),
+      BigInt(opts?.maxGasAmount ?? DEFAULT_MAX_GAS_AMOUNT),
+      scriptFunction,
+    )
+    const transactionDataPayload = (() => {
+      const se = new BcsSerializer()
+      txData.serialize(se)
+      return se.getBytes()
+    })()
+    const auth = await authorizer.auth(transactionDataPayload)
+    const transaction = new RoochTransaction(txData, auth)
+    const transactionPayload = (() => {
+      const se = new BcsSerializer()
+      transaction.serialize(se)
+      return se.getBytes()
+    })()
+
+    return this.client.rooch_sendRawTransaction(transactionPayload)
   }
 
   async getTransactionsByHashes(tx_hashes: string[]): Promise<TransactionWithInfoView | null[]> {
@@ -268,6 +328,122 @@ export class RoochClient implements IClient {
 
   /// contract func
 
+  async getSequenceNumber(address: string): Promise<number> {
+    const resp = await this.executeViewFunction({
+      funcId: '0x2::account::sequence_number',
+      tyArgs: [],
+      args: [
+        {
+          type: 'Address',
+          value: address,
+        },
+      ],
+    })
+
+    if (resp && resp.return_values) {
+      return resp.return_values[0].decoded_value as number
+    }
+
+    return 0
+  }
+
+  // @ts-ignore
+  /**
+   * Query account's sessionKey
+   *
+   * @param address
+   * @param cursor The page cursor
+   * @param limit The page limit
+   */
+  public async querySessionKeys(
+    address: string,
+    cursor: string | null,
+    limit: number,
+  ): Promise<IPage<SessionInfo, string>> {
+    const accessPath = `/resource/${address}/0x3::session_key::SessionKeys`
+    const state = await this.getStates(accessPath)
+
+    if (!state) {
+      throw new Error('not found state')
+    }
+    const stateView = state as any
+
+    const tableId = stateView[0].decoded_value.value.keys.value.handle.value.id
+
+    const tablePath = `/table/${tableId}`
+    const pageView = await this.listStates({
+      accessPath: tablePath,
+      cursor,
+      limit,
+    })
+
+    const parseScopes = (data: Array<any>) => {
+      const result = new Array<string>()
+
+      for (const scope of data) {
+        result.push(`${scope.module_name}::${scope.module_address}::${scope.function_name}`)
+      }
+
+      return result
+    }
+
+    const parseStateToSessionInfo = () => {
+      const result = new Array<SessionInfo>()
+
+      for (const state of pageView.data as any) {
+        const moveValue = state?.state.decoded_value as any
+
+        if (moveValue) {
+          const val = moveValue.value
+
+          result.push({
+            authentication_key: val.authentication_key,
+            scopes: parseScopes(val.scopes),
+            create_time: parseInt(val.create_time),
+            last_active_time: parseInt(val.last_active_time),
+            max_inactive_interval: parseInt(val.max_inactive_interval),
+          } as SessionInfo)
+        }
+      }
+      return result
+    }
+
+    return {
+      data: parseStateToSessionInfo(),
+      nextCursor: pageView.next_cursor,
+      hasNextPage: pageView.has_next_page,
+    }
+  }
+
+  /**
+   * Check session key whether expired
+   *
+   * @param address rooch address
+   * @param authKey the auth key
+   */
+  async sessionIsExpired(address: string, authKey: string): Promise<boolean> {
+    const result = await this.executeViewFunction({
+      funcId: '0x3::session_key::is_expired_session_key',
+      tyArgs: [],
+      args: [
+        {
+          type: 'Address',
+          value: address,
+        },
+        {
+          type: { Vector: 'U8' },
+          value: addressToSeqNumber(authKey),
+        },
+      ],
+    })
+
+    if (result && result.vm_status !== 'Executed') {
+      throw new Error('view 0x3::session_key::is_expired_session_key fail')
+    }
+
+    return result.return_values![0].decoded_value as boolean
+  }
+
   async gasCoinBalance(address: string): Promise<bigint> {
     const result = await this.executeViewFunction({
       funcId: '0x3::gas_coin::balance',
@@ -289,7 +465,7 @@ export class RoochClient implements IClient {
 
   // Resolve the rooch address
   async resoleRoochAddress(params: ResoleRoochAddressParams): Promise<string> {
-    const ma = new bcsTypes.MultiChainAddress(
+    const ma = new bcs.MultiChainAddress(
       BigInt(params.multiChainID),
       addressToSeqNumber(params.address),
     )

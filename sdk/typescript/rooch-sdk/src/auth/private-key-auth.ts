@@ -1,9 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { Bytes } from '../types'
 import { Keypair } from '../utils/crypto'
-import { IAuthorization, IAuthorizer } from './interface'
+import { IAuthorizer } from './interface'
+import { Authenticator } from '../generated/runtime/rooch_types/mod'
+import { uint8Array2SeqNumber } from '../utils'
+import { runtime } from '../index'
 
 const SCHEME_ED25519: number = 0
 
@@ -14,12 +16,9 @@ export class PrivateKeyAuth implements IAuthorizer {
     this.pk = pk
   }
 
-  async auth(data: Bytes): Promise<IAuthorization> {
+  async auth(data: Uint8Array, _?: string): Promise<runtime.Authenticator> {
     const sign = await this.pk.signMessage(data)
 
-    return {
-      scheme: SCHEME_ED25519,
-      payload: sign.signature,
-    }
+    return new Authenticator(BigInt(SCHEME_ED25519), uint8Array2SeqNumber(sign.signature))
   }
 }

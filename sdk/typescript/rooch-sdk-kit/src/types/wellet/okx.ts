@@ -4,10 +4,11 @@
 import { WalletAccount } from '../WalletAccount'
 import { BitcoinWallet } from './bitcoinWallet'
 import { SupportChain } from '../../feature'
+import { RoochClient } from '@roochnetwork/rooch-sdk'
 
 export class OkxWallet extends BitcoinWallet {
-  constructor() {
-    super()
+  constructor(client: RoochClient) {
+    super(client)
     this.name = 'okx'
   }
 
@@ -30,8 +31,10 @@ export class OkxWallet extends BitcoinWallet {
 
     return [
       new WalletAccount(
-        account.address,
         SupportChain.BITCOIN,
+        this,
+        this.account?.address!,
+        this.client,
         account.publicKey,
         account.compressedPublicKey,
       ),

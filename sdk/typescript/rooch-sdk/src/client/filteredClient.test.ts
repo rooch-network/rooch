@@ -9,9 +9,9 @@ import {
   ITransactionFilterChain,
   FuncFilter,
   FilterFunc,
-} from './filtered-client'
+} from './filteredClient'
 import { AnnotatedFunctionResultView, StateView, StatePageView } from '../types'
-import { ExecuteViewFunctionParams, ListStatesParams } from './types.ts'
+import { ExecuteViewFunctionParams, ListStatesParams } from './roochClientTypes'
 
 const mockFilter: ITransactionFilter = {
   init: vi.fn(),

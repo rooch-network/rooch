@@ -40,7 +40,7 @@ describe('create', () => {
 
     const k1 = Ed25519Keypair.deriveKeypair(mnemonics)
 
-    expect(k1.toRoochAddress()).toBe(address)
+    expect(k1.getPublicKey().toRoochAddress()).toBe(address)
   })
 })
 
@@ -58,7 +58,7 @@ describe('sign', () => {
   it('should sign data same as rooch cli', async () => {
     const mnemonics = 'nose aspect organ harbor move prepare raven manage lamp consider oil front'
     const keypair = Ed25519Keypair.deriveKeypair(mnemonics)
-    const roochAddress = keypair.toRoochAddress()
+    const roochAddress = keypair.getPublicKey().toRoochAddress()
     expect(roochAddress).toBe('0x7194e6bf0860250491496174e7f7d7a9a9424d41734830656b9466787c04480c')
 
     const signHash = fromHexString(

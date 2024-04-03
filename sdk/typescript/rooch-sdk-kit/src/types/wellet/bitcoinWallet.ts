@@ -56,7 +56,7 @@ export abstract class BitcoinWallet extends BaseWallet {
     throw new Error('Method not implemented.')
   }
 
-  isSupportChain(chain: SupportChain): boolean {
-    return chain === SupportChain.BITCOIN
+  getChain(): SupportChain {
+    return SupportChain.BITCOIN
   }
 }

@@ -4,19 +4,20 @@
 import { SupportChain, SupportChains } from '../feature'
 import { BaseWallet, Metamask, UniSatWallet } from '../types'
 import { OkxWallet } from '../types/wellet/okx'
+import { RoochClient } from '@roochnetwork/rooch-sdk'
 
-export async function getInstalledWallets(filter?: SupportChain) {
+export async function getInstalledWallets(client: RoochClient, filter?: SupportChain) {
   const wallets: BaseWallet[] = []
   SupportChains.filter((v) => !filter || filter === v).forEach((w) => {
     switch (w) {
       case SupportChain.ETH:
-        wallets.push(new Metamask())
+        wallets.push(new Metamask(client))
         break
       case SupportChain.BITCOIN:
-        wallets.push(new UniSatWallet(), new OkxWallet())
+        wallets.push(new UniSatWallet(client), new OkxWallet(client))
         break
       case SupportChain.Rooch:
-        wallets.push(new Metamask(), new UniSatWallet())
+        wallets.push(new Metamask(client), new UniSatWallet(client))
         break
     }
   })
