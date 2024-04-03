@@ -12,7 +12,7 @@ use moveos_types::state::{MoveStructType, TableChangeSet};
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_rpc_api::jsonrpc_types::TableChangeSetView;
 use rooch_types::bitcoin::utxo::UTXO;
-use rooch_types::transaction::{rooch::RoochTransaction, TransactionSequenceInfo};
+use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
 
 use crate::errors::IndexerError;
 use crate::utils::format_struct_tag;
@@ -53,20 +53,26 @@ pub struct IndexedTransaction {
 
 impl IndexedTransaction {
     pub fn new(
-        transaction: RoochTransaction,
-        sequence_info: TransactionSequenceInfo,
+        transaction: LedgerTransaction,
         execution_info: TransactionExecutionInfo,
         moveos_tx: VerifiedMoveOSTransaction,
     ) -> Result<Self> {
         let move_action = MoveAction::from(moveos_tx.action);
+        //TODO remove the action_raw field, and simply use the action field
         let action_raw = move_action.encode()?;
-        let transaction_authenticator_info = transaction.authenticator_info()?;
         let status = serde_json::to_string(&execution_info.status)?;
-
+        let (auth_validator_id, authenticator_payload) = match &transaction.data {
+            LedgerTxData::L1Block(_block) => (0, vec![]),
+            LedgerTxData::L2Tx(tx) => (
+                tx.authenticator().auth_validator_id,
+                tx.authenticator().payload.clone(),
+            ),
+        };
+        //TODO index L1Block
         let indexed_transaction = IndexedTransaction {
             tx_hash: transaction.tx_hash(),
             // The tx order of this transaction.
-            tx_order: sequence_info.tx_order,
+            tx_order: transaction.sequence_info.tx_order,
 
             sequence_number: moveos_tx.ctx.sequence_number,
             // the account address of sender who send the transaction
@@ -74,11 +80,9 @@ impl IndexedTransaction {
             action: move_action.clone(),
             action_type: move_action.action_type(),
             action_raw,
-            auth_validator_id: transaction_authenticator_info
-                .authenticator
-                .auth_validator_id,
-            authenticator_payload: transaction_authenticator_info.authenticator.payload,
-            tx_accumulator_root: sequence_info.tx_accumulator_root,
+            auth_validator_id,
+            authenticator_payload,
+            tx_accumulator_root: transaction.sequence_info.tx_accumulator_root,
             transaction_raw: transaction.encode(),
 
             state_root: execution_info.state_root,
@@ -90,8 +94,11 @@ impl IndexedTransaction {
             status,
 
             // The tx order signature,
-            tx_order_auth_validator_id: sequence_info.tx_order_signature.auth_validator_id,
-            tx_order_authenticator_payload: sequence_info.tx_order_signature.payload,
+            tx_order_auth_validator_id: transaction
+                .sequence_info
+                .tx_order_signature
+                .auth_validator_id,
+            tx_order_authenticator_payload: transaction.sequence_info.tx_order_signature.payload,
 
             //TODO record transaction timestamp
             created_at: 0,
@@ -126,8 +133,7 @@ pub struct IndexedEvent {
 impl IndexedEvent {
     pub fn new(
         event: Event,
-        transaction: RoochTransaction,
-        sequence_info: TransactionSequenceInfo,
+        transaction: LedgerTransaction,
         moveos_tx: VerifiedMoveOSTransaction,
     ) -> Self {
         IndexedEvent {
@@ -138,7 +144,7 @@ impl IndexedEvent {
             event_index: event.event_index,
 
             tx_hash: transaction.tx_hash(),
-            tx_order: sequence_info.tx_order,
+            tx_order: transaction.sequence_info.tx_order,
             sender: moveos_tx.ctx.sender,
 
             //TODO record transaction timestamp

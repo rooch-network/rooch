@@ -190,6 +190,7 @@ pub fn random_verified_move_action_script() -> VerifiedMoveAction {
 pub fn random_verified_move_action_function() -> VerifiedMoveAction {
     VerifiedMoveAction::Function {
         call: random_function_call(),
+        bypass_visibility: false,
     }
 }
 

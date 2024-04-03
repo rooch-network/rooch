@@ -21,6 +21,12 @@ pub struct Block {
     pub txdata: Vec<Transaction>,
 }
 
+impl Block {
+    pub fn encode(&self) -> Vec<u8> {
+        bcs::to_bytes(self).expect("encode block should success")
+    }
+}
+
 impl From<bitcoin::Block> for Block {
     fn from(block: bitcoin::Block) -> Self {
         Self {

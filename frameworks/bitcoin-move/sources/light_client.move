@@ -55,13 +55,22 @@ module bitcoin_move::light_client{
         object::to_shared(obj);
     }
 
+    fun borrow_block_store(): &Object<BitcoinBlockStore>{
+        let object_id = object::named_object_id<BitcoinBlockStore>();
+        object::borrow_object(object_id)
+    }
+
+    fun borrow_block_store_mut(): &mut Object<BitcoinBlockStore>{
+        let object_id = object::named_object_id<BitcoinBlockStore>();
+        object::borrow_mut_object_shared(object_id)
+    }
+
     fun process_block(btc_block_store_obj: &mut Object<BitcoinBlockStore>, block_height: u64, block_hash: address, block_bytes: vector<u8>):u32{
         let btc_block_store = object::borrow_mut(btc_block_store_obj);
         //already processed
         assert!(!table::contains(&btc_block_store.hash_to_height, block_hash), ErrorBlockAlreadyProcessed);
 
         let block = bcs::from_bytes<Block>(block_bytes);
-        validate_block(btc_block_store, block_height, block_hash, &block);
         process_txs(btc_block_store, &block); 
         let block_header = types::header(&block);
 
@@ -75,15 +84,7 @@ module bitcoin_move::light_client{
         btc_block_store.latest_block_height = option::some(block_height);
         time 
     }
-
-    fun validate_block(_btc_block_store: &BitcoinBlockStore, _block_height: u64, _block_hash: address, _block: &Block){
-        //TODO validate the block via bitcoin consensus
-        // validate prev block hash
-        // validate block hash
-        // validate block nonce
-        //TODO validate txid
-    }
-
+ 
     fun process_txs(btc_block_store: &mut BitcoinBlockStore, block:&Block){
         let txdata = types::txdata(block);
         let idx = 0;
@@ -95,6 +96,7 @@ module bitcoin_move::light_client{
     }
 
     fun process_tx(btc_block_store: &mut BitcoinBlockStore, tx: &Transaction){
+        process_utxo(tx);
         let txid = types::tx_id(tx);
         table::add(&mut btc_block_store.txs, txid, *tx);
         table_vec::push_back(&mut btc_block_store.tx_ids, txid);
@@ -203,55 +205,17 @@ module bitcoin_move::light_client{
 
 
     /// The relay server submit a new Bitcoin block to the light client.
-    entry fun submit_new_block(btc_block_store_obj: &mut Object<BitcoinBlockStore>, block_height: u64, block_hash: address, block_bytes: vector<u8>){
+    fun submit_new_block(block_height: u64, block_hash: address, block_bytes: vector<u8>){
+        let btc_block_store_obj = borrow_block_store_mut();
         let time = process_block(btc_block_store_obj, block_height, block_hash, block_bytes);
 
         let timestamp_seconds = (time as u64);
         let module_signer = signer::module_signer<BitcoinBlockStore>();
         timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));      
-    }
+    } 
 
-    public fun remaining_tx_count(btc_block_store_obj: &Object<BitcoinBlockStore>): u64{
-        let btc_block_store = object::borrow(btc_block_store_obj);
-        let start_tx_index = utxo::next_tx_index();
-        let max_tx_count = table_vec::length(&btc_block_store.tx_ids);
-        if(start_tx_index < max_tx_count){
-            max_tx_count - start_tx_index
-        }else{
-            0
-        }
-    }
-    
-    entry fun process_utxos(btc_block_store_obj: &Object<BitcoinBlockStore>, batch_size: u64){
-        let btc_block_store = object::borrow(btc_block_store_obj);
-        let start_tx_index = utxo::next_tx_index();
-        let max_tx_count = table_vec::length(&btc_block_store.tx_ids);
-        if (start_tx_index >= max_tx_count){
-            return
-        };
-        let processed_tx_count = 0;
-        let process_tx_index = start_tx_index;
-        while(processed_tx_count < batch_size && process_tx_index < max_tx_count){
-            let txid = *table_vec::borrow(&btc_block_store.tx_ids, process_tx_index);
-            let tx = table::borrow(&btc_block_store.txs, txid);
-            process_utxo(tx);
-            processed_tx_count = processed_tx_count + 1;
-            process_tx_index = process_tx_index + 1;
-        };
-        utxo::update_next_tx_index(process_tx_index);
-    }
-
-    public fun txs(btc_block_store_obj: &Object<BitcoinBlockStore>): &Table<address, Transaction>{
-        let btc_block_store = object::borrow(btc_block_store_obj);
-        &btc_block_store.txs
-    }
-
-    public fun tx_ids(btc_block_store_obj: &Object<BitcoinBlockStore>): &TableVec<address>{
-        let btc_block_store = object::borrow(btc_block_store_obj);
-        &btc_block_store.tx_ids
-    }
-
-    public fun get_tx(btc_block_store_obj: &Object<BitcoinBlockStore>, txid: address): Option<Transaction>{
+    public fun get_tx(txid: address): Option<Transaction>{
+        let btc_block_store_obj = borrow_block_store();
         let btc_block_store = object::borrow(btc_block_store_obj);
         if(table::contains(&btc_block_store.txs, txid)){
             option::some(*table::borrow(&btc_block_store.txs, txid))
@@ -261,7 +225,8 @@ module bitcoin_move::light_client{
     }
 
     /// Get block via block_hash
-    public fun get_block(btc_block_store_obj: &Object<BitcoinBlockStore>, block_hash: address): Option<Header>{
+    public fun get_block(block_hash: address): Option<Header>{
+        let btc_block_store_obj = borrow_block_store();
         let btc_block_store = object::borrow(btc_block_store_obj);
         if(table::contains(&btc_block_store.blocks, block_hash)){
             option::some(*table::borrow(&btc_block_store.blocks, block_hash))
@@ -270,7 +235,8 @@ module bitcoin_move::light_client{
         }
     }
 
-    public fun get_block_height(btc_block_store_obj: &Object<BitcoinBlockStore>, block_hash: address): Option<u64>{
+    public fun get_block_height(block_hash: address): Option<u64>{
+        let btc_block_store_obj = borrow_block_store();
         let btc_block_store = object::borrow(btc_block_store_obj);
         if(table::contains(&btc_block_store.hash_to_height, block_hash)){
             option::some(*table::borrow(&btc_block_store.hash_to_height, block_hash))
@@ -280,7 +246,8 @@ module bitcoin_move::light_client{
     }
 
     /// Get block via block_height
-    public fun get_block_by_height(btc_block_store_obj: &Object<BitcoinBlockStore>, block_height: u64): Option<Header>{
+    public fun get_block_by_height(block_height: u64): Option<Header>{
+        let btc_block_store_obj = borrow_block_store();
         let btc_block_store = object::borrow(btc_block_store_obj);
         if(table::contains(&btc_block_store.height_to_hash, block_height)){
             let block_hash = *table::borrow(&btc_block_store.height_to_hash, block_height);
@@ -291,7 +258,8 @@ module bitcoin_move::light_client{
     }
 
     /// Get latest block height
-    public fun get_latest_block_height(btc_block_store_obj: &Object<BitcoinBlockStore>): Option<u64> {
+    public fun get_latest_block_height(): Option<u64> {
+        let btc_block_store_obj = borrow_block_store();
         let btc_block_store = object::borrow(btc_block_store_obj);
         btc_block_store.latest_block_height
     } 

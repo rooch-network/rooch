@@ -152,7 +152,7 @@ impl AccountKeystore for BaseKeyStore {
                 RoochError::SignMessageError(format!("Cannot find key for address: [{address}]"))
             })?;
 
-        let signature = Signature::new_hashed(msg.hash().as_bytes(), &kp);
+        let signature = Signature::new_hashed(msg.tx_hash().as_bytes(), &kp);
 
         let auth = authenticator::Authenticator::rooch(signature);
 
@@ -286,7 +286,7 @@ impl AccountKeystore for BaseKeyStore {
         let kp: RoochKeyPair = retrieve_key_pair(&local_session_key.private_key, password)
             .map_err(signature::Error::from_source)?;
 
-        let signature = Signature::new_hashed(msg.hash().as_bytes(), &kp);
+        let signature = Signature::new_hashed(msg.tx_hash().as_bytes(), &kp);
 
         let auth = authenticator::Authenticator::rooch(signature);
         Ok(RoochTransaction::new(msg, auth))

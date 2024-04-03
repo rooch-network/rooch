@@ -4,20 +4,13 @@
 use anyhow::Result;
 use coerce::actor::{message::Message, scheduler::timer::TimerTick};
 use moveos_types::transaction::TransactionExecutionInfo;
-use rooch_types::transaction::{rooch::RoochTransaction, TransactionSequenceInfo};
-
-/// Transaction Sequence Message
-#[derive(Debug)]
-pub struct TransactionSequenceMessage {
-    pub tx: RoochTransaction,
-}
+use rooch_types::transaction::LedgerTransaction;
 
 /// Transaction Propose Message
 #[derive(Debug)]
 pub struct TransactionProposeMessage {
-    pub tx: RoochTransaction,
+    pub tx: LedgerTransaction,
     pub tx_execution_info: TransactionExecutionInfo,
-    pub tx_sequence_info: TransactionSequenceInfo,
 }
 
 #[derive(Debug)]

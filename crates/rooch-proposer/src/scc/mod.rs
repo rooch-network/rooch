@@ -55,7 +55,7 @@ impl StateCommitmentChain {
         }
         // construct a new block from buffer
         let latest_transaction = self.buffer.last().expect("buffer must not empty");
-        let tx_accumulator_root = latest_transaction.tx_sequence_info.tx_accumulator_root;
+        let tx_accumulator_root = latest_transaction.tx.sequence_info.tx_accumulator_root;
         let state_roots = self
             .buffer
             .iter()

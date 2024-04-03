@@ -36,7 +36,7 @@ pub fn tx_validate_benchmark(c: &mut Criterion) {
     c.bench_function("validate_tx", |b| {
         b.iter(|| {
             let tx = transactions_iter.next().unwrap();
-            binding_test.executor.validate(tx.clone()).unwrap()
+            binding_test.executor.validate_l2_tx(tx.clone()).unwrap()
         });
     });
 }

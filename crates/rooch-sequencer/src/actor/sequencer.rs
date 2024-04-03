@@ -16,7 +16,8 @@ use rooch_store::RoochStore;
 use rooch_types::crypto::{RoochKeyPair, Signature};
 use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::{
-    RoochTransaction, TransactionSequenceInfo, TransactionSequenceInfoMapping,
+    LedgerTransaction, LedgerTxData, RoochTransaction, TransactionSequenceInfo,
+    TransactionSequenceInfoMapping,
 };
 use tracing::info;
 
@@ -45,7 +46,7 @@ impl SequencerActor {
         })
     }
 
-    pub fn sequence(&mut self, tx: RoochTransaction) -> Result<TransactionSequenceInfo> {
+    pub fn sequence(&mut self, tx_data: LedgerTxData) -> Result<LedgerTransaction> {
         let tx_order = if self.last_order == 0 {
             let last_order_opt = self
                 .rooch_store
@@ -59,14 +60,23 @@ impl SequencerActor {
         } else {
             self.last_order + 1
         };
-        let hash = tx.tx_hash();
+        let hash = tx_data.tx_hash();
         let mut witness_data = hash.as_ref().to_vec();
         witness_data.extend(tx_order.to_le_bytes().iter());
         let witness_hash = h256::sha3_256_of(&witness_data);
         let tx_order_signature = Signature::new_hashed(&witness_hash.0, &self.sequencer_key).into();
         self.last_order = tx_order;
 
-        self.rooch_store.save_transaction(tx)?;
+        let tx_accumulator_root = H256::random();
+        let tx_sequence_info = TransactionSequenceInfo {
+            tx_order,
+            tx_order_signature,
+            tx_accumulator_root,
+        };
+
+        let tx = LedgerTransaction::new(tx_data, tx_sequence_info);
+
+        self.rooch_store.save_transaction(tx.clone())?;
         self.rooch_store
             .save_tx_sequence_info_mapping(tx_order, hash)?;
         self.rooch_store
@@ -75,15 +85,7 @@ impl SequencerActor {
         self.rooch_store
             .save_sequencer_order(SequencerOrder::new(self.last_order))?;
 
-        let tx_accumulator_root = H256::random();
-        let tx_sequence_info = TransactionSequenceInfo {
-            tx_order,
-            tx_order_signature,
-            tx_accumulator_root,
-        };
-        self.rooch_store
-            .save_tx_sequence_info(tx_sequence_info.clone())?;
-        Ok(tx_sequence_info)
+        Ok(tx)
     }
 }
 
@@ -95,7 +97,7 @@ impl Handler<TransactionSequenceMessage> for SequencerActor {
         &mut self,
         msg: TransactionSequenceMessage,
         _ctx: &mut ActorContext,
-    ) -> Result<TransactionSequenceInfo> {
+    ) -> Result<LedgerTransaction> {
         self.sequence(msg.tx)
     }
 }

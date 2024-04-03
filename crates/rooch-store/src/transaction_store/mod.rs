@@ -10,7 +10,7 @@ use moveos_types::h256::H256;
 use raw_store::CodecKVStore;
 use raw_store::{derive_store, StoreInstance};
 use rooch_types::transaction::{
-    RoochTransaction, TransactionSequenceInfo, TransactionSequenceInfoMapping,
+    LedgerTransaction, RoochTransaction, TransactionSequenceInfo, TransactionSequenceInfoMapping,
 };
 
 derive_store!(
@@ -42,7 +42,7 @@ derive_store!(
 );
 
 pub trait TransactionStore {
-    fn save_transaction(&mut self, transaction: RoochTransaction) -> Result<()>;
+    fn save_transaction(&mut self, transaction: LedgerTransaction) -> Result<()>;
     fn get_transaction_by_hash(&self, hash: H256) -> Result<Option<RoochTransaction>>;
     fn get_transactions_by_hash(
         &self,
