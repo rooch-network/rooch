@@ -37,6 +37,8 @@
 -  [Function `outpoint_txid`](#0x4_types_outpoint_txid)
 -  [Function `outpoint_vout`](#0x4_types_outpoint_vout)
 -  [Function `unpack_outpoint`](#0x4_types_unpack_outpoint)
+-  [Function `null_outpoint`](#0x4_types_null_outpoint)
+-  [Function `is_null_outpoint`](#0x4_types_is_null_outpoint)
 -  [Function `txout_value`](#0x4_types_txout_value)
 -  [Function `txout_script_pubkey`](#0x4_types_txout_script_pubkey)
 -  [Function `txout_address`](#0x4_types_txout_address)
@@ -45,6 +47,7 @@
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x2::address</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="">0x3::multichain_address</a>;
 <b>use</b> <a href="script_buf.md#0x4_script_buf">0x4::script_buf</a>;
@@ -155,6 +158,15 @@
 
 
 <pre><code><b>const</b> <a href="types.md#0x4_types_TAPROOT_ANNEX_PREFIX">TAPROOT_ANNEX_PREFIX</a>: u8 = 80;
+</code></pre>
+
+
+
+<a name="0x4_types_U32_MAX"></a>
+
+
+
+<pre><code><b>const</b> <a href="types.md#0x4_types_U32_MAX">U32_MAX</a>: u32 = 4294967295;
 </code></pre>
 
 
@@ -425,6 +437,30 @@ bitcoin_script::is_v1_p2tr to check whether this is actually a Taproot witness.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_unpack_outpoint">unpack_outpoint</a>(self: <a href="types.md#0x4_types_OutPoint">types::OutPoint</a>): (<b>address</b>, u32)
+</code></pre>
+
+
+
+<a name="0x4_types_null_outpoint"></a>
+
+## Function `null_outpoint`
+
+Creates a "null" <code><a href="types.md#0x4_types_OutPoint">OutPoint</a></code>.
+This value is used for coinbase transactions because they don't have any previous outputs.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_null_outpoint">null_outpoint</a>(): <a href="types.md#0x4_types_OutPoint">types::OutPoint</a>
+</code></pre>
+
+
+
+<a name="0x4_types_is_null_outpoint"></a>
+
+## Function `is_null_outpoint`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="types.md#0x4_types_is_null_outpoint">is_null_outpoint</a>(self: &<a href="types.md#0x4_types_OutPoint">types::OutPoint</a>): bool
 </code></pre>
 
 

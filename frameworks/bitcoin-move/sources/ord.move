@@ -21,11 +21,22 @@ module bitcoin_move::ord {
     friend bitcoin_move::genesis;
     friend bitcoin_move::light_client;
 
-    // const OUTPOINT_TO_SATPOINT_BUCKET_SIZE: u64 = 1000;
+    /// How may blocks between halvings.
+    const SUBSIDY_HALVING_INTERVAL: u32 = 210_000;
+
+    const FIRST_POST_SUBSIDY_EPOCH: u32 = 33;
+
+    /// How many satoshis are in "one bitcoin".
+    const COIN_VALUE: u64 = 100_000_000;
 
     struct InscriptionID has store, copy, drop {
         txid: address,
         index: u32,
+    }
+
+    struct Flotsam has store, copy, drop {
+        inscription_id: InscriptionID,
+        offset: u64,
     }
 
     struct Inscription has key{
@@ -433,6 +444,17 @@ module bitcoin_move::ord {
     }
 
     native fun from_witness(witness: &Witness): vector<InscriptionRecord>;
+
+    /// Block Rewards
+    public fun subsidy_by_height(height: u32): u64 {
+        let epoch = height / SUBSIDY_HALVING_INTERVAL;
+        if(epoch < FIRST_POST_SUBSIDY_EPOCH) {
+            (50 * COIN_VALUE) >> (epoch as u8)
+        } else {
+            0
+        }
+    }
+
 
     public(friend) fun bind_multichain_address(rooch_address: address, bitcoin_address_opt: Option<BitcoinAddress>) {
         //Auto create address mapping if not exist

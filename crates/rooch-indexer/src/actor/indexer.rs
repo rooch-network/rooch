@@ -301,7 +301,7 @@ impl Handler<IndexerTransactionMessage> for IndexerActor {
         let indexed_transaction = IndexedTransaction::new(transaction, execution_info, moveos_tx)?;
         let transactions = vec![indexed_transaction];
 
-        // just for data verify mode, don't write transaction indexer
+        // just for bitcoin block data import, don't write transaction indexer
         self.indexer_store.persist_transactions(transactions)?;
         Ok(())
     }

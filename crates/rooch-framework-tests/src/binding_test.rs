@@ -19,6 +19,7 @@ use rooch_executor::actor::{executor::ExecutorActor, messages::ExecuteTransactio
 use rooch_framework::natives::default_gas_schedule;
 use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
+use rooch_types::bitcoin::data_import_config::DataImportMode;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::chain_id::RoochChainID;
@@ -72,7 +73,7 @@ impl RustBindingTest {
             .expect("Failure serializing genesis gas schedule");
         let executor = ExecutorActor::new(
             RoochChainID::LOCAL.genesis_ctx(sequencer, gas_schedule_blob),
-            BitcoinGenesisContext::new(Network::default().to_num()),
+            BitcoinGenesisContext::new(Network::default().to_num(), DataImportMode::Ord.to_num()),
             moveos_store,
             rooch_store,
         )?;
