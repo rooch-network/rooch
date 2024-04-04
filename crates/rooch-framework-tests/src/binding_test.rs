@@ -73,10 +73,7 @@ impl RustBindingTest {
             .expect("Failure serializing genesis gas schedule");
         let executor = ExecutorActor::new(
             RoochChainID::LOCAL.genesis_ctx(sequencer, gas_schedule_blob),
-            BitcoinGenesisContext::new(
-                Network::default().to_num(),
-                DataImportMode::default().to_num(),
-            ),
+            BitcoinGenesisContext::new(Network::default().to_num(), DataImportMode::Ord.to_num()),
             moveos_store,
             rooch_store,
         )?;
