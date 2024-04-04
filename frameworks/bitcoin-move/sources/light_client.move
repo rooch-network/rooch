@@ -135,16 +135,16 @@ module bitcoin_move::light_client{
                 let object_id = utxo::derive_utxo_id(outpoint);
                 let (_owner, utxo_obj) = utxo::take(object_id);
                 if(data_import_config::is_ord_mode(data_import_mode)) {
-                    let seal_points = ord::spend_utxo(&mut utxo_obj, tx, input_utxo_values, idx);
+                    let sat_points = ord::spend_utxo(&mut utxo_obj, tx, input_utxo_values, idx);
 
-                    if (!vector::is_empty(&seal_points)) {
+                    if (!vector::is_empty(&sat_points)) {
                         let protocol = type_info::type_name<Inscription>();
                         let j = 0;
-                        let seal_points_len = vector::length(&seal_points);
-                        while (j < seal_points_len) {
-                            let seal_point = vector::pop_back(&mut seal_points);
-                            let (output_index, _offset, _object_id) = utxo::unpack_seal_point(seal_point);
-                            let utxo_seal = utxo::new_utxo_seal(protocol, seal_point);
+                        let sat_points_len = vector::length(&sat_points);
+                        while (j < sat_points_len) {
+                            let sat_point = vector::pop_back(&mut sat_points);
+                            let (output_index, _offset, object_id) = ord::unpack_sat_point(sat_point);
+                            let utxo_seal = utxo::new_utxo_seal(protocol, object_id);
                             simple_multimap::add(&mut output_seals, output_index, utxo_seal);
                             j = j + 1;
                         };
@@ -163,14 +163,15 @@ module bitcoin_move::light_client{
         //If a utxo is spend seal assets, it should not seal new assets
         if(data_import_config::is_ord_mode(data_import_mode)) {
             if (simple_multimap::length(&output_seals) == 0) {
-                let seal_points = ord::process_transaction(tx, input_utxo_values);
+                let sat_points = ord::process_transaction(tx, input_utxo_values);
                 let idx = 0;
                 let protocol = type_info::type_name<Inscription>();
-                let seal_points_len = vector::length(&seal_points);
-                while (idx < seal_points_len) {
-                    let seal_point = vector::pop_back(&mut seal_points);
-                    let output_index = utxo::seal_point_output_index(&seal_point);
-                    let utxo_seal = utxo::new_utxo_seal(protocol, seal_point);
+                let sat_points_len = vector::length(&sat_points);
+                while (idx < sat_points_len) {
+                    let sat_point = vector::pop_back(&mut sat_points);
+                    let output_index = ord::sat_point_output_index(&sat_point);
+                    let seal_object_id = ord::sat_point_object_id(&sat_point);
+                    let utxo_seal = utxo::new_utxo_seal(protocol, seal_object_id);
                     simple_multimap::add(&mut output_seals, output_index, utxo_seal);
                     idx = idx + 1;
                 };
