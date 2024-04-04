@@ -11,6 +11,7 @@
 -  [Struct `InscriptionRecord`](#0x4_ord_InscriptionRecord)
 -  [Struct `InvalidInscriptionEvent`](#0x4_ord_InvalidInscriptionEvent)
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
+-  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_ord_genesis_init)
 -  [Function `new_inscription_id`](#0x4_ord_new_inscription_id)
 -  [Function `get_inscription_id_by_index`](#0x4_ord_get_inscription_id_by_index)
@@ -30,6 +31,7 @@
 -  [Function `unpack_record`](#0x4_ord_unpack_record)
 -  [Function `from_transaction`](#0x4_ord_from_transaction)
 -  [Function `from_transaction_bytes`](#0x4_ord_from_transaction_bytes)
+-  [Function `subsidy_by_height`](#0x4_ord_subsidy_by_height)
 -  [Function `bind_multichain_address`](#0x4_ord_bind_multichain_address)
 
 
@@ -115,6 +117,40 @@
 
 
 <pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionStore">InscriptionStore</a> <b>has</b> key
+</code></pre>
+
+
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x4_ord_COIN_VALUE"></a>
+
+How many satoshis are in "one bitcoin".
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_COIN_VALUE">COIN_VALUE</a>: u64 = 100000000;
+</code></pre>
+
+
+
+<a name="0x4_ord_FIRST_POST_SUBSIDY_EPOCH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_FIRST_POST_SUBSIDY_EPOCH">FIRST_POST_SUBSIDY_EPOCH</a>: u32 = 33;
+</code></pre>
+
+
+
+<a name="0x4_ord_SUBSIDY_HALVING_INTERVAL"></a>
+
+How may blocks between halvings.
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_SUBSIDY_HALVING_INTERVAL">SUBSIDY_HALVING_INTERVAL</a>: u32 = 210000;
 </code></pre>
 
 
@@ -324,6 +360,18 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_from_transaction_bytes">from_transaction_bytes</a>(transaction_bytes: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_subsidy_by_height"></a>
+
+## Function `subsidy_by_height`
+
+Block Rewards
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_subsidy_by_height">subsidy_by_height</a>(height: u32): u64
 </code></pre>
 
 
