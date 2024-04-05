@@ -177,7 +177,7 @@ export class RoochClient {
     if (
       typeof params === 'object' &&
       params !== null &&
-      'authenticator' in params &&
+      'authorizer' in params &&
       'data' in params
     ) {
       const { data, authorizer } = params as SendTransactionDataParams

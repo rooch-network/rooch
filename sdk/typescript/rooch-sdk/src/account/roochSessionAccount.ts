@@ -12,10 +12,9 @@ import { IAuthorizer } from '../auth'
 import {
   RoochTransactionData,
   AccountAddress as BCSAccountAddress,
-  RoochTransaction,
 } from '../generated/runtime/rooch_types/mod'
 import { DEFAULT_MAX_GAS_AMOUNT } from '../constants'
-import { BcsSerializer } from '../generated/runtime/bcs/bcsSerializer'
+import { Ed25519Keypair } from '../utils/keypairs'
 
 const SCOPE_LENGTH = 3
 const SCOPE_MODULE_ADDRESSS = 0
@@ -43,7 +42,10 @@ export class RoochSessionAccount implements IAccount {
     this.scopes = scopes
     this.maxInactiveInterval = maxInactiveInterval
     this.localCreateSessionTime = Date.now() / 1000
-    this.sessionAccount = new RoochAccount(this.client)
+    const kp = Ed25519Keypair.deriveKeypair(
+      'nose aspect organ harbor move prepare raven manage lamp consider oil front',
+    )
+    this.sessionAccount = new RoochAccount(this.client, kp)
     this.authInfo = authInfo
   }
 
@@ -83,7 +85,7 @@ export class RoochSessionAccount implements IAccount {
     const args: Arg[] = [
       {
         type: { Vector: 'U8' },
-        value: addressToSeqNumber(await this.getAuthKey()),
+        value: addressToSeqNumber(this.getAuthKey()),
       },
       {
         type: { Vector: 'Address' },
@@ -102,7 +104,7 @@ export class RoochSessionAccount implements IAccount {
         value: BigInt(this.maxInactiveInterval),
       },
     ]
-    const number = await this.client.getSequenceNumber(await this.getRoochAddress())
+    const sequenceNumber = await this.client.getSequenceNumber(this.getAddress())
     const bcsArgs = args.map((arg) => encodeArg(arg))
     const scriptFunction = encodeFunctionCall(
       '0x3::session_key::create_session_key_with_multi_scope_entry',
@@ -110,8 +112,8 @@ export class RoochSessionAccount implements IAccount {
       bcsArgs,
     )
     const txData = new RoochTransactionData(
-      new BCSAccountAddress(addressToListTuple(await this.getRoochAddress())),
-      BigInt(number),
+      new BCSAccountAddress(addressToListTuple(this.getAddress())),
+      BigInt(sequenceNumber),
       BigInt(this.client.getChainId()),
       BigInt(opts?.maxGasAmount ?? DEFAULT_MAX_GAS_AMOUNT),
       scriptFunction,
@@ -121,37 +123,21 @@ export class RoochSessionAccount implements IAccount {
   }
 
   protected async register(txData: RoochTransactionData): Promise<RoochSessionAccount> {
-    const transactionDataPayload = (() => {
-      const se = new BcsSerializer()
-      txData.serialize(se)
-      return se.getBytes()
-    })()
-
-    const authResult = await this.account.getAuthorizer().auth(transactionDataPayload)
-    const transaction = new RoochTransaction(txData, authResult)
-
-    const transactionPayload = (() => {
-      const se = new BcsSerializer()
-      transaction.serialize(se)
-      return se.getBytes()
-    })()
-
-    const s = await this.client.sendRawTransaction(transactionPayload)
+    const s = await this.client.sendRawTransaction({
+      authorizer: this.account.getAuthorizer(),
+      data: txData,
+    })
     console.log(s)
 
     return this
   }
 
-  public getAuthKey(): Promise<string> {
-    return this.sessionAccount.getRoochAddress()
+  public getAuthKey(): string {
+    return this.sessionAccount.getAddress()
   }
 
-  getAddress(): string | undefined {
+  getAddress(): string {
     return this.account.getAddress()
-  }
-
-  getRoochAddress(): Promise<string> {
-    return this.account.getRoochAddress()
   }
 
   getAuthorizer(): IAuthorizer {
@@ -172,14 +158,7 @@ export class RoochSessionAccount implements IAccount {
     tyArgs?: TypeTag[],
     opts?: SendRawTransactionOpts,
   ): Promise<string> {
-    return this.client.sendRawTransaction({
-      address: await this.account.getRoochAddress(),
-      authorizer: this.sessionAccount.getAuthorizer(),
-      funcId,
-      args,
-      tyArgs,
-      opts,
-    })
+    return this.sessionAccount.sendTransaction(funcId, args, tyArgs, opts)
   }
 
   public async isExpired(): Promise<boolean> {
@@ -187,17 +166,14 @@ export class RoochSessionAccount implements IAccount {
       return Promise.resolve(true)
     }
 
-    return this.client.sessionIsExpired(
-      await this.account.getRoochAddress(),
-      await this.getAuthKey(),
-    )
+    return this.client.sessionIsExpired(this.account.getAddress(), this.getAuthKey())
   }
 
   public async querySessionKeys(
     cursor: string | null,
     limit: number,
   ): Promise<IPage<SessionInfo, string>> {
-    return this.client.querySessionKeys(await this.getRoochAddress(), cursor, limit)
+    return this.client.querySessionKeys(this.getAddress(), cursor, limit)
   }
 
   public async destroy(opts?: SendRawTransactionOpts): Promise<string> {
@@ -206,7 +182,7 @@ export class RoochSessionAccount implements IAccount {
       [
         {
           type: { Vector: 'U8' },
-          value: addressToSeqNumber(await this.getAuthKey()),
+          value: addressToSeqNumber(this.getAuthKey()),
         },
       ],
       [],

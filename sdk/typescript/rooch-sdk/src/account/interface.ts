@@ -5,6 +5,5 @@ import { IAuthorizer } from '../auth'
 
 export interface IAccount {
   getAuthorizer(): IAuthorizer
-  getAddress(): string | undefined
-  getRoochAddress(): Promise<string>
+  getAddress(): string
 }

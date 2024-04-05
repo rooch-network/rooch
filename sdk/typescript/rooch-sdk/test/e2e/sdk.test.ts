@@ -61,7 +61,7 @@ describe('SDK', () => {
   })
 
   afterAll(async () => {
-    await server.stop()
+    // await server.stop()
   })
 
   describe('#viewFunction', () => {
@@ -121,7 +121,7 @@ describe('SDK', () => {
         [
           {
             type: 'Address',
-            value: await account.getRoochAddress(),
+            value: account.getAddress(),
           },
         ],
         [],
@@ -267,7 +267,7 @@ describe('SDK', () => {
         [
           {
             type: 'Address',
-            value: await account.getRoochAddress(),
+            value: account.getAddress(),
           },
         ],
         [],
@@ -294,11 +294,9 @@ describe('SDK', () => {
   describe('#sessionKey', () => {
     it('Create session account should be ok', async () => {
       const client = new RoochClient(LocalNetwork)
-
       const kp = Ed25519Keypair.deriveKeypair(
         'fiber tube acid imitate frost coffee choose crowd grass topple donkey submit',
       )
-
       const account = new RoochAccount(client, kp)
 
       const sessionAccount = await RoochSessionAccount.CREATE(client, account, ['0x3::empty::empty'], 1000)
@@ -311,18 +309,18 @@ describe('SDK', () => {
         args: [
           {
             type: 'Address',
-            value: await sessionAccount.getRoochAddress(),
+            value: sessionAccount.getAddress(),
           },
           {
             type: { Vector: 'U8' },
-            value: addressToSeqNumber(await sessionAccount.getAuthKey()),
+            value: addressToSeqNumber(sessionAccount.getAuthKey()),
           },
         ],
       })
       expect(sessionA).toBeDefined()
-      const session = await sessionAccount.querySessionKeys(null, 10)
+      // const session = await sessionAccount.querySessionKeys(null, 10)
 
-      console.log(session)
+      // console.log(session)
 
       // run function with sessoin key
       const tx = await sessionAccount.sendTransaction('0x3::empty::empty', [], [], {
@@ -338,8 +336,6 @@ describe('SDK', () => {
       const kp = Ed25519Keypair.deriveKeypair(
         'fiber tube acid imitate frost coffee choose crowd grass topple donkey submit',
       )
-      const roochAddress = kp.getPublicKey().toRoochAddress()
-      const authorizer = new PrivateKeyAuth(kp)
 
       const sessionAccount = await RoochSessionAccount.CREATE(client, new RoochAccount(client, kp), ['0x3::empty::empty'], 100 )
       expect(sessionAccount).toBeDefined()
@@ -376,7 +372,7 @@ describe('SDK', () => {
         args: [
           {
             type: 'Address',
-            value: await sessionAccount.getRoochAddress(),
+            value: sessionAccount.getAddress(),
           },
           {
             type: { Vector: 'U8' },
@@ -398,7 +394,7 @@ describe('SDK', () => {
         args: [
           {
             type: 'Address',
-            value: await sessionAccount.getRoochAddress(),
+            value: sessionAccount.getAddress(),
           },
           {
             type: { Vector: 'U8' },
