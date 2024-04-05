@@ -446,7 +446,7 @@ pub enum StateSyncFilterView {
 impl From<StateSyncFilterView> for StateSyncFilter {
     fn from(state_filter: StateSyncFilterView) -> Self {
         match state_filter {
-            StateSyncFilterView::TableHandle(table_handle) => Self::Object(table_handle),
+            StateSyncFilterView::TableHandle(table_handle) => Self::ObjectId(table_handle),
         }
     }
 }
@@ -571,13 +571,13 @@ impl IndexerFieldStateView {
 #[serde(rename_all = "snake_case")]
 pub enum FieldStateFilterView {
     /// Query by object id.
-    Object(ObjectID),
+    ObjectId(ObjectID),
 }
 
 impl From<FieldStateFilterView> for FieldStateFilter {
     fn from(state_filter: FieldStateFilterView) -> Self {
         match state_filter {
-            FieldStateFilterView::Object(object_id) => Self::Object(object_id),
+            FieldStateFilterView::ObjectId(object_id) => Self::ObjectId(object_id),
         }
     }
 }

@@ -455,7 +455,7 @@ impl IndexerReader {
         };
 
         let main_where_clause = match filter {
-            FieldStateFilter::Object(object_id) => {
+            FieldStateFilter::ObjectId(object_id) => {
                 format!("{STATE_OBJECT_ID_STR} = \"{}\"", object_id)
             }
         };
@@ -535,7 +535,7 @@ impl IndexerReader {
         };
 
         let main_where_clause_opt = filter.map(|f| match f {
-            StateSyncFilter::Object(object_id) => {
+            StateSyncFilter::ObjectId(object_id) => {
                 format!("{STATE_OBJECT_ID_STR} = \"{}\"", object_id)
             }
         });

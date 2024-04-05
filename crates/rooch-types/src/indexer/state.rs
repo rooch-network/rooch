@@ -121,13 +121,13 @@ impl Filter<IndexerObjectState> for ObjectStateFilter {
 #[serde(rename_all = "camelCase")]
 pub enum FieldStateFilter {
     /// Query field by object id.
-    Object(ObjectID),
+    ObjectId(ObjectID),
 }
 
 impl FieldStateFilter {
     fn try_matches(&self, item: &IndexerFieldState) -> Result<bool> {
         Ok(match self {
-            FieldStateFilter::Object(object_id) => object_id == &item.object_id,
+            FieldStateFilter::ObjectId(object_id) => object_id == &item.object_id,
         })
     }
 }
@@ -142,13 +142,13 @@ impl Filter<IndexerFieldState> for FieldStateFilter {
 #[serde(rename_all = "camelCase")]
 pub enum StateSyncFilter {
     /// Query by object id.
-    Object(ObjectID),
+    ObjectId(ObjectID),
 }
 
 impl StateSyncFilter {
     fn try_matches(&self, item: &IndexerTableChangeSet) -> Result<bool> {
         Ok(match self {
-            StateSyncFilter::Object(table_handle) => table_handle == &item.table_handle,
+            StateSyncFilter::ObjectId(table_handle) => table_handle == &item.table_handle,
         })
     }
 }

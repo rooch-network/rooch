@@ -251,7 +251,7 @@ fn test_state_store() -> Result<()> {
     assert_eq!(query_object_states.len(), 0);
 
     let talbe_handle = ObjectID::from_str("0x0")?;
-    let filter = FieldStateFilter::Object(talbe_handle);
+    let filter = FieldStateFilter::ObjectId(talbe_handle);
     let query_field_states =
         indexer_reader.query_field_states_with_filter(filter, None, 1, true)?;
     assert_eq!(query_field_states.len(), 0);
