@@ -1,27 +1,25 @@
 # 去中心化验证者
 
-In the current Layer2 solution, it is a challenge how to decentralize the sequencer. If the sequencer cannot be decentralized, on the one hand, there is a single point of risk that the whole network will be unavailable when the sequencer is down, and on the other hand, there is also the risk of sequencer fraud. Before transactions are written in batches to the data availability layer and the consensus layer, the sequencer can fraud by dropping transactions or adjusting the order of transactions.
+在目前的 Layer2 解决方案中，如何将排序器去中心化是一个挑战。如果定序器不能去中心化，一方面存在排序器宕机时全网不可用的单点风险，另一方面也存在排序器造假的风险。在交易批量写入数据可用性层和共识层之前，排序器可以通过丢弃交易或调整交易顺序进行欺诈。
 
-Rooch was designed at the beginning with this in mind, trying to build a decentralized validator network.
+Rooch 在设计之初就考虑到了这一点，试图建立一个去中心化的验证者网络。
 
-## Validator Role Definition
+## 验证者角色定义
 
-- **Sequencer**: order and executes transactions, compute the root of the state tree, and the root of the transaction accumulator.
-- **Verifier**: Fetches transactions from the consensus and data availability layers, executes and verifies them, and initiates fraud proofs to the arbitration layer if the results are found to be incorrect.
+**排序器**：排序并执行交易，计算状态树的根和交易累加器的根。
+**验证者**：从共识层和数据可用性层获取交易，执行并验证它们，如果发现结果不正确，则向仲裁层发起欺诈证明。
 
-The Sequencer and Verifier are called Validator in Rooch.
+Sequencer 和 Verifier 在 Rooch 中被称为 Validator。
 
-## Decentralized Solutions
+## 去中心化解决方案
 
-Since Layer2 consensus only needs to determine the order of transactions, the correctness of transaction execution can be guaranteed by challenge deterrence. To ensure the order of transactions, it is only necessary to write the transactions (or the transaction hash) to Layer1, which has the role of consensus layer.
+由于 Layer2 共识只需要确定交易的顺序，因此可以通过挑战威慑来保证交易执行的正确性。为了保证交易的顺序，只需将交易（或交易哈希）写入 Layer1，Layer1 具有共识层的作用。
 
-Therefore, Layer2 or execution layer does not need to build a PBFT consensus network to decide the transaction order and execution results to achieve decentralization, but only needs to design a rotation mechanism of the sequencer and a data synchronization protocol on the P2P network.
+因此，Layer2 或执行层不需要构建 PBFT 共识网络来决定交易顺序和执行结果来实现去中心化，而只需要设计定序器的轮换机制和 P2P 网络上的数据同步协议。
 
-The initial design idea is as follows.
+最初的设计思路如下：
 
-1. Anyone can register as a validator on the chain by depositing a certain amount of Token.
-2. Each Epoch, the smart contract on the chain randomly selects a validator as a sequencer.
-3. Nodes that are not selected as sequencer automatically become verifier.
-4. All the verifiers form a P2P network, and the transactions received by the verifier will be forwarded to the sequencer. The Sequencer will then verify and order all the transactions, as well as forward them to the other verifiers with the State Tree Root and the [Sequence Proof](/docs/tech-highlights/sequence-proof).
-
-> Tokenomics will be published in [2023 Q4](/docs/miscellaneous/roadmap#2023-q4---mainnet-ready-testnet)
+1. 任何人都可以通过存入一定数量的 Token 来注册成为链上的验证者。
+2. 每个 Epoch，链上的智能合约都会随机选择一个验证者作为排序器。
+3. 未被选为排序器的节点会自动成为验证者。
+4. 所有验证者组成一个 P2P 网络，验证者收到的交易将被转发到排序器。然后，排序器将验证并排序所有交易，并将它们连同状态树根和序列证明转发给其他验证者。

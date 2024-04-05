@@ -23,5 +23,3 @@ The initial design idea is as follows.
 2. Each Epoch, the smart contract on the chain randomly selects a validator as a sequencer.
 3. Nodes that are not selected as sequencer automatically become verifier.
 4. All the verifiers form a P2P network, and the transactions received by the verifier will be forwarded to the sequencer. The Sequencer will then verify and order all the transactions, as well as forward them to the other verifiers with the State Tree Root and the [Sequence Proof](/docs/tech-highlights/sequence-proof).
-
-> Tokenomics will be published in [2023 Q4](/docs/miscellaneous/roadmap#2023-q4---mainnet-ready-testnet)
