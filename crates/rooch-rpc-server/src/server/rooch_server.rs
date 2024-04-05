@@ -23,8 +23,8 @@ use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, FieldStateFilterView, IndexerEventPageView,
     IndexerFieldStatePageView, IndexerFieldStateView, IndexerObjectStatePageView,
-    IndexerObjectStateView,KeyStateView, ObjectStateFilterView,
-    StateKVView, StateOptions, TxOptions,
+    IndexerObjectStateView, KeyStateView, ObjectStateFilterView, StateKVView, StateOptions,
+    TxOptions,
 };
 use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
