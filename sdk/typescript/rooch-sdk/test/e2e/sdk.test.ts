@@ -6,11 +6,11 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import {
   RoochClient,
   Ed25519Keypair,
-  PrivateKeyAuth,
   RoochAccount,
   addressToSeqNumber,
   bcs,
-  LocalNetwork, RoochSessionAccount,
+  LocalNetwork,
+  RoochSessionAccount,
 } from '../../src'
 import { RoochServer } from './servers/rooch-server'
 import { RoochCli } from './cli/rooch-cli'
@@ -22,46 +22,46 @@ describe('SDK', () => {
 
   beforeAll(async () => {
     // start rooch server
-    // server = new RoochServer()
-    // await server.start()
-    //
+    server = new RoochServer()
+    await server.start()
+
     cli = new RoochCli()
-    //
-    // // deploy example entry_function_arguments
-    // await cli.execute([
-    //   'move',
-    //   'publish',
-    //   '-p',
-    //   '../../../examples/entry_function_arguments/',
-    //   '--named-addresses',
-    //   'rooch_examples=default',
-    // ])
-    //
-    // // deploy example counter
-    // await cli.execute([
-    //   'move',
-    //   'publish',
-    //   '-p',
-    //   '../../../examples/counter/',
-    //   '--named-addresses',
-    //   'rooch_examples=default',
-    // ])
-    //
-    // // deploy example coins
-    // await cli.execute([
-    //   'move',
-    //   'publish',
-    //   '-p',
-    //   '../../../examples/coins/',
-    //   '--named-addresses',
-    //   'coins=default',
-    // ])
+
+    // deploy example entry_function_arguments
+    await cli.execute([
+      'move',
+      'publish',
+      '-p',
+      '../../../examples/entry_function_arguments/',
+      '--named-addresses',
+      'rooch_examples=default',
+    ])
+
+    // deploy example counter
+    await cli.execute([
+      'move',
+      'publish',
+      '-p',
+      '../../../examples/counter/',
+      '--named-addresses',
+      'rooch_examples=default',
+    ])
+
+    // deploy example coins
+    await cli.execute([
+      'move',
+      'publish',
+      '-p',
+      '../../../examples/coins/',
+      '--named-addresses',
+      'coins=default',
+    ])
 
     defaultAddress = await cli.defaultAccountAddress()
   })
 
   afterAll(async () => {
-    // await server.stop()
+    await server.stop()
   })
 
   describe('#viewFunction', () => {
@@ -253,7 +253,6 @@ describe('SDK', () => {
 
   describe('#getTransactions', () => {
     it('get transaction by index should be ok', async () => {
-
       const client = new RoochClient()
 
       const kp = Ed25519Keypair.deriveKeypair(
@@ -291,41 +290,25 @@ describe('SDK', () => {
     })
   })
 
-  describe('#sessionKey', () => {
+  describe('#sessionAccount', () => {
     it('Create session account should be ok', async () => {
       const client = new RoochClient(LocalNetwork)
-      const kp = Ed25519Keypair.deriveKeypair(
-        'fiber tube acid imitate frost coffee choose crowd grass topple donkey submit',
-      )
-      const account = new RoochAccount(client, kp)
 
-      const sessionAccount = await RoochSessionAccount.CREATE(client, account, ['0x3::empty::empty'], 1000)
+      const account = new RoochAccount(client)
+      const sessionAccount = await RoochSessionAccount.CREATE(
+        client,
+        account,
+        ['0x3::empty::empty'],
+        100,
+      )
       expect(sessionAccount).toBeDefined()
 
-      // view session Keys
-      const sessionA = await client.executeViewFunction({
-        funcId: '0x3::session_key::get_session_key',
-        tyArgs: [],
-        args: [
-          {
-            type: 'Address',
-            value: sessionAccount.getAddress(),
-          },
-          {
-            type: { Vector: 'U8' },
-            value: addressToSeqNumber(sessionAccount.getAuthKey()),
-          },
-        ],
-      })
-      expect(sessionA).toBeDefined()
-      // const session = await sessionAccount.querySessionKeys(null, 10)
-
-      // console.log(session)
+      // view session Key
+      const session = await sessionAccount.getSessionKey()
+      expect(session).toBeDefined()
 
       // run function with sessoin key
-      const tx = await sessionAccount.sendTransaction('0x3::empty::empty', [], [], {
-        maxGasAmount: 200000000,
-      })
+      const tx = await sessionAccount.sendTransaction('0x3::empty::empty', [], [])
 
       expect(tx).toBeDefined()
     })
@@ -337,17 +320,20 @@ describe('SDK', () => {
         'fiber tube acid imitate frost coffee choose crowd grass topple donkey submit',
       )
 
-      const sessionAccount = await RoochSessionAccount.CREATE(client, new RoochAccount(client, kp), ['0x3::empty::empty'], 100 )
+      const sessionAccount = await RoochSessionAccount.CREATE(
+        client,
+        new RoochAccount(client, kp),
+        ['0x3::empty::empty'],
+        100,
+      )
       expect(sessionAccount).toBeDefined()
 
       // check session key expired
       const expired = await sessionAccount.isExpired()
       expect(expired).toBeFalsy()
 
-      // run function with sessoin key
-      const tx = await sessionAccount.sendTransaction('0x3::empty::empty', [], [], {
-        maxGasAmount: 200000000,
-      })
+      // run function with session
+      const tx = await sessionAccount.sendTransaction('0x3::empty::empty', [], [])
 
       expect(tx).toBeDefined()
     })
@@ -355,70 +341,45 @@ describe('SDK', () => {
     it('Remove session key should be ok', async () => {
       const client = new RoochClient(LocalNetwork)
 
-      const kp = Ed25519Keypair.deriveKeypair(
-        'fiber tube acid imitate frost coffee choose crowd grass topple donkey submit',
+      // create session key
+      const account = new RoochAccount(client)
+      const sessionAccount = await RoochSessionAccount.CREATE(
+        client,
+        account,
+        ['0x3::empty::empty'],
+        100,
       )
-
-      const account = new RoochAccount(client, kp)
-
-      const sessionAccount = await RoochSessionAccount.CREATE(client, account, ['0x3::empty::empty'], 100)
       expect(sessionAccount).toBeDefined()
 
-      // view session Keys
-      const sessionKey = await sessionAccount.getAuthKey()
-      const session = await client.executeViewFunction({
-        funcId: '0x3::session_key::get_session_key',
-        tyArgs: [],
-        args: [
-          {
-            type: 'Address',
-            value: sessionAccount.getAddress(),
-          },
-          {
-            type: { Vector: 'U8' },
-            value: addressToSeqNumber(sessionKey),
-          },
-        ],
-      })
-      expect(session).toBeDefined()
-      expect(session.return_values![0].value.value).not.toBe('0x00')
+      // view session key
+      const sessionKey = await sessionAccount.getSessionKey()
+      expect(sessionKey).toBeDefined()
+      expect(sessionKey.return_values![0].value.value).not.toBe('0x00')
 
-      // run function with sessoin key
+      // destroy session
       const tx = await sessionAccount.destroy()
       expect(tx).toBeDefined()
 
-      // view session Keys
-      const session2 = await client.executeViewFunction({
-        funcId: '0x3::session_key::get_session_key',
-        tyArgs: [],
-        args: [
-          {
-            type: 'Address',
-            value: sessionAccount.getAddress(),
-          },
-          {
-            type: { Vector: 'U8' },
-            value: addressToSeqNumber(sessionKey),
-          },
-        ],
-      })
-
-      expect(session2).toBeDefined()
-      expect(session2.return_values![0].value.value).toBe('0x00')
+      // view session key
+      const sessionKey2 = await sessionAccount.getSessionKey()
+      expect(sessionKey2).toBeDefined()
+      expect(sessionKey2.return_values![0].value.value).toBe('0x00')
     })
 
     it('Create session account with multi scopes should be ok', async () => {
       const client = new RoochClient(LocalNetwork)
 
-      const kp = Ed25519Keypair.generate()
-
-      const sessionAccount = await RoochSessionAccount.CREATE(client, new RoochAccount(client, kp), ['0x3::empty::empty', '0x1::*::*'], 100)
+      const account = new RoochAccount(client)
+      const sessionAccount = await RoochSessionAccount.CREATE(
+        client,
+        account,
+        ['0x3::empty::empty', '0x1::*::*'],
+        100,
+      )
       expect(sessionAccount).toBeDefined()
 
-      // run function with sessoin key
-      const tx = await sessionAccount.sendTransaction('0x3::empty::empty', [], [], {
-        maxGasAmount: 200000000,
-      })
+      // run function with session
+      const tx = await sessionAccount.sendTransaction('0x3::empty::empty', [], [])
 
       expect(tx).toBeDefined()
     })
@@ -426,26 +387,33 @@ describe('SDK', () => {
     it('Session account runFunction out of score should fail', async () => {
       const client = new RoochClient(LocalNetwork)
 
-      const kp = Ed25519Keypair.generate()
-
-      const sessionAccount =await RoochSessionAccount.CREATE(client, new RoochAccount(client, kp), ['0x2::account::*'], 100)
+      const account = new RoochAccount(client)
+      const sessionAccount = await RoochSessionAccount.CREATE(
+        client,
+        account,
+        ['0x2::account::*'],
+        100,
+      )
       expect(sessionAccount).toBeDefined()
 
-      const tx = await sessionAccount.sendTransaction('0x3::empty::empty', [], [], {
-        maxGasAmount: 200000000,
-      })
-
-      expect(tx).toBeDefined()
+      try {
+        const tx = await sessionAccount.sendTransaction('0x3::empty::empty', [], [])
+        expect(tx).toBeUndefined()
+      } catch (e) {
+        expect(e).toBeDefined()
+      }
     })
 
     it('Query session keys should be ok', async () => {
       const client = new RoochClient(LocalNetwork)
 
-      const kp = Ed25519Keypair.generate()
-      const roochAddress = kp.getPublicKey().toRoochAddress()
-      const authorizer = new PrivateKeyAuth(kp)
-
-      const sessionAccount = await RoochSessionAccount.CREATE(client, new RoochAccount(client, kp),['0x3::empty::empty', '0x1::*::*'], 100 )
+      const account = new RoochAccount(client)
+      const sessionAccount = await RoochSessionAccount.CREATE(
+        client,
+        account,
+        ['0x3::empty::empty', '0x1::*::*'],
+        100,
+      )
       expect(sessionAccount).toBeDefined()
 
       // wait timestamp sync

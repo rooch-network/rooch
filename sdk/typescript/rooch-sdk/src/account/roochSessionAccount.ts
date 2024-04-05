@@ -14,7 +14,6 @@ import {
   AccountAddress as BCSAccountAddress,
 } from '../generated/runtime/rooch_types/mod'
 import { DEFAULT_MAX_GAS_AMOUNT } from '../constants'
-import { Ed25519Keypair } from '../utils/keypairs'
 
 const SCOPE_LENGTH = 3
 const SCOPE_MODULE_ADDRESSS = 0
@@ -42,10 +41,7 @@ export class RoochSessionAccount implements IAccount {
     this.scopes = scopes
     this.maxInactiveInterval = maxInactiveInterval
     this.localCreateSessionTime = Date.now() / 1000
-    const kp = Ed25519Keypair.deriveKeypair(
-      'nose aspect organ harbor move prepare raven manage lamp consider oil front',
-    )
-    this.sessionAccount = new RoochAccount(this.client, kp)
+    this.sessionAccount = new RoochAccount(this.client)
     this.authInfo = authInfo
   }
 
@@ -158,15 +154,41 @@ export class RoochSessionAccount implements IAccount {
     tyArgs?: TypeTag[],
     opts?: SendRawTransactionOpts,
   ): Promise<string> {
-    return this.sessionAccount.sendTransaction(funcId, args, tyArgs, opts)
+    return this.client.sendRawTransaction({
+      address: this.getAddress(),
+      authorizer: this.getAuthorizer(),
+      funcId,
+      args,
+      tyArgs,
+      opts,
+    })
   }
 
   public async isExpired(): Promise<boolean> {
-    if (this.localCreateSessionTime + this.maxInactiveInterval > Date.now() / 1000) {
-      return Promise.resolve(true)
-    }
+    // if (this.localCreateSessionTime + this.maxInactiveInterval > Date.now() / 1000) {
+    //   return Promise.resolve(true)
+    // }
 
     return this.client.sessionIsExpired(this.account.getAddress(), this.getAuthKey())
+  }
+
+  public async getSessionKey() {
+    const session = this.client.executeViewFunction({
+      funcId: '0x3::session_key::get_session_key',
+      tyArgs: [],
+      args: [
+        {
+          type: 'Address',
+          value: this.getAddress(),
+        },
+        {
+          type: { Vector: 'U8' },
+          value: addressToSeqNumber(this.getAuthKey()),
+        },
+      ],
+    })
+
+    return session
   }
 
   public async querySessionKeys(
@@ -177,18 +199,18 @@ export class RoochSessionAccount implements IAccount {
   }
 
   public async destroy(opts?: SendRawTransactionOpts): Promise<string> {
-    return await this.sendTransaction(
-      '0x3::session_key::remove_session_key_entry',
-      [
+    return await this.client.sendRawTransaction({
+      funcId: '0x3::session_key::remove_session_key_entry',
+      args: [
         {
           type: { Vector: 'U8' },
           value: addressToSeqNumber(this.getAuthKey()),
         },
       ],
-      [],
-      opts || {
-        maxGasAmount: 100000000,
-      },
-    )
+      tyArgs: [],
+      address: this.getAddress(),
+      authorizer: this.account.getAuthorizer(),
+      opts: opts,
+    })
   }
 }

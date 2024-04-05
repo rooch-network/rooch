@@ -25,6 +25,7 @@ module.exports = {
     'out',
     'generated',
     'templates',
+    'grow-rooch-v1',
     'dist',
     'coverage',
     'next-env.d.ts',
