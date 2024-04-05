@@ -17,9 +17,9 @@ export class RoochAccount implements IAccount {
   private roochAddress?: string
   private authorizer?: IAuthorizer
 
-  public constructor(client: RoochClient) {
+  public constructor(client: RoochClient, keyPair?: Ed25519Keypair) {
     this.client = client
-    this.keypair = new Ed25519Keypair()
+    this.keypair = keyPair ?? new Ed25519Keypair()
   }
 
   public getKeypar(): Ed25519Keypair {

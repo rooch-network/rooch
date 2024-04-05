@@ -1,12 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { FunctionId, TypeTag, Arg } from '../types'
+import { FunctionId, TypeTag, Arg, IPage } from '../types'
 import { addressToListTuple, addressToSeqNumber, encodeArg, encodeFunctionCall } from '../utils'
 
 import { RoochAccount } from './roochAccount'
 import { RoochClient } from '../client/roochClient'
-import { SendRawTransactionOpts } from '../client/roochClientTypes'
+import { SendRawTransactionOpts, SessionInfo } from '../client/roochClientTypes'
 import { IAccount } from '../account/interface.ts'
 import { IAuthorizer } from '../auth'
 import {
@@ -136,7 +136,8 @@ export class RoochSessionAccount implements IAccount {
       return se.getBytes()
     })()
 
-    await this.client.sendRawTransaction(transactionPayload)
+    const s = await this.client.sendRawTransaction(transactionPayload)
+    console.log(s)
 
     return this
   }
@@ -190,6 +191,13 @@ export class RoochSessionAccount implements IAccount {
       await this.account.getRoochAddress(),
       await this.getAuthKey(),
     )
+  }
+
+  public async querySessionKeys(
+    cursor: string | null,
+    limit: number,
+  ): Promise<IPage<SessionInfo, string>> {
+    return this.client.querySessionKeys(await this.getRoochAddress(), cursor, limit)
   }
 
   public async destroy(opts?: SendRawTransactionOpts): Promise<string> {
