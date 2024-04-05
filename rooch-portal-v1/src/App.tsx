@@ -21,7 +21,7 @@ function App() {
     <>
       <CacheProvider value={clientSideEmotionCache}>
         <QueryClientProvider client={queryClient}>
-          <RoochClientProvider defaultNetwork={TestNetwork}>
+          <RoochClientProvider network={TestNetwork}>
             <WalletProvider chain={SupportChain.BITCOIN} autoConnect>
               <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
                 <ToastProvider />
