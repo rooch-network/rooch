@@ -4,7 +4,7 @@
 use super::types;
 use crate::address::BitcoinAddress;
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
-use crate::indexer::state::IndexerGlobalState;
+use crate::indexer::state::IndexerObjectState;
 use anyhow::Result;
 use move_core_types::language_storage::StructTag;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
@@ -109,7 +109,7 @@ pub struct UTXOState {
 
 impl UTXOState {
     pub fn new_from_global_state(
-        state: IndexerGlobalState,
+        state: IndexerObjectState,
         utxo: Option<UTXO>,
         owner_bitcoin_address: Option<BitcoinAddress>,
     ) -> Self {

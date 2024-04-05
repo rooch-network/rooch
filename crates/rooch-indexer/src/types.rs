@@ -153,8 +153,9 @@ impl IndexedEvent {
     }
 }
 
+/// Index all Object state, include child object
 #[derive(Debug, Clone)]
-pub struct IndexedGlobalState {
+pub struct IndexedObjectState {
     // The global state key
     pub object_id: ObjectID,
     // The owner of the object
@@ -179,7 +180,7 @@ pub struct IndexedGlobalState {
     pub updated_at: u64,
 }
 
-impl IndexedGlobalState {
+impl IndexedObjectState {
     pub fn new_from_raw_object(
         raw_object: RawObject,
         raw_object_value_json: String,
@@ -187,7 +188,7 @@ impl IndexedGlobalState {
         tx_order: u64,
         state_index: u64,
     ) -> Self {
-        IndexedGlobalState {
+        IndexedObjectState {
             object_id: raw_object.id,
             owner: raw_object.owner,
             flag: raw_object.flag,
@@ -209,16 +210,17 @@ impl IndexedGlobalState {
     }
 }
 
+/// Index all Object dynamic field
 #[derive(Debug, Clone)]
-pub struct IndexedTableState {
-    // The state table handle
-    pub table_handle: ObjectID,
-    // The hex of the table key state
+pub struct IndexedFieldState {
+    // The state object id
+    pub object_id: ObjectID,
+    // The hex of the field key state
     pub key_hex: String,
-    // The key of the table, json format
+    // The key of the field, json format
     // `key` is a key word in SQlite, so use key_str as column name
     pub key_str: String,
-    // The value of the table, json format
+    // The value of the field, json format
     pub value: String,
     // The type tag of the key
     pub key_type: TypeTag,
@@ -234,9 +236,9 @@ pub struct IndexedTableState {
     pub updated_at: u64,
 }
 
-impl IndexedTableState {
+impl IndexedFieldState {
     pub fn new(
-        table_handle: ObjectID,
+        object_id: ObjectID,
         key_hex: String,
         key_state_json: String,
         state_value_json: String,
@@ -245,8 +247,8 @@ impl IndexedTableState {
         tx_order: u64,
         state_index: u64,
     ) -> Self {
-        IndexedTableState {
-            table_handle,
+        IndexedFieldState {
+            object_id,
             key_hex,
             key_str: key_state_json,
             value: state_value_json,

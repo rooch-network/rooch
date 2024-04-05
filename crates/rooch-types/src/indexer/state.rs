@@ -54,7 +54,7 @@ impl IndexerStateID {
 }
 
 #[derive(Clone, Debug)]
-pub struct IndexerGlobalState {
+pub struct IndexerObjectState {
     pub object_id: ObjectID,
     pub owner: AccountAddress,
     pub flag: u8,
@@ -69,8 +69,8 @@ pub struct IndexerGlobalState {
 }
 
 #[derive(Clone, Debug)]
-pub struct IndexerTableState {
-    pub table_handle: ObjectID,
+pub struct IndexerFieldState {
+    pub object_id: ObjectID,
     pub key_hex: String,
     pub key_str: String,
     pub value: String,
@@ -84,7 +84,7 @@ pub struct IndexerTableState {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub enum GlobalStateFilter {
+pub enum ObjectStateFilter {
     /// Query by object type and owner.
     ObjectTypeWithOwner {
         object_type: StructTag,
@@ -98,42 +98,42 @@ pub enum GlobalStateFilter {
     ObjectId(ObjectID),
 }
 
-impl GlobalStateFilter {
-    fn try_matches(&self, item: &IndexerGlobalState) -> Result<bool> {
+impl ObjectStateFilter {
+    fn try_matches(&self, item: &IndexerObjectState) -> Result<bool> {
         Ok(match self {
-            GlobalStateFilter::ObjectTypeWithOwner { object_type, owner } => {
+            ObjectStateFilter::ObjectTypeWithOwner { object_type, owner } => {
                 object_type == &item.object_type && owner == &item.owner
             }
-            GlobalStateFilter::ObjectType(object_type) => object_type == &item.object_type,
-            GlobalStateFilter::Owner(owner) => owner == &item.owner,
-            GlobalStateFilter::ObjectId(object_id) => object_id == &item.object_id,
+            ObjectStateFilter::ObjectType(object_type) => object_type == &item.object_type,
+            ObjectStateFilter::Owner(owner) => owner == &item.owner,
+            ObjectStateFilter::ObjectId(object_id) => object_id == &item.object_id,
         })
     }
 }
 
-impl Filter<IndexerGlobalState> for GlobalStateFilter {
-    fn matches(&self, item: &IndexerGlobalState) -> bool {
+impl Filter<IndexerObjectState> for ObjectStateFilter {
+    fn matches(&self, item: &IndexerObjectState) -> bool {
         self.try_matches(item).unwrap_or_default()
     }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub enum TableStateFilter {
-    /// Query by table handle.
-    TableHandle(ObjectID),
+pub enum FieldStateFilter {
+    /// Query field by object id.
+    ObjectId(ObjectID),
 }
 
-impl TableStateFilter {
-    fn try_matches(&self, item: &IndexerTableState) -> Result<bool> {
+impl FieldStateFilter {
+    fn try_matches(&self, item: &IndexerFieldState) -> Result<bool> {
         Ok(match self {
-            TableStateFilter::TableHandle(table_handle) => table_handle == &item.table_handle,
+            FieldStateFilter::ObjectId(object_id) => object_id == &item.object_id,
         })
     }
 }
 
-impl Filter<IndexerTableState> for TableStateFilter {
-    fn matches(&self, item: &IndexerTableState) -> bool {
+impl Filter<IndexerFieldState> for FieldStateFilter {
+    fn matches(&self, item: &IndexerFieldState) -> bool {
         self.try_matches(item).unwrap_or_default()
     }
 }
@@ -141,14 +141,14 @@ impl Filter<IndexerTableState> for TableStateFilter {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum StateSyncFilter {
-    /// Query by table handle.
-    TableHandle(ObjectID),
+    /// Query by object id.
+    ObjectId(ObjectID),
 }
 
 impl StateSyncFilter {
     fn try_matches(&self, item: &IndexerTableChangeSet) -> Result<bool> {
         Ok(match self {
-            StateSyncFilter::TableHandle(table_handle) => table_handle == &item.table_handle,
+            StateSyncFilter::ObjectId(table_handle) => table_handle == &item.table_handle,
         })
     }
 }

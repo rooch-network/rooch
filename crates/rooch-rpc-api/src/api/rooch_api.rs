@@ -7,11 +7,10 @@ use crate::jsonrpc_types::transaction_view::{TransactionFilterView, TransactionW
 use crate::jsonrpc_types::TxOptions;
 use crate::jsonrpc_types::{
     AccessPathView, AccountAddressView, AnnotatedFunctionResultView, BalanceInfoPageView,
-    BytesView, EventOptions, EventPageView, ExecuteTransactionResponseView, FunctionCallView,
-    GlobalStateFilterView, H256View, IndexerEventPageView, IndexerGlobalStatePageView,
-    IndexerTableChangeSetPageView, IndexerTableStatePageView, StateOptions, StatePageView,
-    StateSyncFilterView, StateView, StrView, StructTagView, TableStateFilterView,
-    TransactionWithInfoPageView,
+    BytesView, EventOptions, EventPageView, ExecuteTransactionResponseView, FieldStateFilterView,
+    FunctionCallView, H256View, IndexerEventPageView, IndexerFieldStatePageView,
+    IndexerObjectStatePageView, ObjectStateFilterView, StateOptions, StatePageView, StateView,
+    StrView, StructTagView, TransactionWithInfoPageView,
 };
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -132,36 +131,64 @@ pub trait RoochAPI {
         descending_order: Option<bool>,
     ) -> RpcResult<IndexerEventPageView>;
 
-    /// Query the global states indexer by state filter
+    /// Query the object states indexer by state filter
+    #[method(name = "queryObjectStates")]
+    async fn query_object_states(
+        &self,
+        filter: ObjectStateFilterView,
+        // exclusive cursor if `Some`, otherwise start from the beginning
+        cursor: Option<IndexerStateID>,
+        limit: Option<StrView<usize>>,
+        descending_order: Option<bool>,
+    ) -> RpcResult<IndexerObjectStatePageView>;
+
+    #[deprecated(note = "please use `queryObjectStates` instead")]
     #[method(name = "queryGlobalStates")]
     async fn query_global_states(
         &self,
-        filter: GlobalStateFilterView,
+        filter: ObjectStateFilterView,
+        cursor: Option<IndexerStateID>,
+        limit: Option<StrView<usize>>,
+        descending_order: Option<bool>,
+    ) -> RpcResult<IndexerObjectStatePageView> {
+        self.query_object_states(filter, cursor, limit, descending_order)
+            .await
+    }
+
+    /// Query the Object field states indexer by state filter
+    #[method(name = "queryFieldStates")]
+    async fn query_field_states(
+        &self,
+        filter: FieldStateFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
         descending_order: Option<bool>,
-    ) -> RpcResult<IndexerGlobalStatePageView>;
+    ) -> RpcResult<IndexerFieldStatePageView>;
 
-    /// Query the table states indexer by state filter
+    #[deprecated(note = "please use `queryFieldStates` instead")]
     #[method(name = "queryTableStates")]
     async fn query_table_states(
         &self,
-        filter: TableStateFilterView,
+        filter: FieldStateFilterView,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
         descending_order: Option<bool>,
-    ) -> RpcResult<IndexerTableStatePageView>;
+    ) -> RpcResult<IndexerFieldStatePageView> {
+        self.query_field_states(filter, cursor, limit, descending_order)
+            .await
+    }
 
-    /// Sync state change sets from indexer
-    #[method(name = "syncStates")]
-    async fn sync_states(
-        &self,
-        filter: Option<StateSyncFilterView>,
-        // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerStateID>,
-        limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
-    ) -> RpcResult<IndexerTableChangeSetPageView>;
+    //TODO we need to redisign the syncStates method
+    // Sync state change sets from indexer
+    // #[method(name = "syncStates")]
+    // async fn sync_states(
+    //     &self,
+    //     filter: Option<StateSyncFilterView>,
+    //     // exclusive cursor if `Some`, otherwise start from the beginning
+    //     cursor: Option<IndexerStateID>,
+    //     limit: Option<StrView<usize>>,
+    //     descending_order: Option<bool>,
+    // ) -> RpcResult<IndexerTableChangeSetPageView>;
 }

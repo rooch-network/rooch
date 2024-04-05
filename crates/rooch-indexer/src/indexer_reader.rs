@@ -1,34 +1,33 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::models::events::StoredEvent;
+use crate::models::states::{StoredFieldState, StoredObjectState, StoredTableChangeSet};
+use crate::models::transactions::StoredTransaction;
+use crate::schema::object_states;
+use crate::schema::{events, field_states, table_change_sets, transactions};
 use crate::types::IndexerResult;
+use crate::utils::format_struct_tag;
 use crate::{
     errors::IndexerError, IndexerStoreMeta, SqliteConnectionConfig, SqliteConnectionPoolConfig,
-    SqlitePoolConnection, INDEXER_EVENTS_TABLE_NAME, INDEXER_GLOBAL_STATES_TABLE_NAME,
-    INDEXER_TABLE_CHANGE_SETS_TABLE_NAME, INDEXER_TABLE_STATES_TABLE_NAME,
+    SqlitePoolConnection, INDEXER_EVENTS_TABLE_NAME, INDEXER_FIELD_STATES_TABLE_NAME,
+    INDEXER_OBJECT_STATES_TABLE_NAME, INDEXER_TABLE_CHANGE_SETS_TABLE_NAME,
     INDEXER_TRANSACTIONS_TABLE_NAME,
 };
 use anyhow::{anyhow, Result};
 use diesel::{
     r2d2::ConnectionManager, Connection, ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection,
 };
-use std::collections::HashMap;
-use std::ops::DerefMut;
-use std::path::PathBuf;
-
-use crate::models::events::StoredEvent;
-use crate::models::states::{StoredGlobalState, StoredTableChangeSet, StoredTableState};
-use crate::models::transactions::StoredTransaction;
-use crate::schema::global_states;
-use crate::schema::{events, table_change_sets, table_states, transactions};
-use crate::utils::format_struct_tag;
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
-    GlobalStateFilter, IndexerGlobalState, IndexerStateID, IndexerTableChangeSet,
-    IndexerTableState, StateSyncFilter, TableStateFilter,
+    FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, IndexerTableChangeSet,
+    ObjectStateFilter, StateSyncFilter,
 };
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::transaction::TransactionWithInfo;
+use std::collections::HashMap;
+use std::ops::DerefMut;
+use std::path::PathBuf;
 
 pub const TX_ORDER_STR: &str = "tx_order";
 pub const TX_HASH_STR: &str = "tx_hash";
@@ -43,7 +42,7 @@ pub const EVENT_INDEX_STR: &str = "event_index";
 pub const EVENT_SEQ_STR: &str = "event_seq";
 pub const EVENT_TYPE_STR: &str = "event_type";
 
-pub const STATE_TABLE_HANDLE_STR: &str = "table_handle";
+pub const STATE_OBJECT_ID_STR: &str = "object_id";
 pub const STATE_INDEX_STR: &str = "state_index";
 pub const STATE_OBJECT_TYPE_STR: &str = "object_type";
 pub const STATE_OWNER_STR: &str = "owner";
@@ -331,13 +330,13 @@ impl IndexerReader {
         Ok(result)
     }
 
-    pub fn query_global_states_with_filter(
+    pub fn query_object_states_with_filter(
         &self,
-        filter: GlobalStateFilter,
+        filter: ObjectStateFilter,
         cursor: Option<IndexerStateID>,
         limit: usize,
         descending_order: bool,
-    ) -> IndexerResult<Vec<IndexerGlobalState>> {
+    ) -> IndexerResult<Vec<IndexerObjectState>> {
         let (tx_order, state_index) = if let Some(cursor) = cursor {
             let IndexerStateID {
                 tx_order,
@@ -346,13 +345,13 @@ impl IndexerReader {
             (tx_order as i64, state_index as i64)
         } else if descending_order {
             let (max_tx_order, state_index): (i64, i64) = self
-                .get_inner_indexer_reader(INDEXER_GLOBAL_STATES_TABLE_NAME)?
+                .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
                 .run_query(|conn| {
-                    global_states::dsl::global_states
-                        .select((global_states::tx_order, global_states::state_index))
+                    object_states::dsl::object_states
+                        .select((object_states::tx_order, object_states::state_index))
                         .order_by((
-                            global_states::tx_order.desc(),
-                            global_states::state_index.desc(),
+                            object_states::tx_order.desc(),
+                            object_states::state_index.desc(),
                         ))
                         .first::<(i64, i64)>(conn)
                 })?;
@@ -362,7 +361,7 @@ impl IndexerReader {
         };
 
         let main_where_clause = match filter {
-            GlobalStateFilter::ObjectTypeWithOwner { object_type, owner } => {
+            ObjectStateFilter::ObjectTypeWithOwner { object_type, owner } => {
                 let object_type_str = format_struct_tag(object_type);
                 format!(
                     "{STATE_OBJECT_TYPE_STR} = \"{}\" AND {STATE_OWNER_STR} = \"{}\"",
@@ -370,14 +369,14 @@ impl IndexerReader {
                     owner.to_hex_literal()
                 )
             }
-            GlobalStateFilter::ObjectType(object_type) => {
+            ObjectStateFilter::ObjectType(object_type) => {
                 let object_type_str = format_struct_tag(object_type);
                 format!("{STATE_OBJECT_TYPE_STR} = \"{}\"", object_type_str)
             }
-            GlobalStateFilter::Owner(owner) => {
+            ObjectStateFilter::Owner(owner) => {
                 format!("{STATE_OWNER_STR} = \"{}\"", owner.to_hex_literal())
             }
-            GlobalStateFilter::ObjectId(object_id) => {
+            ObjectStateFilter::ObjectId(object_id) => {
                 format!("{OBJECT_ID_STR} = \"{}\"", object_id)
             }
         };
@@ -401,7 +400,7 @@ impl IndexerReader {
 
         let query = format!(
             "
-                SELECT * FROM global_states \
+                SELECT * FROM object_states \
                 WHERE {} {} \
                 ORDER BY {} \
                 LIMIT {}
@@ -411,8 +410,8 @@ impl IndexerReader {
 
         tracing::debug!("query global states: {}", query);
         let stored_states = self
-            .get_inner_indexer_reader(INDEXER_GLOBAL_STATES_TABLE_NAME)?
-            .run_query(|conn| diesel::sql_query(query).load::<StoredGlobalState>(conn))?;
+            .get_inner_indexer_reader(INDEXER_OBJECT_STATES_TABLE_NAME)?
+            .run_query(|conn| diesel::sql_query(query).load::<StoredObjectState>(conn))?;
 
         let result = stored_states
             .into_iter()
@@ -425,13 +424,13 @@ impl IndexerReader {
         Ok(result)
     }
 
-    pub fn query_table_states_with_filter(
+    pub fn query_field_states_with_filter(
         &self,
-        filter: TableStateFilter,
+        filter: FieldStateFilter,
         cursor: Option<IndexerStateID>,
         limit: usize,
         descending_order: bool,
-    ) -> IndexerResult<Vec<IndexerTableState>> {
+    ) -> IndexerResult<Vec<IndexerFieldState>> {
         let (tx_order, state_index) = if let Some(cursor) = cursor {
             let IndexerStateID {
                 tx_order,
@@ -440,13 +439,13 @@ impl IndexerReader {
             (tx_order as i64, state_index as i64)
         } else if descending_order {
             let (max_tx_order, state_index): (i64, i64) = self
-                .get_inner_indexer_reader(INDEXER_TABLE_STATES_TABLE_NAME)?
+                .get_inner_indexer_reader(INDEXER_FIELD_STATES_TABLE_NAME)?
                 .run_query(|conn| {
-                    table_states::dsl::table_states
-                        .select((table_states::tx_order, table_states::state_index))
+                    field_states::dsl::field_states
+                        .select((field_states::tx_order, field_states::state_index))
                         .order_by((
-                            table_states::tx_order.desc(),
-                            table_states::state_index.desc(),
+                            field_states::tx_order.desc(),
+                            field_states::state_index.desc(),
                         ))
                         .first::<(i64, i64)>(conn)
                 })?;
@@ -456,8 +455,8 @@ impl IndexerReader {
         };
 
         let main_where_clause = match filter {
-            TableStateFilter::TableHandle(table_handle) => {
-                format!("{STATE_TABLE_HANDLE_STR} = \"{}\"", table_handle)
+            FieldStateFilter::ObjectId(object_id) => {
+                format!("{STATE_OBJECT_ID_STR} = \"{}\"", object_id)
             }
         };
 
@@ -480,7 +479,7 @@ impl IndexerReader {
 
         let query = format!(
             "
-                SELECT * FROM table_states \
+                SELECT * FROM field_states \
                 WHERE {} {} \
                 ORDER BY {} \
                 LIMIT {}
@@ -490,8 +489,8 @@ impl IndexerReader {
 
         tracing::debug!("query table states: {}", query);
         let stored_states = self
-            .get_inner_indexer_reader(INDEXER_TABLE_STATES_TABLE_NAME)?
-            .run_query(|conn| diesel::sql_query(query).load::<StoredTableState>(conn))?;
+            .get_inner_indexer_reader(INDEXER_FIELD_STATES_TABLE_NAME)?
+            .run_query(|conn| diesel::sql_query(query).load::<StoredFieldState>(conn))?;
 
         let result = stored_states
             .into_iter()
@@ -536,8 +535,8 @@ impl IndexerReader {
         };
 
         let main_where_clause_opt = filter.map(|f| match f {
-            StateSyncFilter::TableHandle(table_handle) => {
-                format!("{STATE_TABLE_HANDLE_STR} = \"{}\"", table_handle)
+            StateSyncFilter::ObjectId(object_id) => {
+                format!("{STATE_OBJECT_ID_STR} = \"{}\"", object_id)
             }
         });
         let cursor_clause = if descending_order {
