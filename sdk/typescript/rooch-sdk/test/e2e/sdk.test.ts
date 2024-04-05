@@ -299,7 +299,9 @@ describe('SDK', () => {
         'fiber tube acid imitate frost coffee choose crowd grass topple donkey submit',
       )
 
-      const sessionAccount = await RoochSessionAccount.CREATE(client, new RoochAccount(client, kp), ['0x3::empty::empty'], 10000)
+      const account = new RoochAccount(client, kp)
+
+      const sessionAccount = await RoochSessionAccount.CREATE(client, account, ['0x3::empty::empty'], 1000)
       expect(sessionAccount).toBeDefined()
 
       // view session Keys
@@ -361,7 +363,9 @@ describe('SDK', () => {
         'fiber tube acid imitate frost coffee choose crowd grass topple donkey submit',
       )
 
-      const sessionAccount = await RoochSessionAccount.CREATE(client, new RoochAccount(client, kp), ['0x3::empty::empty'], 100)
+      const account = new RoochAccount(client, kp)
+
+      const sessionAccount = await RoochSessionAccount.CREATE(client, account, ['0x3::empty::empty'], 100)
       expect(sessionAccount).toBeDefined()
 
       // view session Keys

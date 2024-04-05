@@ -147,7 +147,7 @@ export class RoochSessionAccount implements IAccount {
   }
 
   getAddress(): string | undefined {
-    return undefined
+    return this.account.getAddress()
   }
 
   getRoochAddress(): Promise<string> {

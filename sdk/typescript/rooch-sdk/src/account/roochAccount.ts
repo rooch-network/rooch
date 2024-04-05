@@ -27,7 +27,7 @@ export class RoochAccount implements IAccount {
   }
 
   public getAddress(): string | undefined {
-    return undefined
+    return this.roochAddress
   }
 
   public getRoochAddress(): Promise<string> {
