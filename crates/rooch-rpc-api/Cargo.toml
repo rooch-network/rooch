@@ -38,7 +38,6 @@ bigdecimal = { workspace = true }
 fixed-hash = { workspace = true }
 uint = { workspace = true }
 bytes = { workspace = true }
-open-fastrlp = { workspace = true }
 const-hex = { workspace = true }
 bitcoin = { workspace = true }
 bitcoincore-rpc = { workspace = true }
