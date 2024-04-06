@@ -11,18 +11,18 @@ import {
   bcs,
   EventOptions,
   EventPageView,
-  GlobalStateView,
   InscriptionStatePageView,
   EventWithIndexerPageView,
   StateOptions,
   StatePageView,
   StateView,
-  TableStateView,
   TransactionWithInfoPageView,
   TransactionWithInfoView,
   UTXOStatePageView,
   BalanceInfoPageView,
   IPage,
+  ObjectStateView,
+  FieldStateView,
 } from '../types'
 import {
   addressToListTuple,
@@ -39,9 +39,7 @@ import {
   ExecuteViewFunctionParams,
   GetEventsParams,
   GetTransactionsParams,
-  QueryGlobalStatesParams,
   QueryInscriptionsParams,
-  QueryTableStatesParams,
   QueryUTXOsParams,
   ResoleRoochAddressParams,
   ListStatesParams,
@@ -51,6 +49,8 @@ import {
   GetBalancesParams,
   SessionInfo,
   SendTransactionDataParams,
+  QueryObjectStatesParams,
+  QueryFieldStatesParams,
 } from './roochClientTypes'
 
 import {
@@ -252,7 +252,6 @@ export class RoochClient {
     return await this.client.rooch_getStates(access_path, { decode: true } as StateOptions)
   }
 
-  // TODO: bug? next_cursor The true type is string
   async listStates(params: ListStatesParams): Promise<StatePageView> {
     return await this.client.rooch_listStates(
       params.accessPath,
@@ -264,7 +263,7 @@ export class RoochClient {
     )
   }
 
-  async queryGlobalStates(params: QueryGlobalStatesParams): Promise<GlobalStateView> {
+  async queryGlobalStates(params: QueryObjectStatesParams): Promise<ObjectStateView> {
     return await this.client.rooch_queryGlobalStates(
       params.filter,
       params.cursor as any,
@@ -273,7 +272,25 @@ export class RoochClient {
     )
   }
 
-  async queryTableStates(params: QueryTableStatesParams): Promise<TableStateView> {
+  async queryObjectStates(params: QueryObjectStatesParams): Promise<ObjectStateView> {
+    return await this.client.rooch_queryObjectStates(
+      params.filter,
+      params.cursor as any,
+      params.limit.toString(),
+      params.descending_order,
+    )
+  }
+
+  async queryFieldStates(params: QueryFieldStatesParams): Promise<FieldStateView> {
+    return await this.client.rooch_queryFieldStates(
+      params.filter,
+      params.cursor as any,
+      params.limit.toString(),
+      params.descending_order,
+    )
+  }
+
+  async queryTableStates(params: QueryFieldStatesParams): Promise<FieldStateView> {
     return await this.client.rooch_queryTableStates(
       params.filter,
       params.cursor as any,

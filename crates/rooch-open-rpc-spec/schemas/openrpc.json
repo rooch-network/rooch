@@ -632,43 +632,6 @@
           "$ref": "#/components/schemas/primitive_types::H256"
         }
       }
-    },
-    {
-      "name": "rooch_syncStates",
-      "description": "Sync state change sets from indexer",
-      "params": [
-        {
-          "name": "filter",
-          "schema": {
-            "$ref": "#/components/schemas/StateSyncFilterView"
-          }
-        },
-        {
-          "name": "cursor",
-          "schema": {
-            "$ref": "#/components/schemas/IndexerStateID"
-          }
-        },
-        {
-          "name": "limit",
-          "schema": {
-            "$ref": "#/components/schemas/usize"
-          }
-        },
-        {
-          "name": "descending_order",
-          "schema": {
-            "type": "boolean"
-          }
-        }
-      ],
-      "result": {
-        "name": "IndexerTableChangeSetPageView",
-        "required": true,
-        "schema": {
-          "$ref": "#/components/schemas/PageView_for_IndexerTableChangeSetView_and_IndexerStateID"
-        }
-      }
     }
   ],
   "components": {
@@ -845,21 +808,6 @@
             "additionalProperties": {
               "type": "string"
             }
-          }
-        }
-      },
-      "DynamicFieldView": {
-        "type": "object",
-        "required": [
-          "k",
-          "v"
-        ],
-        "properties": {
-          "k": {
-            "$ref": "#/components/schemas/KeyStateView"
-          },
-          "v": {
-            "$ref": "#/components/schemas/OpView_for_StateView"
           }
         }
       },
@@ -1129,10 +1077,10 @@
             "description": "Query by object id.",
             "type": "object",
             "required": [
-              "object"
+              "object_id"
             ],
             "properties": {
-              "object": {
+              "object_id": {
                 "$ref": "#/components/schemas/ObjectID"
               }
             },
@@ -1379,39 +1327,6 @@
             "type": "integer",
             "format": "uint64",
             "minimum": 0.0
-          },
-          "tx_order": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          }
-        }
-      },
-      "IndexerTableChangeSetView": {
-        "type": "object",
-        "required": [
-          "created_at",
-          "state_index",
-          "table_change_set",
-          "table_handle",
-          "tx_order"
-        ],
-        "properties": {
-          "created_at": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "state_index": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "table_change_set": {
-            "$ref": "#/components/schemas/TableChangeSetView"
-          },
-          "table_handle": {
-            "$ref": "#/components/schemas/ObjectID"
           },
           "tx_order": {
             "type": "integer",
@@ -2271,35 +2186,6 @@
           }
         }
       },
-      "PageView_for_IndexerTableChangeSetView_and_IndexerStateID": {
-        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
-        "type": "object",
-        "required": [
-          "data",
-          "has_next_page"
-        ],
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/IndexerTableChangeSetView"
-            }
-          },
-          "has_next_page": {
-            "type": "boolean"
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/IndexerStateID"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        }
-      },
       "PageView_for_InscriptionStateView_and_IndexerStateID": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
@@ -2499,23 +2385,6 @@
           }
         }
       },
-      "StateSyncFilterView": {
-        "oneOf": [
-          {
-            "description": "Query by table handle.",
-            "type": "object",
-            "required": [
-              "table_handle"
-            ],
-            "properties": {
-              "table_handle": {
-                "$ref": "#/components/schemas/ObjectID"
-              }
-            },
-            "additionalProperties": false
-          }
-        ]
-      },
       "StateView": {
         "type": "object",
         "required": [
@@ -2548,50 +2417,6 @@
           },
           "value_type": {
             "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
-          }
-        }
-      },
-      "TableChangeSetView": {
-        "type": "object",
-        "required": [
-          "changes",
-          "new_tables",
-          "removed_tables"
-        ],
-        "properties": {
-          "changes": {
-            "type": "object",
-            "additionalProperties": {
-              "$ref": "#/components/schemas/TableChangeView"
-            }
-          },
-          "new_tables": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ObjectID"
-            },
-            "uniqueItems": true
-          },
-          "removed_tables": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ObjectID"
-            },
-            "uniqueItems": true
-          }
-        }
-      },
-      "TableChangeView": {
-        "type": "object",
-        "required": [
-          "entries"
-        ],
-        "properties": {
-          "entries": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DynamicFieldView"
-            }
           }
         }
       },

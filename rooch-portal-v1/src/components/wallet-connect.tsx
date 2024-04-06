@@ -32,7 +32,7 @@ export const WalletConnect = () => {
   const { mutateAsync: connectWallet } = useConnectWallet()
   const account = useWalletStore((state) => state.currentAccount)
   const [currentWallet, setCurrentWallet] = useState<BaseWallet | null>(null)
-  const wallets = useWallets().filter((wallet) => wallet.isSupportChain(SupportChain.BITCOIN))
+  const wallets = useWallets().filter((wallet) => wallet.getChain() === SupportChain.BITCOIN)
 
   // ** Connect wallet
   const handleConnectWallet = () => {

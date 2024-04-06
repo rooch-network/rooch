@@ -6,12 +6,12 @@ import { RoochMultiChainID } from '../constants'
 import {
   Arg,
   FunctionId,
-  GlobalStateFilterView,
   IndexerStateID,
   InscriptionFilterView,
   RoochAccountAddress,
-  TableStateFilterView,
   TransactionFilterView,
+  ObjectStateFilterView,
+  FieldStateFilterView,
   TypeTag,
   u64,
   usize,
@@ -62,16 +62,16 @@ export type ListStatesParams = {
   limit: number
 }
 
-export type QueryGlobalStatesParams = {
-  filter: GlobalStateFilterView
+export type QueryObjectStatesParams = {
+  filter: ObjectStateFilterView
   cursor: IndexerStateID | null
   limit: number
   descending_order: boolean
 }
 
-export type QueryTableStatesParams = {
-  filter: TableStateFilterView
-  cursor?: IndexerStateID | null
+export type QueryFieldStatesParams = {
+  filter: FieldStateFilterView
+  cursor: IndexerStateID | null
   limit: number
   descending_order: boolean
 }
