@@ -2,12 +2,14 @@ import toast from 'react-hot-toast'
 import { Copy, RotateCcw } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar } from '@/components/ui/avatar'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 
 import { formatAddress } from '@/utils/format'
 import { useWalletStore } from '@roochnetwork/rooch-sdk-kit'
 import { useNavigate } from 'react-router-dom'
+
+import Jazzicon, { jsNumberForAddress } from 'react-jazzicon'
 
 export const ProfileCard = () => {
   const navigate = useNavigate()
@@ -54,7 +56,6 @@ export const ProfileCard = () => {
             <Button
               variant="ghost"
               size="icon"
-              // TODO: Improvement: only refresh the profile card
               onClick={handleRefreshPage}
               className="rounded-full h-8 w-8 hover:bg-transparent/15 transition-all"
             >
@@ -70,9 +71,11 @@ export const ProfileCard = () => {
       </CardContent>
       <CardFooter className="flex justify-between relative pb-8 md:pb-12 px-4 md:px-6 dark:bg-primary-foreground h-full">
         <div className="absolute">
-          <Avatar className="w-12 h-12 md:w-20 md:h-20">
-            <AvatarImage src="https://github.com/shadcn.png" alt="Logic" />
-            <AvatarFallback className="text-xl">LO</AvatarFallback>
+          <Avatar className="hidden md:inline">
+            <Jazzicon diameter={80} seed={jsNumberForAddress(account?.address as string)} />
+          </Avatar>
+          <Avatar className="inline md:hidden">
+            <Jazzicon diameter={55} seed={jsNumberForAddress(account?.address as string)} />
           </Avatar>
         </div>
         <div className="absolute top-0 right-4 md:top-2 md:right-6">
