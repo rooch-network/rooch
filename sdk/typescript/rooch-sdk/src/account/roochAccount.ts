@@ -14,27 +14,24 @@ import { IAccount } from '../account/interface'
 export class RoochAccount implements IAccount {
   private readonly keypair: Ed25519Keypair
   private readonly client: RoochClient
-  private roochAddress?: string
+  private address?: string
   private authorizer?: IAuthorizer
 
-  public constructor(client: RoochClient) {
+  public constructor(client: RoochClient, keyPair?: Ed25519Keypair) {
     this.client = client
-    this.keypair = new Ed25519Keypair()
+    this.keypair = keyPair ?? Ed25519Keypair.generate()
   }
 
   public getKeypar(): Ed25519Keypair {
     return this.keypair
   }
 
-  public getAddress(): string | undefined {
-    return undefined
-  }
-
-  public getRoochAddress(): Promise<string> {
-    if (!this.roochAddress) {
-      this.roochAddress = this.keypair.getPublicKey().toRoochAddress()
+  public getAddress(): string {
+    if (!this.address) {
+      this.address = this.keypair.getPublicKey().toRoochAddress()
     }
-    return Promise.resolve(this.roochAddress)
+
+    return this.address
   }
 
   public getAuthorizer(): IAuthorizer {
@@ -47,12 +44,12 @@ export class RoochAccount implements IAccount {
 
   async sendTransaction(
     funcId: FunctionId,
-    args: Arg[],
-    tyArgs: TypeTag[],
-    opts: SendRawTransactionOpts,
+    args?: Arg[],
+    tyArgs?: TypeTag[],
+    opts?: SendRawTransactionOpts,
   ): Promise<string> {
     return this.client.sendRawTransaction({
-      address: await this.getRoochAddress(),
+      address: this.getAddress(),
       authorizer: this.getAuthorizer(),
       funcId,
       args,
@@ -63,14 +60,14 @@ export class RoochAccount implements IAccount {
 
   async getBalance(coinType: string): Promise<BalanceInfoView> {
     return this.client.getBalance({
-      address: await this.getRoochAddress(),
+      address: this.getAddress(),
       coinType,
     })
   }
 
   async getBalances(cursor: string, limit: string): Promise<BalanceInfoPageView> {
     return this.client.getBalances({
-      address: await this.getRoochAddress(),
+      address: this.getAddress(),
       cursor,
       limit,
     })

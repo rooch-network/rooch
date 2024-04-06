@@ -177,7 +177,7 @@ export class RoochClient {
     if (
       typeof params === 'object' &&
       params !== null &&
-      'authenticator' in params &&
+      'authorizer' in params &&
       'data' in params
     ) {
       const { data, authorizer } = params as SendTransactionDataParams
@@ -347,7 +347,6 @@ export class RoochClient {
     return 0
   }
 
-  // @ts-ignore
   /**
    * Query account's sessionKey
    *
@@ -361,12 +360,12 @@ export class RoochClient {
     limit: number,
   ): Promise<IPage<SessionInfo, string>> {
     const accessPath = `/resource/${address}/0x3::session_key::SessionKeys`
-    const state = await this.getStates(accessPath)
+    const states = await this.getStates(accessPath)
 
-    if (!state) {
+    if (!states || (Array.isArray(states) && states.length === 0)) {
       throw new Error('not found state')
     }
-    const stateView = state as any
+    const stateView = states as any
 
     const tableId = stateView[0].decoded_value.value.keys.value.handle.value.id
 

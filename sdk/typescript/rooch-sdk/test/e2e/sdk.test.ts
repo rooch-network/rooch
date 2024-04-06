@@ -6,11 +6,11 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import {
   RoochClient,
   Ed25519Keypair,
-  PrivateKeyAuth,
-  Account,
+  RoochAccount,
   addressToSeqNumber,
-  bcsTypes,
+  bcs,
   LocalNetwork,
+  RoochSessionAccount,
 } from '../../src'
 import { RoochServer } from './servers/rooch-server'
 import { RoochCli } from './cli/rooch-cli'
@@ -78,7 +78,7 @@ describe('SDK', () => {
 
       const multiChainIDEther = 60
       const ethAddress = '0xd33293B247A74f9d49c1F6253d909d51242562De'
-      const ma = new bcsTypes.MultiChainAddress(
+      const ma = new bcs.MultiChainAddress(
         BigInt(multiChainIDEther),
         addressToSeqNumber(ethAddress),
       )
@@ -106,57 +106,25 @@ describe('SDK', () => {
     })
   })
 
-  describe('#runFunction', () => {
+  describe('#sendTransaction', () => {
     it('call function with private key auth should be ok', async () => {
       const client = new RoochClient(LocalNetwork)
 
       const kp = Ed25519Keypair.deriveKeypair(
         'nose aspect organ harbor move prepare raven manage lamp consider oil front',
       )
-      const roochAddress = kp.getPublicKey().toRoochAddress()
-      const authorizer = new PrivateKeyAuth(kp)
-
-      const account = new Account(client, roochAddress, authorizer)
+      const account = new RoochAccount(client, kp)
       expect(account).toBeDefined()
 
-      const tx = await account.runFunction(
+      const tx = await account.sendTransaction(
         '0x3::account::create_account_entry',
-        [],
         [
           {
             type: 'Address',
-            value: roochAddress,
+            value: account.getAddress(),
           },
         ],
-        {
-          maxGasAmount: 100000000,
-        },
-      )
-
-      expect(tx).toBeDefined()
-    })
-
-    it('call function with struct be ok', async () => {
-      const client = new RoochClient(LocalNetwork)
-
-      const kp = Ed25519Keypair.deriveKeypair(
-        'nose aspect organ harbor move prepare raven manage lamp consider oil front',
-      )
-      const roochAddress = kp.getPublicKey().toRoochAddress()
-      const authorizer = new PrivateKeyAuth(kp)
-
-      const account = new Account(client, roochAddress, authorizer)
-      expect(account).toBeDefined()
-
-      const tx = await account.runFunction(
-        '0x3::account::create_account_entry',
         [],
-        [
-          {
-            type: 'Address',
-            value: roochAddress,
-          },
-        ],
         {
           maxGasAmount: 100000000,
         },
@@ -171,21 +139,19 @@ describe('SDK', () => {
       const kp = Ed25519Keypair.deriveKeypair(
         'nose aspect organ harbor move prepare raven manage lamp consider oil front',
       )
-      const roochAddress = kp.getPublicKey().toRoochAddress()
-      const authorizer = new PrivateKeyAuth(kp)
 
-      const account = new Account(client, roochAddress, authorizer)
+      const account = new RoochAccount(client, kp)
       expect(account).toBeDefined()
 
-      const tx = await account.runFunction(
+      const tx = await account.sendTransaction(
         `${defaultAddress}::entry_function::emit_object_id`,
-        [],
         [
           {
             type: 'ObjectID',
             value: '0x3134',
           },
         ],
+        [],
         {
           maxGasAmount: 2000000,
         },
@@ -200,15 +166,12 @@ describe('SDK', () => {
       const kp = Ed25519Keypair.deriveKeypair(
         'nose aspect organ harbor move prepare raven manage lamp consider oil front',
       )
-      const roochAddress = kp.getPublicKey().toRoochAddress()
-      const authorizer = new PrivateKeyAuth(kp)
 
-      const account = new Account(client, roochAddress, authorizer)
+      const account = new RoochAccount(client, kp)
       expect(account).toBeDefined()
 
-      const tx = await account.runFunction(
+      const tx = await account.sendTransaction(
         `${defaultAddress}::entry_function::emit_object`,
-        [],
         [
           {
             type: 'Object',
@@ -219,6 +182,7 @@ describe('SDK', () => {
             },
           },
         ],
+        [],
         {
           maxGasAmount: 2000000,
         },
@@ -233,21 +197,19 @@ describe('SDK', () => {
       const kp = Ed25519Keypair.deriveKeypair(
         'nose aspect organ harbor move prepare raven manage lamp consider oil front',
       )
-      const roochAddress = kp.getPublicKey().toRoochAddress()
-      const authorizer = new PrivateKeyAuth(kp)
 
-      const account = new Account(client, roochAddress, authorizer)
+      const account = new RoochAccount(client, kp)
       expect(account).toBeDefined()
 
-      const tx = await account.runFunction(
+      const tx = await account.sendTransaction(
         `${defaultAddress}::entry_function::emit_vec_u8`,
-        [],
         [
           {
             type: 'Raw',
             value: arrayify('0xffff'),
           },
         ],
+        [],
         {
           maxGasAmount: 2000000,
         },
@@ -260,15 +222,12 @@ describe('SDK', () => {
       const client = new RoochClient(LocalNetwork)
 
       const kp = Ed25519Keypair.generate()
-      const roochAddress = kp.getPublicKey().toRoochAddress()
-      const authorizer = new PrivateKeyAuth(kp)
 
-      const account = new Account(client, roochAddress, authorizer)
+      const account = new RoochAccount(client, kp)
       expect(account).toBeDefined()
 
-      const tx = await account.runFunction(
+      const tx = await account.sendTransaction(
         `${defaultAddress}::fixed_supply_coin::faucet`,
-        [],
         [
           {
             type: 'Object',
@@ -279,6 +238,7 @@ describe('SDK', () => {
             },
           },
         ],
+        [],
         {
           maxGasAmount: 200000000,
         },
@@ -286,34 +246,30 @@ describe('SDK', () => {
 
       expect(tx).toBeDefined()
 
-      const fscBalance = await account.coinBalance(`${defaultAddress}::fixed_supply_coin::FSC`)
-      expect(fscBalance).toBe(BigInt(10000))
+      const fscBalance = await account.getBalance(`${defaultAddress}::fixed_supply_coin::FSC`)
+      expect(fscBalance.balance).toBe('10000')
     })
   })
 
   describe('#getTransactions', () => {
     it('get transaction by index should be ok', async () => {
-      /*
       const client = new RoochClient()
 
       const kp = Ed25519Keypair.deriveKeypair(
         'nose aspect organ harbor move prepare raven manage lamp consider oil front',
       )
-      const roochAddress = kp.getPublicKey().toRoochAddress()
-      const authorizer = new PrivateKeyAuth(kp)
-
-      const account = new Account(client, roochAddress, authorizer)
+      const account = new RoochAccount(client, kp)
       expect(account).toBeDefined()
 
-      const tx = await account.runFunction(
+      const tx = await account.sendTransaction(
         '0x3::account::create_account_entry',
-        [],
         [
           {
             type: 'Address',
-            value: roochAddress,
+            value: account.getAddress(),
           },
         ],
+        [],
         {
           maxGasAmount: 2000000,
         },
@@ -321,9 +277,8 @@ describe('SDK', () => {
 
       expect(tx).toBeDefined()
 
-      const result = client.getTransactionsByHash([tx])
+      const result = client.getTransactionsByHashes([tx])
       expect(result).toBeDefined()
-      */
     })
   })
 
@@ -335,51 +290,25 @@ describe('SDK', () => {
     })
   })
 
-  describe('#sessionKey', () => {
-    it('Create session account by registerSessionKey should be ok', async () => {
+  describe('#sessionAccount', () => {
+    it('Create session account should be ok', async () => {
       const client = new RoochClient(LocalNetwork)
 
-      const kp = Ed25519Keypair.deriveKeypair(
-        'fiber tube acid imitate frost coffee choose crowd grass topple donkey submit',
-      )
-      const roochAddress = kp.getPublicKey().toRoochAddress()
-      const authorizer = new PrivateKeyAuth(kp)
-
-      const account = new Account(client, roochAddress, authorizer)
-      expect(account).toBeDefined()
-
-      // create session account
-      const kp2 = Ed25519Keypair.generate()
-      await account.registerSessionKey(
-        kp2.getPublicKey().toRoochAddress(),
+      const account = new RoochAccount(client)
+      const sessionAccount = await RoochSessionAccount.CREATE(
+        client,
+        account,
         ['0x3::empty::empty'],
         100,
       )
-      const auth = new PrivateKeyAuth(kp2)
-      const sessionAccount = new Account(client, roochAddress, auth)
+      expect(sessionAccount).toBeDefined()
 
-      // view session Keys
-      const sessionKey = kp2.getPublicKey().toRoochAddress()
-      const session = await client.executeViewFunction({
-        funcId: '0x3::session_key::get_session_key',
-        tyArgs: [],
-        args: [
-          {
-            type: 'Address',
-            value: roochAddress,
-          },
-          {
-            type: { Vector: 'U8' },
-            value: addressToSeqNumber(sessionKey),
-          },
-        ],
-      })
+      // view session Key
+      const session = await sessionAccount.getSessionKey()
       expect(session).toBeDefined()
 
       // run function with sessoin key
-      const tx = await sessionAccount.runFunction('0x3::empty::empty', [], [], {
-        maxGasAmount: 200000000,
-      })
+      const tx = await sessionAccount.sendTransaction('0x3::empty::empty', [], [])
 
       expect(tx).toBeDefined()
     })
@@ -390,30 +319,21 @@ describe('SDK', () => {
       const kp = Ed25519Keypair.deriveKeypair(
         'fiber tube acid imitate frost coffee choose crowd grass topple donkey submit',
       )
-      const roochAddress = kp.getPublicKey().toRoochAddress()
-      const authorizer = new PrivateKeyAuth(kp)
 
-      const account = new Account(client, roochAddress, authorizer)
-      expect(account).toBeDefined()
-
-      // create session account
-      const kp2 = Ed25519Keypair.generate()
-      await account.registerSessionKey(
-        kp2.getPublicKey().toRoochAddress(),
+      const sessionAccount = await RoochSessionAccount.CREATE(
+        client,
+        new RoochAccount(client, kp),
         ['0x3::empty::empty'],
         100,
       )
-      const auth = new PrivateKeyAuth(kp2)
-      const sessionAccount = new Account(client, roochAddress, auth)
+      expect(sessionAccount).toBeDefined()
 
       // check session key expired
-      const expired = await account.isSessionKeyExpired(kp2.getPublicKey().toRoochAddress())
+      const expired = await sessionAccount.isExpired()
       expect(expired).toBeFalsy()
 
-      // run function with sessoin key
-      const tx = await sessionAccount.runFunction('0x3::empty::empty', [], [], {
-        maxGasAmount: 200000000,
-      })
+      // run function with session
+      const tx = await sessionAccount.sendTransaction('0x3::empty::empty', [], [])
 
       expect(tx).toBeDefined()
     })
@@ -421,109 +341,45 @@ describe('SDK', () => {
     it('Remove session key should be ok', async () => {
       const client = new RoochClient(LocalNetwork)
 
-      const kp = Ed25519Keypair.deriveKeypair(
-        'fiber tube acid imitate frost coffee choose crowd grass topple donkey submit',
-      )
-      const roochAddress = kp.getPublicKey().toRoochAddress()
-      const authorizer = new PrivateKeyAuth(kp)
-
-      const account = new Account(client, roochAddress, authorizer)
-      expect(account).toBeDefined()
-
-      // create session account
-      const kp2 = Ed25519Keypair.generate()
-      await account.registerSessionKey(
-        kp2.getPublicKey().toRoochAddress(),
+      // create session key
+      const account = new RoochAccount(client)
+      const sessionAccount = await RoochSessionAccount.CREATE(
+        client,
+        account,
         ['0x3::empty::empty'],
         100,
       )
-
-      // view session Keys
-      const sessionKey = kp2.getPublicKey().toRoochAddress()
-      const session = await client.executeViewFunction({
-        funcId: '0x3::session_key::get_session_key',
-        tyArgs: [],
-        args: [
-          {
-            type: 'Address',
-            value: roochAddress,
-          },
-          {
-            type: { Vector: 'U8' },
-            value: addressToSeqNumber(sessionKey),
-          },
-        ],
-      })
-      expect(session).toBeDefined()
-      expect(session.return_values![0].value.value).not.toBe('0x00')
-
-      // run function with sessoin key
-      const tx = await account.removeSessionKey(sessionKey)
-      expect(tx).toBeDefined()
-
-      // view session Keys
-      const session2 = await client.executeViewFunction({
-        funcId: '0x3::session_key::get_session_key',
-        tyArgs: [],
-        args: [
-          {
-            type: 'Address',
-            value: roochAddress,
-          },
-          {
-            type: { Vector: 'U8' },
-            value: addressToSeqNumber(sessionKey),
-          },
-        ],
-      })
-
-      expect(session2).toBeDefined()
-      expect(session2.return_values![0].value.value).toBe('0x00')
-    })
-
-    it('Create session account by createSessionAccount should be ok', async () => {
-      const client = new RoochClient(LocalNetwork)
-
-      const kp = Ed25519Keypair.generate()
-      const roochAddress = kp.getPublicKey().toRoochAddress()
-      const authorizer = new PrivateKeyAuth(kp)
-
-      const account = new Account(client, roochAddress, authorizer)
-      expect(account).toBeDefined()
-
-      // create session account
-      const sessionAccount = await account.createSessionAccount(['0x3::empty::empty'], 100)
       expect(sessionAccount).toBeDefined()
 
-      // run function with sessoin key
-      const tx = await sessionAccount.runFunction('0x3::empty::empty', [], [], {
-        maxGasAmount: 200000000,
-      })
+      // view session key
+      const sessionKey = await sessionAccount.getSessionKey()
+      expect(sessionKey).toBeDefined()
+      expect(sessionKey.return_values![0].value.value).not.toBe('0x00')
 
+      // destroy session
+      const tx = await sessionAccount.destroy()
       expect(tx).toBeDefined()
+
+      // view session key
+      const sessionKey2 = await sessionAccount.getSessionKey()
+      expect(sessionKey2).toBeDefined()
+      expect(sessionKey2.return_values![0].value.value).toBe('0x00')
     })
 
     it('Create session account with multi scopes should be ok', async () => {
       const client = new RoochClient(LocalNetwork)
 
-      const kp = Ed25519Keypair.generate()
-      const roochAddress = kp.getPublicKey().toRoochAddress()
-      const authorizer = new PrivateKeyAuth(kp)
-
-      const account = new Account(client, roochAddress, authorizer)
-      expect(account).toBeDefined()
-
-      // create session account
-      const sessionAccount = await account.createSessionAccount(
+      const account = new RoochAccount(client)
+      const sessionAccount = await RoochSessionAccount.CREATE(
+        client,
+        account,
         ['0x3::empty::empty', '0x1::*::*'],
         100,
       )
       expect(sessionAccount).toBeDefined()
 
-      // run function with sessoin key
-      const tx = await sessionAccount.runFunction('0x3::empty::empty', [], [], {
-        maxGasAmount: 200000000,
-      })
+      // run function with session
+      const tx = await sessionAccount.sendTransaction('0x3::empty::empty', [], [])
 
       expect(tx).toBeDefined()
     })
@@ -531,41 +387,40 @@ describe('SDK', () => {
     it('Session account runFunction out of score should fail', async () => {
       const client = new RoochClient(LocalNetwork)
 
-      const kp = Ed25519Keypair.generate()
-      const roochAddress = kp.getPublicKey().toRoochAddress()
-      const authorizer = new PrivateKeyAuth(kp)
-
-      const account = new Account(client, roochAddress, authorizer)
-      expect(account).toBeDefined()
-
-      // create session account
-      const sessionAccount = await account.createSessionAccount(['0x2::account::*'], 100)
+      const account = new RoochAccount(client)
+      const sessionAccount = await RoochSessionAccount.CREATE(
+        client,
+        account,
+        ['0x2::account::*'],
+        100,
+      )
       expect(sessionAccount).toBeDefined()
+
+      try {
+        const tx = await sessionAccount.sendTransaction('0x3::empty::empty', [], [])
+        expect(tx).toBeUndefined()
+      } catch (e) {
+        expect(e).toBeDefined()
+      }
     })
 
     it('Query session keys should be ok', async () => {
       const client = new RoochClient(LocalNetwork)
 
-      const kp = Ed25519Keypair.generate()
-      const roochAddress = kp.getPublicKey().toRoochAddress()
-      const authorizer = new PrivateKeyAuth(kp)
-
-      const account = new Account(client, roochAddress, authorizer)
-      expect(account).toBeDefined()
-
-      //TODO for loop to check the timestamp is updated, or wait for timestamp sync when start rooch server
-      // wait timestamp sync
-      await new Promise((resolve) => setTimeout(resolve, 10000))
-
-      // create session account
-      const sessionAccount = await account.createSessionAccount(
+      const account = new RoochAccount(client)
+      const sessionAccount = await RoochSessionAccount.CREATE(
+        client,
+        account,
         ['0x3::empty::empty', '0x1::*::*'],
         100,
       )
       expect(sessionAccount).toBeDefined()
 
+      // wait timestamp sync
+      await new Promise((resolve) => setTimeout(resolve, 10000))
+
       // query session Keys
-      const page = await account.querySessionKeys(null, 10)
+      const page = await sessionAccount.querySessionKeys(null, 10)
       expect(page).toBeDefined()
       expect(page.hasNextPage).toBeFalsy()
       expect(page.nextCursor).toBeDefined()
