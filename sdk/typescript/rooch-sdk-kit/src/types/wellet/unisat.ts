@@ -33,9 +33,9 @@ export class UniSatWallet extends BitcoinWallet {
     const walletAccounts = accounts.map((address, index) => {
       if (index === 0) {
         // unisat only supports the current account to get publicKey
-        return new WalletAccount(this.getChain(), this, address, this.client, publicKey)
+        return new WalletAccount(this.client, this.getChain(), address, this, publicKey)
       } else {
-        return new WalletAccount(this.getChain(), this, address, this.client)
+        return new WalletAccount(this.client, this.getChain(), address, this)
       }
     })
 
