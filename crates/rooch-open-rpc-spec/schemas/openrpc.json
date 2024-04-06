@@ -426,14 +426,14 @@
       }
     },
     {
-      "name": "rooch_queryGlobalStates",
-      "description": "Query the global states indexer by state filter",
+      "name": "rooch_queryFieldStates",
+      "description": "Query the Object field states indexer by state filter",
       "params": [
         {
           "name": "filter",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/GlobalStateFilterView"
+            "$ref": "#/components/schemas/FieldStateFilterView"
           }
         },
         {
@@ -456,22 +456,96 @@
         }
       ],
       "result": {
-        "name": "IndexerGlobalStatePageView",
+        "name": "IndexerFieldStatePageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_IndexerGlobalStateView_and_IndexerStateID"
+          "$ref": "#/components/schemas/PageView_for_IndexerFieldStateView_and_IndexerStateID"
+        }
+      }
+    },
+    {
+      "name": "rooch_queryGlobalStates",
+      "params": [
+        {
+          "name": "filter",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ObjectStateFilterView"
+          }
+        },
+        {
+          "name": "cursor",
+          "schema": {
+            "$ref": "#/components/schemas/IndexerStateID"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "$ref": "#/components/schemas/usize"
+          }
+        },
+        {
+          "name": "descending_order",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "IndexerObjectStatePageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_IndexerObjectStateView_and_IndexerStateID"
+        }
+      }
+    },
+    {
+      "name": "rooch_queryObjectStates",
+      "description": "Query the object states indexer by state filter",
+      "params": [
+        {
+          "name": "filter",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ObjectStateFilterView"
+          }
+        },
+        {
+          "name": "cursor",
+          "schema": {
+            "$ref": "#/components/schemas/IndexerStateID"
+          }
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "$ref": "#/components/schemas/usize"
+          }
+        },
+        {
+          "name": "descending_order",
+          "schema": {
+            "type": "boolean"
+          }
+        }
+      ],
+      "result": {
+        "name": "IndexerObjectStatePageView",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/PageView_for_IndexerObjectStateView_and_IndexerStateID"
         }
       }
     },
     {
       "name": "rooch_queryTableStates",
-      "description": "Query the table states indexer by state filter",
       "params": [
         {
           "name": "filter",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/TableStateFilterView"
+            "$ref": "#/components/schemas/FieldStateFilterView"
           }
         },
         {
@@ -494,10 +568,10 @@
         }
       ],
       "result": {
-        "name": "IndexerTableStatePageView",
+        "name": "IndexerFieldStatePageView",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/PageView_for_IndexerTableStateView_and_IndexerStateID"
+          "$ref": "#/components/schemas/PageView_for_IndexerFieldStateView_and_IndexerStateID"
         }
       }
     },
@@ -556,43 +630,6 @@
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/primitive_types::H256"
-        }
-      }
-    },
-    {
-      "name": "rooch_syncStates",
-      "description": "Sync state change sets from indexer",
-      "params": [
-        {
-          "name": "filter",
-          "schema": {
-            "$ref": "#/components/schemas/StateSyncFilterView"
-          }
-        },
-        {
-          "name": "cursor",
-          "schema": {
-            "$ref": "#/components/schemas/IndexerStateID"
-          }
-        },
-        {
-          "name": "limit",
-          "schema": {
-            "$ref": "#/components/schemas/usize"
-          }
-        },
-        {
-          "name": "descending_order",
-          "schema": {
-            "type": "boolean"
-          }
-        }
-      ],
-      "result": {
-        "name": "IndexerTableChangeSetPageView",
-        "required": true,
-        "schema": {
-          "$ref": "#/components/schemas/PageView_for_IndexerTableChangeSetView_and_IndexerStateID"
         }
       }
     }
@@ -771,21 +808,6 @@
             "additionalProperties": {
               "type": "string"
             }
-          }
-        }
-      },
-      "DynamicFieldView": {
-        "type": "object",
-        "required": [
-          "k",
-          "v"
-        ],
-        "properties": {
-          "k": {
-            "$ref": "#/components/schemas/KeyStateView"
-          },
-          "v": {
-            "$ref": "#/components/schemas/OpView_for_StateView"
           }
         }
       },
@@ -1049,6 +1071,23 @@
           }
         ]
       },
+      "FieldStateFilterView": {
+        "oneOf": [
+          {
+            "description": "Query by object id.",
+            "type": "object",
+            "required": [
+              "object_id"
+            ],
+            "properties": {
+              "object_id": {
+                "$ref": "#/components/schemas/ObjectID"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
       "FunctionCallView": {
         "type": "object",
         "required": [
@@ -1088,101 +1127,6 @@
             "$ref": "#/components/schemas/alloc::vec::Vec<u8>"
           }
         }
-      },
-      "GlobalStateFilterView": {
-        "oneOf": [
-          {
-            "description": "Query by object value type and owner.",
-            "type": "object",
-            "required": [
-              "object_type_with_owner"
-            ],
-            "properties": {
-              "object_type_with_owner": {
-                "type": "object",
-                "required": [
-                  "object_type",
-                  "owner"
-                ],
-                "properties": {
-                  "object_type": {
-                    "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
-                  },
-                  "owner": {
-                    "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
-                  }
-                }
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "description": "Query by object value type.",
-            "type": "object",
-            "required": [
-              "object_type"
-            ],
-            "properties": {
-              "object_type": {
-                "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "description": "Query by owner.",
-            "type": "object",
-            "required": [
-              "owner"
-            ],
-            "properties": {
-              "owner": {
-                "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "description": "Query by object id.",
-            "type": "object",
-            "required": [
-              "object_id"
-            ],
-            "properties": {
-              "object_id": {
-                "$ref": "#/components/schemas/ObjectID"
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "description": "Query by multi chain address",
-            "type": "object",
-            "required": [
-              "multi_chain_address"
-            ],
-            "properties": {
-              "multi_chain_address": {
-                "type": "object",
-                "required": [
-                  "address",
-                  "multichain_id"
-                ],
-                "properties": {
-                  "address": {
-                    "type": "string"
-                  },
-                  "multichain_id": {
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
-                  }
-                }
-              }
-            },
-            "additionalProperties": false
-          }
-        ]
       },
       "Hex": {
         "description": "Hex string encoding.",
@@ -1254,7 +1198,62 @@
           }
         }
       },
-      "IndexerGlobalStateView": {
+      "IndexerFieldStateView": {
+        "type": "object",
+        "required": [
+          "created_at",
+          "key",
+          "key_hex",
+          "key_type",
+          "object_id",
+          "state_index",
+          "tx_order",
+          "updated_at",
+          "value",
+          "value_type"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "key": {
+            "$ref": "#/components/schemas/AnnotatedMoveValueView"
+          },
+          "key_hex": {
+            "type": "string"
+          },
+          "key_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+          },
+          "object_id": {
+            "$ref": "#/components/schemas/ObjectID"
+          },
+          "state_index": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "tx_order": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "value": {
+            "$ref": "#/components/schemas/AnnotatedMoveValueView"
+          },
+          "value_type": {
+            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
+          }
+        }
+      },
+      "IndexerObjectStateView": {
         "type": "object",
         "required": [
           "created_at",
@@ -1333,94 +1332,6 @@
             "type": "integer",
             "format": "uint64",
             "minimum": 0.0
-          }
-        }
-      },
-      "IndexerTableChangeSetView": {
-        "type": "object",
-        "required": [
-          "created_at",
-          "state_index",
-          "table_change_set",
-          "table_handle",
-          "tx_order"
-        ],
-        "properties": {
-          "created_at": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "state_index": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "table_change_set": {
-            "$ref": "#/components/schemas/TableChangeSetView"
-          },
-          "table_handle": {
-            "$ref": "#/components/schemas/ObjectID"
-          },
-          "tx_order": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          }
-        }
-      },
-      "IndexerTableStateView": {
-        "type": "object",
-        "required": [
-          "created_at",
-          "key",
-          "key_hex",
-          "key_type",
-          "state_index",
-          "table_handle",
-          "tx_order",
-          "updated_at",
-          "value",
-          "value_type"
-        ],
-        "properties": {
-          "created_at": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "key": {
-            "$ref": "#/components/schemas/AnnotatedMoveValueView"
-          },
-          "key_hex": {
-            "type": "string"
-          },
-          "key_type": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
-          },
-          "state_index": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "table_handle": {
-            "$ref": "#/components/schemas/ObjectID"
-          },
-          "tx_order": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "updated_at": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "value": {
-            "$ref": "#/components/schemas/AnnotatedMoveValueView"
-          },
-          "value_type": {
-            "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
           }
         }
       },
@@ -1939,6 +1850,101 @@
       "ObjectID": {
         "$ref": "#/components/schemas/Hex"
       },
+      "ObjectStateFilterView": {
+        "oneOf": [
+          {
+            "description": "Query by object value type and owner.",
+            "type": "object",
+            "required": [
+              "object_type_with_owner"
+            ],
+            "properties": {
+              "object_type_with_owner": {
+                "type": "object",
+                "required": [
+                  "object_type",
+                  "owner"
+                ],
+                "properties": {
+                  "object_type": {
+                    "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+                  },
+                  "owner": {
+                    "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by object value type.",
+            "type": "object",
+            "required": [
+              "object_type"
+            ],
+            "properties": {
+              "object_type": {
+                "$ref": "#/components/schemas/move_core_types::language_storage::StructTag"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by owner.",
+            "type": "object",
+            "required": [
+              "owner"
+            ],
+            "properties": {
+              "owner": {
+                "$ref": "#/components/schemas/move_core_types::account_address::AccountAddress"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by object id.",
+            "type": "object",
+            "required": [
+              "object_id"
+            ],
+            "properties": {
+              "object_id": {
+                "$ref": "#/components/schemas/ObjectID"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "Query by multi chain address",
+            "type": "object",
+            "required": [
+              "multi_chain_address"
+            ],
+            "properties": {
+              "multi_chain_address": {
+                "type": "object",
+                "required": [
+                  "address",
+                  "multichain_id"
+                ],
+                "properties": {
+                  "address": {
+                    "type": "string"
+                  },
+                  "multichain_id": {
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0.0
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
       "OpView_for_StateView": {
         "oneOf": [
           {
@@ -2122,7 +2128,7 @@
           }
         }
       },
-      "PageView_for_IndexerGlobalStateView_and_IndexerStateID": {
+      "PageView_for_IndexerFieldStateView_and_IndexerStateID": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -2133,7 +2139,7 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/IndexerGlobalStateView"
+              "$ref": "#/components/schemas/IndexerFieldStateView"
             }
           },
           "has_next_page": {
@@ -2151,7 +2157,7 @@
           }
         }
       },
-      "PageView_for_IndexerTableChangeSetView_and_IndexerStateID": {
+      "PageView_for_IndexerObjectStateView_and_IndexerStateID": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -2162,36 +2168,7 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/IndexerTableChangeSetView"
-            }
-          },
-          "has_next_page": {
-            "type": "boolean"
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/IndexerStateID"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        }
-      },
-      "PageView_for_IndexerTableStateView_and_IndexerStateID": {
-        "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
-        "type": "object",
-        "required": [
-          "data",
-          "has_next_page"
-        ],
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/IndexerTableStateView"
+              "$ref": "#/components/schemas/IndexerObjectStateView"
             }
           },
           "has_next_page": {
@@ -2408,23 +2385,6 @@
           }
         }
       },
-      "StateSyncFilterView": {
-        "oneOf": [
-          {
-            "description": "Query by table handle.",
-            "type": "object",
-            "required": [
-              "table_handle"
-            ],
-            "properties": {
-              "table_handle": {
-                "$ref": "#/components/schemas/ObjectID"
-              }
-            },
-            "additionalProperties": false
-          }
-        ]
-      },
       "StateView": {
         "type": "object",
         "required": [
@@ -2459,67 +2419,6 @@
             "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
           }
         }
-      },
-      "TableChangeSetView": {
-        "type": "object",
-        "required": [
-          "changes",
-          "new_tables",
-          "removed_tables"
-        ],
-        "properties": {
-          "changes": {
-            "type": "object",
-            "additionalProperties": {
-              "$ref": "#/components/schemas/TableChangeView"
-            }
-          },
-          "new_tables": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ObjectID"
-            },
-            "uniqueItems": true
-          },
-          "removed_tables": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ObjectID"
-            },
-            "uniqueItems": true
-          }
-        }
-      },
-      "TableChangeView": {
-        "type": "object",
-        "required": [
-          "entries"
-        ],
-        "properties": {
-          "entries": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DynamicFieldView"
-            }
-          }
-        }
-      },
-      "TableStateFilterView": {
-        "oneOf": [
-          {
-            "description": "Query by table handle.",
-            "type": "object",
-            "required": [
-              "table_handle"
-            ],
-            "properties": {
-              "table_handle": {
-                "$ref": "#/components/schemas/ObjectID"
-              }
-            },
-            "additionalProperties": false
-          }
-        ]
       },
       "TransactionExecutionInfoView": {
         "type": "object",

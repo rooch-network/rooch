@@ -4,7 +4,7 @@
 use super::types;
 use crate::address::BitcoinAddress;
 use crate::addresses::BITCOIN_MOVE_ADDRESS;
-use crate::indexer::state::IndexerGlobalState;
+use crate::indexer::state::IndexerObjectState;
 use anyhow::Result;
 use move_core_types::language_storage::StructTag;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
@@ -44,36 +44,13 @@ impl MoveStructState for BitcoinUTXOStore {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct SealPoint {
-    pub output_index: u32,
-    pub offset: u64,
-    pub object_id: ObjectID,
-}
-
-impl MoveStructType for SealPoint {
-    const ADDRESS: AccountAddress = BITCOIN_MOVE_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("SealPoint");
-}
-
-impl MoveStructState for SealPoint {
-    fn struct_layout() -> move_core_types::value::MoveStructLayout {
-        move_core_types::value::MoveStructLayout::new(vec![
-            u32::type_layout(),
-            u64::type_layout(),
-            ObjectID::type_layout(),
-        ])
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct UTXO {
     /// The txid of the UTXO
     pub txid: AccountAddress,
     /// The vout of the UTXO
     pub vout: u32,
     pub value: u64,
-    pub seals: SimpleMultiMap<MoveString, SealPoint>,
+    pub seals: SimpleMultiMap<MoveString, ObjectID>,
 }
 
 impl MoveStructType for UTXO {
@@ -98,7 +75,7 @@ impl UTXO {
         txid: AccountAddress,
         vout: u32,
         value: u64,
-        seals: SimpleMultiMap<MoveString, SealPoint>,
+        seals: SimpleMultiMap<MoveString, ObjectID>,
     ) -> Self {
         Self {
             txid,
@@ -132,7 +109,7 @@ pub struct UTXOState {
 
 impl UTXOState {
     pub fn new_from_global_state(
-        state: IndexerGlobalState,
+        state: IndexerObjectState,
         utxo: Option<UTXO>,
         owner_bitcoin_address: Option<BitcoinAddress>,
     ) -> Self {

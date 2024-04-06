@@ -18,7 +18,7 @@ diesel::table! {
 }
 
 diesel::table! {
-    global_states (object_id) {
+    object_states (object_id) {
         object_id -> Text,
         owner -> Text,
         flag -> SmallInt,
@@ -44,8 +44,8 @@ diesel::table! {
 }
 
 diesel::table! {
-    table_states (table_handle, key_hex) {
-        table_handle -> Text,
+    field_states (object_id, key_hex) {
+        object_id -> Text,
         key_hex -> Text,
         key_str -> Text,
         value -> Text,
@@ -84,8 +84,8 @@ diesel::table! {
 
 diesel::allow_tables_to_appear_in_same_query!(
     events,
-    global_states,
+    object_states,
     table_change_sets,
-    table_states,
+    field_states,
     transactions,
 );

@@ -25,19 +25,13 @@ module bitcoin_move::utxo{
         /// The value of the UTXO
         value: u64,
         /// Protocol seals
-        seals: SimpleMultiMap<String, SealPoint>
+        seals: SimpleMultiMap<String, ObjectID>
     }
 
     struct UTXOSeal has store, copy, drop {
         protocol: String,
-        seal_point: SealPoint,
-    }
-
-    struct SealPoint has store, copy, drop {
-        output_index: u32,
-        offset: u64,
         object_id: ObjectID,
-    }
+    } 
 
     struct BitcoinUTXOStore has key{
         /// The next tx index to be processed
@@ -118,35 +112,14 @@ module bitcoin_move::utxo{
         object::borrow_object(object_id)
     }
 
-    /// Get the SealPoint's object_id
-    public fun seal_point_object_id(seal_point: &SealPoint): ObjectID {
-        seal_point.object_id
-    }
-
-    /// Get the SealPoint's offset
-    public fun seal_point_offset(seal_point: &SealPoint): u64 {
-        seal_point.offset
-    }
-
-    /// Get the SealPoint's output_index
-    public fun seal_point_output_index(seal_point: &SealPoint): u32 {
-        seal_point.output_index
-    }
-
     #[private_generics(T)]
     /// Seal the UTXO with a protocol, the T is the protocol object
-    public fun seal<T>(utxo: &mut UTXO, seal_obj: &Object<T>, offset: u64){
+    public fun seal<T>(utxo: &mut UTXO, seal_obj: &Object<T>){
         let protocol = type_info::type_name<T>();
         let object_id = object::id(seal_obj);
-        let output_index = vout(utxo);
-        let seal_point = SealPoint {
-            output_index,
-            offset,
-            object_id,
-        };
         let utxo_seal = UTXOSeal{
             protocol,
-            seal_point,
+            object_id,
         };
         add_seal(utxo, utxo_seal);
     }
@@ -156,7 +129,7 @@ module bitcoin_move::utxo{
         simple_multimap::contains_key(&utxo.seals, &protocol)
     }
 
-    public fun get_seals<T>(utxo: &UTXO) : vector<SealPoint> {
+    public fun get_seals<T>(utxo: &UTXO) : vector<ObjectID> {
         let protocol = type_info::type_name<T>();
         if(simple_multimap::contains_key(&utxo.seals, &protocol)){
             *simple_multimap::borrow(&utxo.seals, &protocol)
@@ -165,7 +138,8 @@ module bitcoin_move::utxo{
         }
     }
 
-    public fun remove_seals<T>(utxo: &mut UTXO): vector<SealPoint> {
+    #[private_generics(T)]
+    public fun remove_seals<T>(utxo: &mut UTXO): vector<ObjectID> {
         let protocol = type_info::type_name<T>();
         if(simple_multimap::contains_key(&utxo.seals, &protocol)){
             let(_k, value) = simple_multimap::remove(&mut utxo.seals, &protocol);
@@ -176,8 +150,8 @@ module bitcoin_move::utxo{
     }
 
     public(friend) fun add_seal(utxo: &mut UTXO, utxo_seal: UTXOSeal){
-        let UTXOSeal{protocol, seal_point} = utxo_seal;
-        simple_multimap::add(&mut utxo.seals, protocol, seal_point);
+        let UTXOSeal{protocol, object_id} = utxo_seal;
+        simple_multimap::add(&mut utxo.seals, protocol, object_id);
     }
 
     // === Object<UTXO> ===    
@@ -190,7 +164,7 @@ module bitcoin_move::utxo{
         object::take_object_extend<UTXO>(object_id)
     }
 
-    public(friend) fun remove(utxo_obj: Object<UTXO>): SimpleMultiMap<String, SealPoint>{
+    public(friend) fun remove(utxo_obj: Object<UTXO>): SimpleMultiMap<String, ObjectID>{
         if(object::contains_field(&utxo_obj, TEMPORARY_AREA)){
             let bag = object::remove_field(&mut utxo_obj, TEMPORARY_AREA);
             bag::drop(bag);
@@ -202,31 +176,17 @@ module bitcoin_move::utxo{
     }
 
     // === UTXOSeal ===
-    public fun new_utxo_seal(protocol: String, seal_point: SealPoint) : UTXOSeal {
+    public fun new_utxo_seal(protocol: String, seal_object_id: ObjectID) : UTXOSeal {
         UTXOSeal{
             protocol,
-            seal_point
+            object_id: seal_object_id,
         }
     }
 
-    public fun unpack_utxo_seal(utxo_seal: UTXOSeal) : (String, SealPoint) {
-        let UTXOSeal{protocol, seal_point} = utxo_seal;
-        (protocol, seal_point)
-    }
-
-    // === SealPoint ===
-    public fun new_seal_point(output_index: u32, offset: u64, object_id: ObjectID) : SealPoint {
-        SealPoint{
-            output_index,
-            offset,
-            object_id
-        }
-    }
-
-    public fun unpack_seal_point(seal_point: SealPoint) : (u32, u64, ObjectID) {
-        let SealPoint{output_index, offset, object_id} = seal_point;
-        (output_index, offset, object_id)
-    }
+    public fun unpack_utxo_seal(utxo_seal: UTXOSeal) : (String, ObjectID) {
+        let UTXOSeal{protocol, object_id} = utxo_seal;
+        (protocol, object_id)
+    } 
 
     // ==== Temporary Area ===
 

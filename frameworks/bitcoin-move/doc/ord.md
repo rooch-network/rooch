@@ -6,10 +6,13 @@
 
 
 -  [Struct `InscriptionID`](#0x4_ord_InscriptionID)
+-  [Struct `Flotsam`](#0x4_ord_Flotsam)
+-  [Struct `SatPoint`](#0x4_ord_SatPoint)
 -  [Resource `Inscription`](#0x4_ord_Inscription)
 -  [Struct `InscriptionRecord`](#0x4_ord_InscriptionRecord)
 -  [Struct `InvalidInscriptionEvent`](#0x4_ord_InvalidInscriptionEvent)
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
+-  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_ord_genesis_init)
 -  [Function `new_inscription_id`](#0x4_ord_new_inscription_id)
 -  [Function `get_inscription_id_by_index`](#0x4_ord_get_inscription_id_by_index)
@@ -26,9 +29,15 @@
 -  [Function `metaprotocol`](#0x4_ord_metaprotocol)
 -  [Function `parent`](#0x4_ord_parent)
 -  [Function `pointer`](#0x4_ord_pointer)
+-  [Function `new_sat_point`](#0x4_ord_new_sat_point)
+-  [Function `unpack_sat_point`](#0x4_ord_unpack_sat_point)
+-  [Function `sat_point_object_id`](#0x4_ord_sat_point_object_id)
+-  [Function `sat_point_offset`](#0x4_ord_sat_point_offset)
+-  [Function `sat_point_output_index`](#0x4_ord_sat_point_output_index)
 -  [Function `unpack_record`](#0x4_ord_unpack_record)
 -  [Function `from_transaction`](#0x4_ord_from_transaction)
 -  [Function `from_transaction_bytes`](#0x4_ord_from_transaction_bytes)
+-  [Function `subsidy_by_height`](#0x4_ord_subsidy_by_height)
 -  [Function `bind_multichain_address`](#0x4_ord_bind_multichain_address)
 
 
@@ -59,6 +68,28 @@
 
 
 <pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionID">InscriptionID</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_ord_Flotsam"></a>
+
+## Struct `Flotsam`
+
+
+
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_Flotsam">Flotsam</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_ord_SatPoint"></a>
+
+## Struct `SatPoint`
+
+
+
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_SatPoint">SatPoint</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -103,6 +134,40 @@
 
 
 <pre><code><b>struct</b> <a href="ord.md#0x4_ord_InscriptionStore">InscriptionStore</a> <b>has</b> key
+</code></pre>
+
+
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x4_ord_COIN_VALUE"></a>
+
+How many satoshis are in "one bitcoin".
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_COIN_VALUE">COIN_VALUE</a>: u64 = 100000000;
+</code></pre>
+
+
+
+<a name="0x4_ord_FIRST_POST_SUBSIDY_EPOCH"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_FIRST_POST_SUBSIDY_EPOCH">FIRST_POST_SUBSIDY_EPOCH</a>: u32 = 33;
+</code></pre>
+
+
+
+<a name="0x4_ord_SUBSIDY_HALVING_INTERVAL"></a>
+
+How may blocks between halvings.
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_SUBSIDY_HALVING_INTERVAL">SUBSIDY_HALVING_INTERVAL</a>: u32 = 210000;
 </code></pre>
 
 
@@ -168,7 +233,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_spend_utxo">spend_utxo</a>(utxo_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;, tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, input_utxo_values: <a href="">vector</a>&lt;u64&gt;, input_index: u64): <a href="">vector</a>&lt;<a href="utxo.md#0x4_utxo_SealPoint">utxo::SealPoint</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_spend_utxo">spend_utxo</a>(utxo_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;, tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, input_utxo_values: <a href="">vector</a>&lt;u64&gt;, input_index: u64): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>&gt;
 </code></pre>
 
 
@@ -179,7 +244,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_process_transaction">process_transaction</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, input_utxo_values: <a href="">vector</a>&lt;u64&gt;): <a href="">vector</a>&lt;<a href="utxo.md#0x4_utxo_SealPoint">utxo::SealPoint</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_process_transaction">process_transaction</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, input_utxo_values: <a href="">vector</a>&lt;u64&gt;): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>&gt;
 </code></pre>
 
 
@@ -283,6 +348,64 @@
 
 
 
+<a name="0x4_ord_new_sat_point"></a>
+
+## Function `new_sat_point`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_new_sat_point">new_sat_point</a>(output_index: u32, offset: u64, object_id: <a href="_ObjectID">object::ObjectID</a>): <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_unpack_sat_point"></a>
+
+## Function `unpack_sat_point`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_unpack_sat_point">unpack_sat_point</a>(sat_point: <a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>): (u32, u64, <a href="_ObjectID">object::ObjectID</a>)
+</code></pre>
+
+
+
+<a name="0x4_ord_sat_point_object_id"></a>
+
+## Function `sat_point_object_id`
+
+Get the SatPoint's object_id
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_sat_point_object_id">sat_point_object_id</a>(sat_point: &<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>): <a href="_ObjectID">object::ObjectID</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_sat_point_offset"></a>
+
+## Function `sat_point_offset`
+
+Get the SatPoint's offset
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_sat_point_offset">sat_point_offset</a>(sat_point: &<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>): u64
+</code></pre>
+
+
+
+<a name="0x4_ord_sat_point_output_index"></a>
+
+## Function `sat_point_output_index`
+
+Get the SatPoint's output_index
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_sat_point_output_index">sat_point_output_index</a>(sat_point: &<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>): u32
+</code></pre>
+
+
+
 <a name="0x4_ord_unpack_record"></a>
 
 ## Function `unpack_record`
@@ -312,6 +435,18 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_from_transaction_bytes">from_transaction_bytes</a>(transaction_bytes: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_subsidy_by_height"></a>
+
+## Function `subsidy_by_height`
+
+Block Rewards
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_subsidy_by_height">subsidy_by_height</a>(height: u32): u64
 </code></pre>
 
 

@@ -20,7 +20,7 @@ use rooch_types::framework::account_coin_store::AccountCoinStoreModule;
 use rooch_types::framework::address_mapping::AddressMapping;
 use rooch_types::framework::coin::{CoinInfo, CoinModule};
 use rooch_types::framework::coin_store::CoinStore;
-use rooch_types::indexer::state::IndexerGlobalState;
+use rooch_types::indexer::state::IndexerObjectState;
 use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::TransactionWithInfo;
 use std::collections::HashMap;
@@ -136,7 +136,7 @@ impl AggregateService {
                 let coin_store_ids = self
                     .rpc_service
                     .list_states(
-                        AccessPath::table_without_keys(coin_stores_handle),
+                        AccessPath::fields_without_keys(coin_stores_handle),
                         cursor,
                         limit,
                     )
@@ -214,18 +214,18 @@ impl AggregateService {
 
     pub async fn get_raw_objects(
         &self,
-        table_handles: Vec<ObjectID>,
+        object_ids: Vec<ObjectID>,
     ) -> Result<HashMap<ObjectID, Option<RawObject>>> {
         // Global table 0x0 table's key type is always ObjectID.
-        let access_path = AccessPath::objects(table_handles.clone());
+        let access_path = AccessPath::objects(object_ids.clone());
         self.rpc_service
             .get_states(access_path)
             .await?
             .into_iter()
-            .zip(table_handles)
-            .map(|(state_opt, table_handle)| {
+            .zip(object_ids)
+            .map(|(state_opt, object_id)| {
                 Ok((
-                    table_handle,
+                    object_id,
                     match state_opt {
                         Some(state) => Some(state.as_raw_object()?),
                         None => None,
@@ -235,8 +235,8 @@ impl AggregateService {
             .collect::<Result<HashMap<_, _>>>()
     }
 
-    pub async fn pack_uxtos(&self, states: Vec<IndexerGlobalState>) -> Result<Vec<UTXOState>> {
-        let table_handles = states
+    pub async fn pack_uxtos(&self, states: Vec<IndexerObjectState>) -> Result<Vec<UTXOState>> {
+        let object_ids = states
             .iter()
             .map(|m| m.object_id.clone())
             .collect::<Vec<_>>();
@@ -247,16 +247,16 @@ impl AggregateService {
             .collect::<Vec<_>>();
 
         // Global table 0x0 table's key type is always ObjectID.
-        let access_path = AccessPath::objects(table_handles.clone());
+        let access_path = AccessPath::objects(object_ids.clone());
         let objects = self
             .rpc_service
             .get_states(access_path)
             .await?
             .into_iter()
-            .zip(table_handles)
-            .map(|(state_opt, table_handle)| {
+            .zip(object_ids)
+            .map(|(state_opt, object_id)| {
                 Ok((
-                    table_handle,
+                    object_id,
                     state_opt
                         .map(|state| {
                             Ok::<UTXO, anyhow::Error>(state.as_object_uncheck::<UTXO>()?.value)
@@ -273,7 +273,7 @@ impl AggregateService {
         let (_address_mapping_handle, _mapping_handle, reverse_mapping_handle) =
             address_mapping_module.address_mapping_handle()?;
 
-        let access_path = AccessPath::table(reverse_mapping_handle, owner_keys);
+        let access_path = AccessPath::fields(reverse_mapping_handle, owner_keys);
         let reverse_address_mapping = self
             .rpc_service
             .get_states(access_path)
@@ -315,9 +315,9 @@ impl AggregateService {
 
     pub async fn pack_inscriptions(
         &self,
-        states: Vec<IndexerGlobalState>,
+        states: Vec<IndexerObjectState>,
     ) -> Result<Vec<InscriptionState>> {
-        let table_handles = states
+        let object_ids = states
             .iter()
             .map(|m| m.object_id.clone())
             .collect::<Vec<_>>();
@@ -328,16 +328,16 @@ impl AggregateService {
             .collect::<Vec<_>>();
 
         // Global table 0x0 table's key type is always ObjectID.
-        let access_path = AccessPath::objects(table_handles.clone());
+        let access_path = AccessPath::objects(object_ids.clone());
         let objects = self
             .rpc_service
             .get_states(access_path)
             .await?
             .into_iter()
-            .zip(table_handles)
-            .map(|(state_opt, table_handle)| {
+            .zip(object_ids)
+            .map(|(state_opt, object_id)| {
                 Ok((
-                    table_handle,
+                    object_id,
                     state_opt
                         .map(|state| {
                             Ok::<Inscription, anyhow::Error>(
@@ -356,7 +356,7 @@ impl AggregateService {
         let (_address_mapping_handle, _mapping_handle, reverse_mapping_handle) =
             address_mapping_module.address_mapping_handle()?;
 
-        let access_path = AccessPath::table(reverse_mapping_handle, owner_keys);
+        let access_path = AccessPath::fields(reverse_mapping_handle, owner_keys);
         let reverse_address_mapping = self
             .rpc_service
             .get_states(access_path)

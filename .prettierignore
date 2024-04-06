@@ -4,11 +4,11 @@
 !/dashboard
 !/sdk
 !/rooch-portal-v1
-!/grow-rooch-v1
 !/.config
 !/*.js
 
 # ignore generated files
+grow-rooch-v1
 .vscode
 .next
 node_modules

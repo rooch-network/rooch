@@ -1,21 +1,21 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::schema::global_states;
+use crate::schema::field_states;
+use crate::schema::object_states;
 use crate::schema::table_change_sets;
-use crate::schema::table_states;
-use crate::types::{IndexedGlobalState, IndexedTableChangeSet, IndexedTableState};
+use crate::types::{IndexedFieldState, IndexedObjectState, IndexedTableChangeSet};
 use diesel::prelude::*;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use moveos_types::moveos_std::object::ObjectID;
 use rooch_rpc_api::jsonrpc_types::TableChangeSetView;
-use rooch_types::indexer::state::{IndexerGlobalState, IndexerTableChangeSet, IndexerTableState};
+use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState, IndexerTableChangeSet};
 use std::str::FromStr;
 
 #[derive(Queryable, QueryableByName, Insertable, Debug, Clone)]
-#[diesel(table_name = global_states)]
-pub struct StoredGlobalState {
+#[diesel(table_name = object_states)]
+pub struct StoredObjectState {
     /// The global state key
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub object_id: String,
@@ -51,8 +51,8 @@ pub struct StoredGlobalState {
     pub updated_at: i64,
 }
 
-impl From<IndexedGlobalState> for StoredGlobalState {
-    fn from(state: IndexedGlobalState) -> Self {
+impl From<IndexedObjectState> for StoredObjectState {
+    fn from(state: IndexedObjectState) -> Self {
         Self {
             object_id: state.object_id.to_string(),
             owner: state.owner.to_hex_literal(),
@@ -69,14 +69,14 @@ impl From<IndexedGlobalState> for StoredGlobalState {
     }
 }
 
-impl StoredGlobalState {
-    pub fn try_into_indexer_global_state(&self) -> Result<IndexerGlobalState, anyhow::Error> {
+impl StoredObjectState {
+    pub fn try_into_indexer_global_state(&self) -> Result<IndexerObjectState, anyhow::Error> {
         let object_id = ObjectID::from_str(self.object_id.as_str())?;
         let owner = AccountAddress::from_hex_literal(self.owner.as_str())?;
         let object_type = StructTag::from_str(self.object_type.as_str())?;
         let state_root = AccountAddress::from_hex_literal(self.state_root.as_str())?;
 
-        let state = IndexerGlobalState {
+        let state = IndexerObjectState {
             object_id,
             owner,
             flag: self.flag as u8,
@@ -94,11 +94,11 @@ impl StoredGlobalState {
 }
 
 #[derive(Queryable, QueryableByName, Insertable, Debug, Clone)]
-#[diesel(table_name = table_states)]
-pub struct StoredTableState {
+#[diesel(table_name = field_states)]
+pub struct StoredFieldState {
     /// The state table handle
     #[diesel(sql_type = diesel::sql_types::Text)]
-    pub table_handle: String,
+    pub object_id: String,
     /// The hex of the table key
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub key_hex: String,
@@ -128,10 +128,10 @@ pub struct StoredTableState {
     pub updated_at: i64,
 }
 
-impl From<IndexedTableState> for StoredTableState {
-    fn from(state: IndexedTableState) -> Self {
+impl From<IndexedFieldState> for StoredFieldState {
+    fn from(state: IndexedFieldState) -> Self {
         Self {
-            table_handle: state.table_handle.to_string(),
+            object_id: state.object_id.to_string(),
             key_hex: state.key_hex,
             key_str: state.key_str,
             value: state.value,
@@ -145,14 +145,14 @@ impl From<IndexedTableState> for StoredTableState {
     }
 }
 
-impl StoredTableState {
-    pub fn try_into_indexer_table_state(&self) -> Result<IndexerTableState, anyhow::Error> {
-        let table_handle = ObjectID::from_str(self.table_handle.as_str())?;
+impl StoredFieldState {
+    pub fn try_into_indexer_table_state(&self) -> Result<IndexerFieldState, anyhow::Error> {
+        let object_id = ObjectID::from_str(self.object_id.as_str())?;
         let key_type = TypeTag::from_str(self.key_type.as_str())?;
         let value_type = TypeTag::from_str(self.value_type.as_str())?;
 
-        let state = IndexerTableState {
-            table_handle,
+        let state = IndexerFieldState {
+            object_id,
             key_hex: self.key_hex.clone(),
             key_str: self.key_str.clone(),
             value: self.value.clone(),

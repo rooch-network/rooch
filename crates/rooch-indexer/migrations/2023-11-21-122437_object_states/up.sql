@@ -1,4 +1,4 @@
-CREATE TABLE global_states
+CREATE TABLE object_states
 (
     object_id          VARCHAR        NOT NULL       PRIMARY KEY,
     owner              VARCHAR        NOT NULL,
@@ -14,6 +14,6 @@ CREATE TABLE global_states
     UNIQUE (tx_order, state_index)
 );
 
-CREATE INDEX idx_global_states_owner ON global_states (owner);
-CREATE INDEX idx_global_states_object_type_and_owner ON global_states (object_type, owner);
-CREATE INDEX idx_global_states_created_at ON global_states (created_at);
+CREATE INDEX idx_object_states_owner ON object_states (owner);
+CREATE INDEX idx_object_states_object_type_and_owner ON object_states (object_type, owner);
+CREATE INDEX idx_object_states_created_at ON object_states (created_at);

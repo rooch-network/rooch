@@ -19,8 +19,8 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::address::MultiChainAddress;
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
-    GlobalStateFilter, IndexerGlobalState, IndexerStateID, IndexerTableChangeSet,
-    IndexerTableState, StateSyncFilter, TableStateFilter,
+    FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, IndexerTableChangeSet,
+    ObjectStateFilter, StateSyncFilter,
 };
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::sequencer::SequencerOrder;
@@ -239,32 +239,32 @@ impl RpcService {
         Ok(resp)
     }
 
-    pub async fn query_global_states(
+    pub async fn query_object_states(
         &self,
-        filter: GlobalStateFilter,
+        filter: ObjectStateFilter,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: usize,
         descending_order: bool,
-    ) -> Result<Vec<IndexerGlobalState>> {
+    ) -> Result<Vec<IndexerObjectState>> {
         let resp = self
             .indexer
-            .query_global_states(filter, cursor, limit, descending_order)
+            .query_object_states(filter, cursor, limit, descending_order)
             .await?;
         Ok(resp)
     }
 
-    pub async fn query_table_states(
+    pub async fn query_field_states(
         &self,
-        filter: TableStateFilter,
+        filter: FieldStateFilter,
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: usize,
         descending_order: bool,
-    ) -> Result<Vec<IndexerTableState>> {
+    ) -> Result<Vec<IndexerFieldState>> {
         let resp = self
             .indexer
-            .query_table_states(filter, cursor, limit, descending_order)
+            .query_field_states(filter, cursor, limit, descending_order)
             .await?;
         Ok(resp)
     }

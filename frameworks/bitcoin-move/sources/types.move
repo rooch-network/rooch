@@ -4,12 +4,14 @@
 module bitcoin_move::types{
     use std::vector;
     use std::option::{Self, Option};
+    use moveos_std::address;
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
     use bitcoin_move::script_buf::{Self, ScriptBuf};
     use rooch_framework::multichain_address;
 
     const LOCK_TIME_THRESHOLD: u32 = 500_000_000;
     const TAPROOT_ANNEX_PREFIX: u8 = 0x50;
+    const U32_MAX: u32 = 4_294_967_295u32;
 
     #[data_struct]
     struct Block has store, copy, drop {
@@ -203,6 +205,19 @@ module bitcoin_move::types{
 
     public fun unpack_outpoint(self: OutPoint) : (address, u32) {
         (self.txid, self.vout)
+    }
+
+    /// Creates a "null" `OutPoint`.
+    /// This value is used for coinbase transactions because they don't have any previous outputs.
+    public fun null_outpoint(): OutPoint {
+        OutPoint{
+            txid: address::zero(),
+            vout: U32_MAX,
+        }
+    }
+
+    public fun is_null_outpoint(self: &OutPoint) : bool {
+        *self == null_outpoint()
     }
 
     #[data_struct]

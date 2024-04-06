@@ -120,7 +120,8 @@ export const TransactionsTable = () => {
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className="text-muted-foreground">
-                    {tx.transaction.action_type.toUpperCase()}
+                    // TODO: https://github.com/rooch-network/rooch/issues/1524
+                    {/*{tx.transaction.data}*/}
                   </Badge>
                 </TableCell>
                 <TableCell>

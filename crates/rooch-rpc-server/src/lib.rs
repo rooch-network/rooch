@@ -47,6 +47,7 @@ use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
+use rooch_types::bitcoin::data_import_config::DataImportMode;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::crypto::RoochKeyPair;
@@ -225,9 +226,13 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         bcs::to_bytes(&default_gas_schedule()).expect("Failure serializing genesis gas schedule");
 
     let btc_network = opt.btc_network.unwrap_or(Network::default().to_num());
+    let data_import_mode = DataImportMode::try_from(
+        opt.data_import_mode
+            .unwrap_or(DataImportMode::None.to_num()),
+    )?;
     let executor_actor = ExecutorActor::new(
         chain_id_opt.genesis_ctx(sequencer_account, gas_schedule_blob),
-        BitcoinGenesisContext::new(btc_network),
+        BitcoinGenesisContext::new(btc_network, data_import_mode.to_num()),
         moveos_store.clone(),
         rooch_store.clone(),
     )?;
@@ -289,13 +294,12 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         .await?;
     let indexer_proxy = IndexerProxy::new(indexer_executor.into(), indexer_reader_executor.into());
 
-    let data_verify_mode = opt.data_verify_mode.unwrap_or(false);
     let processor = PipelineProcessorActor::new(
         executor_proxy.clone(),
         sequencer_proxy.clone(),
         proposer_proxy.clone(),
         indexer_proxy.clone(),
-        data_verify_mode,
+        data_import_mode.is_data_import_flag(),
     )
     .into_actor(Some("PipelineProcessor"), &actor_system)
     .await?;
