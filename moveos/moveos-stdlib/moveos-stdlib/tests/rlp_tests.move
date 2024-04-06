@@ -8,7 +8,6 @@
 module moveos_std::rlp_tests {
     use std::debug;
     use std::vector;
-    use std::bcs;
     use std::string::String;
     use moveos_std::rlp;
     

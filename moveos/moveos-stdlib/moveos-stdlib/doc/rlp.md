@@ -7,11 +7,35 @@ Utility for converting a Move value to its binary representation in RLP(Recursiv
 https://ethereum.org/nl/developers/docs/data-structures-and-encoding/rlp/
 
 
+-  [Constants](#@Constants_0)
 -  [Function `to_bytes`](#0x2_rlp_to_bytes)
 -  [Function `from_bytes`](#0x2_rlp_from_bytes)
 
 
 <pre><code></code></pre>
+
+
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x2_rlp_ErrorRLPDeserializationFailure"></a>
+
+
+
+<pre><code><b>const</b> <a href="rlp.md#0x2_rlp_ErrorRLPDeserializationFailure">ErrorRLPDeserializationFailure</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x2_rlp_ErrorRLPSerializationFailure"></a>
+
+
+
+<pre><code><b>const</b> <a href="rlp.md#0x2_rlp_ErrorRLPSerializationFailure">ErrorRLPSerializationFailure</a>: u64 = 1;
+</code></pre>
 
 
 

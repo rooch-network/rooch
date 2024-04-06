@@ -94,7 +94,7 @@ impl rlp::Encodable for MoveValueWrapper {
     }
 }
 
-fn decode_rlp<'a>(rlp: Rlp<'a>, layout: MoveTypeLayout) -> anyhow::Result<Value> {
+fn decode_rlp(rlp: Rlp, layout: MoveTypeLayout) -> anyhow::Result<Value> {
     let value = match layout {
         MoveTypeLayout::Bool => Value::bool(rlp.as_val::<bool>()?),
         MoveTypeLayout::U8 => Value::u8(rlp.as_val::<u8>()?),
