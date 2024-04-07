@@ -1,8 +1,13 @@
 name: Deploy MAINNET Seed
 on:
-  workflow_dispatch:
-  release:
-    types: [ published ]
+    workflow_dispatch:
+      inputs:
+        tagName:
+          description: 'Tag Name to Checkout'
+          required: true
+          default: 'latest'
+    release:
+      types: [ published ]
 
 jobs:
   deploy-rooch-mainnet:
