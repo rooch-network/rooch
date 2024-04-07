@@ -14,10 +14,6 @@ jobs:
     name: deploy rooch mainnet
     runs-on: self-hosted
     steps:
-      - name: Extract version
-        id: extract-version
-        run: |
-          printf "::set-output name=%s::%s\n" tag-name "${GITHUB_REF#refs/tags/}"
       - name: Deploy to GCP MAINNET VM
         env:
           PRIVATE_KEY: ${{ secrets.GCP_MAINNET_SSH_PRIVATE_KEY }}
