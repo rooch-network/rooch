@@ -93,6 +93,10 @@ name = "bench_tx_exec"
 
 [[bench]]
 harness = false
+name = "bench_tx_exec_blk"
+
+[[bench]]
+harness = false
 name = "bench_tx_query"
 
 [[bench]]
