@@ -2,15 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::tx::TxType::{BTCBlk, Blog, Empty, Transfer};
-use anyhow::{anyhow, Result};
-use bitcoin::block::Header;
+use anyhow::Result;
 use bitcoin::consensus::deserialize;
 use bitcoin::hashes::Hash;
 use bitcoin::hex::FromHex;
-use bitcoin::{BlockHash, CompactTarget};
 use bitcoincore_rpc_json::bitcoin;
-use bitcoincore_rpc_json::bitcoin::consensus::{Decodable, ReadExt};
-use bitcoincore_rpc_json::bitcoin::hex::HexToBytesIter;
 use bitcoincore_rpc_json::bitcoin::Block;
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::system::ActorSystem;
@@ -59,8 +55,7 @@ use rooch_types::chain_id::RoochChainID;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::rooch::RoochTransaction;
-use rooch_types::transaction::{L1Block, L1BlockWithBody};
-use std::collections::HashMap;
+use rooch_types::transaction::L1BlockWithBody;
 use std::fmt::Display;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -366,18 +361,6 @@ pub fn create_btc_blk_tx(height: u64, block_file: String) -> Result<L1BlockWithB
         },
         block_body: move_block.encode(),
     })
-}
-
-fn deserialize_btc_hex<T: Decodable>(hex: &str) -> Result<T> {
-    let mut reader = HexToBytesIter::new(&hex)?;
-    let object = Decodable::consensus_decode(&mut reader)?;
-    if reader.read_u8().is_ok() {
-        Err(anyhow!(
-            "data not consumed entirely when explicitly deserializing"
-        ))
-    } else {
-        Ok(object)
-    }
 }
 
 // pure execution, no validate, sequence
