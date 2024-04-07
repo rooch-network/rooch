@@ -7,7 +7,7 @@ use anyhow::Result;
 use ethers::types::H256;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct L1Block {
     pub chain_id: MultiChainID,
     pub block_height: u64,
@@ -29,7 +29,7 @@ impl L1Block {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct L1BlockWithBody {
     pub block: L1Block,
     pub block_body: Vec<u8>,

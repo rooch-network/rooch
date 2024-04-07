@@ -8380,6 +8380,8 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs",
+ "bitcoin 0.31.0",
+ "bitcoincore-rpc-json",
  "chrono",
  "clap 4.4.1",
  "coerce",

@@ -113,19 +113,27 @@ impl RustBindingTest {
     pub fn execute_l1_block(&mut self, l1_block: L1BlockWithBody) -> Result<()> {
         //TODO get the sequence_number from state
         let sequence_number = 0;
+        let ctx = self.create_bt_blk_tx_ctx(sequence_number, l1_block.clone());
+        let verified_tx: VerifiedMoveOSTransaction =
+            self.executor.validate_l1_block(ctx, l1_block)?;
+        self.execute_verified_tx(verified_tx)
+    }
+
+    pub fn create_bt_blk_tx_ctx(
+        &mut self,
+        sequence_number: u64,
+        l1_block: L1BlockWithBody,
+    ) -> TxContext {
         let max_gas_amount = GasConfig::DEFAULT_MAX_GAS_AMOUNT * 1000;
         let tx_hash = l1_block.block.tx_hash();
         let tx_size = l1_block.block.tx_size();
-        let ctx = TxContext::new(
+        TxContext::new(
             self.sequencer.into(),
             sequence_number,
             max_gas_amount,
             tx_hash,
             tx_size,
-        );
-        let verified_tx: VerifiedMoveOSTransaction =
-            self.executor.validate_l1_block(ctx, l1_block)?;
-        self.execute_verified_tx(verified_tx)
+        )
     }
 
     pub fn execute_as_result(&mut self, tx: RoochTransaction) -> Result<ExecuteTransactionResult> {

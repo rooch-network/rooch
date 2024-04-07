@@ -1,10 +1,21 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use crate::tx::TxType::{BTCBlk, Blog, Empty, Transfer};
+use anyhow::{anyhow, Result};
+use bitcoin::block::Header;
+use bitcoin::consensus::deserialize;
+use bitcoin::hashes::Hash;
+use bitcoin::hex::FromHex;
+use bitcoin::{BlockHash, CompactTarget};
+use bitcoincore_rpc_json::bitcoin;
+use bitcoincore_rpc_json::bitcoin::consensus::{Decodable, ReadExt};
+use bitcoincore_rpc_json::bitcoin::hex::HexToBytesIter;
+use bitcoincore_rpc_json::bitcoin::Block;
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::system::ActorSystem;
 use coerce::actor::IntoActor;
+use criterion::Criterion;
 use lazy_static::lazy_static;
 use moveos_config::store_config::RocksdbConfig;
 use moveos_config::DataDirPath;
@@ -20,6 +31,7 @@ use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_framework::natives::default_gas_schedule;
+use rooch_framework_tests::binding_test;
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
 use rooch_indexer::indexer_reader::IndexerReader;
@@ -44,12 +56,15 @@ use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::crypto::RoochKeyPair;
+use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::rooch::RoochTransaction;
-use std::env;
+use rooch_types::transaction::{L1Block, L1BlockWithBody};
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
+use std::{env, fs};
 use tempfile::TempDir;
 use tracing::info;
 
@@ -61,6 +76,7 @@ pub enum TxType {
     Empty,
     Transfer,
     Blog,
+    BTCBlk,
 }
 
 impl FromStr for TxType {
@@ -69,6 +85,7 @@ impl FromStr for TxType {
         match s {
             "transfer" => Ok(TxType::Transfer),
             "blog" => Ok(TxType::Blog),
+            "btc_block" => Ok(TxType::BTCBlk),
             _ => Ok(TxType::Empty),
         }
     }
@@ -80,6 +97,7 @@ impl Display for TxType {
             TxType::Empty => "empty".to_string(),
             TxType::Transfer => "transfer".to_string(),
             TxType::Blog => "blog".to_string(),
+            TxType::BTCBlk => "btc_blk".to_string(),
         };
         write!(f, "{}", str)
     }
@@ -97,6 +115,8 @@ lazy_static! {
         tx_type_str.parse::<TxType>().unwrap_or(TxType::Empty)
     };
     pub static ref DATA_DIR: DataDirPath = get_data_dir();
+    pub static ref BTC_BLK_DIR: String =
+        env::var("ROOCH_BENCH_BTC_BLK_DIR").unwrap_or(String::from("data/btc"));
 }
 
 pub fn get_data_dir() -> DataDirPath {
@@ -288,21 +308,128 @@ pub fn create_publish_transaction(
     Ok(rooch_tx)
 }
 
-pub fn create_transaction(
+pub fn create_l2_tx(
     test_transaction_builder: &mut TestTransactionBuilder,
     keystore: &InMemKeystore,
-    sequence_number: u64,
+    seq_num: u64,
 ) -> Result<RoochTransaction> {
-    test_transaction_builder.update_sequence_number(sequence_number);
+    test_transaction_builder.update_sequence_number(seq_num);
 
     let action = match *TX_TYPE {
         TxType::Empty => test_transaction_builder.call_empty_create(),
         TxType::Transfer => test_transaction_builder.call_transfer_create(),
         TxType::Blog => test_transaction_builder.call_article_create_with_size(*TX_SIZE),
+        _ => panic!("Unsupported tx type"),
     };
 
     let tx_data = test_transaction_builder.build(action);
     let rooch_tx =
         keystore.sign_transaction(&test_transaction_builder.sender.into(), tx_data, None)?;
     Ok(rooch_tx)
+}
+
+pub fn find_block_height() -> Result<Vec<u64>> {
+    let dir = BTC_BLK_DIR.clone();
+
+    let mut block_heights = Vec::new();
+
+    for entry in fs::read_dir(&dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_file() && path.extension().unwrap_or_default() == "hex" {
+            let file_stem = path.file_stem().unwrap().to_str().unwrap();
+            let height: u64 = file_stem
+                .parse()
+                .expect("Failed to parse block height from filename");
+            block_heights.push(height);
+        }
+    }
+
+    block_heights.sort();
+    Ok(block_heights)
+}
+
+pub fn create_btc_blk_tx(height: u64, block_file: String) -> Result<L1BlockWithBody> {
+    let block_hex_str = fs::read_to_string(block_file).unwrap();
+    let block_hex = Vec::<u8>::from_hex(&block_hex_str).unwrap();
+    let origin_block: Block = deserialize(&block_hex).unwrap();
+    let block = origin_block.clone();
+    let block_hash = block.header.block_hash();
+    let move_block = rooch_types::bitcoin::types::Block::try_from(block.clone()).unwrap();
+    Ok(L1BlockWithBody {
+        block: rooch_types::transaction::L1Block {
+            chain_id: RoochMultiChainID::Bitcoin.multichain_id(),
+            block_height: height,
+            block_hash: block_hash.to_byte_array().to_vec(),
+        },
+        block_body: move_block.encode(),
+    })
+}
+
+fn deserialize_btc_hex<T: Decodable>(hex: &str) -> Result<T> {
+    let mut reader = HexToBytesIter::new(&hex)?;
+    let object = Decodable::consensus_decode(&mut reader)?;
+    if reader.read_u8().is_ok() {
+        Err(anyhow!(
+            "data not consumed entirely when explicitly deserializing"
+        ))
+    } else {
+        Ok(object)
+    }
+}
+
+// pure execution, no validate, sequence
+pub fn tx_exec_benchmark(c: &mut Criterion) {
+    let mut binding_test = binding_test::RustBindingTest::new().unwrap();
+    let keystore = InMemKeystore::new_insecure_for_tests(10);
+
+    let default_account = keystore.addresses()[0];
+    let mut test_transaction_builder = TestTransactionBuilder::new(default_account.into());
+
+    let mut tx_cnt = 300;
+
+    match *TX_TYPE {
+        Blog => {
+            let tx = create_publish_transaction(&test_transaction_builder, &keystore).unwrap();
+            binding_test.execute(tx).unwrap();
+        }
+        BTCBlk => tx_cnt = 200,
+        Transfer => tx_cnt = 500,
+        Empty => tx_cnt = 1000,
+    }
+
+    let mut transactions: Vec<_> = Vec::with_capacity(tx_cnt);
+    if *TX_TYPE != BTCBlk {
+        for n in 0..tx_cnt {
+            let tx = create_l2_tx(&mut test_transaction_builder, &keystore, n as u64).unwrap();
+            transactions.push(binding_test.executor.validate_l2_tx(tx.clone()).unwrap());
+        }
+    } else {
+        let heights = find_block_height().unwrap();
+        let mut cnt = 0;
+        for height in heights {
+            if cnt >= tx_cnt {
+                break;
+            }
+            let filename = format!("{}.hex", height);
+            let file_path = [BTC_BLK_DIR.clone(), "/".parse().unwrap(), filename].concat();
+            let l1_block = create_btc_blk_tx(height, file_path).unwrap();
+            let ctx = binding_test.create_bt_blk_tx_ctx(cnt as u64, l1_block.clone());
+            let move_tx = binding_test
+                .executor
+                .validate_l1_block(ctx, l1_block.clone())
+                .unwrap();
+            transactions.push(move_tx);
+            cnt += 1;
+        }
+    }
+
+    let mut transactions_iter = transactions.into_iter().cycle();
+
+    c.bench_function("tx_exec", |b| {
+        b.iter(|| {
+            let tx = transactions_iter.next().unwrap();
+            binding_test.execute_verified_tx(tx.clone()).unwrap()
+        });
+    });
 }
