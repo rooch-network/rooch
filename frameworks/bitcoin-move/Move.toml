@@ -10,6 +10,6 @@ rooch_framework = "0x3"
 bitcoin_move = "0x4"
 
 [dependencies]
-MoveStdlib = { local = "../../moveos/moveos-stdlib/move-stdlib" }
-MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
-RoochFramework = { local = "../../crates/rooch-framework" }
+MoveStdlib = { local = "../../frameworks/move-stdlib" }
+MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }
+RoochFramework = { local = "../../frameworks/rooch-framework" }

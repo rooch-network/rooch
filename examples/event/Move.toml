@@ -3,7 +3,7 @@ name = "event"
 version = "0.0.1"
 
 [dependencies]
-MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
+MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }
 
 [addresses]
 rooch_examples =  "_"

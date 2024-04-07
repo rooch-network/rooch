@@ -3,9 +3,9 @@ name = "publish_modules"
 version = "0.0.1"
 
 [dependencies]
-MoveStdlib = { local = "../../moveos/moveos-stdlib/move-stdlib" }
-MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
-RoochFramework = { local = "../../crates/rooch-framework" }
+MoveStdlib = { local = "../../frameworks/move-stdlib" }
+MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }
+RoochFramework = { local = "../../frameworks/rooch-framework" }
 
 [addresses]
 rooch_examples =  "_"

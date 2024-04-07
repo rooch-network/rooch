@@ -3,7 +3,7 @@ name = "bitseed_runner"
 version = "0.0.1"
 
 [dependencies]
-MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
+MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }
 BitcoinMove = { local = "../../frameworks/bitcoin-move" }
 
 [addresses]
