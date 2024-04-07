@@ -1,6 +1,6 @@
-CREATE TABLE table_states
+CREATE TABLE field_states
 (
-    table_handle       VARCHAR        NOT NULL,
+    object_id       VARCHAR        NOT NULL,
     key_hex            VARCHAR        NOT NULL,
     key_str            VARCHAR        NOT NULL,
     value              VARCHAR        NOT NULL,
@@ -10,8 +10,8 @@ CREATE TABLE table_states
     state_index        BIGINT         NOT NULL,
     created_at         BIGINT         NOT NULL,
     updated_at         BIGINT         NOT NULL,
-    PRIMARY KEY (table_handle, key_hex),
+    PRIMARY KEY (object_id, key_hex),
     UNIQUE (tx_order, state_index)
 );
 
-CREATE INDEX idx_table_states_created_at ON table_states (created_at);
+CREATE INDEX idx_field_states_created_at ON field_states (created_at);

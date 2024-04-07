@@ -17,8 +17,8 @@ use moveos_types::{
     state::{AnnotatedState, State, StateChangeSet, TableChange, TableTypeInfo},
 };
 use rooch_types::indexer::state::{
-    GlobalStateFilter, IndexerGlobalState, IndexerStateChangeSet, IndexerTableChangeSet,
-    IndexerTableState, StateSyncFilter, TableStateFilter,
+    FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateChangeSet,
+    IndexerTableChangeSet, ObjectStateFilter, StateSyncFilter,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -446,13 +446,13 @@ pub enum StateSyncFilterView {
 impl From<StateSyncFilterView> for StateSyncFilter {
     fn from(state_filter: StateSyncFilterView) -> Self {
         match state_filter {
-            StateSyncFilterView::TableHandle(table_handle) => Self::TableHandle(table_handle),
+            StateSyncFilterView::TableHandle(table_handle) => Self::ObjectId(table_handle),
         }
     }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct IndexerGlobalStateView {
+pub struct IndexerObjectStateView {
     pub object_id: ObjectID,
     pub owner: AccountAddressView,
     pub flag: u8,
@@ -466,12 +466,12 @@ pub struct IndexerGlobalStateView {
     pub updated_at: u64,
 }
 
-impl IndexerGlobalStateView {
+impl IndexerObjectStateView {
     pub fn try_new_from_global_state(
-        state: IndexerGlobalState,
-    ) -> Result<IndexerGlobalStateView, anyhow::Error> {
+        state: IndexerObjectState,
+    ) -> Result<IndexerObjectStateView, anyhow::Error> {
         let value: AnnotatedMoveStructView = serde_json::from_str(state.value.as_str())?;
-        let global_state_view = IndexerGlobalStateView {
+        let global_state_view = IndexerObjectStateView {
             object_id: state.object_id,
             owner: state.owner.into(),
             flag: state.flag,
@@ -490,7 +490,7 @@ impl IndexerGlobalStateView {
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum GlobalStateFilterView {
+pub enum ObjectStateFilterView {
     /// Query by object value type and owner.
     ObjectTypeWithOwner {
         object_type: StructTagView,
@@ -506,34 +506,34 @@ pub enum GlobalStateFilterView {
     MultiChainAddress { multichain_id: u64, address: String },
 }
 
-impl GlobalStateFilterView {
-    pub fn into_global_state_filter(
-        state_filter: GlobalStateFilterView,
+impl ObjectStateFilterView {
+    pub fn into_object_state_filter(
+        state_filter: ObjectStateFilterView,
         resolve_address: AccountAddress,
-    ) -> GlobalStateFilter {
+    ) -> ObjectStateFilter {
         match state_filter {
-            GlobalStateFilterView::ObjectTypeWithOwner { object_type, owner } => {
-                GlobalStateFilter::ObjectTypeWithOwner {
+            ObjectStateFilterView::ObjectTypeWithOwner { object_type, owner } => {
+                ObjectStateFilter::ObjectTypeWithOwner {
                     object_type: object_type.into(),
                     owner: owner.into(),
                 }
             }
-            GlobalStateFilterView::ObjectType(object_type) => {
-                GlobalStateFilter::ObjectType(object_type.into())
+            ObjectStateFilterView::ObjectType(object_type) => {
+                ObjectStateFilter::ObjectType(object_type.into())
             }
-            GlobalStateFilterView::Owner(owner) => GlobalStateFilter::Owner(owner.into()),
-            GlobalStateFilterView::ObjectId(object_id) => GlobalStateFilter::ObjectId(object_id),
-            GlobalStateFilterView::MultiChainAddress {
+            ObjectStateFilterView::Owner(owner) => ObjectStateFilter::Owner(owner.into()),
+            ObjectStateFilterView::ObjectId(object_id) => ObjectStateFilter::ObjectId(object_id),
+            ObjectStateFilterView::MultiChainAddress {
                 multichain_id: _,
                 address: _,
-            } => GlobalStateFilter::Owner(resolve_address),
+            } => ObjectStateFilter::Owner(resolve_address),
         }
     }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct IndexerTableStateView {
-    pub table_handle: ObjectID,
+pub struct IndexerFieldStateView {
+    pub object_id: ObjectID,
     pub key_hex: String,
     pub key: AnnotatedMoveValueView,
     pub value: AnnotatedMoveValueView,
@@ -545,14 +545,14 @@ pub struct IndexerTableStateView {
     pub updated_at: u64,
 }
 
-impl IndexerTableStateView {
+impl IndexerFieldStateView {
     pub fn try_new_from_table_state(
-        state: IndexerTableState,
-    ) -> Result<IndexerTableStateView, anyhow::Error> {
+        state: IndexerFieldState,
+    ) -> Result<IndexerFieldStateView, anyhow::Error> {
         let key: AnnotatedMoveValueView = serde_json::from_str(state.key_str.as_str())?;
         let value: AnnotatedMoveValueView = serde_json::from_str(state.value.as_str())?;
-        let state_view = IndexerTableStateView {
-            table_handle: state.table_handle,
+        let state_view = IndexerFieldStateView {
+            object_id: state.object_id,
             key_hex: state.key_hex,
             key,
             value,
@@ -569,15 +569,15 @@ impl IndexerTableStateView {
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum TableStateFilterView {
-    /// Query by table handle.
-    TableHandle(ObjectID),
+pub enum FieldStateFilterView {
+    /// Query by object id.
+    ObjectId(ObjectID),
 }
 
-impl From<TableStateFilterView> for TableStateFilter {
-    fn from(state_filter: TableStateFilterView) -> Self {
+impl From<FieldStateFilterView> for FieldStateFilter {
+    fn from(state_filter: FieldStateFilterView) -> Self {
         match state_filter {
-            TableStateFilterView::TableHandle(table_handle) => Self::TableHandle(table_handle),
+            FieldStateFilterView::ObjectId(object_id) => Self::ObjectId(object_id),
         }
     }
 }

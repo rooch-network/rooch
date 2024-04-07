@@ -3,28 +3,26 @@
 
 use crate::errors::IndexerError;
 use crate::types::{
-    IndexedEvent, IndexedGlobalState, IndexedTableChangeSet, IndexedTableState, IndexedTransaction,
+    IndexedEvent, IndexedFieldState, IndexedObjectState, IndexedTableChangeSet, IndexedTransaction,
 };
 
 pub trait IndexerStoreTrait: Send + Sync {
-    fn persist_or_update_global_states(
+    fn persist_or_update_object_states(
         &self,
-        states: Vec<IndexedGlobalState>,
+        states: Vec<IndexedObjectState>,
     ) -> Result<(), IndexerError>;
 
-    fn delete_global_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError>;
+    fn delete_object_states(&self, state_pks: Vec<String>) -> Result<(), IndexerError>;
 
-    fn persist_or_update_table_states(
+    fn persist_or_update_field_states(
         &self,
-        states: Vec<IndexedTableState>,
+        states: Vec<IndexedFieldState>,
     ) -> Result<(), IndexerError>;
 
-    fn delete_table_states(&self, state_pks: Vec<(String, String)>) -> Result<(), IndexerError>;
+    fn delete_field_states(&self, state_pks: Vec<(String, String)>) -> Result<(), IndexerError>;
 
-    fn delete_table_states_by_table_handle(
-        &self,
-        table_handles: Vec<String>,
-    ) -> Result<(), IndexerError>;
+    fn delete_field_states_by_object_id(&self, object_ids: Vec<String>)
+        -> Result<(), IndexerError>;
 
     fn persist_table_change_sets(
         &self,

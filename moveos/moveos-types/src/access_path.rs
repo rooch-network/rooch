@@ -30,11 +30,9 @@ pub enum Path {
         account: AccountAddress,
         module_names: Vec<Identifier>,
     },
-    /// TODO rename to Fields: Get object dynamic fields
-    /// Get table values by keys
-    Table {
-        table_handle: ObjectID,
-        keys: Vec<KeyState>,
+    Fields {
+        object_id: ObjectID,
+        fields: Vec<KeyState>,
     },
 }
 
@@ -125,12 +123,13 @@ impl std::fmt::Display for Path {
                         .join(",")
                 )?;
             }
-            Path::Table { table_handle, keys } => {
+            Path::Fields { object_id, fields } => {
                 write!(
                     f,
-                    "/table/{}/{}",
-                    table_handle,
-                    keys.iter()
+                    "/fields/{}/{}",
+                    object_id,
+                    fields
+                        .iter()
                         .map(|key| key.to_string())
                         .collect::<Vec<_>>()
                         .join(",")
@@ -198,13 +197,13 @@ impl FromStr for Path {
                     module_names,
                 })
             }
-            "table" => {
-                let table_handle = iter
+            "table" | "fields" => {
+                let object_id_str = iter
                     .next()
                     .ok_or_else(|| anyhow::anyhow!("Invalid access path"))?;
-                let table_handle = ObjectID::from_str(table_handle)?;
+                let object_id = ObjectID::from_str(object_id_str)?;
 
-                let keys = match iter.next() {
+                let fields = match iter.next() {
                     Some(v) => v
                         .split(',')
                         .map(|key| {
@@ -215,7 +214,7 @@ impl FromStr for Path {
                     None => vec![],
                 };
 
-                Ok(Path::Table { table_handle, keys })
+                Ok(Path::Fields { object_id, fields })
             }
             _ => Err(anyhow::anyhow!("Invalid access path: {}", s)),
         }
@@ -227,7 +226,7 @@ impl FromStr for Path {
 /// 1. /object/$object_id1[,$object_id2]*
 /// 2. /resource/$account_address/$resource_type1[,$resource_type2]*
 /// 3. /module/$account_address/$module_name1[,$module_name2]*
-/// 4. /table/$table_handle/$key_state1[,$key_state2]*
+/// 4. /fields/$object_id/$field_key_state1[,$field_key_state2]*
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AccessPath(pub Path);
 
@@ -270,21 +269,21 @@ impl AccessPath {
         })
     }
 
-    pub fn table(table_handle: ObjectID, keys: Vec<KeyState>) -> Self {
-        AccessPath(Path::Table { table_handle, keys })
+    pub fn fields(object_id: ObjectID, fields: Vec<KeyState>) -> Self {
+        AccessPath(Path::Fields { object_id, fields })
     }
 
-    pub fn table_without_keys(table_handle: ObjectID) -> Self {
-        AccessPath(Path::Table {
-            table_handle,
-            keys: vec![],
+    pub fn fields_without_keys(object_id: ObjectID) -> Self {
+        AccessPath(Path::Fields {
+            object_id,
+            fields: vec![],
         })
     }
 
     /// Convert AccessPath to StateQuery, return the ObjectID and field keys
     pub fn into_state_query(self) -> StateQuery {
         match self.0 {
-            Path::Table { table_handle, keys } => StateQuery::Fields(table_handle, keys),
+            Path::Fields { object_id, fields } => StateQuery::Fields(object_id, fields),
             Path::Object { object_ids } => {
                 if object_ids.is_empty() {
                     StateQuery::Fields(ObjectID::root(), vec![])

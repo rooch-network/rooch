@@ -52,6 +52,7 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
 use rooch_test_transaction_builder::TestTransactionBuilder;
 use rooch_types::address::RoochAddress;
+use rooch_types::bitcoin::data_import_config::DataImportMode;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::chain_id::RoochChainID;
@@ -167,11 +168,12 @@ pub async fn setup_service(
     // Init executor
     let is_genesis = moveos_store.statedb.is_genesis();
     let btc_network = Network::default().to_num();
+    let data_import_mode = DataImportMode::default().to_num();
     let gas_schedule_blob =
         bcs::to_bytes(&default_gas_schedule()).expect("Failure serializing genesis gas schedule");
     let executor_actor = ExecutorActor::new(
         chain_id.genesis_ctx(rooch_account, gas_schedule_blob),
-        BitcoinGenesisContext::new(btc_network),
+        BitcoinGenesisContext::new(btc_network, data_import_mode),
         moveos_store.clone(),
         rooch_store.clone(),
     )?;

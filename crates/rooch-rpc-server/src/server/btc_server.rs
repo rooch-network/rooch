@@ -68,7 +68,7 @@ impl BtcAPIServer for BtcServer {
             UTXOFilterView::into_global_state_filter(filter, resolve_address)?;
         let states = self
             .rpc_service
-            .query_global_states(global_state_filter, cursor, limit_of + 1, descending_order)
+            .query_object_states(global_state_filter, cursor, limit_of + 1, descending_order)
             .await?;
 
         let mut data = self
@@ -123,7 +123,7 @@ impl BtcAPIServer for BtcServer {
             InscriptionFilterView::into_global_state_filter(filter, resolve_address)?;
         let states = self
             .rpc_service
-            .query_global_states(global_state_filter, cursor, limit_of + 1, descending_order)
+            .query_object_states(global_state_filter, cursor, limit_of + 1, descending_order)
             .await?;
 
         let mut data = self

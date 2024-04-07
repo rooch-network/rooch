@@ -16,16 +16,33 @@ module bitcoin_move::ord {
     use rooch_framework::multichain_address;
     use rooch_framework::bitcoin_address::BitcoinAddress;
     use bitcoin_move::types::{Self, Witness, Transaction};
-    use bitcoin_move::utxo::{Self, SealPoint, UTXO};
+    use bitcoin_move::utxo::{Self, UTXO};
 
     friend bitcoin_move::genesis;
     friend bitcoin_move::light_client;
 
-    // const OUTPOINT_TO_SATPOINT_BUCKET_SIZE: u64 = 1000;
+    /// How may blocks between halvings.
+    const SUBSIDY_HALVING_INTERVAL: u32 = 210_000;
+
+    const FIRST_POST_SUBSIDY_EPOCH: u32 = 33;
+
+    /// How many satoshis are in "one bitcoin".
+    const COIN_VALUE: u64 = 100_000_000;
 
     struct InscriptionID has store, copy, drop {
         txid: address,
         index: u32,
+    }
+
+    struct Flotsam has store, copy, drop {
+        inscription_id: InscriptionID,
+        offset: u64,
+    }
+
+    struct SatPoint has store, copy, drop {
+        output_index: u32,
+        offset: u64,
+        object_id: ObjectID,
     }
 
     struct Inscription has key{
@@ -166,50 +183,48 @@ module bitcoin_move::ord {
         object::borrow_object(object_id)
     }
 
-    public fun spend_utxo(utxo_obj: &mut Object<UTXO>, tx: &Transaction, input_utxo_values: vector<u64>, input_index: u64): vector<SealPoint>{
+    public fun spend_utxo(utxo_obj: &mut Object<UTXO>, tx: &Transaction, input_utxo_values: vector<u64>, input_index: u64): vector<SatPoint>{
         let utxo = object::borrow_mut(utxo_obj);
 
-        let seal_points = utxo::remove_seals<Inscription>(utxo);
-        let new_seal_points = vector::empty();
-        if(vector::is_empty(&seal_points)){
-            return new_seal_points
+        let seals = utxo::remove_seals<Inscription>(utxo);
+        let new_sat_points = vector::empty();
+        if(vector::is_empty(&seals)){
+            return new_sat_points
         };
         let outputs = types::tx_output(tx);
 
-        // Track the Inscription via SealPoint
+        // Track the Inscription via SatPoint
         let j = 0;
-        let seal_points_len = vector::length(&seal_points);
-        while(j < seal_points_len){
-            let seal_point = *vector::borrow(&mut seal_points, j);
-            let new_seal_point = match_utxo_and_generate_seal_point(&seal_point, tx, input_utxo_values, input_index);
-            let match_output_index = utxo::seal_point_output_index(&new_seal_point);
+        let seals_len = vector::length(&seals);
+        while(j < seals_len){
+            let seal_object_id = *vector::borrow(&mut seals, j);
+            let (_origin_owner, inscription_obj) = object::take_object_extend<Inscription>(seal_object_id);
+            let inscription = object::borrow_mut(&mut inscription_obj);
+
+            let new_sat_point = match_utxo_and_generate_sat_point(inscription.offset, seal_object_id, tx, input_utxo_values, input_index);
+            let match_output_index = new_sat_point.output_index;
 
             let match_output = vector::borrow(outputs, (match_output_index as u64));
             let bitcoin_address_opt = types::txout_address(match_output);
             let to_address = types::txout_object_address(match_output);
 
-            let seal_object_id = utxo::seal_point_object_id(&new_seal_point);
-            let (_origin_owner, inscription_obj) = object::take_object_extend<Inscription>(seal_object_id);
-            let inscription = object::borrow_mut(&mut inscription_obj);
-            inscription.offset = utxo::seal_point_offset(&new_seal_point);
+            inscription.offset = new_sat_point.offset;
             
             // TODO handle curse inscription
             object::transfer_extend(inscription_obj, to_address);
-            vector::push_back(&mut new_seal_points, new_seal_point);
+            vector::push_back(&mut new_sat_points, new_sat_point);
             // Auto create address mapping if not exist
             bind_multichain_address(to_address, bitcoin_address_opt);
             j = j + 1;
         };
 
-        new_seal_points
+        new_sat_points
     }
 
-    /// Match UTXO, generate new SealPoint, UTXO spent follows "First in First out"
-    fun match_utxo_and_generate_seal_point(seal_point: &SealPoint, tx: &Transaction, input_utxo_values: vector<u64>, input_index: u64): SealPoint{
+    /// Match UTXO, via SatPoint offset, generate new SatPoint, UTXO spent follows "First in First out"
+    fun match_utxo_and_generate_sat_point(offset: u64, seal_object_id: ObjectID, tx: &Transaction, input_utxo_values: vector<u64>, input_index: u64): SatPoint{
         let txoutput = types::tx_output(tx);
-        let offset = utxo::seal_point_offset(seal_point);
-        let seal_object_id = utxo::seal_point_object_id(seal_point);
-
+        
         let idx = 0;
         let input_utxo_value_accumulator = 0;
         while(idx < input_index){
@@ -239,11 +254,10 @@ module bitcoin_move::ord {
 
             idx = idx + 1;
         };
-
-        utxo::new_seal_point((new_output_index as u32), new_offset, seal_object_id)
+        new_sat_point((new_output_index as u32), new_offset, seal_object_id)
     }
 
-    public fun process_transaction(tx: &Transaction, input_utxo_values: vector<u64>): vector<SealPoint>{
+    public fun process_transaction(tx: &Transaction, input_utxo_values: vector<u64>): vector<SatPoint>{
         let output_seals = vector::empty();
 
         let inscriptions = from_transaction(tx, option::some(input_utxo_values));
@@ -285,8 +299,8 @@ module bitcoin_move::ord {
             let object_id = object::id(&inscription_obj);
             object::transfer_extend(inscription_obj, to_address);
 
-            let new_seal_point = utxo::new_seal_point((output_index as u32), offset, object_id);
-            vector::push_back(&mut output_seals, new_seal_point);
+            let new_sat_point = new_sat_point((output_index as u32), offset, object_id);
+            vector::push_back(&mut output_seals, new_sat_point);
 
             //Auto create address mapping if not exist
             bind_multichain_address(to_address, bitcoin_address_opt);
@@ -368,6 +382,37 @@ module bitcoin_move::ord {
         } = self;
     }
 
+    // ===== SatPoint ========== //
+
+    // === SatPoint ===
+    public fun new_sat_point(output_index: u32, offset: u64, object_id: ObjectID) : SatPoint {
+        SatPoint{
+            output_index,
+            offset,
+            object_id
+        }
+    }
+
+    public fun unpack_sat_point(sat_point: SatPoint) : (u32, u64, ObjectID) {
+        let SatPoint{output_index, offset, object_id} = sat_point;
+        (output_index, offset, object_id)
+    }
+
+    /// Get the SatPoint's object_id
+    public fun sat_point_object_id(sat_point: &SatPoint): ObjectID {
+        sat_point.object_id
+    }
+
+    /// Get the SatPoint's offset
+    public fun sat_point_offset(sat_point: &SatPoint): u64 {
+        sat_point.offset
+    }
+
+    /// Get the SatPoint's output_index
+    public fun sat_point_output_index(sat_point: &SatPoint): u32 {
+        sat_point.output_index
+    }
+
     // ==== InscriptionRecord ==== //
 
     public fun unpack_record(record: InscriptionRecord): 
@@ -433,6 +478,17 @@ module bitcoin_move::ord {
     }
 
     native fun from_witness(witness: &Witness): vector<InscriptionRecord>;
+
+    /// Block Rewards
+    public fun subsidy_by_height(height: u32): u64 {
+        let epoch = height / SUBSIDY_HALVING_INTERVAL;
+        if(epoch < FIRST_POST_SUBSIDY_EPOCH) {
+            (50 * COIN_VALUE) >> (epoch as u8)
+        } else {
+            0
+        }
+    }
+
 
     public(friend) fun bind_multichain_address(rooch_address: address, bitcoin_address_opt: Option<BitcoinAddress>) {
         //Auto create address mapping if not exist

@@ -23,7 +23,7 @@ pub struct PipelineProcessorActor {
     pub(crate) sequencer: SequencerProxy,
     pub(crate) proposer: ProposerProxy,
     pub(crate) indexer: IndexerProxy,
-    pub(crate) data_verify_mode: bool,
+    pub(crate) data_import_flag: bool,
 }
 
 impl PipelineProcessorActor {
@@ -32,14 +32,14 @@ impl PipelineProcessorActor {
         sequencer: SequencerProxy,
         proposer: ProposerProxy,
         indexer: IndexerProxy,
-        data_verify_mode: bool,
+        data_import_flag: bool,
     ) -> Self {
         Self {
             executor,
             sequencer,
             proposer,
             indexer,
-            data_verify_mode,
+            data_import_flag,
         }
     }
 
@@ -96,9 +96,9 @@ impl PipelineProcessorActor {
         let sequence_info = tx.sequence_info.clone();
         let output_clone = output.clone();
 
-        // If data verify mode, don't write all indexer
-        //TODO put all indexer data into a single message
-        if !self.data_verify_mode {
+        // If bitcoin block data import, don't write all indexer
+        // TODO put all indexer data into a single message
+        if !self.data_import_flag {
             tokio::spawn(async move {
                 let result = indexer
                     .indexer_states(tx.sequence_info.tx_order, output_clone.changeset.clone())
