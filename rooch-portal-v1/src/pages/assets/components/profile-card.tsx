@@ -6,14 +6,55 @@ import { Avatar } from '@/components/ui/avatar'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 
 import { formatAddress } from '@/utils/format'
-import { useWalletStore } from '@roochnetwork/rooch-sdk-kit'
+import { WalletAccount, useWalletStore } from '@roochnetwork/rooch-sdk-kit'
 import { useNavigate } from 'react-router-dom'
 
 import Jazzicon, { jsNumberForAddress } from 'react-jazzicon'
+import { useEffect, useState } from 'react'
 
 export const ProfileCard = () => {
   const navigate = useNavigate()
   const account = useWalletStore((state) => state.currentAccount)
+  const [roochAddress, setRoochAddress] = useState('')
+  const [walletAccount, setWalletAccount] = useState<WalletAccount | null>(null)
+
+  // ** Create Wallet Account Instance
+  useEffect(() => {
+    if (account) {
+      const newWalletAccount = new WalletAccount(
+        account.client,
+        account.chain,
+        account.address,
+        account.authorization,
+        account.publicKey,
+        account.compressedPublicKey,
+      )
+      setWalletAccount(newWalletAccount)
+    }
+  }, [account])
+
+  // ** Get Rooch Address
+  useEffect(() => {
+    const fetchRoochAddress = async () => {
+      try {
+        const address = await walletAccount?.resoleRoochAddress()
+        if (address === undefined) {
+          setRoochAddress('No address found')
+        } else {
+          setRoochAddress(address)
+        }
+      } catch (err) {
+        console.error('Error fetching Rooch Address:', err)
+      }
+    }
+
+    if (walletAccount) {
+      fetchRoochAddress()
+    }
+  }, [walletAccount])
+
+  console.log(roochAddress)
+  console.log(walletAccount)
 
   const handleClickCopy = () => {
     if (!account) {
@@ -44,7 +85,10 @@ export const ProfileCard = () => {
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="text-2xl md:text-3xl leading-tight text-white">
-              Rooch Account #1
+              <span className="flex flex-col items-start justify-start">
+                <h3>Rooch Account</h3>
+                <p className="text-base">{/* TODO: Rooch Account */}</p>
+              </span>
             </CardTitle>
             {/* <CardDescription className="text-wrap text-white/95 dark:text-white/70 text-xs md:text-sm">
               Manage Your Wallet Connections and Authorized Sessions.
