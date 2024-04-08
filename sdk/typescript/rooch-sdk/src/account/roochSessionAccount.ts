@@ -20,6 +20,8 @@ const SCOPE_MODULE_ADDRESSS = 0
 const SCOPE_MODULE_NAMES = 1
 const SCOPE_FUNCTION_NAMES = 2
 
+const requiredScope = '0x3::session_key::remove_session_key_entry'
+
 export class RoochSessionAccount implements IAccount {
   protected readonly client: RoochClient
   protected readonly scopes: string[]
@@ -43,6 +45,11 @@ export class RoochSessionAccount implements IAccount {
     this.localCreateSessionTime = Date.now() / 1000
     this.sessionAccount = new RoochAccount(this.client)
     this.authInfo = authInfo
+
+    // session must have the right to delete itself
+    if (!this.scopes.find((item) => item === '0x3::*::*' || item === requiredScope)) {
+      this.scopes.push(requiredScope)
+    }
   }
 
   public static async CREATE(
@@ -173,7 +180,7 @@ export class RoochSessionAccount implements IAccount {
   }
 
   public async getSessionKey() {
-    const session = this.client.executeViewFunction({
+    return this.client.executeViewFunction({
       funcId: '0x3::session_key::get_session_key',
       tyArgs: [],
       args: [
@@ -187,8 +194,6 @@ export class RoochSessionAccount implements IAccount {
         },
       ],
     })
-
-    return session
   }
 
   public async querySessionKeys(
@@ -209,7 +214,7 @@ export class RoochSessionAccount implements IAccount {
       ],
       tyArgs: [],
       address: this.getAddress(),
-      authorizer: this.account.getAuthorizer(),
+      authorizer: this.getAuthorizer(),
       opts: opts,
     })
   }

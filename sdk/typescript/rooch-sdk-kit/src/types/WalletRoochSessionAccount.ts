@@ -6,6 +6,8 @@ import { runtime, bcs } from '@roochnetwork/rooch-sdk'
 import { WalletAccount } from '../types/WalletAccount'
 
 export class WalletRoochSessionAccount extends RoochSessionAccount {
+  private roochAddress?: string
+
   constructor(
     client: RoochClient,
     account: WalletAccount,
@@ -43,7 +45,18 @@ export class WalletRoochSessionAccount extends RoochSessionAccount {
     return new WalletRoochSessionAccount(client, account, scopes, maxInactiveInterval).build(opts)
   }
 
-  override async register(txData: runtime.RoochTransactionData): Promise<RoochSessionAccount> {
+  protected override async build(opts?: SendRawTransactionOpts): Promise<RoochSessionAccount> {
+    this.roochAddress = await (this.account as WalletAccount).resoleRoochAddress()
+    return super.build(opts)
+  }
+
+  getAddress(): string {
+    return this.roochAddress!
+  }
+
+  protected override async register(
+    txData: runtime.RoochTransactionData,
+  ): Promise<RoochSessionAccount> {
     const transactionDataPayload = (() => {
       const se = new bcs.BcsSerializer()
       txData.serialize(se)

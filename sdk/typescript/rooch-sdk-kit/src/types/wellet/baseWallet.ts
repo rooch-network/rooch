@@ -12,16 +12,14 @@ import {
 } from '@roochnetwork/rooch-sdk'
 import { Buffer } from 'buffer'
 import { SupportChain } from '../../feature'
-import { chain2MultiChainID } from '../../utils/chain2MultiChainID'
 
 export const RoochSignPrefix = 'Rooch tx hash:\n'
 
 export abstract class BaseWallet implements IAuthorizer {
-  account?: WalletAccount
+  client: RoochClient
+  account: WalletAccount | undefined
   installed: boolean | undefined
   name: string | undefined
-  client: RoochClient
-  roochAddress?: string
 
   constructor(client: RoochClient) {
     this.client = client
@@ -172,16 +170,5 @@ export abstract class BaseWallet implements IAuthorizer {
       await new Promise((resolve) => setTimeout(resolve, 100 * i))
     }
     return Promise.resolve(this.getTarget() !== undefined)
-  }
-
-  async getRoochAddress(): Promise<string> {
-    if (!this.roochAddress) {
-      this.roochAddress = await this.client?.resoleRoochAddress({
-        address: this.account?.address ?? '',
-        multiChainID: chain2MultiChainID(this.getChain()),
-      })
-    }
-
-    return this.roochAddress
   }
 }
