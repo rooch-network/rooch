@@ -323,3 +323,12 @@ Feature: Rooch CLI integration tests
 
       Then stop the server
   
+    @serial
+    @bitcoin-move
+    Scenario: rooch bitcoin test
+      Given a bitcoind server for rooch_bitcoin_test
+      Given a ord server for rooch_bitcoin_test
+      Given a server for rooch_bitcoin_test
+      Then stop the server
+      Then stop the ord server 
+      Then stop the bitcoind server 

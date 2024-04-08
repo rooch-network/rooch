@@ -1,3 +1,6 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
+
 use hmac::{Hmac, Mac};
 use rand::Rng;
 use sha2::Sha256;

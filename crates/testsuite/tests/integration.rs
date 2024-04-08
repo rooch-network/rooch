@@ -12,12 +12,17 @@ use rooch_config::{rooch_config_dir, RoochOpt, ServerOpt};
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_rpc_server::Service;
 use serde_json::Value;
+use std::env;
 use tracing::{debug, info};
 
-use std::time::Duration;
-use testcontainers::{clients::Cli, core::{ WaitFor, Container, ExecCommand}, RunnableImage};
 use images::bitcoin::BitcoinD;
 use images::ord::Ord;
+use std::time::Duration;
+use testcontainers::{
+    clients::Cli,
+    core::{Container, ExecCommand, WaitFor},
+    RunnableImage,
+};
 
 const RPC_USER: &str = "roochuser";
 const RPC_PASS: &str = "roochpass";
@@ -34,8 +39,23 @@ struct World {
 #[given(expr = "a server for {word}")] // Cucumber Expression
 async fn start_server(w: &mut World, _scenario: String) {
     let mut service = Service::new();
-    let opt = RoochOpt::new_with_temp_store();
+    let mut opt = RoochOpt::new_with_temp_store();
     wait_port_available(opt.port()).await;
+
+    match w.bitcoind.take() {
+        Some(bitcoind) => {
+            let bitcoin_rpc_url =
+                format!("http://127.0.0.1:{}", bitcoind.get_host_port_ipv4(RPC_PORT));
+            opt.btc_rpc_url = Some(bitcoin_rpc_url);
+            opt.btc_rpc_username = Some(RPC_USER.to_string());
+            opt.btc_rpc_password = Some(RPC_PASS.to_string());
+            opt.btc_start_block_height = Some(0);
+            info!("config btc rpc ok");
+        }
+        None => {
+            info!("bitcoind server is none");
+        }
+    }
 
     let server_opt = ServerOpt::new();
 
@@ -59,7 +79,6 @@ async fn stop_server(w: &mut World) {
     }
 }
 
-
 #[given(expr = "a bitcoind server for {word}")] // Cucumber Expression
 async fn start_bitcoind_server(w: &mut World, scenario: String) {
     tokio::time::sleep(Duration::from_secs(2)).await;
@@ -71,7 +90,8 @@ async fn start_bitcoind_server(w: &mut World, scenario: String) {
         format!("0.0.0.0:{}", RPC_PORT),
         RPC_USER.to_string(),
         RPC_PASS.to_string(),
-    ).into();
+    )
+    .into();
     bitcoind_image = bitcoind_image
         .with_network(network.clone())
         .with_run_option(("--network-alias", "bitcoind"));
@@ -326,7 +346,11 @@ fn check_port_in_use(port: u16) -> bool {
 
 #[tokio::main]
 async fn main() {
+    let tag_filter = env::var("CUCUMBER_FILTER").unwrap_or_default();
+
     World::cucumber()
-        .run_and_exit("./features/debug.feature")
+        .filter_run_and_exit("./features/cmd.feature", move |_, _, sc| {
+            tag_filter.is_empty() || sc.tags.iter().any(|t| t == &tag_filter)
+        })
         .await;
 }
