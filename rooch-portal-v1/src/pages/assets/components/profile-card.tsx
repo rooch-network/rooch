@@ -1,5 +1,5 @@
 import toast from 'react-hot-toast'
-import { Copy, RotateCcw } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
