@@ -45,7 +45,7 @@ const apps = [
   },
 ]
 
-export const ConnectedSites = () => {
+export const ManageSessions = () => {
   return (
     <div className="rounded-lg border w-full">
       <Table>
