@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+mod images;
+
 use anyhow::{bail, Result};
 use clap::Parser;
 use cucumber::{given, then, World as _};
@@ -12,9 +14,20 @@ use rooch_rpc_server::Service;
 use serde_json::Value;
 use tracing::{debug, info};
 
+use std::time::Duration;
+use testcontainers::{clients::Cli, core::{ WaitFor, Container, ExecCommand}, RunnableImage};
+use images::bitcoin::BitcoinD;
+use images::ord::Ord;
+
+const RPC_USER: &str = "roochuser";
+const RPC_PASS: &str = "roochpass";
+const RPC_PORT: u16 = 18443;
+
 #[derive(cucumber::World, Debug, Default)]
 struct World {
     service: Option<Service>,
+    bitcoind: Option<Container<BitcoinD>>,
+    ord: Option<Container<Ord>>,
     tpl_ctx: Option<TemplateContext>,
 }
 
@@ -42,6 +55,82 @@ async fn stop_server(w: &mut World) {
         }
         None => {
             info!("service is none");
+        }
+    }
+}
+
+
+#[given(expr = "a bitcoind server for {word}")] // Cucumber Expression
+async fn start_bitcoind_server(w: &mut World, scenario: String) {
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    let docker = Cli::default();
+    let network = format!("test_network_{}", scenario);
+
+    let mut bitcoind_image: RunnableImage<BitcoinD> = BitcoinD::new(
+        format!("0.0.0.0:{}", RPC_PORT),
+        RPC_USER.to_string(),
+        RPC_PASS.to_string(),
+    ).into();
+    bitcoind_image = bitcoind_image
+        .with_network(network.clone())
+        .with_run_option(("--network-alias", "bitcoind"));
+
+    let bitcoind = docker.run(bitcoind_image);
+    debug!("bitcoind ok");
+
+    w.bitcoind = Some(bitcoind);
+}
+
+#[then(expr = "stop the bitcoind server")] // Cucumber Expression
+async fn stop_bitcoind_server(w: &mut World) {
+    println!("stop server");
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
+    match w.bitcoind.take() {
+        Some(bitcoind) => {
+            bitcoind.stop();
+            info!("shutdown bitcoind server");
+        }
+        None => {
+            info!("bitcoind server is none");
+        }
+    }
+}
+
+#[given(expr = "a ord server for {word}")] // Cucumber Expression
+async fn start_ord_server(w: &mut World, scenario: String) {
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    let docker = Cli::default();
+    let network = format!("test_network_{}", scenario);
+
+    let mut ord_image: RunnableImage<Ord> = Ord::new(
+        format!("http://bitcoind:{}", RPC_PORT),
+        RPC_USER.to_string(),
+        RPC_PASS.to_string(),
+    )
+    .into();
+    ord_image = ord_image.with_network(network.clone());
+
+    let ord = docker.run(ord_image);
+    debug!("ord ok");
+
+    w.ord = Some(ord);
+}
+
+#[then(expr = "stop the ord server")] // Cucumber Expression
+async fn stop_ord_server(w: &mut World) {
+    println!("stop ord server");
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
+    match w.ord.take() {
+        Some(ord) => {
+            ord.stop();
+            info!("shutdown ord server");
+        }
+        None => {
+            info!("ord server is none");
         }
     }
 }
@@ -238,6 +327,6 @@ fn check_port_in_use(port: u16) -> bool {
 #[tokio::main]
 async fn main() {
     World::cucumber()
-        .run_and_exit("./features/cmd.feature")
+        .run_and_exit("./features/debug.feature")
         .await;
 }
