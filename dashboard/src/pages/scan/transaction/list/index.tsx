@@ -79,7 +79,7 @@ const defaultColumns: GridColDef[] = [
     field: 'sender',
     headerName: 'Sender',
     renderCell: ({ row }: CellType) => (
-      <Tooltip placement="bottom" sx={{ cursor: 'pointer' }} title={''}>
+      <Tooltip placement="bottom" sx={{ cursor: 'pointer' }} title={'hah'}>
         <Typography sx={{ color: 'text.secondary' }}>
           {/*{formatAddress(row.transactionWithInfoView.transaction.sender)}*/}
         </Typography>
