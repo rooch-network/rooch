@@ -295,7 +295,7 @@ impl WASMExecuteGasParameters {
 }
 
 fn build_err(cost: InternalGas, abort_code: u64) -> PartialVMResult<NativeResult> {
-    return Ok(NativeResult::err(cost, abort_code));
+    Ok(NativeResult::err(cost, abort_code))
 }
 
 // native_execute_wasm_function
