@@ -58,10 +58,8 @@ use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::L1BlockWithBody;
 use std::fmt::Display;
 use std::str::FromStr;
-use std::sync::Arc;
 use std::time::Duration;
 use std::{env, fs};
-use tempfile::TempDir;
 use tracing::info;
 
 pub const EXAMPLE_SIMPLE_BLOG_PACKAGE_NAME: &'static str = "simple_blog";
@@ -79,10 +77,10 @@ impl FromStr for TxType {
     type Err = ();
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s {
-            "transfer" => Ok(TxType::Transfer),
-            "blog" => Ok(TxType::Blog),
-            "btc_block" => Ok(TxType::BTCBlk),
-            _ => Ok(TxType::Empty),
+            "transfer" => Ok(Transfer),
+            "blog" => Ok(Blog),
+            "btc_block" => Ok(BTCBlk),
+            _ => Ok(Empty),
         }
     }
 }
@@ -90,10 +88,10 @@ impl FromStr for TxType {
 impl Display for TxType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let str = match self {
-            TxType::Empty => "empty".to_string(),
-            TxType::Transfer => "transfer".to_string(),
-            TxType::Blog => "blog".to_string(),
-            TxType::BTCBlk => "btc_blk".to_string(),
+            Empty => "empty".to_string(),
+            Transfer => "transfer".to_string(),
+            Blog => "blog".to_string(),
+            BTCBlk => "btc_blk".to_string(),
         };
         write!(f, "{}", str)
     }
@@ -108,22 +106,15 @@ lazy_static! {
     };
     pub static ref TX_TYPE: TxType = {
         let tx_type_str = env::var("ROOCH_BENCH_TX_TYPE").unwrap_or_else(|_| String::from("empty"));
-        tx_type_str.parse::<TxType>().unwrap_or(TxType::Empty)
+        tx_type_str.parse::<TxType>().unwrap_or(Empty)
     };
-    pub static ref DATA_DIR: DataDirPath = get_data_dir();
-    pub static ref BTC_BLK_DIR: String =
-        env::var("ROOCH_BENCH_BTC_BLK_DIR").unwrap_or(String::from("data/btc"));
-}
-
-pub fn get_data_dir() -> DataDirPath {
-    match env::var("ROOCH_TEST_DATA_DIR") {
-        Ok(path_str) => {
-            let temp_dir = TempDir::new_in(path_str)
-                .expect("Failed to create temp dir in provided data dir path");
-            DataDirPath::TempPath(Arc::from(temp_dir))
-        }
-        Err(_) => moveos_config::temp_dir(),
-    }
+    pub static ref IMPORT_MODE: DataImportMode = {
+        let import_mode_str =
+            env::var("ROOCH_BENCH_IMPORT_MODE").unwrap_or_else(|_| String::from("none mode"));
+        import_mode_str
+            .parse::<DataImportMode>()
+            .unwrap_or(DataImportMode::None)
+    };
 }
 
 pub fn gen_sequencer(keypair: RoochKeyPair, rooch_store: RoochStore) -> Result<SequencerActor> {
@@ -254,10 +245,10 @@ pub fn init_storage(datadir: &DataDirPath) -> Result<(MoveOSStore, RoochStore)> 
         StoreConfig::get_mock_moveos_store_dir(datadir),
     );
     if !rooch_db_path.exists() {
-        std::fs::create_dir_all(rooch_db_path.clone())?;
+        fs::create_dir_all(rooch_db_path.clone())?;
     }
     if !moveos_db_path.exists() {
-        std::fs::create_dir_all(moveos_db_path.clone())?;
+        fs::create_dir_all(moveos_db_path.clone())?;
     }
 
     //Init store
@@ -282,7 +273,7 @@ pub fn init_storage(datadir: &DataDirPath) -> Result<(MoveOSStore, RoochStore)> 
 pub fn init_indexer(datadir: &DataDirPath) -> Result<(IndexerStore, IndexerReader)> {
     let indexer_db_path = IndexerConfig::get_mock_indexer_db(datadir);
     if !indexer_db_path.exists() {
-        std::fs::create_dir_all(indexer_db_path.clone())?;
+        fs::create_dir_all(indexer_db_path.clone())?;
     }
     let indexer_store = IndexerStore::new(indexer_db_path.clone())?;
     indexer_store.create_all_tables_if_not_exists()?;
@@ -313,9 +304,9 @@ pub fn create_l2_tx(
     test_transaction_builder.update_sequence_number(seq_num);
 
     let action = match *TX_TYPE {
-        TxType::Empty => test_transaction_builder.call_empty_create(),
-        TxType::Transfer => test_transaction_builder.call_transfer_create(),
-        TxType::Blog => test_transaction_builder.call_article_create_with_size(*TX_SIZE),
+        Empty => test_transaction_builder.call_empty_create(),
+        Transfer => test_transaction_builder.call_transfer_create(),
+        Blog => test_transaction_builder.call_article_create_with_size(*TX_SIZE),
         _ => panic!("Unsupported tx type"),
     };
 
@@ -325,9 +316,7 @@ pub fn create_l2_tx(
     Ok(rooch_tx)
 }
 
-pub fn find_block_height() -> Result<Vec<u64>> {
-    let dir = BTC_BLK_DIR.clone();
-
+pub fn find_block_height(dir: String) -> Result<Vec<u64>> {
     let mut block_heights = Vec::new();
 
     for entry in fs::read_dir(&dir)? {
@@ -365,20 +354,25 @@ pub fn create_btc_blk_tx(height: u64, block_file: String) -> Result<L1BlockWithB
 
 // pure execution, no validate, sequence
 pub fn tx_exec_benchmark(c: &mut Criterion) {
-    let mut binding_test = binding_test::RustBindingTest::new().unwrap();
+    let mut binding_test =
+        binding_test::RustBindingTest::new_with_mode((*IMPORT_MODE).to_num()).unwrap();
     let keystore = InMemKeystore::new_insecure_for_tests(10);
 
     let default_account = keystore.addresses()[0];
     let mut test_transaction_builder = TestTransactionBuilder::new(default_account.into());
 
     let mut tx_cnt = 300;
+    let mut bench_id = "tx_exec";
 
     match *TX_TYPE {
         Blog => {
             let tx = create_publish_transaction(&test_transaction_builder, &keystore).unwrap();
             binding_test.execute(tx).unwrap();
         }
-        BTCBlk => tx_cnt = 200,
+        BTCBlk => {
+            bench_id = "tx_exec_blk";
+            tx_cnt = 200
+        }
         Transfer => tx_cnt = 500,
         Empty => tx_cnt = 1000,
     }
@@ -390,14 +384,16 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
             transactions.push(binding_test.executor.validate_l2_tx(tx.clone()).unwrap());
         }
     } else {
-        let heights = find_block_height().unwrap();
+        let btc_blk_dir = env::var("ROOCH_BENCH_BTC_BLK_DIR").unwrap();
+
+        let heights = find_block_height(btc_blk_dir.clone()).unwrap();
         let mut cnt = 0;
         for height in heights {
             if cnt >= tx_cnt {
                 break;
             }
             let filename = format!("{}.hex", height);
-            let file_path = [BTC_BLK_DIR.clone(), "/".parse().unwrap(), filename].concat();
+            let file_path = [btc_blk_dir.clone(), "/".parse().unwrap(), filename].concat();
             let l1_block = create_btc_blk_tx(height, file_path).unwrap();
             let ctx = binding_test.create_bt_blk_tx_ctx(cnt as u64, l1_block.clone());
             let move_tx = binding_test
@@ -411,7 +407,7 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
 
     let mut transactions_iter = transactions.into_iter().cycle();
 
-    c.bench_function("tx_exec", |b| {
+    c.bench_function(bench_id, |b| {
         b.iter(|| {
             let tx = transactions_iter.next().unwrap();
             binding_test.execute_verified_tx(tx.clone()).unwrap()

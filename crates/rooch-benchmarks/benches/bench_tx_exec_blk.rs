@@ -8,7 +8,7 @@ use rooch_benchmarks::tx::tx_exec_benchmark;
 
 criterion_group! {
     name = tx_exec_blk_bench;
-    config = profiled(None).measurement_time(std::time::Duration::from_secs(20));
+    config = profiled(None).measurement_time(std::time::Duration::from_secs(2));
     targets = tx_exec_benchmark
 }
 

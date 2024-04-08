@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, Result};
-use lazy_static::lazy_static;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_config::DataDirPath;
@@ -29,10 +28,6 @@ use std::path::Path;
 use std::sync::Arc;
 use tempfile::TempDir;
 
-lazy_static! {
-    pub static ref DATA_DIR: DataDirPath = get_data_dir();
-}
-
 pub fn get_data_dir() -> DataDirPath {
     match env::var("ROOCH_TEST_DATA_DIR") {
         Ok(path_str) => {
@@ -54,6 +49,10 @@ pub struct RustBindingTest {
 
 impl RustBindingTest {
     pub fn new() -> Result<Self> {
+        Self::new_with_mode(DataImportMode::Ord.to_num())
+    }
+
+    pub fn new_with_mode(data_import_mode: u8) -> Result<Self> {
         let data_dir = get_data_dir();
         let (rooch_db_path, moveos_db_path) = (
             StoreConfig::get_mock_moveos_store_dir(&data_dir),
@@ -73,7 +72,7 @@ impl RustBindingTest {
             .expect("Failure serializing genesis gas schedule");
         let executor = ExecutorActor::new(
             RoochChainID::LOCAL.genesis_ctx(sequencer, gas_schedule_blob),
-            BitcoinGenesisContext::new(Network::default().to_num(), DataImportMode::Ord.to_num()),
+            BitcoinGenesisContext::new(Network::default().to_num(), data_import_mode),
             moveos_store,
             rooch_store,
         )?;
