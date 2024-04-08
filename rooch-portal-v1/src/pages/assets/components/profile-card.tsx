@@ -31,7 +31,7 @@ export const ProfileCard = () => {
       )
       setWalletAccount(newWalletAccount)
     }
-  }, [account])
+  }, [account, setWalletAccount])
 
   // ** Get Rooch Address
   useEffect(() => {
@@ -47,7 +47,7 @@ export const ProfileCard = () => {
     }
 
     fetchRoochAddress()
-  }, [walletAccount])
+  }, [walletAccount, setRoochAddress])
 
   // TODO: handleClickCopy
   const handleClickCopy = (accountType: string) => {
