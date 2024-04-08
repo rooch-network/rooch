@@ -1,7 +1,6 @@
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableFooter,
   TableHead,
@@ -50,9 +49,6 @@ export const AssetsCoin = () => {
   return (
     <div className="rounded-lg border overflow-hidden">
       <Table>
-        <TableCaption>
-          <span className="flex mb-2 ml-2">Transfer your coins here.</span>
-        </TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[120px]">Asset</TableHead>
