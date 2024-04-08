@@ -180,8 +180,8 @@ module bitcoin_move::ord {
 
     public fun borrow_inscription(txid: address, index: u32): &Object<Inscription>{
         let id = InscriptionID{
-            txid: txid,
-            index: index,
+            txid,
+            index,
         };
         let object_id = object::custom_object_id<InscriptionID,Inscription>(id);
         object::borrow_object(object_id)
