@@ -45,7 +45,7 @@ move-package = { workspace = true }
 
 moveos-store = { workspace = true }
 moveos-stdlib = { workspace = true }
-moveos-stdlib-builder = { workspace = true }
+framework-builder = { workspace = true }
 moveos = { workspace = true }
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }

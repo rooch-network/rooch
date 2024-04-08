@@ -1,0 +1,56 @@
+[package]
+name = "moveos-stdlib"
+version = "0.1.0"
+
+# Workspace inherited keys
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+publish = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = { workspace = true }
+better_any = { workspace = true }
+fastcrypto = { workspace = true }
+linked-hash-map = { workspace = true }
+log = { workspace = true }
+once_cell = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_bytes = { workspace = true }
+sha3 = { workspace = true }
+smallvec = { workspace = true }
+hex = { workspace = true }
+petgraph = { workspace = true }
+parking_lot = { workspace = true }
+itertools = { workspace = true }
+ciborium = { workspace = true }
+rlp = { workspace = true }
+primitive-types = { workspace = true }
+
+move-binary-format = { workspace = true }
+move-bytecode-utils = { workspace = true }
+move-bytecode-verifier = { workspace = true }
+move-core-types = { workspace = true }
+move-command-line-common = { workspace = true }
+move-stdlib = { workspace = true }
+move-unit-test = { workspace = true, optional = true }
+move-vm-runtime = { workspace = true }
+move-vm-test-utils = { workspace = true }
+move-vm-types = { workspace = true }
+move-package = { workspace = true }
+move-prover = { workspace = true }
+
+moveos-types = { workspace = true }
+moveos-verifier = { workspace = true }
+framework-builder = { workspace = true }
+moveos-wasm = { workspace = true }
+wasmer = { workspace = true }
+moveos-object-runtime = { workspace = true }
+
+smt = { workspace = true }

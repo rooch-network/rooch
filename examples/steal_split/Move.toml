@@ -3,7 +3,7 @@ name = "examples/steal_split"
 version = "0.0.1"
 
 [dependencies]
-RoochFramework = { local = "../../crates/rooch-framework" }
+RoochFramework = { local = "../../frameworks/rooch-framework" }
 
 [addresses]
 rooch_examples = "_"

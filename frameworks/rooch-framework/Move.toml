@@ -1,0 +1,13 @@
+[package]
+name = "RoochFramework"
+version = "0.0.1"
+
+[addresses]
+std = "0x1"
+moveos_std = "0x2"
+rooch_framework = "0x3"
+vm_reserved = "0x0"
+
+[dependencies]
+MoveStdlib = { local = "../../frameworks/move-stdlib" }
+MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }

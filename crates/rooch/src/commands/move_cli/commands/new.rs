@@ -16,13 +16,13 @@ use std::path::PathBuf;
 use crate::cli_types::WalletContextOptions;
 
 const MOVE_STDLIB_PKG_NAME: &str = "MoveStdlib";
-const MOVE_STDLIB_PKG_PATH: &str = "{ git = \"https://github.com/rooch-network/rooch.git\", subdir = \"moveos/moveos-stdlib/move-stdlib\", rev = \"main\" }";
+const MOVE_STDLIB_PKG_PATH: &str = "{ git = \"https://github.com/rooch-network/rooch.git\", subdir = \"frameworks/move-stdlib\", rev = \"main\" }";
 
 const MOVEOS_STDLIB_PKG_NAME: &str = "MoveosStdlib";
-const MOVEOS_STDLIB_PKG_PATH: &str = "{ git = \"https://github.com/rooch-network/rooch.git\", subdir = \"moveos/moveos-stdlib/moveos-stdlib\", rev = \"main\" }";
+const MOVEOS_STDLIB_PKG_PATH: &str = "{ git = \"https://github.com/rooch-network/rooch.git\", subdir = \"frameworks/moveos-stdlib\", rev = \"main\" }";
 
 const ROOCH_FRAMEWORK_PKG_NAME: &str = "RoochFramework";
-const ROOCH_FRAMEWORK_PKG_PATH: &str = "{ git = \"https://github.com/rooch-network/rooch.git\", subdir = \"crates/rooch-framework\", rev = \"main\" }";
+const ROOCH_FRAMEWORK_PKG_PATH: &str = "{ git = \"https://github.com/rooch-network/rooch.git\", subdir = \"frameworks/rooch-framework\", rev = \"main\" }";
 
 #[derive(Parser)]
 pub struct New {

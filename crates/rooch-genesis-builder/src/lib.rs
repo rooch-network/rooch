@@ -4,18 +4,18 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
+use framework_builder::{Stdlib, StdlibBuildConfig};
 use move_package::BuildConfig;
-use moveos_stdlib_builder::{Stdlib, StdlibBuildConfig};
 use once_cell::sync::Lazy;
 
 static STDLIB_BUILD_CONFIGS: Lazy<Vec<StdlibBuildConfig>> = Lazy::new(|| {
-    let move_stdlib_path = path_in_crate("../../moveos/moveos-stdlib/move-stdlib")
+    let move_stdlib_path = path_in_crate("../../frameworks/move-stdlib")
         .canonicalize()
         .expect("canonicalize path failed");
-    let moveos_stdlib_path = path_in_crate("../../moveos/moveos-stdlib/moveos-stdlib")
+    let moveos_stdlib_path = path_in_crate("../../frameworks/moveos-stdlib")
         .canonicalize()
         .expect("canonicalize path failed");
-    let rooch_framework_path = path_in_crate("../rooch-framework")
+    let rooch_framework_path = path_in_crate("../../frameworks/rooch-framework")
         .canonicalize()
         .expect("canonicalize path failed");
 
@@ -62,7 +62,7 @@ static STDLIB_BUILD_CONFIGS: Lazy<Vec<StdlibBuildConfig>> = Lazy::new(|| {
 });
 
 pub fn build_stdlib() -> Result<Stdlib> {
-    moveos_stdlib_builder::Stdlib::build(STDLIB_BUILD_CONFIGS.clone())
+    framework_builder::Stdlib::build(STDLIB_BUILD_CONFIGS.clone())
 }
 
 pub fn build_and_save_stdlib() -> Result<()> {
