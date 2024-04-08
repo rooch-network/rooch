@@ -1,18 +1,19 @@
 name: Deploy MAINNET Seed
 on:
-  workflow_dispatch:
-  release:
-    types: [ published ]
+    workflow_dispatch:
+      inputs:
+        tagName:
+          description: 'Tag Name to Checkout'
+          required: true
+          default: 'latest'
+    release:
+      types: [ published ]
 
 jobs:
   deploy-rooch-mainnet:
     name: deploy rooch mainnet
     runs-on: self-hosted
     steps:
-      - name: Extract version
-        id: extract-version
-        run: |
-          printf "::set-output name=%s::%s\n" tag-name "${GITHUB_REF#refs/tags/}"
       - name: Deploy to GCP MAINNET VM
         env:
           PRIVATE_KEY: ${{ secrets.GCP_MAINNET_SSH_PRIVATE_KEY }}
@@ -23,5 +24,5 @@ jobs:
           chmod 600 private_key.pem
           sudo apt update
           sudo apt install -y --no-install-recommends openssh-server
-          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST bash -c "'sleep 30' && docker ps | grep rooch | awk '{print \$1}' | xargs -r docker stop && docker ps -a | grep rooch | awk '{print \$1}' | xargs -r docker rm -f && docker pull 'ghcr.io/rooch-network/rooch:${{ steps.extract-version.outputs.tag-name }}' && docker run -d -v /data:/root -p 50051:50051 'ghcr.io/rooch-network/rooch:${{ steps.extract-version.outputs.tag-name }}' server start -n main --btc-rpc-url '${{secrets.BTC_MAIN_RPC_URL}}' --btc-rpc-username rooch-main --btc-rpc-password '${{secrets.BTC_MAIN_RPC_PWD}}' --btc-start-block-height 0 --btc-network 1 --data-import-mode 1"
+          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST bash -c "'sleep 30' && docker ps | grep rooch | awk '{print \$1}' | xargs -r docker stop && docker ps -a | grep rooch | awk '{print \$1}' | xargs -r docker rm -f && docker pull 'ghcr.io/rooch-network/rooch:${{ github.event.inputs.tagName }}' && docker run -d -v /data:/root -p 50051:50051 'ghcr.io/rooch-network/rooch:${{ github.event.inputs.tagName }}' server start -n main --btc-rpc-url '${{secrets.BTC_MAIN_RPC_URL}}' --btc-rpc-username rooch-main --btc-rpc-password '${{secrets.BTC_MAIN_RPC_PWD}}' --btc-start-block-height 0 --btc-end-block-height 767420 --btc-network 1 --data-import-mode 1"
 

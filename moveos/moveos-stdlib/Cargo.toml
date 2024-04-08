@@ -30,6 +30,8 @@ petgraph = { workspace = true }
 parking_lot = { workspace = true }
 itertools = { workspace = true }
 ciborium = { workspace = true }
+rlp = { workspace = true }
+primitive-types = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }
