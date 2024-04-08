@@ -10,13 +10,13 @@ import { WalletAccount, useWalletStore } from '@roochnetwork/rooch-sdk-kit'
 import { useNavigate } from 'react-router-dom'
 
 import Jazzicon, { jsNumberForAddress } from 'react-jazzicon'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { useWalletAccountStore } from '@/store/useWalletAccountStore'
 
 export const ProfileCard = () => {
   const navigate = useNavigate()
   const account = useWalletStore((state) => state.currentAccount)
-  const [roochAddress, setRoochAddress] = useState('')
-  const [walletAccount, setWalletAccount] = useState<WalletAccount | null>(null)
+  const { walletAccount, roochAddress, setWalletAccount, setRoochAddress } = useWalletAccountStore()
 
   // ** Create Wallet Account Instance
   useEffect(() => {
@@ -36,25 +36,18 @@ export const ProfileCard = () => {
   // ** Get Rooch Address
   useEffect(() => {
     const fetchRoochAddress = async () => {
-      try {
-        const address = await walletAccount?.resoleRoochAddress()
-        if (address === undefined) {
-          setRoochAddress('No address found')
-        } else {
+      if (walletAccount) {
+        try {
+          const address = await walletAccount.resoleRoochAddress()
           setRoochAddress(address)
+        } catch (error) {
+          console.error('Error fetching Rooch Address:', error)
         }
-      } catch (err) {
-        console.error('Error fetching Rooch Address:', err)
       }
     }
 
-    if (walletAccount) {
-      fetchRoochAddress()
-    }
+    fetchRoochAddress()
   }, [walletAccount])
-
-  console.log(roochAddress)
-  console.log(walletAccount)
 
   const handleClickCopy = () => {
     if (!account) {
