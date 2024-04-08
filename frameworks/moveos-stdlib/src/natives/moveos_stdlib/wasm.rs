@@ -32,6 +32,11 @@ const E_WASM_FUNCTION_NOT_FOUND: u64 = 6;
 const E_WASM_MEMORY_ACCESS_FAILED: u64 = 7;
 const E_JSON_UNMARSHAL_FAILED: u64 = 8;
 pub const E_CBOR_MARSHAL_FAILED: u64 = 9;
+pub const E_EMPTY_RETURN_VALUE: u64 = 10;
+pub const E_VALUE_NOT_I32: u64 = 11;
+pub const E_MEMORY_NOT_FOUND: u64 = 12;
+pub const E_INCORRECT_LENGTH_OF_ARGS: u64 = 13;
+pub const E_CBOR_UNMARSHAL_FAILED: u64 = 14;
 
 #[derive(Debug, Clone)]
 pub struct WASMCreateInstanceGasParameters {
@@ -131,8 +136,10 @@ fn native_create_cbor_values(
         }
     }
 
-    let cbor_value: ciborium::Value =
-        ciborium::from_reader(cbor_buffer.as_slice()).expect("cbor unmarshal failed");
+    let cbor_value: ciborium::Value = match ciborium::from_reader(cbor_buffer.as_slice()) {
+        Ok(v) => v,
+        Err(_) => return build_err(gas_params.base, E_CBOR_UNMARSHAL_FAILED),
+    };
     log::debug!(
         "native_create_cbor_values -> mint_args_array {:?}",
         cbor_value
@@ -242,11 +249,10 @@ fn native_create_wasm_args_in_memory(
             ));
         }
         Some(instance) => {
-            let stack_alloc_func = instance
-                .instance
-                .exports
-                .get_function("stackAlloc")
-                .unwrap();
+            let stack_alloc_func = match instance.instance.exports.get_function("stackAlloc") {
+                Ok(v) => v,
+                Err(_) => return build_err(gas_params.base_create_args, E_WASM_FUNCTION_NOT_FOUND),
+            };
 
             for arg in func_args.iter() {
                 let c_arg = unsafe { CString::from_vec_unchecked(arg.clone()) };
@@ -288,6 +294,10 @@ impl WASMExecuteGasParameters {
     }
 }
 
+fn build_err(cost: InternalGas, abort_code: u64) -> PartialVMResult<NativeResult> {
+    return Ok(NativeResult::err(cost, abort_code));
+}
+
 // native_execute_wasm_function
 #[inline]
 fn native_execute_wasm_function(
@@ -322,8 +332,24 @@ fn native_execute_wasm_function(
 
                     match calling_function.call(&mut instance.store, wasm_func_args.as_slice()) {
                         Ok(ret) => {
-                            let return_value = ret.deref().get(0).unwrap();
-                            let offset = return_value.i32().unwrap();
+                            let return_value = match ret.deref().get(0) {
+                                Some(v) => v,
+                                None => {
+                                    return build_err(
+                                        gas_params.base_create_execution,
+                                        E_EMPTY_RETURN_VALUE,
+                                    )
+                                }
+                            };
+                            let offset = match return_value.i32() {
+                                Some(v) => v,
+                                None => {
+                                    return build_err(
+                                        gas_params.base_create_execution,
+                                        E_VALUE_NOT_I32,
+                                    )
+                                }
+                            };
                             let ret_val = Value::u64(offset as u64);
 
                             let mut cost = gas_params.base_create_execution;
@@ -381,7 +407,10 @@ fn native_read_data_length(
     let ret = match instance_pool.lock().unwrap().get_mut(&instance_id) {
         None => Ok(NativeResult::err(gas_params.base, E_INSTANCE_NO_EXISTS)),
         Some(instance) => {
-            let memory = instance.instance.exports.get_memory("memory").unwrap();
+            let memory = match instance.instance.exports.get_memory("memory") {
+                Ok(v) => v,
+                Err(_) => return build_err(gas_params.base, E_MEMORY_NOT_FOUND),
+            };
             let memory_view = memory.view(&instance.store);
             let mut length_bytes: [u8; 4] = [0; 4];
             match memory_view.read(data_ptr, length_bytes.as_mut_slice()) {
@@ -435,7 +464,10 @@ fn native_read_data_from_heap(
     let ret = match instance_pool.lock().unwrap().get_mut(&instance_id) {
         None => Ok(NativeResult::err(gas_params.base, E_INSTANCE_NO_EXISTS)),
         Some(instance) => {
-            let memory = instance.instance.exports.get_memory("memory").unwrap();
+            let memory = match instance.instance.exports.get_memory("memory") {
+                Ok(v) => v,
+                Err(_) => return build_err(gas_params.base, E_MEMORY_NOT_FOUND),
+            };
             let memory_view = memory.view(&instance.store);
             if data_length > 0 {
                 let mut data = vec![0; data_length as usize];
@@ -506,7 +538,10 @@ fn native_release_wasm_instance(
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    let value = args.pop_back().unwrap();
+    let value = match args.pop_back() {
+        Some(v) => v,
+        None => return build_err(gas_params.base, E_INCORRECT_LENGTH_OF_ARGS),
+    };
     let mut fiedls = value.value_as::<Struct>()?.unpack()?;
     let val = fiedls.next().ok_or_else(|| {
         PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE)
