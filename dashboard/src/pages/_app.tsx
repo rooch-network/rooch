@@ -110,7 +110,7 @@ const App = (props: ExtendedAppProps) => {
       </Head>
 
       <QueryClientProvider client={queryClient}>
-        <RoochClientProvider defaultNetwork={DevNetwork}>
+        <RoochClientProvider network={DevNetwork}>
           <WalletProvider chain={SupportChain.BITCOIN} autoConnect fallback={<Spinner />}>
             <SettingsProvider {...(setConfig ? { pageSettings: setConfig() } : {})}>
               <SettingsConsumer>

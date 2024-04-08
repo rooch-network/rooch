@@ -13,7 +13,7 @@ import {
 } from '@mui/material'
 
 // ** Hooks Import
-import { useCurrentSessionAccount, useCreateSessionKey } from '@roochnetwork/rooch-sdk-kit'
+import { useCurrentSession, useCreateSessionKey } from '@roochnetwork/rooch-sdk-kit'
 
 interface Props {
   open: boolean
@@ -89,7 +89,7 @@ interface SessionGuardProps {
 const SessionGuard = (props: SessionGuardProps) => {
   const { children } = props
 
-  const sessionAccount = useCurrentSessionAccount()
+  const sessionAccount = useCurrentSession()
   const { mutate: createSessionKey } = useCreateSessionKey()
 
   const handleAuth = (scope: Array<string>, maxInactiveInterval: number) => {
