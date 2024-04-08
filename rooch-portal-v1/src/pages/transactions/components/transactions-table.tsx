@@ -119,7 +119,6 @@ export const TransactionsTable = () => {
                 <TableCell>
                   <Badge variant="outline" className="text-muted-foreground">
                     {/* TODO: https://github.com/rooch-network/rooch/issues/1524 */}
-                    {/* {tx.transaction.data} */}
                     TODO
                   </Badge>
                 </TableCell>
