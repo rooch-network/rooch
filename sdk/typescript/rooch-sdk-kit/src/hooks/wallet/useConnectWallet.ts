@@ -33,7 +33,6 @@ export function useConnectWallet({
 > {
   const setWalletConnected = useWalletStore((state) => state.setWalletConnected)
   const setConnectionStatus = useWalletStore((state) => state.setConnectionStatus)
-  // const currentAccount = useWalletStore((state) => state.currentAccount)
 
   return useMutation({
     mutationKey: walletMutationKeys.connectWallet(mutationKey),
@@ -43,18 +42,7 @@ export function useConnectWallet({
 
         const connectAccounts = await wallet.connect()
         const selectedAccount = connectAccounts[0]
-
-        // use cache date
-        // if (selectedAccount.address === currentAccount?.address) {
-        //   setWalletConnected(connectAccounts, currentAccount)
-        //   return connectAccounts
-        // }
-        //
-
-        // let selectedAccountRoochAddress = await client.resoleRoochAddress({
-        //   address: selectedAccount.address,
-        //   multiChainID: chain2MultiChainID(chain),
-        // })
+        await selectedAccount.resoleRoochAddress()
 
         setWalletConnected(wallet, connectAccounts, selectedAccount)
 

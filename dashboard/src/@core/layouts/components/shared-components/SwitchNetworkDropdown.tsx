@@ -11,7 +11,7 @@ import { Settings } from 'src/@core/context/settingsContext'
 import Typography from '@mui/material/Typography'
 import { AllNetwork, Network } from '@roochnetwork/rooch-sdk'
 import Menu from '@mui/material/Menu'
-import { useRoochClientContext } from '@roochnetwork/rooch-sdk-kit'
+import { useRoochContext } from '@roochnetwork/rooch-sdk-kit'
 import MenuItem from '@mui/material/MenuItem'
 import { Fragment, SyntheticEvent, useState } from 'react'
 
@@ -39,7 +39,7 @@ const SwitchNetworkDropdown = (props: Props) => {
 
   // const chain = useWalletStore(state => state.currentChain)
   // const setChain = useWalletStore(state => state.setChain)
-  const { currentNetwork, selectedNetwork } = useRoochClientContext()
+  const { currentNetwork, switchNetwork } = useRoochContext()
 
   // ** States
   const [anchorEl, setAnchorEl] = useState<Element | null>(null)
@@ -54,7 +54,7 @@ const SwitchNetworkDropdown = (props: Props) => {
   const handleDropdownClose = (v?: Network) => {
     setAnchorEl(null)
     if (v) {
-      selectedNetwork(v)
+      switchNetwork(v)
     }
   }
 
