@@ -894,14 +894,17 @@ name = "bitcoin-move"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "assert_cmd",
  "bcs",
  "better_any",
  "bitcoin 0.31.0",
  "brotli",
  "bs58 0.5.0",
  "ciborium",
+ "cucumber",
  "fastcrypto",
  "framework-builder",
+ "futures",
  "hex",
  "http",
  "linked-hash-map",
