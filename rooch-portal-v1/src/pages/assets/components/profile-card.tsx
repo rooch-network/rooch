@@ -72,10 +72,18 @@ export const ProfileCard = () => {
       <CardFooter className="flex justify-between relative pb-8 md:pb-12 px-4 md:px-6 dark:bg-primary-foreground h-full">
         <div className="absolute">
           <Avatar className="hidden md:inline">
-            <Jazzicon diameter={80} seed={jsNumberForAddress(account?.address as string)} />
+            {account ? (
+              <Jazzicon diameter={80} seed={jsNumberForAddress(account.address)} />
+            ) : (
+              <Jazzicon diameter={80} seed={10000000} />
+            )}
           </Avatar>
           <Avatar className="inline md:hidden">
-            <Jazzicon diameter={55} seed={jsNumberForAddress(account?.address as string)} />
+            {account ? (
+              <Jazzicon diameter={55} seed={jsNumberForAddress(account.address)} />
+            ) : (
+              <Jazzicon diameter={55} seed={10000000} />
+            )}
           </Avatar>
         </div>
         <div className="absolute top-0 right-4 md:top-2 md:right-6">

@@ -33,7 +33,11 @@ export const ProfileInfo = () => {
         >
           <div className="flex items-center justify-start gap-x-3">
             <Avatar className="">
-              <Jazzicon diameter={55} seed={jsNumberForAddress(account?.address as string)} />
+              {account ? (
+                <Jazzicon diameter={55} seed={jsNumberForAddress(account.address)} />
+              ) : (
+                <Jazzicon diameter={55} seed={10000000} />
+              )}
             </Avatar>
             <div className="h-full w-full flex flex-col items-start justify-center">
               <h3 className="text-base font-semibold text-zinc-500 dark:text-zinc-300">
