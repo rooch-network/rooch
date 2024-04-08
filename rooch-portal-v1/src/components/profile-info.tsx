@@ -1,106 +1,42 @@
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Avatar } from '@/components/ui/avatar'
 
 import Jazzicon, { jsNumberForAddress } from 'react-jazzicon'
 
 import { formatAddress } from '@/utils/format'
 import { useWalletStore } from '@roochnetwork/rooch-sdk-kit'
+import { useWalletAccountStore } from '@/store/useWalletAccountStore'
 
 export const ProfileInfo = () => {
   const account = useWalletStore((state) => state.currentAccount)
+  const { roochAddress } = useWalletAccountStore()
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-12 w-full cursor-pointer flex items-center justify-start transition-all ease-in-out"
-        >
-          <div className="flex items-center justify-start gap-x-3">
-            <Avatar className="">
-              {account ? (
-                <Jazzicon diameter={55} seed={jsNumberForAddress(account.address)} />
-              ) : (
-                <Jazzicon diameter={55} seed={10000000} />
-              )}
-            </Avatar>
-            <div className="h-full w-full flex flex-col items-start justify-center">
-              <h3 className="text-base font-semibold text-zinc-500 dark:text-zinc-300">
-                Rooch Network
-              </h3>
-              <p className="text-zinc-400 dark:text-zinc-500">
-                {account === null ? 'Wallet Address' : formatAddress(account.address)}
-              </p>
-            </div>
+    <Button
+      variant="ghost"
+      size="sm"
+      className="h-12 w-full cursor-pointer flex items-center justify-start transition-all ease-in-out"
+    >
+      <div className="flex items-center justify-start gap-x-3">
+        <Avatar className="">
+          {account ? (
+            <Jazzicon diameter={55} seed={jsNumberForAddress(account.address)} />
+          ) : (
+            <Jazzicon diameter={55} seed={10000000} />
+          )}
+        </Avatar>
+        <div className="h-full w-full flex flex-col items-start justify-center">
+          <h3 className="text-base font-semibold text-zinc-500 dark:text-zinc-300">
+            Rooch Network
+          </h3>
+          <div className="leading-none text-white/85 flex items-center justify-start font-normal text-xs sm:text-sm hover:cursor-pointer">
+            {roochAddress ? <p>{formatAddress(roochAddress as string)}</p> : <p>Rooch Address</p>}
+            <Button variant="ghost" size="icon" className="rounded-full h-4 w-4 transition-all">
+              <img src="/rooch_white_logo.svg" alt="rooch logo" className="w-3 h-3" />
+            </Button>
           </div>
-        </Button>
-      </DropdownMenuTrigger>
-
-      <DropdownMenuContent className="w-56">
-        <DropdownMenuLabel>Rooch Network</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem>
-            Profile
-            <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            Billing
-            <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            Settings
-            <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            Keyboard shortcuts
-            <DropdownMenuShortcut>⌘K</DropdownMenuShortcut>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem>Team</DropdownMenuItem>
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>Invite users</DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent>
-                <DropdownMenuItem>Email</DropdownMenuItem>
-                <DropdownMenuItem>Message</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>More...</DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
-          <DropdownMenuItem>
-            New Team
-            <DropdownMenuShortcut>⌘+T</DropdownMenuShortcut>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem>GitHub</DropdownMenuItem>
-        <DropdownMenuItem>Support</DropdownMenuItem>
-        <DropdownMenuItem disabled>API</DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          Log out
-          <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </div>
+      </div>
+    </Button>
   )
 }
