@@ -91,10 +91,6 @@ export const AssetsTable = () => {
                             <DropdownMenuShortcut>⇧⌘F</DropdownMenuShortcut>
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => {}}>
-                            Buy & Sell
-                            <DropdownMenuShortcut>⇧⌘B</DropdownMenuShortcut>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => {}}>
                             Swap
                             <DropdownMenuShortcut>⇧⌘S</DropdownMenuShortcut>
                           </DropdownMenuItem>

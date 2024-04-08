@@ -75,16 +75,12 @@ export const AssetsCoin = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56">
-                    <DropdownMenuLabel>Action 💥</DropdownMenuLabel>
+                    <DropdownMenuLabel>Action</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
                       <DropdownMenuItem onClick={() => {}}>
                         Transfer
                         <DropdownMenuShortcut>⇧⌘F</DropdownMenuShortcut>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => {}}>
-                        Buy & Sell
-                        <DropdownMenuShortcut>⇧⌘B</DropdownMenuShortcut>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => {}}>
                         Swap
