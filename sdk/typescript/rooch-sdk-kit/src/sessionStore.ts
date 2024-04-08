@@ -41,9 +41,7 @@ export function createSessionStore({ storage, storageKey }: ClientConfiguration)
         removeSession(session) {
           const cache = get().sessions
           set(() => ({
-            sessions: cache.filter(
-              async (c) => (await c.getRoochAddress()) === (await session.getRoochAddress()),
-            ),
+            sessions: cache.filter((c) => c.getAddress() === session.getAddress()),
           }))
         },
       }),

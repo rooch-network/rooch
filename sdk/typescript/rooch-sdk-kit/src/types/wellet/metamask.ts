@@ -35,6 +35,12 @@ export class Metamask extends ETHWallet {
         return accounts
       })
 
-    return accounts.map((v) => new WalletAccount(this.getChain(), this, v, this.client))
+    const walletAccounts = accounts.map(
+      (address) => new WalletAccount(this.client, this.getChain(), address, this),
+    )
+
+    this.account = walletAccounts[0]
+
+    return walletAccounts
   }
 }
