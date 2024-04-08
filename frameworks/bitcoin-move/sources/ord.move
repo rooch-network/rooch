@@ -35,8 +35,12 @@ module bitcoin_move::ord {
     }
 
     struct Flotsam has store, copy, drop {
-        inscription_id: InscriptionID,
+        // inscription_id: InscriptionID,
+        // offset: u64,
+        output_index: u32,
+        // start: u64,
         offset: u64,
+        object_id: ObjectID,
     }
 
     struct SatPoint has store, copy, drop {
@@ -183,13 +187,14 @@ module bitcoin_move::ord {
         object::borrow_object(object_id)
     }
 
-    public fun spend_utxo(utxo_obj: &mut Object<UTXO>, tx: &Transaction, input_utxo_values: vector<u64>, input_index: u64): vector<SatPoint>{
+    public fun spend_utxo(utxo_obj: &mut Object<UTXO>, tx: &Transaction, input_utxo_values: vector<u64>, input_index: u64): (vector<SatPoint>, vector<Flotsam>){
         let utxo = object::borrow_mut(utxo_obj);
 
         let seals = utxo::remove_seals<Inscription>(utxo);
         let new_sat_points = vector::empty();
+        let flotsams = vector::empty();
         if(vector::is_empty(&seals)){
-            return new_sat_points
+            return (new_sat_points, flotsams)
         };
         let outputs = types::tx_output(tx);
 
@@ -198,10 +203,51 @@ module bitcoin_move::ord {
         let seals_len = vector::length(&seals);
         while(j < seals_len){
             let seal_object_id = *vector::borrow(&mut seals, j);
-            let (_origin_owner, inscription_obj) = object::take_object_extend<Inscription>(seal_object_id);
+            let (origin_owner, inscription_obj) = object::take_object_extend<Inscription>(seal_object_id);
             let inscription = object::borrow_mut(&mut inscription_obj);
 
-            let new_sat_point = match_utxo_and_generate_sat_point(inscription.offset, seal_object_id, tx, input_utxo_values, input_index);
+            let (is_match, new_sat_point) = match_utxo_and_generate_sat_point(inscription.offset, seal_object_id, tx, input_utxo_values, input_index);
+            if(is_match){
+                let match_output_index = new_sat_point.output_index;
+
+                let match_output = vector::borrow(outputs, (match_output_index as u64));
+                let bitcoin_address_opt = types::txout_address(match_output);
+                let to_address = types::txout_object_address(match_output);
+                inscription.offset = new_sat_point.offset;
+
+                // TODO handle curse inscription
+                object::transfer_extend(inscription_obj, to_address);
+                vector::push_back(&mut new_sat_points, new_sat_point);
+                // Auto create address mapping if not exist
+                bind_multichain_address(to_address, bitcoin_address_opt);
+            } else {
+                let flotsam = new_flotsam(new_sat_point.output_index, new_sat_point.offset, new_sat_point.object_id);
+                vector::push_back(&mut flotsams, flotsam);
+
+                object::transfer_extend(inscription_obj, origin_owner);
+            };
+            j = j + 1;
+        };
+
+        (new_sat_points, flotsams)
+    }
+
+    public fun handle_coinbase_tx(tx: &Transaction, flotsams: vector<Flotsam>, block_height: u64): vector<SatPoint>{
+        let new_sat_points = vector::empty();
+        if(vector::is_empty(&flotsams)){
+            return new_sat_points
+        };
+        let outputs = types::tx_output(tx);
+
+        // Track the Inscription via SatPoint
+        let j = 0;
+        let flotsams_len = vector::length(&flotsams);
+        while(j < flotsams_len){
+            let flotsam = *vector::borrow(&mut flotsams, j);
+            let (_origin_owner, inscription_obj) = object::take_object_extend<Inscription>(flotsam.object_id);
+            let inscription = object::borrow_mut(&mut inscription_obj);
+
+            let new_sat_point = match_coinbase_and_generate_sat_point(j, tx, flotsams, block_height);
             let match_output_index = new_sat_point.output_index;
 
             let match_output = vector::borrow(outputs, (match_output_index as u64));
@@ -209,7 +255,7 @@ module bitcoin_move::ord {
             let to_address = types::txout_object_address(match_output);
 
             inscription.offset = new_sat_point.offset;
-            
+
             // TODO handle curse inscription
             object::transfer_extend(inscription_obj, to_address);
             vector::push_back(&mut new_sat_points, new_sat_point);
@@ -222,7 +268,7 @@ module bitcoin_move::ord {
     }
 
     /// Match UTXO, via SatPoint offset, generate new SatPoint, UTXO spent follows "First in First out"
-    fun match_utxo_and_generate_sat_point(offset: u64, seal_object_id: ObjectID, tx: &Transaction, input_utxo_values: vector<u64>, input_index: u64): SatPoint{
+    fun match_utxo_and_generate_sat_point(offset: u64, seal_object_id: ObjectID, tx: &Transaction, input_utxo_values: vector<u64>, input_index: u64): (bool, SatPoint){
         let txoutput = types::tx_output(tx);
         
         let idx = 0;
@@ -254,7 +300,58 @@ module bitcoin_move::ord {
 
             idx = idx + 1;
         };
-        new_sat_point((new_output_index as u32), new_offset, seal_object_id)
+
+        // match utxo output
+        if(idx < output_len){
+            let new_sat_point = new_sat_point((new_output_index as u32), new_offset, seal_object_id);
+            (true, new_sat_point)
+        }else {
+            // Paid to miners as transaction fees
+            let new_offset = input_utxo_value_accumulator - output_utxo_value_accumulator;
+            let new_sat_point = new_sat_point((input_index as u32), new_offset, seal_object_id);
+            (false, new_sat_point)
+        }
+    }
+
+    /// Match Coinbase, via SatPoint offset, generate new SatPoint
+    fun match_coinbase_and_generate_sat_point(flotsam_index: u64, tx: &Transaction, flotsams: vector<Flotsam>, block_height: u64): SatPoint{
+        let txoutput = types::tx_output(tx);
+
+        let idx = 0;
+        let reward_value_accumulator = 0;
+        let subsidy = subsidy_by_height(block_height);
+        reward_value_accumulator = reward_value_accumulator + subsidy;
+        while(idx <= flotsam_index){
+            let flotsam = *vector::borrow(&flotsams, idx);
+            reward_value_accumulator = reward_value_accumulator + flotsam.offset;
+
+            idx = idx + 1;
+        };
+        // input_utxo_value_accumulator = input_utxo_value_accumulator + offset;
+
+        let idx = 0;
+        let output_len = vector::length(txoutput);
+        let output_utxo_value_accumulator = 0;
+        let new_output_index = 0;
+        let new_offset = 0;
+        while(idx < output_len){
+            let txout = vector::borrow(txoutput, idx);
+            let output_value = types::txout_value(txout);
+            output_utxo_value_accumulator = output_utxo_value_accumulator + output_value;
+
+            if(output_utxo_value_accumulator > reward_value_accumulator) {
+                new_output_index = idx;
+                new_offset = output_value - (output_utxo_value_accumulator - reward_value_accumulator);
+
+                break
+            };
+
+            idx = idx + 1;
+        };
+
+        let flatsam = vector::borrow(&flotsams, flotsam_index);
+        let new_sat_point = new_sat_point((new_output_index as u32), new_offset, flatsam.object_id);
+        new_sat_point
     }
 
     public fun process_transaction(tx: &Transaction, input_utxo_values: vector<u64>): vector<SatPoint>{
@@ -413,6 +510,21 @@ module bitcoin_move::ord {
         sat_point.output_index
     }
 
+
+    // === Flotsam ===
+    public fun new_flotsam(output_index: u32, offset: u64, object_id: ObjectID) : Flotsam {
+        Flotsam{
+            output_index,
+            offset,
+            object_id
+        }
+    }
+
+    public fun unpack_flotsam(flotsam: Flotsam) : (u32, u64, ObjectID) {
+        let Flotsam{output_index, offset, object_id} = flotsam;
+        (output_index, offset, object_id)
+    }
+
     // ==== InscriptionRecord ==== //
 
     public fun unpack_record(record: InscriptionRecord): 
@@ -480,8 +592,8 @@ module bitcoin_move::ord {
     native fun from_witness(witness: &Witness): vector<InscriptionRecord>;
 
     /// Block Rewards
-    public fun subsidy_by_height(height: u32): u64 {
-        let epoch = height / SUBSIDY_HALVING_INTERVAL;
+    public fun subsidy_by_height(height: u64): u64 {
+        let epoch = (height as u32)/ SUBSIDY_HALVING_INTERVAL;
         if(epoch < FIRST_POST_SUBSIDY_EPOCH) {
             (50 * COIN_VALUE) >> (epoch as u8)
         } else {

@@ -19,6 +19,7 @@
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
 -  [Function `borrow_inscription`](#0x4_ord_borrow_inscription)
 -  [Function `spend_utxo`](#0x4_ord_spend_utxo)
+-  [Function `handle_coinbase_tx`](#0x4_ord_handle_coinbase_tx)
 -  [Function `process_transaction`](#0x4_ord_process_transaction)
 -  [Function `txid`](#0x4_ord_txid)
 -  [Function `index`](#0x4_ord_index)
@@ -34,6 +35,8 @@
 -  [Function `sat_point_object_id`](#0x4_ord_sat_point_object_id)
 -  [Function `sat_point_offset`](#0x4_ord_sat_point_offset)
 -  [Function `sat_point_output_index`](#0x4_ord_sat_point_output_index)
+-  [Function `new_flotsam`](#0x4_ord_new_flotsam)
+-  [Function `unpack_flotsam`](#0x4_ord_unpack_flotsam)
 -  [Function `unpack_record`](#0x4_ord_unpack_record)
 -  [Function `from_transaction`](#0x4_ord_from_transaction)
 -  [Function `from_transaction_bytes`](#0x4_ord_from_transaction_bytes)
@@ -233,7 +236,18 @@ How may blocks between halvings.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_spend_utxo">spend_utxo</a>(utxo_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;, tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, input_utxo_values: <a href="">vector</a>&lt;u64&gt;, input_index: u64): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_spend_utxo">spend_utxo</a>(utxo_obj: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="utxo.md#0x4_utxo_UTXO">utxo::UTXO</a>&gt;, tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, input_utxo_values: <a href="">vector</a>&lt;u64&gt;, input_index: u64): (<a href="">vector</a>&lt;<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>&gt;, <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Flotsam">ord::Flotsam</a>&gt;)
+</code></pre>
+
+
+
+<a name="0x4_ord_handle_coinbase_tx"></a>
+
+## Function `handle_coinbase_tx`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_handle_coinbase_tx">handle_coinbase_tx</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, flotsams: <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_Flotsam">ord::Flotsam</a>&gt;, block_height: u64): <a href="">vector</a>&lt;<a href="ord.md#0x4_ord_SatPoint">ord::SatPoint</a>&gt;
 </code></pre>
 
 
@@ -406,6 +420,28 @@ Get the SatPoint's output_index
 
 
 
+<a name="0x4_ord_new_flotsam"></a>
+
+## Function `new_flotsam`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_new_flotsam">new_flotsam</a>(output_index: u32, offset: u64, object_id: <a href="_ObjectID">object::ObjectID</a>): <a href="ord.md#0x4_ord_Flotsam">ord::Flotsam</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_unpack_flotsam"></a>
+
+## Function `unpack_flotsam`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_unpack_flotsam">unpack_flotsam</a>(flotsam: <a href="ord.md#0x4_ord_Flotsam">ord::Flotsam</a>): (u32, u64, <a href="_ObjectID">object::ObjectID</a>)
+</code></pre>
+
+
+
 <a name="0x4_ord_unpack_record"></a>
 
 ## Function `unpack_record`
@@ -446,7 +482,7 @@ Get the SatPoint's output_index
 Block Rewards
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_subsidy_by_height">subsidy_by_height</a>(height: u32): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_subsidy_by_height">subsidy_by_height</a>(height: u64): u64
 </code></pre>
 
 
