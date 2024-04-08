@@ -8,8 +8,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { CircleDot, CircleDotDashed, Copy } from 'lucide-react'
+import { Copy, Unplug } from 'lucide-react'
 import { formatAddress } from '../../../utils/format'
+import { useWalletStore } from '@roochnetwork/rooch-sdk-kit'
 
 const networks = [
   {
@@ -25,6 +26,10 @@ const networks = [
 ]
 
 export const ConnectedAccount = () => {
+  const account = useWalletStore((state) => state.currentAccount)
+
+  console.log(account?.address)
+
   return (
     <div className="rounded-lg border w-full">
       <Table>
@@ -33,16 +38,16 @@ export const ConnectedAccount = () => {
           <TableRow>
             <TableHead className="w-[100px]">Networks</TableHead>
             <TableHead>Address</TableHead>
-            <TableHead className="text-center">Status</TableHead>
+            <TableHead className="text-center">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {networks.map((network) => (
             <TableRow key={network.network}>
               <TableCell className="font-medium">{network.network}</TableCell>
-
               {network.network === 'Ethereum' ? (
                 <>
+                  {/* ETH Comming soon */}
                   <TableCell>
                     <span className="flex items-center justify-start gap-0.5 text-muted-foreground">
                       Coming soon ⌛️
@@ -52,33 +57,52 @@ export const ConnectedAccount = () => {
                 </>
               ) : (
                 <>
+                  {/* BTC */}
                   <TableCell className="hidden md:table-cell">
                     <span className="flex items-center justify-start gap-0.5 text-muted-foreground">
-                      {network.address}
-                      <Button variant="ghost" size="icon" className=" w-6 h-6">
-                        <Copy className="w-3 h-3" />
-                      </Button>
+                      {account?.address ? (
+                        <>
+                          <p>{formatAddress(account.address)}</p>
+                          <Button variant="ghost" size="icon" className=" w-6 h-6">
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </>
+                      ) : (
+                        <p>No account found</p>
+                      )}
                     </span>
                   </TableCell>
                   <TableCell className="md:hidden">
                     <span className="flex items-center justify-start gap-0.5 text-muted-foreground">
-                      {formatAddress(network.address)}
+                      {account?.address ? (
+                        <p>{formatAddress(account.address)}</p>
+                      ) : (
+                        <p>Connect your wallet</p>
+                      )}
                       <Button variant="ghost" size="icon" className=" w-6 h-6">
                         <Copy className="w-3 h-3" />
                       </Button>
                     </span>
                   </TableCell>
-
-                  <TableCell>
-                    {network.status ? (
-                      <span className="text-green-500 dark:text-green-400 flex items-center justify-center">
-                        <CircleDot className="w-5 h-5 pr-1" /> active
-                      </span>
+                  <TableCell className="text-center">
+                    {account?.address ? (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="text-red-500 dark:text-red-400 dark:hover:text-red-300 hover:text-red-600"
+                      >
+                        <Unplug className="h-4 w-4 mr-1" />
+                        Disconnect
+                      </Button>
                     ) : (
-                      <span className="text-zinc-500 dark:text-zinc-400 flex items-center justify-center">
-                        <CircleDotDashed className="w-5 h-5 pr-1" />
-                        inactive
-                      </span>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="text-green-500 dark:text-green-400 dark:hover:text-green-300 hover:text-green-600"
+                      >
+                        <Unplug className="h-4 w-4 mr-1" />
+                        Connect Wallet
+                      </Button>
                     )}
                   </TableCell>
                 </>
