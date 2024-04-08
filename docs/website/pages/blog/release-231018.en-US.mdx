@@ -47,9 +47,9 @@ For a detailed design on Rooch AccountAbstraction, refer to: [Design and Impleme
 ### Move Standard Library, Framework and Virtual Machine
 
 * Enabled publishing Move modules in Move: [account_storage::publish_modules_entry](https://github.com/rooch-network/rooch/blob/7fd6418dff1aa7e40cae9e8eede375b776bbb771/moveos/moveos-stdlib/moveos-stdlib/sources/account_storage.move#L224).
-* Implemented [Coin](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/coin.move), [CoinStore](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/coin_store.move), and [account_coin_store](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/account_coin_store.move). To further understand Rooch's Coin standards, refer to [examples/coins](https://github.com/rooch-network/rooch/tree/main/examples/coins).
+* Implemented [Coin](https://github.com/rooch-network/rooch/blob/main/frameworks/rooch-framework/sources/coin.move), [CoinStore](https://github.com/rooch-network/rooch/blob/main/frameworks/rooch-framework/sources/coin_store.move), and [account_coin_store](https://github.com/rooch-network/rooch/blob/main/frameworks/rooch-framework/sources/account_coin_store.move). To further understand Rooch's Coin standards, refer to [examples/coins](https://github.com/rooch-network/rooch/tree/main/examples/coins).
 * Introduced Gas billing and GasToken.
-* Introduced [Event](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/event.move) standards.
+* Introduced [Event](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/sources/event.move) standards.
 * Improved [Object](../learn/core-concepts/objects/object.en-US.mdx) and [StorageAbstraction](../learn/core-concepts/objects/storage-abstraction.en-US.mdx) designs.
 
 ### JSON RPC and SDK

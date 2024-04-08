@@ -5,8 +5,6 @@ members = [
     "moveos/smt",
     "moveos/moveos-types",
     "moveos/moveos-store",
-    "moveos/moveos-stdlib",
-    "moveos/moveos-stdlib-builder",
     "moveos/moveos",
     "moveos/moveos-commons/moveos-common",
     "moveos/moveos-commons/timeout-join-handler",
@@ -18,9 +16,7 @@ members = [
     "moveos/moveos-object-runtime",
     "crates/rooch-key",
     "crates/rooch-types",
-    "crates/rooch-framework",
     "crates/rooch-framework-tests",
-    "crates/rooch-framework-release",
     "crates/rooch-genesis",
     "crates/rooch-genesis-builder",
     "crates/rooch-integration-test-runner",
@@ -45,6 +41,10 @@ members = [
     "crates/rooch-benchmarks",
     "crates/rooch-test-transaction-builder",
     "crates/data_verify",
+    "frameworks/framework-builder",
+    "frameworks/framework-release",
+    "frameworks/moveos-stdlib",
+    "frameworks/rooch-framework",
     "frameworks/bitcoin-move"
 ]
 
@@ -72,8 +72,6 @@ rust-version = "1.70"
 smt = { path = "moveos/smt" }
 moveos-types = { path = "moveos/moveos-types" }
 moveos-store = { path = "moveos/moveos-store" }
-moveos-stdlib = { path = "moveos/moveos-stdlib" }
-moveos-stdlib-builder = { path = "moveos/moveos-stdlib-builder" }
 moveos = { path = "moveos/moveos" }
 moveos-cli = { path = "moveos/moveos-cli" }
 moveos-common = { path = "moveos/moveos-commons/moveos-common" }
@@ -89,7 +87,6 @@ moveos-object-runtime = { path = "moveos/moveos-object-runtime" }
 rooch = { path = "crates/rooch" }
 rooch-key = { path = "crates/rooch-key" }
 rooch-types = { path = "crates/rooch-types" }
-rooch-framework = { path = "crates/rooch-framework" }
 rooch-framework-tests = { path = "crates/rooch-framework-tests" }
 rooch-integration-test-runner = { path = "crates/rooch-integration-test-runner" }
 rooch-genesis = { path = "crates/rooch-genesis" }
@@ -116,7 +113,12 @@ rooch-test-transaction-builder = { path = "crates/rooch-test-transaction-builder
 data-verify = { path = "crates/data_verify" }
 
 # frameworks
+framework-builder = { path = "frameworks/framework-builder" }
+framework-release = { path = "frameworks/framework-release" }
+moveos-stdlib = { path = "frameworks/moveos-stdlib" }
+rooch-framework = { path = "frameworks/rooch-framework" }
 bitcoin-move = { path = "frameworks/bitcoin-move" }
+
 
 # External crate dependencies.
 # Please do not add any test features here: they should be declared by the individual crate.

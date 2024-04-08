@@ -901,6 +901,7 @@ dependencies = [
  "bs58 0.5.0",
  "ciborium",
  "fastcrypto",
+ "framework-builder",
  "hex",
  "http",
  "linked-hash-map",
@@ -918,7 +919,6 @@ dependencies = [
  "move-vm-types",
  "moveos",
  "moveos-stdlib",
- "moveos-stdlib-builder",
  "moveos-types",
  "moveos-verifier",
  "once_cell",
@@ -3603,6 +3603,59 @@ dependencies = [
 ]
 
 [[package]]
+name = "framework-builder"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "better_any",
+ "codespan-reporting",
+ "fastcrypto",
+ "hex",
+ "linked-hash-map",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-bytecode-verifier",
+ "move-cli",
+ "move-command-line-common",
+ "move-core-types",
+ "move-docgen",
+ "move-errmapgen",
+ "move-model",
+ "move-package",
+ "move-prover",
+ "move-stdlib",
+ "move-unit-test",
+ "move-vm-runtime",
+ "move-vm-test-utils",
+ "move-vm-types",
+ "moveos-types",
+ "moveos-verifier",
+ "once_cell",
+ "pathdiff",
+ "petgraph 0.5.1",
+ "serde 1.0.195",
+ "serde_bytes",
+ "sha3 0.9.1",
+ "smallvec 1.11.0",
+]
+
+[[package]]
+name = "framework-release"
+version = "0.1.0"
+dependencies = [
+ "clap 4.4.1",
+ "framework-builder",
+ "itertools",
+ "move-binary-format",
+ "move-core-types",
+ "moveos-types",
+ "rooch-genesis-builder",
+ "rooch-types",
+ "rpassword",
+]
+
+[[package]]
 name = "fs2"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5964,6 +6017,7 @@ dependencies = [
  "clap 4.4.1",
  "codespan",
  "codespan-reporting",
+ "framework-builder",
  "itertools",
  "log",
  "move-binary-format",
@@ -5988,7 +6042,6 @@ dependencies = [
  "move-vm-types",
  "moveos-object-runtime",
  "moveos-stdlib",
- "moveos-stdlib-builder",
  "moveos-store",
  "moveos-types",
  "moveos-verifier",
@@ -6079,6 +6132,7 @@ dependencies = [
  "better_any",
  "ciborium",
  "fastcrypto",
+ "framework-builder",
  "hex",
  "itertools",
  "linked-hash-map",
@@ -6096,7 +6150,6 @@ dependencies = [
  "move-vm-test-utils",
  "move-vm-types",
  "moveos-object-runtime",
- "moveos-stdlib-builder",
  "moveos-types",
  "moveos-verifier",
  "moveos-wasm",
@@ -6112,44 +6165,6 @@ dependencies = [
  "smallvec 1.11.0",
  "smt",
  "wasmer",
-]
-
-[[package]]
-name = "moveos-stdlib-builder"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bcs",
- "better_any",
- "codespan-reporting",
- "fastcrypto",
- "hex",
- "linked-hash-map",
- "move-binary-format",
- "move-bytecode-utils",
- "move-bytecode-verifier",
- "move-cli",
- "move-command-line-common",
- "move-core-types",
- "move-docgen",
- "move-errmapgen",
- "move-model",
- "move-package",
- "move-prover",
- "move-stdlib",
- "move-unit-test",
- "move-vm-runtime",
- "move-vm-test-utils",
- "move-vm-types",
- "moveos-types",
- "moveos-verifier",
- "once_cell",
- "pathdiff",
- "petgraph 0.5.1",
- "serde 1.0.195",
- "serde_bytes",
- "sha3 0.9.1",
- "smallvec 1.11.0",
 ]
 
 [[package]]
@@ -8325,6 +8340,7 @@ dependencies = [
  "datatest-stable 0.1.1",
  "dirs 4.0.0",
  "fastcrypto",
+ "framework-builder",
  "hex",
  "itertools",
  "move-binary-format",
@@ -8346,7 +8362,6 @@ dependencies = [
  "moveos",
  "moveos-common",
  "moveos-stdlib",
- "moveos-stdlib-builder",
  "moveos-store",
  "moveos-types",
  "moveos-verifier",
@@ -8544,6 +8559,7 @@ dependencies = [
  "brotli",
  "bs58 0.5.0",
  "fastcrypto",
+ "framework-builder",
  "hex",
  "http",
  "linked-hash-map",
@@ -8561,7 +8577,6 @@ dependencies = [
  "move-vm-types",
  "moveos",
  "moveos-stdlib",
- "moveos-stdlib-builder",
  "moveos-types",
  "moveos-verifier",
  "once_cell",
@@ -8571,21 +8586,6 @@ dependencies = [
  "sha3 0.9.1",
  "smallvec 1.11.0",
  "tracing",
-]
-
-[[package]]
-name = "rooch-framework-release"
-version = "0.1.0"
-dependencies = [
- "clap 4.4.1",
- "itertools",
- "move-binary-format",
- "move-core-types",
- "moveos-stdlib-builder",
- "moveos-types",
- "rooch-genesis-builder",
- "rooch-types",
- "rpassword",
 ]
 
 [[package]]
@@ -8648,6 +8648,7 @@ dependencies = [
  "better_any",
  "bitcoin-move",
  "fastcrypto",
+ "framework-builder",
  "hex",
  "linked-hash-map",
  "move-binary-format",
@@ -8664,7 +8665,6 @@ dependencies = [
  "move-vm-types",
  "moveos",
  "moveos-stdlib",
- "moveos-stdlib-builder",
  "moveos-store",
  "moveos-types",
  "moveos-verifier",
@@ -8688,6 +8688,7 @@ dependencies = [
  "bcs",
  "better_any",
  "fastcrypto",
+ "framework-builder",
  "hex",
  "linked-hash-map",
  "move-binary-format",
@@ -8704,7 +8705,6 @@ dependencies = [
  "move-vm-types",
  "moveos",
  "moveos-stdlib",
- "moveos-stdlib-builder",
  "moveos-store",
  "moveos-types",
  "moveos-verifier",
@@ -8772,6 +8772,7 @@ dependencies = [
  "clap 4.4.1",
  "codespan-reporting",
  "datatest-stable 0.1.3",
+ "framework-builder",
  "move-binary-format",
  "move-bytecode-utils",
  "move-bytecode-verifier",
@@ -8788,7 +8789,6 @@ dependencies = [
  "move-vm-types",
  "moveos",
  "moveos-stdlib",
- "moveos-stdlib-builder",
  "moveos-store",
  "moveos-types",
  "moveos-verifier",
@@ -9215,6 +9215,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "fastcrypto",
+ "framework-builder",
  "log",
  "move-binary-format",
  "move-bytecode-utils",
@@ -9226,7 +9227,6 @@ dependencies = [
  "moveos",
  "moveos-config",
  "moveos-stdlib",
- "moveos-stdlib-builder",
  "moveos-store",
  "moveos-types",
  "moveos-verifier",

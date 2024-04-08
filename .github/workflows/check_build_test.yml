@@ -36,7 +36,7 @@ jobs:
       - name: Build
         run: cargo build
       - name: Framework compatibiliy
-        run: cargo run --package rooch-framework-release --bin rooch-framework-release
+        run: cargo run --package framework-release --bin framework-release
       - name: Execute rust tests
         run: cargo nextest run --workspace --all-features --exclude rooch-framework-tests --exclude rooch-integration-test-runner -v
       - name: Execute the framework test with 1 thread

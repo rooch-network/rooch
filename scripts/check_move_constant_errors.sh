@@ -44,11 +44,12 @@ check_constant_errors_for_error() {
 }
 
 # Check constant errors for E* prefix in move-stdlib
-check_constant_errors_for_e "moveos/moveos-stdlib/move-stdlib/sources" || exit 1
+check_constant_errors_for_e "frameworks/move-stdlib/sources" || exit 1
 
 # Check constant errors for Error* prefix in moveos-stdlib, rooch-framework, and examples
-for dir in "moveos/moveos-stdlib/moveos-stdlib/sources" \
-           "crates/rooch-framework/sources" \
+for dir in "frameworks/moveos-stdlib/sources" \
+           "frameworks/rooch-framework/sources" \
+           "frameworks/bitcoin-move/sources" \
            "examples"; do
     check_constant_errors_for_error "$dir" || exit 1
 done

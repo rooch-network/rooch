@@ -31,6 +31,6 @@ This is the reference documentation of the Bitcoin Move Framework.
 ## Reference
 
 
-* [MoveStdlib](https://github.com/rooch-network/rooch/tree/main/moveos/moveos-stdlib/move-stdlib/doc)
-* [MoveosStdlib](https://github.com/rooch-network/rooch/tree/main/moveos/moveos-stdlib/moveos-stdlib/doc)
-* [RoochFramework](https://github.com/rooch-network/rooch/tree/main/crates/rooch-framework/doc)
+* [MoveStdlib](https://github.com/rooch-network/rooch/tree/main/frameworks/move-stdlib/doc)
+* [MoveosStdlib](https://github.com/rooch-network/rooch/tree/main/frameworks/moveos-stdlib/doc)
+* [RoochFramework](https://github.com/rooch-network/rooch/tree/main/frameworks/rooch-framework/doc)

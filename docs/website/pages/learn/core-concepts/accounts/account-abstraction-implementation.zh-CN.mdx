@@ -91,8 +91,8 @@ sequenceDiagram
 
 当前，Rooch 中内置了以下验证器：
 
-1. [Native Auth Validator](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/auth_validator/native_validator.move) : 基于 Ed25519 算法的验证器，验证器的 `auth_validator_id` 为 0，是默认的验证器。
-2. [Ethereum Auth Validator](https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/sources/auth_validator/ethereum_validator.move) : 基于 Ethereum 签名算法的验证器，验证器的 `auth_validator_id` 为 1。 
+1. [Native Auth Validator](https://github.com/rooch-network/rooch/blob/main/frameworks/rooch-framework/sources/auth_validator/native_validator.move) : 基于 Ed25519 算法的验证器，验证器的 `auth_validator_id` 为 0，是默认的验证器。
+2. [Ethereum Auth Validator](https://github.com/rooch-network/rooch/blob/main/frameworks/rooch-framework/sources/auth_validator/ethereum_validator.move) : 基于 Ethereum 签名算法的验证器，验证器的 `auth_validator_id` 为 1。 
 
 Web2 社交登陆的验证器正在开发中，可以关注 [Github issue #769 ](https://github.com/rooch-network/rooch/issues/769)。
 如果想了解如何开发自定义的验证器，可以参考 [examples/noop_auth_validator](https://github.com/rooch-network/rooch/blob/main/examples/noop_auth_validator)。  

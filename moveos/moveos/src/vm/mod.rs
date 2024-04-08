@@ -3,7 +3,7 @@
 
 //TODO remove this after refactor the caller crates.
 pub mod dependency_order {
-    pub use moveos_stdlib_builder::dependency_order::*;
+    pub use framework_builder::dependency_order::*;
 }
 #[allow(dead_code)]
 pub mod data_cache;
