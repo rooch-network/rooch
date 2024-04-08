@@ -27,7 +27,7 @@ import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 
 // ** ICONS
 import { MenuSquare, ExternalLink } from 'lucide-react'
-import { TransactionWithInfoView } from '@roochnetwork/rooch-sdk'
+import { LedgerTransactionView, TransactionWithInfoView } from '@roochnetwork/rooch-sdk'
 import { SkeletonList } from '@/components/skeleton-list'
 import { formatAddress } from '@/utils/format'
 
@@ -82,8 +82,6 @@ export const TransactionsTable = () => {
     return <div>No transactions data available.</div>
   }
 
-  console.log('txs', txs)
-
   return (
     <div>
       <div className="rounded-lg border w-full">
@@ -120,14 +118,19 @@ export const TransactionsTable = () => {
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className="text-muted-foreground">
-                    // TODO: https://github.com/rooch-network/rooch/issues/1524
-                    {/*{tx.transaction.data}*/}
+                    {/* TODO: https://github.com/rooch-network/rooch/issues/1524 */}
+                    {/* {tx.transaction.data} */}
+                    TODO
                   </Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-start gap-1">
                     <span className="hover:no-underline text-blue-400 hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200 transition-all cursor-pointer">
-                      <p className="hidden md:block">{formatAddress(tx.transaction.sender)}</p>
+                      <p>
+                        {formatAddress(
+                          (tx.transaction as LedgerTransactionView & { sender: string }).sender,
+                        )}
+                      </p>
                     </span>
                   </div>
                 </TableCell>
