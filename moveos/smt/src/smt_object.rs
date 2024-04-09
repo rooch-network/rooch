@@ -83,7 +83,7 @@ impl<T> SMTObject<T> {
     {
         let raw = match bcs::to_bytes(&origin) {
             Ok(v) => v,
-            Err(err) => return Err(err.into())
+            Err(err) => return Err(err.into()),
         };
         Ok(SMTObject {
             origin,

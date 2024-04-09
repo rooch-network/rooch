@@ -47,8 +47,13 @@ pub(crate) fn init_mock_db(
             .insert_all(
                 current_state_root,
                 vec![(
-                    key.clone().into_object().unwrap(),
-                    value.clone().into_object().unwrap(),
+                    key.clone()
+                        .into_object()
+                        .expect("TestValue.into_object() failed"),
+                    value
+                        .clone()
+                        .into_object()
+                        .expect("TestValue.into_object() failed"),
                 )],
             )
             .unwrap();
