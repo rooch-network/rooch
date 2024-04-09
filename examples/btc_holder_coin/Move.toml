@@ -3,8 +3,8 @@ name = "btc_holder_coin"
 version = "0.0.1"
 
 [dependencies]
-MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
-RoochFramework = { local = "../../crates/rooch-framework" }
+MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }
+RoochFramework = { local = "../../frameworks/rooch-framework" }
 BitcoinMove = { local = "../../frameworks/bitcoin-move" }
 
 [addresses]

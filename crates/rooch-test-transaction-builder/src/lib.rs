@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use framework_builder::dependency_order::sort_by_dependency_order;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{ModuleId, TypeTag};
 use move_core_types::u256::U256;
 use move_package::BuildConfig;
-use moveos_stdlib_builder::dependency_order::sort_by_dependency_order;
 use moveos_types::move_types::FunctionId;
 use moveos_types::state::MoveStructType;
 use moveos_types::transaction::{FunctionCall, MoveAction};

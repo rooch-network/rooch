@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use framework_builder::Stdlib;
 use move_binary_format::{errors::Location, CompiledModule};
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use move_vm_runtime::{config::VMConfig, native_functions::NativeFunction};
 use moveos::moveos::{MoveOS, MoveOSConfig};
-use moveos_stdlib_builder::Stdlib;
 use moveos_store::{config_store::ConfigDBStore, MoveOSStore};
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256;
@@ -244,7 +244,7 @@ impl GenesisPackage {
     }
 
     pub fn load_stdlib() -> Result<Stdlib> {
-        moveos_stdlib_builder::Stdlib::decode(GENESIS_STDLIB_BYTES)
+        framework_builder::Stdlib::decode(GENESIS_STDLIB_BYTES)
     }
 
     pub fn load_from<P: AsRef<Path>>(genesis_file: P) -> Result<Self> {

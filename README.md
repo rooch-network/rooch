@@ -27,9 +27,10 @@ Please refer to [Connect to Developer Test Network](https://rooch.network/build/
 
 ## MoveStd & MoveosStd & RoochFramework documentation
 
-* std: 0x1 [MoveStdlib](./moveos/moveos-stdlib/move-stdlib/doc)
-* moveos_std: 0x2 [MoveosStdlib](./moveos/moveos-stdlib/moveos-stdlib/doc)
-* rooch_framework: 0x3 [RoochFramework](./crates/rooch-framework/doc/)
+* std: 0x1 [MoveStdlib](./frameworks/move-stdlib/doc)
+* moveos_std: 0x2 [MoveosStdlib](./frameworks/moveos-stdlib/doc)
+* rooch_framework: 0x3 [RoochFramework](./frameworks/rooch-framework/doc/)
+* bitcoin_move: 0x4 [BitcoinMove](./frameworks/bitcoin-move/doc/)
 
 Please refer to [Rooch's built-in library](https://rooch.network/learn/core-concepts/move-contracts/built-in-library) for more information.
 
