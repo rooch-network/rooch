@@ -1,5 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 
+import { Foot } from '@/components/foot'
+
 import { AppsLayout } from '@/pages/apps/apps-layout'
 import { MintLayout } from '@/pages/mint/mint-layout'
 import { AssetsLayout } from '@/pages/assets/assets-layout'
@@ -8,8 +10,6 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { SftDetailLayout } from '@/pages/mint/sftDetail/sft-detail-layout'
 import { TransactionsLayout } from '@/pages/transactions/transactions-layout'
 import { SftDetailLayoutForSelfStaking } from '@/pages/mint/sftDetailForSelfStaking/sft-detail-layout-for-self-staking'
-
-import { Foot } from '@/components/foot'
 
 export const MainContent = () => {
   return (

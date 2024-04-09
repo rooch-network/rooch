@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 // ** UI Library Components
 import { Badge } from '@/components/ui/badge'
@@ -32,6 +33,7 @@ import { SkeletonList } from '@/components/skeleton-list'
 import { formatAddress } from '@/utils/format'
 
 export const TransactionsTable = () => {
+  const navigate = useNavigate()
   const [txs, setTxs] = useState<TransactionWithInfoView[]>([])
   const [currentPage, setCurrentPage] = useState<number>(1)
   const itemsPerPage = 8
@@ -66,6 +68,11 @@ export const TransactionsTable = () => {
       enabled: true,
     },
   )
+
+  // ** Jump to txblock
+  const handleJumpToTxblock = (hash: string) => {
+    navigate(`txblock/${hash}`)
+  }
 
   // ** Set the transactions data to the state
   useEffect(() => {
@@ -141,6 +148,7 @@ export const TransactionsTable = () => {
                     variant="link"
                     size="sm"
                     className="text-blue-400 hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200 transition-all"
+                    onClick={() => handleJumpToTxblock(tx.execution_info.tx_hash)}
                   >
                     <ExternalLink className="w-4 h-4 mr-1" />
                     View
