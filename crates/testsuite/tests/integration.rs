@@ -56,6 +56,8 @@ impl Default for World {
 
 #[given(expr = "a server for {word}")] // Cucumber Expression
 async fn start_server(w: &mut World, _scenario: String) {
+    tokio::time::sleep(Duration::from_secs(5)).await;
+    
     let mut service = Service::new();
     let mut opt = RoochOpt::new_with_temp_store();
     wait_port_available(opt.port()).await;
@@ -68,7 +70,10 @@ async fn start_server(w: &mut World, _scenario: String) {
             opt.btc_rpc_username = Some(RPC_USER.to_string());
             opt.btc_rpc_password = Some(RPC_PASS.to_string());
             opt.btc_start_block_height = Some(0);
+            opt.data_import_mode = Some(1);
             info!("config btc rpc ok");
+
+            w.bitcoind = Some(bitcoind);
         }
         None => {
             info!("bitcoind server is none");
@@ -99,7 +104,7 @@ async fn stop_server(w: &mut World) {
 
 #[given(expr = "a bitcoind server for {word}")] // Cucumber Expression
 async fn start_bitcoind_server(w: &mut World, _scenario: String) {
-    tokio::time::sleep(Duration::from_secs(2)).await;
+    tokio::time::sleep(Duration::from_secs(5)).await;
 
     let mut bitcoind_image: RunnableImage<BitcoinD> = BitcoinD::new(
         format!("0.0.0.0:{}", RPC_PORT),
@@ -134,8 +139,8 @@ async fn stop_bitcoind_server(w: &mut World) {
 }
 
 #[given(expr = "a ord server for {word}")] // Cucumber Expression
-async fn start_ord_server(w: &mut World, scenario: String) {
-    tokio::time::sleep(Duration::from_secs(2)).await;
+async fn start_ord_server(w: &mut World, _scenario: String) {
+    tokio::time::sleep(Duration::from_secs(5)).await;
 
     let mut ord_image: RunnableImage<Ord> = Ord::new(
         format!("http://bitcoind:{}", RPC_PORT),
@@ -560,7 +565,15 @@ async fn main() {
         let current_dir = env::current_dir().expect("Failed to get current directory");
         println!("Current working directory: {:?}", current_dir);
 
-        feature_path = format!("{}/crates/testsuite/features/cmd.feature", current_dir.to_str().expect("current path is not valid UTF-8"));
+        // Convert the current directory to a string once
+        let current_dir_str = current_dir.to_str().expect("Current path is not valid UTF-8");
+
+        // Determine the feature path based on whether the current directory contains "testsuite"
+        feature_path = if current_dir_str.contains("testsuite") {
+            format!("{}/features/cmd.feature", current_dir_str)
+        } else {
+            format!("{}/crates/testsuite/features/cmd.feature", current_dir_str)
+        };
 
         // If the tag filter is empty and we are in debug mode, set a default value
         if tag_filter.is_empty() {
