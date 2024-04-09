@@ -3,11 +3,13 @@
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use rooch_benchmarks::helper::profiled;
-use rooch_benchmarks::tx::{create_transaction, gen_sequencer};
+use rooch_benchmarks::tx::{create_l2_tx, gen_sequencer};
 use rooch_framework_tests::binding_test;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
 use rooch_test_transaction_builder::TestTransactionBuilder;
+use rooch_types::transaction::LedgerTxData;
+use std::time::Duration;
 
 pub fn tx_sequence_benchmark(c: &mut Criterion) {
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
@@ -25,7 +27,10 @@ pub fn tx_sequence_benchmark(c: &mut Criterion) {
     let mut test_transaction_builder = TestTransactionBuilder::new(rooch_account.into());
     let tx_cnt = 100;
     let transactions: Vec<_> = (0..tx_cnt)
-        .map(|n| create_transaction(&mut test_transaction_builder, &keystore, n).unwrap())
+        .map(|n| {
+            let tx = create_l2_tx(&mut test_transaction_builder, &keystore, n).unwrap();
+            LedgerTxData::L2Tx(tx.clone())
+        })
         .collect();
     let mut transactions_iter = transactions.into_iter().cycle();
 
@@ -39,7 +44,7 @@ pub fn tx_sequence_benchmark(c: &mut Criterion) {
 
 criterion_group! {
     name = tx_sequence_bench;
-    config = profiled(None);
+    config = profiled(None).measurement_time(Duration::from_millis(500));
     targets = tx_sequence_benchmark
 }
 

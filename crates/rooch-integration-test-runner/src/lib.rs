@@ -394,7 +394,7 @@ pub fn resolve_package_named_addresses(root_path: PathBuf) -> BTreeMap<String, N
 }
 
 pub fn move_std_info() -> (Vec<String>, BTreeMap<String, NumericalAddress>) {
-    let move_std_path = PathBuf::from("../../moveos/moveos-stdlib/move-stdlib/");
+    let move_std_path = PathBuf::from("../../frameworks/move-stdlib/");
     let named_addresses = resolve_package_named_addresses(move_std_path.clone());
 
     let binding = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -407,7 +407,7 @@ pub fn move_std_info() -> (Vec<String>, BTreeMap<String, NumericalAddress>) {
 }
 
 pub fn moveos_std_info() -> (Vec<String>, BTreeMap<String, NumericalAddress>) {
-    let moveos_std_path = PathBuf::from("../../moveos/moveos-stdlib/moveos-stdlib/");
+    let moveos_std_path = PathBuf::from("../../frameworks/moveos-stdlib/");
     let named_addresses = resolve_package_named_addresses(moveos_std_path.clone());
 
     let binding = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -431,7 +431,7 @@ pub fn moveos_std_info() -> (Vec<String>, BTreeMap<String, NumericalAddress>) {
 // }
 
 pub fn rooch_framework_info() -> (Vec<String>, BTreeMap<String, NumericalAddress>) {
-    let rooch_framework_path = PathBuf::from("../rooch-framework/");
+    let rooch_framework_path = PathBuf::from("../../frameworks/rooch-framework/");
     let named_addresses = resolve_package_named_addresses(rooch_framework_path.clone());
 
     let binding = PathBuf::from(env!("CARGO_MANIFEST_DIR"))

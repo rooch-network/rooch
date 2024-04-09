@@ -22,7 +22,18 @@ pub const NOSTR: u64 = 1237;
 pub const ROOCH: u64 = 20230101; // place holder for slip-0044 needs to replace later
 
 #[derive(
-    Clone, Copy, Debug, Deserialize, Serialize, Hash, Eq, PartialEq, PartialOrd, Ord, JsonSchema,
+    Clone,
+    Copy,
+    Debug,
+    Default,
+    Deserialize,
+    Serialize,
+    Hash,
+    Eq,
+    PartialEq,
+    PartialOrd,
+    Ord,
+    JsonSchema,
 )]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct MultiChainID {

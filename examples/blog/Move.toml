@@ -3,8 +3,8 @@ name = "RoochBlogDemo"
 version = "0.0.1"
 
 [dependencies]
-#MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "moveos/moveos-stdlib/moveos-stdlib", rev = "main" }
-MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
+#MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/moveos-stdlib", rev = "main" }
+MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }
 
 [addresses]
 rooch_examples = "_"
