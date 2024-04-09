@@ -23,12 +23,12 @@ impl BitcoindImageArgs {
     fn generate_rpcauth(&self) -> String {
         let salt: [u8; 16] = rand::thread_rng().gen();
         let salt_hex = hex::encode(salt);
-    
+
         let mut mac = Hmac::<Sha256>::new_from_slice(salt_hex.as_bytes()).unwrap();
         mac.update(self.rpc_pass.as_bytes());
         let result = mac.finalize();
         let password_hmac = hex::encode(result.into_bytes());
-    
+
         format!("{}:{}${}", self.rpc_user, salt_hex, password_hmac)
     }
 }
@@ -38,16 +38,17 @@ impl ImageArgs for BitcoindImageArgs {
         let rpcauth = self.generate_rpcauth();
 
         Box::new(
-          vec![
-            "-chain=regtest".to_string(),
-            "-txindex=1".to_string(),
-            "-fallbackfee=0.00001".to_string(),
-            "-zmqpubrawblock=tcp://0.0.0.0:28332".to_string(),
-            "-zmqpubrawtx=tcp://0.0.0.0:28333".to_string(),
-            "-rpcallowip=0.0.0.0/0".to_string(),
-            format!("-rpcbind={}", self.rpc_bind),
-            format!("-rpcauth={}", rpcauth),
-          ].into_iter(),
+            vec![
+                "-chain=regtest".to_string(),
+                "-txindex=1".to_string(),
+                "-fallbackfee=0.00001".to_string(),
+                "-zmqpubrawblock=tcp://0.0.0.0:28332".to_string(),
+                "-zmqpubrawtx=tcp://0.0.0.0:28333".to_string(),
+                "-rpcallowip=0.0.0.0/0".to_string(),
+                format!("-rpcbind={}", self.rpc_bind),
+                format!("-rpcauth={}", rpcauth),
+            ]
+            .into_iter(),
         )
     }
 }
@@ -58,20 +59,16 @@ pub struct BitcoinD {
 }
 
 impl BitcoinD {
-    pub fn new(
-        rpc_bind: String,
-        rpc_user: String,
-        rpc_pass: String,
-    ) -> (Self, BitcoindImageArgs) {
+    pub fn new(rpc_bind: String, rpc_user: String, rpc_pass: String) -> (Self, BitcoindImageArgs) {
         (
             BitcoinD {
                 env_vars: HashMap::new(),
             },
-            BitcoindImageArgs{
+            BitcoindImageArgs {
                 rpc_bind,
                 rpc_user,
                 rpc_pass,
-            }
+            },
         )
     }
 }

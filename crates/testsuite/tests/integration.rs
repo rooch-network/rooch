@@ -13,9 +13,8 @@ use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_rpc_server::Service;
 use serde_json::Value;
 use std::env;
-use tracing::{Level, error, debug, info};
+use tracing::{debug, error, info, Level};
 
-use uuid::Uuid;
 use images::bitcoin::BitcoinD;
 use images::ord::Ord;
 use std::time::Duration;
@@ -24,6 +23,7 @@ use testcontainers::{
     core::{Container, ExecCommand, WaitFor},
     RunnableImage,
 };
+use uuid::Uuid;
 
 const RPC_USER: &str = "roochuser";
 const RPC_PASS: &str = "roochpass";
@@ -57,7 +57,7 @@ impl Default for World {
 #[given(expr = "a server for {word}")] // Cucumber Expression
 async fn start_server(w: &mut World, _scenario: String) {
     tokio::time::sleep(Duration::from_secs(5)).await;
-    
+
     let mut service = Service::new();
     let mut opt = RoochOpt::new_with_temp_store();
     wait_port_available(opt.port()).await;
@@ -235,9 +235,7 @@ async fn run_cmd(world: &mut World, args: String) {
 fn ord_bash_run_cmd(w: &mut World, input_tpl: String) {
     let ord = w.ord.as_ref().unwrap();
 
-    let mut bitseed_args = vec![
-        "/bin/bash".to_string(),
-    ];
+    let mut bitseed_args = vec!["/bin/bash".to_string()];
 
     if w.tpl_ctx.is_none() {
         let tpl_ctx = TemplateContext::new();
@@ -254,8 +252,8 @@ fn ord_bash_run_cmd(w: &mut World, input_tpl: String) {
     let joined_args = bitseed_args.join(" ");
     debug!("run cmd: ord {}", joined_args);
 
-    let exec_cmd = ExecCommand{
-        cmd:  joined_args,
+    let exec_cmd = ExecCommand {
+        cmd: joined_args,
         ready_conditions: vec![WaitFor::Nothing],
     };
 
@@ -284,7 +282,9 @@ fn ord_bash_run_cmd(w: &mut World, input_tpl: String) {
         panic!("Command execution failed with errors: {}", stderr_string);
     }
 
-    tpl_ctx.entry(format!("{}", cmd_name)).append::<String>(stdout_string);
+    tpl_ctx
+        .entry(format!("{}", cmd_name))
+        .append::<String>(stdout_string);
 
     debug!("current tpl_ctx: {:?}", tpl_ctx);
 }
@@ -316,8 +316,8 @@ fn ord_run_cmd(w: &mut World, input_tpl: String) {
     let joined_args = bitseed_args.join(" ");
     debug!("run cmd: ord {}", joined_args);
 
-    let exec_cmd = ExecCommand{
-        cmd:  joined_args,
+    let exec_cmd = ExecCommand {
+        cmd: joined_args,
         ready_conditions: vec![WaitFor::Nothing],
     };
 
@@ -361,10 +361,7 @@ fn ord_run_cmd(w: &mut World, input_tpl: String) {
 fn bitcoincli_run_cmd(w: &mut World, input_tpl: String) {
     let bitcoind = w.bitcoind.as_ref().unwrap();
 
-    let mut bitcoincli_args = vec![
-        "bitcoin-cli".to_string(),
-        "-regtest".to_string(),
-    ];
+    let mut bitcoincli_args = vec!["bitcoin-cli".to_string(), "-regtest".to_string()];
 
     if w.tpl_ctx.is_none() {
         let tpl_ctx = TemplateContext::new();
@@ -381,8 +378,8 @@ fn bitcoincli_run_cmd(w: &mut World, input_tpl: String) {
     let joined_args = bitcoincli_args.join(" ");
     debug!("run cmd: {}", joined_args);
 
-    let exec_cmd = ExecCommand{
-        cmd:  joined_args,
+    let exec_cmd = ExecCommand {
+        cmd: joined_args,
         ready_conditions: vec![WaitFor::Nothing],
     };
 
@@ -566,7 +563,9 @@ async fn main() {
         println!("Current working directory: {:?}", current_dir);
 
         // Convert the current directory to a string once
-        let current_dir_str = current_dir.to_str().expect("Current path is not valid UTF-8");
+        let current_dir_str = current_dir
+            .to_str()
+            .expect("Current path is not valid UTF-8");
 
         // Determine the feature path based on whether the current directory contains "testsuite"
         feature_path = if current_dir_str.contains("testsuite") {
