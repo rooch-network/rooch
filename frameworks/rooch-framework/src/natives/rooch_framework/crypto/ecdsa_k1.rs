@@ -43,9 +43,11 @@ pub fn native_ecrecover(
     let signature = pop_arg!(args, VectorRef);
     let msg_ref = msg.as_bytes_ref();
     let signature_ref = signature.as_bytes_ref();
+    let msg_size = msg_ref.len();
+    let signature_len = signature_ref.len();
 
-    // TODO(Gas): Charge the arg size dependent costs
-    let cost = gas_params.base;
+    let cost =
+        gas_params.base + gas_params.per_byte * NumBytes::new((msg_size + signature_len) as u64);
 
     let Ok(sig) = <Secp256k1RecoverableSignature as ToFromBytes>::from_bytes(&signature_ref) else {
         return Ok(NativeResult::err(cost, E_INVALID_SIGNATURE));
@@ -78,8 +80,8 @@ pub fn native_decompress_pubkey(
     let pubkey = pop_arg!(args, VectorRef);
     let pubkey_ref = pubkey.as_bytes_ref();
 
-    // TODO(Gas): Charge the arg size dependent costs
-    let cost = gas_params.base;
+    let pubkey_ref_len = pubkey_ref.len();
+    let cost = gas_params.base + gas_params.per_byte * NumBytes::new(pubkey_ref_len as u64);
 
     match Secp256k1PublicKey::from_bytes(&pubkey_ref) {
         Ok(pubkey) => {
