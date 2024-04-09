@@ -101,4 +101,8 @@ name = "bench_tx_query"
 
 [[bench]]
 harness = false
+name = "bench_utils"
+
+[[bench]]
+harness = false
 name = "bench_tx"
