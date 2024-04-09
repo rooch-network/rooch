@@ -46,7 +46,7 @@ const sfts: SftsProps[] = [
   },
 ]
 
-export const AllSfts = () => {
+export const Tokens = () => {
   const [progress, setProgress] = useState(0)
 
   useEffect(() => {
@@ -80,13 +80,11 @@ export const AllSfts = () => {
                 </div>
               </TableCell>
               <TableCell className="text-center">
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="dark:text-teal-400 dark:hover:text-teal-300 text-teal-500 hover:text-teal-600 font-semibold"
-                >
-                  <MousePointer2 className="w-4 h-4 mr-1" />
-                  Mint
+                <Button variant="link" size="sm" className="hover:no-underline">
+                  <span className="flex font-semibold bg-gradient-to-r bg-clip-text from-teal-500 via-purple-500 to-orange-500 text-transparent">
+                    <MousePointer2 className="w-4 h-4 mr-1 text-indigo-600" />
+                    Mint
+                  </span>
                 </Button>
               </TableCell>
             </TableRow>
