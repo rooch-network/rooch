@@ -32,13 +32,7 @@ export const SidebarItem = ({ icon: Icon, label, href, onClose }: SidebarItemPro
       )}
     >
       <div className="flex items-center gap-x-3 dark:hover:text-white">
-        <Icon
-          size={22}
-          className={cn(
-            'text-zinc-500 dark:text-muted-foreground',
-            isActive && 'text-zinc-700 dark:text-white',
-          )}
-        />
+        <Icon size={22} className={cn(isActive && 'text-zinc-700 dark:text-white')} />
         {label}
       </div>
     </Button>

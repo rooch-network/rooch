@@ -12,9 +12,9 @@ export const LanguageSwitcher = () => {
 
   const languageIcon = () => {
     return i18n.language === 'zh' ? (
-      <Languages className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />
+      <Languages className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100" />
     ) : (
-      <Globe2 className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />
+      <Globe2 className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100" />
     )
   }
 
@@ -24,11 +24,11 @@ export const LanguageSwitcher = () => {
 
   return (
     <>
-      <div className="w-full">
+      <div className="w-full transition-all">
         <Button
           variant="ghost"
           size="sm"
-          className="select-none w-full text-muted-foreground hover:text-muted-foreground justify-start px-2"
+          className="select-none w-full text-muted-foreground hover:text-muted-foreground justify-start px-2 hover:bg-zinc-300/20 dark:hover:bg-zinc-800/50 hover:text-zinc-600 dark:hover:text-white"
           onClick={toggleLanguage}
         >
           {languageIcon()}
