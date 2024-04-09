@@ -63,7 +63,7 @@ impl SparseMerkleProof {
             HashValue::LENGTH_IN_BITS,
             self.siblings.len(),
         );
-        let element_key = element_key.into_object();
+        let element_key = element_key.into_object()?;
         let element_key_hash = element_key.merkle_hash();
 
         match (element_blob, self.leaf) {
@@ -77,7 +77,7 @@ impl SparseMerkleProof {
                     proof_key,
                     element_key_hash
                 );
-                let hash: H256 = blob.into_object().merkle_hash().into();
+                let hash: H256 = blob.into_object()?.merkle_hash().into();
                 ensure!(
                     hash == proof_value_hash,
                     "Value hashes do not match. Value hash in proof: {:x}. \
@@ -151,8 +151,8 @@ impl SparseMerkleProof {
         element_key: K,
         element_blob: V,
     ) -> Result<H256> {
-        let element_key_hash = element_key.into_object().merkle_hash();
-        let element_hash = element_blob.into_object().merkle_hash();
+        let element_key_hash = element_key.into_object()?.merkle_hash();
+        let element_hash = element_blob.into_object()?.merkle_hash();
         let is_non_exists_proof = match self.leaf.as_ref() {
             None => true,
             Some((leaf_key, _leaf_value)) => &element_key_hash != leaf_key,

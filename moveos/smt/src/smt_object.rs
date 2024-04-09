@@ -21,7 +21,7 @@ pub trait Value: Clone + EncodeToObject + DecodeToObject {}
 impl<T: Clone + Serialize + EncodeToObject + DecodeToObject> Value for T {}
 
 pub trait EncodeToObject {
-    fn into_object(self) -> SMTObject<Self>
+    fn into_object(self) -> Result<SMTObject<Self>>
     where
         Self: std::marker::Sized;
 }
@@ -36,7 +36,7 @@ impl<T> EncodeToObject for T
 where
     T: Serialize,
 {
-    fn into_object(self) -> SMTObject<Self> {
+    fn into_object(self) -> Result<SMTObject<Self>> {
         SMTObject::from_origin(self)
     }
 }
@@ -77,16 +77,19 @@ impl<T> SMTObject<T> {
         }
     }
 
-    pub fn from_origin(origin: T) -> Self
+    pub fn from_origin(origin: T) -> Result<Self>
     where
         T: Serialize,
     {
-        let raw = bcs::to_bytes(&origin).expect("serialize should not fail");
-        SMTObject {
+        let raw = match bcs::to_bytes(&origin) {
+            Ok(v) => v,
+            Err(err) => return Err(err.into())
+        };
+        Ok(SMTObject {
             origin,
             raw,
             cached_hash: Cell::new(None),
-        }
+        })
     }
 
     pub fn from_raw(raw: Vec<u8>) -> Result<Self>
@@ -173,7 +176,7 @@ where
     T: EncodeToObject,
 {
     fn from(origin: T) -> SMTObject<T> {
-        origin.into_object()
+        origin.into_object().expect("encode to object failed")
     }
 }
 
