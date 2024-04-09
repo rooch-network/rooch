@@ -195,7 +195,6 @@ impl<'a> ExtendedChecker<'a> {
         // Inspect the bytecode of every function, and if an instruction is CallGeneric,
         // verify that it calls a function with the private_generics attribute as detected earlier.
         // Then, ensure that the generic parameters of the CallGeneric instruction are valid.
-        // #TODO: Ensure that every generic function call is fully checked.
         check_call_generics(self.env, module, view);
 
         for (private_generics_func_name, types_list) in type_name_indices {

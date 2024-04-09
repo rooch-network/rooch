@@ -138,7 +138,11 @@ where
                     //Other pure value Struct args
                     //If the session is read_only, only allow any pure value struct, otherwise, only allow the allowed struct
                     if self.read_only || is_allowed_argument_struct(&struct_arg_type) {
-                        let arg = args.next().expect("argument length mismatch");
+                        let arg = args.next().ok_or_else(|| {
+                            PartialVMError::new(StatusCode::NUMBER_OF_ARGUMENTS_MISMATCH)
+                                .with_message("Argument length mismatch".to_string())
+                                .finish(location.clone())
+                        })?;
                         resolved_args.push(ResolvedArg::pure(arg));
                     } else {
                         return Err(PartialVMError::new(StatusCode::TYPE_MISMATCH)
