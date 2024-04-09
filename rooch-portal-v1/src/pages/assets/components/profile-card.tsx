@@ -1,28 +1,74 @@
 import toast from 'react-hot-toast'
-import { Copy, RotateCcw } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 
 import { formatAddress } from '@/utils/format'
-import { useWalletStore } from '@roochnetwork/rooch-sdk-kit'
+import { WalletAccount, useWalletStore } from '@roochnetwork/rooch-sdk-kit'
 import { useNavigate } from 'react-router-dom'
 
 import Jazzicon, { jsNumberForAddress } from 'react-jazzicon'
+import { useEffect } from 'react'
+import { useWalletAccountStore } from '@/store/useWalletAccountStore'
 
 export const ProfileCard = () => {
   const navigate = useNavigate()
   const account = useWalletStore((state) => state.currentAccount)
+  const { walletAccount, roochAddress, setWalletAccount, setRoochAddress } = useWalletAccountStore()
 
-  const handleClickCopy = () => {
+  // ** Create Wallet Account Instance
+  useEffect(() => {
+    if (account) {
+      const newWalletAccount = new WalletAccount(
+        account.client,
+        account.chain,
+        account.address,
+        account.authorization,
+        account.publicKey,
+        account.compressedPublicKey,
+      )
+      setWalletAccount(newWalletAccount)
+    }
+  }, [account, setWalletAccount])
+
+  // ** Get Rooch Address
+  useEffect(() => {
+    const fetchRoochAddress = async () => {
+      if (walletAccount) {
+        try {
+          const address = await walletAccount.resoleRoochAddress()
+          setRoochAddress(address)
+        } catch (error) {
+          console.error('Error fetching Rooch Address:', error)
+        }
+      }
+    }
+
+    fetchRoochAddress()
+  }, [walletAccount, setRoochAddress])
+
+  // TODO: handleClickCopy
+  const handleClickCopy = (accountType: string) => {
+    let textToCopy: string | null = ''
+
     if (!account) {
       toast('Please connect your wallet', {
         icon: '✨',
       })
-    } else {
+      return
+    }
+
+    if (accountType === 'btc') {
+      textToCopy = account.address
+    } else if (accountType === 'rooch') {
+      textToCopy = roochAddress
+    }
+
+    if (textToCopy) {
       navigator.clipboard
-        .writeText(account.address)
+        .writeText(textToCopy)
         .then(() => {
           toast('Copied to clipboard!', {
             icon: '🌟',
@@ -43,12 +89,11 @@ export const ProfileCard = () => {
       <CardHeader className="absolute top-0 left-0 z-10 p-4 md:p-6 w-full">
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-2xl md:text-3xl leading-tight text-white">
-              Rooch Account #1
+            <CardTitle>
+              <div className="flex flex-col items-start justify-start">
+                <h3 className="text-2xl md:text-3xl leading-tight text-white">Rooch Account</h3>
+              </div>
             </CardTitle>
-            {/* <CardDescription className="text-wrap text-white/95 dark:text-white/70 text-xs md:text-sm">
-              Manage Your Wallet Connections and Authorized Sessions.
-            </CardDescription> */}
           </div>
           <div className="ml-4 flex flex-col items-end justify-start text-sm md:text-base">
             <span className="mt-1.5 text-white/95 dark:text-white/85 leading-3">Your balance</span>
@@ -72,23 +117,51 @@ export const ProfileCard = () => {
       <CardFooter className="flex justify-between relative pb-8 md:pb-12 px-4 md:px-6 dark:bg-primary-foreground h-full">
         <div className="absolute">
           <Avatar className="hidden md:inline">
-            <Jazzicon diameter={80} seed={jsNumberForAddress(account?.address as string)} />
+            {account ? (
+              <Jazzicon diameter={80} seed={jsNumberForAddress(account.address)} />
+            ) : (
+              <Jazzicon diameter={80} seed={10000000} />
+            )}
           </Avatar>
           <Avatar className="inline md:hidden">
-            <Jazzicon diameter={55} seed={jsNumberForAddress(account?.address as string)} />
+            {account ? (
+              <Jazzicon diameter={55} seed={jsNumberForAddress(account.address)} />
+            ) : (
+              <Jazzicon diameter={55} seed={10000000} />
+            )}
           </Avatar>
         </div>
-        <div className="absolute top-0 right-4 md:top-2 md:right-6">
-          <div className="flex items-center justify-center gap-1 text-sm text-zinc-800/85 dark:text-white/85">
-            <span>{account === null ? 'Wallet Address' : formatAddress(account?.address)}</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleClickCopy}
-              className="rounded-full h-8 w-8 hover:bg-border transition-all"
+        <div className="absolute top-1 right-4 md:top-3 md:right-6">
+          <div className="flex items-center justify-center gap-1 text-zinc-800/85 dark:text-white/85">
+            {/* Rooch Address */}
+            <div
+              className="leading-none text-white/85 flex items-center justify-start font-normal gap-1 text-xs sm:text-sm hover:cursor-pointer"
+              onClick={() => handleClickCopy('rooch')}
             >
-              <Copy className="w-4 h-4" />
-            </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full h-6 w-6 bg-accent transition-all"
+              >
+                <img src="/rooch_white_logo.svg" alt="rooch logo" className="w-4 h-4" />
+              </Button>
+              {roochAddress ? <p>{formatAddress(roochAddress as string)}</p> : <p>Rooch Address</p>}
+            </div>
+
+            {/* Wallet Address */}
+            <div
+              className="leading-none text-white/85 flex items-center justify-start font-normal gap-1 text-xs sm:text-sm ml-3 hover:cursor-pointer"
+              onClick={() => handleClickCopy('btc')}
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full h-6 w-6 bg-accent transition-all"
+              >
+                <img src="/icon-btc.svg" alt="rooch logo" className="w-4 h-4" />
+              </Button>
+              <span>{account === null ? 'Wallet Address' : formatAddress(account?.address)}</span>
+            </div>
           </div>
         </div>
       </CardFooter>

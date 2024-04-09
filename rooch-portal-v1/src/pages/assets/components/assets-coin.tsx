@@ -1,7 +1,6 @@
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableFooter,
   TableHead,
@@ -50,9 +49,6 @@ export const AssetsCoin = () => {
   return (
     <div className="rounded-lg border overflow-hidden">
       <Table>
-        <TableCaption>
-          <span className="flex mb-2 ml-2">Transfer your coins here.</span>
-        </TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[120px]">Asset</TableHead>
@@ -75,16 +71,12 @@ export const AssetsCoin = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56">
-                    <DropdownMenuLabel>Action 💥</DropdownMenuLabel>
+                    <DropdownMenuLabel>Action</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
                       <DropdownMenuItem onClick={() => {}}>
                         Transfer
                         <DropdownMenuShortcut>⇧⌘F</DropdownMenuShortcut>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => {}}>
-                        Buy & Sell
-                        <DropdownMenuShortcut>⇧⌘B</DropdownMenuShortcut>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => {}}>
                         Swap
