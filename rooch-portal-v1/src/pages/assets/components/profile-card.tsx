@@ -135,7 +135,7 @@ export const ProfileCard = () => {
           <div className="flex items-center justify-center gap-1 text-zinc-800/85 dark:text-white/85">
             {/* Rooch Address */}
             <div
-              className="leading-none text-white/85 flex items-center justify-start font-normal gap-1 text-xs sm:text-sm hover:cursor-pointer"
+              className="leading-none text-muted-foreground dark:text-white/85 flex items-center justify-start font-normal gap-1 text-xs sm:text-sm hover:cursor-pointer"
               onClick={() => handleClickCopy('rooch')}
             >
               <Button
@@ -160,7 +160,9 @@ export const ProfileCard = () => {
               >
                 <img src="/icon-btc.svg" alt="rooch logo" className="w-4 h-4" />
               </Button>
-              <span>{account === null ? 'Wallet Address' : formatAddress(account?.address)}</span>
+              <span className="text-muted-foreground">
+                {account === null ? 'Wallet Address' : formatAddress(account?.address)}
+              </span>
             </div>
           </div>
         </div>
