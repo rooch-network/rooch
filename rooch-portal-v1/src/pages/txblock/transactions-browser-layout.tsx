@@ -21,6 +21,7 @@ export const TxblockLayout = () => {
       {/* Trasaction Details */}
       <div className="rounded-2xl bg-accent h-full w-full">
         <div className="m-2 rounded-2xl bg-background/95 h-full w-full p-4">
+          {/* TODO */}
           <div>Check Point</div>
         </div>
       </div>

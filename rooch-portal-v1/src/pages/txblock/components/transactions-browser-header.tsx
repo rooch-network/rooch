@@ -29,12 +29,15 @@ export const TransactionsBrowserHeader = () => {
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Transactions Block</h1>
               <div className="flex items-center justify-start gap-1 rounded-lg bg-accent w-fit px-2 py-1 mt-2 text-sm hover:cursor-pointer">
-                <p className="text-white/75">{formatAddress(txhash!)}</p>
+                <p className="text-muted-foreground dark:text-white/75">{formatAddress(txhash!)}</p>
                 <Copy className="text-muted-foreground w-3 h-3" />
               </div>
             </div>
           </HoverCardTrigger>
-          <HoverCardContent className="w-fit bg-transparent/75 p-2 rounded-lg" align="start">
+          <HoverCardContent
+            className="w-fit text-sm text-muted-foreground dark:text-white/75 bg-gray-100 bg-accent px-2 py-1 rounded-lg"
+            align="start"
+          >
             {txhash}
           </HoverCardContent>
         </HoverCard>

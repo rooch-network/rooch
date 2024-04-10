@@ -81,6 +81,8 @@ export const TransactionsTable = () => {
     }
   }, [transactionsData])
 
+  console.log(txs)
+
   if (isPending) {
     return <SkeletonList />
   }
