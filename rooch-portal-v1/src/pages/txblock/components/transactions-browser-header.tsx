@@ -35,7 +35,7 @@ export const TransactionsBrowserHeader = () => {
             </div>
           </HoverCardTrigger>
           <HoverCardContent
-            className="w-fit text-sm text-muted-foreground dark:text-white/75 bg-gray-100 bg-accent px-2 py-1 rounded-lg"
+            className="w-fit text-xs text-muted-foreground dark:text-white/75 bg-gray-100 bg-accent p-2 rounded-lg"
             align="start"
           >
             {txhash}

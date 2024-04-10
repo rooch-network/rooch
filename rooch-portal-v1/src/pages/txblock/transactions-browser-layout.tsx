@@ -2,6 +2,7 @@ import { TabItem } from '@/common/interface'
 
 import { TransactionsBrowserTab } from './components/transactions-browser-tab'
 import { TransactionsBrowserHeader } from './components/transactions-browser-header'
+import { TransactionDetails } from './components/transactions-browser-details'
 
 const tabItems: TabItem[] = [
   { id: 'overview', label: 'Overview', path: '/trasactions/txblock/:hash/' },
@@ -10,6 +11,8 @@ const tabItems: TabItem[] = [
 ]
 
 export const TxblockLayout = () => {
+  const activeTabId = tabItems[0].id // 假设当前激活的Tab是"Overview"
+
   return (
     <div className="h-full flex-1 flex-col space-y-4 flex rounded-lg md:shadow-custom md:p-4 md:dark:shadow-muted">
       {/* Transaction Header */}
@@ -20,9 +23,8 @@ export const TxblockLayout = () => {
 
       {/* Trasaction Details */}
       <div className="rounded-2xl bg-accent h-full w-full">
-        <div className="m-2 rounded-2xl bg-background/95 h-full w-full p-4">
-          {/* TODO */}
-          <div>Check Point</div>
+        <div className="m-3 rounded-2xl bg-background/95 h-full p-4">
+          <TransactionDetails tabItems={tabItems} activeTabId={activeTabId} />
         </div>
       </div>
     </div>
