@@ -8,6 +8,7 @@ module rooch_framework::auth_payload {
 
     #[data_struct]
     struct AuthPayload has copy, store, drop {
+        // msg sin
         sign: vector<u8>,
         // Some wallets add magic prefixes, such as unisat adding 'Bitcoin Signed Message:\n'
         sign_info_prefix: vector<u8>,

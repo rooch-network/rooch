@@ -21,21 +21,8 @@ export function App() {
   const {mutateAsync: connectWallet} = useConnectWallet()
   const wallets = useWallets()
   const installedWallets = wallets.filter((w) => w.installed === true)
-  const [roochAddress, setRoochAddress] = useState('');
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const address = await sessionAccount?.getRoochAddress();
-        setRoochAddress(address || '');
-      } catch (error) {
-        // 处理错误
-        console.error('Failed to fetch Rooch address:', error);
-      }
-    }
-
-    fetchData();
-  }, [sessionAccount]);
+  console.log(sessionAccount?.getAuthKey())
 
   return (
     <div className="App">
@@ -73,7 +60,7 @@ export function App() {
             </div>
             <div style={{textAlign: 'left', marginTop: 10}}>
               <div style={{fontWeight: 'bold'}}>Session Account Address:</div>
-              <div style={{wordWrap: 'break-word'}}>{roochAddress}</div>
+              <div style={{wordWrap: 'break-word'}}>{sessionAccount?.getAddress()}</div>
             </div>
           </div>
           <CreateSessionCard/>

@@ -5,32 +5,36 @@ import { createStore } from 'zustand'
 import { createJSONStorage, persist, StateStorage } from 'zustand/middleware'
 import { Network } from '@roochnetwork/rooch-sdk'
 
-export type ClientActions = {
+export type ClientContextActions = {
   addNetwork: (network: Network) => void
   switchNetwork: (network: Network) => void
   removeNetwork: (network: Network) => void
 }
 
-export type ClientStore = {
+export type ClientContextStoreState = {
   networks: Network[]
   currentNetwork: Network
-  // lastConnectedNetwork: Network | null
-} & ClientActions
+} & ClientContextActions
 
-type ClientConfiguration = {
+export type ClientContextStore = ReturnType<typeof createClientContextStore>
+
+type ClientContextConfiguration = {
   storage: StateStorage
   storageKey: string
   networks: Network[]
   currentNetwork: Network
 }
 
-export function createClientStore({ storage, storageKey, currentNetwork }: ClientConfiguration) {
-  return createStore<ClientStore>()(
+export function createClientContextStore({
+  storage,
+  storageKey,
+  currentNetwork,
+}: ClientContextConfiguration) {
+  return createStore<ClientContextStoreState>()(
     persist(
       (set, get) => ({
         networks: [],
         currentNetwork: currentNetwork,
-        // lastConnectedNetwork: null,
         addNetwork(network) {
           const cache = get().networks
           set(() => ({
@@ -47,7 +51,6 @@ export function createClientStore({ storage, storageKey, currentNetwork }: Clien
         switchNetwork(network) {
           set(() => ({
             currentNetwork: network,
-            // lastConnectedNetwork: network,
           }))
         },
       }),
@@ -57,7 +60,6 @@ export function createClientStore({ storage, storageKey, currentNetwork }: Clien
         partialize: ({ networks, currentNetwork }) => ({
           networks,
           currentNetwork,
-          // lastConnectedNetwork,
         }),
       },
     ),

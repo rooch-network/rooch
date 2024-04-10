@@ -7,9 +7,12 @@ module rooch_framework::ethereum_validator {
     use std::vector;
     use std::option::{Self, Option};
     use std::signer;
+    use rooch_framework::multichain_address;
+    use rooch_framework::multichain_address::MultiChainAddress;
     use moveos_std::hex;
-    use moveos_std::tx_context; 
-    use rooch_framework::auth_payload::AuthPayload;
+    use moveos_std::tx_context;
+    use moveos_std::signer::module_signer;
+    use rooch_framework::auth_payload::{AuthPayload};
     use rooch_framework::account_authentication;
     use rooch_framework::ecdsa_k1;
     use rooch_framework::auth_validator;
@@ -29,7 +32,6 @@ module rooch_framework::ethereum_validator {
     }
 
     public entry fun rotate_authentication_key_entry(
-        
         account: &signer,
         public_key: vector<u8>
     ) {
@@ -52,17 +54,6 @@ module rooch_framework::ethereum_validator {
     public entry fun remove_authentication_key_entry(account: &signer) {
         account_authentication::remove_authentication_key<EthereumValidator>(signer::address_of(account));
     }
-
-    /// TODO: fix this
-    /// remove get_public_key_from_authenticator_payload function
-    /// authenticator_payload is no public key included, Should use ecdsa k1 ecrecover from sign
-    ///
-    /// Get the authentication key of the given authenticator from authenticator_payload.
-    // public fun get_authentication_key_from_authenticator_payload(authenticator_payload: &vector<u8>): vector<u8> {
-    //     let public_key = get_public_key_from_authenticator_payload(authenticator_payload);
-    //     let addr = public_key_to_address(public_key);
-    //     ethereum_address::into_bytes(addr)
-    // }
 
     public fun public_key_to_address(public_key: vector<u8>): ETHAddress {
         ethereum_address::new(public_key)
@@ -90,7 +81,7 @@ module rooch_framework::ethereum_validator {
     }
 
     /// Only validate the authenticator's signature.
-    public fun validate_signature(payload: AuthPayload, tx_hash: vector<u8>) {
+    public fun validate_signature(payload: AuthPayload, tx_hash: vector<u8>): ETHAddress {
 
         // tx hash in use wallet signature is hex
         let tx_hex = hex::encode(tx_hash);
@@ -127,26 +118,41 @@ module rooch_framework::ethereum_validator {
             *ethereum_address::as_bytes(&address) == auth_payload::from_address(payload),
             auth_validator::error_invalid_authenticator()
         );
+
+        address
     }
 
-    public fun validate(authenticator_payload: vector<u8>) {
+    public fun validate(authenticator_payload: vector<u8>): MultiChainAddress {
+        let sender = tx_context::sender();
         let tx_hash = tx_context::tx_hash();
-
         let payload = auth_payload::from_bytes(authenticator_payload);
+        let ethAddress = validate_signature(payload, tx_hash);
 
-        validate_signature(payload, tx_hash);
+        if (!is_authentication_key_in_account(sender)) {
+            // For the first invocation, the default auth key is the eth address
+            // Save to context and record after the transaction is executed
+            tx_context::add_attribute_via_system(&module_signer<EthereumValidator>(), ethAddress);
+        } else {
+            let authKey = get_authentication_key_from_account(sender);
+            assert!(
+                *ethereum_address::as_bytes(&ethAddress) == authKey,
+                auth_validator::error_invalid_authenticator()
+            );
+        };
 
-        // TODO compare the auth_key from lsthe payload with the auth_key from the account
+        multichain_address::from_eth(ethAddress)
     }
 
     fun pre_execute() {}
 
     fun post_execute() {
-        // let account_addr = tx_context::sender();
-        // if (is_authentication_key_in_account(account_addr)) {
-        //     let auth_key_in_account = get_authentication_key_from_account(account_addr);
-        //     std::debug::print(&auth_key_in_account);
-        // }
+        let account_addr = tx_context::sender();
+        if (!is_authentication_key_in_account(account_addr)) {
+            let authKey = option::extract(&mut tx_context::get_attribute<ETHAddress>());
+            rotate_authentication_key(tx_context::sender(), *ethereum_address::as_bytes(&authKey));
+            let auth_key_in_account = get_authentication_key_from_account(account_addr);
+            std::debug::print(&auth_key_in_account);
+        }
     }
 
     #[test]

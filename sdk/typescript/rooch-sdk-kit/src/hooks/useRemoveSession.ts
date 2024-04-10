@@ -5,7 +5,7 @@ import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-quer
 import { useMutation } from '@tanstack/react-query'
 import { RoochSessionAccount } from '@roochnetwork/rooch-sdk'
 import { roochMutationKeys } from '../constants/roochMutationKeys'
-import { useRoochContext } from '../hooks/useRoochContext'
+import { useRoochSessionStore } from './index'
 
 type UseRemoveSessionArgs = RoochSessionAccount
 
@@ -25,7 +25,7 @@ export function useRemoveSession({
   UseRemoveSessionArgs,
   unknown
 > {
-  const { removeSession } = useRoochContext()
+  const removeSession = useRoochSessionStore((state) => state.removeSession)
 
   return useMutation({
     mutationKey: roochMutationKeys.removeSession(mutationKey),
