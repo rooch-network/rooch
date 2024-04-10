@@ -9,7 +9,7 @@ import { createSessionStore, SessionStore } from '../sessionStore'
 import { useRoochClient } from '../hooks'
 import { useCurrentNetwork } from '../hooks'
 import { Network } from '@roochnetwork/rooch-sdk'
-import { createInMemoryStore } from '../utils/stateStorage'
+import { getDefaultStorage, StorageType } from '../utils/stateStorage'
 
 const DEFAULT_SESSION_STORAGE_KEY = function (key: string | undefined, network: Network) {
   if (key) {
@@ -17,16 +17,6 @@ const DEFAULT_SESSION_STORAGE_KEY = function (key: string | undefined, network: 
   }
 
   return 'rooch-sdk-kit:rooch-session-info' + network.id
-}
-
-const DEFAULT_SESSION_STORAGE = function (storage?: StateStorage) {
-  if (storage) {
-    return storage
-  }
-
-  return typeof window !== 'undefined' && window.sessionStorage
-    ? sessionStorage
-    : createInMemoryStore()
 }
 
 export const RoochSessionContext = createContext<SessionStore | null>(null)
@@ -57,7 +47,7 @@ export function RoochSessionProvider(props: RoochSessionProviderProps) {
     const init = async () => {
       sessionStoreRef.current = createSessionStore({
         client: client,
-        storage: DEFAULT_SESSION_STORAGE(storage),
+        storage: storage || getDefaultStorage(StorageType.Session),
         storageKey: DEFAULT_SESSION_STORAGE_KEY(storageKey, network),
       })
     }

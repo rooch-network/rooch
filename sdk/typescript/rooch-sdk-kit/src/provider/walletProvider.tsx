@@ -9,7 +9,8 @@ import { useAutoConnectWallet, useRoochClient, useWalletStore } from '../hooks'
 import { getInstalledWallets } from '../utils/walletUtils'
 import { BaseWallet, UniSatWallet, WalletAccount } from '../types'
 import { SupportChain } from '../feature'
-import { useCurrentNetwork } from '../hooks/client/useCurrentNetwork'
+import { useCurrentNetwork } from '../hooks'
+import { getDefaultStorage, StorageType } from '../utils/stateStorage'
 
 type WalletProviderProps = {
   chain?: SupportChain
@@ -57,7 +58,7 @@ export function WalletProvider({
         wallets: wallets,
         currentWallet: wallets.find((v) => v.getChain() === chain) ?? new UniSatWallet(client), // default use unisat
         autoConnectEnabled: autoConnect,
-        storage: storage ?? localStorage,
+        storage: storage || getDefaultStorage(StorageType.Local),
         storageKey: storageKey + network.id + chain?.toString(),
       })
       setLoading(false)

@@ -12,7 +12,7 @@ import { WalletRoochSessionAccount } from '../../types/WalletRoochSessionAccount
 import { useRoochSessionStore } from '../index'
 
 interface UseCreateSessionKeyArgs {
-  scopes?: string[]
+  scopes: string[]
   maxInactiveInterval?: number
 }
 
@@ -29,12 +29,6 @@ type UseCreateSessionKeyMutationOptions = Omit<
   >,
   'mutationFn'
 >
-
-export const defaultScopes = [
-  '0x1::*::*',
-  '0x3::*::*',
-  '0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35::*::*',
-]
 
 export function useCreateSessionKey({
   mutationKey,
@@ -57,7 +51,7 @@ export function useCreateSessionKey({
         throw new WalletNotConnectedError('No wallet is connected.')
       }
 
-      let scopes = args.scopes ?? defaultScopes
+      let scopes = args.scopes
       let maxInactiveInterval = args.maxInactiveInterval ?? 1200
 
       try {

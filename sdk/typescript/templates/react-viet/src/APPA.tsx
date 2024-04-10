@@ -11,7 +11,6 @@ import {
 import {Button} from '@radix-ui/themes';
 
 import './App.css'
-import {useEffect, useState} from 'react';
 
 export function App() {
 
@@ -92,8 +91,12 @@ export function App() {
           style={{marginTop: 10}}
           onClick={async () => {
 
+            const defaultScopes = [
+              '0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35::*::*',
+            ]
+
             createSessionKey(
-              {},
+              {scopes: defaultScopes},
               {
                 onSuccess: (result) => {
                   console.log('session key', result);

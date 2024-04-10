@@ -7,8 +7,9 @@ import type { ReactNode } from 'react'
 import { AllNetwork, isRoochClient, Network, RoochClient } from '@roochnetwork/rooch-sdk'
 import { ClientContextStore, createClientContextStore } from '../clientStore'
 import type { StateStorage } from 'zustand/middleware'
-import { useCurrentNetwork } from '../hooks/client/useCurrentNetwork'
+import { useCurrentNetwork } from '../hooks'
 import { RoochSessionProvider } from './sessionProvider'
+import { getDefaultStorage, StorageType } from '../utils/stateStorage'
 
 const DEFAULT_STORAGE_KEY = 'rooch-sdk-kit:rooch-client-info'
 
@@ -32,7 +33,7 @@ export function RoochClientProvider(props: RoochClientProviderProps) {
 
   const clientStoreRef = useRef(
     createClientContextStore({
-      storage: storage || localStorage,
+      storage: storage || getDefaultStorage(StorageType.Local),
       storageKey: storageKey || DEFAULT_STORAGE_KEY + network.id,
       networks: networks || AllNetwork,
       currentNetwork: network,

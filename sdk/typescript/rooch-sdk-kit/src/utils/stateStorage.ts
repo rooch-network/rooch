@@ -17,3 +17,26 @@ export function createInMemoryStore(): StateStorage {
     },
   }
 }
+
+export enum StorageType {
+  Session,
+  Local,
+}
+
+export function getDefaultStorage(type?: StorageType): StateStorage {
+  let storage: StateStorage | undefined
+
+  switch (type) {
+    case StorageType.Session:
+      storage = typeof window !== 'undefined' && window.sessionStorage ? sessionStorage : undefined
+      break
+    case StorageType.Local:
+      storage = typeof window !== 'undefined' && window.localStorage ? localStorage : undefined
+  }
+
+  if (!storage) {
+    storage = createInMemoryStore()
+  }
+
+  return storage
+}
