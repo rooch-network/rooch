@@ -26,24 +26,24 @@ export class RoochSessionAccount implements IAccount {
   protected readonly client: RoochClient
   protected readonly scopes: string[]
   protected readonly maxInactiveInterval: number
-  protected readonly account: IAccount
+  protected readonly account?: IAccount
   protected readonly sessionAccount: RoochAccount
   protected readonly localCreateSessionTime: number
-  protected readonly authInfo?: string
-
   protected constructor(
     client: RoochClient,
-    account: IAccount,
     scopes: string[],
     maxInactiveInterval: number,
+    account?: IAccount,
     authInfo?: string,
+    sessionAccount?: RoochAccount,
+    localCreateSessionTime?: number,
   ) {
     this.client = client
     this.account = account
     this.scopes = scopes
     this.maxInactiveInterval = maxInactiveInterval
-    this.localCreateSessionTime = Date.now() / 1000
-    this.sessionAccount = new RoochAccount(this.client)
+    this.localCreateSessionTime = localCreateSessionTime ?? Date.now() / 1000
+    this.sessionAccount = sessionAccount ?? new RoochAccount(this.client)
     this.authInfo = authInfo
 
     // session must have the right to delete itself
@@ -52,6 +52,8 @@ export class RoochSessionAccount implements IAccount {
     }
   }
 
+  protected readonly authInfo?: string
+
   public static async CREATE(
     client: RoochClient,
     account: IAccount,
@@ -59,7 +61,36 @@ export class RoochSessionAccount implements IAccount {
     maxInactiveInterval: number,
     opts?: SendRawTransactionOpts,
   ): Promise<RoochSessionAccount> {
-    return new RoochSessionAccount(client, account, scopes, maxInactiveInterval).build(opts)
+    return new RoochSessionAccount(client, scopes, maxInactiveInterval, account).build(opts)
+  }
+
+  public toJSON(): any {
+    return {
+      account: this.account,
+      session: this.sessionAccount,
+      scopes: this.scopes,
+      maxInactiveInterval: this.maxInactiveInterval,
+      localCreateSessionTime: this.localCreateSessionTime,
+      authInfo: this.authInfo,
+    }
+  }
+
+  public static formJson(jsonObj: any, client: RoochClient) {
+    const { account, session, scopes, maxInactiveInterval, authInfo, localCreateSessionTime } =
+      jsonObj
+
+    const roochAccount = RoochAccount.formJson(account, client)
+    const sessionAccount = RoochAccount.formJson(session, client)
+
+    return new RoochSessionAccount(
+      client,
+      scopes,
+      maxInactiveInterval,
+      roochAccount,
+      authInfo,
+      sessionAccount,
+      localCreateSessionTime,
+    )
   }
 
   protected async build(opts?: SendRawTransactionOpts): Promise<RoochSessionAccount> {
@@ -127,7 +158,7 @@ export class RoochSessionAccount implements IAccount {
 
   protected async register(txData: RoochTransactionData): Promise<RoochSessionAccount> {
     const s = await this.client.sendRawTransaction({
-      authorizer: this.account.getAuthorizer(),
+      authorizer: this.account!.getAuthorizer(),
       data: txData,
     })
     console.log(s)
@@ -140,7 +171,7 @@ export class RoochSessionAccount implements IAccount {
   }
 
   getAddress(): string {
-    return this.account.getAddress()
+    return this.account!.getAddress()
   }
 
   getAuthorizer(): IAuthorizer {
@@ -176,7 +207,7 @@ export class RoochSessionAccount implements IAccount {
     //   return Promise.resolve(true)
     // }
 
-    return this.client.sessionIsExpired(this.account.getAddress(), this.getAuthKey())
+    return this.client.sessionIsExpired(this.getAddress(), this.getAuthKey())
   }
 
   public async getSessionKey() {
@@ -218,4 +249,12 @@ export class RoochSessionAccount implements IAccount {
       opts: opts,
     })
   }
+
+  // public toJson(): string {
+  //
+  // }
+  //
+  // public fromJson(): RoochSessionAccount {
+  //
+  // }
 }

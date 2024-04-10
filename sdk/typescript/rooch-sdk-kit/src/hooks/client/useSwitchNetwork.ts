@@ -5,7 +5,7 @@ import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-quer
 import { useMutation } from '@tanstack/react-query'
 import { Network } from '@roochnetwork/rooch-sdk'
 import { roochMutationKeys } from '../../constants/roochMutationKeys'
-import { useRoochContext } from '../../hooks/useRoochContext'
+import { useRoochContextStore } from './index'
 
 type UseSwitchNetworkArgs = Network
 
@@ -25,7 +25,7 @@ export function useSwitchNetwork({
   UseSwitchNetworkArgs,
   unknown
 > {
-  const { switchNetwork } = useRoochContext()
+  const switchNetwork = useRoochContextStore((state) => state.switchNetwork)
 
   return useMutation({
     mutationKey: roochMutationKeys.switchNetwork(mutationKey),

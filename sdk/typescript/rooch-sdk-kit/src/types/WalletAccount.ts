@@ -33,6 +33,10 @@ export class WalletAccount implements IAccount {
     this.compressedPublicKey = compressedPublicKey
   }
 
+  toJSON(): any {
+    return {}
+  }
+
   public toMultiChainAddress(): MultiChainAddress | null {
     if (this.chain !== SupportChain.ETH) {
       return new MultiChainAddress(RoochMultiChainID.Bitcoin, this.address)

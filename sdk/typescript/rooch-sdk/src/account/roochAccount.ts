@@ -22,6 +22,16 @@ export class RoochAccount implements IAccount {
     this.keypair = keyPair ?? Ed25519Keypair.generate()
   }
 
+  public toJSON(): any {
+    return {
+      pk: this.keypair.export(),
+    }
+  }
+
+  public static formJson(jsonObj: any, client: RoochClient) {
+    return new RoochAccount(client, Ed25519Keypair.fromSecretKeyStr(jsonObj.pk.privateKey)!)
+  }
+
   public getKeypar(): Ed25519Keypair {
     return this.keypair
   }
