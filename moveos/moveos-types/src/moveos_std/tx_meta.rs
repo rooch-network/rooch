@@ -44,17 +44,27 @@ impl TxMeta {
 
     pub fn new_from_move_action(move_action: &MoveAction) -> Self {
         let function_meta = match move_action {
-            MoveAction::Function(call) => Some(FunctionCallMeta {
-                module_address: *call.function_id.module_id.address(),
-                module_name: MoveAsciiString::new(
-                    call.function_id.module_id.name().as_bytes().to_vec(),
-                )
-                .expect("module name must be valid ascii"),
-                function_name: MoveAsciiString::new(
-                    call.function_id.function_name.as_bytes().to_vec(),
-                )
-                .expect("module name must be valid ascii"),
-            }),
+            MoveAction::Function(call) => {
+                let module_name =
+                    MoveAsciiString::new(call.function_id.module_id.name().as_bytes().to_vec());
+                let function_name =
+                    MoveAsciiString::new(call.function_id.function_name.as_bytes().to_vec());
+                if module_name.is_err() || function_name.is_err() {
+                    None
+                } else {
+                    Some(FunctionCallMeta {
+                        module_address: *call.function_id.module_id.address(),
+                        module_name: MoveAsciiString::new(
+                            call.function_id.module_id.name().as_bytes().to_vec(),
+                        )
+                        .expect("module name must be valid ascii"),
+                        function_name: MoveAsciiString::new(
+                            call.function_id.function_name.as_bytes().to_vec(),
+                        )
+                        .expect("module name must be valid ascii"),
+                    })
+                }
+            }
             _ => None,
         };
         Self {

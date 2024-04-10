@@ -24,8 +24,7 @@ impl L1Block {
     }
 
     pub fn tx_size(&self) -> u64 {
-        //TODO optimize the size calculation
-        self.encode().len() as u64
+        bcs::serialized_size(self).expect("serialize size should success") as u64
     }
 }
 
