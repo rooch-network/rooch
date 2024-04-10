@@ -107,7 +107,7 @@ module.exports = withNextra({
       {
         source: "/docs/tech-highlights/storage",
         permanent: false,
-        destination: "/learn/in-depth-tech/storage",
+        destination: "/learn/core-concepts/objects/storage",
       },
       {
         source: "/docs/why-rooch",
