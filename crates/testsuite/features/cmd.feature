@@ -341,6 +341,10 @@ Feature: Rooch CLI integration tests
       Then cmd ord: "wallet balance"
       Then assert: "{{$.wallet[-1].total}} == 5000000000"
 
+      # query utxos and inscriptions
+      Then cmd: "rpc request --method rooch_queryGlobalStates --params '[{"object_type":"0x4::utxo::UTXO"}, null, "2", true]'"
+      Then cmd: "rpc request --method rooch_queryGlobalStates --params '[{"object_type":"0x4::ord::Inscription"}, null, "2", true]'"
+
       # release servers
       Then stop the server
       Then stop the ord server 
