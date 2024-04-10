@@ -75,6 +75,8 @@ impl RoochTransactionData {
 pub struct RoochTransaction {
     data: RoochTransactionData,
     authenticator: Authenticator,
+
+    data_hash: Option<H256>,
 }
 
 impl RoochTransaction {
@@ -82,6 +84,7 @@ impl RoochTransaction {
         Self {
             data,
             authenticator,
+            data_hash: None,
         }
     }
 
@@ -95,6 +98,7 @@ impl RoochTransaction {
             authenticator: Authenticator::rooch(Signature::Ed25519RoochSignature(
                 Ed25519RoochSignature::default(),
             )),
+            data_hash: None,
         }
     }
 
@@ -130,9 +134,14 @@ impl RoochTransaction {
     }
 
     //TODO unify the hash function
-    pub fn tx_hash(&self) -> H256 {
-        //TODO cache the hash
-        self.data.tx_hash()
+    pub fn tx_hash(&mut self) -> H256 {
+        if let Some(hash) = self.data_hash {
+            hash
+        } else {
+            let hash = self.data.tx_hash();
+            self.data_hash = Some(hash);
+            self.data_hash.unwrap()
+        }
     }
 
     pub fn authenticator_info(&self) -> Result<AuthenticatorInfo> {
@@ -147,8 +156,7 @@ impl RoochTransaction {
     }
 
     pub fn tx_size(&self) -> u64 {
-        //TODO optimize the size calculation
-        self.encode().len() as u64
+        bcs::serialized_size(self).expect("serialize transaction size should success") as u64
     }
 
     //TODO use protest Arbitrary to generate mock data
@@ -183,7 +191,7 @@ impl RoochTransaction {
 }
 
 impl From<RoochTransaction> for MoveOSTransaction {
-    fn from(tx: RoochTransaction) -> Self {
+    fn from(mut tx: RoochTransaction) -> Self {
         let tx_hash = tx.tx_hash();
         let tx_size = tx.tx_size();
         let tx_ctx = TxContext::new(
