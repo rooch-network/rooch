@@ -10,8 +10,8 @@ const tabItems: TabItem[] = [
   { id: 'rawJson', label: 'Raw Json', path: '/trasactions/txblock/:hash/' },
 ]
 
-export const TxblockLayout = () => {
-  const activeTabId = tabItems[0].id // 假设当前激活的Tab是"Overview"
+export const TransactionsBrowserLayout = () => {
+  const activeTabId = tabItems[0].id
 
   return (
     <div className="h-full flex-1 flex-col space-y-4 flex rounded-lg md:shadow-custom md:p-4 md:dark:shadow-muted">

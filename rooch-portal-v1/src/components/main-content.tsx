@@ -9,7 +9,7 @@ import { SettingsLayout } from '@/pages/settings/settings-layout'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { SftDetailLayout } from '@/pages/mint/sftDetail/sft-detail-layout'
 import { TransactionsLayout } from '@/pages/transactions/transactions-layout'
-import { TxblockLayout } from '@/pages/txblock/transactions-browser-layout'
+import { TransactionsBrowserLayout } from '@/pages/txblock/transactions-browser-layout'
 import { SftDetailLayoutForSelfStaking } from '@/pages/mint/sftDetailForSelfStaking/sft-detail-layout-for-self-staking'
 
 export const MainContent = () => {
@@ -29,7 +29,7 @@ export const MainContent = () => {
             <Route path="/apps" element={<AppsLayout />} />
             <Route path="/transactions" element={<TransactionsLayout />} />
             <Route path="/settings" element={<SettingsLayout />} />
-            <Route path="/transactions/txblock/:hash" element={<TxblockLayout />} />
+            <Route path="/transactions/txblock/:hash" element={<TransactionsBrowserLayout />} />
           </Routes>
         </div>
       </ScrollArea>
