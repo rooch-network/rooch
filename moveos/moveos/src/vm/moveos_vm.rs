@@ -30,10 +30,9 @@ use move_vm_runtime::{
     session::{LoadedFunctionInstantiation, Session},
 };
 use move_vm_types::loaded_data::runtime_types::{CachedStructIndex, StructType, Type};
+use moveos_object_runtime::runtime::{ObjectRuntime, ObjectRuntimeContext};
 use moveos_stdlib::natives::moveos_stdlib::{
-    event::NativeEventContext,
-    move_module::NativeModuleContext,
-    raw_table::{ObjectRuntime, ObjectRuntimeContext},
+    event::NativeEventContext, move_module::NativeModuleContext,
 };
 use moveos_types::{addresses, transaction::RawTransactionOutput};
 use moveos_types::{

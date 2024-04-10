@@ -3,17 +3,15 @@
 
 use std::sync::Arc;
 
-use move_binary_format::file_format::{Signature, SignatureToken};
-use move_vm_runtime::data_cache::TransactionCache;
-use move_vm_runtime::move_vm::MoveVM;
-use moveos_types::moveos_std::{object::RootObjectEntity, tx_context::TxContext};
-use parking_lot::RwLock;
-
-use moveos_stdlib::natives::moveos_stdlib::raw_table::ObjectRuntime;
-
 use crate::vm::data_cache::{into_change_set, MoveosDataCache};
 #[cfg(test)]
 use crate::vm::unit_tests::vm_arguments_tests::{make_script_function, RemoteStore};
+use move_binary_format::file_format::{Signature, SignatureToken};
+use move_vm_runtime::data_cache::TransactionCache;
+use move_vm_runtime::move_vm::MoveVM;
+use moveos_object_runtime::runtime::ObjectRuntime;
+use moveos_types::moveos_std::{object::RootObjectEntity, tx_context::TxContext};
+use parking_lot::RwLock;
 
 #[test]
 #[allow(clippy::arc_with_non_send_sync)]

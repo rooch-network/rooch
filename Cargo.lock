@@ -8361,6 +8361,7 @@ dependencies = [
  "move-vm-test-utils",
  "moveos",
  "moveos-common",
+ "moveos-object-runtime",
  "moveos-stdlib",
  "moveos-store",
  "moveos-types",
