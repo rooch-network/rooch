@@ -234,6 +234,14 @@ where
             MoveAction::ModuleBundle(module_bundle) => {
                 let compiled_modules = deserialize_modules(&module_bundle)?;
 
+                self.vm
+                    .runtime
+                    .loader()
+                    .verify_module_bundle_for_publication(
+                        compiled_modules.as_slice(),
+                        &self.session.data_cache,
+                    )?;
+
                 let mut init_function_modules = vec![];
                 for module in &compiled_modules {
                     let result = moveos_verifier::verifier::verify_module(module, self.remote);
@@ -247,7 +255,6 @@ where
                     }
                 }
 
-                //TODO add more module verifier.
                 Ok(VerifiedMoveAction::ModuleBundle {
                     module_bundle,
                     init_function_modules,

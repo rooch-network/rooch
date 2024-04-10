@@ -108,9 +108,15 @@ pub fn native_bech32(
         gas_params.base + (gas_params.per_byte * NumBytes::new(data.as_bytes_ref().len() as u64));
 
     let binding = data.as_bytes_ref();
-    let data_str = std::str::from_utf8(&binding).unwrap();
+    let data_str = match std::str::from_utf8(&binding) {
+        Ok(v) => v,
+        Err(_) => return Ok(NativeResult::err(cost, E_DECODE_FAILED)),
+    };
 
-    let (hrp, public_key, variant) = bech32::decode(data_str).unwrap();
+    let (hrp, public_key, variant) = match bech32::decode(data_str) {
+        Ok((v1, v2, v3)) => (v1, v2, v3),
+        Err(_) => return Ok(NativeResult::err(cost, E_DECODE_FAILED)),
+    };
 
     if hrp != "bech32" && hrp != "bech32m" {
         return Ok(NativeResult::err(cost, E_DECODE_FAILED));

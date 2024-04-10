@@ -121,9 +121,14 @@ impl BtcAPIServer for BtcServer {
 
         let global_state_filter =
             InscriptionFilterView::into_global_state_filter(filter, resolve_address)?;
+        let limit_value = limit_of
+            .checked_add(1)
+            .ok_or(jsonrpsee::core::Error::Custom(
+                "limit value overflow".to_string(),
+            ))?;
         let states = self
             .rpc_service
-            .query_object_states(global_state_filter, cursor, limit_of + 1, descending_order)
+            .query_object_states(global_state_filter, cursor, limit_value, descending_order)
             .await?;
 
         let mut data = self
