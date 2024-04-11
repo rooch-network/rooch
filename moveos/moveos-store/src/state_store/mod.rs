@@ -20,7 +20,7 @@ impl NodeDBStore {
 
     pub fn write_nodes(&self, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
         let batch = CodecWriteBatch::new_puts(nodes.into_iter().collect());
-        self.write_batch(batch)
+        self.write_batch_sync(batch)
     }
 }
 

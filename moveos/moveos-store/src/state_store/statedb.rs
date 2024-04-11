@@ -253,12 +253,11 @@ impl StateDBStore {
         }
         let global_size = state_change_set.global_size;
 
-        let update_set_size = update_set.len();
         let mut tree_change_set = self.root_object.update_fields(update_set)?;
         let state_root = tree_change_set.state_root;
         nodes.append(&mut tree_change_set.nodes);
         if log::log_enabled!(log::Level::Debug) {
-            log::debug!("apply_change_set state_root: {:?}, update_set_size: {}, pre_global_size: {}, new_global_size: {}", state_root, update_set_size, self.root_object.entity.size, global_size);
+            log::debug!("apply_change_set state_root: {:?}, smt nodes: {}, pre_global_size: {}, new_global_size: {}", state_root, nodes.len(), self.root_object.entity.size, global_size);
         }
         self.root_object.entity.size = global_size;
         self.node_store.write_nodes(nodes)?;
