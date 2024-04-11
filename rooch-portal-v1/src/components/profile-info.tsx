@@ -30,9 +30,13 @@ export const ProfileInfo = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full h-4 w-4 transition-all hover:cursor-default"
+              className="rounded-full h-4 w-4 transition-all hover:cursor-default ml-1"
             >
-              <img src="/rooch_white_logo.svg" alt="rooch logo" className="w-3 h-3" />
+              <img
+                src="/rooch_white_logo.svg"
+                alt="rooch logo"
+                className="w-4 h-4 rounded-full bg-gray-700 p-0.5 dark:bg-inherit"
+              />
             </Button>
           </div>
         </div>

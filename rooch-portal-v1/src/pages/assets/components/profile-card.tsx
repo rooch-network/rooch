@@ -135,28 +135,38 @@ export const ProfileCard = () => {
           <div className="flex items-center justify-center gap-1 text-zinc-800/85 dark:text-white/85">
             {/* Rooch Address */}
             <div
-              className="leading-none text-muted-foreground dark:text-white/85 flex items-center justify-start font-normal gap-1 text-xs sm:text-sm hover:cursor-pointer"
+              className="leading-none text-muted-foreground dark:text-white/85 flex items-center justify-start font-normal text-xs sm:text-sm hover:cursor-pointer"
               onClick={() => handleClickCopy('rooch')}
             >
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full h-6 w-6 bg-accent transition-all"
+                className="h-6 w-6 bg-inherit hover:bg-inherit transition-all"
               >
-                <img src="/rooch_white_logo.svg" alt="rooch logo" className="w-4 h-4" />
+                <img
+                  src="/rooch_white_logo.svg"
+                  alt="rooch logo"
+                  className="w-4 h-4 rounded-full bg-gray-700 p-0.5 dark:bg-gray-700"
+                />
               </Button>
-              {roochAddress ? <p>{formatAddress(roochAddress as string)}</p> : <p>Rooch Address</p>}
+              <span className="text-muted-foreground">
+                {roochAddress ? (
+                  <p>{formatAddress(roochAddress as string)}</p>
+                ) : (
+                  <p>Rooch Address</p>
+                )}
+              </span>
             </div>
 
             {/* Wallet Address */}
             <div
-              className="leading-none text-white/85 flex items-center justify-start font-normal gap-1 text-xs sm:text-sm ml-3 hover:cursor-pointer"
+              className="leading-none text-white/85 flex items-center justify-start font-normal text-xs sm:text-sm ml-3 hover:cursor-pointer"
               onClick={() => handleClickCopy('btc')}
             >
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full h-6 w-6 bg-accent transition-all"
+                className="h-6 w-6 bg-inherit hover:bg-inherit transition-all"
               >
                 <img src="/icon-btc.svg" alt="rooch logo" className="w-4 h-4" />
               </Button>
