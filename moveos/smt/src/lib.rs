@@ -1,23 +1,22 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::Result;
+use jellyfish_merkle::hash::SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE;
+use jellyfish_merkle::{
+    iterator::JellyfishMerkleIterator,
+    node_type::{Node, NodeKey},
+    JellyfishMerkleTree, TreeReader,
+};
+use parking_lot::RwLock;
+use primitive_types::H256;
 use std::{
     collections::{BTreeMap, HashMap},
     marker::PhantomData,
     sync::Arc,
 };
 
-use anyhow::Result;
-use parking_lot::RwLock;
-use primitive_types::H256;
-
-use jellyfish_merkle::hash::SPARSE_MERKLE_PLACEHOLDER_HASH_VALUE;
 pub use jellyfish_merkle::{hash::SPARSE_MERKLE_PLACEHOLDER_HASH, proof::SparseMerkleProof};
-use jellyfish_merkle::{
-    iterator::JellyfishMerkleIterator,
-    node_type::{Node, NodeKey},
-    JellyfishMerkleTree, TreeReader,
-};
 pub use smt_object::{DecodeToObject, EncodeToObject, Key, SMTObject, Value};
 pub use update_set::UpdateSet;
 
@@ -27,16 +26,14 @@ mod smt_object;
 pub(crate) mod tests;
 mod update_set;
 
-/// Store the tree nodes
-pub trait NodeStore {
+/// Load the tree node binary via hash
+pub trait NodeReader {
     fn get(&self, hash: &H256) -> Result<Option<Vec<u8>>>;
-    fn put(&self, key: H256, node: Vec<u8>) -> Result<()>;
-    fn write_nodes(&self, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()>;
 }
 
-impl<K, V, NS> TreeReader<K, V> for NS
+impl<K, V, NR> TreeReader<K, V> for NR
 where
-    NS: NodeStore,
+    NR: NodeReader,
     K: Key,
     V: Value,
 {
@@ -56,6 +53,18 @@ pub struct InMemoryNodeStore {
     inner: Arc<RwLock<HashMap<H256, Vec<u8>>>>,
 }
 
+impl InMemoryNodeStore {
+    pub fn put(&self, key: H256, node: Vec<u8>) -> Result<()> {
+        self.inner.write().insert(key, node);
+        Ok(())
+    }
+
+    pub fn write_nodes(&self, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
+        self.inner.write().extend(nodes);
+        Ok(())
+    }
+}
+
 impl From<HashMap<H256, Vec<u8>>> for InMemoryNodeStore {
     fn from(map: HashMap<H256, Vec<u8>>) -> Self {
         Self {
@@ -64,82 +73,77 @@ impl From<HashMap<H256, Vec<u8>>> for InMemoryNodeStore {
     }
 }
 
-impl NodeStore for InMemoryNodeStore {
+impl NodeReader for InMemoryNodeStore {
     fn get(&self, hash: &H256) -> Result<Option<Vec<u8>>> {
         Ok(self.inner.read().get(hash).cloned())
     }
+}
 
-    fn put(&self, key: H256, node: Vec<u8>) -> Result<()> {
-        self.inner.write().insert(key, node);
-        Ok(())
-    }
+pub struct TreeChangeSet {
+    pub state_root: H256,
+    pub nodes: BTreeMap<H256, Vec<u8>>,
+}
 
-    fn write_nodes(&self, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
-        self.inner.write().extend(nodes);
-        Ok(())
+impl TreeChangeSet {
+    pub fn new(state_root: H256, nodes: BTreeMap<H256, Vec<u8>>) -> Self {
+        Self { state_root, nodes }
     }
 }
 
 /// Sparse Merkle Tree
 #[derive(Clone)]
-pub struct SMTree<K, V, NS> {
-    node_store: NS,
-    root_hash: Arc<RwLock<H256>>,
+pub struct SMTree<K, V, NR> {
+    node_reader: NR,
     key: PhantomData<K>,
     value: PhantomData<V>,
 }
 
-impl<K, V, NS> SMTree<K, V, NS>
+impl<K, V, NR> SMTree<K, V, NR>
 where
     K: Key,
     V: Value,
-    NS: NodeStore,
+    NR: NodeReader,
 {
-    /// Construct a new smt tree from provided `state_root_hash` with underline `node_store`
-    pub fn new(node_store: NS, root_hash: Option<H256>) -> Self {
-        let state_root_hash = root_hash.unwrap_or(*SPARSE_MERKLE_PLACEHOLDER_HASH);
+    /// Construct a new smt tree with a tree reader.
+    pub fn new(node_reader: NR) -> Self {
         SMTree {
-            node_store,
-            root_hash: Arc::new(RwLock::new(state_root_hash)),
+            node_reader,
             key: PhantomData,
             value: PhantomData,
         }
     }
 
-    /// get current root hash
-    pub fn root_hash(&self) -> H256 {
-        *self.root_hash.read()
-    }
-
     /// Put a kv pair into tree and generate new state_root.
     /// If need to put many kvs, please use `puts` method.
-    pub fn put(&self, key: K, value: V) -> Result<H256> {
-        self.puts((key, Some(value)))
+    pub fn put(&self, state_root: H256, key: K, value: V) -> Result<TreeChangeSet> {
+        self.puts(state_root, (key, Some(value)))
     }
 
     /// Remove key_hash's data.
     /// Same as put(K,None)
-    pub fn remove(&self, key: K) -> Result<H256> {
-        self.puts((key, None))
+    pub fn remove(&self, state_root: H256, key: K) -> Result<TreeChangeSet> {
+        self.puts(state_root, (key, None))
     }
 
     /// Get the value of the key from the tree.
-    pub fn get(&self, key: K) -> Result<Option<V>> {
-        Ok(self.get_with_proof(key)?.0)
+    pub fn get(&self, state_root: H256, key: K) -> Result<Option<V>> {
+        Ok(self.get_with_proof(state_root, key)?.0)
     }
 
-    pub fn contains(&self, key: K) -> Result<bool> {
-        self.get(key).map(|result| result.is_some())
+    pub fn contains(&self, state_root: H256, key: K) -> Result<bool> {
+        self.get(state_root, key).map(|result| result.is_some())
     }
 
     /// Returns the value and the corresponding merkle proof.
     /// if the value is not applicable, return None and non-inclusion proof.
-    pub fn get_with_proof(&self, key: K) -> Result<(Option<V>, SparseMerkleProof)> {
-        let cur_root_hash = self.root_hash();
-
-        let tree: JellyfishMerkleTree<K, V, NS> = JellyfishMerkleTree::new(&self.node_store);
+    pub fn get_with_proof(
+        &self,
+        state_root: H256,
+        key: K,
+    ) -> Result<(Option<V>, SparseMerkleProof)> {
+        let tree: JellyfishMerkleTree<K, V, NR> = JellyfishMerkleTree::new(&self.node_reader);
         let key = key.into_object();
-        let (data, proof) = tree.get_with_proof(cur_root_hash.into(), key)?;
+        let (data, proof) = tree.get_with_proof(state_root.into(), key)?;
         match data {
             Some(b) => Ok((Some(b.origin), proof)),
             None => Ok((None, proof)),
@@ -147,8 +151,13 @@ where
     }
 
     /// List the (key, value) from the tree.
-    pub fn list(&self, starting_key: Option<K>, limit: usize) -> Result<Vec<(K, V)>> {
-        let mut iter = self.iter(starting_key.clone())?;
+    pub fn list(
+        &self,
+        state_root: H256,
+        starting_key: Option<K>,
+        limit: usize,
+    ) -> Result<Vec<(K, V)>> {
+        let mut iter = self.iter(state_root, starting_key.clone())?;
 
         let mut data = Vec::new();
         // skip the starting_key if starting_key not NONE
@@ -168,27 +177,36 @@ where
     /// Returns the iterator of the tree for scan the tree.
     /// Note: the key in the tree is sorted by the hash of the key, not origin key.
     /// So the iterator will return the key in the hash order, the starting_key is the first key to start scan.
-    pub fn iter(&self, starting_key: Option<K>) -> Result<SMTIterator<K, V, NS>> {
-        let cur_root_hash = self.root_hash();
-        let iterator = SMTIterator::new(&self.node_store, cur_root_hash, starting_key)?;
+    pub fn iter(&self, state_root: H256, starting_key: Option<K>) -> Result<SMTIterator<K, V, NR>> {
+        let iterator = SMTIterator::new(&self.node_reader, state_root, starting_key)?;
         Ok(iterator)
     }
 
     /// Put kv pairs into tree and generate new state_root.
-    pub fn puts<I: Into<UpdateSet<K, V>>>(&self, update_set: I) -> Result<H256> {
-        self.updates(update_set)
+    pub fn puts<I: Into<UpdateSet<K, V>>>(
+        &self,
+        state_root: H256,
+        update_set: I,
+    ) -> Result<TreeChangeSet> {
+        self.updates(state_root, update_set)
     }
 
-    fn updates<I: Into<UpdateSet<K, V>>>(&self, updates: I) -> Result<H256> {
+    fn updates<I: Into<UpdateSet<K, V>>>(
+        &self,
+        state_root: H256,
+        updates: I,
+    ) -> Result<TreeChangeSet> {
         let updates: UpdateSet<K, V> = updates.into();
-        let cur_root_hash = self.root_hash();
         if updates.is_empty() {
-            return Ok(cur_root_hash);
+            return Ok(TreeChangeSet {
+                state_root,
+                nodes: BTreeMap::default(),
+            });
         }
 
-        let tree = JellyfishMerkleTree::new(&self.node_store);
+        let tree = JellyfishMerkleTree::new(&self.node_reader);
         let (new_state_root, change_set) =
-            tree.updates(Some(cur_root_hash.into()), updates.into_updates())?;
+            tree.updates(Some(state_root.into()), updates.into_updates())?;
 
         let mut node_map: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
 
@@ -196,27 +214,17 @@ where
             node_map.insert(nk.into(), n.encode()?);
         }
 
-        self.node_store.write_nodes(node_map)?;
         let new_state_root: H256 = new_state_root.into();
-        //TODO handle change_set's state_node_index
-        *self.root_hash.write() = new_state_root;
 
-        Ok(new_state_root)
-    }
-
-    pub fn update_state_root(&self, new_state_root: H256) -> Result<()> {
-        *self.root_hash.write() = new_state_root;
-
-        Ok(())
-    }
-
-    pub fn is_genesis(&self) -> bool {
-        self.root_hash() == *SPARSE_MERKLE_PLACEHOLDER_HASH
+        Ok(TreeChangeSet {
+            state_root: new_state_root,
+            nodes: node_map,
+        })
     }
 
     /// Dump all (key, value) from the tree
-    pub fn dump(&self) -> Result<Vec<(K, V)>> {
-        let iter = self.iter(None)?;
+    pub fn dump(&self, state_root: H256) -> Result<Vec<(K, V)>> {
+        let iter = self.iter(state_root, None)?;
 
         let mut data = Vec::new();
         for (_data_size, item) in iter.enumerate() {
@@ -227,39 +235,39 @@ where
     }
 }
 
-pub struct SMTIterator<'a, K, V, R>
+pub struct SMTIterator<'a, K, V, NR>
 where
     K: Key,
     V: Value,
-    R: NodeStore,
+    NR: NodeReader,
 {
-    iter: JellyfishMerkleIterator<'a, K, V, R>,
+    iter: JellyfishMerkleIterator<'a, K, V, NR>,
 }
 
-impl<'a, K, V, R> SMTIterator<'a, K, V, R>
+impl<'a, K, V, NR> SMTIterator<'a, K, V, NR>
 where
     K: Key,
     V: Value,
-    R: NodeStore,
+    NR: NodeReader,
 {
-    pub fn new(reader: &'a R, root_hash: H256, starting_key: Option<K>) -> Result<Self>
+    pub fn new(reader: &'a NR, state_root: H256, starting_key: Option<K>) -> Result<Self>
     where
-        R: NodeStore,
+        NR: NodeReader,
     {
         let iter = JellyfishMerkleIterator::new(
             reader,
-            root_hash.into(),
+            state_root.into(),
             starting_key.map(|k| k.into_object()),
         )?;
         Ok(SMTIterator { iter })
     }
 }
 
-impl<'a, K, V, R> Iterator for SMTIterator<'a, K, V, R>
+impl<'a, K, V, NR> Iterator for SMTIterator<'a, K, V, NR>
 where
     K: Key,
     V: Value,
-    R: NodeStore,
+    NR: NodeReader,
 {
     type Item = Result<(K, V)>;
 
