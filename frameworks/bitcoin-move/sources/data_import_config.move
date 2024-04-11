@@ -24,7 +24,7 @@ module bitcoin_move::data_import_config{
         object::borrow(object::borrow_object<DataImportConfig>(id)).data_import_mode 
     }
 
-    ///Currently, Move does not support enum types, so we use constants to represent the data import mode type.
+    /// Currently, Move does not support enum types, so we use constants to represent the data import mode type.
     /// Bitcoin's none data import mode.
     const DATA_IMPORT_MODE_NONE: u8 = 0;
     public fun data_import_mode_none(): u8 {
@@ -43,11 +43,18 @@ module bitcoin_move::data_import_config{
         DATA_IMPORT_MODE_ORD
     }
 
+    /// Bitcoin's full data import mode.
+    /// All mode will process full data and indexer
+    const DATA_IMPORT_MODE_FULL: u8 = 10;
+    public fun data_import_mode_full(): u8 {
+        DATA_IMPORT_MODE_FULL
+    }
+
     public fun is_data_import_mode(data_import_mode: u8): bool {
         data_import_mode == DATA_IMPORT_MODE_UTXO || data_import_mode == DATA_IMPORT_MODE_ORD
     }
 
     public fun is_ord_mode(data_import_mode: u8): bool {
-        data_import_mode == DATA_IMPORT_MODE_ORD
+        data_import_mode == DATA_IMPORT_MODE_ORD || data_import_mode == DATA_IMPORT_MODE_FULL
     }
 }

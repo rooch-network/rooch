@@ -19,6 +19,8 @@ pub enum DataImportMode {
     None = 0,
     UTXO = 1,
     Ord = 2,
+    // Full mode will process full data and indexer
+    Full = 10,
 }
 
 impl TryFrom<u8> for DataImportMode {
@@ -29,6 +31,7 @@ impl TryFrom<u8> for DataImportMode {
             0 => Ok(DataImportMode::None),
             1 => Ok(DataImportMode::UTXO),
             2 => Ok(DataImportMode::Ord),
+            10 => Ok(DataImportMode::Full),
             _ => Err(anyhow::anyhow!(
                 "Bitcoin data import mode {} is invalid",
                 value
@@ -43,6 +46,7 @@ impl std::fmt::Display for DataImportMode {
             DataImportMode::None => write!(f, "none mode"),
             DataImportMode::UTXO => write!(f, "utxo mode"),
             DataImportMode::Ord => write!(f, "ord mode"),
+            DataImportMode::Full => write!(f, "full mode"),
         }
     }
 }
@@ -53,7 +57,11 @@ impl DataImportMode {
     }
 
     pub fn is_ord_mode(&self) -> bool {
-        *self == DataImportMode::Ord
+        *self == DataImportMode::Ord || *self == DataImportMode::Full
+    }
+
+    pub fn is_full_mode(&self) -> bool {
+        *self == DataImportMode::Full
     }
 
     pub fn is_data_import_flag(&self) -> bool {

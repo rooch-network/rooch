@@ -93,4 +93,19 @@ mod tests {
         );
         assert_eq!(AccountAddress::ZERO, addr_zero);
     }
+
+    #[test]
+    fn test_address_to_txid() {
+        let addr = AccountAddress::from_hex_literal(
+            "0x525535d86aea6a1ec7dafb929b5900e18b68ad003e70a41bc0c8348b72bfa36e",
+        )
+        .unwrap();
+        //The txid hex string use reverse order
+        let txid = bitcoin::Txid::from_byte_array(addr.into());
+        println!("{}", txid);
+        // assert_eq!(
+        //     "6ea3bf728b34c8c01ba4703e00ad688be100599b92fbdac71e6aea6ad8355552",
+        //     txid.to_string()
+        // );
+    }
 }
