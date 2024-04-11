@@ -63,6 +63,7 @@ moveos-store = { workspace = true }
 moveos-common = { workspace = true }
 moveos = { workspace = true }
 moveos-verifier = { workspace = true }
+moveos-object-runtime = { workspace = true }
 framework-builder = { workspace = true }
 
 rooch-key = { workspace = true }
