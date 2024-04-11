@@ -18,11 +18,9 @@ use move_core_types::{
 use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_types::{
     loaded_data::runtime_types::Type,
-    values::{GlobalValue, Struct, Value},
+    values::{GlobalValue, Value},
 };
-use moveos_stdlib::natives::moveos_stdlib::raw_table::{
-    serialize, ObjectRuntime, TypeLayoutLoader,
-};
+use moveos_object_runtime::runtime::{ObjectRuntime, TypeLayoutLoader};
 use moveos_types::state::KeyState;
 use moveos_types::{
     moveos_std::tx_context::TxContext, state::StateChangeSet, state_resolver::MoveOSResolver,
@@ -205,16 +203,6 @@ pub fn into_change_set(
     let data = object_runtime.into_inner();
     let (tx_context, change_set) = data.into_change_set()?;
     Ok((tx_context, change_set))
-}
-
-// Unbox a value of `moveos_std::raw_table::Box<V>` to V and serialize it.
-fn unbox_and_serialize(layout: &MoveTypeLayout, box_val: Value) -> PartialVMResult<Vec<u8>> {
-    let mut fields = box_val.value_as::<Struct>()?.unpack()?;
-    let val = fields.next().ok_or_else(|| {
-        PartialVMError::new(StatusCode::VM_EXTENSION_ERROR)
-            .with_message("Box<V> should have one field of type V".to_owned())
-    })?;
-    serialize(layout, &val)
 }
 
 impl<'r, 'l, S: MoveOSResolver> TypeLayoutLoader for MoveosDataCache<'r, 'l, S> {
