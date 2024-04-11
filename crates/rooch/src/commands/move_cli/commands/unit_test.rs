@@ -1,8 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
-
 use clap::Parser;
 use codespan_reporting::diagnostic::Severity;
 use move_cli::base::test;
@@ -11,10 +9,9 @@ use move_command_line_common::parser::NumberFormat;
 use move_package::BuildConfig;
 use move_unit_test::extensions::set_extension_hook;
 use move_vm_runtime::native_extensions::NativeContextExtensions;
+use moveos_object_runtime::runtime::{ObjectRuntime, ObjectRuntimeContext};
 use moveos_stdlib::natives::moveos_stdlib::{
-    event::NativeEventContext,
-    move_module::NativeModuleContext,
-    raw_table::{ObjectRuntime, ObjectRuntimeContext},
+    event::NativeEventContext, move_module::NativeModuleContext,
 };
 use moveos_store::MoveOSStore;
 use moveos_types::{
@@ -26,6 +23,7 @@ use moveos_verifier::metadata::run_extended_checks;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use rooch_framework::natives::{all_natives, NativeGasParameters};
+use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 use termcolor::Buffer;
 
 use crate::cli_types::WalletContextOptions;

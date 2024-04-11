@@ -1,15 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::natives::{
-    helpers::make_module_natives, moveos_stdlib::raw_table::ObjectRuntimeContext,
-};
+use crate::natives::helpers::make_module_natives;
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
 };
+use moveos_object_runtime::runtime::ObjectRuntimeContext;
 use smallvec::smallvec;
 use std::{collections::VecDeque, sync::Arc};
 
@@ -92,7 +91,7 @@ fn borrow_tx_context(context: &mut NativeContext) -> PartialVMResult<Value> {
 
     let data = object_context.object_runtime();
     let object_runtime = data.read();
-    object_runtime.tx_context.borrow_global()
+    object_runtime.borrow_tx_context()
 }
 
 #[derive(Debug, Clone)]
