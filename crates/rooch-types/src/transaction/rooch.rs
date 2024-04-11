@@ -76,6 +76,7 @@ pub struct RoochTransaction {
     data: RoochTransactionData,
     authenticator: Authenticator,
 
+    #[serde(skip_serializing, skip_deserializing)]
     data_hash: Option<H256>,
 }
 
