@@ -127,7 +127,8 @@ impl RoochAPIServer for RoochServer {
 
     async fn send_raw_transaction(&self, payload: BytesView) -> RpcResult<H256View> {
         info!("send_raw_transaction payload: {:?}", payload);
-        let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
+        let mut tx =
+            bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
         info!("send_raw_transaction tx: {:?}", tx);
 
         let hash = tx.tx_hash();
