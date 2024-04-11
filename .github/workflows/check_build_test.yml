@@ -28,6 +28,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: rooch-network/rooch/.github/actions/rust-setup@main
+      - name: Set up Docker
+        uses: docker-practice/actions-setup-docker@master
 
       - name: Check code format
         run: cargo fmt -- --check

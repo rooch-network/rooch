@@ -70,7 +70,7 @@ async fn start_server(w: &mut World, _scenario: String) {
             opt.btc_rpc_username = Some(RPC_USER.to_string());
             opt.btc_rpc_password = Some(RPC_PASS.to_string());
             opt.btc_start_block_height = Some(0);
-            opt.data_import_mode = Some(1);
+            opt.data_import_mode = Some(1); // Enable data import without writing indexes
             info!("config btc rpc ok");
 
             w.bitcoind = Some(bitcoind);
@@ -573,11 +573,6 @@ async fn main() {
         } else {
             format!("{}/crates/testsuite/features/cmd.feature", current_dir_str)
         };
-
-        // If the tag filter is empty and we are in debug mode, set a default value
-        if tag_filter.is_empty() {
-            tag_filter = "bitcoin-move".to_string();
-        }
     }
 
     World::cucumber()
