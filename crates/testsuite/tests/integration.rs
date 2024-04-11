@@ -551,33 +551,7 @@ fn check_port_in_use(port: u16) -> bool {
 
 #[tokio::main]
 async fn main() {
-    let mut feature_path = "./features/cmd.feature".to_string();
-    let mut tag_filter = env::var("CUCUMBER_FILTER").unwrap_or_default();
-
-    // Check if we are in debug mode
-    if cfg!(debug_assertions) {
-        println!("Running in debug mode");
-
-        // Print the current working directory
-        let current_dir = env::current_dir().expect("Failed to get current directory");
-        println!("Current working directory: {:?}", current_dir);
-
-        // Convert the current directory to a string once
-        let current_dir_str = current_dir
-            .to_str()
-            .expect("Current path is not valid UTF-8");
-
-        // Determine the feature path based on whether the current directory contains "testsuite"
-        feature_path = if current_dir_str.contains("testsuite") {
-            format!("{}/features/cmd.feature", current_dir_str)
-        } else {
-            format!("{}/crates/testsuite/features/cmd.feature", current_dir_str)
-        };
-    }
-
     World::cucumber()
-        .filter_run_and_exit(feature_path, move |_, _, sc| {
-            tag_filter.is_empty() || sc.tags.iter().any(|t| t == &tag_filter)
-        })
+        .run_and_exit("./features/cmd.feature")
         .await;
 }

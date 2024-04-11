@@ -324,7 +324,6 @@ Feature: Rooch CLI integration tests
       Then stop the server
   
     @serial
-    @bitcoin-move
     Scenario: rooch bitcoin test
       # prepare servers
       Given a bitcoind server for rooch_bitcoin_test
