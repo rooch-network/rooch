@@ -5,9 +5,9 @@ import { useContext } from 'react'
 import { useStore } from 'zustand'
 
 import { WalletContext } from '../../provider/walletProvider'
-import type { StoreState } from '../../walletStore'
+import type { WalletStoreState } from '../../walletStore'
 
-export function useWalletStore<T>(selector: (state: StoreState) => T): T {
+export function useWalletStore<T>(selector: (state: WalletStoreState) => T): T {
   const store = useContext(WalletContext)
   if (!store) {
     throw new Error('Could not find WalletContext. Ensure that you have set up the WalletProvider.')

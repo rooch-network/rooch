@@ -11,7 +11,6 @@ import {
 import {Button} from '@radix-ui/themes';
 
 import './App.css'
-import {useEffect, useState} from 'react';
 
 export function App() {
 
@@ -21,21 +20,8 @@ export function App() {
   const {mutateAsync: connectWallet} = useConnectWallet()
   const wallets = useWallets()
   const installedWallets = wallets.filter((w) => w.installed === true)
-  const [roochAddress, setRoochAddress] = useState('');
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const address = await sessionAccount?.getRoochAddress();
-        setRoochAddress(address || '');
-      } catch (error) {
-        // 处理错误
-        console.error('Failed to fetch Rooch address:', error);
-      }
-    }
-
-    fetchData();
-  }, [sessionAccount]);
+  console.log(sessionAccount?.getAuthKey())
 
   return (
     <div className="App">
@@ -73,7 +59,7 @@ export function App() {
             </div>
             <div style={{textAlign: 'left', marginTop: 10}}>
               <div style={{fontWeight: 'bold'}}>Session Account Address:</div>
-              <div style={{wordWrap: 'break-word'}}>{roochAddress}</div>
+              <div style={{wordWrap: 'break-word'}}>{sessionAccount?.getAddress()}</div>
             </div>
           </div>
           <CreateSessionCard/>
@@ -105,8 +91,12 @@ export function App() {
           style={{marginTop: 10}}
           onClick={async () => {
 
+            const defaultScopes = [
+              '0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35::*::*',
+            ]
+
             createSessionKey(
-              {},
+              {scopes: defaultScopes},
               {
                 onSuccess: (result) => {
                   console.log('session key', result);

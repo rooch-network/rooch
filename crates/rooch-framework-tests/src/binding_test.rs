@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, Result};
-use lazy_static::lazy_static;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_config::DataDirPath;
@@ -29,10 +28,6 @@ use std::path::Path;
 use std::sync::Arc;
 use tempfile::TempDir;
 
-lazy_static! {
-    pub static ref DATA_DIR: DataDirPath = get_data_dir();
-}
-
 pub fn get_data_dir() -> DataDirPath {
     match env::var("ROOCH_TEST_DATA_DIR") {
         Ok(path_str) => {
@@ -54,6 +49,10 @@ pub struct RustBindingTest {
 
 impl RustBindingTest {
     pub fn new() -> Result<Self> {
+        Self::new_with_mode(DataImportMode::Ord.to_num())
+    }
+
+    pub fn new_with_mode(data_import_mode: u8) -> Result<Self> {
         let data_dir = get_data_dir();
         let (rooch_db_path, moveos_db_path) = (
             StoreConfig::get_mock_moveos_store_dir(&data_dir),
@@ -73,7 +72,7 @@ impl RustBindingTest {
             .expect("Failure serializing genesis gas schedule");
         let executor = ExecutorActor::new(
             RoochChainID::LOCAL.genesis_ctx(sequencer, gas_schedule_blob),
-            BitcoinGenesisContext::new(Network::default().to_num(), DataImportMode::Ord.to_num()),
+            BitcoinGenesisContext::new(Network::default().to_num(), data_import_mode),
             moveos_store,
             rooch_store,
         )?;
@@ -114,19 +113,27 @@ impl RustBindingTest {
     pub fn execute_l1_block(&mut self, l1_block: L1BlockWithBody) -> Result<()> {
         //TODO get the sequence_number from state
         let sequence_number = 0;
+        let ctx = self.create_bt_blk_tx_ctx(sequence_number, l1_block.clone());
+        let verified_tx: VerifiedMoveOSTransaction =
+            self.executor.validate_l1_block(ctx, l1_block)?;
+        self.execute_verified_tx(verified_tx)
+    }
+
+    pub fn create_bt_blk_tx_ctx(
+        &mut self,
+        sequence_number: u64,
+        l1_block: L1BlockWithBody,
+    ) -> TxContext {
         let max_gas_amount = GasConfig::DEFAULT_MAX_GAS_AMOUNT * 1000;
         let tx_hash = l1_block.block.tx_hash();
         let tx_size = l1_block.block.tx_size();
-        let ctx = TxContext::new(
+        TxContext::new(
             self.sequencer.into(),
             sequence_number,
             max_gas_amount,
             tx_hash,
             tx_size,
-        );
-        let verified_tx: VerifiedMoveOSTransaction =
-            self.executor.validate_l1_block(ctx, l1_block)?;
-        self.execute_verified_tx(verified_tx)
+        )
     }
 
     pub fn execute_as_result(&mut self, tx: RoochTransaction) -> Result<ExecuteTransactionResult> {

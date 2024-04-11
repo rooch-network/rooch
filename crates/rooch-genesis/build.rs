@@ -14,14 +14,14 @@ fn main() {
         println!(
             "cargo:rerun-if-changed={}",
             root_dir
-                .join("moveos/moveos-stdlib/move-stdlib")
+                .join("frameworks/move-stdlib")
                 .join("Move.toml")
                 .display()
         );
         println!(
             "cargo:rerun-if-changed={}",
             root_dir
-                .join("moveos/moveos-stdlib/move-stdlib")
+                .join("frameworks/move-stdlib")
                 .join("sources")
                 .display()
         );
@@ -29,14 +29,14 @@ fn main() {
         println!(
             "cargo:rerun-if-changed={}",
             root_dir
-                .join("moveos/moveos-stdlib/moveos-stdlib")
+                .join("frameworks/moveos-stdlib")
                 .join("Move.toml")
                 .display()
         );
         println!(
             "cargo:rerun-if-changed={}",
             root_dir
-                .join("moveos/moveos-stdlib/moveos-stdlib")
+                .join("frameworks/moveos-stdlib")
                 .join("sources")
                 .display()
         );
@@ -44,7 +44,7 @@ fn main() {
         println!(
             "cargo:rerun-if-changed={}",
             root_dir
-                .join("crates/rooch-framework")
+                .join("frameworks/rooch-framework")
                 .join("Move.toml")
                 .display()
         );
@@ -52,7 +52,7 @@ fn main() {
         println!(
             "cargo:rerun-if-changed={}",
             root_dir
-                .join("crates/rooch-framework")
+                .join("frameworks/rooch-framework")
                 .join("sources")
                 .display()
         );

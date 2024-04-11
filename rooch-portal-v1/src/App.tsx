@@ -23,7 +23,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <RoochClientProvider network={TestNetwork}>
             <WalletProvider chain={SupportChain.BITCOIN} autoConnect>
-              <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+              <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
                 <ToastProvider />
                 <DashboardLayout />
               </ThemeProvider>

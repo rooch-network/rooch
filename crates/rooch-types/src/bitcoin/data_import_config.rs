@@ -9,6 +9,7 @@ use moveos_types::state::{MoveStructState, MoveStructType};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 pub const MODULE_NAME: &IdentStr = ident_str!("data_import_config");
 
@@ -36,6 +37,18 @@ impl TryFrom<u8> for DataImportMode {
                 "Bitcoin data import mode {} is invalid",
                 value
             )),
+        }
+    }
+}
+
+impl FromStr for DataImportMode {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "utxo mode" => Ok(DataImportMode::UTXO),
+            "ord mode" => Ok(DataImportMode::Ord),
+            "none mode" => Ok(DataImportMode::None),
+            _ => Err(anyhow::anyhow!("Invalid bitcoin data import mode {}", s)),
         }
     }
 }

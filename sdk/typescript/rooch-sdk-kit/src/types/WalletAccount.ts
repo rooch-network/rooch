@@ -8,29 +8,33 @@ import { SupportChain } from '../feature'
 import { chain2MultiChainID } from '../utils/chain2MultiChainID'
 
 export class WalletAccount implements IAccount {
+  public readonly chain: SupportChain
+  public readonly client: RoochClient
   public readonly address: string
+  public readonly authorization: IAuthorizer
   public readonly publicKey?: string
   public readonly compressedPublicKey?: string
 
-  private chain: SupportChain
-  private authorization: IAuthorizer
-  private client?: RoochClient
   private roochAddress?: string
 
   public constructor(
+    client: RoochClient,
     chain: SupportChain,
-    authorization: IAuthorizer,
     address: string,
-    client?: RoochClient,
+    authorization: IAuthorizer,
     publicKey?: string,
     compressedPublicKey?: string,
   ) {
     this.chain = chain
     this.client = client
-    this.authorization = authorization
     this.address = address
+    this.authorization = authorization
     this.publicKey = publicKey
     this.compressedPublicKey = compressedPublicKey
+  }
+
+  toJSON(): any {
+    return {}
   }
 
   public toMultiChainAddress(): MultiChainAddress | null {
@@ -41,22 +45,17 @@ export class WalletAccount implements IAccount {
     return null
   }
 
-  getAddress(): string | undefined {
+  getAddress(): string {
     return this.address
   }
 
-  async getRoochAddress(): Promise<string> {
-    if (!this.client) {
-      throw new Error()
-    }
-
+  async resoleRoochAddress(): Promise<string> {
     if (!this.roochAddress) {
-      this.roochAddress = await this.client?.resoleRoochAddress({
+      this.roochAddress = await this.client.resoleRoochAddress({
         address: this.address,
         multiChainID: chain2MultiChainID(this.chain),
       })
     }
-
     return this.roochAddress
   }
 

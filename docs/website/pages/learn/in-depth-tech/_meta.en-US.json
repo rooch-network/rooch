@@ -9,9 +9,6 @@
   "decentralized-validator": "Decentralized validator",
   "pipeline-transaction-processing": "Pipeline Transaction Processing",
   "sequence-proof": "Sequence Proof",
-  "storage": {
-    "title": "Storage"
-  },
   "hash": "Hash",
   "p2p-state-channel": {
     "title": "P2P Channel",

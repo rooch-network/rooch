@@ -1,0 +1,18 @@
+[package]
+name = "btc_holder_farmer"
+version = "0.0.1"
+
+[dependencies]
+MoveStdlib = { local = "../../frameworks/move-stdlib" }
+MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }
+RoochFramework = { local = "../../frameworks/rooch-framework" }
+BitcoinMove = { local = "../../frameworks/bitcoin-move" }
+
+[addresses]
+btc_holder_farmer =  "_"
+moveos_std =  "0x2"
+rooch_framework =  "0x3"
+bitcoin_move =  "0x4"
+
+[dev-addresses]
+btc_holder_farmer = "0x42"

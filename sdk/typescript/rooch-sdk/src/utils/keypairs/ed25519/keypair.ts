@@ -6,7 +6,7 @@ import type { ExportedKeypair } from '../../crypto/keypair'
 import { Ed25519PublicKey } from './publickey'
 import { isValidHardenedPath, mnemonicToSeedHex } from '../../crypto/mnemonics'
 import { derivePath } from './ed25519-hd-key'
-import { toB64 } from '../../../types/bcs'
+import { toB64, fromB64 } from '../../../types/bcs'
 import type { SignatureScheme } from '../../crypto/signature'
 import { PRIVATE_KEY_SIZE, Keypair } from '../../crypto/keypair'
 
@@ -83,7 +83,7 @@ export class Ed25519Keypair extends Keypair {
    * @throws error if the provided secret key is invalid and validation is not skipped.
    *
    * @param secretKey secret key byte array
-   * @param options: skip secret key validation
+   * @param options skip secret key validation
    */
   static fromSecretKey(
     secretKey: Uint8Array,
@@ -105,6 +105,17 @@ export class Ed25519Keypair extends Keypair {
       }
     }
     return new Ed25519Keypair(keypair)
+  }
+
+  static fromSecretKeyStr(str: string) {
+    let sk = fromB64(str)
+
+    // The rooch cli generated key contains schema, remove it
+    if (sk.length > 32) {
+      sk = sk.slice(1)
+    }
+
+    return this.fromSecretKey(sk)
   }
 
   /**

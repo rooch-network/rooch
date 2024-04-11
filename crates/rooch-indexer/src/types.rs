@@ -53,7 +53,7 @@ pub struct IndexedTransaction {
 
 impl IndexedTransaction {
     pub fn new(
-        transaction: LedgerTransaction,
+        mut transaction: LedgerTransaction,
         execution_info: TransactionExecutionInfo,
         moveos_tx: VerifiedMoveOSTransaction,
     ) -> Result<Self> {
@@ -133,7 +133,7 @@ pub struct IndexedEvent {
 impl IndexedEvent {
     pub fn new(
         event: Event,
-        transaction: LedgerTransaction,
+        mut transaction: LedgerTransaction,
         moveos_tx: VerifiedMoveOSTransaction,
     ) -> Self {
         IndexedEvent {

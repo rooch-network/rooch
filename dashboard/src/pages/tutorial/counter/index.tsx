@@ -11,11 +11,7 @@ import Typography from '@mui/material/Typography'
 import { Button } from '@mui/material'
 import React, { useState } from 'react'
 import { DevNetwork } from '@roochnetwork/rooch-sdk'
-import {
-  useCurrentSessionAccount,
-  useRoochClient,
-  useRoochClientQuery,
-} from '@roochnetwork/rooch-sdk-kit'
+import { useCurrentSession, useRoochClient, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 import SessionGuard from 'src/auth/sessionGuard'
 
 const devCounterAddress = '0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35'
@@ -32,7 +28,7 @@ const CounterPage = () => {
     funcId: `${devCounterModule}::value`,
   })
 
-  const sessionKey = useCurrentSessionAccount()
+  const sessionKey = useCurrentSession()
 
   const handlerIncrease = () => {
     // if (sessionKey === null) {
@@ -48,7 +44,7 @@ const CounterPage = () => {
 
     const func = `${devCounterModule}::increase`
 
-    sessionKey?.runFunction(func, [], [], { maxGasAmount: 1000000 }).finally(() => {
+    sessionKey?.sendTransaction(func, [], [], { maxGasAmount: 1000000 }).finally(() => {
       setLoading(false)
       refetch()
     })

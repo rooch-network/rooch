@@ -36,13 +36,13 @@ log = { workspace = true }
 lazy_static = { workspace = true }
 rpassword = { workspace = true }
 tempfile = { workspace = true }
-
 criterion = { workspace = true }
-#criterion-cpu-time = { workspace = true }
 pprof = { workspace = true, features = ["flamegraph", "criterion", "cpp", "frame-pointer", "protobuf-codec"] }
 parking_lot = { workspace = true }
 proptest = { workspace = true }
 rand_core = { default-features = false, workspace = true }
+bitcoincore-rpc-json = { workspace = true }
+bitcoin = { workspace = true }
 
 move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }
@@ -93,7 +93,15 @@ name = "bench_tx_exec"
 
 [[bench]]
 harness = false
+name = "bench_tx_exec_blk"
+
+[[bench]]
+harness = false
 name = "bench_tx_query"
+
+[[bench]]
+harness = false
+name = "bench_utils"
 
 [[bench]]
 harness = false

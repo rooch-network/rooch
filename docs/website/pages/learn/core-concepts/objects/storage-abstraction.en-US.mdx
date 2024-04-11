@@ -95,10 +95,10 @@ In Rooch, each Table in Move corresponds to an SMT, and the Table Object mainly 
 
 ### The types in Move
 
-1. [Context](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/context.md) represents the current transaction and storage context. It currently encapsulates the main methods related to state storage. In the future, when the `AppSpecific Storage` solution is provided, apps can switch the Context to store states in different storage spaces.
-2. [raw_table](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/raw_table.md) provides the lowest level Key-Value storage interface. All contract state changes are ultimately unified as the Key-Value change set of `RawTable`. Each RawTable corresponds to a SMT in the StateDB. The ObjectID of the Global ObjectStore is a special ObjectID with all bytes being `0`.
-3. [type_table](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/type_table.md) is a special type of Table that uses types as Keys and instances of types as Values.
-4. [AccountStorage](https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md) is the abstraction of user storage space in Move. It contains two Tables, the Resource Table and the Module Table. This allows direct operation on Resources and Modules in Move, without the need to use global storage instructions.
+1. [Context](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/doc/context.md) represents the current transaction and storage context. It currently encapsulates the main methods related to state storage. In the future, when the `AppSpecific Storage` solution is provided, apps can switch the Context to store states in different storage spaces.
+2. [raw_table](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/doc/raw_table.md) provides the lowest level Key-Value storage interface. All contract state changes are ultimately unified as the Key-Value change set of `RawTable`. Each RawTable corresponds to a SMT in the StateDB. The ObjectID of the Global ObjectStore is a special ObjectID with all bytes being `0`.
+3. [type_table](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/doc/type_table.md) is a special type of Table that uses types as Keys and instances of types as Values.
+4. [AccountStorage](https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/doc/account_storage.md) is the abstraction of user storage space in Move. It contains two Tables, the Resource Table and the Module Table. This allows direct operation on Resources and Modules in Move, without the need to use global storage instructions.
 
 #### Object
 

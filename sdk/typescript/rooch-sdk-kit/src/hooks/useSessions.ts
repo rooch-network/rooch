@@ -1,12 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { IAccount } from '@roochnetwork/rooch-sdk'
-import { useRoochContext } from './index'
+import { useRoochSessionStore } from './index'
 
 /**
- * Retrieves the session account that is currently selected, if one exists.
+ * Retrieves the all session account
  */
-export function useSession(): IAccount[] {
-  return useRoochContext().sessions
+export function useSession() {
+  return useRoochSessionStore((state) => state.sessions)
 }

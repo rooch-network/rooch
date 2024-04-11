@@ -29,16 +29,18 @@ export class OkxWallet extends BitcoinWallet {
   async connect(): Promise<WalletAccount[]> {
     const account = await this.getTarget().connect()
 
-    return [
-      new WalletAccount(
-        SupportChain.BITCOIN,
-        this,
-        this.account?.address!,
-        this.client,
-        account.publicKey,
-        account.compressedPublicKey,
-      ),
-    ]
+    const walletAccount = new WalletAccount(
+      this.client,
+      SupportChain.BITCOIN,
+      account?.address!,
+      this,
+      account.publicKey,
+      account.compressedPublicKey,
+    )
+
+    this.account = walletAccount
+
+    return [walletAccount]
   }
 
   switchNetwork(): void {

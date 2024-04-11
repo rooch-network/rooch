@@ -8,13 +8,13 @@ exclude = [
   'conduct@rooch.network',
   'https://tokei.rs/b1/github/rooch-network/rooch?category=lines',
   # Need to update
-  'https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/storage_context.move',
-  'https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/sources/account_storage.move',
+  'https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/sources/storage_context.move',
+  'https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/sources/account_storage.move',
   'https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/doc/ecdsa_k1_recoverable.md',
   'https://github.com/rooch-network/rooch/blob/main/crates/rooch-framework/doc/schnorr.md',
-  'https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/raw_table.md',
-  'https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/context.md',
-  'https://github.com/rooch-network/rooch/blob/main/moveos/moveos-stdlib/moveos-stdlib/doc/account_storage.md',
+  'https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/doc/raw_table.md',
+  'https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/doc/context.md',
+  'https://github.com/rooch-network/rooch/blob/main/frameworks/moveos-stdlib/doc/account_storage.md',
   # ./docs/website/pages/blog/bitcoin-l2.zh-CN.mdx
   'https://bitcoinmagazine.com/press-releases/bitcoin-magazine-editorial-policy-on-bitcoin-layer-2s-l2s',
 ]

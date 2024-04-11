@@ -127,7 +127,8 @@ impl RoochAPIServer for RoochServer {
 
     async fn send_raw_transaction(&self, payload: BytesView) -> RpcResult<H256View> {
         info!("send_raw_transaction payload: {:?}", payload);
-        let tx = bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
+        let mut tx =
+            bcs::from_bytes::<RoochTransaction>(&payload.0).map_err(anyhow::Error::from)?;
         info!("send_raw_transaction tx: {:?}", tx);
 
         let hash = tx.tx_hash();
@@ -231,11 +232,16 @@ impl RoochAPIServer for RoochServer {
             Some(key_state_str) => Some(KeyState::from_str(key_state_str.as_str())?),
             None => None,
         };
+        let limit_value = limit_of
+            .checked_add(1)
+            .ok_or(jsonrpsee::core::Error::Custom(
+                "limit value overflow".to_string(),
+            ))?;
         let mut data: Vec<StateKVView> = if state_option.decode || show_display {
             let is_object = access_path.0.is_object();
             let (key_states, states): (Vec<AnnotatedKeyState>, Vec<AnnotatedState>) = self
                 .rpc_service
-                .list_annotated_states(access_path.into(), cursor_of, limit_of + 1)
+                .list_annotated_states(access_path.into(), cursor_of, limit_value)
                 .await?
                 .into_iter()
                 .unzip();
@@ -266,7 +272,7 @@ impl RoochAPIServer for RoochServer {
             }
         } else {
             self.rpc_service
-                .list_states(access_path.into(), cursor_of, limit_of + 1)
+                .list_states(access_path.into(), cursor_of, limit_value)
                 .await?
                 .into_iter()
                 .map(|(key_state, state)| {
@@ -303,7 +309,12 @@ impl RoochAPIServer for RoochServer {
 
         // NOTE: fetch one more object to check if there is next page
         let limit_of = min(limit.unwrap_or(DEFAULT_RESULT_LIMIT), MAX_RESULT_LIMIT);
-        let limit = limit_of + 1;
+        let limit_value = limit_of
+            .checked_add(1)
+            .ok_or(jsonrpsee::core::Error::Custom(
+                "limit value overflow".to_string(),
+            ))?;
+        let limit = limit_value;
         let mut data = if event_options.decode {
             self.rpc_service
                 .get_annotated_events_by_event_handle(
@@ -379,15 +390,27 @@ impl RoochAPIServer for RoochServer {
 
         let tx_orders = if descending_order {
             let start = cursor.unwrap_or(last_sequencer_order + 1);
-            let end = if start >= limit_of {
-                start - limit_of
-            } else {
-                0
-            };
+            let start_sub = start
+                .checked_sub(limit_of)
+                .ok_or(jsonrpsee::core::Error::Custom(
+                    "cursor value overflow".to_string(),
+                ))?;
+            let end = if start >= limit_of { start_sub } else { 0 };
             (end..start).rev().collect::<Vec<_>>()
         } else {
             let start = cursor.unwrap_or(0);
-            let end = min(start + (limit_of + 1), last_sequencer_order + 1);
+            let limit_value = limit_of
+                .checked_add(1)
+                .ok_or(jsonrpsee::core::Error::Custom(
+                    "limit value overflow".to_string(),
+                ))?;
+            let start_plus =
+                start
+                    .checked_add(limit_value)
+                    .ok_or(jsonrpsee::core::Error::Custom(
+                        "cursor value overflow".to_string(),
+                    ))?;
+            let end = min(start_plus, last_sequencer_order + 1);
             (start..end).collect::<Vec<_>>()
         };
 
@@ -453,9 +476,14 @@ impl RoochAPIServer for RoochServer {
             None => None,
         };
 
+        let limit_value = limit_of
+            .checked_add(1)
+            .ok_or(jsonrpsee::core::Error::Custom(
+                "limit value overflow".to_string(),
+            ))?;
         let mut data = self
             .aggregate_service
-            .get_balances(account_addr.into(), cursor_of, limit_of + 1)
+            .get_balances(account_addr.into(), cursor_of, limit_value)
             .await?;
 
         let has_next_page = data.len() > limit_of;
@@ -491,9 +519,14 @@ impl RoochAPIServer for RoochServer {
         let cursor = cursor.map(|v| v.0);
         let descending_order = descending_order.unwrap_or(true);
 
+        let limit_value = limit_of
+            .checked_add(1)
+            .ok_or(jsonrpsee::core::Error::Custom(
+                "limit value overflow".to_string(),
+            ))?;
         let mut data = self
             .rpc_service
-            .query_transactions(filter.into(), cursor, limit_of + 1, descending_order)
+            .query_transactions(filter.into(), cursor, limit_value, descending_order)
             .await?;
 
         let has_next_page = data.len() > limit_of;
@@ -527,9 +560,14 @@ impl RoochAPIServer for RoochServer {
         );
         let descending_order = descending_order.unwrap_or(true);
 
+        let limit_value = limit_of
+            .checked_add(1)
+            .ok_or(jsonrpsee::core::Error::Custom(
+                "limit value overflow".to_string(),
+            ))?;
         let mut data = self
             .rpc_service
-            .query_events(filter.into(), cursor, limit_of + 1, descending_order)
+            .query_events(filter.into(), cursor, limit_value, descending_order)
             .await?
             .into_iter()
             .map(IndexerEventView::from)
@@ -581,9 +619,14 @@ impl RoochAPIServer for RoochServer {
         };
         let global_state_filter =
             ObjectStateFilterView::into_object_state_filter(filter, resolve_address);
+        let limit_value = limit_of
+            .checked_add(1)
+            .ok_or(jsonrpsee::core::Error::Custom(
+                "limit value overflow".to_string(),
+            ))?;
         let mut data = self
             .rpc_service
-            .query_object_states(global_state_filter, cursor, limit_of + 1, descending_order)
+            .query_object_states(global_state_filter, cursor, limit_value, descending_order)
             .await?
             .into_iter()
             .map(IndexerObjectStateView::try_new_from_global_state)
@@ -616,9 +659,14 @@ impl RoochAPIServer for RoochServer {
         );
         let descending_order = descending_order.unwrap_or(true);
 
+        let limit_value = limit_of
+            .checked_add(1)
+            .ok_or(jsonrpsee::core::Error::Custom(
+                "limit value overflow".to_string(),
+            ))?;
         let mut data = self
             .rpc_service
-            .query_field_states(filter.into(), cursor, limit_of + 1, descending_order)
+            .query_field_states(filter.into(), cursor, limit_value, descending_order)
             .await?
             .into_iter()
             .map(IndexerFieldStateView::try_new_from_table_state)

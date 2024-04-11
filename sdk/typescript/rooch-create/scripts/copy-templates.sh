@@ -1,3 +1,7 @@
+#!/bin/bash
+# Copyright (c) RoochNetwork
+# SPDX-License-Identifier: Apache-2.0
+
 #!/usr/bin/env bash
 # Copyright (c) RoochNetwork
 # SPDX-License-Identifier: Apache-2.0

@@ -8,13 +8,6 @@ export const SftCardButtons = () => {
         variant="outline"
         className="rounded-lg cursor-pointer bg-inherit text-teal-500 border-teal-500 dark:hover:border-teal-400 dark:hover:text-teal-400 hover:bg-teal-500/15 w-full flex-1 hover:border-teal-600 hover:text-teal-600"
       >
-        List
-      </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        className="rounded-lg cursor-pointer bg-inherit text-teal-500 border-teal-500 dark:hover:border-teal-400 dark:hover:text-teal-400 hover:bg-teal-500/15 w-full flex-1 hover:border-teal-600 hover:text-teal-600"
-      >
         Split
       </Button>
       <Button

@@ -7,7 +7,7 @@ use anyhow::Result;
 use ethers::types::H256;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct L1Block {
     pub chain_id: MultiChainID,
     pub block_height: u64,
@@ -24,12 +24,11 @@ impl L1Block {
     }
 
     pub fn tx_size(&self) -> u64 {
-        //TODO optimize the size calculation
-        self.encode().len() as u64
+        bcs::serialized_size(self).expect("serialize transaction size should success") as u64
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct L1BlockWithBody {
     pub block: L1Block,
     pub block_body: Vec<u8>,
@@ -42,7 +41,7 @@ pub enum LedgerTxData {
 }
 
 impl LedgerTxData {
-    pub fn tx_hash(&self) -> H256 {
+    pub fn tx_hash(&mut self) -> H256 {
         match self {
             LedgerTxData::L1Block(block) => block.tx_hash(),
             LedgerTxData::L2Tx(tx) => tx.tx_hash(),
@@ -88,7 +87,7 @@ impl LedgerTransaction {
         }
     }
 
-    pub fn tx_hash(&self) -> H256 {
+    pub fn tx_hash(&mut self) -> H256 {
         self.data.tx_hash()
     }
 

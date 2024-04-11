@@ -55,9 +55,9 @@ impl Default for ProfileConfig {
     fn default() -> Self {
         Self {
             sample_size: 10,
-            warm_up_time: Duration::from_millis(10),
+            warm_up_time: Duration::from_millis(1), // no need to warm this heavy operation
             frequency: 2000,
-            measurement_time: Duration::from_millis(500),
+            measurement_time: Duration::from_millis(2000),
         }
     }
 }

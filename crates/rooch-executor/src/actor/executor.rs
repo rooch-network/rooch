@@ -115,7 +115,7 @@ impl ExecutorActor {
                 .0;
 
             //TODO should we save the genesis txs to sequencer?
-            for (genesis_tx, (state_root, size, genesis_tx_output)) in
+            for (mut genesis_tx, (state_root, size, genesis_tx_output)) in
                 self.genesis.genesis_txs().into_iter().zip(genesis_result)
             {
                 let tx_hash = genesis_tx.tx_hash();

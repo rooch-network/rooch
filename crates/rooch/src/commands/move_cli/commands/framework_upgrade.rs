@@ -11,7 +11,7 @@ use rooch_types::transaction::rooch::RoochTransaction;
 use rpassword::prompt_password;
 
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
-use moveos_stdlib_builder::Stdlib;
+use framework_builder::Stdlib;
 use moveos_types::addresses::{MOVEOS_STD_ADDRESS, MOVE_STD_ADDRESS};
 use moveos_types::{move_types::FunctionId, transaction::MoveAction};
 use rooch_key::keystore::account_keystore::AccountKeystore;

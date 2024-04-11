@@ -3,7 +3,7 @@
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use moveos_config::temp_dir;
-use rooch_benchmarks::tx::{create_publish_transaction, create_transaction, setup_service};
+use rooch_benchmarks::tx::{create_l2_tx, create_publish_transaction, setup_service};
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
 use rooch_rpc_api::api::rooch_api::RoochAPIServer;
@@ -28,7 +28,7 @@ pub fn transaction_query_benchmark(c: &mut Criterion) {
     let _publish_result = rt.block_on(async { rpc_service.execute_tx(tx).await.unwrap() });
     //
     for n in 1..500 {
-        let tx = create_transaction(&mut test_transaction_builder, &keystore, n).unwrap();
+        let tx = create_l2_tx(&mut test_transaction_builder, &keystore, n).unwrap();
         let _ = rt.block_on(async { rpc_service.execute_tx(tx).await.unwrap() });
     }
 

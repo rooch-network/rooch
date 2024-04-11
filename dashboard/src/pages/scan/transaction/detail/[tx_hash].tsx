@@ -136,7 +136,9 @@ const TransactionDetail = () => {
                     Signature Payload:{' '}
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important' }}>
-                    {formatAddress(data.data[0].transaction.sequence_info.tx_order_signature.payload as any)}
+                    {formatAddress(
+                      data.data[0].transaction.sequence_info.tx_order_signature.payload as any,
+                    )}
                   </MUITableCell>
                 </TableRow>
                 <TableRow>
@@ -153,7 +155,7 @@ const TransactionDetail = () => {
                     Sender:
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important' }}>
-                    {data.data[0].transaction.sender}
+                    {/*{data.data[0].transaction}*/}
                   </MUITableCell>
                 </TableRow>
                 <TableRow>
@@ -161,7 +163,7 @@ const TransactionDetail = () => {
                     Action Type:
                   </MUITableCell>
                   <MUITableCell sx={{ pb: '0 !important', textTransform: 'uppercase' }}>
-                    {data.data[0].transaction.action_type}
+                    {/*{data.data[0].transaction}*/}
                   </MUITableCell>
                 </TableRow>
                 <TableRow>

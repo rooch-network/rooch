@@ -327,6 +327,7 @@ module bitcoin_move::ord {
 
             idx = idx + 1;
         };
+        // input_utxo_value_accumulator = input_utxo_value_accumulator + offset;
 
         let idx = 0;
         let output_len = vector::length(txoutput);

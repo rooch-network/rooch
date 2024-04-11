@@ -3,13 +3,13 @@ name = "quick_start_counter"
 version = "0.0.1"
 
 [dependencies]
-#MoveStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "moveos/moveos-stdlib/move-stdlib", rev = "main" }
-#MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "moveos/moveos-stdlib/moveos-stdlib", rev = "main" }
-#RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "crates/rooch-framework", rev = "main" }
+#MoveStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/move-stdlib", rev = "main" }
+#MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/moveos-stdlib", rev = "main" }
+#RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/rooch-framework", rev = "main" }
 
-MoveStdlib = { local = "../../moveos/moveos-stdlib/move-stdlib" }
-MoveosStdlib = { local = "../../moveos/moveos-stdlib/moveos-stdlib" }
-RoochFramework = { local = "../../crates/rooch-framework" }
+MoveStdlib = { local = "../../frameworks/move-stdlib" }
+MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }
+RoochFramework = { local = "../../frameworks/rooch-framework" }
 
 [addresses]
 quick_start_counter = "_"
