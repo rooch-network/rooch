@@ -9,7 +9,7 @@ export const TransactionsBrowserTab: React.FC<TabProps> = ({ items }) => {
   const [activeId, setActiveId] = useState<string>(items[0]?.id || '')
 
   return (
-    <nav className="flex space-x-4">
+    <nav className="flex space-x-4 border-b border-accent dark:border-accent/75">
       {items.map((item) => (
         <button
           key={item.id}

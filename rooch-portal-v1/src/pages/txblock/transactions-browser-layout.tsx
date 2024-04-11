@@ -22,8 +22,8 @@ export const TransactionsBrowserLayout = () => {
       <TransactionsBrowserTab items={tabItems} />
 
       {/* Trasaction Details */}
-      <div className="rounded-2xl bg-accent h-full w-full">
-        <div className="m-3 rounded-2xl bg-background/95 h-full p-4">
+      <div className="rounded-2xl bg-accent/75 h-full w-full">
+        <div className="m-3 rounded-2xl bg-background/95 h-full p-4 shadow-sm">
           <TransactionDetails tabItems={tabItems} activeTabId={activeTabId} />
         </div>
       </div>

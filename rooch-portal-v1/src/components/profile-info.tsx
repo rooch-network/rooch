@@ -27,7 +27,11 @@ export const ProfileInfo = () => {
           </h3>
           <div className="leading-none text-muted-foreground flex items-center justify-start font-normal text-xs sm:text-sm">
             {roochAddress ? <p>{formatAddress(roochAddress as string)}</p> : <p>Rooch Address</p>}
-            <Button variant="ghost" size="icon" className="rounded-full h-4 w-4 transition-all">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full h-4 w-4 transition-all hover:cursor-default"
+            >
               <img src="/rooch_white_logo.svg" alt="rooch logo" className="w-3 h-3" />
             </Button>
           </div>
