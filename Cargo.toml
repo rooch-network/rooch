@@ -357,5 +357,5 @@ lto = "thin"
 strip = true
 codegen-units = 1
 
-[profile.bench]
-debug = true
+#[profile.bench]
+#debug = true
