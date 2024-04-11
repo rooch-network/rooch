@@ -28,8 +28,20 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: rooch-network/rooch/.github/actions/rust-setup@main
-      - name: Set up Docker
-        uses: docker-practice/actions-setup-docker@master
+      # Todo self-hosted install docker fail
+      #- name: Set up Docker
+      #  uses: docker-practice/actions-setup-docker@master
+      #- name: Start Docker
+      #  run: |
+      #    docker --version
+      #    sudo dockerd  &
+      #    sleep 6
+      #    docker images
+      - name: Check Docker
+        run: |
+          docker --version
+          sleep 6
+          docker images
 
       - name: Check code format
         run: cargo fmt -- --check
