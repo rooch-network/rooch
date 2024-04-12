@@ -31,8 +31,26 @@ move-core-types = { workspace = true }
 
 [dev-dependencies]
 assert_cmd = "1.0"
-cucumber = "0.19"
+cucumber = "0.20.2"
 futures = { workspace = true }
+testcontainers = { version = "0.15.0", git = "https://github.com/yubing744/testcontainers-rs", rev = "dbb136ef39c1616a6bfa538d01c82a07b8e27524" }
+tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "sync", "time"] }
+jpst = "0.1.1"
+tracing = "0.1"
+backtrace = "0.3"
+env_logger = "0.11.3"
+rand = "0.8"
+sha2 = "0.10.8"
+hmac = "0.12.1"
+hex = "0.4.3"
+
+[dependencies.uuid]
+version = "1.8.0"
+features = [
+    "v4",                # Lets you generate random UUIDs
+    "fast-rng",          # Use a faster (but still sufficiently random) RNG
+    "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
+]
 
 [[test]]
 name = "integration"
