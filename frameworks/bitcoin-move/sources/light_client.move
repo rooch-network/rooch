@@ -92,7 +92,8 @@ module bitcoin_move::light_client{
         let idx = 0;
         let coinbase_tx_idx = 0;
         let flotsams = vector::empty();
-        while(idx < vector::length(txdata)){
+        let tx_len = vector::length(txdata);
+        while(idx < tx_len){
             let tx = vector::borrow(txdata, idx);
 
             let is_coinbase = is_coinbase_tx(tx);
