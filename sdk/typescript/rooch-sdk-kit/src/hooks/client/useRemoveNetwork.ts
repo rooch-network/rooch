@@ -5,7 +5,7 @@ import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-quer
 import { useMutation } from '@tanstack/react-query'
 import { Network } from '@roochnetwork/rooch-sdk'
 import { roochMutationKeys } from '../../constants/roochMutationKeys'
-import { useRoochContext } from '../../hooks/useRoochContext'
+import { useRoochContextStore } from './index'
 
 type UseRemoveNetworkArgs = Network
 
@@ -25,7 +25,7 @@ export function useRemoveNetwork({
   UseRemoveNetworkArgs,
   unknown
 > {
-  const { removeNetwork } = useRoochContext()
+  const removeNetwork = useRoochContextStore((state) => state.removeNetwork)
 
   return useMutation({
     mutationKey: roochMutationKeys.removeNetwork(mutationKey),

@@ -9,9 +9,6 @@
   "decentralized-validator": "去中心化验证者",
   "pipeline-transaction-processing": "基于流水线的并行交易处理",
   "sequence-proof": "交易排序证明",
-  "storage": {
-    "title": "存储"
-  },
   "hash": "哈希",
   "p2p-state-channel": {
     "title": "P2P 通道",

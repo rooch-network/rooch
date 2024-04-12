@@ -69,7 +69,7 @@ const defaultColumns: GridColDef[] = [
     headerName: 'Method',
     renderCell: ({ row }: CellType) => (
       <LinkStyled href="/">
-        {row.transactionWithInfoView.transaction.action_type.toUpperCase()}
+        {/*{row.transactionWithInfoView.transaction.action_type.toUpperCase()}*/}
       </LinkStyled>
     ),
   },
@@ -79,13 +79,9 @@ const defaultColumns: GridColDef[] = [
     field: 'sender',
     headerName: 'Sender',
     renderCell: ({ row }: CellType) => (
-      <Tooltip
-        placement="bottom"
-        sx={{ cursor: 'pointer' }}
-        title={row.transactionWithInfoView.transaction.sender}
-      >
+      <Tooltip placement="bottom" sx={{ cursor: 'pointer' }} title={''}>
         <Typography sx={{ color: 'text.secondary' }}>
-          {formatAddress(row.transactionWithInfoView.transaction.sender)}
+          {/*{formatAddress(row.transactionWithInfoView.transaction.sender)}*/}
         </Typography>
         {/*<LinkStyled href="/" onClick={ (event) => {*/}
         {/*    event.preventDefault()*/}

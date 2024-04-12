@@ -5,13 +5,17 @@
 module rooch_framework::bitcoin_validator {
 
     use std::vector;
-    use rooch_framework::auth_payload::AuthPayload;
+    use std::signer;
+    use std::option::{Self, Option};
     use moveos_std::hex;
-    use moveos_std::tx_context; 
+    use moveos_std::tx_context;
+    use moveos_std::signer::module_signer;
     use rooch_framework::hash;
     use rooch_framework::ecdsa_k1;
     use rooch_framework::auth_payload;
     use rooch_framework::auth_validator;
+    use rooch_framework::account_authentication;
+    use rooch_framework::auth_payload::AuthPayload;
     use rooch_framework::multichain_address::MultiChainAddress;
 
     /// there defines auth validator id for each blockchain
@@ -24,6 +28,49 @@ module rooch_framework::bitcoin_validator {
 
     public fun auth_validator_id(): u64 {
         BITCOIN_AUTH_VALIDATOR_ID
+    }
+
+    public entry fun rotate_authentication_key_entry(
+        account: &signer,
+        public_key: vector<u8>
+    ) {
+        // compare newly passed public key with Ethereum public key length to ensure it's compatible
+        assert!(
+            vector::length(&public_key) == ecdsa_k1::public_key_length(),
+            ErrorInvalidPublicKeyLength
+        );
+
+        // User can rotate the authentication key arbitrarily, so we do not need to check the new public key with the account address.
+        let authentication_key = public_key_to_authentication_key(public_key);
+        let account_addr = signer::address_of(account);
+        rotate_authentication_key(account_addr, authentication_key);
+    }
+
+    fun rotate_authentication_key(account_addr: address, authentication_key: vector<u8>) {
+        account_authentication::rotate_authentication_key<BitcoinValidator>(account_addr, authentication_key);
+    }
+
+    public entry fun remove_authentication_key_entry(account: &signer) {
+        account_authentication::remove_authentication_key<BitcoinValidator>(signer::address_of(account));
+    }
+
+    public fun public_key_to_authentication_key(public_key: vector<u8>): vector<u8> {
+      public_key
+    }
+
+    /// Get the authentication key option of the given account.
+    public fun get_authentication_key_option_from_account(addr: address): Option<vector<u8>> {
+        account_authentication::get_authentication_key<BitcoinValidator>(addr)
+    }
+
+    /// The authentication key exists in account or not.
+    public fun is_authentication_key_in_account(addr: address): bool {
+        option::is_some(&get_authentication_key_option_from_account(addr))
+    }
+
+    /// Extract the authentication key of the authentication key option.
+    public fun get_authentication_key_from_account(addr: address): vector<u8> {
+        option::extract(&mut get_authentication_key_option_from_account(addr))
     }
 
     /// Only validate the authenticator's signature.
@@ -71,17 +118,41 @@ module rooch_framework::bitcoin_validator {
     }
 
     public fun validate(authenticator_payload: vector<u8>): MultiChainAddress {
+        let sender = tx_context::sender();
         let tx_hash = tx_context::tx_hash();
         let payload = auth_payload::from_bytes(authenticator_payload);
 
         validate_signature(payload, tx_hash);
+
+        if (is_authentication_key_in_account(sender)){
+
+            // For the first invocation, the default auth key is the bitcoin pk
+            // Save to context and record after the transaction is executed
+            tx_context::add_attribute_via_system(&module_signer<BitcoinValidator>(), payload);
+        } else {
+            let authKey = get_authentication_key_from_account(sender);
+            assert!(
+                auth_payload::public_key(payload) == authKey,
+                auth_validator::error_invalid_authenticator()
+            );
+        };
 
         auth_payload::multi_address(payload)
     }
 
     fun pre_execute() {}
 
-    fun post_execute() {}
+    fun post_execute() {
+        let account_addr = tx_context::sender();
+        if (!is_authentication_key_in_account(account_addr)) {
+            let authPayload = option::extract(&mut tx_context::get_attribute<AuthPayload>());
+            let authKey = auth_payload::public_key(authPayload);
+            rotate_authentication_key(tx_context::sender(), authKey);
+
+            let auth_key_in_account = get_authentication_key_from_account(account_addr);
+            std::debug::print(&auth_key_in_account);
+        }
+    }
 
     #[test]
     fun test_validate_signature_success() {

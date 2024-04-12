@@ -12,6 +12,7 @@
 -  [Function `data_import_mode_none`](#0x4_data_import_config_data_import_mode_none)
 -  [Function `data_import_mode_utxo`](#0x4_data_import_config_data_import_mode_utxo)
 -  [Function `data_import_mode_ord`](#0x4_data_import_config_data_import_mode_ord)
+-  [Function `data_import_mode_full`](#0x4_data_import_config_data_import_mode_full)
 -  [Function `is_data_import_mode`](#0x4_data_import_config_is_data_import_mode)
 -  [Function `is_ord_mode`](#0x4_data_import_config_is_ord_mode)
 
@@ -36,6 +37,17 @@ Bitcoin data import mode onchain configuration.
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x4_data_import_config_DATA_IMPORT_MODE_FULL"></a>
+
+Bitcoin's full data import mode.
+All mode will process full data and indexer
+
+
+<pre><code><b>const</b> <a href="data_import_config.md#0x4_data_import_config_DATA_IMPORT_MODE_FULL">DATA_IMPORT_MODE_FULL</a>: u8 = 10;
+</code></pre>
+
 
 
 <a name="0x4_data_import_config_DATA_IMPORT_MODE_NONE"></a>
@@ -130,6 +142,17 @@ Get the current data import mode from the onchain configuration.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="data_import_config.md#0x4_data_import_config_data_import_mode_ord">data_import_mode_ord</a>(): u8
+</code></pre>
+
+
+
+<a name="0x4_data_import_config_data_import_mode_full"></a>
+
+## Function `data_import_mode_full`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="data_import_config.md#0x4_data_import_config_data_import_mode_full">data_import_mode_full</a>(): u8
 </code></pre>
 
 

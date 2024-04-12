@@ -25,7 +25,7 @@ export type WalletActions = {
 
 export type WalletStore = ReturnType<typeof createWalletStore>
 
-export type StoreState = {
+export type WalletStoreState = {
   autoConnectEnabled: boolean
   currentChain: SupportChain
   currentWallet: BaseWallet
@@ -54,7 +54,7 @@ export function createWalletStore({
   storageKey,
   autoConnectEnabled,
 }: WalletConfiguration) {
-  return createStore<StoreState>()(
+  return createStore<WalletStoreState>()(
     persist(
       (set, get) => ({
         currentChain: chain,

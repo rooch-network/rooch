@@ -42,7 +42,7 @@ impl SequencerActor {
         })
     }
 
-    pub fn sequence(&mut self, tx_data: LedgerTxData) -> Result<LedgerTransaction> {
+    pub fn sequence(&mut self, mut tx_data: LedgerTxData) -> Result<LedgerTransaction> {
         let tx_order = if self.last_order == 0 {
             let last_order_opt = self
                 .rooch_store

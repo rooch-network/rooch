@@ -1,25 +1,33 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import { RoochClient, RoochSessionAccount, SendRawTransactionOpts } from '@roochnetwork/rooch-sdk'
+import {
+  IAccount,
+  RoochAccount,
+  RoochClient,
+  RoochSessionAccount,
+  SendRawTransactionOpts,
+} from '@roochnetwork/rooch-sdk'
 import { runtime, bcs } from '@roochnetwork/rooch-sdk'
 import { WalletAccount } from '../types/WalletAccount'
 
 export class WalletRoochSessionAccount extends RoochSessionAccount {
   private roochAddress?: string
 
-  constructor(
+  protected constructor(
     client: RoochClient,
-    account: WalletAccount,
     scopes: string[],
     maxInactiveInterval: number,
+    account?: IAccount,
     authInfo?: string,
+    sessionAccount?: RoochAccount,
+    localCreateSessionTime?: number,
   ) {
     super(
       client,
-      account,
       scopes,
       maxInactiveInterval,
+      account,
       authInfo ??
         `Welcome to ${window.location.hostname}\nYou will authorize session:\n${
           'Scope:\n' +
@@ -32,6 +40,8 @@ export class WalletRoochSessionAccount extends RoochSessionAccount {
           '\nTimeOut:' +
           maxInactiveInterval
         }`,
+      sessionAccount,
+      localCreateSessionTime,
     )
   }
 
@@ -42,7 +52,38 @@ export class WalletRoochSessionAccount extends RoochSessionAccount {
     maxInactiveInterval: number,
     opts?: SendRawTransactionOpts,
   ): Promise<RoochSessionAccount> {
-    return new WalletRoochSessionAccount(client, account, scopes, maxInactiveInterval).build(opts)
+    return new WalletRoochSessionAccount(client, scopes, maxInactiveInterval, account).build(opts)
+  }
+
+  public static formJson(jsonObj: any, client: RoochClient) {
+    const { session, scopes, maxInactiveInterval, authInfo, localCreateSessionTime, roochAddress } =
+      jsonObj
+
+    const sessionAccount = RoochAccount.formJson(session, client)
+
+    const rsa = new WalletRoochSessionAccount(
+      client,
+      scopes,
+      maxInactiveInterval,
+      undefined,
+      authInfo,
+      sessionAccount,
+      localCreateSessionTime,
+    )
+
+    rsa.roochAddress = roochAddress
+    return rsa
+  }
+
+  toJSON(): any {
+    return {
+      roochAddress: this.roochAddress,
+      session: this.sessionAccount,
+      scopes: this.scopes,
+      maxInactiveInterval: this.maxInactiveInterval,
+      localCreateSessionTime: this.localCreateSessionTime,
+      authInfo: this.authInfo,
+    }
   }
 
   protected override async build(opts?: SendRawTransactionOpts): Promise<RoochSessionAccount> {
@@ -63,7 +104,7 @@ export class WalletRoochSessionAccount extends RoochSessionAccount {
       return se.getBytes()
     })()
 
-    const auth = await this.account.getAuthorizer().auth(transactionDataPayload, this.authInfo)
+    const auth = await this.account!.getAuthorizer().auth(transactionDataPayload, this.authInfo)
     const transaction = new runtime.RoochTransaction(txData, auth)
     const transactionPayload = (() => {
       const se = new bcs.BcsSerializer()
