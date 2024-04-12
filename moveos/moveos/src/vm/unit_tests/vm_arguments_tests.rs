@@ -283,7 +283,7 @@ impl ResourceResolver for RemoteStore {
 }
 
 impl StateResolver for RemoteStore {
-    fn resolve_table_item(
+    fn get_field(
         &self,
         _handle: &ObjectID,
         _key: &KeyState,
@@ -291,7 +291,7 @@ impl StateResolver for RemoteStore {
         Ok(None)
     }
 
-    fn list_table_items(
+    fn list_fields(
         &self,
         _handle: &ObjectID,
         _cursor: Option<KeyState>,

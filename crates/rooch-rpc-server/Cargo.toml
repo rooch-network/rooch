@@ -66,3 +66,4 @@ rooch-relayer = { workspace = true }
 rooch-indexer = { workspace = true }
 rooch-da = { workspace = true }
 rooch-framework = { workspace = true }
+rooch-genesis = { workspace = true }

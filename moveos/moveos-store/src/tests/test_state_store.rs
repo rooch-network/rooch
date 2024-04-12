@@ -21,10 +21,10 @@ fn test_statedb() {
 
     let mut state_change_set = StateChangeSet::default();
 
-    let table_handle = ObjectID::random();
+    let object_id = ObjectID::random();
 
     let mut object_change = ObjectChange::new(Op::New(
-        ObjectEntity::new_table_object(table_handle.clone(), *GENESIS_STATE_ROOT, 0).into_state(),
+        ObjectEntity::new_table_object(object_id.clone(), *GENESIS_STATE_ROOT, 0).into_state(),
     ));
 
     let key = KeyState::new(
@@ -40,7 +40,7 @@ fn test_statedb() {
 
     state_change_set
         .changes
-        .insert(table_handle.clone(), object_change);
+        .insert(object_id.clone(), object_change);
 
     moveos_store
         .get_state_store_mut()
@@ -49,7 +49,7 @@ fn test_statedb() {
 
     let state = moveos_store
         .get_state_store()
-        .resolve_state(&table_handle, &key.clone().into())
+        .get_field(&object_id, &key.clone().into())
         .unwrap();
     assert!(state.is_some());
     assert_eq!(state.unwrap(), value.into());

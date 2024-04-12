@@ -24,11 +24,7 @@ pub struct SequencerActor {
 }
 
 impl SequencerActor {
-    pub fn new(
-        sequencer_key: RoochKeyPair,
-        rooch_store: RoochStore,
-        _is_genesis: bool,
-    ) -> Result<Self> {
+    pub fn new(sequencer_key: RoochKeyPair, rooch_store: RoochStore) -> Result<Self> {
         let last_order_opt = rooch_store
             .get_meta_store()
             .get_sequencer_order()?

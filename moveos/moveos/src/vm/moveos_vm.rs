@@ -137,7 +137,7 @@ where
         read_only: bool,
     ) -> Self {
         let root = remote.root_object();
-        let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(ctx, root)));
+        let object_runtime = Arc::new(RwLock::new(ObjectRuntime::new(ctx, root.clone())));
         Self {
             vm,
             remote,

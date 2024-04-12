@@ -3,8 +3,8 @@
 
 use crate::move_std::ascii::MoveAsciiString;
 use crate::move_std::string::MoveString;
-use crate::moveos_std::object::ObjectID;
 use crate::moveos_std::object::{AnnotatedObject, ObjectEntity, RawObject};
+use crate::moveos_std::object::{ObjectID, RootObjectEntity};
 use anyhow::{bail, ensure, Result};
 use core::str;
 use move_core_types::language_storage::ModuleId;
@@ -20,6 +20,7 @@ use move_core_types::{
 };
 use move_resource_viewer::{AnnotatedMoveValue, MoveValueAnnotator};
 use move_vm_types::values::{Struct, Value};
+use primitive_types::H256;
 use serde::ser::Error;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use smt::UpdateSet;
@@ -821,9 +822,17 @@ impl FieldChange {
 /// Global State change set.
 #[derive(Clone, Debug, Default)]
 pub struct StateChangeSet {
+    /// The state root before the changes
+    pub state_root: H256,
     /// The root Object field size
     pub global_size: u64,
     pub changes: BTreeMap<ObjectID, ObjectChange>,
+}
+
+impl StateChangeSet {
+    pub fn root_object(&self) -> RootObjectEntity {
+        ObjectEntity::root_object(self.state_root, self.global_size)
+    }
 }
 
 /// A change of a single table.

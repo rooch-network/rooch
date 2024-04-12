@@ -9252,6 +9252,7 @@ dependencies = [
  "rooch-da",
  "rooch-executor",
  "rooch-framework",
+ "rooch-genesis",
  "rooch-indexer",
  "rooch-key",
  "rooch-pipeline-processor",

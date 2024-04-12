@@ -14,7 +14,7 @@ use hyper::Method;
 use jsonrpsee::server::ServerBuilder;
 use jsonrpsee::RpcModule;
 use moveos_store::{MoveOSDB, MoveOSStore};
-use moveos_types::moveos_std::object::ObjectEntity;
+use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use raw_store::errors::RawStoreError;
 use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
@@ -29,6 +29,7 @@ use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_framework::natives::default_gas_schedule;
+use rooch_genesis::RoochGenesis;
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
 use rooch_indexer::indexer_reader::IndexerReader;
@@ -188,7 +189,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     let arc_base_config = Arc::new(base_config);
     let mut store_config = StoreConfig::default();
     store_config.merge_with_opt_with_init(opt, Arc::clone(&arc_base_config), true)?;
-    let (moveos_store, rooch_store) = init_storage(&store_config)?;
+    let (mut root, mut moveos_store, rooch_store) = init_storage(&store_config)?;
 
     //Init indexer store
     let mut indexer_config = IndexerConfig::default();
@@ -218,26 +219,42 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     let sequencer_keypair = server_opt.sequencer_keypair.unwrap();
     let sequencer_account: RoochAddress = (&sequencer_keypair.public()).into();
 
-    // Init executor
-    let is_genesis = moveos_store.statedb.is_genesis();
-
-    // #TODO: If not launched in the Genesis way, the latest onchain GasSchedule needs to be obtained.
-    let gas_schedule_blob =
-        bcs::to_bytes(&default_gas_schedule()).expect("Failure serializing genesis gas schedule");
-
     let btc_network = opt.btc_network.unwrap_or(Network::default().to_num());
     let data_import_mode = DataImportMode::try_from(
         opt.data_import_mode
             .unwrap_or(DataImportMode::None.to_num()),
     )?;
+
+    let genesis = if root.is_genesis() {
+        let gas_schedule_blob = bcs::to_bytes(&default_gas_schedule())
+            .expect("Failure serializing genesis gas schedule");
+        let genesis_ctx = chain_id_opt.genesis_ctx(sequencer_account, gas_schedule_blob);
+        let bitcoin_genesis_ctx =
+            BitcoinGenesisContext::new(btc_network, data_import_mode.to_num());
+        let genesis: RoochGenesis = RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
+        root = genesis.init_genesis(&mut moveos_store)?;
+        genesis
+    } else {
+        //TODO if root is not genesis, we should load genesis from store
+        let gas_schedule_blob = bcs::to_bytes(&default_gas_schedule())
+            .expect("Failure serializing genesis gas schedule");
+        let genesis_ctx = chain_id_opt.genesis_ctx(sequencer_account, gas_schedule_blob);
+        let bitcoin_genesis_ctx =
+            BitcoinGenesisContext::new(btc_network, data_import_mode.to_num());
+        let genesis: RoochGenesis = RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
+        genesis.check_genesis(moveos_store.get_config_store())?;
+        genesis
+    };
+
     let executor_actor = ExecutorActor::new(
-        chain_id_opt.genesis_ctx(sequencer_account, gas_schedule_blob),
-        BitcoinGenesisContext::new(btc_network, data_import_mode.to_num()),
+        root.clone(),
+        genesis.clone(),
         moveos_store.clone(),
         rooch_store.clone(),
     )?;
     let reader_executor = ReaderExecutorActor::new(
-        executor_actor.genesis().clone(),
+        root.clone(),
+        genesis,
         moveos_store.clone(),
         rooch_store.clone(),
     )?
@@ -247,12 +264,10 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         .into_actor(Some("Executor"), &actor_system)
         .await?;
     let executor_proxy = ExecutorProxy::new(executor.into(), reader_executor.into());
-    //This is a workaround to ensure the executor's genesis state is synced with the reader executor
-    //TODO extract the genesis initialization logic to a separate function
-    executor_proxy.sync_state().await?;
+
     // Init sequencer
     info!("RPC Server sequencer address: {:?}", sequencer_account);
-    let sequencer = SequencerActor::new(sequencer_keypair, rooch_store, is_genesis)?
+    let sequencer = SequencerActor::new(sequencer_keypair, rooch_store)?
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
@@ -288,7 +303,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     timers.push(proposer_timer);
 
     // Init indexer
-    let indexer_executor = IndexerActor::new(indexer_store, moveos_store)?
+    let indexer_executor = IndexerActor::new(root, indexer_store, moveos_store)?
         .into_actor(Some("Indexer"), &actor_system)
         .await?;
     let indexer_reader_executor = IndexerReaderActor::new(indexer_reader)?
@@ -411,7 +426,7 @@ fn _build_rpc_api<M: Send + Sync + 'static>(mut rpc_module: RpcModule<M>) -> Rpc
     rpc_module
 }
 
-fn init_storage(store_config: &StoreConfig) -> Result<(MoveOSStore, RoochStore)> {
+fn init_storage(store_config: &StoreConfig) -> Result<(RootObjectEntity, MoveOSStore, RoochStore)> {
     let (rooch_db_path, moveos_db_path) = (
         store_config.get_rooch_store_dir(),
         store_config.get_moveos_store_dir(),
@@ -429,12 +444,11 @@ fn init_storage(store_config: &StoreConfig) -> Result<(MoveOSStore, RoochStore)>
     if let Some(ref startup_info) = startup_info {
         info!("Load startup info {:?}", startup_info);
     }
-    let moveos_store = MoveOSStore::new_with_root(
-        moveosdb,
-        startup_info
-            .map(|s| s.into_root_object())
-            .unwrap_or(ObjectEntity::genesis_root_object()),
-    )?;
+    let root = startup_info
+        .map(|s| s.into_root_object())
+        .unwrap_or(ObjectEntity::genesis_root_object());
+
+    let moveos_store = MoveOSStore::new(moveosdb)?;
 
     let rooch_store = RoochStore::new(StoreInstance::new_db_instance(RocksDB::new(
         rooch_db_path,
@@ -442,7 +456,7 @@ fn init_storage(store_config: &StoreConfig) -> Result<(MoveOSStore, RoochStore)>
         store_config.rocksdb_config(),
         None,
     )?))?;
-    Ok((moveos_store, rooch_store))
+    Ok((root, moveos_store, rooch_store))
 }
 
 fn init_indexer(indexer_config: &IndexerConfig) -> Result<(IndexerStore, IndexerReader)> {

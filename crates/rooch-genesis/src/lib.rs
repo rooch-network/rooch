@@ -3,7 +3,6 @@
 
 use anyhow::Result;
 use framework_builder::Stdlib;
-use move_binary_format::{errors::Location, CompiledModule};
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use move_vm_runtime::{config::VMConfig, native_functions::NativeFunction};
 use moveos::moveos::{MoveOS, MoveOSConfig};
@@ -11,7 +10,8 @@ use moveos_store::{config_store::ConfigDBStore, MoveOSStore};
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256;
 use moveos_types::h256::H256;
-use moveos_types::transaction::MoveAction;
+use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
+use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use once_cell::sync::Lazy;
 use rooch_framework::natives::default_gas_schedule;
 use rooch_framework::natives::gas_parameter::gas_member::InitialGasSchedule;
@@ -57,7 +57,8 @@ pub struct GenesisPackage {
     pub state_root: H256,
     pub genesis_ctx: GenesisContext,
     pub bitcoin_genesis_ctx: BitcoinGenesisContext,
-    pub genesis_txs: Vec<RoochTransaction>,
+    pub genesis_tx: RoochTransaction,
+    pub genesis_moveos_tx: MoveOSTransaction,
 }
 
 #[derive(Clone, Debug)]
@@ -111,12 +112,12 @@ impl RoochGenesis {
         })
     }
 
-    pub fn modules(&self) -> Result<Vec<CompiledModule>> {
-        self.genesis_package.modules()
+    pub fn genesis_tx(&self) -> RoochTransaction {
+        self.genesis_package.genesis_tx.clone()
     }
 
-    pub fn genesis_txs(&self) -> Vec<RoochTransaction> {
-        self.genesis_package.genesis_txs.clone()
+    pub fn genesis_moveos_tx(&self) -> MoveOSTransaction {
+        self.genesis_package.genesis_moveos_tx.clone()
     }
 
     pub fn genesis_ctx(&self) -> GenesisContext {
@@ -181,6 +182,32 @@ impl RoochGenesis {
         }
         Ok(())
     }
+
+    pub fn init_genesis(&self, moveos_store: &mut MoveOSStore) -> Result<RootObjectEntity> {
+        let mut moveos = MoveOS::new(
+            moveos_store.clone(),
+            self.all_natives(),
+            self.config.clone(),
+            vec![],
+            vec![],
+        )?;
+
+        let (genesis_state_root, size, genesis_tx_output) =
+            moveos.init_genesis(self.genesis_moveos_tx())?;
+
+        debug_assert!(
+            genesis_state_root == self.genesis_state_root(),
+            "Genesis state root mismatch"
+        );
+
+        //TODO should we save the genesis txs to sequencer?
+        let tx_hash = self.genesis_tx().tx_hash();
+        moveos_store.handle_tx_output(tx_hash, genesis_state_root, size, genesis_tx_output)?;
+
+        let genesis_info = GenesisInfo::new(self.genesis_package_hash(), genesis_state_root);
+        moveos_store.get_config_store().save_genesis(genesis_info)?;
+        Ok(ObjectEntity::root_object(genesis_state_root, size))
+    }
 }
 
 static GENESIS_STDLIB_BYTES: &[u8] = include_bytes!("../generated/stdlib");
@@ -209,7 +236,14 @@ impl GenesisPackage {
                     .collect(),
             ),
         );
-        let genesis_txs = vec![genesis_tx];
+
+        let mut genesis_moveos_tx = genesis_tx
+            .clone()
+            .into_moveos_transaction(ObjectEntity::genesis_root_object());
+
+        genesis_moveos_tx.ctx.add(genesis_ctx.clone())?;
+        genesis_moveos_tx.ctx.add(bitcoin_genesis_ctx.clone())?;
+
         //TODO put gas parameters into genesis package
         let gas_parameters = rooch_framework::natives::NativeGasParameters::initial();
         let vm_config = MoveOSConfig {
@@ -222,20 +256,14 @@ impl GenesisPackage {
             vec![],
             vec![],
         )?;
-        let genesis_result = moveos.init_genesis(
-            genesis_txs.clone(),
-            genesis_ctx.clone(),
-            bitcoin_genesis_ctx.clone(),
-        )?;
-        let state_root = genesis_result
-            .last()
-            .expect("genesis result should not be empty")
-            .0;
+        let (state_root, _size, _output) = moveos.init_genesis(genesis_moveos_tx.clone())?;
+
         Ok(Self {
             state_root,
             genesis_ctx,
             bitcoin_genesis_ctx,
-            genesis_txs,
+            genesis_tx,
+            genesis_moveos_tx,
         })
     }
 
@@ -258,25 +286,6 @@ impl GenesisPackage {
         let contents = bcs::to_bytes(&self)?;
         file.write_all(&contents)?;
         Ok(())
-    }
-
-    pub fn modules(&self) -> Result<Vec<CompiledModule>> {
-        self.genesis_txs
-            .iter()
-            .filter_map(|tx| {
-                if let MoveAction::ModuleBundle(bundle) = &tx.action() {
-                    Some(bundle)
-                } else {
-                    None
-                }
-            })
-            .flatten()
-            .map(|module| {
-                let compiled_module = CompiledModule::deserialize(module)
-                    .map_err(|e| e.finish(Location::Undefined))?;
-                Ok(compiled_module)
-            })
-            .collect::<Result<Vec<CompiledModule>>>()
     }
 }
 
@@ -311,6 +320,8 @@ mod tests {
     use moveos::moveos::MoveOS;
     use moveos_store::MoveOSStore;
     use moveos_types::moveos_std::move_module::ModuleStore;
+    use moveos_types::moveos_std::object::ObjectEntity;
+    use moveos_types::state_resolver::RootObjectResolver;
     use rooch_framework::natives::{all_natives, default_gas_schedule};
     use rooch_types::bitcoin::data_import_config::DataImportMode;
     use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
@@ -336,10 +347,10 @@ mod tests {
             Ok(genesis) => genesis,
             Err(e) => panic!("genesis build failed: {:?}", e),
         };
-        assert_eq!(genesis.genesis_package.genesis_txs.len(), 1);
+        assert_eq!(genesis.genesis_package.genesis_tx.len(), 1);
         let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
         let mut moveos = MoveOS::new(
-            moveos_store,
+            moveos_store.clone(),
             all_natives(genesis.rooch_framework_gas_params),
             genesis.config,
             vec![],
@@ -347,44 +358,40 @@ mod tests {
         )
         .expect("init moveos failed");
 
-        moveos
+        let (state_root, size, _output) = moveos
             .init_genesis(
-                genesis.genesis_package.genesis_txs,
+                genesis.genesis_package.genesis_tx,
                 genesis.genesis_package.genesis_ctx,
                 genesis.genesis_package.bitcoin_genesis_ctx,
             )
             .expect("init genesis failed");
-        assert!(!moveos.moveos_store().get_state_store().is_genesis());
-        let module_store_state = moveos
-            .moveos_store()
-            .get_state_store()
-            .get(&ModuleStore::module_store_id())
+        let root = ObjectEntity::root_object(state_root, size);
+        let resolver = RootObjectResolver::new(root, &moveos_store);
+
+        let module_store_state = resolver
+            .get_object(&ModuleStore::module_store_id())
             .unwrap();
         assert!(module_store_state.is_some());
         let _module_store_obj = module_store_state
             .unwrap()
-            .as_object::<ModuleStore>()
+            .into_object::<ModuleStore>()
             .unwrap();
-        let chain_id_state = moveos
-            .moveos_store()
-            .get_state_store()
-            .get(&rooch_types::framework::chain_id::ChainID::chain_id_object_id())
+        let chain_id_state = resolver
+            .get_object(&rooch_types::framework::chain_id::ChainID::chain_id_object_id())
             .unwrap();
         assert!(chain_id_state.is_some());
         let chain_id = chain_id_state
             .unwrap()
-            .as_object::<rooch_types::framework::chain_id::ChainID>()
+            .into_object::<rooch_types::framework::chain_id::ChainID>()
             .unwrap();
         assert_eq!(chain_id.value.id, BuiltinChainID::Local.chain_id().id());
-        let bitcoin_network_state = moveos
-            .moveos_store()
-            .get_state_store()
-            .get(&rooch_types::bitcoin::network::BitcoinNetwork::object_id())
+        let bitcoin_network_state = resolver
+            .get_object(&rooch_types::bitcoin::network::BitcoinNetwork::object_id())
             .unwrap();
         assert!(bitcoin_network_state.is_some());
         let bitcoin_network = bitcoin_network_state
             .unwrap()
-            .as_object::<BitcoinNetwork>()
+            .into_object::<BitcoinNetwork>()
             .unwrap();
         assert_eq!(
             bitcoin_network.value.network,
