@@ -9,6 +9,8 @@ import { useAutoConnectWallet, useRoochClient, useWalletStore } from '../hooks'
 import { getInstalledWallets } from '../utils/walletUtils'
 import { BaseWallet, UniSatWallet, WalletAccount } from '../types'
 import { SupportChain } from '../feature'
+import { useCurrentNetwork } from '../hooks'
+import { getDefaultStorage, StorageType } from '../utils/stateStorage'
 
 type WalletProviderProps = {
   chain?: SupportChain
@@ -43,6 +45,7 @@ export function WalletProvider({
   const [loading, setLoading] = useState(true)
   const storeRef = useRef<ReturnType<typeof createWalletStore>>()
   const client = useRoochClient()
+  const network = useCurrentNetwork()
 
   useEffect(() => {
     getInstalledWallets(client).then((v) => setWallets(v))
@@ -55,12 +58,12 @@ export function WalletProvider({
         wallets: wallets,
         currentWallet: wallets.find((v) => v.getChain() === chain) ?? new UniSatWallet(client), // default use unisat
         autoConnectEnabled: autoConnect,
-        storage: storage ?? sessionStorage,
-        storageKey,
+        storage: storage || getDefaultStorage(StorageType.Local),
+        storageKey: storageKey + network.id + chain?.toString(),
       })
       setLoading(false)
     }
-  }, [client, wallets, autoConnect, storageKey, storage, chain])
+  }, [network, client, wallets, autoConnect, storageKey, storage, chain])
 
   return !loading ? (
     <WalletContext.Provider value={storeRef.current!}>

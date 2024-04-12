@@ -4,16 +4,15 @@
 import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query'
 import { useMutation } from '@tanstack/react-query'
 import { RoochSessionAccount } from '@roochnetwork/rooch-sdk'
-
-import { useRoochClient } from '../useRoochClient'
+import { useRoochClient, useCurrentAccount } from '../index'
 import { useCurrentWallet } from './useCurrentWallet'
 import { walletMutationKeys } from '../../constants/walletMutationKeys'
-import { useCurrentAccount, useRoochContext } from '../index'
 import { WalletNotConnectedError } from '../../error/walletErrors'
 import { WalletRoochSessionAccount } from '../../types/WalletRoochSessionAccount'
+import { useRoochSessionStore } from '../index'
 
 interface UseCreateSessionKeyArgs {
-  scope?: string[]
+  scopes: string[]
   maxInactiveInterval?: number
 }
 
@@ -31,12 +30,6 @@ type UseCreateSessionKeyMutationOptions = Omit<
   'mutationFn'
 >
 
-export const defaultScope = [
-  '0x1::*::*',
-  '0x3::*::*',
-  '0x49ee3cf17a017b331ab2b8a4d40ecc9706f328562f9db63cba625a9c106cdf35::*::*',
-]
-
 export function useCreateSessionKey({
   mutationKey,
   ...mutationOptions
@@ -48,7 +41,7 @@ export function useCreateSessionKey({
 > {
   const client = useRoochClient()
   const currentWallet = useCurrentWallet()
-  const setSessionAccount = useRoochContext().setCurrentSession
+  const setSessionAccount = useRoochSessionStore((state) => state.setCurrentSession)
   const currentAccount = useCurrentAccount()
 
   return useMutation({
@@ -58,14 +51,14 @@ export function useCreateSessionKey({
         throw new WalletNotConnectedError('No wallet is connected.')
       }
 
-      let scope = args.scope ?? defaultScope
+      let scopes = args.scopes
       let maxInactiveInterval = args.maxInactiveInterval ?? 1200
 
       try {
         const sessionAccount = await WalletRoochSessionAccount.CREATE(
           client,
           currentAccount!,
-          scope,
+          scopes,
           maxInactiveInterval,
         )
 

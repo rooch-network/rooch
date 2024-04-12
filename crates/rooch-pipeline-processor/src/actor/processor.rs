@@ -81,13 +81,10 @@ impl PipelineProcessorActor {
         self.proposer
             .propose_transaction(tx.clone(), execution_info.clone())
             .await?;
-
+        let root = ObjectEntity::root_object(execution_info.state_root, execution_info.size);
         // Sync latest state root from writer executor to reader executor
         self.executor
-            .refresh_state(
-                ObjectEntity::root_object(execution_info.state_root, execution_info.size),
-                output.is_upgrade,
-            )
+            .refresh_state(root.clone(), output.is_upgrade)
             .await?;
 
         let indexer = self.indexer.clone();
@@ -101,7 +98,11 @@ impl PipelineProcessorActor {
         if !self.data_import_flag {
             tokio::spawn(async move {
                 let result = indexer
-                    .indexer_states(tx.sequence_info.tx_order, output_clone.changeset.clone())
+                    .indexer_states(
+                        root,
+                        tx.sequence_info.tx_order,
+                        output_clone.changeset.clone(),
+                    )
                     .await;
                 match result {
                     Ok(_) => {}

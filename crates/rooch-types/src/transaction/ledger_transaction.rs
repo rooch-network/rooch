@@ -24,7 +24,7 @@ impl L1Block {
     }
 
     pub fn tx_size(&self) -> u64 {
-        bcs::serialized_size(self).expect("serialize size should success") as u64
+        bcs::serialized_size(self).expect("serialize transaction size should success") as u64
     }
 }
 
@@ -41,7 +41,7 @@ pub enum LedgerTxData {
 }
 
 impl LedgerTxData {
-    pub fn tx_hash(&self) -> H256 {
+    pub fn tx_hash(&mut self) -> H256 {
         match self {
             LedgerTxData::L1Block(block) => block.tx_hash(),
             LedgerTxData::L2Tx(tx) => tx.tx_hash(),
@@ -87,7 +87,7 @@ impl LedgerTransaction {
         }
     }
 
-    pub fn tx_hash(&self) -> H256 {
+    pub fn tx_hash(&mut self) -> H256 {
         self.data.tx_hash()
     }
 

@@ -1,30 +1,29 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::raw_table;
-use crate::natives::{
-    helpers::make_module_natives, helpers::make_native,
-    moveos_stdlib::raw_table::ObjectRuntimeContext,
-};
+use crate::natives::{helpers::make_module_natives, helpers::make_native};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
-use move_core_types::{gas_algebra::InternalGas, vm_status::StatusCode};
+use move_core_types::{
+    gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
+    value::MoveTypeLayout,
+    vm_status::StatusCode,
+};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
 };
+use moveos_object_runtime::runtime::{ObjectRuntimeContext, RuntimeField, TypeLayoutLoader};
 use moveos_types::{
-    moveos_std::{object::Object, object::ObjectID},
-    state::{MoveState, PlaceholderStruct},
+    moveos_std::object::{Object, ObjectID},
+    state::{KeyState, MoveState, PlaceholderStruct},
 };
 use smallvec::smallvec;
 use std::{collections::VecDeque, sync::Arc};
 
-/// Ensure the error codes in this file is consistent with the error code in raw_table.move
-pub(crate) const ERROR_ALREADY_EXISTS: u64 = 1;
-pub(crate) const ERROR_NOT_FOUND: u64 = 2;
-pub(crate) const ERROR_OBJECT_ALREADY_BORROWED: u64 = 7;
-pub(crate) const ERROR_TYPE_MISMATCH: u64 = 10;
-pub(crate) const ERROR_OBJECT_RUNTIME_ERROR: u64 = 14;
+pub use moveos_object_runtime::runtime::{
+    ERROR_ALREADY_EXISTS, ERROR_NOT_FOUND, ERROR_OBJECT_ALREADY_BORROWED,
+    ERROR_OBJECT_RUNTIME_ERROR, ERROR_TYPE_MISMATCH,
+};
 
 #[derive(Debug, Clone)]
 pub struct AsRefGasParameters {
@@ -135,44 +134,402 @@ fn borrow_object_reference(
 }
 
 #[derive(Debug, Clone)]
+pub struct CommonGasParameters {
+    pub load_base: InternalGas,
+    pub load_per_byte: InternalGasPerByte,
+    pub load_failure: InternalGas,
+}
+
+impl CommonGasParameters {
+    fn calculate_load_cost(&self, loaded: Option<Option<NumBytes>>) -> InternalGas {
+        self.load_base
+            + match loaded {
+                Some(Some(num_bytes)) => self.load_per_byte * num_bytes,
+                Some(None) => self.load_failure,
+                None => 0.into(),
+            }
+    }
+}
+
+fn native_fn_dispatch(
+    common_gas_params: &CommonGasParameters,
+    base: InternalGas,
+    per_byte_serialized: InternalGasPerByte,
+    context: &mut NativeContext,
+    object_id: ObjectID,
+    field_key: KeyState,
+    f: impl FnOnce(&dyn TypeLayoutLoader, &mut RuntimeField) -> PartialVMResult<Option<Value>>,
+) -> PartialVMResult<NativeResult> {
+    let object_context = context.extensions().get::<ObjectRuntimeContext>();
+    let binding = object_context.object_runtime();
+    let mut object_runtime = binding.write();
+
+    let (object, object_load_gas) =
+        object_runtime.load_object(context, object_context.resolver(), &object_id)?;
+    let field_key_bytes = field_key.key.len() as u64;
+    let (tv, field_load_gas) =
+        object.load_field(context, object_context.resolver(), field_key.clone())?;
+    let gas_cost = base
+        + per_byte_serialized * NumBytes::new(field_key_bytes)
+        + common_gas_params.calculate_load_cost(object_load_gas)
+        + common_gas_params.calculate_load_cost(field_load_gas);
+
+    let result = f(context, tv);
+    match result {
+        Ok(ret) => Ok(NativeResult::ok(
+            gas_cost,
+            ret.map(|v| smallvec![v]).unwrap_or(smallvec![]),
+        )),
+        Err(err) => {
+            let abort_code = match err.major_status() {
+                StatusCode::MISSING_DATA => ERROR_NOT_FOUND,
+                StatusCode::TYPE_MISMATCH => ERROR_TYPE_MISMATCH,
+                StatusCode::RESOURCE_ALREADY_EXISTS => ERROR_ALREADY_EXISTS,
+                _ => ERROR_OBJECT_RUNTIME_ERROR,
+            };
+            if log::log_enabled!(log::Level::Debug) {
+                log::warn!(
+                    "[ObjectRuntime] native_function error: object_id: {:?}, key:{:?}, err: {:?}, abort: {}",
+                    object_id,
+                    field_key,
+                    err,
+                    abort_code
+                );
+            };
+            Ok(NativeResult::err(gas_cost, abort_code))
+        }
+    }
+}
+
+fn native_borrow_root(
+    common_gas_params: &CommonGasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert_eq!(ty_args.len(), 0);
+    debug_assert_eq!(args.len(), 0);
+    let object_context = context.extensions().get::<ObjectRuntimeContext>();
+    let object_runtime = object_context.object_runtime();
+    let value = object_runtime.read().borrow_root()?;
+    let gas_cost = common_gas_params.load_base;
+    Ok(NativeResult::ok(gas_cost, smallvec![value]))
+}
+
+pub fn make_native_borrow_root(common_gas_params: CommonGasParameters) -> NativeFunction {
+    Arc::new(
+        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
+            native_borrow_root(&common_gas_params, context, ty_args, args)
+        },
+    )
+}
+
+#[derive(Debug, Clone)]
+pub struct AddFieldGasParameters {
+    pub base: InternalGas,
+    pub per_byte_serialized: InternalGasPerByte,
+}
+
+fn native_add_field(
+    common_gas_params: &CommonGasParameters,
+    gas_params: &AddFieldGasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    //0 K Type
+    //1 V Type FieldValue or ObjectEntity
+
+    debug_assert_eq!(ty_args.len(), 2);
+    debug_assert_eq!(args.len(), 3);
+
+    let val = args.pop_back().unwrap();
+    let key = args.pop_back().unwrap();
+    let object_id = pop_object_id(&mut args)?;
+
+    let field_key = serialize_key(context, &ty_args[0], key)?;
+
+    native_fn_dispatch(
+        common_gas_params,
+        gas_params.base,
+        gas_params.per_byte_serialized,
+        context,
+        object_id,
+        field_key,
+        move |layout_loader, field| {
+            let value_layout = layout_loader.type_to_type_layout(&ty_args[1])?;
+            let value_type = layout_loader.type_to_type_tag(&ty_args[1])?;
+            field.move_to(val, value_layout, value_type).map(|_| None)
+        },
+    )
+}
+
+pub fn make_native_add_field(
+    common_gas_params: CommonGasParameters,
+    gas_params: AddFieldGasParameters,
+) -> NativeFunction {
+    Arc::new(
+        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
+            native_add_field(&common_gas_params, &gas_params, context, ty_args, args)
+        },
+    )
+}
+
+#[derive(Debug, Clone)]
+pub struct BorrowFieldGasParameters {
+    pub base: InternalGas,
+    pub per_byte_serialized: InternalGasPerByte,
+}
+
+fn native_borrow_field(
+    common_gas_params: &CommonGasParameters,
+    gas_params: &BorrowFieldGasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert_eq!(ty_args.len(), 2);
+    debug_assert_eq!(args.len(), 2);
+
+    let key = args.pop_back().unwrap();
+    let object_id = pop_object_id(&mut args)?;
+
+    let field_key = serialize_key(context, &ty_args[0], key)?;
+
+    native_fn_dispatch(
+        common_gas_params,
+        gas_params.base,
+        gas_params.per_byte_serialized,
+        context,
+        object_id,
+        field_key,
+        |layout_loader, field| {
+            let value_type = layout_loader.type_to_type_tag(&ty_args[1])?;
+            field.borrow_value(value_type).map(Some)
+        },
+    )
+}
+
+pub fn make_native_borrow_field(
+    common_gas_params: CommonGasParameters,
+    gas_params: BorrowFieldGasParameters,
+) -> NativeFunction {
+    Arc::new(
+        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
+            native_borrow_field(&common_gas_params, &gas_params, context, ty_args, args)
+        },
+    )
+}
+
+#[derive(Debug, Clone)]
+pub struct ContainsFieldGasParameters {
+    pub base: InternalGas,
+    pub per_byte_serialized: InternalGasPerByte,
+}
+
+fn native_contains_field(
+    common_gas_params: &CommonGasParameters,
+    gas_params: &ContainsFieldGasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert_eq!(ty_args.len(), 1);
+    debug_assert_eq!(args.len(), 2);
+
+    let key = args.pop_back().unwrap();
+    let object_id = pop_object_id(&mut args)?;
+
+    let field_key = serialize_key(context, &ty_args[0], key)?;
+
+    native_fn_dispatch(
+        common_gas_params,
+        gas_params.base,
+        gas_params.per_byte_serialized,
+        context,
+        object_id,
+        field_key,
+        |_layout_loader, field| Ok(Some(Value::bool(field.exists()?))),
+    )
+}
+
+pub fn make_native_contains_field(
+    common_gas_params: CommonGasParameters,
+    gas_params: ContainsFieldGasParameters,
+) -> NativeFunction {
+    Arc::new(
+        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
+            native_contains_field(&common_gas_params, &gas_params, context, ty_args, args)
+        },
+    )
+}
+
+fn native_contains_field_with_value_type(
+    common_gas_params: &CommonGasParameters,
+    gas_params: &ContainsFieldGasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert_eq!(ty_args.len(), 2);
+    debug_assert_eq!(args.len(), 2);
+
+    let key = args.pop_back().unwrap();
+    let object_id = pop_object_id(&mut args)?;
+
+    let field_key = serialize_key(context, &ty_args[0], key)?;
+
+    native_fn_dispatch(
+        common_gas_params,
+        gas_params.base,
+        gas_params.per_byte_serialized,
+        context,
+        object_id,
+        field_key,
+        |layout_loader, field| {
+            let value_type = layout_loader.type_to_type_tag(&ty_args[1])?;
+            Ok(Some(Value::bool(field.exists_with_type(value_type)?)))
+        },
+    )
+}
+
+pub fn make_native_contains_field_with_value_type(
+    common_gas_params: CommonGasParameters,
+    gas_params: ContainsFieldGasParameters,
+) -> NativeFunction {
+    Arc::new(
+        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
+            native_contains_field_with_value_type(
+                &common_gas_params,
+                &gas_params,
+                context,
+                ty_args,
+                args,
+            )
+        },
+    )
+}
+
+#[derive(Debug, Clone)]
+pub struct RemoveFieldGasParameters {
+    pub base: InternalGas,
+    pub per_byte_serialized: InternalGasPerByte,
+}
+
+fn native_remove_field(
+    common_gas_params: &CommonGasParameters,
+    gas_params: &RemoveFieldGasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert_eq!(ty_args.len(), 2);
+    debug_assert_eq!(args.len(), 2);
+
+    let key = args.pop_back().unwrap();
+    let object_id = pop_object_id(&mut args)?;
+
+    let field_key = serialize_key(context, &ty_args[0], key)?;
+
+    native_fn_dispatch(
+        common_gas_params,
+        gas_params.base,
+        gas_params.per_byte_serialized,
+        context,
+        object_id,
+        field_key,
+        |layout_loader, field| {
+            let value_type = layout_loader.type_to_type_tag(&ty_args[1])?;
+            field.move_from(value_type).map(Some)
+        },
+    )
+}
+
+pub fn make_native_remove_field(
+    common_gas_params: CommonGasParameters,
+    gas_params: RemoveFieldGasParameters,
+) -> NativeFunction {
+    Arc::new(
+        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
+            native_remove_field(&common_gas_params, &gas_params, context, ty_args, args)
+        },
+    )
+}
+
+// =========================================================================================
+// Helpers
+
+fn pop_object_id(args: &mut VecDeque<Value>) -> PartialVMResult<ObjectID> {
+    let handle = args.pop_back().unwrap();
+    ObjectID::from_runtime_value(handle).map_err(|e| {
+        if log::log_enabled!(log::Level::Debug) {
+            log::warn!("[ObjectRuntime] get_object_id: {:?}", e);
+        }
+        PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
+    })
+}
+
+fn partial_extension_error(msg: impl ToString) -> PartialVMError {
+    log::debug!("PartialVMError: {}", msg.to_string());
+    PartialVMError::new(StatusCode::VM_EXTENSION_ERROR).with_message(msg.to_string())
+}
+
+fn type_to_type_layout(context: &NativeContext, ty: &Type) -> PartialVMResult<MoveTypeLayout> {
+    context
+        .type_to_type_layout(ty)?
+        .ok_or_else(|| partial_extension_error("cannot determine type layout"))
+}
+
+fn serialize_key(
+    context: &NativeContext,
+    key_type: &Type,
+    key: Value,
+) -> PartialVMResult<KeyState> {
+    let key_layout = type_to_type_layout(context, key_type)?;
+    let key_type_tag = context.type_to_type_tag(key_type)?;
+    let key_bytes = moveos_object_runtime::runtime::serialize(&key_layout, &key)?;
+    Ok(KeyState::new(key_bytes, key_type_tag))
+}
+
+#[derive(Debug, Clone)]
 pub struct GasParameters {
-    pub common: raw_table::CommonGasParameters,
+    pub common: CommonGasParameters,
     pub as_ref_inner: AsRefGasParameters,
     pub as_mut_ref_inner: AsMutRefGasParameters,
-    pub native_add_field: raw_table::AddFieldGasParameters,
-    pub native_borrow_field: raw_table::BorrowFieldGasParameters,
-    pub native_contains_field: raw_table::ContainsFieldGasParameters,
-    pub native_contains_field_with_value_type: raw_table::ContainsFieldGasParameters,
-    pub native_remove_field: raw_table::RemoveFieldGasParameters,
+    pub native_add_field: AddFieldGasParameters,
+    pub native_borrow_field: BorrowFieldGasParameters,
+    pub native_contains_field: ContainsFieldGasParameters,
+    pub native_contains_field_with_value_type: ContainsFieldGasParameters,
+    pub native_remove_field: RemoveFieldGasParameters,
 }
 
 impl GasParameters {
     pub fn zeros() -> Self {
         Self {
-            common: raw_table::CommonGasParameters {
+            common: CommonGasParameters {
                 load_base: 0.into(),
                 load_per_byte: 0.into(),
                 load_failure: 0.into(),
             },
             as_ref_inner: AsRefGasParameters::zeros(),
             as_mut_ref_inner: AsMutRefGasParameters::zeros(),
-            native_add_field: raw_table::AddFieldGasParameters {
+            native_add_field: AddFieldGasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
-            native_borrow_field: raw_table::BorrowFieldGasParameters {
+            native_borrow_field: BorrowFieldGasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
-            native_contains_field: raw_table::ContainsFieldGasParameters {
+            native_contains_field: ContainsFieldGasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
-            native_contains_field_with_value_type: raw_table::ContainsFieldGasParameters {
+            native_contains_field_with_value_type: ContainsFieldGasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
-            native_remove_field: raw_table::RemoveFieldGasParameters {
+            native_remove_field: RemoveFieldGasParameters {
                 base: 0.into(),
                 per_byte_serialized: 0.into(),
             },
@@ -192,46 +549,34 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         ),
         (
             "native_borrow_root",
-            raw_table::make_native_borrow_root(gas_params.common.clone()),
+            make_native_borrow_root(gas_params.common.clone()),
         ),
         (
             "native_add_field",
-            raw_table::make_native_add_field(
-                gas_params.common.clone(),
-                gas_params.native_add_field,
-            ),
+            make_native_add_field(gas_params.common.clone(), gas_params.native_add_field),
         ),
         (
             "native_borrow_field",
-            raw_table::make_native_borrow_field(
+            make_native_borrow_field(
                 gas_params.common.clone(),
                 gas_params.native_borrow_field.clone(),
             ),
         ),
         (
             "native_borrow_mut_field",
-            raw_table::make_native_borrow_field(
-                gas_params.common.clone(),
-                gas_params.native_borrow_field,
-            ),
+            make_native_borrow_field(gas_params.common.clone(), gas_params.native_borrow_field),
         ),
         (
             "native_remove_field",
-            raw_table::make_native_remove_field(
-                gas_params.common.clone(),
-                gas_params.native_remove_field,
-            ),
+            make_native_remove_field(gas_params.common.clone(), gas_params.native_remove_field),
         ),
         (
             "native_contains_field",
-            raw_table::make_native_contains_field(
-                gas_params.common.clone(),
-                gas_params.native_contains_field,
-            ),
+            make_native_contains_field(gas_params.common.clone(), gas_params.native_contains_field),
         ),
         (
             "native_contains_field_with_value_type",
-            raw_table::make_native_contains_field_with_value_type(
+            make_native_contains_field_with_value_type(
                 gas_params.common,
                 gas_params.native_contains_field_with_value_type,
             ),
@@ -239,8 +584,4 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
     ];
 
     make_module_natives(natives)
-}
-
-fn partial_extension_error(msg: impl ToString) -> PartialVMError {
-    PartialVMError::new(StatusCode::VM_EXTENSION_ERROR).with_message(msg.to_string())
 }

@@ -12,7 +12,7 @@ use moveos_types::state::{
     FieldChange, KeyState, MoveState, MoveType, ObjectChange, StateChangeSet,
 };
 use moveos_types::test_utils::random_state_change_set;
-use smt::NodeStore;
+use smt::NodeReader;
 use std::str::FromStr;
 
 #[test]

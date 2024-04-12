@@ -34,7 +34,7 @@ function App() {
                     style={{background: "var(--gray-a2)", minHeight: 500}}
                 >
 
-                    Wallet state: {wallet.connectionStatus}
+                    Wallet state: {wallet.status}
                     <p>Address: {accounts.map(v => v.getAddress())}</p>
                 </Container>
             </Container>

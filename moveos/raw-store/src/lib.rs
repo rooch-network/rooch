@@ -302,6 +302,8 @@ where
 
     fn write_batch(&self, batch: CodecWriteBatch<K, V>) -> Result<()>;
 
+    fn write_batch_sync(&self, batch: CodecWriteBatch<K, V>) -> Result<()>;
+
     fn put_all(&self, kvs: Vec<(K, V)>) -> Result<()> {
         self.write_batch(CodecWriteBatch::new_puts(kvs))
     }
@@ -368,6 +370,10 @@ where
 
     fn write_batch(&self, batch: CodecWriteBatch<K, V>) -> Result<()> {
         KVStore::write_batch(self.get_store(), batch.try_into()?)
+    }
+
+    fn write_batch_sync(&self, batch: CodecWriteBatch<K, V>) -> Result<()> {
+        KVStore::write_batch_sync(self.get_store(), batch.try_into()?)
     }
 
     fn get_len(&self) -> Result<u64> {

@@ -3,24 +3,23 @@
 // Copyright (c) The Move Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::resolved_arg::ResolvedArg;
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::{
     effects::Op,
-    gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
+    gas_algebra::NumBytes,
     ident_str,
     identifier::IdentStr,
     language_storage::{ModuleId, StructTag, TypeTag},
     value::{MoveStructLayout, MoveTypeLayout},
     vm_status::StatusCode,
 };
-use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
+use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::{
     loaded_data::runtime_types::Type,
-    natives::function::NativeResult,
     values::{GlobalValue, Reference, Struct, StructRef, Value},
 };
-use moveos_object_runtime::resolved_arg::ResolvedArg;
 use moveos_types::{
     addresses::MOVEOS_STD_ADDRESS,
     moveos_std::{
@@ -39,17 +38,17 @@ use moveos_types::{
 };
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
-use smallvec::smallvec;
 use std::{
-    collections::{btree_map::Entry, BTreeMap, VecDeque},
+    collections::{btree_map::Entry, BTreeMap},
     sync::Arc,
 };
 
 /// Ensure the error codes in this file is consistent with the error code in object.move
-const E_ALREADY_EXISTS: u64 = super::object::ERROR_ALREADY_EXISTS;
-const E_NOT_FOUND: u64 = super::object::ERROR_NOT_FOUND;
-const E_TYPE_MISMATCH: u64 = super::object::ERROR_TYPE_MISMATCH;
-const E_OBJECT_RUNTIME_ERROR: u64 = super::object::ERROR_OBJECT_RUNTIME_ERROR;
+pub const ERROR_ALREADY_EXISTS: u64 = 1;
+pub const ERROR_NOT_FOUND: u64 = 2;
+pub const ERROR_OBJECT_ALREADY_BORROWED: u64 = 7;
+pub const ERROR_TYPE_MISMATCH: u64 = 10;
+pub const ERROR_OBJECT_RUNTIME_ERROR: u64 = 14;
 
 const FIELD_VALUE_STRUCT_NAME: &IdentStr = ident_str!("FieldValue");
 
@@ -66,12 +65,10 @@ pub struct TxContextValue {
     value: GlobalValue,
 }
 
-//TODO migrate to moveos-object-runtime crate
 /// A structure representing mutable data of the ObjectRuntimeContext. This is in a RefCell
 /// of the overall context so we can mutate while still accessing the overall context.
 pub struct ObjectRuntime {
     pub(crate) tx_context: TxContextValue,
-    //objects: BTreeMap<ObjectID, RuntimeObject>,
     root: RuntimeObject,
     object_ref_in_args: BTreeMap<ObjectID, Value>,
     object_reference: BTreeMap<ObjectID, GlobalValue>,
@@ -185,6 +182,10 @@ impl<'a> ObjectRuntimeContext<'a> {
 
     pub fn object_runtime(&self) -> Arc<RwLock<ObjectRuntime>> {
         self.object_runtime.clone()
+    }
+
+    pub fn resolver(&self) -> &dyn StateResolver {
+        self.resolver
     }
 }
 
@@ -313,6 +314,14 @@ impl ObjectRuntime {
             .expect("Failed to get tx_context")
     }
 
+    pub fn borrow_tx_context(&self) -> PartialVMResult<Value> {
+        self.tx_context.borrow_global()
+    }
+
+    pub fn borrow_root(&self) -> PartialVMResult<Value> {
+        self.root.borrow_value(ObjectEntity::<Root>::type_tag())
+    }
+
     pub fn root(&self) -> RootObjectEntity {
         self.root
             .as_object_entity::<Root>()
@@ -342,7 +351,7 @@ impl ObjectRuntime {
             let (parent, parent_load_gas) =
                 self.load_object(layout_loader, resolver, &parent_id)?;
             let (obj, load_gas) = parent.load_object_field(layout_loader, resolver, object_id)?;
-            let total_gas = CommonGasParameters::sum_load_cost(parent_load_gas, load_gas);
+            let total_gas = sum_load_cost(parent_load_gas, load_gas);
             Ok((obj, total_gas))
         }
     }
@@ -458,7 +467,7 @@ impl ObjectRuntime {
             // We raise an error if the object is already borrowed
             // Use the error code in object.move for easy debugging
             return Err(PartialVMError::new(StatusCode::ABORTED)
-                .with_sub_status(super::object::ERROR_OBJECT_ALREADY_BORROWED)
+                .with_sub_status(ERROR_OBJECT_ALREADY_BORROWED)
                 .with_message(format!("Object {} already borrowed", object_id))
                 .finish(Location::Module(object::MODULE_ID.clone())));
         }
@@ -989,399 +998,9 @@ impl RuntimeObject {
     }
 }
 
-// =========================================================================================
-// Native Function Implementations
-
-#[derive(Debug, Clone)]
-pub struct CommonGasParameters {
-    pub load_base: InternalGas,
-    pub load_per_byte: InternalGasPerByte,
-    pub load_failure: InternalGas,
-}
-
-impl CommonGasParameters {
-    fn calculate_load_cost(&self, loaded: Option<Option<NumBytes>>) -> InternalGas {
-        self.load_base
-            + match loaded {
-                Some(Some(num_bytes)) => self.load_per_byte * num_bytes,
-                Some(None) => self.load_failure,
-                None => 0.into(),
-            }
-    }
-
-    fn sum_load_cost(
-        first_loaded: Option<Option<NumBytes>>,
-        second_loaded: Option<Option<NumBytes>>,
-    ) -> Option<Option<NumBytes>> {
-        match (first_loaded, second_loaded) {
-            (Some(Some(first)), Some(Some(second))) => Some(Some(first + second)),
-            (Some(Some(first)), None) => Some(Some(first)),
-            (None, Some(Some(second))) => Some(Some(second)),
-            (Some(None), _) | (_, Some(None)) => Some(None),
-            _ => None,
-        }
-    }
-}
-
-fn native_fn_dispatch(
-    common_gas_params: &CommonGasParameters,
-    base: InternalGas,
-    per_byte_serialized: InternalGasPerByte,
-    context: &mut NativeContext,
-    object_id: ObjectID,
-    field_key: KeyState,
-    f: impl FnOnce(&dyn TypeLayoutLoader, &mut RuntimeField) -> PartialVMResult<Option<Value>>,
-) -> PartialVMResult<NativeResult> {
-    let object_context = context.extensions().get::<ObjectRuntimeContext>();
-    let mut object_runtime = object_context.object_runtime.write();
-
-    let (object, object_load_gas) =
-        object_runtime.load_object(context, object_context.resolver, &object_id)?;
-    let field_key_bytes = field_key.key.len() as u64;
-    let (tv, field_load_gas) =
-        object.load_field(context, object_context.resolver, field_key.clone())?;
-    let gas_cost = base
-        + per_byte_serialized * NumBytes::new(field_key_bytes)
-        + common_gas_params.calculate_load_cost(object_load_gas)
-        + common_gas_params.calculate_load_cost(field_load_gas);
-
-    let result = f(context, tv);
-    match result {
-        Ok(ret) => Ok(NativeResult::ok(
-            gas_cost,
-            ret.map(|v| smallvec![v]).unwrap_or(smallvec![]),
-        )),
-        Err(err) => {
-            let abort_code = match err.major_status() {
-                StatusCode::MISSING_DATA => E_NOT_FOUND,
-                StatusCode::TYPE_MISMATCH => E_TYPE_MISMATCH,
-                StatusCode::RESOURCE_ALREADY_EXISTS => E_ALREADY_EXISTS,
-                _ => E_OBJECT_RUNTIME_ERROR,
-            };
-            if log::log_enabled!(log::Level::Debug) {
-                log::warn!(
-                    "[ObjectRuntime] native_function error: object_id: {:?}, key:{:?}, err: {:?}, abort: {}",
-                    object_id,
-                    field_key,
-                    err,
-                    abort_code
-                );
-            };
-            Ok(NativeResult::err(gas_cost, abort_code))
-        }
-    }
-}
-
-fn native_borrow_root(
-    common_gas_params: &CommonGasParameters,
-    context: &mut NativeContext,
-    ty_args: Vec<Type>,
-    args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    debug_assert_eq!(ty_args.len(), 0);
-    debug_assert_eq!(args.len(), 0);
-    let object_context = context.extensions().get::<ObjectRuntimeContext>();
-    let object_runtime = object_context.object_runtime.write();
-    let value = object_runtime
-        .root
-        .borrow_value(RootObjectEntity::type_tag())?;
-    let gas_cost = common_gas_params.load_base;
-    Ok(NativeResult::ok(gas_cost, smallvec![value]))
-}
-
-pub fn make_native_borrow_root(common_gas_params: CommonGasParameters) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_borrow_root(&common_gas_params, context, ty_args, args)
-        },
-    )
-}
-
-#[derive(Debug, Clone)]
-pub struct AddFieldGasParameters {
-    pub base: InternalGas,
-    pub per_byte_serialized: InternalGasPerByte,
-}
-
-fn native_add_field(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &AddFieldGasParameters,
-    context: &mut NativeContext,
-    ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    //0 K Type
-    //1 V Type FieldValue or ObjectEntity
-
-    debug_assert_eq!(ty_args.len(), 2);
-    debug_assert_eq!(args.len(), 3);
-
-    let val = args.pop_back().unwrap();
-    let key = args.pop_back().unwrap();
-    let object_id = pop_object_id(&mut args)?;
-
-    let field_key = serialize_key(context, &ty_args[0], key)?;
-
-    native_fn_dispatch(
-        common_gas_params,
-        gas_params.base,
-        gas_params.per_byte_serialized,
-        context,
-        object_id,
-        field_key,
-        move |layout_loader, field| {
-            let value_layout = layout_loader.type_to_type_layout(&ty_args[1])?;
-            let value_type = layout_loader.type_to_type_tag(&ty_args[1])?;
-            field.move_to(val, value_layout, value_type).map(|_| None)
-        },
-    )
-}
-
-pub fn make_native_add_field(
-    common_gas_params: CommonGasParameters,
-    gas_params: AddFieldGasParameters,
-) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_add_field(&common_gas_params, &gas_params, context, ty_args, args)
-        },
-    )
-}
-
-#[derive(Debug, Clone)]
-pub struct BorrowFieldGasParameters {
-    pub base: InternalGas,
-    pub per_byte_serialized: InternalGasPerByte,
-}
-
-fn native_borrow_field(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &BorrowFieldGasParameters,
-    context: &mut NativeContext,
-    ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    debug_assert_eq!(ty_args.len(), 2);
-    debug_assert_eq!(args.len(), 2);
-
-    let key = args.pop_back().unwrap();
-    let object_id = pop_object_id(&mut args)?;
-
-    let field_key = serialize_key(context, &ty_args[0], key)?;
-
-    native_fn_dispatch(
-        common_gas_params,
-        gas_params.base,
-        gas_params.per_byte_serialized,
-        context,
-        object_id,
-        field_key,
-        |layout_loader, field| {
-            let value_type = layout_loader.type_to_type_tag(&ty_args[1])?;
-            field.borrow_value(value_type).map(Some)
-        },
-    )
-}
-
-pub fn make_native_borrow_field(
-    common_gas_params: CommonGasParameters,
-    gas_params: BorrowFieldGasParameters,
-) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_borrow_field(&common_gas_params, &gas_params, context, ty_args, args)
-        },
-    )
-}
-
-#[derive(Debug, Clone)]
-pub struct ContainsFieldGasParameters {
-    pub base: InternalGas,
-    pub per_byte_serialized: InternalGasPerByte,
-}
-
-fn native_contains_field(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &ContainsFieldGasParameters,
-    context: &mut NativeContext,
-    ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    debug_assert_eq!(ty_args.len(), 1);
-    debug_assert_eq!(args.len(), 2);
-
-    let key = args.pop_back().unwrap();
-    let object_id = pop_object_id(&mut args)?;
-
-    let field_key = serialize_key(context, &ty_args[0], key)?;
-
-    native_fn_dispatch(
-        common_gas_params,
-        gas_params.base,
-        gas_params.per_byte_serialized,
-        context,
-        object_id,
-        field_key,
-        |_layout_loader, field| Ok(Some(Value::bool(field.exists()?))),
-    )
-}
-
-pub fn make_native_contains_field(
-    common_gas_params: CommonGasParameters,
-    gas_params: ContainsFieldGasParameters,
-) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_contains_field(&common_gas_params, &gas_params, context, ty_args, args)
-        },
-    )
-}
-
-fn native_contains_field_with_value_type(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &ContainsFieldGasParameters,
-    context: &mut NativeContext,
-    ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    debug_assert_eq!(ty_args.len(), 2);
-    debug_assert_eq!(args.len(), 2);
-
-    let key = args.pop_back().unwrap();
-    let object_id = pop_object_id(&mut args)?;
-
-    let field_key = serialize_key(context, &ty_args[0], key)?;
-
-    native_fn_dispatch(
-        common_gas_params,
-        gas_params.base,
-        gas_params.per_byte_serialized,
-        context,
-        object_id,
-        field_key,
-        |layout_loader, field| {
-            let value_type = layout_loader.type_to_type_tag(&ty_args[1])?;
-            Ok(Some(Value::bool(field.exists_with_type(value_type)?)))
-        },
-    )
-}
-
-pub fn make_native_contains_field_with_value_type(
-    common_gas_params: CommonGasParameters,
-    gas_params: ContainsFieldGasParameters,
-) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_contains_field_with_value_type(
-                &common_gas_params,
-                &gas_params,
-                context,
-                ty_args,
-                args,
-            )
-        },
-    )
-}
-
-#[derive(Debug, Clone)]
-pub struct RemoveFieldGasParameters {
-    pub base: InternalGas,
-    pub per_byte_serialized: InternalGasPerByte,
-}
-
-fn native_remove_field(
-    common_gas_params: &CommonGasParameters,
-    gas_params: &RemoveFieldGasParameters,
-    context: &mut NativeContext,
-    ty_args: Vec<Type>,
-    mut args: VecDeque<Value>,
-) -> PartialVMResult<NativeResult> {
-    debug_assert_eq!(ty_args.len(), 2);
-    debug_assert_eq!(args.len(), 2);
-
-    let key = args.pop_back().unwrap();
-    let object_id = pop_object_id(&mut args)?;
-
-    let field_key = serialize_key(context, &ty_args[0], key)?;
-
-    native_fn_dispatch(
-        common_gas_params,
-        gas_params.base,
-        gas_params.per_byte_serialized,
-        context,
-        object_id,
-        field_key,
-        |layout_loader, field| {
-            let value_type = layout_loader.type_to_type_tag(&ty_args[1])?;
-            field.move_from(value_type).map(Some)
-        },
-    )
-}
-
-pub fn make_native_remove_field(
-    common_gas_params: CommonGasParameters,
-    gas_params: RemoveFieldGasParameters,
-) -> NativeFunction {
-    Arc::new(
-        move |context, ty_args, args| -> PartialVMResult<NativeResult> {
-            native_remove_field(&common_gas_params, &gas_params, context, ty_args, args)
-        },
-    )
-}
-
-// =========================================================================================
-// Helpers
-
-fn pop_object_id(args: &mut VecDeque<Value>) -> PartialVMResult<ObjectID> {
-    let handle = args.pop_back().unwrap();
-    ObjectID::from_runtime_value(handle).map_err(|e| {
-        if log::log_enabled!(log::Level::Debug) {
-            log::warn!("[ObjectRuntime] get_object_id: {:?}", e);
-        }
-        PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE).with_message(e.to_string())
-    })
-}
-
-pub fn serialize(layout: &MoveTypeLayout, val: &Value) -> PartialVMResult<Vec<u8>> {
-    val.simple_serialize(layout).ok_or_else(|| {
-        partial_extension_error(format!(
-            "cannot serialize object field or value, layout:{:?}, val:{:?}",
-            layout, val
-        ))
-    })
-}
-
-fn deserialize(layout: &MoveTypeLayout, bytes: &[u8]) -> PartialVMResult<Value> {
-    let value = Value::simple_deserialize(bytes, layout).ok_or_else(|| {
-        partial_extension_error(format!(
-            "cannot deserialize object field or value, layout:{:?}, bytes:{:?}",
-            layout,
-            hex::encode(bytes)
-        ))
-    })?;
-    Ok(value)
-}
-
 fn partial_extension_error(msg: impl ToString) -> PartialVMError {
     log::debug!("PartialVMError: {}", msg.to_string());
     PartialVMError::new(StatusCode::VM_EXTENSION_ERROR).with_message(msg.to_string())
-}
-
-fn type_to_type_layout(context: &NativeContext, ty: &Type) -> PartialVMResult<MoveTypeLayout> {
-    context
-        .type_to_type_layout(ty)?
-        .ok_or_else(|| partial_extension_error("cannot determine type layout"))
-}
-
-fn serialize_key(
-    context: &NativeContext,
-    key_type: &Type,
-    key: Value,
-) -> PartialVMResult<KeyState> {
-    let key_layout = type_to_type_layout(context, key_type)?;
-    let key_type_tag = context.type_to_type_tag(key_type)?;
-    let key_bytes = serialize(&key_layout, &key)?;
-    Ok(KeyState::new(key_bytes, key_type_tag))
 }
 
 fn check_type(actual_type: &TypeTag, expect_type: &TypeTag) -> PartialVMResult<()> {
@@ -1394,4 +1013,37 @@ fn check_type(actual_type: &TypeTag, expect_type: &TypeTag) -> PartialVMResult<(
         );
     }
     Ok(())
+}
+
+fn sum_load_cost(
+    first_loaded: Option<Option<NumBytes>>,
+    second_loaded: Option<Option<NumBytes>>,
+) -> Option<Option<NumBytes>> {
+    match (first_loaded, second_loaded) {
+        (Some(Some(first)), Some(Some(second))) => Some(Some(first + second)),
+        (Some(Some(first)), None) => Some(Some(first)),
+        (None, Some(Some(second))) => Some(Some(second)),
+        (Some(None), _) | (_, Some(None)) => Some(None),
+        _ => None,
+    }
+}
+
+pub fn serialize(layout: &MoveTypeLayout, val: &Value) -> PartialVMResult<Vec<u8>> {
+    val.simple_serialize(layout).ok_or_else(|| {
+        partial_extension_error(format!(
+            "cannot serialize object field or value, layout:{:?}, val:{:?}",
+            layout, val
+        ))
+    })
+}
+
+pub fn deserialize(layout: &MoveTypeLayout, bytes: &[u8]) -> PartialVMResult<Value> {
+    let value = Value::simple_deserialize(bytes, layout).ok_or_else(|| {
+        partial_extension_error(format!(
+            "cannot deserialize object field or value, layout:{:?}, bytes:{:?}",
+            layout,
+            hex::encode(bytes)
+        ))
+    })?;
+    Ok(value)
 }
