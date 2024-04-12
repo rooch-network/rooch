@@ -37,6 +37,9 @@ pub const E_VALUE_NOT_I32: u64 = 11;
 pub const E_MEMORY_NOT_FOUND: u64 = 12;
 pub const E_INCORRECT_LENGTH_OF_ARGS: u64 = 13;
 pub const E_CBOR_UNMARSHAL_FAILED: u64 = 14;
+pub const E_GET_INSTANCE_POOL_FAILED: u64 = 15;
+pub const E_UNPACK_STRUCT_FAILED: u64 = 16;
+pub const E_WASM_INSTANCE_CREATION_FAILED: u64 = 17;
 
 #[derive(Debug, Clone)]
 pub struct WASMCreateInstanceGasParameters {
@@ -61,8 +64,22 @@ fn native_create_wasm_instance(
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
+    if args.len() != 1 {
+        return Ok(NativeResult::err(
+            gas_params.base_create_instance,
+            E_INCORRECT_LENGTH_OF_ARGS,
+        ));
+    }
     let wasm_bytes = pop_arg!(args, Vec<u8>);
-    let wasm_instance = create_wasm_instance(&wasm_bytes);
+    let wasm_instance = match create_wasm_instance(&wasm_bytes) {
+        Ok(v) => v,
+        Err(_) => {
+            return Ok(NativeResult::err(
+                gas_params.base_create_instance,
+                E_WASM_INSTANCE_CREATION_FAILED,
+            ))
+        }
+    };
     let instance_id = insert_wasm_instance(wasm_instance);
 
     let mut cost = gas_params.base_create_instance;
@@ -97,6 +114,13 @@ fn native_create_cbor_values(
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
+    if args.len() != 1 {
+        return Ok(NativeResult::err(
+            gas_params.base,
+            E_INCORRECT_LENGTH_OF_ARGS,
+        ));
+    }
+
     let value_list = pop_arg!(args, Vec<Value>);
 
     let mut func_args = Vec::new();
@@ -179,6 +203,13 @@ fn native_add_length_with_data(
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
+    if args.len() != 1 {
+        return Ok(NativeResult::err(
+            gas_params.base,
+            E_INCORRECT_LENGTH_OF_ARGS,
+        ));
+    }
+
     let mut data = pop_arg!(args, Vec<u8>);
 
     let mut buffer_final = Vec::new();
@@ -219,6 +250,13 @@ fn native_create_wasm_args_in_memory(
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
+    if args.len() != 3 {
+        return Ok(NativeResult::err(
+            gas_params.base_create_args,
+            E_INCORRECT_LENGTH_OF_ARGS,
+        ));
+    }
+
     let func_args_value = pop_arg!(args, Vec<Value>);
     let _func_name = pop_arg!(args, Vec<u8>); // TODO: check the length of function arguments
     let instance_id = pop_arg!(args, u64);
@@ -241,7 +279,16 @@ fn native_create_wasm_args_in_memory(
     let mut data_ptr_list = Vec::new();
 
     let instance_pool = get_instance_pool();
-    match instance_pool.lock().unwrap().get_mut(&instance_id) {
+    let mut pool_object = match instance_pool.lock() {
+        Ok(v) => v,
+        Err(_) => {
+            return Ok(NativeResult::err(
+                gas_params.base_create_args,
+                E_GET_INSTANCE_POOL_FAILED,
+            ))
+        }
+    };
+    match pool_object.get_mut(&instance_id) {
         None => {
             return Ok(NativeResult::err(
                 gas_params.base_create_args,
@@ -260,8 +307,16 @@ fn native_create_wasm_args_in_memory(
                 let mut arg_buffer = Vec::new();
                 // arg_buffer.append(&mut (arg.len() as u32).to_be_bytes().to_vec());
                 arg_buffer.append(&mut c_arg.into_bytes_with_nul());
-                let buffer_final_ptr =
-                    put_data_on_stack(stack_alloc_func, &mut instance.store, arg_buffer.as_slice());
+                let buffer_final_ptr = match put_data_on_stack(
+                    stack_alloc_func,
+                    &mut instance.store,
+                    arg_buffer.as_slice(),
+                ) {
+                    Ok(v) => v,
+                    Err(_) => {
+                        return build_err(gas_params.base_create_args, E_WASM_EXECUTION_FAILED)
+                    }
+                };
 
                 data_ptr_list.push(buffer_final_ptr as u64);
                 args_bytes_total += arg.len();
@@ -306,12 +361,28 @@ fn native_execute_wasm_function(
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
+    if args.len() != 3 {
+        return Ok(NativeResult::err(
+            gas_params.base_create_execution,
+            E_INCORRECT_LENGTH_OF_ARGS,
+        ));
+    }
+
     let func_args = pop_arg!(args, Vec<u64>);
     let func_name = pop_arg!(args, Vec<u8>);
     let instance_id = pop_arg!(args, u64);
 
     let instance_pool = get_instance_pool();
-    let ret = match instance_pool.lock().unwrap().get_mut(&instance_id) {
+    let mut pool_object = match instance_pool.lock() {
+        Ok(v) => v,
+        Err(_) => {
+            return Ok(NativeResult::err(
+                gas_params.base_create_execution,
+                E_GET_INSTANCE_POOL_FAILED,
+            ))
+        }
+    };
+    let ret = match pool_object.get_mut(&instance_id) {
         None => Ok(NativeResult::err(
             gas_params.base_create_execution,
             E_INSTANCE_NO_EXISTS,
@@ -400,11 +471,27 @@ fn native_read_data_length(
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
+    if args.len() != 2 {
+        return Ok(NativeResult::err(
+            gas_params.base,
+            E_INCORRECT_LENGTH_OF_ARGS,
+        ));
+    }
+
     let data_ptr = pop_arg!(args, u64);
     let instance_id = pop_arg!(args, u64);
 
     let instance_pool = get_instance_pool();
-    let ret = match instance_pool.lock().unwrap().get_mut(&instance_id) {
+    let mut pool_object = match instance_pool.lock() {
+        Ok(v) => v,
+        Err(_) => {
+            return Ok(NativeResult::err(
+                gas_params.base,
+                E_GET_INSTANCE_POOL_FAILED,
+            ))
+        }
+    };
+    let ret = match pool_object.get_mut(&instance_id) {
         None => Ok(NativeResult::err(gas_params.base, E_INSTANCE_NO_EXISTS)),
         Some(instance) => {
             let memory = match instance.instance.exports.get_memory("memory") {
@@ -456,12 +543,28 @@ fn native_read_data_from_heap(
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
+    if args.len() != 3 {
+        return Ok(NativeResult::err(
+            gas_params.base,
+            E_INCORRECT_LENGTH_OF_ARGS,
+        ));
+    }
+
     let data_length = pop_arg!(args, u32);
     let data_ptr = pop_arg!(args, u32);
     let instance_id = pop_arg!(args, u64);
 
     let instance_pool = get_instance_pool();
-    let ret = match instance_pool.lock().unwrap().get_mut(&instance_id) {
+    let mut pool_object = match instance_pool.lock() {
+        Ok(v) => v,
+        Err(_) => {
+            return Ok(NativeResult::err(
+                gas_params.base,
+                E_GET_INSTANCE_POOL_FAILED,
+            ))
+        }
+    };
+    let ret = match pool_object.get_mut(&instance_id) {
         None => Ok(NativeResult::err(gas_params.base, E_INSTANCE_NO_EXISTS)),
         Some(instance) => {
             let memory = match instance.instance.exports.get_memory("memory") {
@@ -542,8 +645,14 @@ fn native_release_wasm_instance(
         Some(v) => v,
         None => return build_err(gas_params.base, E_INCORRECT_LENGTH_OF_ARGS),
     };
-    let mut fiedls = value.value_as::<Struct>()?.unpack()?;
-    let val = fiedls.next().ok_or_else(|| {
+    let mut fields = match value.value_as::<Struct>() {
+        Ok(struct_) => match struct_.unpack() {
+            Ok(fields_iterator) => fields_iterator,
+            Err(_) => return Ok(NativeResult::err(gas_params.base, E_UNPACK_STRUCT_FAILED)),
+        },
+        Err(_) => return Ok(NativeResult::err(gas_params.base, E_UNPACK_STRUCT_FAILED)),
+    };
+    let val = fields.next().ok_or_else(|| {
         PartialVMError::new(StatusCode::TYPE_RESOLUTION_FAILURE)
             .with_message("There must have only one field".to_owned())
     })?;
@@ -551,7 +660,16 @@ fn native_release_wasm_instance(
     let instance_id = val.value_as::<u64>()?;
 
     let instance_pool = get_instance_pool();
-    match instance_pool.lock().unwrap().get_mut(&instance_id) {
+    let mut pool_object = match instance_pool.lock() {
+        Ok(v) => v,
+        Err(_) => {
+            return Ok(NativeResult::err(
+                gas_params.base,
+                E_GET_INSTANCE_POOL_FAILED,
+            ))
+        }
+    };
+    match pool_object.get_mut(&instance_id) {
         None => return Ok(NativeResult::err(gas_params.base, E_INSTANCE_NO_EXISTS)),
         Some(_) => {}
     };

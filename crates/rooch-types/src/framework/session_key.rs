@@ -3,7 +3,7 @@
 
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use crate::authentication_key::AuthenticationKey;
-use anyhow::Result;
+use anyhow::{Error, Result};
 use move_core_types::value::MoveValue;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::{
@@ -30,12 +30,24 @@ pub struct SessionScope {
 }
 
 impl SessionScope {
-    pub fn new(module_address: AccountAddress, module_name: &str, function_name: &str) -> Self {
-        Self {
+    pub fn new(
+        module_address: AccountAddress,
+        module_name: &str,
+        function_name: &str,
+    ) -> Result<Self> {
+        let module_name_value = match MoveAsciiString::from_str(module_name) {
+            Ok(v) => v,
+            Err(_) => return Err(Error::msg("invalid module name")),
+        };
+        let function_name_value = match MoveAsciiString::from_str(function_name) {
+            Ok(v) => v,
+            Err(_) => return Err(Error::msg("invalid function name")),
+        };
+        Ok(Self {
             module_address,
-            module_name: MoveAsciiString::from_str(module_name).expect("invalid module name"),
-            function_name: MoveAsciiString::from_str(function_name).expect("invalid function name"),
-        }
+            module_name: module_name_value,
+            function_name: function_name_value,
+        })
     }
 
     fn is_asterisk(s: &MoveAsciiString) -> bool {
@@ -104,7 +116,7 @@ impl FromStr for SessionScope {
         let function_name = parts
             .next()
             .ok_or(anyhow::anyhow!("invalid session scope"))?;
-        Ok(Self::new(module_address, module_name, function_name))
+        Self::new(module_address, module_name, function_name)
     }
 }
 

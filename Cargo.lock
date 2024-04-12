@@ -6380,6 +6380,7 @@ dependencies = [
 name = "moveos-wasm"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "ciborium",
  "once_cell",
  "rand 0.8.5",
