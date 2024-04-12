@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::natives::gas_parameter::native::MUL;
-use crate::natives::rooch_framework::crypto::hash::GasParameters;
+use moveos_stdlib::natives::moveos_stdlib::hash::GasParameters;
 
 crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasParameters, "hash", [
     [.keccak256.base, "keccak256.base", 1000 * MUL],

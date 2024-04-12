@@ -27,11 +27,11 @@ This module implements the native validator.
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::features</a>;
+<b>use</b> <a href="">0x2::hash</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="ed25519.md#0x3_ed25519">0x3::ed25519</a>;
-<b>use</b> <a href="hash.md#0x3_hash">0x3::hash</a>;
 </code></pre>
 
 
