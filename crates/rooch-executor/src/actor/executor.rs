@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::messages::{
-    ExecuteTransactionMessage, ExecuteTransactionResult, ResolveMessage, ValidateL1BlockMessage,
-    ValidateL2TxMessage,
+    ExecuteTransactionMessage, ExecuteTransactionResult, GetRootMessage, ResolveMessage,
+    ValidateL1BlockMessage, ValidateL2TxMessage,
 };
 use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::Result;
@@ -26,8 +26,10 @@ use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::FunctionId;
+use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state_resolver::MoveOSResolverProxy;
+use moveos_types::state_resolver::StateResolver;
 use moveos_types::transaction::TransactionOutput;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::transaction::{
@@ -568,5 +570,16 @@ impl Handler<ExecuteTransactionMessage> for ExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<ExecuteTransactionResult> {
         self.execute(msg.tx)
+    }
+}
+
+#[async_trait]
+impl Handler<GetRootMessage> for ExecutorActor {
+    async fn handle(
+        &mut self,
+        _msg: GetRootMessage,
+        _ctx: &mut ActorContext,
+    ) -> Result<RootObjectEntity> {
+        Ok(self.moveos().state().root_object())
     }
 }

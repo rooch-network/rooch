@@ -7,6 +7,7 @@ use move_core_types::effects::Op;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::object::Root;
 use moveos_types::moveos_std::object::RootObjectEntity;
+use moveos_types::moveos_std::object::GENESIS_STATE_ROOT;
 use moveos_types::moveos_std::object::{ObjectEntity, RawObject};
 use moveos_types::state::FieldChange;
 use moveos_types::state::KeyState;
@@ -14,7 +15,9 @@ use moveos_types::state::ObjectChange;
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{h256::H256, state::State};
 use moveos_types::{state::StateChangeSet, state_resolver::StateResolver};
+use smt::TreeChangeSet;
 use smt::{SMTIterator, SMTree, UpdateSet};
+use std::collections::BTreeMap;
 
 /// ObjectEntity with fields State Tree
 #[derive(Clone)]
@@ -25,24 +28,17 @@ pub struct TreeObject {
 
 impl TreeObject {
     pub fn new(node_store: NodeDBStore, entity: RawObject) -> Self {
-        let state_root = Some(entity.state_root());
         Self {
             entity,
-            smt: SMTree::new(node_store, state_root),
+            smt: SMTree::new(node_store),
         }
     }
 
     pub fn get_field(&self, key: KeyState) -> Result<Option<State>> {
-        if self.smt.is_genesis() {
+        if self.is_genesis() {
             return Ok(None);
         }
-        if key.is_object_id() {
-            debug_assert!(
-                key.as_object_id().unwrap().parent().unwrap() == self.entity.id,
-                "Child object key not match parent object id"
-            );
-        }
-        let result = self.smt.get(key.clone());
+        let result = self.smt.get(self.entity.state_root(), key.clone());
         if log::log_enabled!(log::Level::Trace) {
             let result_info = match &result {
                 Ok(Some(state)) => format!("Some({})", state.value_type),
@@ -68,10 +64,10 @@ impl TreeObject {
     }
 
     pub fn list_fields(&self, cursor: Option<KeyState>, limit: usize) -> Result<Vec<StateKV>> {
-        self.smt.list(cursor, limit)
+        self.smt.list(self.entity.state_root(), cursor, limit)
     }
 
-    pub fn update_fields<I>(&mut self, update_set: I) -> Result<H256>
+    pub fn update_fields<I>(&mut self, update_set: I) -> Result<TreeChangeSet>
     where
         I: Into<UpdateSet<KeyState, State>>,
     {
@@ -86,52 +82,32 @@ impl TreeObject {
         } else {
             None
         };
-        let state_root = self.smt.puts(update_set)?;
-        self.entity.update_state_root(state_root);
+        let change_set = self.smt.puts(pre_state_root, update_set)?;
+        self.entity.update_state_root(change_set.state_root);
         if log::log_enabled!(log::Level::Trace) {
             log::trace!(
                 "update_fields object_id:{}, pre_state_root: {}, new_state_root: {}, keys: {:?}",
                 self.entity.id,
                 pre_state_root,
-                state_root,
+                change_set.state_root,
                 keys,
             );
         }
-        Ok(state_root)
+        Ok(change_set)
     }
 
     pub fn state_root(&self) -> H256 {
-        let state_root = self.smt.root_hash();
-        if cfg!(debug_assertions) {
-            debug_assert!(
-                state_root == self.entity.state_root(),
-                "state root not match, object state_root: {}, smt state_root: {}",
-                self.entity.state_root(),
-                state_root
-            );
-        }
-        state_root
+        self.entity.state_root()
     }
 
     pub fn is_genesis(&self) -> bool {
-        let is_genesis = self.smt.is_genesis();
-        if cfg!(debug_assertions) {
-            let state_root = self.smt.root_hash();
-            debug_assert!(
-                state_root == self.entity.state_root(),
-                "is_genesis not match, object state_root: {}, size: {}, smt state_root: {}",
-                self.entity.state_root,
-                self.entity.size,
-                self.smt.root_hash()
-            );
-        }
-        is_genesis
+        self.entity.state_root() == *GENESIS_STATE_ROOT
     }
 
     pub fn put_changes<I: IntoIterator<Item = (KeyState, Op<State>)>>(
         &mut self,
         changes: I,
-    ) -> Result<H256> {
+    ) -> Result<TreeChangeSet> {
         let mut update_set = UpdateSet::new();
         for (key, op) in changes {
             match op {
@@ -150,11 +126,11 @@ impl TreeObject {
     }
 
     pub fn dump(&self) -> Result<Vec<(KeyState, State)>> {
-        self.smt.dump()
+        self.smt.dump(self.entity.state_root())
     }
 
     pub fn iter(&self) -> Result<SMTIterator<KeyState, State, NodeDBStore>> {
-        self.smt.iter(None)
+        self.smt.iter(self.entity.state_root(), None)
     }
 }
 
@@ -220,6 +196,7 @@ impl StateDBStore {
 
     fn apply_object_change(
         &self,
+        nodes: &mut BTreeMap<H256, Vec<u8>>,
         update_set: &mut UpdateSet<KeyState, State>,
         object_id: ObjectID,
         obj_change: ObjectChange,
@@ -254,6 +231,7 @@ impl StateDBStore {
                 },
                 FieldChange::Object(obj_change) => {
                     self.apply_object_change(
+                        nodes,
                         &mut field_update_set,
                         key.as_object_id()?,
                         obj_change,
@@ -261,24 +239,28 @@ impl StateDBStore {
                 }
             }
         }
-        tree_obj.update_fields(field_update_set)?;
+        let mut tree_change_set = tree_obj.update_fields(field_update_set)?;
+        nodes.append(&mut tree_change_set.nodes);
         update_set.put(object_id.to_key(), tree_obj.entity.into_state());
         Ok(())
     }
 
     pub fn apply_change_set(&mut self, state_change_set: StateChangeSet) -> Result<(H256, u64)> {
         let mut update_set = UpdateSet::new();
+        let mut nodes = BTreeMap::new();
         for (object_id, obj_change) in state_change_set.changes {
-            self.apply_object_change(&mut update_set, object_id, obj_change)?;
+            self.apply_object_change(&mut nodes, &mut update_set, object_id, obj_change)?;
         }
         let global_size = state_change_set.global_size;
 
-        let update_set_size = update_set.len();
-        let state_root = self.root_object.update_fields(update_set)?;
+        let mut tree_change_set = self.root_object.update_fields(update_set)?;
+        let state_root = tree_change_set.state_root;
+        nodes.append(&mut tree_change_set.nodes);
         if log::log_enabled!(log::Level::Debug) {
-            log::debug!("apply_change_set state_root: {:?}, update_set_size: {}, pre_global_size: {}, new_global_size: {}", state_root, update_set_size, self.root_object.entity.size, global_size);
+            log::debug!("apply_change_set state_root: {:?}, smt nodes: {}, pre_global_size: {}, new_global_size: {}", state_root, nodes.len(), self.root_object.entity.size, global_size);
         }
         self.root_object.entity.size = global_size;
+        self.node_store.write_nodes(nodes)?;
         Ok((state_root, global_size))
     }
 

@@ -209,9 +209,12 @@ impl Actor for IndexerActor {}
 impl Handler<IndexerStatesMessage> for IndexerActor {
     async fn handle(&mut self, msg: IndexerStatesMessage, _ctx: &mut ActorContext) -> Result<()> {
         let IndexerStatesMessage {
+            root,
             tx_order,
             state_change_set,
         } = msg;
+        //TODO make statedb stateless
+        self.moveos_store.0.statedb.update_root(root)?;
 
         // indexer state index generator
         let mut state_index_generator = 0u64;
