@@ -173,3 +173,10 @@ pub struct RefreshStateMessage {
 impl Message for RefreshStateMessage {
     type Result = Result<()>;
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetRootMessage {}
+
+impl Message for GetRootMessage {
+    type Result = Result<RootObjectEntity>;
+}
