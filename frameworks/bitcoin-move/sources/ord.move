@@ -355,13 +355,13 @@ module bitcoin_move::ord {
     }
 
     public fun process_transaction(tx: &Transaction, input_utxo_values: vector<u64>): vector<SatPoint>{
-        let output_seals = vector::empty();
+        let sat_points = vector::empty();
 
         let inscriptions = from_transaction(tx, option::some(input_utxo_values));
         let inscriptions_len = vector::length(&inscriptions);
         if(inscriptions_len == 0){
             vector::destroy_empty(inscriptions);
-            return output_seals
+            return sat_points
         };
 
         let tx_outputs = types::tx_output(tx);
@@ -398,14 +398,14 @@ module bitcoin_move::ord {
             object::transfer_extend(inscription_obj, to_address);
 
             let new_sat_point = new_sat_point((output_index as u32), offset, object_id);
-            vector::push_back(&mut output_seals, new_sat_point);
+            vector::push_back(&mut sat_points, new_sat_point);
 
             //Auto create address mapping if not exist
             bind_multichain_address(to_address, bitcoin_address_opt);
             idx = idx + 1;
         };
         vector::destroy_empty(inscriptions);
-        output_seals
+        sat_points
     }
  
     fun validate_inscription_records(tx_id: address, input_index: u64, record: vector<InscriptionRecord>): vector<InscriptionRecord>{
