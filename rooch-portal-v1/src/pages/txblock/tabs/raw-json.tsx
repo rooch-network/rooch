@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 import { Copy } from 'lucide-react'
