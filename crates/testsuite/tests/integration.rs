@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+mod images;
+
 use anyhow::{bail, Result};
 use clap::Parser;
 use cucumber::{given, then, World as _};
@@ -10,19 +12,73 @@ use rooch_config::{rooch_config_dir, RoochOpt, ServerOpt};
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_rpc_server::Service;
 use serde_json::Value;
-use tracing::{debug, info};
+use std::env;
+use tracing::{debug, error, info, Level};
 
-#[derive(cucumber::World, Debug, Default)]
+use images::bitcoin::BitcoinD;
+use images::ord::Ord;
+use std::time::Duration;
+use testcontainers::{
+    clients::Cli,
+    core::{Container, ExecCommand, WaitFor},
+    RunnableImage,
+};
+use uuid::Uuid;
+
+const RPC_USER: &str = "roochuser";
+const RPC_PASS: &str = "roochpass";
+const RPC_PORT: u16 = 18443;
+
+#[derive(cucumber::World, Debug)]
 struct World {
+    docker: Cli,
+    container_network: String,
     service: Option<Service>,
+    bitcoind: Option<Container<BitcoinD>>,
+    ord: Option<Container<Ord>>,
     tpl_ctx: Option<TemplateContext>,
+}
+
+impl Default for World {
+    fn default() -> Self {
+        let network_uuid = Uuid::new_v4();
+
+        World {
+            docker: Cli::default(),
+            container_network: format!("test_network_{}", network_uuid),
+            service: None,
+            bitcoind: None,
+            ord: None,
+            tpl_ctx: None,
+        }
+    }
 }
 
 #[given(expr = "a server for {word}")] // Cucumber Expression
 async fn start_server(w: &mut World, _scenario: String) {
+    tokio::time::sleep(Duration::from_secs(5)).await;
+
     let mut service = Service::new();
-    let opt = RoochOpt::new_with_temp_store();
+    let mut opt = RoochOpt::new_with_temp_store();
     wait_port_available(opt.port()).await;
+
+    match w.bitcoind.take() {
+        Some(bitcoind) => {
+            let bitcoin_rpc_url =
+                format!("http://127.0.0.1:{}", bitcoind.get_host_port_ipv4(RPC_PORT));
+            opt.btc_rpc_url = Some(bitcoin_rpc_url);
+            opt.btc_rpc_username = Some(RPC_USER.to_string());
+            opt.btc_rpc_password = Some(RPC_PASS.to_string());
+            opt.btc_start_block_height = Some(0);
+            opt.data_import_mode = Some(1); // Enable data import without writing indexes
+            info!("config btc rpc ok");
+
+            w.bitcoind = Some(bitcoind);
+        }
+        None => {
+            info!("bitcoind server is none");
+        }
+    }
 
     let server_opt = ServerOpt::new();
 
@@ -42,6 +98,76 @@ async fn stop_server(w: &mut World) {
         }
         None => {
             info!("service is none");
+        }
+    }
+}
+
+#[given(expr = "a bitcoind server for {word}")] // Cucumber Expression
+async fn start_bitcoind_server(w: &mut World, _scenario: String) {
+    tokio::time::sleep(Duration::from_secs(5)).await;
+
+    let mut bitcoind_image: RunnableImage<BitcoinD> = BitcoinD::new(
+        format!("0.0.0.0:{}", RPC_PORT),
+        RPC_USER.to_string(),
+        RPC_PASS.to_string(),
+    )
+    .into();
+    bitcoind_image = bitcoind_image
+        .with_network(w.container_network.clone())
+        .with_run_option(("--network-alias", "bitcoind"));
+
+    let bitcoind = w.docker.run(bitcoind_image);
+    debug!("bitcoind ok");
+
+    w.bitcoind = Some(bitcoind);
+}
+
+#[then(expr = "stop the bitcoind server")] // Cucumber Expression
+async fn stop_bitcoind_server(w: &mut World) {
+    println!("stop server");
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
+    match w.bitcoind.take() {
+        Some(bitcoind) => {
+            bitcoind.stop();
+            info!("shutdown bitcoind server");
+        }
+        None => {
+            info!("bitcoind server is none");
+        }
+    }
+}
+
+#[given(expr = "a ord server for {word}")] // Cucumber Expression
+async fn start_ord_server(w: &mut World, _scenario: String) {
+    tokio::time::sleep(Duration::from_secs(5)).await;
+
+    let mut ord_image: RunnableImage<Ord> = Ord::new(
+        format!("http://bitcoind:{}", RPC_PORT),
+        RPC_USER.to_string(),
+        RPC_PASS.to_string(),
+    )
+    .into();
+    ord_image = ord_image.with_network(w.container_network.clone());
+
+    let ord = w.docker.run(ord_image);
+    debug!("ord ok");
+
+    w.ord = Some(ord);
+}
+
+#[then(expr = "stop the ord server")] // Cucumber Expression
+async fn stop_ord_server(w: &mut World) {
+    println!("stop ord server");
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
+    match w.ord.take() {
+        Some(ord) => {
+            ord.stop();
+            info!("shutdown ord server");
+        }
+        None => {
+            info!("ord server is none");
         }
     }
 }
@@ -102,6 +228,194 @@ async fn run_cmd(world: &mut World, args: String) {
             tpl_ctx.entry(cmd_name).append::<Value>(err_msg);
         }
     }
+    debug!("current tpl_ctx: {:?}", tpl_ctx);
+}
+
+#[then(regex = r#"cmd ord bash: "(.*)?""#)]
+fn ord_bash_run_cmd(w: &mut World, input_tpl: String) {
+    let ord = w.ord.as_ref().unwrap();
+
+    let mut bitseed_args = vec!["/bin/bash".to_string()];
+
+    if w.tpl_ctx.is_none() {
+        let tpl_ctx = TemplateContext::new();
+        w.tpl_ctx = Some(tpl_ctx);
+    }
+    let tpl_ctx = w.tpl_ctx.as_mut().unwrap();
+    let input = eval_command_args(tpl_ctx, input_tpl);
+
+    let args: Vec<&str> = input.split_whitespace().collect();
+    let cmd_name = args[0].clone();
+
+    bitseed_args.extend(args.iter().map(|&s| s.to_string()));
+
+    let joined_args = bitseed_args.join(" ");
+    debug!("run cmd: ord {}", joined_args);
+
+    let exec_cmd = ExecCommand {
+        cmd: joined_args,
+        ready_conditions: vec![WaitFor::Nothing],
+    };
+
+    let output = ord.exec(exec_cmd);
+
+    let stdout_string = match String::from_utf8(output.stdout) {
+        Ok(s) => s,
+        Err(e) => {
+            error!("Failed to convert stdout to String: {}", e);
+            String::from("Error converting stdout to String")
+        }
+    };
+
+    let stderr_string = match String::from_utf8(output.stderr) {
+        Ok(s) => s,
+        Err(e) => {
+            error!("Failed to convert stderr to String: {}", e);
+            String::from("Error converting stderr to String")
+        }
+    };
+
+    debug!("run cmd: ord stdout: {}", stdout_string);
+
+    // Check if stderr_string is not empty and panic if it contains any content.
+    if !stderr_string.is_empty() {
+        panic!("Command execution failed with errors: {}", stderr_string);
+    }
+
+    tpl_ctx
+        .entry(format!("{}", cmd_name))
+        .append::<String>(stdout_string);
+
+    debug!("current tpl_ctx: {:?}", tpl_ctx);
+}
+
+#[then(regex = r#"cmd ord: "(.*)?""#)]
+fn ord_run_cmd(w: &mut World, input_tpl: String) {
+    let ord = w.ord.as_ref().unwrap();
+
+    let mut bitseed_args = vec![
+        "ord".to_string(),
+        "--regtest".to_string(),
+        format!("--rpc-url=http://bitcoind:{}", RPC_PORT),
+        format!("--bitcoin-rpc-user={}", RPC_USER),
+        format!("--bitcoin-rpc-pass={}", RPC_PASS),
+    ];
+
+    if w.tpl_ctx.is_none() {
+        let tpl_ctx = TemplateContext::new();
+        w.tpl_ctx = Some(tpl_ctx);
+    }
+    let tpl_ctx = w.tpl_ctx.as_mut().unwrap();
+    let input = eval_command_args(tpl_ctx, input_tpl);
+
+    let args: Vec<&str> = input.split_whitespace().collect();
+    let cmd_name = args[0].clone();
+
+    bitseed_args.extend(args.iter().map(|&s| s.to_string()));
+
+    let joined_args = bitseed_args.join(" ");
+    debug!("run cmd: ord {}", joined_args);
+
+    let exec_cmd = ExecCommand {
+        cmd: joined_args,
+        ready_conditions: vec![WaitFor::Nothing],
+    };
+
+    let output = ord.exec(exec_cmd);
+
+    let stdout_string = match String::from_utf8(output.stdout) {
+        Ok(s) => s,
+        Err(e) => {
+            error!("Failed to convert stdout to String: {}", e);
+            String::from("Error converting stdout to String")
+        }
+    };
+
+    let stderr_string = match String::from_utf8(output.stderr) {
+        Ok(s) => s,
+        Err(e) => {
+            error!("Failed to convert stderr to String: {}", e);
+            String::from("Error converting stderr to String")
+        }
+    };
+
+    debug!("run cmd: ord stdout: {}", stdout_string);
+
+    // Check if stderr_string is not empty and panic if it contains any content.
+    if !stderr_string.is_empty() {
+        panic!("Command execution failed with errors: {}", stderr_string);
+    }
+
+    let result_json = serde_json::from_str::<Value>(&stdout_string);
+    if let Ok(json_value) = result_json {
+        debug!("cmd ord: {} output: {}", cmd_name, json_value);
+        tpl_ctx.entry(cmd_name).append::<Value>(json_value);
+    } else {
+        debug!("result_json not ok!");
+    }
+
+    debug!("current tpl_ctx: {:?}", tpl_ctx);
+}
+
+#[then(regex = r#"cmd bitcoin-cli: "(.*)?""#)]
+fn bitcoincli_run_cmd(w: &mut World, input_tpl: String) {
+    let bitcoind = w.bitcoind.as_ref().unwrap();
+
+    let mut bitcoincli_args = vec!["bitcoin-cli".to_string(), "-regtest".to_string()];
+
+    if w.tpl_ctx.is_none() {
+        let tpl_ctx = TemplateContext::new();
+        w.tpl_ctx = Some(tpl_ctx);
+    }
+    let tpl_ctx = w.tpl_ctx.as_mut().unwrap();
+    let input = eval_command_args(tpl_ctx, input_tpl);
+
+    let args: Vec<&str> = input.split_whitespace().collect();
+    let cmd_name = args[0].clone();
+
+    bitcoincli_args.extend(args.iter().map(|&s| s.to_string()));
+
+    let joined_args = bitcoincli_args.join(" ");
+    debug!("run cmd: {}", joined_args);
+
+    let exec_cmd = ExecCommand {
+        cmd: joined_args,
+        ready_conditions: vec![WaitFor::Nothing],
+    };
+
+    let output = bitcoind.exec(exec_cmd);
+
+    let stdout_string = match String::from_utf8(output.stdout) {
+        Ok(s) => s,
+        Err(e) => {
+            error!("Failed to convert stdout to String: {}", e);
+            String::from("Error converting stdout to String")
+        }
+    };
+
+    let stderr_string = match String::from_utf8(output.stderr) {
+        Ok(s) => s,
+        Err(e) => {
+            error!("Failed to convert stderr to String: {}", e);
+            String::from("Error converting stderr to String")
+        }
+    };
+
+    debug!("run cmd: bitcoincli stdout: {}", stdout_string);
+
+    // Check if stderr_string is not empty and panic if it contains any content.
+    if !stderr_string.is_empty() {
+        panic!("Command execution failed with errors: {}", stderr_string);
+    }
+
+    let result_json = serde_json::from_str::<Value>(&stdout_string);
+    if let Ok(json_value) = result_json {
+        debug!("cmd bitcoincli: {} output: {}", cmd_name, json_value);
+        tpl_ctx.entry(cmd_name).append::<Value>(json_value);
+    } else {
+        debug!("result_json not ok!");
+    }
+
     debug!("current tpl_ctx: {:?}", tpl_ctx);
 }
 

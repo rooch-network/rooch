@@ -355,22 +355,23 @@ module bitcoin_move::ord {
     }
 
     public fun process_transaction(tx: &Transaction, input_utxo_values: vector<u64>): vector<SatPoint>{
-        let output_seals = vector::empty();
+        let sat_points = vector::empty();
 
         let inscriptions = from_transaction(tx, option::some(input_utxo_values));
         let inscriptions_len = vector::length(&inscriptions);
         if(inscriptions_len == 0){
             vector::destroy_empty(inscriptions);
-            return output_seals
+            return sat_points
         };
 
         let tx_outputs = types::tx_output(tx);
         let output_len = vector::length(tx_outputs);
 
         // ord has three mode for Inscribe:   SameSat,SeparateOutputs,SharedOutput,
-        //https://github.com/ordinals/ord/blob/master/src/subcommand/wallet/inscribe/batch.rs#L533
-        //TODO handle SameSat
-        let is_separate_outputs = output_len > inscriptions_len;
+        // SameSat and SharedOutput have only one output
+        // When SeparateOutputs is used, the number of output and inscription is consistent.
+        // https://github.com/ordinals/ord/blob/26fcf05a738e68ef8c9c18fcc0997ccf931d6f41/src/wallet/batch/plan.rs#L270-L307
+        let is_separate_outputs = output_len == inscriptions_len;
         let idx = 0;
         // reverse inscriptions and pop from the end
         vector::reverse(&mut inscriptions);
@@ -397,14 +398,14 @@ module bitcoin_move::ord {
             object::transfer_extend(inscription_obj, to_address);
 
             let new_sat_point = new_sat_point((output_index as u32), offset, object_id);
-            vector::push_back(&mut output_seals, new_sat_point);
+            vector::push_back(&mut sat_points, new_sat_point);
 
             //Auto create address mapping if not exist
             bind_multichain_address(to_address, bitcoin_address_opt);
             idx = idx + 1;
         };
         vector::destroy_empty(inscriptions);
-        output_seals
+        sat_points
     }
  
     fun validate_inscription_records(tx_id: address, input_index: u64, record: vector<InscriptionRecord>): vector<InscriptionRecord>{
@@ -563,20 +564,20 @@ module bitcoin_move::ord {
 
             let inscription_records_from_witness = from_witness(witness);
             let inscription_records_len = vector::length(&inscription_records_from_witness);
-            if(!vector::is_empty(&inscription_records_from_witness)){
-                // FIXME How to calculate how many sats in certain inscription when there are multi inscription from one input?
-                if(inscription_records_len > 1) {
-                    std::debug::print(&string::utf8(b"inscription records from witness greater than 1"));
-                    std::debug::print(&tx_id);
+            let j = 0;
+
+            while(j < inscription_records_len){
+                let record = vector::borrow(&inscription_records_from_witness, j);
+                let pointer = *option::borrow_with_default(&record.pointer, &0u64);
+                if(pointer >= input_value) {
+                    pointer = 0;
                 };
-                let first_record_index = 0;
-                let first_record = vector::borrow(&inscription_records_from_witness, first_record_index);
 
-                let offset = next_offset;
-                let inscription = record_to_inscription(tx_id, (index_counter as u32), (input_idx as u32), offset, *first_record);
-
+                let offset = next_offset + pointer;
+                let inscription = record_to_inscription(tx_id, (index_counter as u32), (input_idx as u32), offset, *record);
                 vector::push_back(&mut inscriptions, inscription);
                 index_counter = index_counter + 1;
+                j = j + 1;
             };
             next_offset = next_offset + input_value;
             input_idx = input_idx + 1;

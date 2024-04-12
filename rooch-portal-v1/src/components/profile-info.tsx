@@ -12,12 +12,8 @@ export const ProfileInfo = () => {
   const { roochAddress } = useWalletAccountStore()
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      className="h-12 w-full cursor-pointer flex items-center justify-start transition-all ease-in-out"
-    >
-      <div className="flex items-center justify-start gap-x-3">
+    <div className="h-12 w-full cursor-default flex items-center justify-start transition-all ease-in-out mt-2">
+      <div className="flex items-center justify-start gap-x-3 w-full p-2 rounded-lg hover:bg-accent transition-all">
         <Avatar className="">
           {account ? (
             <Jazzicon diameter={55} seed={jsNumberForAddress(account.address)} />
@@ -29,14 +25,22 @@ export const ProfileInfo = () => {
           <h3 className="text-base font-semibold text-zinc-500 dark:text-zinc-300">
             Rooch Network
           </h3>
-          <div className="leading-none text-white/85 flex items-center justify-start font-normal text-xs sm:text-sm hover:cursor-pointer">
+          <div className="leading-none text-muted-foreground flex items-center justify-start font-normal text-xs sm:text-sm">
             {roochAddress ? <p>{formatAddress(roochAddress as string)}</p> : <p>Rooch Address</p>}
-            <Button variant="ghost" size="icon" className="rounded-full h-4 w-4 transition-all">
-              <img src="/rooch_white_logo.svg" alt="rooch logo" className="w-3 h-3" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full h-4 w-4 transition-all hover:cursor-default ml-1"
+            >
+              <img
+                src="/rooch_white_logo.svg"
+                alt="rooch logo"
+                className="w-4 h-4 rounded-full bg-gray-700 p-0.5 dark:bg-inherit"
+              />
             </Button>
           </div>
         </div>
       </div>
-    </Button>
+    </div>
   )
 }

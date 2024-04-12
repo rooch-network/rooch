@@ -323,3 +323,28 @@ Feature: Rooch CLI integration tests
 
       Then stop the server
   
+    @serial
+    Scenario: rooch bitcoin test
+      # prepare servers
+      Given a bitcoind server for rooch_bitcoin_test
+      Given a ord server for rooch_bitcoin_test
+      Given a server for rooch_bitcoin_test
+
+      # init wallet
+      Then cmd ord: "wallet create"
+      Then cmd ord: "wallet receive"
+
+      # mint utxos
+      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.wallet[-1].address}}"
+      Then sleep: "10" # wait ord sync and index
+      Then cmd ord: "wallet balance"
+      Then assert: "{{$.wallet[-1].total}} == 5000000000"
+
+      # query utxos and inscriptions
+      #Then cmd: "rpc request --method rooch_queryGlobalStates --params '[{"object_type":"0x4::utxo::UTXO"}, null, "2", true]'"
+      #Then cmd: "rpc request --method rooch_queryGlobalStates --params '[{"object_type":"0x4::ord::Inscription"}, null, "2", true]'"
+
+      # release servers
+      Then stop the server
+      Then stop the ord server 
+      Then stop the bitcoind server 

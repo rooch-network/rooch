@@ -247,7 +247,9 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         .into_actor(Some("Executor"), &actor_system)
         .await?;
     let executor_proxy = ExecutorProxy::new(executor.into(), reader_executor.into());
-
+    //This is a workaround to ensure the executor's genesis state is synced with the reader executor
+    //TODO extract the genesis initialization logic to a separate function
+    executor_proxy.sync_state().await?;
     // Init sequencer
     info!("RPC Server sequencer address: {:?}", sequencer_account);
     let sequencer = SequencerActor::new(sequencer_keypair, rooch_store, is_genesis)?
