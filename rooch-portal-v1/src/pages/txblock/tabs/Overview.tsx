@@ -2,7 +2,7 @@ import { Separator } from '@/components/ui/separator'
 import { formatAddress } from '../../../utils/format'
 import { Copy } from 'lucide-react'
 
-const TransactionInfoCard = () => {
+export const Overview = () => {
   return (
     <div className="flex flex-col items-start justify-start gap-3">
       {/* Block--1 */}
@@ -172,5 +172,3 @@ const TransactionInfoCard = () => {
     </div>
   )
 }
-
-export default TransactionInfoCard

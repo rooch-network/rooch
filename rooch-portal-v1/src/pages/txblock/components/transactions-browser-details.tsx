@@ -1,6 +1,8 @@
 import React from 'react'
+
 import { TabItem } from '@/common/interface'
-import TransactionInfoCard from './transactions-info-card'
+
+import { Overview } from '../tabs/Overview'
 import { UserSignatures } from '../tabs/user-signatures'
 import { RawJson } from '../tabs/raw-json'
 
@@ -13,13 +15,13 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = ({ activeTa
   const renderContent = () => {
     switch (activeTabId) {
       case 'overview':
-        return <TransactionInfoCard />
+        return <Overview />
       case 'userSignatures':
         return <UserSignatures />
       case 'rawJson':
         return <RawJson />
       default:
-        return <TransactionInfoCard />
+        return <Overview />
     }
   }
 
