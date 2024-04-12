@@ -368,9 +368,10 @@ module bitcoin_move::ord {
         let output_len = vector::length(tx_outputs);
 
         // ord has three mode for Inscribe:   SameSat,SeparateOutputs,SharedOutput,
-        //https://github.com/ordinals/ord/blob/master/src/subcommand/wallet/inscribe/batch.rs#L533
-        //TODO handle SameSat
-        let is_separate_outputs = output_len > inscriptions_len;
+        // SameSat and SharedOutput have only one output
+        // When SeparateOutputs is used, the number of output and inscription is consistent.
+        // https://github.com/ordinals/ord/blob/26fcf05a738e68ef8c9c18fcc0997ccf931d6f41/src/wallet/batch/plan.rs#L270-L307
+        let is_separate_outputs = output_len == inscriptions_len;
         let idx = 0;
         // reverse inscriptions and pop from the end
         vector::reverse(&mut inscriptions);

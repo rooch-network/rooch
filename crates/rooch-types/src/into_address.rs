@@ -102,10 +102,10 @@ mod tests {
         .unwrap();
         //The txid hex string use reverse order
         let txid = bitcoin::Txid::from_byte_array(addr.into());
-        println!("{}", txid);
-        // assert_eq!(
-        //     "6ea3bf728b34c8c01ba4703e00ad688be100599b92fbdac71e6aea6ad8355552",
-        //     txid.to_string()
-        // );
+        // println!("{}", txid);
+        assert_eq!(
+            "6ea3bf728b34c8c01ba4703e00ad688be100599b92fbdac71e6aea6ad8355552",
+            txid.to_string()
+        );
     }
 }
