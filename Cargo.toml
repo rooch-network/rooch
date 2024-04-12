@@ -336,7 +336,7 @@ move-ir-types = { git = "https://github.com/rooch-network/move", rev = "1b49c6e1
 # move-bytecode-source-map  = { path = "../move/language/move-ir-compiler/move-bytecode-source-map" }
 # move-ir-types = { path = "../move/language/move-ir/types" }
 [profile.release]
-debug = false
+# enable overflow checks won't affect performance much, branch prediction will handle it well
 overflow-checks = true
 
 # The performance build is not currently recommended
