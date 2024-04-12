@@ -1,17 +1,21 @@
-import { TabItem } from '@/common/interface'
+import { useLocation } from 'react-router-dom'
 
 import { TransactionsBrowserTab } from './components/transactions-browser-tab'
 import { TransactionsBrowserHeader } from './components/transactions-browser-header'
 import { TransactionDetails } from './components/transactions-browser-details'
 
+import { TabItem } from '@/common/interface'
+
 const tabItems: TabItem[] = [
-  { id: 'overview', label: 'Overview', path: '/trasactions/txblock/:hash/' },
-  { id: 'userSignatures', label: 'User Signatures', path: '/trasactions/txblock/:hash/' },
-  { id: 'rawJson', label: 'Raw Json', path: '/trasactions/txblock/:hash/' },
+  { id: 'overview', label: 'Overview' },
+  { id: 'userSignatures', label: 'User Signatures' },
+  { id: 'rawJson', label: 'Raw Json' },
 ]
 
 export const TransactionsBrowserLayout = () => {
-  const activeTabId = tabItems[0].id
+  const location = useLocation()
+  const searchParams = new URLSearchParams(location.search)
+  const activeTabId = searchParams.get('tab') || 'overview'
 
   return (
     <div className="h-full flex-1 flex-col space-y-4 flex rounded-lg md:shadow-custom md:p-4 md:dark:shadow-muted">

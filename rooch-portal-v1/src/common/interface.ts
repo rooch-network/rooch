@@ -72,25 +72,4 @@ export type PaymentTypes = {
 export type TabItem = {
   id: string
   label: string
-  path: string
-}
-
-// ** Tx Type
-export type TransactionCheckpoint = {
-  checkpoint: number
-  timestamp: string
-  transactionAction: string
-  action: string
-  amount: number
-  currency: string
-  sender: string
-  recipients: string
-  status: string
-  totalGasFee: number
-  computationFee: number
-  storageFee: number
-  storageRebate: number
-  gasPayment: string
-  gasBudget: number
-  gasPrice: number
 }
