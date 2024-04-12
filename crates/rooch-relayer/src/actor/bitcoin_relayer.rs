@@ -152,9 +152,10 @@ impl BitcoinRelayer {
             let block_height = block_result.header_info.height;
             let block_hash = block_result.header_info.hash;
             let time = block_result.block.header.time;
+            let tx_size = block_result.block.txdata.len();
             info!(
-                "BitcoinRelayer process block, height: {}, hash: {}, time: {}",
-                block_height, block_hash, time
+                "BitcoinRelayer process block, height: {}, hash: {}, tx_size: {}, time: {}",
+                block_height, block_hash, tx_size, time
             );
             debug!("GetBlockHeaderResult: {:?}", block_result);
 
