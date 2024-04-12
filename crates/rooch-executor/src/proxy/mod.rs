@@ -209,6 +209,15 @@ impl ExecutorProxy {
             .await?
     }
 
+    // This is a workaround function to sync the state of the executor to reader
+    pub async fn sync_state(&self) -> Result<()> {
+        let root = self
+            .actor
+            .send(crate::actor::messages::GetRootMessage {})
+            .await??;
+        self.refresh_state(root, false).await
+    }
+
     pub async fn chain_id(&self) -> Result<ChainID> {
         self.get_states(AccessPath::object(ChainID::chain_id_object_id()))
             .await?

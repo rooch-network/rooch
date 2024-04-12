@@ -11,6 +11,7 @@ use crate::actor::reader_indexer::IndexerReaderActor;
 use anyhow::Result;
 use coerce::actor::ActorRef;
 use moveos_types::moveos_std::event::Event;
+use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::state::StateChangeSet;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
@@ -38,11 +39,13 @@ impl IndexerProxy {
 
     pub async fn indexer_states(
         &self,
+        root: RootObjectEntity,
         tx_order: u64,
         state_change_set: StateChangeSet,
     ) -> Result<()> {
         self.actor
             .send(IndexerStatesMessage {
+                root,
                 tx_order,
                 state_change_set,
             })

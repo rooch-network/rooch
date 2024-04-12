@@ -4,32 +4,30 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{Error, Result};
-use moveos_types::genesis_info::GenesisInfo;
-use moveos_types::moveos_std::object::RootObjectEntity;
-use once_cell::sync::Lazy;
-use raw_store::{ColumnFamilyName, StoreInstance};
-use std::collections::BTreeMap;
-use std::fmt::{Debug, Display, Formatter};
-use std::path::Path;
-use std::sync::Arc;
-
 use crate::config_store::{ConfigDBStore, ConfigStore};
 use crate::event_store::{EventDBStore, EventStore};
 use crate::state_store::statedb::StateDBStore;
 use crate::state_store::NodeDBStore;
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
+use anyhow::{Error, Result};
 use move_core_types::language_storage::StructTag;
 use moveos_config::store_config::RocksdbConfig;
+use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{Event, EventID, TransactionEvent};
 use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{KeyState, State};
 use moveos_types::state_resolver::StateResolver;
 use moveos_types::transaction::TransactionExecutionInfo;
+use once_cell::sync::Lazy;
 use raw_store::rocks::RocksDB;
-use smt::NodeStore;
+use raw_store::{ColumnFamilyName, StoreInstance};
+use smt::NodeReader;
+use std::fmt::{Debug, Display, Formatter};
+use std::path::Path;
+use std::sync::Arc;
 
 pub mod accumulator_store;
 pub mod config_store;
@@ -185,17 +183,9 @@ impl Debug for MoveOSStore {
     }
 }
 
-impl NodeStore for MoveOSStore {
+impl NodeReader for MoveOSStore {
     fn get(&self, hash: &H256) -> Result<Option<Vec<u8>>> {
         self.get_state_node_store().get(hash)
-    }
-
-    fn put(&self, key: H256, node: Vec<u8>) -> Result<()> {
-        self.get_state_node_store().put(key, node)
-    }
-
-    fn write_nodes(&self, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
-        self.get_state_node_store().write_nodes(nodes)
     }
 }
 
@@ -282,7 +272,7 @@ impl ConfigStore for MoveOSStore {
 
 /// Moveos store define
 pub trait Store:
-    NodeStore + TransactionStore + EventStore + ConfigStore + IntoSuper<dyn NodeStore>
+    NodeReader + TransactionStore + EventStore + ConfigStore + IntoSuper<dyn NodeReader>
 {
 }
 
@@ -293,17 +283,17 @@ pub trait IntoSuper<Super: ?Sized> {
     fn into_super_arc(self: Arc<Self>) -> Arc<Super>;
 }
 
-impl<'a, T: 'a + NodeStore> IntoSuper<dyn NodeStore + 'a> for T {
-    fn as_super(&self) -> &(dyn NodeStore + 'a) {
+impl<'a, T: 'a + NodeReader> IntoSuper<dyn NodeReader + 'a> for T {
+    fn as_super(&self) -> &(dyn NodeReader + 'a) {
         self
     }
-    fn as_super_mut(&mut self) -> &mut (dyn NodeStore + 'a) {
+    fn as_super_mut(&mut self) -> &mut (dyn NodeReader + 'a) {
         self
     }
-    fn into_super(self: Box<Self>) -> Box<dyn NodeStore + 'a> {
+    fn into_super(self: Box<Self>) -> Box<dyn NodeReader + 'a> {
         self
     }
-    fn into_super_arc(self: Arc<Self>) -> Arc<dyn NodeStore + 'a> {
+    fn into_super_arc(self: Arc<Self>) -> Arc<dyn NodeReader + 'a> {
         self
     }
 }
