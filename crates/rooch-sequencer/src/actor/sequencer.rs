@@ -15,7 +15,7 @@ use rooch_store::RoochStore;
 use rooch_types::crypto::{RoochKeyPair, Signature};
 use rooch_types::sequencer::SequencerOrder;
 use rooch_types::transaction::{LedgerTransaction, LedgerTxData, TransactionSequenceInfo};
-use tracing::info;
+use tracing::{debug, info};
 
 pub struct SequencerActor {
     last_order: u64,
@@ -61,7 +61,6 @@ impl SequencerActor {
         witness_data.extend(tx_order.to_le_bytes().iter());
         let witness_hash = h256::sha3_256_of(&witness_data);
         let tx_order_signature = Signature::new_hashed(&witness_hash.0, &self.sequencer_key).into();
-        self.last_order = tx_order;
 
         let tx_accumulator_root = H256::random();
         let tx_sequence_info = TransactionSequenceInfo {
@@ -73,7 +72,8 @@ impl SequencerActor {
         let tx = LedgerTransaction::new(tx_data, tx_sequence_info);
 
         self.rooch_store.save_transaction(tx.clone())?;
-
+        debug!("sequencer tx: {} order: {:?}", hash, tx_order);
+        self.last_order = tx_order;
         self.rooch_store
             .save_sequencer_order(SequencerOrder::new(self.last_order))?;
 
