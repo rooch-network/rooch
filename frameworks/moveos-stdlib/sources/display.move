@@ -1,15 +1,19 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module moveos_std::display{
+module moveos_std::display {
     use std::string::String;
     use moveos_std::object::{Self, Object};
     use moveos_std::simple_map;
+    use moveos_std::event::emit;
 
     /// Display<T> is used to define the display of the `T`
     struct Display<phantom T> has key {
         sample_map: simple_map::SimpleMap<String, String>
     }
+
+    /// Event when Display<T> created
+    struct DisplayCreate<phantom T> has drop {}
 
     #[private_generics(T)]
     /// Create or borrow_mut Display object for resource `T`
@@ -24,6 +28,8 @@ module moveos_std::display{
             //And the caller do not need to care about the display object
             object::transfer_extend(display_obj, @moveos_std);
         };
+
+        emit<DisplayCreate<T>>(DisplayCreate{});
         object::borrow_mut_object_extend<Display<T>>(object_id)
     }
 
@@ -40,6 +46,8 @@ module moveos_std::display{
             //And the caller do not need to care about the display object
             object::transfer_extend(display_obj, @moveos_std);
         };
+
+        emit<DisplayCreate<T>>(DisplayCreate{});
         object::borrow_mut_object_extend<Display<Object<T>>>(object_id)
     }
 
@@ -50,7 +58,7 @@ module moveos_std::display{
         simple_map::upsert(&mut display_ref.sample_map, key, value);
     }
 
-    public fun borrow_value<T>(self: & Object<Display<T>> , key: &String): &String {
+    public fun borrow_value<T>(self: & Object<Display<T>>, key: &String): &String {
         let display_ref = object::borrow(self);
         simple_map::borrow(&display_ref.sample_map, key)
     }
@@ -67,17 +75,16 @@ module moveos_std::display{
 
     public fun keys<T>(self: & Object<Display<T>>): vector<String> {
         let display_ref = object::borrow(self);
-        simple_map::keys(& display_ref.sample_map)
+        simple_map::keys(&display_ref.sample_map)
     }
 
     public fun values<T>(self: & Object<Display<T>>): vector<String> {
         let display_ref = object::borrow(self);
-        simple_map::values(& display_ref.sample_map)
+        simple_map::values(&display_ref.sample_map)
     }
 
     public fun contains_key<T>(self: & Object<Display<T>>, key: &String): bool {
         let display_ref = object::borrow(self);
-        simple_map::contains_key(& display_ref.sample_map, key)
+        simple_map::contains_key(&display_ref.sample_map, key)
     }
-
 }
