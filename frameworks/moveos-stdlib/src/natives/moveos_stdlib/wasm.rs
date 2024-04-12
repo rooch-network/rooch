@@ -40,6 +40,7 @@ pub const E_CBOR_UNMARSHAL_FAILED: u64 = 14;
 pub const E_GET_INSTANCE_POOL_FAILED: u64 = 15;
 pub const E_UNPACK_STRUCT_FAILED: u64 = 16;
 pub const E_WASM_INSTANCE_CREATION_FAILED: u64 = 17;
+pub const E_WASM_REMOVE_INSTANCE_FAILED: u64 = 18;
 
 #[derive(Debug, Clone)]
 pub struct WASMCreateInstanceGasParameters {
@@ -80,7 +81,15 @@ fn native_create_wasm_instance(
             ))
         }
     };
-    let instance_id = insert_wasm_instance(wasm_instance);
+    let instance_id = match insert_wasm_instance(wasm_instance) {
+        Ok(v) => v,
+        Err(_) => {
+            return Ok(NativeResult::err(
+                gas_params.base_create_instance,
+                E_WASM_INSTANCE_CREATION_FAILED,
+            ))
+        }
+    };
 
     let mut cost = gas_params.base_create_instance;
     cost += gas_params.per_byte_instance * NumBytes::new(wasm_bytes.len() as u64);
@@ -674,7 +683,15 @@ fn native_release_wasm_instance(
         Some(_) => {}
     };
 
-    moveos_wasm::wasm::remove_instance(instance_id);
+    match moveos_wasm::wasm::remove_instance(instance_id) {
+        Ok(_) => {}
+        Err(_) => {
+            return Ok(NativeResult::err(
+                gas_params.base,
+                E_GET_INSTANCE_POOL_FAILED,
+            ))
+        }
+    };
 
     Ok(NativeResult::Success {
         cost: gas_params.base,

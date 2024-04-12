@@ -7,8 +7,8 @@ use std::sync::{Arc, Mutex};
 
 use once_cell::sync::Lazy;
 use rand;
-use wasmer::Value::I32;
 use wasmer::*;
+use wasmer::Value::I32;
 
 //#[derive(Clone)]
 pub struct WASMInstance {
@@ -31,21 +31,19 @@ pub static mut GLOBAL_MEMORY: Lazy<Option<Arc<Mutex<Memory>>>> = Lazy::new(|| No
 static mut GLOBAL_INSTANCE_POOL: Lazy<Arc<Mutex<BTreeMap<u64, WASMInstance>>>> =
     Lazy::new(|| Arc::new(Mutex::new(BTreeMap::new())));
 
-pub fn insert_wasm_instance(instance: WASMInstance) -> u64 {
+pub fn insert_wasm_instance(instance: WASMInstance) -> anyhow::Result<u64> {
     loop {
         unsafe {
             let instance_id: u64 = rand::random();
-            if GLOBAL_INSTANCE_POOL
-                .lock()
-                .unwrap()
-                .get(&instance_id)
-                .is_none()
-            {
-                GLOBAL_INSTANCE_POOL
-                    .lock()
-                    .unwrap()
-                    .insert(instance_id, instance);
-                return instance_id;
+            let mut instance_pool = match GLOBAL_INSTANCE_POOL.lock() {
+                Ok(pool_guard) => pool_guard,
+                Err(_) => {
+                    return Err(anyhow::Error::msg("get global instance pool failed"));
+                }
+            };
+            if instance_pool.get(&instance_id).is_none() {
+                instance_pool.insert(instance_id, instance);
+                return Ok(instance_id);
             }
         }
     }
@@ -55,9 +53,16 @@ pub fn get_instance_pool() -> Arc<Mutex<BTreeMap<u64, WASMInstance>>> {
     unsafe { GLOBAL_INSTANCE_POOL.clone() }
 }
 
-pub fn remove_instance(instance_id: u64) {
+pub fn remove_instance(instance_id: u64) -> anyhow::Result<()> {
     unsafe {
-        GLOBAL_INSTANCE_POOL.lock().unwrap().remove(&instance_id);
+        let mut instance_pool = match GLOBAL_INSTANCE_POOL.lock() {
+            Ok(pool_guard) => pool_guard,
+            Err(_) => {
+                return Err(anyhow::Error::msg("get global instance pool failed"));
+            }
+        };
+        instance_pool.remove(&instance_id);
+        Ok(())
     }
 }
 
