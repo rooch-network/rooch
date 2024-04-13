@@ -91,6 +91,7 @@ MOVE_TEST_CRATES="\
 if [ ! -z "$CHECK" ]; then
   cargo fmt -- --check
   cargo clippy --all-targets --all-features --tests --benches -- -D warnings
+  cargo clippy -p rooch-benchmarks --all-features --tests --benches -- -D warnings
 fi
 
 cargo build
