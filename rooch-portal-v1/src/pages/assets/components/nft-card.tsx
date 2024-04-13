@@ -8,13 +8,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { AspectRatio } from '@/components/ui/aspect-ratio'
 
-import { nftData } from '@/common/constant'
 import { ArrowLeft, Copy } from 'lucide-react'
+
+import { nftData } from '@/common/constant'
 import { formatAddress } from '../../../utils/format'
-import { Input } from '@/components/ui/input'
 
 export const NftCard = () => {
   const [modalOpen, setModalOpen] = useState(false)
@@ -33,14 +34,33 @@ export const NftCard = () => {
     }
   }, [modalOpen])
 
+  // ** ESC 关闭 modal
+  useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.keyCode === 27) {
+        setModalOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleEsc)
+
+    return () => {
+      window.removeEventListener('keydown', handleEsc)
+    }
+  }, [])
+
   const handleImageClick = (imageUrl: string) => {
     setSelectedImage(imageUrl)
     setModalOpen(true)
   }
 
+  const handleClose = () => {
+    setModalOpen(false)
+  }
+
   const handleCloseModal = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if (event.target === event.currentTarget) {
-      setModalOpen(false)
+      handleClose()
     }
   }
 
@@ -50,15 +70,12 @@ export const NftCard = () => {
         <Card
           key={nft.id}
           className="w-full transition-all border-border/40 dark:bg-zinc-800/90 dark:hover:border-primary/20 hover:shadow-md overflow-hidden"
+          onClick={() => handleImageClick(nft.imageUrl)}
         >
           <CardContent className="p-0">
-            <AspectRatio
-              ratio={1 / 1}
-              className="flex items-center justify-center overflow-hidden cursor-pointer"
-            >
+            <AspectRatio ratio={1 / 1} className="flex items-center justify-center overflow-hidden">
               <img
                 src={nft.imageUrl}
-                onClick={() => handleImageClick(nft.imageUrl)}
                 alt="NFT Image"
                 className="rounded-md object-cover hover:scale-110 transition-all ease-in-out duration-300"
               />
@@ -89,6 +106,7 @@ export const NftCard = () => {
                   variant="secondary"
                   size="sm"
                   className="h-8 w-14 rounded-2xl bg-accent dark:bg-zinc-800 dark:hover:bg-zinc-700/65"
+                  onClick={handleClose}
                 >
                   <ArrowLeft className="w-5 h-5 text-muted-foreground dark:text-gray-200" />
                 </Button>
