@@ -20,7 +20,6 @@
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
-<b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::features</a>;
 <b>use</b> <a href="">0x2::object</a>;

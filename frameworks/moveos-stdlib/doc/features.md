@@ -22,6 +22,12 @@ feature flag is disabled, those functions can constantly return true.
 -  [Constants](#@Constants_0)
 -  [Function `change_feature_flags`](#0x2_features_change_feature_flags)
 -  [Function `is_enabled`](#0x2_features_is_enabled)
+-  [Function `get_devnet_feature`](#0x2_features_get_devnet_feature)
+-  [Function `devnet_enabled`](#0x2_features_devnet_enabled)
+-  [Function `ensuer_devnet_enabled`](#0x2_features_ensuer_devnet_enabled)
+-  [Function `get_testnet_feature`](#0x2_features_get_testnet_feature)
+-  [Function `testnet_enabled`](#0x2_features_testnet_enabled)
+-  [Function `ensuer_testnet_enabled`](#0x2_features_ensuer_testnet_enabled)
 -  [Function `get_module_template_feature`](#0x2_features_get_module_template_feature)
 -  [Function `module_template_enabled`](#0x2_features_module_template_enabled)
 -  [Function `ensuer_module_template_enabled`](#0x2_features_ensuer_module_template_enabled)
@@ -52,6 +58,16 @@ The enabled features, represented by a bitset stored on chain.
 ## Constants
 
 
+<a name="0x2_features_DEVNET"></a>
+
+This feature will only be enabled on devnet or localnet.
+
+
+<pre><code><b>const</b> <a href="features.md#0x2_features_DEVNET">DEVNET</a>: u64 = 1;
+</code></pre>
+
+
+
 <a name="0x2_features_EAPI_DISABLED"></a>
 
 
@@ -78,7 +94,17 @@ This feature is used for creating a new module through a module template bytes,
 thus developers can used to publish new modules in Move.
 
 
-<pre><code><b>const</b> <a href="features.md#0x2_features_MODULE_TEMPLATE">MODULE_TEMPLATE</a>: u64 = 1;
+<pre><code><b>const</b> <a href="features.md#0x2_features_MODULE_TEMPLATE">MODULE_TEMPLATE</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x2_features_TESTNET"></a>
+
+This feature will only be enabled on testnet, devnet or localnet.
+
+
+<pre><code><b>const</b> <a href="features.md#0x2_features_TESTNET">TESTNET</a>: u64 = 2;
 </code></pre>
 
 
@@ -104,6 +130,72 @@ All features are enabled for system reserved accounts.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_is_enabled">is_enabled</a>(feature: u64): bool
+</code></pre>
+
+
+
+<a name="0x2_features_get_devnet_feature"></a>
+
+## Function `get_devnet_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_get_devnet_feature">get_devnet_feature</a>(): u64
+</code></pre>
+
+
+
+<a name="0x2_features_devnet_enabled"></a>
+
+## Function `devnet_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_devnet_enabled">devnet_enabled</a>(): bool
+</code></pre>
+
+
+
+<a name="0x2_features_ensuer_devnet_enabled"></a>
+
+## Function `ensuer_devnet_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensuer_devnet_enabled">ensuer_devnet_enabled</a>()
+</code></pre>
+
+
+
+<a name="0x2_features_get_testnet_feature"></a>
+
+## Function `get_testnet_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_get_testnet_feature">get_testnet_feature</a>(): u64
+</code></pre>
+
+
+
+<a name="0x2_features_testnet_enabled"></a>
+
+## Function `testnet_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_testnet_enabled">testnet_enabled</a>(): bool
+</code></pre>
+
+
+
+<a name="0x2_features_ensuer_testnet_enabled"></a>
+
+## Function `ensuer_testnet_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensuer_testnet_enabled">ensuer_testnet_enabled</a>()
 </code></pre>
 
 

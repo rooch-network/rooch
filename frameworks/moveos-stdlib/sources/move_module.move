@@ -141,13 +141,14 @@ module moveos_std::move_module {
         replace_module_identiner(modules, old_names, new_names)
     }
 
-    // TODO: make it public once we have exhaustive tests
+    // TODO: add more tests
     /// Replace given string constant to the new ones
-    public(friend) fun replace_constant_string(
+    public fun replace_constant_string(
         modules: vector<MoveModule>,
         old_strings: vector<String>,
         new_strings: vector<String>,
     ): vector<MoveModule> {
+        features::ensuer_devnet_enabled();
         assert!(
             vector::length(&old_strings) == vector::length(&new_strings),
             ErrorLengthNotMatch
@@ -185,13 +186,14 @@ module moveos_std::move_module {
         new_batch(rebinded_bytes)
     }
 
-    // TODO: make it public once we have exhaustive tests
+    // TODO: add more tests
     /// Replace given u8 constant to the new ones
-    public(friend) fun replace_constant_u8(
+    public fun replace_constant_u8(
         modules: vector<MoveModule>,
         old_u8s: vector<u8>,
         new_u8s: vector<u8>,
     ): vector<MoveModule> {
+        features::ensuer_devnet_enabled();
         assert!(
             vector::length(&old_u8s) == vector::length(&new_u8s),
             ErrorLengthNotMatch
@@ -201,13 +203,14 @@ module moveos_std::move_module {
         new_batch(rebinded_bytes)
     }
 
-    // TODO: make it public once we have exhaustive tests
+    // TODO: add more tests
     /// Replace given u64 constant to the new ones
-    public(friend) fun replace_constant_u64(
+    public fun replace_constant_u64(
         modules: vector<MoveModule>,
         old_u64s: vector<u64>,
         new_u64s: vector<u64>,
     ): vector<MoveModule> {
+        features::ensuer_devnet_enabled();
         assert!(
             vector::length(&old_u64s) == vector::length(&new_u64s),
             ErrorLengthNotMatch
@@ -217,13 +220,14 @@ module moveos_std::move_module {
         new_batch(rebinded_bytes)
     }
 
-    // TODO: make it public once we have exhaustive tests
+    // TODO: add more tests
     /// Replace given u256 constant to the new ones
-    public(friend) fun replace_constant_u256(
+    public fun replace_constant_u256(
         modules: vector<MoveModule>,
         old_u256s: vector<u256>,
         new_u256s: vector<u256>,
     ): vector<MoveModule> {
+        features::ensuer_devnet_enabled();
         assert!(
             vector::length(&old_u256s) == vector::length(&new_u256s),
             ErrorLengthNotMatch
@@ -273,7 +277,7 @@ module moveos_std::move_module {
         object::contains_field(module_object, module_id)
     }
 
-        /// Publish modules to the account's storage
+    /// Publish modules to the account's storage
     public fun publish_modules(module_store: &mut Object<ModuleStore>, account: &signer, modules: vector<MoveModule>) {
         let account_address = signer::address_of(account);
         let upgrade_flag = publish_modules_internal(module_store, account_address, modules);
@@ -448,8 +452,10 @@ module moveos_std::move_module {
     
     #[test(account=@0x42)]
     fun test_module_template(account: &signer) {
-        features::init_for_test();
-        features::change_feature_flags_for_test(vector[features::get_module_template_feature()], vector[]);
+        features::change_feature_flags_for_test(
+            vector[features::get_module_template_feature(), features::get_devnet_feature()], 
+            vector[]
+        );
         let addr = signer::address_of(account);
         // The following is the bytes of module `examples/coins/sources/fixed_supply_coin.move` with account 0x42
         let ref_bytes: vector<u8> = x"a11ceb0b060000000b01000e020e24033250048201140596019c0107b202940208c604800106c605410a8706110c9806710d890702000001010202020303040305030600070c000008080002090c010001060d08010801050e0001080105130c01080101140700000a000100000b010100030f0304000210060701080611090a010c04120b01010c01150d0e0005160f1001080517110a010802181301010806190114010c06121501010c021a16130108021b130101080305040805080708080809120a080b080c050d0502060c070b020108010002050b0401080001060c010501080101070b020109000107090001080002070b02010b030109000f010b0401090002050b04010900030b040108000b02010b050108000b02010b03010800010a02010806030806080602010b02010b0501090002070b02010b050109000f010b05010800010b02010900010b02010b0301090002070b02010b030109000b040109000109001166697865645f737570706c795f636f696e06737472696e67066f626a656374067369676e6572126163636f756e745f636f696e5f73746f726504636f696e0a636f696e5f73746f726503465343085472656173757279064f626a6563740666617563657404696e69740b64756d6d795f6669656c6409436f696e53746f726504436f696e0a616464726573735f6f660a626f72726f775f6d7574087769746864726177076465706f73697408436f696e496e666f06537472696e6704757466380f72656769737465725f657874656e640b6d696e745f657874656e6409746f5f66726f7a656e116372656174655f636f696e5f73746f7265106e65775f6e616d65645f6f626a65637409746f5f73686172656400000000000000000000000000000000000000000000000000000000000000420000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000030201010f2000b4f9e4300000000000000000000000000000000000000000000000000000000a021211466978656420537570706c7920436f696e0a0204034653430002010c01010201060b02010b0301080000010400020d0b0011020c020b0138000f004a102700000000000000000000000000000000000000000000000000000000000038010c030b020b03380202010000000c170702110607031106070038030c010d01070138040c000b01380538060c020d020b0038070b0212013808380902010000";
@@ -498,8 +504,6 @@ module moveos_std::move_module {
     #[test(_account=@0x42)]
     #[expected_failure(abort_code = 2, location = moveos_std::features)]
     fun test_module_template_with_feature_disabled(_account: &signer) {
-        features::init_for_test();
-
         // The following is the bytes of compiled module: examples/module_template/template/sources/fixed_supply_coin_template.move
         //rooch move build -p examples/module_template/template
         //xxd -c 99999 -p examples/module_template/template/build/template/bytecode_modules/coin_module_identifier_placeholder.mv

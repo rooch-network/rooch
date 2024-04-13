@@ -26,16 +26,6 @@ module moveos_std::features {
         features: vector<u8>,
     }
 
-    fun init() {
-        let feature_store = object::new_named_object(FeatureStore { features: vector::empty() });
-        object::to_shared(feature_store);
-    }
-
-    #[test_only]
-    public fun init_for_test() {
-        init();
-    }
-
     /// Enable or disable features. Only the framework signers can call this function.
     public fun change_feature_flags(framework: &signer, enable: vector<u64>, disable: vector<u64>) {
         core_addresses::assert_system_reserved(framework);
@@ -118,12 +108,20 @@ module moveos_std::features {
 
     fun borrow_features(): &vector<u8> {
         let feature_store_id = object::named_object_id<FeatureStore>();
+        if (!object::exists_object(feature_store_id)) {
+            let feature_store = object::new_named_object(FeatureStore { features: vector::empty() });
+            object::to_shared(feature_store);
+        };
         let feature_store = object::borrow_mut_object_shared<FeatureStore>(feature_store_id);
         &object::borrow(feature_store).features
     }
 
     fun borrow_mut_features(): &mut vector<u8> {
         let feature_store_id = object::named_object_id<FeatureStore>();
+        if (!object::exists_object(feature_store_id)) {
+            let feature_store = object::new_named_object(FeatureStore { features: vector::empty() });
+            object::to_shared(feature_store);
+        };
         let feature_store = object::borrow_mut_object_shared<FeatureStore>(feature_store_id);
         &mut object::borrow_mut(feature_store).features
     }
@@ -173,7 +171,6 @@ module moveos_std::features {
 
     #[test(fx = @moveos_std)]
     fun test_change_feature_txn(fx: signer) {
-        init();
         change_feature_flags(&fx, vector[1, 9, 23], vector[]);
         assert!(is_enabled(1), 1);
         assert!(is_enabled(9), 2);
