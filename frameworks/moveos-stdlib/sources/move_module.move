@@ -99,7 +99,7 @@ module moveos_std::move_module {
         old_address: address,
         new_address: address,
     ): vector<MoveModule> {
-        features::ensuer_module_template_enabled();
+        features::ensure_module_template_enabled();
 
         let bytes_vec = into_byte_codes_batch(modules);
 
@@ -119,7 +119,7 @@ module moveos_std::move_module {
         old_names: vector<String>,
         new_names: vector<String>,
     ): vector<MoveModule> {
-        features::ensuer_module_template_enabled();
+        features::ensure_module_template_enabled();
 
         assert!(
             vector::length(&old_names) == vector::length(&new_names),
@@ -137,7 +137,7 @@ module moveos_std::move_module {
         old_names: vector<String>,
         new_names: vector<String>,
     ): vector<MoveModule> {
-        features::ensuer_module_template_enabled();
+        features::ensure_module_template_enabled();
         replace_module_identiner(modules, old_names, new_names)
     }
 
@@ -148,7 +148,7 @@ module moveos_std::move_module {
         old_strings: vector<String>,
         new_strings: vector<String>,
     ): vector<MoveModule> {
-        features::ensuer_devnet_enabled();
+        features::ensure_devnet_enabled();
         assert!(
             vector::length(&old_strings) == vector::length(&new_strings),
             ErrorLengthNotMatch
@@ -175,7 +175,7 @@ module moveos_std::move_module {
         old_addresses: vector<address>,
         new_addresses: vector<address>,
     ): vector<MoveModule> {
-        features::ensuer_module_template_enabled();
+        features::ensure_module_template_enabled();
 
         assert!(
             vector::length(&old_addresses) == vector::length(&new_addresses),
@@ -193,7 +193,7 @@ module moveos_std::move_module {
         old_u8s: vector<u8>,
         new_u8s: vector<u8>,
     ): vector<MoveModule> {
-        features::ensuer_devnet_enabled();
+        features::ensure_devnet_enabled();
         assert!(
             vector::length(&old_u8s) == vector::length(&new_u8s),
             ErrorLengthNotMatch
@@ -210,7 +210,7 @@ module moveos_std::move_module {
         old_u64s: vector<u64>,
         new_u64s: vector<u64>,
     ): vector<MoveModule> {
-        features::ensuer_devnet_enabled();
+        features::ensure_devnet_enabled();
         assert!(
             vector::length(&old_u64s) == vector::length(&new_u64s),
             ErrorLengthNotMatch
@@ -227,7 +227,7 @@ module moveos_std::move_module {
         old_u256s: vector<u256>,
         new_u256s: vector<u256>,
     ): vector<MoveModule> {
-        features::ensuer_devnet_enabled();
+        features::ensure_devnet_enabled();
         assert!(
             vector::length(&old_u256s) == vector::length(&new_u256s),
             ErrorLengthNotMatch

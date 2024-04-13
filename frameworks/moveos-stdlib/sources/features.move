@@ -36,6 +36,10 @@ module moveos_std::features {
     public fun change_feature_flags_for_test(enable: vector<u64>, disable: vector<u64>) {
         change_feature_flags_internal(enable, disable);
     }
+    #[test_only]
+    public fun switch_on_all_features_for_test() {
+        change_feature_flags_internal(get_all_features(), vector::empty<u64>());
+    }
 
     fun change_feature_flags_internal(enable: vector<u64>, disable: vector<u64>) {
         let features = borrow_mut_features();
@@ -61,23 +65,33 @@ module moveos_std::features {
     // --------------------------------------------------------------------------------------------
     // Available flags
 
-    /// This feature will only be enabled on devnet or localnet.
-    const DEVNET: u64 = 1;
+    /// This feature will only be enabled on localnet.
+    const LOCALNET: u64 = 1;
+    public fun get_localnet_feature(): u64 { LOCALNET }
+    public fun localnet_enabled(): bool {
+        is_enabled(LOCALNET)
+    }
+    public fun ensure_localnet_enabled() {
+        assert!(is_enabled(LOCALNET), EAPI_DISABLED);
+    }
+
+    /// This feature will only be enabled on devnet.
+    const DEVNET: u64 = 2;
     public fun get_devnet_feature(): u64 { DEVNET }
     public fun devnet_enabled(): bool {
         is_enabled(DEVNET)
     }
-    public fun ensuer_devnet_enabled() {
+    public fun ensure_devnet_enabled() {
         assert!(is_enabled(DEVNET), EAPI_DISABLED);
     }
 
     /// This feature will only be enabled on testnet, devnet or localnet.
-    const TESTNET: u64 = 2;
+    const TESTNET: u64 = 3;
     public fun get_testnet_feature(): u64 { TESTNET }
     public fun testnet_enabled(): bool {
         is_enabled(TESTNET)
     }
-    public fun ensuer_testnet_enabled() {
+    public fun ensure_testnet_enabled() {
         assert!(is_enabled(TESTNET), EAPI_DISABLED);
     }
 
@@ -85,12 +99,12 @@ module moveos_std::features {
     /// and constant address.
     /// This feature is used for creating a new module through a module template bytes,
     /// thus developers can used to publish new modules in Move.
-    const MODULE_TEMPLATE: u64 = 3;
+    const MODULE_TEMPLATE: u64 = 4;
     public fun get_module_template_feature(): u64 { MODULE_TEMPLATE }
     public fun module_template_enabled(): bool {
         is_enabled(MODULE_TEMPLATE)
     }
-    public fun ensuer_module_template_enabled() {
+    public fun ensure_module_template_enabled() {
         assert!(is_enabled(MODULE_TEMPLATE), EAPI_DISABLED);
     }
 
@@ -98,6 +112,7 @@ module moveos_std::features {
     /// Update this once new feature added.
     public fun get_all_features(): vector<u64> {
         vector[
+            LOCALNET,
             DEVNET,
             TESTNET,
             MODULE_TEMPLATE

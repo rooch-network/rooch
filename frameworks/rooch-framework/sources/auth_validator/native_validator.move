@@ -8,6 +8,7 @@ module rooch_framework::native_validator {
     use std::option;
     use std::signer;
     use moveos_std::tx_context; 
+    use moveos_std::features;
     use rooch_framework::hash;
     use rooch_framework::account_authentication;
     use rooch_framework::ed25519;
@@ -121,6 +122,8 @@ module rooch_framework::native_validator {
     }
 
     public fun validate(authenticator_payload: vector<u8>) {
+        features::ensure_testnet_enabled();
+        
         let tx_hash = tx_context::tx_hash();
         validate_signature(&authenticator_payload, &tx_hash);
 

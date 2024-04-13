@@ -9,6 +9,7 @@ module rooch_framework::bitcoin_validator {
     use std::option::{Self, Option};
     use moveos_std::hex;
     use moveos_std::tx_context;
+    use moveos_std::features;
     use moveos_std::signer::module_signer;
     use rooch_framework::hash;
     use rooch_framework::ecdsa_k1;
@@ -118,6 +119,8 @@ module rooch_framework::bitcoin_validator {
     }
 
     public fun validate(authenticator_payload: vector<u8>): MultiChainAddress {
+        features::ensure_testnet_enabled();
+        
         let sender = tx_context::sender();
         let tx_hash = tx_context::tx_hash();
         let payload = auth_payload::from_bytes(authenticator_payload);
