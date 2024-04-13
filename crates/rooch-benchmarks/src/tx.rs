@@ -11,7 +11,7 @@ use bitcoincore_rpc_json::bitcoin::Block;
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::system::ActorSystem;
 use coerce::actor::IntoActor;
-use criterion::Criterion;
+use criterion::{Criterion, SamplingMode};
 use lazy_static::lazy_static;
 use moveos_config::store_config::RocksdbConfig;
 use moveos_config::DataDirPath;
@@ -354,6 +354,8 @@ pub fn create_btc_blk_tx(height: u64, block_file: String) -> Result<L1BlockWithB
 
 // pure execution, no validate, sequence
 pub fn tx_exec_benchmark(c: &mut Criterion) {
+    let mut group = c.benchmark_group("flat-sampling-example");
+    group.sampling_mode(SamplingMode::Flat);
     let mut binding_test =
         binding_test::RustBindingTest::new_with_mode((*IMPORT_MODE).to_num()).unwrap();
     let keystore = InMemKeystore::new_insecure_for_tests(10);
@@ -407,10 +409,11 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
 
     let mut transactions_iter = transactions.into_iter().cycle();
 
-    c.bench_function(bench_id, |b| {
+    group.bench_function(bench_id, |b| {
         b.iter(|| {
             let tx = transactions_iter.next().unwrap();
             binding_test.execute_verified_tx(tx.clone()).unwrap()
         });
     });
+    group.finish();
 }
