@@ -15,6 +15,7 @@
 
 <pre><code><b>use</b> <a href="">0x2::account</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
+<b>use</b> <a href="">0x2::features</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="ethereum_address.md#0x3_ethereum_address">0x3::ethereum_address</a>;

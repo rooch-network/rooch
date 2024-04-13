@@ -22,15 +22,18 @@ feature flag is disabled, those functions can constantly return true.
 -  [Constants](#@Constants_0)
 -  [Function `change_feature_flags`](#0x2_features_change_feature_flags)
 -  [Function `is_enabled`](#0x2_features_is_enabled)
+-  [Function `get_localnet_feature`](#0x2_features_get_localnet_feature)
+-  [Function `localnet_enabled`](#0x2_features_localnet_enabled)
+-  [Function `ensure_localnet_enabled`](#0x2_features_ensure_localnet_enabled)
 -  [Function `get_devnet_feature`](#0x2_features_get_devnet_feature)
 -  [Function `devnet_enabled`](#0x2_features_devnet_enabled)
--  [Function `ensuer_devnet_enabled`](#0x2_features_ensuer_devnet_enabled)
+-  [Function `ensure_devnet_enabled`](#0x2_features_ensure_devnet_enabled)
 -  [Function `get_testnet_feature`](#0x2_features_get_testnet_feature)
 -  [Function `testnet_enabled`](#0x2_features_testnet_enabled)
--  [Function `ensuer_testnet_enabled`](#0x2_features_ensuer_testnet_enabled)
+-  [Function `ensure_testnet_enabled`](#0x2_features_ensure_testnet_enabled)
 -  [Function `get_module_template_feature`](#0x2_features_get_module_template_feature)
 -  [Function `module_template_enabled`](#0x2_features_module_template_enabled)
--  [Function `ensuer_module_template_enabled`](#0x2_features_ensuer_module_template_enabled)
+-  [Function `ensure_module_template_enabled`](#0x2_features_ensure_module_template_enabled)
 -  [Function `get_all_features`](#0x2_features_get_all_features)
 
 
@@ -60,10 +63,10 @@ The enabled features, represented by a bitset stored on chain.
 
 <a name="0x2_features_DEVNET"></a>
 
-This feature will only be enabled on devnet or localnet.
+This feature will only be enabled on devnet.
 
 
-<pre><code><b>const</b> <a href="features.md#0x2_features_DEVNET">DEVNET</a>: u64 = 1;
+<pre><code><b>const</b> <a href="features.md#0x2_features_DEVNET">DEVNET</a>: u64 = 2;
 </code></pre>
 
 
@@ -86,6 +89,16 @@ This feature will only be enabled on devnet or localnet.
 
 
 
+<a name="0x2_features_LOCALNET"></a>
+
+This feature will only be enabled on localnet.
+
+
+<pre><code><b>const</b> <a href="features.md#0x2_features_LOCALNET">LOCALNET</a>: u64 = 1;
+</code></pre>
+
+
+
 <a name="0x2_features_MODULE_TEMPLATE"></a>
 
 Whether allowing replacing module's address, module identifier, struct identifier
@@ -94,7 +107,7 @@ This feature is used for creating a new module through a module template bytes,
 thus developers can used to publish new modules in Move.
 
 
-<pre><code><b>const</b> <a href="features.md#0x2_features_MODULE_TEMPLATE">MODULE_TEMPLATE</a>: u64 = 3;
+<pre><code><b>const</b> <a href="features.md#0x2_features_MODULE_TEMPLATE">MODULE_TEMPLATE</a>: u64 = 4;
 </code></pre>
 
 
@@ -104,7 +117,7 @@ thus developers can used to publish new modules in Move.
 This feature will only be enabled on testnet, devnet or localnet.
 
 
-<pre><code><b>const</b> <a href="features.md#0x2_features_TESTNET">TESTNET</a>: u64 = 2;
+<pre><code><b>const</b> <a href="features.md#0x2_features_TESTNET">TESTNET</a>: u64 = 3;
 </code></pre>
 
 
@@ -134,6 +147,39 @@ All features are enabled for system reserved accounts.
 
 
 
+<a name="0x2_features_get_localnet_feature"></a>
+
+## Function `get_localnet_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_get_localnet_feature">get_localnet_feature</a>(): u64
+</code></pre>
+
+
+
+<a name="0x2_features_localnet_enabled"></a>
+
+## Function `localnet_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_localnet_enabled">localnet_enabled</a>(): bool
+</code></pre>
+
+
+
+<a name="0x2_features_ensure_localnet_enabled"></a>
+
+## Function `ensure_localnet_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensure_localnet_enabled">ensure_localnet_enabled</a>()
+</code></pre>
+
+
+
 <a name="0x2_features_get_devnet_feature"></a>
 
 ## Function `get_devnet_feature`
@@ -156,13 +202,13 @@ All features are enabled for system reserved accounts.
 
 
 
-<a name="0x2_features_ensuer_devnet_enabled"></a>
+<a name="0x2_features_ensure_devnet_enabled"></a>
 
-## Function `ensuer_devnet_enabled`
+## Function `ensure_devnet_enabled`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensuer_devnet_enabled">ensuer_devnet_enabled</a>()
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensure_devnet_enabled">ensure_devnet_enabled</a>()
 </code></pre>
 
 
@@ -189,13 +235,13 @@ All features are enabled for system reserved accounts.
 
 
 
-<a name="0x2_features_ensuer_testnet_enabled"></a>
+<a name="0x2_features_ensure_testnet_enabled"></a>
 
-## Function `ensuer_testnet_enabled`
+## Function `ensure_testnet_enabled`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensuer_testnet_enabled">ensuer_testnet_enabled</a>()
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensure_testnet_enabled">ensure_testnet_enabled</a>()
 </code></pre>
 
 
@@ -222,13 +268,13 @@ All features are enabled for system reserved accounts.
 
 
 
-<a name="0x2_features_ensuer_module_template_enabled"></a>
+<a name="0x2_features_ensure_module_template_enabled"></a>
 
-## Function `ensuer_module_template_enabled`
+## Function `ensure_module_template_enabled`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensuer_module_template_enabled">ensuer_module_template_enabled</a>()
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensure_module_template_enabled">ensure_module_template_enabled</a>()
 </code></pre>
 
 
