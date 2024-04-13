@@ -50,7 +50,7 @@ pub enum VMStatusExplainView {
     },
 }
 
-pub fn explain_vm_status<T>(module_resolver: T, vm_status: VMStatus) -> Result<VMStatusExplainView>
+pub fn explain_vm_status<T>(module_resolver: &T, vm_status: VMStatus) -> Result<VMStatusExplainView>
 where
     T: MoveResolver,
 {

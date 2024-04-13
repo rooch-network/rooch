@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use crate::{
     gas_config::GasConfig, h256, h256::H256, move_types::FunctionId,
     moveos_std::event::TransactionEvent, moveos_std::tx_context::TxContext,
@@ -225,6 +226,7 @@ impl Display for VerifiedMoveAction {
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct MoveOSTransaction {
+    pub root: RootObjectEntity,
     pub ctx: TxContext,
     pub action: MoveAction,
     /// if the pre_execute_functions is not empty, the MoveOS will call the functions before the transaction is executed.
@@ -236,7 +238,11 @@ pub struct MoveOSTransaction {
 impl MoveOSTransaction {
     /// Create a new MoveOS transaction
     /// This function only for test case usage
-    pub fn new_for_test(sender: AccountAddress, action: MoveAction) -> Self {
+    pub fn new_for_test(
+        root: RootObjectEntity,
+        sender: AccountAddress,
+        action: MoveAction,
+    ) -> Self {
         let sender_and_action = (sender, action);
         let tx_hash = h256::sha3_256_of(bcs::to_bytes(&sender_and_action).unwrap().as_slice());
         //TODO pass the sequence_number
@@ -247,13 +253,15 @@ impl MoveOSTransaction {
             tx_hash,
             1,
         );
-        Self::new(ctx, sender_and_action.1)
+
+        Self::new(root, ctx, sender_and_action.1)
     }
 
-    pub fn new(mut ctx: TxContext, action: MoveAction) -> Self {
+    pub fn new(root: RootObjectEntity, mut ctx: TxContext, action: MoveAction) -> Self {
         ctx.add(TxMeta::new_from_move_action(&action))
             .expect("add TxMeta to TxContext should success");
         Self {
+            root,
             ctx,
             action,
             pre_execute_functions: vec![],
@@ -278,6 +286,7 @@ pub struct GasStatement {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VerifiedMoveOSTransaction {
+    pub root: RootObjectEntity,
     pub ctx: TxContext,
     pub action: VerifiedMoveAction,
     pub pre_execute_functions: Vec<FunctionCall>,
@@ -285,8 +294,9 @@ pub struct VerifiedMoveOSTransaction {
 }
 
 impl VerifiedMoveOSTransaction {
-    pub fn new(ctx: TxContext, action: VerifiedMoveAction) -> Self {
+    pub fn new(root: RootObjectEntity, ctx: TxContext, action: VerifiedMoveAction) -> Self {
         Self {
+            root,
             ctx,
             action,
             pre_execute_functions: vec![],
@@ -388,6 +398,10 @@ impl TransactionExecutionInfo {
 
     pub fn id(&self) -> H256 {
         h256::sha3_256_of(bcs::to_bytes(self).unwrap().as_slice())
+    }
+
+    pub fn root_object(&self) -> RootObjectEntity {
+        ObjectEntity::root_object(self.state_root, self.size)
     }
 }
 

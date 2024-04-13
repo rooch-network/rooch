@@ -336,26 +336,14 @@ move-ir-types = { git = "https://github.com/rooch-network/move", rev = "1b49c6e1
 # move-bytecode-source-map  = { path = "../move/language/move-ir-compiler/move-bytecode-source-map" }
 # move-ir-types = { path = "../move/language/move-ir/types" }
 [profile.release]
-debug = false
+# enable overflow checks won't affect performance much, branch prediction will handle it well
 overflow-checks = true
-
-# The performance build is not currently recommended
-# for production deployments. It has not been widely tested.
-[profile.performance]
-inherits = "release"
-opt-level = 3
-debug = true
-overflow-checks = true
+# enable link-time optimization, which can significantly improve perf but donesn't cost much extra in compile time
+# thin LTO is enough for us:
+# (https://blog.llvm.org/2016/06/thinlto-scalable-and-incremental-lto.html)
 lto = "thin"
-codegen-units = 1
-
-[profile.cli]
-inherits = "release"
-debug = false
-opt-level = "z"
-lto = "thin"
-strip = true
-codegen-units = 1
+codegen-units = 1 # Help to achieve better result with lto
 
 [profile.bench]
-debug = true
+inherits = "release"
+#debug = true

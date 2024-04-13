@@ -12,6 +12,7 @@ module rooch_framework::ethereum_validator {
     use moveos_std::hex;
     use moveos_std::tx_context;
     use moveos_std::signer::module_signer;
+    use moveos_std::features;
     use rooch_framework::auth_payload::{AuthPayload};
     use rooch_framework::account_authentication;
     use rooch_framework::ecdsa_k1;
@@ -123,6 +124,8 @@ module rooch_framework::ethereum_validator {
     }
 
     public fun validate(authenticator_payload: vector<u8>): MultiChainAddress {
+        features::ensure_testnet_enabled();
+        
         let sender = tx_context::sender();
         let tx_hash = tx_context::tx_hash();
         let payload = auth_payload::from_bytes(authenticator_payload);

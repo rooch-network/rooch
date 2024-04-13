@@ -23,6 +23,7 @@ use moveos_types::moveos_std::event::EventHandle;
 use moveos_types::moveos_std::event::{AnnotatedEvent, Event};
 use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::state::{AnnotatedState, State};
+use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::state_resolver::{AnnotatedStateKV, AnnotatedStateReader, StateKV, StateReader};
 use moveos_types::transaction::TransactionExecutionInfo;
 use rooch_genesis::RoochGenesis;
@@ -30,18 +31,21 @@ use rooch_store::RoochStore;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
 
 pub struct ReaderExecutorActor {
+    root: RootObjectEntity,
     moveos: MoveOS,
+    moveos_store: MoveOSStore,
     rooch_store: RoochStore,
 }
 
 impl ReaderExecutorActor {
     pub fn new(
+        root: RootObjectEntity,
         genesis: RoochGenesis,
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
     ) -> Result<Self> {
         let moveos = MoveOS::new(
-            moveos_store,
+            moveos_store.clone(),
             genesis.all_natives(),
             genesis.config.clone(),
             system_pre_execute_functions(),
@@ -49,7 +53,9 @@ impl ReaderExecutorActor {
         )?;
 
         Ok(Self {
+            root,
             moveos,
+            moveos_store,
             rooch_store,
         })
     }
@@ -63,7 +69,8 @@ impl ReaderExecutorActor {
     }
 
     pub fn refresh_state(&mut self, root: RootObjectEntity, is_upgrade: bool) -> Result<()> {
-        self.moveos.refresh_state(root, is_upgrade)
+        self.root = root;
+        self.moveos.flush_module_cache(is_upgrade)
     }
 }
 
@@ -76,9 +83,10 @@ impl Handler<ExecuteViewFunctionMessage> for ReaderExecutorActor {
         msg: ExecuteViewFunctionMessage,
         _ctx: &mut ActorContext,
     ) -> Result<AnnotatedFunctionResult, anyhow::Error> {
-        let resoler = self.moveos().moveos_resolver();
-
-        let function_result = self.moveos().execute_view_function(msg.call);
+        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+        let function_result = self
+            .moveos()
+            .execute_view_function(self.root.clone(), msg.call);
         Ok(AnnotatedFunctionResult {
             vm_status: function_result.vm_status,
             return_values: match function_result.return_values {
@@ -86,7 +94,7 @@ impl Handler<ExecuteViewFunctionMessage> for ReaderExecutorActor {
                     values
                         .into_iter()
                         .map(|v| {
-                            let decoded_value = resoler.view_value(&v.type_tag, &v.value)?;
+                            let decoded_value = resolver.view_value(&v.type_tag, &v.value)?;
                             Ok(AnnotatedFunctionReturnValue {
                                 value: v,
                                 decoded_value,
@@ -107,8 +115,8 @@ impl Handler<StatesMessage> for ReaderExecutorActor {
         msg: StatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<State>>, anyhow::Error> {
-        let statedb = self.moveos().moveos_resolver();
-        statedb.get_states(msg.access_path)
+        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+        resolver.get_states(msg.access_path)
     }
 }
 
@@ -119,8 +127,8 @@ impl Handler<AnnotatedStatesMessage> for ReaderExecutorActor {
         msg: AnnotatedStatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<Option<AnnotatedState>>, anyhow::Error> {
-        let statedb = self.moveos().moveos_resolver();
-        statedb.get_annotated_states(msg.access_path)
+        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+        resolver.get_annotated_states(msg.access_path)
     }
 }
 
@@ -131,8 +139,8 @@ impl Handler<ListStatesMessage> for ReaderExecutorActor {
         msg: ListStatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<StateKV>, anyhow::Error> {
-        let statedb = self.moveos().moveos_resolver();
-        statedb.list_states(msg.access_path, msg.cursor, msg.limit)
+        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+        resolver.list_states(msg.access_path, msg.cursor, msg.limit)
     }
 }
 
@@ -143,8 +151,8 @@ impl Handler<ListAnnotatedStatesMessage> for ReaderExecutorActor {
         msg: ListAnnotatedStatesMessage,
         _ctx: &mut ActorContext,
     ) -> Result<Vec<AnnotatedStateKV>, anyhow::Error> {
-        let statedb = self.moveos().moveos_resolver();
-        statedb.list_annotated_states(msg.access_path, msg.cursor, msg.limit)
+        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
+        resolver.list_annotated_states(msg.access_path, msg.cursor, msg.limit)
     }
 }
 
@@ -162,7 +170,8 @@ impl Handler<GetAnnotatedEventsByEventHandleMessage> for ReaderExecutorActor {
             descending_order,
         } = msg;
         let event_store = self.moveos().event_store();
-        let resolver = self.moveos().moveos_resolver();
+
+        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
 
         let event_handle_id = EventHandle::derive_event_handle_id(&event_handle_type);
         let events = event_store.get_events_by_event_handle_id(
@@ -175,7 +184,7 @@ impl Handler<GetAnnotatedEventsByEventHandleMessage> for ReaderExecutorActor {
         events
             .into_iter()
             .map(|event| {
-                let event_move_value = MoveValueAnnotator::new(resolver)
+                let event_move_value = MoveValueAnnotator::new(&resolver)
                     .view_resource(&event_handle_type, event.event_data())?;
                 Ok(AnnotatedEvent::new(event, event_move_value))
             })
@@ -212,14 +221,13 @@ impl Handler<GetEventsByEventIDsMessage> for ReaderExecutorActor {
     ) -> Result<Vec<Option<AnnotatedEvent>>> {
         let GetEventsByEventIDsMessage { event_ids } = msg;
         let event_store = self.moveos().event_store();
-        let resolver = self.moveos().moveos_resolver();
-
+        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
         event_store
             .multi_get_events(event_ids)?
             .into_iter()
             .map(|v| match v {
                 Some(event) => {
-                    let event_move_value = MoveValueAnnotator::new(resolver)
+                    let event_move_value = MoveValueAnnotator::new(&resolver)
                         .view_resource(event.event_type(), event.event_data())?;
                     Ok(Some(AnnotatedEvent::new(event, event_move_value)))
                 }
@@ -251,12 +259,12 @@ impl Handler<GetAnnotatedStatesByStateMessage> for ReaderExecutorActor {
         _ctx: &mut ActorContext,
     ) -> Result<Vec<AnnotatedState>> {
         let GetAnnotatedStatesByStateMessage { states } = msg;
-        let resolver = self.moveos().moveos_resolver();
+        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
 
         states
             .into_iter()
             .map(|state| {
-                let annotate_state = MoveValueAnnotator::new(resolver)
+                let annotate_state = MoveValueAnnotator::new(&resolver)
                     .view_value(&state.value_type, &state.value)?;
                 Ok(AnnotatedState::new(state, annotate_state))
             })

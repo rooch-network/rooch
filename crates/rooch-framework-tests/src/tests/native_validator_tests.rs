@@ -13,6 +13,7 @@ use crate::binding_test;
 #[test]
 fn test_validate() {
     let binding_test = binding_test::RustBindingTest::new().unwrap();
+    let root = binding_test.root().clone();
     let native_validator = binding_test
         .as_module_binding::<rooch_types::framework::native_validator::NativeValidatorModule>(
     );
@@ -24,7 +25,8 @@ fn test_validate() {
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
     let auth_info = tx.authenticator_info().unwrap();
-    let move_tx: MoveOSTransaction = tx.into();
+
+    let move_tx: MoveOSTransaction = tx.into_moveos_transaction(root);
 
     native_validator
         .validate(&move_tx.ctx, auth_info.authenticator.payload)

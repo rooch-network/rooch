@@ -9,6 +9,7 @@ use crate::event_store::{EventDBStore, EventStore};
 use crate::state_store::statedb::StateDBStore;
 use crate::state_store::NodeDBStore;
 use crate::transaction_store::{TransactionDBStore, TransactionStore};
+use accumulator::inmemory::InMemoryAccumulator;
 use anyhow::{Error, Result};
 use move_core_types::language_storage::StructTag;
 use moveos_config::store_config::RocksdbConfig;
@@ -16,11 +17,10 @@ use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::{Event, EventID, TransactionEvent};
 use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{KeyState, State};
-use moveos_types::state_resolver::StateResolver;
-use moveos_types::transaction::TransactionExecutionInfo;
+use moveos_types::state_resolver::{StateKV, StatelessResolver};
+use moveos_types::transaction::{TransactionExecutionInfo, TransactionOutput};
 use once_cell::sync::Lazy;
 use raw_store::rocks::RocksDB;
 use raw_store::{ColumnFamilyName, StoreInstance};
@@ -134,14 +134,6 @@ impl MoveOSStore {
         Ok(store)
     }
 
-    pub fn new_with_root(moveosdb: MoveOSDB, root: RootObjectEntity) -> Result<Self> {
-        let store = Self {
-            statedb: StateDBStore::new_with_root(moveosdb.node_store.clone(), root),
-            moveosdb,
-        };
-        Ok(store)
-    }
-
     pub fn get_event_store(&self) -> &EventDBStore {
         &self.moveosdb.event_store
     }
@@ -164,6 +156,47 @@ impl MoveOSStore {
 
     pub fn get_state_store_mut(&mut self) -> &mut StateDBStore {
         &mut self.statedb
+    }
+
+    pub fn handle_tx_output(
+        &mut self,
+        tx_hash: H256,
+        state_root: H256,
+        size: u64,
+        output: TransactionOutput,
+    ) -> Result<TransactionExecutionInfo> {
+        if log::log_enabled!(log::Level::Debug) {
+            log::debug!(
+                "tx_hash: {}, state_root: {}, size: {}, gas_used: {}, status: {:?}",
+                tx_hash,
+                state_root,
+                size,
+                output.gas_used,
+                output.status
+            );
+        }
+        let event_hashes: Vec<_> = output.events.iter().map(|e| e.hash()).collect();
+        let event_root = InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
+
+        let transaction_info = TransactionExecutionInfo::new(
+            tx_hash,
+            state_root,
+            size,
+            event_root,
+            output.gas_used,
+            output.status.clone(),
+        );
+        self.moveosdb
+            .transaction_store
+            .save_tx_execution_info(transaction_info.clone())
+            .map_err(|e| {
+                anyhow::anyhow!(
+                    "ExecuteTransactionMessage handler save tx info failed: {:?} {}",
+                    transaction_info,
+                    e
+                )
+            })?;
+        Ok(transaction_info)
     }
 }
 
@@ -300,25 +333,18 @@ impl<'a, T: 'a + NodeReader> IntoSuper<dyn NodeReader + 'a> for T {
 
 impl Store for MoveOSStore {}
 
-impl StateResolver for MoveOSStore {
-    fn resolve_table_item(
-        &self,
-        handle: &ObjectID,
-        key: &KeyState,
-    ) -> std::result::Result<Option<State>, Error> {
-        self.statedb.resolve_table_item(handle, key)
+impl StatelessResolver for MoveOSStore {
+    fn get_field_at(&self, state_root: H256, key: &KeyState) -> Result<Option<State>, Error> {
+        self.get_state_store().get_field_at(state_root, key)
     }
 
-    fn list_table_items(
+    fn list_fields_at(
         &self,
-        handle: &ObjectID,
+        state_root: H256,
         cursor: Option<KeyState>,
         limit: usize,
-    ) -> std::result::Result<Vec<(KeyState, State)>, Error> {
-        self.statedb.list_table_items(handle, cursor, limit)
-    }
-
-    fn root_object(&self) -> RootObjectEntity {
-        self.statedb.root_object()
+    ) -> Result<Vec<StateKV>, Error> {
+        self.get_state_store()
+            .list_fields_at(state_root, cursor, limit)
     }
 }

@@ -64,9 +64,9 @@ where
                             .with_message(format!("Invalid object id: {:?}", e))
                             .finish(location.clone())
                     })?;
-                    let state = self
+                    let object = self
                         .remote
-                        .resolve_object_state(&object_id)
+                        .get_object(&object_id)
                         .map_err(|e| {
                             PartialVMError::new(StatusCode::STORAGE_ERROR)
                                 .with_message(format!("Failed to resolve object state: {:?}", e))
@@ -77,11 +77,6 @@ where
                                 .with_message(format!("Object not found: {:?}", object_id))
                                 .finish(location.clone())
                         })?;
-                    let object = state.as_raw_object().map_err(|e| {
-                        PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT)
-                            .with_message(format!("Invalid object state: {:?}", e))
-                            .finish(location.clone())
-                    })?;
                     if let TypeTag::Struct(s) = object_type {
                         if s.as_ref() != &object.value.struct_tag {
                             return Err(PartialVMError::new(

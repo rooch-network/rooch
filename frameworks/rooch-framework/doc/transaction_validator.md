@@ -151,5 +151,5 @@ This function is for Rooch to validate the transaction sender's authenticator.
 If the authenticator is invaid, abort this function.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(<a href="chain_id.md#0x3_chain_id">chain_id</a>: u64, auth_validator_id: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="transaction_validator.md#0x3_transaction_validator_validate">validate</a>(<a href="chain_id.md#0x3_chain_id">chain_id</a>: u64, auth_validator_id: u64, authenticator_payload: <a href="">vector</a>&lt;u8&gt;): <a href="auth_validator.md#0x3_auth_validator_TxValidateResult">auth_validator::TxValidateResult</a>
 </code></pre>

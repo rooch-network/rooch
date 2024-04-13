@@ -28,6 +28,7 @@ use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_framework::natives::default_gas_schedule;
 use rooch_framework_tests::binding_test;
+use rooch_genesis::RoochGenesis;
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
 use rooch_indexer::indexer_reader::IndexerReader;
@@ -118,7 +119,7 @@ lazy_static! {
 }
 
 pub fn gen_sequencer(keypair: RoochKeyPair, rooch_store: RoochStore) -> Result<SequencerActor> {
-    SequencerActor::new(keypair, rooch_store.clone(), true) // is_genesis is useless for sequencer in present
+    SequencerActor::new(keypair, rooch_store.clone())
 }
 
 //TODO reuse the rpc run_start_server function
@@ -134,7 +135,7 @@ pub async fn setup_service(
     let chain_id = RoochChainID::LOCAL;
 
     // init storage
-    let (moveos_store, rooch_store) = init_storage(datadir)?;
+    let (mut moveos_store, rooch_store) = init_storage(datadir)?;
     let (indexer_store, indexer_reader) = init_indexer(datadir)?;
 
     // init keystore
@@ -152,19 +153,25 @@ pub async fn setup_service(
     let _relayer_account = RoochAddress::from(&relayer_keypair.public());
 
     // Init executor
-    let is_genesis = moveos_store.statedb.is_genesis();
     let btc_network = Network::default().to_num();
     let data_import_mode = DataImportMode::default().to_num();
     let gas_schedule_blob =
         bcs::to_bytes(&default_gas_schedule()).expect("Failure serializing genesis gas schedule");
+
+    let genesis_ctx = chain_id.genesis_ctx(rooch_account, gas_schedule_blob);
+    let bitcoin_genesis_ctx = BitcoinGenesisContext::new(btc_network, data_import_mode);
+    let genesis: RoochGenesis = RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
+    let root = genesis.init_genesis(&mut moveos_store)?;
+
     let executor_actor = ExecutorActor::new(
-        chain_id.genesis_ctx(rooch_account, gas_schedule_blob),
-        BitcoinGenesisContext::new(btc_network, data_import_mode),
+        root.clone(),
+        genesis.clone(),
         moveos_store.clone(),
         rooch_store.clone(),
     )?;
     let reader_executor = ReaderExecutorActor::new(
-        executor_actor.genesis().clone(),
+        root.clone(),
+        genesis,
         moveos_store.clone(),
         rooch_store.clone(),
     )?
@@ -177,7 +184,7 @@ pub async fn setup_service(
 
     // Init sequencer
     info!("RPC Server sequencer address: {:?}", sequencer_account);
-    let sequencer = SequencerActor::new(sequencer_keypair, rooch_store.clone(), is_genesis)?
+    let sequencer = SequencerActor::new(sequencer_keypair, rooch_store.clone())?
         .into_actor(Some("Sequencer"), &actor_system)
         .await?;
     let sequencer_proxy = SequencerProxy::new(sequencer.into());
@@ -209,7 +216,7 @@ pub async fn setup_service(
     timers.push(proposer_timer);
 
     // Init indexer
-    let indexer_executor = IndexerActor::new(indexer_store.clone(), moveos_store.clone())?
+    let indexer_executor = IndexerActor::new(root, indexer_store.clone(), moveos_store.clone())?
         .into_actor(Some("Indexer"), &actor_system)
         .await?;
     let indexer_reader_executor = IndexerReaderActor::new(indexer_reader)?
