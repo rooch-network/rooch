@@ -116,8 +116,14 @@ module rooch_framework::onchain_config {
         let enables = vector::empty<u64>();
         
         // TODO: change features
+        if (chain_id::is_dev() || chain_id::is_local()) {
+            vector::push_back(&mut enables, features::get_devnet_feature());
+            vector::push_back(&mut enables, features::get_testnet_feature());
+        } else if (chain_id::is_test()) {
+            vector::push_back(&mut enables, features::get_testnet_feature());
+        };
         if (!chain_id::is_main()) {
-            vector::append(&mut enables, features::get_all_features());
+            vector::push_back(&mut enables, features::get_module_template_feature());
         };
 
         features::change_feature_flags(framework, enables, vector[]);

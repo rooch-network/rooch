@@ -71,11 +71,31 @@ module moveos_std::features {
     // --------------------------------------------------------------------------------------------
     // Available flags
 
+    /// This feature will only be enabled on devnet or localnet.
+    const DEVNET: u64 = 1;
+    public fun get_devnet_feature(): u64 { DEVNET }
+    public fun devnet_enabled(): bool {
+        is_enabled(DEVNET)
+    }
+    public fun ensuer_devnet_enabled() {
+        assert!(is_enabled(DEVNET), EAPI_DISABLED);
+    }
+
+    /// This feature will only be enabled on testnet, devnet or localnet.
+    const TESTNET: u64 = 2;
+    public fun get_testnet_feature(): u64 { TESTNET }
+    public fun testnet_enabled(): bool {
+        is_enabled(TESTNET)
+    }
+    public fun ensuer_testnet_enabled() {
+        assert!(is_enabled(TESTNET), EAPI_DISABLED);
+    }
+
     /// Whether allowing replacing module's address, module identifier, struct identifier 
     /// and constant address.
     /// This feature is used for creating a new module through a module template bytes,
     /// thus developers can used to publish new modules in Move.
-    const MODULE_TEMPLATE: u64 = 1;
+    const MODULE_TEMPLATE: u64 = 3;
     public fun get_module_template_feature(): u64 { MODULE_TEMPLATE }
     public fun module_template_enabled(): bool {
         is_enabled(MODULE_TEMPLATE)
@@ -84,11 +104,12 @@ module moveos_std::features {
         assert!(is_enabled(MODULE_TEMPLATE), EAPI_DISABLED);
     }
 
-
     /// Helper for getting all features. 
     /// Update this once new feature added.
     public fun get_all_features(): vector<u64> {
         vector[
+            DEVNET,
+            TESTNET,
             MODULE_TEMPLATE
         ]
     }
