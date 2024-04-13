@@ -118,7 +118,7 @@ module rooch_framework::onchain_config {
         // TODO: change features
         if (!chain_id::is_main()) {
             vector::append(&mut enables, features::get_all_features());
-        }
+        };
 
         features::change_feature_flags(framework, enables, vector[]);
     }

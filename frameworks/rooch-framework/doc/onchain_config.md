@@ -20,10 +20,13 @@
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
+<b>use</b> <a href="">0x2::features</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
+<b>use</b> <a href="chain_id.md#0x3_chain_id">0x3::chain_id</a>;
 </code></pre>
 
 
@@ -95,7 +98,7 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>, sequencer: <b>address</b>, gas_schedule_blob: <a href="">vector</a>&lt;u8&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_genesis_init">genesis_init</a>(genesis_account: &<a href="">signer</a>, sequencer: <b>address</b>, gas_schedule_blob: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
