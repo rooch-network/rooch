@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import {
   Card,
@@ -16,11 +16,22 @@ import { ArrowLeft, Copy } from 'lucide-react'
 import { formatAddress } from '../../../utils/format'
 import { Input } from '@/components/ui/input'
 
-console.log(nftData)
-
 export const NftCard = () => {
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedImage, setSelectedImage] = useState('')
+
+  // ** modal 打开时，禁止父组件 scroll
+  useEffect(() => {
+    if (modalOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [modalOpen])
 
   const handleImageClick = (imageUrl: string) => {
     setSelectedImage(imageUrl)
@@ -58,7 +69,7 @@ export const NftCard = () => {
             <CardDescription>{nft.price}</CardDescription>
           </CardHeader>
           <CardFooter className="px-4 md:px-6">
-            <Button variant="default" size="default" className="w-full font-bold">
+            <Button variant="default" size="default" className="w-full">
               Transfer
             </Button>
           </CardFooter>
@@ -68,10 +79,10 @@ export const NftCard = () => {
       {modalOpen && (
         <div className="flex items-center justify-center font-mono">
           <div
-            className="fixed inset-0 bg-opacity-50 flex justify-center items-center z-50"
+            className="fixed inset-0 bg-opacity-70 dark:bg-opacity-75 flex justify-center items-center z-50 bg-black"
             onClick={handleCloseModal}
           >
-            <div className="bg-background dark:bg-zinc-900 rounded-lg flex flex-col items-start justify-center p-6">
+            <div className="bg-background dark:bg-zinc-900 rounded-none md:rounded-lg flex flex-col items-start justify-center p-6 w-full h-full md:w-auto md:h-auto overflow-auto">
               {/* Back */}
               <div className="mb-4">
                 <Button
@@ -84,7 +95,7 @@ export const NftCard = () => {
               </div>
 
               {/* Content */}
-              <div className="flex items-start justify-start gap-12 mr-6">
+              <div className="flex flex-col md:flex-row h-full items-center justify-start md:items-start md:justify-start gap-6 md:gap-12 md:mr-6">
                 {/* NFT Image */}
                 <div>
                   <img
@@ -95,7 +106,7 @@ export const NftCard = () => {
                 </div>
 
                 {/* Transfer Description */}
-                <div className="flex flex-col items-start justify-start gap-3 w-[320px]">
+                <div className="flex flex-col items-start justify-start gap-3 w-full md:w-[320px]">
                   {/* From Address */}
                   <div className="cursor-pointer">
                     <span className="text-base font-normal text-gray-800 dark:text-gray-100 flex items-center justify-start gap-2 transition-all">
@@ -126,13 +137,13 @@ export const NftCard = () => {
                   />
 
                   {/* CTA */}
-
-                  <button
-                    type="button"
-                    className="text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mt-24 w-full h-11 duration-300"
+                  <Button
+                    variant="default"
+                    size="default"
+                    className="w-full mt-6 md:mt-24 font-sans"
                   >
                     Transfer
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
