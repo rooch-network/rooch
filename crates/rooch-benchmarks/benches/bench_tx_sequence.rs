@@ -12,17 +12,18 @@ use rooch_types::transaction::LedgerTxData;
 use std::time::Duration;
 
 pub fn tx_sequence_benchmark(c: &mut Criterion) {
-    let mut binding_test = binding_test::RustBindingTest::new().unwrap();
+    let binding_test = binding_test::RustBindingTest::new().unwrap();
     let keystore = InMemKeystore::new_insecure_for_tests(10);
 
     let rooch_account = keystore.addresses()[0];
     let rooch_key_pair = keystore
-        .get_key_pairs(&rooch_account, None)?
+        .get_key_pairs(&rooch_account, None)
+        .unwrap()
         .pop()
         .expect("key pair should have value");
     let sequencer_keypair = rooch_key_pair.copy();
     let mut sequencer =
-        gen_sequencer(sequencer_keypair, binding_test.executor().get_rooch_store())?;
+        gen_sequencer(sequencer_keypair, binding_test.executor().get_rooch_store()).unwrap();
 
     let mut test_transaction_builder = TestTransactionBuilder::new(rooch_account.into());
     let tx_cnt = 100;

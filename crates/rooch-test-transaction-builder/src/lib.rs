@@ -80,23 +80,19 @@ impl TestTransactionBuilder {
     }
 
     pub fn call_article_create(&self) -> MoveAction {
-        let mut args = vec![];
-        args.push(
+        let args = vec![
             bcs::to_bytes(&random_string_with_size(20)).expect("serialize title should success"),
-        );
-        args.push(bcs::to_bytes(&random_string()).expect("serialize body should success"));
+            bcs::to_bytes(&random_string()).expect("serialize body should success"),
+        ];
 
         self.new_function_call("simple_blog", "create_article", args, vec![])
     }
 
     pub fn call_article_create_with_size(&self, len: usize) -> MoveAction {
-        let mut args = vec![];
-        args.push(
+        let args = vec![
             bcs::to_bytes(&random_string_with_size(20)).expect("serialize title should success"),
-        );
-        args.push(
             bcs::to_bytes(&random_string_with_size(len)).expect("serialize body should success"),
-        );
+        ];
 
         self.new_function_call("simple_blog", "create_article", args, vec![])
     }
@@ -135,13 +131,10 @@ impl TestTransactionBuilder {
         let mut config = BuildConfig::default();
 
         // Parse named addresses from context and update config
-        match named_address_key {
-            Some(key) => {
-                let mut named_addresses = BTreeMap::<String, AccountAddress>::new();
-                named_addresses.insert(key, self.sender);
-                config.additional_named_addresses = named_addresses;
-            }
-            None => {}
+        if let Some(key) = named_address_key {
+            let mut named_addresses = BTreeMap::<String, AccountAddress>::new();
+            named_addresses.insert(key, self.sender);
+            config.additional_named_addresses = named_addresses;
         };
         let config_cloned = config.clone();
 

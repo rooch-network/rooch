@@ -32,7 +32,7 @@ pub fn transaction_query_benchmark(c: &mut Criterion) {
         let _ = rt.block_on(async { rpc_service.execute_tx(tx).await.unwrap() });
     }
 
-    let mut tx_orders = (1..500).cycle().map(|v| v);
+    let mut tx_orders = (1..500).cycle();
     c.bench_function("get_transactions_by_order", |b| {
         b.to_async(Runtime::new().unwrap()).iter(|| {
             rooch_server.get_transactions_by_order(
