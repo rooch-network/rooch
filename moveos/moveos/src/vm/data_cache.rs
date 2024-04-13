@@ -129,8 +129,9 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
                 let key_state = KeyState::from_module_id(module_id);
                 Err(PartialVMError::new(StatusCode::LINKER_ERROR)
                     .with_message(format!(
-                        "Cannot find module {:?}(key:{:?}) in ObjectRuntime and Storage",
-                        module_id, key_state,
+                        "Cannot find module {:?}(key:{}) in ObjectRuntime and Storage",
+                        module_id,
+                        key_state.to_string(),
                     ))
                     .finish(Location::Undefined))
             }

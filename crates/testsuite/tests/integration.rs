@@ -12,8 +12,7 @@ use rooch_config::{rooch_config_dir, RoochOpt, ServerOpt};
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_rpc_server::Service;
 use serde_json::Value;
-use std::env;
-use tracing::{debug, error, info, Level};
+use tracing::{debug, error, info};
 
 use images::bitcoin::BitcoinD;
 use images::ord::Ord;
@@ -245,7 +244,7 @@ fn ord_bash_run_cmd(w: &mut World, input_tpl: String) {
     let input = eval_command_args(tpl_ctx, input_tpl);
 
     let args: Vec<&str> = input.split_whitespace().collect();
-    let cmd_name = args[0].clone();
+    let cmd_name = args[0];
 
     bitseed_args.extend(args.iter().map(|&s| s.to_string()));
 
@@ -309,7 +308,7 @@ fn ord_run_cmd(w: &mut World, input_tpl: String) {
     let input = eval_command_args(tpl_ctx, input_tpl);
 
     let args: Vec<&str> = input.split_whitespace().collect();
-    let cmd_name = args[0].clone();
+    let cmd_name = args[0];
 
     bitseed_args.extend(args.iter().map(|&s| s.to_string()));
 
@@ -371,7 +370,7 @@ fn bitcoincli_run_cmd(w: &mut World, input_tpl: String) {
     let input = eval_command_args(tpl_ctx, input_tpl);
 
     let args: Vec<&str> = input.split_whitespace().collect();
-    let cmd_name = args[0].clone();
+    let cmd_name = args[0];
 
     bitcoincli_args.extend(args.iter().map(|&s| s.to_string()));
 

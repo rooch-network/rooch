@@ -123,6 +123,8 @@ impl ExecutorActor {
         let execution_info =
             self.moveos_store
                 .handle_tx_output(tx_hash, state_root, size, output.clone())?;
+
+        self.root = execution_info.root_object();
         Ok(ExecuteTransactionResult {
             output,
             transaction_info: execution_info,

@@ -5,6 +5,7 @@
 
 use crate::resolved_arg::ResolvedArg;
 use better_any::{Tid, TidAble};
+use log::debug;
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::{
     effects::Op,
@@ -305,6 +306,7 @@ impl ObjectRuntime {
                 (state_root, global_value)
             }
         };
+        debug!("Init module store object with state_root: {}", state_root);
         let module_store_runtime = RuntimeObject::init(
             module_store_id.clone(),
             ObjectEntity::<ModuleStore>::type_layout(),
@@ -412,7 +414,7 @@ impl ObjectRuntime {
                 Ok(move_module.map(|m| m.byte_codes))
             }
             Err(e) => {
-                print!("load_module error: {:?}", e);
+                debug!("load_module error: {:?}", e);
                 // convert the error to StatusCode::MISSING_DATA if the module is not found
                 if e.major_status() == StatusCode::MISSING_DATA {
                     Ok(None)

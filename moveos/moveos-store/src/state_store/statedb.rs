@@ -215,9 +215,9 @@ impl StatelessResolver for StateDBStore {
                 Err(e) => format!("Error({:?})", e),
             };
             log::trace!(
-                "get_field_at state_root: {} key: {:?}, result: {:?}",
+                "get_field_at state_root: {} key: {}, result: {:?}",
                 state_root,
-                key,
+                key.to_string(),
                 result_info
             );
         }

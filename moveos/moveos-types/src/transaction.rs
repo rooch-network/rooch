@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::moveos_std::object::RootObjectEntity;
+use crate::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use crate::{
     gas_config::GasConfig, h256, h256::H256, move_types::FunctionId,
     moveos_std::event::TransactionEvent, moveos_std::tx_context::TxContext,
@@ -398,6 +398,10 @@ impl TransactionExecutionInfo {
 
     pub fn id(&self) -> H256 {
         h256::sha3_256_of(bcs::to_bytes(self).unwrap().as_slice())
+    }
+
+    pub fn root_object(&self) -> RootObjectEntity {
+        ObjectEntity::root_object(self.state_root, self.size)
     }
 }
 
