@@ -130,8 +130,7 @@ impl<'r, 'l, S: MoveOSResolver> TransactionCache for MoveosDataCache<'r, 'l, S> 
                 Err(PartialVMError::new(StatusCode::LINKER_ERROR)
                     .with_message(format!(
                         "Cannot find module {:?}(key:{}) in ObjectRuntime and Storage",
-                        module_id,
-                        key_state.to_string(),
+                        module_id, key_state,
                     ))
                     .finish(Location::Undefined))
             }

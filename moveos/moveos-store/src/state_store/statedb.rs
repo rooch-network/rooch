@@ -217,7 +217,7 @@ impl StatelessResolver for StateDBStore {
             log::trace!(
                 "get_field_at state_root: {} key: {}, result: {:?}",
                 state_root,
-                key.to_string(),
+                key,
                 result_info
             );
         }
