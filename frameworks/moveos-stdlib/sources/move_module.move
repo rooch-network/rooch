@@ -10,6 +10,7 @@ module moveos_std::move_module {
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::tx_context;
     use moveos_std::signer;
+    use moveos_std::features;
 
     friend moveos_std::genesis;
     
@@ -91,13 +92,15 @@ module moveos_std::move_module {
         check_compatibililty_inner(new_module.byte_codes, old_module.byte_codes);
     }
 
-    // TODO: make it public once we have exhaustive tests
+    // TODO: add more tests
     /// Binding given module's address to the new address
-    public(friend) fun binding_module_address(
+    public fun binding_module_address(
         modules: vector<MoveModule>,
         old_address: address,
         new_address: address,
     ): vector<MoveModule> {
+        features::ensuer_module_template_enabled();
+
         let bytes_vec = into_byte_codes_batch(modules);
 
         let old_addresses = vector::singleton(old_address);
@@ -109,13 +112,15 @@ module moveos_std::move_module {
         new_batch(rebinded_bytes)
     }
 
-    // TODO: make it public once we have exhaustive tests
+    // TODO: add tests
     /// Replace given module's identifier to the new ones
-    public(friend) fun replace_module_identiner (
+    public fun replace_module_identiner (
         modules: vector<MoveModule>,
         old_names: vector<String>,
         new_names: vector<String>,
     ): vector<MoveModule> {
+        features::ensuer_module_template_enabled();
+
         assert!(
             vector::length(&old_names) == vector::length(&new_names),
             ErrorLengthNotMatch
@@ -125,13 +130,14 @@ module moveos_std::move_module {
         new_batch(rebinded_bytes)
     }
 
-    // TODO: make it public once we have exhaustive tests
+    // TODO: add more tests
     /// Replace given struct's identifier to the new ones
-    public(friend) fun replace_struct_identifier(
+    public fun replace_struct_identifier(
         modules: vector<MoveModule>,
         old_names: vector<String>,
         new_names: vector<String>,
     ): vector<MoveModule> {
+        features::ensuer_module_template_enabled();
         replace_module_identiner(modules, old_names, new_names)
     }
 
@@ -161,13 +167,15 @@ module moveos_std::move_module {
         new_batch(rebinded_bytes)
     }
 
-    // TODO: make it public once we have exhaustive tests
+    // TODO: add more tests
     /// Replace given address constant to the new ones
-    public(friend) fun replace_constant_address(
+    public fun replace_constant_address(
         modules: vector<MoveModule>,
         old_addresses: vector<address>,
         new_addresses: vector<address>,
     ): vector<MoveModule> {
+        features::ensuer_module_template_enabled();
+
         assert!(
             vector::length(&old_addresses) == vector::length(&new_addresses),
             ErrorLengthNotMatch
@@ -440,6 +448,8 @@ module moveos_std::move_module {
     
     #[test(account=@0x42)]
     fun test_module_template(account: &signer) {
+        features::init_for_test();
+        features::change_feature_flags_for_test(vector[features::get_module_template_feature()], vector[]);
         let addr = signer::address_of(account);
         // The following is the bytes of module `examples/coins/sources/fixed_supply_coin.move` with account 0x42
         let ref_bytes: vector<u8> = x"a11ceb0b060000000b01000e020e24033250048201140596019c0107b202940208c604800106c605410a8706110c9806710d890702000001010202020303040305030600070c000008080002090c010001060d08010801050e0001080105130c01080101140700000a000100000b010100030f0304000210060701080611090a010c04120b01010c01150d0e0005160f1001080517110a010802181301010806190114010c06121501010c021a16130108021b130101080305040805080708080809120a080b080c050d0502060c070b020108010002050b0401080001060c010501080101070b020109000107090001080002070b02010b030109000f010b0401090002050b04010900030b040108000b02010b050108000b02010b03010800010a02010806030806080602010b02010b0501090002070b02010b050109000f010b05010800010b02010900010b02010b0301090002070b02010b030109000b040109000109001166697865645f737570706c795f636f696e06737472696e67066f626a656374067369676e6572126163636f756e745f636f696e5f73746f726504636f696e0a636f696e5f73746f726503465343085472656173757279064f626a6563740666617563657404696e69740b64756d6d795f6669656c6409436f696e53746f726504436f696e0a616464726573735f6f660a626f72726f775f6d7574087769746864726177076465706f73697408436f696e496e666f06537472696e6704757466380f72656769737465725f657874656e640b6d696e745f657874656e6409746f5f66726f7a656e116372656174655f636f696e5f73746f7265106e65775f6e616d65645f6f626a65637409746f5f73686172656400000000000000000000000000000000000000000000000000000000000000420000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000030201010f2000b4f9e4300000000000000000000000000000000000000000000000000000000a021211466978656420537570706c7920436f696e0a0204034653430002010c01010201060b02010b0301080000010400020d0b0011020c020b0138000f004a102700000000000000000000000000000000000000000000000000000000000038010c030b020b03380202010000000c170702110607031106070038030c010d01070138040c000b01380538060c020d020b0038070b0212013808380902010000";
@@ -483,7 +493,28 @@ module moveos_std::move_module {
         // compare the remapped modules bytes
         assert!(std::compare::cmp_bcs_bytes(&module_bytes, &ref_bytes) == 0u8, 1);
     }
- 
+
+
+    #[test(_account=@0x42)]
+    #[expected_failure(abort_code = 2, location = moveos_std::features)]
+    fun test_module_template_with_feature_disabled(_account: &signer) {
+        features::init_for_test();
+
+        // The following is the bytes of compiled module: examples/module_template/template/sources/fixed_supply_coin_template.move
+        //rooch move build -p examples/module_template/template
+        //xxd -c 99999 -p examples/module_template/template/build/template/bytecode_modules/coin_module_identifier_placeholder.mv
+        let module_bytes: vector<u8> = x"a11ceb0b060000000b01000e020e24033250048201140596019c0107b202c40208f604800106f605590acf06110ce006710dd10702000001010202020303040305030600070c000008080002090c010001060d08010801050e0001080105130c01080101140700000a000100000b010100030f0304000210060701080611090a010c04120b01010c01150d0e0005160f1001080517110a010802181301010806190114010c06121501010c021a16130108021b130101080305040805080708080809120a080b080c050d0502060c070b020108010002050b0401080001060c010501080101070b020109000107090001080002070b02010b030109000f010b0401090002050b04010900030b040108000b02010b050108000b02010b03010800010a02010806030806080602010b02010b0501090002070b02010b050109000f010b05010800010b02010900010b02010b0301090002070b02010b030109000b0401090001090022636f696e5f6d6f64756c655f6964656e7469666965725f706c616365686f6c64657206737472696e67066f626a656374067369676e6572126163636f756e745f636f696e5f73746f726504636f696e0a636f696e5f73746f726522434f494e5f5354525543545f4944454e5449464945525f504c414345484f4c444552085472656173757279064f626a6563740666617563657404696e69740b64756d6d795f6669656c6409436f696e53746f726504436f696e0a616464726573735f6f660a626f72726f775f6d7574087769746864726177076465706f73697408436f696e496e666f06537472696e6704757466380f72656769737465725f657874656e640b6d696e745f657874656e6409746f5f66726f7a656e116372656174655f636f696e5f73746f7265106e65775f6e616d65645f6f626a65637409746f5f736861726564deadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadeadead0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000030201de0f20800283b61c0000000000000000000000000000000000000000000000000000000a021615434f494e5f4e414d455f504c414345484f4c4445520a021817434f494e5f53594d424f4c5f504c414345484f4c4445520002010c01010201060b02010b0301080000010400020d0b0011020c020b0138000f004a102700000000000000000000000000000000000000000000000000000000000038010c030b020b03380202010000000c170702110607031106070038030c010d01070138040c000b01380538060c020d020b0038070b0212013808380902010000";
+        let modules = vector::singleton(Self::new(module_bytes));
+
+        let new_names = vector::empty<String>();
+        vector::push_back(&mut new_names, std::string::utf8(b"fixed_supply_coin"));
+        vector::push_back(&mut new_names, std::string::utf8(b"FSC"));
+        let old_names = vector::empty<String>();
+        vector::push_back(&mut old_names, std::string::utf8(b"coin_module_identifier_placeholder"));
+        vector::push_back(&mut old_names, std::string::utf8(b"COIN_STRUCT_IDENTIFIER_PLACEHOLDER"));
+        let _modules = Self::replace_module_identiner(modules, old_names, new_names);
+    }
+
     #[test(sender=@0x42)]
     fun test_publish_modules(sender: address) {
         init_module_store();
