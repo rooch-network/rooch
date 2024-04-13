@@ -71,11 +71,15 @@ export const NftCard = () => {
             className="fixed inset-0 bg-opacity-50 flex justify-center items-center z-50"
             onClick={handleCloseModal}
           >
-            <div className="bg-zinc-900 rounded-lg flex flex-col items-start justify-center p-6">
+            <div className="bg-background dark:bg-zinc-900 rounded-lg flex flex-col items-start justify-center p-6">
               {/* Back */}
               <div className="mb-4">
-                <Button variant="secondary" size="sm" className="h-8 w-14 rounded-2xl">
-                  <ArrowLeft className="w-5 h-5 text-gray-200" />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="h-8 w-14 rounded-2xl bg-accent dark:bg-zinc-800 dark:hover:bg-zinc-700/65"
+                >
+                  <ArrowLeft className="w-5 h-5 text-muted-foreground dark:text-gray-200" />
                 </Button>
               </div>
 
@@ -86,15 +90,15 @@ export const NftCard = () => {
                   <img
                     src={selectedImage}
                     alt="Selected NFT"
-                    className="w-full md:max-w-[420px] h-auto rounded-lg"
+                    className="w-full md:max-w-[420px] h-auto rounded-lg shadow-md"
                   />
                 </div>
 
                 {/* Transfer Description */}
                 <div className="flex flex-col items-start justify-start gap-3 w-[320px]">
                   {/* From Address */}
-                  <div>
-                    <span className="text-base font-normal text-gray-100 flex items-center justify-start gap-2">
+                  <div className="cursor-pointer">
+                    <span className="text-base font-normal text-gray-800 dark:text-gray-100 flex items-center justify-start gap-2 transition-all">
                       <p>
                         {formatAddress(
                           'bc1pk33n2t5zulq7nz3k8rq55dywjt89szfukypjua5zmuhfg40338wsv9ss7q',
@@ -105,15 +109,15 @@ export const NftCard = () => {
                   </div>
 
                   {/* Send */}
-                  <span className="text-zinc-500 font-normal">Send</span>
+                  <span className="text-muted-foreground dark:text-zinc-500 font-normal">Send</span>
 
                   {/* NFT Name */}
-                  <span className="text-gray-50 text-3xl font-normal tracking-wide">
+                  <span className="text-gray-800 dark:text-gray-50 text-3xl font-normal tracking-wide">
                     Rooch OG NFT
                   </span>
 
                   {/* To */}
-                  <span className="text-zinc-500 font-normal">To</span>
+                  <span className="text-muted-foreground dark:text-zinc-500 font-normal">To</span>
 
                   {/* To Address (Input) */}
                   <Input
@@ -122,9 +126,10 @@ export const NftCard = () => {
                   />
 
                   {/* CTA */}
+
                   <button
                     type="button"
-                    className="text-white bg-gradient-to-br from-green-400 to-blue-600 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-green-200 dark:focus:ring-green-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mt-24 duration-300 ease-in-out w-full h-11"
+                    className="text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mt-24 w-full h-11 duration-300"
                   >
                     Transfer
                   </button>
