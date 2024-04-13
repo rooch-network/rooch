@@ -46,6 +46,7 @@ It is used to store the modules
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
+<b>use</b> <a href="features.md#0x2_features">0x2::features</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
@@ -203,7 +204,7 @@ Abort if the new module is not compatible with the old module.
 Binding given module's address to the new address
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_binding_module_address">binding_module_address</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_address: <b>address</b>, new_address: <b>address</b>): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_binding_module_address">binding_module_address</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_address: <b>address</b>, new_address: <b>address</b>): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
 </code></pre>
 
 
@@ -215,7 +216,7 @@ Binding given module's address to the new address
 Replace given module's identifier to the new ones
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_module_identiner">replace_module_identiner</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, new_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_module_identiner">replace_module_identiner</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, new_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
 </code></pre>
 
 
@@ -227,7 +228,7 @@ Replace given module's identifier to the new ones
 Replace given struct's identifier to the new ones
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_struct_identifier">replace_struct_identifier</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, new_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_struct_identifier">replace_struct_identifier</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, new_names: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
 </code></pre>
 
 
@@ -239,7 +240,7 @@ Replace given struct's identifier to the new ones
 Replace given string constant to the new ones
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_constant_string">replace_constant_string</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_strings: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, new_strings: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_constant_string">replace_constant_string</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_strings: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, new_strings: <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
 </code></pre>
 
 
@@ -251,7 +252,7 @@ Replace given string constant to the new ones
 Replace given address constant to the new ones
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_constant_address">replace_constant_address</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;, new_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_constant_address">replace_constant_address</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;, new_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
 </code></pre>
 
 
@@ -263,7 +264,7 @@ Replace given address constant to the new ones
 Replace given u8 constant to the new ones
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_constant_u8">replace_constant_u8</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_u8s: <a href="">vector</a>&lt;u8&gt;, new_u8s: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_constant_u8">replace_constant_u8</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_u8s: <a href="">vector</a>&lt;u8&gt;, new_u8s: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
 </code></pre>
 
 
@@ -275,7 +276,7 @@ Replace given u8 constant to the new ones
 Replace given u64 constant to the new ones
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_constant_u64">replace_constant_u64</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_u64s: <a href="">vector</a>&lt;u64&gt;, new_u64s: <a href="">vector</a>&lt;u64&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_constant_u64">replace_constant_u64</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_u64s: <a href="">vector</a>&lt;u64&gt;, new_u64s: <a href="">vector</a>&lt;u64&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
 </code></pre>
 
 
@@ -287,7 +288,7 @@ Replace given u64 constant to the new ones
 Replace given u256 constant to the new ones
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_replace_constant_u256">replace_constant_u256</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_u256s: <a href="">vector</a>&lt;u256&gt;, new_u256s: <a href="">vector</a>&lt;u256&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_replace_constant_u256">replace_constant_u256</a>(modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;, old_u256s: <a href="">vector</a>&lt;u256&gt;, new_u256s: <a href="">vector</a>&lt;u256&gt;): <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;
 </code></pre>
 
 

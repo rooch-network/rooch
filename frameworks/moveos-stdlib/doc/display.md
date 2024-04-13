@@ -6,6 +6,7 @@
 
 
 -  [Resource `Display`](#0x2_display_Display)
+-  [Struct `DisplayCreate`](#0x2_display_DisplayCreate)
 -  [Function `resource_display`](#0x2_display_resource_display)
 -  [Function `object_display`](#0x2_display_object_display)
 -  [Function `set_value`](#0x2_display_set_value)
@@ -19,6 +20,7 @@
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="event.md#0x2_event">0x2::event</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="simple_map.md#0x2_simple_map">0x2::simple_map</a>;
 </code></pre>
@@ -33,6 +35,18 @@ Display<T> is used to define the display of the <code>T</code>
 
 
 <pre><code><b>struct</b> <a href="display.md#0x2_display_Display">Display</a>&lt;T&gt; <b>has</b> key
+</code></pre>
+
+
+
+<a name="0x2_display_DisplayCreate"></a>
+
+## Struct `DisplayCreate`
+
+Event when Display<T> created
+
+
+<pre><code><b>struct</b> <a href="display.md#0x2_display_DisplayCreate">DisplayCreate</a>&lt;T&gt; <b>has</b> drop
 </code></pre>
 
 

@@ -7,6 +7,7 @@ module rooch_framework::auth_validator_registry {
     use moveos_std::type_info;
     use moveos_std::table::{Self, Table};
     use moveos_std::type_table::{Self, TypeTable};
+    use moveos_std::features;
     
     use rooch_framework::auth_validator::{Self, AuthValidator};
 
@@ -39,6 +40,7 @@ module rooch_framework::auth_validator_registry {
 
     #[private_generics(ValidatorType)]
     public fun register<ValidatorType: store>() : u64{
+        features::ensure_testnet_enabled();
         register_internal<ValidatorType>()
     }
 
@@ -70,12 +72,16 @@ module rooch_framework::auth_validator_registry {
     }
 
     public fun borrow_validator(id: u64): &AuthValidator {
+        features::ensure_testnet_enabled();
+
         let registry = account::borrow_resource<ValidatorRegistry>(@rooch_framework);
         assert!(table::contains(&registry.validators, id), ErrorValidatorUnregistered);
         table::borrow(&registry.validators, id)
     }
 
     public fun borrow_validator_by_type<ValidatorType: store>(): &AuthValidator {
+        features::ensure_testnet_enabled();
+        
         let registry = account::borrow_resource<ValidatorRegistry>(@rooch_framework);
         assert!(type_table::contains<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type), ErrorValidatorUnregistered);
         let validator_with_type = type_table::borrow<AuthValidatorWithType<ValidatorType>>(&registry.validators_with_type);
@@ -89,6 +95,7 @@ module rooch_framework::auth_validator_registry {
     }
     #[test(sender=@rooch_framework)]
     fun test_registry(sender: signer){
+        features::switch_on_all_features_for_test();
         genesis_init(&sender);
         register<TestAuthValidator>();
         let validator = borrow_validator_by_type<TestAuthValidator>();

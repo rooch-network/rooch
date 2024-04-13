@@ -9,6 +9,7 @@ module rooch_framework::session_key {
     use moveos_std::tx_context; 
     use moveos_std::table::{Self, Table};
     use moveos_std::tx_meta::{Self, FunctionCallMeta};
+    use moveos_std::features;
     use rooch_framework::auth_validator;
     use rooch_framework::native_validator;
     use rooch_framework::timestamp;
@@ -101,6 +102,7 @@ module rooch_framework::session_key {
     }
 
     public fun create_session_key(sender: &signer, authentication_key: vector<u8>, scopes: vector<SessionScope>, max_inactive_interval: u64) {
+        features::ensure_testnet_enabled();
         //Can not create new session key by the other session key
         assert!(!auth_validator::is_validate_via_session_key(), ErrorSessionKeyCreatePermissionDenied);
         let sender_addr = signer::address_of(sender);
