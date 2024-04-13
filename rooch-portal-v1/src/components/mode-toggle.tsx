@@ -10,11 +10,11 @@ export const ModeToggle = () => {
   const ThemeIcon = () => {
     switch (theme) {
       case 'light':
-        return <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />
+        return <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100" />
       case 'dark':
-        return <Moon className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />
+        return <Moon className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100" />
       default:
-        return <Settings className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />
+        return <Settings className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100" />
     }
   }
 
@@ -25,11 +25,11 @@ export const ModeToggle = () => {
 
   return (
     <>
-      <div className="flex w-full">
+      <div className="flex w-full transition-all">
         <Button
           variant="ghost"
           size="sm"
-          className="select-none text-muted-foreground hover:text-muted-foreground justify-start px-2 w-full"
+          className="select-none text-muted-foreground hover:text-muted-foreground justify-start px-2 w-full hover:bg-zinc-300/20 dark:hover:bg-zinc-800/50 hover:text-zinc-600 dark:hover:text-white"
           onClick={toggleTheme}
         >
           <ThemeIcon />
