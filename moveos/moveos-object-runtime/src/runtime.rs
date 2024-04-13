@@ -5,6 +5,7 @@
 
 use crate::resolved_arg::ResolvedArg;
 use better_any::{Tid, TidAble};
+use log::debug;
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMResult};
 use move_core_types::{
     effects::Op,
@@ -22,15 +23,18 @@ use move_vm_types::{
 };
 use moveos_types::{
     addresses::MOVEOS_STD_ADDRESS,
+    h256::H256,
     moveos_std::{
         move_module::{ModuleStore, MoveModule},
-        object::{ModuleStoreObject, ObjectEntity, ObjectID, Root, RootObjectEntity},
+        object::{
+            ModuleStoreObject, ObjectEntity, ObjectID, Root, RootObjectEntity, GENESIS_STATE_ROOT,
+        },
     },
     state::{
         FieldChange, MoveStructState, MoveStructType, MoveType, NormalFieldChange, ObjectChange,
         State, StateChangeSet,
     },
-    state_resolver::StateResolver,
+    state_resolver::StatelessResolver,
 };
 use moveos_types::{
     moveos_std::{object, tx_context::TxContext},
@@ -57,7 +61,7 @@ const FIELD_VALUE_STRUCT_NAME: &IdentStr = ident_str!("FieldValue");
 /// extension.
 #[derive(Tid)]
 pub struct ObjectRuntimeContext<'a> {
-    resolver: &'a dyn StateResolver,
+    resolver: &'a dyn StatelessResolver,
     object_runtime: Arc<RwLock<ObjectRuntime>>,
 }
 
@@ -106,6 +110,8 @@ pub struct RuntimeObject {
     value_type: TypeTag,
     /// This is the ObjectEntity<T> value in MoveVM memory
     value: GlobalValue,
+    /// The state root of the fields
+    state_root: H256,
     fields: BTreeMap<KeyState, RuntimeField>,
 }
 
@@ -166,7 +172,7 @@ impl<'a> ObjectRuntimeContext<'a> {
     /// Create a new instance of a object runtime context. This must be passed in via an
     /// extension into VM session functions.
     pub fn new(
-        resolver: &'a dyn StateResolver,
+        resolver: &'a dyn StatelessResolver,
         object_runtime: Arc<RwLock<ObjectRuntime>>,
     ) -> Self {
         //We need to init or load the module store before verify and execute tx
@@ -184,7 +190,7 @@ impl<'a> ObjectRuntimeContext<'a> {
         self.object_runtime.clone()
     }
 
-    pub fn resolver(&self) -> &dyn StateResolver {
+    pub fn resolver(&self) -> &dyn StatelessResolver {
         self.resolver
     }
 }
@@ -259,47 +265,54 @@ impl ObjectRuntime {
     /// Initialize or load the module store Object into the ObjectRuntime.
     /// Because the module store is required when publishing genesis modules,
     /// So we can not initialize it in Move.
-    pub fn init_module_store(&mut self, resolver: &dyn StateResolver) -> PartialVMResult<()> {
+    pub fn init_module_store(&mut self, resolver: &dyn StatelessResolver) -> PartialVMResult<()> {
         let module_store_id = ModuleStore::module_store_id();
         let state = resolver
-            .resolve_object_state(&module_store_id)
+            .get_object_field_at(self.root.state_root, &module_store_id)
             .map_err(|e| {
                 partial_extension_error(format!(
                     "Failed to resolve module store object state: {:?}",
                     e
                 ))
             })?;
-        let global_value = match state {
+        let (state_root, global_value) = match state {
             Some(state) => {
-                let value = state
-                    .as_object::<ModuleStore>()
-                    .map_err(|e| {
-                        partial_extension_error(format!(
-                            "Failed to resolve module store object: {:?}",
-                            e
-                        ))
-                    })?
-                    .to_runtime_value();
+                let obj = state.into_object::<ModuleStore>().map_err(|e| {
+                    partial_extension_error(format!(
+                        "Failed to resolve module store object: {:?}",
+                        e
+                    ))
+                })?;
+                let state_root = obj.state_root();
+                let value = obj.to_runtime_value();
                 // If we load the module store object, we should cache it
-                GlobalValue::cached(value).expect("Cache the ModuleStore Object should success")
+                (
+                    state_root,
+                    GlobalValue::cached(value)
+                        .expect("Cache the ModuleStore Object should success"),
+                )
             }
             None => {
                 // If the module store object is not found, we should create a new one(before genesis).
                 // Init none GlobalValue and move value to it, make the data status is dirty
                 // The change will apart of the state change set
-                let value = ModuleStoreObject::genesis_module_store().to_runtime_value();
+                let obj = ModuleStoreObject::genesis_module_store();
+                let state_root = obj.state_root();
+                let value = obj.to_runtime_value();
                 let mut global_value = GlobalValue::none();
                 global_value
                     .move_to(value)
                     .expect("Move value to GlobalValue none should success");
-                global_value
+                (state_root, global_value)
             }
         };
+        debug!("Init module store object with state_root: {}", state_root);
         let module_store_runtime = RuntimeObject::init(
             module_store_id.clone(),
             ObjectEntity::<ModuleStore>::type_layout(),
             ObjectEntity::<ModuleStore>::type_tag(),
             global_value,
+            state_root,
         )?;
         self.root.fields.insert(
             module_store_id.to_key(),
@@ -341,7 +354,7 @@ impl ObjectRuntime {
     pub fn load_object(
         &mut self,
         layout_loader: &dyn TypeLayoutLoader,
-        resolver: &dyn StateResolver,
+        resolver: &dyn StatelessResolver,
         object_id: &ObjectID,
     ) -> PartialVMResult<(&mut RuntimeObject, Option<Option<NumBytes>>)> {
         if object_id.is_root() {
@@ -388,7 +401,7 @@ impl ObjectRuntime {
     pub fn load_module(
         &mut self,
         layout_loader: &dyn TypeLayoutLoader,
-        resolver: &dyn StateResolver,
+        resolver: &dyn StatelessResolver,
         module_id: &ModuleId,
     ) -> PartialVMResult<Option<Vec<u8>>> {
         let module_store_id = ModuleStore::module_store_id();
@@ -401,7 +414,7 @@ impl ObjectRuntime {
                 Ok(move_module.map(|m| m.byte_codes))
             }
             Err(e) => {
-                print!("load_module error: {:?}", e);
+                debug!("load_module error: {:?}", e);
                 // convert the error to StatusCode::MISSING_DATA if the module is not found
                 if e.major_status() == StatusCode::MISSING_DATA {
                     Ok(None)
@@ -415,7 +428,7 @@ impl ObjectRuntime {
     pub fn publish_module(
         &mut self,
         layout_loader: &dyn TypeLayoutLoader,
-        resolver: &dyn StateResolver,
+        resolver: &dyn StatelessResolver,
         module_id: &ModuleId,
         blob: Vec<u8>,
         is_republishing: bool,
@@ -519,6 +532,7 @@ impl ObjectRuntime {
             }
         }
         let change_set = StateChangeSet {
+            state_root: root_entity.state_root(),
             global_size: root_entity.size,
             changes,
         };
@@ -707,6 +721,8 @@ impl RuntimeField {
             .expect("Move value to GlobalValue none should success");
 
         Ok(if object::is_object_entity_type(&value_type) {
+            //The object field is new, so the state_root is the genesis state root
+            let state_root = *GENESIS_STATE_ROOT;
             let object = RuntimeObject::init(
                 key.as_object_id().map_err(|e| {
                     partial_extension_error(format!("expect object id, but got {:?}, {:?}", key, e))
@@ -714,6 +730,7 @@ impl RuntimeField {
                 value_layout,
                 value_type,
                 global_value,
+                state_root,
             )?;
             RuntimeField::Object(object)
         } else {
@@ -824,13 +841,21 @@ impl RuntimeField {
 // Implementation of RuntimeObject
 
 impl RuntimeObject {
+    pub fn id(&self) -> &ObjectID {
+        &self.id
+    }
+
     pub fn load(id: ObjectID, value_layout: MoveTypeLayout, state: State) -> PartialVMResult<Self> {
+        let raw_obj = state
+            .as_raw_object()
+            .map_err(|e| partial_extension_error(format!("expect raw object, but got {:?}", e)))?;
         let value = deserialize(&value_layout, state.value.as_slice())?;
         Ok(Self {
             id,
             value_layout,
             value_type: state.value_type,
             value: GlobalValue::cached(value)?,
+            state_root: raw_obj.state_root(),
             fields: Default::default(),
         })
     }
@@ -840,12 +865,14 @@ impl RuntimeObject {
         value_layout: MoveTypeLayout,
         value_type: TypeTag,
         value: GlobalValue,
+        state_root: H256,
     ) -> PartialVMResult<Self> {
         Ok(Self {
             id,
             value_layout,
             value_type,
             value,
+            state_root,
             fields: Default::default(),
         })
     }
@@ -878,7 +905,7 @@ impl RuntimeObject {
     pub fn load_field(
         &mut self,
         layout_loader: &dyn TypeLayoutLoader,
-        resolver: &dyn StateResolver,
+        resolver: &dyn StatelessResolver,
         key: KeyState,
     ) -> PartialVMResult<(&mut RuntimeField, Option<Option<NumBytes>>)> {
         self.load_field_with_layout_fn(resolver, key, |value_type| {
@@ -893,7 +920,7 @@ impl RuntimeObject {
     pub fn load_object_field(
         &mut self,
         layout_loader: &dyn TypeLayoutLoader,
-        resolver: &dyn StateResolver,
+        resolver: &dyn StatelessResolver,
         object_id: &ObjectID,
     ) -> PartialVMResult<(&mut RuntimeObject, Option<Option<NumBytes>>)> {
         let (field, loaded) = self.load_field(layout_loader, resolver, object_id.to_key())?;
@@ -929,16 +956,21 @@ impl RuntimeObject {
 
     pub fn load_field_with_layout_fn(
         &mut self,
-        resolver: &dyn StateResolver,
+        resolver: &dyn StatelessResolver,
         key: KeyState,
         f: impl FnOnce(&TypeTag) -> PartialVMResult<MoveTypeLayout>,
     ) -> PartialVMResult<(&mut RuntimeField, Option<Option<NumBytes>>)> {
         Ok(match self.fields.entry(key.clone()) {
             Entry::Vacant(entry) => {
                 let (tv, loaded) =
-                    match resolver.resolve_table_item(&self.id, &key).map_err(|err| {
-                        partial_extension_error(format!("remote object resolver failure: {}", err))
-                    })? {
+                    match resolver
+                        .get_field_at(self.state_root, &key)
+                        .map_err(|err| {
+                            partial_extension_error(format!(
+                                "remote object resolver failure: {}",
+                                err
+                            ))
+                        })? {
                         Some(state) => {
                             let value_layout = f(&state.value_type)?;
                             let state_bytes_len = state.value.len() as u64;

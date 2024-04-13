@@ -29,9 +29,9 @@ use move_core_types::{
     vm_status::StatusCode,
 };
 use move_vm_runtime::config::VMConfig;
-use moveos_types::moveos_std::object::RootObjectEntity;
+use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use moveos_types::state::KeyState;
-use moveos_types::state_resolver::StateKV;
+use moveos_types::state_resolver::{StateKV, StatelessResolver};
 use moveos_types::transaction::FunctionCall;
 use moveos_types::{
     move_types::FunctionId, moveos_std::object::ObjectID, moveos_std::tx_context::TxContext,
@@ -243,12 +243,14 @@ pub(crate) fn make_script_function(signature: Signature) -> (CompiledModule, Ide
 }
 
 pub(crate) struct RemoteStore {
+    root: RootObjectEntity,
     modules: HashMap<ModuleId, Vec<u8>>,
 }
 
 impl RemoteStore {
     pub(crate) fn new() -> Self {
         Self {
+            root: ObjectEntity::genesis_root_object(),
             modules: HashMap::new(),
         }
     }
@@ -282,8 +284,27 @@ impl ResourceResolver for RemoteStore {
     }
 }
 
+impl StatelessResolver for RemoteStore {
+    fn get_field_at(
+        &self,
+        _state_root: moveos_types::h256::H256,
+        _key: &KeyState,
+    ) -> anyhow::Result<Option<State>, anyhow::Error> {
+        Ok(None)
+    }
+
+    fn list_fields_at(
+        &self,
+        _state_root: moveos_types::h256::H256,
+        _cursor: Option<KeyState>,
+        _limit: usize,
+    ) -> anyhow::Result<Vec<StateKV>> {
+        Ok(vec![])
+    }
+}
+
 impl StateResolver for RemoteStore {
-    fn resolve_table_item(
+    fn get_field(
         &self,
         _handle: &ObjectID,
         _key: &KeyState,
@@ -291,7 +312,7 @@ impl StateResolver for RemoteStore {
         Ok(None)
     }
 
-    fn list_table_items(
+    fn list_fields(
         &self,
         _handle: &ObjectID,
         _cursor: Option<KeyState>,
@@ -299,8 +320,8 @@ impl StateResolver for RemoteStore {
     ) -> anyhow::Result<Vec<StateKV>, anyhow::Error> {
         todo!()
     }
-    fn root_object(&self) -> RootObjectEntity {
-        RootObjectEntity::genesis_root_object()
+    fn root_object(&self) -> &RootObjectEntity {
+        &self.root
     }
 }
 

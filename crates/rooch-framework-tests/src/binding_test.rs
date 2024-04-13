@@ -9,13 +9,15 @@ use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::gas_config::GasConfig;
 use moveos_types::module_binding::MoveFunctionCaller;
-use moveos_types::moveos_std::object::ObjectEntity;
+use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use moveos_types::moveos_std::tx_context::TxContext;
+use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::{FunctionCall, VerifiedMoveOSTransaction};
 use rooch_config::store_config::StoreConfig;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::actor::{executor::ExecutorActor, messages::ExecuteTransactionResult};
 use rooch_framework::natives::default_gas_schedule;
+use rooch_genesis::RoochGenesis;
 use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
 use rooch_types::bitcoin::data_import_config::DataImportMode;
@@ -45,6 +47,8 @@ pub struct RustBindingTest {
     sequencer: RoochAddress,
     pub executor: ExecutorActor,
     pub reader_executor: ReaderExecutorActor,
+    root: RootObjectEntity,
+    moveos_store: MoveOSStore,
 }
 
 impl RustBindingTest {
@@ -65,28 +69,35 @@ impl RustBindingTest {
             std::fs::create_dir_all(moveos_db_path.clone())?;
         }
 
-        let moveos_store = MoveOSStore::mock_moveos_store_with_data_dir(moveos_db_path.as_path())?;
+        let mut moveos_store =
+            MoveOSStore::mock_moveos_store_with_data_dir(moveos_db_path.as_path())?;
         let rooch_store = RoochStore::mock_rooch_store(rooch_db_path.as_path())?;
         let sequencer = AccountAddress::ONE.into();
         let gas_schedule_blob = bcs::to_bytes(&default_gas_schedule())
             .expect("Failure serializing genesis gas schedule");
-        let executor = ExecutorActor::new(
+
+        let genesis = RoochGenesis::build(
             RoochChainID::LOCAL.genesis_ctx(sequencer, gas_schedule_blob),
             BitcoinGenesisContext::new(Network::default().to_num(), data_import_mode),
-            moveos_store,
-            rooch_store,
+        )?;
+        let root = genesis.init_genesis(&mut moveos_store)?;
+
+        let executor = ExecutorActor::new(
+            root.clone(),
+            genesis.clone(),
+            moveos_store.clone(),
+            rooch_store.clone(),
         )?;
 
-        let reader_executor = ReaderExecutorActor::new(
-            executor.genesis().clone(),
-            executor.get_moveos_store(),
-            executor.get_rooch_store(),
-        )?;
+        let reader_executor =
+            ReaderExecutorActor::new(root.clone(), genesis, moveos_store.clone(), rooch_store)?;
         Ok(Self {
+            root,
             data_dir,
             sequencer,
             executor,
             reader_executor,
+            moveos_store,
         })
     }
 
@@ -96,6 +107,14 @@ impl RustBindingTest {
 
     pub fn data_dir(&self) -> &Path {
         self.data_dir.path()
+    }
+
+    pub fn resolver(&self) -> RootObjectResolver<MoveOSStore> {
+        RootObjectResolver::new(self.root.clone(), &self.moveos_store)
+    }
+
+    pub fn root(&self) -> &RootObjectEntity {
+        &self.root
     }
 
     //TODO let the module bundle to execute the function
@@ -161,7 +180,8 @@ impl RustBindingTest {
             result.transaction_info.state_root,
             result.transaction_info.size,
         );
-        self.reader_executor.refresh_state(root, false)?;
+        self.reader_executor.refresh_state(root.clone(), false)?;
+        self.root = root;
         Ok(result)
     }
 }
@@ -172,10 +192,11 @@ impl MoveFunctionCaller for RustBindingTest {
         ctx: &TxContext,
         function_call: FunctionCall,
     ) -> Result<FunctionResult> {
-        let result = self
-            .reader_executor
-            .moveos()
-            .execute_readonly_function(ctx, function_call);
+        let result = self.reader_executor.moveos().execute_readonly_function(
+            self.root.clone(),
+            ctx,
+            function_call,
+        );
         Ok(result)
     }
 }

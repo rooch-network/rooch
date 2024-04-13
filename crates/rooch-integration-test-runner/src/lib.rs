@@ -23,6 +23,8 @@ use move_vm_runtime::session::SerializedReturnValues;
 use moveos::moveos::MoveOS;
 use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
 use moveos_store::MoveOSStore;
+use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
+use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::{
     addresses::MOVEOS_STD_ADDRESS,
     move_types::FunctionId,
@@ -46,6 +48,7 @@ pub struct MoveOSTestRunner<'a> {
     //tempdir: TempDir,
     //debug: bool,
     moveos: MoveOS,
+    root: RootObjectEntity,
 }
 
 #[derive(Parser, Debug)]
@@ -109,13 +112,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         )
         .unwrap();
 
-        moveos
-            .init_genesis(
-                genesis.genesis_txs(),
-                genesis.genesis_ctx(),
-                genesis.bitcoin_genesis_ctx(),
-            )
-            .unwrap();
+        let (state_root, size, _output) = moveos.init_genesis(genesis.genesis_moveos_tx()).unwrap();
 
         let mut named_address_mapping = rooch_framework::rooch_framework_named_addresses()
             .into_iter()
@@ -135,6 +132,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             compiled_state: CompiledState::new(named_address_mapping, pre_compiled_deps, None),
             default_syntax,
             moveos,
+            root: ObjectEntity::root_object(state_root, size),
         };
 
         (adapter, None)
@@ -166,9 +164,10 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             vec![args],
         );
 
-        let tx = MoveOSTransaction::new_for_test(sender, action);
+        let tx = MoveOSTransaction::new_for_test(self.root.clone(), sender, action);
         let verified_tx = self.moveos.verify(tx)?;
-        let (_state_root, _size, output) = self.moveos.execute_and_apply(verified_tx)?;
+        let (state_root, size, output) = self.moveos.execute_and_apply(verified_tx)?;
+        self.root = ObjectEntity::root_object(state_root, size);
         Ok((Some(tx_output_to_str(output)), module))
     }
 
@@ -200,11 +199,13 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             .collect::<Vec<_>>();
 
         let tx = MoveOSTransaction::new_for_test(
+            self.root.clone(),
             signers.pop().unwrap(),
             MoveAction::new_script_call(script_bytes, type_args, args),
         );
         let verified_tx = self.moveos.verify(tx)?;
-        let (_state_root, _size, output) = self.moveos.execute_and_apply(verified_tx)?;
+        let (state_root, size, output) = self.moveos.execute_and_apply(verified_tx)?;
+        self.root = ObjectEntity::root_object(state_root, size);
         //TODO return values
         let value = SerializedReturnValues {
             mutable_reference_outputs: vec![],
@@ -239,11 +240,13 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             .collect::<Vec<_>>();
         let function_id = FunctionId::new(module.clone(), function.to_owned());
         let tx = MoveOSTransaction::new_for_test(
+            self.root.clone(),
             signers.pop().unwrap(),
             MoveAction::new_function_call(function_id, type_args, args),
         );
         let verified_tx = self.moveos.verify(tx)?;
-        let (_state_root, _size, output) = self.moveos.execute_and_apply(verified_tx)?;
+        let (state_root, size, output) = self.moveos.execute_and_apply(verified_tx)?;
+        self.root = ObjectEntity::root_object(state_root, size);
         debug_assert!(
             output.status == move_core_types::vm_status::KeptVMStatus::Executed,
             "{:?}",
@@ -265,13 +268,8 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         resource: &move_core_types::identifier::IdentStr,
         type_args: Vec<move_core_types::language_storage::TypeTag>,
     ) -> anyhow::Result<String> {
-        view_resource_in_move_storage(
-            self.moveos.moveos_resolver(),
-            address,
-            module,
-            resource,
-            type_args,
-        )
+        let resolver = RootObjectResolver::new(self.root.clone(), self.moveos.moveos_store());
+        view_resource_in_move_storage(&resolver, address, module, resource, type_args)
     }
 
     fn handle_subcommand(
@@ -280,8 +278,9 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
     ) -> anyhow::Result<Option<String>> {
         match subcommand.command {
             MoveOSSubcommands::ViewObject { object_id } => {
-                let resoler = self.moveos.moveos_resolver();
-                let object = resoler
+                let resolver =
+                    RootObjectResolver::new(self.root.clone(), self.moveos.moveos_store());
+                let object = resolver
                     .get_annotated_object(object_id.clone())?
                     .ok_or_else(|| anyhow::anyhow!("Object with id {} not found", object_id))?;
                 //TODO should we bring the AnnotatedObjectView from jsonrpc to test adapter for better json output formatting?
