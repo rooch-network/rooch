@@ -85,6 +85,13 @@ module moveos_std::features {
     }
 
 
+    /// Helper for getting all features. 
+    /// Update this once new feature added.
+    public fun get_all_features(): vector<u64> {
+        vector[
+            MODULE_TEMPLATE
+        ]
+    }
     // --------------------------------------------------------------------------------------------
     // Helpers
 

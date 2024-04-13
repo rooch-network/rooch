@@ -3,12 +3,14 @@
 
 module rooch_framework::onchain_config {
 
+    use std::vector;
     use std::string::String;
     use moveos_std::bcs;
     use moveos_std::tx_context;
     use moveos_std::object;
-    use std::vector;
     use moveos_std::signer;
+    use moveos_std::features;
+    use rooch_framework::chain_id;
 
     friend rooch_framework::upgrade;
     friend rooch_framework::genesis;
@@ -37,7 +39,7 @@ module rooch_framework::onchain_config {
         sequencer: address,
     }
 
-    public(friend) fun genesis_init(_genesis_account: &signer, sequencer: address, gas_schedule_blob: vector<u8>){
+    public(friend) fun genesis_init(genesis_account: &signer, sequencer: address, gas_schedule_blob: vector<u8>){
         let gas_schedule = GasSchedule {
             feature_version: 0,
             entries: vector::empty<GasEntry>()
@@ -56,6 +58,8 @@ module rooch_framework::onchain_config {
 
         let obj = object::new_named_object(gas_schedule);
         object::transfer_extend(obj, @rooch_framework);
+
+        set_code_features(genesis_account);
     }
 
     public fun sequencer(): address {
@@ -106,5 +110,16 @@ module rooch_framework::onchain_config {
         let object_id = object::named_object_id<GasSchedule>();
         let obj = object::borrow_object<GasSchedule>(object_id);
         object::borrow(obj)
+    }
+
+    fun set_code_features(framework: &signer) {
+        let enables = vector::empty<u64>();
+        
+        // TODO: change features
+        if (!chain_id::is_main()) {
+            vector::append(&mut enables, features::get_all_features());
+        }
+
+        features::change_feature_flags(framework, enables, vector[]);
     }
 }
