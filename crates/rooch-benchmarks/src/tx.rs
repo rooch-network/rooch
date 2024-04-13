@@ -62,7 +62,7 @@ use std::time::Duration;
 use std::{env, fs};
 use tracing::info;
 
-pub const EXAMPLE_SIMPLE_BLOG_PACKAGE_NAME: &'static str = "simple_blog";
+pub const EXAMPLE_SIMPLE_BLOG_PACKAGE_NAME: &str = "simple_blog";
 pub const EXAMPLE_SIMPLE_BLOG_NAMED_ADDRESS: &str = "simple_blog";
 
 #[derive(PartialEq, Eq)]
@@ -319,7 +319,7 @@ pub fn create_l2_tx(
 pub fn find_block_height(dir: String) -> Result<Vec<u64>> {
     let mut block_heights = Vec::new();
 
-    for entry in fs::read_dir(&dir)? {
+    for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let path = entry.path();
         if path.is_file() && path.extension().unwrap_or_default() == "hex" {
@@ -389,8 +389,7 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
         let btc_blk_dir = env::var("ROOCH_BENCH_BTC_BLK_DIR").unwrap();
 
         let heights = find_block_height(btc_blk_dir.clone()).unwrap();
-        let mut cnt = 0;
-        for height in heights {
+        for (cnt, height) in heights.into_iter().enumerate() {
             if cnt >= tx_cnt {
                 break;
             }
@@ -403,7 +402,6 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
                 .validate_l1_block(ctx, l1_block.clone())
                 .unwrap();
             transactions.push(move_tx);
-            cnt += 1;
         }
     }
 
