@@ -426,7 +426,9 @@ fn _build_rpc_api<M: Send + Sync + 'static>(mut rpc_module: RpcModule<M>) -> Rpc
     rpc_module
 }
 
-fn init_storage(store_config: &StoreConfig) -> Result<(RootObjectEntity, MoveOSStore, RoochStore)> {
+pub fn init_storage(
+    store_config: &StoreConfig,
+) -> Result<(RootObjectEntity, MoveOSStore, RoochStore)> {
     let (rooch_db_path, moveos_db_path) = (
         store_config.get_rooch_store_dir(),
         store_config.get_moveos_store_dir(),

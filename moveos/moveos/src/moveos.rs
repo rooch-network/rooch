@@ -515,14 +515,3 @@ impl MoveOS {
         Ok(())
     }
 }
-
-// impl MoveFunctionCaller for MoveOS {
-//     fn call_function(
-//         &self,
-//         ctx: &TxContext,
-//         function_call: FunctionCall,
-//     ) -> Result<FunctionResult> {
-//         let result = self.execute_readonly_function(ctx, function_call);
-//         Ok(result)
-//     }
-// }

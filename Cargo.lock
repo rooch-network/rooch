@@ -8558,6 +8558,7 @@ dependencies = [
  "rooch-executor",
  "rooch-framework",
  "rooch-framework-tests",
+ "rooch-genesis",
  "rooch-indexer",
  "rooch-key",
  "rooch-pipeline-processor",

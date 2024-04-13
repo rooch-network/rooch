@@ -3,7 +3,7 @@
 
 use crate::move_std::ascii::MoveAsciiString;
 use crate::move_std::string::MoveString;
-use crate::moveos_std::object::{AnnotatedObject, ObjectEntity, RawObject};
+use crate::moveos_std::object::{AnnotatedObject, ObjectEntity, RawObject, GENESIS_STATE_ROOT};
 use crate::moveos_std::object::{ObjectID, RootObjectEntity};
 use anyhow::{bail, ensure, Result};
 use core::str;
@@ -820,7 +820,7 @@ impl FieldChange {
 }
 
 /// Global State change set.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct StateChangeSet {
     /// The state root before the changes
     pub state_root: H256,
@@ -832,6 +832,16 @@ pub struct StateChangeSet {
 impl StateChangeSet {
     pub fn root_object(&self) -> RootObjectEntity {
         ObjectEntity::root_object(self.state_root, self.global_size)
+    }
+}
+
+impl Default for StateChangeSet {
+    fn default() -> Self {
+        Self {
+            state_root: *GENESIS_STATE_ROOT,
+            global_size: 0,
+            changes: Default::default(),
+        }
     }
 }
 

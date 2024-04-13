@@ -321,7 +321,7 @@ mod tests {
     use moveos_store::MoveOSStore;
     use moveos_types::moveos_std::move_module::ModuleStore;
     use moveos_types::moveos_std::object::ObjectEntity;
-    use moveos_types::state_resolver::RootObjectResolver;
+    use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
     use rooch_framework::natives::{all_natives, default_gas_schedule};
     use rooch_types::bitcoin::data_import_config::DataImportMode;
     use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
@@ -347,7 +347,7 @@ mod tests {
             Ok(genesis) => genesis,
             Err(e) => panic!("genesis build failed: {:?}", e),
         };
-        assert_eq!(genesis.genesis_package.genesis_tx.len(), 1);
+
         let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
         let mut moveos = MoveOS::new(
             moveos_store.clone(),
@@ -359,11 +359,7 @@ mod tests {
         .expect("init moveos failed");
 
         let (state_root, size, _output) = moveos
-            .init_genesis(
-                genesis.genesis_package.genesis_tx,
-                genesis.genesis_package.genesis_ctx,
-                genesis.genesis_package.bitcoin_genesis_ctx,
-            )
+            .init_genesis(genesis.genesis_package.genesis_moveos_tx)
             .expect("init genesis failed");
         let root = ObjectEntity::root_object(state_root, size);
         let resolver = RootObjectResolver::new(root, &moveos_store);
