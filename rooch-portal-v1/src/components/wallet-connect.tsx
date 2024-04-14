@@ -59,14 +59,14 @@ export const WalletConnect = () => {
   return (
     <>
       <Button
-        variant="secondary"
+        variant="default"
         size="default"
-        className="md:p-3 rounded-lg ml-2 h-auto md:h-9 p-2"
+        className="rounded-lg ml-2 h-auto shadow-custom bg-white hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-800/50"
         onClick={handleConnectWallet}
       >
-        <div className="flex items-center justify-center gap-x-2 ">
-          <Wallet className="h-[1rem] w-[1rem] md:h-[1.2rem] md:w-[1.2rem] rotate-0 scale-100 transition-all text-teal-600" />
-          <div className="flex items-center justify-center gap-x-1 bg-gradient-to-r bg-clip-text font-black dark:from-teal-500 dark:via-purple-500 dark:to-orange-500 text-transparent from-teal-600 via-purple-600 to-orange-600">
+        <div className="flex items-center justify-center gap-x-2">
+          <Wallet className="h-[1rem] w-[1rem] md:h-[1.2rem] md:w-[1.2rem] rotate-0 scale-100 transition-all text-teal-600 dark:text-teal-400" />
+          <div className="flex items-center justify-center gap-x-1 bg-gradient-to-r bg-clip-text font-black text-transparent from-teal-600 via-purple-600 to-orange-600 dark:from-teal-400 dark:via-purple-400 dark:to-orange-400">
             {account === null ? 'Connect Wallet' : formatAddress(account?.address)}
           </div>
         </div>
