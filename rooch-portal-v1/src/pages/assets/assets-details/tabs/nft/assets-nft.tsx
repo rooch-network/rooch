@@ -1,4 +1,4 @@
-import { NftCard } from './nft-card'
+import { NftCard } from './components/nft-card'
 
 export const AssetsNft = () => {
   return (
