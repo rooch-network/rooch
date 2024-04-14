@@ -9,7 +9,7 @@ module rooch_framework::native_validator {
     use std::signer;
     use moveos_std::tx_context; 
     use moveos_std::features;
-    use rooch_framework::hash;
+    use moveos_std::hash;
     use rooch_framework::account_authentication;
     use rooch_framework::ed25519;
     use rooch_framework::auth_validator;

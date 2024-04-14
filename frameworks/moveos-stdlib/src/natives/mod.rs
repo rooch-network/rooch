@@ -24,6 +24,9 @@ pub struct GasParameters {
     pub json: moveos_stdlib::json::GasParameters,
     pub wasm: moveos_stdlib::wasm::GasParameters,
     pub tx_context: moveos_stdlib::tx_context::GasParameters,
+    pub base58: moveos_stdlib::base58::GasParameters,
+    pub bech32: moveos_stdlib::bech32::GasParameters,
+    pub hash: moveos_stdlib::hash::GasParameters,
 }
 
 impl GasParameters {
@@ -43,6 +46,9 @@ impl GasParameters {
             json: moveos_stdlib::json::GasParameters::zeros(),
             wasm: moveos_stdlib::wasm::GasParameters::zeros(),
             tx_context: moveos_stdlib::tx_context::GasParameters::zeros(),
+            base58: moveos_stdlib::base58::GasParameters::zeros(),
+            bech32: moveos_stdlib::bech32::GasParameters::zeros(),
+            hash: moveos_stdlib::hash::GasParameters::zeros(),
         }
     }
 }
@@ -108,6 +114,9 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
         "tx_context",
         moveos_stdlib::tx_context::make_all(gas_params.tx_context)
     );
+    add_natives!("base58", moveos_stdlib::base58::make_all(gas_params.base58));
+    add_natives!("bech32", moveos_stdlib::bech32::make_all(gas_params.bech32));
+    add_natives!("hash", moveos_stdlib::hash::make_all(gas_params.hash));
 
     let moveos_native_fun_table = make_table_from_iter(MOVEOS_STD_ADDRESS, natives);
     native_fun_table.extend(moveos_native_fun_table);
