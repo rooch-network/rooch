@@ -44,8 +44,7 @@ module rooch_framework::transaction_validator {
 
     /// This function is for Rooch to validate the transaction sender's authenticator.
     /// If the authenticator is invaid, abort this function.
-    public fun validate(
-        
+    public(friend) fun validate(
         chain_id: u64,
         auth_validator_id: u64,
         authenticator_payload: vector<u8>

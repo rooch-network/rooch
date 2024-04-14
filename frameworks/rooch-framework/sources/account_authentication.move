@@ -9,6 +9,7 @@ module rooch_framework::account_authentication {
    use std::signer;
    use std::vector;
    use moveos_std::account;
+   use moveos_std::features;
    
    use moveos_std::type_table::{Self, TypeTable};
    use rooch_framework::auth_validator_registry;
@@ -70,7 +71,10 @@ module rooch_framework::account_authentication {
    #[private_generics(ValidatorType)]
    /// This function is used to rotate a resource account's authentication key, only the module which define the `ValidatorType` can call this function.
    public fun rotate_authentication_key<ValidatorType>(account_addr: address, new_auth_key: vector<u8>) {
-      
+      // TODO: This may have some issues as we can only rotate the authentication key of Rooch accounts.
+      // We have no way to change the BTC authentication.
+      features::ensure_testnet_enabled();
+
       assert!(
          vector::length(&new_auth_key) <= MAX_AUTHENTICATION_KEY_LENGTH,
          ErrorMalformedAuthenticationKey
@@ -121,6 +125,8 @@ module rooch_framework::account_authentication {
 
    //TODO should we init the AuthenticationKey when install auth validator?
    public fun install_auth_validator<ValidatorType: store>(account_signer: &signer) {
+      features::ensure_testnet_enabled();
+
       let validator = auth_validator_registry::borrow_validator_by_type<ValidatorType>();
       let validator_id = auth_validator::validator_id(validator);
       let account_addr = signer::address_of(account_signer);
@@ -150,6 +156,7 @@ module rooch_framework::account_authentication {
    
    #[test(sender=@0x42)]
    fun test_rotate_authentication_key(sender: signer){
+      features::switch_on_all_features_for_test();
       
       init_authentication_keys(&sender);
       let sender_addr = signer::address_of(&sender);
@@ -164,6 +171,7 @@ module rooch_framework::account_authentication {
 
    #[test(sender=@0x42)]
    fun test_remove_authentication_key(sender: signer){
+      features::switch_on_all_features_for_test();
       
       init_authentication_keys(&sender);
       let sender_addr = signer::address_of(&sender);

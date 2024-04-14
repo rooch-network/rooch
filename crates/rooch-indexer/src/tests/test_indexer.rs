@@ -12,7 +12,7 @@ use move_core_types::language_storage::StructTag;
 use move_core_types::vm_status::KeptVMStatus;
 use moveos_types::h256::H256;
 use moveos_types::move_types::{random_struct_tag, random_type_tag};
-use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::moveos_std::object::{ObjectEntity, ObjectID};
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state::MoveStructType;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
@@ -159,6 +159,7 @@ fn test_transaction_store() -> Result<()> {
     let tx_context = TxContext::new_readonly_ctx(AccountAddress::random());
     let move_action = random_verified_move_action();
     let random_moveos_tx = VerifiedMoveOSTransaction {
+        root: ObjectEntity::genesis_root_object(),
         ctx: tx_context,
         action: move_action,
         pre_execute_functions: random_function_calls(),
@@ -197,6 +198,7 @@ fn test_event_store() -> Result<()> {
     let tx_context = TxContext::new_readonly_ctx(AccountAddress::random());
     let move_action = random_verified_move_action();
     let random_moveos_tx = VerifiedMoveOSTransaction {
+        root: ObjectEntity::genesis_root_object(),
         ctx: tx_context,
         action: move_action,
         pre_execute_functions: random_function_calls(),

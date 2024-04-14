@@ -402,6 +402,10 @@ impl<T> ObjectEntity<T> {
     pub fn to_frozen(&mut self) {
         self.flag |= Self::FROZEN_OBJECT_FLAG_MASK;
     }
+
+    pub fn is_genesis(&self) -> bool {
+        self.state_root() == *GENESIS_STATE_ROOT
+    }
 }
 
 impl<T> ObjectEntity<T>

@@ -3,10 +3,11 @@
 
 use crate::moveos_std::account::Account;
 use crate::moveos_std::move_module::ModuleStore;
-use crate::moveos_std::object::{ObjectID, RootObjectEntity};
+use crate::moveos_std::object::{ObjectID, RawObject, RootObjectEntity};
 use crate::state::{AnnotatedKeyState, KeyState};
 use crate::{
     access_path::AccessPath,
+    h256::H256,
     moveos_std::move_module::MoveModule,
     moveos_std::object::AnnotatedObject,
     state::{AnnotatedState, State},
@@ -28,36 +29,126 @@ pub type AnnotatedStateKV = (AnnotatedKeyState, AnnotatedState);
 /// If the handle is ObjectID::root(), it will get the data from the global state tree,
 /// otherwise it will get the data from the table state tree.
 /// The key can be an ObjectID or an arbitrary key of a table.
-pub trait StateResolver {
-    fn resolve_table_item(
+pub trait StateResolver: StatelessResolver {
+    /// Get an object field with the given object_id and key.
+    fn get_field(
         &self,
-        handle: &ObjectID,
+        object_id: &ObjectID,
+        key: &KeyState,
+    ) -> Result<Option<State>, anyhow::Error> {
+        self.get_object(object_id).and_then(|res| {
+            res.map(|obj| self.get_field_at(obj.state_root(), key))
+                .unwrap_or(Ok(None))
+        })
+    }
+
+    fn get_object(&self, id: &ObjectID) -> Result<Option<RawObject>> {
+        if id.is_root() {
+            Ok(Some(self.root_object().to_raw()))
+        } else {
+            let parent_id = id.parent().expect("ObjectID parent should not be None");
+            let parent = self.get_object(&parent_id)?;
+            match parent {
+                Some(parent) => {
+                    let obj_field = self.get_object_field_at(parent.state_root(), id)?;
+                    Ok(obj_field)
+                }
+                None => Ok(None),
+            }
+        }
+    }
+
+    /// List fields with the given object_id.
+    fn list_fields(
+        &self,
+        object_id: &ObjectID,
+        cursor: Option<KeyState>,
+        limit: usize,
+    ) -> Result<Vec<StateKV>, anyhow::Error> {
+        let obj = self
+            .get_object(object_id)?
+            .ok_or_else(|| anyhow::format_err!("Object with id {} not found", object_id))?;
+        self.list_fields_at(obj.state_root(), cursor, limit)
+    }
+
+    fn root_object(&self) -> &RootObjectEntity;
+}
+
+pub struct RootObjectResolver<'a, R> {
+    root_object: RootObjectEntity,
+    resolver: &'a R,
+}
+
+impl<'a, R> RootObjectResolver<'a, R>
+where
+    R: StatelessResolver,
+{
+    pub fn new(root_object: RootObjectEntity, resolver: &'a R) -> Self {
+        Self {
+            root_object,
+            resolver,
+        }
+    }
+}
+
+impl<R> StatelessResolver for RootObjectResolver<'_, R>
+where
+    R: StatelessResolver,
+{
+    fn get_field_at(
+        &self,
+        state_root: H256,
+        key: &KeyState,
+    ) -> Result<Option<State>, anyhow::Error> {
+        self.resolver.get_field_at(state_root, key)
+    }
+
+    fn list_fields_at(
+        &self,
+        state_root: H256,
+        cursor: Option<KeyState>,
+        limit: usize,
+    ) -> Result<Vec<StateKV>, anyhow::Error> {
+        self.resolver.list_fields_at(state_root, cursor, limit)
+    }
+}
+
+impl<R> StateResolver for RootObjectResolver<'_, R>
+where
+    R: StatelessResolver,
+{
+    fn root_object(&self) -> &RootObjectEntity {
+        &self.root_object
+    }
+}
+
+pub trait StatelessResolver {
+    /// Get an object field with the key at the given state_root
+    fn get_field_at(
+        &self,
+        state_root: H256,
         key: &KeyState,
     ) -> Result<Option<State>, anyhow::Error>;
 
-    fn list_table_items(
-        &self,
-        handle: &ObjectID,
-        cursor: Option<KeyState>,
-        limit: usize,
-    ) -> Result<Vec<StateKV>, anyhow::Error>;
-
-    // get object data from global state tree.
-    fn resolve_object_state(&self, object_id: &ObjectID) -> Result<Option<State>, anyhow::Error> {
-        let parent_id = object_id.parent().unwrap_or(ObjectID::root());
-        self.resolve_table_item(&parent_id, &object_id.to_key())
+    fn get_object_field_at(&self, state_root: H256, id: &ObjectID) -> Result<Option<RawObject>> {
+        self.get_field_at(state_root, &id.to_key())?
+            .map(|state| state.as_raw_object())
+            .transpose()
+            .map_err(Into::into)
     }
 
-    fn root_object(&self) -> RootObjectEntity;
+    /// List fields with the given state_root.
+    fn list_fields_at(
+        &self,
+        state_root: H256,
+        cursor: Option<KeyState>,
+        limit: usize,
+    ) -> Result<Vec<StateKV>>;
 }
 
-/// A proxy type for proxy the StateResolver to MoveResolver
-/// Because the MoveResolver is a forgein trait, we can't implement the MoveResolver for StateResolver generic.
-pub struct MoveOSResolverProxy<R: StateResolver>(pub R);
-
-impl<R> ResourceResolver for MoveOSResolverProxy<R>
+impl<R> ResourceResolver for RootObjectResolver<'_, R>
 where
-    R: StateResolver,
+    R: StatelessResolver,
 {
     fn get_resource_with_metadata(
         &self,
@@ -69,8 +160,7 @@ where
 
         let key = KeyState::from_struct_tag(tag);
         let result = self
-            .0
-            .resolve_table_item(&account_object_id, &key)?
+            .get_field(&account_object_id, &key)?
             .map(|s| {
                 ensure!(
                     s.match_struct_type(tag),
@@ -95,9 +185,9 @@ where
     }
 }
 
-impl<R> ModuleResolver for MoveOSResolverProxy<R>
+impl<R> ModuleResolver for RootObjectResolver<'_, R>
 where
-    R: StateResolver,
+    R: StatelessResolver,
 {
     fn get_module_metadata(&self, _module_id: &ModuleId) -> Vec<Metadata> {
         vec![]
@@ -108,36 +198,9 @@ where
         let key = KeyState::from_module_id(module_id);
         //We wrap the modules byte codes to `MoveModule` type when store the module.
         //So we need unwrap the MoveModule type.
-        self.0
-            .resolve_table_item(&module_object_id, &key)?
+        self.get_field(&module_object_id, &key)?
             .map(|s| Ok(s.cast::<MoveModule>()?.byte_codes))
             .transpose()
-    }
-}
-
-impl<R> StateResolver for MoveOSResolverProxy<R>
-where
-    R: StateResolver,
-{
-    fn resolve_table_item(
-        &self,
-        handle: &ObjectID,
-        key: &KeyState,
-    ) -> Result<Option<State>, anyhow::Error> {
-        self.0.resolve_table_item(handle, key)
-    }
-
-    fn list_table_items(
-        &self,
-        handle: &ObjectID,
-        cursor: Option<KeyState>,
-        limit: usize,
-    ) -> Result<Vec<StateKV>, anyhow::Error> {
-        self.0.list_table_items(handle, cursor, limit)
-    }
-
-    fn root_object(&self) -> RootObjectEntity {
-        self.0.root_object()
     }
 }
 
@@ -152,7 +215,7 @@ pub trait StateReader: StateResolver {
         let query = path.into_state_query().into_fields_query()?;
         query
             .into_iter()
-            .map(|(object_id, key)| self.resolve_table_item(&object_id, &key))
+            .map(|(object_id, key)| self.get_field(&object_id, &key))
             .collect()
     }
 
@@ -164,7 +227,7 @@ pub trait StateReader: StateResolver {
         limit: usize,
     ) -> Result<Vec<StateKV>> {
         let query = path.into_state_query().into_list_query()?;
-        self.list_table_items(&query, cursor, limit)
+        self.list_fields(&query, cursor, limit)
     }
 }
 

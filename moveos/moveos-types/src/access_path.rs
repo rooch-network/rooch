@@ -198,19 +198,29 @@ impl FromStr for Path {
                 })
             }
             "table" | "fields" => {
-                let object_id_str = iter
-                    .next()
-                    .ok_or_else(|| anyhow::anyhow!("Invalid access path"))?;
+                let object_id_str = iter.next().ok_or_else(|| {
+                    anyhow::anyhow!("Invalid access path, require $object_id in /fields/$object_id")
+                })?;
                 let object_id = ObjectID::from_str(object_id_str)?;
 
                 let fields = match iter.next() {
-                    Some(v) => v
-                        .split(',')
-                        .map(|key| {
-                            KeyState::from_str(key)
-                                .map_err(|_| anyhow::anyhow!("Invalid access path key: {}", key))
-                        })
-                        .collect::<Result<Vec<_>, _>>()?,
+                    Some(v) => {
+                        if v.trim().is_empty() {
+                            vec![]
+                        } else {
+                            v.split(',')
+                                .map(|key| {
+                                    KeyState::from_str(key).map_err(|e| {
+                                        anyhow::anyhow!(
+                                            "Invalid access path key: {}, err: {:?}",
+                                            key,
+                                            e
+                                        )
+                                    })
+                                })
+                                .collect::<Result<Vec<_>, _>>()?
+                        }
+                    }
                     None => vec![],
                 };
 

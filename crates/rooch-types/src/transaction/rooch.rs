@@ -8,6 +8,7 @@ use crate::{address::RoochAddress, chain_id::RoochChainID};
 use anyhow::Result;
 use moveos_types::gas_config::GasConfig;
 use moveos_types::h256::H256;
+use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::{
     moveos_std::tx_context::TxContext,
     transaction::{MoveAction, MoveOSTransaction},
@@ -189,20 +190,18 @@ impl RoochTransaction {
             Signature::new_hashed(transaction_data.tx_hash().as_bytes(), &ed25519_keypair).into();
         RoochTransaction::new(transaction_data, auth)
     }
-}
 
-impl From<RoochTransaction> for MoveOSTransaction {
-    fn from(mut tx: RoochTransaction) -> Self {
-        let tx_hash = tx.tx_hash();
-        let tx_size = tx.tx_size();
+    pub fn into_moveos_transaction(mut self, root: RootObjectEntity) -> MoveOSTransaction {
+        let tx_hash = self.tx_hash();
+        let tx_size = self.tx_size();
         let tx_ctx = TxContext::new(
-            tx.data.sender.into(),
-            tx.data.sequence_number,
-            tx.data.max_gas_amount,
+            self.data.sender.into(),
+            self.data.sequence_number,
+            self.data.max_gas_amount,
             tx_hash,
             tx_size,
         );
-        MoveOSTransaction::new(tx_ctx, tx.data.action)
+        MoveOSTransaction::new(root, tx_ctx, self.data.action)
     }
 }
 

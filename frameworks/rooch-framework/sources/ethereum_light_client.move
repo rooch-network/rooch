@@ -8,6 +8,7 @@ module rooch_framework::ethereum_light_client{
     use moveos_std::table::{Self, Table};
     use moveos_std::bcs;
     use moveos_std::signer;
+    use moveos_std::features;
     use rooch_framework::ethereum_address::ETHAddress;
     use rooch_framework::timestamp; 
 
@@ -77,6 +78,7 @@ module rooch_framework::ethereum_light_client{
 
     /// The relay server submit a new Ethereum block to the light client.
     public entry fun submit_new_block(block_header_bytes: vector<u8>){
+        features::ensure_localnet_enabled();
         process_block(block_header_bytes);
     }
 

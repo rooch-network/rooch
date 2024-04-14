@@ -73,6 +73,7 @@ rooch-rpc-server = { workspace = true }
 rooch-test-transaction-builder = { workspace = true }
 rooch-framework = { workspace = true }
 rooch-framework-tests = { workspace = true }
+rooch-genesis = { workspace = true }
 
 [dev-dependencies]
 
