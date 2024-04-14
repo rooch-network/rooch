@@ -81,10 +81,7 @@ impl<T> SMTObject<T> {
     where
         T: Serialize,
     {
-        let raw = match bcs::to_bytes(&origin) {
-            Ok(v) => v,
-            Err(err) => return Err(err.into()),
-        };
+        let raw = bcs::to_bytes(&origin)?;
         Ok(SMTObject {
             origin,
             raw,

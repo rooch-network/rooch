@@ -74,14 +74,10 @@ where
         for (k, v_opt) in self.into_iter() {
             let key = k.into_object()?;
             let value = match v_opt {
-                Some(v) => v.into_object()?,
-                None => {
-                    return Err(anyhow::Error::msg(
-                        "into_updates failed: is not a SMTObject",
-                    ))
-                }
+                Some(v) => Some(v.into_object()?),
+                None => None,
             };
-            ret.push((key, Some(value)));
+            ret.push((key, value));
         }
         Ok(ret)
     }
