@@ -45,6 +45,7 @@ pub fn native_encoding(
         ("bech32m", Variant::Bech32m)
     };
 
+    // TODO: handle the encode error
     let encoded =
         bech32::encode(hrp, public_key.as_bytes_ref().to_vec().to_base32(), variant).unwrap();
 

@@ -6,6 +6,7 @@
 Module which defines base58 functions.
 
 
+-  [Constants](#@Constants_0)
 -  [Function `encoding`](#0x2_base58_encoding)
 -  [Function `checksum_encoding`](#0x2_base58_checksum_encoding)
 -  [Function `decoding`](#0x2_base58_decoding)
@@ -13,6 +14,20 @@ Module which defines base58 functions.
 
 
 <pre><code></code></pre>
+
+
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x2_base58_E_DECODE_FAILED"></a>
+
+
+
+<pre><code><b>const</b> <a href="base58.md#0x2_base58_E_DECODE_FAILED">E_DECODE_FAILED</a>: u64 = 1;
+</code></pre>
 
 
 

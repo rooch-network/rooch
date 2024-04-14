@@ -6,11 +6,26 @@
 Module which defines bech32 functions.
 
 
+-  [Constants](#@Constants_0)
 -  [Function `encoding`](#0x2_bech32_encoding)
 -  [Function `decoding`](#0x2_bech32_decoding)
 
 
 <pre><code></code></pre>
+
+
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x2_bech32_E_DECODE_FAILED"></a>
+
+
+
+<pre><code><b>const</b> <a href="bech32.md#0x2_bech32_E_DECODE_FAILED">E_DECODE_FAILED</a>: u64 = 1;
+</code></pre>
 
 
 

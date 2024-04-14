@@ -3,6 +3,9 @@
 
 /// Module which defines base58 functions.
 module moveos_std::base58 {
+
+   // Decode failed error
+   const E_DECODE_FAILED: u64 = 1;
    
    /// @param address_bytes: address bytes for base58 format
    /// Encode the address bytes with Base58 algorithm and returns an encoded base58 bytes
@@ -26,7 +29,7 @@ module moveos_std::base58 {
    /// This test can be verified at http://lenschulwitz.com/base58.
    fun test_encoding() {
       let address_bytes = x"0062e907b15cbf27d5425399ebf6f0fb50ebb88f18c29b7d93"; 
-      let encoded_address_bytes = base58(&address_bytes);
+      let encoded_address_bytes = encoding(&address_bytes);
       let expected_encoded_address_bytes = b"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"; // Satoshi Nakamoto address with Base58 (P2PKH)
 
       assert!(encoded_address_bytes == expected_encoded_address_bytes, 1000);
@@ -37,7 +40,7 @@ module moveos_std::base58 {
    fun test_checksum_encoding() {
       use std::vector;
       let address_bytes = x"0062e907b15cbf27d5425399ebf6f0fb50ebb88f18";
-      let encoded_address_bytes = base58check(&address_bytes, 0); // Use script version 0 for verifying Base58 (P2PKH) address
+      let encoded_address_bytes = checksum_encoding(&address_bytes, 0); // Use script version 0 for verifying Base58 (P2PKH) address
 
       let truncated_encoded_address_bytes = vector::empty<u8>();
       let i = 1;
@@ -56,19 +59,19 @@ module moveos_std::base58 {
    /// This test can be verified at http://lenschulwitz.com/base58.
    fun test_decoding() {
       let address_bytes = b"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"; // Satoshi Nakamoto address with Base58 (P2PKH)
-      let decoded_address_bytes = base58(&address_bytes);
+      let decoded_address_bytes = decoding(&address_bytes);
       let expected_decoded_address_bytes = x"0062e907b15cbf27d5425399ebf6f0fb50ebb88f18c29b7d93";
 
-      assert!(decoded_address_bytes == expected_decoded_address_bytes, 1002);
+      assert!(decoded_address_bytes == expected_decoded_address_bytes, E_DECODE_FAILED);
    }
 
    #[test]
    /// checksum decoding removes the last 8 digits (4 bytes) checksum.
    fun test_checksum_decoding() {
       let address_bytes = b"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"; // Satoshi Nakamoto address with Base58 (P2PKH)
-      let decoded_address_bytes = base58check(&address_bytes, 0); // Base58 (P2PKH) is verified for script version 0
+      let decoded_address_bytes = checksum_decoding(&address_bytes, 0); // Base58 (P2PKH) is verified for script version 0
       let expected_decoded_address_bytes = x"0062e907b15cbf27d5425399ebf6f0fb50ebb88f18";
 
-      assert!(decoded_address_bytes == expected_decoded_address_bytes, 1003);
+      assert!(decoded_address_bytes == expected_decoded_address_bytes, E_DECODE_FAILED);
    }
 }
