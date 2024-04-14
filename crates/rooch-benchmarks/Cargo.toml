@@ -82,6 +82,10 @@ bench = false
 
 [[bench]]
 harness = false
+name = "bench_utils"
+
+[[bench]]
+harness = false
 name = "bench_tx_validate"
 
 [[bench]]
@@ -94,16 +98,4 @@ name = "bench_tx_exec"
 
 [[bench]]
 harness = false
-name = "bench_tx_exec_blk"
-
-[[bench]]
-harness = false
-name = "bench_tx_query"
-
-[[bench]]
-harness = false
-name = "bench_utils"
-
-[[bench]]
-harness = false
-name = "bench_tx"
+name = "bench_tx_exec_btc_blk"
