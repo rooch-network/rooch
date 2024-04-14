@@ -13,7 +13,7 @@ export const Banner: React.FC<BannerProps> = ({ onClose }) => {
         <p className="flex items-center text-sm font-normal text-zinc-500 dark:text-zinc-400">
           <span className="inline-flex p-1 me-2 bg-zinc-400 rounded-full dark:bg-zinc-600 w-5 h-5 items-center justify-center flex-shrink-0">
             <img src="/rooch_white_logo.svg" alt="rooc" className="w-3 h-3" />
-            <span className="sr-only">Light bulb</span>
+            <span className="sr-only">Rooch</span>
           </span>
           <span>
             Rooch BTC Layer2 is comming soon{' '}
@@ -31,7 +31,7 @@ export const Banner: React.FC<BannerProps> = ({ onClose }) => {
         <button
           onClick={onClose}
           type="button"
-          className="flex-shrink-0 inline-flex justify-center w-7 h-7 items-center text-zinc-400 hover:bg-zinc-200 hover:text-zinc-900 rounded-lg text-sm p-1.5 dark:hover:bg-zinc-600 dark:hover:text-white"
+          className="flex-shrink-0 inline-flex justify-center w-7 h-7 items-center text-zinc-400 hover:bg-zinc-200 hover:text-zinc-900 rounded-lg text-sm p-1.5 dark:hover:bg-zinc-600 dark:hover:text-white transition-all"
         >
           <svg
             className="w-2.5 h-2.5"

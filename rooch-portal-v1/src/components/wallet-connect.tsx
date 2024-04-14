@@ -61,7 +61,7 @@ export const WalletConnect = () => {
       <Button
         variant="default"
         size="default"
-        className="rounded-lg ml-2 h-auto shadow-custom bg-white hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-800/50"
+        className="rounded-lg ml-2 h-auto shadow-custom bg-white hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-800/75 dark:shadow-muted/80"
         onClick={handleConnectWallet}
       >
         <div className="flex items-center justify-center gap-x-2">
