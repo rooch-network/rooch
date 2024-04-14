@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/card'
 import { Send } from 'lucide-react'
 
-export const AppItem = ({ id, name, description, profileUrl, logoUrl, type }: AppItemProps) => {
+export const AppsItem = ({ id, name, description, profileUrl, logoUrl, type }: AppItemProps) => {
   return (
     <Card
       key={id}
@@ -52,11 +52,7 @@ export const AppItem = ({ id, name, description, profileUrl, logoUrl, type }: Ap
         </div>
       </CardContent>
       <CardFooter className="p-4">
-        <Button
-          variant="default"
-          size="default"
-          className="w-full text-white bg-blue-500 hover:bg-blue-600 font-semibold"
-        >
+        <Button variant="default" size="default" className="w-full">
           <div className="flex items-center justify-center gap-x-2">
             <Send className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all" />
             {type}
