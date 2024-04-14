@@ -95,7 +95,7 @@ module rooch_framework::auth_validator_registry {
     }
     #[test(sender=@rooch_framework)]
     fun test_registry(sender: signer){
-        features::switch_on_all_features_for_test();
+        features::init_and_enable_all_features_for_test();
         genesis_init(&sender);
         register<TestAuthValidator>();
         let validator = borrow_validator_by_type<TestAuthValidator>();

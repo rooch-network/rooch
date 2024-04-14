@@ -156,7 +156,7 @@ module rooch_framework::account_authentication {
    
    #[test(sender=@0x42)]
    fun test_rotate_authentication_key(sender: signer){
-      features::switch_on_all_features_for_test();
+      features::init_and_enable_all_features_for_test();
       
       init_authentication_keys(&sender);
       let sender_addr = signer::address_of(&sender);
@@ -171,7 +171,7 @@ module rooch_framework::account_authentication {
 
    #[test(sender=@0x42)]
    fun test_remove_authentication_key(sender: signer){
-      features::switch_on_all_features_for_test();
+      features::init_and_enable_all_features_for_test();
       
       init_authentication_keys(&sender);
       let sender_addr = signer::address_of(&sender);
