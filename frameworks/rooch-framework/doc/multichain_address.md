@@ -28,9 +28,9 @@
 
 
 <pre><code><b>use</b> <a href="">0x2::bcs</a>;
+<b>use</b> <a href="">0x2::hash</a>;
 <b>use</b> <a href="bitcoin_address.md#0x3_bitcoin_address">0x3::bitcoin_address</a>;
 <b>use</b> <a href="ethereum_address.md#0x3_ethereum_address">0x3::ethereum_address</a>;
-<b>use</b> <a href="hash.md#0x3_hash">0x3::hash</a>;
 </code></pre>
 
 

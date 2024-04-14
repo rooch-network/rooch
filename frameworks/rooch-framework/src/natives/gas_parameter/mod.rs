@@ -1,11 +1,11 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 mod account;
+mod base58;
 mod bcd;
-mod decoding;
+mod bech32;
 mod ecdsa_k1;
 mod ed25519;
-mod encoding;
 mod events;
 pub mod gas_member;
 mod hash;

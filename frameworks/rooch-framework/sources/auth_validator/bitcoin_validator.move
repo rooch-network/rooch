@@ -11,7 +11,7 @@ module rooch_framework::bitcoin_validator {
     use moveos_std::tx_context;
     use moveos_std::features;
     use moveos_std::signer::module_signer;
-    use rooch_framework::hash;
+    use moveos_std::hash;
     use rooch_framework::ecdsa_k1;
     use rooch_framework::auth_payload;
     use rooch_framework::auth_validator;

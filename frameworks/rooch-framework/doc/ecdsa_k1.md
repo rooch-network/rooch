@@ -15,7 +15,7 @@
 -  [Function `verify`](#0x3_ecdsa_k1_verify)
 
 
-<pre><code><b>use</b> <a href="hash.md#0x3_hash">0x3::hash</a>;
+<pre><code><b>use</b> <a href="">0x2::hash</a>;
 </code></pre>
 
 

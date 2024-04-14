@@ -11,6 +11,7 @@ import { WalletProvider, RoochClientProvider, SupportChain } from '@roochnetwork
 
 import { DashboardLayout } from './pages/dashboard-layout'
 import { ToastProvider } from './providers/toast-provider'
+// import { Banner } from './components/banner'
 
 const clientSideEmotionCache = createEmotionCache()
 
@@ -25,6 +26,7 @@ function App() {
             <WalletProvider chain={SupportChain.BITCOIN} autoConnect>
               <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
                 <ToastProvider />
+                {/* <Banner /> */}
                 <DashboardLayout />
               </ThemeProvider>
             </WalletProvider>

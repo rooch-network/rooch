@@ -155,7 +155,7 @@ module rooch_framework::ecdsa_k1 {
     // Helper Move function to recover signature directly to an ETH address.
     fun ecrecover_eth_address(sig: vector<u8>, msg: vector<u8>): vector<u8> {
         use std::vector;
-        use rooch_framework::hash;
+        use moveos_std::hash;
 
         // Normalize the last byte of the signature to be 0 or 1.
         let v = vector::borrow_mut(&mut sig, 64);

@@ -28,10 +28,10 @@ export const TransactionsBrowserTab: React.FC<TabProps> = ({ items }) => {
       {items.map((item) => (
         <button
           key={item.id}
-          className={`px-3 py-2 text-muted-foreground ${
+          className={`px-3 py-2 ${
             activeId === item.id
               ? 'border-b-2 border-blue-500 text-blue-500'
-              : 'border-b-2 border-transparent'
+              : 'border-b-2 border-transparent text-muted-foreground'
           } hover:text-blue-500 transition-all`}
           onClick={() => handleTabClick(item.id)}
         >

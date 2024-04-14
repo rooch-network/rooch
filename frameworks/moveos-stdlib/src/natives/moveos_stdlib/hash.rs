@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::natives::helpers::{make_module_natives, make_native};
-use fastcrypto::hash::{Blake2b256, HashFunction, Keccak256};
+use fastcrypto::hash::{Blake2b256, HashFunction, Keccak256, Ripemd160};
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -69,21 +69,21 @@ pub fn native_blake2b256(
     hash::<Blake2b256, 32>(gas_params, context, ty_args, args)
 }
 
-// /***************************************************************************************************
-//  * native fun ripemd160
-//  * Implementation of the Move native function `hash::ripemd160(data: &vector<u8>): vector<u8>`
-//  *   gas cost: hash_ripemd160_cost_base                               | base cost for function call and fixed opers
-//  *              + hash_ripemd160_data_cost_per_byte * msg.len()       | cost depends on length of message
-//  *              + hash_ripemd160_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
-//  **************************************************************************************************/
-// pub fn native_ripemd160(
-//     _gas_params: &FromBytesGasParameters,
-//     context: &mut NativeContext,
-//     ty_args: Vec<Type>,
-//     args: VecDeque<Value>,
-// ) -> PartialVMResult<NativeResult> {
-//     hash::<Ripemd160, 20>(context, ty_args, args)
-// }
+/***************************************************************************************************
+ * native fun ripemd160
+ * Implementation of the Move native function `hash::ripemd160(data: &vector<u8>): vector<u8>`
+ *   gas cost: hash_ripemd160_cost_base                               | base cost for function call and fixed opers
+ *              + hash_ripemd160_data_cost_per_byte * msg.len()       | cost depends on length of message
+ *              + hash_ripemd160_data_cost_per_block * num_blocks     | cost depends on number of blocks in message
+ **************************************************************************************************/
+pub fn native_ripemd160(
+    gas_params: &FromBytesGasParameters,
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    hash::<Ripemd160, 20>(gas_params, context, ty_args, args)
+}
 
 #[derive(Debug, Clone)]
 pub struct FromBytesGasParameters {
@@ -131,10 +131,10 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             "blake2b256",
             make_native(gas_params.blake2b256, native_blake2b256),
         ),
-        // (
-        //     "ripemd160",
-        //     make_native(gas_params.ripemd160, native_ripemd160),
-        // ),
+        (
+            "ripemd160",
+            make_native(gas_params.ripemd160, native_ripemd160),
+        ),
     ];
 
     make_module_natives(natives)

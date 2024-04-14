@@ -5,7 +5,7 @@ module rooch_framework::multichain_address {
 
     use rooch_framework::ethereum_address::{Self, ETHAddress};
     use rooch_framework::bitcoin_address::{Self, BitcoinAddress};
-    use rooch_framework::hash::{blake2b256};
+    use moveos_std::hash::{blake2b256};
     use moveos_std::bcs;
 
     const ErrorMultiChainIDMismatch: u64 = 1;
