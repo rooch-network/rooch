@@ -48,7 +48,7 @@ impl<'a> EventModule<'a> {
             .into_result()
             .map_err(|e| anyhow::anyhow!("Call get event handle error:{}", e))?;
 
-        let event_handle_id = match result.get(0) {
+        let event_handle_id = match result.first() {
             Some(value) => bcs::from_bytes::<ObjectID>(&value.value)?,
             None => return Err(anyhow::anyhow!("Event handle should have event handle id")),
         };

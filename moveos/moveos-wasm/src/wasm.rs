@@ -142,7 +142,7 @@ pub fn put_data_on_stack(stack_alloc_func: &Function, store: &mut Store, data: &
         .expect("call stackAlloc failed");
     let return_value = result
         .deref()
-        .get(0)
+        .first()
         .expect("the stackAlloc func does not have return value");
     let offset = return_value
         .i32()

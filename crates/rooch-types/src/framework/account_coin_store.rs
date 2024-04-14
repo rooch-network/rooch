@@ -40,7 +40,7 @@ impl<'a> AccountCoinStoreModule<'a> {
             .call_function(&ctx, call)?
             .into_result()
             .map_err(|e| anyhow::anyhow!("Call coin store handle error:{}", e))?;
-        let object_id = match result.get(0) {
+        let object_id = match result.first() {
             Some(value) => {
                 let object_id_result = MoveOption::<ObjectID>::from_bytes(&value.value)?;
                 Option::<ObjectID>::from(object_id_result)
