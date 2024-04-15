@@ -1,0 +1,4 @@
+tx_type = "btc-block"
+data_import_mode = "utxo"
+btc_block_dir = "/home/rooch/btc/blk/800000"
+pprof_output = "flamegraph"

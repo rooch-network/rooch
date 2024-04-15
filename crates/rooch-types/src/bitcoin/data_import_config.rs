@@ -16,6 +16,7 @@ pub const MODULE_NAME: &IdentStr = ident_str!("data_import_config");
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 #[repr(u8)]
+#[serde(rename_all = "lowercase")]
 pub enum DataImportMode {
     None = 0,
     UTXO = 1,

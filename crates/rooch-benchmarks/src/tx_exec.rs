@@ -9,7 +9,7 @@ use rooch_key::keystore::memory_keystore::InMemKeystore;
 use rooch_test_transaction_builder::TestTransactionBuilder;
 
 use crate::config::BenchTxConfig;
-use crate::config::TxType::{BTCBlk, Empty, Transfer};
+use crate::config::TxType::{BTCBlock, Empty, Transfer};
 use crate::tx::{create_btc_blk_tx, create_l2_tx, find_block_height};
 
 // pure execution, no validate, sequence
@@ -27,7 +27,7 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
     let mut bench_id = "l2_tx";
     let tx_type = config.tx_type.unwrap();
     let tx_cnt = match tx_type {
-        BTCBlk => {
+        BTCBlock => {
             bench_id = "btc_blk";
             20 // block after 800,000 always need seconds/block
         }
@@ -36,7 +36,7 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
     };
 
     let mut transactions: Vec<_> = Vec::with_capacity(tx_cnt);
-    if tx_type != BTCBlk {
+    if tx_type != BTCBlock {
         for n in 0..tx_cnt {
             let tx = create_l2_tx(
                 &mut test_transaction_builder,

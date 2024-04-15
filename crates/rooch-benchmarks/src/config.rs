@@ -20,6 +20,7 @@ lazy_static! {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
 pub enum PProfOutput {
     Proto,
     Flamegraph,
@@ -46,11 +47,11 @@ impl Display for PProfOutput {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Eq)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "kebab-case")]
 pub enum TxType {
     Empty,
     Transfer,
-    BTCBlk,
+    BTCBlock,
 }
 
 impl FromStr for TxType {
@@ -58,7 +59,7 @@ impl FromStr for TxType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "transfer" => Ok(TxType::Transfer),
-            "btc_block" => Ok(TxType::BTCBlk),
+            "btc_block" => Ok(TxType::BTCBlock),
             "empty" => Ok(TxType::Empty),
             _ => Err(format!("invalid tx type: {}", s)),
         }
@@ -70,7 +71,7 @@ impl Display for TxType {
         let str = match self {
             TxType::Empty => "empty".to_string(),
             TxType::Transfer => "transfer".to_string(),
-            TxType::BTCBlk => "btc_blk".to_string(),
+            TxType::BTCBlock => "btc_blk".to_string(),
         };
         write!(f, "{}", str)
     }
@@ -78,10 +79,10 @@ impl Display for TxType {
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser, Eq)]
 pub struct BenchTxConfig {
-    pub tx_type: Option<TxType>,
-    pub data_import_mode: Option<DataImportMode>,
+    pub tx_type: Option<TxType>, // empty(default)/transfer/btc-block
+    pub data_import_mode: Option<DataImportMode>, // utxo(default)/ord/none/full
     pub btc_block_dir: Option<String>,
-    pub pprof_output: Option<PProfOutput>,
+    pub pprof_output: Option<PProfOutput>, // flamegraph(default)/proto
 }
 
 impl BenchTxConfig {
@@ -89,7 +90,7 @@ impl BenchTxConfig {
         self.tx_type.get_or_insert(TxType::Empty);
         self.data_import_mode.get_or_insert(DataImportMode::UTXO);
         // if tx_type is btc_block, btc_block_dir must be existed, if not, panic
-        if self.tx_type == Some(TxType::BTCBlk) {
+        if self.tx_type == Some(TxType::BTCBlock) {
             self.btc_block_dir
                 .as_ref()
                 .expect("btc_block_dir must be existed");
