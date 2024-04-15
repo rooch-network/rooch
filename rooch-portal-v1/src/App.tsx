@@ -11,12 +11,29 @@ import { WalletProvider, RoochClientProvider, SupportChain } from '@roochnetwork
 
 import { DashboardLayout } from './pages/dashboard-layout'
 import { ToastProvider } from './providers/toast-provider'
-// import { Banner } from './components/banner'
+import { useEffect, useState } from 'react'
+
+import SessionKeyModal from '@/components/session-key-modal'
 
 const clientSideEmotionCache = createEmotionCache()
 
-function App() {
+const App = () => {
   const queryClient = new QueryClient()
+  const [isSessionKeyModalOpen, setIsSessionKeyModalOpen] = useState<boolean>(false)
+  const handleSessionKeyRequest = () => {
+    setIsSessionKeyModalOpen(true)
+  }
+
+  const handleAuthorize = () => {
+    console.log('Handling authorization in App component.')
+
+    setIsSessionKeyModalOpen(false)
+  }
+
+  // 如果要测试 Session Key Modal，打开这个就行
+  useEffect(() => {
+    handleSessionKeyRequest()
+  }, [])
 
   return (
     <>
@@ -26,8 +43,12 @@ function App() {
             <WalletProvider chain={SupportChain.BITCOIN} autoConnect>
               <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
                 <ToastProvider />
-                {/* <Banner /> */}
                 <DashboardLayout />
+                <SessionKeyModal
+                  isOpen={isSessionKeyModalOpen}
+                  onClose={() => setIsSessionKeyModalOpen(false)}
+                  onAuthorize={handleAuthorize}
+                />
               </ThemeProvider>
             </WalletProvider>
             <Toaster />
