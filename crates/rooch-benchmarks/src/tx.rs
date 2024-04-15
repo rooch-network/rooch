@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tx::TxType::{BTCBlk, Blog, Empty, Transfer};
+use std::fs;
+use std::time::Duration;
+
 use anyhow::Result;
 use bitcoin::consensus::deserialize;
 use bitcoin::hashes::Hash;
@@ -11,7 +13,8 @@ use bitcoincore_rpc_json::bitcoin::Block;
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::system::ActorSystem;
 use coerce::actor::IntoActor;
-use lazy_static::lazy_static;
+use tracing::info;
+
 use moveos_config::store_config::RocksdbConfig;
 use moveos_config::DataDirPath;
 use moveos_store::{MoveOSDB, MoveOSStore};
@@ -55,66 +58,12 @@ use rooch_types::crypto::RoochKeyPair;
 use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::L1BlockWithBody;
-use std::fmt::Display;
-use std::str::FromStr;
-use std::time::Duration;
-use std::{env, fs};
-use tracing::info;
+
+use crate::config::TxType;
+use crate::tx::TxType::{Empty, Transfer};
 
 pub const EXAMPLE_SIMPLE_BLOG_PACKAGE_NAME: &str = "simple_blog";
 pub const EXAMPLE_SIMPLE_BLOG_NAMED_ADDRESS: &str = "simple_blog";
-
-#[derive(PartialEq, Eq)]
-pub enum TxType {
-    Empty,
-    Transfer,
-    Blog,
-    BTCBlk,
-}
-
-impl FromStr for TxType {
-    type Err = ();
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        match s {
-            "transfer" => Ok(Transfer),
-            "blog" => Ok(Blog),
-            "btc_block" => Ok(BTCBlk),
-            _ => Ok(Empty),
-        }
-    }
-}
-
-impl Display for TxType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let str = match self {
-            Empty => "empty".to_string(),
-            Transfer => "transfer".to_string(),
-            Blog => "blog".to_string(),
-            BTCBlk => "btc_blk".to_string(),
-        };
-        write!(f, "{}", str)
-    }
-}
-
-lazy_static! {
-    pub static ref TX_SIZE: usize = {
-        env::var("ROOCH_BENCH_TX_SIZE")
-            .unwrap_or_else(|_| String::from("0"))
-            .parse::<usize>()
-            .unwrap_or(0usize)
-    };
-    pub static ref TX_TYPE: TxType = {
-        let tx_type_str = env::var("ROOCH_BENCH_TX_TYPE").unwrap_or_else(|_| String::from("empty"));
-        tx_type_str.parse::<TxType>().unwrap_or(Empty)
-    };
-    pub static ref IMPORT_MODE: DataImportMode = {
-        let import_mode_str =
-            env::var("ROOCH_BENCH_IMPORT_MODE").unwrap_or_else(|_| String::from("none mode"));
-        import_mode_str
-            .parse::<DataImportMode>()
-            .unwrap_or(DataImportMode::None)
-    };
-}
 
 pub fn gen_sequencer(keypair: RoochKeyPair, rooch_store: RoochStore) -> Result<SequencerActor> {
     SequencerActor::new(keypair, rooch_store.clone())
@@ -305,13 +254,13 @@ pub fn create_l2_tx(
     test_transaction_builder: &mut TestTransactionBuilder,
     keystore: &InMemKeystore,
     seq_num: u64,
+    tx_type: TxType,
 ) -> Result<RoochTransaction> {
     test_transaction_builder.update_sequence_number(seq_num);
 
-    let action = match *TX_TYPE {
+    let action = match tx_type {
         Empty => test_transaction_builder.call_empty_create(),
         Transfer => test_transaction_builder.call_transfer_create(),
-        Blog => test_transaction_builder.call_article_create_with_size(*TX_SIZE),
         _ => panic!("Unsupported tx type"),
     };
 

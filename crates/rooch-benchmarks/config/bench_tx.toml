@@ -1,0 +1,4 @@
+tx_type = "empty"
+data_import_mode = "utxo mode"
+#btc_block_dir = "/path/to/dir"
+pprof_output = "flamegraph"
