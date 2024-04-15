@@ -4,7 +4,7 @@
 module rooch_framework::ethereum_address {
     use std::vector;
     use rooch_framework::ecdsa_k1;
-    use rooch_framework::hash;
+    use moveos_std::hash;
 
     /// Ethereum addresses are always 20 bytes
     const ETHEREUM_ADDR_LENGTH: u64 = 20;

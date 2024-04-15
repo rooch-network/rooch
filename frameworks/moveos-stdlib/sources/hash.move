@@ -3,7 +3,7 @@
 
 /// Module which defines hash functions. Note that Sha-256 and Sha3-256 is available in the std::hash module in the
 /// Move standard library and wrap the functions at here.
-module rooch_framework::hash {
+module moveos_std::hash {
    
    public fun sha2_256(data: vector<u8>): vector<u8> {
       std::hash::sha2_256(data)
@@ -20,6 +20,10 @@ module rooch_framework::hash {
    /// @param data: Arbitrary binary data to hash
    /// Hash the input bytes using keccak256 and returns 32 bytes.
    native public fun keccak256(data: &vector<u8>): vector<u8>;
+
+   /// @param data: Arbitrary binary data to hash
+   /// Hash the input bytes using ripemd160 and returns 20 bytes.
+   native public fun ripemd160(data: &vector<u8>): vector<u8>;
 
    #[test]
    fun test_keccak256_hash() {
@@ -45,5 +49,19 @@ module rooch_framework::hash {
       let _ = blake2b256(&empty_msg);
       let long_msg = b"57caa176af1ac0433c5df30e8dabcd2ec1af1e92a26eced5f719b88458777cd657caa176af1ac0433c5df30e8dabcd2ec1af1e92a26eced5f719b88458777cd657caa176af1ac0433c5df30e8dabcd2ec1af1e92a26eced5f719b88458777cd657caa176af1ac0433c5df30e8dabcd2ec1af1e92a26eced5f719b88458777cd657caa176af1ac0433c5df30e8dabcd2ec1af1e92a26eced5f719b88458777cd657caa176af1ac0433c5df30e8dabcd2ec1af1e92a26eced5f719b88458777cd657caa176af1ac0433c5df30e8dabcd2ec1af1e92a26eced5f719b88458777cd657caa176af1ac0433c5df30e8dabcd2ec1af1e92a26eced5f719b88458777cd6";
       let _ = blake2b256(&long_msg);
+   }
+
+   #[test]
+   fun test_ripemd160_hash() {
+      let msg = b"Hello, World!";
+      let hashed_msg_bytes = x"527a6a4b9a6da75607546842e0e00105350b1aaf";
+      let hashed_msg = ripemd160(&msg);
+      std::debug::print(&hashed_msg);
+      assert!(hashed_msg == hashed_msg_bytes, 0);
+
+      let empty_msg = b"";
+      let _ = ripemd160(&empty_msg);
+      let long_msg = b"57caa176af1ac0433c5df30e8dabcd2ec1af1e92a26eced5f719b88458777cd657caa176af1ac0433c5df30e8dabcd2ec1af1e92a26eced5f719b88458777cd657caa176af1ac0433c5df30e8dabcd2ec1af1e92a26eced5f719b88458777cd657caa176af1ac0433c5df30e8dabcd2ec1af1e92a26eced5f719b88458777cd657caa176af1ac0433c5df30e8dabcd2ec1af1e92a26eced5f719b88458777cd657caa176af1ac0433c5df30e8dabcd2ec1af1e92a26eced5f719b88458777cd657caa176af1ac0433c5df30e8dabcd2ec1af1e92a26eced5f719b88458777cd657caa176af1ac0433c5df30e8dabcd2ec1af1e92a26eced5f719b88458777cd6";
+      let _ = ripemd160(&long_msg);
    }
 }

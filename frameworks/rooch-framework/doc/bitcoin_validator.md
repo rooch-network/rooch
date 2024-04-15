@@ -24,6 +24,7 @@ This module implements Bitcoin validator with the ECDSA recoverable signature ov
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::features</a>;
+<b>use</b> <a href="">0x2::hash</a>;
 <b>use</b> <a href="">0x2::hex</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
@@ -31,7 +32,6 @@ This module implements Bitcoin validator with the ECDSA recoverable signature ov
 <b>use</b> <a href="auth_payload.md#0x3_auth_payload">0x3::auth_payload</a>;
 <b>use</b> <a href="auth_validator.md#0x3_auth_validator">0x3::auth_validator</a>;
 <b>use</b> <a href="ecdsa_k1.md#0x3_ecdsa_k1">0x3::ecdsa_k1</a>;
-<b>use</b> <a href="hash.md#0x3_hash">0x3::hash</a>;
 <b>use</b> <a href="multichain_address.md#0x3_multichain_address">0x3::multichain_address</a>;
 </code></pre>
 

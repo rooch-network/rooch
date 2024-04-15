@@ -1,5 +1,5 @@
-import { IndexedAssetsBTC } from './indexed-assets-btc'
-import { IndexedAssetsOrdi } from './indexed-assets-ordi'
+import { IndexedAssetsBTC } from './components/indexed-assets-btc'
+import { IndexedAssetsOrdi } from './components/indexed-assets-ordi'
 
 export const AssetsIndexedAssets = () => {
   return (

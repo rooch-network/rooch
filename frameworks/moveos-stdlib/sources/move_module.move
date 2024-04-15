@@ -452,6 +452,7 @@ module moveos_std::move_module {
     
     #[test(account=@0x42)]
     fun test_module_template(account: &signer) {
+        features::init_feature_store_for_test();
         features::change_feature_flags_for_test(
             vector[features::get_module_template_feature(), features::get_devnet_feature()], 
             vector[]
@@ -504,6 +505,7 @@ module moveos_std::move_module {
     #[test(_account=@0x42)]
     #[expected_failure(abort_code = 2, location = moveos_std::features)]
     fun test_module_template_with_feature_disabled(_account: &signer) {
+        features::init_feature_store_for_test();
         // The following is the bytes of compiled module: examples/module_template/template/sources/fixed_supply_coin_template.move
         //rooch move build -p examples/module_template/template
         //xxd -c 99999 -p examples/module_template/template/build/template/bytecode_modules/coin_module_identifier_placeholder.mv

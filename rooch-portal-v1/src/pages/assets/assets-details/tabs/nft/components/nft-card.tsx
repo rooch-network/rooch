@@ -15,7 +15,7 @@ import { AspectRatio } from '@/components/ui/aspect-ratio'
 import { ArrowLeft, Copy } from 'lucide-react'
 
 import { nftData } from '@/common/constant'
-import { formatAddress } from '../../../utils/format'
+import { formatAddress } from '../../../../../../utils/format'
 
 export const NftCard = () => {
   const [modalOpen, setModalOpen] = useState(false)
