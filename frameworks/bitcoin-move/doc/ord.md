@@ -15,6 +15,7 @@
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_ord_genesis_init)
 -  [Function `new_inscription_id`](#0x4_ord_new_inscription_id)
+-  [Function `derive_inscription_id`](#0x4_ord_derive_inscription_id)
 -  [Function `get_inscription_id_by_index`](#0x4_ord_get_inscription_id_by_index)
 -  [Function `exists_inscription`](#0x4_ord_exists_inscription)
 -  [Function `borrow_inscription`](#0x4_ord_borrow_inscription)
@@ -192,6 +193,17 @@ How may blocks between halvings.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_new_inscription_id">new_inscription_id</a>(txid: <b>address</b>, index: u32): <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_derive_inscription_id"></a>
+
+## Function `derive_inscription_id`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_derive_inscription_id">derive_inscription_id</a>(inscription_id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): <a href="_ObjectID">object::ObjectID</a>
 </code></pre>
 
 
