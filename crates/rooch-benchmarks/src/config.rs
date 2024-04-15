@@ -51,7 +51,7 @@ impl Display for PProfOutput {
 pub enum TxType {
     Empty,
     Transfer,
-    BTCBlock,
+    BtcBlock,
 }
 
 impl FromStr for TxType {
@@ -59,7 +59,7 @@ impl FromStr for TxType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "transfer" => Ok(TxType::Transfer),
-            "btc_block" => Ok(TxType::BTCBlock),
+            "btc_block" => Ok(TxType::BtcBlock),
             "empty" => Ok(TxType::Empty),
             _ => Err(format!("invalid tx type: {}", s)),
         }
@@ -71,7 +71,7 @@ impl Display for TxType {
         let str = match self {
             TxType::Empty => "empty".to_string(),
             TxType::Transfer => "transfer".to_string(),
-            TxType::BTCBlock => "btc_blk".to_string(),
+            TxType::BtcBlock => "btc_blk".to_string(),
         };
         write!(f, "{}", str)
     }
@@ -90,7 +90,7 @@ impl BenchTxConfig {
         self.tx_type.get_or_insert(TxType::Empty);
         self.data_import_mode.get_or_insert(DataImportMode::UTXO);
         // if tx_type is btc_block, btc_block_dir must be existed, if not, panic
-        if self.tx_type == Some(TxType::BTCBlock) {
+        if self.tx_type == Some(TxType::BtcBlock) {
             self.btc_block_dir
                 .as_ref()
                 .expect("btc_block_dir must be existed");
