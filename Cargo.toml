@@ -73,7 +73,6 @@ smt = { path = "moveos/smt" }
 moveos-types = { path = "moveos/moveos-types" }
 moveos-store = { path = "moveos/moveos-store" }
 moveos = { path = "moveos/moveos" }
-moveos-cli = { path = "moveos/moveos-cli" }
 moveos-common = { path = "moveos/moveos-commons/moveos-common" }
 timeout-join-handler = { path = "moveos/moveos-commons/timeout-join-handler" }
 moveos-verifier = { path = "moveos/moveos-verifier" }
