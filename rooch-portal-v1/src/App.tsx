@@ -18,6 +18,8 @@ const clientSideEmotionCache = createEmotionCache()
 function App() {
   const queryClient = new QueryClient()
 
+  // Test the commits
+
   return (
     <>
       <CacheProvider value={clientSideEmotionCache}>
