@@ -34,7 +34,7 @@ pub fn bcs_serialized_size_benchmark(c: &mut Criterion) {
     let l1_block = L1Block::default();
     let mut group = c.benchmark_group("bcs_serialized_size_bench");
 
-    let funcs = vec![
+    let funcs = [
         BcsSerializeSizeFunContainer {
             func: serialized_size,
             name: "serialized_size",

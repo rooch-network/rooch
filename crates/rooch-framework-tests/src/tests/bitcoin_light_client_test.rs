@@ -33,7 +33,7 @@ fn test_submit_block() {
     let bitcoin_txdata = block.txdata.clone();
     let block_hash = block.header.block_hash();
     let block_header: Header = block.header.into();
-    let move_block = rooch_types::bitcoin::types::Block::try_from(block.clone()).unwrap();
+    let move_block = rooch_types::bitcoin::types::Block::from(block.clone());
 
     binding_test
         .execute_l1_block(L1BlockWithBody {
@@ -100,7 +100,7 @@ fn test_utxo_progress() {
     let height = 818677u64;
     let block: Block = deserialize(&btc_block_bytes).unwrap();
     let block_hash = block.header.block_hash();
-    let move_block = rooch_types::bitcoin::types::Block::try_from(block.clone()).unwrap();
+    let move_block = rooch_types::bitcoin::types::Block::from(block.clone());
 
     binding_test
         .execute_l1_block(L1BlockWithBody {

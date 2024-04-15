@@ -17,5 +17,3 @@ runs:
     - name: install protoc and related tools
       shell: bash
       run: scripts/dev_setup.sh -b -r
-
-

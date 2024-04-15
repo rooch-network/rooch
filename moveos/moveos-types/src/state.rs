@@ -584,7 +584,7 @@ impl State {
                 ) {
                     let object_type_param = struct_tag
                         .type_params
-                        .get(0)
+                        .first()
                         .expect("The ObjectEntity<T> should have a type param");
                     match object_type_param {
                         TypeTag::Struct(struct_tag) => Some(struct_tag.as_ref().clone()),

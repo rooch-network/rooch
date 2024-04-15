@@ -41,7 +41,7 @@ impl<'a> AddressMapping<'a> {
                 .call_function(&ctx, call)?
                 .into_result()
                 .map(|values| {
-                    let value = values.get(0).expect("Expected return value");
+                    let value = values.first().expect("Expected return value");
                     let result = MoveOption::<AccountAddress>::from_bytes(&value.value)
                         .expect("Expected Option<address>");
                     result.into()
@@ -69,7 +69,7 @@ impl<'a> AddressMapping<'a> {
                 .call_function(&ctx, call)?
                 .into_result()
                 .map(|values| {
-                    let value = values.get(0).expect("Expected return value");
+                    let value = values.first().expect("Expected return value");
                     AccountAddress::from_bytes(&value.value).expect("Expected return address")
                 })?;
             Ok(address)
@@ -89,7 +89,7 @@ impl<'a> AddressMapping<'a> {
             .call_function(&ctx, call)?
             .into_result()
             .map(|values| {
-                let value0 = values.get(0).ok_or(anyhow::anyhow!(
+                let value0 = values.first().ok_or(anyhow::anyhow!(
                     "Address mapping handle expected return value"
                 ))?;
                 let value1 = values.get(1).ok_or(anyhow::anyhow!(

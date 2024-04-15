@@ -1421,7 +1421,7 @@ pub fn get_gas_schedule_entries<Resolver: MoveOSResolver>(
                                 match field_value {
                                     AnnotatedMoveValue::Struct(gas_entries_struct) => {
                                         let (_, gas_entry_key) =
-                                            gas_entries_struct.value.get(0).unwrap();
+                                            gas_entries_struct.value.first().unwrap();
                                         let (_, gas_entry_value) =
                                             gas_entries_struct.value.get(1).unwrap();
 
@@ -1467,7 +1467,7 @@ fn extract_bytes_from_value(value: &AnnotatedMoveValue) -> Option<Vec<u8>> {
     match value {
         AnnotatedMoveValue::Bytes(v) => Some(v.clone()),
         AnnotatedMoveValue::Struct(v) => {
-            let (_, item) = v.value.get(0).unwrap();
+            let (_, item) = v.value.first().unwrap();
             match item {
                 AnnotatedMoveValue::Bytes(value) => Some(value.clone()),
                 _ => None,

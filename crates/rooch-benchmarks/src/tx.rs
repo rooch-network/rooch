@@ -295,7 +295,7 @@ pub fn create_btc_blk_tx(height: u64, block_file: String) -> Result<L1BlockWithB
     let origin_block: Block = deserialize(&block_hex).unwrap();
     let block = origin_block.clone();
     let block_hash = block.header.block_hash();
-    let move_block = rooch_types::bitcoin::types::Block::try_from(block.clone()).unwrap();
+    let move_block = rooch_types::bitcoin::types::Block::from(block.clone());
     Ok(L1BlockWithBody {
         block: rooch_types::transaction::L1Block {
             chain_id: RoochMultiChainID::Bitcoin.multichain_id(),

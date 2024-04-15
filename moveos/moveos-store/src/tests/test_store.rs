@@ -114,7 +114,7 @@ fn test_event_store() {
     let event_ids = store.save_events(tx_events.clone()).unwrap();
     assert_eq!(event_ids.len(), 2);
     let event0 = store
-        .get_event(event_ids.get(0).cloned().unwrap())
+        .get_event(event_ids.first().cloned().unwrap())
         .unwrap()
         .unwrap();
     assert_eq!(event0.event_type, tx_events[0].event_type);

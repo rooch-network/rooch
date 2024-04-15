@@ -226,7 +226,7 @@ pub fn get_object_type(type_tag: &TypeTag) -> Option<TypeTag> {
     match type_tag {
         TypeTag::Struct(s) => {
             if is_object_struct(s) {
-                s.type_params.get(0).cloned()
+                s.type_params.first().cloned()
             } else {
                 None
             }
