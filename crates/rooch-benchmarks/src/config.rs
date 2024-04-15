@@ -77,12 +77,23 @@ impl Display for TxType {
     }
 }
 
-#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser, Eq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Parser, Eq)]
 pub struct BenchTxConfig {
     pub tx_type: Option<TxType>, // empty(default)/transfer/btc-block
     pub data_import_mode: Option<DataImportMode>, // utxo(default)/ord/none/full
     pub btc_block_dir: Option<String>,
     pub pprof_output: Option<PProfOutput>, // flamegraph(default)/proto
+}
+
+impl Default for BenchTxConfig {
+    fn default() -> Self {
+        Self {
+            tx_type: Some(TxType::Empty),
+            data_import_mode: Some(DataImportMode::UTXO),
+            btc_block_dir: None,
+            pprof_output: Some(PProfOutput::Flamegraph),
+        }
+    }
 }
 
 impl BenchTxConfig {
@@ -100,8 +111,22 @@ impl BenchTxConfig {
 
     pub fn load() -> Self {
         let path = &*BENCH_TX_CONFIG_PATH;
-        let config_data = std::fs::read_to_string(path).expect("failed to read config file");
-        toml::from_str(&config_data).expect("failed to parse config file")
+        let mut config = BenchTxConfig::default();
+        match std::fs::read_to_string(path) {
+            Ok(config_data) => match toml::from_str::<BenchTxConfig>(&config_data) {
+                Ok(mut parsed_config) => {
+                    parsed_config.adjust();
+                    config = parsed_config;
+                }
+                Err(e) => {
+                    log::error!("Failed to parse config file: {}", e);
+                }
+            },
+            Err(e) => {
+                log::error!("Failed to read config file: {}", e);
+            }
+        };
+        config
     }
 }
 

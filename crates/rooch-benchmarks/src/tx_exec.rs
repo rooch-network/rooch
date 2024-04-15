@@ -14,8 +14,7 @@ use crate::tx::{create_btc_blk_tx, create_l2_tx, find_block_height};
 
 // pure execution, no validate, sequence
 pub fn tx_exec_benchmark(c: &mut Criterion) {
-    let mut config = BenchTxConfig::load();
-    config.adjust();
+    let config = BenchTxConfig::load();
 
     let mut binding_test =
         binding_test::RustBindingTest::new_with_mode(config.data_import_mode.unwrap().to_num())
