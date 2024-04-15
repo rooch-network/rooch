@@ -119,6 +119,11 @@ module bitcoin_move::ord {
         }
     }
 
+    public fun derive_inscription_id(inscription_id: InscriptionID) : ObjectID {
+        let parent_id = object::named_object_id<InscriptionStore>();
+        object::custom_child_object_id<InscriptionID, Inscription>(parent_id, inscription_id)
+    }
+
     // ==== Inscription ==== //
     public fun get_inscription_id_by_index(index: u64) : &InscriptionID {
         let store_obj_id = object::named_object_id<InscriptionStore>();
@@ -128,7 +133,7 @@ module bitcoin_move::ord {
     }
 
     fun record_to_inscription(txid: address, index: u32, input: u32, offset: u64, record: InscriptionRecord): Inscription{
-        let parent = option::map(record.parent, |e| object::custom_object_id<InscriptionID,Inscription>(e));
+        let parent = option::map(record.parent, |e| derive_inscription_id(e));
         Inscription{
             txid,
             index,
@@ -145,7 +150,6 @@ module bitcoin_move::ord {
     }
 
     fun create_obj(inscription: Inscription): Object<Inscription> {
-
         let id = InscriptionID{
             txid: inscription.txid,
             index: inscription.index,
@@ -154,7 +158,7 @@ module bitcoin_move::ord {
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
         let store = object::borrow_mut(store_obj);
         table_vec::push_back(&mut store.inscriptions, id);
-        let object = object::new_with_id(id, inscription);
+        let object = object::add_object_field_with_id(store_obj, id, inscription);
         object
     }
     
@@ -174,7 +178,7 @@ module bitcoin_move::ord {
             txid: txid,
             index: index,
         };
-        let object_id = object::custom_object_id<InscriptionID,Inscription>(id);
+        let object_id = derive_inscription_id(id);
         object::exists_object_with_type<Inscription>(object_id)
     }
 
@@ -183,7 +187,7 @@ module bitcoin_move::ord {
             txid,
             index,
         };
-        let object_id = object::custom_object_id<InscriptionID,Inscription>(id);
+        let object_id = derive_inscription_id(id);
         object::borrow_object(object_id)
     }
 
@@ -367,7 +371,7 @@ module bitcoin_move::ord {
         let tx_outputs = types::tx_output(tx);
         let output_len = vector::length(tx_outputs);
 
-        // ord has three mode for Inscribe:   SameSat,SeparateOutputs,SharedOutput,
+        // Ord has three mode for inscribe: SameSat,SeparateOutputs,SharedOutput:
         // SameSat and SharedOutput have only one output
         // When SeparateOutputs is used, the number of output and inscription is consistent.
         // https://github.com/ordinals/ord/blob/26fcf05a738e68ef8c9c18fcc0997ccf931d6f41/src/wallet/batch/plan.rs#L270-L307

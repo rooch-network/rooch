@@ -107,4 +107,13 @@ module rooch_framework::multichain_address {
             moveos_std::bcs::to_address(hash)
         }
     }
+
+    #[test]
+    fun test_multi_chain_address_into_rooch_address() {
+        let msg = x"00536ffa992491508dca0354e52f32a3a7a679a53a";
+        let hashed_msg = blake2b256(&msg);
+        let addr = moveos_std::bcs::to_address(hashed_msg);
+        let expect_addr = @0x419791e7f82060465cf8c16c8f45ab9930b3a944b18e1df2278807c12ea32c65;
+        assert!(expect_addr == addr, 0);
+    }
 }
