@@ -134,7 +134,7 @@ bitcoin = { version = "0.31.0", features = ["rand-std"] }
 bitcoincore-rpc = "0.18.0"
 bip32 = "0.4.0"
 byteorder = "1.4.3"
-clap = { version = "4.4.1", features = ["derive", "env"] }
+clap = { version = "4.5.4", features = ["derive", "env"] }
 brotli = "3.4.0"
 chrono = "0.4.23"
 coerce = "0.8"
