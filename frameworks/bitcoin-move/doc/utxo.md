@@ -8,6 +8,8 @@
 -  [Resource `UTXO`](#0x4_utxo_UTXO)
 -  [Struct `UTXOSeal`](#0x4_utxo_UTXOSeal)
 -  [Resource `BitcoinUTXOStore`](#0x4_utxo_BitcoinUTXOStore)
+-  [Struct `CreatingUTXOEvent`](#0x4_utxo_CreatingUTXOEvent)
+-  [Struct `RemovingUTXOEvent`](#0x4_utxo_RemovingUTXOEvent)
 -  [Struct `TempState`](#0x4_utxo_TempState)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_utxo_genesis_init)
@@ -41,6 +43,7 @@
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::bag</a>;
+<b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_multimap</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
@@ -79,6 +82,30 @@ The UTXO Object
 
 
 <pre><code><b>struct</b> <a href="utxo.md#0x4_utxo_BitcoinUTXOStore">BitcoinUTXOStore</a> <b>has</b> key
+</code></pre>
+
+
+
+<a name="0x4_utxo_CreatingUTXOEvent"></a>
+
+## Struct `CreatingUTXOEvent`
+
+Event for creating UTXO
+
+
+<pre><code><b>struct</b> <a href="utxo.md#0x4_utxo_CreatingUTXOEvent">CreatingUTXOEvent</a> <b>has</b> drop, store
+</code></pre>
+
+
+
+<a name="0x4_utxo_RemovingUTXOEvent"></a>
+
+## Struct `RemovingUTXOEvent`
+
+Event for remove UTXO
+
+
+<pre><code><b>struct</b> <a href="utxo.md#0x4_utxo_RemovingUTXOEvent">RemovingUTXOEvent</a> <b>has</b> drop, store
 </code></pre>
 
 
