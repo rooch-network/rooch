@@ -1,7 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tx::TxType::{BTCBlk, Blog, Empty, Transfer};
+use std::fs;
+use std::time::Duration;
+
 use anyhow::Result;
 use bitcoin::consensus::deserialize;
 use bitcoin::hashes::Hash;
@@ -11,8 +13,8 @@ use bitcoincore_rpc_json::bitcoin::Block;
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::system::ActorSystem;
 use coerce::actor::IntoActor;
-use criterion::{Criterion, SamplingMode};
-use lazy_static::lazy_static;
+use tracing::info;
+
 use moveos_config::store_config::RocksdbConfig;
 use moveos_config::DataDirPath;
 use moveos_store::{MoveOSDB, MoveOSStore};
@@ -27,7 +29,6 @@ use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_framework::natives::default_gas_schedule;
-use rooch_framework_tests::binding_test;
 use rooch_genesis::RoochGenesis;
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
@@ -57,66 +58,12 @@ use rooch_types::crypto::RoochKeyPair;
 use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::L1BlockWithBody;
-use std::fmt::Display;
-use std::str::FromStr;
-use std::time::Duration;
-use std::{env, fs};
-use tracing::info;
+
+use crate::config::TxType;
+use crate::tx::TxType::{Empty, Transfer};
 
 pub const EXAMPLE_SIMPLE_BLOG_PACKAGE_NAME: &str = "simple_blog";
 pub const EXAMPLE_SIMPLE_BLOG_NAMED_ADDRESS: &str = "simple_blog";
-
-#[derive(PartialEq, Eq)]
-pub enum TxType {
-    Empty,
-    Transfer,
-    Blog,
-    BTCBlk,
-}
-
-impl FromStr for TxType {
-    type Err = ();
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        match s {
-            "transfer" => Ok(Transfer),
-            "blog" => Ok(Blog),
-            "btc_block" => Ok(BTCBlk),
-            _ => Ok(Empty),
-        }
-    }
-}
-
-impl Display for TxType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let str = match self {
-            Empty => "empty".to_string(),
-            Transfer => "transfer".to_string(),
-            Blog => "blog".to_string(),
-            BTCBlk => "btc_blk".to_string(),
-        };
-        write!(f, "{}", str)
-    }
-}
-
-lazy_static! {
-    pub static ref TX_SIZE: usize = {
-        env::var("ROOCH_BENCH_TX_SIZE")
-            .unwrap_or_else(|_| String::from("0"))
-            .parse::<usize>()
-            .unwrap_or(0usize)
-    };
-    pub static ref TX_TYPE: TxType = {
-        let tx_type_str = env::var("ROOCH_BENCH_TX_TYPE").unwrap_or_else(|_| String::from("empty"));
-        tx_type_str.parse::<TxType>().unwrap_or(Empty)
-    };
-    pub static ref IMPORT_MODE: DataImportMode = {
-        let import_mode_str =
-            env::var("ROOCH_BENCH_IMPORT_MODE").unwrap_or_else(|_| String::from("none mode"));
-        import_mode_str
-            .parse::<DataImportMode>()
-            .unwrap_or(DataImportMode::None)
-    };
-}
 
 pub fn gen_sequencer(keypair: RoochKeyPair, rooch_store: RoochStore) -> Result<SequencerActor> {
     SequencerActor::new(keypair, rooch_store.clone())
@@ -307,13 +254,13 @@ pub fn create_l2_tx(
     test_transaction_builder: &mut TestTransactionBuilder,
     keystore: &InMemKeystore,
     seq_num: u64,
+    tx_type: TxType,
 ) -> Result<RoochTransaction> {
     test_transaction_builder.update_sequence_number(seq_num);
 
-    let action = match *TX_TYPE {
+    let action = match tx_type {
         Empty => test_transaction_builder.call_empty_create(),
         Transfer => test_transaction_builder.call_transfer_create(),
-        Blog => test_transaction_builder.call_article_create_with_size(*TX_SIZE),
         _ => panic!("Unsupported tx type"),
     };
 
@@ -357,68 +304,4 @@ pub fn create_btc_blk_tx(height: u64, block_file: String) -> Result<L1BlockWithB
         },
         block_body: move_block.encode(),
     })
-}
-
-// pure execution, no validate, sequence
-pub fn tx_exec_benchmark(c: &mut Criterion) {
-    let mut group = c.benchmark_group("flat-sampling-example");
-    group.sampling_mode(SamplingMode::Flat);
-    let mut binding_test =
-        binding_test::RustBindingTest::new_with_mode((*IMPORT_MODE).to_num()).unwrap();
-    let keystore = InMemKeystore::new_insecure_for_tests(10);
-
-    let default_account = keystore.addresses()[0];
-    let mut test_transaction_builder = TestTransactionBuilder::new(default_account.into());
-
-    let mut tx_cnt = 300;
-    let mut bench_id = "tx_exec";
-
-    match *TX_TYPE {
-        Blog => {
-            let tx = create_publish_transaction(&test_transaction_builder, &keystore).unwrap();
-            binding_test.execute(tx).unwrap();
-        }
-        BTCBlk => {
-            bench_id = "tx_exec_blk";
-            tx_cnt = 200
-        }
-        Transfer => tx_cnt = 500,
-        Empty => tx_cnt = 1000,
-    }
-
-    let mut transactions: Vec<_> = Vec::with_capacity(tx_cnt);
-    if *TX_TYPE != BTCBlk {
-        for n in 0..tx_cnt {
-            let tx = create_l2_tx(&mut test_transaction_builder, &keystore, n as u64).unwrap();
-            transactions.push(binding_test.executor.validate_l2_tx(tx.clone()).unwrap());
-        }
-    } else {
-        let btc_blk_dir = env::var("ROOCH_BENCH_BTC_BLK_DIR").unwrap();
-
-        let heights = find_block_height(btc_blk_dir.clone()).unwrap();
-        for (cnt, height) in heights.into_iter().enumerate() {
-            if cnt >= tx_cnt {
-                break;
-            }
-            let filename = format!("{}.hex", height);
-            let file_path = [btc_blk_dir.clone(), "/".parse().unwrap(), filename].concat();
-            let l1_block = create_btc_blk_tx(height, file_path).unwrap();
-            let ctx = binding_test.create_bt_blk_tx_ctx(cnt as u64, l1_block.clone());
-            let move_tx = binding_test
-                .executor
-                .validate_l1_block(ctx, l1_block.clone())
-                .unwrap();
-            transactions.push(move_tx);
-        }
-    }
-
-    let mut transactions_iter = transactions.into_iter().cycle();
-
-    group.bench_function(bench_id, |b| {
-        b.iter(|| {
-            let tx = transactions_iter.next().unwrap();
-            binding_test.execute_verified_tx(tx.clone()).unwrap()
-        });
-    });
-    group.finish();
 }

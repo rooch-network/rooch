@@ -1,0 +1,3 @@
+tx_type = "empty"
+data_import_mode = "utxo"
+pprof_output = "flamegraph"
