@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react'
+
 import { CacheProvider } from '@emotion/react'
-import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
+import { ThemeProvider } from '@/components/theme-provider'
+import { SessionKeyModal } from '@/components/session-key-modal'
 
 import { createEmotionCache } from '@/utils/create-emotion-cache'
 
@@ -9,16 +12,28 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { TestNetwork } from '@roochnetwork/rooch-sdk'
 import { WalletProvider, RoochClientProvider, SupportChain } from '@roochnetwork/rooch-sdk-kit'
 
-import { DashboardLayout } from './pages/dashboard-layout'
-import { ToastProvider } from './providers/toast-provider'
-// import { Banner } from './components/banner'
+import { DashboardLayout } from '@/pages/dashboard-layout'
+import { ToastProvider } from '@/providers/toast-provider'
 
 const clientSideEmotionCache = createEmotionCache()
 
 function App() {
   const queryClient = new QueryClient()
+  const [isSessionKeyModalOpen, setIsSessionKeyModalOpen] = useState<boolean>(false)
+  const handleSessionKeyRequest = () => {
+    setIsSessionKeyModalOpen(true)
+  }
 
-  // Test the commits
+  const handleAuthorize = () => {
+    console.log('Handling authorization in App component.')
+
+    setIsSessionKeyModalOpen(false)
+  }
+
+  // ** Session Key Modal 测试（可以关掉）
+  useEffect(() => {
+    handleSessionKeyRequest()
+  }, [])
 
   return (
     <>
@@ -28,8 +43,8 @@ function App() {
             <WalletProvider chain={SupportChain.BITCOIN} autoConnect>
               <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
                 <ToastProvider />
-                {/* <Banner /> */}
                 <DashboardLayout />
+                <SessionKeyModal />
               </ThemeProvider>
             </WalletProvider>
             <Toaster />
