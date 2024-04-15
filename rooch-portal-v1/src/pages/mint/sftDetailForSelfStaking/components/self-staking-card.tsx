@@ -76,10 +76,10 @@ export const SelfStakingCard = () => {
     <div className="mt-6">
       <div className="h-full w-full">
         <Card className="h-full border-border/40 shadow-inner bg-border/10 dark:bg-border/60">
-          <CardHeader className="dark:text-blue-100 flex flex-row items-center justify-between">
+          <CardHeader className="dark:text-zinc-100 flex flex-row items-center justify-between">
             <div>
               <CardTitle>My Bitcoin UTXO</CardTitle>
-              <CardDescription className="dark:text-blue-50/70">
+              <CardDescription className="dark:text-zinc-50/70">
                 Stake your UTXO below
               </CardDescription>
             </div>

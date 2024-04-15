@@ -6,8 +6,8 @@ export const SftTabs = () => {
   return (
     <Tabs defaultValue="featured">
       <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
-        <TabsTrigger value="featured">Featured SFTs</TabsTrigger>
-        <TabsTrigger value="tokens">Tokens</TabsTrigger>
+        <TabsTrigger value="featured">Featured Tokens</TabsTrigger>
+        <TabsTrigger value="tokens">All Tokens</TabsTrigger>
       </TabsList>
       <TabsContent value="featured">
         {/* Featured SFTs */}
