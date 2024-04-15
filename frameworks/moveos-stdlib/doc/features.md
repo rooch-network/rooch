@@ -20,6 +20,7 @@ feature flag is disabled, those functions can constantly return true.
 
 -  [Resource `FeatureStore`](#0x2_features_FeatureStore)
 -  [Constants](#@Constants_0)
+-  [Function `init_feature_store`](#0x2_features_init_feature_store)
 -  [Function `change_feature_flags`](#0x2_features_change_feature_flags)
 -  [Function `is_enabled`](#0x2_features_is_enabled)
 -  [Function `get_localnet_feature`](#0x2_features_get_localnet_feature)
@@ -118,6 +119,17 @@ This feature will only be enabled on testnet, devnet or localnet.
 
 
 <pre><code><b>const</b> <a href="features.md#0x2_features_TESTNET">TESTNET</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x2_features_init_feature_store"></a>
+
+## Function `init_feature_store`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="features.md#0x2_features_init_feature_store">init_feature_store</a>()
 </code></pre>
 
 

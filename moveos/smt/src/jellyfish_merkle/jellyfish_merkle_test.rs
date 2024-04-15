@@ -63,7 +63,7 @@ fn test_delete_from_tree() {
     let value = TestValue::from(vec![1u8, 2u8, 3u8, 4u8]);
 
     let (_new_root_hash, batch) = tree
-        .put_blob_set(None, vec![(key.into_object(), value.into())])
+        .put_blob_set(None, vec![(key.into_object().unwrap(), value.into())])
         .unwrap();
     db.write_tree_update_batch(batch).unwrap();
 
@@ -80,7 +80,7 @@ fn test_delete_from_tree() {
     let (_root1_hash, batch) = tree
         .put_blob_set(
             Some(_new_root_hash),
-            vec![(key2.into_object(), value2.into_object())],
+            vec![(key2.into_object().unwrap(), value2.into_object().unwrap())],
         )
         .unwrap();
     assert_eq!(batch.stale_node_index_batch.len(), 0);
@@ -345,7 +345,7 @@ fn test_batch_insertion() {
         // ```test
         //   1(root)
         // ```
-        db.purge_stale_nodes(key1.into_object().merkle_hash())
+        db.purge_stale_nodes(key1.into_object().unwrap().merkle_hash())
             .unwrap();
         // ```text
         //   1 (p)           internal(a)
@@ -354,7 +354,7 @@ fn test_batch_insertion() {
         // add 3, prune 1
         // ```
         assert_eq!(db.num_nodes(), 23);
-        db.purge_stale_nodes(key2.into_object().merkle_hash())
+        db.purge_stale_nodes(key2.into_object().unwrap().merkle_hash())
             .unwrap();
         // ```text
         //     internal(p)             internal(a)
@@ -365,7 +365,7 @@ fn test_batch_insertion() {
         // add 4, prune 2
         // ```
         assert_eq!(db.num_nodes(), 23);
-        db.purge_stale_nodes(key3.into_object().merkle_hash())
+        db.purge_stale_nodes(key3.into_object().unwrap().merkle_hash())
             .unwrap();
         // ```text
         //         internal(p)                internal(a)
@@ -376,7 +376,7 @@ fn test_batch_insertion() {
         // add 3, prune 2
         // ```
         assert_eq!(db.num_nodes(), 23);
-        db.purge_stale_nodes(key4.into_object().merkle_hash())
+        db.purge_stale_nodes(key4.into_object().unwrap().merkle_hash())
             .unwrap();
         // ```text
         //            internal(p)                         internal(a)
@@ -395,7 +395,7 @@ fn test_batch_insertion() {
         // add 8, prune 3
         // ```
         assert_eq!(db.num_nodes(), 23);
-        db.purge_stale_nodes(key5.into_object().merkle_hash())
+        db.purge_stale_nodes(key5.into_object().unwrap().merkle_hash())
             .unwrap();
         // ```text
         //                  internal(p)                             internal(a)
@@ -414,7 +414,7 @@ fn test_batch_insertion() {
         // add 5, prune 4
         // ```
         assert_eq!(db.num_nodes(), 23);
-        db.purge_stale_nodes(key6.into_object().merkle_hash())
+        db.purge_stale_nodes(key6.into_object().unwrap().merkle_hash())
             .unwrap();
         // ```text
         //                         internal(p)                               internal(a)
@@ -559,7 +559,10 @@ fn test_non_existence_and_build_new_root_with_proof_many() {
     let value1 = TestValue::from(vec![1u8]);
 
     let (mut root, batch) = tree
-        .put_blob_set(None, vec![(key1.into_object(), value1.clone().into())])
+        .put_blob_set(
+            None,
+            vec![(key1.into_object().unwrap(), value1.clone().into())],
+        )
         .unwrap();
     db.write_tree_update_batch(batch).unwrap();
     assert_eq!(tree.get(root, key1).unwrap().unwrap().origin, value1);
@@ -593,7 +596,7 @@ fn test_put_blob_sets() {
             let mut keyed_blob_set = vec![];
             for _ in 0..2 {
                 let next = iter.next().unwrap();
-                keyed_blob_set.push((next.0.into_object(), next.1.into_object()));
+                keyed_blob_set.push((next.0.into_object().unwrap(), next.1.into_object().unwrap()));
             }
             let (root, batch) = tree.put_blob_set(temp_root, keyed_blob_set).unwrap();
             db.write_tree_update_batch(batch.clone()).unwrap();
@@ -616,7 +619,10 @@ fn test_put_blob_sets() {
             let mut keyed_blob_set = vec![];
             for _ in 0..2 {
                 let val = iter.next().unwrap();
-                keyed_blob_set.push((val.0.into_object(), Some(val.1.into_object())));
+                keyed_blob_set.push((
+                    val.0.into_object().unwrap(),
+                    Some(val.1.into_object().unwrap()),
+                ));
             }
             blob_sets.push(keyed_blob_set);
         }
@@ -639,7 +645,10 @@ fn many_keys_get_proof_and_verify_tree_root(seed: &[u8], num_keys: usize) {
     for _i in 0..num_keys {
         let key = HashValue::random_with_rng(&mut rng);
         let value = TestValue::from(HashValue::random_with_rng(&mut rng).to_vec());
-        kvs.push((TestKey(key).into_object(), value.into_object()));
+        kvs.push((
+            TestKey(key).into_object().unwrap(),
+            value.into_object().unwrap(),
+        ));
     }
 
     let (root, batch) = tree.put_blob_set(None, kvs.clone()).unwrap();
@@ -790,7 +799,7 @@ proptest! {
         let tree = JellyfishMerkleTree::new(&db);
         let root_hash = root_hash_option.unwrap();
         let nth_key = *btree.keys().nth(n).unwrap();
-        let proof = tree.get_range_proof(root_hash, nth_key.into_object()).unwrap();
+        let proof = tree.get_range_proof(root_hash, nth_key.into_object().unwrap()).unwrap();
         verify_range_proof(
             root_hash,
             btree.into_iter().take(n + 1).collect(),
@@ -845,7 +854,10 @@ fn test_nonexistent_key_value_update_impl(
     let (root, batch) = tree
         .put_blob_set(
             Some(root_hash),
-            vec![(key.into_object(), value.clone().into_object())],
+            vec![(
+                key.into_object().unwrap(),
+                value.clone().into_object().unwrap(),
+            )],
         )
         .unwrap();
     db.write_tree_update_batch(batch).unwrap();
@@ -910,7 +922,8 @@ fn verify_range_proof<K: Key, V: Value>(
         .last()
         .expect("We are proving at least one key.")
         .clone()
-        .into_object();
+        .into_object()
+        .unwrap();
     let last_proven_key_hash = last_proven_key.merkle_hash();
     for (i, sibling) in last_proven_key_hash
         .iter_bits()
