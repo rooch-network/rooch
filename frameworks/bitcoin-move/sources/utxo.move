@@ -8,6 +8,7 @@ module bitcoin_move::utxo{
     use moveos_std::simple_multimap::{Self, SimpleMultiMap};
     use moveos_std::type_info;
     use moveos_std::bag;
+    use moveos_std::event;
     use bitcoin_move::types::{Self, OutPoint};
 
     friend bitcoin_move::genesis;
@@ -36,6 +37,18 @@ module bitcoin_move::utxo{
     struct BitcoinUTXOStore has key{
         /// The next tx index to be processed
         next_tx_index: u64,
+    }
+
+    /// Event for creating UTXO
+    struct CreatingUTXOEvent has drop, store {
+        /// UTXO object id
+        id: ObjectID,
+    }
+
+    /// Event for remove UTXO
+    struct RemovingUTXOEvent has drop, store {
+        /// UTXO object id
+        id: ObjectID,
     }
 
     public(friend) fun genesis_init(){
@@ -79,7 +92,10 @@ module bitcoin_move::utxo{
             seals: simple_multimap::new(),
         };
         let uxto_store = borrow_mut_utxo_store();
-        object::add_object_field_with_id(uxto_store, id, utxo)
+        let utxo_obj = object::add_object_field_with_id(uxto_store, id, utxo);
+
+        event::emit<CreatingUTXOEvent>( CreatingUTXOEvent { id: object::id(&utxo_obj) } );
+        utxo_obj
     }
 
     public fun derive_utxo_id(outpoint: OutPoint) : ObjectID {
@@ -170,6 +186,9 @@ module bitcoin_move::utxo{
             bag::drop(bag);
         };
         let uxto_store = borrow_mut_utxo_store();
+
+        event::emit<RemovingUTXOEvent>( RemovingUTXOEvent { id: object::id(&utxo_obj) } );
+        
         let utxo = object::remove_object_field(uxto_store, utxo_obj);
         let UTXO{txid:_, vout:_, value:_, seals} = utxo;
         seals

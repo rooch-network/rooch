@@ -32,6 +32,8 @@ itertools = { workspace = true }
 ciborium = { workspace = true }
 rlp = { workspace = true }
 primitive-types = { workspace = true }
+bech32 = { workspace = true }
+bs58 = { workspace = true, features = ["check"] }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }

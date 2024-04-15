@@ -26,12 +26,9 @@ pub mod rooch_framework;
 
 #[derive(Debug, Clone)]
 pub struct NativeGasParameters {
-    moveos_stdlib: moveos_stdlib::natives::GasParameters,
-    hash: rooch_framework::crypto::hash::GasParameters,
+    moveos_stdlib: MoveOSStdlibGasParameters,
     ed25519: rooch_framework::crypto::ed25519::GasParameters,
     ecdsa_k1: rooch_framework::crypto::ecdsa_k1::GasParameters,
-    encoding: rooch_framework::crypto::encoding::GasParameters,
-    decoding: rooch_framework::crypto::decoding::GasParameters,
     bcs: rooch_framework::bcs::GasParameters,
 }
 
@@ -40,11 +37,8 @@ impl FromOnChainGasSchedule for NativeGasParameters {
         Some(Self {
             moveos_stdlib: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule)
                 .unwrap(),
-            hash: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             ed25519: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             ecdsa_k1: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
-            encoding: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
-            decoding: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             bcs: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
         })
     }
@@ -53,11 +47,8 @@ impl FromOnChainGasSchedule for NativeGasParameters {
 impl ToOnChainGasSchedule for NativeGasParameters {
     fn to_on_chain_gas_schedule(&self) -> Vec<(String, u64)> {
         let mut entires = self.moveos_stdlib.to_on_chain_gas_schedule();
-        entires.extend(self.hash.to_on_chain_gas_schedule());
         entires.extend(self.ed25519.to_on_chain_gas_schedule());
         entires.extend(self.ecdsa_k1.to_on_chain_gas_schedule());
-        entires.extend(self.encoding.to_on_chain_gas_schedule());
-        entires.extend(self.decoding.to_on_chain_gas_schedule());
         entires.extend(self.bcs.to_on_chain_gas_schedule());
         entires
     }
@@ -67,11 +58,8 @@ impl InitialGasSchedule for NativeGasParameters {
     fn initial() -> Self {
         Self {
             moveos_stdlib: InitialGasSchedule::initial(),
-            hash: InitialGasSchedule::initial(),
             ed25519: InitialGasSchedule::initial(),
             ecdsa_k1: InitialGasSchedule::initial(),
-            encoding: InitialGasSchedule::initial(),
-            decoding: InitialGasSchedule::initial(),
             bcs: InitialGasSchedule::initial(),
         }
     }
@@ -94,6 +82,9 @@ impl FromOnChainGasSchedule for MoveOSStdlibGasParameters {
             json: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             wasm: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
             tx_context: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
+            base58: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
+            bech32: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
+            hash: FromOnChainGasSchedule::from_on_chain_gas_schedule(gas_schedule).unwrap(),
         })
     }
 }
@@ -115,6 +106,9 @@ impl ToOnChainGasSchedule for MoveOSStdlibGasParameters {
         entires.extend(self.json.to_on_chain_gas_schedule());
         entires.extend(self.wasm.to_on_chain_gas_schedule());
         entires.extend(self.tx_context.to_on_chain_gas_schedule());
+        entires.extend(self.base58.to_on_chain_gas_schedule());
+        entires.extend(self.bech32.to_on_chain_gas_schedule());
+        entires.extend(self.hash.to_on_chain_gas_schedule());
         entires
     }
 }
@@ -136,6 +130,9 @@ impl InitialGasSchedule for MoveOSStdlibGasParameters {
             json: InitialGasSchedule::initial(),
             wasm: InitialGasSchedule::initial(),
             tx_context: InitialGasSchedule::initial(),
+            base58: InitialGasSchedule::initial(),
+            bech32: InitialGasSchedule::initial(),
+            hash: InitialGasSchedule::initial(),
         }
     }
 }
@@ -149,11 +146,8 @@ impl NativeGasParameters {
     pub fn zeros() -> Self {
         Self {
             moveos_stdlib: moveos_stdlib::natives::GasParameters::zeros(),
-            hash: rooch_framework::crypto::hash::GasParameters::zeros(),
             ed25519: rooch_framework::crypto::ed25519::GasParameters::zeros(),
             ecdsa_k1: rooch_framework::crypto::ecdsa_k1::GasParameters::zeros(),
-            encoding: rooch_framework::crypto::encoding::GasParameters::zeros(),
-            decoding: rooch_framework::crypto::decoding::GasParameters::zeros(),
             bcs: rooch_framework::bcs::GasParameters::zeros(),
         }
     }
@@ -174,24 +168,12 @@ pub fn all_natives(gas_params: NativeGasParameters) -> NativeFunctionTable {
 
     // rooch_framework natives
     add_natives!(
-        "hash",
-        rooch_framework::crypto::hash::make_all(gas_params.hash)
-    );
-    add_natives!(
         "ed25519",
         rooch_framework::crypto::ed25519::make_all(gas_params.ed25519)
     );
     add_natives!(
         "ecdsa_k1",
         rooch_framework::crypto::ecdsa_k1::make_all(gas_params.ecdsa_k1)
-    );
-    add_natives!(
-        "encoding",
-        rooch_framework::crypto::encoding::make_all(gas_params.encoding)
-    );
-    add_natives!(
-        "decoding",
-        rooch_framework::crypto::decoding::make_all(gas_params.decoding)
     );
     add_natives!("bcs", rooch_framework::bcs::make_all(gas_params.bcs));
 

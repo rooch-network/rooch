@@ -90,13 +90,17 @@ export const SelfStakingCard = () => {
                   id="batch-mode"
                   checked={isSwitchOn}
                   onCheckedChange={handleSwitchChange}
-                  className="data-[state=checked]:bg-blue-600 dark:data-[state=checked]:bg-blue-500"
+                  className="data-[state=checked]:bg-teal-500 dark:data-[state=checked]:bg-teal-400"
                 />
                 <Label htmlFor="batch-mode" className="text-muted-foreground">
                   Batch Mode
                 </Label>
               </div>
-              <Button size="sm" className="rounded-lg" onClick={handleSelfStake}>
+              <Button
+                size="sm"
+                className="rounded-lg border-teal-400 dark:border-teal-500 bg-teal-500 hover:bg-teal-600 dark:bg-teal-400 dark:hover:bg-teal-300"
+                onClick={handleSelfStake}
+              >
                 Self-stake
               </Button>
             </div>
@@ -110,7 +114,7 @@ export const SelfStakingCard = () => {
                   className={cn(
                     'relative rounded-lg border border-border/40 dark:bg-zinc-800/90 overflow-hidden select-none',
                     utxo.isSelected
-                      ? 'border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-800/60'
+                      ? 'border-teal-400 dark:border-teal-500 bg-teal-50 dark:bg-teal-800/60'
                       : '',
                     isSwitchOn && utxo.isStaked ? 'opacity-50' : 'opacity-100',
                     utxo.isStaked ? 'opacity-50 dark:bg-zinc-900' : '',
@@ -132,7 +136,7 @@ export const SelfStakingCard = () => {
                       <CheckCircle2
                         className={cn(
                           'w-5 h-5 text-muted-foreground',
-                          utxo.isSelected ? 'text-blue-400' : '',
+                          utxo.isSelected ? 'text-teal-400' : '',
                         )}
                       />
                     </div>
