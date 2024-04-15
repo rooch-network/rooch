@@ -35,14 +35,8 @@ impl SessionScope {
         module_name: &str,
         function_name: &str,
     ) -> Result<Self> {
-        let module_name_value = match MoveAsciiString::from_str(module_name) {
-            Ok(v) => v,
-            Err(_) => return Err(Error::msg("invalid module name")),
-        };
-        let function_name_value = match MoveAsciiString::from_str(function_name) {
-            Ok(v) => v,
-            Err(_) => return Err(Error::msg("invalid function name")),
-        };
+        let module_name_value = MoveAsciiString::from_str(module_name)?;
+        let function_name_value = MoveAsciiString::from_str(function_name)?;
         Ok(Self {
             module_address,
             module_name: module_name_value,

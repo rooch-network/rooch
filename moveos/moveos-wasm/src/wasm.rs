@@ -7,8 +7,8 @@ use std::sync::{Arc, Mutex};
 
 use once_cell::sync::Lazy;
 use rand;
-use wasmer::*;
 use wasmer::Value::I32;
+use wasmer::*;
 
 //#[derive(Clone)]
 pub struct WASMInstance {
