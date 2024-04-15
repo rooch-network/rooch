@@ -3,7 +3,7 @@
 
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use crate::authentication_key::AuthenticationKey;
-use anyhow::{Error, Result};
+use anyhow::Result;
 use move_core_types::value::MoveValue;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
 use moveos_types::{
