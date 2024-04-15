@@ -13,7 +13,6 @@ runs:
       with:
           override: true
           components: rustfmt, clippy
-          toolchain: 1.77.1
 
     - name: install protoc and related tools
       shell: bash
