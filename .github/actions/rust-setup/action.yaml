@@ -11,11 +11,9 @@ runs:
 
     - uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # pin@v1
       with:
-          override: true
-          components: rustfmt, clippy
+        override: true
+        components: rustfmt, clippy
 
     - name: install protoc and related tools
       shell: bash
       run: scripts/dev_setup.sh -b -r
-
-

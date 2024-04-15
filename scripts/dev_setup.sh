@@ -837,7 +837,7 @@ if [[ "$INSTALL_BUILD_TOOLS" == "true" ]]; then
   install_lld
 
   install_rustup "$BATCH_MODE"
-  install_toolchain "$(grep "channel" ./rust-toolchain | awk -F "\"" '{print $2}')"
+  install_toolchain "$(cat ./rust-toolchain)"
   install_rustup_components_and_nightly
 
   install_cargo_sort
