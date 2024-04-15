@@ -46,7 +46,7 @@ function App() {
                 <DashboardLayout />
                 <SessionKeyModal
                   isOpen={isSessionKeyModalOpen}
-                  onClose={handleSessionKeyRequest}
+                  onClose={() => setIsSessionKeyModalOpen(false)}
                   onAuthorize={handleAuthorize}
                 />
               </ThemeProvider>
