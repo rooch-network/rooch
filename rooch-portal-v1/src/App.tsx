@@ -44,7 +44,11 @@ function App() {
               <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
                 <ToastProvider />
                 <DashboardLayout />
-                <SessionKeyModal />
+                <SessionKeyModal
+                  isOpen={isSessionKeyModalOpen}
+                  onClose={handleSessionKeyRequest}
+                  onAuthorize={handleAuthorize}
+                />
               </ThemeProvider>
             </WalletProvider>
             <Toaster />
