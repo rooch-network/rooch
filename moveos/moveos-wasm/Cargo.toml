@@ -10,3 +10,4 @@ once_cell = { workspace = true }
 wasmer = { workspace = true }
 ciborium = { workspace = true }
 rand = { workspace = true }
+anyhow = { workspace = true }

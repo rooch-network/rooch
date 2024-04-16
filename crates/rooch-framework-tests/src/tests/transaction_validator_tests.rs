@@ -32,7 +32,8 @@ fn test_session_key_rooch() {
         ROOCH_FRAMEWORK_ADDRESS,
         Empty::MODULE_NAME.as_str(),
         Empty::EMPTY_FUNCTION_NAME.as_str(),
-    );
+    )
+    .unwrap();
     let max_inactive_interval = 100;
     let action = rooch_types::framework::session_key::SessionKeyModule::create_session_key_action(
         session_auth_key.as_ref().to_vec(),

@@ -31,21 +31,19 @@ pub static mut GLOBAL_MEMORY: Lazy<Option<Arc<Mutex<Memory>>>> = Lazy::new(|| No
 static mut GLOBAL_INSTANCE_POOL: Lazy<Arc<Mutex<BTreeMap<u64, WASMInstance>>>> =
     Lazy::new(|| Arc::new(Mutex::new(BTreeMap::new())));
 
-pub fn insert_wasm_instance(instance: WASMInstance) -> u64 {
+pub fn insert_wasm_instance(instance: WASMInstance) -> anyhow::Result<u64> {
     loop {
         unsafe {
             let instance_id: u64 = rand::random();
-            if GLOBAL_INSTANCE_POOL
-                .lock()
-                .unwrap()
-                .get(&instance_id)
-                .is_none()
-            {
-                GLOBAL_INSTANCE_POOL
-                    .lock()
-                    .unwrap()
-                    .insert(instance_id, instance);
-                return instance_id;
+            let mut instance_pool = match GLOBAL_INSTANCE_POOL.lock() {
+                Ok(pool_guard) => pool_guard,
+                Err(_) => {
+                    return Err(anyhow::Error::msg("get global instance pool failed"));
+                }
+            };
+            if instance_pool.get(&instance_id).is_none() {
+                instance_pool.insert(instance_id, instance);
+                return Ok(instance_id);
             }
         }
     }
@@ -55,9 +53,16 @@ pub fn get_instance_pool() -> Arc<Mutex<BTreeMap<u64, WASMInstance>>> {
     unsafe { GLOBAL_INSTANCE_POOL.clone() }
 }
 
-pub fn remove_instance(instance_id: u64) {
+pub fn remove_instance(instance_id: u64) -> anyhow::Result<()> {
     unsafe {
-        GLOBAL_INSTANCE_POOL.lock().unwrap().remove(&instance_id);
+        let mut instance_pool = match GLOBAL_INSTANCE_POOL.lock() {
+            Ok(pool_guard) => pool_guard,
+            Err(_) => {
+                return Err(anyhow::Error::msg("get global instance pool failed"));
+            }
+        };
+        instance_pool.remove(&instance_id);
+        Ok(())
     }
 }
 
@@ -135,43 +140,56 @@ fn proc_exit(_env: FunctionEnvMut<Env>, code: i32) {
     eprintln!("program exit with {:}", code)
 }
 
-pub fn put_data_on_stack(stack_alloc_func: &Function, store: &mut Store, data: &[u8]) -> i32 {
+pub fn put_data_on_stack(
+    stack_alloc_func: &Function,
+    store: &mut Store,
+    data: &[u8],
+) -> anyhow::Result<i32> {
     let data_len = data.len() as i32;
-    let result = stack_alloc_func
-        .call(store, vec![I32(data_len + 1)].as_slice())
-        .expect("call stackAlloc failed");
-    let return_value = result
-        .deref()
-        .first()
-        .expect("the stackAlloc func does not have return value");
-    let offset = return_value
-        .i32()
-        .expect("the return value of stackAlloc is not i32");
+    let result = stack_alloc_func.call(store, vec![I32(data_len + 1)].as_slice())?;
+    let return_value = match result.deref().first() {
+        None => return Err(anyhow::Error::msg("call StaclAlloc function failed")),
+        Some(v) => v,
+    };
+    let offset = match return_value.i32() {
+        None => return Err(anyhow::Error::msg("the data of function return is not i32")),
+        Some(v) => v,
+    };
 
     let memory = unsafe { GLOBAL_MEMORY.clone().expect("global memory is none") };
 
-    let bindings = memory.lock().expect("getting memory mutex failed");
+    let bindings = match memory.lock() {
+        Ok(v) => v,
+        Err(_) => return Err(anyhow::Error::msg("memory lock failed")),
+    };
     let memory_view = bindings.view(store);
-    memory_view
-        .write(offset as u64, data)
-        .expect("write memory failed");
+    memory_view.write(offset as u64, data)?;
 
-    offset
+    Ok(offset)
 }
 
-pub fn get_data_from_heap(memory: Arc<Mutex<Memory>>, store: &Store, ptr_offset: i32) -> Vec<u8> {
-    let bindings = memory.lock().expect("getting memory mutex failed");
+pub fn get_data_from_heap(
+    memory: Arc<Mutex<Memory>>,
+    store: &Store,
+    ptr_offset: i32,
+) -> anyhow::Result<Vec<u8>> {
+    let bindings = match memory.lock() {
+        Ok(v) => v,
+        Err(_) => return Err(anyhow::Error::msg("memory lock failed")),
+    };
     let memory_view = bindings.view(store);
     let mut length_bytes: [u8; 4] = [0; 4];
-    memory_view
-        .read(ptr_offset as u64, length_bytes.as_mut_slice())
-        .expect("read length_bytes failed");
+    match memory_view.read(ptr_offset as u64, length_bytes.as_mut_slice()) {
+        Ok(_) => {}
+        Err(_) => return Err(anyhow::Error::msg("read memory failed")),
+    }
     let length = u32::from_be_bytes(length_bytes);
     let mut data = vec![0; length as usize];
-    memory_view
-        .read((ptr_offset + 4) as u64, &mut data)
-        .expect("read uninit failed");
-    data
+    match memory_view.read((ptr_offset + 4) as u64, &mut data) {
+        Ok(_) => {}
+        Err(_) => return Err(anyhow::Error::msg("read memory failed")),
+    }
+    Ok(data)
 
     // let ptr = memory_view.data_ptr().offset(ptr_offset as isize) as *mut c_char;
     // let c_str = CStr::from_ptr(ptr);
@@ -181,7 +199,7 @@ pub fn get_data_from_heap(memory: Arc<Mutex<Memory>>, store: &Store, ptr_offset:
     // owned_str
 }
 
-pub fn create_wasm_instance(bytecode: &Vec<u8>) -> WASMInstance {
+pub fn create_wasm_instance(bytecode: &Vec<u8>) -> anyhow::Result<WASMInstance> {
     let mut store = Store::default();
     let module = Module::new(&store, bytecode).unwrap();
 
@@ -202,9 +220,15 @@ pub fn create_wasm_instance(bytecode: &Vec<u8>) -> WASMInstance {
         }
     };
 
-    let instance = Instance::new(&mut store, &module, &import_object).unwrap();
-    let memory = instance.exports.get_memory("memory").unwrap();
+    let instance = match Instance::new(&mut store, &module, &import_object) {
+        Ok(v) => v,
+        Err(_) => return Err(anyhow::Error::msg("create wasm instance failed")),
+    };
+    let memory = match instance.exports.get_memory("memory") {
+        Ok(v) => v,
+        Err(_) => return Err(anyhow::Error::msg("get memory failed")),
+    };
     unsafe { *GLOBAL_MEMORY = Some(Arc::new(Mutex::new(memory.clone()))) };
 
-    WASMInstance::new(bytecode.clone(), instance, store)
+    Ok(WASMInstance::new(bytecode.clone(), instance, store))
 }

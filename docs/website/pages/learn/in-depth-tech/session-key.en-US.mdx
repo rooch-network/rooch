@@ -1,0 +1,79 @@
+# Session key
+
+## What is the session key?
+
+Rooch's Session Key is a temporary key that facilitates users to interact with the chain.
+
+## What is the session key used for?
+
+When interacting with Rooch applications, each application generates a session key. It has an expiration time and will become invalid if there is no interaction for a long time.
+
+The purpose of the session key is to simplify the interaction process between the wallet and the DApp. The session key is generated during the first interaction. As long as the session key has not expired in subsequent operations, the DApp does not need to call the wallet again for signature.
+
+## Advantage
+
+Rooch's session keys provide several advantages:
+
+1. Shorten the complicated signing steps of chain game interaction. Taking the 2048 mini-game as an example, each step needs to send a transaction to the chain. The client will frequently call the wallet to sign, which is a very time-consuming process. Some wallets may use a delegation agent, which means prepaying a portion of Gas, and when the budgeted Gas is exhausted, a one-time signature transaction will be uploaded to the chain. This form of custody involves financial risks and game cheating. When using a session key, you only need to sign a transaction once when you start the game. During subsequent game executions, as long as the session key has not expired, the Rooch system will automatically sign the transaction on the chain at each step.
+2. Provide better permission management. Which functions can be used for different account addresses can be determined when signing for the first time.
+3. It is more user-friendly and provides end users with the same smooth experience using Web3 as Web2.
+
+## Definition
+
+Rooch's Session key contains five attributes: authentication key, scope, creation time, last activity time, and maximum inactivity time. The authentication key can be regarded as the ID of the session key.
+
+The authentication key is the public key hash corresponding to the private key, which is automatically generated every time a transaction is signed using the private key.
+
+```move
+struct SessionKey has store,copy,drop {
+    /// The session key's authentication key, it also is the session key's id
+    authentication_key: vector<u8>,
+    /// The session key's scopes
+    scopes: vector<SessionScope>,
+    /// The session key's create time, current timestamp in seconds
+    create_time: u64,
+    /// The session key's last active time, in seconds
+    last_active_time: u64,
+    /// The session key's max inactive time period, in seconds
+    /// If the session key is not active in this time period, it will be expired
+    /// If the max_inactive_interval is 0, the session key will never be expired
+    max_inactive_interval: u64,
+}
+```
+
+## Related operations
+
+### Create session key
+
+The creation of a session key only requires the Signer, authentication key, scope, and maximum inactivity time.
+
+- The scope is uniquely identified by address, module name, and function name.
+- A session key cannot be created from another session key, and a new session key can only be created by re-signing by the Signer.
+
+A single session key can be created using the `create_session_key_entry` function.
+
+You can also use `create_session_key_with_multi_scope_entry` to create a session key with a wider scope. In this case, the address, module name, and function in the scope can be encapsulated with vector.
+
+When we use session keys, module names and function names can use `*` to match any function, but we must use it with caution to avoid assigning excessive permissions that may lead to the loss of assets.
+
+### Get session key
+
+Under the premise of knowing the account address and authentication key, we can use the `get_seesion_key` function to obtain the session key of the current account.
+
+### Expiration
+
+If the session key has a non-zero maximum activity time and the last time the session key was used plus the set maximum inactivity time is less than the current time, the session key has expired.
+
+### Session key scope
+
+Session keys only work when calling functions. Session keys cannot be used to execute scripts or publish modules.
+
+Each time a function call is executed, the `in_session_scope` function checks whether the current session key has the ability to call the current function.
+
+### Update session key expiration time
+
+When the session key is not used for a long time, it will automatically expire. The system will automatically refresh the last activity time after each use of the session key.
+
+## Reference link
+
+Code [implementation of session keys](https://github.com/rooch-network/rooch/blob/main/frameworks/rooch-framework/sources/session_key.move) in Rooch
