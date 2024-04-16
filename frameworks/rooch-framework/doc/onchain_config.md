@@ -13,12 +13,15 @@
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_onchain_config_genesis_init)
 -  [Function `new_gas_schedule_config`](#0x3_onchain_config_new_gas_schedule_config)
+-  [Function `new_gas_entry`](#0x3_onchain_config_new_gas_entry)
 -  [Function `sequencer`](#0x3_onchain_config_sequencer)
 -  [Function `update_framework_version`](#0x3_onchain_config_update_framework_version)
 -  [Function `framework_version`](#0x3_onchain_config_framework_version)
 -  [Function `onchain_config`](#0x3_onchain_config_onchain_config)
--  [Function `update_onchain_gas_schedule`](#0x3_onchain_config_update_onchain_gas_schedule)
+-  [Function `update_onchain_gas_schedule_entry`](#0x3_onchain_config_update_onchain_gas_schedule_entry)
 -  [Function `onchain_gas_schedule`](#0x3_onchain_config_onchain_gas_schedule)
+-  [Function `gas_schedule_version`](#0x3_onchain_config_gas_schedule_version)
+-  [Function `gas_schedule_entries`](#0x3_onchain_config_gas_schedule_entries)
 
 
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
@@ -135,6 +138,17 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
+<a name="0x3_onchain_config_new_gas_entry"></a>
+
+## Function `new_gas_entry`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_new_gas_entry">new_gas_entry</a>(key: <a href="_String">ascii::String</a>, val: u64): <a href="onchain_config.md#0x3_onchain_config_GasEntry">onchain_config::GasEntry</a>
+</code></pre>
+
+
+
 <a name="0x3_onchain_config_sequencer"></a>
 
 ## Function `sequencer`
@@ -179,13 +193,13 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
-<a name="0x3_onchain_config_update_onchain_gas_schedule"></a>
+<a name="0x3_onchain_config_update_onchain_gas_schedule_entry"></a>
 
-## Function `update_onchain_gas_schedule`
+## Function `update_onchain_gas_schedule_entry`
 
 
 
-<pre><code>entry <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_update_onchain_gas_schedule">update_onchain_gas_schedule</a>(<a href="">account</a>: &<a href="">signer</a>, gas_schedule_config: <a href="">vector</a>&lt;u8&gt;)
+<pre><code>entry <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_update_onchain_gas_schedule_entry">update_onchain_gas_schedule_entry</a>(<a href="">account</a>: &<a href="">signer</a>, gas_schedule_config: <a href="">vector</a>&lt;u8&gt;)
 </code></pre>
 
 
@@ -197,4 +211,26 @@ OnchainConfig is framework configurations stored on chain.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_onchain_gas_schedule">onchain_gas_schedule</a>(): &<a href="onchain_config.md#0x3_onchain_config_GasSchedule">onchain_config::GasSchedule</a>
+</code></pre>
+
+
+
+<a name="0x3_onchain_config_gas_schedule_version"></a>
+
+## Function `gas_schedule_version`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_gas_schedule_version">gas_schedule_version</a>(schedule: &<a href="onchain_config.md#0x3_onchain_config_GasSchedule">onchain_config::GasSchedule</a>): u64
+</code></pre>
+
+
+
+<a name="0x3_onchain_config_gas_schedule_entries"></a>
+
+## Function `gas_schedule_entries`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_gas_schedule_entries">gas_schedule_entries</a>(schedule: &<a href="onchain_config.md#0x3_onchain_config_GasSchedule">onchain_config::GasSchedule</a>): &<a href="">vector</a>&lt;<a href="onchain_config.md#0x3_onchain_config_GasEntry">onchain_config::GasEntry</a>&gt;
 </code></pre>
