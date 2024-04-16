@@ -1,10 +1,12 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::env;
 use std::fs::create_dir_all;
 use std::sync::Arc;
 use std::{fmt::Debug, path::Path, path::PathBuf};
 
+use rand::Rng;
 use anyhow::Result;
 use clap::Parser;
 use once_cell::sync::Lazy;
@@ -158,8 +160,12 @@ impl std::fmt::Display for RoochOpt {
 
 impl RoochOpt {
     pub fn new_with_temp_store() -> Self {
+        let temp_dir = env::temp_dir();
+        let random_dir_name = format!("random_dir_{}", rand::thread_rng().gen::<u32>());
+        let random_dir = temp_dir.join(random_dir_name);
+
         RoochOpt {
-            base_data_dir: Some(PathBuf::from("TMP")),
+            base_data_dir: Some(random_dir),
             chain_id: Some(RoochChainID::LOCAL),
             store: StoreConfig::default(),
             port: None,
