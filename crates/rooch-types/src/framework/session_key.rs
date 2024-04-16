@@ -30,12 +30,18 @@ pub struct SessionScope {
 }
 
 impl SessionScope {
-    pub fn new(module_address: AccountAddress, module_name: &str, function_name: &str) -> Self {
-        Self {
+    pub fn new(
+        module_address: AccountAddress,
+        module_name: &str,
+        function_name: &str,
+    ) -> Result<Self> {
+        let module_name_value = MoveAsciiString::from_str(module_name)?;
+        let function_name_value = MoveAsciiString::from_str(function_name)?;
+        Ok(Self {
             module_address,
-            module_name: MoveAsciiString::from_str(module_name).expect("invalid module name"),
-            function_name: MoveAsciiString::from_str(function_name).expect("invalid function name"),
-        }
+            module_name: module_name_value,
+            function_name: function_name_value,
+        })
     }
 
     fn is_asterisk(s: &MoveAsciiString) -> bool {
@@ -104,7 +110,7 @@ impl FromStr for SessionScope {
         let function_name = parts
             .next()
             .ok_or(anyhow::anyhow!("invalid session scope"))?;
-        Ok(Self::new(module_address, module_name, function_name))
+        Self::new(module_address, module_name, function_name)
     }
 }
 
