@@ -6,6 +6,7 @@ use std::fs::create_dir_all;
 use std::sync::Arc;
 use std::{fmt::Debug, path::Path, path::PathBuf};
 
+use rand::Rng;
 use anyhow::Result;
 use clap::Parser;
 use once_cell::sync::Lazy;
