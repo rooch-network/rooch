@@ -14,8 +14,7 @@ use rooch_test_transaction_builder::TestTransactionBuilder;
 use rooch_types::transaction::LedgerTxData;
 
 pub fn tx_sequence_benchmark(c: &mut Criterion) {
-    let mut config = BenchTxConfig::load();
-    config.adjust();
+    let config = BenchTxConfig::load();
 
     let binding_test = binding_test::RustBindingTest::new().unwrap();
     let keystore = InMemKeystore::new_insecure_for_tests(10);
