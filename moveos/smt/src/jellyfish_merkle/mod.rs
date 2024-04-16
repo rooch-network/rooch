@@ -300,7 +300,7 @@ where
         blob_sets: Vec<Vec<(SMTObject<K>, Option<SMTObject<V>>)>>,
     ) -> Result<(Vec<HashValue>, TreeUpdateBatch<K, V>)> {
         let mut tree_cache = TreeCache::new(self.reader, state_root_hash);
-        for (_idx, blob_set) in blob_sets.into_iter().enumerate() {
+        for blob_set in blob_sets.into_iter() {
             assert!(
                 !blob_set.is_empty(),
                 "Transactions that output empty write set should not be included.",

@@ -434,7 +434,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
         orginal_args
     );
     for chunk in splited_args.chunks(3) {
-        let first = chunk.get(0).cloned();
+        let first = chunk.first().cloned();
         let op = chunk.get(1).cloned();
         let second = chunk.get(2).cloned();
 

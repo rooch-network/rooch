@@ -134,7 +134,7 @@ bitcoin = { version = "0.31.0", features = ["rand-std"] }
 bitcoincore-rpc = "0.18.0"
 bip32 = "0.4.0"
 byteorder = "1.4.3"
-clap = { version = "4.4.1", features = ["derive", "env"] }
+clap = { version = "4.5.4", features = ["derive", "env"] }
 brotli = "3.4.0"
 chrono = "0.4.23"
 coerce = "0.8"
@@ -263,6 +263,7 @@ celestia-rpc = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = 
 celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev = "129272e8d926b4c7badf27a26dea915323dd6489" }
 opendal = "0.44.1"
 bitcoincore-rpc-json = "0.18.0"
+toml = "0.8.12"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

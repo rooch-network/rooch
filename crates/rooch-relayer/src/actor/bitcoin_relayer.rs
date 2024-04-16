@@ -160,7 +160,7 @@ impl BitcoinRelayer {
             debug!("GetBlockHeaderResult: {:?}", block_result);
 
             let block_height = block_result.header_info.height;
-            let block_body = rooch_types::bitcoin::types::Block::try_from(block_result.block)?;
+            let block_body = rooch_types::bitcoin::types::Block::from(block_result.block);
 
             Ok(Some(L1BlockWithBody {
                 block: L1Block {

@@ -46,7 +46,15 @@ pub(crate) fn init_mock_db(
         let (_root_hash, write_batch) = tree
             .insert_all(
                 current_state_root,
-                vec![(key.clone().into_object(), value.clone().into_object())],
+                vec![(
+                    key.clone()
+                        .into_object()
+                        .expect("TestValue.into_object() failed"),
+                    value
+                        .clone()
+                        .into_object()
+                        .expect("TestValue.into_object() failed"),
+                )],
             )
             .unwrap();
         db.write_tree_update_batch(write_batch).unwrap();

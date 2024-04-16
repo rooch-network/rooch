@@ -92,6 +92,14 @@ impl MoveStructState for Inscription {
     }
 }
 
+pub fn derive_inscription_id(inscription_id: &InscriptionID) -> ObjectID {
+    object::custom_child_object_id(
+        InscriptionStore::object_id(),
+        inscription_id,
+        &Inscription::struct_tag(),
+    )
+}
+
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Default)]
 pub struct InscriptionRecord {
     pub body: Vec<u8>,

@@ -192,7 +192,7 @@ fn process_indexer_entry(
             Some(availablebalance),
             Some(transferablebalance),
         ) = (
-            columns.get(0),
+            columns.first(),
             columns.get(1),
             columns.get(3),
             columns.get(4),
@@ -322,7 +322,7 @@ fn update_coin_tsv(config: &DataConfig, tick_str: &str, amt_numeric: i32) -> Res
         let line = line_result?;
         let mut columns: Vec<&str> = line.split('\t').collect();
 
-        if let Some(existing_tick) = columns.get(0) {
+        if let Some(existing_tick) = columns.first() {
             if existing_tick == &tick_str {
                 if let Some(leftforsupply) = columns.get_mut(1) {
                     let leftforsupply_numeric: i32 = leftforsupply.parse().unwrap_or_default();
@@ -351,7 +351,7 @@ fn read_coin_tsv(config: &DataConfig, name: &str) -> Result<(String, String)> {
         let columns: Vec<&str> = line.split('\t').collect();
 
         // Assuming the format is name, leftforsupply, limit, id
-        if let Some(existing_name) = columns.get(0) {
+        if let Some(existing_name) = columns.first() {
             if existing_name == &name {
                 if let (Some(leftforsupply), Some(limit)) = (columns.get(1), columns.get(2)) {
                     return Ok((leftforsupply.to_string(), limit.to_string()));
@@ -378,7 +378,7 @@ fn tick_exists_in_coin_tsv(config: &DataConfig, tick: &str) -> Result<bool> {
             for line_result in reader.lines() {
                 let line = line_result?;
                 let columns: Vec<&str> = line.split('\t').collect();
-                if let Some(existing_tick) = columns.get(0) {
+                if let Some(existing_tick) = columns.first() {
                     if existing_tick == &tick {
                         return Ok(true);
                     }
@@ -400,7 +400,7 @@ fn inscription_id_exists_in_failinscription_tsv(config: &DataConfig, txid: &str)
             for line_result in reader.lines() {
                 let line = line_result?;
                 let columns: Vec<&str> = line.split('\t').collect();
-                if let Some(existing_txid) = columns.get(0) {
+                if let Some(existing_txid) = columns.first() {
                     // let iid = ("{}i0",txid);
                     if existing_txid == &format!("{}i0", txid) {
                         return Ok(true);

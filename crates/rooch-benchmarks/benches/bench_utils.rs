@@ -6,7 +6,7 @@ use std::time::Duration;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use serde::Serialize;
 
-use rooch_benchmarks::helper::profiled;
+use rooch_benchmarks::config::configure_criterion;
 use rooch_types::transaction::L1Block;
 
 pub struct BcsSerializeSizeFunContainer<T: ?Sized + Serialize> {
@@ -32,9 +32,9 @@ where
 
 pub fn bcs_serialized_size_benchmark(c: &mut Criterion) {
     let l1_block = L1Block::default();
-    let mut group = c.benchmark_group("bcs_serialized_size");
+    let mut group = c.benchmark_group("bcs_serialized_size_bench");
 
-    let funcs = vec![
+    let funcs = [
         BcsSerializeSizeFunContainer {
             func: serialized_size,
             name: "serialized_size",
@@ -60,7 +60,7 @@ pub fn bcs_serialized_size_benchmark(c: &mut Criterion) {
 
 criterion_group! {
     name = bcs_serialized_size_bench;
-    config = profiled(None).warm_up_time(Duration::from_millis(10));
+    config = configure_criterion(None).warm_up_time(Duration::from_millis(10));
     targets = bcs_serialized_size_benchmark
 }
 

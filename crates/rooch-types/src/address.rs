@@ -911,4 +911,21 @@ mod test {
         assert_eq!(bitcoin_address_str, bitcoin_address_format);
         Ok(())
     }
+
+    #[test]
+    pub fn test_bitcoin_address_to_rooch_address() -> Result<()> {
+        // let bitcoin_address_str = "bc1qvz9u76epzm67x0gkxj8l8udzldc0lskspecuf5";
+        let bitcoin_address_str = "18cBEMRxXHqzWWCxZNtU91F5sbUNKhL5PX";
+
+        let maddress = MultiChainAddress::try_from_str_with_multichain_id(
+            RoochMultiChainID::Bitcoin,
+            bitcoin_address_str,
+        )?;
+        println!(
+            "test_bitcoin_address_to_rooch_address {} ",
+            hex::encode(maddress.raw_address)
+        );
+
+        Ok(())
+    }
 }

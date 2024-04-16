@@ -43,6 +43,7 @@ proptest = { workspace = true }
 rand_core = { default-features = false, workspace = true }
 bitcoincore-rpc-json = { workspace = true }
 bitcoin = { workspace = true }
+toml = { workspace = true }
 
 move-core-types = { workspace = true }
 move-resource-viewer = { workspace = true }
@@ -82,6 +83,10 @@ bench = false
 
 [[bench]]
 harness = false
+name = "bench_utils"
+
+[[bench]]
+harness = false
 name = "bench_tx_validate"
 
 [[bench]]
@@ -94,16 +99,4 @@ name = "bench_tx_exec"
 
 [[bench]]
 harness = false
-name = "bench_tx_exec_blk"
-
-[[bench]]
-harness = false
-name = "bench_tx_query"
-
-[[bench]]
-harness = false
-name = "bench_utils"
-
-[[bench]]
-harness = false
-name = "bench_tx"
+name = "bench_tx_exec_btc_blk"

@@ -412,7 +412,7 @@ fn native_execute_wasm_function(
 
                     match calling_function.call(&mut instance.store, wasm_func_args.as_slice()) {
                         Ok(ret) => {
-                            let return_value = match ret.deref().get(0) {
+                            let return_value = match ret.deref().first() {
                                 Some(v) => v,
                                 None => {
                                     return build_err(

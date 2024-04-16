@@ -43,15 +43,15 @@ impl TestKey {
         self.0.to_vec()
     }
 
-    pub fn into_object(self) -> SMTObject<Self> {
+    pub fn into_object(self) -> Result<SMTObject<Self>> {
         let raw = self.0.to_vec();
         let hash = self.0;
-        SMTObject::new_for_test(self, raw, hash)
+        Ok(SMTObject::new_for_test(self, raw, hash))
     }
 }
 
 impl EncodeToObject for TestKey {
-    fn into_object(self) -> SMTObject<Self>
+    fn into_object(self) -> Result<SMTObject<Self>>
     where
         Self: std::marker::Sized,
     {
@@ -65,7 +65,7 @@ impl DecodeToObject for TestKey {
         Self: std::marker::Sized,
     {
         let key = TestKey::new_with_hash(HashValue::from_slice(raw).unwrap());
-        Ok(key.into_object())
+        key.into_object()
     }
 }
 

@@ -4,6 +4,8 @@
 use crate::{Key, SMTObject, Value};
 use std::collections::BTreeMap;
 
+type SMTObjectResult<K, V> = anyhow::Result<Vec<(SMTObject<K>, Option<SMTObject<V>>)>>;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UpdateSet<K, V> {
     updates: BTreeMap<K, Option<V>>,
@@ -67,10 +69,17 @@ where
         self.updates.clear();
     }
 
-    pub(crate) fn into_updates(self) -> Vec<(SMTObject<K>, Option<SMTObject<V>>)> {
-        self.into_iter()
-            .map(|(k, v)| (k.into_object(), v.map(|v| v.into_object())))
-            .collect()
+    pub(crate) fn into_updates(self) -> SMTObjectResult<K, V> {
+        let mut ret = Vec::new();
+        for (k, v_opt) in self.into_iter() {
+            let key = k.into_object()?;
+            let value = match v_opt {
+                Some(v) => Some(v.into_object()?),
+                None => None,
+            };
+            ret.push((key, value));
+        }
+        Ok(ret)
     }
 }
 

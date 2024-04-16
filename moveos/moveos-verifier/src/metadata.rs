@@ -1250,7 +1250,7 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
             // So we need to skip inline functions.
             continue;
         }
-        for (_offset, instr) in fun.get_bytecode().unwrap().iter().enumerate() {
+        for instr in fun.get_bytecode().unwrap().iter() {
             if let Bytecode::CallGeneric(finst_idx) = instr {
                 let FunctionInstantiation {
                     handle,
@@ -1392,7 +1392,7 @@ fn check_gas_validate_function(fenv: &FunctionEnv, _global_env: &GlobalEnv) -> (
     //TODO FIXME
 
     // Length of the return_types array has already been checked above, so unwrap directly here.
-    let first_return_type = return_types.get(0).unwrap();
+    let first_return_type = return_types.first().unwrap();
     match first_return_type {
         Type::Primitive(PrimitiveType::Bool) => (true, "".to_string()),
         _ => (false, "Return type must be of type Bool.".to_string()),
@@ -1431,7 +1431,7 @@ fn check_gas_charge_post_function(fenv: &FunctionEnv, _global_env: &GlobalEnv) -
     }
 
     // Length of the return_types array has already been checked above, so unwrap directly here.
-    let first_return_type = return_types.get(0).unwrap();
+    let first_return_type = return_types.first().unwrap();
     match first_return_type {
         Type::Primitive(PrimitiveType::Bool) => (true, "".to_string()),
         _ => (false, "Return type must be of type Bool.".to_string()),

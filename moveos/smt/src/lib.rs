@@ -142,7 +142,7 @@ where
         key: K,
     ) -> Result<(Option<V>, SparseMerkleProof)> {
         let tree: JellyfishMerkleTree<K, V, NR> = JellyfishMerkleTree::new(&self.node_reader);
-        let key = key.into_object();
+        let key = key.into_object()?;
         let (data, proof) = tree.get_with_proof(state_root.into(), key)?;
         match data {
             Some(b) => Ok((Some(b.origin), proof)),
@@ -206,7 +206,7 @@ where
 
         let tree = JellyfishMerkleTree::new(&self.node_reader);
         let (new_state_root, change_set) =
-            tree.updates(Some(state_root.into()), updates.into_updates())?;
+            tree.updates(Some(state_root.into()), updates.into_updates()?)?;
 
         let mut node_map: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
 
@@ -227,7 +227,7 @@ where
         let iter = self.iter(state_root, None)?;
 
         let mut data = Vec::new();
-        for (_data_size, item) in iter.enumerate() {
+        for item in iter {
             let (k, v) = item?;
             data.push((k, v));
         }
@@ -254,11 +254,14 @@ where
     where
         NR: NodeReader,
     {
-        let iter = JellyfishMerkleIterator::new(
-            reader,
-            state_root.into(),
-            starting_key.map(|k| k.into_object()),
-        )?;
+        let key = match starting_key {
+            None => None,
+            Some(v) => match v.into_object() {
+                Ok(object) => Some(object),
+                Err(_) => None,
+            },
+        };
+        let iter = JellyfishMerkleIterator::new(reader, state_root.into(), key)?;
         Ok(SMTIterator { iter })
     }
 }

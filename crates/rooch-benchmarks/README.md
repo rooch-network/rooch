@@ -1,6 +1,12 @@
 # Benchmark
 
-## Run
+## TODO
+
+1. refine bench_tx_query, is too heavy cannot distinguish the performance of different tx_types/components.
+2. add more bench
+3. pass args from command line not env var
+
+## Usage
 
 run all benchmark:
 
@@ -17,7 +23,9 @@ cargo bench --bench bench_tx_query
 cargo bench --bench bench_tx_write
 ```
 
-### Run with Args
+### Options
+
+Some benchmark can be configured by env var.
 
 #### bench_tx_write:
 
@@ -44,3 +52,11 @@ pprof -svg profile.pb
 ```shell
 cargo bench --bench bench_tx_write -- --profile-time=3
 ```
+
+## FAQ
+
+### Why not run in CI pipeline?
+
+The virtual environment in CI is not stable, the result is not reliable.
+See [this](https://bheisler.github.io/criterion.rs/book/faq.html) for more details.
+After Rooch build its own CI, we can run it in CI pipeline.

@@ -79,7 +79,7 @@ impl<'a> AuthenticationKeyModule<'a> {
             .call_function(&ctx, call)?
             .into_result()
             .map(|values| {
-                let value = values.get(0).expect("Expected return value");
+                let value = values.first().expect("Expected return value");
                 let result = MoveOption::<Vec<u8>>::from_bytes(&value.value)
                     .expect("Expected Option<address>");
                 result.into()
