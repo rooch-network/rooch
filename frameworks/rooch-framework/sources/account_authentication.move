@@ -43,7 +43,7 @@ module rooch_framework::account_authentication {
    }
 
    //TODO should we use the AuthenticationKeys to indecate the auth validator is installed for the account?
-   /// A resource tha holds the auth validator ids for this account has installed.
+   /// A resource that holds the auth validator ids for this account has installed.
    struct InstalledAuthValidator has key,store {
       validators: vector<u64>,
    }
