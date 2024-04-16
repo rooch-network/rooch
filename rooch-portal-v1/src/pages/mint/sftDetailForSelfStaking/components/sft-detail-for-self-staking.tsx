@@ -15,7 +15,7 @@ export function SftDetailForSelfStaking() {
 
   return (
     <>
-      <div className="flex items-center justify-start w-full gap-2 text-muted-foreground dark:text-blue-50 mt-2">
+      <div className="flex items-center justify-start w-full gap-2 text-muted-foreground dark:text-zinc-50 mt-2">
         <span className="text-sm">Process</span>
         <Progress value={progress} />
         <span className="text-sm flex items-center gap-1">
