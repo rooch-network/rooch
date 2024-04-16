@@ -147,7 +147,7 @@ pub fn put_data_on_stack(
 ) -> anyhow::Result<i32> {
     let data_len = data.len() as i32;
     let result = stack_alloc_func.call(store, vec![I32(data_len + 1)].as_slice())?;
-    let return_value = match result.deref().get(0) {
+    let return_value = match result.deref().first() {
         None => return Err(anyhow::Error::msg("call StaclAlloc function failed")),
         Some(v) => v,
     };
