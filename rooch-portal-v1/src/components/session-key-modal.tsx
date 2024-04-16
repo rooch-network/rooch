@@ -16,7 +16,7 @@ export const SessionKeyModal: React.FC<SessionKeyModalProps> = ({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+    <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center">
       <div className="bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-lg max-w-sm w-full">
         <h2 className="text-lg font-bold mb-4">Session Authorize</h2>
         <p className="text-sm text-muted-foreground mb-2">
