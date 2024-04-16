@@ -6,6 +6,7 @@ use crate::gas::gas_member::{FromOnChainGasSchedule, InitialGasSchedule, ToOnCha
 use crate::gas::r#abstract::{
     AbstractValueSize, AbstractValueSizePerArg, InternalGasPerAbstractValueUnit,
 };
+use anyhow::Result;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_binary_format::file_format::CodeOffset;
 use move_core_types::account_address::AccountAddress;
@@ -13,16 +14,12 @@ use move_core_types::gas_algebra::{
     AbstractMemorySize, GasQuantity, InternalGas, InternalGasPerArg, InternalGasPerByte, NumArgs,
     NumBytes,
 };
-use move_core_types::ident_str;
-use move_core_types::identifier::{IdentStr, Identifier};
-use move_core_types::language_storage::{ModuleId, StructTag};
+use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::StatusCode;
-use move_resource_viewer::AnnotatedMoveValue;
-use move_vm_types::gas::{GasMeter, SimpleInstruction};
+use move_vm_types::gas::{GasMeter, SimpleInstruction, UnmeteredGasMeter};
 use move_vm_types::views::{TypeView, ValueView};
-use moveos_types::moveos_std::object;
-use moveos_types::state::{MoveStructState, MoveStructType};
-use moveos_types::state_resolver::{AnnotatedStateReader, MoveOSResolver};
+use moveos_types::moveos_std::gas_schedule::GasSchedule;
+use moveos_types::state_resolver::StateResolver;
 use moveos_types::transaction::GasStatement;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -30,7 +27,6 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::ops::{Add, Bound};
 use std::rc::Rc;
-use std::sync::Mutex;
 
 /// The size in bytes for a reference on the stack
 pub const REFERENCE_SIZE: AbstractMemorySize = AbstractMemorySize::new(8);
@@ -46,40 +42,6 @@ pub const STACK_HEIGHT_TIER_DEFAULT: u64 = 1;
 pub const STACK_SIZE_TIER_DEFAULT: u64 = 1;
 
 pub static ZERO_COST_SCHEDULE: Lazy<CostTable> = Lazy::new(zero_cost_schedule);
-
-#[derive(Clone, Debug, Default, Serialize, PartialEq, Eq, Deserialize)]
-pub struct GlobalGasEntries {
-    pub last_updated: u64,
-    pub entries: BTreeMap<String, u64>,
-}
-
-pub static mut GLOBAL_GAS_ENTRIES: Lazy<Mutex<Option<GlobalGasEntries>>> =
-    Lazy::new(|| Mutex::new(None));
-
-#[derive(Clone, Debug, Default, Serialize, PartialEq, Eq, Deserialize)]
-pub struct GasScheduleUpdated {
-    pub last_updated: u64,
-}
-
-pub const ROOCH_FRAMEWORK_ADDRESS: AccountAddress = {
-    let mut addr = [0u8; AccountAddress::LENGTH];
-    addr[AccountAddress::LENGTH - 1] = 3u8;
-    AccountAddress::new(addr)
-};
-
-impl MoveStructType for GasScheduleUpdated {
-    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("onchain_config");
-    const STRUCT_NAME: &'static IdentStr = ident_str!("GasScheduleUpdated");
-}
-
-impl MoveStructState for GasScheduleUpdated {
-    fn struct_layout() -> move_core_types::value::MoveStructLayout {
-        move_core_types::value::MoveStructLayout::new(vec![
-            move_core_types::value::MoveTypeLayout::U64,
-        ])
-    }
-}
 
 #[derive(Clone, Debug, Default, Serialize, PartialEq, Eq, Deserialize)]
 pub struct StorageGasParameter {
@@ -347,6 +309,46 @@ impl InstructionParameter {
             vec_unpack_base: 0.into(),
             vec_unpack_per_expected_elem: 0.into(),
         }
+    }
+}
+
+pub struct VMGasParameters {
+    pub instruction_gas_parameter: InstructionParameter,
+    pub storage_gas_parameter: StorageGasParameter,
+    pub abstract_value_parameter: AbstractValueSizeGasParameter,
+}
+
+impl VMGasParameters {
+    pub fn initial() -> Self {
+        Self {
+            instruction_gas_parameter: InstructionParameter::zeros(),
+            storage_gas_parameter: StorageGasParameter::zeros(),
+            abstract_value_parameter: AbstractValueSizeGasParameter::zeros(),
+        }
+    }
+
+    pub fn from_on_chain_gas_schedule(gas_schedule: &BTreeMap<String, u64>) -> Option<Self> {
+        let instruction_gas_parameter =
+            InstructionParameter::from_on_chain_gas_schedule(gas_schedule)
+                .expect("restore InstructionParameter from entries failed");
+        let storage_gas_parameter = StorageGasParameter::from_on_chain_gas_schedule(gas_schedule)
+            .expect("restore StorageGasParameter from entries failed");
+        let abstract_value_parameter =
+            AbstractValueSizeGasParameter::from_on_chain_gas_schedule(gas_schedule)
+                .expect("restore AbstractValueSizeGasParameter from entries failed");
+        Some(Self {
+            instruction_gas_parameter,
+            storage_gas_parameter,
+            abstract_value_parameter,
+        })
+    }
+
+    pub fn to_on_chain_gas_schedule(&self) -> Vec<(String, u64)> {
+        let mut gas_schedule = vec![];
+        gas_schedule.extend(self.instruction_gas_parameter.to_on_chain_gas_schedule());
+        gas_schedule.extend(self.storage_gas_parameter.to_on_chain_gas_schedule());
+        gas_schedule.extend(self.abstract_value_parameter.to_on_chain_gas_schedule());
+        gas_schedule
     }
 }
 
@@ -1378,108 +1380,44 @@ pub fn misc_parameter_to_on_chain_gas_schedule(
     gas_parameter.to_on_chain_gas_schedule()
 }
 
-pub fn gas_schedule_struct() -> StructTag {
-    StructTag {
-        address: AccountAddress::from_hex_literal("0x3").unwrap(),
-        module: Identifier::new("onchain_config").unwrap(),
-        name: Identifier::new("GasSchedule").unwrap(),
-        type_params: vec![],
-    }
-}
+pub fn get_gas_schedule_entries<Resolver: StateResolver>(
+    state_resolver: &Resolver,
+) -> Result<Option<BTreeMap<String, u64>>> {
+    //TODO try to reuse the GasSchedule with the native function
+    let gas_schedule_state = state_resolver.get_object(&GasSchedule::gas_schedule_object_id())?;
 
-pub fn unset_global_gas_schedule_cache(gas_schedule_updated: &GasScheduleUpdated) {
-    if gas_schedule_updated.last_updated == 1 {
-        unsafe {
-            *(GLOBAL_GAS_ENTRIES.lock().unwrap()) = None;
+    match gas_schedule_state {
+        None => Ok(None),
+        Some(gas_schedule_state) => {
+            let gas_schedule = gas_schedule_state.into_object::<GasSchedule>()?;
+            let entries = gas_schedule
+                .value
+                .entries
+                .into_iter()
+                .map(|entry| (entry.key.to_string(), entry.val))
+                .collect::<BTreeMap<_, _>>();
+            Ok(Some(entries))
         }
     }
 }
 
-pub fn get_gas_schedule_entries<Resolver: MoveOSResolver>(
-    db: &Resolver,
-) -> Option<BTreeMap<String, u64>> {
-    unsafe {
-        if GLOBAL_GAS_ENTRIES.lock().unwrap().is_some() {
-            return Some(GLOBAL_GAS_ENTRIES.lock().unwrap().clone().unwrap().entries);
-        }
+impl ClassifiedGasMeter for UnmeteredGasMeter {
+    fn charge_execution(&mut self, _gas_cost: u64) -> PartialVMResult<()> {
+        Ok(())
     }
 
-    let id = object::named_object_id(&gas_schedule_struct());
-    let gas_schedule_vec_result = db.get_annotated_object(id);
-
-    let mut gas_schedule_entries = BTreeMap::new();
-
-    return match gas_schedule_vec_result {
-        Ok(gas_schedule_opt) => {
-            if let Some(annotated_state) = gas_schedule_opt {
-                let gas_schedule_fields = annotated_state.value.value;
-                if gas_schedule_fields.len() > 1 {
-                    let (_, gas_entry_vec) = gas_schedule_fields.get(1).unwrap();
-                    match gas_entry_vec {
-                        AnnotatedMoveValue::Vector(_, gas_entries_list) => {
-                            for field_value in gas_entries_list.iter() {
-                                match field_value {
-                                    AnnotatedMoveValue::Struct(gas_entries_struct) => {
-                                        let (_, gas_entry_key) =
-                                            gas_entries_struct.value.first().unwrap();
-                                        let (_, gas_entry_value) =
-                                            gas_entries_struct.value.get(1).unwrap();
-
-                                        let key = String::from_utf8_lossy(
-                                            extract_bytes_from_value(gas_entry_key)
-                                                .unwrap()
-                                                .as_slice(),
-                                        )
-                                        .to_string();
-
-                                        let value =
-                                            extract_u64_from_value(gas_entry_value).unwrap();
-
-                                        gas_schedule_entries.insert(key, value);
-                                    }
-                                    _ => return None,
-                                }
-                            }
-                        }
-                        _ => return None,
-                    }
-                } else {
-                    return None;
-                }
-            } else {
-                return None;
-            }
-
-            unsafe {
-                *(GLOBAL_GAS_ENTRIES.lock().unwrap()) = Some(GlobalGasEntries {
-                    last_updated: 0,
-                    entries: gas_schedule_entries.clone(),
-                });
-            }
-
-            Some(gas_schedule_entries)
-        }
-        Err(_) => None,
-    };
-}
-
-fn extract_bytes_from_value(value: &AnnotatedMoveValue) -> Option<Vec<u8>> {
-    match value {
-        AnnotatedMoveValue::Bytes(v) => Some(v.clone()),
-        AnnotatedMoveValue::Struct(v) => {
-            let (_, item) = v.value.first().unwrap();
-            match item {
-                AnnotatedMoveValue::Bytes(value) => Some(value.clone()),
-                _ => None,
-            }
-        }
-        _ => None,
+    fn charge_io_write(&mut self, _data_size: u64) -> PartialVMResult<()> {
+        Ok(())
     }
-}
 
-fn extract_u64_from_value(value: &AnnotatedMoveValue) -> Option<u64> {
-    match value {
-        AnnotatedMoveValue::U64(v) => Some(*v),
-        _ => None,
+    fn check_constrains(&self, _max_gas_amount: u64) -> PartialVMResult<()> {
+        Ok(())
+    }
+
+    fn gas_statement(&self) -> GasStatement {
+        GasStatement {
+            execution_gas_used: InternalGas::from(0),
+            storage_gas_used: InternalGas::from(0),
+        }
     }
 }

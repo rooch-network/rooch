@@ -9,74 +9,33 @@ use move_core_types::{
     value::{MoveStructLayout, MoveTypeLayout},
 };
 use moveos_types::{
-    move_std::ascii::MoveAsciiString,
     moveos_std::object::{self, ObjectID},
-    state::{MoveState, MoveStructState, MoveStructType},
+    state::{MoveStructState, MoveStructType},
 };
 use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("onchain_config");
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
-pub struct GasEntry {
-    pub key: MoveAsciiString,
-    pub val: u64,
+pub struct OnchainConfig {
+    pub framework_version: u64,
+    pub sequencer: AccountAddress,
 }
 
-impl MoveStructType for GasEntry {
+impl MoveStructType for OnchainConfig {
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("GasEntry");
+    const STRUCT_NAME: &'static IdentStr = ident_str!("OnchainConfig");
 }
 
-impl MoveStructState for GasEntry {
+impl MoveStructState for OnchainConfig {
     fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![MoveAsciiString::type_layout(), MoveTypeLayout::U64])
+        MoveStructLayout::new(vec![MoveTypeLayout::U64, MoveTypeLayout::Address])
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
-pub struct GasScheduleConfig {
-    pub entries: Vec<GasEntry>,
-}
-
-impl MoveStructType for GasScheduleConfig {
-    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("GasScheduleConfig");
-}
-
-impl MoveStructState for GasScheduleConfig {
-    fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![MoveTypeLayout::Vector(Box::new(
-            GasEntry::type_layout(),
-        ))])
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
-pub struct GasSchedule {
-    pub schedule_version: u64,
-    pub entries: Vec<GasEntry>,
-}
-
-impl GasSchedule {
-    pub fn gas_schedule_object_id() -> ObjectID {
+impl OnchainConfig {
+    pub fn get_onchain_config_object_id() -> ObjectID {
         object::named_object_id(&Self::struct_tag())
-    }
-}
-
-impl MoveStructType for GasSchedule {
-    const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const STRUCT_NAME: &'static IdentStr = ident_str!("GasSchedule");
-}
-
-impl MoveStructState for GasSchedule {
-    fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![
-            MoveTypeLayout::U64,
-            MoveTypeLayout::Vector(Box::new(GasEntry::type_layout())),
-        ])
     }
 }

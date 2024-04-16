@@ -5,11 +5,13 @@ use anyhow::Result;
 use framework_builder::Stdlib;
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use move_vm_runtime::native_functions::NativeFunction;
+use moveos::gas::table::VMGasParameters;
 use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos_store::{config_store::ConfigDBStore, MoveOSStore};
 use moveos_types::genesis_info::GenesisInfo;
 use moveos_types::h256::H256;
 use moveos_types::move_std::ascii::MoveAsciiString;
+use moveos_types::moveos_std::gas_schedule::{GasEntry, GasSchedule, GasScheduleConfig};
 use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
 use moveos_types::{h256, state_resolver};
@@ -23,7 +25,6 @@ use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::error::GenesisError;
 use rooch_types::framework::genesis::GenesisContext;
-use rooch_types::framework::onchain_config::{GasEntry, GasSchedule, GasScheduleConfig};
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::{address::RoochAddress, chain_id::RoochChainID};
 use serde::{Deserialize, Serialize};
@@ -55,6 +56,7 @@ pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
 });
 
 pub struct FrameworksGasParameters {
+    pub vm_gas_params: VMGasParameters,
     pub rooch_framework_gas_params: rooch_framework::natives::NativeGasParameters,
     pub bitcoin_move_gas_params: bitcoin_move::natives::GasParameters,
 }
@@ -62,14 +64,16 @@ pub struct FrameworksGasParameters {
 impl FrameworksGasParameters {
     pub fn initial() -> Self {
         Self {
+            vm_gas_params: VMGasParameters::initial(),
             rooch_framework_gas_params: rooch_framework::natives::NativeGasParameters::initial(),
             bitcoin_move_gas_params: bitcoin_move::natives::GasParameters::initial(),
         }
     }
 
     pub fn to_gas_schedule_config(&self) -> GasScheduleConfig {
-        let mut entries = self.rooch_framework_gas_params.to_on_chain_gas_schedule();
-        entries.append(&mut self.bitcoin_move_gas_params.to_on_chain_gas_schedule());
+        let mut entries = self.vm_gas_params.to_on_chain_gas_schedule();
+        entries.extend(self.rooch_framework_gas_params.to_on_chain_gas_schedule());
+        entries.extend(self.bitcoin_move_gas_params.to_on_chain_gas_schedule());
         GasScheduleConfig {
             entries: entries
                 .into_iter()
@@ -87,12 +91,16 @@ impl FrameworksGasParameters {
             .get_object(&GasSchedule::gas_schedule_object_id())?
             .ok_or_else(|| anyhow::anyhow!("Gas schedule object not found"))?;
         let gas_schedule = gas_schedule_state.into_object::<GasSchedule>()?;
-        let entries = gas_schedule
-            .value
-            .entries
+        Self::load_from_gas_entries(gas_schedule.value.entries)
+    }
+
+    pub fn load_from_gas_entries(entries: Vec<GasEntry>) -> Result<Self> {
+        let entries = entries
             .into_iter()
             .map(|entry| (entry.key.to_string(), entry.val))
             .collect::<BTreeMap<_, _>>();
+        let vm_gas_parameter = VMGasParameters::from_on_chain_gas_schedule(&entries)
+            .ok_or_else(|| anyhow::anyhow!("Failed to load vm gas parameters"))?;
         let rooch_framework_gas_params =
             rooch_framework::natives::NativeGasParameters::from_on_chain_gas_schedule(&entries)
                 .ok_or_else(|| anyhow::anyhow!("Failed to load rooch framework gas parameters"))?;
@@ -100,6 +108,7 @@ impl FrameworksGasParameters {
             bitcoin_move::natives::GasParameters::from_on_chain_gas_schedule(&entries)
                 .ok_or_else(|| anyhow::anyhow!("Failed to load bitcoin move gas parameters"))?;
         Ok(Self {
+            vm_gas_params: vm_gas_parameter,
             rooch_framework_gas_params,
             bitcoin_move_gas_params,
         })
@@ -119,6 +128,7 @@ impl FrameworksGasParameters {
 pub struct RoochGenesis {
     /// The root object after genesis initialization
     pub root: RootObjectEntity,
+    pub genesis_gas_entries: Vec<GasEntry>,
     pub genesis_tx: RoochTransaction,
     pub genesis_moveos_tx: MoveOSTransaction,
 }
@@ -165,16 +175,14 @@ impl RoochGenesis {
             .into_moveos_transaction(ObjectEntity::genesis_root_object());
 
         let gas_parameter = FrameworksGasParameters::initial();
-
+        let gas_config = gas_parameter.to_gas_schedule_config();
         genesis_moveos_tx.ctx.add(genesis_ctx.clone())?;
         genesis_moveos_tx.ctx.add(bitcoin_genesis_ctx.clone())?;
-        genesis_moveos_tx
-            .ctx
-            .add(gas_parameter.to_gas_schedule_config())?;
+        genesis_moveos_tx.ctx.add(gas_config.clone())?;
 
         let vm_config = MoveOSConfig::default();
 
-        let mut moveos = MoveOS::new(
+        let moveos = MoveOS::new(
             MoveOSStore::mock_moveos_store()?,
             gas_parameter.all_natives(),
             vm_config,
@@ -185,6 +193,7 @@ impl RoochGenesis {
 
         Ok(Self {
             root: ObjectEntity::root_object(state_root, size),
+            genesis_gas_entries: gas_config.entries,
             genesis_tx,
             genesis_moveos_tx,
         })
@@ -245,8 +254,10 @@ impl RoochGenesis {
     }
 
     pub fn init_genesis(&self, moveos_store: &mut MoveOSStore) -> Result<RootObjectEntity> {
-        let genesis_gas_parameter = FrameworksGasParameters::initial();
-        let mut moveos = MoveOS::new(
+        //we load the gas parameter from genesis binary, avoid the code change affect the genesis result
+        let genesis_gas_parameter =
+            FrameworksGasParameters::load_from_gas_entries(self.genesis_gas_entries.clone())?;
+        let moveos = MoveOS::new(
             moveos_store.clone(),
             genesis_gas_parameter.all_natives(),
             MoveOSConfig::default(),

@@ -101,7 +101,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
         let genesis_gas_parameter = FrameworksGasParameters::initial();
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_LOCAL_GENESIS;
-        let mut moveos = MoveOS::new(
+        let moveos = MoveOS::new(
             moveos_store,
             genesis_gas_parameter.all_natives(),
             MoveOSConfig::default(),

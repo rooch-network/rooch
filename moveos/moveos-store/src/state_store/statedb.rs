@@ -103,7 +103,7 @@ impl StateDBStore {
         Ok(())
     }
 
-    pub fn apply_change_set(&mut self, state_change_set: StateChangeSet) -> Result<(H256, u64)> {
+    pub fn apply_change_set(&self, state_change_set: StateChangeSet) -> Result<(H256, u64)> {
         let root = state_change_set.root_object();
         let resolver = RootObjectResolver::new(root, self);
         let pre_state_root = state_change_set.state_root;

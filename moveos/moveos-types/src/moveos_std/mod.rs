@@ -8,6 +8,7 @@ pub mod any;
 pub mod copyable_any;
 pub mod display;
 pub mod event;
+pub mod gas_schedule;
 pub mod module_upgrade_flag;
 pub mod move_module;
 pub mod object;

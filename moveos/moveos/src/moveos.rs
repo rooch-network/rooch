@@ -1,9 +1,10 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::sync::Arc;
+
 use crate::gas::table::{
-    get_gas_schedule_entries, initial_cost_schedule, unset_global_gas_schedule_cache,
-    GasScheduleUpdated, MoveOSGasMeter,
+    get_gas_schedule_entries, initial_cost_schedule, CostTable, MoveOSGasMeter,
 };
 use crate::vm::moveos_vm::{MoveOSSession, MoveOSVM};
 use anyhow::{bail, Result};
@@ -25,6 +26,7 @@ use moveos_store::MoveOSStore;
 use moveos_types::addresses::MOVEOS_STD_ADDRESS;
 use moveos_types::function_return_value::FunctionResult;
 use moveos_types::moveos_std::event::EventID;
+use moveos_types::moveos_std::gas_schedule::GasScheduleUpdated;
 use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::moveos_std::tx_result::TxResult;
@@ -36,6 +38,7 @@ use moveos_types::transaction::{
     VerifiedMoveOSTransaction,
 };
 use moveos_types::{h256::H256, transaction::FunctionCall};
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
@@ -98,6 +101,7 @@ impl Clone for MoveOSConfig {
 pub struct MoveOS {
     vm: MoveOSVM,
     db: MoveOSStore,
+    cost_table: Arc<RwLock<Option<CostTable>>>,
     system_pre_execute_functions: Vec<FunctionCall>,
     system_post_execute_functions: Vec<FunctionCall>,
 }
@@ -114,20 +118,21 @@ impl MoveOS {
         Ok(Self {
             vm,
             db,
+            cost_table: Arc::new(RwLock::new(None)),
             system_pre_execute_functions,
             system_post_execute_functions,
         })
     }
 
     pub fn init_genesis(
-        &mut self,
+        &self,
         genesis_tx: MoveOSTransaction,
     ) -> Result<(H256, u64, TransactionOutput)> {
         self.verify_and_execute_genesis_tx(genesis_tx)
     }
 
     fn verify_and_execute_genesis_tx(
-        &mut self,
+        &self,
         tx: MoveOSTransaction,
     ) -> Result<(H256, u64, TransactionOutput)> {
         let MoveOSTransaction {
@@ -172,6 +177,22 @@ impl MoveOS {
         Ok((state_root, size, output))
     }
 
+    fn load_cost_table(&self, root: &RootObjectEntity) -> VMResult<CostTable> {
+        if let Some(cost_table) = self.cost_table.read().as_ref() {
+            Ok(cost_table.clone())
+        } else {
+            let resolver = RootObjectResolver::new(root.clone(), &self.db);
+            let gas_entries = get_gas_schedule_entries(&resolver).map_err(|e| {
+                PartialVMError::new(StatusCode::STORAGE_ERROR)
+                    .with_message(format!("Load gas schedule entries failed: {}", e))
+                    .finish(Location::Undefined)
+            })?;
+            let cost_table = initial_cost_schedule(gas_entries);
+            self.cost_table.write().replace(cost_table.clone());
+            Ok(cost_table)
+        }
+    }
+
     pub fn state(&self) -> &StateDBStore {
         self.db.get_state_store()
     }
@@ -200,11 +221,11 @@ impl MoveOS {
             pre_execute_functions,
             post_execute_functions,
         } = tx;
-        let resolver = RootObjectResolver::new(root.clone(), &self.db);
-        let gas_entries = get_gas_schedule_entries(&resolver);
-        let cost_table = initial_cost_schedule(gas_entries);
+        let cost_table = self.load_cost_table(&root)?;
         let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
         gas_meter.set_metering(false);
+
+        let resolver = RootObjectResolver::new(root.clone(), &self.db);
         let session = self
             .vm
             .new_readonly_session(&resolver, ctx.clone(), gas_meter);
@@ -242,13 +263,14 @@ impl MoveOS {
         // The variables in TxContext kv store before this executions should not be cleaned,
         // So we keep a backup here, and then insert to the TxContext kv store when session respawed.
         let system_env = ctx.map.clone();
-        let resolver = RootObjectResolver::new(root, &self.db);
-        let gas_entries = get_gas_schedule_entries(&resolver);
-        let cost_table = initial_cost_schedule(gas_entries);
+
+        let cost_table = self.load_cost_table(&root)?;
         let gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
 
         // Temporary behavior, will enable this in the future.
         // gas_meter.charge_io_write(ctx.tx_size)?;
+
+        let resolver = RootObjectResolver::new(root, &self.db);
         let mut session = self.vm.new_session(&resolver, ctx, gas_meter);
 
         // system pre_execute
@@ -305,7 +327,7 @@ impl MoveOS {
     }
 
     pub fn execute_and_apply(
-        &mut self,
+        &self,
         tx: VerifiedMoveOSTransaction,
     ) -> Result<(H256, u64, TransactionOutput)> {
         let raw_output = self.execute(tx)?;
@@ -316,7 +338,7 @@ impl MoveOS {
     }
 
     fn apply_transaction_output(
-        &mut self,
+        &self,
         output: RawTransactionOutput,
     ) -> Result<(H256, u64, Vec<EventID>)> {
         //TODO move apply change set to a suitable place, and make MoveOS stateless?
@@ -330,7 +352,7 @@ impl MoveOS {
 
         let (new_state_root, size) = self
             .db
-            .get_state_store_mut()
+            .get_state_store()
             .apply_change_set(changeset)
             .map_err(|e| {
                 PartialVMError::new(StatusCode::STORAGE_ERROR)
@@ -371,12 +393,16 @@ impl MoveOS {
         tx_context: &TxContext,
         function_call: FunctionCall,
     ) -> FunctionResult {
-        let resolver = RootObjectResolver::new(root, &self.db);
         //TODO limit the view function max gas usage
-        let gas_entries = get_gas_schedule_entries(&resolver);
-        let cost_table = initial_cost_schedule(gas_entries);
+        let cost_table = match self.load_cost_table(&root) {
+            Ok(cost_table) => cost_table,
+            Err(e) => {
+                return FunctionResult::err(e);
+            }
+        };
         let mut gas_meter = MoveOSGasMeter::new(cost_table, tx_context.max_gas_amount);
         gas_meter.set_metering(false);
+        let resolver = RootObjectResolver::new(root, &self.db);
         let mut session = self
             .vm
             .new_readonly_session(&resolver, tx_context.clone(), gas_meter);
@@ -501,15 +527,16 @@ impl MoveOS {
         // }
 
         let gas_schedule_updated = session.tx_context().get::<GasScheduleUpdated>()?;
-        if let Some(updated) = gas_schedule_updated {
-            unset_global_gas_schedule_cache(&updated);
+        if let Some(_updated) = gas_schedule_updated {
+            log::info!("Gas schedule updated");
+            self.cost_table.write().take();
         }
 
         let (_ctx, output) = session.finish_with_extensions(kept_status)?;
         Ok(output)
     }
 
-    pub fn flush_module_cache(&mut self, is_upgrade: bool) -> Result<()> {
+    pub fn flush_module_cache(&self, is_upgrade: bool) -> Result<()> {
         if is_upgrade {
             self.vm.mark_loader_cache_as_invalid();
         };
