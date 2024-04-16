@@ -9,8 +9,8 @@ use bitcoin::hashes::Hash;
 use bitcoin::Txid;
 use move_core_types::account_address::AccountAddress;
 use moveos_types::move_std::string::MoveString;
-use moveos_types::moveos_std::object;
 use moveos_types::{moveos_std::object::ObjectID, state::MoveStructType};
+use rooch_types::bitcoin::ord;
 use rooch_types::bitcoin::ord::{
     BitcoinInscriptionID, Inscription, InscriptionID, InscriptionState,
 };
@@ -60,9 +60,8 @@ impl InscriptionFilterView {
             InscriptionFilterView::InscriptionId { txid, index } => {
                 let txid = hex_to_txid(txid.as_str())?;
                 let inscription_id = InscriptionID::new(txid.into_address(), index);
-                let object_id =
-                    object::custom_object_id(&inscription_id, &Inscription::struct_tag());
-                ObjectStateFilter::ObjectId(object_id)
+                let obj_id = ord::derive_inscription_id(&inscription_id);
+                ObjectStateFilter::ObjectId(obj_id)
             }
             InscriptionFilterView::ObjectId(object_id) => ObjectStateFilter::ObjectId(object_id),
             InscriptionFilterView::All => ObjectStateFilter::ObjectType(Inscription::struct_tag()),
