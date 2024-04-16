@@ -59,6 +59,7 @@ impl MoveStructState for GasPaymentAccount {
     }
 }
 
+#[derive(Default)]
 pub struct MoveOSConfig {
     pub vm_config: VMConfig,
 }

@@ -16,7 +16,6 @@ use moveos_types::transaction::{FunctionCall, VerifiedMoveOSTransaction};
 use rooch_config::store_config::StoreConfig;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::actor::{executor::ExecutorActor, messages::ExecuteTransactionResult};
-use rooch_framework::natives::default_gas_schedule;
 use rooch_genesis::RoochGenesis;
 use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
@@ -73,24 +72,17 @@ impl RustBindingTest {
             MoveOSStore::mock_moveos_store_with_data_dir(moveos_db_path.as_path())?;
         let rooch_store = RoochStore::mock_rooch_store(rooch_db_path.as_path())?;
         let sequencer = AccountAddress::ONE.into();
-        let gas_schedule_blob = bcs::to_bytes(&default_gas_schedule())
-            .expect("Failure serializing genesis gas schedule");
 
         let genesis = RoochGenesis::build(
-            RoochChainID::LOCAL.genesis_ctx(sequencer, gas_schedule_blob),
+            RoochChainID::LOCAL.genesis_ctx(sequencer),
             BitcoinGenesisContext::new(Network::default().to_num(), data_import_mode),
         )?;
         let root = genesis.init_genesis(&mut moveos_store)?;
 
-        let executor = ExecutorActor::new(
-            root.clone(),
-            genesis.clone(),
-            moveos_store.clone(),
-            rooch_store.clone(),
-        )?;
+        let executor = ExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?;
 
         let reader_executor =
-            ReaderExecutorActor::new(root.clone(), genesis, moveos_store.clone(), rooch_store)?;
+            ReaderExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store)?;
         Ok(Self {
             root,
             data_dir,

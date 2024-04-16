@@ -28,7 +28,6 @@ use rooch_da::proxy::DAProxy;
 use rooch_executor::actor::executor::ExecutorActor;
 use rooch_executor::actor::reader_executor::ReaderExecutorActor;
 use rooch_executor::proxy::ExecutorProxy;
-use rooch_framework::natives::default_gas_schedule;
 use rooch_genesis::RoochGenesis;
 use rooch_indexer::actor::indexer::IndexerActor;
 use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
@@ -102,28 +101,18 @@ pub async fn setup_service(
     // Init executor
     let btc_network = Network::default().to_num();
     let data_import_mode = DataImportMode::default().to_num();
-    let gas_schedule_blob =
-        bcs::to_bytes(&default_gas_schedule()).expect("Failure serializing genesis gas schedule");
 
-    let genesis_ctx = chain_id.genesis_ctx(rooch_account, gas_schedule_blob);
+    let genesis_ctx = chain_id.genesis_ctx(rooch_account);
     let bitcoin_genesis_ctx = BitcoinGenesisContext::new(btc_network, data_import_mode);
     let genesis: RoochGenesis = RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
     let root = genesis.init_genesis(&mut moveos_store)?;
 
-    let executor_actor = ExecutorActor::new(
-        root.clone(),
-        genesis.clone(),
-        moveos_store.clone(),
-        rooch_store.clone(),
-    )?;
-    let reader_executor = ReaderExecutorActor::new(
-        root.clone(),
-        genesis,
-        moveos_store.clone(),
-        rooch_store.clone(),
-    )?
-    .into_actor(Some("ReaderExecutor"), &actor_system)
-    .await?;
+    let executor_actor =
+        ExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?;
+    let reader_executor =
+        ReaderExecutorActor::new(root.clone(), moveos_store.clone(), rooch_store.clone())?
+            .into_actor(Some("ReaderExecutor"), &actor_system)
+            .await?;
     let executor = executor_actor
         .into_actor(Some("Executor"), &actor_system)
         .await?;

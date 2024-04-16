@@ -4,26 +4,30 @@
 use anyhow::Result;
 use framework_builder::Stdlib;
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
-use move_vm_runtime::{config::VMConfig, native_functions::NativeFunction};
+use move_vm_runtime::native_functions::NativeFunction;
 use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos_store::{config_store::ConfigDBStore, MoveOSStore};
 use moveos_types::genesis_info::GenesisInfo;
-use moveos_types::h256;
 use moveos_types::h256::H256;
+use moveos_types::move_std::ascii::MoveAsciiString;
 use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use moveos_types::transaction::{MoveAction, MoveOSTransaction};
+use moveos_types::{h256, state_resolver};
 use once_cell::sync::Lazy;
-use rooch_framework::natives::default_gas_schedule;
-use rooch_framework::natives::gas_parameter::gas_member::InitialGasSchedule;
+use rooch_framework::natives::gas_parameter::gas_member::{
+    FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule,
+};
 use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
 use rooch_types::bitcoin::data_import_config::DataImportMode;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::error::GenesisError;
 use rooch_types::framework::genesis::GenesisContext;
+use rooch_types::framework::onchain_config::{GasEntry, GasSchedule, GasScheduleConfig};
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::{address::RoochAddress, chain_id::RoochChainID};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::str::FromStr;
 use std::{
     fs::File,
@@ -42,35 +46,81 @@ pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
         Network::NetworkRegtest.to_num(),
         DataImportMode::None.to_num(),
     );
-    let gas_schedule_blob =
-        bcs::to_bytes(&default_gas_schedule()).expect("Failure serializing genesis gas schedule");
     RoochGenesis::build_with_option(
-        RoochChainID::LOCAL.genesis_ctx(mock_sequencer, gas_schedule_blob),
+        RoochChainID::LOCAL.genesis_ctx(mock_sequencer),
         bitcoin_genesis_ctx,
         BuildOption::Fresh,
     )
     .expect("build rooch genesis failed")
 });
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct GenesisPackage {
-    pub state_root: H256,
-    pub genesis_ctx: GenesisContext,
-    pub bitcoin_genesis_ctx: BitcoinGenesisContext,
-    pub genesis_tx: RoochTransaction,
-    pub genesis_moveos_tx: MoveOSTransaction,
-}
-
-#[derive(Clone, Debug)]
-pub struct RoochGenesis {
-    pub config: MoveOSConfig,
-    ///config for the Move integration test
-    pub config_for_test: MoveOSConfig,
-    //TODO we need to add gas parameters to the GenesisPackage
-    //How to serialize the gas parameters?
+pub struct FrameworksGasParameters {
     pub rooch_framework_gas_params: rooch_framework::natives::NativeGasParameters,
     pub bitcoin_move_gas_params: bitcoin_move::natives::GasParameters,
-    pub genesis_package: GenesisPackage,
+}
+
+impl FrameworksGasParameters {
+    pub fn initial() -> Self {
+        Self {
+            rooch_framework_gas_params: rooch_framework::natives::NativeGasParameters::initial(),
+            bitcoin_move_gas_params: bitcoin_move::natives::GasParameters::initial(),
+        }
+    }
+
+    pub fn to_gas_schedule_config(&self) -> GasScheduleConfig {
+        let mut entries = self.rooch_framework_gas_params.to_on_chain_gas_schedule();
+        entries.append(&mut self.bitcoin_move_gas_params.to_on_chain_gas_schedule());
+        GasScheduleConfig {
+            entries: entries
+                .into_iter()
+                .map(|(key, val)| GasEntry {
+                    key: MoveAsciiString::from_str(key.as_str())
+                        .expect("GasEntry key must be ascii"),
+                    val,
+                })
+                .collect(),
+        }
+    }
+
+    pub fn load_from_chain(state_resolver: &dyn state_resolver::StateResolver) -> Result<Self> {
+        let gas_schedule_state = state_resolver
+            .get_object(&GasSchedule::gas_schedule_object_id())?
+            .ok_or_else(|| anyhow::anyhow!("Gas schedule object not found"))?;
+        let gas_schedule = gas_schedule_state.into_object::<GasSchedule>()?;
+        let entries = gas_schedule
+            .value
+            .entries
+            .into_iter()
+            .map(|entry| (entry.key.to_string(), entry.val))
+            .collect::<BTreeMap<_, _>>();
+        let rooch_framework_gas_params =
+            rooch_framework::natives::NativeGasParameters::from_on_chain_gas_schedule(&entries)
+                .ok_or_else(|| anyhow::anyhow!("Failed to load rooch framework gas parameters"))?;
+        let bitcoin_move_gas_params =
+            bitcoin_move::natives::GasParameters::from_on_chain_gas_schedule(&entries)
+                .ok_or_else(|| anyhow::anyhow!("Failed to load bitcoin move gas parameters"))?;
+        Ok(Self {
+            rooch_framework_gas_params,
+            bitcoin_move_gas_params,
+        })
+    }
+
+    pub fn all_natives(&self) -> Vec<(AccountAddress, Identifier, Identifier, NativeFunction)> {
+        let mut rooch_framework_native_tables =
+            rooch_framework::natives::all_natives(self.rooch_framework_gas_params.clone());
+        let bitcoin_move_native_table =
+            bitcoin_move::natives::all_natives(self.bitcoin_move_gas_params.clone());
+        rooch_framework_native_tables.extend(bitcoin_move_native_table);
+        rooch_framework_native_tables
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RoochGenesis {
+    /// The root object after genesis initialization
+    pub root: RootObjectEntity,
+    pub genesis_tx: RoochTransaction,
+    pub genesis_moveos_tx: MoveOSTransaction,
 }
 
 pub enum BuildOption {
@@ -91,134 +141,7 @@ impl RoochGenesis {
         bitcoin_genesis_ctx: BitcoinGenesisContext,
         option: BuildOption,
     ) -> Result<Self> {
-        let config = MoveOSConfig {
-            vm_config: VMConfig::default(),
-        };
-
-        let config_for_test = MoveOSConfig {
-            vm_config: VMConfig::default(),
-        };
-
-        let rooch_framework_gas_params = rooch_framework::natives::NativeGasParameters::initial();
-        let bitcoin_move_gas_params = bitcoin_move::natives::GasParameters::initial();
-        let genesis_package = GenesisPackage::build(genesis_ctx, bitcoin_genesis_ctx, option)?;
-
-        Ok(RoochGenesis {
-            config,
-            config_for_test,
-            rooch_framework_gas_params,
-            bitcoin_move_gas_params,
-            genesis_package,
-        })
-    }
-
-    pub fn genesis_tx(&self) -> RoochTransaction {
-        self.genesis_package.genesis_tx.clone()
-    }
-
-    pub fn genesis_moveos_tx(&self) -> MoveOSTransaction {
-        self.genesis_package.genesis_moveos_tx.clone()
-    }
-
-    pub fn genesis_ctx(&self) -> GenesisContext {
-        self.genesis_package.genesis_ctx.clone()
-    }
-
-    pub fn bitcoin_genesis_ctx(&self) -> BitcoinGenesisContext {
-        self.genesis_package.bitcoin_genesis_ctx.clone()
-    }
-
-    pub fn all_natives(&self) -> Vec<(AccountAddress, Identifier, Identifier, NativeFunction)> {
-        let mut rooch_framework_native_tables =
-            rooch_framework::natives::all_natives(self.rooch_framework_gas_params.clone());
-        let bitcoin_move_native_table =
-            bitcoin_move::natives::all_natives(self.bitcoin_move_gas_params.clone());
-        rooch_framework_native_tables.extend(bitcoin_move_native_table);
-        rooch_framework_native_tables
-    }
-
-    pub fn genesis_package_hash(&self) -> H256 {
-        h256::sha3_256_of(
-            bcs::to_bytes(&self.genesis_package)
-                .expect("genesis txs bcs to_bytes should success")
-                .as_slice(),
-        )
-    }
-
-    pub fn genesis_state_root(&self) -> H256 {
-        self.genesis_package.state_root
-    }
-
-    pub fn genesis_info(&self) -> GenesisInfo {
-        GenesisInfo {
-            genesis_package_hash: self.genesis_package_hash(),
-            state_root_hash: self.genesis_state_root(),
-        }
-    }
-
-    pub fn check_genesis(&self, config_store: &ConfigDBStore) -> Result<()> {
-        let genesis_info_result = config_store.get_genesis();
-        match genesis_info_result {
-            Ok(Some(genesis_info_from_store)) => {
-                let genesis_info_from_binary = self.genesis_info();
-
-                // We need to check the genesis package hash and genesis state root hash
-                // because the same genesis package may generate different state root hash when the Move VM is upgraded
-                if genesis_info_from_store != genesis_info_from_binary {
-                    return Err(GenesisError::GenesisVersionMismatch {
-                        from_store: genesis_info_from_store,
-                        from_binary: genesis_info_from_binary,
-                    }
-                    .into());
-                }
-            }
-            Err(e) => return Err(GenesisError::GenesisLoadFailure(e.to_string()).into()),
-            Ok(None) => {
-                return Err(GenesisError::GenesisNotExist(
-                    "genesis hash from store is none".to_string(),
-                )
-                .into())
-            }
-        }
-        Ok(())
-    }
-
-    pub fn init_genesis(&self, moveos_store: &mut MoveOSStore) -> Result<RootObjectEntity> {
-        let mut moveos = MoveOS::new(
-            moveos_store.clone(),
-            self.all_natives(),
-            self.config.clone(),
-            vec![],
-            vec![],
-        )?;
-
-        let (genesis_state_root, size, genesis_tx_output) =
-            moveos.init_genesis(self.genesis_moveos_tx())?;
-
-        debug_assert!(
-            genesis_state_root == self.genesis_state_root(),
-            "Genesis state root mismatch"
-        );
-
-        //TODO should we save the genesis txs to sequencer?
-        let tx_hash = self.genesis_tx().tx_hash();
-        moveos_store.handle_tx_output(tx_hash, genesis_state_root, size, genesis_tx_output)?;
-
-        let genesis_info = GenesisInfo::new(self.genesis_package_hash(), genesis_state_root);
-        moveos_store.get_config_store().save_genesis(genesis_info)?;
-        Ok(ObjectEntity::root_object(genesis_state_root, size))
-    }
-}
-
-static GENESIS_STDLIB_BYTES: &[u8] = include_bytes!("../generated/stdlib");
-
-impl GenesisPackage {
-    fn build(
-        genesis_ctx: GenesisContext,
-        bitcoin_genesis_ctx: BitcoinGenesisContext,
-        build_option: BuildOption,
-    ) -> Result<Self> {
-        let stdlib = match build_option {
+        let stdlib = match option {
             BuildOption::Fresh => Self::build_stdlib()?,
             BuildOption::Release => Self::load_stdlib()?,
         };
@@ -241,30 +164,112 @@ impl GenesisPackage {
             .clone()
             .into_moveos_transaction(ObjectEntity::genesis_root_object());
 
+        let gas_parameter = FrameworksGasParameters::initial();
+
         genesis_moveos_tx.ctx.add(genesis_ctx.clone())?;
         genesis_moveos_tx.ctx.add(bitcoin_genesis_ctx.clone())?;
+        genesis_moveos_tx
+            .ctx
+            .add(gas_parameter.to_gas_schedule_config())?;
 
-        //TODO put gas parameters into genesis package
-        let gas_parameters = rooch_framework::natives::NativeGasParameters::initial();
-        let vm_config = MoveOSConfig {
-            vm_config: VMConfig::default(),
-        };
+        let vm_config = MoveOSConfig::default();
+
         let mut moveos = MoveOS::new(
             MoveOSStore::mock_moveos_store()?,
-            rooch_framework::natives::all_natives(gas_parameters),
+            gas_parameter.all_natives(),
             vm_config,
             vec![],
             vec![],
         )?;
-        let (state_root, _size, _output) = moveos.init_genesis(genesis_moveos_tx.clone())?;
+        let (state_root, size, _output) = moveos.init_genesis(genesis_moveos_tx.clone())?;
 
         Ok(Self {
-            state_root,
-            genesis_ctx,
-            bitcoin_genesis_ctx,
+            root: ObjectEntity::root_object(state_root, size),
             genesis_tx,
             genesis_moveos_tx,
         })
+    }
+
+    pub fn genesis_tx(&self) -> RoochTransaction {
+        self.genesis_tx.clone()
+    }
+
+    pub fn genesis_moveos_tx(&self) -> MoveOSTransaction {
+        self.genesis_moveos_tx.clone()
+    }
+
+    pub fn genesis_hash(&self) -> H256 {
+        h256::sha3_256_of(
+            bcs::to_bytes(&self)
+                .expect("genesis txs bcs to_bytes should success")
+                .as_slice(),
+        )
+    }
+
+    pub fn genesis_root(&self) -> &RootObjectEntity {
+        &self.root
+    }
+
+    pub fn genesis_info(&self) -> GenesisInfo {
+        GenesisInfo {
+            genesis_package_hash: self.genesis_hash(),
+            root: self.genesis_root().clone(),
+        }
+    }
+
+    pub fn check_genesis(&self, config_store: &ConfigDBStore) -> Result<()> {
+        let genesis_info_result = config_store.get_genesis();
+        match genesis_info_result {
+            Ok(Some(genesis_info_from_store)) => {
+                let genesis_info_from_binary = self.genesis_info();
+
+                // We need to check the genesis package hash and genesis state root hash
+                // because the same genesis package may generate different state root hash when the Move VM is upgraded
+                if genesis_info_from_store != genesis_info_from_binary {
+                    return Err(GenesisError::GenesisVersionMismatch {
+                        from_store: Box::new(genesis_info_from_store),
+                        from_binary: Box::new(genesis_info_from_binary),
+                    }
+                    .into());
+                }
+            }
+            Err(e) => return Err(GenesisError::GenesisLoadFailure(e.to_string()).into()),
+            Ok(None) => {
+                return Err(GenesisError::GenesisNotExist(
+                    "genesis hash from store is none".to_string(),
+                )
+                .into())
+            }
+        }
+        Ok(())
+    }
+
+    pub fn init_genesis(&self, moveos_store: &mut MoveOSStore) -> Result<RootObjectEntity> {
+        let genesis_gas_parameter = FrameworksGasParameters::initial();
+        let mut moveos = MoveOS::new(
+            moveos_store.clone(),
+            genesis_gas_parameter.all_natives(),
+            MoveOSConfig::default(),
+            vec![],
+            vec![],
+        )?;
+
+        let (genesis_state_root, size, genesis_tx_output) =
+            moveos.init_genesis(self.genesis_moveos_tx())?;
+
+        let inited_root = ObjectEntity::root_object(genesis_state_root, size);
+        debug_assert!(
+            inited_root == *self.genesis_root(),
+            "Genesis state root mismatch"
+        );
+
+        //TODO save the genesis txs to sequencer
+        let tx_hash = self.genesis_tx().tx_hash();
+        moveos_store.handle_tx_output(tx_hash, genesis_state_root, size, genesis_tx_output)?;
+
+        let genesis_info = GenesisInfo::new(self.genesis_hash(), inited_root.clone());
+        moveos_store.get_config_store().save_genesis(genesis_info)?;
+        Ok(inited_root)
     }
 
     pub fn build_stdlib() -> Result<Stdlib> {
@@ -288,6 +293,8 @@ impl GenesisPackage {
         Ok(())
     }
 }
+
+static GENESIS_STDLIB_BYTES: &[u8] = include_bytes!("../generated/stdlib");
 
 pub fn crate_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -317,16 +324,15 @@ pub fn rooch_framework_error_descriptions() -> &'static [u8] {
 #[cfg(test)]
 mod tests {
     use move_core_types::account_address::AccountAddress;
-    use moveos::moveos::MoveOS;
     use moveos_store::MoveOSStore;
     use moveos_types::moveos_std::move_module::ModuleStore;
-    use moveos_types::moveos_std::object::ObjectEntity;
     use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
-    use rooch_framework::natives::{all_natives, default_gas_schedule};
     use rooch_types::bitcoin::data_import_config::DataImportMode;
     use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
     use rooch_types::bitcoin::network::{BitcoinNetwork, Network};
     use rooch_types::chain_id::{BuiltinChainID, RoochChainID};
+
+    use crate::FrameworksGasParameters;
 
     #[test]
     fn test_genesis_init() {
@@ -336,33 +342,25 @@ mod tests {
             Network::NetworkRegtest.to_num(),
             DataImportMode::None.to_num(),
         );
-        let gas_schedule_blob = bcs::to_bytes(&default_gas_schedule())
-            .expect("Failure serializing genesis gas schedule");
-        let genesis_result = super::RoochGenesis::build_with_option(
-            RoochChainID::LOCAL.genesis_ctx(sequencer, gas_schedule_blob),
+        let genesis = super::RoochGenesis::build_with_option(
+            RoochChainID::LOCAL.genesis_ctx(sequencer),
             bitcoin_genesis_ctx,
             crate::BuildOption::Fresh,
-        );
-        let genesis = match genesis_result {
-            Ok(genesis) => genesis,
-            Err(e) => panic!("genesis build failed: {:?}", e),
-        };
-
-        let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
-        let mut moveos = MoveOS::new(
-            moveos_store.clone(),
-            all_natives(genesis.rooch_framework_gas_params),
-            genesis.config,
-            vec![],
-            vec![],
         )
-        .expect("init moveos failed");
+        .expect("build rooch genesis failed");
 
-        let (state_root, size, _output) = moveos
-            .init_genesis(genesis.genesis_package.genesis_moveos_tx)
-            .expect("init genesis failed");
-        let root = ObjectEntity::root_object(state_root, size);
+        let mut moveos_store = MoveOSStore::mock_moveos_store().unwrap();
+
+        let root = genesis.init_genesis(&mut moveos_store).unwrap();
+
         let resolver = RootObjectResolver::new(root, &moveos_store);
+        let gas_parameter = FrameworksGasParameters::load_from_chain(&resolver)
+            .expect("load gas parameter from chain failed");
+
+        assert_eq!(
+            FrameworksGasParameters::initial().to_gas_schedule_config(),
+            gas_parameter.to_gas_schedule_config()
+        );
 
         let module_store_state = resolver
             .get_object(&ModuleStore::module_store_id())

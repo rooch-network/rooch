@@ -4,7 +4,7 @@
 module rooch_framework::onchain_config {
 
     use std::vector;
-    use std::string::String;
+    use std::ascii::String;
     use moveos_std::bcs;
     use moveos_std::tx_context;
     use moveos_std::object;
@@ -16,6 +16,7 @@ module rooch_framework::onchain_config {
     friend rooch_framework::genesis;
 
     const ErrorNotSequencer: u64 = 1;
+    const ErrorInvalidGasScheduleEntries: u64 = 2;
 
     struct GasScheduleUpdated has store, copy, drop {
         last_updated: u64
@@ -27,9 +28,13 @@ module rooch_framework::onchain_config {
         val: u64,
     }
 
+    struct GasSchedule has key {
+        schedule_version: u64,
+        entries: vector<GasEntry>,
+    }
+
     #[data_struct]
-    struct GasSchedule has key, copy, drop, store {
-        feature_version: u64,
+    struct GasScheduleConfig has copy, drop, store{
         entries: vector<GasEntry>,
     }
 
@@ -39,14 +44,11 @@ module rooch_framework::onchain_config {
         sequencer: address,
     }
 
-    public(friend) fun genesis_init(genesis_account: &signer, sequencer: address, gas_schedule_blob: vector<u8>){
-        let gas_schedule = GasSchedule {
-            feature_version: 0,
-            entries: vector::empty<GasEntry>()
-        };
+    public(friend) fun genesis_init(genesis_account: &signer, sequencer: address, gas_schedule_config: GasScheduleConfig){
 
-        if (vector::length(&gas_schedule_blob) > 0) {
-            gas_schedule = bcs::from_bytes<GasSchedule>(gas_schedule_blob);
+        let gas_schedule = GasSchedule {
+            schedule_version: 0,
+            entries: gas_schedule_config.entries,
         };
 
         let config = OnchainConfig{
@@ -60,6 +62,14 @@ module rooch_framework::onchain_config {
         object::transfer_extend(obj, @rooch_framework);
 
         set_code_features(genesis_account);
+    }
+
+    public fun new_gas_schedule_config(entries: vector<GasEntry>): GasScheduleConfig {
+        GasScheduleConfig {entries}
+    }
+
+    public fun new_gas_entry(key: String, val: u64): GasEntry {
+        GasEntry {key, val}
     }
 
     public fun sequencer(): address {
@@ -87,29 +97,41 @@ module rooch_framework::onchain_config {
         object::borrow(obj)
     }
 
-    entry fun update_onchain_gas_schedule(account: &signer, gas_schedule_blob: vector<u8>) {
+    entry fun update_onchain_gas_schedule_entry(account: &signer, gas_schedule_config: vector<u8>) {
         let sender_address = signer::address_of(account);
         assert!(sender_address == Self::sequencer(), ErrorNotSequencer);
+        assert!(vector::length(&gas_schedule_config) > 0, ErrorInvalidGasScheduleEntries);
 
-        let gas_schedule = GasSchedule {
-            feature_version: 0,
-            entries: vector::empty<GasEntry>()
-        };
+        let gas_schedule_config = bcs::from_bytes<GasScheduleConfig>(gas_schedule_config);
+        update_onchain_gas_schedule(gas_schedule_config);
+    }
 
-        if (vector::length(&gas_schedule_blob) > 0) {
-            gas_schedule = bcs::from_bytes<GasSchedule>(gas_schedule_blob);
-        };
+
+    fun update_onchain_gas_schedule(gas_schedule_config: GasScheduleConfig) {
+
+        let object_id = object::named_object_id<GasSchedule>();
+        let obj = object::borrow_mut_object_extend<GasSchedule>(object_id);
+        let gas_schedule = object::borrow_mut(obj);
+
+        gas_schedule.schedule_version = gas_schedule.schedule_version + 1;
+        gas_schedule.entries = gas_schedule_config.entries;
+
         let system = moveos_std::signer::module_signer<GasScheduleUpdated>();
         tx_context::add_attribute_via_system(&system, GasScheduleUpdated {last_updated: 1});
-
-        let obj = object::new_named_object(gas_schedule);
-        object::transfer_extend(obj, @rooch_framework);
     }
 
     public fun onchain_gas_schedule(): &GasSchedule {
         let object_id = object::named_object_id<GasSchedule>();
         let obj = object::borrow_object<GasSchedule>(object_id);
         object::borrow(obj)
+    }
+
+    public fun gas_schedule_version(schedule: &GasSchedule): u64 {
+        schedule.schedule_version
+    }
+
+    public fun gas_schedule_entries(schedule: &GasSchedule): &vector<GasEntry> {
+        &schedule.entries
     }
 
     fun set_code_features(framework: &signer) {
@@ -131,5 +153,10 @@ module rooch_framework::onchain_config {
         };
 
         features::change_feature_flags(framework, enables, vector[]);
+    }
+
+    #[test_only]
+    public fun update_onchain_gas_schedule_for_testing(gas_schedule_config: GasScheduleConfig) {
+        update_onchain_gas_schedule(gas_schedule_config);
     }
 }

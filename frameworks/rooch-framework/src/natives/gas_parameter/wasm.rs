@@ -8,7 +8,7 @@ crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasPar
     [.create_instance_gas_parameter.per_byte_instance, "create_instance_gas_parameter.per_byte_instance", 100],
 
     [.create_cbor_value_gas_parameter.base, "create_cbor_value_gas_parameter.base", 100],
-    [.create_cbor_value_gas_parameter.per_byte, "create_cbor_value_gas_parameter.base", 10000],
+    [.create_cbor_value_gas_parameter.per_byte, "create_cbor_value_gas_parameter.per_byte", 10000],
 
     [.add_length_with_data.base, "add_length_with_data.base", 100],
     [.add_length_with_data.per_byte, "add_length_with_data.per_byte", 10000],
@@ -20,7 +20,7 @@ crate::natives::gas_parameter::native::define_gas_parameters_for_natives!(GasPar
     [.function_execution_gas_parameter.per_byte_execution_result, "function_execution_gas_parameter.per_byte_execution_result", 100],
 
     [.read_data_length_gas_parameter.base, "read_data_length_gas_parameter.base", 100],
-    [.read_data_length_gas_parameter.per_byte, "read_data_length_gas_parameter.base", 10000],
+    [.read_data_length_gas_parameter.per_byte, "read_data_length_gas_parameter.per_byte", 10000],
 
     [.read_heap_data.base, "read_heap_data.base", 100],
     [.read_heap_data.per_byte, "read_heap_data.per_byte", 10000],
