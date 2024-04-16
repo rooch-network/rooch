@@ -10,6 +10,7 @@
   "pipeline-transaction-processing": "基于流水线的并行交易处理",
   "sequence-proof": "交易排序证明",
   "hash": "哈希",
+  "session-key": "会话密钥",
   "p2p-state-channel": {
     "title": "P2P 通道",
     "display": "hidden"
