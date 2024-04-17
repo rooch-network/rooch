@@ -37,7 +37,7 @@ pub struct RocksdbConfig {
 impl RocksdbConfig {
     #[cfg(unix)]
     fn default_max_open_files() -> i32 {
-        40960
+        4096
     }
 
     #[cfg(windows)]
