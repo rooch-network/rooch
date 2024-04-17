@@ -10,7 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-import { useTheme } from '@/components/theme-provider'
+import { NoData } from '@/components/no-data'
 
 interface App {
   app: string
@@ -33,10 +33,6 @@ const apps: App[] = [
 ]
 
 export const ManageSessions: React.FC = () => {
-  const { theme } = useTheme()
-
-  const logoSrc = theme === 'dark' ? '/rooch_white_logo.svg' : '/rooch_black_logo.svg'
-
   const hasValidData = (apps: App[]): boolean => {
     return apps.some(
       (app) =>
@@ -50,25 +46,7 @@ export const ManageSessions: React.FC = () => {
   }
 
   if (!hasValidData(apps)) {
-    return (
-      <div className="rounded-lg border w-full overflow-hidden">
-        <Table>
-          <TableBody>
-            <TableRow>
-              <TableCell>
-                <div
-                  className="flex justify-center items-center flex-col"
-                  style={{ height: '80vh' }}
-                >
-                  <img src={logoSrc} alt="No Data" style={{ width: '200px', height: '200px' }} />
-                  <p className="text-gray-500 mt-4">No data found :(</p>
-                </div>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
-    )
+    return <NoData />
   }
 
   return (

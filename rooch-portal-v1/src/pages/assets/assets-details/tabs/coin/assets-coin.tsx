@@ -7,7 +7,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,10 +17,10 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-
+import { NoData } from '@/components/no-data'
 import { Button } from '@/components/ui/button'
+
 import { GripVerticalIcon } from 'lucide-react'
-import { useTheme } from '@/components/theme-provider'
 
 interface Coin {
   coin: string
@@ -43,34 +42,12 @@ const coins: Coin[] = [
 ]
 
 export const AssetsCoin = () => {
-  const { theme } = useTheme()
-
-  const logoSrc = theme === 'dark' ? '/rooch_white_logo.svg' : '/rooch_black_logo.svg'
-
   const hasValidData = (coins: Coin[]): boolean => {
     return coins.some((coin) => coin.coin.trim() !== '' && coin.balance !== 0)
   }
 
   if (!hasValidData(coins)) {
-    return (
-      <div className="rounded-lg border w-full overflow-hidden">
-        <Table>
-          <TableBody>
-            <TableRow>
-              <TableCell>
-                <div
-                  className="flex justify-center items-center flex-col"
-                  style={{ height: '80vh' }}
-                >
-                  <img src={logoSrc} alt="No Data" style={{ width: '200px', height: '200px' }} />
-                  <p className="text-gray-500 mt-4">No data found :(</p>
-                </div>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
-    )
+    return <NoData />
   }
 
   return (

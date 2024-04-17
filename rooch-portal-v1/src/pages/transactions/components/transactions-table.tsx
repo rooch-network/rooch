@@ -22,6 +22,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
+import { NoData } from '@/components/no-data'
 
 // ** ROOCH SDK
 import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
@@ -31,7 +32,7 @@ import { MenuSquare, ExternalLink } from 'lucide-react'
 import { LedgerTransactionView, TransactionWithInfoView } from '@roochnetwork/rooch-sdk'
 import { SkeletonList } from '@/components/skeleton-list'
 import { formatAddress } from '@/utils/format'
-import { useTheme } from '@/components/theme-provider'
+
 export const TransactionsTable = () => {
   const navigate = useNavigate()
   const [txs, setTxs] = useState<TransactionWithInfoView[]>([])
@@ -41,10 +42,6 @@ export const TransactionsTable = () => {
   const indexOfLastItem = currentPage * itemsPerPage
   const indexOfFirstItem = indexOfLastItem - itemsPerPage
   const currentItems = txs.slice(indexOfFirstItem, indexOfLastItem)
-
-  const { theme } = useTheme()
-
-  const logoSrc = theme === 'dark' ? '/rooch_white_logo.svg' : '/rooch_black_logo.svg'
 
   const pageNumbers: number[] = []
   for (let i = 1; i <= Math.ceil(txs.length / itemsPerPage); i++) {
@@ -76,25 +73,7 @@ export const TransactionsTable = () => {
   }
 
   if (!txs || txs.length === 0) {
-    return (
-      <div className="rounded-lg border w-full overflow-hidden">
-        <Table>
-          <TableBody>
-            <TableRow>
-              <TableCell>
-                <div
-                  className="flex justify-center items-center flex-col"
-                  style={{ height: '80vh' }}
-                >
-                  <img src={logoSrc} alt="No Data" style={{ width: '200px', height: '200px' }} />
-                  <p className="text-gray-500 mt-4">No data found :(</p>
-                </div>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
-    )
+    return <NoData />
   }
 
   return (
