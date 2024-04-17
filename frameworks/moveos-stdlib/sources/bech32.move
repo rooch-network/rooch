@@ -13,6 +13,12 @@ module moveos_std::bech32 {
    // Invalid BIP code error
    const E_INVALID_BIP_CODE: u64 = 3;
 
+   // Invalid bitcoin network
+   const E_INVALID_NETWORK: u64 = 4;
+
+   // Invalid witness version
+   const E_INVALID_WITNESS_VERSION: u64 = 5;
+
    /// @param hrp: human-readable part in string
    /// @param data: arbitrary data to be encoded.
    /// Encode arbitrary data using string as the human-readable part and append a bech32 checksum.

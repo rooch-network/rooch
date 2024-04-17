@@ -49,6 +49,24 @@ Module which defines bech32 functions.
 
 
 
+<a name="0x2_bech32_E_INVALID_NETWORK"></a>
+
+
+
+<pre><code><b>const</b> <a href="bech32.md#0x2_bech32_E_INVALID_NETWORK">E_INVALID_NETWORK</a>: u64 = 4;
+</code></pre>
+
+
+
+<a name="0x2_bech32_E_INVALID_WITNESS_VERSION"></a>
+
+
+
+<pre><code><b>const</b> <a href="bech32.md#0x2_bech32_E_INVALID_WITNESS_VERSION">E_INVALID_WITNESS_VERSION</a>: u64 = 5;
+</code></pre>
+
+
+
 <a name="0x2_bech32_encode"></a>
 
 ## Function `encode`
