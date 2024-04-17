@@ -6,7 +6,7 @@ export const MintLayout = () => {
       <div className="flex items-center justify-between space-y-2">
         <span>
           <h1 className="text-3xl font-bold tracking-tight">Mint</h1>
-          <p className="text-muted-foreground text-wrap">Start your MINT journey</p>
+          <p className="text-muted-foreground text-wrap">Start your minting tokens journey</p>
         </span>
       </div>
       <SftTabs />

@@ -1,24 +1,36 @@
+import { NoData } from '@/components/no-data'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
+interface MockData {
+  id: number
+  amount: number
+}
+
+const mockData: MockData[] = [
+  { id: 123, amount: 1234 },
+  { id: 456, amount: 2468 },
+]
+
 export const IndexedAssetsOrdi = () => {
+  if (mockData.length === 0) {
+    return <NoData />
+  }
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-      <Card className="w-full transition-all border-border/40 dark:bg-zinc-800/90 dark:hover:border-primary/20 hover:shadow-md overflow-hidden">
-        <CardHeader className="flex items-center justify-center">
-          <h3 className="text-xl md:text-2xl">UTXO #123</h3>
-        </CardHeader>
-        <CardContent className="flex items-center justify-center text-sm md:text-base">
-          Amount 1,234
-        </CardContent>
-      </Card>
-      <Card className="w-full transition-all border-border/40 dark:bg-zinc-800/90 dark:hover:border-primary/20 hover:shadow-md overflow-hidden">
-        <CardHeader className="flex items-center justify-center">
-          <h3 className="text-xl md:text-2xl">UTXO #456</h3>
-        </CardHeader>
-        <CardContent className="flex items-center justify-center text-sm md:text-base">
-          Amount 2,468
-        </CardContent>
-      </Card>
+      {mockData.map((data) => (
+        <Card
+          key={data.id}
+          className="w-full transition-all border-border/40 dark:bg-zinc-800/90 dark:hover:border-primary/20 hover:shadow-md overflow-hidden"
+        >
+          <CardHeader className="flex items-center justify-center">
+            <h3 className="text-xl md:text-2xl">UTXO #{data.id}</h3>
+          </CardHeader>
+          <CardContent className="flex items-center justify-center text-sm md:text-base">
+            Amount {data.amount.toLocaleString()}
+          </CardContent>
+        </Card>
+      ))}
     </div>
   )
 }

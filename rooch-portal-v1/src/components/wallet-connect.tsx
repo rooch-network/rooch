@@ -76,12 +76,12 @@ export const WalletConnect = () => {
         <DialogTrigger asChild />
         <DialogContent
           className={cn(
-            'sm:max-w-[425px]',
-            isLoading ? 'border-gray-500 dark:border-gray-600' : '',
+            'sm:max-w-[425px] overflow-hidden',
+            isLoading ? 'border-zinc-500 dark:border-zinc-600' : '',
           )}
         >
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50 z-10">
+            <div className="absolute inset-0 flex items-center justify-center bg-zinc-500 bg-opacity-70 z-10">
               <LoadingSpinner />
             </div>
           )}

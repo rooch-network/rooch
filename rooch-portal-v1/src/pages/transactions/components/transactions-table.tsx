@@ -22,6 +22,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
+import { NoData } from '@/components/no-data'
 
 // ** ROOCH SDK
 import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
@@ -38,57 +39,41 @@ export const TransactionsTable = () => {
   const [currentPage, setCurrentPage] = useState<number>(1)
   const itemsPerPage = 8
 
-  // ** Calculate the indices for the current page
   const indexOfLastItem = currentPage * itemsPerPage
   const indexOfFirstItem = indexOfLastItem - itemsPerPage
-
-  // ** Slice the txs array to get only the items for the current page
   const currentItems = txs.slice(indexOfFirstItem, indexOfLastItem)
 
-  // ** Generate the page numbers for pagination
   const pageNumbers: number[] = []
   for (let i = 1; i <= Math.ceil(txs.length / itemsPerPage); i++) {
     pageNumbers.push(i)
   }
 
-  // ** Function to change the page
   const paginate = (pageNumber: number): void => {
     setCurrentPage(pageNumber)
   }
 
-  // ** Fetch Transactions with SDK
   const { data: transactionsData, isPending } = useRoochClientQuery(
     'getTransactions',
-    {
-      cursor: 0,
-      limit: 10,
-      descending_order: false,
-    },
-    {
-      enabled: true,
-    },
+    { cursor: 0, limit: 10, descending_order: false },
+    { enabled: true },
   )
 
-  // ** Jump to txblock
   const handleJumpToTxblock = (hash: string) => {
     navigate(`txblock/${hash}`)
   }
 
-  // ** Set the transactions data to the state
   useEffect(() => {
     if (transactionsData && transactionsData.data) {
       setTxs(transactionsData.data as TransactionWithInfoView[])
     }
   }, [transactionsData])
 
-  console.log(txs)
-
   if (isPending) {
     return <SkeletonList />
   }
 
   if (!txs || txs.length === 0) {
-    return <div>No transactions data available.</div>
+    return <NoData />
   }
 
   return (
@@ -117,7 +102,6 @@ export const TransactionsTable = () => {
                 <TableCell>
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-start gap-1">
                     <span className="hover:no-underline text-blue-400 hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200 transition-all cursor-pointer">
-                      {/* 前十五位 */}
                       <p className="hidden md:block">{tx.execution_info.tx_hash}</p>
                       <p className="md:hidden block">
                         {tx.execution_info.tx_hash.substring(0, 15)}...
@@ -127,7 +111,6 @@ export const TransactionsTable = () => {
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className="text-muted-foreground">
-                    {/* TODO: https://github.com/rooch-network/rooch/issues/1524 */}
                     TODO
                   </Badge>
                 </TableCell>
@@ -161,7 +144,6 @@ export const TransactionsTable = () => {
           </TableBody>
         </Table>
       </div>
-      {/* Pagination Functionality */}
       <Pagination className="mt-4 justify-end">
         <PaginationContent>
           <PaginationItem>
