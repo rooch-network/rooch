@@ -51,7 +51,7 @@ export const ManageSessions: React.FC = () => {
 
   if (!hasValidData(apps)) {
     return (
-      <div className="rounded-lg border w-full">
+      <div className="rounded-lg border w-full overflow-hidden">
         <Table>
           <TableBody>
             <TableRow>

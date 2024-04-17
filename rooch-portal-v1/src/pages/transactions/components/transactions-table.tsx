@@ -77,14 +77,21 @@ export const TransactionsTable = () => {
 
   if (!txs || txs.length === 0) {
     return (
-      <div className="rounded-lg border w-full">
+      <div className="rounded-lg border w-full overflow-hidden">
         <Table>
-          <TableRow>
-            <div className="flex justify-center items-center flex-col" style={{ height: '80vh' }}>
-              <img src={logoSrc} alt="No Data" style={{ width: '200px', height: '200px' }} />
-              <p className="text-gray-500 mt-4">No data found :)</p>
-            </div>
-          </TableRow>
+          <TableBody>
+            <TableRow>
+              <TableCell>
+                <div
+                  className="flex justify-center items-center flex-col"
+                  style={{ height: '80vh' }}
+                >
+                  <img src={logoSrc} alt="No Data" style={{ width: '200px', height: '200px' }} />
+                  <p className="text-gray-500 mt-4">No data found :(</p>
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
         </Table>
       </div>
     )
