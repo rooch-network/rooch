@@ -114,6 +114,8 @@ impl MoveOS {
         system_pre_execute_functions: Vec<FunctionCall>,
         system_post_execute_functions: Vec<FunctionCall>,
     ) -> Result<Self> {
+        //TODO load the gas table from argument, and remove the cost_table lock.
+
         let vm = MoveOSVM::new(natives, config.vm_config)?;
         Ok(Self {
             vm,
@@ -178,19 +180,33 @@ impl MoveOS {
     }
 
     fn load_cost_table(&self, root: &RootObjectEntity) -> VMResult<CostTable> {
-        if let Some(cost_table) = self.cost_table.read().as_ref() {
-            Ok(cost_table.clone())
-        } else {
-            let resolver = RootObjectResolver::new(root.clone(), &self.db);
-            let gas_entries = get_gas_schedule_entries(&resolver).map_err(|e| {
-                PartialVMError::new(StatusCode::STORAGE_ERROR)
-                    .with_message(format!("Load gas schedule entries failed: {}", e))
-                    .finish(Location::Undefined)
-            })?;
-            let cost_table = initial_cost_schedule(gas_entries);
-            self.cost_table.write().replace(cost_table.clone());
-            Ok(cost_table)
+        // We use a scoped lock here to avoid holding the lock for a long time.
+        {
+            let rlock = self.cost_table.read();
+            if let Some(cost_table) = rlock.as_ref() {
+                return Ok(cost_table.clone());
+            }
         }
+
+        if log::log_enabled!(log::Level::Trace) {
+            log::trace!("load_cost_table from db");
+        }
+        let resolver = RootObjectResolver::new(root.clone(), &self.db);
+        let gas_entries = get_gas_schedule_entries(&resolver).map_err(|e| {
+            PartialVMError::new(StatusCode::STORAGE_ERROR)
+                .with_message(format!("Load gas schedule entries failed: {}", e))
+                .finish(Location::Undefined)
+        })?;
+        let cost_table = initial_cost_schedule(gas_entries);
+        match self.cost_table.try_write() {
+            Some(mut w) => {
+                w.replace(cost_table.clone());
+            }
+            None => {
+                log::warn!("load_cost_table try_write failed");
+            }
+        }
+        Ok(cost_table)
     }
 
     pub fn state(&self) -> &StateDBStore {

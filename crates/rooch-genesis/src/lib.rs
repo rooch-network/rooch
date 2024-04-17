@@ -50,7 +50,7 @@ pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
     RoochGenesis::build_with_option(
         RoochChainID::LOCAL.genesis_ctx(mock_sequencer),
         bitcoin_genesis_ctx,
-        BuildOption::Fresh,
+        BuildOption::Release,
     )
     .expect("build rooch genesis failed")
 });

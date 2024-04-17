@@ -40,6 +40,7 @@ use rooch_genesis::{FrameworksGasParameters, RoochGenesis};
 use rooch_types::function_arg::FunctionArg;
 use std::path::PathBuf;
 use std::{collections::BTreeMap, path::Path};
+use tracing::debug;
 
 pub struct MoveOSTestRunner<'a> {
     compiled_state: CompiledState<'a>,
@@ -134,7 +135,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             moveos,
             root: ObjectEntity::root_object(state_root, size),
         };
-
+        debug!("init moveos test adapter");
         (adapter, None)
     }
 
@@ -145,6 +146,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         _gas_budget: Option<u64>,
         _extra: Option<Self::ExtraPublishArgs>,
     ) -> anyhow::Result<(Option<String>, move_binary_format::CompiledModule)> {
+        debug!("publish module: {}", module.self_id());
         let mut module_bytes = vec![];
         module.serialize(&mut module_bytes)?;
 
