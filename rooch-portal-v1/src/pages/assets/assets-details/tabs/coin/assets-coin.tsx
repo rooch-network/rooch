@@ -29,30 +29,12 @@ interface Coin {
   value: string
 }
 
-// const coins: Coin[] = [
-//   {
-//     coin: 'ROOCH',
-//     balance: 288.88,
-//     value: '$1,146.98',
-//   },
-//   {
-//     coin: 'BTC',
-//     balance: 1.88,
-//     value: '$52,988.00',
-//   },
-//   {
-//     coin: 'USDC',
-//     balance: 12.88,
-//     value: '$0.99',
-//   },
-//   {
-//     coin: 'ETH',
-//     balance: 10.99,
-//     value: '$2,800.00',
-//   },
-// ]
-
 const coins: Coin[] = [
+  // {
+  //   coin: 'ROOCH',
+  //   balance: 288.88,
+  //   value: '$1,146.98',
+  // },
   {
     coin: '',
     balance: 0,
