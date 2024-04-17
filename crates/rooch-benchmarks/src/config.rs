@@ -51,7 +51,7 @@ impl Display for PProfOutput {
 pub enum TxType {
     Empty,
     Transfer,
-    BTCBlock,
+    BtcBlock,
 }
 
 impl FromStr for TxType {
@@ -59,7 +59,7 @@ impl FromStr for TxType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "transfer" => Ok(TxType::Transfer),
-            "btc_block" => Ok(TxType::BTCBlock),
+            "btc_block" => Ok(TxType::BtcBlock),
             "empty" => Ok(TxType::Empty),
             _ => Err(format!("invalid tx type: {}", s)),
         }
@@ -71,18 +71,29 @@ impl Display for TxType {
         let str = match self {
             TxType::Empty => "empty".to_string(),
             TxType::Transfer => "transfer".to_string(),
-            TxType::BTCBlock => "btc_blk".to_string(),
+            TxType::BtcBlock => "btc_blk".to_string(),
         };
         write!(f, "{}", str)
     }
 }
 
-#[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser, Eq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Parser, Eq)]
 pub struct BenchTxConfig {
     pub tx_type: Option<TxType>, // empty(default)/transfer/btc-block
     pub data_import_mode: Option<DataImportMode>, // utxo(default)/ord/none/full
-    pub btc_block_dir: Option<String>,
+    pub btc_block_dir: Option<String>, // btc block dir, file name: <height>.hex
     pub pprof_output: Option<PProfOutput>, // flamegraph(default)/proto
+}
+
+impl Default for BenchTxConfig {
+    fn default() -> Self {
+        Self {
+            tx_type: Some(TxType::Empty),
+            data_import_mode: Some(DataImportMode::UTXO),
+            btc_block_dir: None,
+            pprof_output: Some(PProfOutput::Flamegraph),
+        }
+    }
 }
 
 impl BenchTxConfig {
@@ -90,7 +101,7 @@ impl BenchTxConfig {
         self.tx_type.get_or_insert(TxType::Empty);
         self.data_import_mode.get_or_insert(DataImportMode::UTXO);
         // if tx_type is btc_block, btc_block_dir must be existed, if not, panic
-        if self.tx_type == Some(TxType::BTCBlock) {
+        if self.tx_type == Some(TxType::BtcBlock) {
             self.btc_block_dir
                 .as_ref()
                 .expect("btc_block_dir must be existed");
@@ -100,8 +111,22 @@ impl BenchTxConfig {
 
     pub fn load() -> Self {
         let path = &*BENCH_TX_CONFIG_PATH;
-        let config_data = std::fs::read_to_string(path).expect("failed to read config file");
-        toml::from_str(&config_data).expect("failed to parse config file")
+        let mut config = BenchTxConfig::default();
+        match std::fs::read_to_string(path) {
+            Ok(config_data) => match toml::from_str::<BenchTxConfig>(&config_data) {
+                Ok(mut parsed_config) => {
+                    parsed_config.adjust();
+                    config = parsed_config;
+                }
+                Err(e) => {
+                    log::error!("Failed to parse config file: {}", e);
+                }
+            },
+            Err(e) => {
+                log::error!("Failed to read config file: {}", e);
+            }
+        };
+        config
     }
 }
 
