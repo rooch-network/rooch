@@ -27,7 +27,14 @@ impl WASMInstance {
     }
 }
 
-pub static mut GLOBAL_MEMORY: Lazy<Option<Arc<Mutex<Memory>>>> = Lazy::new(|| None);
+pub static mut GLOBAL_MEMORY: Lazy<Arc<Mutex<Option<Memory>>>> =
+    Lazy::new(|| Arc::new(Mutex::new(None)));
+/*
+TODO:
+The WASMInstance must be protected by the locker which owned by the the signer
+    while we enable the parallel tx execution.
+The way we're doing it now is by using this big global lock, but it's too broad.
+ */
 static mut GLOBAL_INSTANCE_POOL: Lazy<Arc<Mutex<BTreeMap<u64, WASMInstance>>>> =
     Lazy::new(|| Arc::new(Mutex::new(BTreeMap::new())));
 
@@ -69,43 +76,61 @@ pub fn remove_instance(instance_id: u64) -> anyhow::Result<()> {
 #[allow(dead_code)]
 #[derive(Clone)]
 struct Env {
-    memory: Option<Arc<Mutex<Memory>>>,
+    memory: Arc<Mutex<Option<Memory>>>,
 }
 
 fn fd_write(env: FunctionEnvMut<Env>, _fd: i32, mut iov: i32, iovcnt: i32, pnum: i32) -> i32 {
-    let memory_obj = unsafe { GLOBAL_MEMORY.clone().unwrap() };
+    let memory_global = unsafe { GLOBAL_MEMORY.clone() };
 
-    // let binding = env.data().memory.clone().unwrap();
-    // let memory = binding.lock().unwrap();
-    let memory = memory_obj.lock().expect("getting memory mutex failed");
+    let memory = match memory_global.lock() {
+        Ok(v) => v,
+        Err(_) => return 0,
+    };
     let store_ref = env.as_store_ref();
-    let memory_view = memory.view(&store_ref);
+    let memory_obj = match memory.clone() {
+        Some(v) => v,
+        None => return 0,
+    };
+    let memory_view = memory_obj.view(&store_ref);
 
-    let mut temp_buffer: [u8; 4] = [0; 4];
+    let mut ptr_buffer: [u8; 4] = [0; 4];
+    let mut len_buffer: [u8; 4] = [0; 4];
+    let mut write_buffer = Vec::new();
     let mut number = 0;
     for _ in 0..(iovcnt - 1) {
         let ptr_index = (iov) >> 2;
         let len_index = ((iov) + (4)) >> 2;
 
-        memory_view
-            .read(ptr_index as u64, temp_buffer.as_mut_slice())
-            .expect("read data from memory view failed");
-        let _ptr = i32::from_be_bytes(temp_buffer);
+        match memory_view.read(ptr_index as u64, ptr_buffer.as_mut_slice()) {
+            Ok(_) => {}
+            Err(_) => return 0,
+        }
+        let ptr = i32::from_be_bytes(ptr_buffer);
 
-        memory_view
-            .read(len_index as u64, temp_buffer.as_mut_slice())
-            .expect("read data from memory view failed");
-        let len = i32::from_be_bytes(temp_buffer);
+        match memory_view.read(len_index as u64, len_buffer.as_mut_slice()) {
+            Ok(_) => {}
+            Err(_) => return 0,
+        }
+        let len = i32::from_be_bytes(len_buffer);
+
+        for i in 0..(len - 1) {
+            let single_char = match memory_view.read_u8((ptr + i) as u64) {
+                Ok(v) => v,
+                Err(_) => return 0,
+            };
+            write_buffer.push(single_char);
+        }
 
         iov += 8;
         number += len;
     }
 
-    let ret_index = (pnum) >> 2;
+    let ret_index = pnum >> 2;
     let ret_index_bytes: [u8; 4] = number.to_be_bytes();
-    memory_view
-        .write(ret_index as u64, ret_index_bytes.as_slice())
-        .expect("write data to memory failed");
+    match memory_view.write(ret_index as u64, ret_index_bytes.as_slice()) {
+        Ok(_) => {}
+        Err(_) => return 0,
+    }
     0
 }
 
@@ -140,13 +165,14 @@ fn proc_exit(_env: FunctionEnvMut<Env>, code: i32) {
     eprintln!("program exit with {:}", code)
 }
 
-pub fn put_data_on_stack(
-    stack_alloc_func: &Function,
-    store: &mut Store,
-    data: &[u8],
-) -> anyhow::Result<i32> {
+pub fn put_data_on_stack(instance: &mut WASMInstance, data: &[u8]) -> anyhow::Result<i32> {
+    let stack_alloc_func = match instance.instance.exports.get_function("stackAlloc") {
+        Ok(v) => v,
+        Err(_) => return Err(anyhow::Error::msg("get stackAlloc function failed")),
+    };
+
     let data_len = data.len() as i32;
-    let result = stack_alloc_func.call(store, vec![I32(data_len + 1)].as_slice())?;
+    let result = stack_alloc_func.call(&mut instance.store, vec![I32(data_len + 1)].as_slice())?;
     let return_value = match result.deref().first() {
         None => return Err(anyhow::Error::msg("call StaclAlloc function failed")),
         Some(v) => v,
@@ -156,13 +182,11 @@ pub fn put_data_on_stack(
         Some(v) => v,
     };
 
-    let memory = unsafe { GLOBAL_MEMORY.clone().expect("global memory is none") };
-
-    let bindings = match memory.lock() {
+    let memory = match instance.instance.exports.get_memory("memory") {
         Ok(v) => v,
-        Err(_) => return Err(anyhow::Error::msg("memory lock failed")),
+        Err(_) => return Err(anyhow::Error::msg("memory not found")),
     };
-    let memory_view = bindings.view(store);
+    let memory_view = memory.view(&instance.store);
     memory_view.write(offset as u64, data)?;
 
     Ok(offset)
@@ -201,7 +225,12 @@ pub fn get_data_from_heap(
 
 pub fn create_wasm_instance(bytecode: &Vec<u8>) -> anyhow::Result<WASMInstance> {
     let mut store = Store::default();
-    let module = Module::new(&store, bytecode).unwrap();
+    let module = match Module::new(&store, bytecode) {
+        Ok(m) => m,
+        Err(e) => {
+            return Err(anyhow::Error::msg(e.to_string()));
+        }
+    };
 
     let global_memory = unsafe { GLOBAL_MEMORY.clone() };
     let env = FunctionEnv::new(
@@ -228,7 +257,7 @@ pub fn create_wasm_instance(bytecode: &Vec<u8>) -> anyhow::Result<WASMInstance> 
         Ok(v) => v,
         Err(_) => return Err(anyhow::Error::msg("get memory failed")),
     };
-    unsafe { *GLOBAL_MEMORY = Some(Arc::new(Mutex::new(memory.clone()))) };
+    unsafe { *GLOBAL_MEMORY = Arc::new(Mutex::new(Some(memory.clone()))) };
 
     Ok(WASMInstance::new(bytecode.clone(), instance, store))
 }
