@@ -8569,6 +8569,7 @@ dependencies = [
  "once_cell",
  "proptest",
  "proptest-derive",
+ "rand 0.8.5",
  "rooch-key",
  "rooch-types",
  "schemars",
