@@ -10,7 +10,6 @@ use rand::Rng;
 use anyhow::Result;
 use clap::Parser;
 use once_cell::sync::Lazy;
-use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use moveos_config::{temp_dir, DataDirPath};

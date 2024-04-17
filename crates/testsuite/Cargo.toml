@@ -33,7 +33,7 @@ move-core-types = { workspace = true }
 assert_cmd = "1.0"
 cucumber = "0.20.2"
 futures = { workspace = true }
-testcontainers = { version = "0.15.0", git = "https://github.com/yubing744/testcontainers-rs", rev = "dbb136ef39c1616a6bfa538d01c82a07b8e27524" }
+testcontainers = { version = "0.15.0", git = "https://github.com/yubing744/testcontainers-rs", rev = "6b87dc53ab3bc6eb4d15c7e73a3c57dcbf40d0af" }
 tokio = { version = "1.12", features = ["macros", "rt-multi-thread", "sync", "time"] }
 jpst = "0.1.1"
 tracing = "0.1"

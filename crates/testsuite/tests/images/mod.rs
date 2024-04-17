@@ -3,3 +3,4 @@
 
 pub mod bitcoin;
 pub mod ord;
+pub mod bitseed;
