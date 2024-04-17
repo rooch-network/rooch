@@ -4,77 +4,134 @@
 /// Module which defines bech32 functions.
 module moveos_std::bech32 {
 
+   // Encode failed error
+   const E_ENCODE_FAILED: u64 = 1;
+
    // Decode failed error
-   const E_DECODE_FAILED: u64 = 1;
+   const E_DECODE_FAILED: u64 = 2;
 
-   /// @param public_key: 20 or 32 bytes public keys
-   /// @param witness_version: 0 for bech32 encoding and 1-16 for bech32m encoding.
-   /// Encode the public keys with Bech32 or Bech32m encoding algorithm and returns 42 or 62 length Bech32 or Bech32m addresses.
-   native public fun encoding(public_key: &vector<u8>, witness_version: u8): vector<u8>;
+   // Invalid BIP code error
+   const E_INVALID_BIP_CODE: u64 = 3;
 
-   /// @param data: 42 or 62 length Bech32 or Bech32m address bytes
-   /// Decode the encoded 42 or 62 length Bech32 or Bech32m address bytes with Bech32 or Bech32m decoding algorithm and returns 20 or 32 bytes of public keys.
-   native public fun decoding(data: &vector<u8>): vector<u8>;
+   /// @param hrp: human-readable part in string
+   /// @param data: arbitrary data to be encoded.
+   /// Encode arbitrary data using string as the human-readable part and append a bech32 checksum.
+   native public fun encode(bip: u16, hrp: vector<u8>, data: vector<u8>): vector<u8>;
 
+   /// @param network: network to be selected, i.e. bc, tb, or bcrt
+   /// @param witness_version: segwit witness version. 0 for bech32, 1 for bech32m and taproot, and 2-16 is included.
+   /// @param data: arbitrary data to be encoded.
+   /// Encode arbitrary data to a Bitcoin address using string as the network, number as the witness version
+   native public fun segwit_encode(network: vector<u8>, witness_version: u8, data: vector<u8>): vector<u8>;
+
+   /// @param hrp: human-readable part bytes to be used as a decoding input
+   /// @param encoded: encoded bytes to be decoded as data
+   /// Decode a bech32 encoded string that includes a bech32 checksum.
+   native public fun decode(hrp: vector<u8>, encoded: vector<u8>): vector<u8>;
+
+   /// @param hrp: human-readable part bytes to be used as a decoding input
+   /// @param witness_ascii_version: segwit witness ASCII version to be used as a decoding input
+   /// @param encoded: encoded bytes to be decoded as data
+   /// Decode an encoded Bitcoin address
+   native public fun segwit_decode(hrp: vector<u8>, witness_ascii_version: u8, encoded: vector<u8>): vector<u8>;
+
+   // Test succeeded with https://slowli.github.io/bech32-buffer/ on Data
    #[test]
-   fun test_encoding_with_bech32_32_bytes_pk() {
-      let public_key = x"031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd07"; // 32-bytes public key for a Bech32 address
-      let version = 0; // version 0 for a Bech32 address
-      
-      let encoded_address = encoding(&public_key, version);
-      let expected_encoded_address = b"bech321qvdcf32k0vfxgsyet5ldt246q4jaw8scx3sysx0lnstlt6w4m5rsl7wnyw";
+   fun test_encode_bech32() {
+      let bip = 173; // bip173 is bech32
+      let hrp = b"bc"; // hrp "bc" for bitcoin mainnet
+      let data = x"0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"; // 32-bytes data with 02 prefix for a Bech32 checksum: https://en.bitcoin.it/wiki/Bech32
 
-      assert!(encoded_address == expected_encoded_address, 1000);
+      let encoded = encode(bip, hrp, data);
+      let expected_encoded = b"bc1qfumuen7l8wthtz45p3ftn58pvrs9xlumvkuu2xet8egzkcklqtesjm9aq0"; // https://mempool.space/address/bc1qfumuen7l8wthtz45p3ftn58pvrs9xlumvkuu2xet8egzkcklqtesjm9aq0
+
+      assert!(encoded == expected_encoded, E_ENCODE_FAILED);
+   }
+
+   // Test succeeded with https://slowli.github.io/bech32-buffer/ on Data
+   #[test]
+   fun test_encode_bech32m() {
+      let bip = 350; // bip350 is bech32m
+      let hrp = b"rooch"; // hrp "rooch" for custom human-readable part
+      let data = x"b19ced819df50b20648cfcabb75c4f216c77991f36d6"; // 22-bytes data for a Bech32m checksum
+
+      let encoded = encode(bip, hrp, data);
+      let expected_encoded = b"rooch1kxwwmqva759jqeyvlj4mwhz0y9k80xglxmtqxdfdl5";
+
+      assert!(encoded == expected_encoded, E_ENCODE_FAILED);
    }
 
    #[test]
-   fun test_encoding_with_bech32_20_bytes_pk() {
-      let public_key = x"045ea1fcaafa392db3f6a5f414ea229e9d9b6240"; // 20-bytes public key for a Bech32 address
-      let version = 0; // version 0 for a Bech32 address
-      
-      let encoded_address = encoding(&public_key, version);
-      let expected_encoded_address = b"bech321q302rl92lgujmvlk5h6pf63zn6wekcjqxj30hr";
+   fun test_encode_no_checksum() {
+      let bip = 0; // bip0 is no checksum
+      let hrp = b"rooch"; // hrp "rooch" for custom human-readable part
+      let data = x"45348f7e62331ace696702f2910e32efceb601a341644d4fac07"; // 26-bytes data for no checksum
 
-      assert!(encoded_address == expected_encoded_address, 1001);
+      let encoded = encode(bip, hrp, data);
+      let expected_encoded = b"rooch1g56g7lnzxvdvu6t8qtefzr3jal8tvqdrg9jy6navqu";
+
+      assert!(encoded == expected_encoded, E_ENCODE_FAILED);
    }
 
    #[test]
-   fun test_encoding_with_bech32m_32_bytes_pk() {
-      let public_key = x"031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd07"; // 32-bytes public key for a Bech32m address
-      let version = 1; // version 1 for a Bech32m address
-      
-      let encoded_address = encoding(&public_key, version);
-      let expected_encoded_address = b"bech32m1qvdcf32k0vfxgsyet5ldt246q4jaw8scx3sysx0lnstlt6w4m5rs6l85rk";
+   #[expected_failure(abort_code = E_INVALID_BIP_CODE, location = Self)]
+   fun test_encode_failed_bip() {
+      let bip = 1; // bip1 is invalid
+      let hrp = b"rooch";
+      let data = x"e91c57466fba2b572c57bafbb9a2de49d3bb09e12aaf031d";
 
-      assert!(encoded_address == expected_encoded_address, 1002);
+      encode(bip, hrp, data);
    }
 
    #[test]
-   fun test_decoding_to_bech32_52_bytes_pk() {
-      let encoded_address = b"bech321qvdcf32k0vfxgsyet5ldt246q4jaw8scx3sysx0lnstlt6w4m5rsl7wnyw";
-      // TODO handle bech32 and bech32m public key's difference
-      let expected_public_key = decoding(&encoded_address);
+   fun test_segwit_encode() {
+      let network = b"tb"; // tb is testnet network
+      let witness_version = 1; // 1 is taproot address version
+      let data = x"41876e7b954162eea060743e8489df36454a50eddd60046c85ac4e67a88ef5fc3320321cd79bee"; // 39-bytes data for encoding to a bitcoin address
 
-      let public_key = x"000c0d1809110a160f0c0906081004190b141f0d0b0a151a0015121d0e0710180611100410060f1f13100b1f0b1a0e151b140310"; // 52-bytes raw public key for a Bech32 address
-      assert!(public_key == expected_public_key, E_DECODE_FAILED);
+      let encoded = segwit_encode(network, witness_version, data);
+      let expected_encoded = b"tb1pgxrku7u4g93wagrqwslgfzwlxez5558dm4sqgmy9438x02yw7h7rxgpjrntehmsj7d5je";
+
+      assert!(encoded == expected_encoded, E_ENCODE_FAILED);
    }
 
    #[test]
-   fun test_decoding_to_bech32_32_bytes_pk() {
-      let encoded_address = b"bech321q302rl92lgujmvlk5h6pf63zn6wekcjqxj30hr";
-      let expected_public_key = decoding(&encoded_address);
+   fun test_decode_bech32() {
+      let hrp = b"bc"; // hrp "bc" for bitcoin mainnet
+      let encoded = b"bc1qfumuen7l8wthtz45p3ftn58pvrs9xlumvkuu2xet8egzkcklqtesjm9aq0"; // https://mempool.space/address/bc1qfumuen7l8wthtz45p3ftn58pvrs9xlumvkuu2xet8egzkcklqtesjm9aq0
+      let decoded = decode(hrp, encoded);
+      let expected_decoded = x"0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"; // 32-bytes data with 02 prefix for a Bech32 checksum (P2WSH): https://en.bitcoin.it/wiki/Bech32
+      assert!(decoded == expected_decoded, E_DECODE_FAILED);
+   }
 
-      let public_key = x"00110f0a031f050a1f081c121b0c1f1614171a01091a1102131a0e1916181200"; // 32-bytes raw public key for a Bech32 address
-      assert!(public_key == expected_public_key, E_DECODE_FAILED);
+   // Test succeeded with https://slowli.github.io/bech32-buffer/ on Data
+   #[test]
+   fun test_decode_bech32m() {
+      let hrp = b"rooch"; // hrp "rooch" for custom human-readable part
+      let encoded = b"rooch1kxwwmqva759jqeyvlj4mwhz0y9k80xglxmtqxdfdl5";
+      let decoded = decode(hrp, encoded);
+      let expected_decoded = x"b19ced819df50b20648cfcabb75c4f216c77991f36d6";
+      assert!(decoded == expected_decoded, E_DECODE_FAILED);
+   }
+
+   // TODO: since no valid non-checksum decoding method was present for no checksummed string, it will result in failure when decoding strings with no checksum
+   #[test]
+   #[expected_failure(abort_code = E_DECODE_FAILED, location = Self)]
+   fun test_decode_no_checksum() {
+      let hrp = b"rooch"; // hrp "rooch" for custom human-readable part
+      let encoded = b"rooch1g56g7lnzxvdvu6t8qtefzr3jal8tvqdrg9jy6navqu";
+      decode(hrp, encoded);
    }
 
    #[test]
-   fun test_decoding_to_bech32m_52_bytes_pk() {
-      let encoded_address = b"bech32m1qvdcf32k0vfxgsyet5ldt246q4jaw8scx3sysx0lnstlt6w4m5rs6l85rk";
-      // TODO handle bech32 and bech32m public key's difference
-      let expected_public_key = decoding(&encoded_address);
+   fun test_segwit_decode() {
+      let hrp = b"tb"; // tb is testnet network
+      let witness_ascii_version = 112; // 112 is p's ASCII value
+      let encoded = b"tb1pgxrku7u4g93wagrqwslgfzwlxez5558dm4sqgmy9438x02yw7h7rxgpjrntehmsj7d5je";
 
-      let public_key = x"000c0d1809110a160f0c0906081004190b141f0d0b0a151a0015121d0e0710180611100410060f1f13100b1f0b1a0e151b140310"; // 52-bytes public key for a Bech32m address
-      assert!(public_key == expected_public_key, E_DECODE_FAILED);
+      let decoded = segwit_decode(hrp, witness_ascii_version, encoded);
+      let expected_decoded = x"41876e7b954162eea060743e8489df36454a50eddd60046c85ac4e67a88ef5fc3320321cd79bee";
+
+      assert!(decoded == expected_decoded, E_DECODE_FAILED);
    }
 }
