@@ -10,8 +10,7 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::vm_status::VMStatus;
-use moveos::gas::table::get_gas_schedule_entries;
-use moveos::moveos::MoveOS;
+use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos::vm::vm_status_explainer::explain_vm_status;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
@@ -21,8 +20,7 @@ use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::transaction::VerifiedMoveOSTransaction;
 use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAction};
-use rooch_framework::natives::gas_parameter::gas_member::FromOnChainGasSchedule;
-use rooch_genesis::RoochGenesis;
+use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
 use rooch_types::address::MultiChainAddress;
 use rooch_types::bitcoin::light_client::BitcoinLightClientModule;
@@ -36,7 +34,6 @@ use rooch_types::transaction::{AuthenticatorInfo, L1Block, L1BlockWithBody, Rooc
 
 pub struct ExecutorActor {
     root: RootObjectEntity,
-    genesis: RoochGenesis,
     moveos: MoveOS,
     moveos_store: MoveOSStore,
     rooch_store: RoochStore,
@@ -55,34 +52,22 @@ type ValidateAuthenticatorResult = Result<
 impl ExecutorActor {
     pub fn new(
         root: RootObjectEntity,
-        mut genesis: RoochGenesis,
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
     ) -> Result<Self> {
-        //TODO refactor the gas schedule loading
         let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
-        let gas_schedule_entries = get_gas_schedule_entries(&resolver);
-        if let Some(gas_entries) = gas_schedule_entries {
-            if let Some(gas_parameters) =
-                rooch_framework::natives::NativeGasParameters::from_on_chain_gas_schedule(
-                    &gas_entries,
-                )
-            {
-                genesis.rooch_framework_gas_params = gas_parameters;
-            }
-        }
+        let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
 
         let moveos = MoveOS::new(
             moveos_store.clone(),
-            genesis.all_natives(),
-            genesis.config.clone(),
+            gas_parameters.all_natives(),
+            MoveOSConfig::default(),
             system_pre_execute_functions(),
             system_post_execute_functions(),
         )?;
 
         Ok(Self {
             root,
-            genesis,
             moveos,
             moveos_store,
             rooch_store,
@@ -99,10 +84,6 @@ impl ExecutorActor {
 
     pub fn moveos(&self) -> &MoveOS {
         &self.moveos
-    }
-
-    pub fn genesis(&self) -> &RoochGenesis {
-        &self.genesis
     }
 
     pub fn resolve_or_generate(

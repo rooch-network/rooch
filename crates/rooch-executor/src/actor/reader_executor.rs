@@ -15,6 +15,7 @@ use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use move_resource_viewer::MoveValueAnnotator;
 use moveos::moveos::MoveOS;
+use moveos::moveos::MoveOSConfig;
 use moveos_store::transaction_store::TransactionStore;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
@@ -26,7 +27,7 @@ use moveos_types::state::{AnnotatedState, State};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::state_resolver::{AnnotatedStateKV, AnnotatedStateReader, StateKV, StateReader};
 use moveos_types::transaction::TransactionExecutionInfo;
-use rooch_genesis::RoochGenesis;
+use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
 use rooch_types::framework::{system_post_execute_functions, system_pre_execute_functions};
 
@@ -40,14 +41,15 @@ pub struct ReaderExecutorActor {
 impl ReaderExecutorActor {
     pub fn new(
         root: RootObjectEntity,
-        genesis: RoochGenesis,
         moveos_store: MoveOSStore,
         rooch_store: RoochStore,
     ) -> Result<Self> {
+        let resolver = RootObjectResolver::new(root.clone(), &moveos_store);
+        let gas_parameters = FrameworksGasParameters::load_from_chain(&resolver)?;
         let moveos = MoveOS::new(
             moveos_store.clone(),
-            genesis.all_natives(),
-            genesis.config.clone(),
+            gas_parameters.all_natives(),
+            MoveOSConfig::default(),
             system_pre_execute_functions(),
             system_post_execute_functions(),
         )?;

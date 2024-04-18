@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::data_cache::{into_change_set, MoveosDataCache};
-use crate::gas::table::{get_gas_schedule_entries, initial_cost_schedule, ClassifiedGasMeter};
-use crate::gas::{table::MoveOSGasMeter, SwitchableGasMeter};
+use crate::gas::table::ClassifiedGasMeter;
+use crate::gas::SwitchableGasMeter;
 use move_binary_format::compatibility::Compatibility;
 use move_binary_format::file_format::CompiledScript;
 use move_binary_format::normalized;
@@ -29,6 +29,7 @@ use move_vm_runtime::{
     native_functions::NativeFunction,
     session::{LoadedFunctionInstantiation, Session},
 };
+use move_vm_types::gas::UnmeteredGasMeter;
 use move_vm_types::loaded_data::runtime_types::{CachedStructIndex, StructType, Type};
 use moveos_object_runtime::runtime::{ObjectRuntime, ObjectRuntimeContext};
 use moveos_stdlib::natives::moveos_stdlib::{
@@ -83,14 +84,10 @@ impl MoveOSVM {
         &self,
         remote: &'r S,
         ctx: TxContext,
-    ) -> MoveOSSession<'r, '_, S, MoveOSGasMeter> {
+    ) -> MoveOSSession<'r, '_, S, UnmeteredGasMeter> {
         //Do not charge gas for genesis session
-        let gas_entries = get_gas_schedule_entries(remote);
-        let cost_table = initial_cost_schedule(gas_entries);
-        let mut gas_meter = MoveOSGasMeter::new(cost_table, ctx.max_gas_amount);
-        gas_meter.set_metering(false);
         // Genesis session do not need to execute pre_execute and post_execute function
-        MoveOSSession::new(&self.inner, remote, ctx, gas_meter, false)
+        MoveOSSession::new(&self.inner, remote, ctx, UnmeteredGasMeter, false)
     }
 
     pub fn new_readonly_session<
@@ -127,7 +124,7 @@ pub struct MoveOSSession<'r, 'l, S, G> {
 impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
 where
     S: MoveOSResolver,
-    G: SwitchableGasMeter + ClassifiedGasMeter + Clone,
+    G: SwitchableGasMeter + ClassifiedGasMeter,
 {
     pub fn new(
         vm: &'l MoveVM,

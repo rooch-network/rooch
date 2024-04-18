@@ -15,7 +15,6 @@ use moveos::gas::table::{
     InstructionParameter, StorageGasParameter,
 };
 use moveos_stdlib::natives::GasParameters as MoveOSStdlibGasParameters;
-use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub mod helpers {
@@ -97,7 +96,6 @@ impl ToOnChainGasSchedule for MoveOSStdlibGasParameters {
         entires.extend(self.type_info.to_on_chain_gas_schedule());
         entires.extend(self.rlp.to_on_chain_gas_schedule());
         entires.extend(self.bcd.to_on_chain_gas_schedule());
-        entires.extend(self.bcd.to_on_chain_gas_schedule());
         entires.extend(self.events.to_on_chain_gas_schedule());
         entires.extend(self.test_helper.to_on_chain_gas_schedule());
         entires.extend(self.signer.to_on_chain_gas_schedule());
@@ -135,11 +133,6 @@ impl InitialGasSchedule for MoveOSStdlibGasParameters {
             hash: InitialGasSchedule::initial(),
         }
     }
-}
-
-pub fn get_global_gas_parameter() {
-    let gas_parameter = NativeGasParameters::initial();
-    println!("global gas parameter {:?}", gas_parameter);
 }
 
 impl NativeGasParameters {
@@ -242,15 +235,32 @@ impl RoochGasParameters {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
-pub struct GasSchedule {
-    pub feature_version: u64,
-    pub entries: Vec<(String, u64)>,
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-pub fn default_gas_schedule() -> GasSchedule {
-    GasSchedule {
-        feature_version: 1,
-        entries: RoochGasParameters::initial().to_on_chain_gas_schedule(),
+    #[test]
+    fn test_gas_parameters() {
+        let gas_parameters = NativeGasParameters::initial();
+        let on_chain_gas_schedule = gas_parameters.to_on_chain_gas_schedule();
+        let entries = on_chain_gas_schedule
+            .iter()
+            .map(|(k, v)| (k.clone(), *v))
+            .collect::<BTreeMap<String, u64>>();
+        let gas_parameters_from_on_chain =
+            NativeGasParameters::from_on_chain_gas_schedule(&entries).unwrap();
+
+        gas_parameters
+            .to_on_chain_gas_schedule()
+            .into_iter()
+            .zip(
+                gas_parameters_from_on_chain
+                    .to_on_chain_gas_schedule()
+                    .into_iter(),
+            )
+            .for_each(|((k1, v1), (k2, v2))| {
+                assert_eq!(k1, k2);
+                assert_eq!(v1, v2, "k1: {}, v1: {}, k2: {}, v2: {}", k1, v1, k2, v2);
+            });
     }
 }

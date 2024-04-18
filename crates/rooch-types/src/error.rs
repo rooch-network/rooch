@@ -150,8 +150,8 @@ impl From<VMError> for RoochError {
 pub enum GenesisError {
     #[error("Genesis version mismatch: from store({from_store:?}), from binary({from_binary:?}).")]
     GenesisVersionMismatch {
-        from_store: GenesisInfo,
-        from_binary: GenesisInfo,
+        from_store: Box<GenesisInfo>,
+        from_binary: Box<GenesisInfo>,
     },
     #[error("Genesis load fail {0}")]
     GenesisLoadFailure(String),
