@@ -121,7 +121,7 @@ pub fn native_segwit_encode(
 
     let version = if witness_version == 0 {
         VERSION_0 // bech32 -> q
-    } else if witness_version >= 1 && witness_version <= 16 {
+    } else if (1..=16).contains(&witness_version) {
         VERSION_1 // bech32m -> p (taproot)
     } else {
         return Ok(NativeResult::err(cost, E_INVALID_WITNESS_VERSION));
