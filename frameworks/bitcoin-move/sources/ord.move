@@ -173,6 +173,17 @@ module bitcoin_move::ord {
         json::to_map(record.body)
     }
 
+    public fun parse_inscription_body(inscription: &Inscription) : SimpleMap<String,String> {
+        if (vector::is_empty(&inscription.body) || option::is_none(&inscription.content_type)) {
+            return simple_map::new()
+        };
+        let content_type = option::destroy_some(inscription.content_type);
+        if(content_type != string::utf8(b"text/plain;charset=utf-8") || content_type != string::utf8(b"text/plain") || content_type != string::utf8(b"application/json")){
+            return simple_map::new()
+        };
+        json::to_map(inscription.body)
+    }
+
     public fun exists_inscription(txid: address, index: u32): bool{
         let id = InscriptionID{
             txid: txid,
