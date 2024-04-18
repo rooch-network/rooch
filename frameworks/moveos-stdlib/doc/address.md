@@ -144,7 +144,7 @@ Largest possible address
 
 ## Function `zero`
 
-all zeros addreess
+all zeros address
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_zero">zero</a>(): <b>address</b>

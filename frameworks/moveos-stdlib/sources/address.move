@@ -68,7 +68,7 @@ module moveos_std::address {
         MAX
     }
 
-    /// all zeros addreess
+    /// all zeros address
     public fun zero(): address {
         ZERO
     }
