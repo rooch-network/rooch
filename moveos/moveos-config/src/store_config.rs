@@ -60,7 +60,7 @@ impl Default for RocksdbConfig {
             max_open_files: Self::default_max_open_files(),
             max_total_wal_size: 1u64 << 30,
             bytes_per_sync: 1u64 << 20,
-            max_background_jobs: 4,
+            max_background_jobs: 8,
             wal_bytes_per_sync: 1u64 << 20,
             row_cache_size: 2u64 << 30,
             max_write_buffer_numer: 5,
