@@ -19,6 +19,8 @@ pub static R_DEFAULT_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("roochdb
 static R_DEFAULT_DB_MOVEOS_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("moveos_store"));
 static R_DEFAULT_DB_ROOCH_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("rooch_store"));
 
+pub const DEFAULT_ROCKSDB_ROW_CACHE_SIZE: u64 = 1 << 28; // 256MB, for Rooch DB instance, doesn't need too much row cache
+
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 pub struct StoreConfig {
@@ -64,8 +66,8 @@ pub struct StoreConfig {
     // TODO share large block cache between column families, dozens GB is required. block_size is 16KB by default for balancing bulk scan and read amplification
     // #[clap(name="rocksdb-block-size", long, help="rocksdb block size")]
     // pub block_size:u64,
-    // #[clap(name="rocksdb-cache-index-and-filter-blocks", long, help="rocksdb cache index and filter blocks")]
     // TODO filter cache configs
+    // #[clap(name="rocksdb-cache-index-and-filter-blocks", long, help="rocksdb cache index and filter blocks")]
 
     // Once the limit is reached, RocksDB will not create more memtables and will stall all new write operations until the memtables count is reduced below the max-write-buffer-number limit.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -145,7 +147,9 @@ impl StoreConfig {
             wal_bytes_per_sync: self
                 .wal_bytes_per_sync
                 .unwrap_or(default.wal_bytes_per_sync),
-            row_cache_size: self.row_cache_size.unwrap_or(default.row_cache_size),
+            row_cache_size: self
+                .row_cache_size
+                .unwrap_or(DEFAULT_ROCKSDB_ROW_CACHE_SIZE),
             max_write_buffer_numer: self
                 .max_write_buffer_number
                 .unwrap_or(default.max_write_buffer_numer),
