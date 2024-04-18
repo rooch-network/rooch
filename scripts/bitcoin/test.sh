@@ -2,4 +2,4 @@
 # Copyright (c) RoochNetwork
 # SPDX-License-Identifier: Apache-2.0
 
-cargo test -p testsuite --test integration -- --name "rooch bitcoin test"
+RUST_LOG=debug cargo test -p testsuite --test integration -- --name "rooch bitcoin test"

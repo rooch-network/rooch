@@ -31,7 +31,9 @@ impl FromOnChainGasSchedule for GasParameters {
 
 impl ToOnChainGasSchedule for GasParameters {
     fn to_on_chain_gas_schedule(&self) -> Vec<(String, u64)> {
-        self.ord.to_on_chain_gas_schedule()
+        let mut entries = self.ord.to_on_chain_gas_schedule();
+        entries.append(&mut self.bitseed.to_on_chain_gas_schedule());
+        entries
     }
 }
 
@@ -42,11 +44,6 @@ impl InitialGasSchedule for GasParameters {
             bitseed: InitialGasSchedule::initial(),
         }
     }
-}
-
-pub fn get_global_gas_parameter() {
-    let gas_parameter = GasParameters::initial();
-    println!("global gas parameter {:?}", gas_parameter);
 }
 
 impl GasParameters {
@@ -73,4 +70,25 @@ pub fn all_natives(gas_params: GasParameters) -> NativeFunctionTable {
     add_natives!("bitseed", bitseed::make_all(gas_params.bitseed));
 
     make_table_from_iter(BITCOIN_MOVE_ADDRESS, natives)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_gas_parameters() {
+        let gas_parameters = GasParameters::initial();
+        let on_chain_gas_schedule = gas_parameters.to_on_chain_gas_schedule();
+        let entries = on_chain_gas_schedule
+            .iter()
+            .map(|(k, v)| (k.clone(), *v))
+            .collect::<BTreeMap<String, u64>>();
+        let gas_parameters_from_on_chain =
+            GasParameters::from_on_chain_gas_schedule(&entries).unwrap();
+        assert_eq!(
+            gas_parameters.to_on_chain_gas_schedule(),
+            gas_parameters_from_on_chain.to_on_chain_gas_schedule()
+        );
+    }
 }

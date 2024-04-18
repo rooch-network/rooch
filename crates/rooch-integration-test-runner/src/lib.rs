@@ -20,7 +20,7 @@ use move_transactional_test_runner::{
     vm_test_harness::view_resource_in_move_storage,
 };
 use move_vm_runtime::session::SerializedReturnValues;
-use moveos::moveos::MoveOS;
+use moveos::moveos::{MoveOS, MoveOSConfig};
 use moveos::moveos_test_runner::{CompiledState, MoveOSTestAdapter, TaskInput};
 use moveos_store::MoveOSStore;
 use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
@@ -36,10 +36,11 @@ use moveos_verifier::build::build_model;
 use moveos_verifier::metadata::run_extended_checks;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use rooch_genesis::RoochGenesis;
+use rooch_genesis::{FrameworksGasParameters, RoochGenesis};
 use rooch_types::function_arg::FunctionArg;
 use std::path::PathBuf;
 use std::{collections::BTreeMap, path::Path};
+use tracing::debug;
 
 pub struct MoveOSTestRunner<'a> {
     compiled_state: CompiledState<'a>,
@@ -99,12 +100,12 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         };
 
         let moveos_store = MoveOSStore::mock_moveos_store().unwrap();
-
+        let genesis_gas_parameter = FrameworksGasParameters::initial();
         let genesis: &RoochGenesis = &rooch_genesis::ROOCH_LOCAL_GENESIS;
-        let mut moveos = MoveOS::new(
+        let moveos = MoveOS::new(
             moveos_store,
-            genesis.all_natives(),
-            genesis.config_for_test.clone(),
+            genesis_gas_parameter.all_natives(),
+            MoveOSConfig::default(),
             rooch_types::framework::system_pre_execute_functions(),
             vec![],
             //TODO FIXME https://github.com/rooch-network/rooch/issues/1137
@@ -134,7 +135,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
             moveos,
             root: ObjectEntity::root_object(state_root, size),
         };
-
+        debug!("init moveos test adapter");
         (adapter, None)
     }
 
@@ -145,6 +146,7 @@ impl<'a> MoveOSTestAdapter<'a> for MoveOSTestRunner<'a> {
         _gas_budget: Option<u64>,
         _extra: Option<Self::ExtraPublishArgs>,
     ) -> anyhow::Result<(Option<String>, move_binary_format::CompiledModule)> {
+        debug!("publish module: {}", module.self_id());
         let mut module_bytes = vec![];
         module.serialize(&mut module_bytes)?;
 

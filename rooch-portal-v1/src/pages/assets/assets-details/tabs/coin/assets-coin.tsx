@@ -7,7 +7,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,34 +17,39 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-
+import { NoData } from '@/components/no-data'
 import { Button } from '@/components/ui/button'
+
 import { GripVerticalIcon } from 'lucide-react'
 
-const coins = [
+interface Coin {
+  coin: string
+  balance: number
+  value: string
+}
+
+const coins: Coin[] = [
+  // {
+  //   coin: 'ROOCH',
+  //   balance: 288.88,
+  //   value: '$1,146.98',
+  // },
   {
-    coin: 'ROOCH',
-    balance: 288.88,
-    value: '$1,146.98',
-  },
-  {
-    coin: 'BTC',
-    balance: 1.88,
-    value: '$52,988.00',
-  },
-  {
-    coin: 'USDC',
-    balance: 12.88,
-    value: '$0.99',
-  },
-  {
-    coin: 'ETH',
-    balance: 10.99,
-    value: '$2,800.00',
+    coin: '',
+    balance: 0,
+    value: '',
   },
 ]
 
 export const AssetsCoin = () => {
+  const hasValidData = (coins: Coin[]): boolean => {
+    return coins.some((coin) => coin.coin.trim() !== '' && coin.balance !== 0)
+  }
+
+  if (!hasValidData(coins)) {
+    return <NoData />
+  }
+
   return (
     <div className="rounded-lg border overflow-hidden">
       <Table>

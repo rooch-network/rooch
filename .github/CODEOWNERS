@@ -1,41 +1,42 @@
-/ @jolestar @wow-sven @baichuan3 @templexxx @stevenlaw123
+/ @jolestar @wow-sven @baichuan3 @popcnt1 @steelgeek091
 /.github @yourmoonlight @jolestar
 /scripts @yourmoonlight @jolestar
 /kube @yourmoonlight @jolestar
 /docker @yourmoonlight @jolestar
 
-/moveos @stevenlaw123 @jolestar
-/moveos/metrics @baichuan3 @stevenlaw123
-/moveos/moveos @stevenlaw123 @jolestar
+/moveos @steelgeek091 @jolestar
+/moveos/metrics @baichuan3 @steelgeek091
+/moveos/moveos @steelgeek091 @jolestar
 /moveos/moveos-commons @baichuan3 @wow-sven
 /moveos/moveos-config @baichuan3 @wow-sven
-/moveos/moveos-stdlib @baichuan3 @wow-sven @jolestar
-/moveos/moveos-store @baichuan3 @templexxx
+/moveos/moveos-store @baichuan3 @popcnt1
 /moveos/moveos-types @jolestar @baichuan3
-/moveos/moveos-verfier @stevenlaw123 @jolestar
-/moveos/raw-store @baichuan3 @templexxx
-/moveos/smt @baichuan3 @templexxx @jolestar
+/moveos/moveos-verfier @steelgeek091 @jolestar
+/moveos/raw-store @baichuan3 @popcnt1
+/moveos/smt @baichuan3 @popcnt1 @jolestar
+
+/frameworks @jolestar @baichuan3 @wow-sven 
 
 /crates @baichuan3 @jolestar
 /crates/rooch @wow-sven @pause125 
 /crates/rooch-config @wow-sven @baichuan3
-/crates/rooch-da @templexxx @jolestar 
-/crates/rooch-executor @templexxx @jolestar
-/crates/rooch-framework @jolestar @baichuan3 
+/crates/rooch-da @popcnt1 @jolestar 
+/crates/rooch-executor @popcnt1 @jolestar
 /crates/rooch-genesis @jolestar @baichuan3 
-/crates/rooch-integration-test-runner @stevenlaw123 @jolestar
-/crates/rooch-key @wow-sven @templexxx
+/crates/rooch-integration-test-runner @steelgeek091 @jolestar
+/crates/rooch-key @wow-sven @popcnt1
 /crates/rooch-open-rpc @wow-sven @baichuan3
 /crates/rooch-open-rpc-macros @wow-sven @baichuan3
 /crates/rooch-open-rpc-spec @wow-sven @baichuan3
-/crates/rooch-proposer @jolestar @templexxx
+/crates/rooch-proposer @jolestar @popcnt1
 /crates/rooch-rpc-api @wow-sven @baichuan3
 /crates/rooch-rpc-client @wow-sven @baichuan3
 /crates/rooch-rpc-server @wow-sven @baichuan3
-/crates/rooch-sequencer @templexxx @jolestar
-/crates/rooch-store @baichuan3 @templexxx
+/crates/rooch-sequencer @popcnt1 @jolestar
+/crates/rooch-store @baichuan3 @popcnt1
 /crates/rooch-types @jolestar @baichuan3
 /crates/testsuite @pause125 @jolestar
+/crates/rooch-benchmarks @popcnt1
 
 /examples @jolestar @wow-sven @geometryolife
 /examples/blog @wubuku @jolestar

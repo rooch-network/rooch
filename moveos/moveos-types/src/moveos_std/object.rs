@@ -327,7 +327,7 @@ pub type ModuleStoreObject = ObjectEntity<ModuleStore>;
 
 /// The Entity of the Object<T>.
 /// The value must be the last field
-#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
+#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
 pub struct ObjectEntity<T> {
     pub id: ObjectID,
     pub owner: AccountAddress,

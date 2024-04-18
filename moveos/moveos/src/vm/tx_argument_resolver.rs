@@ -24,7 +24,7 @@ use std::sync::Arc;
 impl<'r, 'l, S, G> MoveOSSession<'r, 'l, S, G>
 where
     S: MoveOSResolver,
-    G: SwitchableGasMeter + ClassifiedGasMeter + Clone,
+    G: SwitchableGasMeter + ClassifiedGasMeter,
 {
     pub fn resolve_argument(
         &self,
