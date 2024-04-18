@@ -19,8 +19,6 @@ pub static R_DEFAULT_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("roochdb
 static R_DEFAULT_DB_MOVEOS_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("moveos_store"));
 static R_DEFAULT_DB_ROOCH_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("rooch_store"));
 
-pub const DEFAULT_CACHE_SIZE: usize = 20000;
-
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
 pub struct StoreConfig {
@@ -37,14 +35,6 @@ pub struct StoreConfig {
     pub max_total_wal_size: Option<u64>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(name = "cache-sizes", long, help = "cache sizes")]
-    pub cache_size: Option<usize>,
-
-    #[serde(skip)]
-    #[clap(skip)]
-    base: Option<Arc<BaseConfig>>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(
         name = "rocksdb-wal-bytes-per-sync",
         long,
@@ -55,6 +45,40 @@ pub struct StoreConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(name = "rocksdb-bytes-per-sync", long, help = "rocksdb bytes per sync")]
     pub bytes_per_sync: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "rocksdb-max-background-jobs",
+        long,
+        help = "rocksdb max background jobs"
+    )]
+    pub max_background_jobs: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(name = "rocksdb-row-cache-size", long, help = "rocksdb row cache size")]
+    pub row_cache_size: Option<u64>, // get: memtable -> row cache -> block cache -> disk
+
+    // TODO row cache is expensive (not so memory efficient), we need block cache at the same time.
+    // #[clap(name="rocksdb-block-cache-size", long, help="rocksdb block cache size")]
+    // pub block_cache_size:u64,
+    // TODO share large block cache between column families, dozens GB is required. block_size is 16KB by default for balancing bulk scan and read amplification
+    // #[clap(name="rocksdb-block-size", long, help="rocksdb block size")]
+    // pub block_size:u64,
+    // #[clap(name="rocksdb-cache-index-and-filter-blocks", long, help="rocksdb cache index and filter blocks")]
+    // TODO filter cache configs
+
+    // Once the limit is reached, RocksDB will not create more memtables and will stall all new write operations until the memtables count is reduced below the max-write-buffer-number limit.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "rocksdb-max-write-buffer-number",
+        long,
+        help = "rocksdb max write buffer number, maximum number of memtables that you can create"
+    )]
+    pub max_write_buffer_number: Option<u64>,
+
+    #[serde(skip)]
+    #[clap(skip)]
+    base: Option<Arc<BaseConfig>>,
 }
 
 impl StoreConfig {
@@ -115,13 +139,17 @@ impl StoreConfig {
                 .max_total_wal_size
                 .unwrap_or(default.max_total_wal_size),
             bytes_per_sync: self.bytes_per_sync.unwrap_or(default.bytes_per_sync),
+            max_background_jobs: self
+                .max_background_jobs
+                .unwrap_or(default.max_background_jobs),
             wal_bytes_per_sync: self
                 .wal_bytes_per_sync
                 .unwrap_or(default.wal_bytes_per_sync),
+            row_cache_size: self.row_cache_size.unwrap_or(default.row_cache_size),
+            max_write_buffer_numer: self
+                .max_write_buffer_number
+                .unwrap_or(default.max_write_buffer_numer),
         }
-    }
-    pub fn cache_size(&self) -> usize {
-        self.cache_size.unwrap_or(DEFAULT_CACHE_SIZE)
     }
 
     pub fn get_mock_moveos_store_dir(data_dir: &DataDirPath) -> PathBuf {
@@ -150,8 +178,8 @@ impl ConfigModule for StoreConfig {
         if store_config.max_total_wal_size.is_some() {
             self.max_total_wal_size = store_config.max_total_wal_size;
         }
-        if store_config.cache_size.is_some() {
-            self.cache_size = store_config.cache_size;
+        if store_config.row_cache_size.is_some() {
+            self.row_cache_size = store_config.row_cache_size;
         }
         if store_config.bytes_per_sync.is_some() {
             self.bytes_per_sync = store_config.bytes_per_sync;

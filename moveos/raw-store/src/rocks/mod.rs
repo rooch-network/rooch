@@ -14,10 +14,13 @@ use crate::{ColumnFamilyName, WriteOp};
 use anyhow::{ensure, format_err, Error, Result};
 use moveos_common::utils::{check_open_fds_limit, from_bytes};
 use moveos_config::store_config::RocksdbConfig;
-use rocksdb::{ColumnFamily, Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB};
+use rocksdb::{
+    Cache, ColumnFamily, Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB,
+};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::collections::HashSet;
+use std::ffi::c_int;
 use std::iter;
 use std::marker::PhantomData;
 use std::path::Path;
@@ -194,14 +197,13 @@ impl RocksDB {
         db_opts.set_max_total_wal_size(config.max_total_wal_size);
         db_opts.set_wal_bytes_per_sync(config.wal_bytes_per_sync);
         db_opts.set_bytes_per_sync(config.bytes_per_sync);
-        // db_opts.enable_statistics();
-        // write buffer size
-        db_opts.set_max_write_buffer_number(5);
-        db_opts.set_max_background_jobs(5);
-        // cache
-        // let cache = Cache::new_lru_cache(2 * 1024 * 1024 * 1024);
-        // db_opts.set_row_cache(&cache.unwrap());
+        db_opts.set_max_background_jobs(config.max_background_jobs as c_int);
+        db_opts.set_max_write_buffer_number(config.max_write_buffer_numer as c_int);
+        let cache = Cache::new_lru_cache(config.row_cache_size as usize);
+        db_opts.set_row_cache(&cache);
         db_opts
+
+        // db_opts.enable_statistics();
     }
     fn iter_with_direction<K, V>(
         &self,
