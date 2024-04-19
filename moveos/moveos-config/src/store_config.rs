@@ -40,6 +40,17 @@ pub struct RocksdbConfig {
         help = "rocksdb max write buffer number"
     )]
     pub max_write_buffer_numer: u64,
+
+    // row cache is expensive (not so memory efficient), we need block cache at the same time.
+    // share large block cache between column families, dozens GB is required.
+    #[clap(
+        name = "rocksdb-block-cache-size",
+        long,
+        help = "rocksdb block cache size"
+    )]
+    pub block_cache_size: u64,
+    #[clap(name = "rocksdb-block-size", long, help = "rocksdb block size")]
+    pub block_size: u64,
 }
 
 impl RocksdbConfig {
@@ -60,10 +71,12 @@ impl Default for RocksdbConfig {
             max_open_files: Self::default_max_open_files(),
             max_total_wal_size: 1u64 << 30,
             bytes_per_sync: 1u64 << 20,
-            max_background_jobs: 8,
+            max_background_jobs: 6, // rocksdb will decide compaction threads and flush threads based on this number
             wal_bytes_per_sync: 1u64 << 20,
-            row_cache_size: 2u64 << 30,
+            row_cache_size: 1u64 << 30,
             max_write_buffer_numer: 5,
+            block_cache_size: 1u64 << 32,
+            block_size: 1u64 << 12,
         }
     }
 }
