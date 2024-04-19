@@ -211,7 +211,7 @@ Configure whether auto-accept coins.
 
 ## Function `withdraw`
 
-Withdraw specifed <code>amount</code> of coin <code>CoinType</code> from the signing account.
+Withdraw specified <code>amount</code> of coin <code>CoinType</code> from the signing account.
 This public entry function requires the <code>CoinType</code> to have <code>key</code> and <code>store</code> abilities.
 
 
@@ -272,7 +272,7 @@ Any account and module can call this function to transfer coins, the <code>CoinT
 
 ## Function `withdraw_extend`
 
-Withdraw specifed <code>amount</code> of coin <code>CoinType</code> from any addr, this function does not check the Coin <code>frozen</code> attribute
+Withdraw specified <code>amount</code> of coin <code>CoinType</code> from any addr, this function does not check the Coin <code>frozen</code> attribute
 This function is only called by the <code>CoinType</code> module, for the developer to extend custom withdraw logic
 
 

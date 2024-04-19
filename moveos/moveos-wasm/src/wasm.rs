@@ -31,7 +31,7 @@ pub static mut GLOBAL_MEMORY: Lazy<Arc<Mutex<Option<Memory>>>> =
     Lazy::new(|| Arc::new(Mutex::new(None)));
 /*
 TODO:
-The WASMInstance must be protected by the locker which owned by the the signer
+The WASMInstance must be protected by the locker which owned by the signer
     while we enable the parallel tx execution.
 The way we're doing it now is by using this big global lock, but it's too broad.
  */
