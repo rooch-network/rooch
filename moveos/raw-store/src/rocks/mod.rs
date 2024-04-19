@@ -15,12 +15,13 @@ use anyhow::{ensure, format_err, Error, Result};
 use moveos_common::utils::{check_open_fds_limit, from_bytes};
 use moveos_config::store_config::RocksdbConfig;
 use rocksdb::{
-    Cache, ColumnFamily, Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB,
+    BlockBasedOptions, Cache, ColumnFamily, Options, ReadOptions, WriteBatch as DBWriteBatch,
+    WriteOptions, DB,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::collections::HashSet;
-use std::ffi::c_int;
+use std::ffi::{c_double, c_int};
 use std::iter;
 use std::marker::PhantomData;
 use std::path::Path;
@@ -96,7 +97,12 @@ impl RocksDB {
         } else {
             rocksdb_opts.create_if_missing(true);
             rocksdb_opts.create_missing_column_families(true);
-            Self::open_inner(&rocksdb_opts, path, column_families.clone())?
+            Self::open_inner(
+                &rocksdb_config,
+                &rocksdb_opts,
+                path,
+                column_families.clone(),
+            )?
         };
         check_open_fds_limit(rocksdb_config.max_open_files as u64 + RES_FDS)?;
         Ok(RocksDB {
@@ -107,16 +113,34 @@ impl RocksDB {
     }
 
     fn open_inner(
+        rocksdb_config: &RocksdbConfig,
         opts: &Options,
         path: impl AsRef<Path>,
         column_families: Vec<ColumnFamilyName>,
     ) -> Result<DB> {
+        let mut table_opts = BlockBasedOptions::default();
+
+        // options for enabling partitioned index filter
+        table_opts.set_index_type(rocksdb::BlockBasedIndexType::TwoLevelIndexSearch);
+        table_opts.set_bloom_filter(10 as c_double, false); // we use get op frequently, so set bloom filter to reduce disk read
+        table_opts.set_partition_filters(true);
+        table_opts.set_metadata_block_size(4096);
+        table_opts.set_cache_index_and_filter_blocks(true);
+        table_opts.set_pin_top_level_index_and_filter(true);
+        table_opts.set_pin_l0_filter_and_index_blocks_in_cache(true);
+
+        let cache = Cache::new_lru_cache(rocksdb_config.block_cache_size as usize);
+        table_opts.set_block_cache(&cache);
+
         let inner = DB::open_cf_descriptors(
             opts,
             path,
             column_families.iter().map(|cf_name| {
                 let mut cf_opts = Options::default();
+                cf_opts.set_level_compaction_dynamic_level_bytes(true);
                 cf_opts.set_compression_type(rocksdb::DBCompressionType::Lz4);
+                cf_opts.set_bottommost_compression_type(rocksdb::DBCompressionType::Zstd); // zstd for bottommost level, saving space
+                cf_opts.set_block_based_table_factory(&table_opts);
                 rocksdb::ColumnFamilyDescriptor::new((*cf_name).to_string(), cf_opts)
             }),
         )?;

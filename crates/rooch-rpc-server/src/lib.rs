@@ -423,7 +423,7 @@ pub fn init_storage(
     let moveosdb = MoveOSDB::new(StoreInstance::new_db_instance(RocksDB::new(
         moveos_db_path,
         moveos_store::StoreMeta::get_column_family_names().to_vec(),
-        store_config.rocksdb_config(),
+        store_config.rocksdb_config(true),
         None,
     )?))?;
     let startup_info = moveosdb.config_store.get_startup_info()?;
@@ -440,7 +440,7 @@ pub fn init_storage(
     let rooch_store = RoochStore::new(StoreInstance::new_db_instance(RocksDB::new(
         rooch_db_path,
         rooch_store::StoreMeta::get_column_family_names().to_vec(),
-        store_config.rocksdb_config(),
+        store_config.rocksdb_config(false),
         None,
     )?))?;
     Ok((root, moveos_store, rooch_store))

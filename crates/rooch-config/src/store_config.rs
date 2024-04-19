@@ -20,6 +20,7 @@ static R_DEFAULT_DB_MOVEOS_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("m
 static R_DEFAULT_DB_ROOCH_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("rooch_store"));
 
 pub const DEFAULT_ROCKSDB_ROW_CACHE_SIZE: u64 = 1 << 28; // 256MB, for Rooch DB instance, doesn't need too much row cache
+pub const DEFAULT_ROCKSDB_BLOCK_CACHE_SIZE: u64 = 1 << 30; // 1GB, for Rooch DB instance, doesn't need too much block cache
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
@@ -60,12 +61,17 @@ pub struct StoreConfig {
     #[clap(name = "rocksdb-row-cache-size", long, help = "rocksdb row cache size")]
     pub row_cache_size: Option<u64>, // get: memtable -> row cache -> block cache -> disk
 
-    // TODO row cache is expensive (not so memory efficient), we need block cache at the same time.
-    // #[clap(name="rocksdb-block-cache-size", long, help="rocksdb block cache size")]
-    // pub block_cache_size:u64,
-    // TODO share large block cache between column families, dozens GB is required. block_size is 16KB by default for balancing bulk scan and read amplification
-    // #[clap(name="rocksdb-block-size", long, help="rocksdb block size")]
-    // pub block_size:u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(
+        name = "rocksdb-block-cache-size",
+        long,
+        help = "rocksdb block cache size"
+    )]
+    pub block_cache_size: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[clap(name = "rocksdb-block-size", long, help = "rocksdb block size")]
+    pub block_size: Option<u64>,
     // TODO filter cache configs
     // #[clap(name="rocksdb-cache-index-and-filter-blocks", long, help="rocksdb cache index and filter blocks")]
 
@@ -133,8 +139,15 @@ impl StoreConfig {
             .join(R_DEFAULT_DB_ROOCH_SUBDIR.as_path())
     }
 
-    pub fn rocksdb_config(&self) -> RocksdbConfig {
+    pub fn rocksdb_config(&self, is_moveos_db: bool) -> RocksdbConfig {
         let default = RocksdbConfig::default();
+        let mut block_cache_size = default.block_cache_size;
+        let mut row_cache_size = default.row_cache_size;
+        if !is_moveos_db {
+            block_cache_size = DEFAULT_ROCKSDB_BLOCK_CACHE_SIZE;
+            row_cache_size = DEFAULT_ROCKSDB_ROW_CACHE_SIZE;
+        }
+
         RocksdbConfig {
             max_open_files: self.max_open_files.unwrap_or(default.max_open_files),
             max_total_wal_size: self
@@ -147,12 +160,12 @@ impl StoreConfig {
             wal_bytes_per_sync: self
                 .wal_bytes_per_sync
                 .unwrap_or(default.wal_bytes_per_sync),
-            row_cache_size: self
-                .row_cache_size
-                .unwrap_or(DEFAULT_ROCKSDB_ROW_CACHE_SIZE),
+            row_cache_size: self.row_cache_size.unwrap_or(row_cache_size),
             max_write_buffer_numer: self
                 .max_write_buffer_number
                 .unwrap_or(default.max_write_buffer_numer),
+            block_cache_size: self.block_cache_size.unwrap_or(block_cache_size),
+            block_size: self.block_size.unwrap_or(default.block_size),
         }
     }
 
