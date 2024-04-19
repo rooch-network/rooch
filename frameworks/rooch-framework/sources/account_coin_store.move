@@ -123,7 +123,7 @@ module rooch_framework::account_coin_store {
         event::emit<AcceptCoinEvent>(AcceptCoinEvent { enable });
     }
 
-    /// Withdraw specifed `amount` of coin `CoinType` from the signing account.
+    /// Withdraw specified `amount` of coin `CoinType` from the signing account.
     /// This public entry function requires the `CoinType` to have `key` and `store` abilities.
     public fun withdraw<CoinType: key + store>(
         
@@ -168,7 +168,7 @@ module rooch_framework::account_coin_store {
     }
 
     #[private_generics(CoinType)]
-    /// Withdraw specifed `amount` of coin `CoinType` from any addr, this function does not check the Coin `frozen` attribute
+    /// Withdraw specified `amount` of coin `CoinType` from any addr, this function does not check the Coin `frozen` attribute
     /// This function is only called by the `CoinType` module, for the developer to extend custom withdraw logic
     public fun withdraw_extend<CoinType: key>(
         

@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
 
 import { NoData } from '@/components/no-data'
 
@@ -23,12 +24,13 @@ interface App {
 
 const apps: App[] = [
   {
-    app: '',
-    appSite: '',
-    contract: '',
+    app: 'Rooch',
+    appSite: 'rooch.network',
+    contract:
+      'bc1pk33n2t5zulq7nz3k8rq55dywjt89szfukypjua5zmuhfg40338wsv9ss7qbc1pk33n2t5zulq7nz3k8rq55dywjt89szfukypjua5zmuhfg40338wsv9ss7qbc1pk33n2t5zulq7nz3k8rq55dywjt89szfukypjua5zmuhfg40338wsv9ss7q',
     sessionID: 0,
-    grantedAt: '',
-    expiredAt: '',
+    grantedAt: '2/30/2024',
+    expiredAt: '3/30/2024',
   },
 ]
 
@@ -67,12 +69,18 @@ export const ManageSessions: React.FC = () => {
           {apps.map((app, index) => (
             <TableRow key={index}>
               <TableCell className="font-medium">{app.app}</TableCell>
-              <TableCell>{app.contract}</TableCell>
+              <TableCell className="overflow-auto max-w-[480px]">{app.contract}</TableCell>
               <TableCell>{app.sessionID}</TableCell>
               <TableCell>{app.grantedAt}</TableCell>
               <TableCell>{app.expiredAt}</TableCell>
               <TableCell className="text-center">
-                <button className="text-red-500">Disconnect</button>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="text-red-500 dark:text-red-400 dark:hover:text-red-300 hover:text-red-600"
+                >
+                  Disconnect
+                </Button>
               </TableCell>
             </TableRow>
           ))}

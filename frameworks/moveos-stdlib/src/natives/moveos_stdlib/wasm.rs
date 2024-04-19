@@ -305,22 +305,13 @@ fn native_create_wasm_args_in_memory(
             ));
         }
         Some(instance) => {
-            let stack_alloc_func = match instance.instance.exports.get_function("stackAlloc") {
-                Ok(v) => v,
-                Err(_) => return build_err(gas_params.base_create_args, E_WASM_FUNCTION_NOT_FOUND),
-            };
-
             for arg in func_args.iter() {
                 let c_arg = unsafe { CString::from_vec_unchecked(arg.clone()) };
 
                 let mut arg_buffer = Vec::new();
                 // arg_buffer.append(&mut (arg.len() as u32).to_be_bytes().to_vec());
                 arg_buffer.append(&mut c_arg.into_bytes_with_nul());
-                let buffer_final_ptr = match put_data_on_stack(
-                    stack_alloc_func,
-                    &mut instance.store,
-                    arg_buffer.as_slice(),
-                ) {
+                let buffer_final_ptr = match put_data_on_stack(instance, arg_buffer.as_slice()) {
                     Ok(v) => v,
                     Err(_) => {
                         return build_err(gas_params.base_create_args, E_WASM_EXECUTION_FAILED)
@@ -668,20 +659,22 @@ fn native_release_wasm_instance(
 
     let instance_id = val.value_as::<u64>()?;
 
-    let instance_pool = get_instance_pool();
-    let mut pool_object = match instance_pool.lock() {
-        Ok(v) => v,
-        Err(_) => {
-            return Ok(NativeResult::err(
-                gas_params.base,
-                E_GET_INSTANCE_POOL_FAILED,
-            ))
-        }
-    };
-    match pool_object.get_mut(&instance_id) {
-        None => return Ok(NativeResult::err(gas_params.base, E_INSTANCE_NO_EXISTS)),
-        Some(_) => {}
-    };
+    {
+        let instance_pool = get_instance_pool();
+        let mut pool_object = match instance_pool.lock() {
+            Ok(v) => v,
+            Err(_) => {
+                return Ok(NativeResult::err(
+                    gas_params.base,
+                    E_GET_INSTANCE_POOL_FAILED,
+                ))
+            }
+        };
+        match pool_object.get_mut(&instance_id) {
+            None => return Ok(NativeResult::err(gas_params.base, E_INSTANCE_NO_EXISTS)),
+            Some(_) => {}
+        };
+    }
 
     match moveos_wasm::wasm::remove_instance(instance_id) {
         Ok(_) => {}
