@@ -739,6 +739,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98f7eed2b2781a6f0b5c903471d48e15f56fb4e1165df8a9a2337fd1a59d45ea"
 
 [[package]]
+name = "bech32"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d965446196e3b7decd44aa7ee49e31d630118f90ef12f97900f262eb915c951d"
+
+[[package]]
 name = "beef"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -898,7 +904,7 @@ dependencies = [
  "better_any",
  "bitcoin 0.31.0",
  "brotli",
- "bs58 0.5.0",
+ "bs58 0.5.1",
  "ciborium",
  "fastcrypto",
  "framework-builder",
@@ -1157,9 +1163,9 @@ dependencies = [
 
 [[package]]
 name = "bs58"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5353f36341f7451062466f0b755b96ac3a9547e4d7f6b70d603fc721a7d7896"
+checksum = "bf88ba1141d185c399bee5288d850d63b8369520c1eafc32a0430b5b6c287bf4"
 dependencies = [
  "sha2 0.10.8",
  "tinyvec",
@@ -1732,7 +1738,7 @@ version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b6be4a5df2098cd811f3194f64ddb96c267606bffd9689ac7b0160097b01ad3"
 dependencies = [
- "bs58 0.5.0",
+ "bs58 0.5.1",
  "coins-core",
  "digest 0.10.7",
  "hmac",
@@ -1766,7 +1772,7 @@ checksum = "5286a0843c21f8367f7be734f89df9b822e0321d8bcce8d6e735aadff7d74979"
 dependencies = [
  "base64 0.21.3",
  "bech32 0.9.1",
- "bs58 0.5.0",
+ "bs58 0.5.1",
  "digest 0.10.7",
  "generic-array",
  "hex",
@@ -5132,7 +5138,7 @@ version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "999ec70441b2fb35355076726a6bc466c932e9bdc66f6a11c6c0aa17c7ab9be0"
 dependencies = [
- "bs58 0.5.0",
+ "bs58 0.5.1",
  "hkdf",
  "multihash",
  "quick-protobuf",
@@ -6218,9 +6224,9 @@ name = "moveos-stdlib"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bech32 0.9.1",
+ "bech32 0.11.0",
  "better_any",
- "bs58 0.5.0",
+ "bs58 0.5.1",
  "ciborium",
  "fastcrypto",
  "framework-builder",
@@ -9346,10 +9352,10 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bcs",
- "bech32 0.9.1",
+ "bech32 0.11.0",
  "bitcoin 0.31.0",
  "bitcoincore-rpc",
- "bs58 0.5.0",
+ "bs58 0.5.1",
  "clap 4.5.4",
  "derive_more",
  "enum_dispatch",
