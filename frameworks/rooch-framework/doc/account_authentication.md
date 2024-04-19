@@ -61,7 +61,7 @@ A resource that holds the authentication keys for this account.
 
 ## Resource `InstalledAuthValidator`
 
-A resource tha holds the auth validator ids for this account has installed.
+A resource that holds the auth validator ids for this account has installed.
 
 
 <pre><code><b>struct</b> <a href="account_authentication.md#0x3_account_authentication_InstalledAuthValidator">InstalledAuthValidator</a> <b>has</b> store, key

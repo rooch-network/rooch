@@ -56,7 +56,6 @@ module moveos_std::hash {
       let msg = b"Hello, World!";
       let hashed_msg_bytes = x"527a6a4b9a6da75607546842e0e00105350b1aaf";
       let hashed_msg = ripemd160(&msg);
-      std::debug::print(&hashed_msg);
       assert!(hashed_msg == hashed_msg_bytes, 0);
 
       let empty_msg = b"";
