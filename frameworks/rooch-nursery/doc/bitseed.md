@@ -24,8 +24,10 @@
 
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::string_utils</a>;
+<b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::wasm</a>;
 </code></pre>
 
@@ -49,6 +51,50 @@
 
 
 <pre><code><b>struct</b> <a href="bitseed.md#0xa_bitseed_MintOp">MintOp</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_bitseed_BitseedID"></a>
+
+## Struct `BitseedID`
+
+
+
+<pre><code><b>struct</b> <a href="bitseed.md#0x4_bitseed_BitseedID">BitseedID</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_bitseed_SFTContent"></a>
+
+## Struct `SFTContent`
+
+
+
+<pre><code><b>struct</b> <a href="bitseed.md#0x4_bitseed_SFTContent">SFTContent</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_bitseed_SFT"></a>
+
+## Struct `SFT`
+
+
+
+<pre><code><b>struct</b> <a href="bitseed.md#0x4_bitseed_SFT">SFT</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x4_bitseed_SFTStore"></a>
+
+## Resource `SFTStore`
+
+
+
+<pre><code><b>struct</b> <a href="bitseed.md#0x4_bitseed_SFTStore">SFTStore</a> <b>has</b> key
 </code></pre>
 
 

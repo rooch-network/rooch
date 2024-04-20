@@ -5,13 +5,19 @@ module rooch_nursery::bitseed {
     use std::string;
     use std::string::String;
     use std::vector;
+
+    use moveos_std::object::{Self, Object};
     use moveos_std::string_utils::{parse_u64, parse_u8};
     use moveos_std::simple_map;
     use moveos_std::simple_map::SimpleMap;
     use moveos_std::wasm;
+    use moveos_std::table::{Self, Table};
 
     const BIT_SEED_DEPLOY: vector<u8> = b"bitseed_deploy";
     const BIT_SEED_MINT: vector<u8> = b"bitseed_mint";
+
+    friend bitcoin_move::genesis;
+    friend bitcoin_move::ord;
 
     struct DeployOp has store,copy,drop {
         is_valid: u8,
@@ -34,6 +40,37 @@ module rooch_nursery::bitseed {
         attributes: vector<u8>,
         content_type: vector<u8>,
         body: vector<u8>
+    }
+
+    struct BitseedID has store, copy, drop {
+        txid: address,
+        index: u32,
+    }
+
+    struct SFTContent has store,copy,drop {
+        content_type: String,
+        body: vector<u8>
+    }
+
+    struct SFT has store,copy,drop {
+        op: String,
+        tick: String,
+        amount: u64,
+        attributes: vector<u8>,
+        content: SFTContent,
+        is_valid: u8,
+    }
+
+    struct SFTStore has key{
+        sfts: Table<BitseedID, SFT>
+    }
+
+    public(friend) fun genesis_init(_genesis_account: &signer){
+        let sft_store = SFTStore{
+            sfts: table::new(),
+        }; 
+        let obj = object::new_named_object(sft_store);
+        object::to_shared(obj);
     }
 
     public fun bitseed_deploy_key(): vector<u8> {

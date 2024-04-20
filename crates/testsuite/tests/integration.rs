@@ -334,10 +334,10 @@ async fn bitseed_run_cmd(w: &mut World, input_tpl: String) {
     )
     .into();
 
-    let test_file_path = Path::new(file!()).parent().unwrap();
-    let test_data_path = test_file_path.join("../data").into_os_string().
-        into_string().
+    let test_data_path = Path::new("./data").
+        canonicalize().unwrap().into_os_string().into_string().
         unwrap_or_else(|_| panic!("Invalid Unicode path"));
+    debug!("test_data_path: {}", test_data_path);
 
     bitseed_image = bitseed_image.with_network(w.container_network.clone()).
         with_volume((test_data_path, "/app/test-data"));
@@ -368,7 +368,7 @@ async fn bitseed_run_cmd(w: &mut World, input_tpl: String) {
         panic!("Command execution failed with errors: {}", stderr_string);
     }
 
-    let result_json = serde_json::from_str::<Value>(&stdout_string);
+    let result_json = extract_json(&stdout_string);
     if let Ok(json_value) = result_json {
         debug!("cmd bitseed: {} output: {}", cmd_name, json_value);
         tpl_ctx.entry(cmd_name).append::<Value>(json_value);
@@ -525,7 +525,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
         orginal_args
     );
     for chunk in splited_args.chunks(3) {
-        let first = chunk.first().cloned();
+        let first = chunk.get(0).cloned();
         let op = chunk.get(1).cloned();
         let second = chunk.get(2).cloned();
 
@@ -538,6 +538,12 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                 "contains" => assert!(
                     first.contains(&second),
                     "Assert {:?} contains {:?} failed",
+                    first,
+                    second
+                ),
+                "not_contains" => assert!(
+                    !first.contains(&second),
+                    "Assert {:?} not_contains {:?} failed",
                     first,
                     second
                 ),
@@ -637,6 +643,13 @@ fn check_port_in_use(port: u16) -> bool {
         Err(_e) => false,
     };
     in_use
+}
+
+fn extract_json(output: &String) -> Result<Value> {
+    let lines: Vec<&str> = output.lines().collect();
+    let last_line = lines.last().expect("No JSON found in output");
+    let json: Value = serde_json::from_str(last_line)?;
+    Ok(json)
 }
 
 #[tokio::main]
