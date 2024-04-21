@@ -35,6 +35,9 @@ feature flag is disabled, those functions can constantly return true.
 -  [Function `get_module_template_feature`](#0x2_features_get_module_template_feature)
 -  [Function `module_template_enabled`](#0x2_features_module_template_enabled)
 -  [Function `ensure_module_template_enabled`](#0x2_features_ensure_module_template_enabled)
+-  [Function `get_module_publishing_allowlist_feature`](#0x2_features_get_module_publishing_allowlist_feature)
+-  [Function `module_publishing_allowlist_enabled`](#0x2_features_module_publishing_allowlist_enabled)
+-  [Function `ensure_module_publishing_allowlist_enabled`](#0x2_features_ensure_module_publishing_allowlist_enabled)
 -  [Function `get_all_features`](#0x2_features_get_all_features)
 
 
@@ -96,6 +99,16 @@ This feature will only be enabled on localnet.
 
 
 <pre><code><b>const</b> <a href="features.md#0x2_features_LOCALNET">LOCALNET</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x2_features_MODULE_PUBLISHING_ALLOWLIST"></a>
+
+Whether enable the allowlist feature for publishing modules.
+
+
+<pre><code><b>const</b> <a href="features.md#0x2_features_MODULE_PUBLISHING_ALLOWLIST">MODULE_PUBLISHING_ALLOWLIST</a>: u64 = 5;
 </code></pre>
 
 
@@ -287,6 +300,39 @@ All features are enabled for system reserved accounts.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensure_module_template_enabled">ensure_module_template_enabled</a>()
+</code></pre>
+
+
+
+<a name="0x2_features_get_module_publishing_allowlist_feature"></a>
+
+## Function `get_module_publishing_allowlist_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_get_module_publishing_allowlist_feature">get_module_publishing_allowlist_feature</a>(): u64
+</code></pre>
+
+
+
+<a name="0x2_features_module_publishing_allowlist_enabled"></a>
+
+## Function `module_publishing_allowlist_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_module_publishing_allowlist_enabled">module_publishing_allowlist_enabled</a>(): bool
+</code></pre>
+
+
+
+<a name="0x2_features_ensure_module_publishing_allowlist_enabled"></a>
+
+## Function `ensure_module_publishing_allowlist_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensure_module_publishing_allowlist_enabled">ensure_module_publishing_allowlist_enabled</a>()
 </code></pre>
 
 

@@ -9,6 +9,7 @@ It is used to store the modules
 
 
 -  [Struct `MoveModule`](#0x2_move_module_MoveModule)
+-  [Resource `Allowlist`](#0x2_move_module_Allowlist)
 -  [Resource `ModuleStore`](#0x2_move_module_ModuleStore)
 -  [Constants](#@Constants_0)
 -  [Function `new`](#0x2_move_module_new)
@@ -34,6 +35,11 @@ It is used to store the modules
 -  [Function `publish_modules`](#0x2_move_module_publish_modules)
 -  [Function `publish_modules_entry`](#0x2_move_module_publish_modules_entry)
 -  [Function `publish_modules_internal`](#0x2_move_module_publish_modules_internal)
+-  [Function `borrow_allowlist`](#0x2_move_module_borrow_allowlist)
+-  [Function `borrow_mut_allowlist`](#0x2_move_module_borrow_mut_allowlist)
+-  [Function `add_to_allowlist`](#0x2_move_module_add_to_allowlist)
+-  [Function `remove_from_allowlist`](#0x2_move_module_remove_from_allowlist)
+-  [Function `is_in_allowlist`](#0x2_move_module_is_in_allowlist)
 -  [Function `request_init_functions`](#0x2_move_module_request_init_functions)
 -  [Function `replace_address_identifiers`](#0x2_move_module_replace_address_identifiers)
 -  [Function `replace_identifiers`](#0x2_move_module_replace_identifiers)
@@ -46,6 +52,7 @@ It is used to store the modules
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
+<b>use</b> <a href="core_addresses.md#0x2_core_addresses">0x2::core_addresses</a>;
 <b>use</b> <a href="features.md#0x2_features">0x2::features</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 <b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
@@ -61,6 +68,18 @@ It is used to store the modules
 
 
 <pre><code><b>struct</b> <a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
+<a name="0x2_move_module_Allowlist"></a>
+
+## Resource `Allowlist`
+
+Allowlist for module function invocation
+
+
+<pre><code><b>struct</b> <a href="move_module.md#0x2_move_module_Allowlist">Allowlist</a> <b>has</b> store, key
 </code></pre>
 
 
@@ -118,6 +137,16 @@ Module verification error
 
 
 <pre><code><b>const</b> <a href="move_module.md#0x2_move_module_ErrorModuleVerificationError">ErrorModuleVerificationError</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x2_move_module_ErrorNotAllowToPublish"></a>
+
+Not allow to publish module
+
+
+<pre><code><b>const</b> <a href="move_module.md#0x2_move_module_ErrorNotAllowToPublish">ErrorNotAllowToPublish</a>: u64 = 5;
 </code></pre>
 
 
@@ -396,6 +425,61 @@ Return true if the modules are upgraded
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_publish_modules_internal">publish_modules_internal</a>(module_object: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="move_module.md#0x2_move_module_ModuleStore">move_module::ModuleStore</a>&gt;, account_address: <b>address</b>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;): bool
+</code></pre>
+
+
+
+<a name="0x2_move_module_borrow_allowlist"></a>
+
+## Function `borrow_allowlist`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_borrow_allowlist">borrow_allowlist</a>(): &<a href="move_module.md#0x2_move_module_Allowlist">move_module::Allowlist</a>
+</code></pre>
+
+
+
+<a name="0x2_move_module_borrow_mut_allowlist"></a>
+
+## Function `borrow_mut_allowlist`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_borrow_mut_allowlist">borrow_mut_allowlist</a>(): &<b>mut</b> <a href="move_module.md#0x2_move_module_Allowlist">move_module::Allowlist</a>
+</code></pre>
+
+
+
+<a name="0x2_move_module_add_to_allowlist"></a>
+
+## Function `add_to_allowlist`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_add_to_allowlist">add_to_allowlist</a>(allowlist: &<b>mut</b> <a href="move_module.md#0x2_move_module_Allowlist">move_module::Allowlist</a>, publisher: <b>address</b>)
+</code></pre>
+
+
+
+<a name="0x2_move_module_remove_from_allowlist"></a>
+
+## Function `remove_from_allowlist`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_remove_from_allowlist">remove_from_allowlist</a>(allowlist: &<b>mut</b> <a href="move_module.md#0x2_move_module_Allowlist">move_module::Allowlist</a>, publisher: <b>address</b>)
+</code></pre>
+
+
+
+<a name="0x2_move_module_is_in_allowlist"></a>
+
+## Function `is_in_allowlist`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_is_in_allowlist">is_in_allowlist</a>(allowlist: &<a href="move_module.md#0x2_move_module_Allowlist">move_module::Allowlist</a>, publisher: <b>address</b>): bool
 </code></pre>
 
 

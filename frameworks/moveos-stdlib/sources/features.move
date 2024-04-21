@@ -121,6 +121,16 @@ module moveos_std::features {
         assert!(is_enabled(MODULE_TEMPLATE), EAPI_DISABLED);
     }
 
+    /// Whether enable the allowlist feature for publishing modules.
+    const MODULE_PUBLISHING_ALLOWLIST: u64 = 5;
+    public fun get_module_publishing_allowlist_feature(): u64 { MODULE_PUBLISHING_ALLOWLIST }
+    public fun module_publishing_allowlist_enabled(): bool {
+        is_enabled(MODULE_PUBLISHING_ALLOWLIST)
+    }
+    public fun ensure_module_publishing_allowlist_enabled() {
+        assert!(is_enabled(MODULE_PUBLISHING_ALLOWLIST), EAPI_DISABLED);
+    }
+
     /// Helper for getting all features. 
     /// Update this once new feature added.
     public fun get_all_features(): vector<u64> {

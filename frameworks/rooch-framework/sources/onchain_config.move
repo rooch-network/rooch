@@ -4,8 +4,10 @@
 module rooch_framework::onchain_config {
 
     use std::vector;
+    use std::signer;
     use moveos_std::object;
     use moveos_std::features;
+    use moveos_std::move_module;
     use rooch_framework::chain_id;
 
     friend rooch_framework::upgrade;
@@ -42,16 +44,33 @@ module rooch_framework::onchain_config {
         onchain_config().framework_version
     }
 
-    fun onchain_config_mut(): &mut OnchainConfig {
-        let object_id = object::named_object_id<OnchainConfig>();
-        let obj = object::borrow_mut_object_extend<OnchainConfig>(object_id);
-        object::borrow_mut(obj)
-    }
-
     public fun onchain_config(): &OnchainConfig {
         let object_id = object::named_object_id<OnchainConfig>();
         let obj = object::borrow_object<OnchainConfig>(object_id);
         object::borrow(obj)
+    }
+
+    /******  APIs for update module publishing allowlist. ******/
+    // TODO: find a better way to do this
+
+    public fun add_to_publishing_allowlist(account: &signer, publisher: address) {
+        let sender = signer::address_of(account);
+        assert!(sender == sequencer(), ErrorNotSequencer);
+        let allowlist = move_module::borrow_mut_allowlist();
+        move_module::add_to_allowlist(allowlist, publisher);
+    }
+
+    public fun remove_from_publishing_allowlist(account: &signer, publisher: address) {
+        let sender = signer::address_of(account);
+        assert!(sender == sequencer(), ErrorNotSequencer);
+        let allowlist = move_module::borrow_mut_allowlist();
+        move_module::remove_from_allowlist(allowlist, publisher);
+    }
+
+    fun onchain_config_mut(): &mut OnchainConfig {
+        let object_id = object::named_object_id<OnchainConfig>();
+        let obj = object::borrow_mut_object_extend<OnchainConfig>(object_id);
+        object::borrow_mut(obj)
     }
 
     fun set_code_features(framework: &signer) {

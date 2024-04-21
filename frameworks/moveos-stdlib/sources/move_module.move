@@ -7,6 +7,7 @@
 module moveos_std::move_module {
     use std::vector;
     use std::string::{Self, String};
+    use moveos_std::core_addresses;
     use moveos_std::object::{Self, ObjectID, Object};
     use moveos_std::tx_context;
     use moveos_std::signer;
@@ -22,9 +23,18 @@ module moveos_std::move_module {
     const ErrorModuleIncompatible: u64 = 3;
     /// Vector length not match
     const ErrorLengthNotMatch: u64 = 4;
+    /// Not allow to publish module
+    const ErrorNotAllowToPublish: u64 = 5;
     
     struct MoveModule has copy, store, drop {
         byte_codes: vector<u8>,
+    }
+
+    /// Allowlist for module function invocation
+    struct Allowlist has key, store {
+        /// Allow list for publishing modules
+        publisher: vector<address>,
+
     }
 
     public fun new(byte_codes: vector<u8>) : MoveModule {
@@ -253,7 +263,10 @@ module moveos_std::move_module {
         if (!object::exists_object(module_store_id)) {
             let obj = object::new_named_object(ModuleStore {});
             object::to_shared(obj)
-        }
+        };
+
+        let allowlist = object::new_named_object(Allowlist { publisher: vector::empty() });
+        object::to_shared(allowlist);
     }
 
     public fun borrow_module_store(): &Object<ModuleStore> {
@@ -279,6 +292,9 @@ module moveos_std::move_module {
 
     /// Publish modules to the account's storage
     public fun publish_modules(module_store: &mut Object<ModuleStore>, account: &signer, modules: vector<MoveModule>) {
+        if (features::module_publishing_allowlist_enabled()) {
+            ensure_publisher_in_allowlist();
+        };
         let account_address = signer::address_of(account);
         let upgrade_flag = publish_modules_internal(module_store, account_address, modules);
         // Store ModuleUpgradeFlag in tx_context which will be fetched in VM in Rust, 
@@ -332,6 +348,41 @@ module moveos_std::move_module {
         upgrade_flag
     }
 
+    public fun borrow_allowlist(): &Allowlist {
+        let allowlist_id = object::named_object_id<Allowlist>();
+        let allowlist_obj = object::borrow_object(allowlist_id);
+        object::borrow<Allowlist>(allowlist_obj)
+    }
+
+    public fun borrow_mut_allowlist(): &mut Allowlist {
+        let allowlist_id = object::named_object_id<Allowlist>();
+        let allowlist_obj = object::borrow_mut_object_shared(allowlist_id);
+        object::borrow_mut<Allowlist>(allowlist_obj)
+    }
+
+    public fun add_to_allowlist(allowlist: &mut Allowlist, publisher: address) {
+        let sender = tx_context::sender();
+        core_addresses::assert_system_reserved_address(sender);
+        if (!vector::contains(&allowlist.publisher, &publisher)) {
+            vector::push_back(&mut allowlist.publisher, publisher);
+        };
+    }
+
+    public fun remove_from_allowlist(allowlist: &mut Allowlist, publisher: address) {
+        let sender = tx_context::sender();
+        core_addresses::assert_system_reserved_address(sender);
+        let _ = vector::remove_value(&mut allowlist.publisher, &publisher);
+    }
+
+    public fun is_in_allowlist(allowlist: &Allowlist, publisher: address): bool {
+        vector::contains(&allowlist.publisher, &publisher)
+    }
+
+    fun ensure_publisher_in_allowlist() {
+        let sender = tx_context::sender();
+        let allowlist = borrow_allowlist().publisher;
+        assert!(vector::contains(&allowlist, &sender), ErrorNotAllowToPublish);
+    }
 
     native fun module_id_inner(byte_codes: &vector<u8>): String;
 
@@ -528,6 +579,57 @@ module moveos_std::move_module {
         let module_bytes = COUNTER_MV_BYTES;
         let m: MoveModule = Self::new(module_bytes);
         Self::publish_modules_internal(module_object, sender, vector::singleton(m));
+    }
+
+    #[test(sender=@0x42)]
+    #[expected_failure(abort_code = ErrorNotAllowToPublish, location = Self)]
+    fun test_publish_modules_without_access(sender: &signer) {
+        init_module_store();
+        features::init_feature_store_for_test();
+        features::change_feature_flags_for_test(
+            vector[features::get_module_publishing_allowlist_feature()], 
+            vector[]
+        );
+        let module_object = borrow_mut_module_store();
+        let module_bytes = COUNTER_MV_BYTES;
+        let m: MoveModule = Self::new(module_bytes);
+        Self::publish_modules(module_object, sender, vector::singleton(m));
+    }
+
+    #[test(account=@0x42)]
+    fun test_publish_modules_with_access(account: &signer) {
+        init_module_store();
+        features::init_feature_store_for_test();
+        features::change_feature_flags_for_test(
+            vector[features::get_module_publishing_allowlist_feature()], 
+            vector[]
+        );
+        let allowlist = borrow_mut_allowlist();
+
+        tx_context::set_ctx_sender_for_testing(@moveos_std);
+        add_to_allowlist(allowlist, signer::address_of(account));
+        tx_context::set_ctx_sender_for_testing(signer::address_of(account));
+
+        let module_object = borrow_mut_module_store();
+        let module_bytes = COUNTER_MV_BYTES;
+        let m: MoveModule = Self::new(module_bytes);
+        Self::publish_modules(module_object, account, vector::singleton(m));
+    }
+
+    #[test(_account=@moveos_std)]
+    fun test_add_and_remove_allowlist(_account: &signer) {
+        init_module_store();
+        tx_context::set_ctx_sender_for_testing(@moveos_std);
+
+        let allowlist = borrow_allowlist();
+        assert!(!is_in_allowlist(allowlist, @0x42), 1);
+
+        let allowlist = borrow_mut_allowlist();
+        add_to_allowlist(allowlist, @0x42);
+        assert!(is_in_allowlist(allowlist, @0x42), 2);
+
+        remove_from_allowlist(allowlist, @0x42);
+        assert!(!is_in_allowlist(allowlist, @0x42), 3);
     }
 }
 

@@ -12,9 +12,13 @@
 -  [Function `update_framework_version`](#0x3_onchain_config_update_framework_version)
 -  [Function `framework_version`](#0x3_onchain_config_framework_version)
 -  [Function `onchain_config`](#0x3_onchain_config_onchain_config)
+-  [Function `add_to_publishing_allowlist`](#0x3_onchain_config_add_to_publishing_allowlist)
+-  [Function `remove_from_publishing_allowlist`](#0x3_onchain_config_remove_from_publishing_allowlist)
 
 
-<pre><code><b>use</b> <a href="">0x2::features</a>;
+<pre><code><b>use</b> <a href="">0x1::signer</a>;
+<b>use</b> <a href="">0x2::features</a>;
+<b>use</b> <a href="">0x2::move_module</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="chain_id.md#0x3_chain_id">0x3::chain_id</a>;
 </code></pre>
@@ -98,4 +102,26 @@ OnchainConfig is framework configurations stored on chain.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config">onchain_config</a>(): &<a href="onchain_config.md#0x3_onchain_config_OnchainConfig">onchain_config::OnchainConfig</a>
+</code></pre>
+
+
+
+<a name="0x3_onchain_config_add_to_publishing_allowlist"></a>
+
+## Function `add_to_publishing_allowlist`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_add_to_publishing_allowlist">add_to_publishing_allowlist</a>(<a href="">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
+</code></pre>
+
+
+
+<a name="0x3_onchain_config_remove_from_publishing_allowlist"></a>
+
+## Function `remove_from_publishing_allowlist`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_remove_from_publishing_allowlist">remove_from_publishing_allowlist</a>(<a href="">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
 </code></pre>
