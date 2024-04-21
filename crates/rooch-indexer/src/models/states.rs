@@ -3,14 +3,12 @@
 
 use crate::schema::field_states;
 use crate::schema::object_states;
-use crate::schema::table_change_sets;
-use crate::types::{IndexedFieldState, IndexedObjectState, IndexedTableChangeSet};
+use crate::types::{IndexedFieldState, IndexedObjectState};
 use diesel::prelude::*;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use moveos_types::moveos_std::object::ObjectID;
-use rooch_rpc_api::jsonrpc_types::TableChangeSetView;
-use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState, IndexerTableChangeSet};
+use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState};
 use std::str::FromStr;
 
 #[derive(Queryable, QueryableByName, Insertable, Debug, Clone)]
@@ -164,56 +162,5 @@ impl StoredFieldState {
             updated_at: self.updated_at as u64,
         };
         Ok(state)
-    }
-}
-
-#[derive(Clone, Debug, Queryable, Insertable, QueryableByName)]
-#[diesel(table_name = table_change_sets)]
-pub struct StoredTableChangeSet {
-    /// The tx order of this transaction which produce the table change set
-    #[diesel(sql_type = diesel::sql_types::BigInt)]
-    pub tx_order: i64,
-    /// The table handle index in the tx
-    #[diesel(sql_type = diesel::sql_types::BigInt)]
-    pub state_index: i64,
-    /// The table handle
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    pub table_handle: String,
-    /// The table change set, json format
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    pub table_change_set: String,
-    /// The tx executed timestamp on chain
-    #[diesel(sql_type = diesel::sql_types::BigInt)]
-    pub created_at: i64,
-}
-
-impl From<IndexedTableChangeSet> for StoredTableChangeSet {
-    fn from(state_change_set: IndexedTableChangeSet) -> Self {
-        Self {
-            tx_order: state_change_set.tx_order as i64,
-            state_index: state_change_set.state_index as i64,
-            table_handle: state_change_set.table_handle.to_string(),
-            table_change_set: state_change_set.table_change_set,
-            created_at: state_change_set.created_at as i64,
-        }
-    }
-}
-
-impl StoredTableChangeSet {
-    pub fn try_into_indexer_state_change_set(
-        &self,
-    ) -> Result<IndexerTableChangeSet, anyhow::Error> {
-        let table_handle = ObjectID::from_str(self.table_handle.as_str())?;
-        let table_change_set: TableChangeSetView =
-            serde_json::from_str(self.table_change_set.as_str())?;
-
-        let indexer_state_change_set = IndexerTableChangeSet {
-            tx_order: self.tx_order as u64,
-            state_index: self.state_index as u64,
-            table_handle,
-            table_change_set: table_change_set.into(),
-            created_at: self.created_at as u64,
-        };
-        Ok(indexer_state_change_set)
     }
 }

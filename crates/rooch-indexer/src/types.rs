@@ -8,9 +8,8 @@ use moveos_types::h256::H256;
 use moveos_types::moveos_std::event::Event;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::object::RawObject;
-use moveos_types::state::{MoveStructType, TableChangeSet};
+use moveos_types::state::MoveStructType;
 use moveos_types::transaction::{MoveAction, TransactionExecutionInfo, VerifiedMoveOSTransaction};
-use rooch_rpc_api::jsonrpc_types::TableChangeSetView;
 use rooch_types::bitcoin::utxo::UTXO;
 use rooch_types::transaction::{LedgerTransaction, LedgerTxData};
 
@@ -266,40 +265,4 @@ impl IndexedFieldState {
     // pub fn is_utxo_object_state(&self) -> bool {
     //     self.object_type == format_struct_tag(UTXO::struct_tag())
     // }
-}
-
-#[derive(Debug, Clone)]
-pub struct IndexedTableChangeSet {
-    // The tx order of this transaction which produce the table change set
-    pub tx_order: u64,
-    // The table handle index in the tx
-    pub state_index: u64,
-    // The table handle
-    pub table_handle: ObjectID,
-    // The table change set, json format
-    pub table_change_set: String,
-    // The tx executed timestamp on chain
-    pub created_at: u64,
-}
-
-impl IndexedTableChangeSet {
-    pub fn new(
-        tx_order: u64,
-        state_index: u64,
-        table_handle: ObjectID,
-        table_change_set: TableChangeSet,
-    ) -> Result<Self> {
-        let table_change_set_json =
-            serde_json::to_string(&TableChangeSetView::from(table_change_set))?;
-
-        Ok(IndexedTableChangeSet {
-            tx_order,
-            state_index,
-            table_handle,
-            table_change_set: table_change_set_json,
-
-            //TODO record transaction timestamp
-            created_at: 0,
-        })
-    }
 }

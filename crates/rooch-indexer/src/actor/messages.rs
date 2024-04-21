@@ -9,8 +9,7 @@ use moveos_types::state::StateChangeSet;
 use moveos_types::transaction::{TransactionExecutionInfo, VerifiedMoveOSTransaction};
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
-    FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, IndexerTableChangeSet,
-    ObjectStateFilter, StateSyncFilter,
+    FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, ObjectStateFilter,
 };
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::transaction::LedgerTransaction;
@@ -108,18 +107,4 @@ pub struct QueryIndexerFieldStatesMessage {
 
 impl Message for QueryIndexerFieldStatesMessage {
     type Result = Result<Vec<IndexerFieldState>>;
-}
-
-/// Sync Indexer State change sets Message
-#[derive(Debug, Serialize, Deserialize)]
-pub struct SyncIndexerStatesMessage {
-    pub filter: Option<StateSyncFilter>,
-    // exclusive cursor if `Some`, otherwise start from the beginning
-    pub cursor: Option<IndexerStateID>,
-    pub limit: usize,
-    pub descending_order: bool,
-}
-
-impl Message for SyncIndexerStatesMessage {
-    type Result = Result<Vec<IndexerTableChangeSet>>;
 }

@@ -684,48 +684,6 @@ impl RoochAPIServer for RoochServer {
             has_next_page,
         })
     }
-
-    //TODO redesign this method
-    // async fn sync_states(
-    //     &self,
-    //     filter: Option<StateSyncFilterView>,
-    //     // exclusive cursor if `Some`, otherwise start from the beginning
-    //     cursor: Option<IndexerStateID>,
-    //     limit: Option<StrView<usize>>,
-    //     descending_order: Option<bool>,
-    // ) -> RpcResult<IndexerTableChangeSetPageView> {
-    //     let limit_of = min(
-    //         limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
-    //         MAX_RESULT_LIMIT_USIZE,
-    //     );
-    //     // Sync from asc by default
-    //     let descending_order = descending_order.unwrap_or(false);
-
-    //     let mut data = self
-    //         .rpc_service
-    //         .sync_states(
-    //             filter.map(Into::into),
-    //             cursor,
-    //             limit_of + 1,
-    //             descending_order,
-    //         )
-    //         .await?
-    //         .into_iter()
-    //         .map(IndexerTableChangeSetView::from)
-    //         .collect::<Vec<_>>();
-
-    //     let has_next_page = data.len() > limit_of;
-    //     data.truncate(limit_of);
-    //     let next_cursor = data.last().cloned().map_or(cursor, |t| {
-    //         Some(IndexerStateID::new(t.tx_order, t.state_index))
-    //     });
-
-    //     Ok(IndexerTableChangeSetPageView {
-    //         data,
-    //         next_cursor,
-    //         has_next_page,
-    //     })
-    // }
 }
 
 impl RoochRpcModule for RoochServer {

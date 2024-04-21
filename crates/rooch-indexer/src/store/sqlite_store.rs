@@ -8,12 +8,10 @@ use tracing::log;
 
 use crate::errors::{Context, IndexerError};
 use crate::models::events::StoredEvent;
-use crate::models::states::{StoredFieldState, StoredObjectState, StoredTableChangeSet};
+use crate::models::states::{StoredFieldState, StoredObjectState};
 use crate::models::transactions::StoredTransaction;
-use crate::schema::{events, field_states, object_states, table_change_sets, transactions};
-use crate::types::{
-    IndexedEvent, IndexedFieldState, IndexedObjectState, IndexedTableChangeSet, IndexedTransaction,
-};
+use crate::schema::{events, field_states, object_states, transactions};
+use crate::types::{IndexedEvent, IndexedFieldState, IndexedObjectState, IndexedTransaction};
 use crate::utils::escape_sql_string;
 use crate::{get_sqlite_pool_connection, SqliteConnectionPool};
 
@@ -241,29 +239,6 @@ impl SqliteIndexerStore {
         .execute(&mut connection)
         .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
         .context("Failed to delete table states by table handles to SQLiteDB")?;
-
-        Ok(())
-    }
-
-    pub fn persist_table_change_sets(
-        &self,
-        table_change_sets: Vec<IndexedTableChangeSet>,
-    ) -> Result<(), IndexerError> {
-        if table_change_sets.is_empty() {
-            return Ok(());
-        }
-
-        let mut connection = get_sqlite_pool_connection(&self.connection_pool)?;
-        let table_change_sets = table_change_sets
-            .into_iter()
-            .map(StoredTableChangeSet::from)
-            .collect::<Vec<_>>();
-
-        diesel::insert_into(table_change_sets::table)
-            .values(table_change_sets.as_slice())
-            .execute(&mut connection)
-            .map_err(|e| IndexerError::SQLiteWriteError(e.to_string()))
-            .context("Failed to write table change sets to SQLiteDB")?;
 
         Ok(())
     }

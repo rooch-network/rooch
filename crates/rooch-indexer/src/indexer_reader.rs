@@ -2,17 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::models::events::StoredEvent;
-use crate::models::states::{StoredFieldState, StoredObjectState, StoredTableChangeSet};
+use crate::models::states::{StoredFieldState, StoredObjectState};
 use crate::models::transactions::StoredTransaction;
 use crate::schema::object_states;
-use crate::schema::{events, field_states, table_change_sets, transactions};
+use crate::schema::{events, field_states, transactions};
 use crate::types::IndexerResult;
 use crate::utils::format_struct_tag;
 use crate::{
     errors::IndexerError, IndexerStoreMeta, SqliteConnectionConfig, SqliteConnectionPoolConfig,
     SqlitePoolConnection, INDEXER_EVENTS_TABLE_NAME, INDEXER_FIELD_STATES_TABLE_NAME,
-    INDEXER_OBJECT_STATES_TABLE_NAME, INDEXER_TABLE_CHANGE_SETS_TABLE_NAME,
-    INDEXER_TRANSACTIONS_TABLE_NAME,
+    INDEXER_OBJECT_STATES_TABLE_NAME, INDEXER_TRANSACTIONS_TABLE_NAME,
 };
 use anyhow::{anyhow, Result};
 use diesel::{
@@ -20,8 +19,7 @@ use diesel::{
 };
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
-    FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, IndexerTableChangeSet,
-    ObjectStateFilter, StateSyncFilter,
+    FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, ObjectStateFilter,
 };
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::transaction::TransactionWithInfo;
@@ -498,93 +496,6 @@ impl IndexerReader {
             .collect::<Result<Vec<_>>>()
             .map_err(|e| {
                 IndexerError::SQLiteReadError(format!("Cast indexer table states failed: {:?}", e))
-            })?;
-
-        Ok(result)
-    }
-
-    pub fn sync_states(
-        &self,
-        filter: Option<StateSyncFilter>,
-        // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerStateID>,
-        limit: usize,
-        descending_order: bool,
-    ) -> IndexerResult<Vec<IndexerTableChangeSet>> {
-        let (tx_order, state_index) = if let Some(cursor) = cursor {
-            let IndexerStateID {
-                tx_order,
-                state_index,
-            } = cursor;
-            (tx_order as i64, state_index as i64)
-        } else if descending_order {
-            let (max_tx_order, state_index): (i64, i64) = self
-                .get_inner_indexer_reader(INDEXER_TABLE_CHANGE_SETS_TABLE_NAME)?
-                .run_query(|conn| {
-                    table_change_sets::dsl::table_change_sets
-                        .select((table_change_sets::tx_order, table_change_sets::state_index))
-                        .order_by((
-                            table_change_sets::tx_order.desc(),
-                            table_change_sets::state_index.desc(),
-                        ))
-                        .first::<(i64, i64)>(conn)
-                })?;
-            (max_tx_order + 1, state_index)
-        } else {
-            (-1, 0)
-        };
-
-        let main_where_clause_opt = filter.map(|f| match f {
-            StateSyncFilter::ObjectId(object_id) => {
-                format!("{STATE_OBJECT_ID_STR} = \"{}\"", object_id)
-            }
-        });
-        let cursor_clause = if descending_order {
-            format!(
-                " ({TX_ORDER_STR} < {} OR ({TX_ORDER_STR} = {} AND {STATE_INDEX_STR} < {}))",
-                tx_order, tx_order, state_index
-            )
-        } else {
-            format!(
-                " ({TX_ORDER_STR} > {} OR ({TX_ORDER_STR} = {} AND {STATE_INDEX_STR} > {}))",
-                tx_order, tx_order, state_index
-            )
-        };
-        let where_clause = match main_where_clause_opt {
-            Some(main_where_clause) => format!(" {} AND {} ", main_where_clause, cursor_clause),
-            None => format!(" {} ", cursor_clause),
-        };
-
-        let order_clause = if descending_order {
-            format!("{TX_ORDER_STR} DESC, {STATE_INDEX_STR} DESC")
-        } else {
-            format!("{TX_ORDER_STR} ASC, {STATE_INDEX_STR} ASC")
-        };
-
-        let query = format!(
-            "
-                SELECT * FROM table_change_sets \
-                WHERE {} \
-                ORDER BY {} \
-                LIMIT {}
-            ",
-            where_clause, order_clause, limit,
-        );
-
-        tracing::debug!("sync states: {}", query);
-        let stored_table_change_sets = self
-            .get_inner_indexer_reader(INDEXER_TABLE_CHANGE_SETS_TABLE_NAME)?
-            .run_query(|conn| diesel::sql_query(query).load::<StoredTableChangeSet>(conn))?;
-
-        let result = stored_table_change_sets
-            .into_iter()
-            .map(|t| t.try_into_indexer_state_change_set())
-            .collect::<Result<Vec<_>>>()
-            .map_err(|e| {
-                IndexerError::SQLiteReadError(format!(
-                    "Cast indexer table change sets failed: {:?}",
-                    e
-                ))
             })?;
 
         Ok(result)

@@ -10,9 +10,8 @@ use bitcoin::{Block, OutPoint, Transaction, TxOut};
 use hex::FromHex;
 use moveos_types::access_path::AccessPath;
 use moveos_types::module_binding::MoveFunctionCaller;
-use moveos_types::moveos_std::object;
-use moveos_types::state::MoveStructType;
 use moveos_types::state_resolver::StateReader;
+use rooch_types::bitcoin::ord;
 use rooch_types::bitcoin::ord::{Inscription, InscriptionID};
 use rooch_types::bitcoin::types::{self, Header};
 use rooch_types::bitcoin::utxo::{self, UTXO};
@@ -179,7 +178,7 @@ fn check_utxo(txs: Vec<Transaction>, binding_test: &binding_test::RustBindingTes
             txid_address, index
         );
         let inscription_id = InscriptionID::new(txid_address, index);
-        let object_id = object::custom_object_id(&inscription_id, &Inscription::struct_tag());
+        let object_id = ord::derive_inscription_id(&inscription_id);
         let inscription_state = moveos_resolver
             .get_states(AccessPath::object(object_id))
             .unwrap()

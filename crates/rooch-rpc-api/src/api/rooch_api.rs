@@ -179,16 +179,4 @@ pub trait RoochAPI {
         self.query_field_states(filter, cursor, limit, descending_order)
             .await
     }
-
-    //TODO we need to redisign the syncStates method
-    // Sync state change sets from indexer
-    // #[method(name = "syncStates")]
-    // async fn sync_states(
-    //     &self,
-    //     filter: Option<StateSyncFilterView>,
-    //     // exclusive cursor if `Some`, otherwise start from the beginning
-    //     cursor: Option<IndexerStateID>,
-    //     limit: Option<StrView<usize>>,
-    //     descending_order: Option<bool>,
-    // ) -> RpcResult<IndexerTableChangeSetPageView>;
 }
