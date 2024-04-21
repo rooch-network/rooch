@@ -89,6 +89,8 @@ module rooch_framework::onchain_config {
         };
         if (!chain_id::is_main()) {
             vector::push_back(&mut enables, features::get_module_template_feature());
+        } else {
+            vector::push_back(&mut enables, features::get_module_publishing_allowlist_feature());
         };
 
         features::change_feature_flags(framework, enables, vector[]);
