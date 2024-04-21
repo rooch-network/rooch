@@ -258,27 +258,5 @@ fn test_state_store() -> Result<()> {
         indexer_reader.query_field_states_with_filter(filter, None, 1, true)?;
     assert_eq!(query_field_states.len(), 0);
 
-    //TODO renable this test after repaire the state sync feature
-    // test state sync
-    //let state_change_set = random_state_change_set();
-    // let mut split_state_change_set = SplitStateChangeSet::default();
-    // for (table_handle, table_change) in state_change_set.changes.clone() {
-    //     split_state_change_set.add_table_change(table_handle, table_change);
-    // }
-
-    // let mut indexed_table_change_sets = vec![];
-    // for (index, item) in split_state_change_set
-    //     .table_change_sets
-    //     .into_iter()
-    //     .enumerate()
-    // {
-    //     let table_change_set = IndexedTableChangeSet::new(0, index as u64, item.0, item.1)?;
-    //     indexed_table_change_sets.push(table_change_set);
-    // }
-    // indexer_store.persist_table_change_sets(indexed_table_change_sets)?;
-
-    // let sync_states = indexer_reader.sync_states(None, None, 2, false)?;
-    // assert_eq!(sync_states.len(), 2);
-
     Ok(())
 }

@@ -48,6 +48,12 @@ impl ObjectID {
         Self(vec![AccountAddress::new(obj_id)])
     }
 
+    pub fn new_with_child(parent_id: ObjectID, obj_id: AccountAddress) -> Self {
+        let mut parent = parent_id.0.clone();
+        parent.push(obj_id);
+        Self(parent)
+    }
+
     pub fn root() -> Self {
         Self(vec![])
     }
@@ -86,6 +92,13 @@ impl ObjectID {
 
     pub fn has_parent(&self) -> bool {
         !self.is_root()
+    }
+
+    pub fn is_child(&self, parent_id: ObjectID) -> bool {
+        match self.parent() {
+            Some(obj_id) => obj_id == parent_id,
+            None => false,
+        }
     }
 
     pub fn to_key(&self) -> KeyState {

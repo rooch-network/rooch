@@ -6,7 +6,7 @@ use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::{StructTag, TypeTag};
 use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::state::{StateChangeSet, TableChangeSet};
+use moveos_types::state::StateChangeSet;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -14,15 +14,6 @@ use serde::{Deserialize, Serialize};
 pub struct IndexerStateChangeSet {
     pub tx_order: u64,
     pub state_change_set: StateChangeSet,
-    pub created_at: u64,
-}
-
-#[derive(Clone, Debug)]
-pub struct IndexerTableChangeSet {
-    pub tx_order: u64,
-    pub state_index: u64,
-    pub table_handle: ObjectID,
-    pub table_change_set: TableChangeSet,
     pub created_at: u64,
 }
 
@@ -143,18 +134,4 @@ impl Filter<IndexerFieldState> for FieldStateFilter {
 pub enum StateSyncFilter {
     /// Query by object id.
     ObjectId(ObjectID),
-}
-
-impl StateSyncFilter {
-    fn try_matches(&self, item: &IndexerTableChangeSet) -> Result<bool> {
-        Ok(match self {
-            StateSyncFilter::ObjectId(table_handle) => table_handle == &item.table_handle,
-        })
-    }
-}
-
-impl Filter<IndexerTableChangeSet> for StateSyncFilter {
-    fn matches(&self, item: &IndexerTableChangeSet) -> bool {
-        self.try_matches(item).unwrap_or_default()
-    }
 }

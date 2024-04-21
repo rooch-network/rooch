@@ -23,8 +23,7 @@ use move_vm_types::values::{Struct, Value};
 use primitive_types::H256;
 use serde::ser::Error;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use smt::UpdateSet;
-use std::collections::{btree_map, BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::str::FromStr;
 
 /// `State` is represent state in MoveOS statedb, it can be a Move module or a Move Object or a Move resource or a Table value
@@ -752,6 +751,12 @@ impl ObjectChange {
         self.fields.insert(key, field_change);
     }
 
+    pub fn add_field_changes(&mut self, field_states: Vec<FieldState>) {
+        for v in field_states {
+            self.fields.insert(v.key_state, v.field_change);
+        }
+    }
+
     pub fn get_field_change(&self, key: &KeyState) -> Option<&FieldChange> {
         self.fields.get(key)
     }
@@ -766,6 +771,26 @@ impl ObjectChange {
 
     pub fn is_empty(&self) -> bool {
         self.op.is_none() && self.fields.is_empty()
+    }
+
+    /// just use for statedb dump and apply
+    pub fn reset_state_root(&mut self, state_root: H256) -> Result<()> {
+        if let Some(op) = self.op.clone() {
+            match op.clone() {
+                Op::New(state) | Op::Modify(state) => {
+                    let mut obj = state.as_raw_object()?;
+                    obj.state_root = AccountAddress::new(state_root.into());
+                    if Op::New(state) == op {
+                        self.op = Some(Op::New(obj.into_state()));
+                    } else {
+                        self.op = Some(Op::Modify(obj.into_state()));
+                    }
+                }
+                Op::Delete => {}
+            }
+        };
+
+        Ok(())
     }
 }
 
@@ -845,72 +870,43 @@ impl Default for StateChangeSet {
     }
 }
 
-/// A change of a single table.
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct TableChange {
-    pub entries: BTreeMap<KeyState, Op<State>>,
+#[derive(Clone, Debug)]
+pub struct ObjectState {
+    /// The state root of the Object
+    pub state_root: H256,
+    /// The Object field size
+    pub size: u64,
+    pub object_id: ObjectID,
+    pub object_change: ObjectChange,
 }
 
-/// A change of a single table.
-#[derive(Default, Clone, Debug, Eq, PartialEq)]
-pub struct TableState {
-    pub entries: UpdateSet<KeyState, State>,
-}
-
-/// TableStateSet is represent state dump result. Not include events and other stores
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct TableStateSet {
-    pub table_state_sets: BTreeMap<ObjectID, TableState>,
-}
-
-/// A change set of a single table.
-/// Consistent with the StateChangeSet format. Use for state sync.
-#[derive(Default, Clone, Debug, Eq, PartialEq)]
-pub struct TableChangeSet {
-    pub new_tables: BTreeSet<ObjectID>,
-    pub removed_tables: BTreeSet<ObjectID>,
-    pub changes: BTreeMap<ObjectID, TableChange>,
-}
-
-impl TableChangeSet {
-    pub fn get_or_insert_table_change(&mut self, object_id: ObjectID) -> &mut TableChange {
-        match self.changes.entry(object_id) {
-            btree_map::Entry::Occupied(entry) => entry.into_mut(),
-            btree_map::Entry::Vacant(entry) => entry.insert(TableChange::default()),
+impl ObjectState {
+    pub fn new(
+        state_root: H256,
+        size: u64,
+        object_id: ObjectID,
+        object_change: ObjectChange,
+    ) -> ObjectState {
+        Self {
+            state_root,
+            size,
+            object_id,
+            object_change,
         }
     }
-
-    pub fn add_op(&mut self, handle: ObjectID, key: KeyState, op: Op<State>) {
-        let table_change = self.get_or_insert_table_change(handle);
-        table_change.entries.insert(key, op);
-    }
 }
 
-#[derive(Default, Clone, Debug)]
-pub struct SplitStateChangeSet {
-    pub table_change_sets: BTreeMap<ObjectID, TableChangeSet>,
+#[derive(Clone, Debug)]
+pub struct FieldState {
+    pub key_state: KeyState,
+    pub field_change: FieldChange,
 }
 
-impl SplitStateChangeSet {
-    pub fn get_or_insert_table_change_set(&mut self, object_id: ObjectID) -> &mut TableChangeSet {
-        match self.table_change_sets.entry(object_id) {
-            btree_map::Entry::Occupied(entry) => entry.into_mut(),
-            btree_map::Entry::Vacant(entry) => entry.insert(TableChangeSet::default()),
+impl FieldState {
+    pub fn new(key_state: KeyState, field_change: FieldChange) -> FieldState {
+        Self {
+            key_state,
+            field_change,
         }
-    }
-
-    pub fn add_new_table(&mut self, table_handle: ObjectID) {
-        let table_change_set = self.get_or_insert_table_change_set(table_handle.clone());
-        table_change_set.new_tables.insert(table_handle);
-    }
-
-    pub fn add_table_change(&mut self, table_handle: ObjectID, table_change: TableChange) {
-        let table_change_set = self.get_or_insert_table_change_set(table_handle.clone());
-        table_change_set.changes.insert(table_handle, table_change);
-    }
-
-    pub fn add_remove_table(&mut self, table_handle: ObjectID) {
-        let table_change_set = self.get_or_insert_table_change_set(table_handle.clone());
-        table_change_set.removed_tables.insert(table_handle);
     }
 }

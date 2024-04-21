@@ -19,8 +19,7 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_types::address::MultiChainAddress;
 use rooch_types::indexer::event_filter::{EventFilter, IndexerEvent, IndexerEventID};
 use rooch_types::indexer::state::{
-    FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, IndexerTableChangeSet,
-    ObjectStateFilter, StateSyncFilter,
+    FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateID, ObjectStateFilter,
 };
 use rooch_types::indexer::transaction_filter::TransactionFilter;
 use rooch_types::sequencer::SequencerOrder;
@@ -265,21 +264,6 @@ impl RpcService {
         let resp = self
             .indexer
             .query_field_states(filter, cursor, limit, descending_order)
-            .await?;
-        Ok(resp)
-    }
-
-    pub async fn sync_states(
-        &self,
-        filter: Option<StateSyncFilter>,
-        // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerStateID>,
-        limit: usize,
-        descending_order: bool,
-    ) -> Result<Vec<IndexerTableChangeSet>> {
-        let resp = self
-            .indexer
-            .sync_states(filter, cursor, limit, descending_order)
             .await?;
         Ok(resp)
     }

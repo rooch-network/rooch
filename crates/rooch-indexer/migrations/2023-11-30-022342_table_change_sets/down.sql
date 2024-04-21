@@ -1,1 +1,0 @@
-DROP TABLE IF EXISTS table_change_sets;

@@ -3,14 +3,14 @@
 
 use crate::actor::messages::{
     QueryIndexerEventsMessage, QueryIndexerFieldStatesMessage, QueryIndexerObjectStatesMessage,
-    QueryIndexerTransactionsMessage, SyncIndexerStatesMessage,
+    QueryIndexerTransactionsMessage,
 };
 use crate::indexer_reader::IndexerReader;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use coerce::actor::{context::ActorContext, message::Handler, Actor};
 use rooch_types::indexer::event_filter::IndexerEvent;
-use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState, IndexerTableChangeSet};
+use rooch_types::indexer::state::{IndexerFieldState, IndexerObjectState};
 use rooch_types::transaction::TransactionWithInfo;
 
 pub struct IndexerReaderActor {
@@ -98,29 +98,5 @@ impl Handler<QueryIndexerFieldStatesMessage> for IndexerReaderActor {
         self.indexer_reader
             .query_field_states_with_filter(filter, cursor, limit, descending_order)
             .map_err(|e| anyhow!(format!("Failed to query indexer table states: {:?}", e)))
-    }
-}
-
-#[async_trait]
-impl Handler<SyncIndexerStatesMessage> for IndexerReaderActor {
-    async fn handle(
-        &mut self,
-        msg: SyncIndexerStatesMessage,
-        _ctx: &mut ActorContext,
-    ) -> Result<Vec<IndexerTableChangeSet>> {
-        let SyncIndexerStatesMessage {
-            filter,
-            cursor,
-            limit,
-            descending_order,
-        } = msg;
-        self.indexer_reader
-            .sync_states(filter, cursor, limit, descending_order)
-            .map_err(|e| {
-                anyhow!(format!(
-                    "Failed to query indexer state change sets: {:?}",
-                    e
-                ))
-            })
     }
 }
