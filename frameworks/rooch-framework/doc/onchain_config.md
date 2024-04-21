@@ -112,7 +112,7 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_add_to_publishing_allowlist">add_to_publishing_allowlist</a>(<a href="">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_add_to_publishing_allowlist">add_to_publishing_allowlist</a>(<a href="">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
 </code></pre>
 
 
@@ -123,5 +123,5 @@ OnchainConfig is framework configurations stored on chain.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_remove_from_publishing_allowlist">remove_from_publishing_allowlist</a>(<a href="">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_remove_from_publishing_allowlist">remove_from_publishing_allowlist</a>(<a href="">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
 </code></pre>

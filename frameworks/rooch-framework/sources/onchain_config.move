@@ -51,7 +51,7 @@ module rooch_framework::onchain_config {
     }
 
     /******  APIs for update module publishing allowlist. ******/
-    public fun add_to_publishing_allowlist(account: &signer, publisher: address) {
+    public entry fun add_to_publishing_allowlist(account: &signer, publisher: address) {
         let sender = signer::address_of(account);
         assert!(sender == sequencer(), ErrorNotSequencer);
         let system_account = signer::module_signer<OnchainConfig>();
@@ -59,7 +59,7 @@ module rooch_framework::onchain_config {
         move_module::add_to_allowlist(allowlist, &system_account, publisher);
     }
 
-    public fun remove_from_publishing_allowlist(account: &signer, publisher: address) {
+    public entry fun remove_from_publishing_allowlist(account: &signer, publisher: address) {
         let sender = signer::address_of(account);
         assert!(sender == sequencer(), ErrorNotSequencer);
         let system_account = signer::module_signer<OnchainConfig>();
