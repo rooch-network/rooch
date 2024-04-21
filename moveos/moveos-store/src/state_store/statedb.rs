@@ -2,22 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::state_store::NodeDBStore;
-use anyhow::{Error, Result};
+use anyhow::{ensure, Error, Result};
 use move_core_types::effects::Op;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::object::GENESIS_STATE_ROOT;
-use moveos_types::state::FieldChange;
-use moveos_types::state::KeyState;
 use moveos_types::state::ObjectChange;
 use moveos_types::state::StateChangeSet;
+use moveos_types::state::{FieldChange, MoveState, MoveType, ObjectState};
+use moveos_types::state::{FieldState, KeyState};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::state_resolver::StateKV;
 use moveos_types::state_resolver::StateResolver;
 use moveos_types::state_resolver::StatelessResolver;
 use moveos_types::{h256::H256, state::State};
-use smt::TreeChangeSet;
+use smt::{SMTIterator, TreeChangeSet};
 use smt::{SMTree, UpdateSet};
 use std::collections::BTreeMap;
+
+pub const STATEDB_DUMP_BATCH_SIZE: usize = 5000;
 
 /// StateDB provide state storage and state proof
 #[derive(Clone)]
@@ -135,67 +137,74 @@ impl StateDBStore {
         Ok((new_state_root, global_size))
     }
 
-    //TODO support dump and dump_iter and apply
+    pub fn iter(
+        &self,
+        state_root: H256,
+        starting_key: Option<KeyState>,
+    ) -> Result<SMTIterator<KeyState, State, NodeDBStore>> {
+        self.smt.iter(state_root, starting_key)
+    }
 
-    // rebuild statedb via TableStateSet from dump
-    // pub fn apply(&self, table_state_set: TableStateSet) -> Result<H256> {
-    //     let mut state_root = H256::zero();
-    //     for (k, v) in table_state_set.table_state_sets.into_iter() {
-    //         if k == ObjectID::root() {
-    //             state_root = self.root_object.puts(v.entries)?
-    //         } else {
-    //             // must force create table
-    //             let table_store = TreeObject::new(self.node_store.clone());
-    //             state_root = table_store.puts(v.entries)?
-    //         }
-    //     }
-    //     Ok(state_root)
-    // }
+    // Batch dump child object states of specified object by object id
+    pub fn dump_child_object_states(
+        &self,
+        parent_id: ObjectID,
+        state_root: H256,
+        starting_key: Option<KeyState>,
+        with_parent: bool,
+    ) -> Result<(Vec<ObjectState>, Option<KeyState>)> {
+        let iter = self.iter(state_root, starting_key)?;
+        let mut data = Vec::new();
+        let mut counter = 0;
+        let mut next_key = None;
+        for item in iter {
+            if counter >= STATEDB_DUMP_BATCH_SIZE {
+                break;
+            };
+            let (k, v) = item?;
+            ensure!(k.key_type == ObjectID::type_tag());
+            let obj_id = ObjectID::from_bytes(k.key.clone())?;
+            if (with_parent && obj_id == parent_id) || obj_id.is_child(parent_id.clone()) {
+                let obj = v.as_raw_object()?;
+                let object_change = ObjectChange::new(Op::New(v));
+                let object_state = ObjectState::new(
+                    H256::from(obj.state_root.into_bytes()),
+                    obj.size,
+                    obj.id,
+                    object_change,
+                );
+                data.push(object_state);
 
-    // pub fn dump_iter(
-    //     &self,
-    //     handle: &ObjectID,
-    // ) -> Result<Option<SMTIterator<Vec<u8>, State, NodeDBStore>>> {
-    //     if handle == &ObjectID::root() {
-    //         self.root_object.iter().map(|v| Some(v))
-    //     } else {
-    //         self.get_as_table(handle.clone())
-    //             .and_then(|res| res.map_or(Ok(None), |(_, table)| table.iter().map(|v| Some(v))))
-    //     }
-    // }
+                counter += 1;
+            };
+            next_key = Some(k);
+        }
+        Ok((data, next_key))
+    }
 
-    // dump all states
-    // pub fn dump(&self) -> Result<TableStateSet> {
-    //     let global_states = self.root_object.dump()?;
-    //     let mut table_state_set = TableStateSet::default();
-    //     let mut golbal_table_state = TableState::default();
-    //     for (key, state) in global_states.into_iter() {
-    //         // If the state is an Object, and the T's struct_tag of Object<T> is Table
-    //         if ObjectID::struct_tag_match(&as_struct_tag(key.key_type.clone())?) {
-    //             let mut table_state = TableState::default();
-    //             let table_handle = ObjectID::from_bytes(key.key.clone())?;
-    //             let result = self.get_object(table_handle)?;
-    //             if result.is_none() {
-    //                 continue;
-    //             };
-    //             let obj = result.unwrap();
-    //             let states = obj.dump()?;
-    //             for (inner_key, inner_state) in states.into_iter() {
-    //                 table_state.entries.put(inner_key, inner_state);
-    //             }
-    //             table_state_set
-    //                 .table_state_sets
-    //                 .insert(table_handle, table_state);
-    //         }
+    /// Batch dump filed states of specified object by object id
+    pub fn dump_field_states(
+        &self,
+        _object_id: ObjectID,
+        state_root: H256,
+        starting_key: Option<KeyState>,
+    ) -> Result<(Vec<FieldState>, Option<KeyState>)> {
+        let iter = self.iter(state_root, starting_key)?;
+        let mut data = Vec::new();
+        let mut next_key = None;
+        for (counter, item) in iter.enumerate() {
+            if counter >= STATEDB_DUMP_BATCH_SIZE {
+                break;
+            };
+            let (k, v) = item?;
+            let field_change = FieldChange::new_normal(Op::New(v));
+            let field_state = FieldState::new(k.clone(), field_change);
+            data.push(field_state);
 
-    //         golbal_table_state.entries.put(key, state);
-    //     }
-    //     table_state_set
-    //         .table_state_sets
-    //         .insert(ObjectID::root(), golbal_table_state);
-
-    //     Ok(table_state_set)
-    // }
+            next_key = Some(k);
+        }
+        Ok((data, next_key))
+    }
 }
 
 impl StatelessResolver for StateDBStore {

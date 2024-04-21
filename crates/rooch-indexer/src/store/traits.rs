@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::errors::IndexerError;
-use crate::types::{
-    IndexedEvent, IndexedFieldState, IndexedObjectState, IndexedTableChangeSet, IndexedTransaction,
-};
+use crate::types::{IndexedEvent, IndexedFieldState, IndexedObjectState, IndexedTransaction};
 
 pub trait IndexerStoreTrait: Send + Sync {
     fn persist_or_update_object_states(
@@ -23,11 +21,6 @@ pub trait IndexerStoreTrait: Send + Sync {
 
     fn delete_field_states_by_object_id(&self, object_ids: Vec<String>)
         -> Result<(), IndexerError>;
-
-    fn persist_table_change_sets(
-        &self,
-        table_change_sets: Vec<IndexedTableChangeSet>,
-    ) -> Result<(), IndexerError>;
 
     fn persist_transactions(
         &self,

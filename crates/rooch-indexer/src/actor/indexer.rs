@@ -275,28 +275,6 @@ impl Handler<IndexerStatesMessage> for IndexerActor {
         self.indexer_store
             .delete_field_states_by_object_id(remove_field_states_by_object_id)?;
 
-        // TODO Temporarily close StateChangeSet Indexer writing and wait for the function to be turned on.
-        // Store table change set for state sync
-        // let mut split_state_change_set = SplitStateChangeSet::default();
-
-        // for (object_id, table_change) in state_change_set.changes.clone() {
-        //     split_state_change_set.add_table_change(object_id, table_change);
-        // }
-
-        // let mut indexed_table_change_sets = vec![];
-        // for (index, item) in split_state_change_set
-        //     .table_change_sets
-        //     .into_iter()
-        //     .enumerate()
-        // {
-        //     let table_change_set =
-        //         IndexedTableChangeSet::new(tx_order, index as u64, item.0, item.1)?;
-
-        //     indexed_table_change_sets.push(table_change_set);
-        // }
-
-        // self.indexer_store
-        //     .persist_table_change_sets(indexed_table_change_sets)?;
         Ok(())
     }
 }

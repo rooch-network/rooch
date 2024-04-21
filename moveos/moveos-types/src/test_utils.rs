@@ -268,6 +268,19 @@ pub fn random_field_change(level: usize) -> (KeyState, FieldChange) {
 
 pub fn random_raw_object() -> RawObject {
     let id = ObjectID::from(AccountAddress::random());
+    internal_random_raw_object(id)
+}
+
+pub fn random_raw_object_with_object_id(object_id: ObjectID) -> RawObject {
+    internal_random_raw_object(object_id)
+}
+
+pub fn random_raw_object_for_child_object(parent_id: ObjectID) -> RawObject {
+    let id = ObjectID::new_with_child(parent_id, AccountAddress::random());
+    internal_random_raw_object(id)
+}
+
+fn internal_random_raw_object(id: ObjectID) -> RawObject {
     let owner = AccountAddress::random();
     let flag = 0u8;
     let state_root = *GENESIS_STATE_ROOT;
@@ -281,9 +294,29 @@ pub fn random_raw_object() -> RawObject {
 }
 
 pub fn random_object_change(level: usize) -> (ObjectID, ObjectChange) {
+    let raw_object = random_raw_object();
+    internal_random_object_change(raw_object, level)
+}
+
+pub fn random_object_change_with_object_id(
+    object_id: ObjectID,
+    level: usize,
+) -> (ObjectID, ObjectChange) {
+    let raw_object = random_raw_object_with_object_id(object_id);
+    internal_random_object_change(raw_object, level)
+}
+
+pub fn random_object_change_for_child_object(
+    parent_id: ObjectID,
+    level: usize,
+) -> (ObjectID, ObjectChange) {
+    let raw_object = random_raw_object_for_child_object(parent_id);
+    internal_random_object_change(raw_object, level)
+}
+
+fn internal_random_object_change(raw_object: RawObject, level: usize) -> (ObjectID, ObjectChange) {
     let mut object_change = ObjectChange::default();
 
-    let raw_object = random_raw_object();
     let object_id = raw_object.id.clone();
     object_change.op = Some(Op::New(raw_object.into_state()));
 
@@ -306,6 +339,28 @@ pub fn random_state_change_set() -> StateChangeSet {
     // generate changes
     for _n in 0..size {
         let (id, change) = random_object_change(1);
+        state_change_set.changes.insert(id, change);
+    }
+
+    state_change_set
+}
+
+pub fn random_state_change_set_for_child_object(parent_id: ObjectID) -> StateChangeSet {
+    let mut state_change_set = StateChangeSet::default();
+
+    let mut rng = thread_rng();
+    let size = rng.gen_range(1..=20);
+    state_change_set.global_size = size + 1;
+
+    let (_parent_id, parent_object_change) =
+        random_object_change_with_object_id(parent_id.clone(), 1);
+    state_change_set
+        .changes
+        .insert(parent_id.clone(), parent_object_change);
+
+    // generate changes
+    for _n in 0..size {
+        let (id, change) = random_object_change_for_child_object(parent_id.clone(), 1);
         state_change_set.changes.insert(id, change);
     }
 

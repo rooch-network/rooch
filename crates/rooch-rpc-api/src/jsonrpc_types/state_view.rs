@@ -9,20 +9,20 @@ use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
 use moveos_types::state::{
-    AnnotatedKeyState, FieldChange, KeyState, NormalFieldChange, ObjectChange, TableChangeSet,
+    AnnotatedKeyState, FieldChange, KeyState, NormalFieldChange, ObjectChange,
 };
 use moveos_types::state_resolver::StateKV;
 use moveos_types::{
     moveos_std::object::ObjectID,
-    state::{AnnotatedState, State, StateChangeSet, TableChange, TableTypeInfo},
+    state::{AnnotatedState, State, StateChangeSet, TableTypeInfo},
 };
 use rooch_types::indexer::state::{
     FieldStateFilter, IndexerFieldState, IndexerObjectState, IndexerStateChangeSet,
-    IndexerTableChangeSet, ObjectStateFilter, StateSyncFilter,
+    ObjectStateFilter, StateSyncFilter,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, JsonSchema)]
@@ -354,88 +354,6 @@ pub struct TableChangeView {
     pub entries: Vec<DynamicFieldView>,
 }
 
-impl From<TableChange> for TableChangeView {
-    fn from(table_change: TableChange) -> Self {
-        Self {
-            entries: table_change
-                .entries
-                .into_iter()
-                .map(|(k, v)| DynamicFieldView::new(k.into(), v.into()))
-                .collect::<Vec<_>>(),
-        }
-    }
-}
-
-impl From<TableChangeView> for TableChange {
-    fn from(table_change: TableChangeView) -> Self {
-        Self {
-            entries: table_change
-                .entries
-                .into_iter()
-                .map(|kv| (kv.k.into(), kv.v.into()))
-                .collect(),
-        }
-    }
-}
-#[derive(Default, Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct TableChangeSetView {
-    pub new_tables: BTreeSet<ObjectID>,
-    pub changes: BTreeMap<ObjectID, TableChangeView>,
-    pub removed_tables: BTreeSet<ObjectID>,
-}
-
-impl From<TableChangeSet> for TableChangeSetView {
-    fn from(table_change_set: TableChangeSet) -> Self {
-        Self {
-            new_tables: table_change_set.new_tables,
-            removed_tables: table_change_set.removed_tables.into_iter().collect(),
-            changes: table_change_set
-                .changes
-                .into_iter()
-                .map(|(k, v)| (k, v.into()))
-                .collect(),
-        }
-    }
-}
-
-impl From<TableChangeSetView> for TableChangeSet {
-    fn from(table_change_set: TableChangeSetView) -> Self {
-        Self {
-            new_tables: table_change_set.new_tables,
-            removed_tables: table_change_set
-                .removed_tables
-                .into_iter()
-                .collect::<BTreeSet<_>>(),
-            changes: table_change_set
-                .changes
-                .into_iter()
-                .map(|(k, v)| (k, v.into()))
-                .collect(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-pub struct IndexerTableChangeSetView {
-    pub tx_order: u64,
-    pub state_index: u64,
-    pub table_handle: ObjectID,
-    pub table_change_set: TableChangeSetView,
-    pub created_at: u64,
-}
-
-impl From<IndexerTableChangeSet> for IndexerTableChangeSetView {
-    fn from(table_change_set: IndexerTableChangeSet) -> Self {
-        IndexerTableChangeSetView {
-            tx_order: table_change_set.tx_order,
-            state_index: table_change_set.state_index,
-            table_handle: table_change_set.table_handle,
-            table_change_set: table_change_set.table_change_set.into(),
-            created_at: table_change_set.created_at,
-        }
-    }
-}
-
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum StateSyncFilterView {
@@ -446,7 +364,7 @@ pub enum StateSyncFilterView {
 impl From<StateSyncFilterView> for StateSyncFilter {
     fn from(state_filter: StateSyncFilterView) -> Self {
         match state_filter {
-            StateSyncFilterView::TableHandle(table_handle) => Self::ObjectId(table_handle),
+            StateSyncFilterView::TableHandle(object_id) => Self::ObjectId(object_id),
         }
     }
 }

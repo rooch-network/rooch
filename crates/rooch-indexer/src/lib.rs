@@ -13,9 +13,7 @@ use diesel::sqlite::SqliteConnection;
 
 use crate::store::sqlite_store::SqliteIndexerStore;
 use crate::store::traits::IndexerStoreTrait;
-use crate::types::{
-    IndexedEvent, IndexedFieldState, IndexedObjectState, IndexedTableChangeSet, IndexedTransaction,
-};
+use crate::types::{IndexedEvent, IndexedFieldState, IndexedObjectState, IndexedTransaction};
 use crate::utils::create_all_tables_if_not_exists;
 use errors::IndexerError;
 use rooch_config::indexer_config::ROOCH_INDEXER_DB_DIR;
@@ -38,7 +36,7 @@ pub mod utils;
 pub type IndexerTableName = &'static str;
 pub const INDEXER_EVENTS_TABLE_NAME: IndexerTableName = "events";
 pub const INDEXER_OBJECT_STATES_TABLE_NAME: IndexerTableName = "object_states";
-pub const INDEXER_TABLE_CHANGE_SETS_TABLE_NAME: IndexerTableName = "table_change_sets";
+// pub const INDEXER_TABLE_CHANGE_SETS_TABLE_NAME: IndexerTableName = "object_changes";
 pub const INDEXER_FIELD_STATES_TABLE_NAME: IndexerTableName = "field_states";
 pub const INDEXER_TRANSACTIONS_TABLE_NAME: IndexerTableName = "transactions";
 
@@ -47,7 +45,7 @@ static INDEXER_VEC_TABLE_NAME: Lazy<Vec<IndexerTableName>> = Lazy::new(|| {
     vec![
         INDEXER_EVENTS_TABLE_NAME,
         INDEXER_OBJECT_STATES_TABLE_NAME,
-        INDEXER_TABLE_CHANGE_SETS_TABLE_NAME,
+        // INDEXER_TABLE_CHANGE_SETS_TABLE_NAME,
         INDEXER_FIELD_STATES_TABLE_NAME,
         INDEXER_TRANSACTIONS_TABLE_NAME,
     ]
@@ -175,14 +173,6 @@ impl IndexerStoreTrait for IndexerStore {
     ) -> Result<(), IndexerError> {
         self.get_sqlite_store(INDEXER_FIELD_STATES_TABLE_NAME)?
             .delete_field_states_by_object_id(object_ids)
-    }
-
-    fn persist_table_change_sets(
-        &self,
-        table_change_sets: Vec<IndexedTableChangeSet>,
-    ) -> Result<(), IndexerError> {
-        self.get_sqlite_store(INDEXER_TABLE_CHANGE_SETS_TABLE_NAME)?
-            .persist_table_change_sets(table_change_sets)
     }
 
     fn persist_transactions(
