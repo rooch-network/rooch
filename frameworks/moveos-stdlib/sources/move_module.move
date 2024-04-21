@@ -572,13 +572,15 @@ module moveos_std::move_module {
         let _modules = Self::replace_module_identiner(modules, old_names, new_names);
     }
 
-    #[test(sender=@0x42)]
-    fun test_publish_modules(sender: address) {
+    #[test(account=@0x42)]
+    fun test_publish_modules(account: &signer) {
         init_module_store();
+        features::init_feature_store_for_test();
+        
         let module_object = borrow_mut_module_store();
         let module_bytes = COUNTER_MV_BYTES;
         let m: MoveModule = Self::new(module_bytes);
-        Self::publish_modules_internal(module_object, sender, vector::singleton(m));
+        Self::publish_modules(module_object, account, vector::singleton(m));
     }
 
     #[test(sender=@0x42)]
