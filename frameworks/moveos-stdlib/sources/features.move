@@ -66,13 +66,8 @@ module moveos_std::features {
 
     /// Check whether the feature is enabled.
     /// All features are enabled for system reserved accounts.
-    // TODO: Is it OK to enable all features for system reserved accounts?
     public fun is_enabled(feature: u64): bool {
-        if (core_addresses::is_system_reserved_address(tx_context::sender())) {
-            true
-        } else {
-            contains(borrow_features(), feature)
-        }
+        contains(borrow_features(), feature)
     }
 
     // --------------------------------------------------------------------------------------------

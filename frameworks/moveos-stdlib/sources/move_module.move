@@ -380,6 +380,9 @@ module moveos_std::move_module {
 
     fun ensure_publisher_in_allowlist() {
         let sender = tx_context::sender();
+        if (core_addresses::is_system_reserved_address(sender)) {
+            return;
+        };
         let allowlist = borrow_allowlist().publisher;
         assert!(vector::contains(&allowlist, &sender), ErrorNotAllowToPublish);
     }

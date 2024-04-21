@@ -51,8 +51,6 @@ module rooch_framework::onchain_config {
     }
 
     /******  APIs for update module publishing allowlist. ******/
-    // TODO: find a better way to do this
-
     public fun add_to_publishing_allowlist(account: &signer, publisher: address) {
         let sender = signer::address_of(account);
         assert!(sender == sequencer(), ErrorNotSequencer);
