@@ -360,16 +360,16 @@ module moveos_std::move_module {
         object::borrow_mut<Allowlist>(allowlist_obj)
     }
 
-    public fun add_to_allowlist(allowlist: &mut Allowlist, publisher: address) {
-        let sender = tx_context::sender();
+    public fun add_to_allowlist(allowlist: &mut Allowlist, account: &signer, publisher: address) {
+        let sender = signer::address_of(account);
         core_addresses::assert_system_reserved_address(sender);
         if (!vector::contains(&allowlist.publisher, &publisher)) {
             vector::push_back(&mut allowlist.publisher, publisher);
         };
     }
 
-    public fun remove_from_allowlist(allowlist: &mut Allowlist, publisher: address) {
-        let sender = tx_context::sender();
+    public fun remove_from_allowlist(allowlist: &mut Allowlist, account: &signer, publisher: address) {
+        let sender = signer::address_of(account);
         core_addresses::assert_system_reserved_address(sender);
         let _ = vector::remove_value(&mut allowlist.publisher, &publisher);
     }
@@ -381,7 +381,7 @@ module moveos_std::move_module {
     fun ensure_publisher_in_allowlist() {
         let sender = tx_context::sender();
         if (core_addresses::is_system_reserved_address(sender)) {
-            return;
+            return
         };
         let allowlist = borrow_allowlist().publisher;
         assert!(vector::contains(&allowlist, &sender), ErrorNotAllowToPublish);

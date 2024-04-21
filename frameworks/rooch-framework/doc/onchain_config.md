@@ -16,10 +16,10 @@
 -  [Function `remove_from_publishing_allowlist`](#0x3_onchain_config_remove_from_publishing_allowlist)
 
 
-<pre><code><b>use</b> <a href="">0x1::signer</a>;
-<b>use</b> <a href="">0x2::features</a>;
+<pre><code><b>use</b> <a href="">0x2::features</a>;
 <b>use</b> <a href="">0x2::move_module</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="chain_id.md#0x3_chain_id">0x3::chain_id</a>;
 </code></pre>
 

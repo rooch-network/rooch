@@ -16,7 +16,6 @@ module moveos_std::features {
 
     use moveos_std::core_addresses;
     use moveos_std::object;
-    use moveos_std::tx_context;
 
     friend moveos_std::genesis;
 

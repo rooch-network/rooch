@@ -457,7 +457,7 @@ Return true if the modules are upgraded
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_add_to_allowlist">add_to_allowlist</a>(allowlist: &<b>mut</b> <a href="move_module.md#0x2_move_module_Allowlist">move_module::Allowlist</a>, publisher: <b>address</b>)
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_add_to_allowlist">add_to_allowlist</a>(allowlist: &<b>mut</b> <a href="move_module.md#0x2_move_module_Allowlist">move_module::Allowlist</a>, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
 </code></pre>
 
 
@@ -468,7 +468,7 @@ Return true if the modules are upgraded
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_remove_from_allowlist">remove_from_allowlist</a>(allowlist: &<b>mut</b> <a href="move_module.md#0x2_move_module_Allowlist">move_module::Allowlist</a>, publisher: <b>address</b>)
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_remove_from_allowlist">remove_from_allowlist</a>(allowlist: &<b>mut</b> <a href="move_module.md#0x2_move_module_Allowlist">move_module::Allowlist</a>, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
 </code></pre>
 
 

@@ -4,10 +4,10 @@
 module rooch_framework::onchain_config {
 
     use std::vector;
-    use std::signer;
     use moveos_std::object;
     use moveos_std::features;
     use moveos_std::move_module;
+    use moveos_std::signer;
     use rooch_framework::chain_id;
 
     friend rooch_framework::upgrade;
@@ -54,15 +54,17 @@ module rooch_framework::onchain_config {
     public fun add_to_publishing_allowlist(account: &signer, publisher: address) {
         let sender = signer::address_of(account);
         assert!(sender == sequencer(), ErrorNotSequencer);
+        let system_account = signer::module_signer<OnchainConfig>();
         let allowlist = move_module::borrow_mut_allowlist();
-        move_module::add_to_allowlist(allowlist, publisher);
+        move_module::add_to_allowlist(allowlist, &system_account, publisher);
     }
 
     public fun remove_from_publishing_allowlist(account: &signer, publisher: address) {
         let sender = signer::address_of(account);
         assert!(sender == sequencer(), ErrorNotSequencer);
+        let system_account = signer::module_signer<OnchainConfig>();
         let allowlist = move_module::borrow_mut_allowlist();
-        move_module::remove_from_allowlist(allowlist, publisher);
+        move_module::remove_from_allowlist(allowlist, &system_account, publisher);
     }
 
     fun onchain_config_mut(): &mut OnchainConfig {
