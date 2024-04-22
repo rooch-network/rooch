@@ -168,12 +168,16 @@ impl<T> AsRef<T> for SMTObject<T> {
     }
 }
 
+// Because we use expect in the From impl, so make it only available in test.
+#[cfg(test)]
 impl<T> From<T> for SMTObject<T>
 where
     T: EncodeToObject,
 {
     fn from(origin: T) -> SMTObject<T> {
-        origin.into_object().expect("encode to object failed")
+        origin
+            .into_object()
+            .expect("Failed to convert origin to SMTObject")
     }
 }
 
