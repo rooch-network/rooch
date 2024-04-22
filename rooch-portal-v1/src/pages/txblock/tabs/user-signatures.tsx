@@ -1,5 +1,5 @@
 import { Copy } from 'lucide-react'
-import { TransactionSequenceInfoView } from '@roochnetwork/rooch-sdk';
+import { TransactionSequenceInfoView } from '@roochnetwork/rooch-sdk'
 
 type UserSignaturesProps = {
   seqData: TransactionSequenceInfoView
@@ -10,7 +10,7 @@ enum Auth {
   ECDSA_K1,
 }
 
-export const UserSignatures: React.FC<UserSignaturesProps> = ({seqData}) => {
+export const UserSignatures: React.FC<UserSignaturesProps> = ({ seqData }) => {
   const validatorId = parseInt(seqData.tx_order_signature.auth_validator_id)
   return (
     <div className="flex flex-col items-start justify-start gap-3">
@@ -21,7 +21,7 @@ export const UserSignatures: React.FC<UserSignaturesProps> = ({seqData}) => {
             <span>Schema:</span>
           </div>
           <span className="text-gray-800 dark:text-gray-50 tracking-tight">
-            <span>{Auth[validatorId > 1 ? validatorId -1 : validatorId]}</span>
+            <span>{Auth[validatorId > 1 ? validatorId - 1 : validatorId]}</span>
           </span>
         </div>
 

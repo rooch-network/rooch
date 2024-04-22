@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState} from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 // ** UI Library Components
@@ -25,7 +25,7 @@ import {
 import { NoData } from '@/components/no-data'
 
 // ** ROOCH SDK
-import {useCurrentAccount, useRoochClientQuery} from '@roochnetwork/rooch-sdk-kit'
+import { useCurrentAccount, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 
 // ** ICONS
 import { MenuSquare, ExternalLink } from 'lucide-react'
@@ -37,7 +37,7 @@ export const TransactionsTable = () => {
   const navigate = useNavigate()
   const account = useCurrentAccount()
 
-  const [paginationModel, setPaginationModel] = useState({ index: 0, limit: 1})
+  const [paginationModel, setPaginationModel] = useState({ index: 0, limit: 1 })
   const mapPageToNextCursor = useRef<{ [page: number]: number | null }>({})
 
   const queryOptions = useMemo(
@@ -48,16 +48,13 @@ export const TransactionsTable = () => {
     [paginationModel],
   )
 
-  const { data: transactionsResult, isPending } = useRoochClientQuery(
-    'queryTransactions',
-    {
-      filter: {
-        sender: account?.getRoochAddress() || '',
-      },
-      cursor: queryOptions.cursor,
-      limit: paginationModel.limit
+  const { data: transactionsResult, isPending } = useRoochClientQuery('queryTransactions', {
+    filter: {
+      sender: account?.getRoochAddress() || '',
     },
-  )
+    cursor: queryOptions.cursor,
+    limit: paginationModel.limit,
+  })
 
   useEffect(() => {
     if (!transactionsResult) {
@@ -76,7 +73,7 @@ export const TransactionsTable = () => {
     }
     setPaginationModel({
       ...paginationModel,
-      index
+      index,
     })
   }
 
@@ -84,7 +81,11 @@ export const TransactionsTable = () => {
     navigate(`txblock/${hash}`)
   }
 
-  return (isPending ? <SkeletonList/> : !transactionsResult || transactionsResult.data.length === 0 ? <NoData/>:
+  return isPending ? (
+    <SkeletonList />
+  ) : !transactionsResult || transactionsResult.data.length === 0 ? (
+    <NoData />
+  ) : (
     <div>
       <div className="rounded-lg border w-full">
         <Table>
@@ -156,22 +157,19 @@ export const TransactionsTable = () => {
         <PaginationContent>
           <PaginationItem>
             {paginationModel.index !== 0 ? (
-              <PaginationPrevious
-                href="#"
-                onClick={() => paginate(paginationModel.index - 1)}
-              />
+              <PaginationPrevious href="#" onClick={() => paginate(paginationModel.index - 1)} />
             ) : (
               <PaginationPrevious href="#" />
             )}
           </PaginationItem>
-          {Array.from({length: paginationModel.index + 1}, (_, i) => (
+          {Array.from({ length: paginationModel.index + 1 }, (_, i) => (
             <PaginationItem key={i}>
               <PaginationLink
                 onClick={() => paginate(i)}
                 isActive={paginationModel.index === i}
                 className="cursor-pointer"
               >
-                {i+1}
+                {i + 1}
               </PaginationLink>
             </PaginationItem>
           ))}
@@ -180,10 +178,7 @@ export const TransactionsTable = () => {
           </PaginationItem>
           <PaginationItem>
             {transactionsResult.has_next_page && (
-              <PaginationNext
-                href="#"
-                onClick={() => paginate(paginationModel.index + 1)}
-              />
+              <PaginationNext href="#" onClick={() => paginate(paginationModel.index + 1)} />
             )}
           </PaginationItem>
         </PaginationContent>

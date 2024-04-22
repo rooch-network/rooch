@@ -41,7 +41,7 @@ module rooch_framework::session_key {
 
     struct SessionKey has store,copy,drop {
         /// App name
-        app_name: std::ascii::String,
+        app_name: std::string::String,
         /// app website url
         app_url: std::ascii::String,
         /// The session key's authentication key, it also is the session key's id
@@ -107,7 +107,7 @@ module rooch_framework::session_key {
 
     public fun create_session_key(
         sender: &signer,
-        app_name: std::ascii::String,
+        app_name: std::string::String,
         app_url: std::ascii::String,
         authentication_key: vector<u8>,
         scopes: vector<SessionScope>,
@@ -138,7 +138,7 @@ module rooch_framework::session_key {
 
     public entry fun create_session_key_entry(
         sender: &signer,
-        app_name: std::ascii::String,
+        app_name: std::string::String,
         app_url: std::ascii::String,
         authentication_key: vector<u8>,
         scope_module_address: address,
@@ -154,7 +154,7 @@ module rooch_framework::session_key {
 
     public entry fun create_session_key_with_multi_scope_entry(
         sender: &signer,
-        app_name: std::ascii::String,
+        app_name: std::string::String,
         app_url: std::ascii::String,
         authentication_key: vector<u8>, 
         scope_module_addresses: vector<address>, 

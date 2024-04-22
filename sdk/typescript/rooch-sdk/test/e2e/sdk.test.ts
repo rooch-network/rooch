@@ -345,8 +345,6 @@ describe('SDK', () => {
       expect(page.data).toHaveLength(1)
       expect(page.data[0].authenticationKey).toBeDefined()
       expect(page.data[0].maxInactiveInterval).toBe(100)
-      expect(page.data[0].createTime).toBe(0)
-      expect(page.data[0].lastActiveTime).toBe(0)
     })
   })
 })

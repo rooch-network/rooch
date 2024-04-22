@@ -31,7 +31,7 @@ export const AssetsNft = () => {
   const { mutateAsync: transferObject } = useTransferObject()
 
   // TODO: How do I get all the nft
-  // TODO: 1, data/image loading, 2, pagination
+  // TODO: 1, fetch data/image loading, 2, pagination
   const { data: nfts, refetch: reFetchNFTS } = useRoochClientQuery('queryGlobalStates', {
     filter: {
       object_type_with_owner: {
@@ -61,7 +61,8 @@ export const AssetsNft = () => {
             console.log(result)
             return {
               key: obj.key,
-              image: (result[0].decoded_value as any).value.value.value.url + '?auto=format&dpr=1&w=640',
+              image:
+                (result[0].decoded_value as any).value.value.value.url + '?auto=format&dpr=1&w=640',
             }
           }),
       )
@@ -73,7 +74,6 @@ export const AssetsNft = () => {
 
       setImages(map)
     }
-
 
     fetchCollectionInfo().then()
   }, [client, nfts])
