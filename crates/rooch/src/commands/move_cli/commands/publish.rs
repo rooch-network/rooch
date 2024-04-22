@@ -43,7 +43,10 @@ pub struct Publish {
 
     /// Whether publish modules by `MoveAction::ModuleBundle`?
     /// If not set, publish moduels through Move entry function
-    /// `moveos_std::move_module::publish_modules_entry`
+    /// `moveos_std::move_module::publish_modules_entry`.
+    /// **Deprecated**! Publish modules by `MoveAction::ModuleBundle` is no longer used anymore.
+    /// So you should never add this option.
+    /// For now, the option is kept for test only.
     #[clap(long)]
     pub by_move_action: bool,
 }

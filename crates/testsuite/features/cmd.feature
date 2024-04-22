@@ -194,27 +194,7 @@ Feature: Rooch CLI integration tests
 
       # The counter example
       Then cmd: "move publish -p ../../examples/counter  --named-addresses rooch_examples=default --by-move-action"
-      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move view --function default::counter::value"
-      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 0"
-      Then cmd: "move run --function default::counter::increase "
-      Then cmd: "move view --function default::counter::value"
-      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 1"
-      Then cmd: "resource --address default --resource default::counter::Counter"
-      Then assert: "{{$.resource[-1].decoded_value.value.value}} == 1"
-
-      # The entry_function_arguments example
-      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default --by-move-action"
-      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132" "
-      Then assert: "'{{$.move[-1]}}' contains FUNCTION_RESOLUTION_FAILURE"
-      Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default --by-move-action"
-      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      #Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132" "
-      #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      # check compatibility
-      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default --by-move-action"
-      Then assert: "'{{$.move[-1].execution_info.status.type}}' == miscellaneouserror"
+      Then assert: "'{{$.move[-1]}}' contains INVALID_MODULE_PUBLISHER"
 
       Then stop the server
 
