@@ -5,19 +5,25 @@ module rooch_nursery::bitseed {
     use std::string;
     use std::string::String;
     use std::vector;
+    use std::option;
 
-    use moveos_std::object::{Self, Object};
+    use moveos_std::object::{Self, ObjectID};
     use moveos_std::string_utils::{parse_u64, parse_u8};
     use moveos_std::simple_map;
     use moveos_std::simple_map::SimpleMap;
     use moveos_std::wasm;
     use moveos_std::table::{Self, Table};
 
+    use bitcoin_move::types::{Self, Transaction};
+    use bitcoin_move::utxo;
+    use bitcoin_move::ord::{Self, Inscription};
+
     const BIT_SEED_DEPLOY: vector<u8> = b"bitseed_deploy";
     const BIT_SEED_MINT: vector<u8> = b"bitseed_mint";
 
     friend bitcoin_move::genesis;
-    friend bitcoin_move::ord;
+
+    struct Bitseed has key {}
 
     struct DeployOp has store,copy,drop {
         is_valid: u8,
@@ -42,34 +48,24 @@ module rooch_nursery::bitseed {
         body: vector<u8>
     }
 
-    struct BitseedID has store, copy, drop {
-        txid: address,
-        index: u32,
-    }
-
-    struct SFTContent has store,copy,drop {
-        content_type: String,
-        body: vector<u8>
-    }
-
-    struct SFT has store,copy,drop {
-        op: String,
+    struct BitseedCoinInfo has store, copy{
         tick: String,
-        amount: u64,
-        attributes: vector<u8>,
-        content: SFTContent,
-        is_valid: u8,
+        max: u256,
+        lim: u256,
+        dec: u64,
+        supply: u256,
     }
 
-    struct SFTStore has key{
-        sfts: Table<BitseedID, SFT>
+    struct BitseedStore has key{
+        coins: Table<String, BitseedCoinInfo>,
     }
 
     public(friend) fun genesis_init(_genesis_account: &signer){
-        let sft_store = SFTStore{
-            sfts: table::new(),
-        }; 
-        let obj = object::new_named_object(sft_store);
+        let bitseed_store = BitseedStore{
+            coins: table::new(),
+        };
+
+        let obj = object::new_named_object(bitseed_store);
         object::to_shared(obj);
     }
 
@@ -81,9 +77,9 @@ module rooch_nursery::bitseed {
         BIT_SEED_MINT
     }
 
-    public fun is_bitseed(json_map: &SimpleMap<String,String>) : bool {
-        let protocol_key = string::utf8(b"p");
-        simple_map::contains_key(json_map, &protocol_key) && simple_map::borrow(json_map, &protocol_key) == &string::utf8(b"bitseed")
+    public fun is_bitseed(inscription: &Inscription) : bool {
+        let metaprotocol = ord::metaprotocol(inscription);
+        option::is_some<String>(&metaprotocol) && option::borrow(&metaprotocol) == &string::utf8(b"bitseed")
     }
 
     public fun is_bitseed_deploy(json_map: &SimpleMap<String,String>) : bool {
@@ -209,12 +205,51 @@ module rooch_nursery::bitseed {
         //TODO
         abort 0
     }
-    
-    //temporary remove the native function, if needed, we can add it back
-    // https://github.com/rooch-network/rooch/blob/ad65c907864a63a9823a553cd32061e7182b863b/frameworks/bitcoin-move/src/natives/ord/bitseed.rs
-    // native fun native_pack_inscribe_generate_args(
-    //     deploy_args: vector<u8>, deploy_args_key: vector<u8>,
-    //     seed: vector<u8>, seed_key: vector<u8>,
-    //     user_input: vector<u8>, user_input_key: vector<u8>,
-    // ): vector<u8>;
+
+    native fun native_pack_inscribe_generate_args(
+        deploy_args: vector<u8>, deploy_args_key: vector<u8>,
+        seed: vector<u8>, seed_key: vector<u8>,
+        user_input: vector<u8>, user_input_key: vector<u8>,
+    ): vector<u8>;
+
+
+    // ==== Process Bitseed ==== //
+    public fun process(tx: &Transaction) {
+        let txid = types::tx_id(tx);
+        let txoutput = types::tx_output(tx);
+        let idx = 0;
+        let txoutput_len = vector::length(txoutput);
+        while(idx < txoutput_len){
+            let vout = (idx as u32);
+            let output_point = types::new_outpoint(txid, vout);
+            let utxo_obj = utxo::borrow_utxo(output_point);
+            let utxo = object::borrow(utxo_obj);
+            let seals = utxo::get_seals<Inscription>(utxo);
+
+            // Track the Inscription via SatPoint
+            let j = 0;
+            let seals_len = vector::length<ObjectID>(&seals);
+            while(j < seals_len){
+                let seal_object_id = *vector::borrow(&seals, j);
+                let inscription_obj = object::borrow_object<Inscription>(seal_object_id);
+                let inscription = object::borrow(inscription_obj);
+                process_inscription(tx, inscription);
+
+                j = j + 1;
+            };
+
+            idx = idx + 1;
+        };
+    }
+
+    public fun process_inscription(tx: &Transaction, inscription: &Inscription) {
+        let txid = types::tx_id(tx);
+        let index = ord::index(inscription);
+        let inscription_id = ord::new_inscription_id(txid, index);
+
+        if (is_bitseed(inscription)) {
+            // TODO parse inscription.meta and valid op
+            ord::seal_metaprotocol_validity<Bitseed>(inscription_id, true, option::none());
+        };
+    }
 }

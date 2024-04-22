@@ -5,30 +5,51 @@
 
 
 
--  [Struct `DeployOp`](#0xa_bitseed_DeployOp)
--  [Struct `MintOp`](#0xa_bitseed_MintOp)
+-  [Resource `Bitseed`](#0x4_bitseed_Bitseed)
+-  [Struct `DeployOp`](#0x4_bitseed_DeployOp)
+-  [Struct `MintOp`](#0x4_bitseed_MintOp)
+-  [Struct `BitseedCoinInfo`](#0x4_bitseed_BitseedCoinInfo)
+-  [Resource `BitseedStore`](#0x4_bitseed_BitseedStore)
 -  [Constants](#@Constants_0)
--  [Function `bitseed_deploy_key`](#0xa_bitseed_bitseed_deploy_key)
--  [Function `bitseed_mint_key`](#0xa_bitseed_bitseed_mint_key)
--  [Function `is_bitseed`](#0xa_bitseed_is_bitseed)
--  [Function `is_bitseed_deploy`](#0xa_bitseed_is_bitseed_deploy)
--  [Function `is_bitseed_mint`](#0xa_bitseed_is_bitseed_mint)
--  [Function `inscription_to_bitseed_deploy`](#0xa_bitseed_inscription_to_bitseed_deploy)
--  [Function `inscription_to_bitseed_mint`](#0xa_bitseed_inscription_to_bitseed_mint)
--  [Function `inscribe_generate`](#0xa_bitseed_inscribe_generate)
--  [Function `inscribe_verify`](#0xa_bitseed_inscribe_verify)
--  [Function `mint_op_is_valid`](#0xa_bitseed_mint_op_is_valid)
--  [Function `mint_op_attributes`](#0xa_bitseed_mint_op_attributes)
--  [Function `deploy_op_generator`](#0xa_bitseed_deploy_op_generator)
--  [Function `deploy_op_args`](#0xa_bitseed_deploy_op_args)
+-  [Function `genesis_init`](#0x4_bitseed_genesis_init)
+-  [Function `bitseed_deploy_key`](#0x4_bitseed_bitseed_deploy_key)
+-  [Function `bitseed_mint_key`](#0x4_bitseed_bitseed_mint_key)
+-  [Function `is_bitseed`](#0x4_bitseed_is_bitseed)
+-  [Function `is_bitseed_deploy`](#0x4_bitseed_is_bitseed_deploy)
+-  [Function `is_bitseed_mint`](#0x4_bitseed_is_bitseed_mint)
+-  [Function `inscription_to_bitseed_deploy`](#0x4_bitseed_inscription_to_bitseed_deploy)
+-  [Function `inscription_to_bitseed_mint`](#0x4_bitseed_inscription_to_bitseed_mint)
+-  [Function `inscribe_generate`](#0x4_bitseed_inscribe_generate)
+-  [Function `inscribe_verify`](#0x4_bitseed_inscribe_verify)
+-  [Function `mint_op_is_valid`](#0x4_bitseed_mint_op_is_valid)
+-  [Function `mint_op_attributes`](#0x4_bitseed_mint_op_attributes)
+-  [Function `deploy_op_generator`](#0x4_bitseed_deploy_op_generator)
+-  [Function `deploy_op_args`](#0x4_bitseed_deploy_op_args)
+-  [Function `process`](#0x4_bitseed_process)
+-  [Function `process_inscription`](#0x4_bitseed_process_inscription)
 
 
-<pre><code><b>use</b> <a href="">0x1::string</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::string_utils</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="">0x2::wasm</a>;
+<b>use</b> <a href="ord.md#0x4_ord">0x4::ord</a>;
+<b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
+<b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
+</code></pre>
+
+
+
+<a name="0x4_bitseed_Bitseed"></a>
+
+## Resource `Bitseed`
+
+
+
+<pre><code><b>struct</b> <a href="bitseed.md#0x4_bitseed_Bitseed">Bitseed</a> <b>has</b> key
 </code></pre>
 
 
@@ -55,46 +76,24 @@
 
 
 
-<a name="0x4_bitseed_BitseedID"></a>
+<a name="0x4_bitseed_BitseedCoinInfo"></a>
 
-## Struct `BitseedID`
+## Struct `BitseedCoinInfo`
 
 
 
-<pre><code><b>struct</b> <a href="bitseed.md#0x4_bitseed_BitseedID">BitseedID</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="bitseed.md#0x4_bitseed_BitseedCoinInfo">BitseedCoinInfo</a> <b>has</b> <b>copy</b>, store
 </code></pre>
 
 
 
-<a name="0x4_bitseed_SFTContent"></a>
+<a name="0x4_bitseed_BitseedStore"></a>
 
-## Struct `SFTContent`
-
-
-
-<pre><code><b>struct</b> <a href="bitseed.md#0x4_bitseed_SFTContent">SFTContent</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
+## Resource `BitseedStore`
 
 
 
-<a name="0x4_bitseed_SFT"></a>
-
-## Struct `SFT`
-
-
-
-<pre><code><b>struct</b> <a href="bitseed.md#0x4_bitseed_SFT">SFT</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
-<a name="0x4_bitseed_SFTStore"></a>
-
-## Resource `SFTStore`
-
-
-
-<pre><code><b>struct</b> <a href="bitseed.md#0x4_bitseed_SFTStore">SFTStore</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="bitseed.md#0x4_bitseed_BitseedStore">BitseedStore</a> <b>has</b> key
 </code></pre>
 
 
@@ -150,7 +149,11 @@
 
 
 
+<<<<<<< HEAD:frameworks/rooch-nursery/doc/bitseed.md
 <pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_is_bitseed">is_bitseed</a>(json_map: &<a href="_SimpleMap">simple_map::SimpleMap</a>&lt;<a href="_String">string::String</a>, <a href="_String">string::String</a>&gt;): bool
+=======
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0x4_bitseed_is_bitseed">is_bitseed</a>(inscription: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): bool
+>>>>>>> 07e1fdeb... feat: rebase from main 4:frameworks/bitcoin-move/doc/bitseed.md
 </code></pre>
 
 
@@ -261,4 +264,26 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_deploy_op_args">deploy_op_args</a>(deploy_op: &<a href="bitseed.md#0xa_bitseed_DeployOp">bitseed::DeployOp</a>): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x4_bitseed_process"></a>
+
+## Function `process`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0x4_bitseed_process">process</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>)
+</code></pre>
+
+
+
+<a name="0x4_bitseed_process_inscription"></a>
+
+## Function `process_inscription`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0x4_bitseed_process_inscription">process_inscription</a>(tx: &<a href="types.md#0x4_types_Transaction">types::Transaction</a>, inscription: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>)
 </code></pre>

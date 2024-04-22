@@ -19,7 +19,7 @@ module bitcoin_move::ord {
     use rooch_framework::bitcoin_address::BitcoinAddress;
     use bitcoin_move::types::{Self, Witness, Transaction};
     use bitcoin_move::utxo::{Self, UTXO};
-
+    
     friend bitcoin_move::genesis;
     friend bitcoin_move::bitcoin;
 
@@ -56,7 +56,7 @@ module bitcoin_move::ord {
         object_id: ObjectID,
     }
 
-    struct Inscription has key{
+    struct Inscription has key {
         txid: address,
         index: u32,
         /// Transaction input index
@@ -413,7 +413,7 @@ module bitcoin_move::ord {
             }else{
                 inscription.offset
             };
-            
+
             let inscription_obj = create_obj(inscription);
             let object_id = object::id(&inscription_obj);
             object::transfer_extend(inscription_obj, to_address);
@@ -423,6 +423,7 @@ module bitcoin_move::ord {
 
             //Auto create address mapping if not exist
             bind_multichain_address(to_address, bitcoin_address_opt);
+
             idx = idx + 1;
         };
         vector::destroy_empty(inscriptions);

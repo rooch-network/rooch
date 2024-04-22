@@ -18,7 +18,7 @@ module bitcoin_move::bitcoin{
     use bitcoin_move::types::{Self, Block, Header, Transaction};
     use bitcoin_move::ord::{Self, Inscription, bind_multichain_address, Flotsam, SatPoint};
     use bitcoin_move::utxo::{Self, UTXOSeal};
-    
+    use bitcoin_move::bitseed;
 
     friend bitcoin_move::genesis;
 
@@ -203,6 +203,12 @@ module bitcoin_move::bitcoin{
 
         // create new utxo
         handle_new_utxo(tx, &mut output_seals);
+
+        // handle bitseed
+        if(data_import_config::is_ord_mode(data_import_mode)) {
+            bitseed::process(tx);
+        };
+
         simple_multimap::drop(output_seals);
         flotsams
     }
