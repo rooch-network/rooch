@@ -93,7 +93,7 @@ The UTXO Object
 Event for creating UTXO
 
 
-<pre><code><b>struct</b> <a href="utxo.md#0x4_utxo_CreatingUTXOEvent">CreatingUTXOEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="utxo.md#0x4_utxo_CreatingUTXOEvent">CreatingUTXOEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -105,7 +105,7 @@ Event for creating UTXO
 Event for remove UTXO
 
 
-<pre><code><b>struct</b> <a href="utxo.md#0x4_utxo_RemovingUTXOEvent">RemovingUTXOEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="utxo.md#0x4_utxo_RemovingUTXOEvent">RemovingUTXOEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 

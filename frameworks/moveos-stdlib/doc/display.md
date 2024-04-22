@@ -46,7 +46,7 @@ Display<T> is used to define the display of the <code>T</code>
 Event when Display<T> created
 
 
-<pre><code><b>struct</b> <a href="display.md#0x2_display_DisplayCreate">DisplayCreate</a>&lt;T&gt; <b>has</b> drop
+<pre><code><b>struct</b> <a href="display.md#0x2_display_DisplayCreate">DisplayCreate</a>&lt;T&gt; <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 

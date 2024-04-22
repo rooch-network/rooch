@@ -49,6 +49,8 @@ use std::cmp::min;
 use std::str::FromStr;
 use tracing::info;
 
+const MAX_RESULT_AMOUNT: u64 = 10000000;
+
 pub struct RoochServer {
     rpc_service: RpcService,
     aggregate_service: AggregateService,
@@ -393,24 +395,48 @@ impl RoochAPIServer for RoochServer {
             let start_sub = start
                 .checked_sub(limit_of)
                 .ok_or(jsonrpsee::core::Error::Custom(
-                    "cursor value overflow".to_string(),
+                    "cursor value is overflow".to_string(),
                 ))?;
             let end = if start >= limit_of { start_sub } else { 0 };
+
+            let gaps = end
+                .checked_sub(start)
+                .ok_or(jsonrpsee::core::Error::Custom(
+                    "end value is overflow".to_string(),
+                ))?;
+            if gaps > MAX_RESULT_AMOUNT {
+                return Err(jsonrpsee::core::Error::Custom(
+                    "end value is overflow".to_string(),
+                ));
+            }
+
             (end..start).rev().collect::<Vec<_>>()
         } else {
             let start = cursor.unwrap_or(0);
             let limit_value = limit_of
                 .checked_add(1)
                 .ok_or(jsonrpsee::core::Error::Custom(
-                    "limit value overflow".to_string(),
+                    "limit value is overflow".to_string(),
                 ))?;
             let start_plus =
                 start
                     .checked_add(limit_value)
                     .ok_or(jsonrpsee::core::Error::Custom(
-                        "cursor value overflow".to_string(),
+                        "cursor value is overflow".to_string(),
                     ))?;
             let end = min(start_plus, last_sequencer_order + 1);
+
+            let gaps = end
+                .checked_sub(start)
+                .ok_or(jsonrpsee::core::Error::Custom(
+                    "start value is overflow".to_string(),
+                ))?;
+            if gaps > MAX_RESULT_AMOUNT {
+                return Err(jsonrpsee::core::Error::Custom(
+                    "end value is overflow".to_string(),
+                ));
+            }
+
             (start..end).collect::<Vec<_>>()
         };
 

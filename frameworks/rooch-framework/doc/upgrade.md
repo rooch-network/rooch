@@ -26,7 +26,7 @@
 Event for framework upgrades
 
 
-<pre><code><b>struct</b> <a href="upgrade.md#0x3_upgrade_FrameworkUpgradeEvent">FrameworkUpgradeEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="upgrade.md#0x3_upgrade_FrameworkUpgradeEvent">FrameworkUpgradeEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
