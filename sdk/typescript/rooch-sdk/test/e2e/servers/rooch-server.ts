@@ -26,8 +26,6 @@ export class RoochServer {
       'local',
       '-d',
       'TMP',
-      '--eth-rpc-url',
-      'https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
       '--port',
       `${this.port}`,
     ])
@@ -60,9 +58,9 @@ export class RoochServer {
   }
 
   checkReady(cb: (ret: Error | undefined) => void) {
-    // const readyRegex = /JSON-RPC HTTP Server start listening/
+    const readyRegex = /JSON-RPC HTTP Server start listening/
     // Wait eth relayer ready, TODO: Direct inspection timestamp contract
-    const readyRegex = /EthereumRelayer process block/
+    // const readyRegex = /EthereumRelayer process block/
     const errorRegex = /[Ee]rror:/
 
     const timer = setTimeout(() => {
