@@ -292,10 +292,11 @@ module moveos_std::move_module {
 
     /// Publish modules to the account's storage
     public fun publish_modules(module_store: &mut Object<ModuleStore>, account: &signer, modules: vector<MoveModule>) {
-        if (features::module_publishing_allowlist_enabled()) {
-            ensure_publisher_in_allowlist();
-        };
         let account_address = signer::address_of(account);
+        if (features::module_publishing_allowlist_enabled()) {
+            ensure_publisher_in_allowlist(account_address);
+        };
+        
         let upgrade_flag = publish_modules_internal(module_store, account_address, modules);
         // Store ModuleUpgradeFlag in tx_context which will be fetched in VM in Rust, 
         // and then announce to the VM that the code loading cache should be considered outdated. 
@@ -378,13 +379,12 @@ module moveos_std::move_module {
         vector::contains(&allowlist.publisher, &publisher)
     }
 
-    fun ensure_publisher_in_allowlist() {
-        let sender = tx_context::sender();
-        if (core_addresses::is_system_reserved_address(sender)) {
+    fun ensure_publisher_in_allowlist(publisher: address) {
+        if (core_addresses::is_system_reserved_address(publisher)) {
             return
         };
         let allowlist = borrow_allowlist().publisher;
-        assert!(vector::contains(&allowlist, &sender), ErrorNotAllowToPublish);
+        assert!(vector::contains(&allowlist, &publisher), ErrorNotAllowToPublish);
     }
 
     native fun module_id_inner(byte_codes: &vector<u8>): String;
@@ -610,10 +610,8 @@ module moveos_std::move_module {
             vector[]
         );
         let allowlist = borrow_mut_allowlist();
-
-        tx_context::set_ctx_sender_for_testing(@moveos_std);
-        add_to_allowlist(allowlist, signer::address_of(account));
-        tx_context::set_ctx_sender_for_testing(signer::address_of(account));
+        let system_account = signer::module_signer<Allowlist>();
+        add_to_allowlist(allowlist, &system_account, signer::address_of(account));
 
         let module_object = borrow_mut_module_store();
         let module_bytes = COUNTER_MV_BYTES;
@@ -624,16 +622,16 @@ module moveos_std::move_module {
     #[test(_account=@moveos_std)]
     fun test_add_and_remove_allowlist(_account: &signer) {
         init_module_store();
-        tx_context::set_ctx_sender_for_testing(@moveos_std);
+        let system_account = signer::module_signer<Allowlist>();
 
         let allowlist = borrow_allowlist();
         assert!(!is_in_allowlist(allowlist, @0x42), 1);
 
         let allowlist = borrow_mut_allowlist();
-        add_to_allowlist(allowlist, @0x42);
+        add_to_allowlist(allowlist, &system_account, @0x42);
         assert!(is_in_allowlist(allowlist, @0x42), 2);
 
-        remove_from_allowlist(allowlist, @0x42);
+        remove_from_allowlist(allowlist, &system_account, @0x42);
         assert!(!is_in_allowlist(allowlist, @0x42), 3);
     }
 }
