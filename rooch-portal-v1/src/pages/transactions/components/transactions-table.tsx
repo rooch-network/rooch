@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import {useEffect, useMemo, useRef, useState} from 'react'
 import { useNavigate } from 'react-router-dom'
 
 // ** UI Library Components
@@ -37,9 +37,40 @@ export const TransactionsTable = () => {
   const navigate = useNavigate()
   const account = useCurrentAccount()
 
-  const [paginationModel, setPaginationModel] = useState({ index: 0, limit: 10})
+  const [paginationModel, setPaginationModel] = useState({ index: 0, limit: 1})
+  const mapPageToNextCursor = useRef<{ [page: number]: number | null }>({})
+
+  const queryOptions = useMemo(
+    () => ({
+      cursor: mapPageToNextCursor.current[paginationModel.index - 1],
+      limit: paginationModel.limit,
+    }),
+    [paginationModel],
+  )
+
+  const { data: transactionsResult, isPending } = useRoochClientQuery(
+    'queryTransactions',
+    {
+      filter: {
+        sender: account?.getRoochAddress() || '',
+      },
+      cursor: queryOptions.cursor,
+      limit: paginationModel.limit
+    },
+  )
+
+  useEffect(() => {
+    if (!transactionsResult) {
+      return
+    }
+
+    if (transactionsResult.has_next_page) {
+      mapPageToNextCursor.current[paginationModel.index] = transactionsResult.next_cursor ?? null
+    }
+  }, [paginationModel, transactionsResult])
 
   const paginate = (index: number): void => {
+    console.log(index)
     if (index < 0) {
       return
     }
@@ -48,17 +79,6 @@ export const TransactionsTable = () => {
       index
     })
   }
-
-  const { data: transactionsResult, isPending } = useRoochClientQuery(
-    'queryTransactions',
-    {
-      filter: {
-        sender: account?.getRoochAddress() || '',
-      },
-      cursor: paginationModel.index !== 0 ? paginationModel.index : null,
-      limit: paginationModel.limit
-    },
-  )
 
   const handleToTransactionDetail = (hash: string) => {
     navigate(`txblock/${hash}`)
@@ -135,12 +155,10 @@ export const TransactionsTable = () => {
       <Pagination className="mt-4 justify-end">
         <PaginationContent>
           <PaginationItem>
-            {paginationModel.index !== 1 ? (
+            {paginationModel.index !== 0 ? (
               <PaginationPrevious
                 href="#"
-                onClick={() => {
-                  paginate(paginationModel.index - 1)
-                }}
+                onClick={() => paginate(paginationModel.index - 1)}
               />
             ) : (
               <PaginationPrevious href="#" />
@@ -149,13 +167,11 @@ export const TransactionsTable = () => {
           {Array.from({length: paginationModel.index + 1}, (_, i) => (
             <PaginationItem key={i}>
               <PaginationLink
-                onClick={() => {
-                  paginate(i)
-                }}
+                onClick={() => paginate(i)}
                 isActive={paginationModel.index === i}
                 className="cursor-pointer"
               >
-                {i}
+                {i+1}
               </PaginationLink>
             </PaginationItem>
           ))}
@@ -166,9 +182,7 @@ export const TransactionsTable = () => {
             {transactionsResult.has_next_page && (
               <PaginationNext
                 href="#"
-                onClick={() => {
-                  paginate(paginationModel.index + 1)
-                }}
+                onClick={() => paginate(paginationModel.index + 1)}
               />
             )}
           </PaginationItem>

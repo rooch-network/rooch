@@ -40,7 +40,6 @@ export const AssetsCoin = () => {
     if (selectedPage < 0) {
       return
     }
-    console.log(selectedPage)
     setPaginationModel({
       page: selectedPage,
       pageSize: paginationModel.pageSize,

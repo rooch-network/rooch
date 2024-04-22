@@ -284,7 +284,7 @@ export class RoochClient {
   async queryTransactions(params: QueryTransactionParams): Promise<TransactionWithInfoPageView> {
     return await this.client.rooch_queryTransactions(
       params.filter,
-      params.cursor || DEFAULT_NULL_CURSOR,
+      params.cursor?.toString() || DEFAULT_NULL_CURSOR,
       params.limit?.toString() || DEFAULT_LIMIT,
       params.descending_order || true,
     )
