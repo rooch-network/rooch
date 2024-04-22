@@ -5,7 +5,7 @@ import { IAuthorizer, PrivateKeyAuth } from '../auth'
 import { Ed25519Keypair } from '../utils/keypairs'
 import { RoochClient } from '../client/roochClient'
 import { Arg, BalanceInfoPageView, BalanceInfoView, FunctionId, TypeTag } from '../types'
-import { SendRawTransactionOpts } from '../client/roochClientTypes'
+import { ExecuteTransactionOpts, SendTransactionOpts } from '../client/roochClientTypes'
 import { IAccount } from '../account/interface'
 
 /**
@@ -56,9 +56,25 @@ export class RoochAccount implements IAccount {
     funcId: FunctionId,
     args?: Arg[],
     tyArgs?: TypeTag[],
-    opts?: SendRawTransactionOpts,
+    opts?: SendTransactionOpts,
   ): Promise<string> {
     return this.client.sendRawTransaction({
+      address: this.getAddress(),
+      authorizer: this.getAuthorizer(),
+      funcId,
+      args,
+      tyArgs,
+      opts,
+    })
+  }
+
+  async executeTransaction(
+    funcId: FunctionId,
+    args?: Arg[],
+    tyArgs?: TypeTag[],
+    opts?: ExecuteTransactionOpts,
+  ) {
+    return this.client.executeTransaction({
       address: this.getAddress(),
       authorizer: this.getAuthorizer(),
       funcId,
@@ -75,7 +91,7 @@ export class RoochAccount implements IAccount {
     })
   }
 
-  async getBalances(cursor: string, limit: string): Promise<BalanceInfoPageView> {
+  async getBalances(cursor: string, limit: number): Promise<BalanceInfoPageView> {
     return this.client.getBalances({
       address: this.getAddress(),
       cursor,

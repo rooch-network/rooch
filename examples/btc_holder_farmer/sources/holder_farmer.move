@@ -37,7 +37,6 @@ module btc_holder_farmer::hold_farmer {
 
 
 
-
     spec module {
         pragma verify = false;
     }

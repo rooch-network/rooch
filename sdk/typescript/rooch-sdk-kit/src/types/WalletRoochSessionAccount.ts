@@ -6,7 +6,7 @@ import {
   RoochAccount,
   RoochClient,
   RoochSessionAccount,
-  SendRawTransactionOpts,
+  SendTransactionOpts,
 } from '@roochnetwork/rooch-sdk'
 import { runtime, bcs } from '@roochnetwork/rooch-sdk'
 import { WalletAccount } from '../types/WalletAccount'
@@ -16,6 +16,8 @@ export class WalletRoochSessionAccount extends RoochSessionAccount {
 
   protected constructor(
     client: RoochClient,
+    appName: string,
+    appUrl: string,
     scopes: string[],
     maxInactiveInterval: number,
     account?: IAccount,
@@ -25,6 +27,8 @@ export class WalletRoochSessionAccount extends RoochSessionAccount {
   ) {
     super(
       client,
+      appName,
+      appUrl,
       scopes,
       maxInactiveInterval,
       account,
@@ -48,21 +52,40 @@ export class WalletRoochSessionAccount extends RoochSessionAccount {
   public static async CREATE(
     client: RoochClient,
     account: WalletAccount,
+    appName: string,
+    appUrl: string,
     scopes: string[],
     maxInactiveInterval: number,
-    opts?: SendRawTransactionOpts,
+    opts?: SendTransactionOpts,
   ): Promise<RoochSessionAccount> {
-    return new WalletRoochSessionAccount(client, scopes, maxInactiveInterval, account).build(opts)
+    return new WalletRoochSessionAccount(
+      client,
+      appName,
+      appUrl,
+      scopes,
+      maxInactiveInterval,
+      account,
+    ).build(opts)
   }
 
   public static formJson(jsonObj: any, client: RoochClient) {
-    const { session, scopes, maxInactiveInterval, authInfo, localCreateSessionTime, roochAddress } =
-      jsonObj
+    const {
+      session,
+      scopes,
+      maxInactiveInterval,
+      authInfo,
+      localCreateSessionTime,
+      roochAddress,
+      appName,
+      appUrl,
+    } = jsonObj
 
     const sessionAccount = RoochAccount.formJson(session, client)
 
     const rsa = new WalletRoochSessionAccount(
       client,
+      appName,
+      appUrl,
       scopes,
       maxInactiveInterval,
       undefined,
@@ -86,7 +109,7 @@ export class WalletRoochSessionAccount extends RoochSessionAccount {
     }
   }
 
-  protected override async build(opts?: SendRawTransactionOpts): Promise<RoochSessionAccount> {
+  protected override async build(opts?: SendTransactionOpts): Promise<RoochSessionAccount> {
     this.roochAddress = await (this.account as WalletAccount).resoleRoochAddress()
     return super.build(opts)
   }

@@ -3,7 +3,10 @@
 
 import { PaymentTypes } from '@/common/interface'
 
-export const formatAddress = (address: string) => {
+export const formatAddress = (address?: string) => {
+  if (!address) {
+    return ''
+  }
   let shortAddress = address.substring(0, 6)
   shortAddress += '...'
   shortAddress += address.substring(address.length - 6, address.length)
@@ -106,4 +109,18 @@ export const formatCVC = (value: string, cardNumber: string, Payment: PaymentTyp
   const maxLength = issuer === 'amex' ? 4 : 3
 
   return clearValue.slice(0, maxLength)
+}
+
+export const hexToString = (hex: string): string => {
+  if (hex.startsWith('0x')) {
+    hex = hex.substring(2)
+  }
+
+  let result = ''
+  for (let i = 0; i < hex.length; i += 2) {
+    const byte = parseInt(hex.substr(i, 2), 16)
+    result += String.fromCharCode(byte)
+  }
+
+  return result
 }

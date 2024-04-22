@@ -80,7 +80,7 @@ module nft::nft {
 
     /// Mint a new NFT and transfer it to sender
     /// The Collection is shared object, so anyone can mint a new NFT
-    entry fun mint_entry(collection_obj: &mut Object<collection::Collection>, name: String) {
+    public entry fun mint_entry(collection_obj: &mut Object<collection::Collection>, name: String) {
         let sender = moveos_std::tx_context::sender();
         let nft_obj = mint(collection_obj, name);
         object::transfer(nft_obj, sender);
@@ -88,7 +88,7 @@ module nft::nft {
 
      /// Update the base uri of the NFT
     /// the Collection is shared object, so we need to check the creator of collection, only the creator of collection can update the base uri
-    entry fun update_base_uri(collection_obj: &Object<collection::Collection>, new_base_uri: String){
+    public entry fun update_base_uri(collection_obj: &Object<collection::Collection>, new_base_uri: String){
         let sender_address = moveos_std::tx_context::sender();
         let collection = object::borrow(collection_obj);
         assert!(collection::creator(collection) == sender_address, ErrorCreatorNotMatch);
@@ -104,6 +104,7 @@ module nft::nft {
         let collection_id = collection::create_collection(
             
             string::utf8(b"test_collection_name1"),
+            string::utf8(b"test"),
             sender,
             string::utf8(b"test_collection_description1"),
             option::none(),
@@ -115,8 +116,6 @@ module nft::nft {
             string::utf8(b"test_nft_1"),
         );
         object::transfer(nft_obj, sender);
-        
-        
     }
 
 }

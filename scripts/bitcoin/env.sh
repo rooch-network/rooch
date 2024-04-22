@@ -58,10 +58,10 @@ init() {
   echo '{"p":"brc-20","op":"mint","tick":"Rooch","amt":"1"}' > /tmp/hello.txt
 
   # Step 6: Inscribe the file to the blockchain
-  ord wallet inscribe --fee-rate 1 --file /tmp/hello.txt --destination "${address}" > /dev/null 2>&1
+  ord wallet inscribe --fee-rate 1 --file /tmp/hello.txt --destination $address
 
   # Step 7: Mine an inscription with 1 block
-  bitcoin-cli generatetoaddress 1 $address > /dev/null 2>&1
+  bitcoin-cli generatetoaddress 1 $address
 
   echo "You inscriptions"
   # Step 8: Get the reveal transaction ID

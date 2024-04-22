@@ -8,13 +8,9 @@ import {
   FunctionId,
   IndexerStateID,
   InscriptionFilterView,
-  RoochAccountAddress,
-  TransactionFilterView,
   ObjectStateFilterView,
   FieldStateFilterView,
   TypeTag,
-  u64,
-  usize,
   UTXOFilterView,
 } from '../types'
 
@@ -22,28 +18,56 @@ import { RoochTransactionData } from '../generated/runtime/rooch_types/mod'
 
 import { IAuthorizer } from '../auth'
 
-export type SendRawTransactionOpts = {
-  maxGasAmount?: number
+export const DEFAULT_LIMIT = '10'
+export const DEFAULT_NULL_CURSOR = null as any
+
+export const DEFAULT_DISPLAY = {
+  decode: true,
+  showDisplay: true,
 }
 
-export type SendTransactionParams = {
-  address: string
-  authorizer: IAuthorizer
-  funcId: FunctionId
-  args?: Arg[]
-  tyArgs?: TypeTag[]
-  opts?: SendRawTransactionOpts
+export type DisplayOpts = {
+  decode: boolean
+  showDisplay: boolean
 }
 
-export type SendTransactionDataParams = {
+export type PagesOpts<T> = {
+  cursor?: T | null
+  limit?: number
+  descending_order?: boolean
+}
+
+export type TransactionDataParams = {
   authorizer: IAuthorizer
   data: RoochTransactionData
 }
 
-export type SendRawTransactionParams =
-  | SendTransactionParams
-  | SendTransactionDataParams
+export type SendTransactionOpts = {
+  maxGasAmount?: number
+}
+
+export type SendTransactionInfoParams = ExecuteViewFunctionParams & {
+  address: string
+  authorizer: IAuthorizer
+  opts?: SendTransactionOpts
+}
+
+export type SendTransactionParams = SendTransactionInfoParams | TransactionDataParams | Uint8Array
+
+export type ExecuteTransactionOpts = SendTransactionOpts & {
+  withOutput?: boolean
+}
+
+export type ExecuteTransactionInfoParams = SendTransactionInfoParams & {
+  opts?: ExecuteTransactionOpts
+}
+
+export type ExecuteTransactionParams =
+  | ExecuteTransactionInfoParams
+  | TransactionDataParams
   | Uint8Array
+
+// export type ExecuteTransactionParams = ExecuteTransactionParams | TransactionDataParams | Uint8Array
 
 export type ExecuteViewFunctionParams = {
   funcId: FunctionId
@@ -56,65 +80,47 @@ export type ResoleRoochAddressParams = {
   multiChainID: RoochMultiChainID
 }
 
-export type ListStatesParams = {
+export type GetStatesParams = {
   accessPath: string
-  cursor: string | null
-  limit: number
+  display?: DisplayOpts
 }
 
-export type QueryObjectStatesParams = {
+export type ListStatesParams = PagesOpts<string> & {
+  accessPath: string
+  display?: DisplayOpts
+}
+
+export type QueryObjectStatesParams = PagesOpts<IndexerStateID> & {
   filter: ObjectStateFilterView
-  cursor: IndexerStateID | null
-  limit: number
-  descending_order: boolean
 }
 
-export type QueryFieldStatesParams = {
+export type QueryFieldStatesParams = PagesOpts<IndexerStateID> & {
   filter: FieldStateFilterView
-  cursor: IndexerStateID | null
-  limit: number
-  descending_order: boolean
 }
 
-export type QueryInscriptionsParams = {
-  filter?: InscriptionFilterView | null
-  cursor?: IndexerStateID | null
-  limit: number
-  descending_order: boolean
+export type QueryInscriptionsParams = PagesOpts<IndexerStateID> & {
+  filter: InscriptionFilterView
 }
 
-export type QueryUTXOsParams = {
-  filter?: UTXOFilterView | null
-  cursor?: IndexerStateID | null
-  limit: number
-  descending_order: boolean
+export type QueryUTXOsParams = PagesOpts<IndexerStateID> & {
+  filter: UTXOFilterView
 }
 
-export type GetTransactionsParams = {
-  cursor: number
-  limit: number
-  descending_order: boolean
-}
+export type GetTransactionsParams = PagesOpts<number>
 
-export type GetEventsParams = {
+export type GetEventsParams = PagesOpts<number> & {
   eventHandleType: string
-  cursor: number
-  limit: number
-  descending_order: boolean
 }
 
 export type QueryTransactionFilterParams =
-  | { sender: RoochAccountAddress }
+  | { sender: string }
   | { original_address: string }
   | { tx_hashes: string[] }
   | { time_range: { end_time: number; start_time: number } }
   | { tx_order_range: { from_order: number; to_order: number } }
 
-export type QueryTransactionParams = {
-  filter: TransactionFilterView
-  cursor: u64
-  limit: usize
-  descending_order: boolean
+export type QueryTransactionParams = PagesOpts<number> & {
+  filter: QueryTransactionFilterParams
 }
 
 export type QueryEventFilterParams =
@@ -124,11 +130,8 @@ export type QueryEventFilterParams =
   | { time_range: { end_time: number; start_time: number } }
   | { tx_order_range: { from_order: number; to_order: number } }
 
-export type QueryEventParams = {
+export type QueryEventParams = PagesOpts<string> & {
   filter: QueryEventFilterParams
-  cursor: { event_index: number; tx_order: number }
-  limit: usize
-  descending_order: boolean
 }
 
 export type GetBalanceParams = {
@@ -136,16 +139,43 @@ export type GetBalanceParams = {
   coinType: string
 }
 
-export type GetBalancesParams = {
+export type GetBalancesParams = PagesOpts<string> & {
   address: string
-  cursor: string
-  limit: string
 }
 
-export type SessionInfo = {
-  authentication_key: string
-  scopes: Array<string>
-  create_time: number
-  last_active_time: number
-  max_inactive_interval: number
+export type QuerySessionKeysParams = PagesOpts<string> & {
+  address: string
 }
+
+export type SessionInfoResult = {
+  appName: string
+  appUrl: string
+  authenticationKey: string
+  scopes: Array<string>
+  createTime: number
+  lastActiveTime: number
+  maxInactiveInterval: number
+}
+
+// export type MoveAbort = {
+//   abort_code: u64
+//   location: string
+//   type: string
+// }
+//
+// export type ExecutionFailure = {
+//   code_offset: number
+//   function: number
+//   location: string
+//   type: string
+// }
+//
+// export type TransactionExecutionResult = TransactionExecutionInfoView & {
+//   status: 'executed' | 'outOfGas' | 'MiscellaneousError' | MoveAbort | ExecutionFailure
+// }
+//
+// export type ExecuteTransactionResult = {
+//   execution_info: TransactionExecutionResult
+//   output: TransactionOutputView | null
+//   sequence_info: TransactionSequenceInfoView
+// }

@@ -4,12 +4,10 @@ import { Avatar } from '@/components/ui/avatar'
 import Jazzicon, { jsNumberForAddress } from 'react-jazzicon'
 
 import { formatAddress } from '@/utils/format'
-import { useWalletStore } from '@roochnetwork/rooch-sdk-kit'
-import { useWalletAccountStore } from '@/store/useWalletAccountStore'
+import { useCurrentAccount } from '@roochnetwork/rooch-sdk-kit'
 
 export const ProfileInfo = () => {
-  const account = useWalletStore((state) => state.currentAccount)
-  const { roochAddress } = useWalletAccountStore()
+  const account = useCurrentAccount()
 
   return (
     <div className="h-12 w-full cursor-default flex items-center justify-start transition-all ease-in-out mt-2">
@@ -26,7 +24,7 @@ export const ProfileInfo = () => {
             Rooch Network
           </h3>
           <div className="leading-none text-muted-foreground flex items-center justify-start font-normal text-xs sm:text-sm">
-            {roochAddress ? <p>{formatAddress(roochAddress as string)}</p> : <p>Rooch Address</p>}
+            <p>{formatAddress(account?.getRoochAddress())}</p>
             <Button
               variant="ghost"
               size="icon"

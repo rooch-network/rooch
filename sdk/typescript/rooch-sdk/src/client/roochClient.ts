@@ -13,7 +13,6 @@ import {
   EventPageView,
   InscriptionStatePageView,
   EventWithIndexerPageView,
-  StateOptions,
   StatePageView,
   StateView,
   TransactionWithInfoPageView,
@@ -34,8 +33,6 @@ import {
   typeTagToString,
 } from '../utils'
 import {
-  SendRawTransactionParams,
-  SendTransactionParams,
   ExecuteViewFunctionParams,
   GetEventsParams,
   GetTransactionsParams,
@@ -47,10 +44,18 @@ import {
   QueryEventParams,
   GetBalanceParams,
   GetBalancesParams,
-  SessionInfo,
-  SendTransactionDataParams,
+  SessionInfoResult,
   QueryObjectStatesParams,
   QueryFieldStatesParams,
+  DEFAULT_LIMIT,
+  DEFAULT_NULL_CURSOR,
+  DEFAULT_DISPLAY,
+  GetStatesParams,
+  QuerySessionKeysParams,
+  SendTransactionParams,
+  TransactionDataParams,
+  ExecuteTransactionParams,
+  ExecuteTransactionInfoParams,
 } from './roochClientTypes'
 
 import {
@@ -169,70 +174,26 @@ export class RoochClient {
     })
   }
 
-  async sendRawTransaction(params: SendRawTransactionParams) {
-    if (params instanceof Uint8Array) {
-      return this.client.rooch_sendRawTransaction(params)
-    }
+  async executeTransaction(params: ExecuteTransactionParams) {
+    return await this.client.rooch_executeRawTransaction(await this.buildRawTransations(params), {
+      withOutput: true,
+    })
+  }
 
-    if (
-      typeof params === 'object' &&
-      params !== null &&
-      'authorizer' in params &&
-      'data' in params
-    ) {
-      const { data, authorizer } = params as SendTransactionDataParams
-      const transactionDataPayload = (() => {
-        const se = new BcsSerializer()
-        data.serialize(se)
-        return se.getBytes()
-      })()
-      const auth = await authorizer.auth(transactionDataPayload)
-      const transaction = new RoochTransaction(data, auth)
-      const transactionPayload = (() => {
-        const se = new BcsSerializer()
-        transaction.serialize(se)
-        return se.getBytes()
-      })()
-
-      return this.client.rooch_sendRawTransaction(transactionPayload)
-    }
-
-    const { address, authorizer, args, funcId, tyArgs, opts } = params as SendTransactionParams
-    const number = await this.getSequenceNumber(address)
-    const bcsArgs = args?.map((arg) => encodeArg(arg)) ?? []
-    const scriptFunction = encodeFunctionCall(funcId, tyArgs ?? [], bcsArgs)
-    const txData = new RoochTransactionData(
-      new BCSAccountAddress(addressToListTuple(address)),
-      BigInt(number),
-      BigInt(this.getChainId()),
-      BigInt(opts?.maxGasAmount ?? DEFAULT_MAX_GAS_AMOUNT),
-      scriptFunction,
-    )
-    const transactionDataPayload = (() => {
-      const se = new BcsSerializer()
-      txData.serialize(se)
-      return se.getBytes()
-    })()
-    const auth = await authorizer.auth(transactionDataPayload)
-    const transaction = new RoochTransaction(txData, auth)
-    const transactionPayload = (() => {
-      const se = new BcsSerializer()
-      transaction.serialize(se)
-      return se.getBytes()
-    })()
-
-    return this.client.rooch_sendRawTransaction(transactionPayload)
+  async sendRawTransaction(params: SendTransactionParams) {
+    const payload = await this.buildRawTransations(params)
+    return this.client.rooch_sendRawTransaction(payload)
   }
 
   async getTransactionsByHashes(tx_hashes: string[]): Promise<TransactionWithInfoView | null[]> {
     return await this.client.rooch_getTransactionsByHash(tx_hashes)
   }
 
-  async getTransactions(params: GetTransactionsParams): Promise<TransactionWithInfoPageView> {
+  async getTransactions(params?: GetTransactionsParams): Promise<TransactionWithInfoPageView> {
     return this.client.rooch_getTransactionsByOrder(
-      params.cursor.toString(),
-      params.limit.toString(),
-      params.descending_order,
+      params?.cursor?.toString() || DEFAULT_NULL_CURSOR,
+      params?.limit?.toString() || DEFAULT_LIMIT,
+      params?.descending_order || true,
     )
   }
 
@@ -240,98 +201,101 @@ export class RoochClient {
   async getEvents(params: GetEventsParams): Promise<EventPageView> {
     return await this.client.rooch_getEventsByEventHandle(
       params.eventHandleType,
-      params.cursor.toString(),
-      params.limit.toString(),
-      params.descending_order,
+      params?.cursor?.toString() || DEFAULT_NULL_CURSOR,
+      params?.limit?.toString() || DEFAULT_LIMIT,
+      params?.descending_order || true,
       { decode: true } as EventOptions,
     )
   }
 
   // Get the states by access_path
-  async getStates(access_path: string): Promise<StateView | null[]> {
-    return await this.client.rooch_getStates(access_path, { decode: true } as StateOptions)
+  async getStates(params: GetStatesParams): Promise<StateView[]> {
+    const result = await this.client.rooch_getStates(
+      params.accessPath,
+      params.display || DEFAULT_DISPLAY,
+    )
+
+    return result as unknown as StateView[]
   }
 
   async listStates(params: ListStatesParams): Promise<StatePageView> {
     return await this.client.rooch_listStates(
       params.accessPath,
-      params.cursor as any,
-      params.limit.toString(),
-      {
-        decode: true,
-      } as StateOptions,
+      params.cursor || DEFAULT_NULL_CURSOR,
+      params.limit?.toString() || DEFAULT_LIMIT,
+      params.display || DEFAULT_DISPLAY,
     )
   }
 
   async queryGlobalStates(params: QueryObjectStatesParams): Promise<ObjectStateView> {
     return await this.client.rooch_queryGlobalStates(
       params.filter,
-      params.cursor as any,
-      params.limit.toString(),
-      params.descending_order,
+      params.cursor || DEFAULT_NULL_CURSOR,
+      params.limit?.toString() || DEFAULT_LIMIT,
+      params.descending_order || true,
     )
   }
 
   async queryObjectStates(params: QueryObjectStatesParams): Promise<ObjectStateView> {
     return await this.client.rooch_queryObjectStates(
       params.filter,
-      params.cursor as any,
-      params.limit.toString(),
-      params.descending_order,
+      params.cursor || DEFAULT_NULL_CURSOR,
+      params.limit?.toString() || DEFAULT_LIMIT,
+      params.descending_order || true,
     )
   }
 
   async queryFieldStates(params: QueryFieldStatesParams): Promise<FieldStateView> {
     return await this.client.rooch_queryFieldStates(
       params.filter,
-      params.cursor as any,
-      params.limit.toString(),
-      params.descending_order,
+      params.cursor || DEFAULT_NULL_CURSOR,
+      params.limit?.toString() || DEFAULT_LIMIT,
+      params.descending_order || true,
     )
   }
 
   async queryTableStates(params: QueryFieldStatesParams): Promise<FieldStateView> {
     return await this.client.rooch_queryTableStates(
       params.filter,
-      params.cursor as any,
-      params.limit.toString(),
-      params.descending_order,
+      params.cursor || DEFAULT_NULL_CURSOR,
+      params.limit?.toString() || DEFAULT_LIMIT,
+      params.descending_order || true,
     )
   }
 
   async queryInscriptions(params: QueryInscriptionsParams): Promise<InscriptionStatePageView> {
     return await this.client.btc_queryInscriptions(
-      params.filter as any,
-      params.cursor as any,
-      params.limit.toString(),
-      params.descending_order,
+      params.filter,
+      params.cursor || DEFAULT_NULL_CURSOR,
+      params.limit?.toString() || DEFAULT_LIMIT,
+      params.descending_order || true,
     )
   }
 
   async queryUTXOs(params: QueryUTXOsParams): Promise<UTXOStatePageView> {
     return await this.client.btc_queryUTXOs(
-      params.filter as any,
-      params.cursor as any,
-      params.limit.toString(),
-      params.descending_order,
+      params.filter,
+      params.cursor || DEFAULT_NULL_CURSOR,
+      params.limit?.toString() || DEFAULT_LIMIT,
+      params.descending_order || true,
     )
   }
 
   async queryTransactions(params: QueryTransactionParams): Promise<TransactionWithInfoPageView> {
     return await this.client.rooch_queryTransactions(
       params.filter,
-      params.cursor,
-      params.limit,
-      params.descending_order,
+      params.cursor || DEFAULT_NULL_CURSOR,
+      params.limit?.toString() || DEFAULT_LIMIT,
+      params.descending_order || true,
     )
   }
 
   async queryEvents(params: QueryEventParams): Promise<EventWithIndexerPageView> {
     return await this.client.rooch_queryEvents(
       params.filter,
-      params.cursor,
-      params.limit,
-      params.descending_order,
+      params.cursor || DEFAULT_NULL_CURSOR,
+      params.limit?.toString() || DEFAULT_LIMIT,
+      params.descending_order || true,
     )
   }
 
@@ -340,7 +304,11 @@ export class RoochClient {
   }
 
   async getBalances(params: GetBalancesParams): Promise<BalanceInfoPageView> {
-    return await this.client.rooch_getBalances(params.address, params.cursor, params.limit)
+    return await this.client.rooch_getBalances(
+      params.address,
+      params.cursor || DEFAULT_NULL_CURSOR,
+      params.limit?.toString() || DEFAULT_LIMIT,
+    )
   }
 
   /// contract func
@@ -348,7 +316,6 @@ export class RoochClient {
   async getSequenceNumber(address: string): Promise<number> {
     const resp = await this.executeViewFunction({
       funcId: '0x2::account::sequence_number',
-      tyArgs: [],
       args: [
         {
           type: 'Address',
@@ -372,12 +339,10 @@ export class RoochClient {
    * @param limit The page limit
    */
   public async querySessionKeys(
-    address: string,
-    cursor: string | null,
-    limit: number,
-  ): Promise<IPage<SessionInfo, string>> {
-    const accessPath = `/resource/${address}/0x3::session_key::SessionKeys`
-    const states = await this.getStates(accessPath)
+    params: QuerySessionKeysParams,
+  ): Promise<IPage<SessionInfoResult, string>> {
+    const accessPath = `/resource/${params.address}/0x3::session_key::SessionKeys`
+    const states = await this.getStates({ accessPath })
 
     if (!states || (Array.isArray(states) && states.length === 0)) {
       throw new Error('not found state')
@@ -389,22 +354,23 @@ export class RoochClient {
     const tablePath = `/table/${tableId}`
     const pageView = await this.listStates({
       accessPath: tablePath,
-      cursor,
-      limit,
+      cursor: params.cursor,
+      limit: params.limit,
     })
 
     const parseScopes = (data: Array<any>) => {
       const result = new Array<string>()
 
       for (const scope of data) {
-        result.push(`${scope.module_name}::${scope.module_address}::${scope.function_name}`)
+        const value = scope.value
+        result.push(`${value.module_name}::${value.module_address}::${value.function_name}`)
       }
 
       return result
     }
 
     const parseStateToSessionInfo = () => {
-      const result = new Array<SessionInfo>()
+      const result = new Array<SessionInfoResult>()
 
       for (const state of pageView.data as any) {
         const moveValue = state?.state.decoded_value as any
@@ -413,12 +379,14 @@ export class RoochClient {
           const val = moveValue.value
 
           result.push({
-            authentication_key: val.authentication_key,
+            appName: val.app_name,
+            appUrl: val.app_url,
+            authenticationKey: val.authentication_key,
             scopes: parseScopes(val.scopes),
-            create_time: parseInt(val.create_time),
-            last_active_time: parseInt(val.last_active_time),
-            max_inactive_interval: parseInt(val.max_inactive_interval),
-          } as SessionInfo)
+            createTime: parseInt(val.create_time),
+            lastActiveTime: parseInt(val.last_active_time),
+            maxInactiveInterval: parseInt(val.max_inactive_interval),
+          } as SessionInfoResult)
         }
       }
       return result
@@ -508,5 +476,57 @@ export class RoochClient {
     }
 
     throw new Error('resolve rooch address fail')
+  }
+
+  private async buildRawTransations(params: ExecuteTransactionParams): Promise<Uint8Array> {
+    if (params instanceof Uint8Array) {
+      return params
+    }
+
+    if (
+      typeof params === 'object' &&
+      params !== null &&
+      'authorizer' in params &&
+      'data' in params
+    ) {
+      const { data, authorizer } = params as TransactionDataParams
+      const transactionDataPayload = (() => {
+        const se = new BcsSerializer()
+        data.serialize(se)
+        return se.getBytes()
+      })()
+      const auth = await authorizer.auth(transactionDataPayload)
+      const transaction = new RoochTransaction(data, auth)
+      return (() => {
+        const se = new BcsSerializer()
+        transaction.serialize(se)
+        return se.getBytes()
+      })()
+    }
+
+    const { address, authorizer, args, funcId, tyArgs, opts } =
+      params as ExecuteTransactionInfoParams
+    const number = await this.getSequenceNumber(address)
+    const bcsArgs = args?.map((arg) => encodeArg(arg)) ?? []
+    const scriptFunction = encodeFunctionCall(funcId, tyArgs ?? [], bcsArgs)
+    const txData = new RoochTransactionData(
+      new BCSAccountAddress(addressToListTuple(address)),
+      BigInt(number),
+      BigInt(this.getChainId()),
+      BigInt(opts?.maxGasAmount ?? DEFAULT_MAX_GAS_AMOUNT),
+      scriptFunction,
+    )
+    const transactionDataPayload = (() => {
+      const se = new BcsSerializer()
+      txData.serialize(se)
+      return se.getBytes()
+    })()
+    const auth = await authorizer.auth(transactionDataPayload)
+    const transaction = new RoochTransaction(txData, auth)
+    return (() => {
+      const se = new BcsSerializer()
+      transaction.serialize(se)
+      return se.getBytes()
+    })()
   }
 }

@@ -188,7 +188,7 @@ Get the session key of the account_address by the authentication key
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scopes: <a href="">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">session_key::SessionScope</a>&gt;, max_inactive_interval: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key">create_session_key</a>(sender: &<a href="">signer</a>, app_name: <a href="_String">ascii::String</a>, app_url: <a href="_String">ascii::String</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scopes: <a href="">vector</a>&lt;<a href="session_key.md#0x3_session_key_SessionScope">session_key::SessionScope</a>&gt;, max_inactive_interval: u64)
 </code></pre>
 
 
@@ -199,7 +199,7 @@ Get the session key of the account_address by the authentication key
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_entry">create_session_key_entry</a>(sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scope_module_address: <b>address</b>, scope_module_name: <a href="_String">ascii::String</a>, scope_function_name: <a href="_String">ascii::String</a>, max_inactive_interval: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_entry">create_session_key_entry</a>(sender: &<a href="">signer</a>, app_name: <a href="_String">ascii::String</a>, app_url: <a href="_String">ascii::String</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scope_module_address: <b>address</b>, scope_module_name: <a href="_String">ascii::String</a>, scope_function_name: <a href="_String">ascii::String</a>, max_inactive_interval: u64)
 </code></pre>
 
 
@@ -210,7 +210,7 @@ Get the session key of the account_address by the authentication key
 
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_with_multi_scope_entry">create_session_key_with_multi_scope_entry</a>(sender: &<a href="">signer</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scope_module_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;, scope_module_names: <a href="">vector</a>&lt;<a href="_String">ascii::String</a>&gt;, scope_function_names: <a href="">vector</a>&lt;<a href="_String">ascii::String</a>&gt;, max_inactive_interval: u64)
+<pre><code><b>public</b> entry <b>fun</b> <a href="session_key.md#0x3_session_key_create_session_key_with_multi_scope_entry">create_session_key_with_multi_scope_entry</a>(sender: &<a href="">signer</a>, app_name: <a href="_String">ascii::String</a>, app_url: <a href="_String">ascii::String</a>, authentication_key: <a href="">vector</a>&lt;u8&gt;, scope_module_addresses: <a href="">vector</a>&lt;<b>address</b>&gt;, scope_module_names: <a href="">vector</a>&lt;<a href="_String">ascii::String</a>&gt;, scope_function_names: <a href="">vector</a>&lt;<a href="_String">ascii::String</a>&gt;, max_inactive_interval: u64)
 </code></pre>
 
 

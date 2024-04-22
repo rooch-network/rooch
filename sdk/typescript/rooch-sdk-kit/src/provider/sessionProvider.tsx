@@ -43,6 +43,7 @@ export function RoochSessionProvider(props: RoochSessionProviderProps) {
   const network = useCurrentNetwork()
   const sessionStoreRef = useRef<SessionStore>()
 
+  // init
   useEffect(() => {
     const init = async () => {
       sessionStoreRef.current = createSessionStore({

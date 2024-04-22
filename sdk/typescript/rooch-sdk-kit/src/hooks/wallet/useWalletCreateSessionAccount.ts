@@ -12,6 +12,8 @@ import { WalletRoochSessionAccount } from '../../types/WalletRoochSessionAccount
 import { useRoochSessionStore } from '../index'
 
 interface UseCreateSessionKeyArgs {
+  appName: string
+  appUrl: string
   scopes: string[]
   maxInactiveInterval?: number
 }
@@ -58,6 +60,8 @@ export function useCreateSessionKey({
         const sessionAccount = await WalletRoochSessionAccount.CREATE(
           client,
           currentAccount!,
+          args.appName,
+          args.appUrl,
           scopes,
           maxInactiveInterval,
         )
