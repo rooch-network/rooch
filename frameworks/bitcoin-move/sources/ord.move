@@ -12,6 +12,8 @@ module bitcoin_move::ord {
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::json;
     use moveos_std::table_vec::{Self, TableVec};
+    use moveos_std::type_info;
+    use moveos_std::bag;
     use rooch_framework::address_mapping;
     use rooch_framework::multichain_address;
     use rooch_framework::bitcoin_address::BitcoinAddress;
@@ -25,6 +27,8 @@ module bitcoin_move::ord {
     const SUBSIDY_HALVING_INTERVAL: u32 = 210_000;
 
     const FIRST_POST_SUBSIDY_EPOCH: u32 = 33;
+
+    const PERMANENT_AREA: vector<u8> = b"permanent_area";
 
     /// How many satoshis are in "one bitcoin".
     const COIN_VALUE: u64 = 100_000_000;
@@ -171,17 +175,6 @@ module bitcoin_move::ord {
             return simple_map::new()
         };
         json::to_map(record.body)
-    }
-
-    public fun parse_inscription_body(inscription: &Inscription) : SimpleMap<String,String> {
-        if (vector::is_empty(&inscription.body) || option::is_none(&inscription.content_type)) {
-            return simple_map::new()
-        };
-        let content_type = option::destroy_some(inscription.content_type);
-        if(content_type != string::utf8(b"text/plain;charset=utf-8") || content_type != string::utf8(b"text/plain") || content_type != string::utf8(b"application/json")){
-            return simple_map::new()
-        };
-        json::to_map(inscription.body)
     }
 
     public fun exists_inscription(txid: address, index: u32): bool{
@@ -630,5 +623,97 @@ module bitcoin_move::ord {
         };
     }
 
+    // ===== permenent area ========== //
+    #[private_generics(S)]
+    public fun add_permanent_state<S: store>(inscription: &mut Object<Inscription>, state: S){
+        if(object::contains_field(inscription, PERMANENT_AREA)){
+            let bag = object::borrow_mut_field(inscription, PERMANENT_AREA);
+            let name = type_info::type_name<S>();
+            bag::add(bag, name, state);
+        }else{
+            let bag = bag::new();
+            let name = type_info::type_name<S>();
+            bag::add(&mut bag, name, state);
+            object::add_field(inscription, PERMANENT_AREA, bag);
+        }
+    }
 
+    public fun contains_permanent_state<S: store>(inscription: &Object<Inscription>) : bool {
+        if(object::contains_field(inscription, PERMANENT_AREA)){
+            let bag = object::borrow_field(inscription, PERMANENT_AREA);
+            let name = type_info::type_name<S>();
+            bag::contains(bag, name)
+        }else{
+            false
+        }
+    }
+
+    public fun borrow_permanent_state<S: store>(inscription: &Object<Inscription>) : &S {
+        let bag = object::borrow_field(inscription, PERMANENT_AREA);
+        let name = type_info::type_name<S>();
+        bag::borrow(bag, name)
+    }
+
+    #[private_generics(S)]
+    public fun borrow_mut_permanent_state<S: store>(inscription: &mut Object<Inscription>) : &mut S {
+        let bag = object::borrow_mut_field(inscription, PERMANENT_AREA);
+        let name = type_info::type_name<S>();
+        bag::borrow_mut(bag, name)
+    }
+
+    #[private_generics(S)]
+    public fun remove_permanent_state<S: store>(inscription: &mut Object<Inscription>) : S {
+        let bag = object::borrow_mut_field(inscription, PERMANENT_AREA);
+        let name = type_info::type_name<S>();
+        bag::remove(bag, name)
+    }
+
+    #[test_only]
+    public fun new_inscription_object_for_test(
+        txid: address,
+        index: u32,
+        input: u32,
+        offset: u64,
+        body: vector<u8>,
+        content_encoding: Option<String>,
+        content_type: Option<String>,
+        metadata: vector<u8>,
+        metaprotocol: Option<String>,
+        parent: Option<ObjectID>,
+        pointer: Option<u64>,
+    ): Object<Inscription> {
+        let inscription = Inscription {
+            txid,
+            index,
+            input,
+            offset,
+            body,
+            content_encoding,
+            content_type,
+            metadata,
+            metaprotocol,
+            parent,
+            pointer,
+        };
+
+        object::new(inscription)
+    }
+
+    #[test_only]
+    public fun drop_inscription_object_for_test(inscription: Object<Inscription>) {
+        let inscription = object::remove(inscription);
+        let Inscription { 
+            txid: _, 
+            index: _,
+            input: _,
+            offset: _,
+            body: _,
+            content_encoding: _,
+            content_type: _,
+            metadata: _,
+            metaprotocol: _,
+            parent: _,
+            pointer: _,
+        } = inscription;
+    }
 }

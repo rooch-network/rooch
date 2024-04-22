@@ -22,75 +22,180 @@
 ///     which has no more relationship with the seed and the plant.
 module bitcoin_plants::plants {
 
-    use std::string;
+    use std::vector;
     use moveos_std::tx_context;
     use moveos_std::object::{Self, Object};
-    use rooch_framework::coin::{Self, Coin, CoinInfo};
-    use rooch_framework::account_coin_store;
     use rooch_framework::timestamp;
-    use bitcoin_move::utxo::{Self, UTXO};
-    use bitcoin_move::ord::Inscription;
+    use bitcoin_move::ord::{Self, Inscription};
 
-    const ErrorAlreadyStaked: u64 = 1;
-    const ErrorAlreadyClaimed: u64 = 2;
+    const ErrorNotSeed: u64 = 0;
+    const ErrorAlreadyPlanted: u64 = 1;
+    const ErrorNotPlanted: u64 = 2;
+    const ErrorWateringTooFrequently: u64 = 3;
+    const ErrorPlantDead: u64 = 4;
+
+    const WATERING_INTERVAL: u64 = 60 * 60 * 24; // 1 day
 
     /// The fruit NFT.
-    struct Fruit has key, store {
+    // TODO: maybe SFT is more suitable to represent the fruits.
+    struct Fruits has key, store {
         variety: u64,
         value: u64,
     }
 
     /// The plant.
-    /// Recording the plant's status and will be stored in the permanent state area of the UTXO
+    /// Recording the plant's status and will be stored in the permanent state area of the Inscription.
     struct Plant has store {
         /// The variety of the plant. The type variety is inferred from the seed Inscription.
         variety: u64,
         /// The growth value of the plant. The value will be updated by watering actions.
-        /// All status can be inferred from the growth value.
         growth_value: u64,
-        status: u8,
+        /// The health of the plant. Health will decrease if the plant is not watered.
+        /// The health will be updated by watering actions.
+        /// Health value ranges in [0,100], if health is 0, the plant is dead.
+        health: u8,
+        /// The last time that the plant has been watered, in seconds.
         last_watering_time: u64,
+        /// The number of fruits that are available to be picked.
+        pickable_fruits: u64,
+        /// The number of fruits that have been picked.
+        picked_fruits: u64,
     }
 
     fun init() {
-        let coin_info_obj = coin::register_extend<HDC>(
-            string::utf8(b"BTC Holder Coin"),
-            string::utf8(b"HDC"),
-            DECIMALS,
-        );
-        let coin_info_holder_obj = object::new_named_object(CoinInfoHolder { coin_info: coin_info_obj });
-        // Make the coin info holder object to shared, so anyone can get mutable CoinInfoHolder object
-        object::to_shared(coin_info_holder_obj);
     }
 
     /// Plant with seed represented by the Inscription
     // Parse the Inscription and store planting info and plant states in the UTXO's permanent state area.
-    public fun do_plant(seed: &mut Object<Inscription>) {
+    public entry fun plant(seed: &mut Object<Inscription>) {
         // Parse the Inscription, check if it is a seed Inscription.
-        // A seed inscription has protocol `bitseed` and tick name `seed`
+        let inscription = object::borrow(seed);
+        ensure_seed_inscription(inscription);
 
+        // Check if the Inscription is already planted
+        assert!(!ord::contains_permanent_state<Plant>(seed), ErrorAlreadyPlanted);
 
-        // Check if the UTXO is already planted
+        // TODO: init the Plant from seed attributes
+        let plant = Plant {
+            variety: 0,
+            growth_value: 0,
+            health: 100,
+            last_watering_time: timestamp::now_seconds(),
+            pickable_fruits: 0,
+            picked_fruits: 0,
+        };
 
-        // Store the planting info and plant status in the UTXO's permanent state area
+        // Store the planting info and plant status in the Inscription's permanent state area
+        ord::add_permanent_state(seed, plant);
     }
 
-    public fun do_water(plant: &mut Object<Inscription>) {
-        // Check watering actions of this plant
-
+    public entry fun water(plant: &mut Object<Inscription>) {
+        let plant = ord::borrow_mut_permanent_state<Plant>(plant);
+        let watering_interval = timestamp::now_seconds() - plant.last_watering_time;
+        assert!(watering_interval >= WATERING_INTERVAL, ErrorWateringTooFrequently);
         // Update plant status and watering actions
+        plant.health = calculate_health(plant.growth_value, plant.health, watering_interval);
+        if (plant.health == 0) {
+            // The plant is dead
+            return
+        };
+        plant.growth_value = plant.growth_value + 1;
+        plant.last_watering_time = timestamp::now_seconds();
+
+        // Update fruits status
+        if (plant.growth_value >= 10) {
+            plant.pickable_fruits = (plant.growth_value - 10) / 5 + 1 - plant.picked_fruits;
+        }
     }
 
-    public fun do_harvest(plant: &mut Object<Inscription>) {
-        // Check the plant's status.
+    public fun do_harvest(plant: &mut Object<Inscription>): vector<Fruits> {
+        let plant = ord::borrow_mut_permanent_state<Plant>(plant);
+        assert!(plant.health > 0, ErrorPlantDead);
 
         // Harvest the plant if there are fruits
+        if (plant.pickable_fruits > 0) {
+            plant.picked_fruits = plant.picked_fruits + plant.pickable_fruits;
+            let fruits = Fruits {
+                variety: plant.variety,
+                value: plant.pickable_fruits
+            };
+            plant.pickable_fruits = 0;
+            vector[fruits]
+        } else {
+            vector[]
+        }
     }
 
-    public fun is_seed(json_map: &SimpleMap<String,String>) : bool {
-        let protocol_key = string::utf8(b"p");
-        simple_map::contains_key(json_map, &protocol_key) && \
-        simple_map::borrow(json_map, &protocol_key) == &string::utf8(b"bitseed") && \
-        simple_map::borrow(json_map, &string::utf8(b"n")) == &string::utf8(b"seed")
+    public entry fun harvest(plant: &mut Object<Inscription>) {
+        let fruits = do_harvest(plant);
+        if (vector::length(&fruits) > 0) {
+            let fruit = vector::pop_back(&mut fruits);
+            let obj = object::new(fruit);
+            object::transfer(obj, tx_context::sender());
+        };
+        vector::destroy_empty(fruits);
+    }
+
+    public fun is_seed(_inscription: &Inscription) : bool {
+        // TODO: Parse the Inscription content and check if it is a seed Inscription
+        true
+    }
+
+    /// Infer the level of plant through growth value.
+    public fun infer_plant_level(_growth_value: u64): u8 {
+        // TODO
+        1
+    }
+
+    /// Calculate the health of the plant.
+    /// With longer `thirst_duration`, the health will decrease more.
+    /// With higher growth value, the health will decrease slower.
+    public fun calculate_health(_growth_value: u64, health: u8, _thirst_duration: u64): u8 {
+        // TODO
+        health
+    }
+
+    fun ensure_seed_inscription(inscription: &Inscription) {
+        assert!(is_seed(inscription), ErrorNotSeed);
+    }
+
+    #[test_only]
+    use std::option;
+
+    #[test]
+    fun test() {
+        let inscription_obj = ord::new_inscription_object_for_test(
+            @0x3232423,
+            0,
+            0,
+            0,
+            vector[],
+            option::none(),
+            option::none(),
+            vector[],
+            option::none(),
+            option::none(),
+            option::none(),
+        );
+
+        plant(&mut inscription_obj);
+
+        let i = 0u8;
+        loop {
+            timestamp::fast_forward_seconds_for_test(WATERING_INTERVAL);
+            water(&mut inscription_obj);
+            i = i + 1;
+            if (i == 10) break;
+        };
+
+        let fruits = do_harvest(&mut inscription_obj);
+        assert!(vector::length(&fruits) == 1, 1);
+        let Fruits { variety: _, value: _} = vector::pop_back(&mut fruits);
+        vector::destroy_empty(fruits);
+
+        let plant = ord::remove_permanent_state<Plant>(&mut inscription_obj);
+        let Plant { variety: _, growth_value: _, health: _, last_watering_time: _, pickable_fruits: _, picked_fruits: _ } = plant;
+        
+        ord::drop_inscription_object_for_test(inscription_obj);
     }
 }
