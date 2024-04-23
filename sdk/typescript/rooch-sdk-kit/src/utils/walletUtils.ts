@@ -3,7 +3,6 @@
 
 import { SupportChain, SupportChains } from '../feature'
 import { BaseWallet, Metamask, UniSatWallet } from '../types'
-import { OkxWallet } from '../types/wellet/okx'
 import { RoochClient } from '@roochnetwork/rooch-sdk'
 
 export async function getInstalledWallets(client: RoochClient, filter?: SupportChain) {
@@ -14,7 +13,7 @@ export async function getInstalledWallets(client: RoochClient, filter?: SupportC
         wallets.push(new Metamask(client))
         break
       case SupportChain.BITCOIN:
-        wallets.push(new UniSatWallet(client), new OkxWallet(client))
+        wallets.push(new UniSatWallet(client))
         break
       case SupportChain.Rooch:
         wallets.push(new Metamask(client), new UniSatWallet(client))
