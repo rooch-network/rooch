@@ -89,7 +89,7 @@ impl rlp::Encodable for MoveValueWrapper {
                     }
                 }
             }
-            _ => todo!(),
+            _ => unreachable!(),
         }
     }
 }

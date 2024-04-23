@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module moveos_std::wasm {
+    use moveos_std::features;
+
     struct WASMInstance {
         id: u64
     }
@@ -11,6 +13,8 @@ module moveos_std::wasm {
     }
 
     public fun create_wasm_instance(bytecode: vector<u8>): WASMInstance {
+        features::ensure_wasm_enabled();
+
         let instance_id = native_create_wasm_instance(bytecode);
         WASMInstance {id: instance_id }
     }
@@ -28,6 +32,7 @@ module moveos_std::wasm {
     }
 
     public fun execute_wasm_function(instance_id: u64, func_name: vector<u8>, args: vector<u64>): u64 {
+        features::ensure_wasm_enabled();
         native_execute_wasm_function(instance_id, func_name, args)
     }
 
@@ -40,6 +45,7 @@ module moveos_std::wasm {
     }
 
     public fun release_wasm_instance(instance: WASMInstance): bool {
+        features::ensure_wasm_enabled();
         native_release_wasm_instance(instance)
     }
 
