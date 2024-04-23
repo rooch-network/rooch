@@ -36,3 +36,4 @@ sdk/typescript/dist/
 sdk/typescript/example/
 sdk/typescript/src/generated/
 rooch-portal-v1/script/nohup.out
+*.out
