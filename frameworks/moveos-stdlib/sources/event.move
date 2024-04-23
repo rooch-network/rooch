@@ -20,7 +20,7 @@ module moveos_std::event {
     native fun native_emit<T>(event: T);
 
     #[test_only]
-    struct WithdrawEvent has drop {
+    struct WithdrawEvent has drop,copy {
         addr: address,
         amount: u64
     }
