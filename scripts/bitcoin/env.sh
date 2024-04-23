@@ -42,7 +42,7 @@ init() {
   fi
 
   # Step 1: Create a new ord wallet
-  nohup ord --regtest --bitcoin-rpc-url http://127.0.0.1:18443 --bitcoin-rpc-username roochuser --bitcoin-rpc-password roochpass server &
+  ord server &
 
   sleep 5
 
