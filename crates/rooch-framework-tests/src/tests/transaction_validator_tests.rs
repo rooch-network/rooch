@@ -10,12 +10,15 @@ use move_core_types::vm_status::{AbortLocation, VMStatus};
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_types::FunctionId;
 use moveos_types::{module_binding::ModuleBinding, transaction::MoveAction};
+use moveos_types::move_std::ascii::MoveAsciiString;
+use moveos_types::move_std::string::MoveString;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
 use rooch_types::framework::session_key::SessionKeyModule;
 use rooch_types::framework::timestamp::TimestampModule;
 use rooch_types::{addresses::ROOCH_FRAMEWORK_ADDRESS, framework::empty::Empty};
 use rooch_types::{framework::session_key::SessionScope, transaction::rooch::RoochTransactionData};
+use std::str::FromStr;
 
 #[test]
 fn test_session_key_rooch() {
@@ -34,8 +37,12 @@ fn test_session_key_rooch() {
         Empty::EMPTY_FUNCTION_NAME.as_str(),
     )
     .unwrap();
+    let app_name = MoveString::from_str("test").unwrap();
+    let app_url = MoveAsciiString::from_str("https:://test.rooch.network").unwrap();
     let max_inactive_interval = 100;
     let action = rooch_types::framework::session_key::SessionKeyModule::create_session_key_action(
+        app_name,
+        app_url,
         session_auth_key.as_ref().to_vec(),
         session_scope.clone(),
         max_inactive_interval,

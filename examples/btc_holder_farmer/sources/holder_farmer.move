@@ -516,9 +516,9 @@ module btc_holder_farmer::hold_farmer {
 
     public fun check_asset_is_staked(asset_id: ObjectID): bool {
         let farming_asset = account::borrow_resource<FarmingAsset>(DEPLOYER);
-        let account = table::borrow(&farming_asset.stake_table, asset_id);
-        let user_stake = account::borrow_resource<UserStake>(*account);
-        table::contains(&user_stake.stake, asset_id)
+        // let account = table::borrow(&farming_asset.stake_table, asset_id);
+        // let user_stake = account::borrow_resource<UserStake>(*account);
+        table::contains(&farming_asset.stake_table, asset_id)
     }
 
     public entry fun remove_expired_stake(asset_id: ObjectID) {
