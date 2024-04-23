@@ -49,8 +49,6 @@ use std::cmp::min;
 use std::str::FromStr;
 use tracing::info;
 
-const MAX_RESULT_AMOUNT: u64 = 10000;
-
 pub struct RoochServer {
     rpc_service: RpcService,
     aggregate_service: AggregateService,
@@ -386,29 +384,29 @@ impl RoochAPIServer for RoochServer {
             .await?
             .map_or(0, |v| v.last_order);
 
-        let limit_of = limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT);
+        let limit_of = min(
+            limit
+                .map(Into::into)
+                .unwrap_or(DEFAULT_RESULT_LIMIT_USIZE as u64),
+            MAX_RESULT_LIMIT_USIZE as u64,
+        );
+
         let descending_order = descending_order.unwrap_or(true);
         let cursor = cursor.map(|v| v.0);
 
         let tx_orders = if descending_order {
             let start = cursor.unwrap_or(last_sequencer_order + 1);
-            let start_sub = start
-                .checked_sub(limit_of)
-                .ok_or(jsonrpsee::core::Error::Custom(
-                    "cursor value is overflow".to_string(),
-                ))?;
-            let end = if start >= limit_of { start_sub } else { 0 };
-
-            let gaps = end
-                .checked_sub(start)
-                .ok_or(jsonrpsee::core::Error::Custom(
-                    "end value is overflow".to_string(),
-                ))?;
-            if gaps > MAX_RESULT_AMOUNT {
-                return Err(jsonrpsee::core::Error::Custom(
-                    "amount of the result is too large".to_string(),
-                ));
-            }
+            let start_sub =
+                start
+                    .checked_sub(limit_of as u64)
+                    .ok_or(jsonrpsee::core::Error::Custom(
+                        "cursor value is overflow".to_string(),
+                    ))?;
+            let end = if start >= limit_of as u64 {
+                start_sub
+            } else {
+                0
+            };
 
             (end..start).rev().collect::<Vec<_>>()
         } else {
@@ -420,22 +418,11 @@ impl RoochAPIServer for RoochServer {
                 ))?;
             let start_plus =
                 start
-                    .checked_add(limit_value)
+                    .checked_add(limit_value as u64)
                     .ok_or(jsonrpsee::core::Error::Custom(
                         "cursor value is overflow".to_string(),
                     ))?;
             let end = min(start_plus, last_sequencer_order + 1);
-
-            let gaps = end
-                .checked_sub(start)
-                .ok_or(jsonrpsee::core::Error::Custom(
-                    "start value is overflow".to_string(),
-                ))?;
-            if gaps > MAX_RESULT_AMOUNT {
-                return Err(jsonrpsee::core::Error::Custom(
-                    "amount of the result is too large".to_string(),
-                ));
-            }
 
             (start..end).collect::<Vec<_>>()
         };
@@ -448,7 +435,7 @@ impl RoochAPIServer for RoochServer {
             .filter_map(|(h, o)| h.map(|h| (h, o)))
             .collect::<Vec<_>>();
 
-        let has_next_page = (hash_order_pair.len() as u64) > limit_of;
+        let has_next_page = (hash_order_pair.len() as u64) > limit_of as u64;
         hash_order_pair.truncate(limit_of as usize);
 
         let next_cursor = hash_order_pair.last().map_or(cursor, |(_h, o)| Some(*o));

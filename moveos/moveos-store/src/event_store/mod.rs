@@ -10,8 +10,6 @@ use raw_store::{derive_store, CodecKVStore, StoreInstance};
 use std::cmp::min;
 use std::collections::{HashMap, HashSet};
 
-const MAX_RESULT_AMOUNT: u64 = 10000000;
-
 derive_store!(EventDBBaseStore, (ObjectID, u64), Event, EVENT_PREFIX_NAME);
 
 derive_store!(
@@ -157,14 +155,6 @@ impl EventDBStore {
             let start = cursor.unwrap_or(last_seq + 1);
             let end = if start >= limit { start - limit } else { 0 };
 
-            let gaps = match end.checked_sub(start) {
-                None => return Err(anyhow::Error::msg("end value is overflow")),
-                Some(v) => v,
-            };
-            if gaps > MAX_RESULT_AMOUNT {
-                return Err(anyhow::Error::msg("end value is overflow"));
-            }
-
             (end..start).rev().collect::<Vec<_>>()
         } else {
             let start = match cursor {
@@ -183,14 +173,6 @@ impl EventDBStore {
             };
 
             let end = min(value, last_seq + 1);
-
-            let gaps = match end.checked_sub(start) {
-                None => return Err(anyhow::Error::msg("end value is overflow")),
-                Some(v) => v,
-            };
-            if gaps > MAX_RESULT_AMOUNT {
-                return Err(anyhow::Error::msg("end value is overflow"));
-            }
 
             (start..end).collect::<Vec<_>>()
         };
