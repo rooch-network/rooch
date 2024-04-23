@@ -13,7 +13,7 @@ module bitcoin_move::ord {
     use moveos_std::json;
     use moveos_std::table_vec::{Self, TableVec};
     use moveos_std::type_info;
-    use moveos_std::bag::{Self, Bag};
+    use moveos_std::bag;
     use rooch_framework::address_mapping;
     use rooch_framework::multichain_address;
     use rooch_framework::bitcoin_address::BitcoinAddress;
