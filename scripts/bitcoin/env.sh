@@ -5,7 +5,7 @@
 container_name="bitcoind"
 
 ord() {
-  command ord --regtest --rpc-url http://127.0.0.1:18443 --bitcoin-rpc-user roochuser --bitcoin-rpc-pass roochpass "$@"
+  command ord --regtest --bitcoin-rpc-url http://127.0.0.1:18443 --bitcoin-rpc-username roochuser --bitcoin-rpc-password roochpass "$@"
 }
 
 bitcoin-cli() {
@@ -18,6 +18,7 @@ getBitcoinNode() {
 }
 
 init() {
+  # check bitcoin env
   container_id=$(getBitcoinNode)
   if [ -n "$container_id" ]; then
     echo "Bitcoin node is already running."
@@ -41,15 +42,26 @@ init() {
   done
   fi
 
+  # start ord server
+  ord server &
+
+  sleep 5
+
   # Step 1: Create a new ord wallet
   ord wallet create
 
+  sleep 1
+
   # Step 2: Get a new address to receive funds
-  address=$(ord wallet receive | jq -r '.address')
+  address=$(ord wallet receive | jq -r '.addresses[0]')
   echo "You bitcoin address $address"
+
+  sleep 1
 
   # Step 3: Generate 101 blocks to the address
   bitcoin-cli generatetoaddress 101 $address > /dev/null 2>&1
+
+  sleep 3
 
   # Step 4: Check the balance of the wallet
   ord wallet balance
@@ -58,10 +70,14 @@ init() {
   echo '{"p":"brc-20","op":"mint","tick":"Rooch","amt":"1"}' > /tmp/hello.txt
 
   # Step 6: Inscribe the file to the blockchain
-  ord wallet inscribe --fee-rate 1 --file /tmp/hello.txt --destination $address
+  ord wallet inscribe --fee-rate 1 --file /tmp/hello.txt --destination $address > /dev/null 2>&1
+
+  sleep 1
 
   # Step 7: Mine an inscription with 1 block
-  bitcoin-cli generatetoaddress 1 $address
+  bitcoin-cli generatetoaddress 1 $address > /dev/null 2>&1
+
+  sleep 2
 
   echo "You inscriptions"
   # Step 8: Get the reveal transaction ID
@@ -69,7 +85,6 @@ init() {
 
   # Step 9: start rooch node
   cargo run --package rooch --bin rooch server start --btc-rpc-url http://127.0.0.1:18443 --btc-rpc-username roochuser --btc-rpc-password roochpass --btc-start-block-height 0 --btc-network 4 --data-import-mode 10
-
 }
 
 clean() {
@@ -78,6 +93,9 @@ clean() {
   if [ -n "$indexPath" ]; then
     rm "$indexPath"
   fi
+
+  # stop ord server
+  lsof -ti:80 | xargs kill
 
   # clean bitcoin docker
   container_id=$(getBitcoinNode)
