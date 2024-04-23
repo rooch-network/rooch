@@ -398,11 +398,11 @@ impl RoochAPIServer for RoochServer {
             let start = cursor.unwrap_or(last_sequencer_order + 1);
             let start_sub =
                 start
-                    .checked_sub(limit_of as u64)
+                    .checked_sub(limit_of)
                     .ok_or(jsonrpsee::core::Error::Custom(
                         "cursor value is overflow".to_string(),
                     ))?;
-            let end = if start >= limit_of as u64 {
+            let end = if start >= limit_of {
                 start_sub
             } else {
                 0
@@ -418,7 +418,7 @@ impl RoochAPIServer for RoochServer {
                 ))?;
             let start_plus =
                 start
-                    .checked_add(limit_value as u64)
+                    .checked_add(limit_value)
                     .ok_or(jsonrpsee::core::Error::Custom(
                         "cursor value is overflow".to_string(),
                     ))?;
@@ -435,7 +435,7 @@ impl RoochAPIServer for RoochServer {
             .filter_map(|(h, o)| h.map(|h| (h, o)))
             .collect::<Vec<_>>();
 
-        let has_next_page = (hash_order_pair.len() as u64) > limit_of as u64;
+        let has_next_page = (hash_order_pair.len() as u64) > limit_of;
         hash_order_pair.truncate(limit_of as usize);
 
         let next_cursor = hash_order_pair.last().map_or(cursor, |(_h, o)| Some(*o));
