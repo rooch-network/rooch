@@ -21,6 +21,7 @@ import {
   BaseWallet,
   SupportChain,
   useConnectWallet,
+  useCurrentWallet,
   useWallets,
   useWalletStore,
 } from '@roochnetwork/rooch-sdk-kit'
@@ -31,9 +32,8 @@ export const WalletConnect = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const { mutateAsync: connectWallet } = useConnectWallet()
   const account = useWalletStore((state) => state.currentAccount)
-  const [currentWallet, setCurrentWallet] = useState<BaseWallet | null>(null)
   const wallets = useWallets().filter((wallet) => wallet.getChain() === SupportChain.BITCOIN)
-
+  const currentWallet = useCurrentWallet()
   // ** Connect wallet
   const handleConnectWallet = () => {
     setIsDialogOpen(true)
@@ -44,8 +44,6 @@ export const WalletConnect = () => {
     try {
       setIsLoading(true)
       await connectWallet({ wallet: wallet })
-
-      setCurrentWallet(wallet)
 
       toast.success(`${wallet?.name} wallet connected`)
     } catch (error) {
@@ -106,7 +104,7 @@ export const WalletConnect = () => {
                       <CardTitle>
                         <span className="flex items-center justify-start">
                           <p>{capitalizeFirstLetter(wallet.name!)} Wallet</p>
-                          {currentWallet?.name === wallet.name && (
+                          {currentWallet?.wallet.name === wallet.name && (
                             <Badge
                               variant="outline"
                               className="ml-2 border-teal-400 text-teal-400 hover:bg-teal-400/10 py-0 px-0.5 rounded-md"

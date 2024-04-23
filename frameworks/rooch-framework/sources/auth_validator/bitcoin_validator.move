@@ -93,12 +93,17 @@ module rooch_framework::bitcoin_validator {
         };
 
         let sign_info_len = (vector::length(&sign_info) as u8);
+        let sign_info_insert_index = 0u64;
+        if (sign_info_prefix_len > 0) {
+            sign_info_insert_index = (sign_info_prefix_len as u64) + 1;
+        };
+
         if (vector::length(&sign_info) > 0) {
-            vector::insert(&mut full_tx, (sign_info_prefix_len as u64) + 1,sign_info_len + tx_hex_len);
+            vector::insert(&mut full_tx, sign_info_insert_index,sign_info_len + tx_hex_len);
             vector::append(&mut full_tx, sign_info);
             vector::append(&mut full_tx, tx_hex);
         } else {
-            vector::insert(&mut full_tx, (sign_info_prefix_len as u64) + 1, tx_hex_len);
+            vector::insert(&mut full_tx, sign_info_insert_index, tx_hex_len);
             vector::append(&mut full_tx, tx_hex);
         };
         // append tx hash end
