@@ -14,6 +14,7 @@
 -  [Function `onchain_config`](#0x3_onchain_config_onchain_config)
 -  [Function `add_to_publishing_allowlist`](#0x3_onchain_config_add_to_publishing_allowlist)
 -  [Function `remove_from_publishing_allowlist`](#0x3_onchain_config_remove_from_publishing_allowlist)
+-  [Function `change_feature_flags`](#0x3_onchain_config_change_feature_flags)
 
 
 <pre><code><b>use</b> <a href="">0x2::features</a>;
@@ -110,6 +111,9 @@ OnchainConfig is framework configurations stored on chain.
 
 ## Function `add_to_publishing_allowlist`
 
+When module_publishing_allowlist_feature is enabled, only address in allowlist
+can publish modules.
+Add <code>publisher</code> to publishing allowlist.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_add_to_publishing_allowlist">add_to_publishing_allowlist</a>(<a href="">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
@@ -121,7 +125,20 @@ OnchainConfig is framework configurations stored on chain.
 
 ## Function `remove_from_publishing_allowlist`
 
+Remove <code>publisher</code> from publishing allowlist.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_remove_from_publishing_allowlist">remove_from_publishing_allowlist</a>(<a href="">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
+</code></pre>
+
+
+
+<a name="0x3_onchain_config_change_feature_flags"></a>
+
+## Function `change_feature_flags`
+
+Enable or disable features. You can find all feature flags in moveos_std::features.
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="onchain_config.md#0x3_onchain_config_change_feature_flags">change_feature_flags</a>(<a href="">account</a>: &<a href="">signer</a>, enable: <a href="">vector</a>&lt;u64&gt;, disable: <a href="">vector</a>&lt;u64&gt;)
 </code></pre>

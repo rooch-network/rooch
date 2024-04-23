@@ -50,7 +50,11 @@ module rooch_framework::onchain_config {
         object::borrow(obj)
     }
 
-    /******  APIs for update module publishing allowlist. ******/
+    /******  API for update module publishing allowlist. ******/
+
+    /// When module_publishing_allowlist_feature is enabled, only address in allowlist 
+    /// can publish modules.
+    /// Add `publisher` to publishing allowlist.
     public entry fun add_to_publishing_allowlist(account: &signer, publisher: address) {
         let sender = signer::address_of(account);
         assert!(sender == sequencer(), ErrorNotSequencer);
@@ -59,6 +63,7 @@ module rooch_framework::onchain_config {
         move_module::add_to_allowlist(allowlist, &system_account, publisher);
     }
 
+    /// Remove `publisher` from publishing allowlist.
     public entry fun remove_from_publishing_allowlist(account: &signer, publisher: address) {
         let sender = signer::address_of(account);
         assert!(sender == sequencer(), ErrorNotSequencer);
@@ -66,6 +71,20 @@ module rooch_framework::onchain_config {
         let allowlist = move_module::borrow_mut_allowlist();
         move_module::remove_from_allowlist(allowlist, &system_account, publisher);
     }
+    /****** End of API for update module publishing allowlist. ******/
+
+    /****** API for changing feature flags *******/
+
+    /// Enable or disable features. You can find all feature flags in moveos_std::features.
+    public entry fun change_feature_flags(account: &signer, enable: vector<u64>, disable: vector<u64>) {
+        let sender = signer::address_of(account);
+        assert!(sender == sequencer(), ErrorNotSequencer);
+        let system_account = signer::module_signer<OnchainConfig>();
+        features::change_feature_flags(&system_account, enable, disable);
+    }
+
+    /****** End of API for changing feature flags ******/
+
 
     fun onchain_config_mut(): &mut OnchainConfig {
         let object_id = object::named_object_id<OnchainConfig>();
@@ -87,10 +106,11 @@ module rooch_framework::onchain_config {
         } else if (chain_id::is_test()) {
             vector::push_back(&mut enables, features::get_testnet_feature());
         };
-        if (!chain_id::is_main()) {
-            vector::push_back(&mut enables, features::get_module_template_feature());
-        } else {
+        if (chain_id::is_main()) {
             vector::push_back(&mut enables, features::get_module_publishing_allowlist_feature());
+        } else {
+            vector::push_back(&mut enables, features::get_module_template_feature());
+            vector::push_back(&mut enables, features::get_wasm_feature());
         };
 
         features::change_feature_flags(framework, enables, vector[]);
