@@ -49,7 +49,7 @@ use std::cmp::min;
 use std::str::FromStr;
 use tracing::info;
 
-const MAX_RESULT_AMOUNT: u64 = 10000000;
+const MAX_RESULT_AMOUNT: u64 = 10000;
 
 pub struct RoochServer {
     rpc_service: RpcService,
@@ -406,7 +406,7 @@ impl RoochAPIServer for RoochServer {
                 ))?;
             if gaps > MAX_RESULT_AMOUNT {
                 return Err(jsonrpsee::core::Error::Custom(
-                    "end value is overflow".to_string(),
+                    "amount of the result is too large".to_string(),
                 ));
             }
 
@@ -433,7 +433,7 @@ impl RoochAPIServer for RoochServer {
                 ))?;
             if gaps > MAX_RESULT_AMOUNT {
                 return Err(jsonrpsee::core::Error::Custom(
-                    "end value is overflow".to_string(),
+                    "amount of the result is too large".to_string(),
                 ));
             }
 

@@ -8,8 +8,6 @@ use raw_store::CodecKVStore;
 use raw_store::{derive_store, StoreInstance};
 use rooch_types::transaction::LedgerTransaction;
 
-const MAX_RESULT_AMOUNT: u64 = 10000000;
-
 derive_store!(
     LedgerTransactionStore,
     H256,
@@ -36,14 +34,6 @@ pub trait TransactionStore {
     fn get_tx_hashs_by_order(&self, cursor: Option<u64>, limit: u64) -> Result<Vec<Option<H256>>> {
         let start = cursor.unwrap_or(0);
         let end = start + limit;
-
-        let gaps = match end.checked_sub(start) {
-            None => return Err(anyhow::Error::msg("end value is overflow")),
-            Some(v) => v,
-        };
-        if gaps > MAX_RESULT_AMOUNT {
-            return Err(anyhow::Error::msg("end value is overflow"));
-        }
 
         // Since tx order is strictly incremental, traversing the SMT Tree can be optimized into a multi get query to improve query performance.
         let tx_orders: Vec<_> = if cursor.is_some() {
