@@ -74,7 +74,6 @@ module bitcoin_plants::plants {
 
         // Check if the Inscription is already planted
         assert!(!ord::contains_permanent_state<Plant>(seed), ErrorAlreadyPlanted);
-
         // TODO: init the Plant from seed attributes
         let plant = Plant {
             variety: 0,
@@ -162,8 +161,12 @@ module bitcoin_plants::plants {
     #[test_only]
     use std::option;
 
+    #[test_only]
+    use rooch_framework::genesis;
+
     #[test]
     fun test() {
+        genesis::init_for_test();
         let inscription_obj = ord::new_inscription_object_for_test(
             @0x3232423,
             0,
@@ -195,7 +198,7 @@ module bitcoin_plants::plants {
 
         let plant = ord::remove_permanent_state<Plant>(&mut inscription_obj);
         let Plant { variety: _, growth_value: _, health: _, last_watering_time: _, pickable_fruits: _, picked_fruits: _ } = plant;
-        
+        ord::destroy_permanent_area(&mut inscription_obj);
         ord::drop_inscription_object_for_test(inscription_obj);
     }
 }

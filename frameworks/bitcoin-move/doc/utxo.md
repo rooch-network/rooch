@@ -10,7 +10,6 @@
 -  [Resource `BitcoinUTXOStore`](#0x4_utxo_BitcoinUTXOStore)
 -  [Struct `CreatingUTXOEvent`](#0x4_utxo_CreatingUTXOEvent)
 -  [Struct `RemovingUTXOEvent`](#0x4_utxo_RemovingUTXOEvent)
--  [Struct `TempState`](#0x4_utxo_TempState)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_utxo_genesis_init)
 -  [Function `borrow_utxo_store`](#0x4_utxo_borrow_utxo_store)
@@ -106,17 +105,6 @@ Event for remove UTXO
 
 
 <pre><code><b>struct</b> <a href="utxo.md#0x4_utxo_RemovingUTXOEvent">RemovingUTXOEvent</a> <b>has</b> drop, store
-</code></pre>
-
-
-
-<a name="0x4_utxo_TempState"></a>
-
-## Struct `TempState`
-
-
-
-<pre><code><b>struct</b> <a href="utxo.md#0x4_utxo_TempState">TempState</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 

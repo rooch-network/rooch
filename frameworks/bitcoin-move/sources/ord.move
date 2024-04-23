@@ -13,7 +13,7 @@ module bitcoin_move::ord {
     use moveos_std::json;
     use moveos_std::table_vec::{Self, TableVec};
     use moveos_std::type_info;
-    use moveos_std::bag;
+    use moveos_std::bag::{Self, Bag};
     use rooch_framework::address_mapping;
     use rooch_framework::multichain_address;
     use rooch_framework::bitcoin_address::BitcoinAddress;
@@ -668,6 +668,13 @@ module bitcoin_move::ord {
         bag::remove(bag, name)
     }
 
+    // TODO: remove #[test_only]?
+    #[test_only]
+    public fun destroy_permanent_area(inscription: &mut Object<Inscription>){
+        let bag: Bag = object::remove_field(inscription, PERMANENT_AREA);
+        bag::destroy_empty(bag);
+    }
+
     #[test_only]
     public fun new_inscription_object_for_test(
         txid: address,
@@ -715,5 +722,43 @@ module bitcoin_move::ord {
             parent: _,
             pointer: _,
         } = inscription;
+    }
+
+    #[test_only]
+    struct PermanentState has store {
+        value: u64,
+    }
+
+    #[test]
+    fun test_permanent_state(){
+        // genesis_init();
+        let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let inscription_obj = new_inscription_object_for_test(
+            txid,
+            0,
+            0,
+            0,
+            vector[],
+            option::none(),
+            option::none(),
+            vector[],
+            option::none(),
+            option::none(),
+            option::none(),
+        );
+        add_permanent_state(&mut inscription_obj, PermanentState{value: 10});
+        assert!(contains_permanent_state<PermanentState>(&inscription_obj), 1);
+        assert!(borrow_permanent_state<PermanentState>(&inscription_obj).value == 10, 2);
+        {
+            let state = borrow_mut_permanent_state<PermanentState>(&mut inscription_obj);
+            state.value = 20;
+        };
+        let state = remove_permanent_state<PermanentState>(&mut inscription_obj);
+        assert!(state.value == 20, 1);
+        assert!(!contains_permanent_state<PermanentState>(&inscription_obj), 3);
+
+        let PermanentState { value: _ } = state;
+        destroy_permanent_area(&mut inscription_obj);
+        drop_inscription_object_for_test(inscription_obj);
     }
 }
