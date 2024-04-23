@@ -80,7 +80,7 @@ jobs:
             ${{ runner.OS }}-pnpm-
             ## Build and test app start
       - name: Install pnpm dependencies
-        run: npm install pnpm -g && pnpm install
+        run: npm install pnpm -g@8.6.6 && pnpm install
       - name: Gen SDK dependencie Code
         run: pnpm rooch-sdk gen
       - name: Lint

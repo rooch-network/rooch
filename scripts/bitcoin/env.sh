@@ -58,17 +58,17 @@ init() {
   echo '{"p":"brc-20","op":"mint","tick":"Rooch","amt":"1"}' > /tmp/hello.txt
 
   # Step 6: Inscribe the file to the blockchain
-  ord wallet inscribe --fee-rate 1 --file /tmp/hello.txt --destination "${address}" > /dev/null 2>&1
+  ord wallet inscribe --fee-rate 1 --file /tmp/hello.txt --destination $address
 
   # Step 7: Mine an inscription with 1 block
-  bitcoin-cli generatetoaddress 1 $address > /dev/null 2>&1
+  bitcoin-cli generatetoaddress 1 $address
 
   echo "You inscriptions"
   # Step 8: Get the reveal transaction ID
   ord wallet inscriptions
 
   # Step 9: start rooch node
-  cargo run --package rooch --bin rooch server start --btc-rpc-url http://127.0.0.1:18443 --btc-rpc-username roochuser --btc-rpc-password roochpass --btc-start-block-height 0 --btc-network 4
+  cargo run --package rooch --bin rooch server start --btc-rpc-url http://127.0.0.1:18443 --btc-rpc-username roochuser --btc-rpc-password roochpass --btc-start-block-height 0 --btc-network 4 --data-import-mode 10
 
 }
 

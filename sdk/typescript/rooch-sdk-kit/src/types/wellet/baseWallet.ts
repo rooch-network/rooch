@@ -20,6 +20,7 @@ export abstract class BaseWallet implements IAuthorizer {
   account: WalletAccount | undefined
   installed: boolean | undefined
   name: string | undefined
+  onAccountsChangedWrapper?: (addresses: string[]) => void
 
   constructor(client: RoochClient) {
     this.client = client

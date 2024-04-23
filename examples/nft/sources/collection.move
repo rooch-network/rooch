@@ -16,6 +16,7 @@ module nft::collection{
 
     struct Collection has key{
         name: String,
+        url: String,
         creator: address,
         supply:  Supply,
         description: String,
@@ -45,8 +46,8 @@ module nft::collection{
 
     /// Create a new collection Object
     public fun create_collection(
-        
         name: String,
+        url: String,
         creator: address,
         description: String,
         max_supply: Option<u64>,
@@ -54,6 +55,7 @@ module nft::collection{
 
         let collection = Collection {
             name,
+            url,
             creator,
             supply: Supply {
                 current: 0,
@@ -80,14 +82,14 @@ module nft::collection{
         collection_id
     }
 
-    entry fun create_collection_entry(
-        
+    public entry fun create_collection_entry(
         name: String,
+        url: String,
         creator: address,
         description: String,
         max_supply: u64,
     ) {
-        create_collection(name, creator, description, option::some(max_supply));
+        create_collection(name, url, creator, description, option::some(max_supply));
     }
 
     public(friend) fun increment_supply(collection: &mut Collection): Option<u64>{

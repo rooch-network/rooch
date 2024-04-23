@@ -8,7 +8,7 @@ import { WalletRoochSessionAccount } from './types'
 
 export type SessionActions = {
   addSession: (session: RoochSessionAccount) => void
-  setCurrentSession: (session: RoochSessionAccount) => void
+  setCurrentSession: (session?: RoochSessionAccount) => void
   removeSession: (session: RoochSessionAccount) => void
 }
 
@@ -40,7 +40,12 @@ export function createSessionStore({ client, storage, storageKey }: ClientConfig
           }))
         },
         setCurrentSession(session) {
-          console.log('setCurrentSession')
+          if (!session) {
+            set(() => ({
+              currentSession: null,
+            }))
+            return
+          }
           const cache = get().sessions
           if (!cache.find((item) => item.getAuthKey() === session.getAuthKey())) {
             cache.push(session)
@@ -51,9 +56,12 @@ export function createSessionStore({ client, storage, storageKey }: ClientConfig
           }))
         },
         removeSession(session) {
-          const cache = get().sessions
+          const cacheSessions = get().sessions
+          const cacheCurSession = get().currentSession
           set(() => ({
-            sessions: cache.filter((c) => c.getAddress() !== session.getAddress()),
+            currentSession:
+              cacheCurSession?.getAuthKey() === session.getAuthKey() ? null : cacheCurSession,
+            sessions: cacheSessions.filter((c) => c.getAddress() !== session.getAddress()),
           }))
         },
       }),
@@ -61,10 +69,6 @@ export function createSessionStore({ client, storage, storageKey }: ClientConfig
         name: storageKey,
         storage: createJSONStorage(() => storage, {
           reviver: (key, value) => {
-            if (key === 'currentSession') {
-              return WalletRoochSessionAccount.formJson(value, client)
-            }
-
             if (key === 'sessions') {
               return (value as any[]).map((session: any) =>
                 WalletRoochSessionAccount.formJson(session, client),
@@ -74,9 +78,8 @@ export function createSessionStore({ client, storage, storageKey }: ClientConfig
             return value
           },
         }),
-        partialize: ({ sessions, currentSession }) => ({
+        partialize: ({ sessions }) => ({
           sessions,
-          currentSession,
         }),
       },
     ),

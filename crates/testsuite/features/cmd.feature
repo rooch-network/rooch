@@ -35,9 +35,9 @@ Feature: Rooch CLI integration tests
       # Get gas
       Then cmd: "move run --function rooch_framework::gas_coin::faucet_entry"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      
+
       # session key
-      Then cmd: "session-key create  --scope 0x3::empty::empty"
+      Then cmd: "session-key create  --app-name test --app-url https:://test.rooch.network --scope 0x3::empty::empty"
       Then cmd: "move run --function 0x3::empty::empty  --session-key {{$.session-key[-1].authentication_key}}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 

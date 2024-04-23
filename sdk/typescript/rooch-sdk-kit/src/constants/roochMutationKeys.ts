@@ -15,4 +15,5 @@ export const roochMutationKeys = {
   switchNetwork: formMutationKeyFn('switch-network'),
   removeNetwork: formMutationKeyFn('remove-network'),
   removeSession: formMutationKeyFn('remove-session'),
+  transferObject: formMutationKeyFn('transfer-object'),
 }

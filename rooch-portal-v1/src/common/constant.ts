@@ -1,5 +1,7 @@
 import { WalletsMaterialProps } from './interface'
 
+export const ROOCH_OPERATING_ADDRESS = import.meta.env.VITE_ROOCH_OPERATING_ADDRESS
+
 // ** Wallet Connect
 export const walletsMaterialMap = new Map<string, WalletsMaterialProps>([
   [

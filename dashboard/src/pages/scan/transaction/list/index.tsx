@@ -121,9 +121,7 @@ const TransactionList = () => {
   let { data, isPending } = useRoochClientQuery(
     'getTransactions',
     {
-      cursor: 0,
       limit: (paginationModel.page + 1) * paginationModel.pageSize,
-      descending_order: false,
     },
     {
       enabled: true,

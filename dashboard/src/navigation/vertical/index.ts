@@ -64,7 +64,6 @@ const navigation = (): VerticalNavItemsType => {
       title: 'Counter Example',
       icon: 'bxs-package',
       path: '/tutorial/counter',
-      domain: 'https://dev-dashboard.rooch.network',
     },
 
     // {

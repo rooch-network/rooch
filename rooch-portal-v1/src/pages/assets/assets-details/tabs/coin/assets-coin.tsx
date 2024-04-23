@@ -2,6 +2,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  // TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -26,119 +27,129 @@ import {
 } from '@/components/ui/pagination'
 import { NoData } from '@/components/no-data'
 import { Button } from '@/components/ui/button'
-
 import { GripVerticalIcon } from 'lucide-react'
-import { useState } from 'react'
-
-interface Coin {
-  coin: string
-  balance: number
-  value: string
-}
-
-const coins: Coin[] = [
-  { coin: 'ROOCH', balance: 288.88, value: '$1,146.98' },
-  { coin: 'BTC', balance: 2.5, value: '$95,000.00' },
-  { coin: 'ETH', balance: 10, value: '$30,000.00' },
-  { coin: 'LTC', balance: 100, value: '$10,000.00' },
-  { coin: 'XRP', balance: 2000, value: '$1,200.00' },
-  { coin: 'DOGE', balance: 15000, value: '$4,500.00' },
-]
+import { useCurrentAccount, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 export const AssetsCoin = () => {
-  const [currentPage, setCurrentPage] = useState(0)
-  const itemsPerPage = 5
+  const account = useCurrentAccount()
 
-  const pageCount = Math.ceil(coins.length / itemsPerPage)
-  const currentItems = coins.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage)
-
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
+  const mapPageToNextCursor = useRef<{ [page: number]: string | null }>({})
   const handlePageChange = (selectedPage: number) => {
-    setCurrentPage(selectedPage)
+    if (selectedPage < 0) {
+      return
+    }
+    setPaginationModel({
+      page: selectedPage,
+      pageSize: paginationModel.pageSize,
+    })
   }
 
-  const hasValidData = (coins: Coin[]): boolean => {
-    return coins.some((coin) => coin.coin.trim() !== '' && coin.balance !== 0)
-  }
+  const queryOptions = useMemo(
+    () => ({
+      cursor: mapPageToNextCursor.current[paginationModel.page - 1],
+      pageSize: paginationModel.pageSize,
+    }),
+    [paginationModel],
+  )
 
-  if (!hasValidData(coins)) {
-    return <NoData />
-  }
+  const { data } = useRoochClientQuery('getBalances', {
+    address: account?.getRoochAddress() || '',
+    cursor: queryOptions.cursor,
+    limit: queryOptions.pageSize,
+  })
 
-  return (
-    <>
-      <div className="rounded-lg border overflow-hidden w-full">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[120px]">Asset</TableHead>
-              <TableHead>Balance</TableHead>
-              <TableHead>Value</TableHead>
-              <TableHead className="text-right">Action</TableHead>
+  useEffect(() => {
+    if (!data) {
+      return
+    }
+
+    if (data.has_next_page) {
+      mapPageToNextCursor.current[paginationModel.page] = data.next_cursor ?? null
+    }
+  }, [paginationModel, data])
+
+  return !data || data.data.length === 0 ? (
+    <NoData />
+  ) : (
+    <div className="rounded-lg border overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[120px]">Asset</TableHead>
+            <TableHead>Balance</TableHead>
+            {/*<TableHead>Value</TableHead>*/}
+            <TableHead className="text-right">Action</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {data?.data.map((coin) => (
+            <TableRow key={coin.name}>
+              {/*<TableCell className="font-medium">{coin.coin}</TableCell>*/}
+              <TableCell>{coin.name}</TableCell>
+              <TableCell>{coin.balance}</TableCell>
+              <TableCell className="text-right">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="icon" variant="ghost" className="hover:rounded-lg">
+                      <GripVerticalIcon className="w-5 h-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56">
+                    <DropdownMenuLabel>Action</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem onClick={() => {}}>
+                        Transfer
+                        <DropdownMenuShortcut>⇧⌘F</DropdownMenuShortcut>
+                      </DropdownMenuItem>
+                      {/*<DropdownMenuItem onClick={() => {}}>*/}
+                      {/*  Swap*/}
+                      {/*  <DropdownMenuShortcut>⇧⌘S</DropdownMenuShortcut>*/}
+                      {/*</DropdownMenuItem>*/}
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {currentItems.map((coin) => (
-              <TableRow key={coin.coin}>
-                <TableCell className="font-medium">{coin.coin}</TableCell>
-                <TableCell>{coin.balance}</TableCell>
-                <TableCell>{coin.value}</TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button size="icon" variant="ghost" className="hover:rounded-lg">
-                        <GripVerticalIcon className="w-5 h-5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56">
-                      <DropdownMenuLabel>Action</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuGroup>
-                        <DropdownMenuItem onClick={() => {}}>
-                          Transfer
-                          <DropdownMenuShortcut>⇧⌘F</DropdownMenuShortcut>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => {}}>
-                          Swap
-                          <DropdownMenuShortcut>⇧⌘S</DropdownMenuShortcut>
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <Pagination className="justify-end mt-4">
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              href="#"
-              onClick={() => handlePageChange(Math.max(0, currentPage - 1))}
-            />
-          </PaginationItem>
-          {Array.from({ length: pageCount }, (_, index) => (
-            <PaginationItem key={index}>
-              <PaginationLink
-                href="#"
-                onClick={() => handlePageChange(index)}
-                isActive={index === currentPage}
-              >
-                {index + 1}
-              </PaginationLink>
-            </PaginationItem>
           ))}
-          {currentPage < pageCount - 1 && (
-            <PaginationItem>
-              <PaginationNext
-                href="#"
-                onClick={() => handlePageChange(Math.min(pageCount - 1, currentPage + 1))}
-              />
-            </PaginationItem>
-          )}
-        </PaginationContent>
-      </Pagination>
-    </>
+        </TableBody>
+        <Pagination className="justify-end mt-4">
+          <PaginationContent>
+            {paginationModel.page !== 0 && (
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={() => handlePageChange(paginationModel.page - 1)}
+                />
+              </PaginationItem>
+            )}
+            {Array.from(
+              { length: Object.values(mapPageToNextCursor.current).length + 1 },
+              (_, index) => (
+                <PaginationItem key={index}>
+                  <PaginationLink
+                    href="#"
+                    onClick={() => handlePageChange(index)}
+                    isActive={index === paginationModel.page}
+                  >
+                    {index + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ),
+            )}
+            {data?.has_next_page && (
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={() => handlePageChange(paginationModel.page + 1)}
+                />
+              </PaginationItem>
+            )}
+          </PaginationContent>
+        </Pagination>
+      </Table>
+    </div>
   )
 }
