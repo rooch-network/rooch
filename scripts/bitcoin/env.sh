@@ -18,6 +18,7 @@ getBitcoinNode() {
 }
 
 init() {
+  # check bitcoin env
   container_id=$(getBitcoinNode)
   if [ -n "$container_id" ]; then
     echo "Bitcoin node is already running."
@@ -41,7 +42,7 @@ init() {
   done
   fi
 
-  # Step 1: Create a new ord wallet
+  # start ord server
   ord server &
 
   sleep 5
