@@ -102,15 +102,30 @@ module infinite_wand::infinite_wand {
 
     public entry fun transfer(receiver: address, amount: u256, global_obj: &mut Object<Global>) {
         let global = object::borrow_mut(global_obj);
-        let is_whitelist = table::contains(&global.whitelist, sender());
-        if (is_whitelist){
-            //TODO Should check whether the receiver is whitelist here?
-            //TODO Should record the whitelist detail?
+        let sender_is_whitelist = table::contains(&global.whitelist, sender());
+        let receiver_is_whitelist = table::contains(&global.whitelist, receiver);
+
+        if (sender_is_whitelist || receiver_is_whitelist){
             account_coin_store::transfer_extend<InfiniteGold>(sender(), receiver, amount);
             return
         };
-        let sender_detail =  table::borrow_mut(&mut global.swap_detail, sender());
+
         let now = now_milliseconds();
+        if (!table::contains(&global.swap_detail, sender())) {
+            table::add(&mut global.swap_detail, sender(), SwapRuler{
+                receive_amount: 0,
+                send_amount: 0,
+                timestamp: now
+            })
+        };
+        if (!table::contains(&global.swap_detail, receiver)) {
+            table::add(&mut global.swap_detail, receiver, SwapRuler{
+                receive_amount: 0,
+                send_amount: 0,
+                timestamp: now
+            })
+        };
+        let sender_detail =  table::borrow_mut(&mut global.swap_detail, sender());
         if (sender_detail.timestamp + THIRTY_DAYS_MILLISECONDS > now) {
             sender_detail.timestamp = now;
             sender_detail.send_amount = 0;
