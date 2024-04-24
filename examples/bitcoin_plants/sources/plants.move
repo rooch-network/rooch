@@ -14,10 +14,10 @@
 /// The details are as follows:
 /// 1. All Bitcoin transactions are processed and tracked on Rooch. All UTXOs are represented by the `UTXO` object on Rooch.
 ///     You can read all Bitcoin states. So if you have a seed Inscription on Bitcoin, you can know that.
-/// 2. After planting the plant, the plant's growth status is stored in the `Inscription` UTXO's permanently state area on Rooch .
+/// 2. After planting the plant, the plant's growth status is stored in the `Inscription` 's permanently state area on Rooch .
 ///     Once the seed Inscription is transferred on Bitcoin, the plant produced by this seed will also be transferred.
-/// 3. After watering the plant, the plant's growth status will be updated. The watering action will also be recorded in the `Inscription` UTXO's temporary state area.
-///     Once the seed Inscription is transferred on Bitcoin, the watering actions will be cleaned.
+/// 3. After watering the plant, the plant's growth status will be updated. The watering action will also be recorded in the Inscription's temporary state area.
+///     Once the seed Inscription is transferred, the watering actions will be cleaned.
 /// 4. Once the plants have produced, players can harvest the fruit, the fruit will be minted as a Coin or NFT on Rooch, 
 ///     which has no more relationship with the seed and the plant.
 module bitcoin_plants::plants {
@@ -62,6 +62,14 @@ module bitcoin_plants::plants {
         picked_fruits: u64,
     }
 
+    /// Actions of interaction with the plant.
+    struct Actions has store, copy, drop {
+        planting_time: u64,
+        watering_time: vector<u64>,
+        harvest_time: vector<u64>,
+        harvest_amount: vector<u64>,
+    }
+
     fun init() {
     }
 
@@ -86,6 +94,15 @@ module bitcoin_plants::plants {
 
         // Store the planting info and plant status in the Inscription's permanent state area
         ord::add_permanent_state(seed, plant);
+
+        // Init and store the planting action in the Inscription's temporary state area
+        let actions = Actions {
+            planting_time: timestamp::now_seconds(),
+            watering_time: vector[],
+            harvest_time: vector[],
+            harvest_amount: vector[],
+        };
+        ord::add_temporary_state(seed, actions);
     }
 
     public entry fun water(plant: &mut Object<Inscription>) {
@@ -100,6 +117,9 @@ module bitcoin_plants::plants {
         };
         plant.growth_value = plant.growth_value + 1;
         plant.last_watering_time = timestamp::now_seconds();
+
+        let actions = ord::borrow_mut_temporary_state<Actions>(plant);
+        vector::push_back(&mut actions.watering_time, plant.last_watering_time);
 
         // Update fruits status
         if (plant.growth_value >= 10) {
@@ -119,6 +139,10 @@ module bitcoin_plants::plants {
                 value: plant.pickable_fruits
             };
             plant.pickable_fruits = 0;
+
+            let actions = ord::borrow_mut_temporary_state<Actions>(plant);
+            vector::push_back(&mut actions.harvest_time, timestamp::now_seconds());
+            vector::push_back(&mut actions.harvest_amount, fruits.value);
             vector[fruits]
         } else {
             vector[]
@@ -199,6 +223,7 @@ module bitcoin_plants::plants {
         let plant = ord::remove_permanent_state<Plant>(&mut inscription_obj);
         let Plant { variety: _, growth_value: _, health: _, last_watering_time: _, pickable_fruits: _, picked_fruits: _ } = plant;
         ord::destroy_permanent_area(&mut inscription_obj);
+        ord::drop_temporary_area(&mut inscription_obj);
         ord::drop_inscription_object_for_test(inscription_obj);
     }
 }
