@@ -26,7 +26,7 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
     let tx_type = config.tx_type.unwrap();
     let (bench_id, tx_cnt) = match tx_type {
         BtcBlock => ("bench_btc_blk", 20), // block after 800,000 always need seconds/block
-        Transfer => ("l2_tx_transfer", 600),
+        Transfer => ("l2_tx_transfer", 800),
         Empty => ("l2_tx_empty", 1000),
     };
 
@@ -39,7 +39,7 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
                 n as u64,
                 tx_type.clone(),
             )
-                .unwrap();
+            .unwrap();
             transactions.push(binding_test.executor.validate_l2_tx(tx.clone()).unwrap());
         }
     } else {

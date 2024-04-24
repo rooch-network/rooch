@@ -79,9 +79,12 @@ impl Display for TxType {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Parser, Eq)]
 pub struct BenchTxConfig {
-    pub tx_type: Option<TxType>, // empty(default)/transfer/btc-block
-    pub data_import_mode: Option<DataImportMode>, // utxo(default)/ord/none/full
-    pub btc_block_dir: Option<String>, // btc block dir, file name: <height>.hex
+    pub tx_type: Option<TxType>,
+    // empty(default)/transfer/btc-block
+    pub data_import_mode: Option<DataImportMode>,
+    // utxo(default)/ord/none/full
+    pub btc_block_dir: Option<String>,
+    // btc block dir, file name: <height>.hex
     pub pprof_output: Option<PProfOutput>, // flamegraph(default)/proto
 }
 
@@ -144,7 +147,7 @@ impl Default for CriterionConfig {
             sample_size: 500,
             warm_up_time: Duration::from_millis(1), // no need to warm this heavy operation
             frequency: 2000,
-            measurement_time: Duration::from_millis(3000),
+            measurement_time: Duration::from_millis(1000),
             pprof_output: PProfOutput::Flamegraph,
         }
     }
