@@ -101,11 +101,11 @@ function WalletConnectionManager({ children }: WalletConnectionManagerProps) {
     if (accounts.length === 0) {
       setWalletDisconnected()
     } else {
-      console.log('qiehuan')
       setConnectionStatus('connecting')
       const selectedAccount = accounts[0]
       if (selectedAccount.address !== currentAccount?.address) {
         setAccountSwitched(selectedAccount)
+        await selectedAccount.resoleRoochAddress()
         setSessionAccount(undefined)
       }
     }

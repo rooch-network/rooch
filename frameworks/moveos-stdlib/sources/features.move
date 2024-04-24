@@ -125,6 +125,16 @@ module moveos_std::features {
         assert!(is_enabled(MODULE_PUBLISHING_ALLOWLIST), EAPI_DISABLED);
     }
 
+    /// Whether enable the wasm feature.
+    const WASM: u64 = 6;
+    public fun get_wasm_feature(): u64 { WASM }
+    public fun wasm_enabled(): bool {
+        is_enabled(WASM)
+    }
+    public fun ensure_wasm_enabled() {
+        assert!(is_enabled(WASM), EAPI_DISABLED);
+    }
+    
     /// Helper for getting all features. 
     /// Update this once new feature added.
     public fun get_all_features(): vector<u64> {
