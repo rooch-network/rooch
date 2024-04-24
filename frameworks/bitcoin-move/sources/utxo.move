@@ -283,6 +283,7 @@ module bitcoin_move::utxo{
         simple_multimap::drop(seals);
     }
 
+    #[test_only]
     struct TempState has store, copy, drop {
         value: u64,
     }

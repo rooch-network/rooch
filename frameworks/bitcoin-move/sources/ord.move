@@ -12,6 +12,8 @@ module bitcoin_move::ord {
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::json;
     use moveos_std::table_vec::{Self, TableVec};
+    use moveos_std::type_info;
+    use moveos_std::bag;
     use rooch_framework::address_mapping;
     use rooch_framework::multichain_address;
     use rooch_framework::bitcoin_address::BitcoinAddress;
@@ -25,6 +27,9 @@ module bitcoin_move::ord {
     const SUBSIDY_HALVING_INTERVAL: u32 = 210_000;
 
     const FIRST_POST_SUBSIDY_EPOCH: u32 = 33;
+
+    const PERMANENT_AREA: vector<u8> = b"permanent_area";
+    const TEMPORARY_AREA: vector<u8> = b"temporary_area";
 
     /// How many satoshis are in "one bitcoin".
     const COIN_VALUE: u64 = 100_000_000;
@@ -209,6 +214,7 @@ module bitcoin_move::ord {
             let seal_object_id = *vector::borrow(&mut seals, j);
             let (origin_owner, inscription_obj) = object::take_object_extend<Inscription>(seal_object_id);
             let inscription = object::borrow_mut(&mut inscription_obj);
+            
 
             let (is_match, new_sat_point) = match_utxo_and_generate_sat_point(inscription.offset, seal_object_id, tx, input_utxo_values, input_index);
             if(is_match){
@@ -220,6 +226,8 @@ module bitcoin_move::ord {
                 inscription.offset = new_sat_point.offset;
 
                 // TODO handle curse inscription
+                // drop the temporary area if inscription is transferred.
+                drop_temp_area(&mut inscription_obj);
                 object::transfer_extend(inscription_obj, to_address);
                 vector::push_back(&mut new_sat_points, new_sat_point);
                 // Auto create address mapping if not exist
@@ -228,6 +236,7 @@ module bitcoin_move::ord {
                 let flotsam = new_flotsam(new_sat_point.output_index, new_sat_point.offset, new_sat_point.object_id);
                 vector::push_back(&mut flotsams, flotsam);
 
+                drop_temp_area(&mut inscription_obj);
                 object::transfer_extend(inscription_obj, origin_owner);
             };
             j = j + 1;
@@ -619,5 +628,281 @@ module bitcoin_move::ord {
         };
     }
 
+    // ===== permenent area ========== //
+    #[private_generics(S)]
+    public fun add_permanent_state<S: store>(inscription: &mut Object<Inscription>, state: S){
+        if(object::contains_field(inscription, PERMANENT_AREA)){
+            let bag = object::borrow_mut_field(inscription, PERMANENT_AREA);
+            let name = type_info::type_name<S>();
+            bag::add(bag, name, state);
+        }else{
+            let bag = bag::new();
+            let name = type_info::type_name<S>();
+            bag::add(&mut bag, name, state);
+            object::add_field(inscription, PERMANENT_AREA, bag);
+        }
+    }
 
+    public fun contains_permanent_state<S: store>(inscription: &Object<Inscription>) : bool {
+        if(object::contains_field(inscription, PERMANENT_AREA)){
+            let bag = object::borrow_field(inscription, PERMANENT_AREA);
+            let name = type_info::type_name<S>();
+            bag::contains(bag, name)
+        }else{
+            false
+        }
+    }
+
+    public fun borrow_permanent_state<S: store>(inscription: &Object<Inscription>) : &S {
+        let bag = object::borrow_field(inscription, PERMANENT_AREA);
+        let name = type_info::type_name<S>();
+        bag::borrow(bag, name)
+    }
+
+    #[private_generics(S)]
+    public fun borrow_mut_permanent_state<S: store>(inscription: &mut Object<Inscription>) : &mut S {
+        let bag = object::borrow_mut_field(inscription, PERMANENT_AREA);
+        let name = type_info::type_name<S>();
+        bag::borrow_mut(bag, name)
+    }
+
+    #[private_generics(S)]
+    public fun remove_permanent_state<S: store>(inscription: &mut Object<Inscription>) : S {
+        let bag = object::borrow_mut_field(inscription, PERMANENT_AREA);
+        let name = type_info::type_name<S>();
+        bag::remove(bag, name)
+    }
+
+    // TODO: remove #[test_only]?
+    #[test_only]
+    /// Destroy permanent area if it's empty. Aborts if it's not empty.
+    public fun destroy_permanent_area(inscription: &mut Object<Inscription>){
+        if (object::contains_field(inscription, PERMANENT_AREA)) {
+            let bag = object::remove_field(inscription, PERMANENT_AREA);
+            bag::destroy_empty(bag);
+        }
+    }
+
+
+    // ==== Temporary Area ===
+
+    #[private_generics(S)]
+    public fun add_temp_state<S: store + drop>(inscription: &mut Object<Inscription>, state: S){
+        if(object::contains_field(inscription, TEMPORARY_AREA)){
+            let bag = object::borrow_mut_field(inscription, TEMPORARY_AREA);
+            let name = type_info::type_name<S>();
+            bag::add_dropable(bag, name, state);
+        }else{
+            let bag = bag::new_dropable();
+            let name = type_info::type_name<S>();
+            bag::add_dropable(&mut bag, name, state);
+            object::add_field(inscription, TEMPORARY_AREA, bag);
+        }
+    }
+
+    public fun contains_temp_state<S: store + drop>(inscription: &Object<Inscription>) : bool {
+        if(object::contains_field(inscription, TEMPORARY_AREA)){
+            let bag = object::borrow_field(inscription, TEMPORARY_AREA);
+            let name = type_info::type_name<S>();
+            bag::contains(bag, name)
+        }else{
+            false
+        }
+    }
+
+    public fun borrow_temp_state<S: store + drop>(inscription: &Object<Inscription>) : &S {
+        let bag = object::borrow_field(inscription, TEMPORARY_AREA);
+        let name = type_info::type_name<S>();
+        bag::borrow(bag, name)
+    }
+
+    #[private_generics(S)]
+    public fun borrow_mut_temp_state<S: store + drop>(inscription: &mut Object<Inscription>) : &mut S {
+        let bag = object::borrow_mut_field(inscription, TEMPORARY_AREA);
+        let name = type_info::type_name<S>();
+        bag::borrow_mut(bag, name)
+    }
+
+    #[private_generics(S)]
+    public fun remove_temp_state<S: store + drop>(inscription: &mut Object<Inscription>) : S {
+        let bag = object::borrow_mut_field(inscription, TEMPORARY_AREA);
+        let name = type_info::type_name<S>();
+        bag::remove(bag, name)
+    }
+
+    /// Drop the bag, whether it's empty or not
+    public(friend) fun drop_temp_area(inscription: &mut Object<Inscription>){
+        if (object::contains_field(inscription, TEMPORARY_AREA)) {
+            let bag = object::remove_field(inscription, TEMPORARY_AREA);
+            bag::drop(bag);
+        }
+    }
+
+    #[test_only]
+    public fun drop_temp_area_for_test(inscription: &mut Object<Inscription>) {
+        drop_temp_area(inscription);
+    }
+
+    #[test_only]
+    public fun new_inscription_object_for_test(
+        txid: address,
+        index: u32,
+        input: u32,
+        offset: u64,
+        body: vector<u8>,
+        content_encoding: Option<String>,
+        content_type: Option<String>,
+        metadata: vector<u8>,
+        metaprotocol: Option<String>,
+        parent: Option<ObjectID>,
+        pointer: Option<u64>,
+    ): Object<Inscription> {
+        let inscription = Inscription {
+            txid,
+            index,
+            input,
+            offset,
+            body,
+            content_encoding,
+            content_type,
+            metadata,
+            metaprotocol,
+            parent,
+            pointer,
+        };
+
+        object::new(inscription)
+    }
+
+    #[test_only]
+    public fun drop_inscription_object_for_test(inscription: Object<Inscription>) {
+        let inscription = object::remove(inscription);
+        let Inscription { 
+            txid: _, 
+            index: _,
+            input: _,
+            offset: _,
+            body: _,
+            content_encoding: _,
+            content_type: _,
+            metadata: _,
+            metaprotocol: _,
+            parent: _,
+            pointer: _,
+        } = inscription;
+    }
+
+    #[test_only]
+    struct PermanentState has store {
+        value: u64,
+    }
+
+    #[test]
+    fun test_permanent_state(){
+        // genesis_init();
+        let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let inscription_obj = new_inscription_object_for_test(
+            txid,
+            0,
+            0,
+            0,
+            vector[],
+            option::none(),
+            option::none(),
+            vector[],
+            option::none(),
+            option::none(),
+            option::none(),
+        );
+        add_permanent_state(&mut inscription_obj, PermanentState{value: 10});
+        assert!(contains_permanent_state<PermanentState>(&inscription_obj), 1);
+        assert!(borrow_permanent_state<PermanentState>(&inscription_obj).value == 10, 2);
+        {
+            let state = borrow_mut_permanent_state<PermanentState>(&mut inscription_obj);
+            state.value = 20;
+        };
+        let state = remove_permanent_state<PermanentState>(&mut inscription_obj);
+        assert!(state.value == 20, 1);
+        assert!(!contains_permanent_state<PermanentState>(&inscription_obj), 3);
+
+        let PermanentState { value: _ } = state;
+        destroy_permanent_area(&mut inscription_obj);
+        drop_inscription_object_for_test(inscription_obj);
+    }
+
+    #[test_only]
+    struct TempState has store, copy, drop {
+        value: u64,
+    }
+
+    #[test]
+    fun test_temp_state(){
+        // genesis_init();
+        let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let inscription_obj = new_inscription_object_for_test(
+            txid,
+            0,
+            0,
+            0,
+            vector[],
+            option::none(),
+            option::none(),
+            vector[],
+            option::none(),
+            option::none(),
+            option::none(),
+        );
+        add_temp_state(&mut inscription_obj, TempState{value: 10});
+        assert!(contains_temp_state<TempState>(&inscription_obj), 1);
+        assert!(borrow_temp_state<TempState>(&inscription_obj).value == 10, 2);
+        {
+            let state = borrow_mut_temp_state<TempState>(&mut inscription_obj);
+            state.value = 20;
+        };
+        let state = remove_temp_state<TempState>(&mut inscription_obj);
+        assert!(state.value == 20, 1);
+        assert!(!contains_temp_state<TempState>(&inscription_obj), 3);
+
+        drop_temp_area(&mut inscription_obj);
+        drop_inscription_object_for_test(inscription_obj);
+    }
+
+    #[test_only]
+    fun mock_inscription_transferring_along_utxo(inscription_obj: Object<Inscription>, to: address) {
+        drop_temp_area(&mut inscription_obj);
+        object::transfer_extend(inscription_obj, to);
+    }
+
+    // If the inscription is transferred, the permanent area will be kept and the temporary area will be dropped.
+    #[test]
+    fun test_transfer() {
+        let txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let inscription_obj = new_inscription_object_for_test(
+            txid,
+            0,
+            0,
+            0,
+            vector[],
+            option::none(),
+            option::none(),
+            vector[],
+            option::none(),
+            option::none(),
+            option::none(),
+        );
+
+        add_temp_state(&mut inscription_obj, TempState{value: 10});
+        add_permanent_state(&mut inscription_obj, PermanentState{value: 10});
+        let object_id = object::id(&inscription_obj);
+
+        let to_address = @0x42;
+        {
+            mock_inscription_transferring_along_utxo(inscription_obj, to_address);
+        };
+
+        let inscription_obj = object::borrow_object<Inscription>(object_id);
+        assert!(!contains_temp_state<TempState>(inscription_obj), 1);
+        assert!(contains_permanent_state<PermanentState>(inscription_obj), 2);
+
+    }
 }
