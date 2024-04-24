@@ -96,7 +96,3 @@ name = "bench_tx_sequence"
 [[bench]]
 harness = false
 name = "bench_tx_exec"
-
-[[bench]]
-harness = false
-name = "bench_tx_exec_btc_blk"

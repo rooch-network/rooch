@@ -23,15 +23,11 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
     let default_account = keystore.addresses()[0];
     let mut test_transaction_builder = TestTransactionBuilder::new(default_account.into());
 
-    let mut bench_id = "l2_tx";
     let tx_type = config.tx_type.unwrap();
-    let tx_cnt = match tx_type {
-        BtcBlock => {
-            bench_id = "btc_blk";
-            20 // block after 800,000 always need seconds/block
-        }
-        Transfer => 600,
-        Empty => 1000,
+    let (bench_id, tx_cnt) = match tx_type {
+        BtcBlock => ("bench_btc_blk", 20), // block after 800,000 always need seconds/block
+        Transfer => ("l2_tx_transfer", 600),
+        Empty => ("l2_tx_empty", 1000),
     };
 
     let mut transactions: Vec<_> = Vec::with_capacity(tx_cnt);
@@ -43,7 +39,7 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
                 n as u64,
                 tx_type.clone(),
             )
-            .unwrap();
+                .unwrap();
             transactions.push(binding_test.executor.validate_l2_tx(tx.clone()).unwrap());
         }
     } else {
@@ -69,6 +65,7 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
     let mut transactions_iter = transactions.into_iter().cycle();
 
     let mut group = c.benchmark_group("bench_tx_exec");
+    group.sample_size(tx_cnt);
     group.sampling_mode(SamplingMode::Flat);
     group.bench_function(bench_id, |b| {
         b.iter(|| {
