@@ -102,11 +102,11 @@ module bitcoin_plants::plants {
             harvest_time: vector[],
             harvest_amount: vector[],
         };
-        ord::add_temporary_state(seed, actions);
+        ord::add_temp_state(seed, actions);
     }
 
-    public entry fun water(plant: &mut Object<Inscription>) {
-        let plant = ord::borrow_mut_permanent_state<Plant>(plant);
+    public entry fun water(seed: &mut Object<Inscription>) {
+        let plant = ord::borrow_mut_permanent_state<Plant>(seed);
         let watering_interval = timestamp::now_seconds() - plant.last_watering_time;
         assert!(watering_interval >= WATERING_INTERVAL, ErrorWateringTooFrequently);
         // Update plant status and watering actions
@@ -116,19 +116,20 @@ module bitcoin_plants::plants {
             return
         };
         plant.growth_value = plant.growth_value + 1;
-        plant.last_watering_time = timestamp::now_seconds();
-
-        let actions = ord::borrow_mut_temporary_state<Actions>(plant);
-        vector::push_back(&mut actions.watering_time, plant.last_watering_time);
+        let now = timestamp::now_seconds();
+        plant.last_watering_time = now;
 
         // Update fruits status
         if (plant.growth_value >= 10) {
             plant.pickable_fruits = (plant.growth_value - 10) / 5 + 1 - plant.picked_fruits;
-        }
+        };
+        
+        let actions = ord::borrow_mut_temp_state<Actions>(seed);
+        vector::push_back(&mut actions.watering_time, now);
     }
 
-    public fun do_harvest(plant: &mut Object<Inscription>): vector<Fruits> {
-        let plant = ord::borrow_mut_permanent_state<Plant>(plant);
+    public fun do_harvest(seed: &mut Object<Inscription>): vector<Fruits> {
+        let plant = ord::borrow_mut_permanent_state<Plant>(seed);
         assert!(plant.health > 0, ErrorPlantDead);
 
         // Harvest the plant if there are fruits
@@ -140,7 +141,7 @@ module bitcoin_plants::plants {
             };
             plant.pickable_fruits = 0;
 
-            let actions = ord::borrow_mut_temporary_state<Actions>(plant);
+            let actions = ord::borrow_mut_temp_state<Actions>(seed);
             vector::push_back(&mut actions.harvest_time, timestamp::now_seconds());
             vector::push_back(&mut actions.harvest_amount, fruits.value);
             vector[fruits]
@@ -223,7 +224,7 @@ module bitcoin_plants::plants {
         let plant = ord::remove_permanent_state<Plant>(&mut inscription_obj);
         let Plant { variety: _, growth_value: _, health: _, last_watering_time: _, pickable_fruits: _, picked_fruits: _ } = plant;
         ord::destroy_permanent_area(&mut inscription_obj);
-        ord::drop_temporary_area(&mut inscription_obj);
+        ord::drop_temp_area_for_test(&mut inscription_obj);
         ord::drop_inscription_object_for_test(inscription_obj);
     }
 }

@@ -48,6 +48,12 @@
 -  [Function `borrow_permanent_state`](#0x4_ord_borrow_permanent_state)
 -  [Function `borrow_mut_permanent_state`](#0x4_ord_borrow_mut_permanent_state)
 -  [Function `remove_permanent_state`](#0x4_ord_remove_permanent_state)
+-  [Function `add_temp_state`](#0x4_ord_add_temp_state)
+-  [Function `contains_temp_state`](#0x4_ord_contains_temp_state)
+-  [Function `borrow_temp_state`](#0x4_ord_borrow_temp_state)
+-  [Function `borrow_mut_temp_state`](#0x4_ord_borrow_mut_temp_state)
+-  [Function `remove_temp_state`](#0x4_ord_remove_temp_state)
+-  [Function `drop_temp_area`](#0x4_ord_drop_temp_area)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -151,6 +157,15 @@
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x4_ord_TEMPORARY_AREA"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_TEMPORARY_AREA">TEMPORARY_AREA</a>: <a href="">vector</a>&lt;u8&gt; = [116, 101, 109, 112, 111, 114, 97, 114, 121, 95, 97, 114, 101, 97];
+</code></pre>
+
 
 
 <a name="0x4_ord_COIN_VALUE"></a>
@@ -579,4 +594,74 @@ Block Rewards
 
 <pre><code>#[private_generics(#[S])]
 <b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_remove_permanent_state">remove_permanent_state</a>&lt;S: store&gt;(inscription: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;): S
+</code></pre>
+
+
+
+<a name="0x4_ord_add_temp_state"></a>
+
+## Function `add_temp_state`
+
+
+
+<pre><code>#[private_generics(#[S])]
+<b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_add_temp_state">add_temp_state</a>&lt;S: drop, store&gt;(inscription: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;, state: S)
+</code></pre>
+
+
+
+<a name="0x4_ord_contains_temp_state"></a>
+
+## Function `contains_temp_state`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_contains_temp_state">contains_temp_state</a>&lt;S: drop, store&gt;(inscription: &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;): bool
+</code></pre>
+
+
+
+<a name="0x4_ord_borrow_temp_state"></a>
+
+## Function `borrow_temp_state`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_temp_state">borrow_temp_state</a>&lt;S: drop, store&gt;(inscription: &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;): &S
+</code></pre>
+
+
+
+<a name="0x4_ord_borrow_mut_temp_state"></a>
+
+## Function `borrow_mut_temp_state`
+
+
+
+<pre><code>#[private_generics(#[S])]
+<b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_mut_temp_state">borrow_mut_temp_state</a>&lt;S: drop, store&gt;(inscription: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;): &<b>mut</b> S
+</code></pre>
+
+
+
+<a name="0x4_ord_remove_temp_state"></a>
+
+## Function `remove_temp_state`
+
+
+
+<pre><code>#[private_generics(#[S])]
+<b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_remove_temp_state">remove_temp_state</a>&lt;S: drop, store&gt;(inscription: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;): S
+</code></pre>
+
+
+
+<a name="0x4_ord_drop_temp_area"></a>
+
+## Function `drop_temp_area`
+
+Drop the bag, whether it's empty or not
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_drop_temp_area">drop_temp_area</a>(inscription: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;)
 </code></pre>

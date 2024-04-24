@@ -214,8 +214,7 @@ module bitcoin_move::ord {
             let seal_object_id = *vector::borrow(&mut seals, j);
             let (origin_owner, inscription_obj) = object::take_object_extend<Inscription>(seal_object_id);
             let inscription = object::borrow_mut(&mut inscription_obj);
-            // drop the temporary area if inscription is transferred.
-            drop_temporary_area(&mut inscription_obj);
+            
 
             let (is_match, new_sat_point) = match_utxo_and_generate_sat_point(inscription.offset, seal_object_id, tx, input_utxo_values, input_index);
             if(is_match){
@@ -227,6 +226,8 @@ module bitcoin_move::ord {
                 inscription.offset = new_sat_point.offset;
 
                 // TODO handle curse inscription
+                // drop the temporary area if inscription is transferred.
+                drop_temp_area(&mut inscription_obj);
                 object::transfer_extend(inscription_obj, to_address);
                 vector::push_back(&mut new_sat_points, new_sat_point);
                 // Auto create address mapping if not exist
@@ -235,6 +236,7 @@ module bitcoin_move::ord {
                 let flotsam = new_flotsam(new_sat_point.output_index, new_sat_point.offset, new_sat_point.object_id);
                 vector::push_back(&mut flotsams, flotsam);
 
+                drop_temp_area(&mut inscription_obj);
                 object::transfer_extend(inscription_obj, origin_owner);
             };
             j = j + 1;
@@ -672,10 +674,10 @@ module bitcoin_move::ord {
     }
 
     // TODO: remove #[test_only]?
-    /// Destroy permanent area if it's empty. Aborts if it's not empty.
     #[test_only]
+    /// Destroy permanent area if it's empty. Aborts if it's not empty.
     public fun destroy_permanent_area(inscription: &mut Object<Inscription>){
-        if object::contains_field(inscription, PERMANENT_AREA) {
+        if (object::contains_field(inscription, PERMANENT_AREA)) {
             let bag = object::remove_field(inscription, PERMANENT_AREA);
             bag::destroy_empty(bag);
         }
@@ -729,11 +731,16 @@ module bitcoin_move::ord {
     }
 
     /// Drop the bag, whether it's empty or not
-    public(friend) fun drop_temporary_area(inscription: &mut Object<Inscription>){
-        if object::contains_field(inscription, TEMPORARY_AREA) {
+    public(friend) fun drop_temp_area(inscription: &mut Object<Inscription>){
+        if (object::contains_field(inscription, TEMPORARY_AREA)) {
             let bag = object::remove_field(inscription, TEMPORARY_AREA);
             bag::drop(bag);
         }
+    }
+
+    #[test_only]
+    public fun drop_temp_area_for_test(inscription: &mut Object<Inscription>) {
+        drop_temp_area(inscription);
     }
 
     #[test_only]
@@ -856,13 +863,13 @@ module bitcoin_move::ord {
         assert!(state.value == 20, 1);
         assert!(!contains_temp_state<TempState>(&inscription_obj), 3);
 
-        drop_temporary_area(&mut inscription_obj);
+        drop_temp_area(&mut inscription_obj);
         drop_inscription_object_for_test(inscription_obj);
     }
 
     #[test_only]
     fun mock_inscription_transferring_along_utxo(inscription_obj: Object<Inscription>, to: address) {
-        drop_temporary_area(&mut inscription_obj);
+        drop_temp_area(&mut inscription_obj);
         object::transfer_extend(inscription_obj, to);
     }
 
@@ -891,10 +898,11 @@ module bitcoin_move::ord {
         let to_address = @0x42;
         {
             mock_inscription_transferring_along_utxo(inscription_obj, to_address);
-        }
+        };
 
         let inscription_obj = object::borrow_object<Inscription>(object_id);
-        assert!(!contains_temp_state<TempState>(&inscription_obj), 1);
-        assert!(contains_permanent_state<PermanentState>(&inscription_obj), 2);
+        assert!(!contains_temp_state<TempState>(inscription_obj), 1);
+        assert!(contains_permanent_state<PermanentState>(inscription_obj), 2);
+
     }
 }
