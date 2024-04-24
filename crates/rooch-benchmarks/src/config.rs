@@ -144,7 +144,7 @@ impl Default for CriterionConfig {
             sample_size: 500,
             warm_up_time: Duration::from_millis(1), // no need to warm this heavy operation
             frequency: 2000,
-            measurement_time: Duration::from_millis(3000),
+            measurement_time: Duration::from_millis(1000),
             pprof_output: PProfOutput::Flamegraph,
         }
     }
