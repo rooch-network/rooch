@@ -396,17 +396,12 @@ impl RoochAPIServer for RoochServer {
 
         let tx_orders = if descending_order {
             let start = cursor.unwrap_or(last_sequencer_order + 1);
-            let start_sub =
-                start
-                    .checked_sub(limit_of)
-                    .ok_or(jsonrpsee::core::Error::Custom(
-                        "cursor value is overflow".to_string(),
-                    ))?;
-            let end = if start >= limit_of {
-                start_sub
-            } else {
-                0
-            };
+            let start_sub = start
+                .checked_sub(limit_of)
+                .ok_or(jsonrpsee::core::Error::Custom(
+                    "cursor value is overflow".to_string(),
+                ))?;
+            let end = if start >= limit_of { start_sub } else { 0 };
 
             (end..start).rev().collect::<Vec<_>>()
         } else {
