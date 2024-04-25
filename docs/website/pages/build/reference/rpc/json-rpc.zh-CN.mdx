@@ -37,10 +37,10 @@ curl --location 'https://dev-seed.rooch.network/' --header 'Content-Type: applic
 `--data` 指定的就是我们要请求 RPC 接口中的**方法名**和**参数**等信息，这里要以 JSON 的数据格式来填写。
 
 ```shell
-{"jsonrpc":"2.0","result":"20230103","id":0}
+{"jsonrpc":"2.0","result":"3","id":0}
 ```
 
-这是 RPC 请求后从 Rooch 节点以 JSON 格式返回的响应信息，我们重点关注 `result` 字段，即 RPC 的执行结果，Rooch 的 `dev` 网络的链 ID 号为 `20230103`。
+这是 RPC 请求后从 Rooch 节点以 JSON 格式返回的响应信息，我们重点关注 `result` 字段，即 RPC 的执行结果，Rooch 的 `dev` 网络的链 ID 号为 `3`。
 
 #### 使用 Web 页面的客户端向 Rooch 节点发送请求
 

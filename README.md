@@ -20,7 +20,7 @@
 ## Developer Network Information
 
 * Name: dev
-* ChainID: 20230103
+* ChainID: 3
 * RPC: https://dev-seed.rooch.network/
 
 Please refer to [Connect to Developer Test Network](https://rooch.network/build/getting-started/connect-to-rooch/connect-devnet) for more information.

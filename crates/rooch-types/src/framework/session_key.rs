@@ -118,7 +118,9 @@ impl FromStr for SessionScope {
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionKey {
+    #[serde(default)]
     pub app_name: MoveString,
+    #[serde(default)]
     pub app_url: MoveAsciiString,
     #[serde_as(as = "Readable<Hex, _>")]
     pub authentication_key: Vec<u8>,
