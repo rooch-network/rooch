@@ -17,6 +17,7 @@ use moveos_types::{
 use rooch_client::RoochRpcClient;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::runtime::Handle;
 
 pub mod client_config;
 pub mod rooch_client;
@@ -112,20 +113,22 @@ impl ModuleResolver for &Client {
     }
 
     fn get_module(&self, id: &ModuleId) -> Result<Option<Vec<u8>>> {
-        futures::executor::block_on(async {
-            let mut states = self
-                .rooch
-                .get_states(AccessPath::module(*id.address(), id.name().to_owned()))
-                .await?;
-            states
-                .pop()
-                .flatten()
-                .map(|state_view| {
-                    let state = State::from(state_view);
-                    let module = state.cast::<MoveModule>()?;
-                    Ok(module.byte_codes)
-                })
-                .transpose()
+        tokio::task::block_in_place(|| {
+            Handle::current().block_on(async {
+                let mut states = self
+                    .rooch
+                    .get_states(AccessPath::module(*id.address(), id.name().to_owned()))
+                    .await?;
+                states
+                    .pop()
+                    .flatten()
+                    .map(|state_view| {
+                        let state = State::from(state_view);
+                        let module = state.cast::<MoveModule>()?;
+                        Ok(module.byte_codes)
+                    })
+                    .transpose()
+            })
         })
     }
 }
