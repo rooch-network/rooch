@@ -171,7 +171,7 @@ module btc_holder_farmer::hold_farmer {
         name: vector<u8>,
         symbol: vector<u8>,
         decimals: u8,
-        _cap: &Object<AdminCap>
+        _cap: &mut Object<AdminCap>
     ) {
         assert!(signer::address_of(signer) == DEPLOYER, ErrorWrongDeployer);
         assert!(!account::exists_resource<FarmingAsset>(DEPLOYER), ErrorAlreadyDeployed);
@@ -196,7 +196,7 @@ module btc_holder_farmer::hold_farmer {
     }
 
     public fun modify_parameter(
-        _cap: &Object<AdminCap>,
+        _cap: &mut Object<AdminCap>,
         release_per_second: u128,
         alive: bool
     ) {
