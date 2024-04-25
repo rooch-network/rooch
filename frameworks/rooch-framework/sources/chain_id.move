@@ -7,10 +7,10 @@ module rooch_framework::chain_id {
 
     friend rooch_framework::genesis;
 
-    const CHAIN_ID_LOCAL: u64 = 20230104;
-    const CHAIN_ID_DEV: u64 = 20230103;
-    const CHAIN_ID_TEST: u64 = 20230102;
-    const CHAIN_ID_MAIN: u64 = 20230101;
+    const CHAIN_ID_LOCAL: u64 = 4;
+    const CHAIN_ID_DEV: u64 = 3;
+    const CHAIN_ID_TEST: u64 = 2;
+    const CHAIN_ID_MAIN: u64 = 1;
 
     /// The ChainID in the global storage
     struct ChainID has key,store {
