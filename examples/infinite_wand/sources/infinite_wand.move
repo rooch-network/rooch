@@ -67,7 +67,7 @@ module infinite_wand::infinite_wand {
         object::to_shared(global_obj);
     }
 
-    public fun mint_infinite_wand(_admin_cap: &AdminCap, global_obj: &mut Object<Global>, receiver: address) {
+    public fun mint_infinite_wand(_admin_cap: &mut Object<AdminCap>, global_obj: &mut Object<Global>, receiver: address) {
         let global = object::borrow_mut(global_obj);
         let nft = InfiniteWand {
             nft_id: global.wand_id,
@@ -82,19 +82,19 @@ module infinite_wand::infinite_wand {
         global.wand_id = global.wand_id + 1;
     }
 
-    public fun mint_infinite_gold(_admin_cap: &AdminCap, coin_info_obj: &mut Object<CoinInfo<InfiniteGold>>, credit: u256, receiver: address) {
+    public fun mint_infinite_gold(_admin_cap: &mut Object<AdminCap>, coin_info_obj: &mut Object<CoinInfo<InfiniteGold>>, credit: u256, receiver: address) {
         let coin = coin::mint_extend<InfiniteGold>(coin_info_obj, credit);
         // must set InfiniteGold is accept coin
         account_coin_store::deposit_extend(receiver, coin);
     }
 
-    public fun add_whitelist(_admin_cap: &AdminCap, global_obj: &mut Object<Global>, addr: address) {
+    public fun add_whitelist(_admin_cap: &mut Object<AdminCap>, global_obj: &mut Object<Global>, addr: address) {
         let global = object::borrow_mut(global_obj);
         assert!(!table::contains(&global.whitelist, addr), ErrorAddressAlreadyInWhitelist);
         table::add(&mut global.whitelist, addr, true);
     }
 
-    public fun remove_whitelist(_admin_cap: &AdminCap, global_obj: &mut Object<Global>, addr: address) {
+    public fun remove_whitelist(_admin_cap: &mut Object<AdminCap>, global_obj: &mut Object<Global>, addr: address) {
         let global = object::borrow_mut(global_obj);
         assert!(table::contains(&global.whitelist, addr), ErrorAddressNotInWhitelist);
         table::remove(&mut global.whitelist, addr);
