@@ -46,5 +46,14 @@
       "timestamp": false,
       "typesetting": "article"
     }
+  },
+  "about": {
+    "type": "page",
+    "display": "hidden",
+    "theme": {
+      "sidebar": false,
+      "timestamp": false,
+      "typesetting": "article"
+    }
   }
 }
