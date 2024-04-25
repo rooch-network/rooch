@@ -728,10 +728,10 @@ When creating and deleting articles, update the list of articles in the blog at 
 A test article can be created by submitting a transaction using the Rooch CLI like this:
 
 ```shell
-rooch move run --function default::simple_blog::create_article --sender-account default --args 'string:Hello Rooch' --args "string:Accelerating World's Transition to Decentralization"
+rooch move run --function default::simple_blog::create_article --sender-account default --args 'string:Hello Rooch' --args "string:Unlocking infinite utility for the Bitcoin Economy"
 ```
 
-`--function` specifies to execute the `create_article` function in the `simple_blog`module published at address `0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081`, that is, create a new blog post. `--sender-account` specifies who should submit this transaction. This function requires us to pass two parameters to it, specified by `--args`, the first is the title of the article, I named it `Hello Rooch`; the second is the content of the article, I wrote the slogan of Rooch: `Accelerating World's Transition to Decentralization`.
+`--function` specifies to execute the `create_article` function in the `simple_blog`module published at address `0x5078ae74bac281e65fc446b467a843b186904a1b2d435f367030fc755eef1081`, that is, create a new blog post. `--sender-account` specifies who should submit this transaction. This function requires us to pass two parameters to it, specified by `--args`, the first is the title of the article, I named it `Hello Rooch`; the second is the content of the article, I wrote the slogan of Rooch: `Unlocking infinite utility for the Bitcoin Economy`.
 
 The parameter passed is a string, which needs to be wrapped in quotation marks and specified through `string:`. There are single quotation marks in the content of the second parameter, so use double quotation marks to wrap it, otherwise you must use an escape character (`\`).
 
@@ -799,7 +799,7 @@ rooch state --access-path /object/0x6067b5c1f0a6a9d059ab0e2e4fe5ce12832cc4036aa5
           "abilities": 12,
           "type": "0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::simple_article::Article",
           "value": {
-            "body": "Accelerating World's Transition to Decentralization",
+            "body": "Unlocking infinite utility for the Bitcoin Economy",
             "title": "Hello Rooch",
             "version": "0"
           }
@@ -828,9 +828,7 @@ We can also use the previous command to query `MyBlog` Resource under the accoun
       "abilities": 12,
       "type": "0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::simple_blog::MyBlog",
       "value": {
-        "articles": [
-          "0xf3264835925cf7573b0da6a5e8b97d6051b695455b012c1d87482b6652892379"
-        ],
+        "articles": ["0xf3264835925cf7573b0da6a5e8b97d6051b695455b012c1d87482b6652892379"],
         "name": "Rooch blog"
       }
     },
@@ -867,7 +865,33 @@ curl --location --request POST 'http://127.0.0.1:50051/' --header 'Content-Type:
 In the output, it can be observed that the title and body of the article are successfully modified:
 
 ```json
-{"jsonrpc":"2.0","result":[{"value":"0x01f3264835925cf7573b0da6a5e8b97d6051b695455b012c1d87482b6652892379ff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7005350415253455f4d45524b4c455f504c414345484f4c4445525f4841534800000000000000000000010000000000000003466f6f03426172","value_type":"0x2::object::ObjectEntity<0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::simple_article::Article>","decoded_value":{"abilities":0,"type":"0x2::object::ObjectEntity<0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::simple_article::Article>","value":{"flag":0,"id":"0xf3264835925cf7573b0da6a5e8b97d6051b695455b012c1d87482b6652892379","owner":"0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7","size":"0","state_root":"0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000","value":{"abilities":12,"type":"0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::simple_article::Article","value":{"body":"Bar","title":"Foo","version":"1"}}}},"display_fields":null}],"id":101}
+{
+  "jsonrpc": "2.0",
+  "result": [
+    {
+      "value": "0x01f3264835925cf7573b0da6a5e8b97d6051b695455b012c1d87482b6652892379ff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7005350415253455f4d45524b4c455f504c414345484f4c4445525f4841534800000000000000000000010000000000000003466f6f03426172",
+      "value_type": "0x2::object::ObjectEntity<0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::simple_article::Article>",
+      "decoded_value": {
+        "abilities": 0,
+        "type": "0x2::object::ObjectEntity<0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::simple_article::Article>",
+        "value": {
+          "flag": 0,
+          "id": "0xf3264835925cf7573b0da6a5e8b97d6051b695455b012c1d87482b6652892379",
+          "owner": "0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7",
+          "size": "0",
+          "state_root": "0x5350415253455f4d45524b4c455f504c414345484f4c4445525f484153480000",
+          "value": {
+            "abilities": 12,
+            "type": "0xff795489ecdf184de120244354a3bcf7471cd7683780cb6f19b2336b2ca239b7::simple_article::Article",
+            "value": { "body": "Bar", "title": "Foo", "version": "1" }
+          }
+        }
+      },
+      "display_fields": null
+    }
+  ],
+  "id": 101
+}
 ```
 
 #### 4.3.6 Delete article
