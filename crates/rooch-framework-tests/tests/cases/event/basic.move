@@ -3,7 +3,7 @@
 //# publish
 module test::m {
     use moveos_std::event;
-    struct WithdrawEvent has drop {
+    struct WithdrawEvent has drop,copy {
         addr: address,
         amount: u64
     }

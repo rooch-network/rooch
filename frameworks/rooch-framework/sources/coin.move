@@ -88,7 +88,7 @@ module rooch_framework::coin {
     }
 
     /// Event emitted when coin minted.
-    struct MintEvent has drop, store {
+    struct MintEvent has drop, store, copy {
         /// The type of coin that was minted
         coin_type: string::String,
         /// coin amount added to the system
@@ -96,7 +96,7 @@ module rooch_framework::coin {
     }
 
     /// Event emitted when coin burned.
-    struct BurnEvent has drop, store {
+    struct BurnEvent has drop, store, copy {
         /// The type of coin that was burned
         coin_type: string::String,
         /// coin amount removed from the system

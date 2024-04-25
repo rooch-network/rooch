@@ -108,7 +108,7 @@ impl MoveFunctionCaller for Client {
 
 impl ModuleResolver for &Client {
     fn get_module_metadata(&self, _module_id: &ModuleId) -> Vec<Metadata> {
-        todo!()
+        Vec::new()
     }
 
     fn get_module(&self, id: &ModuleId) -> Result<Option<Vec<u8>>> {

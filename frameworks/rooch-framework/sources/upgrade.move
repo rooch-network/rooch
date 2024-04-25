@@ -19,7 +19,7 @@ module rooch_framework::upgrade {
     const BitcoinMoveAccount: address = @0x4;
 
     /// Event for framework upgrades
-    struct FrameworkUpgradeEvent has drop, store {
+    struct FrameworkUpgradeEvent has drop, store, copy {
         version: u64,
     }
 

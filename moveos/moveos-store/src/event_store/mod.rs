@@ -154,15 +154,26 @@ impl EventDBStore {
         let ids = if descending_order {
             let start = cursor.unwrap_or(last_seq + 1);
             let end = if start >= limit { start - limit } else { 0 };
+
             (end..start).rev().collect::<Vec<_>>()
         } else {
             let start = match cursor {
                 //The cursor do not include the result
-                Some(cursor) => cursor + 1,
+                Some(cursor) => match cursor.checked_add(1) {
+                    None => return Err(anyhow::Error::msg("'start + limit' is overflow")),
+                    Some(v) => v,
+                },
                 //None means start from -1
                 None => 0,
             };
-            let end = min(start + limit, last_seq + 1);
+
+            let value = match start.checked_add(limit) {
+                None => return Err(anyhow::Error::msg("'start + limit' is overflow")),
+                Some(v) => v,
+            };
+
+            let end = min(value, last_seq + 1);
+
             (start..end).collect::<Vec<_>>()
         };
 

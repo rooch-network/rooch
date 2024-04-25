@@ -66,7 +66,7 @@ module rooch_examples::rooch_examples {
         decision: u64
     }
 
-    struct CreateGameEvent has store, drop {
+    struct CreateGameEvent has store, drop, copy {
         game_id: u128,
         prize_pool_amount: u256,
         player_one_address: address,
@@ -76,7 +76,7 @@ module rooch_examples::rooch_examples {
     }
 
 
-    struct SubmitDecisionEvent has store, drop {
+    struct SubmitDecisionEvent has store, drop, copy {
         game_id: u128,
         player_address: address,
         decision_hash: vector<u8>,
@@ -84,14 +84,14 @@ module rooch_examples::rooch_examples {
         event_creation_timestamp_in_seconds: u64
     }
 
-    struct RevealDecisionEvent has store, drop {
+    struct RevealDecisionEvent has store, drop, copy {
         game_id: u128,
         player_address: address,
         decision: u64,
         event_creation_timestamp_in_seconds: u64
     }
 
-    struct ConcludeGameEvent has store, drop {
+    struct ConcludeGameEvent has store, drop, copy {
         game_id: u128,
         player_one_decision: u64,
         player_two_decision: u64,
@@ -99,7 +99,7 @@ module rooch_examples::rooch_examples {
         event_creation_timestamp_in_seconds: u64
     }
 
-    struct ReleaseFundsAfterExpirationEvent has store, drop {
+    struct ReleaseFundsAfterExpirationEvent has store, drop, copy {
         game_id: u128,
         player_one_decision: u64,
         player_two_decision: u64,
