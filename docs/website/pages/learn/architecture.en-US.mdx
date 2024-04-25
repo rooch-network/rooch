@@ -57,7 +57,7 @@ The Rooch Network has several essential middleware services that are in charge o
 
 - **Sequencer** - The Sequencer is in charge of verifying incoming transactions and ordering them. The ordered transactions will be submitted to the DA Chain and Proposer.
 - **Challenger** - The Challenger is the guardian of the Rooch Layer2 network. It constantly monitors the transaction stream and also executes them to calculate state transitions. If the calculated state result does not match with the proposed state to the Arbitration Layer, the Challenger shall request the fraud proofs and submit them for arbitration. (See [Fraud Proof](/learn/in-depth-tech/fraud-proof) for more information).
-- **ZK Prover** - The ZK Prover generates ZK Proofs for state transitions based on the batched transactions. The Proof will be sent to the Arbitration Layer to optimize the challenge period required by the security mechanism. (See [Hybrid Security with ZK Proof](/learn/in-depth-techhybrid-security) for more information).
+- **ZK Prover** - The ZK Prover generates ZK Proofs for state transitions based on the batched transactions. The Proof will be sent to the Arbitration Layer to optimize the challenge period required by the security mechanism. (See [Hybrid Security with ZK Proof](/learn/in-depth-tech/hybrid-security) for more information).
 - **Proposer** - The Proposer is responsible for executing all the ordered transactions and committing the resulting state to the Arbitration Layer.
 
 ### DA Layer
