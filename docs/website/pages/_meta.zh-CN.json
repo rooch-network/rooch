@@ -25,14 +25,6 @@
       "typesetting": "article"
     }
   },
-  "about": {
-    "title": "关于",
-    "type": "page",
-    "theme": {
-      "sidebar": false,
-      "typesetting": "article"
-    }
-  },
   "dashboard": {
     "title": "仪表盘",
     "type": "page",
