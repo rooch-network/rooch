@@ -30,6 +30,8 @@ module bitcoin_move::ord {
 
     const PERMANENT_AREA: vector<u8> = b"permanent_area";
     const TEMPORARY_AREA: vector<u8> = b"temporary_area";
+    
+    const METAPROTOCOL_VALIDITY: vector<u8> = b"metaprotocol_validity";
 
     /// How many satoshis are in "one bitcoin".
     const COIN_VALUE: u64 = 100_000_000;
@@ -88,6 +90,12 @@ module bitcoin_move::ord {
         txid: address,
         input_index: u64,
         record: InscriptionRecord,
+    }
+
+    struct MetaprotocolValidity has store, copy, drop {
+        protocol_type: String,
+        is_valid: bool,
+        invalid_reason: Option<String>,
     }
 
     struct InscriptionStore has key{
@@ -903,6 +911,143 @@ module bitcoin_move::ord {
         let inscription_obj = object::borrow_object<Inscription>(object_id);
         assert!(!contains_temp_state<TempState>(inscription_obj), 1);
         assert!(contains_permanent_state<PermanentState>(inscription_obj), 2);
+    }
 
+    // ==== Inscription Metaprotocol Validity ==== //
+
+    // Seal the metaprotocol validity for the given inscription_id.
+    #[private_generics(T)]
+    public fun seal_metaprotocol_validity<T>(inscription_id: InscriptionID, is_valid: bool, invalid_reason: Option<String>) {
+        let store_obj_id = object::named_object_id<InscriptionStore>();
+        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
+
+        let inscription_object_id = derive_inscription_id(inscription_id);
+        let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+
+        let protocol_type = type_info::type_name<T>();
+        let validity = MetaprotocolValidity {
+            protocol_type,
+            is_valid,
+            invalid_reason,
+        };
+
+        object::upsert_field(inscription_obj, METAPROTOCOL_VALIDITY, validity);
+    }
+
+    // Borrow the metaprotocol validity for the given inscription_id.
+    public fun borrow_metaprotocol_validity(inscription_id: InscriptionID): &MetaprotocolValidity {
+        let store_obj_id = object::named_object_id<InscriptionStore>();
+        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
+
+        let inscription_object_id = derive_inscription_id(inscription_id);
+        let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+
+        object::borrow_field(inscription_obj, METAPROTOCOL_VALIDITY)
+    }
+
+    /// Get the MetaprotocolValidity's protocol_type
+    public fun metaprotocol_validity_protocol_type(validity: &MetaprotocolValidity): String {
+        validity.protocol_type
+    }
+
+    /// Get the MetaprotocolValidity's is_valid
+    public fun metaprotocol_validity_is_valid(validity: &MetaprotocolValidity): bool {
+        validity.is_valid
+    }
+
+    /// Get the MetaprotocolValidity's invalid_reason
+    public fun metaprotocol_validity_invalid_reason(validity: &MetaprotocolValidity): Option<String> {
+        validity.invalid_reason
+    }
+
+    #[test_only]
+    struct TestProtocol has key {}
+
+    #[test_only]
+    fun new_inscription_id_for_test(        
+        txid: address,
+        index: u32,
+    ) : InscriptionID {
+        InscriptionID {
+            txid,
+            index,
+        }
+    }
+
+    #[test_only]
+    public fun new_inscription_for_test(
+        txid: address,
+        index: u32,
+        input: u32,
+        offset: u64,
+        body: vector<u8>,
+        content_encoding: Option<String>,
+        content_type: Option<String>,
+        metadata: vector<u8>,
+        metaprotocol: Option<String>,
+        parent: Option<ObjectID>,
+        pointer: Option<u64>,
+    ): Inscription {
+        Inscription {
+            txid,
+            index,
+            input,
+            offset,
+            body,
+            content_encoding,
+            content_type,
+            metadata,
+            metaprotocol,
+            parent,
+            pointer,
+        }
+    }
+
+    #[test(genesis_account=@0x4)]
+    fun test_metaprotocol_validity(genesis_account: &signer){
+        genesis_init(genesis_account);
+
+        // prepare test inscription
+        let test_address = @0x5416690eaaf671031dc609ff8d36766d2eb91ca44f04c85c27628db330f40fd1;
+        let test_txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let test_inscription_id = new_inscription_id_for_test(test_txid, 0);
+        let test_inscription = new_inscription_for_test(
+            test_txid,
+            0,
+            0,
+            0,
+            vector[],
+            option::none(),
+            option::none(),
+            vector[],
+            option::none(),
+            option::none(),
+            option::none(),
+        );
+
+        let test_inscription_obj = create_obj(test_inscription);
+        object::transfer_extend(test_inscription_obj, test_address);
+
+        // seal TestProtocol valid to test_inscription_id
+        seal_metaprotocol_validity<TestProtocol>(test_inscription_id, true, option::none());
+
+        // borrow metaprotocol validity from test_inscription_id
+        let metaprotocol_validity = borrow_metaprotocol_validity(test_inscription_id);
+        let is_valid = metaprotocol_validity_is_valid(metaprotocol_validity);
+        assert!(is_valid, 1);
+
+        // seal TestProtocol not valid to test_inscription_id
+        let test_invalid_reason = string::utf8(b"Claimed first by another");
+        seal_metaprotocol_validity<TestProtocol>(test_inscription_id, false, option::some(test_invalid_reason));
+
+        // borrow metaprotocol validity from test_inscription_id
+        let metaprotocol_validity = borrow_metaprotocol_validity(test_inscription_id);
+
+        let is_valid = metaprotocol_validity_is_valid(metaprotocol_validity);
+        assert!(!is_valid, 1);
+
+        let invalid_reason_option = metaprotocol_validity_invalid_reason(metaprotocol_validity);
+        let invalid_reason = option::borrow(&invalid_reason_option);
+        assert!(invalid_reason == &test_invalid_reason, 1);
     }
 }

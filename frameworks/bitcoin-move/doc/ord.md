@@ -11,6 +11,7 @@
 -  [Resource `Inscription`](#0x4_ord_Inscription)
 -  [Struct `InscriptionRecord`](#0x4_ord_InscriptionRecord)
 -  [Struct `InvalidInscriptionEvent`](#0x4_ord_InvalidInscriptionEvent)
+-  [Struct `MetaprotocolValidity`](#0x4_ord_MetaprotocolValidity)
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_ord_genesis_init)
@@ -54,6 +55,11 @@
 -  [Function `borrow_mut_temp_state`](#0x4_ord_borrow_mut_temp_state)
 -  [Function `remove_temp_state`](#0x4_ord_remove_temp_state)
 -  [Function `drop_temp_area`](#0x4_ord_drop_temp_area)
+-  [Function `seal_metaprotocol_validity`](#0x4_ord_seal_metaprotocol_validity)
+-  [Function `borrow_metaprotocol_validity`](#0x4_ord_borrow_metaprotocol_validity)
+-  [Function `metaprotocol_validity_protocol_type`](#0x4_ord_metaprotocol_validity_protocol_type)
+-  [Function `metaprotocol_validity_is_valid`](#0x4_ord_metaprotocol_validity_is_valid)
+-  [Function `metaprotocol_validity_invalid_reason`](#0x4_ord_metaprotocol_validity_invalid_reason)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -143,6 +149,17 @@
 
 
 
+<a name="0x4_ord_MetaprotocolValidity"></a>
+
+## Struct `MetaprotocolValidity`
+
+
+
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_MetaprotocolValidity">MetaprotocolValidity</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
 <a name="0x4_ord_InscriptionStore"></a>
 
 ## Resource `InscriptionStore`
@@ -183,6 +200,15 @@ How many satoshis are in "one bitcoin".
 
 
 <pre><code><b>const</b> <a href="ord.md#0x4_ord_FIRST_POST_SUBSIDY_EPOCH">FIRST_POST_SUBSIDY_EPOCH</a>: u32 = 33;
+</code></pre>
+
+
+
+<a name="0x4_ord_METAPROTOCOL_VALIDITY"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_METAPROTOCOL_VALIDITY">METAPROTOCOL_VALIDITY</a>: <a href="">vector</a>&lt;u8&gt; = [109, 101, 116, 97, 112, 114, 111, 116, 111, 99, 111, 108, 95, 118, 97, 108, 105, 100, 105, 116, 121];
 </code></pre>
 
 
@@ -664,4 +690,63 @@ Drop the bag, whether it's empty or not
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_drop_temp_area">drop_temp_area</a>(inscription: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;)
+</code></pre>
+
+
+
+<a name="0x4_ord_seal_metaprotocol_validity"></a>
+
+## Function `seal_metaprotocol_validity`
+
+
+
+<pre><code>#[private_generics(#[T])]
+<b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_seal_metaprotocol_validity">seal_metaprotocol_validity</a>&lt;T&gt;(inscription_id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>, is_valid: bool, invalid_reason: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;)
+</code></pre>
+
+
+
+<a name="0x4_ord_borrow_metaprotocol_validity"></a>
+
+## Function `borrow_metaprotocol_validity`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_metaprotocol_validity">borrow_metaprotocol_validity</a>(inscription_id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): &<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_metaprotocol_validity_protocol_type"></a>
+
+## Function `metaprotocol_validity_protocol_type`
+
+Get the MetaprotocolValidity's protocol_type
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_metaprotocol_validity_protocol_type">metaprotocol_validity_protocol_type</a>(validity: &<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_metaprotocol_validity_is_valid"></a>
+
+## Function `metaprotocol_validity_is_valid`
+
+Get the MetaprotocolValidity's is_valid
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_metaprotocol_validity_is_valid">metaprotocol_validity_is_valid</a>(validity: &<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>): bool
+</code></pre>
+
+
+
+<a name="0x4_ord_metaprotocol_validity_invalid_reason"></a>
+
+## Function `metaprotocol_validity_invalid_reason`
+
+Get the MetaprotocolValidity's invalid_reason
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_metaprotocol_validity_invalid_reason">metaprotocol_validity_invalid_reason</a>(validity: &<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>
