@@ -543,7 +543,7 @@ module btc_holder_farmer::hold_farmer {
         rooch_framework::genesis::init_for_test();
         bitcoin_move::genesis::init_for_test();
         let admin_cap = object::new_named_object(AdminCap {});
-        deploy(&sender, 1, 0, 200, b"BTC Holder Coin", b"HDC", 6, &admin_cap);
+        deploy(&sender, 1, 0, 200, b"BTC Holder Coin", b"HDC", 6, &mut admin_cap);
         let seconds = 100;
         let tx_id = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
         let sat_value = 100000000;
