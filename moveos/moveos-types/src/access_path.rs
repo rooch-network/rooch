@@ -65,7 +65,8 @@ impl StateQuery {
                 ensure!(!object_ids.is_empty(), "Please specify object id");
                 Ok(object_ids
                     .into_iter()
-                    .map(|id| (id.parent().unwrap_or(ObjectID::root()), id.to_key()))
+                    // .map(|id| (id.parent().unwrap_or(ObjectID::root()), id.to_key()))
+                    .map(|id| (ObjectID::root(), id.to_key()))
                     .collect())
             }
             StateQuery::Fields(object_id, fields) => {

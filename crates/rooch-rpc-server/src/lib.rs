@@ -431,6 +431,7 @@ pub fn init_storage(
     if let Some(ref startup_info) = startup_info {
         info!("Load startup info {:?}", startup_info);
     }
+    // info!("Load startup info {:?}", startup_info);
     let root = startup_info
         .map(|s| s.into_root_object())
         .unwrap_or(ObjectEntity::genesis_root_object());

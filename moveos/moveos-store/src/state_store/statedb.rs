@@ -36,7 +36,7 @@ impl StateDBStore {
         }
     }
 
-    fn update_fields<I>(&self, pre_state_root: H256, update_set: I) -> Result<TreeChangeSet>
+    pub fn update_fields<I>(&self, pre_state_root: H256, update_set: I) -> Result<TreeChangeSet>
     where
         I: Into<UpdateSet<KeyState, State>>,
     {
@@ -50,6 +50,11 @@ impl StateDBStore {
             );
         }
         Ok(change_set)
+    }
+
+    pub fn update_nodes(&self, nodes: BTreeMap<H256, Vec<u8>>) -> Result<()> {
+        self.node_store.write_nodes(nodes)?;
+        Ok(())
     }
 
     fn apply_object_change(

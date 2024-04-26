@@ -13,4 +13,5 @@ pub mod rpc;
 pub mod server;
 pub mod session_key;
 pub mod state;
+pub mod statedb;
 pub mod transaction;
