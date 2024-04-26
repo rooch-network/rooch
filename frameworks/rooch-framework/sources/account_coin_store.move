@@ -40,7 +40,7 @@ module rooch_framework::account_coin_store {
     }
 
     /// Event for auto accept coin set
-    struct AcceptCoinEvent has drop, store {
+    struct AcceptCoinEvent has drop, store, copy {
         /// auto accept coin config
         enable: bool,
     }

@@ -22,7 +22,7 @@ import Image from "next/image";
   - **RPC Proxy** is a special components designed for interpreting differernt transaction structures to the native schema to allow users sending transactions directly from all kinds of wallets in the market. E.g. users can directly send transactions from MetaMask to call a Move contract on Rooch
 - **MoveOS** - MoveOS is the component that does all the computational and storage work
   - **flexEmu** is a general purpose MIPS emulator that generates [Fraud Proof](/learn/in-depth-tech/fraud-proof)
-  - **MoveVM** is a full function turing-complete VM that executes smart contracts written in [Move Language](/learn/core-concepts/move-concepts/move-language)
+  - **MoveVM** is a full function turing-complete VM that executes smart contracts written in [Move Language](/learn/core-concepts/move-contracts/move-language)
   - **State Storage** contains all the user and contract states
 - **Role Specific Modules** - These are the funcational modules that allow node operators to config their nodes as different roles in a Layered network (see [Rooch Network Architecture](/learn/architecture) for more details)
 - **Interfaces** - Rooch has built-in interfaces to work with different layers. Interfaces being abstracted enough ensures that Rooch will be able to adapt to different ecosystems.
@@ -57,7 +57,7 @@ The Rooch Network has several essential middleware services that are in charge o
 
 - **Sequencer** - The Sequencer is in charge of verifying incoming transactions and ordering them. The ordered transactions will be submitted to the DA Chain and Proposer.
 - **Challenger** - The Challenger is the guardian of the Rooch Layer2 network. It constantly monitors the transaction stream and also executes them to calculate state transitions. If the calculated state result does not match with the proposed state to the Arbitration Layer, the Challenger shall request the fraud proofs and submit them for arbitration. (See [Fraud Proof](/learn/in-depth-tech/fraud-proof) for more information).
-- **ZK Prover** - The ZK Prover generates ZK Proofs for state transitions based on the batched transactions. The Proof will be sent to the Arbitration Layer to optimize the challenge period required by the security mechanism. (See [Hybrid Security with ZK Proof](/learn/in-depth-techhybrid-security) for more information).
+- **ZK Prover** - The ZK Prover generates ZK Proofs for state transitions based on the batched transactions. The Proof will be sent to the Arbitration Layer to optimize the challenge period required by the security mechanism. (See [Hybrid Security with ZK Proof](/learn/in-depth-tech/hybrid-security) for more information).
 - **Proposer** - The Proposer is responsible for executing all the ordered transactions and committing the resulting state to the Arbitration Layer.
 
 ### DA Layer

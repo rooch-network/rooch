@@ -228,6 +228,14 @@ where
                 })
             }
             MoveAction::ModuleBundle(module_bundle) => {
+                let sender = self.tx_context().sender();
+                // Publishing modules through `MoveAction::ModuleBundle` is only allowed for
+                // system reserved addresses. Developers can publish modules through Move function
+                // `moveos_std::move_module::publish_modules`
+                if !addresses::is_system_reserved_address(sender) {
+                    return Err(PartialVMError::new(StatusCode::INVALID_MODULE_PUBLISHER)
+                        .finish(Location::Undefined));
+                };
                 let compiled_modules = deserialize_modules(&module_bundle)?;
 
                 self.vm

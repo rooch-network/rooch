@@ -5,7 +5,14 @@ import { createContext, useEffect, useRef, useState, ReactElement } from 'react'
 import type { StateStorage } from 'zustand/middleware'
 
 import { createWalletStore, WalletStore } from '../walletStore'
-import { useAutoConnectWallet, useRoochClient, useWalletStore } from '../hooks'
+import {
+  useAutoConnectWallet,
+  useCurrentSession,
+  useRoochClient,
+  useRoochSessionStore,
+  useSession,
+  useWalletStore,
+} from '../hooks'
 import { getInstalledWallets } from '../utils/walletUtils'
 import { BaseWallet, UniSatWallet, WalletAccount } from '../types'
 import { SupportChain } from '../feature'
@@ -85,6 +92,9 @@ function WalletConnectionManager({ children }: WalletConnectionManagerProps) {
   const setConnectionStatus = useWalletStore((state) => state.setConnectionStatus)
   const setAccountSwitched = useWalletStore((store) => store.setAccountSwitched)
   const currentAccount = useWalletStore((state) => state.currentAccount)
+  const sessions = useSession()
+  const curSession = useCurrentSession()
+  const setSessionAccount = useRoochSessionStore((state) => state.setCurrentSession)
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const accountsChangedHandler = async (accounts: WalletAccount[]) => {
@@ -95,9 +105,13 @@ function WalletConnectionManager({ children }: WalletConnectionManagerProps) {
       const selectedAccount = accounts[0]
       if (selectedAccount.address !== currentAccount?.address) {
         setAccountSwitched(selectedAccount)
+        await selectedAccount.resoleRoochAddress()
+        setSessionAccount(undefined)
       }
     }
   }
+
+  // handle Listener
   useEffect(() => {
     if (connectionStatus === 'connected') {
       currentWallet.onAccountsChanged(accountsChangedHandler)
@@ -109,5 +123,13 @@ function WalletConnectionManager({ children }: WalletConnectionManagerProps) {
       }
     }
   }, [accountsChangedHandler, connectionStatus, currentWallet])
+
+  // handle session
+  useEffect(() => {
+    const cur = sessions.find((item) => item.getAddress() === currentAccount?.getRoochAddress())
+    if (cur && cur.getAuthKey() !== curSession?.getAuthKey()) {
+      setSessionAccount(cur)
+    }
+  }, [sessions, currentAccount, curSession, setSessionAccount])
   return children
 }

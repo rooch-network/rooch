@@ -11,10 +11,10 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-pub const CHAIN_ID_LOCAL: u64 = 20230104;
-pub const CHAIN_ID_DEV: u64 = 20230103;
-pub const CHAIN_ID_TEST: u64 = 20230102;
-pub const CHAIN_ID_MAIN: u64 = 20230101;
+pub const CHAIN_ID_LOCAL: u64 = 4;
+pub const CHAIN_ID_DEV: u64 = 3;
+pub const CHAIN_ID_TEST: u64 = 2;
+pub const CHAIN_ID_MAIN: u64 = 1;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, Hash, Eq, PartialEq, JsonSchema)]
 pub struct ChainID {

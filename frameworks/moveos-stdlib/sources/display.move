@@ -13,7 +13,7 @@ module moveos_std::display {
     }
 
     /// Event when Display<T> created
-    struct DisplayCreate<phantom T> has drop {}
+    struct DisplayCreate<phantom T> has drop,copy {}
 
     #[private_generics(T)]
     /// Create or borrow_mut Display object for resource `T`

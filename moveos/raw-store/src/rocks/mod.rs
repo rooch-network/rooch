@@ -353,10 +353,10 @@ where
 }
 
 impl DBStore for RocksDB {
-    fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
+    fn get(&self, prefix_name: &str, key: &[u8]) -> Result<Option<Vec<u8>>> {
         record_metrics("db", prefix_name, "get", self.metrics.as_ref()).call(|| {
             let cf_handle = self.get_cf_handle(prefix_name);
-            let result = self.db.get_cf(&cf_handle, key.as_slice())?;
+            let result = self.db.get_cf(&cf_handle, key)?;
             Ok(result)
         })
     }
@@ -377,7 +377,7 @@ impl DBStore for RocksDB {
         })
     }
 
-    fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
+    fn contains_key(&self, prefix_name: &str, key: &[u8]) -> Result<bool> {
         record_metrics("db", prefix_name, "contains_key", self.metrics.as_ref()).call(|| match self
             .get(prefix_name, key)
         {

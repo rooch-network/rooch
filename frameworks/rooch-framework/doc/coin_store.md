@@ -74,7 +74,7 @@ These are kept in a single resource to ensure locality of data.
 Event emitted when a coin store is created.
 
 
-<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_CreateEvent">CreateEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_CreateEvent">CreateEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -86,7 +86,7 @@ Event emitted when a coin store is created.
 Event emitted when some amount of a coin is deposited into a coin store.
 
 
-<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_DepositEvent">DepositEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_DepositEvent">DepositEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -98,7 +98,7 @@ Event emitted when some amount of a coin is deposited into a coin store.
 Event emitted when some amount of a coin is withdrawn from a coin store.
 
 
-<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_WithdrawEvent">WithdrawEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_WithdrawEvent">WithdrawEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -110,7 +110,7 @@ Event emitted when some amount of a coin is withdrawn from a coin store.
 Event emitted when a coin store is frozen or unfrozen.
 
 
-<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_FreezeEvent">FreezeEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_FreezeEvent">FreezeEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -122,7 +122,7 @@ Event emitted when a coin store is frozen or unfrozen.
 Event emitted when a coin store is removed.
 
 
-<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_RemoveEvent">RemoveEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="coin_store.md#0x3_coin_store_RemoveEvent">RemoveEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 

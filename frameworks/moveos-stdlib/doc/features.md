@@ -35,12 +35,17 @@ feature flag is disabled, those functions can constantly return true.
 -  [Function `get_module_template_feature`](#0x2_features_get_module_template_feature)
 -  [Function `module_template_enabled`](#0x2_features_module_template_enabled)
 -  [Function `ensure_module_template_enabled`](#0x2_features_ensure_module_template_enabled)
+-  [Function `get_module_publishing_allowlist_feature`](#0x2_features_get_module_publishing_allowlist_feature)
+-  [Function `module_publishing_allowlist_enabled`](#0x2_features_module_publishing_allowlist_enabled)
+-  [Function `ensure_module_publishing_allowlist_enabled`](#0x2_features_ensure_module_publishing_allowlist_enabled)
+-  [Function `get_wasm_feature`](#0x2_features_get_wasm_feature)
+-  [Function `wasm_enabled`](#0x2_features_wasm_enabled)
+-  [Function `ensure_wasm_enabled`](#0x2_features_ensure_wasm_enabled)
 -  [Function `get_all_features`](#0x2_features_get_all_features)
 
 
 <pre><code><b>use</b> <a href="core_addresses.md#0x2_core_addresses">0x2::core_addresses</a>;
 <b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 </code></pre>
 
 
@@ -100,6 +105,16 @@ This feature will only be enabled on localnet.
 
 
 
+<a name="0x2_features_MODULE_PUBLISHING_ALLOWLIST"></a>
+
+Whether enable the allowlist feature for publishing modules.
+
+
+<pre><code><b>const</b> <a href="features.md#0x2_features_MODULE_PUBLISHING_ALLOWLIST">MODULE_PUBLISHING_ALLOWLIST</a>: u64 = 5;
+</code></pre>
+
+
+
 <a name="0x2_features_MODULE_TEMPLATE"></a>
 
 Whether allowing replacing module's address, module identifier, struct identifier
@@ -119,6 +134,16 @@ This feature will only be enabled on testnet, devnet or localnet.
 
 
 <pre><code><b>const</b> <a href="features.md#0x2_features_TESTNET">TESTNET</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x2_features_WASM"></a>
+
+Whether enable the wasm feature.
+
+
+<pre><code><b>const</b> <a href="features.md#0x2_features_WASM">WASM</a>: u64 = 6;
 </code></pre>
 
 
@@ -287,6 +312,72 @@ All features are enabled for system reserved accounts.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensure_module_template_enabled">ensure_module_template_enabled</a>()
+</code></pre>
+
+
+
+<a name="0x2_features_get_module_publishing_allowlist_feature"></a>
+
+## Function `get_module_publishing_allowlist_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_get_module_publishing_allowlist_feature">get_module_publishing_allowlist_feature</a>(): u64
+</code></pre>
+
+
+
+<a name="0x2_features_module_publishing_allowlist_enabled"></a>
+
+## Function `module_publishing_allowlist_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_module_publishing_allowlist_enabled">module_publishing_allowlist_enabled</a>(): bool
+</code></pre>
+
+
+
+<a name="0x2_features_ensure_module_publishing_allowlist_enabled"></a>
+
+## Function `ensure_module_publishing_allowlist_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensure_module_publishing_allowlist_enabled">ensure_module_publishing_allowlist_enabled</a>()
+</code></pre>
+
+
+
+<a name="0x2_features_get_wasm_feature"></a>
+
+## Function `get_wasm_feature`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_get_wasm_feature">get_wasm_feature</a>(): u64
+</code></pre>
+
+
+
+<a name="0x2_features_wasm_enabled"></a>
+
+## Function `wasm_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_wasm_enabled">wasm_enabled</a>(): bool
+</code></pre>
+
+
+
+<a name="0x2_features_ensure_wasm_enabled"></a>
+
+## Function `ensure_wasm_enabled`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="features.md#0x2_features_ensure_wasm_enabled">ensure_wasm_enabled</a>()
 </code></pre>
 
 

@@ -6,7 +6,7 @@ import { addressToListTuple, addressToSeqNumber, encodeArg, encodeFunctionCall }
 
 import { RoochAccount } from './roochAccount'
 import { RoochClient } from '../client/roochClient'
-import { SendRawTransactionOpts, SessionInfo } from '../client/roochClientTypes'
+import { SendTransactionOpts, SessionInfoResult } from '../client/roochClientTypes'
 import { IAccount } from '../account/interface.ts'
 import { IAuthorizer } from '../auth'
 import {
@@ -29,8 +29,12 @@ export class RoochSessionAccount implements IAccount {
   protected readonly account?: IAccount
   protected readonly sessionAccount: RoochAccount
   protected readonly localCreateSessionTime: number
+  protected readonly appName: string
+  protected readonly appUrl: string
   protected constructor(
     client: RoochClient,
+    appName: string,
+    appUrl: string,
     scopes: string[],
     maxInactiveInterval: number,
     account?: IAccount,
@@ -39,12 +43,14 @@ export class RoochSessionAccount implements IAccount {
     localCreateSessionTime?: number,
   ) {
     this.client = client
-    this.account = account
+    this.appName = appName
+    this.appUrl = appUrl
     this.scopes = scopes
     this.maxInactiveInterval = maxInactiveInterval
-    this.localCreateSessionTime = localCreateSessionTime ?? Date.now() / 1000
-    this.sessionAccount = sessionAccount ?? new RoochAccount(this.client)
+    this.account = account
     this.authInfo = authInfo
+    this.sessionAccount = sessionAccount || new RoochAccount(this.client)
+    this.localCreateSessionTime = localCreateSessionTime ?? Date.now() / 1000
 
     // session must have the right to delete itself
     if (!this.scopes.find((item) => item === '0x3::*::*' || item === requiredScope)) {
@@ -57,11 +63,20 @@ export class RoochSessionAccount implements IAccount {
   public static async CREATE(
     client: RoochClient,
     account: IAccount,
+    appName: string,
+    appUrl: string,
     scopes: string[],
     maxInactiveInterval: number,
-    opts?: SendRawTransactionOpts,
+    opts?: SendTransactionOpts,
   ): Promise<RoochSessionAccount> {
-    return new RoochSessionAccount(client, scopes, maxInactiveInterval, account).build(opts)
+    return new RoochSessionAccount(
+      client,
+      appName,
+      appUrl,
+      scopes,
+      maxInactiveInterval,
+      account,
+    ).build(opts)
   }
 
   public toJSON(): any {
@@ -72,18 +87,30 @@ export class RoochSessionAccount implements IAccount {
       maxInactiveInterval: this.maxInactiveInterval,
       localCreateSessionTime: this.localCreateSessionTime,
       authInfo: this.authInfo,
+      appName: this.appName,
+      appUrl: this.appUrl,
     }
   }
 
   public static formJson(jsonObj: any, client: RoochClient) {
-    const { account, session, scopes, maxInactiveInterval, authInfo, localCreateSessionTime } =
-      jsonObj
+    const {
+      account,
+      session,
+      scopes,
+      maxInactiveInterval,
+      authInfo,
+      localCreateSessionTime,
+      appName,
+      appUrl,
+    } = jsonObj
 
     const roochAccount = RoochAccount.formJson(account, client)
     const sessionAccount = RoochAccount.formJson(session, client)
 
     return new RoochSessionAccount(
       client,
+      appName,
+      appUrl,
       scopes,
       maxInactiveInterval,
       roochAccount,
@@ -93,7 +120,130 @@ export class RoochSessionAccount implements IAccount {
     )
   }
 
-  protected async build(opts?: SendRawTransactionOpts): Promise<RoochSessionAccount> {
+  public getAuthKey(): string {
+    return this.sessionAccount.getAddress()
+  }
+
+  getAddress(): string {
+    return this.account!.getAddress()
+  }
+
+  getAuthorizer(): IAuthorizer {
+    return this.sessionAccount.getAuthorizer()
+  }
+
+  async sendTransaction(
+    funcId: FunctionId,
+    args?: Arg[],
+    tyArgs?: TypeTag[],
+    opts?: SendTransactionOpts,
+  ) {
+    return this.client.sendRawTransaction({
+      address: this.getAddress(),
+      authorizer: this.getAuthorizer(),
+      funcId,
+      args,
+      tyArgs,
+      opts,
+    })
+  }
+
+  async executeTransaction(
+    funcId: FunctionId,
+    args?: Arg[],
+    tyArgs?: TypeTag[],
+    opts?: SendTransactionOpts,
+  ) {
+    return this.client.executeTransaction({
+      address: this.getAddress(),
+      authorizer: this.getAuthorizer(),
+      funcId,
+      args,
+      tyArgs,
+      opts,
+    })
+  }
+
+  public async isExpired(): Promise<boolean> {
+    // if (this.localCreateSessionTime + this.maxInactiveInterval > Date.now() / 1000) {
+    //   return Promise.resolve(true)
+    // }
+
+    return this.client.sessionIsExpired(this.getAddress(), this.getAuthKey())
+  }
+
+  public async getSessionKey() {
+    const result = await this.client.executeViewFunction({
+      funcId: '0x3::session_key::get_session_key',
+      tyArgs: [],
+      args: [
+        {
+          type: 'Address',
+          value: this.getAddress(),
+        },
+        {
+          type: { Vector: 'U8' },
+          value: addressToSeqNumber(this.getAuthKey()),
+        },
+      ],
+    })
+
+    if ((result.return_values![0].value.value as any) === '0x00') {
+      return null
+    }
+
+    const parseScopes = (data: Array<any>) => {
+      const result = new Array<string>()
+
+      for (const scope of data) {
+        const value = scope.value
+        result.push(`${value.module_name}::${value.module_address}::${value.function_name}`)
+      }
+
+      return result
+    }
+
+    const val = (result.return_values![0].decoded_value as any).value.vec[0].value as any
+
+    return {
+      appName: val.app_name,
+      appUrl: val.app_url,
+      authenticationKey: val.authentication_key,
+      scopes: parseScopes(val.scopes),
+      createTime: parseInt(val.create_time),
+      lastActiveTime: parseInt(val.last_active_time),
+      maxInactiveInterval: parseInt(val.max_inactive_interval),
+    } as SessionInfoResult
+  }
+
+  public async querySessionKeys(
+    cursor?: string,
+    limit?: number,
+  ): Promise<IPage<SessionInfoResult, string>> {
+    return this.client.querySessionKeys({
+      address: this.getAddress(),
+      cursor,
+      limit,
+    })
+  }
+
+  public async destroy(opts?: SendTransactionOpts) {
+    await this.client.executeTransaction({
+      funcId: '0x3::session_key::remove_session_key_entry',
+      args: [
+        {
+          type: { Vector: 'U8' },
+          value: addressToSeqNumber(this.getAuthKey()),
+        },
+      ],
+      tyArgs: [],
+      address: this.getAddress(),
+      authorizer: this.getAuthorizer(),
+      opts: opts,
+    })
+  }
+
+  protected async build(opts?: SendTransactionOpts): Promise<RoochSessionAccount> {
     const [scopeModuleAddresss, scopeModuleNames, scopeFunctionNames] = this.scopes
       .map((scope: string) => {
         const parts = scope.split('::')
@@ -117,6 +267,14 @@ export class RoochSessionAccount implements IAccount {
       )
 
     const args: Arg[] = [
+      {
+        type: 'Ascii',
+        value: this.appName,
+      },
+      {
+        type: 'Ascii',
+        value: this.appUrl,
+      },
       {
         type: { Vector: 'U8' },
         value: addressToSeqNumber(this.getAuthKey()),
@@ -157,104 +315,16 @@ export class RoochSessionAccount implements IAccount {
   }
 
   protected async register(txData: RoochTransactionData): Promise<RoochSessionAccount> {
-    const s = await this.client.sendRawTransaction({
+    const result = await this.client.executeTransaction({
       authorizer: this.account!.getAuthorizer(),
       data: txData,
     })
-    console.log(s)
+
+    if (result.execution_info.status.type !== 'executed') {
+      console.log(result.execution_info.status)
+      throw new Error('create session error')
+    }
 
     return this
   }
-
-  public getAuthKey(): string {
-    return this.sessionAccount.getAddress()
-  }
-
-  getAddress(): string {
-    return this.account!.getAddress()
-  }
-
-  getAuthorizer(): IAuthorizer {
-    return this.sessionAccount.getAuthorizer()
-  }
-
-  /**
-   * Run move function by current account
-   *
-   * @param funcId FunctionId the function like '0x3::empty::empty'
-   * @param tyArgs Generic parameter list
-   * @param args parameter list
-   * @param opts Call option
-   */
-  async sendTransaction(
-    funcId: FunctionId,
-    args?: Arg[],
-    tyArgs?: TypeTag[],
-    opts?: SendRawTransactionOpts,
-  ): Promise<string> {
-    return this.client.sendRawTransaction({
-      address: this.getAddress(),
-      authorizer: this.getAuthorizer(),
-      funcId,
-      args,
-      tyArgs,
-      opts,
-    })
-  }
-
-  public async isExpired(): Promise<boolean> {
-    // if (this.localCreateSessionTime + this.maxInactiveInterval > Date.now() / 1000) {
-    //   return Promise.resolve(true)
-    // }
-
-    return this.client.sessionIsExpired(this.getAddress(), this.getAuthKey())
-  }
-
-  public async getSessionKey() {
-    return this.client.executeViewFunction({
-      funcId: '0x3::session_key::get_session_key',
-      tyArgs: [],
-      args: [
-        {
-          type: 'Address',
-          value: this.getAddress(),
-        },
-        {
-          type: { Vector: 'U8' },
-          value: addressToSeqNumber(this.getAuthKey()),
-        },
-      ],
-    })
-  }
-
-  public async querySessionKeys(
-    cursor: string | null,
-    limit: number,
-  ): Promise<IPage<SessionInfo, string>> {
-    return this.client.querySessionKeys(this.getAddress(), cursor, limit)
-  }
-
-  public async destroy(opts?: SendRawTransactionOpts): Promise<string> {
-    return await this.client.sendRawTransaction({
-      funcId: '0x3::session_key::remove_session_key_entry',
-      args: [
-        {
-          type: { Vector: 'U8' },
-          value: addressToSeqNumber(this.getAuthKey()),
-        },
-      ],
-      tyArgs: [],
-      address: this.getAddress(),
-      authorizer: this.getAuthorizer(),
-      opts: opts,
-    })
-  }
-
-  // public toJson(): string {
-  //
-  // }
-  //
-  // public fromJson(): RoochSessionAccount {
-  //
-  // }
 }

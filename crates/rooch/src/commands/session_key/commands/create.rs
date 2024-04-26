@@ -4,6 +4,8 @@
 use crate::cli_types::{TransactionOptions, WalletContextOptions};
 use clap::Parser;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::move_std::ascii::MoveAsciiString;
+use moveos_types::move_std::string::MoveString;
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::{
@@ -16,6 +18,11 @@ use rpassword::prompt_password;
 /// Create a new session key on-chain
 #[derive(Debug, Parser)]
 pub struct CreateCommand {
+    #[clap(long)]
+    pub app_name: MoveString,
+    #[clap(long)]
+    pub app_url: MoveAsciiString,
+
     /// The scope of the session key, format: address::module_name::function_name.
     /// The module_name and function_name must be valid Move identifiers or '*'. `*` means any module or function.
     /// For example: 0x3::empty::empty
@@ -62,6 +69,8 @@ impl CreateCommand {
 
         let action =
             rooch_types::framework::session_key::SessionKeyModule::create_session_key_action(
+                self.app_name,
+                self.app_url,
                 session_auth_key.as_ref().to_vec(),
                 session_scope.clone(),
                 self.max_inactive_interval,

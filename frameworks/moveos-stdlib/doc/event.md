@@ -26,5 +26,5 @@ phantom parameters, eg. emit(MyEvent<phantom T>).
 
 
 <pre><code>#[private_generics(#[T])]
-<b>public</b> <b>fun</b> <a href="event.md#0x2_event_emit">emit</a>&lt;T: drop&gt;(<a href="event.md#0x2_event">event</a>: T)
+<b>public</b> <b>fun</b> <a href="event.md#0x2_event_emit">emit</a>&lt;T: <b>copy</b>, drop&gt;(<a href="event.md#0x2_event">event</a>: T)
 </code></pre>

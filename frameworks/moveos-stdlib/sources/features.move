@@ -16,7 +16,6 @@ module moveos_std::features {
 
     use moveos_std::core_addresses;
     use moveos_std::object;
-    use moveos_std::tx_context;
 
     friend moveos_std::genesis;
 
@@ -66,13 +65,8 @@ module moveos_std::features {
 
     /// Check whether the feature is enabled.
     /// All features are enabled for system reserved accounts.
-    // TODO: Is it OK to enable all features for system reserved accounts?
     public fun is_enabled(feature: u64): bool {
-        if (core_addresses::is_system_reserved_address(tx_context::sender())) {
-            true
-        } else {
-            contains(borrow_features(), feature)
-        }
+        contains(borrow_features(), feature)
     }
 
     // --------------------------------------------------------------------------------------------
@@ -121,6 +115,26 @@ module moveos_std::features {
         assert!(is_enabled(MODULE_TEMPLATE), EAPI_DISABLED);
     }
 
+    /// Whether enable the allowlist feature for publishing modules.
+    const MODULE_PUBLISHING_ALLOWLIST: u64 = 5;
+    public fun get_module_publishing_allowlist_feature(): u64 { MODULE_PUBLISHING_ALLOWLIST }
+    public fun module_publishing_allowlist_enabled(): bool {
+        is_enabled(MODULE_PUBLISHING_ALLOWLIST)
+    }
+    public fun ensure_module_publishing_allowlist_enabled() {
+        assert!(is_enabled(MODULE_PUBLISHING_ALLOWLIST), EAPI_DISABLED);
+    }
+
+    /// Whether enable the wasm feature.
+    const WASM: u64 = 6;
+    public fun get_wasm_feature(): u64 { WASM }
+    public fun wasm_enabled(): bool {
+        is_enabled(WASM)
+    }
+    public fun ensure_wasm_enabled() {
+        assert!(is_enabled(WASM), EAPI_DISABLED);
+    }
+    
     /// Helper for getting all features. 
     /// Update this once new feature added.
     public fun get_all_features(): vector<u64> {

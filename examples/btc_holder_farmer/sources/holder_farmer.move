@@ -37,7 +37,6 @@ module btc_holder_farmer::hold_farmer {
 
 
 
-
     spec module {
         pragma verify = false;
     }
@@ -172,7 +171,7 @@ module btc_holder_farmer::hold_farmer {
         name: vector<u8>,
         symbol: vector<u8>,
         decimals: u8,
-        _cap: &Object<AdminCap>
+        _cap: &mut Object<AdminCap>
     ) {
         assert!(signer::address_of(signer) == DEPLOYER, ErrorWrongDeployer);
         assert!(!account::exists_resource<FarmingAsset>(DEPLOYER), ErrorAlreadyDeployed);
@@ -197,7 +196,7 @@ module btc_holder_farmer::hold_farmer {
     }
 
     public fun modify_parameter(
-        _cap: &Object<AdminCap>,
+        _cap: &mut Object<AdminCap>,
         release_per_second: u128,
         alive: bool
     ) {
@@ -517,9 +516,9 @@ module btc_holder_farmer::hold_farmer {
 
     public fun check_asset_is_staked(asset_id: ObjectID): bool {
         let farming_asset = account::borrow_resource<FarmingAsset>(DEPLOYER);
-        let account = table::borrow(&farming_asset.stake_table, asset_id);
-        let user_stake = account::borrow_resource<UserStake>(*account);
-        table::contains(&user_stake.stake, asset_id)
+        // let account = table::borrow(&farming_asset.stake_table, asset_id);
+        // let user_stake = account::borrow_resource<UserStake>(*account);
+        table::contains(&farming_asset.stake_table, asset_id)
     }
 
     public entry fun remove_expired_stake(asset_id: ObjectID) {
@@ -544,7 +543,7 @@ module btc_holder_farmer::hold_farmer {
         rooch_framework::genesis::init_for_test();
         bitcoin_move::genesis::init_for_test();
         let admin_cap = object::new_named_object(AdminCap {});
-        deploy(&sender, 1, 0, 200, b"BTC Holder Coin", b"HDC", 6, &admin_cap);
+        deploy(&sender, 1, 0, 200, b"BTC Holder Coin", b"HDC", 6, &mut admin_cap);
         let seconds = 100;
         let tx_id = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
         let sat_value = 100000000;

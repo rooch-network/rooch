@@ -35,9 +35,9 @@ Feature: Rooch CLI integration tests
       # Get gas
       Then cmd: "move run --function rooch_framework::gas_coin::faucet_entry"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      
+
       # session key
-      Then cmd: "session-key create  --scope 0x3::empty::empty"
+      Then cmd: "session-key create  --app-name test --app-url https:://test.rooch.network --scope 0x3::empty::empty"
       Then cmd: "move run --function 0x3::empty::empty  --session-key {{$.session-key[-1].authentication_key}}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
@@ -62,7 +62,7 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::timestamp::Timestamp>'"
       Then cmd: "state --access-path /object/0x3::chain_id::ChainID"
       Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::chain_id::ChainID>'"
-      Then assert: "{{$.state[-1][0].decoded_value.value.value.value.id}} == 20230104"
+      Then assert: "{{$.state[-1][0].decoded_value.value.value.value.id}} == 4"
       Then cmd: "state --access-path /object/0x3::address_mapping::AddressMapping"
       Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::address_mapping::AddressMapping>'"
       Then cmd: "state --access-path /object/0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"
@@ -194,27 +194,7 @@ Feature: Rooch CLI integration tests
 
       # The counter example
       Then cmd: "move publish -p ../../examples/counter  --named-addresses rooch_examples=default --by-move-action"
-      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move view --function default::counter::value"
-      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 0"
-      Then cmd: "move run --function default::counter::increase "
-      Then cmd: "move view --function default::counter::value"
-      Then assert: "{{$.move[-1].return_values[0].decoded_value}} == 1"
-      Then cmd: "resource --address default --resource default::counter::Counter"
-      Then assert: "{{$.resource[-1].decoded_value.value.value}} == 1"
-
-      # The entry_function_arguments example
-      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default --by-move-action"
-      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132" "
-      Then assert: "'{{$.move[-1]}}' contains FUNCTION_RESOLUTION_FAILURE"
-      Then cmd: "move publish -p ../../examples/entry_function_arguments/  --named-addresses rooch_examples=default --by-move-action"
-      Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      #Then cmd: "move run --function default::entry_function::emit_mix --args 3u8 --args "vector<object_id>:0x2342,0x3132" "
-      #Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      # check compatibility
-      Then cmd: "move publish -p ../../examples/entry_function_arguments_old/  --named-addresses rooch_examples=default --by-move-action"
-      Then assert: "'{{$.move[-1].execution_info.status.type}}' == miscellaneouserror"
+      Then assert: "'{{$.move[-1]}}' contains INVALID_MODULE_PUBLISHER"
 
       Then stop the server
 

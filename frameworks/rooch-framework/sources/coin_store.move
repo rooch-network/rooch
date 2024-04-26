@@ -46,7 +46,7 @@ module rooch_framework::coin_store {
     }
 
     /// Event emitted when a coin store is created.
-    struct CreateEvent has drop, store {
+    struct CreateEvent has drop, store, copy {
         /// The id of the coin store that was created
         coin_store_id: ObjectID,
         /// The type of the coin that was created
@@ -54,7 +54,7 @@ module rooch_framework::coin_store {
     }
 
     /// Event emitted when some amount of a coin is deposited into a coin store.
-    struct DepositEvent has drop, store {
+    struct DepositEvent has drop, store, copy {
         /// The id of the coin store that was deposited to
         coin_store_id: ObjectID,
         /// The type of the coin that was sent
@@ -63,7 +63,7 @@ module rooch_framework::coin_store {
     }
 
     /// Event emitted when some amount of a coin is withdrawn from a coin store.
-    struct WithdrawEvent has drop, store {
+    struct WithdrawEvent has drop, store, copy {
         /// The id of the coin store that was withdrawn from
         coin_store_id: ObjectID,
         /// The type of the coin that was sent
@@ -72,7 +72,7 @@ module rooch_framework::coin_store {
     }
 
     /// Event emitted when a coin store is frozen or unfrozen.
-    struct FreezeEvent has drop, store {
+    struct FreezeEvent has drop, store, copy {
         /// The id of the coin store that was frozen or unfrozen
         coin_store_id: ObjectID,
         /// The type of the coin that was frozen or unfrozen
@@ -81,7 +81,7 @@ module rooch_framework::coin_store {
     }
 
     /// Event emitted when a coin store is removed.
-    struct RemoveEvent has drop, store {
+    struct RemoveEvent has drop, store, copy {
         /// The id of the coin store that was removed
         coin_store_id: ObjectID,
         /// The type of the coin that was removed

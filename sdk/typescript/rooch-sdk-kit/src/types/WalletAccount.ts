@@ -49,6 +49,10 @@ export class WalletAccount implements IAccount {
     return this.address
   }
 
+  getRoochAddress(): string {
+    return this.roochAddress!
+  }
+
   async resoleRoochAddress(): Promise<string> {
     if (!this.roochAddress) {
       this.roochAddress = await this.client.resoleRoochAddress({

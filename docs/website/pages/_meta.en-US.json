@@ -25,15 +25,6 @@
       "typesetting": "article"
     }
   },
-  "about": {
-    "title": "About",
-    "type": "page",
-    "theme": {
-      "sidebar": false,
-      "timestamp": false,
-      "typesetting": "article"
-    }
-  },
   "dashboard": {
     "title": "Dashboard",
     "type": "page",
@@ -48,6 +39,15 @@
     }
   },
   "brand": {
+    "type": "page",
+    "display": "hidden",
+    "theme": {
+      "sidebar": false,
+      "timestamp": false,
+      "typesetting": "article"
+    }
+  },
+  "about": {
     "type": "page",
     "display": "hidden",
     "theme": {

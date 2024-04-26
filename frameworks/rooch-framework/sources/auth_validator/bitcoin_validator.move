@@ -10,7 +10,6 @@ module rooch_framework::bitcoin_validator {
     use moveos_std::hex;
     use moveos_std::tx_context;
     use moveos_std::features;
-    use moveos_std::signer::module_signer;
     use moveos_std::hash;
     use rooch_framework::ecdsa_k1;
     use rooch_framework::auth_payload;
@@ -94,12 +93,17 @@ module rooch_framework::bitcoin_validator {
         };
 
         let sign_info_len = (vector::length(&sign_info) as u8);
+        let sign_info_insert_index = 0u64;
+        if (sign_info_prefix_len > 0) {
+            sign_info_insert_index = (sign_info_prefix_len as u64) + 1;
+        };
+
         if (vector::length(&sign_info) > 0) {
-            vector::insert(&mut full_tx, (sign_info_prefix_len as u64) + 1,sign_info_len + tx_hex_len);
+            vector::insert(&mut full_tx, sign_info_insert_index,sign_info_len + tx_hex_len);
             vector::append(&mut full_tx, sign_info);
             vector::append(&mut full_tx, tx_hex);
         } else {
-            vector::insert(&mut full_tx, (sign_info_prefix_len as u64) + 1, tx_hex_len);
+            vector::insert(&mut full_tx, sign_info_insert_index, tx_hex_len);
             vector::append(&mut full_tx, tx_hex);
         };
         // append tx hash end
@@ -121,24 +125,10 @@ module rooch_framework::bitcoin_validator {
     public fun validate(authenticator_payload: vector<u8>): MultiChainAddress {
         features::ensure_testnet_enabled();
         
-        let sender = tx_context::sender();
         let tx_hash = tx_context::tx_hash();
         let payload = auth_payload::from_bytes(authenticator_payload);
 
         validate_signature(payload, tx_hash);
-
-        if (is_authentication_key_in_account(sender)){
-
-            // For the first invocation, the default auth key is the bitcoin pk
-            // Save to context and record after the transaction is executed
-            tx_context::add_attribute_via_system(&module_signer<BitcoinValidator>(), payload);
-        } else {
-            let authKey = get_authentication_key_from_account(sender);
-            assert!(
-                auth_payload::public_key(payload) == authKey,
-                auth_validator::error_invalid_authenticator()
-            );
-        };
 
         auth_payload::multi_address(payload)
     }
@@ -146,15 +136,6 @@ module rooch_framework::bitcoin_validator {
     fun pre_execute() {}
 
     fun post_execute() {
-        let account_addr = tx_context::sender();
-        if (!is_authentication_key_in_account(account_addr)) {
-            let authPayload = option::extract(&mut tx_context::get_attribute<AuthPayload>());
-            let authKey = auth_payload::public_key(authPayload);
-            rotate_authentication_key(tx_context::sender(), authKey);
-
-            let auth_key_in_account = get_authentication_key_from_account(account_addr);
-            std::debug::print(&auth_key_in_account);
-        }
     }
 
     #[test]
