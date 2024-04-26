@@ -17,7 +17,7 @@ import PostHeader from "/components/blog/postHeader";
 
 这个方案在 Vitalik 在他的文章 《Deeper dive on cross-L2 reading for wallets and other use cases》中有详细的探讨。Rooch 最早设计的多链结算方案中，也是用类似的技术，L2 嵌入 L1 的轻节点，验证 L1 的区块来获得 L1 的状态根。但这套方案用在 Bitcoin 上的时候，会遇到难题。
 
-1. Bitcoin 上的 UTXO 并没有状态树，不能之间证明某个 UTXO 在某个区块高度是否被消费了，只能通过交易证明，证明某个交易是否包含在某个区块中。
+1. Bitcoin 上的 UTXO 并没有状态树，不能证明某个 UTXO 在某个区块高度是否被消费了，只能通过交易证明，证明某个交易是否包含在某个区块中。
 2. 同时要支持 Bitcoin 上的 UTXO 附加的信息的证明，比如 RGB，铭文（Ordinals），还需要证明交易的 Input 和 Output 之间的关联关系，这个挑战更大。
 
 这里补充一下 Bitcoin 的一个基础知识，Bitcoin 的共识协议验证区块的时候，只检查 Input 和 Output 的 BTC amount 是否匹配，并不关心 Input 和 Output 的对应关系。

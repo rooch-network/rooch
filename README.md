@@ -9,7 +9,7 @@
 
 [![Check-Build-Test](https://github.com/rooch-network/rooch/actions/workflows/check_build_test.yml/badge.svg)](https://github.com/rooch-network/rooch/actions/workflows/check_build_test.yml)
 [![License](https://img.shields.io/badge/license-Apache-green.svg)](LICENSE)
-[![LoC](https://tokei.rs/b1/github/rooch-network/rooch?category=lines)](https://github.com/rooch-network/rooch)
+<!-- [![LoC](https://tokei.rs/b1/github/rooch-network/rooch?category=lines)](https://github.com/rooch-network/rooch) -->
 
 ## Usage
 
