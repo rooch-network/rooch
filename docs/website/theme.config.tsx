@@ -54,7 +54,7 @@ const theme: DocsThemeConfig = {
       ? frontMatter.description
       : currentLang === 'en-US'
       ? 'Unlocking  infinite utility for the Bitcoin Economy'
-      : '加速世界向去中心化的转变'
+      : '开启比特币经济的无限可能'
     return (
       <>
         <meta name="msapplication-TileColor" content="#ffffff" />
