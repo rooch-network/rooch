@@ -1,0 +1,73 @@
+# Rooch TypeScript SDK quick start
+
+Rooch TypeScript SDK 是一个用于与 Rooch Layer2 交互的模块化工具库。使用它向 RPC 节点发送查询、构建和签署交易以及与 Rooch 或本地网络交互。
+
+这篇文章主要引导你快速上手 Roock 的 TypeScript 开发者工具（TS SDK）。
+
+## 创建新项目
+
+> 注：本篇教程在 Linux 环境下演示！
+
+首先创建一个目录，再使用 JS/TS 等包管理工具初始化项目 —— `sdk-quick-start`：
+
+```bash
+mkdir sdk-quick-start
+cd sdk-quick-start
+```
+
+```bash
+[joe@mx sdk-quick-start]$ npm init
+This utility will walk you through creating a package.json file.
+It only covers the most common items, and tries to guess sensible defaults.
+
+See `npm help init` for definitive documentation on these fields
+and exactly what they do.
+
+Use `npm install <pkg>` afterwards to install a package and
+save it as a dependency in the package.json file.
+
+Press ^C at any time to quit.
+package name: (sdk-quick-start)
+version: (1.0.0)
+description: Rooch TS SDK Test.
+entry point: (index.js)
+test command:
+git repository:
+keywords:
+author: Joe Chen
+license: (ISC)
+About to write to /home/joe/i/sdk-quick-start/package.json:
+
+{
+  "name": "sdk-quick-start",
+  "version": "1.0.0",
+  "description": "Rooch TS SDK Test.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Joe Chen",
+  "license": "ISC"
+}
+
+
+Is this OK? (yes) yes
+```
+
+添加 `rooch-sdk` 依赖：
+
+```sh npm2yarn
+npm i @roochnetwork/rooch-sdk
+```
+
+检查 `package.json` 文件，`dependencies` 已经添加了我们需要使用的依赖清单：
+
+```json
+  "dependencies": {
+    "@roochnetwork/rooch-sdk": "^0.1.0"
+  }
+```
+
+
+
+
