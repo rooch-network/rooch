@@ -95,6 +95,8 @@ const SessionGuard = (props: SessionGuardProps) => {
   const handleAuth = (scope: Array<string>, maxInactiveInterval: number) => {
     // requestAuthorize && requestAuthorize(scope, maxInactiveInterval)
     createSessionKey({
+      appName: 'rooch-dashboard',
+      appUrl: 'https://dashboard.rooch.network/scan/state/get/',
       scopes: scope,
       maxInactiveInterval: maxInactiveInterval,
     })

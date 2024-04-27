@@ -20,11 +20,15 @@ const StateGetView = () => {
   // ** State
   const [accessPath, setAccessPath] = useState<string>('/object/0x1')
 
-  let { data, isPending, error } = useRoochClientQuery('getStates', accessPath, {
-    refetchOnWindowFocus: false,
-    retry: false,
-    enabled: !!accessPath,
-  })
+  let { data, isPending, error } = useRoochClientQuery(
+    'getStates',
+    { accessPath: accessPath },
+    {
+      refetchOnWindowFocus: false,
+      retry: false,
+      enabled: !!accessPath,
+    },
+  )
 
   return (
     <Grid container spacing={6}>

@@ -43,7 +43,7 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>const</b> <a href="chain_id.md#0x3_chain_id_CHAIN_ID_DEV">CHAIN_ID_DEV</a>: u64 = 20230103;
+<pre><code><b>const</b> <a href="chain_id.md#0x3_chain_id_CHAIN_ID_DEV">CHAIN_ID_DEV</a>: u64 = 3;
 </code></pre>
 
 
@@ -52,7 +52,7 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>const</b> <a href="chain_id.md#0x3_chain_id_CHAIN_ID_LOCAL">CHAIN_ID_LOCAL</a>: u64 = 20230104;
+<pre><code><b>const</b> <a href="chain_id.md#0x3_chain_id_CHAIN_ID_LOCAL">CHAIN_ID_LOCAL</a>: u64 = 4;
 </code></pre>
 
 
@@ -61,7 +61,7 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>const</b> <a href="chain_id.md#0x3_chain_id_CHAIN_ID_MAIN">CHAIN_ID_MAIN</a>: u64 = 20230101;
+<pre><code><b>const</b> <a href="chain_id.md#0x3_chain_id_CHAIN_ID_MAIN">CHAIN_ID_MAIN</a>: u64 = 1;
 </code></pre>
 
 
@@ -70,7 +70,7 @@ The ChainID in the global storage
 
 
 
-<pre><code><b>const</b> <a href="chain_id.md#0x3_chain_id_CHAIN_ID_TEST">CHAIN_ID_TEST</a>: u64 = 20230102;
+<pre><code><b>const</b> <a href="chain_id.md#0x3_chain_id_CHAIN_ID_TEST">CHAIN_ID_TEST</a>: u64 = 2;
 </code></pre>
 
 

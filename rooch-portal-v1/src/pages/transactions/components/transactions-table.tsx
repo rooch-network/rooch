@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 // ** UI Library Components
@@ -25,58 +25,67 @@ import {
 import { NoData } from '@/components/no-data'
 
 // ** ROOCH SDK
-import { useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
+import { useCurrentAccount, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 
 // ** ICONS
 import { MenuSquare, ExternalLink } from 'lucide-react'
-import { LedgerTransactionView, TransactionWithInfoView } from '@roochnetwork/rooch-sdk'
+import { LedgerTxDataView1 } from '@roochnetwork/rooch-sdk'
 import { SkeletonList } from '@/components/skeleton-list'
 import { formatAddress } from '@/utils/format'
 
 export const TransactionsTable = () => {
   const navigate = useNavigate()
-  const [txs, setTxs] = useState<TransactionWithInfoView[]>([])
-  const [currentPage, setCurrentPage] = useState<number>(1)
-  const itemsPerPage = 8
+  const account = useCurrentAccount()
 
-  const indexOfLastItem = currentPage * itemsPerPage
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage
-  const currentItems = txs.slice(indexOfFirstItem, indexOfLastItem)
+  const [paginationModel, setPaginationModel] = useState({ index: 0, limit: 1 })
+  const mapPageToNextCursor = useRef<{ [page: number]: number | null }>({})
 
-  const pageNumbers: number[] = []
-  for (let i = 1; i <= Math.ceil(txs.length / itemsPerPage); i++) {
-    pageNumbers.push(i)
-  }
-
-  const paginate = (pageNumber: number): void => {
-    setCurrentPage(pageNumber)
-  }
-
-  const { data: transactionsData, isPending } = useRoochClientQuery(
-    'getTransactions',
-    { cursor: 0, limit: 10, descending_order: false },
-    { enabled: true },
+  const queryOptions = useMemo(
+    () => ({
+      cursor: mapPageToNextCursor.current[paginationModel.index - 1],
+      limit: paginationModel.limit,
+    }),
+    [paginationModel],
   )
 
-  const handleJumpToTxblock = (hash: string) => {
+  const { data: transactionsResult, isPending } = useRoochClientQuery('queryTransactions', {
+    filter: {
+      sender: account?.getRoochAddress() || '',
+    },
+    cursor: queryOptions.cursor,
+    limit: paginationModel.limit,
+  })
+
+  useEffect(() => {
+    if (!transactionsResult) {
+      return
+    }
+
+    if (transactionsResult.has_next_page) {
+      mapPageToNextCursor.current[paginationModel.index] = transactionsResult.next_cursor ?? null
+    }
+  }, [paginationModel, transactionsResult])
+
+  const paginate = (index: number): void => {
+    console.log(index)
+    if (index < 0) {
+      return
+    }
+    setPaginationModel({
+      ...paginationModel,
+      index,
+    })
+  }
+
+  const handleToTransactionDetail = (hash: string) => {
     navigate(`txblock/${hash}`)
   }
 
-  useEffect(() => {
-    if (transactionsData && transactionsData.data) {
-      setTxs(transactionsData.data as TransactionWithInfoView[])
-    }
-  }, [transactionsData])
-
-  if (isPending) {
-    return <SkeletonList />
-  }
-
-  if (!txs || txs.length === 0) {
-    return <NoData />
-  }
-
-  return (
+  return isPending ? (
+    <SkeletonList />
+  ) : !transactionsResult || transactionsResult.data.length === 0 ? (
+    <NoData />
+  ) : (
     <div>
       <div className="rounded-lg border w-full">
         <Table>
@@ -92,7 +101,7 @@ export const TransactionsTable = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentItems.map((tx) => (
+            {transactionsResult.data.map((tx) => (
               <TableRow key={tx.execution_info.tx_hash}>
                 <TableCell className="font-medium">
                   <Button variant="ghost" size="icon" className="cursor-default bg-accent">
@@ -111,7 +120,7 @@ export const TransactionsTable = () => {
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className="text-muted-foreground">
-                    TODO
+                    {(tx.transaction.data as LedgerTxDataView1).action_type.toUpperCase()}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -119,7 +128,7 @@ export const TransactionsTable = () => {
                     <span className="hover:no-underline text-blue-400 hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200 transition-all cursor-pointer">
                       <p>
                         {formatAddress(
-                          (tx.transaction as LedgerTransactionView & { sender: string }).sender,
+                          (tx.transaction.data as LedgerTxDataView1).sender.toUpperCase(),
                         )}
                       </p>
                     </span>
@@ -133,7 +142,7 @@ export const TransactionsTable = () => {
                     variant="link"
                     size="sm"
                     className="text-blue-400 hover:text-blue-500 dark:text-blue-300 dark:hover:text-blue-200 transition-all"
-                    onClick={() => handleJumpToTxblock(tx.execution_info.tx_hash)}
+                    onClick={() => handleToTransactionDetail(tx.execution_info.tx_hash)}
                   >
                     <ExternalLink className="w-4 h-4 mr-1" />
                     View
@@ -147,27 +156,20 @@ export const TransactionsTable = () => {
       <Pagination className="mt-4 justify-end">
         <PaginationContent>
           <PaginationItem>
-            {currentPage !== 1 ? (
-              <PaginationPrevious
-                href="#"
-                onClick={() => {
-                  paginate(currentPage - 1)
-                }}
-              />
+            {paginationModel.index !== 0 ? (
+              <PaginationPrevious href="#" onClick={() => paginate(paginationModel.index - 1)} />
             ) : (
               <PaginationPrevious href="#" />
             )}
           </PaginationItem>
-          {pageNumbers.map((number) => (
-            <PaginationItem key={number}>
+          {Array.from({ length: paginationModel.index + 1 }, (_, i) => (
+            <PaginationItem key={i}>
               <PaginationLink
-                onClick={() => {
-                  paginate(number)
-                }}
-                isActive={currentPage === number}
+                onClick={() => paginate(i)}
+                isActive={paginationModel.index === i}
                 className="cursor-pointer"
               >
-                {number}
+                {i + 1}
               </PaginationLink>
             </PaginationItem>
           ))}
@@ -175,15 +177,8 @@ export const TransactionsTable = () => {
             <PaginationEllipsis />
           </PaginationItem>
           <PaginationItem>
-            {currentPage !== pageNumbers.length ? (
-              <PaginationNext
-                href="#"
-                onClick={() => {
-                  paginate(currentPage + 1)
-                }}
-              />
-            ) : (
-              <PaginationNext href="#" />
+            {transactionsResult.has_next_page && (
+              <PaginationNext href="#" onClick={() => paginate(paginationModel.index + 1)} />
             )}
           </PaginationItem>
         </PaginationContent>

@@ -38,7 +38,7 @@ const mockProvider: IClient = {
     throw new Error('Function not implemented.')
   },
   listStates: function (params: ListStatesParams): Promise<StatePageView> {
-    console.log(params.accessPath, params.cursor as any, params.limit.toString())
+    console.log(params.accessPath, params.cursor as any, params.limit)
     throw new Error('Function not implemented.')
   },
 }

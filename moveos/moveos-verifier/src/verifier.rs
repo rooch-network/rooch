@@ -765,7 +765,8 @@ where
                                                 view.module_handle_at(struct_handle.module);
                                             let full_struct_name = format!(
                                                 "{}::{}::{}",
-                                                module_handle.address,
+                                                view.address_identifier_at(module_handle.address)
+                                                    .to_hex_literal(),
                                                 view.identifier_at(module_handle.name),
                                                 view.identifier_at(struct_handle.name)
                                             );

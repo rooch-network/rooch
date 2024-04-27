@@ -114,7 +114,7 @@ describe('provider', () => {
 
         try {
           const assetsPath = '/object::0x1'
-          const result = await provider.getStates(assetsPath)
+          const result = await provider.getStates({ accessPath: assetsPath })
 
           expect(result).toHaveLength(1)
         } catch (err: any) {
@@ -181,10 +181,9 @@ describe('provider', () => {
         try {
           const accessPath =
             '/table/0x030d80ff6a6b1a2467dffd11a7f0eba7d2b1a486289c3484112ca1245645dfe0'
-          const cursor = null
           const result = await provider.listStates({
             accessPath: accessPath,
-            cursor: cursor,
+            cursor: null,
             limit: 1,
           })
 

@@ -1,0 +1,17 @@
+[package]
+name = "infinite_wand"
+version = "0.0.1"
+
+[dependencies]
+MoveStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/move-stdlib", rev = "main" }
+MoveosStdlib = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/moveos-stdlib", rev = "main" }
+RoochFramework = { git = "https://github.com/rooch-network/rooch.git", subdir = "frameworks/rooch-framework", rev = "main" }
+
+[addresses]
+infinite_wand = "_"
+std = "0x1"
+moveos_std = "0x2"
+rooch_framework = "0x3"
+
+[dev-addresses]
+infinite_wand = "0x42"

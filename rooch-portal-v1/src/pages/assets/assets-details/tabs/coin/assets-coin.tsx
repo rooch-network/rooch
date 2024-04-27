@@ -2,6 +2,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  // TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -46,7 +47,13 @@ export const AssetsCoin = () => {
   const pageCount = Math.ceil(coins.length / itemsPerPage)
   const currentItems = coins.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage)
   const handlePageChange = (selectedPage: number) => {
-    setCurrentPage(selectedPage)
+    if (selectedPage < 0) {
+      return
+    }
+    setPaginationModel({
+      page: selectedPage,
+      pageSize: paginationModel.pageSize,
+    })
   }
 
   // ** Render the `no-data` page while data is empty

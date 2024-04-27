@@ -1,14 +1,13 @@
-import { DocsThemeConfig } from "nextra-theme-docs";
-import { Footer } from "./components/layout/footer";
-import Image from "next/image";
-import { useRouter } from "next/router";
-import { useConfig } from "nextra-theme-docs";
+import { DocsThemeConfig } from 'nextra-theme-docs'
+import { Footer } from './components/layout/footer'
+import Image from 'next/image'
+import { useRouter } from 'next/router'
+import { useConfig } from 'nextra-theme-docs'
 
 const theme: DocsThemeConfig = {
-  docsRepositoryBase:
-    "https://github.com/rooch-network/rooch/blob/main/docs/website",
+  docsRepositoryBase: 'https://github.com/rooch-network/rooch/blob/main/docs/website',
   nextThemes: {
-    defaultTheme: "light",
+    defaultTheme: 'light',
   },
   logo: (
     <div>
@@ -29,63 +28,43 @@ const theme: DocsThemeConfig = {
     </div>
   ),
   useNextSeoProps() {
-    const { asPath } = useRouter();
-    if (asPath !== "/") {
-      if (asPath.includes("/docs/")) {
+    const { asPath } = useRouter()
+    if (asPath !== '/') {
+      if (asPath.includes('/docs/')) {
         return {
-          titleTemplate: "%s – Rooch Network Documentation",
-        };
+          titleTemplate: '%s – Rooch Network Documentation',
+        }
       }
       return {
-        titleTemplate: "%s – Rooch Network",
-      };
+        titleTemplate: '%s – Rooch Network',
+      }
     } else {
       return {
-        titleTemplate: "%s",
-      };
+        titleTemplate: '%s',
+      }
     }
   },
   head: function useHead() {
-    const { title, frontMatter } = useConfig();
-    const { asPath } = useRouter();
-    const router = useRouter();
-    const socialCard = "/logo/rooch-banner.png";
-    const currentLang = router.locale;
+    const { title, frontMatter } = useConfig()
+    const { asPath } = useRouter()
+    const router = useRouter()
+    const socialCard = '/logo/rooch-banner.png'
+    const currentLang = router.locale
     const pageDescription = frontMatter.description
       ? frontMatter.description
-      : currentLang === "en-US"
-      ? "Accelerating World's Transition to Decentralization"
-      : "加速世界向去中心化的转变";
+      : currentLang === 'en-US'
+      ? 'Unlocking  infinite utility for the Bitcoin Economy'
+      : '加速世界向去中心化的转变'
     return (
       <>
         <meta name="msapplication-TileColor" content="#ffffff" />
         <meta name="theme-color" content="#ffffff" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link
-          rel="alternate"
-          href={"https://rooch.network" + asPath}
-          hrefLang="x-default"
-        />
-        <link
-          rel="alternate"
-          href={"https://rooch.network" + asPath}
-          hrefLang="en-us"
-        />
-        <link
-          rel="alternate"
-          href={"https://rooch.network" + asPath}
-          hrefLang="en"
-        />
-        <link
-          rel="alternate"
-          href={"https://rooch.network/zh-CN" + asPath}
-          hrefLang="zh-cn"
-        />
-        <link
-          rel="alternate"
-          href={"https://rooch.network/zh-CN" + asPath}
-          hrefLang="zh"
-        />
+        <link rel="alternate" href={'https://rooch.network' + asPath} hrefLang="x-default" />
+        <link rel="alternate" href={'https://rooch.network' + asPath} hrefLang="en-us" />
+        <link rel="alternate" href={'https://rooch.network' + asPath} hrefLang="en" />
+        <link rel="alternate" href={'https://rooch.network/zh-CN' + asPath} hrefLang="zh-cn" />
+        <link rel="alternate" href={'https://rooch.network/zh-CN' + asPath} hrefLang="zh" />
         <meta name="description" content={pageDescription} />
         <meta name="og:description" content={pageDescription} />
         <meta name="twitter:card" content="summary_large_image" />
@@ -94,11 +73,7 @@ const theme: DocsThemeConfig = {
         <meta name="twitter:url" content="https://rooch.network" />
         <meta name="og:image" content={socialCard} />
         <meta name="apple-mobile-web-app-title" content="Rooch Network" />
-        <link
-          rel="icon"
-          href="/logo/rooch_black_logo.svg"
-          type="image/svg+xml"
-        />
+        <link rel="icon" href="/logo/rooch_black_logo.svg" type="image/svg+xml" />
         <link rel="icon" href="/logo/rooch_black_logo.png" type="image/png" />
         <link
           rel="icon"
@@ -113,24 +88,24 @@ const theme: DocsThemeConfig = {
           media="(prefers-color-scheme: dark)"
         />
       </>
-    );
+    )
   },
   project: {
-    link: "https://github.com/rooch-network",
+    link: 'https://github.com/rooch-network',
   },
   chat: {
-    link: "https://discord.gg/rooch",
+    link: 'https://discord.gg/rooch',
   },
   i18n: [
-    { locale: "en-US", text: "English" },
-    { locale: "zh-CN", text: "简体中文" },
+    { locale: 'en-US', text: 'English' },
+    { locale: 'zh-CN', text: '简体中文' },
   ],
   footer: {
     component: Footer,
   },
   sidebar: {
     defaultMenuCollapseLevel: 0,
-  }
-};
+  },
+}
 
-export default theme;
+export default theme

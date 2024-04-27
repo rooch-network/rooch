@@ -13,6 +13,23 @@ export class UniSatWallet extends BitcoinWallet {
     this.name = 'unisat'
   }
 
+  private async analysisAccount(addresses: string[]): Promise<WalletAccount[]> {
+    let publicKey = await this.getTarget().getPublicKey()
+
+    const walletAccounts = addresses.map((address, index) => {
+      if (index === 0) {
+        // unisat only supports the current account to get publicKey
+        return new WalletAccount(this.client, this.getChain(), address, this, publicKey)
+      } else {
+        return new WalletAccount(this.client, this.getChain(), address, this)
+      }
+    })
+
+    this.account = walletAccounts[0]
+
+    return walletAccounts
+  }
+
   getTarget(): any {
     return (window as any).unisat
   }
@@ -28,20 +45,8 @@ export class UniSatWallet extends BitcoinWallet {
       await this.getTarget().requestAccounts()
       return this.connect()
     }
-    let publicKey = await this.getTarget().getPublicKey()
 
-    const walletAccounts = accounts.map((address, index) => {
-      if (index === 0) {
-        // unisat only supports the current account to get publicKey
-        return new WalletAccount(this.client, this.getChain(), address, this, publicKey)
-      } else {
-        return new WalletAccount(this.client, this.getChain(), address, this)
-      }
-    })
-
-    this.account = walletAccounts[0]
-
-    return walletAccounts
+    return await this.analysisAccount(accounts)
   }
 
   switchNetwork(network: string): void {
@@ -54,10 +59,16 @@ export class UniSatWallet extends BitcoinWallet {
     return UNISAT_SUPPORT_NETWORKS
   }
   onAccountsChanged(callback: (account: WalletAccount[]) => void): void {
-    this.getTarget().on('accountsChanged', callback)
+    if (!this.onAccountsChangedWrapper) {
+      this.onAccountsChangedWrapper = async (addresses: string[]) => {
+        callback(await this.analysisAccount(addresses))
+      }
+    }
+    this.getTarget().on('accountsChanged', this.onAccountsChangedWrapper)
   }
-  removeAccountsChanged(callback: (account: WalletAccount[]) => void): void {
-    this.getTarget().removeListener('accountsChanged', callback)
+  removeAccountsChanged(_: (account: WalletAccount[]) => void): void {
+    this.getTarget().removeListener('accountsChanged', this.onAccountsChangedWrapper)
+    this.onAccountsChangedWrapper = undefined
   }
   onNetworkChanged(callback: (network: string) => void): void {
     this.getTarget().on('networkChanged', callback)

@@ -22,7 +22,7 @@ import Image from "next/image";
   - **RPC 代理** RPC 代理是一个特殊的组件，旨在将不同的交易结构解释为本机模式，以允许用户直接从市场上的各种钱包发送交易。例如，用户可以直接从 MetaMask 发送交易以调用 Rooch 上的 Move 合约
 - **MoveOS** - MoveOS 是执行所有计算和存储工作的组件
   - **flexEmu** 是一个通用的 MIPS 模拟器，用于为执行生成[欺诈证明](/learn/in-depth-tech/fraud-proof)
-  - **MoveVM** 是一个完整的功能图灵完备的 VM，用于执行用 [Move 语言](/learn/core-concepts/move-concepts/move-language)编写的智能合约
+  - **MoveVM** 是一个完整的功能图灵完备的 VM，用于执行用 [Move 语言](/learn/core-concepts/move-contracts/move-language)编写的智能合约
   - **State Storage** 包含所有用户和合约状态
 - **角色特定模块** - 这些是功能模块，允许节点运营者将其节点配置为分层网络中的不同角色（有关详细信息，请参见 [Rooch Network Architecture](/learn/architecture)）
 - **接口** - Rooch 具有内置接口，可与不同层一起使用；接口需要足够抽象，来确保 Rooch 能够适应不同的生态系统
@@ -57,7 +57,7 @@ Rooch Network 有几个关键的中间件服务，负责处理执行层上所有
 
 - **Sequencer** - Sequencer 负责验证传入的交易并对其进行排序。排序后的交易将提交给 DA Chain 和 Proposer。
 - **Challenger** - Challenger 是 Rooch Layer2 网络的守护者。它不断监视交易流，并执行交易以计算状态转换。如果计算的状态结果与提议的状态不匹配，则 Challenger 将请求欺诈证明并将其提交仲裁。（有关更多信息，请参见 [Fraud Proof](/learn/in-depth-tech/fraud-proof)。）
-- **ZK Prover** - ZK Prover 根据批处理的交易生成状态转换的 ZK 证明。证明将发送到仲裁层以优化安全机制所需的挑战期。(有关更多信息，请参见使用 [Hybrid Security with ZK Proof](/learn/in-depth-techhybrid-security)）
+- **ZK Prover** - ZK Prover 根据批处理的交易生成状态转换的 ZK 证明。证明将发送到仲裁层以优化安全机制所需的挑战期。(有关更多信息，请参见使用 [Hybrid Security with ZK Proof](/learn/in-depth-tech/hybrid-security)）
 - **Proposer** - Proposer 负责执行所有排序后的交易并将生成的状态提交给仲裁层。
 
 ### DA 层

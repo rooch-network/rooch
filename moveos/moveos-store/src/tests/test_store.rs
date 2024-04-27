@@ -32,7 +32,7 @@ fn test_reopen() {
         )
         .unwrap();
         assert_eq!(
-            db.get(DEFAULT_PREFIX_NAME, bcs::to_bytes(&key).unwrap())
+            db.get(DEFAULT_PREFIX_NAME, bcs::to_bytes(&key).unwrap().as_slice())
                 .unwrap(),
             Some(bcs::to_bytes(&value).unwrap())
         );
@@ -40,7 +40,7 @@ fn test_reopen() {
     {
         let db = RocksDB::new(tmpdir.path(), cfs, RocksdbConfig::default(), None).unwrap();
         assert_eq!(
-            db.get(DEFAULT_PREFIX_NAME, bcs::to_bytes(&key).unwrap())
+            db.get(DEFAULT_PREFIX_NAME, bcs::to_bytes(&key).unwrap().as_slice())
                 .unwrap(),
             Some(bcs::to_bytes(&value).unwrap())
         );
@@ -69,7 +69,7 @@ fn test_open_read_only() {
     );
     assert!(result.is_err());
     let result = db
-        .get(DEFAULT_PREFIX_NAME, bcs::to_bytes(&key).unwrap())
+        .get(DEFAULT_PREFIX_NAME, bcs::to_bytes(&key).unwrap().as_slice())
         .unwrap();
     assert_eq!(result, Some(bcs::to_bytes(&value).unwrap()));
 }

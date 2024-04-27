@@ -81,7 +81,7 @@ CoinInfo<CoinType> is a named Object, the <code>coin_type</code> is the unique k
 Event emitted when coin minted.
 
 
-<pre><code><b>struct</b> <a href="coin.md#0x3_coin_MintEvent">MintEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="coin.md#0x3_coin_MintEvent">MintEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -93,7 +93,7 @@ Event emitted when coin minted.
 Event emitted when coin burned.
 
 
-<pre><code><b>struct</b> <a href="coin.md#0x3_coin_BurnEvent">BurnEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="coin.md#0x3_coin_BurnEvent">BurnEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 

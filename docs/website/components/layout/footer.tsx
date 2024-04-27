@@ -1,33 +1,37 @@
-import { ThemeSwitch, useConfig } from "nextra-theme-docs";
-import { LocaleSwitch } from "./localeSwitch";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { ThemeSwitch, useConfig } from 'nextra-theme-docs'
+import { LocaleSwitch } from './localeSwitch'
+import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import About from '../pages/about'
 
 export function Footer() {
   const buttonStyle =
-    "inline-flex justify-center items-center w-10 h-10 text-center text-gray-500 hover:bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 focus:ring-offset-white transition dark:text-gray-500 dark:hover:text-gray-200 dark:hover:bg-gray-800";
+    'inline-flex justify-center items-center w-10 h-10 text-center text-gray-500 hover:bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 focus:ring-offset-white transition dark:text-gray-500 dark:hover:text-gray-200 dark:hover:bg-gray-800'
 
-  const pathname = usePathname();
+  const pathname = usePathname()
 
-  const config = useConfig();
+  const config = useConfig()
 
-  const [SwitchDisplay, SetSwitchDisplay] = useState(false);
+  const [SwitchDisplay, SetSwitchDisplay] = useState(false)
 
   useEffect(() => {
-    if (pathname.includes("/docs")) {
-      SetSwitchDisplay(false);
+    if (pathname.includes('/docs')) {
+      SetSwitchDisplay(false)
     } else {
-      SetSwitchDisplay(true);
+      SetSwitchDisplay(true)
     }
-  }, [pathname]);
+  }, [pathname])
 
   return (
     <footer className="mt-auto w-full max-w-[85rem] py-10 px-4 sm:px-6 lg:px-8 mx-auto">
       {/* Theme Buttons */}
       {SwitchDisplay ? (
-        <div className="text-left pb-4">
-          <LocaleSwitch options={config.i18n} />
-          <ThemeSwitch />
+        <div className="text-left pb-4 flex items-center justify-between">
+          <div className="flex items-center justify-start">
+            <LocaleSwitch options={config.i18n} />
+            <ThemeSwitch />
+          </div>
+          <About />
         </div>
       ) : null}
       {/* End of Theme Buttons */}
@@ -93,5 +97,5 @@ export function Footer() {
         {/* End of Social Network Buttons */}
       </div>
     </footer>
-  );
+  )
 }

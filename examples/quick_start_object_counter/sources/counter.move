@@ -10,7 +10,7 @@ module quick_start_object_counter::quick_start_object_counter {
         count_value: u64
     }
 
-    struct UserCounterCreatedEvent has drop {
+    struct UserCounterCreatedEvent has drop, copy {
         id: ObjectID
     }
 

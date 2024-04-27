@@ -40,6 +40,10 @@ module rooch_framework::session_key {
     }
 
     struct SessionKey has store,copy,drop {
+        /// App name
+        app_name: std::string::String,
+        /// app website url
+        app_url: std::ascii::String,
         /// The session key's authentication key, it also is the session key's id
         authentication_key: vector<u8>,
         /// The session key's scopes
@@ -101,7 +105,13 @@ module rooch_framework::session_key {
         }
     }
 
-    public fun create_session_key(sender: &signer, authentication_key: vector<u8>, scopes: vector<SessionScope>, max_inactive_interval: u64) {
+    public fun create_session_key(
+        sender: &signer,
+        app_name: std::string::String,
+        app_url: std::ascii::String,
+        authentication_key: vector<u8>,
+        scopes: vector<SessionScope>,
+        max_inactive_interval: u64) {
         features::ensure_testnet_enabled();
         //Can not create new session key by the other session key
         assert!(!auth_validator::is_validate_via_session_key(), ErrorSessionKeyCreatePermissionDenied);
@@ -109,11 +119,13 @@ module rooch_framework::session_key {
         assert!(!exists_session_key(sender_addr, authentication_key), ErrorSessionKeyAlreadyExists);
         let now_seconds = timestamp::now_seconds();
         let session_key = SessionKey {
-            authentication_key: authentication_key,
-            scopes: scopes,
+            app_name,
+            app_url,
+            authentication_key,
+            scopes,
             create_time: now_seconds,
             last_active_time: now_seconds,
-            max_inactive_interval: max_inactive_interval,
+            max_inactive_interval,
         };
         if (!account::exists_resource<SessionKeys>(sender_addr)){
             let keys = table::new<vector<u8>, SessionKey>();
@@ -124,8 +136,16 @@ module rooch_framework::session_key {
         table::add(&mut session_keys.keys, authentication_key, session_key);
     }
 
-    public entry fun create_session_key_entry(sender: &signer, authentication_key: vector<u8>, scope_module_address: address, scope_module_name: std::ascii::String, scope_function_name: std::ascii::String, max_inactive_interval: u64) {
-        create_session_key(sender, authentication_key, vector::singleton(SessionScope{
+    public entry fun create_session_key_entry(
+        sender: &signer,
+        app_name: std::string::String,
+        app_url: std::ascii::String,
+        authentication_key: vector<u8>,
+        scope_module_address: address,
+        scope_module_name: std::ascii::String,
+        scope_function_name: std::ascii::String,
+        max_inactive_interval: u64) {
+        create_session_key(sender, app_name, app_url, authentication_key, vector::singleton(SessionScope{
             module_address: scope_module_address,
             module_name: scope_module_name,
             function_name: scope_function_name,
@@ -133,8 +153,9 @@ module rooch_framework::session_key {
     }
 
     public entry fun create_session_key_with_multi_scope_entry(
-        
-        sender: &signer, 
+        sender: &signer,
+        app_name: std::string::String,
+        app_url: std::ascii::String,
         authentication_key: vector<u8>, 
         scope_module_addresses: vector<address>, 
         scope_module_names: vector<std::ascii::String>, 
@@ -163,7 +184,7 @@ module rooch_framework::session_key {
             idx = idx + 1;
         };
 
-        create_session_key(sender, authentication_key, scopes, max_inactive_interval);
+        create_session_key(sender, app_name, app_url, authentication_key, scopes, max_inactive_interval);
     }
 
     /// Validate the current tx via the session key

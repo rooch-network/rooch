@@ -35,9 +35,9 @@ Feature: Rooch CLI integration tests
       # Get gas
       Then cmd: "move run --function rooch_framework::gas_coin::faucet_entry"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
-      
+
       # session key
-      Then cmd: "session-key create  --scope 0x3::empty::empty"
+      Then cmd: "session-key create  --app-name test --app-url https:://test.rooch.network --scope 0x3::empty::empty"
       Then cmd: "move run --function 0x3::empty::empty  --session-key {{$.session-key[-1].authentication_key}}"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
@@ -62,7 +62,7 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::timestamp::Timestamp>'"
       Then cmd: "state --access-path /object/0x3::chain_id::ChainID"
       Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::chain_id::ChainID>'"
-      Then assert: "{{$.state[-1][0].decoded_value.value.value.value.id}} == 20230104"
+      Then assert: "{{$.state[-1][0].decoded_value.value.value.value.id}} == 4"
       Then cmd: "state --access-path /object/0x3::address_mapping::AddressMapping"
       Then assert: "{{$.state[-1][0].value_type}} == '0x2::object::ObjectEntity<0x3::address_mapping::AddressMapping>'"
       Then cmd: "state --access-path /object/0x3::coin::CoinInfo<0x3::gas_coin::GasCoin>"

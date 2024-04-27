@@ -51,7 +51,7 @@ impl StoreInstance {
 }
 
 impl DBStore for StoreInstance {
-    fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>> {
+    fn get(&self, prefix_name: &str, key: &[u8]) -> Result<Option<Vec<u8>>> {
         match self {
             StoreInstance::DB { db } => db.get(prefix_name, key),
         }
@@ -63,7 +63,7 @@ impl DBStore for StoreInstance {
         }
     }
 
-    fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool> {
+    fn contains_key(&self, prefix_name: &str, key: &[u8]) -> Result<bool> {
         match self {
             StoreInstance::DB { db } => db.contains_key(prefix_name, key),
         }
@@ -147,7 +147,7 @@ where
     CF: ColumnFamily,
 {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        self.instance.get(self.prefix_name, key.to_vec())
+        self.instance.get(self.prefix_name, key)
     }
 
     fn multiple_get(&self, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
@@ -158,7 +158,7 @@ where
         self.instance.put(self.prefix_name, key, value)
     }
 
-    fn contains_key(&self, key: Vec<u8>) -> Result<bool> {
+    fn contains_key(&self, key: &[u8]) -> Result<bool> {
         self.instance.contains_key(self.prefix_name, key)
     }
 
@@ -304,6 +304,8 @@ where
 
     fn write_batch_sync(&self, batch: CodecWriteBatch<K, V>) -> Result<()>;
 
+    fn write_batch_raw(&self, batch: WriteBatch) -> Result<()>;
+
     fn put_all(&self, kvs: Vec<(K, V)>) -> Result<()> {
         self.write_batch(CodecWriteBatch::new_puts(kvs))
     }
@@ -316,9 +318,9 @@ where
 
     fn keys(&self) -> Result<Vec<K>>;
 
-    fn put_raw(&self, key: K, value: Vec<u8>) -> Result<()>;
+    fn put_raw(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
 
-    fn get_raw(&self, key: K) -> Result<Option<Vec<u8>>>;
+    fn get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
 
     fn iter(&self) -> Result<SchemaIterator<K, V>>;
 }
@@ -361,7 +363,7 @@ where
     }
 
     fn contains_key(&self, key: K) -> Result<bool> {
-        KVStore::contains_key(self.get_store(), to_bytes(&key)?)
+        KVStore::contains_key(self.get_store(), to_bytes(&key)?.as_slice())
     }
 
     fn remove(&self, key: K) -> Result<()> {
@@ -376,6 +378,10 @@ where
         KVStore::write_batch_sync(self.get_store(), batch.try_into()?)
     }
 
+    fn write_batch_raw(&self, batch: WriteBatch) -> Result<()> {
+        KVStore::write_batch(self.get_store(), batch)
+    }
+
     fn get_len(&self) -> Result<u64> {
         KVStore::get_len(self.get_store())
     }
@@ -388,12 +394,12 @@ where
             .collect())
     }
 
-    fn put_raw(&self, key: K, value: Vec<u8>) -> Result<()> {
-        KVStore::put(self.get_store(), to_bytes(&key)?, value)
+    fn put_raw(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+        KVStore::put(self.get_store(), key, value)
     }
 
-    fn get_raw(&self, key: K) -> Result<Option<Vec<u8>>> {
-        KVStore::get(self.get_store(), to_bytes(&key)?.as_slice())
+    fn get_raw(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        KVStore::get(self.get_store(), key)
     }
 
     fn iter(&self) -> Result<SchemaIterator<K, V>> {
