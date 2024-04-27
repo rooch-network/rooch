@@ -9,13 +9,15 @@ use bitcoin::Txid;
 use clap::Parser;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
-use moveos_types::moveos_std::object::{ObjectEntity, GENESIS_STATE_ROOT};
+use moveos_types::moveos_std::object::{
+    ObjectEntity, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK, SYSTEM_OWNER_ADDRESS,
+};
 use moveos_types::moveos_std::simple_multimap::SimpleMultiMap;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::MoveState;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::address::{MultiChainAddress, RoochAddress};
-use rooch_types::bitcoin::utxo::UTXO;
+use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
 use rooch_types::bitcoin::{types, utxo};
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::error::{RoochError, RoochResult};
@@ -90,7 +92,9 @@ impl GenesisUTXOCommand {
         let reader = BufReader::new(File::open(file_name)?);
 
         let mut utxo_datas = vec![];
-        let mut pre_state_root = H256::from(root.state_root.into_bytes());
+        let mut pre_root_state_root = H256::from(root.state_root.into_bytes());
+        let mut pre_utxostore_state_root = *GENESIS_STATE_ROOT;
+        // let mut pre_utxostore_state_root = *GENESIS_STATE_ROOT;
         let mut count: u64 = 0;
         for line in reader.lines() {
             let line = line?;
@@ -122,32 +126,46 @@ impl GenesisUTXOCommand {
             utxo_datas.push(utxo_data);
 
             if utxo_datas.len() >= BATCH_SIZE {
-                let new_state_root =
-                    Self::process_utxos(&moveos_store, pre_state_root, utxo_datas.clone())?;
+                let new_utxostore_state_root = Self::process_utxos(
+                    &moveos_store,
+                    pre_utxostore_state_root,
+                    utxo_datas.clone(),
+                )?;
                 utxo_datas.clear();
                 println!(
-                    "process_utxos pre_state_root: {:?}, new_state_root: {:?}",
-                    pre_state_root, new_state_root
+                    "process_utxos pre_utxostore_state_root: {:?}, new_utxostore_state_root: {:?}",
+                    pre_utxostore_state_root, new_utxostore_state_root
                 );
-                pre_state_root = new_state_root;
+                pre_utxostore_state_root = new_utxostore_state_root;
             }
             count += 1;
         }
 
         if !utxo_datas.is_empty() {
-            let new_state_root =
-                Self::process_utxos(&moveos_store, pre_state_root, utxo_datas.clone())?;
+            let new_utxostore_state_root =
+                Self::process_utxos(&moveos_store, pre_utxostore_state_root, utxo_datas.clone())?;
             utxo_datas.clear();
             println!(
-                "process_utxos pre_state_root: {:?}, new_state_root: {:?}",
-                pre_state_root, new_state_root
+                "process_utxos pre_utxostore_state_root: {:?}, new_utxostore_state_root: {:?}",
+                pre_utxostore_state_root, new_utxostore_state_root
             );
-            pre_state_root = new_state_root;
+            pre_utxostore_state_root = new_utxostore_state_root;
         }
 
-        // Update startup info
-        let new_size = root.size + count;
-        let new_startup_info = StartupInfo::new(pre_state_root, new_size);
+        // Update UTXOStore Object
+        let mut genesis_utxostore_object = Self::create_genesis_utxostore_object()?;
+        genesis_utxostore_object.size += count;
+        genesis_utxostore_object.state_root = pre_utxostore_state_root.into_address();
+        let mut update_set = UpdateSet::new();
+        let parent_id = BitcoinUTXOStore::object_id();
+        update_set.put(parent_id.to_key(), genesis_utxostore_object.into_state());
+        let tree_change_set = apply_fields(&moveos_store, pre_root_state_root, update_set)?;
+        apply_nodes(&moveos_store, tree_change_set.nodes)?;
+        pre_root_state_root = tree_change_set.state_root;
+
+        // Update Startup Info
+        let new_size = root.size;
+        let new_startup_info = StartupInfo::new(pre_root_state_root, new_size);
         moveos_store
             .get_config_store()
             .save_startup_info(new_startup_info)?;
@@ -162,7 +180,7 @@ impl GenesisUTXOCommand {
 
     fn process_utxos(
         moveos_store: &MoveOSStore,
-        pre_state_root: H256,
+        pre_utxostore_state_root: H256,
         utxo_datas: Vec<UTXOData>,
     ) -> Result<H256> {
         let utxo_objects = utxo_datas
@@ -170,11 +188,12 @@ impl GenesisUTXOCommand {
             .map(|v| Self::create_utxo_object(v))
             .collect::<Result<Vec<_>, _>>()?;
         let mut update_set = UpdateSet::new();
+        // let parent_id = BitcoinUTXOStore::object_id();
         for utxo_object in utxo_objects {
             update_set.put(utxo_object.id.to_key(), utxo_object.into_state());
         }
 
-        let tree_change_set = apply_fields(moveos_store, pre_state_root, update_set)?;
+        let tree_change_set = apply_fields(moveos_store, pre_utxostore_state_root, update_set)?;
         apply_nodes(moveos_store, tree_change_set.nodes)?;
         Ok(tree_change_set.state_root)
     }
@@ -205,5 +224,19 @@ impl GenesisUTXOCommand {
             utxo,
         );
         Ok(utxo_object)
+    }
+
+    fn create_genesis_utxostore_object() -> Result<ObjectEntity<BitcoinUTXOStore>> {
+        let utxostore_object = BitcoinUTXOStore { next_tx_index: 0 };
+        let utxostore_id = BitcoinUTXOStore::object_id();
+        let utxostore_object = ObjectEntity::new(
+            utxostore_id,
+            SYSTEM_OWNER_ADDRESS.into(),
+            SHARED_OBJECT_FLAG_MASK,
+            *GENESIS_STATE_ROOT,
+            0,
+            utxostore_object,
+        );
+        Ok(utxostore_object)
     }
 }

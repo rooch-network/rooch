@@ -36,6 +36,11 @@ pub static MODULE_ID: Lazy<ModuleId> =
     Lazy::new(|| ModuleId::new(MOVEOS_STD_ADDRESS, MODULE_NAME.to_owned()));
 pub const OBJECT_ENTITY_STRUCT_NAME: &IdentStr = ident_str!("ObjectEntity");
 
+pub const SYSTEM_OWNER_ADDRESS: AccountAddress = AccountAddress::ZERO;
+
+pub const SHARED_OBJECT_FLAG_MASK: u8 = 1;
+pub const FROZEN_OBJECT_FLAG_MASK: u8 = 1 << 1;
+
 // New table's state_root should be the place holder hash.
 pub static GENESIS_STATE_ROOT: Lazy<H256> = Lazy::new(|| *SPARSE_MERKLE_PLACEHOLDER_HASH);
 
@@ -360,7 +365,7 @@ impl ObjectEntity<Root> {
         Self {
             id: ObjectID::root(),
             owner: MOVEOS_STD_ADDRESS,
-            flag: Self::SHARED_OBJECT_FLAG_MASK,
+            flag: SHARED_OBJECT_FLAG_MASK,
             state_root: AccountAddress::new(state_root.into()),
             size,
             value: Root {
@@ -371,9 +376,6 @@ impl ObjectEntity<Root> {
 }
 
 impl<T> ObjectEntity<T> {
-    const SHARED_OBJECT_FLAG_MASK: u8 = 1;
-    const FROZEN_OBJECT_FLAG_MASK: u8 = 1 << 1;
-
     pub fn new(
         id: ObjectID,
         owner: AccountAddress,
@@ -401,19 +403,19 @@ impl<T> ObjectEntity<T> {
     }
 
     pub fn is_shared(&self) -> bool {
-        self.flag & Self::SHARED_OBJECT_FLAG_MASK == Self::SHARED_OBJECT_FLAG_MASK
+        self.flag & SHARED_OBJECT_FLAG_MASK == SHARED_OBJECT_FLAG_MASK
     }
 
     pub fn to_shared(&mut self) {
-        self.flag |= Self::SHARED_OBJECT_FLAG_MASK;
+        self.flag |= SHARED_OBJECT_FLAG_MASK;
     }
 
     pub fn is_frozen(&self) -> bool {
-        self.flag & Self::FROZEN_OBJECT_FLAG_MASK == Self::FROZEN_OBJECT_FLAG_MASK
+        self.flag & FROZEN_OBJECT_FLAG_MASK == FROZEN_OBJECT_FLAG_MASK
     }
 
     pub fn to_frozen(&mut self) {
-        self.flag |= Self::FROZEN_OBJECT_FLAG_MASK;
+        self.flag |= FROZEN_OBJECT_FLAG_MASK;
     }
 
     pub fn is_genesis(&self) -> bool {
@@ -502,7 +504,7 @@ impl ObjectEntity<ModuleStore> {
         Self::new(
             ModuleStore::module_store_id(),
             MOVEOS_STD_ADDRESS,
-            Self::SHARED_OBJECT_FLAG_MASK,
+            SHARED_OBJECT_FLAG_MASK,
             *GENESIS_STATE_ROOT,
             0,
             ModuleStore::default(),
