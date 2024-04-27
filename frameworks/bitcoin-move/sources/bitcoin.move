@@ -26,6 +26,7 @@ module bitcoin_move::bitcoin{
     const ErrorBlockAlreadyProcessed:u64 = 2;
 
     const ORDINAL_GENESIS_HEIGHT:u64 = 767430;
+    const BITSEED_GENESIS_HEIGHT:u64 = 940000;
 
     struct TxProgressErrorLogEvent has copy, drop{
         txid: address,
@@ -205,7 +206,7 @@ module bitcoin_move::bitcoin{
         handle_new_utxo(tx, &mut output_seals);
 
         // handle bitseed
-        if(data_import_config::is_ord_mode(data_import_mode)) {
+        if(need_process_bitseed(block_height)) {
             bitseed::process(tx);
         };
 
@@ -344,6 +345,14 @@ module bitcoin_move::bitcoin{
         }
     }
     
+    public fun need_process_bitseed(block_height: u64) : bool {
+        let btc_network = network::network();
+        if(network::is_mainnet(btc_network)){
+            block_height >= BITSEED_GENESIS_HEIGHT
+        }else{
+            true
+        }
+    }
     #[test_only]
     public fun submit_block_for_test(block_height: u64, block_hash: address, block_header: &Header){
         let btc_block_store_obj = borrow_block_store_mut();

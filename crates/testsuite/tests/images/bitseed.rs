@@ -3,10 +3,7 @@
 
 use std::collections::HashMap;
 
-use testcontainers::{
-    core::WaitFor,
-    Image, ImageArgs,
-};
+use testcontainers::{core::WaitFor, Image, ImageArgs};
 
 const NAME: &str = "bitseed/bitseed";
 const TAG: &str = "0.1.4";
@@ -63,11 +60,11 @@ impl Image for Bitseed {
 
 impl Bitseed {
     pub fn new(
-        bitcoin_rpc_url: String, 
+        bitcoin_rpc_url: String,
         bitcoin_rpc_user: String,
         bitcoin_rpc_pass: String,
         ord_server_url: String,
-        ext_args: Vec<String>
+        ext_args: Vec<String>,
     ) -> (Self, BitseedImageArgs) {
         (
             Bitseed {

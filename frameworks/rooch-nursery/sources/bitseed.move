@@ -1,18 +1,23 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+<<<<<<< HEAD:frameworks/rooch-nursery/sources/bitseed.move
 module rooch_nursery::bitseed {
     use std::string;
     use std::string::String;
+=======
+module bitcoin_move::bitseed {
+>>>>>>> 5e2be180... feat: check SFT valid:frameworks/bitcoin-move/sources/bitseed.move
     use std::vector;
-    use std::option;
+    use std::option::{Self, Option};
+    use std::string::{Self, String};
 
     use moveos_std::object::{Self, ObjectID};
     use moveos_std::string_utils::{parse_u64, parse_u8};
-    use moveos_std::simple_map;
-    use moveos_std::simple_map::SimpleMap;
+    use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::wasm;
     use moveos_std::table::{Self, Table};
+    use moveos_std::cbor;
 
     use bitcoin_move::types::{Self, Transaction};
     use bitcoin_move::utxo;
@@ -77,17 +82,74 @@ module rooch_nursery::bitseed {
         BIT_SEED_MINT
     }
 
-    public fun is_bitseed(inscription: &Inscription) : bool {
+    fun is_bitseed(inscription: &Inscription) : bool {
         let metaprotocol = ord::metaprotocol(inscription);
         option::is_some<String>(&metaprotocol) && option::borrow(&metaprotocol) == &string::utf8(b"bitseed")
     }
 
-    public fun is_bitseed_deploy(json_map: &SimpleMap<String,String>) : bool {
+    fun get_SFT_op(metadata: &SimpleMap<String,vector<u8>>) : Option<std::string::String> {
         let op_key = string::utf8(b"op");
-        let is_deploy_op = simple_map::contains_key(json_map, &op_key) && simple_map::borrow(json_map, &op_key) == &string::utf8(b"deploy");
-        let attributes_generator = *simple_map::borrow(json_map, &string::utf8(b"generator"));
-        let attributes_deploy_args = *simple_map::borrow(json_map, &string::utf8(b"deploy_args"));
-        is_deploy_op && string::length(&attributes_generator) > 0 && string::length(&attributes_deploy_args) > 0
+
+        if (simple_map::contains_key(metadata, &op_key)) {
+            let op_bytes = simple_map::borrow(metadata, &op_key);
+            return cbor::from_cbor_option<std::string::String>(*op_bytes)
+        };
+
+        return option::none()
+    }
+
+    fun get_SFT_tick(metadata: &SimpleMap<String,vector<u8>>) : Option<std::string::String> {
+        let key = string::utf8(b"tick");
+
+        if (simple_map::contains_key(metadata, &key)) {
+            let bytes = simple_map::borrow(metadata, &key);
+            return cbor::from_cbor_option<std::string::String>(*bytes)
+        };
+
+        return option::none()
+    }
+
+    fun get_SFT_amount(metadata: &SimpleMap<String,vector<u8>>) : Option<u64> {
+        let key = string::utf8(b"amount");
+
+        if (simple_map::contains_key(metadata, &key)) {
+            let bytes = simple_map::borrow(metadata, &key);
+            return cbor::from_cbor_option<u64>(*bytes)
+        };
+
+        return option::none()
+    }
+
+    fun get_SFT_attributes(metadata: &SimpleMap<String,vector<u8>>) : SimpleMap<String,vector<u8>> {
+        let key = string::utf8(b"attributes");
+
+        if (simple_map::contains_key(metadata, &key)) {
+            let bytes = simple_map::borrow(metadata, &key);
+            return cbor::to_map(*bytes)
+        };
+
+        return simple_map::new()
+    }
+
+    fun is_valid_bitseed_deploy(metadata: &SimpleMap<String,vector<u8>>) : (bool, Option<String>) {
+        let attributes = get_SFT_attributes(metadata);
+
+        let generator_bytes = simple_map::borrow(&attributes, &string::utf8(b"generator"));
+        let generator = cbor::from_cbor_option<std::string::String>(*generator_bytes);
+        if (option::is_none(&generator)) {
+            simple_map::drop(attributes);
+            return (false, option::some(std::string::utf8(b"not found metadata.attributes.generator")))
+        };
+
+        let deploy_args_bytes = simple_map::borrow(&attributes, &string::utf8(b"deploy_args"));
+        let deploy_args = cbor::from_cbor_option<std::string::String>(*deploy_args_bytes);
+        if (option::is_none(&deploy_args)) {
+            simple_map::drop(attributes);
+            return (false, option::some(std::string::utf8(b"not found metadata.attributes.deploy_args")))
+        };
+
+        simple_map::drop(attributes);
+        (true, option::none<String>())
     }
 
     public fun is_bitseed_mint(json_map: &SimpleMap<String,String>) : bool {
@@ -248,8 +310,28 @@ module rooch_nursery::bitseed {
         let inscription_id = ord::new_inscription_id(txid, index);
 
         if (is_bitseed(inscription)) {
-            // TODO parse inscription.meta and valid op
-            ord::seal_metaprotocol_validity<Bitseed>(inscription_id, true, option::none());
-        };
+            let metadata_bytes = ord::metadata(inscription);
+            let metadata = cbor::to_map(metadata_bytes);
+
+            let op = get_SFT_op(&metadata);
+            if (option::is_some(&op)) {
+                if (option::borrow(&op) == &string::utf8(b"deploy")) {
+                    let (is_valid, reason) = is_valid_bitseed_deploy(&metadata);
+                    ord::seal_metaprotocol_validity<Bitseed>(inscription_id, is_valid, reason);
+                } else if (option::borrow(&op) == &string::utf8(b"mint")) {
+                    ord::seal_metaprotocol_validity<Bitseed>(inscription_id, true, option::none());
+                } else if (option::borrow(&op) == &string::utf8(b"split")) {
+                    ord::seal_metaprotocol_validity<Bitseed>(inscription_id, true, option::none());
+                } else if (option::borrow(&op) == &string::utf8(b"merge")) {
+                    ord::seal_metaprotocol_validity<Bitseed>(inscription_id, true, option::none());
+                } else {
+                    ord::seal_metaprotocol_validity<Bitseed>(inscription_id, false, option::some(string::utf8(b"invalid op")));
+                }
+            } else {
+                ord::seal_metaprotocol_validity<Bitseed>(inscription_id, false, option::some(string::utf8(b"op not found")));
+            };
+
+            simple_map::drop(metadata)
+        }
     }
 }

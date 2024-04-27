@@ -3,7 +3,6 @@
 
 mod images;
 
-use std::path::Path;
 use anyhow::{bail, Result};
 use clap::Parser;
 use cucumber::{given, then, World as _};
@@ -14,12 +13,13 @@ use rooch_key::key_derive::{generate_new_key_pair, retrieve_key_pair};
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_rpc_server::Service;
 use serde_json::Value;
+use std::path::Path;
 use tracing::{debug, error, info};
 
+use rooch_types::bitcoin::network::Network;
 use images::bitcoin::BitcoinD;
 use images::ord::Ord;
 use rooch_types::{bitcoin::network::Network, crypto::RoochKeyPair};
-use images::bitseed::Bitseed;
 use images::bitseed::{Bitseed, BitseedImageArgs};
 use std::time::Duration;
 use testcontainers::{
@@ -161,8 +161,9 @@ async fn start_ord_server(w: &mut World, _scenario: String) {
         RPC_PASS.to_string(),
     )
     .into();
-    ord_image = ord_image.with_network(w.container_network.clone()).
-        with_run_option(("--network-alias", "ord"));
+    ord_image = ord_image
+        .with_network(w.container_network.clone())
+        .with_run_option(("--network-alias", "ord"));
 
     let ord = w.docker.run(ord_image);
     debug!("ord ok");
@@ -330,17 +331,21 @@ async fn bitseed_run_cmd(w: &mut World, input_tpl: String) {
         RPC_USER.to_string(),
         RPC_PASS.to_string(),
         format!("http://ord:{}", ORD_RPC_PORT),
-        bitseed_args
+        bitseed_args,
     )
     .into();
 
-    let test_data_path = Path::new("./data").
-        canonicalize().unwrap().into_os_string().into_string().
-        unwrap_or_else(|_| panic!("Invalid Unicode path"));
+    let test_data_path = Path::new("./data")
+        .canonicalize()
+        .unwrap()
+        .into_os_string()
+        .into_string()
+        .unwrap_or_else(|_| panic!("Invalid Unicode path"));
     debug!("test_data_path: {}", test_data_path);
 
-    bitseed_image = bitseed_image.with_network(w.container_network.clone()).
-        with_volume((test_data_path, "/app/test-data"));
+    bitseed_image = bitseed_image
+        .with_network(w.container_network.clone())
+        .with_volume((test_data_path, "/app/test-data"));
 
     let mut bitseed_cmd = w.docker.run_cmd(bitseed_image);
     let output = bitseed_cmd.output().expect("run bitseed cmd should be ok");

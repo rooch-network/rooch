@@ -14,8 +14,6 @@
 -  [Function `genesis_init`](#0x4_bitseed_genesis_init)
 -  [Function `bitseed_deploy_key`](#0x4_bitseed_bitseed_deploy_key)
 -  [Function `bitseed_mint_key`](#0x4_bitseed_bitseed_mint_key)
--  [Function `is_bitseed`](#0x4_bitseed_is_bitseed)
--  [Function `is_bitseed_deploy`](#0x4_bitseed_is_bitseed_deploy)
 -  [Function `is_bitseed_mint`](#0x4_bitseed_is_bitseed_mint)
 -  [Function `inscription_to_bitseed_deploy`](#0x4_bitseed_inscription_to_bitseed_deploy)
 -  [Function `inscription_to_bitseed_mint`](#0x4_bitseed_inscription_to_bitseed_mint)
@@ -31,6 +29,7 @@
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
+<b>use</b> <a href="">0x2::cbor</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::string_utils</a>;
@@ -143,6 +142,7 @@
 
 
 
+<<<<<<< HEAD:frameworks/rooch-nursery/doc/bitseed.md
 <a name="0xa_bitseed_is_bitseed"></a>
 
 ## Function `is_bitseed`
@@ -170,6 +170,9 @@
 
 
 <a name="0xa_bitseed_is_bitseed_mint"></a>
+=======
+<a name="0x4_bitseed_is_bitseed_mint"></a>
+>>>>>>> 5e2be180... feat: check SFT valid:frameworks/bitcoin-move/doc/bitseed.md
 
 ## Function `is_bitseed_mint`
 
