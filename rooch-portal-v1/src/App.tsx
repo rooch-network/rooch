@@ -19,21 +19,6 @@ const clientSideEmotionCache = createEmotionCache()
 
 function App() {
   const queryClient = new QueryClient()
-  // const [isSessionKeyModalOpen, setIsSessionKeyModalOpen] = useState<boolean>(false)
-  // const handleSessionKeyRequest = () => {
-  //   setIsSessionKeyModalOpen(true)
-  // }
-  //
-  // const handleAuthorize = () => {
-  //   console.log('Handling authorization in App component.')
-  //
-  //   setIsSessionKeyModalOpen(false)
-  // }
-  //
-  // // ** Session Key Modal 测试（可以关掉）
-  // useEffect(() => {
-  //   handleSessionKeyRequest()
-  // }, [])
 
   return (
     <>

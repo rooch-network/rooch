@@ -155,7 +155,7 @@ export const AssetsNft = () => {
           onClick={() => handleImageClick(nft.object_id)}
         >
           <CardContent className="p-0">
-            <AspectRatio ratio={1 / 1} className="flex items-center justify-center overflow-hidden">
+            <AspectRatio ratio={1} className="flex items-center justify-center overflow-hidden">
               <img
                 src={images.get(nft.object_id)}
                 alt="NFT"

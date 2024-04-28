@@ -13,7 +13,7 @@ export const IndexedAssetsBTC = () => {
   // TODO: 1, loading, 2 pagination
   const { data: result } = useRoochClientQuery('queryUTXOs', {
     filter: {
-      owner: account?.getAddress() || testAddress,
+      owner: 'bcrt1p79ruqzh9hmmhvaz7x3up3t6pdrmz5hmhz3pfkddxqnfzg0md7upq3jjjev',
     },
   })
 

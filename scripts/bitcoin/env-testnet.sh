@@ -2,26 +2,14 @@
 # Copyright (c) RoochNetwork
 # SPDX-License-Identifier: Apache-2.0
 
-network="$BTC_NETWORK"
-btc_rpc_url="$BTC_RPC_URL"
-btc_rpc_username="$BTC_RPC_USERNAME"
-btc_rpc_password="$BTC_RPC_PASSWORD"
-container_name="bitcoind_regtest"
-
-if [ -z "$network" ]; then
-  # default
-  network="regtest"
-  btc_rpc_url="http://127.0.0.1:18443"
-  btc_rpc_username="roochuser"
-  btc_rpc_password="roochpass"
-fi
+container_name="bitcoind"
 
 ord() {
-  command ord --${network} --bitcoin-rpc-url ${btc_rpc_url} --bitcoin-rpc-username ${btc_rpc_username} --bitcoin-rpc-password ${btc_rpc_password} "$@"
+  command ord --testnet --bitcoin-rpc-url http://65.108.39.171:18443 --bitcoin-rpc-username rooch-test --bitcoin-rpc-password rooch1216$ "$@"
 }
 
 bitcoin-cli() {
-  command docker exec -it ${container_name} bitcoin-cli -regtest "$@"
+  command docker exec -it bitcoind bitcoin-cli -testnet "$@"
 }
 
 getBitcoinNode() {
@@ -30,31 +18,29 @@ getBitcoinNode() {
 }
 
 init() {
-  if [ "$network" == "regtest" ]; then
-    # check bitcoin env
-      container_id=$(getBitcoinNode)
-      if [ -n "$container_id" ]; then
-        echo "Bitcoin node is already running."
-      else
-        echo "Starting Bitcoin node..."
-        ./node/run_local_node_docker.sh
-
-      sleep 1
-
-      attempt=1
-      max_attempts=30
-      while [ $attempt -le $max_attempts ]; do
-        if docker inspect -f '{{.State.Running}}' $container_name 2>/dev/null | grep -q "true"; then
-          echo "Container $container_name is running."
-          break
-        else
-          echo "Attempt $attempt: Waiting for $container_name to start..."
-          sleep 1
-          ((attempt++))
-        fi
-      done
-      fi
-  fi
+#  # check bitcoin env
+#  container_id=$(getBitcoinNode)
+#  if [ -n "$container_id" ]; then
+#    echo "Bitcoin node is already running."
+#  else
+#    echo "Starting Bitcoin node..."
+#    ./node/run_local_test_node_docker.sh
+#
+#  sleep 1
+#
+#  attempt=1
+#  max_attempts=30
+#  while [ $attempt -le $max_attempts ]; do
+#    if docker inspect -f '{{.State.Running}}' $container_name 2>/dev/null | grep -q "true"; then
+#      echo "Container $container_name is running."
+#      break
+#    else
+#      echo "Attempt $attempt: Waiting for $container_name to start..."
+#      sleep 1
+#      ((attempt++))
+#    fi
+#  done
+#  fi
 
   # start ord server
   ord server &
@@ -98,23 +84,19 @@ init() {
   ord wallet inscriptions
 
   # Step 9: start rooch node
-  cargo run --package rooch --bin rooch server start --btc-rpc-url ${btc_rpc_url} --btc-rpc-username ${btc_rpc_username} --btc-rpc-password ${btc_rpc_password} --btc-start-block-height 0 --btc-network 4 --data-import-mode 10
+  cargo run --package rooch --bin rooch server start --btc-rpc-url http://127.0.0.1:18443 --btc-rpc-username roochuser --btc-rpc-password roochpass --btc-start-block-height 0 --btc-network 4 --data-import-mode 10
 }
 
 clean() {
-#  # clean ord index
-#  indexPath=$(ord index info 2>/dev/null | jq -r '.index_path')
-#  if [ -n "$indexPath" ]; then
-#    rm "$indexPath"
-#  fi
+  # clean ord index
+  indexPath=$(ord index info 2>/dev/null | jq -r '.index_path')
+  if [ -n "$indexPath" ]; then
+    rm "$indexPath"
+  fi
 
-  echo a
   # stop ord server
   lsof -ti:80 | xargs kill
 
-  lsof -ti:50051 | xargs kill
-
-  echo b
   # clean bitcoin docker
   container_id=$(getBitcoinNode)
   if [ -n "$container_id" ]; then
@@ -122,11 +104,8 @@ clean() {
     sleep 2
   fi
 
-  echo c
-
   # clean bitcoin data
-  echo $HOME/regtest/.bitcoin
-#  rm -rf $HOME/regtest/.bitcoin
+  #  rm -rf ~/.bitcoin
 
   # clean rooch data
   cargo run --package rooch --bin rooch server clean -n local
