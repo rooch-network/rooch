@@ -121,7 +121,8 @@ fn parse_move_value_from_cbor_value(
         // Parse an unsigned 8-bit integer
         MoveTypeLayout::U8 => {
             let u64_value = cbor_value
-                .as_u64()
+                .as_integer()
+                .and_then(|int| int.try_into().ok())
                 .ok_or_else(|| anyhow::anyhow!("Invalid u8 value"))?;
             if u64_value > (u8::MAX as u64) {
                 return Err(anyhow::anyhow!("Invalid u8 value"));
@@ -131,14 +132,16 @@ fn parse_move_value_from_cbor_value(
         // Parse an unsigned 64-bit integer
         MoveTypeLayout::U64 => {
             let u64_value = cbor_value
-                .as_u64()
+                .as_integer()
+                .and_then(|int| int.try_into().ok())
                 .ok_or_else(|| anyhow::anyhow!("Invalid u64 value"))?;
             Ok(MoveValue::u64(u64_value))
         }
         // Parse an unsigned 128-bit integer
         MoveTypeLayout::U128 => {
             let u128_value = cbor_value
-                .as_u128()
+                .as_integer()
+                .and_then(|int| int.try_into().ok())
                 .ok_or_else(|| anyhow::anyhow!("Invalid u128 value"))?;
             Ok(MoveValue::u128(u128_value))
         }
@@ -147,8 +150,8 @@ fn parse_move_value_from_cbor_value(
             let bytes = cbor_value
                 .as_bytes()
                 .ok_or_else(|| anyhow::anyhow!("Invalid address value"))?;
-            let addr =
-                AccountAddress::from_bytes(bytes).map_err(|_| anyhow::anyhow!("Invalid address value"))?;
+            let addr = AccountAddress::from_bytes(bytes)
+                .map_err(|_| anyhow::anyhow!("Invalid address value"))?;
             Ok(MoveValue::address(addr))
         }
         // Parse a vector value
@@ -175,7 +178,8 @@ fn parse_move_value_from_cbor_value(
         // Parse an unsigned 16-bit integer
         MoveTypeLayout::U16 => {
             let u64_value = cbor_value
-                .as_u64()
+                .as_integer()
+                .and_then(|int| int.try_into().ok())
                 .ok_or_else(|| anyhow::anyhow!("Invalid u16 value"))?;
             if u64_value > (u16::MAX as u64) {
                 return Err(anyhow::anyhow!("Invalid u16 value"));
@@ -185,7 +189,8 @@ fn parse_move_value_from_cbor_value(
         // Parse an unsigned 32-bit integer
         MoveTypeLayout::U32 => {
             let u64_value = cbor_value
-                .as_u64()
+                .as_integer()
+                .and_then(|int| int.try_into().ok())
                 .ok_or_else(|| anyhow::anyhow!("Invalid u32 value"))?;
             if u64_value > (u32::MAX as u64) {
                 return Err(anyhow::anyhow!("Invalid u32 value"));
@@ -275,7 +280,6 @@ fn serialize_move_value_to_cbor(value: &MoveValue) -> Result<Vec<u8>> {
     }
     Ok(writer)
 }
-
 
 #[derive(Debug, Clone)]
 pub struct FromBytesGasParameters {
