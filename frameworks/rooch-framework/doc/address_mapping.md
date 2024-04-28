@@ -6,6 +6,7 @@
 
 
 -  [Resource `AddressMapping`](#0x3_address_mapping_AddressMapping)
+-  [Struct `AddressMappingIndex`](#0x3_address_mapping_AddressMappingIndex)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x3_address_mapping_genesis_init)
 -  [Function `address_mapping_handle`](#0x3_address_mapping_address_mapping_handle)
@@ -29,6 +30,7 @@
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::core_addresses</a>;
 <b>use</b> <a href="">0x2::object</a>;
+<b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::table</a>;
 <b>use</b> <a href="multichain_address.md#0x3_multichain_address">0x3::multichain_address</a>;
 </code></pre>
@@ -46,6 +48,17 @@
 
 
 
+<a name="0x3_address_mapping_AddressMappingIndex"></a>
+
+## Struct `AddressMappingIndex`
+
+
+
+<pre><code><b>struct</b> <a href="address_mapping.md#0x3_address_mapping_AddressMappingIndex">AddressMappingIndex</a> <b>has</b> drop
+</code></pre>
+
+
+
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -56,6 +69,24 @@
 
 
 <pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_ErrorMultiChainAddressInvalid">ErrorMultiChainAddressInvalid</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_NAMED_MAPPING_INDEX"></a>
+
+
+
+<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_NAMED_MAPPING_INDEX">NAMED_MAPPING_INDEX</a>: u64 = 0;
+</code></pre>
+
+
+
+<a name="0x3_address_mapping_NAMED_REVERSE_MAPPING_INDEX"></a>
+
+
+
+<pre><code><b>const</b> <a href="address_mapping.md#0x3_address_mapping_NAMED_REVERSE_MAPPING_INDEX">NAMED_REVERSE_MAPPING_INDEX</a>: u64 = 1;
 </code></pre>
 
 

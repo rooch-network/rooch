@@ -9,6 +9,7 @@
 /// struct itself, while the operations are implemented as native functions. No traversal is provided.
 
 module moveos_std::table {
+    use moveos_std::core_addresses;
     use moveos_std::object::ObjectID;
     use moveos_std::object::{Self, Object};
 
@@ -24,6 +25,15 @@ module moveos_std::table {
     /// Create a new Table.
     public fun new<K: copy + drop, V: store>(): Table<K, V> {
         let obj = object::new(TablePlaceholder{ _placeholder: false });
+        Table {
+            handle: obj,
+        }
+    }
+
+    /// Create a new Table with object id.
+    public fun new_with_object_id_by_system<K: copy + drop, V: store>(system: &signer, id: ObjectID): Table<K, V> {
+        core_addresses::assert_system_reserved(system);
+        let obj = object::new_with_object_id(id, TablePlaceholder{ _placeholder: false });
         Table {
             handle: obj,
         }

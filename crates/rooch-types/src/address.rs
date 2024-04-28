@@ -18,6 +18,7 @@ use ethers::types::H160;
 use fastcrypto::hash::Blake2b256;
 use fastcrypto::hash::HashFunction;
 use fastcrypto::secp256k1::Secp256k1PublicKey;
+use move_core_types::language_storage::TypeTag;
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
@@ -26,7 +27,7 @@ use move_core_types::{
 };
 #[cfg(any(test, feature = "fuzzing"))]
 use moveos_types::h256;
-use moveos_types::state::MoveState;
+use moveos_types::state::{KeyState, MoveState};
 use moveos_types::{
     h256::H256,
     state::{MoveStructState, MoveStructType},
@@ -118,6 +119,11 @@ impl MultiChainAddress {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         bcs::to_bytes(self).expect("bcs encode should success")
+    }
+
+    pub fn to_key(&self) -> KeyState {
+        let key_type = TypeTag::Struct(Box::new(Self::struct_tag()));
+        KeyState::new(self.to_bytes(), key_type)
     }
 }
 

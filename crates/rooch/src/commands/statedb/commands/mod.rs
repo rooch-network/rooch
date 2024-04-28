@@ -22,9 +22,7 @@ pub fn init_statedb(
     chain_id: Option<RoochChainID>,
 ) -> Result<(RootObjectEntity, MoveOSStore)> {
     // Reconstruct RoochOpt
-    let mut opt = RoochOpt::default();
-    opt.base_data_dir = base_data_dir;
-    opt.chain_id = chain_id;
+    let opt = RoochOpt::new_with_default(base_data_dir, chain_id);
 
     //Init store
     let base_config = BaseConfig::load_with_opt(&opt)?;

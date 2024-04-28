@@ -6,6 +6,7 @@ module rooch_framework::address_mapping{
     use std::option::{Self, Option};
     use std::signer;
     use std::vector;
+    use moveos_std::signer::module_signer;
     use moveos_std::core_addresses;
     use moveos_std::bcs;
     use moveos_std::table::{Self, Table};
@@ -18,14 +19,28 @@ module rooch_framework::address_mapping{
     
     const ErrorMultiChainAddressInvalid: u64 = 1;
 
+    const NAMED_MAPPING_INDEX: u64 = 0;
+    const NAMED_REVERSE_MAPPING_INDEX: u64 = 1;
+
     struct AddressMapping has key{
         mapping: Table<MultiChainAddress, address>,
         reverse_mapping: Table<address, vector<MultiChainAddress>>,
     }
 
+    struct AddressMappingIndex has drop {
+        index: u64,
+    }
+
     public(friend) fun genesis_init(_genesis_account: &signer) {
-        let mapping = table::new<MultiChainAddress, address>();
-        let reverse_mapping = table::new<address, vector<MultiChainAddress>>();
+        let mapping_id = object::custom_object_id<AddressMappingIndex, AddressMapping>(AddressMappingIndex {
+            index: NAMED_MAPPING_INDEX
+        });
+        let reverse_mapping_id = object::custom_object_id<AddressMappingIndex, AddressMapping>(AddressMappingIndex {
+            index: NAMED_REVERSE_MAPPING_INDEX
+        });
+        let module_signer = module_signer<AddressMapping>();
+        let mapping = table::new_with_object_id_by_system<MultiChainAddress, address>(&module_signer, mapping_id);
+        let reverse_mapping = table::new_with_object_id_by_system<address, vector<MultiChainAddress>>(&module_signer, reverse_mapping_id);
         let obj = object::new_named_object(AddressMapping{
             mapping,
             reverse_mapping
