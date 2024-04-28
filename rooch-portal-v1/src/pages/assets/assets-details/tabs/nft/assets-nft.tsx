@@ -34,14 +34,15 @@ export const AssetsNft = () => {
   // TODO: 1, fetch data/image loading, 2, pagination
   const { data: nfts, refetch: reFetchNFTS } = useRoochClientQuery('queryGlobalStates', {
     filter: {
-      owner: sessionKey?.getAddress() || ''
+      object_type_with_owner: {
+        owner: sessionKey?.getAddress() || '',
+        object_type: `${ROOCH_OPERATING_ADDRESS}::nft::NFT`,
+      },
     },
     cursor: null,
     limit: 10,
     descending_order: true,
   })
-
-  console.log(nfts)
 
   // fetch collection info
   useEffect(() => {
@@ -152,7 +153,7 @@ export const AssetsNft = () => {
           onClick={() => handleImageClick(nft.object_id)}
         >
           <CardContent className="p-0">
-            <AspectRatio ratio={1 / 1} className="flex items-center justify-center overflow-hidden">
+            <AspectRatio ratio={1} className="flex items-center justify-center overflow-hidden">
               <img
                 src={images.get(nft.object_id)}
                 alt="NFT Image"

@@ -495,8 +495,8 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7(@types/react-dom@18.2.17)(@types/react@18.2.63)(react-dom@18.2.0)(react@18.2.0)
       '@roochnetwork/rooch-sdk':
-        specifier: 0.1.0
-        version: 0.1.0
+        specifier: 0.1.1
+        version: 0.1.1
       '@roochnetwork/rooch-sdk-kit':
         specifier: 0.1.1
         version: 0.1.1(@types/react@18.2.63)(react-native@0.72.4)
@@ -1840,16 +1840,6 @@ packages:
       '@babel/core': 7.23.5
       '@babel/helper-plugin-utils': 7.22.5
 
-  /@babel/plugin-syntax-flow@7.22.5(@babel/core@7.22.11):
-    resolution: {integrity: sha512-9RdCl0i+q0QExayk2nOS7853w08yLucnnPML6EN9S8fgMPVtdLDCdx/cOQ/i44Lb9UeQX9A35yaqBBOMMZxPxQ==}
-    engines: {node: '>=6.9.0'}
-    peerDependencies:
-      '@babel/core': ^7.0.0-0
-    dependencies:
-      '@babel/core': 7.22.11
-      '@babel/helper-plugin-utils': 7.22.5
-    dev: true
-
   /@babel/plugin-syntax-flow@7.22.5(@babel/core@7.23.0):
     resolution: {integrity: sha512-9RdCl0i+q0QExayk2nOS7853w08yLucnnPML6EN9S8fgMPVtdLDCdx/cOQ/i44Lb9UeQX9A35yaqBBOMMZxPxQ==}
     engines: {node: '>=6.9.0'}
@@ -1940,16 +1930,6 @@ packages:
     dependencies:
       '@babel/core': 7.23.5
       '@babel/helper-plugin-utils': 7.22.5
-
-  /@babel/plugin-syntax-jsx@7.22.5(@babel/core@7.22.11):
-    resolution: {integrity: sha512-gvyP4hZrgrs/wWMaocvxZ44Hw0b3W8Pe+cMxc8V1ULQ07oh8VNbIRaoD1LRZVTvD+0nieDKjfgKg89sD7rrKrg==}
-    engines: {node: '>=6.9.0'}
-    peerDependencies:
-      '@babel/core': ^7.0.0-0
-    dependencies:
-      '@babel/core': 7.22.11
-      '@babel/helper-plugin-utils': 7.22.5
-    dev: true
 
   /@babel/plugin-syntax-jsx@7.22.5(@babel/core@7.23.0):
     resolution: {integrity: sha512-gvyP4hZrgrs/wWMaocvxZ44Hw0b3W8Pe+cMxc8V1ULQ07oh8VNbIRaoD1LRZVTvD+0nieDKjfgKg89sD7rrKrg==}
@@ -3014,20 +2994,6 @@ packages:
     dependencies:
       '@babel/core': 7.23.5
       '@babel/helper-plugin-utils': 7.22.5
-
-  /@babel/plugin-transform-react-jsx@7.22.5(@babel/core@7.22.11):
-    resolution: {integrity: sha512-rog5gZaVbUip5iWDMTYbVM15XQq+RkUKhET/IHR6oizR+JEoN6CAfTTuHcK4vwUyzca30qqHqEpzBOnaRMWYMA==}
-    engines: {node: '>=6.9.0'}
-    peerDependencies:
-      '@babel/core': ^7.0.0-0
-    dependencies:
-      '@babel/core': 7.22.11
-      '@babel/helper-annotate-as-pure': 7.22.5
-      '@babel/helper-module-imports': 7.22.5
-      '@babel/helper-plugin-utils': 7.22.5
-      '@babel/plugin-syntax-jsx': 7.22.5(@babel/core@7.22.11)
-      '@babel/types': 7.23.0
-    dev: true
 
   /@babel/plugin-transform-react-jsx@7.22.5(@babel/core@7.23.0):
     resolution: {integrity: sha512-rog5gZaVbUip5iWDMTYbVM15XQq+RkUKhET/IHR6oizR+JEoN6CAfTTuHcK4vwUyzca30qqHqEpzBOnaRMWYMA==}
@@ -9501,6 +9467,27 @@ packages:
       - utf-8-validate
     dev: false
 
+  /@roochnetwork/rooch-sdk@0.1.1:
+    resolution: {integrity: sha512-NcJ1PgMnGj0glp62CGPGl9cH30wN4o3LeUi5TXHeMS6Y+rvc7rfM/VsxmungaiWYp90qd+UnCSxPSL2y2vzONg==}
+    engines: {node: '>=18.0.0'}
+    dependencies:
+      '@ethersproject/bytes': 5.7.0
+      '@kayahr/text-encoding': 1.2.0
+      '@noble/hashes': 1.3.2
+      '@open-rpc/client-js': 1.8.1
+      '@scure/bip39': 1.2.1
+      '@suchipi/femver': 1.0.0
+      '@types/ws': 8.5.5
+      events: 3.3.0
+      isomorphic-fetch: 3.0.0
+      superstruct: 1.0.3
+      tweetnacl: 1.0.3
+    transitivePeerDependencies:
+      - bufferutil
+      - encoding
+      - utf-8-validate
+    dev: false
+
   /@rushstack/eslint-patch@1.3.3:
     resolution: {integrity: sha512-0xd7qez0AQ+MbHatZTlI1gu5vkG8r7MYRUJAHPAHJBmGLs16zpkrpAVLvjQKQOqaXPDUBwOiJzNc00znHSCVBw==}
     dev: true
@@ -13886,8 +13873,8 @@ packages:
       '@babel/plugin-transform-react-jsx': ^7.14.9
       eslint: ^8.1.0
     dependencies:
-      '@babel/plugin-syntax-flow': 7.22.5(@babel/core@7.22.11)
-      '@babel/plugin-transform-react-jsx': 7.22.5(@babel/core@7.22.11)
+      '@babel/plugin-syntax-flow': 7.22.5(@babel/core@7.23.5)
+      '@babel/plugin-transform-react-jsx': 7.22.5(@babel/core@7.23.5)
       eslint: 8.48.0
       lodash: 4.17.21
       string-natural-compare: 3.0.1
