@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import React from 'react'
 import { Separator } from '@/components/ui/separator'
 import { Copy } from 'lucide-react'

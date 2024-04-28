@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { AppItemProps } from '@/common/interface'
 import { AspectRatio } from '@/components/ui/aspect-ratio'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -47,7 +49,7 @@ export const AppsItem = ({ id, name, description, profileUrl, logoUrl, type }: A
             ratio={16 / 9}
             className="flex items-center justify-center overflow-hidden cursor-pointer"
           >
-            <img src={logoUrl} alt="NFT Image" className="rounded-md object-cover transition-all" />
+            <img src={logoUrl} alt="NFT" className="rounded-md object-cover transition-all" />
           </AspectRatio>
         </div>
       </CardContent>

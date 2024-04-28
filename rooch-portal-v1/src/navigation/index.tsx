@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { Bitcoin, LucideIcon, Compass, LayoutGrid, Scroll, UserCog } from 'lucide-react'
 import * as React from 'react'
 import { Routes, Route } from 'react-router-dom'
@@ -61,7 +63,7 @@ export const routers = (): React.ReactElement => {
   return (
     <Routes>
       {navItems()
-        .filter((item) => item.element != undefined || !item.disabled)
+        .filter((item) => item.element !== undefined || !item.disabled)
         .map((item) => <Route key={item.path} path={item.path} element={item.element} />)
         .concat(
           otherRouter.map((or) => <Route key={or.path} path={or.path} element={or.element} />),

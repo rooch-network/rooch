@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { Wallet } from 'lucide-react'

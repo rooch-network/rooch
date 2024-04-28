@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 export default function ErrorPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">

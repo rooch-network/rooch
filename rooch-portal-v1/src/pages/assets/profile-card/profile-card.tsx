@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import toast from 'react-hot-toast'
 import { RotateCcw } from 'lucide-react'
 

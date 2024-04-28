@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { NoData } from '@/components/no-data'
 import { Card, CardHeader } from '@/components/ui/card'
 import { useCurrentAccount, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'

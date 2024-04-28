@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { useEffect, useState } from 'react'
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -156,7 +158,7 @@ export const AssetsNft = () => {
             <AspectRatio ratio={1 / 1} className="flex items-center justify-center overflow-hidden">
               <img
                 src={images.get(nft.object_id)}
-                alt="NFT Image"
+                alt="NFT"
                 className="rounded-md object-cover hover:scale-110 transition-all ease-in-out duration-300"
               />
             </AspectRatio>

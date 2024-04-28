@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { useTranslation } from 'react-i18next'
 import { SidebarItem } from './sidebar-item'
 import { SidebarRoutesProps } from '@/common/interface'

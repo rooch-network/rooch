@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { useState } from 'react'
 import { TabItem } from '@/common/interface'
 import { AssetsCoin } from './tabs/coin/assets-coin'
