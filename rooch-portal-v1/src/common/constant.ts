@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { WalletsMaterialProps } from './interface'
 
 export const ROOCH_OPERATING_ADDRESS = import.meta.env.VITE_ROOCH_OPERATING_ADDRESS

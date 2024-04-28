@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { BitcoinIcon, LockKeyhole } from 'lucide-react'
 
 export const SftCardContents = () => {

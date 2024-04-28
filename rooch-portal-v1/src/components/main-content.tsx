@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { Foot } from '@/components/foot'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { routers } from '@/navigation'

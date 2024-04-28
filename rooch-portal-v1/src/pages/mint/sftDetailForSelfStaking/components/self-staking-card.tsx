@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { useState } from 'react'
 
 import { Label } from '@/components/ui/label'
@@ -63,6 +65,7 @@ export const SelfStakingCard = () => {
       toast({
         title: 'Self-staking successful ✅',
         description: (
+          // eslint-disable-next-line jsx-a11y/anchor-is-valid
           <a className="text-muted-foreground hover:underline cursor-pointer">
             See the transaction on explorer
           </a>

@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { ProfileInfo } from '@/components/profile-info'
 import { Logo } from './logo'
 import { SidebarRoutes } from './sidebar-routes'

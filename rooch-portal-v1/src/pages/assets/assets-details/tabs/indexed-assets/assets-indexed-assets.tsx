@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { IndexedAssetsBTC } from './components/indexed-assets-btc'
 import { IndexedAssetsOrdi } from './components/indexed-assets-ordi'
 

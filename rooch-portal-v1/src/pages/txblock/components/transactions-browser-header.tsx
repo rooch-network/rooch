@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { useParams } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 

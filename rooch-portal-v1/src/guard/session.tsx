@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { ReactNode, useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
@@ -36,7 +38,7 @@ export const SessionGuard = (props: SessionGuardProps) => {
 
     setOpen(
       sessionKey === null &&
-        navItems().find((item) => s.pathname.startsWith(item.path) && item.auth) != undefined,
+        navItems().find((item) => s.pathname.startsWith(item.path) && item.auth) !== undefined,
     )
   }, [isConnected, s, sessionKey])
 

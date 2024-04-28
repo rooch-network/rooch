@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { useEffect, useState } from 'react'
 import { useTheme } from '@/components/theme-provider'
 import { useNavigate } from 'react-router-dom'

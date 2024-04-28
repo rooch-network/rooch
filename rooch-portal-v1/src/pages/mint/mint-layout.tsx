@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { SftTabs } from './components/sft-tabs'
 
 export const MintLayout = () => {

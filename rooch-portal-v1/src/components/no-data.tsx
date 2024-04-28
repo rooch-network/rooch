@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { useTheme } from './theme-provider'
 
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table'
