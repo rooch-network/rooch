@@ -12,7 +12,7 @@ export const IndexedAssetsOrdi = () => {
 
   const { data: result } = useRoochClientQuery('queryInscriptions', {
     filter: {
-      owner: account?.getAddress() || testAddress,
+      owner: 'bcrt1p79ruqzh9hmmhvaz7x3up3t6pdrmz5hmhz3pfkddxqnfzg0md7upq3jjjev',
     },
   })
 

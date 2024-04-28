@@ -34,15 +34,14 @@ export const AssetsNft = () => {
   // TODO: 1, fetch data/image loading, 2, pagination
   const { data: nfts, refetch: reFetchNFTS } = useRoochClientQuery('queryGlobalStates', {
     filter: {
-      object_type_with_owner: {
-        owner: sessionKey?.getAddress() || '',
-        object_type: `${ROOCH_OPERATING_ADDRESS}::nft::NFT`,
-      },
+      owner: sessionKey?.getAddress() || ''
     },
     cursor: null,
     limit: 10,
     descending_order: true,
   })
+
+  console.log(nfts)
 
   // fetch collection info
   useEffect(() => {

@@ -90,7 +90,6 @@ module btc_holder_farmer::hold_farmer {
     /// The `BTC Holder Coin`
     struct HDC has key, store {}
 
-
     struct FarmingAsset has key, store {
         asset_total_weight: u64,
         harvest_index: u128,
@@ -514,29 +513,29 @@ module btc_holder_farmer::hold_farmer {
         account::exists_resource<UserStake>(account)
     }
 
-    public fun check_asset_is_staked(asset_id: ObjectID): bool {
-        let farming_asset = account::borrow_resource<FarmingAsset>(DEPLOYER);
-        // let account = table::borrow(&farming_asset.stake_table, asset_id);
-        // let user_stake = account::borrow_resource<UserStake>(*account);
-        table::contains(&farming_asset.stake_table, asset_id)
-    }
-
-    public entry fun remove_expired_stake(asset_id: ObjectID) {
-        assert!(check_asset_is_staked(asset_id), ErrorNotStaked);
-        assert!(!object::exists_object_with_type<UTXO>(asset_id), ErrorAssetExist);
-        let farming_asset = account::borrow_mut_resource<FarmingAsset>(DEPLOYER);
-        let account = table::remove(&mut farming_asset.stake_table, asset_id);
-        let user_stake = account::borrow_mut_resource<UserStake>(account);
-        let Stake {
-            asset_weight,
-            last_harvest_index: _,
-            gain: _ } = table::remove(&mut user_stake.stake, asset_id);
-        emit(RemoveExpiredEvent{
-            asset_id,
-            account
-        });
-        farming_asset.asset_total_weight = farming_asset.asset_total_weight - asset_weight;
-    }
+    // public fun check_asset_is_staked(asset_id: ObjectID): bool {
+    //     let farming_asset = account::borrow_resource<FarmingAsset>(DEPLOYER);
+    //     // let account = table::borrow(&farming_asset.stake_table, asset_id);
+    //     // let user_stake = account::borrow_resource<UserStake>(*account);
+    //     table::contains(&farming_asset.stake_table, asset_id)
+    // }
+    //
+    // public entry fun remove_expired_stake(asset_id: ObjectID) {
+    //     assert!(check_asset_is_staked(asset_id), ErrorNotStaked);
+    //     assert!(!object::exists_object_with_type<UTXO>(asset_id), ErrorAssetExist);
+    //     let farming_asset = account::borrow_mut_resource<FarmingAsset>(DEPLOYER);
+    //     let account = table::remove(&mut farming_asset.stake_table, asset_id);
+    //     let user_stake = account::borrow_mut_resource<UserStake>(account);
+    //     let Stake {
+    //         asset_weight,
+    //         last_harvest_index: _,
+    //         gain: _ } = table::remove(&mut user_stake.stake, asset_id);
+    //     emit(RemoveExpiredEvent{
+    //         asset_id,
+    //         account
+    //     });
+    //     farming_asset.asset_total_weight = farming_asset.asset_total_weight - asset_weight;
+    // }
 
     #[test(sender=@0x42)]
     fun test_stake(sender: signer) {
@@ -567,7 +566,7 @@ module btc_holder_farmer::hold_farmer {
         assert!(coin::value(&coin2) == 50, 4);
         coin::destroy_for_testing(coin2);
         utxo::drop_for_testing(utxo2);
-        remove_expired_stake(utxo_id2);
+        // remove_expired_stake(utxo_id2);
         utxo::drop_for_testing(utxo);
         coin::destroy_for_testing(coin);
         object::to_shared(admin_cap)

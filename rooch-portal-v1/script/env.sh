@@ -2,17 +2,11 @@
 # Copyright (c) RoochNetwork
 # SPDX-License-Identifier: Apache-2.0
 
-default_address=0xb7ac336861ff431cf867400a1eaa9708b5666954b5268486e6bd2e948aab1a42
-target_address=address:0x676c71c28aa7be1733a5d8c1b4e0e00f2927bd0e5acd592f37fbde99496aa366
-
-getDefaultAddress() {
-  container_id=$()
-  echo "$container_id"
-}
-
 rooch() {
   command cargo run --package rooch --bin rooch "$@"
 }
+
+default_address=$(rooch account list | awk '/0x[0-9a-fA-F]+/{addr=$1} END{print addr}')
 
 reset () {
   lsof -ti:50051 | xargs kill
@@ -33,7 +27,7 @@ dep_coin() {
   rooch move run --function default::fixed_supply_coin::faucet --args object:default::fixed_supply_coin::Treasury
 
   # transfer
-  rooch move run --function rooch_framework::transfer::transfer_coin --type-args default::fixed_supply_coin::FSC --args ${target_address}  --args 1u256
+  rooch move run --function rooch_framework::transfer::transfer_coin --type-args default::fixed_supply_coin::FSC --args address:$1  --args 1u256
 }
 
 dep_nft() {
@@ -53,7 +47,7 @@ dep_nft() {
   nft_obj_id=$(rooch rpc request --method rooch_queryGlobalStates --params '[{"object_type":"'"${default_address}"'::nft::NFT"}, null, "10", true]' | jq -r '.data[0].object_id')
 
   # transfer nft
-  rooch move run --function rooch_framework::transfer::transfer_object --type-args default::nft::NFT --args ${target_address} --args object:${nft_obj_id}
+  rooch move run --function rooch_framework::transfer::transfer_object --type-args default::nft::NFT --args address:$1 --args object:${nft_obj_id}
 }
 
 dep_mint() {
@@ -93,12 +87,14 @@ EOF
   esac
 done
 
+shift $((OPTIND -1))
+
 if [ ! -z "$NFT" ]; then
-  dep_nft
+  dep_nft $1
 fi
 
 if [ ! -z "$COIN" ]; then
-  dep_coin
+  dep_coin $1
 fi
 
 if [ ! -z "$RESET" ]; then
@@ -106,5 +102,5 @@ if [ ! -z "$RESET" ]; then
 fi
 
 if [ ! -z "$MINT" ]; then
-  dep_mint
+  dep_mint $1
 fi

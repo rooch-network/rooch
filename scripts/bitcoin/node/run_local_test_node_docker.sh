@@ -3,14 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 docker run -d \
-    --name bitcoind_regtest \
+    --name bitcoind \
     -p 18443:18443 \
     -p 18444:18444 \
     -p 28333:28333 \
     -p 28332:28332 \
-    -v $HOME/./regtest/.bitcoin:/data/.bitcoin \
+    -v $HOME/testnet/.bitcoin:/data/.bitcoin \
     lncm/bitcoind:v25.1 \
-    -chain=regtest \
+    -testnet=0 \
     -txindex=1 \
     -fallbackfee=0.00001 \
     -zmqpubrawblock=tcp://0.0.0.0:28332 \
