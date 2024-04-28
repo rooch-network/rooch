@@ -65,6 +65,9 @@ moveos = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-object-runtime = { workspace = true }
 framework-builder = { workspace = true }
+raw-store = { workspace = true }
+smt = { workspace = true }
+bitcoin = { workspace = true }
 
 rooch-key = { workspace = true }
 rooch-types = { workspace = true }

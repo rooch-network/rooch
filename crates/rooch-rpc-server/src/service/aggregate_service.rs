@@ -17,7 +17,7 @@ use rooch_types::address::{BitcoinAddress, MultiChainAddress};
 use rooch_types::bitcoin::ord::{Inscription, InscriptionState};
 use rooch_types::bitcoin::utxo::{UTXOState, UTXO};
 use rooch_types::framework::account_coin_store::AccountCoinStoreModule;
-use rooch_types::framework::address_mapping::AddressMapping;
+use rooch_types::framework::address_mapping::AddressMappingModule;
 use rooch_types::framework::coin::{CoinInfo, CoinModule};
 use rooch_types::framework::coin_store::CoinStore;
 use rooch_types::indexer::state::IndexerObjectState;
@@ -269,7 +269,7 @@ impl AggregateService {
         let address_mapping_module = self
             .rpc_service
             .executor
-            .as_module_binding::<AddressMapping>();
+            .as_module_binding::<AddressMappingModule>();
         let (_address_mapping_handle, _mapping_handle, reverse_mapping_handle) =
             address_mapping_module.address_mapping_handle()?;
 
@@ -352,7 +352,7 @@ impl AggregateService {
         let address_mapping_module = self
             .rpc_service
             .executor
-            .as_module_binding::<AddressMapping>();
+            .as_module_binding::<AddressMappingModule>();
         let (_address_mapping_handle, _mapping_handle, reverse_mapping_handle) =
             address_mapping_module.address_mapping_handle()?;
 

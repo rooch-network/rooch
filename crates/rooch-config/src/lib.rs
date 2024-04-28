@@ -184,6 +184,17 @@ impl RoochOpt {
         }
     }
 
+    pub fn new_with_default(
+        base_data_dir: Option<PathBuf>,
+        chain_id: Option<RoochChainID>,
+    ) -> Self {
+        RoochOpt {
+            base_data_dir,
+            chain_id,
+            ..Default::default()
+        }
+    }
+
     pub fn ethereum_relayer_config(&self) -> Option<EthereumRelayerConfig> {
         self.eth_rpc_url
             .as_ref()

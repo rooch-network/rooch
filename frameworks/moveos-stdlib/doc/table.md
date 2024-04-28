@@ -14,6 +14,7 @@ struct itself, while the operations are implemented as native functions. No trav
 -  [Resource `TablePlaceholder`](#0x2_table_TablePlaceholder)
 -  [Struct `Table`](#0x2_table_Table)
 -  [Function `new`](#0x2_table_new)
+-  [Function `new_with_object_id_by_system`](#0x2_table_new_with_object_id_by_system)
 -  [Function `add`](#0x2_table_add)
 -  [Function `borrow`](#0x2_table_borrow)
 -  [Function `borrow_with_default`](#0x2_table_borrow_with_default)
@@ -29,7 +30,8 @@ struct itself, while the operations are implemented as native functions. No trav
 -  [Function `handle`](#0x2_table_handle)
 
 
-<pre><code><b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
+<pre><code><b>use</b> <a href="core_addresses.md#0x2_core_addresses">0x2::core_addresses</a>;
+<b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
 </code></pre>
 
 
@@ -65,6 +67,18 @@ Create a new Table.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_new">new</a>&lt;K: <b>copy</b>, drop, V: store&gt;(): <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;
+</code></pre>
+
+
+
+<a name="0x2_table_new_with_object_id_by_system"></a>
+
+## Function `new_with_object_id_by_system`
+
+Create a new Table with object id.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="table.md#0x2_table_new_with_object_id_by_system">new_with_object_id_by_system</a>&lt;K: <b>copy</b>, drop, V: store&gt;(system: &<a href="">signer</a>, id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>): <a href="table.md#0x2_table_Table">table::Table</a>&lt;K, V&gt;
 </code></pre>
 
 
