@@ -20,6 +20,7 @@ use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{KeyState, MoveState, MoveType, State};
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::address::{BitcoinAddress, MultiChainAddress, RoochAddress};
+use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
 use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
 use rooch_types::bitcoin::{types, utxo};
 use rooch_types::chain_id::RoochChainID;
@@ -92,6 +93,12 @@ impl UTXOData {
             script_type,
             address,
         }
+    }
+
+    pub fn is_valid_empty_address(&self) -> bool {
+        SCRIPT_TYPE_P2PK.eq(self.script_type.as_str())
+            || SCRIPT_TYPE_P2MS.eq(self.script_type.as_str())
+            || SCRIPT_TYPE_NON_STANDARD.eq(self.script_type.as_str())
     }
 }
 
@@ -168,13 +175,7 @@ impl GenesisUTXOCommand {
             let script_type = str_list[7].to_string();
             let address = str_list[8].to_string();
             let utxo_data = UTXOData::new(txid, vout, amount, script, script_type, address.clone());
-            // skip UTXO with type is p2ms or non-standard
-            if SCRIPT_TYPE_P2MS.eq(utxo_data.script_type.as_str())
-                || SCRIPT_TYPE_NON_STANDARD.eq(utxo_data.script_type.as_str())
-            {
-                continue;
-            }
-            if address.is_empty() && !SCRIPT_TYPE_P2PK.eq(utxo_data.script_type.as_str()) {
+            if address.is_empty() && !utxo_data.is_valid_empty_address() {
                 println!("Invalid utxo data: {:?}", utxo_data);
                 continue;
             }
@@ -314,9 +315,11 @@ impl GenesisUTXOCommand {
 
         let mut utxo_update_set = UpdateSet::new();
         let mut adderss_mapping_datas = vec![];
-        for (utxo_object, adderss_mapping_data) in utxos_and_address_mapping_datas {
+        for (utxo_object, adderss_mapping_data_opt) in utxos_and_address_mapping_datas {
             utxo_update_set.put(utxo_object.id.to_key(), utxo_object.into_state());
-            adderss_mapping_datas.push(adderss_mapping_data);
+            if let Some(adderss_mapping_data) = adderss_mapping_data_opt {
+                adderss_mapping_datas.push(adderss_mapping_data);
+            }
         }
         let utxo_tree_change_set =
             apply_fields(moveos_store, pre_utxostore_state_root, utxo_update_set)?;
@@ -387,21 +390,33 @@ impl GenesisUTXOCommand {
 
     fn create_utxo_object_and_address_mapping_data(
         mut utxo_data: UTXOData,
-    ) -> Result<(ObjectEntity<UTXO>, AddressMappingData)> {
+    ) -> Result<(ObjectEntity<UTXO>, Option<AddressMappingData>)> {
         let txid = Txid::from_str(utxo_data.txid.as_str())?.into_address();
 
-        if SCRIPT_TYPE_P2PK.eq(utxo_data.script_type.as_str()) {
-            let pubkey = PublicKey::from_str(utxo_data.script.as_str())?;
-            let pubkey_hash = pubkey.pubkey_hash();
-            let bitcoin_address = BitcoinAddress::new_p2pkh(&pubkey_hash);
-            utxo_data.address = bitcoin_address.to_string();
-        }
-        let maddress = MultiChainAddress::try_from_str_with_multichain_id(
-            RoochMultiChainID::Bitcoin,
-            utxo_data.address.as_str(),
-        )?;
+        // reserve utxo by default bitcoin and rooch address
+        let (address, address_mapping_data) = if SCRIPT_TYPE_P2MS.eq(utxo_data.script_type.as_str())
+            || SCRIPT_TYPE_NON_STANDARD.eq(utxo_data.script_type.as_str())
+        {
+            let _bitcoin_address = BitcoinAddress::default();
+            let address = BITCOIN_MOVE_ADDRESS;
+            (address, None)
+        } else {
+            if SCRIPT_TYPE_P2PK.eq(utxo_data.script_type.as_str()) {
+                let pubkey = PublicKey::from_str(utxo_data.script.as_str())?;
+                let pubkey_hash = pubkey.pubkey_hash();
+                let bitcoin_address = BitcoinAddress::new_p2pkh(&pubkey_hash);
+                utxo_data.address = bitcoin_address.to_string();
+            }
 
-        let address = AccountAddress::from(RoochAddress::try_from(maddress.clone())?);
+            let maddress = MultiChainAddress::try_from_str_with_multichain_id(
+                RoochMultiChainID::Bitcoin,
+                utxo_data.address.as_str(),
+            )?;
+            let address = AccountAddress::from(RoochAddress::try_from(maddress.clone())?);
+            let address_mapping_data =
+                AddressMappingData::new(utxo_data.address, maddress, address);
+            (address, Some(address_mapping_data))
+        };
         let utxo = UTXO::new(
             txid,
             utxo_data.vout,
@@ -412,7 +427,6 @@ impl GenesisUTXOCommand {
         let out_point = types::OutPoint::new(txid, utxo_data.vout);
         let utxo_id = utxo::derive_utxo_id(&out_point);
         let utxo_object = ObjectEntity::new(utxo_id, address, 0u8, *GENESIS_STATE_ROOT, 0, utxo);
-        let address_mapping_data = AddressMappingData::new(utxo_data.address, maddress, address);
         Ok((utxo_object, address_mapping_data))
     }
 
