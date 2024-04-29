@@ -88,6 +88,8 @@ impl RuntimeModuleMetadataV1 {
             && self.struct_attributes.is_empty()
             && self.private_generics_indices.is_empty()
             && self.gas_free_function_map.is_empty()
+            && self.data_struct_map.is_empty()
+            && self.data_struct_func_map.is_empty()
     }
 }
 

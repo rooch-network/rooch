@@ -783,6 +783,14 @@ where
                                                 );
                                             }
                                         }
+                                        SignatureToken::Address => {}
+                                        SignatureToken::Bool => {}
+                                        SignatureToken::U8 => {}
+                                        SignatureToken::U16 => {}
+                                        SignatureToken::U32 => {}
+                                        SignatureToken::U64 => {}
+                                        SignatureToken::U128 => {}
+                                        SignatureToken::U256 => {}
                                         _ => {
                                             let error_msg = format!("The type parameter when calling function {} is now allowed",
                                                                     full_path_func_name);
