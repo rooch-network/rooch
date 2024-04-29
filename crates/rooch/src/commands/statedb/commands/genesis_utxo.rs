@@ -317,8 +317,8 @@ impl GenesisUTXOCommand {
         let mut adderss_mapping_datas = vec![];
         for (utxo_object, adderss_mapping_data_opt) in utxos_and_address_mapping_datas {
             utxo_update_set.put(utxo_object.id.to_key(), utxo_object.into_state());
-            if adderss_mapping_data_opt.is_some() {
-                adderss_mapping_datas.push(adderss_mapping_data_opt.unwrap());
+            if let Some(adderss_mapping_data) = adderss_mapping_data_opt {
+                adderss_mapping_datas.push(adderss_mapping_data);
             }
         }
         let utxo_tree_change_set =
