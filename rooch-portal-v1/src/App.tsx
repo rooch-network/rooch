@@ -13,7 +13,7 @@ import { WalletProvider, RoochClientProvider, SupportChain } from '@roochnetwork
 
 import { DashboardLayout } from '@/pages/dashboard-layout'
 import { ToastProvider } from '@/providers/toast-provider'
-import { SessionGuard } from '@/guard/session.tsx'
+// import { SessionGuard } from '@/guard/session.tsx'
 
 const clientSideEmotionCache = createEmotionCache()
 
@@ -28,9 +28,9 @@ function App() {
             <WalletProvider chain={SupportChain.BITCOIN} autoConnect>
               <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
                 <ToastProvider />
-                <SessionGuard>
-                  <DashboardLayout />
-                </SessionGuard>
+                {/* <SessionGuard> */}
+                <DashboardLayout />
+                {/* </SessionGuard> */}
               </ThemeProvider>
             </WalletProvider>
             <Toaster />
