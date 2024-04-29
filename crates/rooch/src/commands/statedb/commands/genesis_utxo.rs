@@ -5,7 +5,7 @@ use crate::cli_types::WalletContextOptions;
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
 use crate::commands::statedb::commands::init_statedb;
 use anyhow::{Error, Result};
-use bitcoin::Txid;
+use bitcoin::{PublicKey, Txid};
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::TypeTag;
@@ -19,7 +19,7 @@ use moveos_types::moveos_std::table::TablePlaceholder;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{KeyState, MoveState, MoveType, State};
 use rooch_config::R_OPT_NET_HELP;
-use rooch_types::address::{MultiChainAddress, RoochAddress};
+use rooch_types::address::{BitcoinAddress, MultiChainAddress, RoochAddress};
 use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
 use rooch_types::bitcoin::{types, utxo};
 use rooch_types::chain_id::RoochChainID;
@@ -37,7 +37,10 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::SystemTime;
 
-pub const BATCH_SIZE: usize = 2000;
+pub const BATCH_SIZE: usize = 5000;
+pub const SCRIPT_TYPE_P2MS: &str = "p2ms";
+pub const SCRIPT_TYPE_P2PK: &str = "p2pk";
+pub const SCRIPT_TYPE_NON_STANDARD: &str = "non-standard";
 
 /// Genesis Import UTXO
 #[derive(Debug, Parser)]
@@ -67,15 +70,26 @@ pub struct UTXOData {
     /// The vout of the UTXO
     pub vout: u32,
     pub value: u64,
+    pub script: String,
+    pub script_type: String,
     pub address: String,
 }
 
 impl UTXOData {
-    pub fn new(txid: String, vout: u32, value: u64, address: String) -> Self {
+    pub fn new(
+        txid: String,
+        vout: u32,
+        value: u64,
+        script: String,
+        script_type: String,
+        address: String,
+    ) -> Self {
         Self {
             txid,
             vout,
             value,
+            script,
+            script_type,
             address,
         }
     }
@@ -134,7 +148,6 @@ impl GenesisUTXOCommand {
         let mut address_mapping_count: u64 = 0;
         for line in reader.lines() {
             let line = line?;
-            // println!("{:?}", line);
             // skip the first line
             if line.starts_with("count") {
                 continue;
@@ -151,10 +164,18 @@ impl GenesisUTXOCommand {
             let amount = str_list[5].parse::<u64>().map_err(|e| {
                 RoochError::from(Error::msg(format!("Invalid amount format: {}", e)))
             })?;
+            let script = str_list[6].to_string();
+            let script_type = str_list[7].to_string();
             let address = str_list[8].to_string();
-            let utxo_data = UTXOData::new(txid, vout, amount, address);
-            if utxo_data.txid.is_empty() || utxo_data.address.is_empty() {
-                println!("Invalid UTXOData {:?}", line);
+            let utxo_data = UTXOData::new(txid, vout, amount, script, script_type, address.clone());
+            // skip UTXO with type is p2ms or non-standard
+            if SCRIPT_TYPE_P2MS.eq(utxo_data.script_type.as_str())
+                || SCRIPT_TYPE_NON_STANDARD.eq(utxo_data.script_type.as_str())
+            {
+                continue;
+            }
+            if address.is_empty() && !SCRIPT_TYPE_P2PK.eq(utxo_data.script_type.as_str()) {
+                println!("Invalid utxo data: {:?}", utxo_data);
                 continue;
             }
             utxo_datas.push(utxo_data);
@@ -170,6 +191,7 @@ impl GenesisUTXOCommand {
                     "process_utxos pre_utxostore_state_root: {:?}, new_utxostore_state_root: {:?}",
                     pre_utxostore_state_root, new_utxostore_state_root
                 );
+                println!("process_utxos utxo count: {}", utxo_count);
                 pre_utxostore_state_root = new_utxostore_state_root;
 
                 let (
@@ -206,6 +228,7 @@ impl GenesisUTXOCommand {
                 "process_utxos pre_utxostore_state_root: {:?}, new_utxostore_state_root: {:?}",
                 pre_utxostore_state_root, new_utxostore_state_root
             );
+            println!("process_utxos utxo count: {}", utxo_count);
             pre_utxostore_state_root = new_utxostore_state_root;
 
             let (
@@ -240,9 +263,6 @@ impl GenesisUTXOCommand {
         let mut update_set = UpdateSet::new();
         let parent_id = BitcoinUTXOStore::object_id();
         update_set.put(parent_id.to_key(), genesis_utxostore_object.into_state());
-        // let tree_change_set = apply_fields(&moveos_store, pre_root_state_root, update_set)?;
-        // apply_nodes(&moveos_store, tree_change_set.nodes)?;
-        // pre_root_state_root = tree_change_set.state_root;
 
         // Update Address Mapping Object
         let mut genesis_address_mapping_object = Self::create_genesis_address_mapping_object()?;
@@ -366,15 +386,21 @@ impl GenesisUTXOCommand {
     }
 
     fn create_utxo_object_and_address_mapping_data(
-        utxo_data: UTXOData,
+        mut utxo_data: UTXOData,
     ) -> Result<(ObjectEntity<UTXO>, AddressMappingData)> {
         let txid = Txid::from_str(utxo_data.txid.as_str())?.into_address();
 
-        // println!("[DEBUG] create_utxo_object UTXOData {:?}", utxo_data);
+        if SCRIPT_TYPE_P2PK.eq(utxo_data.script_type.as_str()) {
+            let pubkey = PublicKey::from_str(utxo_data.script.as_str())?;
+            let pubkey_hash = pubkey.pubkey_hash();
+            let bitcoin_address = BitcoinAddress::new_p2pkh(&pubkey_hash);
+            utxo_data.address = bitcoin_address.to_string();
+        }
         let maddress = MultiChainAddress::try_from_str_with_multichain_id(
             RoochMultiChainID::Bitcoin,
             utxo_data.address.as_str(),
         )?;
+
         let address = AccountAddress::from(RoochAddress::try_from(maddress.clone())?);
         let utxo = UTXO::new(
             txid,

@@ -23,12 +23,7 @@ pub const NAMED_MAPPING_INDEX: u64 = 0;
 pub const NAMED_REVERSE_MAPPING_INDEX: u64 = 1;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AddressMappingWrapper {
-    // mapping: Table<MultiChainAddress, AccountAddress>,
-    // mapping: Table<MultiChainAddress, RoochAddress>,
-    // reverse_mapping: Table<AccountAddress, Vec<MultiChainAddress>>,
-    // reverse_mapping: Table<RoochAddress, Vec<MultiChainAddress>>,
-}
+pub struct AddressMappingWrapper {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AddressMappingIndex {
@@ -60,37 +55,6 @@ impl AddressMappingWrapper {
         object::custom_object_id(&named_index, &Self::struct_tag())
     }
 }
-
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// pub struct AddressMapping {
-//     mapping: Table<MultiChainAddress, AccountAddress>,
-//     // mapping: Table<MultiChainAddress, RoochAddress>,
-//     reverse_mapping: Table<AccountAddress, Vec<MultiChainAddress>>,
-//     // reverse_mapping: Table<RoochAddress, Vec<MultiChainAddress>>,
-// }
-//
-// impl MoveStructType for AddressMapping {
-//     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
-//     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-//     const STRUCT_NAME: &'static IdentStr = ident_str!("AddressMapping");
-// }
-//
-// impl MoveStructState for AddressMapping {
-//     fn struct_layout() -> MoveStructLayout {
-//         MoveStructLayout::new(vec![
-//             MoveTypeLayout::Struct(Table::<MultiChainAddress, AccountAddress>::struct_layout()),
-//             MoveTypeLayout::Struct(
-//                 Table::<AccountAddress, Vec<MultiChainAddress>>::struct_layout(),
-//             ),
-//         ])
-//     }
-// }
-//
-// impl AddressMapping {
-//     pub fn address_mapping_object_id() -> ObjectID {
-//         object::named_object_id(&Self::struct_tag())
-//     }
-// }
 
 /// Rust bindings for RoochFramework address_mapping module
 pub struct AddressMappingModule<'a> {
