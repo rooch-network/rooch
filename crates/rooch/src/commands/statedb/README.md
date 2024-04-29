@@ -6,17 +6,17 @@ A tool to export and import rooch statedb.
 
 1. rooch  statedb genesis-utxo
 ```shell
-rooch statedb genesis-utxo --input ~/utxo.txt -d ~/.rooch -n local
+rooch statedb genesis-utxo --input ~/utxo.txt -d ~/.rooch -n main
 ```
 
 Step 1, cleanup database files
 ```shell
-rooch server clean -n local
+rooch server clean -n main -d  {your rooch data dir} 
 ```
 
 Step 2, start server to initialization genesis
 ```shell
-rooch server start -n local
+rooch server start -n main -d  {your rooch data dir} 
 ```
 
 Step 3, stop server
@@ -26,7 +26,7 @@ kill {server pid} or Ctrl-C
 
 Step 4 run statedb genesis-utxo command
 ```shell
-rooch statedb genesis-utxo --input {utxo.file} -d {rooch.database.file} -n {rooch.network}
+rooch statedb genesis-utxo --input {your utxo file} -d {your rooch data dir} -n main
 ```
 
 2. rooch  statedb export
