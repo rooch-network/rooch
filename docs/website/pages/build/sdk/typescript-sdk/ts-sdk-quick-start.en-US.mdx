@@ -1,14 +1,14 @@
 # Rooch TypeScript SDK quick start
 
-Rooch TypeScript SDK 是一个用于与 Rooch Layer2 交互的模块化工具库。使用它向 RPC 节点发送查询、构建和签署交易以及与 Rooch 或本地网络交互。
+The Rooch TypeScript SDK is a modular library of tools for interacting with the Rooch Layer2. Use it to send queries to RPC nodes, build and sign transactions, and interact with a Rooch or local network.
 
-这篇文章主要引导你快速上手 Roock 的 TypeScript 开发者工具（TS SDK）。
+This article mainly guides you to quickly get started with Roock's TypeScript development tools (TS SDK).
 
-## 创建新项目
+## Create new project
 
-> 注：本篇教程在 Linux 环境下演示！
+> Note: This tutorial is demonstrated in a Linux environment!
 
-首先创建一个目录，再使用 JS/TS 等包管理工具初始化项目 —— `sdk-quick-start`：
+First create a directory, and then use package management tools such as JS/TS to initialize the project - `sdk-quick-start`:
 
 ```bash
 mkdir sdk-quick-start
@@ -54,15 +54,15 @@ About to write to /home/joe/i/sdk-quick-start/package.json:
 Is this OK? (yes) yes
 ```
 
-## 添加依赖
+## Add dependencies
 
-这里只需要添加 `rooch-sdk` 依赖：
+Here you only need to add the `rooch-sdk` dependency:
 
 ```sh npm2yarn
 npm i @roochnetwork/rooch-sdk
 ```
 
-检查 `package.json` 文件，`dependencies` 已经添加了我们需要使用的依赖清单：
+Check the `package.json` file, the `dependencies` list we need to use has been added:
 
 ```json
 "dependencies": {
@@ -70,15 +70,15 @@ npm i @roochnetwork/rooch-sdk
 }
 ```
 
-## 更新配置
+## Update configuration
 
-在 `package.json` 里添加下面这句来启用模块特性：
+Add the following line to `package.json` to enable module features:
 
 ```json
 "type": "module",
 ```
 
-## 在代码中调用 RPC 方法
+## Call RPC methods in code
 
 ```ts
 import pkg from '@roochnetwork/rooch-sdk';
@@ -90,9 +90,9 @@ const provider = new RoochClient(DevNetwork);
 console.log(provider);
 ```
 
-这里主要是使用 `RoochClient` 创建一个客户端实例，并用来获取一些常见的 Rooch RPC 操作方法。
+Here we mainly use `RoochClient` to create a client instance and obtain some common Rooch RPC operation methods.
 
-这里展示了 `RoochClient` 的对象信息。
+The object information of `RoochClient` is displayed here.
 
 ```json
 [joe@mx sdk-quick-start]$ node index.js
@@ -119,7 +119,7 @@ RoochClient {
 }
 ```
 
-我们使用客户端提供的一个 RPC 方法 `ChainInfo()` 来查看链当前的信息：
+We use an RPC method `ChainInfo()` provided by the client to view the current information of the chain:
 
 ```ts
 const rooch_chain = provider.ChainInfo();
@@ -128,7 +128,7 @@ const rooch_chain = provider.ChainInfo();
 console.log(rooch_chain);
 ```
 
-返回：
+Return:
 
 ```json
 {
@@ -142,9 +142,9 @@ console.log(rooch_chain);
 }
 ```
 
-接着我们可以使用返回的 JSON 信息来进行相应的操作。
+Then we can use the returned JSON information to perform corresponding operations.
 
-修改代码如下：
+Modify the code as follows:
 
 ```ts
 import pkg from '@roochnetwork/rooch-sdk';
@@ -166,7 +166,7 @@ console.log(
 );
 ```
 
-运行结果：
+Running result:
 
 ```bash
 [joe@mx sdk-quick-start]$ node index.js
@@ -178,10 +178,10 @@ Welcome to Rooch Typescript SDK Quick Start!
 => Rooch's Token is "ROH."
 ```
 
-## 总结
+## Summary
 
-至此，你已经了解了如何使用 SDK 了！
+At this point, you already know how to use the SDK!
 
-使用 SDK 我们可以方便地在代码中使用 RPC 方法来处理相应的操作，而不需要在命令行中手动地输入 RPC 方法。
+Using the SDK we can easily use RPC methods in code to handle corresponding operations without having to manually enter RPC methods on the command line.
 
-接下来将带你开始 Rooch TypeScript SDK 开发之旅！
+Next, we will take you to start the Rooch TypeScript SDK development journey!

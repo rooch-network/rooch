@@ -1,0 +1,12 @@
+{
+  "ts-sdk-quick-start": {
+    "title": "Rooch TS SDK quick start"
+  },
+  "install": {
+    "title": "Install"
+  },
+  "faucet": {
+    "title": "Faucet",
+    "display": "hidden"
+  }
+}
