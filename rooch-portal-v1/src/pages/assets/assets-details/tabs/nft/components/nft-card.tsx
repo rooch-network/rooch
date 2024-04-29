@@ -23,6 +23,8 @@ export const NftCard = () => {
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedImage, setSelectedImage] = useState('')
 
+  // PAGINATION
+
   // ** modal 打开时，禁止父组件 scroll
   useEffect(() => {
     if (modalOpen) {
