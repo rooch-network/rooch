@@ -5,17 +5,17 @@ use crate::natives::helpers::{make_module_natives, make_native};
 use anyhow::Result;
 use ciborium::de::from_reader;
 use ciborium::ser::into_writer;
-use ciborium::value::Value;
+use ciborium::value::Value as CborValue;
 use log::debug;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::TypeTag;
 use move_core_types::value::MoveStructLayout;
+use move_core_types::value::MoveTypeLayout;
+use move_core_types::value::MoveValue as CoreMoveValue;
+use move_core_types::value::MoveStruct;
 use move_core_types::vm_status::StatusCode;
-use move_core_types::{
-    gas_algebra::{InternalGas, InternalGasPerByte, NumBytes},
-    value::MoveTypeLayout,
-};
+use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
     loaded_data::runtime_types::Type,
@@ -23,6 +23,9 @@ use move_vm_types::{
     pop_arg,
     values::{Struct, Value as MoveValue, Vector},
 };
+use move_core_types::u256::{self, U256_NUM_BYTES};
+use moveos_types::addresses::MOVE_STD_ADDRESS;
+use primitive_types::U256 as PrimitiveU256;
 use smallvec::smallvec;
 use std::collections::VecDeque;
 use std::io::Cursor;
@@ -35,58 +38,44 @@ fn parse_struct_value_from_cbor(
     context: &NativeContext,
 ) -> Result<Struct> {
     let cursor = Cursor::new(bytes);
-    let cbor_value: Value = from_reader(cursor)?;
+    let cbor_value: CborValue = from_reader(cursor)?;
     parse_struct_value_from_cbor_value(layout, &cbor_value, context)
 }
 
 fn parse_struct_value_from_cbor_value(
     layout: &MoveStructLayout,
-    cbor_value: &Value,
+    cbor_value: &CborValue,
     context: &NativeContext,
 ) -> Result<Struct> {
-    if let MoveStructLayout::WithTypes {
-        type_: struct_type,
-        fields,
-    } = layout
-    {
-        if struct_type.is_std_string(&MOVE_STD_ADDRESS) {
-            let str_value = cbor_value
-                .as_bytes()
-                .ok_or_else(|| anyhow::anyhow!("Invalid string value"))?;
-            Ok(Struct::pack(vec![MoveValue::vector_u8(
-                str_value.to_vec(),
-            )]))
-        } else if struct_type.is_ascii_string(&MOVE_STD_ADDRESS) {
-            let str_value = cbor_value
-                .as_bytes()
-                .ok_or_else(|| anyhow::anyhow!("Invalid ascii string value"))?;
-            if !str_value.iter().all(|&b| b.is_ascii()) {
-                return Err(anyhow::anyhow!("Invalid ascii string value"));
-            }
-            Ok(Struct::pack(vec![MoveValue::vector_u8(
-                str_value.to_vec(),
-            )]))
-        } else {
-            let field_values = fields
-                .iter()
-                .map(|field| -> Result<MoveValue> {
-                    let name = field.name.as_str();
-                    let cbor_field = cbor_value
-                        .as_map()
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("type: {}, Expected a map value", struct_type)
-                        })?
-                        .get(name)
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("type: {}, Missing field {}", struct_type, name)
-                        })?;
-                    parse_move_value_from_cbor_value(&field.layout, cbor_field, context)
-                })
-                .collect::<Result<Vec<MoveValue>>>()?;
-            Ok(Struct::pack(field_values))
+    match layout {
+        MoveStructLayout::WithTypes { type_: struct_type, fields } => {
+            let str_value = match struct_type {
+                _ if struct_type.is_std_string(&MOVE_STD_ADDRESS) => {
+                    cbor_value.as_bytes().ok_or_else(|| anyhow::anyhow!("Invalid string value"))?
+                }
+                _ if struct_type.is_ascii_string(&MOVE_STD_ADDRESS) => {
+                    let str_value = cbor_value.as_bytes().ok_or_else(|| anyhow::anyhow!("Invalid ascii string value"))?;
+                    if !str_value.iter().all(|&b| b.is_ascii()) {
+                        return Err(anyhow::anyhow!("Invalid ascii string value"));
+                    }
+                    str_value
+                }
+                _ => {
+                    let field_values = fields.iter().map(|field| -> Result<MoveValue> {
+                        let name = field.name.as_str();
+                        let cbor_field = cbor_value.as_map().ok_or_else(|| anyhow::anyhow!("type: {}, Expected a map value", struct_type))?
+                            .iter()
+                            .find(|(key, _)| key.into_text().unwrap_or("".to_owned()) == name)
+                            .map(|(_, value)| value)
+                            .ok_or_else(|| anyhow::anyhow!("Missing field: {}", name))?;
+                        parse_move_value_from_cbor_value(&field.layout, cbor_field, context)
+                    }).collect::<Result<Vec<MoveValue>>>()?;
+                    return Ok(Struct::pack(field_values));
+                }
+            };
+            Ok(Struct::pack(vec![MoveValue::vector_u8(str_value.to_vec())]))
         }
-    } else {
-        Err(anyhow::anyhow!("Invalid MoveStructLayout"))
+        _ => Err(anyhow::anyhow!("Invalid MoveStructLayout")),
     }
 }
 
@@ -107,7 +96,7 @@ fn parse_struct_value_from_cbor_value(
 /// A `Result` containing the parsed `MoveValue`, or an `anyhow::Error` if the parsing failed.
 fn parse_move_value_from_cbor_value(
     layout: &MoveTypeLayout,
-    cbor_value: &Value,
+    cbor_value: &CborValue,
     context: &NativeContext,
 ) -> Result<MoveValue> {
     match layout {
@@ -202,9 +191,11 @@ fn parse_move_value_from_cbor_value(
             let u256_bytes = cbor_value
                 .as_bytes()
                 .ok_or_else(|| anyhow::anyhow!("Invalid u256 value"))?;
-            let u256_value = move_core_types::u256::U256::from_bytes_big_endian(u256_bytes)
-                .map_err(|_| anyhow::anyhow!("Invalid u256 value"))?;
-            Ok(MoveValue::u256(u256_value))
+            
+            let value = PrimitiveU256::from_big_endian(&u256_bytes);
+            let mut buffer = [0u8; U256_NUM_BYTES];
+            value.to_little_endian(&mut buffer);
+            Ok(MoveValue::u256(u256::U256::from_le_bytes(&buffer)))
         }
     }
 }
@@ -220,65 +211,88 @@ fn parse_move_value_from_cbor_value(
 /// Returns:
 ///
 /// A `Result` containing the serialized CBOR bytes as a `Vec<u8>`, or an `anyhow::Error` if the serialization failed.
-fn serialize_move_value_to_cbor(value: &MoveValue) -> Result<Vec<u8>> {
+fn serialize_move_value_to_cbor(layout: &MoveTypeLayout, value: &CoreMoveValue) -> Result<Vec<u8>> {
+    use MoveTypeLayout as L;
+    use CoreMoveValue as MoveValue;
+
     let mut writer = Vec::new();
-    match value {
-        // Serialize a boolean value
-        MoveValue::Bool(b) => {
-            into_writer(&mut writer, &Value::Bool(*b))?;
+
+    match (layout, value) {
+        (L::Struct(layout), MoveValue::Struct(struct_)) => {
+            let cbor_value = serialize_move_struct_to_cbor(layout, struct_)?;
+            into_writer(&cbor_value, &mut writer)?;
         }
-        // Serialize an unsigned 8-bit integer
-        MoveValue::U8(u) => {
-            into_writer(&mut writer, &Value::U64(*u as u64))?;
+        (L::Bool, MoveValue::Bool(b)) => into_writer( &CborValue::from(*b), &mut writer)?,
+        (L::U8, MoveValue::U8(b)) => into_writer( &CborValue::from(*b), &mut writer)?,
+        (L::U16, MoveValue::U16(b)) => into_writer( &CborValue::from(*b), &mut writer)?,
+        (L::U32, MoveValue::U32(b)) => into_writer( &CborValue::from(*b), &mut writer)?,
+        (L::U64, MoveValue::U64(b)) => into_writer( &CborValue::from(*b), &mut writer)?,
+        (L::U128, MoveValue::U128(b)) => into_writer( &CborValue::from(*b), &mut writer)?,
+        (L::U256, MoveValue::U256(i)) => {
+            let slice = i.to_le_bytes();
+            let value = PrimitiveU256::from_little_endian(&slice);
+            let leading_empty_bytes = value.leading_zeros() as usize / 8;
+            let mut buffer = [0u8; U256_NUM_BYTES];
+            value.to_big_endian(&mut buffer);
+            let bytes = buffer[leading_empty_bytes..].to_vec();
+            into_writer(&CborValue::Bytes(bytes), &mut writer)?;
         }
-        // Serialize an unsigned 64-bit integer
-        MoveValue::U64(u) => {
-            into_writer(&mut writer, &Value::U64(*u))?;
-        }
-        // Serialize an unsigned 128-bit integer
-        MoveValue::U128(u) => {
-            into_writer(&mut writer, &Value::U128(*u))?;
-        }
-        // Serialize an address value
-        MoveValue::Address(addr) => {
-            into_writer(&mut writer, &Value::Bytes(addr.to_vec()))?;
-        }
-        // Serialize a vector value
-        MoveValue::Vector(vec) => {
+        (L::Address, MoveValue::Address(addr)) => into_writer(&CborValue::from(addr.to_vec()), &mut writer)?,
+        (L::Signer, MoveValue::Signer(a)) => into_writer(&CborValue::from(a.to_vec()), &mut writer)?,
+        (L::Vector(layout), MoveValue::Vector(vec)) => {
             let mut cbor_vec = Vec::new();
             for item in vec.iter() {
-                cbor_vec.push(serialize_move_value_to_cbor(item)?);
+                let bytes = serialize_move_value_to_cbor(layout, item)?;
+                let cbor_value = CborValue::from(bytes);
+                cbor_vec.push(cbor_value);
             }
-            into_writer(&mut writer, &Value::Array(cbor_vec))?;
+
+            into_writer(&CborValue::Array(cbor_vec), &mut writer)?;
         }
-        // Serialize a struct value
-        MoveValue::Struct(struct_value) => {
-            let fields = struct_value
-                .fields
-                .iter()
-                .map(|(name, value)| {
-                    let cbor_value = serialize_move_value_to_cbor(value)?;
-                    Ok((name.as_str().to_string(), Value::Bytes(cbor_value)))
-                })
-                .collect::<Result<Vec<_>>>()?;
-            into_writer(&mut writer, &Value::Map(fields))?;
-        }
-        // Serialize an unsigned 16-bit integer
-        MoveValue::U16(u) => {
-            into_writer(&mut writer, &Value::U64(*u as u64))?;
-        }
-        // Serialize an unsigned 32-bit integer
-        MoveValue::U32(u) => {
-            into_writer(&mut writer, &Value::U64(*u as u64))?;
-        }
-        // Serialize an unsigned 256-bit integer
-        MoveValue::U256(u) => {
-            into_writer(&mut writer, &Value::Bytes(u.as_bytes_big_endian()))?;
-        }
-        // Unsupported Move value type
-        _ => return Err(anyhow::anyhow!("Unsupported Move value type")),
+        _ => unreachable!(),
     }
+
     Ok(writer)
+}
+
+fn serialize_move_struct_to_cbor(layout: &MoveStructLayout, struct_: &MoveStruct) -> Result<CborValue> {
+    use MoveStructLayout as L;
+
+    let value = match (layout, struct_) {
+        (L::Runtime(layouts), MoveStruct::Runtime(s)) => {
+            let mut cbor_array = vec![];
+            for (layout, v) in layouts.iter().zip(s) {
+                let bytes = serialize_move_value_to_cbor(layout, v)?;
+                let cbor_value = CborValue::from(bytes);
+                cbor_array.push(cbor_value);
+            }
+            CborValue::Array(cbor_array)
+        }
+        (L::WithFields(layout_fields), MoveStruct::WithFields(value_fields)) => {
+            let mut fields = Vec::new();
+        
+            for (filed_layout, (name, value)) in layout_fields.iter().zip(value_fields) {
+                let cbor_value = serialize_move_value_to_cbor(&filed_layout.layout, value)?;
+                let values = (CborValue::Text(name.into_string()), CborValue::Bytes(cbor_value));
+                fields.push(values);
+            }
+        
+            CborValue::Map(fields)
+        },
+        (L::WithTypes {type_: layout_type_, fields: layout_fields}, MoveStruct::WithTypes { type_, fields }) => {
+            let mut cbor_fields = Vec::new();
+
+            for (filed_layout, (name, value)) in layout_fields.iter().zip(fields) {
+                let cbor_bytes = serialize_move_value_to_cbor(&filed_layout.layout, &value)?;
+                let values = (CborValue::Text(name.into_string()), CborValue::Bytes(cbor_bytes));
+                cbor_fields.push(values);
+            }
+
+            CborValue::Map(cbor_fields)
+        }
+    };
+
+    Ok(value)
 }
 
 #[derive(Debug, Clone)]
@@ -422,7 +436,8 @@ fn native_to_cbor(
     let value = pop_arg!(args, MoveValue);
 
     if let MoveTypeLayout::Struct(struct_layout) = layout {
-        let bytes = match serialize_move_value_to_cbor(&value) {
+        let move_val = value.as_move_value(&layout);
+        let bytes = match serialize_move_value_to_cbor(&layout, &move_val) {
             Ok(bytes) => {
                 cost += gas_params.per_byte_in_str * NumBytes::new(bytes.len() as u64);
                 bytes
@@ -473,5 +488,5 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
         ),
     ];
 
-    make_module_natives(natives);
+    make_module_natives(natives)
 }
