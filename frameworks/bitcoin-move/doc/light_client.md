@@ -14,6 +14,7 @@
 -  [Function `get_block_height`](#0x4_light_client_get_block_height)
 -  [Function `get_block_by_height`](#0x4_light_client_get_block_by_height)
 -  [Function `get_latest_block_height`](#0x4_light_client_get_latest_block_height)
+-  [Function `need_process_oridinals`](#0x4_light_client_need_process_oridinals)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -28,7 +29,7 @@
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="">0x3::timestamp</a>;
-<b>use</b> <a href="data_import_config.md#0x4_data_import_config">0x4::data_import_config</a>;
+<b>use</b> <a href="network.md#0x4_network">0x4::network</a>;
 <b>use</b> <a href="ord.md#0x4_ord">0x4::ord</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
 <b>use</b> <a href="utxo.md#0x4_utxo">0x4::utxo</a>;
@@ -77,6 +78,15 @@
 
 
 <pre><code><b>const</b> <a href="light_client.md#0x4_light_client_ErrorBlockAlreadyProcessed">ErrorBlockAlreadyProcessed</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x4_light_client_ORDINAL_GENESIS_HEIGHT"></a>
+
+
+
+<pre><code><b>const</b> <a href="light_client.md#0x4_light_client_ORDINAL_GENESIS_HEIGHT">ORDINAL_GENESIS_HEIGHT</a>: u64 = 767430;
 </code></pre>
 
 
@@ -146,4 +156,15 @@ Get latest block height
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="light_client.md#0x4_light_client_get_latest_block_height">get_latest_block_height</a>(): <a href="_Option">option::Option</a>&lt;u64&gt;
+</code></pre>
+
+
+
+<a name="0x4_light_client_need_process_oridinals"></a>
+
+## Function `need_process_oridinals`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="light_client.md#0x4_light_client_need_process_oridinals">need_process_oridinals</a>(block_height: u64): bool
 </code></pre>

@@ -72,7 +72,7 @@ impl<'a> BitcoinLightClientModule<'a> {
     pub const GET_UTXO_FUNCTION_NAME: &'static IdentStr = ident_str!("get_utxo");
     pub const SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("submit_new_block");
-    pub const PROCESS_UTXOS_ENTRY_FUNCTION_NAME: &'static IdentStr = ident_str!("process_utxos");
+    // pub const PROCESS_UTXOS_ENTRY_FUNCTION_NAME: &'static IdentStr = ident_str!("process_utxos");
 
     pub fn get_block(&self, block_hash: BlockHash) -> Result<Option<Header>> {
         let call = Self::create_function_call(

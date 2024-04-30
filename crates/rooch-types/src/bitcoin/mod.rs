@@ -4,7 +4,6 @@
 /// Types mapping from Bitcoin Move types to Rust types
 /// Module binding for the Framework
 pub mod brc20;
-pub mod data_import_config;
 pub mod genesis;
 pub mod light_client;
 pub mod network;

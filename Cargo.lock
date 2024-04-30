@@ -8442,6 +8442,7 @@ dependencies = [
  "framework-builder",
  "hex",
  "itertools 0.10.5",
+ "log",
  "move-binary-format",
  "move-bytecode-utils",
  "move-bytecode-verifier",

@@ -49,7 +49,6 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
 use rooch_test_transaction_builder::TestTransactionBuilder;
 use rooch_types::address::RoochAddress;
-use rooch_types::bitcoin::data_import_config::DataImportMode;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::chain_id::RoochChainID;
@@ -100,10 +99,10 @@ pub async fn setup_service(
 
     // Init executor
     let btc_network = Network::default().to_num();
-    let data_import_mode = DataImportMode::default().to_num();
+    let _data_import_flag = false;
 
     let genesis_ctx = chain_id.genesis_ctx(rooch_account);
-    let bitcoin_genesis_ctx = BitcoinGenesisContext::new(btc_network, data_import_mode);
+    let bitcoin_genesis_ctx = BitcoinGenesisContext::new(btc_network);
     let genesis: RoochGenesis = RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
     let root = genesis.init_genesis(&mut moveos_store)?;
 
