@@ -70,7 +70,8 @@ impl RustBindingTest {
 
         let genesis = RoochGenesis::build(
             RoochChainID::LOCAL.genesis_ctx(sequencer),
-            BitcoinGenesisContext::new(Network::default().to_num()),
+            BitcoinGenesisContext::new(Network::NetworkTestnet.to_num()),
+            // BitcoinGenesisContext::new(Network::default().to_num()),
         )?;
         let root = genesis.init_genesis(&mut moveos_store)?;
 

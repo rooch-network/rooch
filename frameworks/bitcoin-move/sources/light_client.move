@@ -331,7 +331,11 @@ module bitcoin_move::light_client{
 
     public fun need_process_oridinals(block_height: u64) : bool {
         let btc_network = network::network();
-        network::is_mainnet(btc_network) && block_height >= ORDINAL_GENESIS_HEIGHT
+        if(network::is_mainnet(btc_network)){
+            block_height >= ORDINAL_GENESIS_HEIGHT
+        }else{
+            true
+        }
     }
     
 }
