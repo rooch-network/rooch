@@ -1,6 +1,5 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-
 import React from 'react'
 import {
   Pagination,
@@ -13,13 +12,13 @@ import {
 
 interface PaginationComponentProps {
   currentPage: number
-  totalPages: number
+  hasNextPage: boolean
   onPageChange: (page: number) => void
 }
 
 const PaginationComponent: React.FC<PaginationComponentProps> = ({
   currentPage,
-  totalPages,
+  hasNextPage,
   onPageChange,
 }) => {
   return (
@@ -27,27 +26,33 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
       <PaginationContent>
         <PaginationItem>
           <PaginationPrevious
-            onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
-            className="cursor-pointer"
+            href="#"
+            onClick={() => currentPage > 0 && onPageChange(currentPage - 1)}
+            className={`cursor-pointer border-none hover:bg-inherit ${
+              currentPage <= 0 ? 'text-gray-500 cursor-not-allowed hover:text-gray-500' : ''
+            }`}
+            isActive={currentPage <= 0}
           />
         </PaginationItem>
-        {Array.from({ length: totalPages }, (_, index) => (
-          <PaginationItem key={index + 1}>
-            <PaginationLink
-              onClick={() => onPageChange(index + 1)}
-              isActive={currentPage === index + 1}
-              className="cursor-pointer"
-            >
-              {index + 1}
-            </PaginationLink>
-          </PaginationItem>
-        ))}
         <PaginationItem>
-          <PaginationNext
-            onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
+          <PaginationLink
+            href="#"
+            onClick={() => onPageChange(currentPage)}
+            isActive={true}
             className="cursor-pointer"
-          />
+          >
+            {currentPage + 1}
+          </PaginationLink>
         </PaginationItem>
+        {hasNextPage && (
+          <PaginationItem>
+            <PaginationNext
+              href="#"
+              onClick={() => onPageChange(currentPage + 1)}
+              className="cursor-pointer"
+            />
+          </PaginationItem>
+        )}
       </PaginationContent>
     </Pagination>
   )
