@@ -46,6 +46,7 @@ impl CreateCommand {
         let mut context = self.context_options.build()?;
 
         let sender: RoochAddress = context.resolve_address(self.tx_options.sender)?.into();
+        let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
 
         let session_auth_key = if context.keystore.get_if_password_is_empty() {
             context.keystore.generate_session_key(&sender, None)?
@@ -79,7 +80,9 @@ impl CreateCommand {
         println!("Generated new session key {session_auth_key} for address [{sender}]",);
 
         let result = if context.keystore.get_if_password_is_empty() {
-            context.sign_and_execute(sender, action, None).await?
+            context
+                .sign_and_execute(sender, action, None, max_gas_amount)
+                .await?
         } else {
             let password =
                 prompt_password("Enter the password to create a new key pair:").unwrap_or_default();
@@ -93,7 +96,7 @@ impl CreateCommand {
             }
 
             context
-                .sign_and_execute(sender, action, Some(password))
+                .sign_and_execute(sender, action, Some(password), max_gas_amount)
                 .await?
         };
         context.assert_execute_success(result)?;

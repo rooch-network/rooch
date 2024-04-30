@@ -119,6 +119,8 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         let sender: RoochAddress = pkg_address.into();
         eprintln!("Publish modules to address: {:?}", sender);
 
+        let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
+
         // Prepare and execute the transaction based on the action type
         let tx_result = if !self.by_move_action {
             let args = bcs::to_bytes(&bundles).unwrap();
@@ -137,13 +139,17 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
             // Handle transaction with or without authenticator
             match self.tx_options.authenticator {
                 Some(authenticator) => {
-                    let tx_data = context.build_tx_data(sender, action).await?;
+                    let tx_data = context
+                        .build_tx_data(sender, action, max_gas_amount)
+                        .await?;
                     let tx = RoochTransaction::new(tx_data, authenticator.into());
                     context.execute(tx).await?
                 }
                 None => {
                     if context.keystore.get_if_password_is_empty() {
-                        context.sign_and_execute(sender, action, None).await?
+                        context
+                            .sign_and_execute(sender, action, None, max_gas_amount)
+                            .await?
                     } else {
                         let password =
                             prompt_password("Enter the password to publish:").unwrap_or_default();
@@ -159,7 +165,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                         }
 
                         context
-                            .sign_and_execute(sender, action, Some(password))
+                            .sign_and_execute(sender, action, Some(password), max_gas_amount)
                             .await?
                     }
                 }
@@ -169,7 +175,9 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
             let action = MoveAction::ModuleBundle(bundles);
 
             if context.keystore.get_if_password_is_empty() {
-                context.sign_and_execute(sender, action, None).await?
+                context
+                    .sign_and_execute(sender, action, None, max_gas_amount)
+                    .await?
             } else {
                 let password =
                     prompt_password("Enter the password to publish:").unwrap_or_default();
@@ -183,7 +191,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                 }
 
                 context
-                    .sign_and_execute(sender, action, Some(password))
+                    .sign_and_execute(sender, action, Some(password), max_gas_amount)
                     .await?
             }
         };

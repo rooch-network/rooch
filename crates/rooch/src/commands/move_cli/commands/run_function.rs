@@ -60,6 +60,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
         let context = self.context.build()?;
         let address_mapping = context.address_mapping();
         let sender: RoochAddress = context.resolve_address(self.tx_options.sender)?.into();
+        let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
         let function_id = self.function.into_function_id(&address_mapping)?;
         let args = self
             .args
@@ -78,14 +79,18 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
         let action = MoveAction::new_function_call(function_id, type_args, args);
         match (self.tx_options.authenticator, self.tx_options.session_key) {
             (Some(authenticator), _) => {
-                let tx_data = context.build_tx_data(sender, action).await?;
+                let tx_data = context
+                    .build_tx_data(sender, action, max_gas_amount)
+                    .await?;
                 //TODO the authenticator usually is associalted with the RoochTransactinData
                 //So we need to find a way to let user generate the authenticator based on the tx_data.
                 let tx = RoochTransaction::new(tx_data, authenticator.into());
                 context.execute(tx).await
             }
             (_, Some(session_key)) => {
-                let tx_data = context.build_tx_data(sender, action).await?;
+                let tx_data = context
+                    .build_tx_data(sender, action, max_gas_amount)
+                    .await?;
                 let tx = if context.keystore.get_if_password_is_empty() {
                     context
                         .keystore
@@ -119,7 +124,9 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
             }
             (None, None) => {
                 if context.keystore.get_if_password_is_empty() {
-                    context.sign_and_execute(sender, action, None).await
+                    context
+                        .sign_and_execute(sender, action, None, max_gas_amount)
+                        .await
                 } else {
                     let password =
                         prompt_password("Enter the password to run functions:").unwrap_or_default();
@@ -135,7 +142,7 @@ impl CommandAction<ExecuteTransactionResponseView> for RunFunction {
                     }
 
                     context
-                        .sign_and_execute(sender, action, Some(password))
+                        .sign_and_execute(sender, action, Some(password), max_gas_amount)
                         .await
                 }
             }

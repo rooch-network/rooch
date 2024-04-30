@@ -49,7 +49,7 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
         // Execute the Move call as a transaction
         let mut result = if context.keystore.get_if_password_is_empty() {
             context
-                .sign_and_execute(existing_address, action, None)
+                .sign_and_execute(existing_address, action, None, None)
                 .await?
         } else {
             let password =
@@ -64,7 +64,7 @@ impl CommandAction<ExecuteTransactionResponseView> for NullifyCommand {
             }
 
             context
-                .sign_and_execute(existing_address, action, Some(password))
+                .sign_and_execute(existing_address, action, Some(password), None)
                 .await?
         };
         result = context.assert_execute_success(result)?;
