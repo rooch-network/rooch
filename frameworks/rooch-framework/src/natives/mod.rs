@@ -108,6 +108,7 @@ impl ToOnChainGasSchedule for MoveOSStdlibGasParameters {
         entires.extend(self.base58.to_on_chain_gas_schedule());
         entires.extend(self.bech32.to_on_chain_gas_schedule());
         entires.extend(self.hash.to_on_chain_gas_schedule());
+        entires.extend(self.bls12381.to_on_chain_gas_schedule());
         entires
     }
 }
