@@ -6,7 +6,7 @@ use crate::server::rooch_server::RoochServer;
 use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_logger::RpcLogger;
 use crate::service::rpc_service::RpcService;
-use anyhow::{bail, ensure, Error, Result};
+use anyhow::{ensure, Error, Result};
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
 use hyper::header::HeaderValue;
@@ -36,9 +36,9 @@ use rooch_relayer::actor::relayer::RelayerActor;
 use rooch_rpc_api::api::RoochRpcModule;
 use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
-use rooch_types::address::{BitcoinAddress, RoochAddress};
+use rooch_types::address::RoochAddress;
 use rooch_types::error::{GenesisError, RoochError};
-use rooch_types::rooch_network::{BuiltinChainID, RoochChainID, RoochNetwork};
+use rooch_types::rooch_network::BuiltinChainID;
 use serde_json::json;
 use std::env;
 use std::fmt::Debug;
@@ -163,9 +163,6 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
     let _ = tracing_subscriber::fmt::try_init();
 
     let config = ServerConfig::new_with_port(opt.port());
-
-    let chain_id = opt.chain_id.clone().unwrap_or_default();
-
     let actor_system = ActorSystem::global_system();
 
     //Init store
@@ -189,28 +186,27 @@ pub async fn run_start_server(opt: RoochOpt, server_opt: ServerOpt) -> Result<Se
 
     let sequencer_keypair = server_opt.sequencer_keypair.unwrap();
     let sequencer_account = sequencer_keypair.public().rooch_address()?;
+    let sequencer_bitcoin_address = sequencer_keypair.public().bitcoin_address()?;
 
     let data_import_flag = opt.data_import_flag;
-    if let RoochChainID::Builtin(builtin_chain_id) = chain_id {
-        let mut network: RoochNetwork = builtin_chain_id.into();
-        let sequencer_account: BitcoinAddress = sequencer_keypair.public().bitcoin_address()?;
-        match builtin_chain_id {
-            // local chain can use any sequencer account
-            BuiltinChainID::Local | BuiltinChainID::Dev => {
-                network.set_sequencer_account(sequencer_account);
-            }
-            _ => {
-                ensure!(network.genesis_config.sequencer_account == sequencer_account, "Sequencer({:?}) in genesis config is not equal to sequencer({:?}) in cli config", network.genesis_config.sequencer_account, sequencer_account);
-            }
-        }
-        let genesis = RoochGenesis::build(network)?;
-        if root.is_genesis() {
-            root = genesis.init_genesis(&rooch_db)?;
-        } else {
-            genesis.check_genesis(moveos_store.get_config_store())?;
-        }
-    } else if root.is_genesis() {
-        bail!("Custom chain_id is not supported auto genesis, please use `rooch genesis` to init genesis. ");
+    let mut network = opt.network();
+    if network.chain_id == BuiltinChainID::Local.chain_id() {
+        // local chain use current active account as sequencer account
+        network.set_sequencer_account(sequencer_bitcoin_address);
+    } else {
+        ensure!(
+            network.genesis_config.sequencer_account == sequencer_bitcoin_address,
+            "Sequencer({:?}) in genesis config is not equal to sequencer({:?}) in cli config",
+            network.genesis_config.sequencer_account,
+            sequencer_bitcoin_address
+        );
+    }
+
+    let genesis = RoochGenesis::build(network)?;
+    if root.is_genesis() {
+        root = genesis.init_genesis(&rooch_db)?;
+    } else {
+        genesis.check_genesis(moveos_store.get_config_store())?;
     }
 
     let executor_actor =

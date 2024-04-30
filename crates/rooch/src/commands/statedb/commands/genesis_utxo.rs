@@ -17,7 +17,8 @@ use moveos_types::moveos_std::object::{
 use moveos_types::moveos_std::simple_multimap::SimpleMultiMap;
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{KeyState, MoveState, State};
-use rooch_config::R_OPT_NET_HELP;
+use rooch_config::{RoochOpt, R_OPT_NET_HELP};
+use rooch_db::RoochDB;
 use rooch_types::address::BitcoinAddress;
 use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
 use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
@@ -38,8 +39,6 @@ use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, SyncSender};
 use std::thread;
 use std::time::SystemTime;
-
-use crate::commands::statedb::commands::init_statedb;
 
 pub const SCRIPT_TYPE_P2MS: &str = "p2ms";
 pub const SCRIPT_TYPE_P2PK: &str = "p2pk";
@@ -102,8 +101,10 @@ impl GenesisUTXOCommand {
         let start_time = SystemTime::now();
         let datetime: DateTime<Local> = start_time.into();
 
-        let (root, moveos_store) =
-            init_statedb(self.base_data_dir.clone(), self.chain_id.clone()).unwrap();
+        let opt = RoochOpt::new_with_default(self.base_data_dir, self.chain_id, None).unwrap();
+        let rooch_db = RoochDB::init(opt.store_config()).unwrap();
+        let (root, moveos_store) = (rooch_db.root, rooch_db.moveos_store);
+
         let utxo_store_id = BitcoinUTXOStore::object_id();
         let address_mapping_id = RoochToBitcoinAddressMapping::object_id();
 

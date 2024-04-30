@@ -16,7 +16,7 @@ fn init_indexer(
     chain_id: Option<RoochChainID>,
 ) -> Result<(IndexerStore, IndexerReader)> {
     // Reconstruct RoochOpt
-    let opt = RoochOpt::new_with_default(base_data_dir, chain_id)?;
+    let opt = RoochOpt::new_with_default(base_data_dir, chain_id, None)?;
 
     let store_config = opt.store_config();
 

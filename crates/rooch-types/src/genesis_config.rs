@@ -28,6 +28,44 @@ pub struct GenesisConfig {
     pub stdlib_version: StdlibVersion,
 }
 
+impl GenesisConfig {
+    pub fn new(
+        bitcoin_network: u8,
+        bitcoin_block_height: u64,
+        timestamp: u64,
+        sequencer_account: BitcoinAddress,
+        genesis_objects: Vec<GenesisObject>,
+        stdlib_version: StdlibVersion,
+    ) -> Self {
+        Self {
+            bitcoin_network,
+            bitcoin_block_height,
+            timestamp,
+            sequencer_account,
+            genesis_objects,
+            stdlib_version,
+        }
+    }
+
+    pub fn load<P>(path: P) -> anyhow::Result<Self>
+    where
+        P: AsRef<std::path::Path>,
+    {
+        let content = std::fs::read_to_string(path)?;
+        let config: GenesisConfig = serde_yaml::from_str(&content)?;
+        Ok(config)
+    }
+
+    pub fn save<P>(&self, path: P) -> anyhow::Result<()>
+    where
+        P: AsRef<std::path::Path>,
+    {
+        let content = serde_yaml::to_string(self)?;
+        std::fs::write(path, content)?;
+        Ok(())
+    }
+}
+
 pub static G_LOCAL_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     bitcoin_network: crate::bitcoin::network::Network::Regtest.to_num(),
     bitcoin_block_height: 0,
