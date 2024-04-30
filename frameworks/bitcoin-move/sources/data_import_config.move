@@ -58,6 +58,7 @@ module bitcoin_move::data_import_config{
     }
 
     public fun is_ord_mode(data_import_mode: u8): bool {
-        data_import_mode == DATA_IMPORT_MODE_ORD || data_import_mode == DATA_IMPORT_MODE_FULL
+        true
+        //data_import_mode == DATA_IMPORT_MODE_ORD || data_import_mode == DATA_IMPORT_MODE_FULL
     }
 }

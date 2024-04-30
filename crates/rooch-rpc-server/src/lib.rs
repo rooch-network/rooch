@@ -60,7 +60,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
-use tracing::info;
+use tracing::{info, warn};
 
 pub mod server;
 pub mod service;
@@ -236,7 +236,14 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         let bitcoin_genesis_ctx =
             BitcoinGenesisContext::new(btc_network, data_import_mode.to_num());
         let genesis: RoochGenesis = RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
-        genesis.check_genesis(moveos_store.get_config_store())?;
+        match genesis.check_genesis(moveos_store.get_config_store()) {
+            Ok(_) => {
+                info!("Genesis check pass");
+            }
+            Err(e) => {
+                warn!("Genesis check fail, {:?}", e);
+            }
+        };
     };
 
     let executor_actor =
