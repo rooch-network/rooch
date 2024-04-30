@@ -1,6 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -16,9 +16,9 @@ import {
   useRoochClientQuery,
   useTransferObject,
 } from '@roochnetwork/rooch-sdk-kit'
-import { nftData, ROOCH_OPERATING_ADDRESS } from '@/common/constant.ts'
+import { ROOCH_OPERATING_ADDRESS } from '@/common/constant.ts'
 import { NoData } from '@/components/no-data.tsx'
-import PaginationComponent from '@/components/custom-pagination.tsx'
+import CustomPagination from '@/components/custom-pagination.tsx'
 
 export const AssetsNft = () => {
   const sessionKey = useCurrentSession()
@@ -29,20 +29,29 @@ export const AssetsNft = () => {
   const [toAddress, setToAddress] = useState('')
   const [transferLoading, setTransferLoading] = useState(false)
 
-  // PAGINATION
-  const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage] = useState(4)
-  const indexOfLastItem = currentPage * itemsPerPage
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage
-  const currentItems = nftData.slice(indexOfFirstItem, indexOfLastItem) // TODO: nftData 现在暂时是静态数据，后面要改成动态的
-  const totalPages = Math.ceil(nftData.length / itemsPerPage) // TODO: nftData 现在暂时是静态数据，后面要改成动态的
-
-  console.log(currentItems)
-
   const client = useRoochClient()
 
   const { mutateAsync: transferObject } = useTransferObject()
 
+  // PAGINATION
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
+  const mapPageToNextCursor = useRef<{ [page: number]: string | null }>({})
+  const handlePageChange = (selectedPage: number) => {
+    if (selectedPage < 0) {
+      return
+    }
+    setPaginationModel({
+      page: selectedPage,
+      pageSize: paginationModel.pageSize,
+    })
+  }
+  const queryOptions = useMemo(
+    () => ({
+      cursor: mapPageToNextCursor.current[paginationModel.page - 1],
+      pageSize: paginationModel.pageSize,
+    }),
+    [paginationModel],
+  )
   // TODO: How do I get all the nft
   // TODO: 1, fetch data/image loading, 2, pagination
   const { data: nfts, refetch: reFetchNFTS } = useRoochClientQuery('queryGlobalStates', {
@@ -52,8 +61,10 @@ export const AssetsNft = () => {
         object_type: `${ROOCH_OPERATING_ADDRESS}::nft::NFT`,
       },
     },
-    cursor: null,
-    limit: 10,
+    // TODO: 待解决的类型问题
+    // @ts-ignore
+    cursor: queryOptions.cursor,
+    limit: queryOptions.pageSize,
     descending_order: true,
   })
 
@@ -269,10 +280,11 @@ export const AssetsNft = () => {
           </div>
         )}
       </div>
-      <PaginationComponent
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
+
+      <CustomPagination
+        currentPage={paginationModel.page}
+        hasNextPage={!!nfts?.has_next_page}
+        onPageChange={handlePageChange}
       />
     </>
   )
