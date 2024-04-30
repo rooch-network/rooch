@@ -70,18 +70,23 @@ impl CommandAction<ExecuteTransactionResponseView> for FrameworkUpgrade {
         );
 
         // Build context and handle errors
-
         let sender = context.resolve_address(self.tx_options.sender)?.into();
+        let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
+
         // Handle transaction with or without authenticator
         match self.tx_options.authenticator {
             Some(authenticator) => {
-                let tx_data = context.build_tx_data(sender, action).await?;
+                let tx_data = context
+                    .build_tx_data(sender, action, max_gas_amount)
+                    .await?;
                 let tx = RoochTransaction::new(tx_data, authenticator.into());
                 context.execute(tx).await
             }
             None => {
                 if context.keystore.get_if_password_is_empty() {
-                    context.sign_and_execute(sender, action, None).await
+                    context
+                        .sign_and_execute(sender, action, None, max_gas_amount)
+                        .await
                 } else {
                     let password =
                         prompt_password("Enter the password to publish:").unwrap_or_default();
@@ -97,7 +102,7 @@ impl CommandAction<ExecuteTransactionResponseView> for FrameworkUpgrade {
                     }
 
                     context
-                        .sign_and_execute(sender, action, Some(password))
+                        .sign_and_execute(sender, action, Some(password), max_gas_amount)
                         .await
                 }
             }
