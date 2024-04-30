@@ -7,7 +7,6 @@ module rooch_framework::transfer_test{
 
     use std::option;
     use std::string;
-    use moveos_std::account;
     
     use moveos_std::object::{Self, Object};
     use rooch_framework::transfer;
@@ -27,6 +26,7 @@ module rooch_framework::transfer_test{
     fun test_transfer_coin(from: address, to: address){
         rooch_framework::genesis::init_for_test();
         let from_signer = account_entry::create_account_for_testing(from);
+        let _ = account_entry::create_account_for_testing(to);
         let init_gas = 9999u256;
         gas_coin::faucet_for_test(from, init_gas); 
         assert!(gas_coin::balance(from) == init_gas, 1000);
@@ -93,17 +93,17 @@ module rooch_framework::transfer_test{
     }
 
     #[test(from_addr= @0x33, to_addr= @0x66)]
-    fun test_transfer_to_no_exists_account(from_addr: address, to_addr: address) {
+    fun test_transfer_fake_coin(from_addr: address, to_addr: address) {
         rooch_framework::genesis::init_for_test();
         let coin_info_obj = register_fake_coin(9);
 
         let from = account_entry::create_account_for_testing(from_addr);
-        assert!(!account::exists_at(to_addr), 1000);
+        let _ = account_entry::create_account_for_testing(to_addr);
 
         let amount = 100u256;
         mint_and_deposit(&mut coin_info_obj, from_addr, amount);
         transfer::transfer_coin<FakeCoin>(&from, to_addr, 50u256);
-        assert!(account::exists_at(to_addr), 1000);
+
         assert!(account_coin_store::balance<FakeCoin>(to_addr) == 50u256, 1001);
         object::transfer(coin_info_obj, @rooch_framework);
         
@@ -114,6 +114,7 @@ module rooch_framework::transfer_test{
         rooch_framework::genesis::init_for_test();
       
         let from = account_entry::create_account_for_testing(from_addr);
+        let _ = account_entry::create_account_for_testing(to_addr);
         let obj = object::new(TestStruct{value: 100});
         let object_id = object::id(&obj);
         object::transfer(obj, from_addr);
