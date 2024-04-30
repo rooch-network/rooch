@@ -8,6 +8,7 @@ import {
 import { NoData } from '@/components/no-data'
 import { Card, CardHeader } from '@/components/ui/card'
 import CustomPagination from '@/components/custom-pagination.tsx'
+import { LoadingSpinner } from '@/components/loading-spinner.tsx'
 
 import { hexToString } from '@/utils/format.ts'
 
@@ -39,7 +40,11 @@ export const IndexedAssetsOrdi = () => {
     [paginationModel],
   )
 
-  const { data: result } = useRoochClientQuery('queryInscriptions', {
+  const {
+    data: result,
+    isLoading,
+    isError,
+  } = useRoochClientQuery('queryInscriptions', {
     filter: {
       owner: 'bcrt1p79ruqzh9hmmhvaz7x3up3t6pdrmz5hmhz3pfkddxqnfzg0md7upq3jjjev',
     },
@@ -48,6 +53,16 @@ export const IndexedAssetsOrdi = () => {
     cursor: queryOptions.cursor,
     limit: queryOptions.pageSize,
   })
+
+  if (isLoading || isError) {
+    return (
+      <div className="relative my-12">
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          {isLoading ? <LoadingSpinner /> : <div>Error loading data</div>}
+        </div>
+      </div>
+    )
+  }
 
   return !result || result.data.length === 0 ? (
     <NoData />

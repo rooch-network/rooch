@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { LoadingSpinner } from '@/components/loading-spinner.tsx'
 
 import CustomPagination from '@/components/custom-pagination.tsx'
 import { BalanceInfoView } from '../../../../../../../sdk/typescript/rooch-sdk'
@@ -44,7 +45,7 @@ export const AssetsCoin = () => {
     [paginationModel],
   )
 
-  const { data } = useRoochClientQuery('getBalances', {
+  const { data, isLoading, isError } = useRoochClientQuery('getBalances', {
     address: account?.getRoochAddress() || '',
     cursor: queryOptions.cursor,
     limit: queryOptions.pageSize,
@@ -106,6 +107,16 @@ export const AssetsCoin = () => {
       mapPageToNextCursor.current[paginationModel.page] = data.next_cursor ?? null
     }
   }, [paginationModel, data])
+
+  if (isLoading || isError) {
+    return (
+      <div className="relative my-12">
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          {isLoading ? <LoadingSpinner /> : <div>Error loading data</div>}
+        </div>
+      </div>
+    )
+  }
 
   return !data || data.data.length === 0 ? (
     <NoData />
@@ -180,7 +191,9 @@ export const AssetsCoin = () => {
                       <Label htmlFor="address">Amount</Label>
                       <p className="text-xs text-muted-foreground">
                         <span>Balance: </span>
-                        <span className="font-semibold text-blue-600 dark:text-blue-400">{selectedCoin?.balance}</span>
+                        <span className="font-semibold text-blue-600 dark:text-blue-400">
+                          {selectedCoin?.balance}
+                        </span>
                       </p>
                     </div>
                     <div className="h-14 rounded-2xl bg-zinc-200 dark:bg-zinc-700 w-96 pl-6 flex items-center justify-between relative">
@@ -204,7 +217,9 @@ export const AssetsCoin = () => {
                   {/* CTA */}
                   <Button variant="default" size="default" className="w-full mt-6 font-sans gap-1">
                     <span>Send</span>
-                    <span className="font-semibold text-blue-400 dark:text-blue-600">{selectedCoin?.name}</span>
+                    <span className="font-semibold text-blue-400 dark:text-blue-600">
+                      {selectedCoin?.name}
+                    </span>
                   </Button>
                 </div>
               </div>

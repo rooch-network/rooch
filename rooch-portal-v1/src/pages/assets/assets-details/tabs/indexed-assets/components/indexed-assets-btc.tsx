@@ -9,13 +9,13 @@ import {
 import { NoData } from '@/components/no-data.tsx'
 import CustomPagination from '@/components/custom-pagination.tsx'
 
+import { LoadingSpinner } from '@/components/loading-spinner.tsx'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 // test address
 // const testAddress = ''
 
 export const IndexedAssetsBTC = () => {
-  // ** FILL DATA
   // const account = useCurrentAccount()
 
   // ** PAGINATION
@@ -39,7 +39,11 @@ export const IndexedAssetsBTC = () => {
   )
 
   // TODO: 1, loading, 2 pagination
-  const { data: result } = useRoochClientQuery('queryUTXOs', {
+  const {
+    data: result,
+    isLoading,
+    isError,
+  } = useRoochClientQuery('queryUTXOs', {
     filter: {
       owner: 'bcrt1p79ruqzh9hmmhvaz7x3up3t6pdrmz5hmhz3pfkddxqnfzg0md7upq3jjjev',
     },
@@ -48,6 +52,16 @@ export const IndexedAssetsBTC = () => {
     cursor: queryOptions.cursor,
     limit: queryOptions.pageSize,
   })
+
+  if (isLoading || isError) {
+    return (
+      <div className="relative my-12">
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          {isLoading ? <LoadingSpinner /> : <div>Error loading data</div>}
+        </div>
+      </div>
+    )
+  }
 
   return !result || result.data.length === 0 ? (
     <NoData />

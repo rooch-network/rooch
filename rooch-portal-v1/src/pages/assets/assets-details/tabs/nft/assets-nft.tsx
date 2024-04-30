@@ -1,24 +1,25 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 import { useEffect, useMemo, useRef, useState } from 'react'
-
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { AspectRatio } from '@/components/ui/aspect-ratio'
-
-import { ArrowLeft, Copy } from 'lucide-react'
-
-import { formatAddress } from '@/utils/format'
 import {
   useCurrentSession,
   useRoochClient,
   useRoochClientQuery,
   useTransferObject,
 } from '@roochnetwork/rooch-sdk-kit'
-import { ROOCH_OPERATING_ADDRESS } from '@/common/constant.ts'
+
+import { ArrowLeft, Copy } from 'lucide-react'
+
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { NoData } from '@/components/no-data.tsx'
+import { AspectRatio } from '@/components/ui/aspect-ratio'
 import CustomPagination from '@/components/custom-pagination.tsx'
+import { LoadingSpinner } from '@/components/loading-spinner.tsx'
+
+import { formatAddress } from '@/utils/format'
+import { ROOCH_OPERATING_ADDRESS } from '@/common/constant.ts'
 
 export const AssetsNft = () => {
   const sessionKey = useCurrentSession()
@@ -54,7 +55,12 @@ export const AssetsNft = () => {
   )
   // TODO: How do I get all the nft
   // TODO: 1, fetch data/image loading, 2, pagination
-  const { data: nfts, refetch: reFetchNFTS } = useRoochClientQuery('queryGlobalStates', {
+  const {
+    data: nfts,
+    refetch: reFetchNFTS,
+    isLoading,
+    isError,
+  } = useRoochClientQuery('queryGlobalStates', {
     filter: {
       object_type_with_owner: {
         owner: sessionKey?.getAddress() || '',
@@ -166,13 +172,21 @@ export const AssetsNft = () => {
     reFetchNFTS()
   }
 
+  if (isLoading || isError) {
+    return (
+      <div className="relative my-12">
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          {isLoading ? <LoadingSpinner /> : <div>Error loading data</div>}
+        </div>
+      </div>
+    )
+  }
+
   return !nfts || nfts.data.length === 0 ? (
     <NoData />
   ) : (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full place-items-center">
-        {/* TODO: 后面把 fetch 到的 nfts 数据赋值到 currentItems 后 */}
-        {/* TODO: 使用 currentItems.map(...) 来获取页面数据 */}
         {nfts?.data.map((nft) => (
           <Card
             key={nft.object_id}
