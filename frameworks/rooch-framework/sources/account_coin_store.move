@@ -35,7 +35,7 @@ module rooch_framework::account_coin_store {
 
     /// A resource that holds all the ids of Object<CoinStore<T>> for account.
     /// TODO after the indexer is ready, we can use the indexer to list all the CoinStore<T> objects for account
-    struct CoinStores has key, store {
+    struct CoinStores has key {
         coin_stores: Table<string::String, ObjectID>,
     }
 

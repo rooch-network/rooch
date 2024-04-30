@@ -13,7 +13,7 @@ module rooch_examples::complex_struct {
       value: u64,
    }
 
-   struct ComplexStruct has key, store {
+   struct ComplexStruct has key {
       field_u8: u8,
       field_u16: u16,
       field_u32: u32,

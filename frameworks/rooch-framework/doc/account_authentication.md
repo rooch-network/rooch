@@ -52,7 +52,7 @@ ValidatorType is a phantom type parameter that is used to distinguish between di
 A resource that holds the authentication keys for this account.
 
 
-<pre><code><b>struct</b> <a href="account_authentication.md#0x3_account_authentication_AuthenticationKeys">AuthenticationKeys</a> <b>has</b> store, key
+<pre><code><b>struct</b> <a href="account_authentication.md#0x3_account_authentication_AuthenticationKeys">AuthenticationKeys</a> <b>has</b> key
 </code></pre>
 
 
@@ -64,7 +64,7 @@ A resource that holds the authentication keys for this account.
 A resource that holds the auth validator ids for this account has installed.
 
 
-<pre><code><b>struct</b> <a href="account_authentication.md#0x3_account_authentication_InstalledAuthValidator">InstalledAuthValidator</a> <b>has</b> store, key
+<pre><code><b>struct</b> <a href="account_authentication.md#0x3_account_authentication_InstalledAuthValidator">InstalledAuthValidator</a> <b>has</b> key
 </code></pre>
 
 

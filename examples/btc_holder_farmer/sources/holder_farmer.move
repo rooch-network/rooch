@@ -90,7 +90,7 @@ module btc_holder_farmer::hold_farmer {
     /// The `BTC Holder Coin`
     struct HDC has key, store {}
 
-    struct FarmingAsset has key, store {
+    struct FarmingAsset has key {
         asset_total_weight: u64,
         harvest_index: u128,
         last_update_timestamp: u64,
@@ -108,7 +108,7 @@ module btc_holder_farmer::hold_farmer {
         alive: bool,
     }
 
-    struct UserStake has key, store {
+    struct UserStake has key {
         /// utxo ==> stake
         stake: Table<ObjectID, Stake>
     }
