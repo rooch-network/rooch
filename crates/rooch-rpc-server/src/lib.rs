@@ -218,7 +218,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     let sequencer_account: RoochAddress = (&sequencer_keypair.public()).into();
 
     let btc_network = opt.btc_network.unwrap_or(Network::default().to_num());
-    let data_import_flag = opt.data_import_flag.unwrap_or(false);
+    let data_import_flag = opt.data_import_flag;
 
     if root.is_genesis() {
         let genesis_ctx = chain_id_opt.genesis_ctx(sequencer_account);

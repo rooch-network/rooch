@@ -78,7 +78,7 @@ impl Display for TxType {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Parser, Eq)]
 pub struct BenchTxConfig {
     pub tx_type: Option<TxType>, // empty(default)/transfer/btc-block
-    pub data_import_flag: Option<bool>,
+    pub data_import_flag: bool,
     pub btc_block_dir: Option<String>, // btc block dir, file name: <height>.hex
     pub pprof_output: Option<PProfOutput>, // flamegraph(default)/proto
 }
@@ -87,7 +87,7 @@ impl Default for BenchTxConfig {
     fn default() -> Self {
         Self {
             tx_type: Some(TxType::Empty),
-            data_import_flag: Some(false),
+            data_import_flag: false,
             btc_block_dir: None,
             pprof_output: Some(PProfOutput::Flamegraph),
         }
@@ -97,7 +97,7 @@ impl Default for BenchTxConfig {
 impl BenchTxConfig {
     pub fn adjust(&mut self) {
         self.tx_type.get_or_insert(TxType::Empty);
-        self.data_import_flag.get_or_insert(false);
+        self.data_import_flag = false;
         // if tx_type is btc_block, btc_block_dir must be existed, if not, panic
         if self.tx_type == Some(TxType::BtcBlock) {
             self.btc_block_dir

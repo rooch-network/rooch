@@ -5,6 +5,7 @@ module bitcoin_move::light_client{
     use std::option::{Self, Option};
     use std::vector;
     use std::string::{String};
+    use bitcoin_move::network;
     use moveos_std::simple_multimap::SimpleMultiMap;
     use moveos_std::type_info;
     use moveos_std::table::{Self, Table};
@@ -185,7 +186,7 @@ module bitcoin_move::light_client{
         };
 
         // Transfer and inscribe may happen at the same transaction
-        if(need_process_oridinals(block_height)) {
+        if(need_process_oridinal) {
             let sat_points = ord::process_transaction(tx, input_utxo_values);
             let idx = 0;
             let protocol = type_info::type_name<Inscription>();
@@ -329,7 +330,8 @@ module bitcoin_move::light_client{
     }
 
     public fun need_process_oridinals(block_height: u64) : bool {
-        block_height >= ORDINAL_GENESIS_HEIGHT
+        let btc_network = network::network();
+        network::is_mainnet(btc_network) && block_height >= ORDINAL_GENESIS_HEIGHT
     }
     
 }

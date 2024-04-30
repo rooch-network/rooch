@@ -141,10 +141,9 @@ pub struct RoochOpt {
     #[clap(long)]
     pub da: Option<DAConfig>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long)]
     /// The data import flag. If true, may be ignore the indexer write
-    pub data_import_flag: Option<bool>,
+    pub data_import_flag: bool,
 }
 
 impl std::fmt::Display for RoochOpt {
@@ -179,7 +178,7 @@ impl RoochOpt {
             proposer_account: None,
             relayer_account: None,
             da: None,
-            data_import_flag: Some(false),
+            data_import_flag: false,
         }
     }
 
