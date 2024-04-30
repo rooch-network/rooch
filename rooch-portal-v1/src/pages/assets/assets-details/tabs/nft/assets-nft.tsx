@@ -34,9 +34,8 @@ export const AssetsNft = () => {
   const [itemsPerPage] = useState(4)
   const indexOfLastItem = currentPage * itemsPerPage
   const indexOfFirstItem = indexOfLastItem - itemsPerPage
-  // TODO: 后面需要把 nftData 换成 nfts
-  const currentItems = nftData.slice(indexOfFirstItem, indexOfLastItem)
-  const totalPages = Math.ceil(nftData.length / itemsPerPage)
+  const currentItems = nftData.slice(indexOfFirstItem, indexOfLastItem) // TODO: nftData 现在暂时是静态数据，后面要改成动态的
+  const totalPages = Math.ceil(nftData.length / itemsPerPage) // TODO: nftData 现在暂时是静态数据，后面要改成动态的
 
   console.log(currentItems)
 
@@ -161,7 +160,8 @@ export const AssetsNft = () => {
   ) : (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full place-items-center">
-        {/* TODO: 后面 currentItems 有数据后： currentItems.map()... */}
+        {/* TODO: 后面把 fetch 到的 nfts 数据赋值到 currentItems 后 */}
+        {/* TODO: 使用 currentItems.map(...) 来获取页面数据 */}
         {nfts?.data.map((nft) => (
           <Card
             key={nft.object_id}
