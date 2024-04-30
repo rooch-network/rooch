@@ -21,7 +21,7 @@ use move_vm_types::{
     loaded_data::runtime_types::Type,
     natives::function::NativeResult,
     pop_arg,
-    values::{Struct, Value as MoveValue, Vector},
+    values::{values_impl::Reference, Struct, Value as MoveValue, Vector},
 };
 use move_core_types::u256::{self, U256_NUM_BYTES};
 use moveos_types::addresses::MOVE_STD_ADDRESS;
@@ -31,6 +31,7 @@ use std::collections::VecDeque;
 use std::io::Cursor;
 
 const E_TYPE_NOT_MATCH: u64 = 1;
+const STATUS_CODE_FAILED_TO_SERIALIZE_VALUE: u64 = 2;
 
 fn parse_struct_value_from_cbor(
     layout: &MoveStructLayout,
@@ -109,20 +110,17 @@ fn parse_move_value_from_cbor_value(
         }
         // Parse an unsigned 8-bit integer
         MoveTypeLayout::U8 => {
-            let u64_value = cbor_value
+            let u8_value = cbor_value
                 .as_integer()
-                .and_then(|int| int.try_into().ok())
+                .and_then(|int| u8::try_from(int).ok())
                 .ok_or_else(|| anyhow::anyhow!("Invalid u8 value"))?;
-            if u64_value > (u8::MAX as u64) {
-                return Err(anyhow::anyhow!("Invalid u8 value"));
-            }
-            Ok(MoveValue::u8(u64_value as u8))
+            Ok(MoveValue::u8(u8_value))
         }
         // Parse an unsigned 64-bit integer
         MoveTypeLayout::U64 => {
             let u64_value = cbor_value
                 .as_integer()
-                .and_then(|int| int.try_into().ok())
+                .and_then(|int| u64::try_from(int).ok())
                 .ok_or_else(|| anyhow::anyhow!("Invalid u64 value"))?;
             Ok(MoveValue::u64(u64_value))
         }
@@ -130,7 +128,7 @@ fn parse_move_value_from_cbor_value(
         MoveTypeLayout::U128 => {
             let u128_value = cbor_value
                 .as_integer()
-                .and_then(|int| int.try_into().ok())
+                .and_then(|int| u128::try_from(int).ok())
                 .ok_or_else(|| anyhow::anyhow!("Invalid u128 value"))?;
             Ok(MoveValue::u128(u128_value))
         }
@@ -166,25 +164,19 @@ fn parse_move_value_from_cbor_value(
         MoveTypeLayout::Signer => Err(anyhow::anyhow!("Do not support Signer type")),
         // Parse an unsigned 16-bit integer
         MoveTypeLayout::U16 => {
-            let u64_value = cbor_value
+            let u16_value = cbor_value
                 .as_integer()
-                .and_then(|int| int.try_into().ok())
+                .and_then(|int| u16::try_from(int).ok())
                 .ok_or_else(|| anyhow::anyhow!("Invalid u16 value"))?;
-            if u64_value > (u16::MAX as u64) {
-                return Err(anyhow::anyhow!("Invalid u16 value"));
-            }
-            Ok(MoveValue::u16(u64_value as u16))
+            Ok(MoveValue::u16(u16_value))
         }
         // Parse an unsigned 32-bit integer
         MoveTypeLayout::U32 => {
-            let u64_value = cbor_value
+            let u32_value = cbor_value
                 .as_integer()
-                .and_then(|int| int.try_into().ok())
+                .and_then(|int| u32::try_from(int).ok())
                 .ok_or_else(|| anyhow::anyhow!("Invalid u32 value"))?;
-            if u64_value > (u32::MAX as u64) {
-                return Err(anyhow::anyhow!("Invalid u32 value"));
-            }
-            Ok(MoveValue::u32(u64_value as u32))
+            Ok(MoveValue::u32(u32_value))
         }
         // Parse an unsigned 256-bit integer
         MoveTypeLayout::U256 => {
@@ -289,7 +281,8 @@ fn serialize_move_struct_to_cbor(layout: &MoveStructLayout, struct_: &MoveStruct
             }
 
             CborValue::Map(cbor_fields)
-        }
+        },
+        _ => return Err(anyhow::anyhow!("Invalid combination of MoveStructLayout and MoveStruct")),
     };
 
     Ok(value)
@@ -433,10 +426,10 @@ fn native_to_cbor(
             )
         })?;
 
-    let value = pop_arg!(args, MoveValue);
+    let ref_to_val = pop_arg!(args, Reference);
 
     if let MoveTypeLayout::Struct(struct_layout) = layout {
-        let move_val = value.as_move_value(&layout);
+        let move_val = ref_to_val.read_ref()?.as_move_value(&layout);;
         let bytes = match serialize_move_value_to_cbor(&layout, &move_val) {
             Ok(bytes) => {
                 cost += gas_params.per_byte_in_str * NumBytes::new(bytes.len() as u64);
