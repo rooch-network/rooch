@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import PaginationComponent from '@/components/custom-pagination.tsx'
-// import { useCurrentAccount, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
+import { useCurrentAccount, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 // import { hexToString } from '@/utils/format.ts'
 
 // test address
@@ -26,6 +26,18 @@ const mockData: MockData[] = [
 
 // TODO: 1, loading, 2 pagination, 3 目前只处理了json 铭文，其他类型还需添加ui
 export const IndexedAssetsOrdi = () => {
+  // ** FILL DATA @Sven
+  const account = useCurrentAccount()
+
+  const { data: result } = useRoochClientQuery('queryInscriptions', {
+    filter: {
+      owner: 'bcrt1p79ruqzh9hmmhvaz7x3up3t6pdrmz5hmhz3pfkddxqnfzg0md7upq3jjjev',
+    },
+  })
+
+  console.log(account)
+  console.log(result)
+
   // ** PAGINATION
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(4)
@@ -33,15 +45,6 @@ export const IndexedAssetsOrdi = () => {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage
   const currentItems = mockData.slice(indexOfFirstItem, indexOfLastItem)
   const totalPages = Math.ceil(mockData.length / itemsPerPage)
-
-  // ** FILL DATA @Sven
-  // const account = useCurrentAccount()
-
-  // const { data: result } = useRoochClientQuery('queryInscriptions', {
-  //   filter: {
-  //     owner: 'bcrt1p79ruqzh9hmmhvaz7x3up3t6pdrmz5hmhz3pfkddxqnfzg0md7upq3jjjev',
-  //   },
-  // })
 
   // return !result || result.data.length === 0 ? (
   //   <NoData />
