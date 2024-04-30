@@ -24,6 +24,7 @@ import { BalanceInfoView } from '../../../../../../../sdk/typescript/rooch-sdk'
 export const AssetsCoin = () => {
   const account = useCurrentAccount()
 
+  // ** PAGINATION
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
   const mapPageToNextCursor = useRef<{ [page: number]: string | null }>({})
   const handlePageChange = (selectedPage: number) => {
@@ -35,7 +36,6 @@ export const AssetsCoin = () => {
       pageSize: paginationModel.pageSize,
     })
   }
-
   const queryOptions = useMemo(
     () => ({
       cursor: mapPageToNextCursor.current[paginationModel.page - 1],
