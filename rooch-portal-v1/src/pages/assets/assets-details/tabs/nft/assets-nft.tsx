@@ -275,6 +275,7 @@ export const AssetsNft = () => {
                       onChange={(event) => {
                         setToAddress(event.target.value)
                       }}
+                      disabled={transferLoading}
                     />
 
                     {/* CTA */}
@@ -285,7 +286,7 @@ export const AssetsNft = () => {
                       disabled={transferLoading}
                       className="w-full mt-6 md:mt-24 font-sans"
                     >
-                      {transferLoading ? 'Transferring' : 'Transfer'}
+                      {transferLoading ? <LoadingSpinner /> : 'Transfer'}
                     </Button>
                   </div>
                 </div>
