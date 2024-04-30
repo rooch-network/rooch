@@ -44,15 +44,16 @@ const PaginationComponent: React.FC<PaginationComponentProps> = ({
             {currentPage + 1}
           </PaginationLink>
         </PaginationItem>
-        {hasNextPage && (
-          <PaginationItem>
-            <PaginationNext
-              href="#"
-              onClick={() => onPageChange(currentPage + 1)}
-              className="cursor-pointer"
-            />
-          </PaginationItem>
-        )}
+        <PaginationItem>
+          <PaginationNext
+            href="#"
+            onClick={() => currentPage > 0 && onPageChange(currentPage + 1)}
+            className={`cursor-pointer border-none hover:bg-inherit ${
+              !hasNextPage ? 'text-gray-500 cursor-not-allowed hover:text-gray-500' : ''
+            }`}
+            isActive={hasNextPage}
+          />
+        </PaginationItem>
       </PaginationContent>
     </Pagination>
   )
