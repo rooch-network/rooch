@@ -16,7 +16,7 @@ use tracing::{debug, error, info};
 
 use images::bitcoin::BitcoinD;
 use images::ord::Ord;
-use rooch_types::bitcoin::network::{BitcoinNetwork, Network};
+use rooch_types::bitcoin::network::Network;
 use std::time::Duration;
 use testcontainers::{
     clients::Cli,
