@@ -3,7 +3,7 @@
 
 // import { NoData } from '@/components/no-data'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-// import { useCurrentAccount, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
+import { useCurrentAccount, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 import { useState } from 'react'
 
 import PaginationComponent from '@/components/custom-pagination.tsx'
@@ -26,6 +26,19 @@ const mockData: MockData[] = [
 ]
 
 export const IndexedAssetsBTC = () => {
+  // ** FILL DATA
+  const account = useCurrentAccount()
+
+  // TODO: 1, loading, 2 pagination
+  const { data: result } = useRoochClientQuery('queryUTXOs', {
+    filter: {
+      owner: 'bcrt1p79ruqzh9hmmhvaz7x3up3t6pdrmz5hmhz3pfkddxqnfzg0md7upq3jjjev',
+    },
+  })
+
+  console.log(account)
+  console.log(result)
+
   // ** PAGINATION
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(4)
@@ -34,20 +47,9 @@ export const IndexedAssetsBTC = () => {
   const currentItems = mockData.slice(indexOfFirstItem, indexOfLastItem)
   const totalPages = Math.ceil(mockData.length / itemsPerPage)
 
-  // ** FILL DATA @Sven
-  // const account = useCurrentAccount()
-
-  // TODO: 1, loading, 2 pagination
-  // const { data: result } = useRoochClientQuery('queryUTXOs', {
-  //   filter: {
-  //     owner: 'bcrt1p79ruqzh9hmmhvaz7x3up3t6pdrmz5hmhz3pfkddxqnfzg0md7upq3jjjev',
-  //   },
-  // })
-
   // return !result || result.data.length === 0 ? (
   //   <NoData />
   // ) : (
-
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
