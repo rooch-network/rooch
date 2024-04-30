@@ -19,7 +19,6 @@ use rooch_executor::actor::{executor::ExecutorActor, messages::ExecuteTransactio
 use rooch_genesis::RoochGenesis;
 use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
-use rooch_types::bitcoin::data_import_config::DataImportMode;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::chain_id::RoochChainID;
@@ -52,10 +51,6 @@ pub struct RustBindingTest {
 
 impl RustBindingTest {
     pub fn new() -> Result<Self> {
-        Self::new_with_mode(DataImportMode::Ord.to_num())
-    }
-
-    pub fn new_with_mode(data_import_mode: u8) -> Result<Self> {
         let data_dir = get_data_dir();
         let (rooch_db_path, moveos_db_path) = (
             StoreConfig::get_mock_moveos_store_dir(&data_dir),
@@ -75,7 +70,7 @@ impl RustBindingTest {
 
         let genesis = RoochGenesis::build(
             RoochChainID::LOCAL.genesis_ctx(sequencer),
-            BitcoinGenesisContext::new(Network::default().to_num(), data_import_mode),
+            BitcoinGenesisContext::new(Network::default().to_num()),
         )?;
         let root = genesis.init_genesis(&mut moveos_store)?;
 

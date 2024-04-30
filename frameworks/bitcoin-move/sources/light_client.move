@@ -6,7 +6,6 @@ module bitcoin_move::light_client{
     use std::vector;
     use std::string::{String};
     use moveos_std::simple_multimap::SimpleMultiMap;
-    use bitcoin_move::data_import_config;
     use moveos_std::type_info;
     use moveos_std::table::{Self, Table};
     use moveos_std::bcs;
@@ -24,6 +23,8 @@ module bitcoin_move::light_client{
 
     const ErrorBlockNotFound:u64 = 1;
     const ErrorBlockAlreadyProcessed:u64 = 2;
+
+    const ORDINAL_GENESIS_HEIGHT:u64 = 767430;
 
     struct TxProgressErrorLogEvent has copy, drop{
         txid: address,
@@ -100,7 +101,7 @@ module bitcoin_move::light_client{
             if(is_coinbase) {
                 coinbase_tx_idx = idx;
             } else {
-                let tx_flotsams = process_tx(btc_block_store, tx);
+                let tx_flotsams = process_tx(btc_block_store, tx, block_height);
                 vector::append(&mut flotsams, tx_flotsams);
             };
             idx = idx + 1;
@@ -123,8 +124,8 @@ module bitcoin_move::light_client{
         is_coinbase
     }
 
-    fun process_tx(btc_block_store: &mut BitcoinBlockStore, tx: &Transaction): vector<Flotsam>{
-        let flotsams = process_utxo(tx);
+    fun process_tx(btc_block_store: &mut BitcoinBlockStore, tx: &Transaction, block_height: u64): vector<Flotsam>{
+        let flotsams = process_utxo(tx, block_height);
         let txid = types::tx_id(tx);
         table::add(&mut btc_block_store.txs, txid, *tx);
         table_vec::push_back(&mut btc_block_store.tx_ids, txid);
@@ -138,7 +139,7 @@ module bitcoin_move::light_client{
         table_vec::push_back(&mut btc_block_store.tx_ids, txid);
     }
 
-    fun process_utxo(tx: &Transaction): vector<Flotsam>{
+    fun process_utxo(tx: &Transaction, block_height: u64): vector<Flotsam>{
         let txinput = types::tx_input(tx);
         let flotsams = vector::empty();
 
@@ -160,14 +161,14 @@ module bitcoin_move::light_client{
 
         let idx = 0;
         let output_seals = simple_multimap::new<u32, UTXOSeal>();
-        let data_import_mode = data_import_config::data_import_mode();
+        let need_process_oridinal = need_process_oridinals(block_height);
         while (idx < vector::length(txinput)) {
             let txin = vector::borrow(txinput, idx);
             let outpoint = *types::txin_previous_output(txin);
             if (utxo::exists_utxo(outpoint)) {
                 let object_id = utxo::derive_utxo_id(outpoint);
                 let (_owner, utxo_obj) = utxo::take(object_id);
-                if(data_import_config::is_ord_mode(data_import_mode)) {
+                if(need_process_oridinal) {
                     let (sat_points, utxo_flotsams) = ord::spend_utxo(&mut utxo_obj, tx, input_utxo_values, idx);
                     handle_sat_point(sat_points, &mut output_seals);
                     vector::append(&mut flotsams, utxo_flotsams);
@@ -184,7 +185,7 @@ module bitcoin_move::light_client{
         };
 
         // Transfer and inscribe may happen at the same transaction
-        if(data_import_config::is_ord_mode(data_import_mode)) {
+        if(need_process_oridinals(block_height)) {
             let sat_points = ord::process_transaction(tx, input_utxo_values);
             let idx = 0;
             let protocol = type_info::type_name<Inscription>();
@@ -207,8 +208,7 @@ module bitcoin_move::light_client{
 
     fun process_coinbase_utxo(tx: &Transaction, flotsams: vector<Flotsam>, block_height: u64){
         let output_seals = simple_multimap::new<u32, UTXOSeal>();
-        let data_import_mode = data_import_config::data_import_mode();
-        if(data_import_config::is_ord_mode(data_import_mode)) {
+        if(need_process_oridinals(block_height)) {
             let sat_points = ord::handle_coinbase_tx(tx, flotsams, block_height);
             handle_sat_point(sat_points, &mut output_seals);
         };
@@ -326,6 +326,10 @@ module bitcoin_move::light_client{
         let btc_block_store_obj = borrow_block_store();
         let btc_block_store = object::borrow(btc_block_store_obj);
         btc_block_store.latest_block_height
-    } 
+    }
+
+    public fun need_process_oridinals(block_height: u64) : bool {
+        block_height >= ORDINAL_GENESIS_HEIGHT
+    }
     
 }

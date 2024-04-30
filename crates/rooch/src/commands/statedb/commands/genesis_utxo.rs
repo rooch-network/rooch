@@ -37,6 +37,7 @@ use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::SystemTime;
+use tracing::log;
 
 pub const BATCH_SIZE: usize = 5000;
 pub const SCRIPT_TYPE_P2MS: &str = "p2ms";
@@ -188,9 +189,10 @@ impl GenesisUTXOCommand {
                     utxo_datas.clone(),
                 )?;
                 utxo_datas.clear();
-                println!(
+                log::debug!(
                     "process_utxos pre_utxostore_state_root: {:?}, new_utxostore_state_root: {:?}",
-                    pre_utxostore_state_root, new_utxostore_state_root
+                    pre_utxostore_state_root,
+                    new_utxostore_state_root
                 );
                 println!("process_utxos utxo count: {}", utxo_count);
                 pre_utxostore_state_root = new_utxostore_state_root;
@@ -206,11 +208,11 @@ impl GenesisUTXOCommand {
                     address_mapping_datas,
                     &mut address_mapping_checker,
                 )?;
-                println!(
+                log::debug!(
                     "process_address_mappings pre_address_mapping_state_root: {:?}, new_address_mapping_state_root: {:?}",
                     pre_address_mapping_state_root, new_address_mapping_state_root
                 );
-                println!(
+                log::debug!(
                     "process_address_mappings pre_reverse_address_mapping_state_root: {:?}, new_reverse_address_mapping_state_root: {:?}",
                     pre_reverse_address_mapping_state_root, new_reverse_address_mapping_state_root
                 );
@@ -225,9 +227,10 @@ impl GenesisUTXOCommand {
             let (new_utxostore_state_root, address_mapping_datas) =
                 Self::process_utxos(&moveos_store, pre_utxostore_state_root, utxo_datas.clone())?;
             utxo_datas.clear();
-            println!(
+            log::debug!(
                 "process_utxos pre_utxostore_state_root: {:?}, new_utxostore_state_root: {:?}",
-                pre_utxostore_state_root, new_utxostore_state_root
+                pre_utxostore_state_root,
+                new_utxostore_state_root
             );
             println!("process_utxos utxo count: {}", utxo_count);
             pre_utxostore_state_root = new_utxostore_state_root;
@@ -243,11 +246,11 @@ impl GenesisUTXOCommand {
                 address_mapping_datas,
                 &mut address_mapping_checker,
             )?;
-            println!(
+            log::debug!(
                 "process_address_mappings pre_address_mapping_state_root: {:?}, new_address_mapping_state_root: {:?}",
                 pre_address_mapping_state_root, new_address_mapping_state_root
             );
-            println!(
+            log::debug!(
                 "process_address_mappings pre_reverse_address_mapping_state_root: {:?}, new_reverse_address_mapping_state_root: {:?}",
                 pre_reverse_address_mapping_state_root, new_reverse_address_mapping_state_root
             );

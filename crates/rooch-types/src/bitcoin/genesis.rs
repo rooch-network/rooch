@@ -12,8 +12,6 @@ pub const MODULE_NAME: &IdentStr = ident_str!("genesis");
 pub struct BitcoinGenesisContext {
     /// The bitcoin network
     pub network: u8,
-    /// The bitcoin data import mode. 1 include UTXOs, 2 include UTXOs + Ord data.
-    pub data_import_mode: u8,
 }
 
 impl MoveStructType for BitcoinGenesisContext {
@@ -26,16 +24,12 @@ impl MoveStructState for BitcoinGenesisContext {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
             move_core_types::value::MoveTypeLayout::U8,
-            move_core_types::value::MoveTypeLayout::U8,
         ])
     }
 }
 
 impl BitcoinGenesisContext {
-    pub fn new(network: u8, data_import_mode: u8) -> Self {
-        Self {
-            network,
-            data_import_mode,
-        }
+    pub fn new(network: u8) -> Self {
+        Self { network }
     }
 }
