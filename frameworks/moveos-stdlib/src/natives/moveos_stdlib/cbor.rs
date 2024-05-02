@@ -48,38 +48,51 @@ fn parse_struct_value_from_cbor_value(
     cbor_value: &CborValue,
     context: &NativeContext,
 ) -> Result<Struct> {
-    match layout {
-        MoveStructLayout::WithTypes { type_: struct_type, fields } => {
-            let str_value = match struct_type {
-                _ if struct_type.is_std_string(&MOVE_STD_ADDRESS) => {
-                    cbor_value.as_bytes().ok_or_else(|| anyhow::anyhow!("Invalid string value"))?
-                }
-                _ if struct_type.is_ascii_string(&MOVE_STD_ADDRESS) => {
-                    let str_value = cbor_value.as_bytes().ok_or_else(|| anyhow::anyhow!("Invalid ascii string value"))?;
-                    if !str_value.iter().all(|&b| b.is_ascii()) {
-                        return Err(anyhow::anyhow!("Invalid ascii string value"));
-                    }
-                    str_value
-                }
-                _ => {
-                    let field_values = fields.iter().map(|field| -> Result<MoveValue> {
-                        let name = field.name.as_str();
-                        let cbor_field = cbor_value.as_map().ok_or_else(|| anyhow::anyhow!("type: {}, Expected a map value", struct_type))?
-                            .iter()
-                            .find(|(key, _)| key.into_text().unwrap_or("".to_owned()) == name)
-                            .map(|(_, value)| value)
-                            .ok_or_else(|| anyhow::anyhow!("Missing field: {}", name))?;
-                        parse_move_value_from_cbor_value(&field.layout, cbor_field, context)
-                    }).collect::<Result<Vec<MoveValue>>>()?;
-                    return Ok(Struct::pack(field_values));
-                }
-            };
-            Ok(Struct::pack(vec![MoveValue::vector_u8(str_value.to_vec())]))
+    if let MoveStructLayout::WithTypes {
+        type_: struct_type,
+        fields,
+    } = layout
+    {
+        if struct_type.is_std_string(&MOVE_STD_ADDRESS) {
+            let str_value = cbor_value
+                .as_bytes()
+                .ok_or_else(|| anyhow::anyhow!("Invalid string value"))?;
+            Ok(Struct::pack(vec![MoveValue::vector_u8(
+                str_value.to_vec(),
+            )]))
+        } else if struct_type.is_ascii_string(&MOVE_STD_ADDRESS) {
+            let str_value = cbor_value
+                .as_bytes()
+                .ok_or_else(|| anyhow::anyhow!("Invalid ascii string value"))?;
+            if !str_value.iter().all(|&b| b.is_ascii()) {
+                return Err(anyhow::anyhow!("Invalid ascii string value"));
+            }
+            Ok(Struct::pack(vec![MoveValue::vector_u8(
+                str_value.to_vec(),
+            )]))
+        } else {
+            let field_values = fields
+                .iter()
+                .map(|field| -> Result<MoveValue> {
+                    let name = field.name.as_str();
+                    let cbor_field = cbor_value
+                        .as_map()
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("type: {}, Expected a map value", struct_type)
+                        })?
+                        .iter().find(|x|{x.0.into_text().unwrap()==name})
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("type: {}, Missing field {}", struct_type, name)
+                        })?;
+                    parse_move_value_from_cbor_value(&field.layout, cbor_field, context)
+                })
+                .collect::<Result<Vec<MoveValue>>>()?;
+            Ok(Struct::pack(field_values))
         }
-        _ => Err(anyhow::anyhow!("Invalid MoveStructLayout")),
+    } else {
+        Err(anyhow::anyhow!("Invalid MoveStructLayout"))
     }
 }
-
 
 /// Parse a Move value from a CBOR value based on the provided layout.
 ///
