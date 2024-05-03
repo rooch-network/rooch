@@ -25,12 +25,12 @@ module moveos_std::cbor {
     }
 
     /// Serialize a value of type T to CBOR bytes.
-    public fun to_cbor<T: drop>(value: T): vector<u8> {
+    public fun to_cbor<T: drop>(value: &T): vector<u8> {
         native_to_cbor(value)
     }
 
     native fun native_from_cbor<T>(bytes: vector<u8>): Option<T>;
-    native fun native_to_cbor<T>(value: T): vector<u8>;
+    native fun native_to_cbor<T>(value: &T): vector<u8>;
 
     #[test_only]
     use std::vector;
@@ -42,9 +42,10 @@ module moveos_std::cbor {
         bytes: vector<u8>,
     }
 
+
     #[test]
     fun test_from_cbor() {
-        let cbor_bytes = x"A2636279746573C4046362C06263C06263C063766176616C756518D8";
+        let cbor_bytes = x"8218648403020100";
         let obj = from_cbor<Test>(cbor_bytes);
         assert!(obj.value == 100u64, 0);
         assert!(vector::length(&obj.bytes) == 4, 1);
@@ -54,10 +55,11 @@ module moveos_std::cbor {
         assert!(vector::borrow(&obj.bytes, 3) == &0u8, 5);
     }
 
+
     #[test]
     fun test_to_cbor() {
         let test = Test { value: 100u64, bytes: vector<u8>[3u8, 2u8, 1u8, 0u8] };
-        let cbor_bytes = to_cbor(test);
-        assert!(cbor_bytes == x"A2636279746573C4046362C06263C06263C063766176616C756518D8", 0);
+        let cbor_bytes = to_cbor(&test);
+        assert!(cbor_bytes == x"8218648403020100", 1);
     }
 }

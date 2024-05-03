@@ -75,5 +75,5 @@ If the CBOR bytes are invalid, it will return None.
 Serialize a value of type T to CBOR bytes.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="cbor.md#0x2_cbor_to_cbor">to_cbor</a>&lt;T: drop&gt;(value: T): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="cbor.md#0x2_cbor_to_cbor">to_cbor</a>&lt;T: drop&gt;(value: &T): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
