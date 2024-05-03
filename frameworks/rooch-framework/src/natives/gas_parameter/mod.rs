@@ -11,6 +11,7 @@ mod events;
 pub mod gas_member;
 mod hash;
 mod json;
+mod cbor;
 mod move_module;
 pub mod move_std;
 pub mod native;

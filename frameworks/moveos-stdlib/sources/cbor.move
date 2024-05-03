@@ -37,7 +37,7 @@ module moveos_std::cbor {
 
     #[test_only]
     #[data_struct]
-    struct Test has drop, store {
+    struct Test has copy, drop, store {
         value: u64,
         bytes: vector<u8>,
     }
