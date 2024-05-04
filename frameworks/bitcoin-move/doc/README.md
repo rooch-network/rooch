@@ -12,10 +12,10 @@ This is the reference documentation of the Bitcoin Move Framework.
 ## Index
 
 
+-  [`0x4::bitcoin`](light_client.md#0x4_bitcoin)
 -  [`0x4::bitseed`](bitseed.md#0x4_bitseed)
 -  [`0x4::brc20`](brc20.md#0x4_brc20)
 -  [`0x4::genesis`](genesis.md#0x4_genesis)
--  [`0x4::light_client`](light_client.md#0x4_light_client)
 -  [`0x4::network`](network.md#0x4_network)
 -  [`0x4::opcode`](opcode.md#0x4_opcode)
 -  [`0x4::ord`](ord.md#0x4_ord)

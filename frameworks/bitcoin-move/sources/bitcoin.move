@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module bitcoin_move::light_client{
+module bitcoin_move::bitcoin{
     use std::option::{Self, Option};
     use std::vector;
     use std::string::{String};

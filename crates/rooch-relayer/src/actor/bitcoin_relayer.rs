@@ -12,7 +12,7 @@ use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_config::BitcoinRelayerConfig;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_types::{
-    bitcoin::light_client::BitcoinLightClientModule,
+    bitcoin::BitcoinModule,
     multichain_id::RoochMultiChainID,
     transaction::{L1Block, L1BlockWithBody},
 };
@@ -67,10 +67,8 @@ impl BitcoinRelayer {
             return Ok(());
         }
         self.latest_sync_timestamp = chrono::Utc::now().timestamp() as u64;
-        let bitcoin_light_client = self
-            .move_caller
-            .as_module_binding::<BitcoinLightClientModule>();
-        let latest_block_height_in_rooch = bitcoin_light_client.get_latest_block_height()?;
+        let bitcoin_module = self.move_caller.as_module_binding::<BitcoinModule>();
+        let latest_block_height_in_rooch = bitcoin_module.get_latest_block_height()?;
         let latest_block_hash_in_bitcoin = self.rpc_client.get_best_block_hash().await?;
         let latest_block_header_info = self
             .rpc_client

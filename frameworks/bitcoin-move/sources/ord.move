@@ -21,7 +21,7 @@ module bitcoin_move::ord {
     use bitcoin_move::utxo::{Self, UTXO};
 
     friend bitcoin_move::genesis;
-    friend bitcoin_move::light_client;
+    friend bitcoin_move::bitcoin;
 
     /// How may blocks between halvings.
     const SUBSIDY_HALVING_INTERVAL: u32 = 210_000;

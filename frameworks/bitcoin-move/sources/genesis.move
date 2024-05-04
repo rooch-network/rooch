@@ -5,7 +5,7 @@ module bitcoin_move::genesis{
     use std::option;
     use moveos_std::tx_context;
     use moveos_std::signer;
-    use bitcoin_move::light_client;
+    use bitcoin_move::bitcoin;
     use bitcoin_move::ord;
     use bitcoin_move::brc20;
     use bitcoin_move::utxo;
@@ -27,7 +27,7 @@ module bitcoin_move::genesis{
         utxo::genesis_init();
         brc20::genesis_init(&genesis_account);
         ord::genesis_init(&genesis_account);
-        light_client::genesis_init(&genesis_account);
+        bitcoin::genesis_init(&genesis_account);
     }
 
     #[test_only]
