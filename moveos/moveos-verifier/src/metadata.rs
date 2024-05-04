@@ -1019,7 +1019,7 @@ fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> b
     return match field_type {
         Type::Primitive(_) => true,
         Type::Vector(item_type) => check_data_struct_fields_type(item_type.as_ref(), module_env),
-        Type::Struct(module_id, struct_id, _) => {
+        Type::Struct(module_id, struct_id, ty_args) => {
             let module = module_env.env.get_module(*module_id);
 
             let struct_name = module_env
@@ -1034,6 +1034,14 @@ fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> b
 
             let struct_module = module_env.env.get_module(*module_id);
             let struct_env = struct_module.get_struct(*struct_id);
+
+            if is_std_option_type(&full_struct_name) {
+                if let Some(item_type) = ty_args.first() {
+                    return check_data_struct_fields_type(item_type, module_env)
+                }
+                
+                return false
+            }
 
             if !is_data_struct_annotation(&struct_env, module_env) {
                 return false;
@@ -1059,7 +1067,14 @@ fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> b
 fn is_allowed_data_struct_type(full_struct_name: &str) -> bool {
     matches!(
         full_struct_name,
-        "0x1::string::String" | "0x1::ascii::String" | "0x2::object::ObjectID"
+        "0x1::string::String" | "0x1::ascii::String" | "0x2::object::ObjectID" 
+    )
+}
+
+fn is_std_option_type(full_struct_name: &str) -> bool {
+    matches!(
+        full_struct_name,
+        "0x1::option::Option"
     )
 }
 

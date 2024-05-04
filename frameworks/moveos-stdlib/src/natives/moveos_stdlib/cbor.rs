@@ -9,12 +9,11 @@ use ciborium::value::Value as CborValue;
 use log::debug;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::TypeTag;
+use move_core_types::language_storage::{TypeTag, StructTag};
 use move_core_types::identifier::Identifier;
 use move_core_types::value::{MoveTypeLayout, MoveStructLayout, MoveFieldLayout};
 use move_core_types::value::MoveValue as CoreMoveValue;
 use move_core_types::value::MoveStruct;
-use move_core_types::value::{MOVE_STRUCT_TYPE, MOVE_STRUCT_FIELDS};
 use move_core_types::vm_status::StatusCode;
 use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
@@ -24,9 +23,14 @@ use move_vm_types::{
     pop_arg,
     values::{values_impl::Reference, Struct, Value as MoveValue, Vector},
 };
-use move_core_types::u256::{self, U256_NUM_BYTES};
+
 use moveos_types::addresses::MOVE_STD_ADDRESS;
+use moveos_types::move_std::string::MoveString;
+use moveos_types::moveos_std::simple_map::{Element, SimpleMap};
+use moveos_types::state::{MoveStructType, MoveType};
 use primitive_types::U256 as PrimitiveU256;
+use move_core_types::u256::{self, U256_NUM_BYTES};
+use primitive_types::U128 as PrimitiveU128;
 use smallvec::smallvec;
 use std::collections::VecDeque;
 use std::io::Cursor;
@@ -50,11 +54,9 @@ fn parse_struct_value_from_cbor_value(
     cbor_value: &CborValue,
     context: &NativeContext,
 ) -> Result<Struct> {
-    debug!("parse_struct_value_from_cbor_value: layout:{:?}, value:{:?}", layout, cbor_value);
-
     if let MoveStructLayout::WithTypes {
         type_: struct_type,
-        fields: move_fields,
+        fields: move_fields_layout,
     } = layout
     {
         if struct_type.is_std_string(&MOVE_STD_ADDRESS) {
@@ -74,10 +76,43 @@ fn parse_struct_value_from_cbor_value(
             Ok(Struct::pack(vec![MoveValue::vector_u8(
                 str_value.to_vec(),
             )]))
+        } else if is_std_option(struct_type, &MOVE_STD_ADDRESS) {
+            let mut vec_value = Vec::new();
+            let vec_layout = move_fields_layout.first().unwrap();
+            let type_tag: TypeTag = (&vec_layout.layout).try_into()?;
+            let ty = context.load_type(&type_tag)?;
+
+            if let (MoveTypeLayout::Vector(vec_layout), CborValue::Map(_map)) = (vec_layout.layout.clone(), cbor_value) {
+                let struct_layout = vec_layout.as_ref();
+                let move_struct_value = parse_move_value_from_cbor_value(&struct_layout, cbor_value, context)?;
+                vec_value.push(move_struct_value);
+            }
+
+            let value = Vector::pack(&ty, vec_value)?;
+            Ok(Struct::pack(vec!(value)))
+        } else if struct_type == &SimpleMap::<MoveString, Vec<u8>>::struct_tag() {
+            debug!("parse_struct_value_from_cbor_value simple_map layout:{:?}, value:{:?}", move_fields_layout, cbor_value);
+
+            let key_value_pairs = cbor_obj_to_key_value_pairs(cbor_value)?;
+            let mut key_values = Vec::new();
+
+            for (key, bytes) in key_value_pairs {
+                key_values.push(MoveValue::struct_(Struct::pack(vec![
+                    MoveValue::struct_(Struct::pack(vec![MoveValue::vector_u8(
+                        key.as_bytes().to_vec(),
+                    )])),
+                    MoveValue::vector_u8(
+                        bytes,
+                    ),
+                ])));
+            }
+
+            let element_type = context.load_type(&Element::<MoveString, Vec<u8>>::type_tag())?;
+            Ok(Struct::pack(vec![Vector::pack(&element_type, key_values)?]))
         } else {
             match cbor_value {
                 CborValue::Map(cbor_map) => {
-                    let field_values = move_fields
+                    let field_values = move_fields_layout
                     .iter()
                     .map(|field| -> Result<MoveValue> {
                         let name = field.name.as_str();
@@ -96,7 +131,7 @@ fn parse_struct_value_from_cbor_value(
                     Ok(Struct::pack(field_values))
                 },
                 CborValue::Array(cbor_fields) => {
-                    let field_values = move_fields.iter().zip(cbor_fields).map(|(field_layout,cbor_value)|-> Result<MoveValue> {
+                    let field_values = move_fields_layout.iter().zip(cbor_fields).map(|(field_layout,cbor_value)|-> Result<MoveValue> {
                         parse_move_value_from_cbor_value(&field_layout.layout, &cbor_value, context)
                     })
                     .collect::<Result<Vec<MoveValue>>>()?;
@@ -111,6 +146,45 @@ fn parse_struct_value_from_cbor_value(
         Err(anyhow::anyhow!("Invalid MoveStructLayout"))
     }
 }
+
+fn cbor_obj_to_key_value_pairs(cbor_value: &CborValue) -> Result<Vec<(String, Vec<u8>)>> {
+    if let CborValue::Map(cbor_map) = cbor_value {
+        let key_value_pairs = cbor_map.iter().map(|(key, value)| {
+            let name = key.clone().into_text().ok().ok_or_else(|| anyhow::anyhow!("Invalid key"))?;
+            let cbor_field = value;
+
+            debug!("cbor_obj_to_key_value_pairs name:{:?}, cbor_field:{:?}", name, cbor_field);
+
+            let bytes = match cbor_field {
+                CborValue::Null => {
+                    "null".as_bytes().to_vec()
+                },
+                CborValue::Bool(v) => {
+                    v.to_string().as_bytes().to_vec()
+                },
+                CborValue::Integer(v) => {
+                    let u64_value = u64::try_from(*v).ok().ok_or_else(|| anyhow::anyhow!("Invalid u64 value"))?;
+                    u64_value.to_string().as_bytes().to_vec()
+                },
+                CborValue::Text(t) => {
+                    t.as_bytes().to_vec()
+                }
+                _ => {
+                    let mut writer = Vec::new();
+                    into_writer(&cbor_value, &mut writer)?;
+                    writer
+                }
+            };
+
+            Ok((String::from(name), bytes))
+        }).collect::<Result<Vec<(String, Vec<u8>)>>>()?;
+
+        Ok(key_value_pairs)
+    } else {
+        Err(anyhow::anyhow!("Invalid json object"))
+    }
+}
+
 
 /// Parse a Move value from a CBOR value based on the provided layout.
 ///
@@ -131,8 +205,6 @@ fn parse_move_value_from_cbor_value(
     cbor_value: &CborValue,
     context: &NativeContext,
 ) -> Result<MoveValue> {
-    debug!("parse_move_value_from_cbor_value: layout:{:?}, value:{:?}", layout, cbor_value);
-
     match layout {
         // Parse a boolean value
         MoveTypeLayout::Bool => {
@@ -151,8 +223,6 @@ fn parse_move_value_from_cbor_value(
         }
         // Parse an unsigned 64-bit integer
         MoveTypeLayout::U64 => {
-            debug!("parse_move_value_from_cbor_value: u64:{:?}", cbor_value.as_integer());
-
             let u64_value = cbor_value
                 .as_integer()
                 .and_then(|int| u64::try_from(int).ok())
@@ -161,12 +231,25 @@ fn parse_move_value_from_cbor_value(
         }
         // Parse an unsigned 128-bit integer
         MoveTypeLayout::U128 => {
-            let u128_value = cbor_value
-                .as_integer()
-                .and_then(|int| u128::try_from(int).ok())
+            const BIGPOS: u64 = 2;
+
+            let (tag, value) = cbor_value
+                .as_tag()
                 .ok_or_else(|| anyhow::anyhow!("Invalid u128 value"))?;
-            Ok(MoveValue::u128(u128_value))
+        
+            // Verify tag is correct
+            if tag != BIGPOS {
+                return Err(anyhow::anyhow!("Invalid CBOR tag for u128 value"));
+            }
+        
+            let u128_bytes = value
+                .as_bytes()
+                .ok_or_else(|| anyhow::anyhow!("Invalid u128 value"))?;
+
+            let u128_value = PrimitiveU128::from_big_endian(&u128_bytes);
+            Ok(MoveValue::u128(u128_value.as_u128()))
         }
+
         // Parse an address value
         MoveTypeLayout::Address => {
             let bytes = cbor_value
@@ -251,11 +334,9 @@ fn serialize_move_value_to_cbor_value(layout: &MoveTypeLayout, value: &CoreMoveV
     use MoveTypeLayout as L;
     use CoreMoveValue as MoveValue;
 
-    debug!("serialize_move_value_to_cbor: layout:{:?}, value:{:?}", layout, value);
-
     let cbor_value = match (layout, value) {
         (L::Struct(layout), MoveValue::Struct(struct_)) => {
-            serialize_move_struct_to_cbor(layout, struct_)?
+            serialize_move_struct_to_cbor_value(layout, struct_)?
         }
         (L::Bool, MoveValue::Bool(b)) => CborValue::from(*b),
         (L::U8, MoveValue::U8(b)) => CborValue::from(*b),
@@ -283,14 +364,15 @@ fn serialize_move_value_to_cbor_value(layout: &MoveTypeLayout, value: &CoreMoveV
 
             CborValue::Array(cbor_vec)
         }
-        _ => unreachable!(),
+        _ => return Err(anyhow::anyhow!("Invalid combination of MoveStructLayout and MoveStruct")),
     };
 
     Ok(cbor_value)
 }
 
-fn serialize_move_struct_to_cbor(layout: &MoveStructLayout, struct_: &MoveStruct) -> Result<CborValue> {
+fn serialize_move_struct_to_cbor_value(layout: &MoveStructLayout, struct_: &MoveStruct) -> Result<CborValue> {
     use MoveStructLayout as L;
+    use CoreMoveValue as MoveValue;
 
     let value = match (layout, struct_) {
         (L::Runtime(layouts), MoveStruct::Runtime(s)) => {
@@ -302,15 +384,58 @@ fn serialize_move_struct_to_cbor(layout: &MoveStructLayout, struct_: &MoveStruct
             CborValue::Array(cbor_array)
         }
         (L::WithFields(layout_fields), MoveStruct::WithFields(value_fields)) => {
-            serialize_move_fields_to_cbor(layout_fields, value_fields)?
+            serialize_move_fields_to_cbor_value(layout_fields, value_fields)?
         },
-        (L::WithTypes {type_, fields: layout_fields}, MoveStruct::WithTypes { type_: _, fields: value_fields }) => {
-            let mut cbor_fields: Vec<(CborValue, CborValue)> = Vec::new();
-            cbor_fields.push((CborValue::Text(MOVE_STRUCT_TYPE.to_owned()), CborValue::Text(type_.to_string())));
+        (L::WithTypes {type_:struct_type, fields: layout_fields}, MoveStruct::WithTypes { type_: _, fields: value_fields }) => {
+            if struct_type.is_ascii_string(&MOVE_STD_ADDRESS) {
+                let bytes_field = value_fields
+                    .first()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid bytes field"))?;
 
-            let fields = serialize_move_fields_to_cbor(layout_fields, value_fields)?;
-            cbor_fields.push((CborValue::Text(MOVE_STRUCT_FIELDS.to_owned()), fields));
-            CborValue::Map(cbor_fields)
+                match bytes_field.1.clone() {
+                    MoveValue::Vector(vec) => {
+                        let cbor_bytes = MoveValue::vec_to_vec_u8(vec)?;
+                        CborValue::Bytes(cbor_bytes)
+                    },
+                    _ => return Err(anyhow::anyhow!("Invalid ascii string")),
+                }
+            } else if struct_type.is_std_string(&MOVE_STD_ADDRESS) {
+                let bytes_field = value_fields
+                    .first()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid bytes field"))?;
+
+                match bytes_field.1.clone() {
+                    MoveValue::Vector(vec) => {
+                        let cbor_bytes = MoveValue::vec_to_vec_u8(vec)?;
+                        CborValue::Bytes(cbor_bytes)
+                    },
+                    _ => return Err(anyhow::anyhow!("Invalid std string")),
+                }
+            } else if is_std_option(struct_type, &MOVE_STD_ADDRESS) {
+                let vec_layout = layout_fields
+                    .first()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid std option layout"))?;
+                let vec_field = value_fields
+                    .first()
+                    .ok_or_else(|| anyhow::anyhow!("Invalid std option field"))?;
+
+                match (vec_layout.clone().layout, vec_field.1.clone()) {
+                    (MoveTypeLayout::Vector(vec_layout), MoveValue::Vector(vec)) => {
+                        let item_layout = vec_layout.as_ref();
+
+                        if vec.len() > 0 {
+                            let cbor_val = serialize_move_value_to_cbor_value(item_layout, vec.first().unwrap())?;
+                            debug!("serialize_move_struct_to_cbor_value is_std_option cbor_val: {:?}", cbor_val);
+                            cbor_val
+                        } else {
+                            CborValue::Null
+                        }
+                    },
+                    _ => return Err(anyhow::anyhow!("Invalid std option")),
+                }
+            } else {
+                serialize_move_fields_to_cbor_value(layout_fields, value_fields)?
+            }
         },
         _ => return Err(anyhow::anyhow!("Invalid combination of MoveStructLayout and MoveStruct")),
     };
@@ -318,8 +443,13 @@ fn serialize_move_struct_to_cbor(layout: &MoveStructLayout, struct_: &MoveStruct
     Ok(value)
 }
 
+fn is_std_option(struck_tag: &StructTag, move_std_addr: &AccountAddress) -> bool {
+    struck_tag.address == *move_std_addr
+        && struck_tag.module.as_str().eq("option")
+        && struck_tag.name.as_str().eq("Option")
+}
 
-fn serialize_move_fields_to_cbor(layout_fields: &Vec<MoveFieldLayout>, value_fields: &Vec<(Identifier, move_core_types::value::MoveValue)>) -> Result<CborValue> {
+fn serialize_move_fields_to_cbor_value(layout_fields: &Vec<MoveFieldLayout>, value_fields: &Vec<(Identifier, move_core_types::value::MoveValue)>) -> Result<CborValue> {
     let mut fields = Vec::new();
         
     for (filed_layout, (name, value)) in layout_fields.iter().zip(value_fields) {
@@ -472,7 +602,16 @@ fn native_to_cbor(
 
     let move_val = ref_to_val.read_ref()?.as_move_value(&layout);
 
-    let bytes = match serialize_move_value_to_cbor(&layout, &move_val) {
+    let annotated_layout = match context.type_to_fully_annotated_layout(&arg_type)? {
+        Some(layout) => layout,
+        None => {
+            return Ok(NativeResult::err(cost, E_CBOR_SERIALIZATION_FAILURE));
+        }
+    };
+
+    let annotated_move_val = move_val.decorate(&annotated_layout);
+
+    let bytes = match serialize_move_value_to_cbor(&annotated_layout, &annotated_move_val) {
         Ok(bytes) => {
             cost += gas_params.per_byte_in_str * NumBytes::new(bytes.len() as u64);
             bytes
