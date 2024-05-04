@@ -19,8 +19,10 @@ pub static R_DEFAULT_DB_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("roochdb
 static R_DEFAULT_DB_MOVEOS_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("moveos_store"));
 static R_DEFAULT_DB_ROOCH_SUBDIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("rooch_store"));
 
-pub const DEFAULT_ROCKSDB_ROW_CACHE_SIZE: u64 = 1 << 28; // 256MB, for Rooch DB instance, doesn't need too much row cache
-pub const DEFAULT_ROCKSDB_BLOCK_CACHE_SIZE: u64 = 1 << 30; // 1GB, for Rooch DB instance, doesn't need too much block cache
+// for Rooch DB instance, doesn't need too much row cache:
+// store ledger tx and several meta. Most of the time, they are always requested for newer data
+pub const DEFAULT_ROCKSDB_ROW_CACHE_SIZE: u64 = 1 << 24; // 16MB,
+pub const DEFAULT_ROCKSDB_BLOCK_CACHE_SIZE: u64 = 1 << 26; // 64MB
 
 #[derive(Clone, Default, Debug, Deserialize, PartialEq, Serialize, Parser)]
 #[serde(deny_unknown_fields)]
