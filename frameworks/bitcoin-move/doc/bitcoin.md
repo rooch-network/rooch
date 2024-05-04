@@ -43,7 +43,7 @@
 
 
 
-<pre><code><b>struct</b> <a href="light_client.md#0x4_bitcoin_TxProgressErrorLogEvent">TxProgressErrorLogEvent</a> <b>has</b> <b>copy</b>, drop
+<pre><code><b>struct</b> <a href="bitcoin.md#0x4_bitcoin_TxProgressErrorLogEvent">TxProgressErrorLogEvent</a> <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 
@@ -54,7 +54,7 @@
 
 
 
-<pre><code><b>struct</b> <a href="light_client.md#0x4_bitcoin_BitcoinBlockStore">BitcoinBlockStore</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="bitcoin.md#0x4_bitcoin_BitcoinBlockStore">BitcoinBlockStore</a> <b>has</b> key
 </code></pre>
 
 
@@ -68,7 +68,7 @@
 
 
 
-<pre><code><b>const</b> <a href="light_client.md#0x4_bitcoin_ErrorBlockNotFound">ErrorBlockNotFound</a>: u64 = 1;
+<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ErrorBlockNotFound">ErrorBlockNotFound</a>: u64 = 1;
 </code></pre>
 
 
@@ -77,7 +77,7 @@
 
 
 
-<pre><code><b>const</b> <a href="light_client.md#0x4_bitcoin_ErrorBlockAlreadyProcessed">ErrorBlockAlreadyProcessed</a>: u64 = 2;
+<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ErrorBlockAlreadyProcessed">ErrorBlockAlreadyProcessed</a>: u64 = 2;
 </code></pre>
 
 
@@ -86,7 +86,7 @@
 
 
 
-<pre><code><b>const</b> <a href="light_client.md#0x4_bitcoin_ORDINAL_GENESIS_HEIGHT">ORDINAL_GENESIS_HEIGHT</a>: u64 = 767430;
+<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ORDINAL_GENESIS_HEIGHT">ORDINAL_GENESIS_HEIGHT</a>: u64 = 767430;
 </code></pre>
 
 
@@ -97,7 +97,7 @@
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="light_client.md#0x4_bitcoin_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>)
 </code></pre>
 
 
@@ -108,7 +108,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="light_client.md#0x4_bitcoin_get_tx">get_tx</a>(txid: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="types.md#0x4_types_Transaction">types::Transaction</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_tx">get_tx</a>(txid: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="types.md#0x4_types_Transaction">types::Transaction</a>&gt;
 </code></pre>
 
 
@@ -120,7 +120,7 @@
 Get block via block_hash
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="light_client.md#0x4_bitcoin_get_block">get_block</a>(block_hash: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="types.md#0x4_types_Header">types::Header</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_block">get_block</a>(block_hash: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="types.md#0x4_types_Header">types::Header</a>&gt;
 </code></pre>
 
 
@@ -131,7 +131,7 @@ Get block via block_hash
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="light_client.md#0x4_bitcoin_get_block_height">get_block_height</a>(block_hash: <b>address</b>): <a href="_Option">option::Option</a>&lt;u64&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_block_height">get_block_height</a>(block_hash: <b>address</b>): <a href="_Option">option::Option</a>&lt;u64&gt;
 </code></pre>
 
 
@@ -143,7 +143,7 @@ Get block via block_hash
 Get block via block_height
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="light_client.md#0x4_bitcoin_get_block_by_height">get_block_by_height</a>(block_height: u64): <a href="_Option">option::Option</a>&lt;<a href="types.md#0x4_types_Header">types::Header</a>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_block_by_height">get_block_by_height</a>(block_height: u64): <a href="_Option">option::Option</a>&lt;<a href="types.md#0x4_types_Header">types::Header</a>&gt;
 </code></pre>
 
 
@@ -155,7 +155,7 @@ Get block via block_height
 Get latest block height
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="light_client.md#0x4_bitcoin_get_latest_block_height">get_latest_block_height</a>(): <a href="_Option">option::Option</a>&lt;u64&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_latest_block_height">get_latest_block_height</a>(): <a href="_Option">option::Option</a>&lt;u64&gt;
 </code></pre>
 
 
@@ -166,5 +166,5 @@ Get latest block height
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="light_client.md#0x4_bitcoin_need_process_oridinals">need_process_oridinals</a>(block_height: u64): bool
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_need_process_oridinals">need_process_oridinals</a>(block_height: u64): bool
 </code></pre>
