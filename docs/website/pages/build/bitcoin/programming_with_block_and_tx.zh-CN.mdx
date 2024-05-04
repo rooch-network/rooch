@@ -1,0 +1,21 @@
+# 通过 Bitcoin 的区块和交易编程
+
+import { Callout, FileTree } from 'nextra/components'
+
+Rooch 内置了 [bitcoin-move](https://github.com/rooch-network/rooch/tree/main/frameworks/bitcoin-move) 框架，开发者可以通过 bitcoin-move 框架来读取 Bitcoin 区块以及交易，利用区块和交易中携带的数据来进行编程。
+
+## 在合约中读取 Bitcoin 区块和交易
+
+<Callout>
+TODO: 这部分文档需要改进
+
+1. 如何读取交易，以及交易字段说明
+2. 如何读取区块，以及区块字段说明
+3. 需要说明 Bitcoin 哈希在 Move 中的表达方式以及区别
+</Callout>
+
+## 应用场景
+
+1. 利用 Bitcoin 哈希作为随机数种子，实现一个随机数生成器。注意，这种场景需要使用未来的区块哈希，避免被预测。
+2. 将应用数据通过 OP_RETURN 写入 Bitcoin 中，然后通过 Move 合约读取交易中的 OP_RETURN 数据，进行处理。
+3. 在 Move 中校验 Bitcoin 交易的 Script，实现 Move 和 Bitcoin Script 混合编程。这个特性尚在开发中，可以跟踪 [Issue #1651](https://github.com/rooch-network/rooch/issues/1651)。 

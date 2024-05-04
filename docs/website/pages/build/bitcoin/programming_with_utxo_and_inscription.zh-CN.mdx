@@ -1,0 +1,44 @@
+# 通过 Bitcoin 的 UTXO 和 Inscription 编程
+
+import { Callout, FileTree } from 'nextra/components'
+
+Bitcoin 的 UTXO 和 Inscription 在 Rooch 中会被解析成 Move 的 [Object](https://rooch.network/learn/core-concepts/objects/object)，开发者可以通过 Object 相关的 API 来操作 Bitcoin 的 UTXO 和 Inscription。
+
+## 原子化状态绑定
+
+Rooch 通过 Move 的 Object 嵌套特效，实现 Bitcoin 状态和 Rooch L2 状态之间的原子化绑定。
+
+![Atomic-binding UTXO](/blog/stackable-l2/rooch-atomic-binding-utxo.svg)
+
+比如上图中的 UTXO X 在 Move 中表达为一种 Object，它内置一个 Temporary 区域，嵌套放置在该区域的状态，在该 UTXO 被消费的时候会被清理掉。它类似于 RGB 的“一次性密封”，利用了 UTXO 只能被消费一次的特性。比如有个应用提供一种持有 Bitcoin 挖矿的特性，将用户的 Stake 信息存在该区域，一旦用户消费掉该 UTXO，则自动丢失 Stake 信息。而如果是支持 UTXO 映射追踪的协议的状态，则可以提供 Permanent Area，实现 L1 与 L2 的状态的原子化转让。
+
+![Atomic-binding Inscription](/blog/stackable-l2/rooch-atomic-binding-ord.svg)
+
+比如上图中，是通过 Move 表达的一种 Bitcoin 链上状态，比如 Ordinals Inscription（RGB 同理）。它里面的 Permanent Area 可以保存永久的状态，比如 Coin 或者 NFT。一旦该 Inscription 在 L1 被转让，Temporary Area 中的状态会被清空，而 Permanent Area 的状态会被保留，一并转让给新的所有者。 
+
+## 用 UTXO 编程
+
+<Callout>
+TODO: 这部分文档需要改进
+
+1. UTXO 的字段说明
+2. 如何通过方法参数接受 UTXO
+3. 如何在 UTXO 的临时区域中存储数据
+</Callout>
+
+### 示例
+
+1. [btc_holder_coin](https://github.com/rooch-network/rooch/blob/main/examples/btc_holder_coin): 一个简单的 UTXO 示例，实现了给 Bitcoin 持有者按持有时间发放代币的功能。
+2. [btc_holder_farmer](https://github.com/rooch-network/rooch/blob/main/examples/btc_holder_farmer): 一个更复杂的 UTXO 示例，实现了给 Bitcoin 持有者通过 DeFi farmer 模式 发放代币奖励的功能。
+
+## 用 Inscription 编程
+
+<Callout>
+TODO: 这部分文档需要改进
+1. Inscription 的字段说明
+2. 如何通过方法参数接受 Inscription
+3. 如何在 Inscription 的临时区域和永久区域中存储数据
+</Callout>
+
+### 示例
+1. [bitcoin_plants](https://github.com/rooch-network/rooch/blob/main/examples/bitcoin_plants): 一个简单的 Inscription 示例，实现了将 Bitcoin Inscription 作为种子，在 Layer2 上种植植物的游戏。这个植物的所有权会随着 Inscription 一起转移。
