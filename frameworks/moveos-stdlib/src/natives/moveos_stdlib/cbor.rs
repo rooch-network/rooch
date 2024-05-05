@@ -189,20 +189,6 @@ fn cbor_obj_to_key_value_pairs(cbor_value: &CborValue) -> Result<Vec<(String, Ve
     }
 }
 
-/// Parse a Move value from a CBOR value based on the provided layout.
-///
-/// This function takes a `MoveTypeLayout` and a `Value` (from the `ciborium` crate),
-/// and recursively parses the CBOR value into the corresponding Move value.
-///
-/// Arguments:
-///
-/// * `layout` - The `MoveTypeLayout` describing the expected type of the Move value.
-/// * `cbor_value` - The `Value` representing the CBOR value to be parsed.
-/// * `context` - The `NativeContext` providing access to the Move VM runtime.
-///
-/// Returns:
-///
-/// A `Result` containing the parsed `MoveValue`, or an `anyhow::Error` if the parsing failed.
 fn parse_move_value_from_cbor_value(
     layout: &MoveTypeLayout,
     cbor_value: &CborValue,
@@ -329,17 +315,6 @@ fn parse_move_value_from_cbor_value(
     }
 }
 
-/// Serialize a Move value to CBOR bytes.
-///
-/// This function takes a `MoveValue` and serializes it to a vector of CBOR bytes.
-///
-/// Arguments:
-///
-/// * `value` - The `MoveValue` to be serialized.
-///
-/// Returns:
-///
-/// A `Result` containing the serialized CBOR bytes as a `Vec<u8>`, or an `anyhow::Error` if the serialization failed.
 fn serialize_move_value_to_cbor(layout: &MoveTypeLayout, value: &CoreMoveValue) -> Result<Vec<u8>> {
     let mut writer = Vec::new();
 

@@ -6,10 +6,8 @@ module moveos_std::cbor {
     use std::option::{Self, Option};
     use moveos_std::simple_map::{Self, SimpleMap};
 
-    /// Error if the `T` is not a struct
-    const ERROR_TYPE_NOT_MATCH: u64 = 1;
     /// Error if the CBOR bytes are invalid
-    const ERROR_INVALID_CBOR_BYTES: u64 = 2;
+    const ERROR_INVALID_CBOR_BYTES: u64 = 1;
 
     #[data_struct(T)]
     /// Function to deserialize a type T from CBOR bytes.

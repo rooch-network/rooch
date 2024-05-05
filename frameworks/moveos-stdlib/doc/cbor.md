@@ -29,17 +29,7 @@
 Error if the CBOR bytes are invalid
 
 
-<pre><code><b>const</b> <a href="cbor.md#0x2_cbor_ERROR_INVALID_CBOR_BYTES">ERROR_INVALID_CBOR_BYTES</a>: u64 = 2;
-</code></pre>
-
-
-
-<a name="0x2_cbor_ERROR_TYPE_NOT_MATCH"></a>
-
-Error if the <code>T</code> is not a struct
-
-
-<pre><code><b>const</b> <a href="cbor.md#0x2_cbor_ERROR_TYPE_NOT_MATCH">ERROR_TYPE_NOT_MATCH</a>: u64 = 1;
+<pre><code><b>const</b> <a href="cbor.md#0x2_cbor_ERROR_INVALID_CBOR_BYTES">ERROR_INVALID_CBOR_BYTES</a>: u64 = 1;
 </code></pre>
 
 
