@@ -1377,7 +1377,7 @@ fn check_func_data_struct(
             // #[data_struct(T)] supports not only structs, but also std::option::Option.
             if is_std_option_type(&full_struct_name) {
                 if let Some(item_type) = ty_args.first() {
-                    return check_func_data_struct(view, func_env, item_type)
+                    return check_func_data_struct(view, func_env, item_type);
                 }
             }
 

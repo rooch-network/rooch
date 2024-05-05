@@ -85,7 +85,7 @@ fn parse_struct_value_from_cbor_value(
 
             if let CborValue::Null = cbor_value {
                 let value = Vector::pack(&ty, vec_value)?;
-                return Ok(Struct::pack(vec![value]))
+                return Ok(Struct::pack(vec![value]));
             }
 
             if let MoveTypeLayout::Vector(vec_layout) = vec_layout.layout.clone() {
@@ -375,7 +375,9 @@ fn serialize_move_value_to_cbor_value(
             CborValue::Tag(TAG_BIGPOS, CborValue::Bytes(bytes.into()).into())
         }
         (L::Address, MoveValue::Address(addr)) => CborValue::Bytes(addr.to_vec()),
-        (L::Signer, MoveValue::Signer(_a)) => return Err(anyhow::anyhow!("Do not support Signer type")),
+        (L::Signer, MoveValue::Signer(_a)) => {
+            return Err(anyhow::anyhow!("Do not support Signer type"))
+        }
         (L::Vector(vec_layout), MoveValue::Vector(vec)) => {
             let layout = vec_layout.as_ref();
 
@@ -482,10 +484,7 @@ fn serialize_move_struct_to_cbor_value(
                         let item_layout = vec_layout.as_ref();
 
                         if vec.len() > 0 {
-                            serialize_move_value_to_cbor_value(
-                                item_layout,
-                                vec.first().unwrap(),
-                            )?
+                            serialize_move_value_to_cbor_value(item_layout, vec.first().unwrap())?
                         } else {
                             CborValue::Null
                         }
@@ -603,11 +602,7 @@ fn native_from_cbor(
     let result = match parse_move_value_from_cbor(&layout, bytes, context) {
         Ok(val) => {
             // Pack the MoveOption Some
-            Struct::pack(vec![Vector::pack(
-                type_param,
-                vec![val],
-            )
-            .map_err(|e| {
+            Struct::pack(vec![Vector::pack(type_param, vec![val]).map_err(|e| {
                 PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
                     .with_message(format!("Failed to pack Option: {:?}", e))
             })?])
