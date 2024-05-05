@@ -47,6 +47,7 @@ fn parse_move_value_from_cbor(
 ) -> Result<MoveValue> {
     let cursor = Cursor::new(bytes);
     let cbor_value: CborValue = from_reader(cursor)?;
+
     parse_move_value_from_cbor_value(layout, &cbor_value, context)
 }
 
@@ -91,9 +92,10 @@ fn parse_struct_value_from_cbor_value(
             if let MoveTypeLayout::Vector(vec_layout) = vec_layout.layout.clone() {
                 let struct_layout = vec_layout.as_ref();
                 let move_struct_value =
-                    parse_move_value_from_cbor_value(&struct_layout, cbor_value, context)?;
+                    parse_move_value_from_cbor_value(struct_layout, cbor_value, context)?;
                 vec_value.push(move_struct_value);
             }
+
             let value = Vector::pack(&ty, vec_value)?;
             Ok(Struct::pack(vec![value]))
         } else if struct_type == &SimpleMap::<MoveString, Vec<u8>>::struct_tag() {
@@ -140,7 +142,7 @@ fn parse_struct_value_from_cbor_value(
                         .map(|(field_layout, cbor_value)| -> Result<MoveValue> {
                             parse_move_value_from_cbor_value(
                                 &field_layout.layout,
-                                &cbor_value,
+                                cbor_value,
                                 context,
                             )
                         })
@@ -169,7 +171,6 @@ fn cbor_obj_to_key_value_pairs(cbor_value: &CborValue) -> Result<Vec<(String, Ve
                 let cbor_field = value;
 
                 let bytes = match cbor_field {
-                    CborValue::Text(t) => t.clone().into_bytes(),
                     CborValue::Bytes(t) => t.clone(),
                     _ => {
                         let mut writer = Vec::new();
@@ -178,7 +179,7 @@ fn cbor_obj_to_key_value_pairs(cbor_value: &CborValue) -> Result<Vec<(String, Ve
                     }
                 };
 
-                Ok((String::from(name), bytes))
+                Ok((name, bytes))
             })
             .collect::<Result<Vec<(String, Vec<u8>)>>>()?;
 
@@ -246,7 +247,7 @@ fn parse_move_value_from_cbor_value(
                 .as_bytes()
                 .ok_or_else(|| anyhow::anyhow!("Invalid u128 value"))?;
 
-            let u128_value = PrimitiveU128::from_big_endian(&u128_bytes);
+            let u128_value = PrimitiveU128::from_big_endian(u128_bytes);
             Ok(MoveValue::u128(u128_value.as_u128()))
         }
 
@@ -320,7 +321,7 @@ fn parse_move_value_from_cbor_value(
                 .as_bytes()
                 .ok_or_else(|| anyhow::anyhow!("Invalid u256 value"))?;
 
-            let value = PrimitiveU256::from_big_endian(&u256_bytes);
+            let value = PrimitiveU256::from_big_endian(u256_bytes);
             let mut buffer = [0u8; U256_NUM_BYTES];
             value.to_little_endian(&mut buffer);
             Ok(MoveValue::u256(u256::U256::from_le_bytes(&buffer)))
@@ -372,7 +373,7 @@ fn serialize_move_value_to_cbor_value(
             let mut buffer = [0u8; U256_NUM_BYTES];
             value.to_big_endian(&mut buffer);
             let bytes = buffer[leading_empty_bytes..].to_vec();
-            CborValue::Tag(TAG_BIGPOS, CborValue::Bytes(bytes.into()).into())
+            CborValue::Tag(TAG_BIGPOS, CborValue::Bytes(bytes).into())
         }
         (L::Address, MoveValue::Address(addr)) => CborValue::Bytes(addr.to_vec()),
         (L::Signer, MoveValue::Signer(_a)) => {
@@ -483,7 +484,7 @@ fn serialize_move_struct_to_cbor_value(
                     (MoveTypeLayout::Vector(vec_layout), MoveValue::Vector(vec)) => {
                         let item_layout = vec_layout.as_ref();
 
-                        if vec.len() > 0 {
+                        if !vec.is_empty() {
                             serialize_move_value_to_cbor_value(item_layout, vec.first().unwrap())?
                         } else {
                             CborValue::Null
@@ -512,7 +513,7 @@ fn is_std_option(struck_tag: &StructTag, move_std_addr: &AccountAddress) -> bool
 }
 
 fn serialize_move_fields_to_cbor_value(
-    layout_fields: &Vec<MoveFieldLayout>,
+    layout_fields: &[MoveFieldLayout],
     value_fields: &Vec<(Identifier, move_core_types::value::MoveValue)>,
 ) -> Result<CborValue> {
     let mut fields = Vec::new();

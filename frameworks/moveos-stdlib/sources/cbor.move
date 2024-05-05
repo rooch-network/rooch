@@ -100,7 +100,6 @@ module moveos_std::cbor {
         };
 
         let cbor_bytes = to_cbor(&test);
-        std::debug::print(&cbor_bytes);
         assert!(cbor_bytes == x"ad6a626f6f6c5f76616c7565f563616765181e6762616c616e6365c2508000000000000000000000000000000063736967c258184563918244f400000000000000000000176a81ca357800006c61736369695f737472696e676d726f6f63682e6e6574776f726b6b757466385f737472696e676d726f6f63682e6e6574776f726b6d6f7074696f6e5f737472696e676d726f6f63682e6e6574776f726b65696e6e6572a16576616c756518646a6e756c6c5f76616c7565f66c696e6e65725f6f7074696f6ea16576616c756518666b696e6e65725f617272617981a16576616c75651865676163636f756e74582000000000000000000000000000000000000000000000000000000000000000426562797465734403020100", 1);
     }
 
@@ -162,12 +161,12 @@ module moveos_std::cbor {
 
         // check ascii string
         let ascii_string_bytes = simple_map::borrow(&map, &std::string::utf8(b"ascii_string"));
-        let ascii_string = std::ascii::string(*ascii_string_bytes);
+        let ascii_string = from_cbor<std::ascii::String>(*ascii_string_bytes);
         assert!(ascii_string == std::ascii::string(b"rooch.network"), 2);
 
         // check utf8 string
         let utf8_string_bytes = simple_map::borrow(&map, &std::string::utf8(b"utf8_string"));
-        let utf8_string = std::string::utf8(*utf8_string_bytes);
+        let utf8_string = from_cbor<std::string::String>(*utf8_string_bytes);
         assert!(utf8_string == std::string::utf8(b"rooch.network"), 3);
 
         // check u8
@@ -213,13 +212,13 @@ module moveos_std::cbor {
         let sig_bytes = simple_map::borrow(&map, &std::string::utf8(b"sig"));
         let sig = from_cbor<u256>(*sig_bytes);
         assert!(sig == 1701411834604692317316873037158841057281687303715884105728u256, 16);
-
-        /* check option string
+ 
+        // check option string
         let option_string_bytes = simple_map::borrow(&map, &std::string::utf8(b"option_string"));
+        std::debug::print(option_string_bytes);
         let option_string = from_cbor<Option<std::string::String>>(*option_string_bytes);
         assert!(option::is_some(&option_string), 17);
         assert!(option::borrow(&option_string) == &std::string::utf8(b"rooch.network"), 18);
-        */
 
         simple_map::drop(map);
     }
