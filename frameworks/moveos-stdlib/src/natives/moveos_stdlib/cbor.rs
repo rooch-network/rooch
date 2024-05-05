@@ -35,20 +35,19 @@ use smallvec::smallvec;
 use std::collections::VecDeque;
 use std::io::Cursor;
 
-const E_TYPE_NOT_MATCH: u64 = 1;
-const STATUS_CODE_FAILED_TO_SERIALIZE_VALUE: u64 = 2;
-const E_CBOR_SERIALIZATION_FAILURE: u64 = 3;
+const STATUS_CODE_FAILED_TO_SERIALIZE_VALUE: u64 = 1;
+const E_CBOR_SERIALIZATION_FAILURE: u64 = 2;
 
-const BIGPOS: u64 = 2;
+const TAG_BIGPOS: u64 = 2;
 
-fn parse_struct_value_from_cbor(
-    layout: &MoveStructLayout,
+fn parse_move_value_from_cbor(
+    layout: &MoveTypeLayout,
     bytes: Vec<u8>,
     context: &NativeContext,
-) -> Result<Struct> {
+) -> Result<MoveValue> {
     let cursor = Cursor::new(bytes);
     let cbor_value: CborValue = from_reader(cursor)?;
-    parse_struct_value_from_cbor_value(layout, &cbor_value, context)
+    parse_move_value_from_cbor_value(layout, &cbor_value, context)
 }
 
 fn parse_struct_value_from_cbor_value(
@@ -84,15 +83,17 @@ fn parse_struct_value_from_cbor_value(
             let type_tag: TypeTag = (&vec_layout.layout).try_into()?;
             let ty = context.load_type(&type_tag)?;
 
-            if let (MoveTypeLayout::Vector(vec_layout), CborValue::Map(_map)) =
-                (vec_layout.layout.clone(), cbor_value)
-            {
+            if let CborValue::Null = cbor_value {
+                let value = Vector::pack(&ty, vec_value)?;
+                return Ok(Struct::pack(vec![value]))
+            }
+
+            if let MoveTypeLayout::Vector(vec_layout) = vec_layout.layout.clone() {
                 let struct_layout = vec_layout.as_ref();
                 let move_struct_value =
                     parse_move_value_from_cbor_value(&struct_layout, cbor_value, context)?;
                 vec_value.push(move_struct_value);
             }
-
             let value = Vector::pack(&ty, vec_value)?;
             Ok(Struct::pack(vec![value]))
         } else if struct_type == &SimpleMap::<MoveString, Vec<u8>>::struct_tag() {
@@ -168,32 +169,8 @@ fn cbor_obj_to_key_value_pairs(cbor_value: &CborValue) -> Result<Vec<(String, Ve
                 let cbor_field = value;
 
                 let bytes = match cbor_field {
-                    CborValue::Null => "null".as_bytes().to_vec(),
-                    CborValue::Bool(v) => v.to_string().as_bytes().to_vec(),
-                    CborValue::Integer(v) => {
-                        let value = i128::try_from(*v)
-                            .ok()
-                            .ok_or_else(|| anyhow::anyhow!("Invalid integer value"))?;
-                        value.to_string().as_bytes().to_vec()
-                    }
                     CborValue::Text(t) => t.clone().into_bytes(),
                     CborValue::Bytes(t) => t.clone(),
-                    CborValue::Tag(tag, value) => {
-                        if *tag == BIGPOS {
-                            let u128_bytes = value
-                                .as_bytes()
-                                .ok_or_else(|| anyhow::anyhow!("Invalid u128 value"))?;
-
-                            let u128_value = PrimitiveU128::from_big_endian(&u128_bytes);
-                            u128_value.to_string().as_bytes().to_vec()
-                        } else {
-                            let bytes = value
-                                .as_ref()
-                                .as_bytes()
-                                .ok_or_else(|| anyhow::anyhow!("Invalid u128 value"))?;
-                            bytes.clone()
-                        }
-                    }
                     _ => {
                         let mut writer = Vec::new();
                         into_writer(&cbor_field, &mut writer)?;
@@ -261,7 +238,7 @@ fn parse_move_value_from_cbor_value(
                 .ok_or_else(|| anyhow::anyhow!("Invalid u128 value"))?;
 
             // Verify tag is correct
-            if tag != BIGPOS {
+            if tag != TAG_BIGPOS {
                 return Err(anyhow::anyhow!("Invalid CBOR tag for u128 value"));
             }
 
@@ -330,7 +307,16 @@ fn parse_move_value_from_cbor_value(
         }
         // Parse an unsigned 256-bit integer
         MoveTypeLayout::U256 => {
-            let u256_bytes = cbor_value
+            let (tag, value) = cbor_value
+                .as_tag()
+                .ok_or_else(|| anyhow::anyhow!("Invalid u128 value"))?;
+
+            // Verify tag is correct
+            if tag != TAG_BIGPOS {
+                return Err(anyhow::anyhow!("Invalid CBOR tag for u256 value"));
+            }
+
+            let u256_bytes = value
                 .as_bytes()
                 .ok_or_else(|| anyhow::anyhow!("Invalid u256 value"))?;
 
@@ -386,10 +372,10 @@ fn serialize_move_value_to_cbor_value(
             let mut buffer = [0u8; U256_NUM_BYTES];
             value.to_big_endian(&mut buffer);
             let bytes = buffer[leading_empty_bytes..].to_vec();
-            CborValue::Bytes(bytes)
+            CborValue::Tag(TAG_BIGPOS, CborValue::Bytes(bytes.into()).into())
         }
-        (L::Address, MoveValue::Address(addr)) => CborValue::from(addr.to_vec()),
-        (L::Signer, MoveValue::Signer(a)) => CborValue::from(a.to_vec()),
+        (L::Address, MoveValue::Address(addr)) => CborValue::Bytes(addr.to_vec()),
+        (L::Signer, MoveValue::Signer(_a)) => return Err(anyhow::anyhow!("Do not support Signer type")),
         (L::Vector(vec_layout), MoveValue::Vector(vec)) => {
             let layout = vec_layout.as_ref();
 
@@ -496,15 +482,10 @@ fn serialize_move_struct_to_cbor_value(
                         let item_layout = vec_layout.as_ref();
 
                         if vec.len() > 0 {
-                            let cbor_val = serialize_move_value_to_cbor_value(
+                            serialize_move_value_to_cbor_value(
                                 item_layout,
                                 vec.first().unwrap(),
-                            )?;
-                            debug!(
-                                "serialize_move_struct_to_cbor_value is_std_option cbor_val: {:?}",
-                                cbor_val
-                            );
-                            cbor_val
+                            )?
                         } else {
                             CborValue::Null
                         }
@@ -619,35 +600,32 @@ fn native_from_cbor(
     let bytes = pop_arg!(args, Vec<u8>);
     cost += gas_params.per_byte_in_str * NumBytes::new(bytes.len() as u64);
 
-    if let MoveTypeLayout::Struct(struct_layout) = layout {
-        let result = match parse_struct_value_from_cbor(&struct_layout, bytes, context) {
-            Ok(val) => {
-                // Pack the MoveOption Some
-                Struct::pack(vec![Vector::pack(
-                    type_param,
-                    vec![MoveValue::struct_(val)],
-                )
-                .map_err(|e| {
-                    PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-                        .with_message(format!("Failed to pack Option: {:?}", e))
-                })?])
-            }
-            Err(e) => {
-                debug!("Failed to parse struct_value: {:?}", e);
-                // Pack the MoveOption None
-                Struct::pack(vec![Vector::pack(type_param, vec![]).map_err(|e| {
-                    PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-                        .with_message(format!("Failed to pack Option: {:?}", e))
-                })?])
-            }
-        };
-        Ok(NativeResult::ok(
-            cost,
-            smallvec![MoveValue::struct_(result)],
-        ))
-    } else {
-        Ok(NativeResult::err(cost, E_TYPE_NOT_MATCH))
-    }
+    let result = match parse_move_value_from_cbor(&layout, bytes, context) {
+        Ok(val) => {
+            // Pack the MoveOption Some
+            Struct::pack(vec![Vector::pack(
+                type_param,
+                vec![val],
+            )
+            .map_err(|e| {
+                PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+                    .with_message(format!("Failed to pack Option: {:?}", e))
+            })?])
+        }
+        Err(e) => {
+            debug!("Failed to parse struct_value: {:?}", e);
+            // Pack the MoveOption None
+            Struct::pack(vec![Vector::pack(type_param, vec![]).map_err(|e| {
+                PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+                    .with_message(format!("Failed to pack Option: {:?}", e))
+            })?])
+        }
+    };
+
+    Ok(NativeResult::ok(
+        cost,
+        smallvec![MoveValue::struct_(result)],
+    ))
 }
 
 /// Rust implementation of Move's `native fun native_to_cbor<T>(value: T): vector<u8>` in cbor module

@@ -60,48 +60,53 @@ module moveos_std::cbor {
     #[test_only]
     #[data_struct]
     struct Test has copy, drop, store {
+        bool_value: bool,
+        age: u8,
         balance: u128,
+        sig: u256,
         ascii_string: std::ascii::String,
         utf8_string: std::string::String,
-        age: u8,
-        bool_value: bool,
-        null_value: Option<Inner>,
+        option_string: Option<std::string::String>,
         inner: Inner,
+        null_value: Option<Inner>,
         inner_option: Option<Inner>,
-        bytes: vector<u8>, 
         inner_array: vector<Inner>,
         account: address,
+        bytes: vector<u8>,
     }
 
     #[test]
     fun test_to_cbor() {
         let test = Test { 
+            bool_value: true,
+            age: 30u8,
             balance: 170141183460469231731687303715884105728u128,
+            sig: 1701411834604692317316873037158841057281687303715884105728u256,
             ascii_string: std::ascii::string(b"rooch.network"),
             utf8_string: std::string::utf8(b"rooch.network"),
-            age: 30u8,
-            bool_value: true,
             null_value: option::none(),
+            option_string: option::some(std::string::utf8(b"rooch.network")),
             inner: Inner {
                 value: 100u64,
             },
             inner_option: option::some(Inner {
                 value: 102u64,
             }),
-            bytes: vector<u8>[3u8, 2u8, 1u8, 0u8],
             inner_array: std::vector::singleton(Inner {
                 value: 101u64,
             }),
             account: @0x42,
+            bytes: vector<u8>[3u8, 2u8, 1u8, 0u8],
         };
 
         let cbor_bytes = to_cbor(&test);
-        assert!(cbor_bytes == x"ab6762616c616e6365c250800000000000000000000000000000006c61736369695f737472696e676d726f6f63682e6e6574776f726b6b757466385f737472696e676d726f6f63682e6e6574776f726b63616765181e6a626f6f6c5f76616c7565f56a6e756c6c5f76616c7565f665696e6e6572a16576616c756518646c696e6e65725f6f7074696f6ea16576616c7565186665627974657344030201006b696e6e65725f617272617981a16576616c75651865676163636f756e7458200000000000000000000000000000000000000000000000000000000000000042", 1);
+        std::debug::print(&cbor_bytes);
+        assert!(cbor_bytes == x"ad6a626f6f6c5f76616c7565f563616765181e6762616c616e6365c2508000000000000000000000000000000063736967c258184563918244f400000000000000000000176a81ca357800006c61736369695f737472696e676d726f6f63682e6e6574776f726b6b757466385f737472696e676d726f6f63682e6e6574776f726b6d6f7074696f6e5f737472696e676d726f6f63682e6e6574776f726b65696e6e6572a16576616c756518646a6e756c6c5f76616c7565f66c696e6e65725f6f7074696f6ea16576616c756518666b696e6e65725f617272617981a16576616c75651865676163636f756e74582000000000000000000000000000000000000000000000000000000000000000426562797465734403020100", 1);
     }
 
     #[test]
     fun test_from_cbor() {
-        let cbor_bytes = x"ab6762616c616e6365c250800000000000000000000000000000006c61736369695f737472696e676d726f6f63682e6e6574776f726b6b757466385f737472696e676d726f6f63682e6e6574776f726b63616765181e6a626f6f6c5f76616c7565f56a6e756c6c5f76616c7565f665696e6e6572a16576616c756518646c696e6e65725f6f7074696f6ea16576616c7565186665627974657344030201006b696e6e65725f617272617981a16576616c75651865676163636f756e7458200000000000000000000000000000000000000000000000000000000000000042";
+        let cbor_bytes = x"ad6a626f6f6c5f76616c7565f563616765181e6762616c616e6365c2508000000000000000000000000000000063736967c258184563918244f400000000000000000000176a81ca357800006c61736369695f737472696e676d726f6f63682e6e6574776f726b6b757466385f737472696e676d726f6f63682e6e6574776f726b6d6f7074696f6e5f737472696e676d726f6f63682e6e6574776f726b65696e6e6572a16576616c756518646a6e756c6c5f76616c7565f66c696e6e65725f6f7074696f6ea16576616c756518666b696e6e65725f617272617981a16576616c75651865676163636f756e74582000000000000000000000000000000000000000000000000000000000000000426562797465734403020100";
         let obj = from_cbor<Test>(cbor_bytes);
         assert!(obj.balance == 170141183460469231731687303715884105728u128, 1);
         assert!(obj.age == 30u8, 2);
@@ -114,17 +119,17 @@ module moveos_std::cbor {
         assert!(vector::borrow(&obj.bytes, 2) == &1u8, 7);
         assert!(vector::borrow(&obj.bytes, 3) == &0u8, 8);
 
-        // check inner_array
+        // check inner array
         assert!(vector::length(&obj.inner_array) == 1, 9);
         assert!(vector::borrow(&obj.inner_array, 0).value == 101u64, 10);
 
         // check account
         assert!(obj.account == @0x42, 11);
 
-        // check ascii_string
+        // check ascii string
         assert!(obj.ascii_string == std::ascii::string(b"rooch.network"), 12);
 
-        // check utf8_string
+        // check utf8 string
         assert!(obj.utf8_string == std::string::utf8(b"rooch.network"), 13);
 
         // check bool
@@ -135,47 +140,62 @@ module moveos_std::cbor {
 
         // check inner_option
         assert!(option::is_some(&obj.inner_option), 16);
-        assert!(option::borrow(&obj.inner_option).value == 102u64, 10);
+        assert!(option::borrow(&obj.inner_option).value == 102u64, 17);
+
+        // check u256
+        assert!(obj.sig == 1701411834604692317316873037158841057281687303715884105728u256, 18);
+
+        // check option string
+        assert!(option::is_some(&obj.option_string), 19);
+        assert!(option::borrow(&obj.option_string) == &std::string::utf8(b"rooch.network"), 20);
     }
 
- 
     #[test]
     fun test_to_map(){
-        let cbor_bytes = x"ab6762616c616e6365c250800000000000000000000000000000006c61736369695f737472696e676d726f6f63682e6e6574776f726b6b757466385f737472696e676d726f6f63682e6e6574776f726b63616765181e6a626f6f6c5f76616c7565f56a6e756c6c5f76616c7565f665696e6e6572a16576616c756518646c696e6e65725f6f7074696f6ea16576616c7565186665627974657344030201006b696e6e65725f617272617981a16576616c75651865676163636f756e7458200000000000000000000000000000000000000000000000000000000000000042";
+        let cbor_bytes = x"ad6a626f6f6c5f76616c7565f563616765181e6762616c616e6365c2508000000000000000000000000000000063736967c258184563918244f400000000000000000000176a81ca357800006c61736369695f737472696e676d726f6f63682e6e6574776f726b6b757466385f737472696e676d726f6f63682e6e6574776f726b6d6f7074696f6e5f737472696e676d726f6f63682e6e6574776f726b65696e6e6572a16576616c756518646a6e756c6c5f76616c7565f66c696e6e65725f6f7074696f6ea16576616c756518666b696e6e65725f617272617981a16576616c75651865676163636f756e74582000000000000000000000000000000000000000000000000000000000000000426562797465734403020100";
         let map = to_map(cbor_bytes);
 
+        // check u128
         let balance_bytes = simple_map::borrow(&map, &std::string::utf8(b"balance"));
-        let balance_text = std::string::utf8(*balance_bytes);
-        assert!(balance_text == std::string::utf8(b"170141183460469231731687303715884105728"), 1);
+        let balance = from_cbor<u128>(*balance_bytes);
+        assert!(balance == 170141183460469231731687303715884105728u128, 1);
 
+        // check ascii string
         let ascii_string_bytes = simple_map::borrow(&map, &std::string::utf8(b"ascii_string"));
         let ascii_string = std::ascii::string(*ascii_string_bytes);
         assert!(ascii_string == std::ascii::string(b"rooch.network"), 2);
 
+        // check utf8 string
         let utf8_string_bytes = simple_map::borrow(&map, &std::string::utf8(b"utf8_string"));
         let utf8_string = std::string::utf8(*utf8_string_bytes);
         assert!(utf8_string == std::string::utf8(b"rooch.network"), 3);
 
+        // check u8
         let age_bytes = simple_map::borrow(&map, &std::string::utf8(b"age"));
-        let age_text = std::string::utf8(*age_bytes);
-        assert!(age_text == std::string::utf8(b"30"), 4);
+        let age = from_cbor<u8>(*age_bytes);
+        assert!(age == 30u8, 4);
 
+        // check bool
         let bool_value_bytes = simple_map::borrow(&map, &std::string::utf8(b"bool_value"));
-        let bool_value_text = std::string::utf8(*bool_value_bytes);
-        assert!(bool_value_text == std::string::utf8(b"true"), 5);
+        let bool_value = from_cbor<bool>(*bool_value_bytes);
+        assert!(bool_value, 5);
 
+        // check null
         let null_value_bytes = simple_map::borrow(&map, &std::string::utf8(b"null_value"));
-        let null_value_text = std::string::utf8(*null_value_bytes);
-        assert!(null_value_text == std::string::utf8(b"null"), 6);
+        let null_value = from_cbor<Option<Inner>>(*null_value_bytes);
+        assert!(option::is_none<Inner>(&null_value), 6);
 
+        // check address
         let account_bytes = simple_map::borrow(&map, &std::string::utf8(b"account"));
         let account = moveos_std::address::from_bytes(*account_bytes);
         assert!(account == @0x42, 7);
 
+        // check inner struct
         let inner_bytes = simple_map::borrow(&map, &std::string::utf8(b"inner"));
         let inner = from_cbor<Inner>(*inner_bytes);
         assert!(inner.value == 100u64, 8);
 
+        // check bytes
         let bytes = simple_map::borrow(&map, &std::string::utf8(b"bytes"));
         assert!(vector::length(bytes) == 4, 9);
         assert!(vector::borrow(bytes, 0) == &3u8, 10);
@@ -183,12 +203,22 @@ module moveos_std::cbor {
         assert!(vector::borrow(bytes, 2) == &1u8, 12);
         assert!(vector::borrow(bytes, 3) == &0u8, 13);
 
-        //TODO
-        /*
+        // check inner array
         let inner_array_bytes = simple_map::borrow(&map, &std::string::utf8(b"inner_array"));
         let inner_array = from_cbor<vector<Inner>>(*inner_array_bytes);
         assert!(vector::length(&inner_array) == 1, 14);
         assert!(vector::borrow(&inner_array, 0).value == 101u64, 15);
+
+        // check u256
+        let sig_bytes = simple_map::borrow(&map, &std::string::utf8(b"sig"));
+        let sig = from_cbor<u256>(*sig_bytes);
+        assert!(sig == 1701411834604692317316873037158841057281687303715884105728u256, 16);
+
+        /* check option string
+        let option_string_bytes = simple_map::borrow(&map, &std::string::utf8(b"option_string"));
+        let option_string = from_cbor<Option<std::string::String>>(*option_string_bytes);
+        assert!(option::is_some(&option_string), 17);
+        assert!(option::borrow(&option_string) == &std::string::utf8(b"rooch.network"), 18);
         */
 
         simple_map::drop(map);
