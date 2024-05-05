@@ -1037,10 +1037,10 @@ fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> b
 
             if is_std_option_type(&full_struct_name) {
                 if let Some(item_type) = ty_args.first() {
-                    return check_data_struct_fields_type(item_type, module_env)
+                    return check_data_struct_fields_type(item_type, module_env);
                 }
-                
-                return false
+
+                return false;
             }
 
             if !is_data_struct_annotation(&struct_env, module_env) {
@@ -1067,15 +1067,12 @@ fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> b
 fn is_allowed_data_struct_type(full_struct_name: &str) -> bool {
     matches!(
         full_struct_name,
-        "0x1::string::String" | "0x1::ascii::String" | "0x2::object::ObjectID" 
+        "0x1::string::String" | "0x1::ascii::String" | "0x2::object::ObjectID"
     )
 }
 
 fn is_std_option_type(full_struct_name: &str) -> bool {
-    matches!(
-        full_struct_name,
-        "0x1::option::Option"
-    )
+    matches!(full_struct_name, "0x1::option::Option")
 }
 
 fn is_data_struct_annotation(struct_env: &StructEnv, module_env: &ModuleEnv) -> bool {

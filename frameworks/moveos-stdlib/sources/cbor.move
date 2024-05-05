@@ -96,13 +96,12 @@ module moveos_std::cbor {
         };
 
         let cbor_bytes = to_cbor(&test);
-        std::debug::print(&cbor_bytes);
-        assert!(cbor_bytes == x"ab6762616c616e6365c250800000000000000000000000000000006c61736369695f737472696e674d726f6f63682e6e6574776f726b6b757466385f737472696e674d726f6f63682e6e6574776f726b63616765181e6a626f6f6c5f76616c7565f56a6e756c6c5f76616c7565f665696e6e6572a16576616c756518646c696e6e65725f6f7074696f6ea16576616c7565186665627974657384030201006b696e6e65725f617272617981a16576616c75651865676163636f756e7458200000000000000000000000000000000000000000000000000000000000000042", 1);
+        assert!(cbor_bytes == x"ab6762616c616e6365c250800000000000000000000000000000006c61736369695f737472696e676d726f6f63682e6e6574776f726b6b757466385f737472696e676d726f6f63682e6e6574776f726b63616765181e6a626f6f6c5f76616c7565f56a6e756c6c5f76616c7565f665696e6e6572a16576616c756518646c696e6e65725f6f7074696f6ea16576616c7565186665627974657344030201006b696e6e65725f617272617981a16576616c75651865676163636f756e7458200000000000000000000000000000000000000000000000000000000000000042", 1);
     }
 
     #[test]
     fun test_from_cbor() {
-        let cbor_bytes = x"ab6762616c616e6365c250800000000000000000000000000000006c61736369695f737472696e674d726f6f63682e6e6574776f726b6b757466385f737472696e674d726f6f63682e6e6574776f726b63616765181e6a626f6f6c5f76616c7565f56a6e756c6c5f76616c7565f665696e6e6572a16576616c756518646c696e6e65725f6f7074696f6ea16576616c7565186665627974657384030201006b696e6e65725f617272617981a16576616c75651865676163636f756e7458200000000000000000000000000000000000000000000000000000000000000042";
+        let cbor_bytes = x"ab6762616c616e6365c250800000000000000000000000000000006c61736369695f737472696e676d726f6f63682e6e6574776f726b6b757466385f737472696e676d726f6f63682e6e6574776f726b63616765181e6a626f6f6c5f76616c7565f56a6e756c6c5f76616c7565f665696e6e6572a16576616c756518646c696e6e65725f6f7074696f6ea16576616c7565186665627974657344030201006b696e6e65725f617272617981a16576616c75651865676163636f756e7458200000000000000000000000000000000000000000000000000000000000000042";
         let obj = from_cbor<Test>(cbor_bytes);
         assert!(obj.balance == 170141183460469231731687303715884105728u128, 1);
         assert!(obj.age == 30u8, 2);
@@ -139,24 +138,74 @@ module moveos_std::cbor {
         assert!(option::borrow(&obj.inner_option).value == 102u64, 10);
     }
 
-    /*
+ 
     #[test]
     fun test_to_map(){
-        let cbor_bytes = x"ab6762616c616e6365c250800000000000000000000000000000006c61736369695f737472696e674d726f6f63682e6e6574776f726b6b757466385f737472696e674d726f6f63682e6e6574776f726b63616765181e6a626f6f6c5f76616c7565f56a6e756c6c5f76616c7565f665696e6e6572a16576616c756518646c696e6e65725f6f7074696f6ea16576616c7565186665627974657384030201006b696e6e65725f617272617981a16576616c75651865676163636f756e7458200000000000000000000000000000000000000000000000000000000000000042";
+        let cbor_bytes = x"ab6762616c616e6365c250800000000000000000000000000000006c61736369695f737472696e676d726f6f63682e6e6574776f726b6b757466385f737472696e676d726f6f63682e6e6574776f726b63616765181e6a626f6f6c5f76616c7565f56a6e756c6c5f76616c7565f665696e6e6572a16576616c756518646c696e6e65725f6f7074696f6ea16576616c7565186665627974657344030201006b696e6e65725f617272617981a16576616c75651865676163636f756e7458200000000000000000000000000000000000000000000000000000000000000042";
         let map = to_map(cbor_bytes);
-        std::debug::print(&map);
 
-        assert!(simple_map::borrow(&map, &string::utf8(b"balance")) == &b"170141183460469231731687303715884105728", 1);
-        assert!(simple_map::borrow(&map, &string::utf8(b"ascii_string")) == &b"rooch.network", 2);
-        assert!(simple_map::borrow(&map, &string::utf8(b"utf8_string")) == &b"rooch.network", 2);
-        assert!(simple_map::borrow(&map, &string::utf8(b"age")) == &b"30", 4);
-        assert!(simple_map::borrow(&map, &string::utf8(b"bool_value")) == &b"true", 5);
-        assert!(simple_map::borrow(&map, &string::utf8(b"null_value")) == &b"null", 6);
-        assert!(simple_map::borrow(&map, &string::utf8(b"account")) == &b"0x42", 7);
-        //assert!(simple_map::borrow(&map, &string::utf8(b"inner")) == x"0x42"), 8);
-        //assert!(simple_map::borrow(&map, &string::utf8(b"bytes")) == b"[3,3,2,1]", 9);
-        //assert!(simple_map::borrow(&map, &string::utf8(b"inner_array")) == b"[{\"value\":101}]", 10);
+        let balance_bytes = simple_map::borrow(&map, &std::string::utf8(b"balance"));
+        let balance_text = std::string::utf8(*balance_bytes);
+        assert!(balance_text == std::string::utf8(b"170141183460469231731687303715884105728"), 1);
+
+        let ascii_string_bytes = simple_map::borrow(&map, &std::string::utf8(b"ascii_string"));
+        let ascii_string = std::ascii::string(*ascii_string_bytes);
+        assert!(ascii_string == std::ascii::string(b"rooch.network"), 2);
+
+        let utf8_string_bytes = simple_map::borrow(&map, &std::string::utf8(b"utf8_string"));
+        let utf8_string = std::string::utf8(*utf8_string_bytes);
+        assert!(utf8_string == std::string::utf8(b"rooch.network"), 3);
+
+        let age_bytes = simple_map::borrow(&map, &std::string::utf8(b"age"));
+        let age_text = std::string::utf8(*age_bytes);
+        assert!(age_text == std::string::utf8(b"30"), 4);
+
+        let bool_value_bytes = simple_map::borrow(&map, &std::string::utf8(b"bool_value"));
+        let bool_value_text = std::string::utf8(*bool_value_bytes);
+        assert!(bool_value_text == std::string::utf8(b"true"), 5);
+
+        let null_value_bytes = simple_map::borrow(&map, &std::string::utf8(b"null_value"));
+        let null_value_text = std::string::utf8(*null_value_bytes);
+        assert!(null_value_text == std::string::utf8(b"null"), 6);
+
+        let account_bytes = simple_map::borrow(&map, &std::string::utf8(b"account"));
+        let account = moveos_std::address::from_bytes(*account_bytes);
+        assert!(account == @0x42, 7);
+
+        let inner_bytes = simple_map::borrow(&map, &std::string::utf8(b"inner"));
+        let inner = from_cbor<Inner>(*inner_bytes);
+        assert!(inner.value == 100u64, 8);
+
+        let bytes = simple_map::borrow(&map, &std::string::utf8(b"bytes"));
+        assert!(vector::length(bytes) == 4, 9);
+        assert!(vector::borrow(bytes, 0) == &3u8, 10);
+        assert!(vector::borrow(bytes, 1) == &2u8, 11);
+        assert!(vector::borrow(bytes, 2) == &1u8, 12);
+        assert!(vector::borrow(bytes, 3) == &0u8, 13);
+
+        //TODO
+        /*
+        let inner_array_bytes = simple_map::borrow(&map, &std::string::utf8(b"inner_array"));
+        let inner_array = from_cbor<vector<Inner>>(*inner_array_bytes);
+        assert!(vector::length(&inner_array) == 1, 14);
+        assert!(vector::borrow(&inner_array, 0).value == 101u64, 15);
+        */
+
         simple_map::drop(map);
     }
-    */
+
+    #[test]
+    fun test_invalid_cbor_bytes_to_map(){
+        let invalid_bytes = x"abcd";
+        let map = to_map(invalid_bytes);
+        assert!(simple_map::length(&map) == 0, 1);
+        simple_map::drop(map);
+    }
+
+    #[test]
+    fun test_invalid_cbor_bytes_from_cbor(){
+        let invalid_bytes = x"abcd";
+        let obj = from_cbor_option<Test>(invalid_bytes);
+        assert!(option::is_none(&obj), 1);
+    }
 }
