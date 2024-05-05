@@ -21,6 +21,7 @@ This is the reference documentation of the MoveOS standard library.
 -  [`0x2::bech32`](bech32.md#0x2_bech32)
 -  [`0x2::big_vector`](big_vector.md#0x2_big_vector)
 -  [`0x2::bls12381`](bls12381.md#0x2_bls12381)
+-  [`0x2::cbor`](cbor.md#0x2_cbor)
 -  [`0x2::copyable_any`](copyable_any.md#0x2_copyable_any)
 -  [`0x2::core_addresses`](core_addresses.md#0x2_core_addresses)
 -  [`0x2::display`](display.md#0x2_display)
