@@ -5,7 +5,6 @@
 /// This test module is used to test the transfer entry functions
 module rooch_framework::transfer_test{
 
-    use std::option;
     use std::string;
     
     use moveos_std::object::{Self, Object};
@@ -46,22 +45,20 @@ module rooch_framework::transfer_test{
         let init_gas = 9999u256;
         gas_coin::faucet_for_test(from, init_gas); 
         assert!(gas_coin::balance(from) == init_gas, 1000);
+        
+        let to_address = address_mapping::resolve_or_generate(to);
+        let to_signer = account_entry::create_account_for_testing(to_address);
+        address_mapping::bind(&to_signer, to);
 
         let amount = 11u256;
         transfer::transfer_coin_to_multichain_address<GasCoin>(&from_signer, multichain_address::multichain_id(&to), *multichain_address::raw_address(&to), amount);
-
-        let to_address_opt = address_mapping::resolve(to);
-        assert!(option::is_some(&to_address_opt), 1001);
-        let to_address = option::extract(&mut to_address_opt);
 
         assert!(gas_coin::balance(from) == init_gas - amount, 1002);
         assert!(gas_coin::balance(to_address) == amount, 1003);
 
         //transfer again
         transfer::transfer_coin_to_multichain_address<GasCoin>(&from_signer, multichain_address::multichain_id(&to), *multichain_address::raw_address(&to), amount);
-        assert!(gas_coin::balance(to_address) == amount*2, 1004);
-        
-        
+        assert!(gas_coin::balance(to_address) == amount*2, 1004);        
     }
 
      #[test(from = @0x42)]
