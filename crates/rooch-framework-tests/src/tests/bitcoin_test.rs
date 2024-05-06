@@ -46,29 +46,18 @@ fn test_submit_block() {
         .unwrap();
 
     // let moveos = binding_test.reader_executor.moveos().read();
-    let bitcoin_light_client_module = binding_test
-        .as_module_binding::<rooch_types::bitcoin::light_client::BitcoinLightClientModule>(
-    );
+    let bitcoin_module = binding_test.as_module_binding::<rooch_types::bitcoin::BitcoinModule>();
     assert_eq!(
-        bitcoin_light_client_module
-            .get_block(block_hash)
-            .unwrap()
-            .unwrap(),
+        bitcoin_module.get_block(block_hash).unwrap().unwrap(),
         block_header
     );
 
     assert_eq!(
-        bitcoin_light_client_module
-            .get_block_by_height(height)
-            .unwrap()
-            .unwrap(),
+        bitcoin_module.get_block_by_height(height).unwrap().unwrap(),
         block_header
     );
     assert_eq!(
-        bitcoin_light_client_module
-            .get_latest_block_height()
-            .unwrap()
-            .unwrap(),
+        bitcoin_module.get_latest_block_height().unwrap().unwrap(),
         height
     );
     println!("txdata len: {}", bitcoin_txdata.len());
@@ -88,7 +77,7 @@ fn test_submit_block() {
 }
 
 //this test takes too long time in debug mod run it in release mod, use command:
-//RUST_LOG=debug cargo test --release --package rooch-framework-tests --lib -- --include-ignored tests::bitcoin_light_client_test::test_utxo_progress
+//RUST_LOG=debug cargo test --release --package rooch-framework-tests --lib -- --include-ignored tests::bitcoin_test::test_utxo_progress
 #[test]
 fn test_utxo_progress() {
     let _ = tracing_subscriber::fmt::try_init();
