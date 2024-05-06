@@ -6,6 +6,7 @@ pub mod base58;
 pub mod bcs;
 pub mod bech32;
 pub mod bls12381;
+pub mod cbor;
 pub mod event;
 pub mod hash;
 pub mod json;
