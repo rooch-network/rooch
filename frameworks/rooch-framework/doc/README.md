@@ -30,7 +30,6 @@ This is the reference documentation of the Rooch Framework.
 -  [`0x3::ed25519`](ed25519.md#0x3_ed25519)
 -  [`0x3::empty`](empty.md#0x3_empty)
 -  [`0x3::ethereum_address`](ethereum_address.md#0x3_ethereum_address)
--  [`0x3::ethereum_light_client`](ethereum_light_client.md#0x3_ethereum_light_client)
 -  [`0x3::ethereum_validator`](ethereum_validator.md#0x3_ethereum_validator)
 -  [`0x3::gas_coin`](gas_coin.md#0x3_gas_coin)
 -  [`0x3::genesis`](genesis.md#0x3_genesis)

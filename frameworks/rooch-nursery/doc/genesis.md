@@ -9,6 +9,7 @@
 
 
 <pre><code><b>use</b> <a href="">0x3::chain_id</a>;
+<b>use</b> <a href="ethereum.md#0xa_ethereum">0xa::ethereum</a>;
 </code></pre>
 
 
