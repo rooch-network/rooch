@@ -27,7 +27,8 @@
 -  [Function `process_inscription`](#0x4_bitseed_process_inscription)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::debug</a>;
+<b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x2::cbor</a>;
 <b>use</b> <a href="">0x2::object</a>;

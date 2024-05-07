@@ -132,6 +132,18 @@ module bitcoin_move::ord {
         }
     }
 
+    public fun parse_inscription_id(inscription_id: &String) : Option<InscriptionID> {
+        let index = string::index_of(inscription_id, &std::string::utf8(b"i"));
+        if (index == 0) {
+            return option::none()
+        };
+
+        option::some(InscriptionID{
+            txid,
+            index,
+        })
+    }
+
     public fun derive_inscription_id(inscription_id: InscriptionID) : ObjectID {
         let parent_id = object::named_object_id<InscriptionStore>();
         object::custom_child_object_id<InscriptionID, Inscription>(parent_id, inscription_id)

@@ -131,24 +131,83 @@ module bitcoin_move::bitseed {
         return simple_map::new()
     }
 
-    fun is_valid_bitseed_deploy(metadata: &SimpleMap<String,vector<u8>>) : (bool, Option<String>) {
-        let attributes = get_SFT_attributes(metadata);
+    fun get_SFT_string_attribute(attributes: &SimpleMap<String,vector<u8>>, name: vector<u8>) : Option<std::string::String> {
+        let key = string::utf8(name);
 
-        let generator_bytes = simple_map::borrow(&attributes, &string::utf8(b"generator"));
-        let generator = cbor::from_cbor_option<std::string::String>(*generator_bytes);
-        if (option::is_none(&generator)) {
-            simple_map::drop(attributes);
-            return (false, option::some(std::string::utf8(b"not found metadata.attributes.generator")))
+        if (simple_map::contains_key(attributes, &key)) {
+            let bytes = simple_map::borrow(attributes, &key);
+            return cbor::from_cbor_option<std::string::String>(*bytes)
         };
 
-        let deploy_args_bytes = simple_map::borrow(&attributes, &string::utf8(b"deploy_args"));
-        let deploy_args = cbor::from_cbor_option<std::string::String>(*deploy_args_bytes);
-        if (option::is_none(&deploy_args)) {
+        return option::none()
+    }
+
+    fun get_SFT_bytes_attribute(attributes: &SimpleMap<String,vector<u8>>, name: vector<u8>) : Option<vector<u8>> {
+        let key = string::utf8(name);
+
+        if (simple_map::contains_key(attributes, &key)) {
+            let bytes = simple_map::borrow(attributes, &key);
+            return option::some(*bytes)
+        };
+
+        return option::none()
+    }
+
+    fun is_valid_bitseed(metadata: &SimpleMap<String,vector<u8>>) : (bool, Option<String>) {
+        let tick = get_SFT_tick(metadata);
+        if (option::is_none(&tick)) {
+            return (false, option::some(std::string::utf8(b"metadata.tick is required")))
+        };
+
+        let tick_len = std::string::length(option::borrow(&tick));
+        if (tick_len < 4 || tick_len > 32) {
+            return (false, option::some(std::string::utf8(b"metadata.tick must be 4-32 characters")))
+        };
+
+        let amount = get_SFT_amount(metadata);
+        if (option::is_none(&amount)) {
+            return (false, option::some(std::string::utf8(b"metadata.amount is required")))
+        };
+
+        (true, option::none<String>())
+    }
+
+    fun is_valid_bitseed_deploy(metadata: &SimpleMap<String,vector<u8>>) : (bool, Option<String>) {
+        let (is_valid, reason) = is_valid_bitseed(metadata);
+        if (!is_valid) {
+            return (false, reason)
+        };
+
+        let attributes = get_SFT_attributes(metadata);
+
+        let generator = get_SFT_string_attribute(&attributes, b"generator");
+        if (option::is_none(&generator)) {
             simple_map::drop(attributes);
-            return (false, option::some(std::string::utf8(b"not found metadata.attributes.deploy_args")))
+            return (false, option::some(std::string::utf8(b"metadata.attributes.generator is required")))
+        };
+
+        let (is_valid, reason) = is_valid_generator_uri(option::borrow(&generator));
+        if (!is_valid) {
+            simple_map::drop(attributes);
+            return (false, reason)
         };
 
         simple_map::drop(attributes);
+        (true, option::none<String>())
+    }
+
+    fun is_valid_generator_uri(generator_uri: &String) : (bool, Option<String>) {
+        let index = string::index_of(generator_uri, &std::string::utf8(b"/inscription/"));
+        if (index != 0) {
+            return (false, option::some(std::string::utf8(b"metadata.attributes.generator not start with /inscription/")))
+        };
+
+        let inscription_id_str = string::sub_string(generator_uri, vector::length(&b"/inscription/"), string::length(generator_uri));
+        let inscription_id = ord::parse_inscription_id(inscription_id_str);
+        if (!ord::exists_inscription(&inscription_id)) {
+            return (false, option::some(std::string::utf8(b"metadata.attributes.generator inscription not exists")))
+        };
+
         (true, option::none<String>())
     }
 
@@ -333,5 +392,83 @@ module bitcoin_move::bitseed {
 
             simple_map::drop(metadata)
         }
+    }
+
+    #[test]
+    fun test_is_valid_bitseed_deploy_ok(){
+        let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e741903e86a61747472696275746573a366726570656174016967656e657261746f72784f2f696e736372697074696f6e2f3666353534373563653635303534616138333731643631386432313764613863396137363463656364616634646562636263653864363331326665366234643869306b6465706c6f795f617267738178377b22686569676874223a7b2274797065223a2272616e6765222c2264617461223a7b226d696e223a312c226d6178223a313030307d7d7d";
+        let metadata = cbor::to_map(metadata_bytes);
+        let (is_valid, reason) = is_valid_bitseed_deploy(&metadata);
+        simple_map::drop(metadata);
+
+        assert!(is_valid, 1);
+        assert!(option::is_none(&reason), 1);
+    }
+
+    #[test]
+    fun test_is_valid_bitseed_deploy_fail_with_tick_not_found(){
+        let metadata_bytes = x"a4626f70666465706c6f79647469636bf766616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f653839633162343830356538626235303236323038373632326263656662383533343232356364376138633264343832366433366630633161653333303831316931";
+        let metadata = cbor::to_map(metadata_bytes);
+        let (is_valid, reason) = is_valid_bitseed_deploy(&metadata);
+        simple_map::drop(metadata);
+
+        assert!(!is_valid, 1);
+        assert!(option::borrow(&reason) == &std::string::utf8(b"metadata.tick is required"), 1);
+    }
+
+    #[test]
+    fun test_is_valid_bitseed_deploy_fail_with_tick_too_short(){
+        let metadata_bytes = x"a4626f70666465706c6f79647469636b6378787866616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f653839633162343830356538626235303236323038373632326263656662383533343232356364376138633264343832366433366630633161653333303831316931";
+        let metadata = cbor::to_map(metadata_bytes);
+        let (is_valid, reason) = is_valid_bitseed_deploy(&metadata);
+        simple_map::drop(metadata);
+
+        assert!(!is_valid, 1);
+        assert!(option::borrow(&reason) == &std::string::utf8(b"metadata.tick must be 4-32 characters"), 1);
+    }
+
+    #[test]
+    fun test_is_valid_bitseed_deploy_fail_with_tick_too_long(){
+        let metadata_bytes = x"a4626f70666465706c6f79647469636b78227878787878787878787878787878787878787878787878787878787878787878787866616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f653839633162343830356538626235303236323038373632326263656662383533343232356364376138633264343832366433366630633161653333303831316931";
+        let metadata = cbor::to_map(metadata_bytes);
+        let (is_valid, reason) = is_valid_bitseed_deploy(&metadata);
+        simple_map::drop(metadata);
+
+        assert!(!is_valid, 1);
+        assert!(option::borrow(&reason) == &std::string::utf8(b"metadata.tick must be 4-32 characters"), 1);
+    }
+
+    #[test]
+    fun test_is_valid_bitseed_deploy_fail_with_amount_not_found(){
+        let metadata_bytes = x"a4626f70666465706c6f79647469636b68746573745469636b66616d6f756e74f76a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f653839633162343830356538626235303236323038373632326263656662383533343232356364376138633264343832366433366630633161653333303831316931";
+        let metadata = cbor::to_map(metadata_bytes);
+        let (is_valid, reason) = is_valid_bitseed_deploy(&metadata);
+        simple_map::drop(metadata);
+
+        assert!(!is_valid, 1);
+        assert!(option::borrow(&reason) == &std::string::utf8(b"metadata.amount is required"), 1);
+    }
+
+
+    #[test]
+    fun test_is_valid_bitseed_deploy_fail_with_generator_not_found(){
+        let metadata_bytes = x"a4626f70666465706c6f79647469636b68746573745469636b66616d6f756e74016a61747472696275746573a0";
+        let metadata = cbor::to_map(metadata_bytes);
+        let (is_valid, reason) = is_valid_bitseed_deploy(&metadata);
+        simple_map::drop(metadata);
+
+        assert!(!is_valid, 1);
+        assert!(option::borrow(&reason) == &std::string::utf8(b"metadata.attributes.generator is required"), 1);
+    }
+
+    #[test]
+    fun test_is_valid_bitseed_deploy_fail_with_generator_uri_not_start_with_generator(){
+        let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e74016a61747472696275746573a16967656e657261746f7278472f7878782f653839633162343830356538626235303236323038373632326263656662383533343232356364376138633264343832366433366630633161653333303831316931";
+        let metadata = cbor::to_map(metadata_bytes);
+        let (is_valid, reason) = is_valid_bitseed_deploy(&metadata);
+        simple_map::drop(metadata);
+
+        assert!(!is_valid, 1);
+        assert!(option::borrow(&reason) == &std::string::utf8(b"metadata.attributes.generator not start with /inscription/"), 1);
     }
 }

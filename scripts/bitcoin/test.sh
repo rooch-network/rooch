@@ -4,10 +4,6 @@
 
 set -e
 
-UNIT_TEST=0
-INT_TEST=0
-BITSEED_INT_TEST=0
-
 while getopts "huia" opt; do
   case $opt in
     h)
