@@ -7,8 +7,8 @@ module rooch_examples::bitseed_runner {
    use moveos_std::string_utils::parse_u64;
    use moveos_std::simple_map::{Self, SimpleMap};
    use moveos_std::json;
-   use bitcoin_move::bitseed;
-   use bitcoin_move::bitseed::{MintOp, DeployOp};
+   use rooch_nursery::bitseed;
+   use rooch_nursery::bitseed::{MintOp, DeployOp};
    use bitcoin_move::ord::{InscriptionID, Inscription};
    use bitcoin_move::ord;
    use moveos_std::object;
