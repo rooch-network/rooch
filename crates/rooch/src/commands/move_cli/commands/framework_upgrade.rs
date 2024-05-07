@@ -47,7 +47,7 @@ impl CommandAction<ExecuteTransactionResponseView> for FrameworkUpgrade {
 
         let stdlib = Stdlib::load_from_file(package_path)?;
         let bundles_map: HashMap<_, _> = stdlib
-            .module_bundles()
+            .all_module_bundles()
             .expect("get bundles failed")
             .into_iter()
             .collect();
