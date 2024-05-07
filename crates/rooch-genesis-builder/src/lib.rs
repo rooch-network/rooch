@@ -8,7 +8,7 @@ use framework_builder::{Stdlib, StdlibBuildConfig};
 use move_package::BuildConfig;
 use once_cell::sync::Lazy;
 
-pub const ALL_STDLIB_PACKAGE_NAMES: [&'static str; 5] = [
+pub const ALL_STDLIB_PACKAGE_NAMES: [&str; 5] = [
     "MoveStdlib",
     "MoveosStdlib",
     "RoochFramework",
@@ -16,7 +16,7 @@ pub const ALL_STDLIB_PACKAGE_NAMES: [&'static str; 5] = [
     "RoochNursery",
 ];
 
-pub const ALL_STDLIB_PACKAGE_NAMES_STABLE: [&'static str; 4] = [
+pub const ALL_STDLIB_PACKAGE_NAMES_STABLE: [&str; 4] = [
     "MoveStdlib",
     "MoveosStdlib",
     "RoochFramework",
