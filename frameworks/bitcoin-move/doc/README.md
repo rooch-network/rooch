@@ -13,8 +13,6 @@ This is the reference documentation of the Bitcoin Move Framework.
 
 
 -  [`0x4::bitcoin`](bitcoin.md#0x4_bitcoin)
--  [`0x4::bitseed`](bitseed.md#0x4_bitseed)
--  [`0x4::brc20`](brc20.md#0x4_brc20)
 -  [`0x4::genesis`](genesis.md#0x4_genesis)
 -  [`0x4::network`](network.md#0x4_network)
 -  [`0x4::opcode`](opcode.md#0x4_opcode)

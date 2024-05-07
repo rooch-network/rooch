@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module bitcoin_move::bitseed {
+module rooch_nursery::bitseed {
     use std::string;
     use std::string::String;
     use std::vector;
@@ -170,14 +170,16 @@ module bitcoin_move::bitseed {
         deploy_op.attributes_deploy_args
     }
 
-    fun pack_inscribe_generate_args(deploy_args: vector<u8>, seed: vector<u8>, user_input: vector<u8>): vector<u8>{
-        native_pack_inscribe_generate_args(deploy_args, b"attrs", seed, b"seed",
-            user_input, b"user_input")
+    fun pack_inscribe_generate_args(_deploy_args: vector<u8>, _seed: vector<u8>, _user_input: vector<u8>): vector<u8>{
+        //TODO
+        abort 0
     }
-
-    native fun native_pack_inscribe_generate_args(
-        deploy_args: vector<u8>, deploy_args_key: vector<u8>,
-        seed: vector<u8>, seed_key: vector<u8>,
-        user_input: vector<u8>, user_input_key: vector<u8>,
-    ): vector<u8>;
+    
+    //temporary remove the native function, if needed, we can add it back
+    // https://github.com/rooch-network/rooch/blob/ad65c907864a63a9823a553cd32061e7182b863b/frameworks/bitcoin-move/src/natives/ord/bitseed.rs
+    // native fun native_pack_inscribe_generate_args(
+    //     deploy_args: vector<u8>, deploy_args_key: vector<u8>,
+    //     seed: vector<u8>, seed_key: vector<u8>,
+    //     user_input: vector<u8>, user_input_key: vector<u8>,
+    // ): vector<u8>;
 }

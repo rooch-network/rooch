@@ -12,6 +12,8 @@ This is the reference documentation of the Rooch Nursery Framework.
 ## Index
 
 
+-  [`0xa::bitseed`](bitseed.md#0xa_bitseed)
+-  [`0xa::brc20`](brc20.md#0xa_brc20)
 -  [`0xa::genesis`](genesis.md#0xa_genesis)
 
 
