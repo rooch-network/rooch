@@ -15,7 +15,10 @@ module rooch_framework::empty{
     
     /// This empty function does nothing
     public entry fun empty(){
-        //Just do nothing
+        // Just do nothing
     }
 
+    public entry fun empty_with_signer(_sender: &signer) {
+        // Just do nothing
+    }
 }

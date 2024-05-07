@@ -9,7 +9,7 @@ module rooch_examples::kv_store {
    use std::string::{String};
    use moveos_std::account;
 
-   struct KVStore has store, key {
+   struct KVStore has key {
       table: Table<String, String>,
    }
 

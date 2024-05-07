@@ -48,7 +48,7 @@ module rooch_framework::ethereum_light_client{
         extra_data: vector<u8>,
     }
 
-    struct BlockStore has key, store{
+    struct BlockStore has key {
         blocks: Table<u64, BlockHeader>,
     }
 

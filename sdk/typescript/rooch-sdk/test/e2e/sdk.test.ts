@@ -108,12 +108,7 @@ describe('SDK', () => {
       const account = new RoochAccount(client)
       expect(account).toBeDefined()
 
-      const tx = await account.executeTransaction('0x3::account::create_account_entry', [
-        {
-          type: 'Address',
-          value: account.getAddress(),
-        },
-      ])
+      const tx = await account.executeTransaction('0x3::empty::empty_with_signer', [])
 
       expect(tx.execution_info.status.type).toBe('executed')
     })
@@ -192,12 +187,7 @@ describe('SDK', () => {
   describe('#getTransactions', () => {
     it('get transaction by index should be ok', async () => {
       const account = new RoochAccount(client)
-      const tx = await account.executeTransaction('0x3::account::create_account_entry', [
-        {
-          type: 'Address',
-          value: account.getAddress(),
-        },
-      ])
+      const tx = await account.executeTransaction('0x3::empty::empty_with_signer', [])
 
       expect(tx.execution_info.status.type).toBe('executed')
 

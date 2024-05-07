@@ -28,7 +28,7 @@ module rooch_examples::blog {
     const ErrorInappropriateVersion: u64 = 103;
     const ErrorNotGenesisAccount: u64 = 105;
 
-    struct Blog has key, store {
+    struct Blog has key {
         version: u64,
         name: String,
         articles: Table<ObjectID, Object<Article>>,

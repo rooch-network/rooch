@@ -10,6 +10,7 @@ module rooch_framework::account {
    use moveos_std::core_addresses;
 
    friend rooch_framework::genesis;
+   friend rooch_framework::transfer;
    friend rooch_framework::transaction_validator;
 
    /// Just using to get Account module signer
@@ -20,26 +21,10 @@ module rooch_framework::account {
    /// Cannot create account because address is reserved
    const ErrorAddressReserved: u64 = 2;
 
-   // TODO should we provide create account from arbitrary address?
-   // TODO Can create accounts arbitrary. Is this a security risk?
-   /// A entry function to create an account under `new_address`
-   public entry fun create_account_entry(new_address: address){
-      // Make sure the address is not reserved
-      // Although we will check it in `create_account`, we need check it here
-      // to prevent 0x0 address pass the check, as `account::exists_at(0x0)` will return true
-      assert!(!core_addresses::is_reserved_address(new_address), ErrorAddressReserved);
-
-      // If account already exists, do nothing
-      // Because if the new address is the same as the sender, the account must already created in the `transaction_validator::pre_execute` function
-      if(!account::exists_at(new_address)){
-         create_account(new_address);
-      };
-   }
-
    /// Publishes a new `Account` resource under `new_address`. A signer representing `new_address`
    /// is returned. This way, the caller of this function can publish additional resources under
    /// `new_address`.
-   public fun create_account(new_address: address): signer {
+   public(friend) fun create_account(new_address: address): signer {
       assert!(!core_addresses::is_reserved_address(new_address), ErrorAddressReserved);
       create_account_internal(new_address)
    }
@@ -76,14 +61,9 @@ module rooch_framework::account {
       version: u64
    }
 
-   #[test(sender=@0x42)]
-   fun test_create_account_entry(sender: address){
-      create_account_entry(sender);
-   }
-
    #[test(sender=@0x0)]
    #[expected_failure(abort_code = ErrorAddressReserved, location = Self)]
    fun test_failure_entry_account_creation_reserved(sender: address){
-      create_account_entry(sender);
+      create_account(sender);
    }
 }

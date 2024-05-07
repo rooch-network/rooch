@@ -40,11 +40,11 @@ module rooch_examples::rooch_examples {
     const ErrorBothPlayersDoNotHaveDecisionsSubmitted: u64 = 7;
     const ErrorPlayerHasDecisionSubmitted: u64 = 8;
 
-    struct ResouceAccountAddress has key, store {
+    struct ResouceAccountAddress has key {
         addr: address
     }
 
-    struct State has key, store {
+    struct State has key {
         next_game_id: u128,
         games: SimpleMap<u128, Game>,
         cap: SignerCapability,

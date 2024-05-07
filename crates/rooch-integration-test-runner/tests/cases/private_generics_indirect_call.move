@@ -18,7 +18,7 @@ module creator::test {
     use moveos_std::object;
     use moveos_std::account;
 
-    struct Foo has key, store {
+    struct Foo has key {
         x: u64,
     }
 
