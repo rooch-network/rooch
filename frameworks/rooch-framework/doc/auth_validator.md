@@ -200,7 +200,7 @@ Get the auth validator's id from the TxValidateResult in the TxContext
 ## Function `get_session_key_from_ctx_option`
 
 Get the session key from the TxValidateResult in the TxContext
-If the TxValidateResult is None or SessionKey is None, return None
+If the TxValidateResult, AuthValidator or SessionKey is None, return None
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_validator.md#0x3_auth_validator_get_session_key_from_ctx_option">get_session_key_from_ctx_option</a>(): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;

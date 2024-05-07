@@ -38,7 +38,7 @@ fn test_session_key_rooch() {
     )
     .unwrap();
     let app_name = MoveString::from_str("test").unwrap();
-    let app_url = MoveAsciiString::from_str("https:://test.rooch.network").unwrap();
+    let app_url = MoveAsciiString::from_str("https://test-seed.rooch.network").unwrap();
     let max_inactive_interval = 100;
     let action = rooch_types::framework::session_key::SessionKeyModule::create_session_key_action(
         app_name,

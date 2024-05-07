@@ -158,7 +158,7 @@ pub struct TxValidateResult {
 
 impl MoveStructType for TxValidateResult {
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("transaction_validtor");
+    const MODULE_NAME: &'static IdentStr = ident_str!("auth_validator");
     const STRUCT_NAME: &'static IdentStr = ident_str!("TxValidateResult");
 }
 
@@ -177,6 +177,10 @@ impl MoveStructState for TxValidateResult {
 }
 
 impl TxValidateResult {
+    pub fn auth_validator_id(&self) -> u64 {
+        self.auth_validator_id.clone()
+    }
+
     pub fn auth_validator(&self) -> Option<AuthValidator> {
         self.auth_validator.clone().into()
     }
