@@ -1,6 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { BalanceInfoView } from '@roochnetwork/rooch-sdk'
 import { useCurrentAccount, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
 
 import { ArrowLeft } from 'lucide-react'
@@ -20,7 +21,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { LoadingSpinner } from '@/components/loading-spinner.tsx'
 
 import CustomPagination from '@/components/custom-pagination.tsx'
-import { BalanceInfoView } from '../../../../../../../sdk/typescript/rooch-sdk'
 
 export const AssetsCoin = () => {
   const account = useCurrentAccount()
