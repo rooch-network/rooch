@@ -16,6 +16,7 @@
 
 
 <pre><code><b>use</b> <a href="">0x1::ascii</a>;
+<b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="bcs.md#0x2_bcs">0x2::bcs</a>;
 <b>use</b> <a href="hex.md#0x2_hex">0x2::hex</a>;
 </code></pre>
@@ -123,7 +124,7 @@ Convert <code>a</code> to a hex-encoded ASCII string
 Convert <code>a</code> from a hex-encoded ASCII string
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_from_ascii_string">from_ascii_string</a>(a: <a href="_String">ascii::String</a>): <b>address</b>
+<pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_from_ascii_string">from_ascii_string</a>(a: <a href="_String">ascii::String</a>): <a href="_Option">option::Option</a>&lt;<b>address</b>&gt;
 </code></pre>
 
 

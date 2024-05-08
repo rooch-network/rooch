@@ -7,10 +7,11 @@ use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_core_types::vm_status::StatusCode;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
-    loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
+    loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::{Value, Struct, Vector},
 };
 use smallvec::smallvec;
 use std::collections::VecDeque;
+use log::debug;
 
 const E_TYPE_NOT_MATCH: u64 = 1;
 
@@ -42,6 +43,7 @@ fn native_from_bytes(
     debug_assert_eq!(args.len(), 1);
 
     let mut cost = gas_params.base;
+    let type_param = &ty_args[0];
 
     // TODO(Gas): charge for getting the layout
     let layout = context.type_to_type_layout(&ty_args[0])?.ok_or_else(|| {
@@ -53,14 +55,26 @@ fn native_from_bytes(
 
     let bytes = pop_arg!(args, Vec<u8>);
     cost += gas_params.per_byte_deserialize * NumBytes::new(bytes.len() as u64);
-    let val = match Value::simple_deserialize(&bytes, &layout) {
-        Some(val) => val,
+    let result = match Value::simple_deserialize(&bytes, &layout) {
+        Some(val) => {
+            Struct::pack(vec![Vector::pack(type_param, vec![val]).map_err(|e| {
+                PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+                    .with_message(format!("Failed to pack Option: {:?}", e))
+            })?])
+        },
         None => {
-            return Ok(NativeResult::err(cost, E_TYPE_NOT_MATCH));
+            // Pack the MoveOption None
+            Struct::pack(vec![Vector::pack(type_param, vec![]).map_err(|e| {
+                PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+                    .with_message(format!("Failed to pack Option: {:?}", e))
+            })?])
         }
     };
 
-    Ok(NativeResult::ok(cost, smallvec![val]))
+    Ok(NativeResult::ok(
+        cost,
+        smallvec![Value::struct_(result)],
+    ))
 }
 
 /***************************************************************************************************

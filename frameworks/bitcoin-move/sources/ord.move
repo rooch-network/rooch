@@ -1065,7 +1065,10 @@ module bitcoin_move::ord {
             return option::none()
         };
 
-        let txid = address::from_ascii_string(option::extract(&mut ascii_txid_option));
+        let txid_option = address::from_ascii_string(option::extract(&mut ascii_txid_option));
+        if (option::is_none(&txid_option)) {
+            return option::none()
+        };
 
         let index_str = string::sub_string(inscription_id, offset+1, string::length(inscription_id));
         let index_option = string_utils::parse_u64_option(&index_str);
@@ -1074,7 +1077,7 @@ module bitcoin_move::ord {
         };
 
         option::some(InscriptionID{
-            txid: txid,
+            txid: option::extract<address>(&mut txid_option),
             index: (option::extract<u64>(&mut index_option) as u32),
         })
     }

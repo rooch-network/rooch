@@ -9,8 +9,11 @@
 /// a general conversion back-and-force is needed, consider the `moveos_std::Any` type which preserves invariants.
 module moveos_std::bcs{
 
+    use std::option::{Self, Option};
+    
     /// The request Move type is not match with input Move type.
     const ErrorTypeNotMatch: u64 = 1;
+    const ErrorInvalidBytes: u64 = 2;
     
     public fun to_bytes<MoveValue>(v: &MoveValue): vector<u8>{
         std::bcs::to_bytes(v)
@@ -40,10 +43,20 @@ module moveos_std::bcs{
     /// Function to deserialize a type T.
     /// Note the `private_generics` ensure only the `MoveValue`'s owner module can call this function
     public fun from_bytes<MoveValue>(bytes: vector<u8>): MoveValue {
+        let opt_result = native_from_bytes(bytes);
+        assert!(option::is_some(&opt_result), ErrorInvalidBytes);
+        option::destroy_some(opt_result)
+    }
+
+    #[data_struct(MoveValue)]
+    /// Function to deserialize a type T.
+    /// Note the `private_generics` ensure only the `MoveValue`'s owner module can call this function
+    /// If the bytes are invalid, it will return None.
+    public fun from_bytes_option<MoveValue>(bytes: vector<u8>): Option<MoveValue> {
         native_from_bytes(bytes)
     }
 
-    native public(friend) fun native_from_bytes<MoveValue>(bytes: vector<u8>): MoveValue;
+    native public(friend) fun native_from_bytes<MoveValue>(bytes: vector<u8>): Option<MoveValue>;
     friend moveos_std::any;
     friend moveos_std::copyable_any;
 

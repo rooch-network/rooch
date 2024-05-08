@@ -8,6 +8,7 @@
 
 module moveos_std::address {
     use std::ascii;
+    use std::option::{Self, Option};
     use moveos_std::bcs;
     use moveos_std::hex;
 
@@ -53,9 +54,14 @@ module moveos_std::address {
     }
 
     /// Convert `a` from a hex-encoded ASCII string
-    public fun from_ascii_string(a: ascii::String): address {
-        let bytes = hex::decode(ascii::into_bytes(a));
-        bcs::to_address(bytes)
+    public fun from_ascii_string(a: ascii::String): Option<address> {
+        let opt_bytes = hex::decode_option(ascii::into_bytes(a));
+        if (option::is_none(&opt_bytes)) {
+            return option::none()
+        };
+
+        let bytes = option::destroy_some(opt_bytes);
+        bcs::from_bytes_option<address>(bytes)
     }
 
     /// Convert `a` to a hex-encoded ASCII string
