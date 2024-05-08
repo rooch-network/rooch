@@ -88,6 +88,8 @@ impl RuntimeModuleMetadataV1 {
             && self.struct_attributes.is_empty()
             && self.private_generics_indices.is_empty()
             && self.gas_free_function_map.is_empty()
+            && self.data_struct_map.is_empty()
+            && self.data_struct_func_map.is_empty()
     }
 }
 
@@ -1017,7 +1019,7 @@ fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> b
     return match field_type {
         Type::Primitive(_) => true,
         Type::Vector(item_type) => check_data_struct_fields_type(item_type.as_ref(), module_env),
-        Type::Struct(module_id, struct_id, _) => {
+        Type::Struct(module_id, struct_id, ty_args) => {
             let module = module_env.env.get_module(*module_id);
 
             let struct_name = module_env
@@ -1032,6 +1034,14 @@ fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> b
 
             let struct_module = module_env.env.get_module(*module_id);
             let struct_env = struct_module.get_struct(*struct_id);
+
+            if is_std_option_type(&full_struct_name) {
+                if let Some(item_type) = ty_args.first() {
+                    return check_data_struct_fields_type(item_type, module_env);
+                }
+
+                return false;
+            }
 
             if !is_data_struct_annotation(&struct_env, module_env) {
                 return false;
@@ -1059,6 +1069,10 @@ fn is_allowed_data_struct_type(full_struct_name: &str) -> bool {
         full_struct_name,
         "0x1::string::String" | "0x1::ascii::String" | "0x2::object::ObjectID"
     )
+}
+
+fn is_std_option_type(full_struct_name: &str) -> bool {
+    matches!(full_struct_name, "0x1::option::Option")
 }
 
 fn is_data_struct_annotation(struct_env: &StructEnv, module_env: &ModuleEnv) -> bool {
@@ -1328,12 +1342,42 @@ fn check_func_data_struct(
                 struct_name
             );
 
+            // #[data_struct(T)] supports not only structs, but also string and ObjectID.
+            if is_allowed_data_struct_type(&full_struct_name) {
+                return (true, "".to_string());
+            }
+
             unsafe {
                 let data_struct_opt = GLOBAL_DATA_STRUCT.get(full_struct_name.as_str());
                 if let Some(is_data_struct) = data_struct_opt {
                     if *is_data_struct {
                         return (true, "".to_string());
                     }
+                }
+            }
+
+            (false, format!("The type argument {} of #[data_struct] for function {} in the module {} is not allowed.",
+            full_struct_name, func_name, full_module_name))
+        }
+        SignatureToken::StructInstantiation(struct_handle_index, ty_args) => {
+            let shandle = view.struct_handle_at(*struct_handle_index);
+            let module_id = shandle.module;
+            let module_handle = view.module_handle_at(module_id);
+            let module_address = view.address_identifier_at(module_handle.address);
+            let module_name = view.identifier_at(module_handle.name);
+            let full_module_name = format!("{}::{}", module_address.to_hex_literal(), module_name);
+            let struct_name = view.identifier_at(shandle.name).to_string();
+            let full_struct_name = format!(
+                "{}::{}::{}",
+                module_address.to_hex_literal(),
+                module_name,
+                struct_name
+            );
+
+            // #[data_struct(T)] supports not only structs, but also std::option::Option.
+            if is_std_option_type(&full_struct_name) {
+                if let Some(item_type) = ty_args.first() {
+                    return check_func_data_struct(view, func_env, item_type);
                 }
             }
 

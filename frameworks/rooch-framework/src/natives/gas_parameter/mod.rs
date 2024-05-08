@@ -4,6 +4,8 @@ mod account;
 mod base58;
 mod bcd;
 mod bech32;
+pub mod bls12381;
+mod cbor;
 mod ecdsa_k1;
 mod ed25519;
 mod events;

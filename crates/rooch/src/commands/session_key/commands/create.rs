@@ -4,6 +4,8 @@
 use crate::cli_types::{TransactionOptions, WalletContextOptions};
 use clap::Parser;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::move_std::ascii::MoveAsciiString;
+use moveos_types::move_std::string::MoveString;
 use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_types::{
@@ -16,6 +18,11 @@ use rpassword::prompt_password;
 /// Create a new session key on-chain
 #[derive(Debug, Parser)]
 pub struct CreateCommand {
+    #[clap(long)]
+    pub app_name: MoveString,
+    #[clap(long)]
+    pub app_url: MoveAsciiString,
+
     /// The scope of the session key, format: address::module_name::function_name.
     /// The module_name and function_name must be valid Move identifiers or '*'. `*` means any module or function.
     /// For example: 0x3::empty::empty
@@ -39,6 +46,7 @@ impl CreateCommand {
         let mut context = self.context_options.build()?;
 
         let sender: RoochAddress = context.resolve_address(self.tx_options.sender)?.into();
+        let max_gas_amount: Option<u64> = self.tx_options.max_gas_amount;
 
         let session_auth_key = if context.keystore.get_if_password_is_empty() {
             context.keystore.generate_session_key(&sender, None)?
@@ -62,6 +70,8 @@ impl CreateCommand {
 
         let action =
             rooch_types::framework::session_key::SessionKeyModule::create_session_key_action(
+                self.app_name,
+                self.app_url,
                 session_auth_key.as_ref().to_vec(),
                 session_scope.clone(),
                 self.max_inactive_interval,
@@ -70,7 +80,9 @@ impl CreateCommand {
         println!("Generated new session key {session_auth_key} for address [{sender}]",);
 
         let result = if context.keystore.get_if_password_is_empty() {
-            context.sign_and_execute(sender, action, None).await?
+            context
+                .sign_and_execute(sender, action, None, max_gas_amount)
+                .await?
         } else {
             let password =
                 prompt_password("Enter the password to create a new key pair:").unwrap_or_default();
@@ -84,7 +96,7 @@ impl CreateCommand {
             }
 
             context
-                .sign_and_execute(sender, action, Some(password))
+                .sign_and_execute(sender, action, Some(password), max_gas_amount)
                 .await?
         };
         context.assert_execute_success(result)?;

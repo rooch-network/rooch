@@ -20,7 +20,6 @@ use rooch_framework::natives::gas_parameter::gas_member::{
     FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule,
 };
 use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
-use rooch_types::bitcoin::data_import_config::DataImportMode;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::error::GenesisError;
@@ -43,10 +42,7 @@ pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
     let mock_sequencer = RoochAddress::from_str("0x0").expect("parse sequencer address failed");
     // genesis for integration test, we need to build the stdlib every time for `private_generic` check
     // see moveos/moveos-verifier/src/metadata.rs#L27-L30
-    let bitcoin_genesis_ctx = BitcoinGenesisContext::new(
-        Network::NetworkRegtest.to_num(),
-        DataImportMode::None.to_num(),
-    );
+    let bitcoin_genesis_ctx = BitcoinGenesisContext::new(Network::NetworkRegtest.to_num());
     RoochGenesis::build_with_option(
         RoochChainID::LOCAL.genesis_ctx(mock_sequencer),
         bitcoin_genesis_ctx,
@@ -338,7 +334,6 @@ mod tests {
     use moveos_store::MoveOSStore;
     use moveos_types::moveos_std::move_module::ModuleStore;
     use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
-    use rooch_types::bitcoin::data_import_config::DataImportMode;
     use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
     use rooch_types::bitcoin::network::{BitcoinNetwork, Network};
     use rooch_types::chain_id::{BuiltinChainID, RoochChainID};
@@ -349,10 +344,7 @@ mod tests {
     fn test_genesis_init() {
         let _ = tracing_subscriber::fmt::try_init();
         let sequencer = AccountAddress::ONE.into();
-        let bitcoin_genesis_ctx = BitcoinGenesisContext::new(
-            Network::NetworkRegtest.to_num(),
-            DataImportMode::None.to_num(),
-        );
+        let bitcoin_genesis_ctx = BitcoinGenesisContext::new(Network::NetworkRegtest.to_num());
         let genesis = super::RoochGenesis::build_with_option(
             RoochChainID::LOCAL.genesis_ctx(sequencer),
             bitcoin_genesis_ctx,

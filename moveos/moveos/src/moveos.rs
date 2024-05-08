@@ -172,7 +172,7 @@ impl MoveOS {
         let (state_root, size, event_ids) = self.apply_transaction_output(raw_output.clone())?;
         let output = TransactionOutput::new(raw_output, event_ids);
         log::info!(
-            "execute genesis tx state_root:{}, state_size:{}",
+            "execute genesis tx state_root:{:?}, state_size:{}",
             state_root,
             size
         );

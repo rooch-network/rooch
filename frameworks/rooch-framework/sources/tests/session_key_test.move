@@ -20,7 +20,9 @@ module rooch_framework::session_key_test{
         let scope = session_key::new_session_scope(@0x1, std::ascii::string(b"*"), std::ascii::string(b"*"));
         let authentication_key = bcs::to_bytes(&sender_addr);
         let max_inactive_interval = 10;
-        session_key::create_session_key(&sender, authentication_key, vector::singleton(scope), max_inactive_interval);
+        let app_name = std::string::utf8(b"test");
+        let app_url = std::ascii::string(b"https://test.rooch.network");
+        session_key::create_session_key(&sender, app_name, app_url,  authentication_key, vector::singleton(scope), max_inactive_interval);
         let session_key_opt = session_key::get_session_key(sender_addr, authentication_key);
         assert!(option::is_some(&session_key_opt), 1000);
 

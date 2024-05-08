@@ -4,7 +4,7 @@
 module quick_start_counter::quick_start_counter {
     use moveos_std::account;
 
-    struct Counter has key,store {
+    struct Counter has key {
         count_value: u64
     }
 

@@ -35,3 +35,4 @@ crates/rooch-indexer/.env
 sdk/typescript/dist/
 sdk/typescript/example/
 sdk/typescript/src/generated/
+*.out

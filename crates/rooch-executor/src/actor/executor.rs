@@ -23,8 +23,8 @@ use moveos_types::transaction::{FunctionCall, MoveOSTransaction, VerifiedMoveAct
 use rooch_genesis::FrameworksGasParameters;
 use rooch_store::RoochStore;
 use rooch_types::address::MultiChainAddress;
-use rooch_types::bitcoin::light_client::BitcoinLightClientModule;
-use rooch_types::framework::address_mapping::AddressMapping;
+use rooch_types::bitcoin::BitcoinModule;
+use rooch_types::framework::address_mapping::AddressMappingModule;
 use rooch_types::framework::auth_validator::{AuthValidatorCaller, TxValidateResult};
 use rooch_types::framework::ethereum_light_client::EthereumLightClientModule;
 use rooch_types::framework::transaction_validator::TransactionValidator;
@@ -91,7 +91,7 @@ impl ExecutorActor {
         multi_chain_address_sender: MultiChainAddress,
     ) -> Result<AccountAddress> {
         let resolved_sender = {
-            let address_mapping = self.as_module_binding::<AddressMapping>();
+            let address_mapping = self.as_module_binding::<AddressMappingModule>();
             address_mapping.resolve_or_generate(multi_chain_address_sender)?
         };
 
@@ -130,7 +130,7 @@ impl ExecutorActor {
         match RoochMultiChainID::try_from(chain_id.id())? {
             RoochMultiChainID::Bitcoin => {
                 let action = VerifiedMoveAction::Function {
-                    call: BitcoinLightClientModule::create_submit_new_block_call_bytes(
+                    call: BitcoinModule::create_submit_new_block_call_bytes(
                         block_height,
                         block_hash,
                         block_body,

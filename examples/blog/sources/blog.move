@@ -28,7 +28,7 @@ module rooch_examples::blog {
     const ErrorInappropriateVersion: u64 = 103;
     const ErrorNotGenesisAccount: u64 = 105;
 
-    struct Blog has key, store {
+    struct Blog has key {
         version: u64,
         name: String,
         articles: Table<ObjectID, Object<Article>>,
@@ -67,7 +67,7 @@ module rooch_examples::blog {
         }
     }
 
-    struct ArticleAddedToBlog has drop {
+    struct ArticleAddedToBlog has drop, copy {
         version: u64,
         article_id: ObjectID,
     }
@@ -86,7 +86,7 @@ module rooch_examples::blog {
         }
     }
 
-    struct ArticleRemovedFromBlog has drop {
+    struct ArticleRemovedFromBlog has drop, copy {
         version: u64,
         article_id: ObjectID,
     }
@@ -105,7 +105,7 @@ module rooch_examples::blog {
         }
     }
 
-    struct BlogCreated has drop {
+    struct BlogCreated has drop, copy {
         name: String,
     }
 
@@ -121,7 +121,7 @@ module rooch_examples::blog {
         }
     }
 
-    struct BlogUpdated has drop {
+    struct BlogUpdated has drop, copy {
         version: u64,
         name: String,
     }
@@ -140,7 +140,7 @@ module rooch_examples::blog {
         }
     }
 
-    struct BlogDeleted has drop {
+    struct BlogDeleted has drop, copy {
         version: u64,
     }
 

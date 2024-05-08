@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import toast from 'react-hot-toast'
 import { RotateCcw } from 'lucide-react'
 
@@ -6,48 +8,14 @@ import { Avatar } from '@/components/ui/avatar'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 
 import { formatAddress } from '@/utils/format'
-import { WalletAccount, useWalletStore } from '@roochnetwork/rooch-sdk-kit'
+import { useCurrentAccount } from '@roochnetwork/rooch-sdk-kit'
 import { useNavigate } from 'react-router-dom'
 
 import Jazzicon, { jsNumberForAddress } from 'react-jazzicon'
-import { useEffect } from 'react'
-import { useWalletAccountStore } from '@/store/useWalletAccountStore'
 
 export const ProfileCard = () => {
   const navigate = useNavigate()
-  const account = useWalletStore((state) => state.currentAccount)
-  const { walletAccount, roochAddress, setWalletAccount, setRoochAddress } = useWalletAccountStore()
-
-  // ** Create Wallet Account Instance
-  useEffect(() => {
-    if (account) {
-      const newWalletAccount = new WalletAccount(
-        account.client,
-        account.chain,
-        account.address,
-        account.authorization,
-        account.publicKey,
-        account.compressedPublicKey,
-      )
-      setWalletAccount(newWalletAccount)
-    }
-  }, [account, setWalletAccount])
-
-  // ** Get Rooch Address
-  useEffect(() => {
-    const fetchRoochAddress = async () => {
-      if (walletAccount) {
-        try {
-          const address = await walletAccount.resoleRoochAddress()
-          setRoochAddress(address)
-        } catch (error) {
-          console.error('Error fetching Rooch Address:', error)
-        }
-      }
-    }
-
-    fetchRoochAddress()
-  }, [walletAccount, setRoochAddress])
+  const account = useCurrentAccount()
 
   // TODO: handleClickCopy
   const handleClickCopy = (accountType: string) => {
@@ -63,7 +31,7 @@ export const ProfileCard = () => {
     if (accountType === 'btc') {
       textToCopy = account.address
     } else if (accountType === 'rooch') {
-      textToCopy = roochAddress
+      textToCopy = account.getRoochAddress()
     }
 
     if (textToCopy) {
@@ -80,6 +48,7 @@ export const ProfileCard = () => {
     }
   }
 
+  // TODO: refect data
   const handleRefreshPage = () => {
     navigate(0)
   }
@@ -150,8 +119,8 @@ export const ProfileCard = () => {
                 />
               </Button>
               <span className="text-muted-foreground">
-                {roochAddress ? (
-                  <p>{formatAddress(roochAddress as string)}</p>
+                {account?.getRoochAddress() ? (
+                  <p>{formatAddress(account?.getRoochAddress() as string)}</p>
                 ) : (
                   <p>Rooch Address</p>
                 )}

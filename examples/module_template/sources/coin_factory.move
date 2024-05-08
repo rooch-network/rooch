@@ -15,7 +15,7 @@ module rooch_examples::coin_factory {
    const TEMPLATE_COIN_SUPPLY_PLACEHOLDER: u256 = 123_321_123_456u256;
    const TEMPLATE_COIN_DECIMALS: u8 = 222u8;
 
-   struct TemplateStore has key, store {
+   struct TemplateStore has key {
       templates: Table<String, vector<u8>>,
    }
 

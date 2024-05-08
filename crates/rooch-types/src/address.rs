@@ -15,7 +15,10 @@ use bitcoin::{
 };
 
 use ethers::types::H160;
+use fastcrypto::hash::Blake2b256;
+use fastcrypto::hash::HashFunction;
 use fastcrypto::secp256k1::Secp256k1PublicKey;
+use move_core_types::language_storage::TypeTag;
 use move_core_types::{
     account_address::AccountAddress,
     ident_str,
@@ -24,7 +27,7 @@ use move_core_types::{
 };
 #[cfg(any(test, feature = "fuzzing"))]
 use moveos_types::h256;
-use moveos_types::state::MoveState;
+use moveos_types::state::{KeyState, MoveState};
 use moveos_types::{
     h256::H256,
     state::{MoveStructState, MoveStructType},
@@ -116,6 +119,11 @@ impl MultiChainAddress {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         bcs::to_bytes(self).expect("bcs encode should success")
+    }
+
+    pub fn to_key(&self) -> KeyState {
+        let key_type = TypeTag::Struct(Box::new(Self::struct_tag()));
+        KeyState::new(self.to_bytes(), key_type)
     }
 }
 
@@ -229,13 +237,15 @@ impl TryFrom<MultiChainAddress> for RoochAddress {
     type Error = anyhow::Error;
 
     fn try_from(value: MultiChainAddress) -> Result<Self, Self::Error> {
-        if value.multichain_id != RoochMultiChainID::Rooch {
-            return Err(anyhow::anyhow!(
-                "multichain_id type {} is invalid",
-                value.multichain_id
-            ));
-        }
-        Ok(Self(H256::from_slice(&value.raw_address)))
+        let address = if value.multichain_id != RoochMultiChainID::Rooch {
+            let mut hasher = Blake2b256::default();
+            hasher.update(&value.raw_address);
+            let g_arr = hasher.finalize();
+            Self(H256(g_arr.digest))
+        } else {
+            Self(H256::from_slice(&value.raw_address))
+        };
+        Ok(address)
     }
 }
 
@@ -915,15 +925,26 @@ mod test {
     #[test]
     pub fn test_bitcoin_address_to_rooch_address() -> Result<()> {
         // let bitcoin_address_str = "bc1qvz9u76epzm67x0gkxj8l8udzldc0lskspecuf5";
-        let bitcoin_address_str = "18cBEMRxXHqzWWCxZNtU91F5sbUNKhL5PX";
+        // let bitcoin_address_str = "18cBEMRxXHqzWWCxZNtU91F5sbUNKhL5PX";
+        let bitcoin_address_str = "bc1q262qeyyhdakrje5qaux8m2a3r4z8sw8vu5mysh";
 
         let maddress = MultiChainAddress::try_from_str_with_multichain_id(
             RoochMultiChainID::Bitcoin,
             bitcoin_address_str,
         )?;
+        // println!(
+        //     "test_bitcoin_address_to_rooch_address {} ",
+        //     hex::encode(maddress.raw_address.clone())
+        // );
+
+        let rooch_address = RoochAddress::try_from(maddress)?;
         println!(
-            "test_bitcoin_address_to_rooch_address {} ",
-            hex::encode(maddress.raw_address)
+            "test_bitcoin_address_to_rooch_address rooch_address {} ",
+            rooch_address.to_string()
+        );
+        assert_eq!(
+            rooch_address.to_string(),
+            "0x7fe695faf7047ccfbc85f7dccb6c405d4e9b7b44788e71a71c3891a06ce0ca12"
         );
 
         Ok(())

@@ -16,7 +16,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-#[derive(Eq, PartialEq, Clone, PartialOrd, Ord, Hash, JsonSchema)]
+#[derive(Eq, PartialEq, Clone, PartialOrd, Ord, Hash, Default, JsonSchema)]
 pub struct MoveString {
     bytes: Vec<u8>,
 }

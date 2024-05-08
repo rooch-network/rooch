@@ -66,7 +66,7 @@ A resource that holds all the ids of Object<CoinStore<T>> for account.
 TODO after the indexer is ready, we can use the indexer to list all the CoinStore<T> objects for account
 
 
-<pre><code><b>struct</b> <a href="account_coin_store.md#0x3_account_coin_store_CoinStores">CoinStores</a> <b>has</b> store, key
+<pre><code><b>struct</b> <a href="account_coin_store.md#0x3_account_coin_store_CoinStores">CoinStores</a> <b>has</b> key
 </code></pre>
 
 
@@ -78,7 +78,7 @@ TODO after the indexer is ready, we can use the indexer to list all the CoinStor
 Event for auto accept coin set
 
 
-<pre><code><b>struct</b> <a href="account_coin_store.md#0x3_account_coin_store_AcceptCoinEvent">AcceptCoinEvent</a> <b>has</b> drop, store
+<pre><code><b>struct</b> <a href="account_coin_store.md#0x3_account_coin_store_AcceptCoinEvent">AcceptCoinEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 

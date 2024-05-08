@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { MainContent } from '../components/main-content'
 import { Navbar } from '../components/navbar'
 import { Sidebar } from '../components/sidebar'

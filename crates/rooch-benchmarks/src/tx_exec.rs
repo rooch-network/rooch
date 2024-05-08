@@ -16,22 +16,16 @@ use crate::tx::{create_btc_blk_tx, create_l2_tx, find_block_height};
 pub fn tx_exec_benchmark(c: &mut Criterion) {
     let config = BenchTxConfig::load();
 
-    let mut binding_test =
-        binding_test::RustBindingTest::new_with_mode(config.data_import_mode.unwrap().to_num())
-            .unwrap();
+    let mut binding_test = binding_test::RustBindingTest::new().unwrap();
     let keystore = InMemKeystore::new_insecure_for_tests(10);
     let default_account = keystore.addresses()[0];
     let mut test_transaction_builder = TestTransactionBuilder::new(default_account.into());
 
-    let mut bench_id = "l2_tx";
     let tx_type = config.tx_type.unwrap();
-    let tx_cnt = match tx_type {
-        BtcBlock => {
-            bench_id = "btc_blk";
-            20 // block after 800,000 always need seconds/block
-        }
-        Transfer => 600,
-        Empty => 1000,
+    let (bench_id, tx_cnt) = match tx_type {
+        BtcBlock => ("btc_blk", 20), // block after 800,000 always need seconds/block
+        Transfer => ("l2_tx_transfer", 800),
+        Empty => ("l2_tx_empty", 1000),
     };
 
     let mut transactions: Vec<_> = Vec::with_capacity(tx_cnt);
@@ -69,6 +63,7 @@ pub fn tx_exec_benchmark(c: &mut Criterion) {
     let mut transactions_iter = transactions.into_iter().cycle();
 
     let mut group = c.benchmark_group("bench_tx_exec");
+    group.sample_size(tx_cnt);
     group.sampling_mode(SamplingMode::Flat);
     group.bench_function(bench_id, |b| {
         b.iter(|| {

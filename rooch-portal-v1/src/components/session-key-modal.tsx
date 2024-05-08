@@ -1,17 +1,29 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { useState } from 'react'
+import { RoochSessionAccount } from '@roochnetwork/rooch-sdk'
 
 interface SessionKeyModalProps {
   isOpen: boolean
-  onClose: () => void
-  onAuthorize: () => void
+  scopes: string[]
+  onAuthorize: () => Promise<RoochSessionAccount | null>
 }
 
 export const SessionKeyModal: React.FC<SessionKeyModalProps> = ({
   isOpen,
-  onClose,
+  scopes,
   onAuthorize,
 }) => {
+  const [loading, setLoading] = useState(false)
+
+  const onAuthorizeWrapper = async () => {
+    setLoading(true)
+    await onAuthorize()
+    setLoading(false)
+  }
+
   if (!isOpen) return null
 
   return (
@@ -26,10 +38,9 @@ export const SessionKeyModal: React.FC<SessionKeyModalProps> = ({
           {/* SCOPE */}
           <div className="flex flex-col items-start justify-start text-gray-300 text-sm overflow-auto">
             <h3 className="text-xs mb-1 font-medium text-gray-400">Scope</h3>
-            <span>0x1..</span>
-            <span>0x2..</span>
-            <span>0xd8a78bcf08402de9c19be5b958694ad9027e1c6f482fdaee6b7327ca1982549e</span>
-            <span>0x6..</span>
+            {scopes.map((item) => (
+              <span key={item}>{item}</span>
+            ))}
           </div>
           <Separator className="bg-muted-foreground/50 h-[0.5px] my-1.5" />
           {/* MAX INACTIVE INTERVAL */}
@@ -39,14 +50,9 @@ export const SessionKeyModal: React.FC<SessionKeyModalProps> = ({
           </div>
         </div>
         <div className="flex items-center justify-end mt-4">
-          <div>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              Cancel
-            </Button>
-          </div>
           <div className="flex justify-end">
-            <Button variant="default" size="sm" onClick={onAuthorize}>
-              Authorize
+            <Button variant="default" size="sm" onClick={onAuthorizeWrapper} disabled={loading}>
+              {loading ? 'Createing' : 'Authorize'}
             </Button>
           </div>
         </div>

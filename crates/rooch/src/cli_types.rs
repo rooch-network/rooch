@@ -73,6 +73,11 @@ pub struct TransactionOptions {
     #[clap(long, alias = "sender-account", value_parser=ParsedAddress::parse, default_value = "default")]
     pub(crate) sender: ParsedAddress,
 
+    /// Custom the transaction's gas limit.
+    /// [default: 1_000_000_000] [alias: "gas-limit"]
+    #[clap(long, alias = "gas-limit")]
+    pub(crate) max_gas_amount: Option<u64>,
+
     /// Custom the transaction's authenticator
     /// format: `auth_validator_id:payload`, auth validator id is u64, payload is hex string
     /// example: 123:0x2abc

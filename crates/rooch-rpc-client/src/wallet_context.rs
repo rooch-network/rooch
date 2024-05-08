@@ -142,6 +142,7 @@ impl WalletContext {
         &self,
         sender: RoochAddress,
         action: MoveAction,
+        max_gas_amount: Option<u64>,
     ) -> RoochResult<RoochTransactionData> {
         let client = self.get_client().await?;
         let chain_id = client.rooch.get_chain_id().await?;
@@ -156,7 +157,7 @@ impl WalletContext {
             sender,
             sequence_number,
             chain_id,
-            GasConfig::DEFAULT_MAX_GAS_AMOUNT,
+            max_gas_amount.unwrap_or(GasConfig::DEFAULT_MAX_GAS_AMOUNT),
             action,
         );
         Ok(tx_data)
@@ -167,6 +168,7 @@ impl WalletContext {
         sender: RoochAddress,
         action: MoveAction,
         password: Option<String>,
+        max_gas_amount: Option<u64>,
     ) -> RoochResult<RoochTransaction> {
         let kp = self
             .keystore
@@ -178,7 +180,7 @@ impl WalletContext {
                 ))
             })?;
 
-        let tx_data = self.build_tx_data(sender, action).await?;
+        let tx_data = self.build_tx_data(sender, action, max_gas_amount).await?;
         let signature = Signature::new_hashed(tx_data.tx_hash().as_bytes(), &kp);
         Ok(RoochTransaction::new(
             tx_data,
@@ -203,8 +205,9 @@ impl WalletContext {
         sender: RoochAddress,
         action: MoveAction,
         password: Option<String>,
+        max_gas_amount: Option<u64>,
     ) -> RoochResult<ExecuteTransactionResponseView> {
-        let tx = self.sign(sender, action, password).await?;
+        let tx = self.sign(sender, action, password, max_gas_amount).await?;
         self.execute(tx).await
     }
 

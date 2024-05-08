@@ -19,14 +19,12 @@ This module implements Bitcoin validator with the ECDSA recoverable signature ov
 -  [Function `validate`](#0x3_bitcoin_validator_validate)
 
 
-<pre><code><b>use</b> <a href="">0x1::debug</a>;
-<b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::signer</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::features</a>;
 <b>use</b> <a href="">0x2::hash</a>;
 <b>use</b> <a href="">0x2::hex</a>;
-<b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="account_authentication.md#0x3_account_authentication">0x3::account_authentication</a>;
 <b>use</b> <a href="auth_payload.md#0x3_auth_payload">0x3::auth_payload</a>;

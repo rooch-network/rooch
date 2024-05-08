@@ -47,7 +47,6 @@ use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
-use rooch_types::bitcoin::data_import_config::DataImportMode;
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::crypto::RoochKeyPair;
@@ -219,22 +218,17 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
     let sequencer_account: RoochAddress = (&sequencer_keypair.public()).into();
 
     let btc_network = opt.btc_network.unwrap_or(Network::default().to_num());
-    let data_import_mode = DataImportMode::try_from(
-        opt.data_import_mode
-            .unwrap_or(DataImportMode::None.to_num()),
-    )?;
+    let data_import_flag = opt.data_import_flag;
 
     if root.is_genesis() {
         let genesis_ctx = chain_id_opt.genesis_ctx(sequencer_account);
-        let bitcoin_genesis_ctx =
-            BitcoinGenesisContext::new(btc_network, data_import_mode.to_num());
+        let bitcoin_genesis_ctx = BitcoinGenesisContext::new(btc_network);
         let genesis: RoochGenesis = RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
         root = genesis.init_genesis(&mut moveos_store)?;
     } else {
         //TODO if root is not genesis, we should load genesis from store
         let genesis_ctx = chain_id_opt.genesis_ctx(sequencer_account);
-        let bitcoin_genesis_ctx =
-            BitcoinGenesisContext::new(btc_network, data_import_mode.to_num());
+        let bitcoin_genesis_ctx = BitcoinGenesisContext::new(btc_network);
         let genesis: RoochGenesis = RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
         genesis.check_genesis(moveos_store.get_config_store())?;
     };
@@ -301,7 +295,7 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         sequencer_proxy.clone(),
         proposer_proxy.clone(),
         indexer_proxy.clone(),
-        data_import_mode.is_data_import_flag(),
+        data_import_flag,
     )
     .into_actor(Some("PipelineProcessor"), &actor_system)
     .await?;

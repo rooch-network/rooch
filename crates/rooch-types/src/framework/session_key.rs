@@ -6,6 +6,7 @@ use crate::authentication_key::AuthenticationKey;
 use anyhow::Result;
 use move_core_types::value::MoveValue;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
+use moveos_types::move_std::string::MoveString;
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     move_std::ascii::MoveAsciiString,
@@ -117,6 +118,10 @@ impl FromStr for SessionScope {
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionKey {
+    #[serde(default)]
+    pub app_name: MoveString,
+    #[serde(default)]
+    pub app_url: MoveAsciiString,
     #[serde_as(as = "Readable<Hex, _>")]
     pub authentication_key: Vec<u8>,
     #[serde_as(as = "Vec<Readable<DisplayFromStr, _>>")]
@@ -218,6 +223,8 @@ impl<'a> SessionKeyModule<'a> {
     }
 
     pub fn create_session_key_action(
+        app_name: MoveString,
+        app_url: MoveAsciiString,
         authentication_key: Vec<u8>,
         scope: SessionScope,
         max_inactive_interval: u64,
@@ -226,6 +233,8 @@ impl<'a> SessionKeyModule<'a> {
             Self::CREATE_SESSION_KEY_ENTRY_FUNCTION_NAME,
             vec![],
             vec![
+                app_name.to_move_value(),
+                app_url.to_move_value(),
                 MoveValue::vector_u8(authentication_key),
                 scope.module_address.to_move_value(),
                 scope.module_name.to_move_value(),

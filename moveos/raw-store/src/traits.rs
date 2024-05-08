@@ -9,7 +9,7 @@ pub trait KVStore: Send + Sync {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
     fn multiple_get(&self, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>>;
     fn put(&self, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
-    fn contains_key(&self, key: Vec<u8>) -> Result<bool>;
+    fn contains_key(&self, key: &[u8]) -> Result<bool>;
     fn remove(&self, key: Vec<u8>) -> Result<()>;
     fn write_batch(&self, batch: WriteBatch) -> Result<()>;
     fn get_len(&self) -> Result<u64>;
@@ -19,9 +19,9 @@ pub trait KVStore: Send + Sync {
 }
 
 pub trait DBStore: Send + Sync {
-    fn get(&self, prefix_name: &str, key: Vec<u8>) -> Result<Option<Vec<u8>>>;
+    fn get(&self, prefix_name: &str, key: &[u8]) -> Result<Option<Vec<u8>>>;
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()>;
-    fn contains_key(&self, prefix_name: &str, key: Vec<u8>) -> Result<bool>;
+    fn contains_key(&self, prefix_name: &str, key: &[u8]) -> Result<bool>;
     fn remove(&self, prefix_name: &str, key: Vec<u8>) -> Result<()>;
     fn write_batch(&self, prefix_name: &str, batch: WriteBatch) -> Result<()>;
     fn get_len(&self) -> Result<u64>;

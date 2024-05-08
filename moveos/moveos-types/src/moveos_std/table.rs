@@ -20,7 +20,7 @@ pub const MODULE_NAME: &IdentStr = ident_str!("table");
 pub struct TablePlaceholder {
     // Move VM will auto add a bool field to the empty struct
     // So we manually add a bool field to the struct
-    _placeholder: bool,
+    pub _placeholder: bool,
 }
 
 impl MoveStructType for TablePlaceholder {

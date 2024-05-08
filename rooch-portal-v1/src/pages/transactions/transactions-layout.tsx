@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { TransactionsTable } from './components/transactions-table'
 
 export const TransactionsLayout = () => {

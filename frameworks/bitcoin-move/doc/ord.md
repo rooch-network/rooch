@@ -11,6 +11,7 @@
 -  [Resource `Inscription`](#0x4_ord_Inscription)
 -  [Struct `InscriptionRecord`](#0x4_ord_InscriptionRecord)
 -  [Struct `InvalidInscriptionEvent`](#0x4_ord_InvalidInscriptionEvent)
+-  [Struct `MetaprotocolValidity`](#0x4_ord_MetaprotocolValidity)
 -  [Resource `InscriptionStore`](#0x4_ord_InscriptionStore)
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_ord_genesis_init)
@@ -43,11 +44,28 @@
 -  [Function `from_transaction_bytes`](#0x4_ord_from_transaction_bytes)
 -  [Function `subsidy_by_height`](#0x4_ord_subsidy_by_height)
 -  [Function `bind_multichain_address`](#0x4_ord_bind_multichain_address)
+-  [Function `add_permanent_state`](#0x4_ord_add_permanent_state)
+-  [Function `contains_permanent_state`](#0x4_ord_contains_permanent_state)
+-  [Function `borrow_permanent_state`](#0x4_ord_borrow_permanent_state)
+-  [Function `borrow_mut_permanent_state`](#0x4_ord_borrow_mut_permanent_state)
+-  [Function `remove_permanent_state`](#0x4_ord_remove_permanent_state)
+-  [Function `add_temp_state`](#0x4_ord_add_temp_state)
+-  [Function `contains_temp_state`](#0x4_ord_contains_temp_state)
+-  [Function `borrow_temp_state`](#0x4_ord_borrow_temp_state)
+-  [Function `borrow_mut_temp_state`](#0x4_ord_borrow_mut_temp_state)
+-  [Function `remove_temp_state`](#0x4_ord_remove_temp_state)
+-  [Function `drop_temp_area`](#0x4_ord_drop_temp_area)
+-  [Function `seal_metaprotocol_validity`](#0x4_ord_seal_metaprotocol_validity)
+-  [Function `borrow_metaprotocol_validity`](#0x4_ord_borrow_metaprotocol_validity)
+-  [Function `metaprotocol_validity_protocol_type`](#0x4_ord_metaprotocol_validity_protocol_type)
+-  [Function `metaprotocol_validity_is_valid`](#0x4_ord_metaprotocol_validity_is_valid)
+-  [Function `metaprotocol_validity_invalid_reason`](#0x4_ord_metaprotocol_validity_invalid_reason)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
+<b>use</b> <a href="">0x2::bag</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::json</a>;
@@ -55,6 +73,7 @@
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
 <b>use</b> <a href="">0x2::table_vec</a>;
+<b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x3::address_mapping</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="">0x3::multichain_address</a>;
@@ -130,6 +149,17 @@
 
 
 
+<a name="0x4_ord_MetaprotocolValidity"></a>
+
+## Struct `MetaprotocolValidity`
+
+
+
+<pre><code><b>struct</b> <a href="ord.md#0x4_ord_MetaprotocolValidity">MetaprotocolValidity</a> <b>has</b> <b>copy</b>, drop, store
+</code></pre>
+
+
+
 <a name="0x4_ord_InscriptionStore"></a>
 
 ## Resource `InscriptionStore`
@@ -144,6 +174,15 @@
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x4_ord_TEMPORARY_AREA"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_TEMPORARY_AREA">TEMPORARY_AREA</a>: <a href="">vector</a>&lt;u8&gt; = [116, 101, 109, 112, 111, 114, 97, 114, 121, 95, 97, 114, 101, 97];
+</code></pre>
+
 
 
 <a name="0x4_ord_COIN_VALUE"></a>
@@ -161,6 +200,24 @@ How many satoshis are in "one bitcoin".
 
 
 <pre><code><b>const</b> <a href="ord.md#0x4_ord_FIRST_POST_SUBSIDY_EPOCH">FIRST_POST_SUBSIDY_EPOCH</a>: u32 = 33;
+</code></pre>
+
+
+
+<a name="0x4_ord_METAPROTOCOL_VALIDITY"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_METAPROTOCOL_VALIDITY">METAPROTOCOL_VALIDITY</a>: <a href="">vector</a>&lt;u8&gt; = [109, 101, 116, 97, 112, 114, 111, 116, 111, 99, 111, 108, 95, 118, 97, 108, 105, 100, 105, 116, 121];
+</code></pre>
+
+
+
+<a name="0x4_ord_PERMANENT_AREA"></a>
+
+
+
+<pre><code><b>const</b> <a href="ord.md#0x4_ord_PERMANENT_AREA">PERMANENT_AREA</a>: <a href="">vector</a>&lt;u8&gt; = [112, 101, 114, 109, 97, 110, 101, 110, 116, 95, 97, 114, 101, 97];
 </code></pre>
 
 
@@ -505,4 +562,191 @@ Block Rewards
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_bind_multichain_address">bind_multichain_address</a>(rooch_address: <b>address</b>, bitcoin_address_opt: <a href="_Option">option::Option</a>&lt;<a href="_BitcoinAddress">bitcoin_address::BitcoinAddress</a>&gt;)
+</code></pre>
+
+
+
+<a name="0x4_ord_add_permanent_state"></a>
+
+## Function `add_permanent_state`
+
+
+
+<pre><code>#[private_generics(#[S])]
+<b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_add_permanent_state">add_permanent_state</a>&lt;S: store&gt;(inscription: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;, state: S)
+</code></pre>
+
+
+
+<a name="0x4_ord_contains_permanent_state"></a>
+
+## Function `contains_permanent_state`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_contains_permanent_state">contains_permanent_state</a>&lt;S: store&gt;(inscription: &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;): bool
+</code></pre>
+
+
+
+<a name="0x4_ord_borrow_permanent_state"></a>
+
+## Function `borrow_permanent_state`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_permanent_state">borrow_permanent_state</a>&lt;S: store&gt;(inscription: &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;): &S
+</code></pre>
+
+
+
+<a name="0x4_ord_borrow_mut_permanent_state"></a>
+
+## Function `borrow_mut_permanent_state`
+
+
+
+<pre><code>#[private_generics(#[S])]
+<b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_mut_permanent_state">borrow_mut_permanent_state</a>&lt;S: store&gt;(inscription: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;): &<b>mut</b> S
+</code></pre>
+
+
+
+<a name="0x4_ord_remove_permanent_state"></a>
+
+## Function `remove_permanent_state`
+
+
+
+<pre><code>#[private_generics(#[S])]
+<b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_remove_permanent_state">remove_permanent_state</a>&lt;S: store&gt;(inscription: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;): S
+</code></pre>
+
+
+
+<a name="0x4_ord_add_temp_state"></a>
+
+## Function `add_temp_state`
+
+
+
+<pre><code>#[private_generics(#[S])]
+<b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_add_temp_state">add_temp_state</a>&lt;S: drop, store&gt;(inscription: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;, state: S)
+</code></pre>
+
+
+
+<a name="0x4_ord_contains_temp_state"></a>
+
+## Function `contains_temp_state`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_contains_temp_state">contains_temp_state</a>&lt;S: drop, store&gt;(inscription: &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;): bool
+</code></pre>
+
+
+
+<a name="0x4_ord_borrow_temp_state"></a>
+
+## Function `borrow_temp_state`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_temp_state">borrow_temp_state</a>&lt;S: drop, store&gt;(inscription: &<a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;): &S
+</code></pre>
+
+
+
+<a name="0x4_ord_borrow_mut_temp_state"></a>
+
+## Function `borrow_mut_temp_state`
+
+
+
+<pre><code>#[private_generics(#[S])]
+<b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_mut_temp_state">borrow_mut_temp_state</a>&lt;S: drop, store&gt;(inscription: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;): &<b>mut</b> S
+</code></pre>
+
+
+
+<a name="0x4_ord_remove_temp_state"></a>
+
+## Function `remove_temp_state`
+
+
+
+<pre><code>#[private_generics(#[S])]
+<b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_remove_temp_state">remove_temp_state</a>&lt;S: drop, store&gt;(inscription: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;): S
+</code></pre>
+
+
+
+<a name="0x4_ord_drop_temp_area"></a>
+
+## Function `drop_temp_area`
+
+Drop the bag, whether it's empty or not
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="ord.md#0x4_ord_drop_temp_area">drop_temp_area</a>(inscription: &<b>mut</b> <a href="_Object">object::Object</a>&lt;<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>&gt;)
+</code></pre>
+
+
+
+<a name="0x4_ord_seal_metaprotocol_validity"></a>
+
+## Function `seal_metaprotocol_validity`
+
+
+
+<pre><code>#[private_generics(#[T])]
+<b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_seal_metaprotocol_validity">seal_metaprotocol_validity</a>&lt;T&gt;(inscription_id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>, is_valid: bool, invalid_reason: <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;)
+</code></pre>
+
+
+
+<a name="0x4_ord_borrow_metaprotocol_validity"></a>
+
+## Function `borrow_metaprotocol_validity`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_metaprotocol_validity">borrow_metaprotocol_validity</a>(inscription_id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): &<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_metaprotocol_validity_protocol_type"></a>
+
+## Function `metaprotocol_validity_protocol_type`
+
+Get the MetaprotocolValidity's protocol_type
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_metaprotocol_validity_protocol_type">metaprotocol_validity_protocol_type</a>(validity: &<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>): <a href="_String">string::String</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_metaprotocol_validity_is_valid"></a>
+
+## Function `metaprotocol_validity_is_valid`
+
+Get the MetaprotocolValidity's is_valid
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_metaprotocol_validity_is_valid">metaprotocol_validity_is_valid</a>(validity: &<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>): bool
+</code></pre>
+
+
+
+<a name="0x4_ord_metaprotocol_validity_invalid_reason"></a>
+
+## Function `metaprotocol_validity_invalid_reason`
+
+Get the MetaprotocolValidity's invalid_reason
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_metaprotocol_validity_invalid_reason">metaprotocol_validity_invalid_reason</a>(validity: &<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
 </code></pre>

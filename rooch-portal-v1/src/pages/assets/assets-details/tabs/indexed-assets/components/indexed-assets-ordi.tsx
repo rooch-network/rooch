@@ -1,34 +1,43 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { NoData } from '@/components/no-data'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardHeader } from '@/components/ui/card'
+import { useCurrentAccount, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
+import { hexToString } from '@/utils/format.ts'
 
-interface MockData {
-  id: number
-  amount: number
-}
+// test address
+const testAddress = ''
 
-const mockData: MockData[] = [
-  { id: 123, amount: 1234 },
-  { id: 456, amount: 2468 },
-]
-
+// TODO: 1, loading, 2 pagination, 3 目前只处理了json 铭文，其他类型还需添加ui
 export const IndexedAssetsOrdi = () => {
-  if (mockData.length === 0) {
-    return <NoData />
-  }
+  const account = useCurrentAccount()
 
-  return (
+  const { data: result } = useRoochClientQuery('queryInscriptions', {
+    filter: {
+      owner: 'bcrt1p79ruqzh9hmmhvaz7x3up3t6pdrmz5hmhz3pfkddxqnfzg0md7upq3jjjev',
+    },
+  })
+
+  return !result || result.data.length === 0 ? (
+    <NoData />
+  ) : (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-      {mockData.map((data) => (
+      {result.data.map((item) => (
         <Card
-          key={data.id}
+          key={item.object_id}
           className="w-full transition-all border-border/40 dark:bg-zinc-800/90 dark:hover:border-primary/20 hover:shadow-md overflow-hidden"
         >
           <CardHeader className="flex items-center justify-center">
-            <h3 className="text-xl md:text-2xl">UTXO #{data.id}</h3>
+            <h3 className="text-xl md:text-2xl">
+              Inscriptions #
+              {item.value.content_type === 'text/plain;charset=utf-8'
+                ? hexToString(item.value.body as unknown as string)
+                : item.value.content_type}
+            </h3>
           </CardHeader>
-          <CardContent className="flex items-center justify-center text-sm md:text-base">
-            Amount {data.amount.toLocaleString()}
-          </CardContent>
+          {/*<CardContent className="flex items-center justify-center text-sm md:text-base">*/}
+          {/*  Amount {data.amount.toLocaleString()}*/}
+          {/*</CardContent>*/}
         </Card>
       ))}
     </div>

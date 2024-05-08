@@ -30,7 +30,7 @@ module rooch_examples::article {
     const ErrorNotGenesisAccount: u64 = 105;
     const ErrorIdNotFound: u64 = 106;
 
-    struct CommentTableItemAdded has drop {
+    struct CommentTableItemAdded has drop, copy {
         article_id: ObjectID,
         comment_seq_id: u64,
     }
@@ -136,7 +136,7 @@ module rooch_examples::article {
         }
     }
 
-    struct CommentUpdated has drop {
+    struct CommentUpdated has drop, copy {
         id: ObjectID,
         version: u64,
         comment_seq_id: u64,
@@ -183,7 +183,7 @@ module rooch_examples::article {
         }
     }
 
-    struct CommentRemoved has drop {
+    struct CommentRemoved has drop, copy {
         id: ObjectID,
         version: u64,
         comment_seq_id: u64,
@@ -209,7 +209,7 @@ module rooch_examples::article {
         }
     }
 
-    struct CommentAdded has drop {
+    struct CommentAdded has drop, copy {
         id: ObjectID,
         version: u64,
         comment_seq_id: u64,
@@ -256,7 +256,7 @@ module rooch_examples::article {
         }
     }
 
-    struct ArticleCreated has drop {
+    struct ArticleCreated has drop, copy {
         id: option::Option<ObjectID>,
         title: String,
         body: String,
@@ -289,7 +289,7 @@ module rooch_examples::article {
         }
     }
 
-    struct ArticleUpdated has drop {
+    struct ArticleUpdated has drop, copy {
         id: ObjectID,
         version: u64,
         title: String,
@@ -322,7 +322,7 @@ module rooch_examples::article {
         }
     }
 
-    struct ArticleDeleted has drop {
+    struct ArticleDeleted has drop, copy {
         id: ObjectID,
         version: u64,
     }

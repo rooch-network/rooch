@@ -13,7 +13,6 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use moveos_config::{temp_dir, DataDirPath};
-use rooch_types::bitcoin::data_import_config::DataImportMode;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::crypto::RoochKeyPair;
@@ -142,10 +141,9 @@ pub struct RoochOpt {
     #[clap(long)]
     pub da: Option<DAConfig>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long)]
-    /// The data import mode. If true, may be ignore the indexer write
-    pub data_import_mode: Option<u8>,
+    /// The data import flag. If true, may be ignore the indexer write
+    pub data_import_flag: bool,
 }
 
 impl std::fmt::Display for RoochOpt {
@@ -180,7 +178,18 @@ impl RoochOpt {
             proposer_account: None,
             relayer_account: None,
             da: None,
-            data_import_mode: Some(DataImportMode::default().to_num()),
+            data_import_flag: false,
+        }
+    }
+
+    pub fn new_with_default(
+        base_data_dir: Option<PathBuf>,
+        chain_id: Option<RoochChainID>,
+    ) -> Self {
+        RoochOpt {
+            base_data_dir,
+            chain_id,
+            ..Default::default()
         }
     }
 

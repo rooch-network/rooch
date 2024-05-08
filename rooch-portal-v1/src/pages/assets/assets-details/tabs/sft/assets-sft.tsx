@@ -1,3 +1,5 @@
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { SftCardHeader } from './components/sft-card-header'
 import { SftCardContents } from './components/sft-card-contents'

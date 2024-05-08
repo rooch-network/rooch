@@ -40,7 +40,7 @@ const TransactionDetail = () => {
   let { data } = useRoochClientQuery(
     'getTransactions',
     {
-      cursor: Number(cursor),
+      cursor: cursor ? parseInt(cursor as string) : null,
       limit: 1,
       descending_order: false,
     },
@@ -48,9 +48,6 @@ const TransactionDetail = () => {
       enabled: true,
     },
   )
-
-  console.log(cursor)
-  console.log(data)
 
   if (data) {
     return (

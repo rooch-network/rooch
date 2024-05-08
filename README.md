@@ -9,7 +9,7 @@
 
 [![Check-Build-Test](https://github.com/rooch-network/rooch/actions/workflows/check_build_test.yml/badge.svg)](https://github.com/rooch-network/rooch/actions/workflows/check_build_test.yml)
 [![License](https://img.shields.io/badge/license-Apache-green.svg)](LICENSE)
-[![LoC](https://tokei.rs/b1/github/rooch-network/rooch?category=lines)](https://github.com/rooch-network/rooch)
+<!-- [![LoC](https://tokei.rs/b1/github/rooch-network/rooch?category=lines)](https://github.com/rooch-network/rooch) -->
 
 ## Usage
 
@@ -20,7 +20,7 @@
 ## Developer Network Information
 
 * Name: dev
-* ChainID: 20230103
+* ChainID: 3
 * RPC: https://dev-seed.rooch.network/
 
 Please refer to [Connect to Developer Test Network](https://rooch.network/build/getting-started/connect-to-rooch/connect-devnet) for more information.

@@ -16,6 +16,7 @@ use tracing::{debug, error, info};
 
 use images::bitcoin::BitcoinD;
 use images::ord::Ord;
+use rooch_types::bitcoin::network::Network;
 use std::time::Duration;
 use testcontainers::{
     clients::Cli,
@@ -69,7 +70,8 @@ async fn start_server(w: &mut World, _scenario: String) {
             opt.btc_rpc_username = Some(RPC_USER.to_string());
             opt.btc_rpc_password = Some(RPC_PASS.to_string());
             opt.btc_start_block_height = Some(0);
-            opt.data_import_mode = Some(0); // Enable data import without writing indexes
+            opt.data_import_flag = false; // Enable data import without writing indexes
+            opt.btc_network = Some(Network::NetworkTestnet.to_num());
             info!("config btc rpc ok");
 
             w.bitcoind = Some(bitcoind);

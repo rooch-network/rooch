@@ -12,7 +12,7 @@ module moveos_std::event {
     ///
     /// The type T is the main way to index the event, and can contain
     /// phantom parameters, eg. emit(MyEvent<phantom T>).
-    public fun emit<T: drop>(event: T) {
+    public fun emit<T: drop+copy>(event: T) {
         native_emit<T>(event);
     }
 
@@ -20,7 +20,7 @@ module moveos_std::event {
     native fun native_emit<T>(event: T);
 
     #[test_only]
-    struct WithdrawEvent has drop {
+    struct WithdrawEvent has drop,copy {
         addr: address,
         amount: u64
     }

@@ -13,7 +13,7 @@ module bitcoin_move::utxo{
 
     friend bitcoin_move::genesis;
     friend bitcoin_move::ord;
-    friend bitcoin_move::light_client;
+    friend bitcoin_move::bitcoin;
 
     const TEMPORARY_AREA: vector<u8> = b"temporary_area";
 
@@ -40,13 +40,13 @@ module bitcoin_move::utxo{
     }
 
     /// Event for creating UTXO
-    struct CreatingUTXOEvent has drop, store {
+    struct CreatingUTXOEvent has drop, store, copy {
         /// UTXO object id
         id: ObjectID,
     }
 
     /// Event for remove UTXO
-    struct RemovingUTXOEvent has drop, store {
+    struct RemovingUTXOEvent has drop, store, copy {
         /// UTXO object id
         id: ObjectID,
     }
@@ -283,6 +283,7 @@ module bitcoin_move::utxo{
         simple_multimap::drop(seals);
     }
 
+    #[test_only]
     struct TempState has store, copy, drop {
         value: u64,
     }

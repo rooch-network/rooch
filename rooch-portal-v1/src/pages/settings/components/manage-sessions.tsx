@@ -1,5 +1,5 @@
-import React from 'react'
-
+// Copyright (c) RoochNetwork
+// SPDX-License-Identifier: Apache-2.0
 import {
   Table,
   TableBody,
@@ -11,44 +11,26 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 
-import { NoData } from '@/components/no-data'
+import {
+  useCurrentSession,
+  useRemoveSession,
+  useRoochClientQuery,
+} from '@roochnetwork/rooch-sdk-kit'
+import { Copy } from 'lucide-react'
 
-interface App {
-  app: string
-  appSite: string
-  contract: string
-  sessionID: number
-  grantedAt: string
-  expiredAt: string
-}
+// TODO: 1. fetch/remove loading, 2. The first boot creates a session and introduces a session
+export const ManageSessions = () => {
+  const sessionKey = useCurrentSession()
+  const { mutateAsync: removeSession } = useRemoveSession()
+  const { data: sessionKeys } = useRoochClientQuery('querySessionKeys', {
+    address: sessionKey?.getAddress() || '',
+  })
 
-const apps: App[] = [
-  {
-    app: 'Rooch',
-    appSite: 'rooch.network',
-    contract:
-      'bc1pk33n2t5zulq7nz3k8rq55dywjt89szfukypjua5zmuhfg40338wsv9ss7qbc1pk33n2t5zulq7nz3k8rq55dywjt89szfukypjua5zmuhfg40338wsv9ss7qbc1pk33n2t5zulq7nz3k8rq55dywjt89szfukypjua5zmuhfg40338wsv9ss7q',
-    sessionID: 0,
-    grantedAt: '2/30/2024',
-    expiredAt: '3/30/2024',
-  },
-]
-
-export const ManageSessions: React.FC = () => {
-  const hasValidData = (apps: App[]): boolean => {
-    return apps.some(
-      (app) =>
-        app.app ||
-        app.appSite ||
-        app.contract ||
-        app.sessionID !== 0 ||
-        app.grantedAt ||
-        app.expiredAt,
-    )
-  }
-
-  if (!hasValidData(apps)) {
-    return <NoData />
+  const remove = async (authKey: string) => {
+    console.log(authKey)
+    await removeSession({
+      authKey: authKey,
+    })
   }
 
   return (
@@ -61,22 +43,43 @@ export const ManageSessions: React.FC = () => {
             <TableHead>Session Key ID</TableHead>
             <TableHead>Session ID</TableHead>
             <TableHead>Granted at</TableHead>
-            <TableHead>Expired at</TableHead>
+            <TableHead>Inactive Interval at</TableHead>
             <TableHead className="text-center">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {apps.map((app, index) => (
-            <TableRow key={index}>
-              <TableCell className="font-medium">{app.app}</TableCell>
-              <TableCell className="overflow-auto max-w-[480px]">{app.contract}</TableCell>
-              <TableCell>{app.sessionID}</TableCell>
-              <TableCell>{app.grantedAt}</TableCell>
-              <TableCell>{app.expiredAt}</TableCell>
+          {sessionKeys?.data.map((session) => (
+            <TableRow key={session.authenticationKey}>
+              <TableCell className="font-medium">{session.appName}</TableCell>
+              {/* 完整地址仅在较大屏幕上显示 */}
+              <TableCell className="hidden md:table-cell">
+                <span className="flex items-center justify-start gap-0.5 text-muted-foreground">
+                  {session.scopes}
+                  <Button variant="ghost" size="icon" className=" w-6 h-6">
+                    <Copy className="w-3 h-3" />
+                  </Button>
+                </span>
+              </TableCell>
+
+              {/* 缩短的地址仅在移动设备上显示 */}
+              {/*<TableCell className="md:hidden">*/}
+              {/*  <span className="flex items-center justify-start gap-0.5 text-muted-foreground">*/}
+              {/*    {`${session.contract.substring(0, 3)}...${app.contract.substring(*/}
+              {/*      app.contract.length - 3,*/}
+              {/*    )}`}*/}
+              {/*    <Button variant="ghost" size="icon" className=" w-6 h-6">*/}
+              {/*      <Copy className="w-3 h-3" />*/}
+              {/*    </Button>*/}
+              {/*  </span>*/}
+              {/*</TableCell>*/}
+              <TableCell className="text-muted-foreground">{session.createTime}</TableCell>
+              <TableCell className="text-muted-foreground">{session.lastActiveTime}</TableCell>
+              <TableCell className="text-muted-foreground">{session.maxInactiveInterval}</TableCell>
               <TableCell className="text-center">
                 <Button
                   variant="link"
                   size="sm"
+                  onClick={() => remove(session.authenticationKey)}
                   className="text-red-500 dark:text-red-400 dark:hover:text-red-300 hover:text-red-600"
                 >
                   Disconnect

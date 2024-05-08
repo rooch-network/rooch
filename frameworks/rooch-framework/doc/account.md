@@ -7,7 +7,6 @@
 
 -  [Struct `AccountPlaceholder`](#0x3_account_AccountPlaceholder)
 -  [Constants](#@Constants_0)
--  [Function `create_account_entry`](#0x3_account_create_account_entry)
 -  [Function `create_account`](#0x3_account_create_account)
 -  [Function `create_account_internal`](#0x3_account_create_account_internal)
 -  [Function `create_resource_account`](#0x3_account_create_resource_account)
@@ -59,18 +58,6 @@ Cannot create account because address is reserved
 
 
 
-<a name="0x3_account_create_account_entry"></a>
-
-## Function `create_account_entry`
-
-A entry function to create an account under <code>new_address</code>
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="account.md#0x3_account_create_account_entry">create_account_entry</a>(new_address: <b>address</b>)
-</code></pre>
-
-
-
 <a name="0x3_account_create_account"></a>
 
 ## Function `create_account`
@@ -80,7 +67,7 @@ is returned. This way, the caller of this function can publish additional resour
 <code>new_address</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="account.md#0x3_account_create_account">create_account</a>(new_address: <b>address</b>): <a href="">signer</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="account.md#0x3_account_create_account">create_account</a>(new_address: <b>address</b>): <a href="">signer</a>
 </code></pre>
 
 

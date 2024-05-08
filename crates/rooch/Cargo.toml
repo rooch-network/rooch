@@ -39,6 +39,7 @@ parking_lot = { workspace = true }
 bcs-ext = { workspace = true }
 rpassword = { workspace = true }
 fastcrypto = { workspace = true }
+log = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
@@ -65,6 +66,9 @@ moveos = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-object-runtime = { workspace = true }
 framework-builder = { workspace = true }
+raw-store = { workspace = true }
+smt = { workspace = true }
+bitcoin = { workspace = true }
 
 rooch-key = { workspace = true }
 rooch-types = { workspace = true }
