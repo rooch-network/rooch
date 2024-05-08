@@ -43,7 +43,7 @@ export const SessionGuard = (props: SessionGuardProps) => {
   }, [isConnected, s, sessionKey])
 
   const handleAuth = async () => {
-    return createSessionKey({
+    await createSessionKey({
       appName: 'rooch-protal',
       appUrl: 'protal.rooch.network',
       scopes: defaultScope,
