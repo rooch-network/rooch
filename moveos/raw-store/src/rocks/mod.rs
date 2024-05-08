@@ -4,27 +4,30 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-pub mod batch;
+use std::collections::HashSet;
+use std::ffi::{c_double, c_int};
+use std::iter;
+use std::marker::PhantomData;
+use std::path::Path;
 
-use crate::errors::RawStoreError;
-use crate::metrics::{record_metrics, StoreMetrics};
-use crate::rocks::batch::WriteBatch;
-use crate::traits::DBStore;
-use crate::{ColumnFamilyName, WriteOp};
 use anyhow::{ensure, format_err, Error, Result};
-use moveos_common::utils::{check_open_fds_limit, from_bytes};
-use moveos_config::store_config::RocksdbConfig;
 use rocksdb::{
     BlockBasedOptions, Cache, ColumnFamily, Options, ReadOptions, WriteBatch as DBWriteBatch,
     WriteOptions, DB,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use std::collections::HashSet;
-use std::ffi::{c_double, c_int};
-use std::iter;
-use std::marker::PhantomData;
-use std::path::Path;
+
+use moveos_common::utils::{check_open_fds_limit, from_bytes};
+use moveos_config::store_config::RocksdbConfig;
+
+use crate::errors::RawStoreError;
+use crate::metrics::{record_metrics, StoreMetrics};
+use crate::rocks::batch::WriteBatch;
+use crate::traits::DBStore;
+use crate::{ColumnFamilyName, WriteOp};
+
+pub mod batch;
 
 pub const DEFAULT_PREFIX_NAME: ColumnFamilyName = "default";
 pub const RES_FDS: u64 = 4096;
@@ -138,9 +141,24 @@ impl RocksDB {
             column_families.iter().map(|cf_name| {
                 let mut cf_opts = Options::default();
                 cf_opts.set_level_compaction_dynamic_level_bytes(true);
+                cf_opts.set_min_level_to_compress(2);
                 cf_opts.set_compression_type(rocksdb::DBCompressionType::Lz4);
-                cf_opts.set_bottommost_compression_type(rocksdb::DBCompressionType::Zstd); // zstd for bottommost level, saving space
                 cf_opts.set_block_based_table_factory(&table_opts);
+
+                if (*cf_name).to_string() == "state_node" {
+                    cf_opts.set_write_buffer_size(512 * 1024 * 1024);
+                    cf_opts.set_max_write_buffer_number(4);
+
+                    cf_opts.enable_statistics();
+                    cf_opts.set_statistics_level(rocksdb::statistics::StatsLevel::All);
+
+                    cf_opts.set_target_file_size_base(128 * 1024 * 1024);
+                    cf_opts.set_max_bytes_for_level_base(2 * 1024 * 1024 * 1024);
+                    cf_opts.set_level_compaction_dynamic_level_bytes(false);
+                    cf_opts.set_max_bytes_for_level_multiplier(8f64);
+                    cf_opts.set_compaction_readahead_size(2 * 1024 * 1024);
+                }
+
                 rocksdb::ColumnFamilyDescriptor::new((*cf_name).to_string(), cf_opts)
             }),
         )?;

@@ -69,13 +69,13 @@ impl Default for RocksdbConfig {
     fn default() -> Self {
         Self {
             max_open_files: Self::default_max_open_files(),
-            max_total_wal_size: 1u64 << 30,
+            max_total_wal_size: 1u64 << 31,
             bytes_per_sync: 1u64 << 20,
             max_background_jobs: 6, // rocksdb will decide compaction threads and flush threads based on this number
             wal_bytes_per_sync: 1u64 << 20,
-            row_cache_size: 1u64 << 30,
-            max_write_buffer_numer: 5,
-            block_cache_size: 1u64 << 32,
+            row_cache_size: 1u64 << 32,
+            max_write_buffer_numer: 4,
+            block_cache_size: 1u64 << 34,
             block_size: 1u64 << 12,
         }
     }

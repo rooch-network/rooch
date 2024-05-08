@@ -1,8 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::{BTreeMap, HashMap};
 use std::collections::hash_map::Entry;
+use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
@@ -14,6 +14,7 @@ use std::time::SystemTime;
 
 use anyhow::{Error, Result};
 use bitcoin::{PublicKey, Txid};
+use chrono::{DateTime, Local};
 use clap::Parser;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::language_storage::TypeTag;
@@ -22,7 +23,7 @@ use serde::{Deserialize, Serialize};
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::{
-    GENESIS_STATE_ROOT, ObjectEntity, RootObjectEntity, SHARED_OBJECT_FLAG_MASK,
+    ObjectEntity, RootObjectEntity, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK,
     SYSTEM_OWNER_ADDRESS,
 };
 use moveos_types::moveos_std::simple_multimap::SimpleMultiMap;
@@ -32,8 +33,8 @@ use moveos_types::state::{KeyState, MoveState, MoveType, State};
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::address::{BitcoinAddress, MultiChainAddress, RoochAddress};
 use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
-use rooch_types::bitcoin::{types, utxo};
 use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
+use rooch_types::bitcoin::{types, utxo};
 use rooch_types::chain_id::RoochChainID;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::framework::address_mapping::AddressMappingWrapper;
@@ -45,7 +46,6 @@ use crate::cli_types::WalletContextOptions;
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
 use crate::commands::statedb::commands::init_statedb;
 
-pub const DEFAULT_BATCH_SIZE: usize = 8192;
 pub const SCRIPT_TYPE_P2MS: &str = "p2ms";
 pub const SCRIPT_TYPE_P2PK: &str = "p2pk";
 pub const SCRIPT_TYPE_NON_STANDARD: &str = "non-standard";
@@ -69,7 +69,7 @@ pub struct GenesisUTXOCommand {
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
 
-    #[clap(long, short = 'b', default_value = DEFAULT_BATCH_SIZE.to_string())]
+    #[clap(long, short = 'b', default_value = "8192")]
     pub batch_size: Option<usize>,
 
     #[clap(flatten)]
@@ -78,13 +78,14 @@ pub struct GenesisUTXOCommand {
 
 impl GenesisUTXOCommand {
     pub async fn execute(self) -> RoochResult<()> {
+        let input_path = self.input.clone();
+        let batch_size = self.batch_size.clone().unwrap();
         let (root, moveos_store, start_time) = self.init();
         let pre_root_state_root = H256::from(root.state_root.into_bytes());
         let (tx, rx) = mpsc::sync_channel(10);
-        let batch_size = self.batch_size.clone().unwrap();
 
         let produce_updates_thread =
-            thread::spawn(move || produce_updates(tx, self.input.clone(), batch_size));
+            thread::spawn(move || produce_updates(tx, input_path, batch_size));
         let apply_updates_thread = thread::spawn(move || {
             apply_updates_to_state(
                 rx,
@@ -97,23 +98,25 @@ impl GenesisUTXOCommand {
                 start_time,
             );
         });
-        produce_updates_thread.join()?;
-        apply_updates_thread.join()?;
+        produce_updates_thread.join().unwrap();
+        apply_updates_thread.join().unwrap();
 
         Ok(())
     }
 
-    fn init(mut self) -> (RootObjectEntity, MoveOSStore, SystemTime) {
+    fn init(self) -> (RootObjectEntity, MoveOSStore, SystemTime) {
         let start_time = SystemTime::now();
+        let datetime: DateTime<Local> = start_time.into();
 
-        let (root, moveos_store) = init_statedb(self.base_data_dir.clone(), self.chain_id.clone())?;
+        let (root, moveos_store) =
+            init_statedb(self.base_data_dir.clone(), self.chain_id.clone()).unwrap();
         let utxo_store_id = BitcoinUTXOStore::object_id();
         let address_mapping_id = AddressMappingWrapper::mapping_object_id();
         let reverse_mapping_object_id = AddressMappingWrapper::reverse_mapping_object_id();
 
         println!(
-            "task progress started at {:?}, batch_size: {:?}",
-            start_time, self.batch_size
+            "task progress started at {}, batch_size: {:?}",
+            datetime, self.batch_size
         );
         println!("root object: {:?}", root);
         println!("utxo_store_id: {:?}", utxo_store_id);
@@ -213,11 +216,6 @@ fn gen_utxo_data_from_csv_line(line: &str) -> Result<UTXOData> {
     Ok(utxo_data)
 }
 
-struct UTXOUpdate {
-    utxo: UTXO,
-    address: AccountAddress,
-}
-
 fn apply_updates_to_state(
     rx: Receiver<BatchUpdates>,
     moveos_store: &MoveOSStore,
@@ -238,13 +236,15 @@ fn apply_updates_to_state(
     while let Ok(batch) = rx.recv() {
         let mut nodes: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
 
+        let cnt = batch.utxo_updates.len();
         let mut utxo_tree_change_set =
             apply_fields(moveos_store, utxo_store_state_root, batch.utxo_updates).unwrap();
         nodes.append(&mut utxo_tree_change_set.nodes);
         utxo_store_state_root = utxo_tree_change_set.state_root;
-        utxo_count += batch.utxo_updates.len() as u64;
+        utxo_count += cnt as u64;
 
         if !batch.address_mapping_updates.is_empty() {
+            let cnt = batch.address_mapping_updates.len();
             let mut address_mapping_tree_change_set = apply_fields(
                 moveos_store,
                 address_mapping_state_root,
@@ -253,7 +253,7 @@ fn apply_updates_to_state(
             .unwrap();
             nodes.append(&mut address_mapping_tree_change_set.nodes);
             address_mapping_state_root = address_mapping_tree_change_set.state_root;
-            address_mapping_count += batch.address_mapping_updates.len() as u64;
+            address_mapping_count += cnt as u64;
         }
 
         if !batch.reverse_mapping_updates.is_empty() {
@@ -268,13 +268,13 @@ fn apply_updates_to_state(
         }
 
         apply_nodes(moveos_store, nodes).expect("failed to apply nodes");
-        loop_start_time = SystemTime::now();
 
         println!(
             "{} utxo applied in: {:?}",
             utxo_count,
             loop_start_time.elapsed().unwrap()
         );
+        loop_start_time = SystemTime::now();
     }
 
     finish_task(
@@ -305,7 +305,7 @@ fn finish_task(
     task_start_time: SystemTime,
 ) {
     // Update UTXOStore Object
-    let mut genesis_utxostore_object = create_genesis_utxostore_object()?;
+    let mut genesis_utxostore_object = create_genesis_utxostore_object().unwrap();
     genesis_utxostore_object.size += utxo_count;
     genesis_utxostore_object.state_root = utxo_store_state_root.into_address();
     let mut update_set = UpdateSet::new();
@@ -313,9 +313,9 @@ fn finish_task(
     update_set.put(parent_id.to_key(), genesis_utxostore_object.into_state());
 
     // Update Address Mapping Object
-    let mut genesis_address_mapping_object = create_genesis_address_mapping_object()?;
+    let mut genesis_address_mapping_object = create_genesis_address_mapping_object().unwrap();
     let mut genesis_reverse_address_mapping_object =
-        create_genesis_reverse_address_mapping_object()?;
+        create_genesis_reverse_address_mapping_object().unwrap();
     genesis_address_mapping_object.size += address_mapping_count;
     genesis_address_mapping_object.state_root = address_mapping_state_root.into_address();
     genesis_reverse_address_mapping_object.size += address_mapping_count;
@@ -330,17 +330,18 @@ fn finish_task(
         genesis_reverse_address_mapping_object.id.to_key(),
         genesis_reverse_address_mapping_object.into_state(),
     );
-    let tree_change_set = apply_fields(&moveos_store, root_state_root, update_set)?;
-    apply_nodes(&moveos_store, tree_change_set.nodes)?;
+    let tree_change_set = apply_fields(&moveos_store, root_state_root, update_set).unwrap();
+    apply_nodes(&moveos_store, tree_change_set.nodes).unwrap();
     root_state_root = tree_change_set.state_root;
 
     // Update Startup Info
     let new_startup_info = StartupInfo::new(root_state_root, root_size);
     moveos_store
         .get_config_store()
-        .save_startup_info(new_startup_info)?;
+        .save_startup_info(new_startup_info)
+        .unwrap();
 
-    let startup_info = moveos_store.get_config_store().get_startup_info()?;
+    let startup_info = moveos_store.get_config_store().get_startup_info().unwrap();
     println!(
         "Done in {:?}. New startup_info: {:?}",
         task_start_time.elapsed().unwrap(),
