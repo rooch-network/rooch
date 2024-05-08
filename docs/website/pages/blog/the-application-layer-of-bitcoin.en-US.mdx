@@ -18,7 +18,7 @@ Rooch Network is the Application Layer of Bitcoin, an Asset-Centric infrastructu
 
 ## Why Rooch Network?
 
-In 2023, the Bitcoin ecosystem saw the emergence of various new asset protocols, characterized by registering asset ownership on Bitcoin with validity verified off-chain, collectively known as [client-side validation](https://docs.rgb.info/distributed-computing-concepts/client-side-validation) assets. What future does this suggest for the Bitcoin ecosystem? Opinions vary, but we believe **these new asset protocols on Bitcoin signify a new paradigm for building application ecosystems**.
+In 2023, the Bitcoin ecosystem saw the emergence of various new asset protocols, characterized by registering asset ownership on Bitcoin with validity verified off-chain, collectively known as [client-side validation](/learn/core-concepts/client-side-validation) assets. What future does this suggest for the Bitcoin ecosystem? Opinions vary, but we believe **these new asset protocols on Bitcoin signify a new paradigm for building application ecosystems**.
 
 Client-side validation assets validate asset validity off-chain, thus allowing for the design of a cross-layer asset migration protocol that truly enables the migration of assets from on-chain to off-chain, simulating a "cash" effect in the digital world. This provides usage scenarios for assets that are no longer limited by the scalability issues of the chain, offering a new scaling solution and infinite possibilities for applications.
 
@@ -98,32 +98,30 @@ The Distributed State Tree Protocol can be extended in two directions:
 1. Integration with state channels. State channels can be understood as a special kind of lifecycle-managed state tree. When state channels involving multiple participants open, the state tree is created; when the channels settle, the application can discard or settle the states in the state tree. This scenario, combined with a P2P network, is highly suitable for multiplayer interactive applications (such as games).
 2. Support for other types of state trees. In theory, existing state trees can be mounted as sub-trees within the distributed state tree, such as git repositories. This allows applications to directly read files from git repositories.
 
-### Cross-Layer Asset Migration Protocol
+### Asset Leap Protocol
 
-Settling directly on Bitcoin L1 still faces issues with high transaction costs and long confirmation times. How to migrate assets from Bitcoin to L2 is a current industry challenge:
+Settling directly on Bitcoin L1 still faces issues with high transaction costs and long confirmation times. How to bridge assets from Bitcoin to L2 is a current industry challenge:
 
 1. Custodial bridge models are widely used. How to use Bitcoin to ensure the bridge's safety and decentralization is still an area of exploration. Rooch will collaborate with dedicated cross-chain bridge projects to implement asset bridging and enhance the bridge's security through Rooch's programming capabilities.
 2. Non-custodial models: This is the main direction Rooch is exploring, such as the [statechains](https://bitcoinops.org/en/topics/statechains/).
 
-For the Client-side validation assets, we will try to design a cross-layer asset migration protocol. 
-
-Off-chain smart contracts can provide computational scalability for Bitcoin, while the asset migration protocol aims to achieve state scalability.
+For the Client-side validation assets, we will try to design a asset leap protocol. 
 
 If a large number of new assets are issued on Bitcoin in the future, a protocol to facilitate asset migration between the Bitcoin network and L2 is needed to reduce the state storage pressure on Bitcoin. Also, new assets issued on L2 should be able to migrate to Bitcoin, thereby gaining higher security and broader circulation capabilities.
 
-The core idea of the asset migration protocol is as follows: 
+**The core idea of the asset leap protocol is as follows**: 
 
 Assets like RGB/Ordinals that are based on client-side validation use Bitcoin to register ownership, but their validity is verified by the client.
 
-If we define a protocol instruction to migrate assets from L1 to L2, or vice versa, and then enable clients to verify on both side, we can facilitate cross-layer asset migration.
+If we define a protocol instruction `leap` to migrate assets from L1 to L2, or vice versa, and then enable clients to verify on both side, we can facilitate asset migration.
 
 This protocol has several advantages over the current bridge models:
 
 1. It does not concentrate large amounts of assets in the bridge, thus avoiding centralization risks. The risk associated with asset migration is distributed. Both the migration out and migration in are triggered by users, and the client tracks ownership. As long as the destruction operation when migrating out and the reissuance operation when migrating in are matched, the assets are secure.
-2. Assets will truly migrate between networks like "cash." Separating the storage of assets from their application scenarios can solve the state explosion problem as well as issues related to the massive issuance of new assets.
+2. Assets can migrate between networks like "cash." Separating the storage of assets from their application scenarios can solve the state explosion problem as well as issues related to the massive issuance of new assets.
 3. This model requires wallets to play a significant role, not just as the current "dumb" wallets that only trust RPC, but rather more "smart" ones.
 
-To this end, the Rooch team has designed the SFT protocol based on Ordinals, [Bitseed](https://bitseed.pro/), and will explore asset migration protocols based on the Bitseed protocol in the future.
+To this end, the Rooch team has designed the SFT protocol based on Ordinals, [Bitseed](https://bitseed.pro/), and will explore asset migration protocols based on the Bitseed protocol in the future. For more details, please refer to the asset leap protocol section of the [Client-side validation protocol](/learn/core-concepts/client-side-validation/).
 
 ### Security Issues
 

@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use ethers::prelude::*;
 use rooch_config::EthereumRelayerConfig;
 use rooch_types::{
-    framework::ethereum_light_client::BlockHeader,
+    framework::ethereum::BlockHeader,
     multichain_id::RoochMultiChainID,
     transaction::{L1Block, L1BlockWithBody},
 };

@@ -1,0 +1,21 @@
+# Programming with Bitcoin Blocks and Transactions
+
+import { Callout, FileTree } from 'nextra/components'
+
+Rooch incorporates the [bitcoin-move](https://github.com/rooch-network/rooch/tree/main/frameworks/bitcoin-move) framework, which allows developers to read Bitcoin blocks and transactions through the bitcoin-move framework and use the data carried in them for programming.
+
+## Reading Bitcoin Blocks and Transactions in Contracts
+
+<Callout>
+TODO: This section of the document needs improvement
+
+1. How to read transactions, including explanations of transaction fields.
+2. How to read blocks, including explanations of block fields.
+3. An explanation of how Bitcoin hashes are expressed and differ in Move is required.
+</Callout>
+
+## Application Scenarios
+
+1. Use a Bitcoin hash as a random number seed to implement a random number generator. Note, this scenario requires using the hash of future blocks to prevent predictability.
+2. Embed application data in Bitcoin via OP_RETURN, then read the OP_RETURN data from the transaction using a Move contract for processing.
+3. Validate Bitcoin transaction scripts in Move to enable mixed programming with Move and Bitcoin Script. This feature is still in development, and progress can be tracked at [Issue #1651](https://github.com/rooch-network/rooch/issues/1651).

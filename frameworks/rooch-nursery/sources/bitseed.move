@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module bitcoin_move::bitseed {
+module rooch_nursery::bitseed {
     use std::string;
     use std::string::String;
     use std::vector;
@@ -109,7 +109,6 @@ module bitcoin_move::bitseed {
     public fun inscribe_generate(wasm_bytes: vector<u8>, deploy_args: vector<u8>,
                                  seed: vector<u8>, user_input: vector<u8>): vector<u8> {
         let wasm_instance = wasm::create_wasm_instance(wasm_bytes);
-        let wasm_instance_id = wasm::get_instance_id(&wasm_instance);
 
         let function_name = b"inscribe_generate";
 
@@ -118,12 +117,12 @@ module bitcoin_move::bitseed {
 
         let arg_list = vector::empty<vector<u8>>();
         vector::push_back(&mut arg_list, arg_with_length);
-        let memory_args_list = wasm::create_memory_wasm_args(wasm_instance_id, function_name, arg_list);
+        let memory_args_list = wasm::create_memory_wasm_args(&mut wasm_instance, function_name, arg_list);
 
-        let ret_val = wasm::execute_wasm_function(wasm_instance_id, function_name, memory_args_list);
+        let ret_val = wasm::execute_wasm_function(&mut wasm_instance, function_name, memory_args_list);
 
-        let ret_data_length = wasm::read_data_length(wasm_instance_id, ret_val);
-        let ret_data = wasm::read_data_from_heap(wasm_instance_id, (ret_val as u32) + 4, ret_data_length);
+        let ret_data_length = wasm::read_data_length(&wasm_instance, ret_val);
+        let ret_data = wasm::read_data_from_heap(&wasm_instance, (ret_val as u32) + 4, ret_data_length);
 
         wasm::release_wasm_instance(wasm_instance);
         ret_data
@@ -132,7 +131,6 @@ module bitcoin_move::bitseed {
     public fun inscribe_verify(wasm_bytes: vector<u8>, deploy_args: vector<u8>,
                                seed: vector<u8>, user_input: vector<u8>, attributes_output: vector<u8>): bool {
         let wasm_instance = wasm::create_wasm_instance(wasm_bytes);
-        let wasm_instance_id = wasm::get_instance_id(&wasm_instance);
 
         let function_name = b"inscribe_verify";
 
@@ -142,9 +140,9 @@ module bitcoin_move::bitseed {
         let arg_list = vector::empty<vector<u8>>();
         vector::push_back(&mut arg_list, arg_with_length);
         vector::push_back(&mut arg_list, attributes_output);
-        let memory_args_list = wasm::create_memory_wasm_args(wasm_instance_id, function_name, arg_list);
+        let memory_args_list = wasm::create_memory_wasm_args(&mut wasm_instance, function_name, arg_list);
 
-        let ret_val = wasm::execute_wasm_function(wasm_instance_id, function_name, memory_args_list);
+        let ret_val = wasm::execute_wasm_function(&mut wasm_instance, function_name, memory_args_list);
 
         wasm::release_wasm_instance(wasm_instance);
         if (ret_val == 0 ) {
@@ -170,14 +168,16 @@ module bitcoin_move::bitseed {
         deploy_op.attributes_deploy_args
     }
 
-    fun pack_inscribe_generate_args(deploy_args: vector<u8>, seed: vector<u8>, user_input: vector<u8>): vector<u8>{
-        native_pack_inscribe_generate_args(deploy_args, b"attrs", seed, b"seed",
-            user_input, b"user_input")
+    fun pack_inscribe_generate_args(_deploy_args: vector<u8>, _seed: vector<u8>, _user_input: vector<u8>): vector<u8>{
+        //TODO
+        abort 0
     }
-
-    native fun native_pack_inscribe_generate_args(
-        deploy_args: vector<u8>, deploy_args_key: vector<u8>,
-        seed: vector<u8>, seed_key: vector<u8>,
-        user_input: vector<u8>, user_input_key: vector<u8>,
-    ): vector<u8>;
+    
+    //temporary remove the native function, if needed, we can add it back
+    // https://github.com/rooch-network/rooch/blob/ad65c907864a63a9823a553cd32061e7182b863b/frameworks/bitcoin-move/src/natives/ord/bitseed.rs
+    // native fun native_pack_inscribe_generate_args(
+    //     deploy_args: vector<u8>, deploy_args_key: vector<u8>,
+    //     seed: vector<u8>, seed_key: vector<u8>,
+    //     user_input: vector<u8>, user_input_key: vector<u8>,
+    // ): vector<u8>;
 }

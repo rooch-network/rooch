@@ -83,7 +83,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_create_memory_wasm_args">create_memory_wasm_args</a>(instance_id: u64, func_name: <a href="">vector</a>&lt;u8&gt;, args: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;): <a href="">vector</a>&lt;u64&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_create_memory_wasm_args">create_memory_wasm_args</a>(instance: &<b>mut</b> <a href="wasm.md#0x2_wasm_WASMInstance">wasm::WASMInstance</a>, func_name: <a href="">vector</a>&lt;u8&gt;, args: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;): <a href="">vector</a>&lt;u64&gt;
 </code></pre>
 
 
@@ -94,7 +94,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_execute_wasm_function">execute_wasm_function</a>(instance_id: u64, func_name: <a href="">vector</a>&lt;u8&gt;, args: <a href="">vector</a>&lt;u64&gt;): u64
+<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_execute_wasm_function">execute_wasm_function</a>(instance: &<b>mut</b> <a href="wasm.md#0x2_wasm_WASMInstance">wasm::WASMInstance</a>, func_name: <a href="">vector</a>&lt;u8&gt;, args: <a href="">vector</a>&lt;u64&gt;): u64
 </code></pre>
 
 
@@ -105,7 +105,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_read_data_length">read_data_length</a>(instance_id: u64, data_ptr: u64): u32
+<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_read_data_length">read_data_length</a>(instance: &<a href="wasm.md#0x2_wasm_WASMInstance">wasm::WASMInstance</a>, data_ptr: u64): u32
 </code></pre>
 
 
@@ -116,7 +116,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_read_data_from_heap">read_data_from_heap</a>(instance_id: u64, data_ptr: u32, data_length: u32): <a href="">vector</a>&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="wasm.md#0x2_wasm_read_data_from_heap">read_data_from_heap</a>(instance: &<a href="wasm.md#0x2_wasm_WASMInstance">wasm::WASMInstance</a>, data_ptr: u32, data_length: u32): <a href="">vector</a>&lt;u8&gt;
 </code></pre>
 
 
