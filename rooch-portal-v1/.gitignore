@@ -24,8 +24,5 @@ dist-ssr
 *.sw?
 script/nohup.out
 
-# webstorm
-.idea
-
 # script logs
 .script/nohup.out
