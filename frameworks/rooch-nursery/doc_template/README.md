@@ -1,6 +1,6 @@
-# Bitcoin Move Framework
+# Rooch Nursery
 
-This is the reference documentation of the Bitcoin Move Framework.
+This is the reference documentation of the Rooch Nursery Framework.
 
 ## Index
 

@@ -15,7 +15,6 @@ module rooch_framework::genesis {
     use rooch_framework::transaction_fee;
     use rooch_framework::timestamp;
     use rooch_framework::address_mapping;
-    use rooch_framework::ethereum_light_client;
     use rooch_framework::onchain_config;
 
 
@@ -44,8 +43,7 @@ module rooch_framework::genesis {
         gas_coin::genesis_init(genesis_account);
         transaction_fee::genesis_init(genesis_account);
         timestamp::genesis_init(genesis_account, genesis_context.timestamp);
-        address_mapping::genesis_init(genesis_account);
-        ethereum_light_client::genesis_init(genesis_account);
+        address_mapping::genesis_init(genesis_account); 
 
         onchain_config::genesis_init(genesis_account, genesis_context.sequencer);
     }

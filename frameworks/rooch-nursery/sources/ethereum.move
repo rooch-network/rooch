@@ -1,10 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module rooch_framework::ethereum_light_client{
+module rooch_nursery::ethereum{
 
     use moveos_std::account;
-    
     use moveos_std::table::{Self, Table};
     use moveos_std::bcs;
     use moveos_std::signer;
@@ -12,7 +11,7 @@ module rooch_framework::ethereum_light_client{
     use rooch_framework::ethereum_address::ETHAddress;
     use rooch_framework::timestamp; 
 
-    friend rooch_framework::genesis;
+    friend rooch_nursery::genesis;
 
     const ErrorBlockNotFound:u64 = 1;
 

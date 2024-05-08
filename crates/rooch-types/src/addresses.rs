@@ -20,12 +20,21 @@ pub const BITCOIN_MOVE_ADDRESS: AccountAddress = {
     AccountAddress::new(addr)
 };
 
-pub static ROOCH_NAMED_ADDRESS_MAPPING: [(&str, &str); 2] = [
+pub const ROOCH_NURSERY_ADDRESS_NAME: &str = "rooch_nursery";
+pub const ROOCH_NURSERY_ADDRESS_LITERAL: &str = "0xa";
+pub const ROOCH_NURSERY_ADDRESS: AccountAddress = {
+    let mut addr = [0u8; AccountAddress::LENGTH];
+    addr[AccountAddress::LENGTH - 1] = 10u8;
+    AccountAddress::new(addr)
+};
+
+pub static ROOCH_NAMED_ADDRESS_MAPPING: [(&str, &str); 3] = [
     (
         ROOCH_FRAMEWORK_ADDRESS_NAME,
         ROOCH_FRAMEWORK_ADDRESS_LITERAL,
     ),
     (BITCOIN_MOVE_ADDRESS_NAME, BITCOIN_MOVE_ADDRESS_LITERAL),
+    (ROOCH_NURSERY_ADDRESS_NAME, ROOCH_NURSERY_ADDRESS_LITERAL),
 ];
 
 pub fn rooch_framework_named_addresses() -> BTreeMap<String, AccountAddress> {

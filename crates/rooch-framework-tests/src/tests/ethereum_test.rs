@@ -7,7 +7,7 @@ use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::transaction::MoveAction;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_key::keystore::memory_keystore::InMemKeystore;
-use rooch_types::framework::ethereum_light_client::BlockHeader;
+use rooch_types::framework::ethereum::BlockHeader;
 use rooch_types::transaction::rooch::RoochTransactionData;
 
 #[test]
@@ -53,7 +53,11 @@ fn test_submit_block() {
     let ethereum_block: Block<()> = serde_json::from_value(json).unwrap();
 
     let block_header = BlockHeader::try_from(&ethereum_block).unwrap();
-    let action = MoveAction::Function(rooch_types::framework::ethereum_light_client::EthereumLightClientModule::create_submit_new_block_call(&block_header));
+    let action = MoveAction::Function(
+        rooch_types::framework::ethereum::EthereumModule::create_submit_new_block_call(
+            &block_header,
+        ),
+    );
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number, action);
     let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
     binding_test.execute(tx).unwrap();

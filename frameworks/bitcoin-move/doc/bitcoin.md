@@ -64,20 +64,20 @@
 ## Constants
 
 
-<a name="0x4_bitcoin_ErrorBlockNotFound"></a>
-
-
-
-<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ErrorBlockNotFound">ErrorBlockNotFound</a>: u64 = 1;
-</code></pre>
-
-
-
 <a name="0x4_bitcoin_ErrorBlockAlreadyProcessed"></a>
 
 
 
 <pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ErrorBlockAlreadyProcessed">ErrorBlockAlreadyProcessed</a>: u64 = 2;
+</code></pre>
+
+
+
+<a name="0x4_bitcoin_ErrorBlockNotFound"></a>
+
+
+
+<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ErrorBlockNotFound">ErrorBlockNotFound</a>: u64 = 1;
 </code></pre>
 
 

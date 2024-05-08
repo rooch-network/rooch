@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-module bitcoin_move::brc20 {
+module rooch_nursery::brc20 {
     use std::option::{Self, Option};
     use std::string::{Self, String};
     use moveos_std::object::{Self, Object};
@@ -11,8 +11,6 @@ module bitcoin_move::brc20 {
     #[test_only]
     use moveos_std::json;
 
-    friend bitcoin_move::genesis;
-    friend bitcoin_move::ord;
 
     //TODO should we register the BRC20 as a CoinInfo?
     struct BRC20CoinInfo has store, copy{
