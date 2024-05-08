@@ -2,8 +2,8 @@
   "accounts": "账户",
   "transaction": "交易",
   "objects": "对象",
-  "token": "代币",
   "move-contracts": "Move 概念",
+  "client-side-validation": "客户端验证",
   "token": {
     "title": "Token",
     "display": "hidden"

@@ -2,8 +2,8 @@
   "accounts": "Account",
   "transaction": "Transaction",
   "objects": "Object",
-  "token": "Token",
   "move-contracts": "Move concepts",
+  "client-side-validation": "Client-side Validation",
   "token": {
     "title": "Token",
     "display": "hidden"
