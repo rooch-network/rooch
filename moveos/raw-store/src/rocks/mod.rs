@@ -12,8 +12,8 @@ use std::path::Path;
 
 use anyhow::{ensure, format_err, Error, Result};
 use rocksdb::{
-    BlockBasedOptions, Cache, ColumnFamily, Options, ReadOptions, WriteBatch as DBWriteBatch,
-    WriteOptions, DB,
+    BlockBasedOptions, Cache, ColumnFamily, DBCompressionType, Options, ReadOptions,
+    WriteBatch as DBWriteBatch, WriteOptions, DB,
 };
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -141,8 +141,15 @@ impl RocksDB {
             column_families.iter().map(|cf_name| {
                 let mut cf_opts = Options::default();
                 cf_opts.set_level_compaction_dynamic_level_bytes(true);
-                cf_opts.set_min_level_to_compress(2);
-                cf_opts.set_compression_type(rocksdb::DBCompressionType::Lz4);
+                cf_opts.set_compression_per_level(&[
+                    DBCompressionType::None,
+                    DBCompressionType::None,
+                    DBCompressionType::Lz4,
+                    DBCompressionType::Lz4,
+                    DBCompressionType::Lz4,
+                    DBCompressionType::Lz4,
+                    DBCompressionType::Lz4,
+                ]);
                 cf_opts.set_block_based_table_factory(&table_opts);
 
                 if (*cf_name).to_string() == "state_node" {
