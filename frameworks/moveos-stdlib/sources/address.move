@@ -52,6 +52,12 @@ module moveos_std::address {
         ascii::string(hex::encode(to_bytes(a)))
     }
 
+    /// Convert `a` from a hex-encoded ASCII string
+    public fun from_ascii_string(a: ascii::String): address {
+        let bytes = hex::decode(ascii::into_bytes(a));
+        bcs::to_address(bytes)
+    }
+
     /// Convert `a` to a hex-encoded ASCII string
     //TODO add `from_ascii` to string module
     // public fun to_string(a: address): string::String {

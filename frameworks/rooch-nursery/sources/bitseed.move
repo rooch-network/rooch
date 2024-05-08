@@ -203,8 +203,13 @@ module bitcoin_move::bitseed {
         };
 
         let inscription_id_str = string::sub_string(generator_uri, vector::length(&b"/inscription/"), string::length(generator_uri));
-        let inscription_id = ord::parse_inscription_id(inscription_id_str);
-        if (!ord::exists_inscription(&inscription_id)) {
+        let inscription_id_option = ord::parse_inscription_id(&inscription_id_str);
+        if (option::is_none(&inscription_id_option)) {
+            return (false, option::some(std::string::utf8(b"metadata.attributes.generator inscription_id parse fail")))
+        };
+
+        let inscription_id = option::extract(&mut inscription_id_option);
+        if (!ord::exists_inscription(inscription_id)) {
             return (false, option::some(std::string::utf8(b"metadata.attributes.generator inscription not exists")))
         };
 

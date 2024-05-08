@@ -6,6 +6,7 @@ module bitcoin_move::ord {
     use std::option::{Self, Option};
     use std::string;
     use std::string::String;
+
     use moveos_std::bcs;
     use moveos_std::event;
     use moveos_std::object::{Self, ObjectID, Object};
@@ -14,6 +15,9 @@ module bitcoin_move::ord {
     use moveos_std::table_vec::{Self, TableVec};
     use moveos_std::type_info;
     use moveos_std::bag;
+    use moveos_std::string_utils;
+    use moveos_std::address;
+
     use rooch_framework::address_mapping;
     use rooch_framework::multichain_address;
     use rooch_framework::bitcoin_address::BitcoinAddress;
@@ -132,18 +136,6 @@ module bitcoin_move::ord {
         }
     }
 
-    public fun parse_inscription_id(inscription_id: &String) : Option<InscriptionID> {
-        let index = string::index_of(inscription_id, &std::string::utf8(b"i"));
-        if (index == 0) {
-            return option::none()
-        };
-
-        option::some(InscriptionID{
-            txid,
-            index,
-        })
-    }
-
     public fun derive_inscription_id(inscription_id: InscriptionID) : ObjectID {
         let parent_id = object::named_object_id<InscriptionStore>();
         object::custom_child_object_id<InscriptionID, Inscription>(parent_id, inscription_id)
@@ -198,11 +190,7 @@ module bitcoin_move::ord {
         json::to_map(record.body)
     }
 
-    public fun exists_inscription(txid: address, index: u32): bool{
-        let id = InscriptionID{
-            txid: txid,
-            index: index,
-        };
+    public fun exists_inscription(id: InscriptionID): bool{
         let object_id = derive_inscription_id(id);
         object::exists_object_with_type<Inscription>(object_id)
     }
@@ -1062,5 +1050,67 @@ module bitcoin_move::ord {
         let invalid_reason_option = metaprotocol_validity_invalid_reason(metaprotocol_validity);
         let invalid_reason = option::borrow(&invalid_reason_option);
         assert!(invalid_reason == &test_invalid_reason, 1);
+    }
+
+    // ==== Prase InscriptionID ==== //
+    public fun parse_inscription_id(inscription_id: &String) : Option<InscriptionID> {
+        let offset = string::index_of(inscription_id, &std::string::utf8(b"i"));
+        if (offset == string::length(inscription_id)) {
+            return option::none()
+        };
+
+        let txid_str = string::sub_string(inscription_id, 0, offset);
+        let ascii_txid_option = std::ascii::try_string(string::into_bytes(txid_str));
+        if (option::is_none(&ascii_txid_option)) {
+            return option::none()
+        };
+
+        let txid = address::from_ascii_string(option::extract(&mut ascii_txid_option));
+
+        let index_str = string::sub_string(inscription_id, offset+1, string::length(inscription_id));
+        let index_option = string_utils::parse_u64_option(&index_str);
+        if (option::is_none(&index_option)) {
+            return option::none()
+        };
+
+        option::some(InscriptionID{
+            txid: txid,
+            index: (option::extract<u64>(&mut index_option) as u32),
+        })
+    }
+
+    #[test]
+    fun test_parse_inscription_id_ok(){
+        let inscription_id_str = std::string::utf8(b"6f55475ce65054aa8371d618d217da8c9a764cecdaf4debcbce8d6312fe6b4d8i0");
+        let inscription_id_option = parse_inscription_id(&inscription_id_str);
+        assert!(option::is_some(&inscription_id_option), 1);
+    }
+
+    #[test]
+    fun test_parse_inscription_id_fail_with_invalid_txid_str(){
+        let inscription_id_str = std::string::utf8(x"E4BDA0E5A5BD6930");
+        let inscription_id_option = parse_inscription_id(&inscription_id_str);
+        assert!(option::is_none(&inscription_id_option), 1);
+    }
+
+    #[test]
+    fun test_parse_inscription_id_fail_with_invalid_txid_address(){
+        let inscription_id_str = std::string::utf8(b"6x55475ce65054aa8371d618d217da8c9a764cecdaf4debcbce8d6312fe6b4d8i0");
+        let inscription_id_option = parse_inscription_id(&inscription_id_str);
+        assert!(option::is_none(&inscription_id_option), 1);
+    }
+
+    #[test]
+    fun test_parse_inscription_id_fail_with_without_i(){
+        let inscription_id_str = std::string::utf8(b"6f55475ce65054aa8371d618d217da8c9a764cecdaf4debcbce8d6312fe6b4d8");
+        let inscription_id_option = parse_inscription_id(&inscription_id_str);
+        assert!(option::is_none(&inscription_id_option), 1);
+    }
+
+    #[test]
+    fun test_parse_inscription_id_fail_with_invalid_index(){
+        let inscription_id_str = std::string::utf8(b"6f55475ce65054aa8371d618d217da8c9a764cecdaf4debcbce8d6312fe6b4d8ix");
+        let inscription_id_option = parse_inscription_id(&inscription_id_str);
+        assert!(option::is_none(&inscription_id_option), 1);
     }
 }

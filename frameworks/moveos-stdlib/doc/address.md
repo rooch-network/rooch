@@ -9,6 +9,7 @@
 -  [Function `from_bytes`](#0x2_address_from_bytes)
 -  [Function `to_bytes`](#0x2_address_to_bytes)
 -  [Function `to_ascii_string`](#0x2_address_to_ascii_string)
+-  [Function `from_ascii_string`](#0x2_address_from_ascii_string)
 -  [Function `length`](#0x2_address_length)
 -  [Function `max`](#0x2_address_max)
 -  [Function `zero`](#0x2_address_zero)
@@ -111,6 +112,18 @@ Convert <code>a</code> to a hex-encoded ASCII string
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_to_ascii_string">to_ascii_string</a>(a: <b>address</b>): <a href="_String">ascii::String</a>
+</code></pre>
+
+
+
+<a name="0x2_address_from_ascii_string"></a>
+
+## Function `from_ascii_string`
+
+Convert <code>a</code> from a hex-encoded ASCII string
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="address.md#0x2_address_from_ascii_string">from_ascii_string</a>(a: <a href="_String">ascii::String</a>): <b>address</b>
 </code></pre>
 
 

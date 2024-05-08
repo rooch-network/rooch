@@ -37,7 +37,7 @@ EOF
 done
 
 if [ ! -z "$UNIT_TEST" ]; then
-  cargo run --bin rooch move test -p frameworks/bitcoin-move bitseed
+  cargo run --bin rooch move test -p frameworks/bitcoin-move ord
 fi
 
 if [ ! -z "$INT_TEST" ]; then
