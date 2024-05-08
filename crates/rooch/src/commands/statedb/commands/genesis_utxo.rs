@@ -82,7 +82,7 @@ impl GenesisUTXOCommand {
         let batch_size = self.batch_size.clone().unwrap();
         let (root, moveos_store, start_time) = self.init();
         let pre_root_state_root = H256::from(root.state_root.into_bytes());
-        let (tx, rx) = mpsc::sync_channel(10);
+        let (tx, rx) = mpsc::sync_channel(16);
 
         let produce_updates_thread =
             thread::spawn(move || produce_updates(tx, input_path, batch_size));
@@ -232,8 +232,9 @@ fn apply_updates_to_state(
     let mut utxo_count = 0;
     let mut address_mapping_count = 0;
 
-    let mut loop_start_time = SystemTime::now();
     while let Ok(batch) = rx.recv() {
+        let loop_start_time = SystemTime::now();
+
         let mut nodes: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
 
         let cnt = batch.utxo_updates.len();
@@ -270,11 +271,14 @@ fn apply_updates_to_state(
         apply_nodes(moveos_store, nodes).expect("failed to apply nodes");
 
         println!(
-            "{} utxo applied in: {:?}",
+            "{} utxo applied. This bacth cost: {:?}",
+            // because we skip the first line, count result keep missing one.
+            // e.g. batch_size = 8192:
+            // 8191 utxo applied in: 1.000000000s
+            // 16383 utxo applied in: 1.000000000s
             utxo_count,
             loop_start_time.elapsed().unwrap()
         );
-        loop_start_time = SystemTime::now();
     }
 
     finish_task(
