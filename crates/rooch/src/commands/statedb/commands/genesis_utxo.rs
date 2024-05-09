@@ -233,6 +233,10 @@ fn apply_updates_to_state(
     let mut utxo_count = 0;
     let mut address_mapping_count = 0;
 
+    let mut last_utxo_store_state_root = utxo_store_state_root;
+    let mut last_address_mapping_state_root = address_mapping_state_root;
+    let mut last_reverse_address_mapping_state_root = reverse_address_mapping_state_root;
+
     while let Ok(batch) = rx.recv() {
         let loop_start_time = SystemTime::now();
 
@@ -281,6 +285,19 @@ fn apply_updates_to_state(
             address_mapping_count,
             loop_start_time.elapsed().unwrap()
         );
+
+        log::debug!(
+            "last_utxo_store_state_root: {:?}, new utxo_store_state_root: {:?}\
+            last_address_mapping_state_root: {:?}, new address_mapping_state_root: {:?}\
+            last_reverse_address_mapping_state_root: {:?}, new reverse_address_mapping_state_root: {:?}",
+            last_utxo_store_state_root,utxo_store_state_root,
+            last_address_mapping_state_root,address_mapping_state_root,
+            last_reverse_address_mapping_state_root,reverse_address_mapping_state_root
+        );
+
+        last_utxo_store_state_root = utxo_store_state_root;
+        last_address_mapping_state_root = address_mapping_state_root;
+        last_reverse_address_mapping_state_root = reverse_address_mapping_state_root;
     }
 
     finish_task(
