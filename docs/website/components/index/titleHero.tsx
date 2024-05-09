@@ -14,14 +14,17 @@ export default function TitleHero({
         <p className="block font-bold text-gray-800 text-4xl md:text-5xl lg:text-5xl dark:text-gray-200">
           {title}
         </p>
-        <p className="block pt-2 font-bold text-gray-800 text-2xl md:text-3xl lg:text-4xl dark:text-gray-200">
-          {slogan}
-        </p>
+          {slogan ?
+              <p className="block pt-2 font-bold text-gray-800 text-2xl md:text-3xl lg:text-4xl dark:text-gray-200">
+                  {slogan}
+              </p>
+              : ''
+          }
       </div>
-      {/* <!-- End Title --> */}
+        {/* <!-- End Title --> */}
 
-      <div className="mt-5 max-w-2xl text-center mx-auto">
-        <p className="text-lg text-gray-600 dark:text-gray-400">
+        <div className="mt-5 max-w-2xl text-center mx-auto">
+            <p className="text-lg text-gray-600 dark:text-gray-400">
           {description}
         </p>
       </div>
