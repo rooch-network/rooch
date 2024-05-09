@@ -929,11 +929,16 @@ impl<'a> ExtendedChecker<'a> {
 
 impl<'a> ExtendedChecker<'a> {
     fn check_data_struct(&mut self, module_env: &ModuleEnv) {
+        let mut available_data_structs = BTreeMap::new();
+
         for struct_def in module_env.get_structs() {
             if is_data_struct_annotation(&struct_def, module_env) {
                 if is_copy_drop_struct(&struct_def) {
-                    let (error_message, is_allowed) =
-                        check_data_struct_fields(&struct_def, module_env);
+                    let (error_message, is_allowed) = check_data_struct_fields(
+                        &struct_def,
+                        module_env,
+                        &mut available_data_structs,
+                    );
                     if !is_allowed {
                         self.env
                             .error(&struct_def.get_loc(), error_message.as_str());
@@ -952,6 +957,20 @@ impl<'a> ExtendedChecker<'a> {
             }
         }
 
+        if !available_data_structs.is_empty() {
+            log::debug!(
+                "\n\ncheck_data_struct() module {:?} data structs start...",
+                module_env.get_full_name_str()
+            );
+            for (k, v) in available_data_structs.iter() {
+                log::debug!("{:?} -> {:?}", k, v);
+            }
+            log::debug!(
+                "\n\ncheck_data_struct() module {:?} data structs end...",
+                module_env.get_full_name_str()
+            );
+        }
+
         let verified_module = match module_env.get_verified_module() {
             None => {
                 self.env
@@ -963,13 +982,10 @@ impl<'a> ExtendedChecker<'a> {
 
         let module_metadata = self.output.entry(verified_module.self_id()).or_default();
 
-        let data_struct_map = unsafe {
-            let result: BTreeMap<String, bool> = GLOBAL_DATA_STRUCT
-                .iter()
-                .map(|(key, value)| (key.clone(), *value))
-                .collect();
-            result
-        };
+        let data_struct_map: BTreeMap<String, bool> = available_data_structs
+            .iter()
+            .map(|(key, value)| (key.clone(), *value))
+            .collect();
 
         module_metadata.data_struct_map = data_struct_map;
 
@@ -977,7 +993,11 @@ impl<'a> ExtendedChecker<'a> {
     }
 }
 
-fn check_data_struct_fields(struct_def: &StructEnv, module_env: &ModuleEnv) -> (String, bool) {
+fn check_data_struct_fields(
+    struct_def: &StructEnv,
+    module_env: &ModuleEnv,
+    valid_structs: &mut BTreeMap<String, bool>,
+) -> (String, bool) {
     let struct_fields = struct_def.get_fields().collect_vec();
     for field in struct_fields {
         let field_type = field.get_type();
@@ -985,7 +1005,7 @@ fn check_data_struct_fields(struct_def: &StructEnv, module_env: &ModuleEnv) -> (
             .symbol_pool()
             .string(field.get_name())
             .to_string();
-        let is_allowed = check_data_struct_fields_type(&field_type, module_env);
+        let is_allowed = check_data_struct_fields_type(&field_type, module_env, valid_structs);
         if !is_allowed {
             let struct_name = module_env
                 .symbol_pool()
@@ -1008,6 +1028,7 @@ fn check_data_struct_fields(struct_def: &StructEnv, module_env: &ModuleEnv) -> (
         .string(struct_def.get_name())
         .to_string();
     let full_struct_name = format!("{}::{}", module_env.get_full_name_str(), struct_name);
+    valid_structs.insert(full_struct_name.clone(), true);
     unsafe {
         GLOBAL_DATA_STRUCT.insert(full_struct_name, true);
     }
@@ -1015,10 +1036,16 @@ fn check_data_struct_fields(struct_def: &StructEnv, module_env: &ModuleEnv) -> (
     ("".to_string(), true)
 }
 
-fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> bool {
+fn check_data_struct_fields_type(
+    field_type: &Type,
+    module_env: &ModuleEnv,
+    valid_structs: &mut BTreeMap<String, bool>,
+) -> bool {
     return match field_type {
         Type::Primitive(_) => true,
-        Type::Vector(item_type) => check_data_struct_fields_type(item_type.as_ref(), module_env),
+        Type::Vector(item_type) => {
+            check_data_struct_fields_type(item_type.as_ref(), module_env, valid_structs)
+        }
         Type::Struct(module_id, struct_id, ty_args) => {
             let module = module_env.env.get_module(*module_id);
 
@@ -1037,7 +1064,7 @@ fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> b
 
             if is_std_option_type(&full_struct_name) {
                 if let Some(item_type) = ty_args.first() {
-                    return check_data_struct_fields_type(item_type, module_env);
+                    return check_data_struct_fields_type(item_type, module_env, valid_structs);
                 }
 
                 return false;
@@ -1051,7 +1078,7 @@ fn check_data_struct_fields_type(field_type: &Type, module_env: &ModuleEnv) -> b
                 return false;
             }
 
-            check_data_struct_fields(&struct_env, &struct_module);
+            check_data_struct_fields(&struct_env, &struct_module, valid_structs);
 
             let is_allowed_opt = unsafe { GLOBAL_DATA_STRUCT.get(full_struct_name.as_str()) };
             return if let Some(is_allowed) = is_allowed_opt {
@@ -1248,13 +1275,24 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
         .entry(compiled_module.self_id())
         .or_default();
 
-    let data_struct_func_map = unsafe {
-        let result: BTreeMap<String, Vec<usize>> = GLOBAL_DATA_STRUCT_FUNC
-            .iter()
-            .map(|(key, value)| (key.clone(), value.clone()))
-            .collect();
-        result
-    };
+    let data_struct_func_map: BTreeMap<String, Vec<usize>> = type_name_indices
+        .iter()
+        .map(|(key, value)| (key.clone(), value.clone()))
+        .collect();
+
+    if !data_struct_func_map.is_empty() {
+        log::debug!(
+            "\n\ncheck_data_struct_func() module {:?} data structs func start...",
+            module_env.get_full_name_str()
+        );
+        for (k, v) in data_struct_func_map.iter() {
+            log::debug!("{:?} -> {:?}", k, v);
+        }
+        log::debug!(
+            "\n\ncheck_data_struct_func() module {:?} data structs func end...",
+            module_env.get_full_name_str()
+        );
+    }
 
     module_metadata.data_struct_func_map = data_struct_func_map;
 
@@ -1295,6 +1333,15 @@ fn check_data_struct_func(extended_checker: &mut ExtendedChecker, module_env: &M
                 };
 
                 if let Some(data_struct_func_indicies) = data_struct_func_types {
+                    let caller_fun_name = fun.get_full_name_str();
+                    log::debug!(
+                        "function {:?}::{:?} call data_struct func {:?} with types {:?}",
+                        module_env.self_address(),
+                        caller_fun_name,
+                        full_path_func_name,
+                        data_struct_func_indicies
+                    );
+
                     for generic_type_index in data_struct_func_indicies {
                         let type_arg = match type_arguments.get(generic_type_index) {
                             None => {

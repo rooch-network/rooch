@@ -49,7 +49,7 @@ use moveos_types::{
 };
 use moveos_verifier::verifier::INIT_FN_NAME_IDENTIFIER;
 use parking_lot::RwLock;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::{borrow::Borrow, sync::Arc};
 
 /// MoveOSVM is a wrapper of MoveVM with MoveOS specific features.
@@ -203,7 +203,12 @@ where
                     Err(err) => return Err(err.finish(Location::Undefined)),
                 };
                 let script_module = script_into_module(compiled_script);
-                let result = moveos_verifier::verifier::verify_module(&script_module, self.remote);
+                let mut verified_modules: BTreeMap<ModuleId, CompiledModule> = BTreeMap::new();
+                let result = moveos_verifier::verifier::verify_module(
+                    &script_module,
+                    self.remote,
+                    &mut verified_modules,
+                );
                 match result {
                     Ok(_) => {}
                     Err(err) => return Err(err),
@@ -247,8 +252,13 @@ where
                     )?;
 
                 let mut init_function_modules = vec![];
+                let mut verified_modules: BTreeMap<ModuleId, CompiledModule> = BTreeMap::new();
                 for module in &compiled_modules {
-                    let result = moveos_verifier::verifier::verify_module(module, self.remote);
+                    let result = moveos_verifier::verifier::verify_module(
+                        module,
+                        self.remote,
+                        &mut verified_modules,
+                    );
                     match result {
                         Ok(res) => {
                             if res {
