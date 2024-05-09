@@ -287,8 +287,8 @@ fn apply_updates_to_state(
         );
 
         log::debug!(
-            "last_utxo_store_state_root: {:?}, new utxo_store_state_root: {:?}\
-            last_address_mapping_state_root: {:?}, new address_mapping_state_root: {:?}\
+            "last_utxo_store_state_root: {:?}, new utxo_store_state_root: {:?}; \
+            last_address_mapping_state_root: {:?}, new address_mapping_state_root: {:?}; \
             last_reverse_address_mapping_state_root: {:?}, new reverse_address_mapping_state_root: {:?}",
             last_utxo_store_state_root,utxo_store_state_root,
             last_address_mapping_state_root,address_mapping_state_root,
