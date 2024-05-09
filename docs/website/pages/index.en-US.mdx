@@ -4,12 +4,28 @@ description: Rooch Network is the Application Layer of Bitcoin, an Asset-Centric
 searchable: false
 ---
 
-import TitleHero from '../components/index/titleHero'
+import Index from '../components/index'
 
-<TitleHero
-  title="Unlocking Infinite Utility for the Bitcoin Economy"
-  slogan=""
-  description="Rooch Network is the Application Layer of Bitcoin, an Asset-Centric infrastructure that provides indexing, trading, and enables application scenarios for all Bitcoin assets"
-  button="Join the community"
-  buttonHref="/learn/introduction"
+<Index
+  heroTitle="Unlocking Infinite Utility for the Bitcoin Economy"
+  heroSlogan=""
+  heroDescription="Rooch Network is the Application Layer of Bitcoin, an Asset-Centric infrastructure that provides indexing, trading, and enables application scenarios for all Bitcoin assets"
+  heroButton="Join the community"
+  heroButtonHref="/learn/introduction"
+  featuresTitle="Our Features"
+  features={[
+    { title: 'Feature 1', description: 'Description 1' },
+    { title: 'Feature 2', description: 'Description 2' },
+    { title: 'Feature 3', description: 'Description 3' },
+  ]}
+  exploreTitle="Explore"
+  exploreContent="Explore content here."
+  ecosystemTitle="Our Ecosystem"
+  ecosystemContent="Ecosystem content here."
+  blogsTitle="Latest Blogs"
+  blogs={[
+    { title: 'Blog 1', summary: 'Summary 1', link: '/blog/1' },
+    { title: 'Blog 2', summary: 'Summary 2', link: '/blog/2' },
+    { title: 'Blog 3', summary: 'Summary 3', link: '/blog/3' },
+  ]}
 />

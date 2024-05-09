@@ -4,12 +4,28 @@ description: Rooch Network 是比特币的应用层，一个以资产为中心�
 searchable: false
 ---
 
-import TitleHero from '../components/index/titleHero'
+import Index from '../components/index'
 
-<TitleHero
-  title="开启比特币经济的无限可能"
-  slogan=""
-  description="Rooch Network 是比特币的应用层，一个以资产为中心的基础设施，提供比特币所有资产的索引、交易，并支持各种应用场景。"
-  button="加入我们"
-  buttonHref="/learn/introduction"
+<Index
+  heroTitle="开启比特币经济的无限可能"
+  heroSlogan=""
+  heroDescription="Rooch Network 是比特币的应用层，一个以资产为中心的基础设施，提供比特币所有资产的索引、交易，并支持各种应用场景。"
+  heroButton="加入我们"
+  heroButtonHref="/learn/introduction"
+  featuresTitle="Our Features"
+  features={[
+    { title: 'Feature 1', description: 'Description 1' },
+    { title: 'Feature 2', description: 'Description 2' },
+    { title: 'Feature 3', description: 'Description 3' },
+  ]}
+  exploreTitle="Explore"
+  exploreContent="Explore content here."
+  ecosystemTitle="Our Ecosystem"
+  ecosystemContent="Ecosystem content here."
+  blogsTitle="Latest Blogs"
+  blogs={[
+    { title: 'Blog 1', summary: 'Summary 1', link: '/blog/1' },
+    { title: 'Blog 2', summary: 'Summary 2', link: '/blog/2' },
+    { title: 'Blog 3', summary: 'Summary 3', link: '/blog/3' },
+  ]}
 />
