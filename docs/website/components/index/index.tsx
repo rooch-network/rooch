@@ -27,7 +27,7 @@ interface IndexProps {
 
   // BLOGS
   blogsTitle: string
-  blogs: { title: string; summary: string; link: string }[]
+  blogs: { title: string; date: string; link: string }[]
 }
 
 export default function Index({
@@ -127,7 +127,7 @@ export default function Index({
             {blogs?.map((blog, index) => (
               <div key={index} className="bg-white shadow-lg rounded-lg p-6">
                 <h3 className="text-xl font-bold text-gray-800">{blog.title}</h3>
-                <p className="text-gray-600 mt-2">{blog.summary}</p>
+                <p className="text-gray-600 mt-2">{blog.date}</p>
                 <Link href={blog.link}>
                   <button className="text-blue-500 hover:text-blue-700 mt-4 inline-block">
                     Read More
