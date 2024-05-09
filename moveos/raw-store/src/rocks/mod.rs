@@ -156,9 +156,6 @@ impl RocksDB {
                     cf_opts.set_write_buffer_size(512 * 1024 * 1024);
                     cf_opts.set_max_write_buffer_number(4);
 
-                    cf_opts.enable_statistics();
-                    cf_opts.set_statistics_level(rocksdb::statistics::StatsLevel::All);
-
                     cf_opts.set_target_file_size_base(128 * 1024 * 1024);
                     cf_opts.set_max_bytes_for_level_base(2 * 1024 * 1024 * 1024);
                     cf_opts.set_level_compaction_dynamic_level_bytes(false);
@@ -252,6 +249,8 @@ impl RocksDB {
         db_opts.set_row_cache(&cache);
         db_opts.set_enable_pipelined_write(true);
         db_opts.set_wal_recovery_mode(rocksdb::DBRecoveryMode::PointInTime); // for memtable crash recovery
+        db_opts.enable_statistics();
+        // db_opts.set_statistics_level(rocksdb::statistics::StatsLevel::All);
         db_opts
 
         // db_opts.enable_statistics();
