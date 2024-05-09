@@ -152,7 +152,7 @@ impl RocksDB {
                 ]);
                 cf_opts.set_block_based_table_factory(&table_opts);
 
-                if (*cf_name).to_string() == "state_node" {
+                if (*cf_name) == "state_node" {
                     cf_opts.set_write_buffer_size(512 * 1024 * 1024);
                     cf_opts.set_max_write_buffer_number(4);
 

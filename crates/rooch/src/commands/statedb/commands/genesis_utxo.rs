@@ -69,7 +69,7 @@ pub struct GenesisUTXOCommand {
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
     pub chain_id: Option<RoochChainID>,
 
-    #[clap(long, short = 'b', default_value = "8192")]
+    #[clap(long, short = 'b', default_value = "2097152")]
     pub batch_size: Option<usize>,
 
     #[clap(flatten)]
@@ -79,7 +79,7 @@ pub struct GenesisUTXOCommand {
 impl GenesisUTXOCommand {
     pub async fn execute(self) -> RoochResult<()> {
         let input_path = self.input.clone();
-        let batch_size = self.batch_size.clone().unwrap();
+        let batch_size = self.batch_size.unwrap();
         let (root, moveos_store, start_time) = self.init();
         let pre_root_state_root = H256::from(root.state_root.into_bytes());
         let (tx, rx) = mpsc::sync_channel(2);
@@ -353,8 +353,8 @@ fn finish_task(
         genesis_reverse_address_mapping_object.id.to_key(),
         genesis_reverse_address_mapping_object.into_state(),
     );
-    let tree_change_set = apply_fields(&moveos_store, root_state_root, update_set).unwrap();
-    apply_nodes(&moveos_store, tree_change_set.nodes).unwrap();
+    let tree_change_set = apply_fields(moveos_store, root_state_root, update_set).unwrap();
+    apply_nodes(moveos_store, tree_change_set.nodes).unwrap();
     root_state_root = tree_change_set.state_root;
 
     // Update Startup Info
