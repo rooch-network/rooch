@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 script/nohup.out
+
+# script logs
+.script/nohup.out

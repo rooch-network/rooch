@@ -27,25 +27,24 @@ module moveos_std::wasm {
         native_add_length_with_data(value)
     }
 
-    public fun create_memory_wasm_args(instance_id: u64, func_name: vector<u8>, args: vector<vector<u8>>): vector<u64> {
-        native_create_wasm_args_in_memory(instance_id, func_name, args)
+    public fun create_memory_wasm_args(instance: &mut WASMInstance, func_name: vector<u8>, args: vector<vector<u8>>): vector<u64> {
+        native_create_wasm_args_in_memory(instance.id, func_name, args)
     }
 
-    public fun execute_wasm_function(instance_id: u64, func_name: vector<u8>, args: vector<u64>): u64 {
+    public fun execute_wasm_function(instance: &mut WASMInstance, func_name: vector<u8>, args: vector<u64>): u64 {
         features::ensure_wasm_enabled();
-        native_execute_wasm_function(instance_id, func_name, args)
+        native_execute_wasm_function(instance.id, func_name, args)
     }
 
-    public fun read_data_length(instance_id: u64, data_ptr: u64): u32 {
-        native_read_data_length(instance_id, data_ptr)
+    public fun read_data_length(instance: &WASMInstance, data_ptr: u64): u32 {
+        native_read_data_length(instance.id, data_ptr)
     }
 
-    public fun read_data_from_heap(instance_id: u64, data_ptr: u32, data_length: u32): vector<u8> {
-        native_read_data_from_heap(instance_id, data_ptr, data_length)
+    public fun read_data_from_heap(instance: &WASMInstance, data_ptr: u32, data_length: u32): vector<u8> {
+        native_read_data_from_heap(instance.id, data_ptr, data_length)
     }
 
     public fun release_wasm_instance(instance: WASMInstance): bool {
-        features::ensure_wasm_enabled();
         native_release_wasm_instance(instance)
     }
 
