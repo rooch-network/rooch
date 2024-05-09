@@ -7,6 +7,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useWalletStore } from './useWalletStore'
 import { BaseWallet, WalletAccount } from '../../types'
 import { walletMutationKeys } from '../../constants/walletMutationKeys'
+import { Buffer } from 'buffer'
 
 type ConnectWalletArgs = {
   wallet: BaseWallet
@@ -45,6 +46,9 @@ export function useConnectWallet({
         await selectedAccount.resoleRoochAddress()
 
         setWalletConnected(wallet, connectAccounts, selectedAccount)
+
+        console.log(selectedAccount)
+        console.log(Buffer.from(selectedAccount.address).toString('hex'))
 
         return connectAccounts
       } catch (error) {

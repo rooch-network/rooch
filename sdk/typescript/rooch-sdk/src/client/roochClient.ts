@@ -4,7 +4,13 @@
 import fetch from 'isomorphic-fetch'
 import { HTTPTransport, RequestManager } from '@open-rpc/client-js'
 import { JsonRpcClient } from '../generated/client'
-import { ChainInfo, Network, DevNetwork, DEFAULT_MAX_GAS_AMOUNT } from '../constants'
+import {
+  ChainInfo,
+  Network,
+  DevNetwork,
+  DEFAULT_MAX_GAS_AMOUNT,
+  RoochMultiChainID,
+} from '../constants'
 import {
   AnnotatedFunctionResultView,
   BalanceInfoView,
@@ -65,6 +71,7 @@ import {
 } from '../generated/runtime/rooch_types/mod'
 
 import { BcsSerializer } from '../generated/runtime/bcs/bcsSerializer'
+import { Buffer } from 'buffer'
 
 export const ROOCH_CLIENT_BRAND = Symbol.for('@roochnetwork/rooch-sdk')
 
@@ -449,10 +456,18 @@ export class RoochClient {
 
   // Resolve the rooch address
   async resoleRoochAddress(params: ResoleRoochAddressParams): Promise<string> {
-    const ma = new bcs.MultiChainAddress(
-      BigInt(params.multiChainID),
-      addressToSeqNumber(params.address),
-    )
+    const handleAddress = () => {
+      switch (params.multiChainID) {
+        case RoochMultiChainID.Bitcoin:
+          return Array.from(Buffer.from(params.address))
+        case RoochMultiChainID.Ether:
+          return Array.from(Buffer.from(params.address.substring(2), 'hex'))
+        default:
+          return Array.from(Buffer.from(params.address))
+      }
+    }
+
+    const ma = new bcs.MultiChainAddress(BigInt(params.multiChainID), handleAddress())
 
     const result = await this.executeViewFunction({
       funcId: '0x3::address_mapping::resolve_or_generate',
