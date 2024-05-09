@@ -11,7 +11,7 @@ export default function TitleHero({
     <div className="mx-auto px-4 sm:px-6 lg:px-8 pt-60 pb-60">
       {/* <!-- Title --> */}
       <div className="mt-5 max-w-3xl text-center mx-auto">
-        <p className="block font-bold text-gray-800 text-4xl md:text-5xl lg:text-6xl dark:text-gray-200">
+        <p className="block font-bold text-gray-800 text-4xl md:text-5xl lg:text-5xl dark:text-gray-200">
           {title}
         </p>
         <p className="block pt-2 font-bold text-gray-800 text-2xl md:text-3xl lg:text-4xl dark:text-gray-200">
