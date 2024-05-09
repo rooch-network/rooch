@@ -250,7 +250,7 @@ impl RocksDB {
         db_opts.set_enable_pipelined_write(true);
         db_opts.set_wal_recovery_mode(rocksdb::DBRecoveryMode::PointInTime); // for memtable crash recovery
         db_opts.enable_statistics();
-        // db_opts.set_statistics_level(rocksdb::statistics::StatsLevel::All);
+        db_opts.set_statistics_level(rocksdb::statistics::StatsLevel::ExceptTimeForMutex);
         db_opts
 
         // db_opts.enable_statistics();

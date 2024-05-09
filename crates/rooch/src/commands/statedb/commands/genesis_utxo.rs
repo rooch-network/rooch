@@ -115,8 +115,9 @@ impl GenesisUTXOCommand {
         let reverse_mapping_object_id = AddressMappingWrapper::reverse_mapping_object_id();
 
         println!(
-            "task progress started at {}, batch_size: {:?}",
-            datetime, self.batch_size
+            "task progress started at {}, batch_size: {}",
+            datetime,
+            self.batch_size.unwrap()
         );
         println!("root object: {:?}", root);
         println!("utxo_store_id: {:?}", utxo_store_id);
