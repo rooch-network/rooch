@@ -1,0 +1,187 @@
+# Rooch TypeScript SDK quick start
+
+The Rooch TypeScript SDK is a modular library of tools for interacting with the Rooch Layer2. Use it to send queries to RPC nodes, build and sign transactions, and interact with a Rooch or local network.
+
+This article mainly guides you to quickly get started with Roock's TypeScript development tools (TS SDK).
+
+## Create new project
+
+> Note: This tutorial is demonstrated in a Linux environment!
+
+First create a directory, and then use package management tools such as JS/TS to initialize the project - `sdk-quick-start`:
+
+```bash
+mkdir sdk-quick-start
+cd sdk-quick-start
+```
+
+```bash
+[joe@mx sdk-quick-start]$ npm init
+This utility will walk you through creating a package.json file.
+It only covers the most common items, and tries to guess sensible defaults.
+
+See `npm help init` for definitive documentation on these fields
+and exactly what they do.
+
+Use `npm install <pkg>` afterwards to install a package and
+save it as a dependency in the package.json file.
+
+Press ^C at any time to quit.
+package name: (sdk-quick-start)
+version: (1.0.0)
+description: Rooch TS SDK Test.
+entry point: (index.js)
+test command:
+git repository:
+keywords:
+author: Joe Chen
+license: (ISC)
+About to write to /home/joe/i/sdk-quick-start/package.json:
+
+{
+  "name": "sdk-quick-start",
+  "version": "1.0.0",
+  "description": "Rooch TS SDK Test.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Joe Chen",
+  "license": "ISC"
+}
+
+
+Is this OK? (yes) yes
+```
+
+## Add dependencies
+
+Here you only need to add the `rooch-sdk` dependency:
+
+```sh npm2yarn
+npm i @roochnetwork/rooch-sdk
+```
+
+Check the `package.json` file, the `dependencies` list we need to use has been added:
+
+```json
+"dependencies": {
+  "@roochnetwork/rooch-sdk": "^0.1.0"
+}
+```
+
+## Update configuration
+
+Add the following line to `package.json` to enable module features:
+
+```json
+"type": "module",
+```
+
+## Call RPC methods in code
+
+```ts
+import pkg from '@roochnetwork/rooch-sdk';
+const { DevNetwork, RoochClient } = pkg;
+
+// create a provider connected to devnet
+const provider = new RoochClient(DevNetwork);
+
+console.log(provider);
+```
+
+Here we mainly use `RoochClient` to create a client instance and obtain some common Rooch RPC operation methods.
+
+The object information of `RoochClient` is displayed here.
+
+```json
+[joe@mx sdk-quick-start]$ node index.js
+
+RoochClient {
+  options: { versionCacheTimeoutInSeconds: 600 },
+  network: Network {
+    id: 20230103,
+    name: 'dev',
+    options: { url: 'https://dev-seed.rooch.network:443' }
+  },
+  client: JsonRpcClient {
+    requestManager: RequestManager {
+      batch: [],
+      batchStarted: false,
+      lastId: -1,
+      transports: [Array],
+      requests: {},
+      connectPromise: [Promise],
+      requestChannel: [EventEmitter],
+      nextID: [Function (anonymous)]
+    }
+  }
+}
+```
+
+We use an RPC method `ChainInfo()` provided by the client to view the current information of the chain:
+
+```ts
+const rooch_chain = provider.ChainInfo();
+
+// console.log(provider);
+console.log(rooch_chain);
+```
+
+Return:
+
+```json
+{
+  chainId: '0x134afd7',
+  chainName: 'dev',
+  iconUrls: [
+    'https://github.com/rooch-network/rooch/blob/main/docs/website/public/logo/rooch_black_text.png'
+  ],
+  nativeCurrency: { name: 'ROH', symbol: 'ROH', decimals: 18 },
+  rpcUrls: [ 'https://dev-seed.rooch.network:443' ]
+}
+```
+
+Then we can use the returned JSON information to perform corresponding operations.
+
+Modify the code as follows:
+
+```ts
+import pkg from '@roochnetwork/rooch-sdk';
+const { DevNetwork, RoochClient } = pkg;
+
+// create a provider connected to devnet
+const provider = new RoochClient(DevNetwork);
+
+const rooch_chain = provider.ChainInfo();
+
+// console.log(provider);
+// console.log(rooch_chain);
+
+console.log(
+  `Welcome to Rooch Typescript SDK Quick Start!\n
+=> The network you are currently linked to is ${rooch_chain.chainName}.
+=> The RPC URL is ${rooch_chain.rpcUrls}
+=> Rooch's Token is "${rooch_chain.nativeCurrency.symbol}."`
+);
+```
+
+Running result:
+
+```bash
+[joe@mx sdk-quick-start]$ node index.js
+
+Welcome to Rooch Typescript SDK Quick Start!
+
+=> The network you are currently linked to is dev.
+=> The RPC URL is https://dev-seed.rooch.network:443
+=> Rooch's Token is "ROH."
+```
+
+## Summary
+
+At this point, you already know how to use the SDK!
+
+Using the SDK we can easily use RPC methods in code to handle corresponding operations without having to manually enter RPC methods on the command line.
+
+Next, we will take you to start the Rooch TypeScript SDK development journey!

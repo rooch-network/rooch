@@ -3,12 +3,12 @@
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { useState } from 'react'
-import { RoochSessionAccount } from '@roochnetwork/rooch-sdk'
 
 interface SessionKeyModalProps {
   isOpen: boolean
   scopes: string[]
-  onAuthorize: () => Promise<RoochSessionAccount | null>
+  // onAuthorize: () => Promise<RoochSessionAccount | null>
+  onAuthorize: () => void
 }
 
 export const SessionKeyModal: React.FC<SessionKeyModalProps> = ({
@@ -20,7 +20,7 @@ export const SessionKeyModal: React.FC<SessionKeyModalProps> = ({
 
   const onAuthorizeWrapper = async () => {
     setLoading(true)
-    await onAuthorize()
+    onAuthorize()
     setLoading(false)
   }
 

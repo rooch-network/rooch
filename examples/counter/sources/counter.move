@@ -5,7 +5,7 @@ module rooch_examples::counter {
    
    use moveos_std::account;
 
-   struct Counter has key, store {
+   struct Counter has key {
       value:u64,
    }
 

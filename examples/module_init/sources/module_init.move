@@ -8,7 +8,7 @@ module rooch_examples::module_init {
     
     use moveos_std::signer;
     
-    struct InitConfig has key, store{
+    struct InitConfig has key {
         is_init: bool,
     }
 

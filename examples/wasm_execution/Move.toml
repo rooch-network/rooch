@@ -5,12 +5,14 @@ version = "0.0.1"
 [dependencies]
 MoveosStdlib = { local = "../../frameworks/moveos-stdlib" }
 BitcoinMove = { local = "../../frameworks/bitcoin-move" }
+RoochNursery = { local = "../../frameworks/rooch-nursery" }
 
 [addresses]
 rooch_examples =  "_"
 moveos_std =  "0x2"
 rooch_framework =  "0x3"
 bitcoin_move = "0x4"
+rooch_nursery = "0xa"
 
 [dev-addresses]
 rooch_examples = "0x42"

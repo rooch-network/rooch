@@ -6,12 +6,12 @@ module creator::test {
     
     use moveos_std::account;
 
-    struct Foo has key, store {
+    struct Foo has key {
         x: u64,
     }
 
     #[private_generics(T1)]
-    fun publish_foo<T1: store>(s: &signer) {
+    fun publish_foo<T1>(s: &signer) {
         account::move_resource_to<Foo>(s, Foo { x: 500 })
     }
 

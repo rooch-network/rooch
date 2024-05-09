@@ -5,17 +5,33 @@
 
 
 
+-  [Constants](#@Constants_0)
 -  [Function `transfer_coin`](#0x3_transfer_transfer_coin)
 -  [Function `transfer_coin_to_multichain_address`](#0x3_transfer_transfer_coin_to_multichain_address)
 -  [Function `transfer_object`](#0x3_transfer_transfer_object)
 
 
-<pre><code><b>use</b> <a href="">0x2::account</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x2::account</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="account.md#0x3_account">0x3::account</a>;
 <b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
 <b>use</b> <a href="address_mapping.md#0x3_address_mapping">0x3::address_mapping</a>;
 <b>use</b> <a href="multichain_address.md#0x3_multichain_address">0x3::multichain_address</a>;
+</code></pre>
+
+
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x3_transfer_ErrorAccountNotExists"></a>
+
+
+
+<pre><code><b>const</b> <a href="transfer.md#0x3_transfer_ErrorAccountNotExists">ErrorAccountNotExists</a>: u64 = 1;
 </code></pre>
 
 

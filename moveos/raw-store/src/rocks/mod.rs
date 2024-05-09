@@ -225,6 +225,8 @@ impl RocksDB {
         db_opts.set_max_write_buffer_number(config.max_write_buffer_numer as c_int);
         let cache = Cache::new_lru_cache(config.row_cache_size as usize);
         db_opts.set_row_cache(&cache);
+        db_opts.set_enable_pipelined_write(true);
+        db_opts.set_wal_recovery_mode(rocksdb::DBRecoveryMode::PointInTime); // for memtable crash recovery
         db_opts
 
         // db_opts.enable_statistics();

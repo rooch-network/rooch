@@ -484,7 +484,7 @@ module moveos_std::object {
     }
 
     // Add field and wrap the value to FieldValue
-    fun add_field_internal<T: key, K: copy + drop, V>(obj_id: ObjectID, key: K, val: V) {
+    public(friend) fun add_field_internal<T: key, K: copy + drop, V>(obj_id: ObjectID, key: K, val: V) {
         native_add_field<K, FieldValue<V>>(obj_id, key, FieldValue{val});
         increment_size<T>(obj_id);
     }
@@ -539,7 +539,7 @@ module moveos_std::object {
     }
 
     /// Borrow FieldValue and return the val of FieldValue
-    fun borrow_field_internal<K: copy + drop, V>(obj_id: ObjectID, key: K): &V {
+    public(friend) fun borrow_field_internal<K: copy + drop, V>(obj_id: ObjectID, key: K): &V {
         &native_borrow_field<K, FieldValue<V>>(obj_id, key).val
     }
 
@@ -568,7 +568,7 @@ module moveos_std::object {
 
     /// Acquire a mutable reference to the value which `key` maps to.
     /// Aborts if there is no field for `key`.
-    fun borrow_mut_field_internal<K: copy + drop, V>(obj_id: ObjectID, key: K): &mut V {
+    public(friend) fun borrow_mut_field_internal<K: copy + drop, V>(obj_id: ObjectID, key: K): &mut V {
         &mut native_borrow_mut_field<K, FieldValue<V>>(obj_id, key).val
     }
 
@@ -631,7 +631,7 @@ module moveos_std::object {
         remove_field_internal<T, K, V>(obj.id, key)
     }
 
-    fun remove_field_internal<T: key, K: copy + drop, V>(obj_id: ObjectID, key: K): V {
+    public(friend) fun remove_field_internal<T: key, K: copy + drop, V>(obj_id: ObjectID, key: K): V {
         let FieldValue { val } = native_remove_field<K, FieldValue<V>>(obj_id, key);
         decreases_size<T>(obj_id);
         val
@@ -682,7 +682,7 @@ module moveos_std::object {
         contains_field_internal<K>(obj.id, key)
     }
 
-    fun contains_field_internal<K: copy + drop>(obj_id: ObjectID, key: K): bool {
+    public(friend) fun contains_field_internal<K: copy + drop>(obj_id: ObjectID, key: K): bool {
         native_contains_field<K>(obj_id, key)
     }
 

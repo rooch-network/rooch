@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use super::ethereum_address::ETHAddress;
+use crate::addresses::ROOCH_NURSERY_ADDRESS;
 use anyhow::Result;
 use ethers::types::Block;
 use move_core_types::{
@@ -10,19 +12,14 @@ use move_core_types::{
     u256::{U256, U256_NUM_BYTES},
     value::MoveValue,
 };
-use serde::{Deserialize, Serialize};
-
 use moveos_types::{
     module_binding::{ModuleBinding, MoveFunctionCaller},
     moveos_std::tx_context::TxContext,
     transaction::FunctionCall,
 };
+use serde::{Deserialize, Serialize};
 
-use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
-
-use super::ethereum_address::ETHAddress;
-
-pub const MODULE_NAME: &IdentStr = ident_str!("ethereum_light_client");
+pub const MODULE_NAME: &IdentStr = ident_str!("ethereum");
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockHeader {
@@ -97,11 +94,11 @@ impl<T> TryFrom<&Block<T>> for BlockHeader {
 }
 
 /// Rust bindings for RoochFramework ethereum_light_client module
-pub struct EthereumLightClientModule<'a> {
+pub struct EthereumModule<'a> {
     caller: &'a dyn MoveFunctionCaller,
 }
 
-impl<'a> EthereumLightClientModule<'a> {
+impl<'a> EthereumModule<'a> {
     pub const GET_BLOCK_FUNCTION_NAME: &'static IdentStr = ident_str!("get_block");
     pub const SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("submit_new_block");
@@ -144,9 +141,9 @@ impl<'a> EthereumLightClientModule<'a> {
     }
 }
 
-impl<'a> ModuleBinding<'a> for EthereumLightClientModule<'a> {
+impl<'a> ModuleBinding<'a> for EthereumModule<'a> {
     const MODULE_NAME: &'static IdentStr = MODULE_NAME;
-    const MODULE_ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
+    const MODULE_ADDRESS: AccountAddress = ROOCH_NURSERY_ADDRESS;
 
     fn new(caller: &'a impl MoveFunctionCaller) -> Self
     where

@@ -1,10 +1,14 @@
 ---
-title:  Rooch Network - The Application Layer of Bitcoin
+title: Rooch Network - The Application Layer of Bitcoin
 description: "an Asset-Centric infrastructure that provides indexing, trading, and enables application scenarios for all Bitcoin assets."
 author: jolestar
-date: 2024/04/24
 category: Technology
+date: 2024/04/24
 ---
+
+import PostHeader from "/components/blog/postHeader";
+
+<PostHeader />
 
 ![The Application Layer of Bitcoin](/blog/bitcoin-application-layer/bitcoin-application-layer-cover.en.jpg)
 
@@ -14,21 +18,17 @@ Rooch Network is the Application Layer of Bitcoin, an Asset-Centric infrastructu
 
 ## Why Rooch Network?
 
-In 2023, the Bitcoin ecosystem saw the emergence of various new asset protocols, characterized by registering asset ownership on Bitcoin with validity verified off-chain, collectively known as [client-side validation](https://docs.rgb.info/distributed-computing-concepts/client-side-validation) assets. 
+In 2023, the Bitcoin ecosystem saw the emergence of various new asset protocols, characterized by registering asset ownership on Bitcoin with validity verified off-chain, collectively known as [client-side validation](/learn/core-concepts/client-side-validation) assets. What future does this suggest for the Bitcoin ecosystem? Opinions vary, but we believe **these new asset protocols on Bitcoin signify a new paradigm for building application ecosystems**.
 
-What future does this suggest for the Bitcoin ecosystem? Opinions vary, but we believe **these new asset protocols on Bitcoin signify a new paradigm for building application ecosystems**.
+Client-side validation assets validate asset validity off-chain, thus allowing for the design of a cross-layer asset migration protocol that truly enables the migration of assets from on-chain to off-chain, simulating a "cash" effect in the digital world. This provides usage scenarios for assets that are no longer limited by the scalability issues of the chain, offering a new scaling solution and infinite possibilities for applications.
 
-Client-side validation assets validate asset validity off-chain, thus allowing for the design of a cross-layer asset migration protocol that truly enables the migration of assets from on-chain to off-chain, simulating a "cash" effect in the digital world. 
-This provides usage scenarios for assets that are no longer limited by the scalability issues of the chain, offering a new scaling solution and infinite possibilities for applications.
-
-This model also suggests a possible launch mode for application ecosystems. 
-By initially attracting users with in-app assets to build a user community, applications can then emerge within the community, solving the cold start problem for applications.
+This model also suggests a possible launch mode for application ecosystems. By initially attracting users with in-app assets to build a user community, applications can then emerge within the community, solving the cold start problem for applications.
 
 So, what kind of infrastructure is needed to support this model?
 
-First, an off-chain scalable application environment is needed. This environment can provide verification and scalability services for on-chain asset protocols and also run applications to provide scenarios for assets.
-Secondly, a cross-layer asset migration protocol is required to facilitate the migration of assets from on-chain to off-chain.
-Lastly, a network is needed to connect off-chain applications together, ensuring interoperability between applications.
+1. First, an off-chain scalable application environment is needed. This environment can provide verification and scalability services for on-chain asset protocols and also run applications to provide scenarios for assets.
+2. Secondly, a cross-layer asset migration protocol is required to facilitate the migration of assets from on-chain to off-chain.
+3. Lastly, a network is needed to connect off-chain applications together, ensuring interoperability between applications.
 
 This is the direction Rooch Network seeks to explore and experiment with.
 
@@ -52,10 +52,7 @@ Using this application container, application developers can almost convert most
 
 ### Root to Bitcoin
 
-With the VApp container in place, we need to integrate it with Bitcoin. 
-Rooch's approach involves executing all blocks on the Bitcoin network within the VApp container, 
-verifying UTXOs and extensions built on top of UTXOs, 
-and translating them into Move Object, providing an off-chain smart contract Layer2 solution for Bitcoin.
+With the VApp container in place, we need to integrate it with Bitcoin. Rooch's approach involves executing all blocks on the Bitcoin network within the VApp container, verifying UTXOs and extensions built on top of UTXOs, and translating them into Move Object, providing an off-chain smart contract Layer2 solution for Bitcoin.
 
 This smart contract layer primarily provides three capabilities:
 
@@ -67,84 +64,64 @@ With the complete state of Bitcoin, we stack an L2 state layer on top, allowing 
 
 **Settling with Bitcoin L1 assets**
 
-This includes "[Atomic swap](https://en.bitcoin.it/wiki/Atomic_swap)," "[PSBT](https://github.com/bitcoin/bitcoin/blob/master/doc/psbt.md)," and "on-chain payment triggers off-chain settlement" modes. 
-These modes are suitable for swap or payment scenarios, settling directly on-chain, thus requiring an asynchronous programming model to lower the barrier for developers. 
-The Move community has already experimented with async Move extensions, and we can continue to explore this direction.
+This includes "[Atomic swap](https://en.bitcoin.it/wiki/Atomic_swap)", "[PSBT](https://github.com/bitcoin/bitcoin/blob/master/doc/psbt.md)," and "on-chain payment triggers off-chain settlement" modes. These modes are suitable for swap or payment scenarios, settling directly on-chain, thus requiring an asynchronous programming model to lower the barrier for developers. The Move community has already experimented with async Move extensions, and we can continue to explore this direction.
 
 **Atomic Binding**
 
-Binding L2 assets to Bitcoin L1 assets, enabling the ownership of L2 assets to transfer along with Bitcoin L1 asset transfers. 
-For example, having an Inscription on L1 that represents a piece of land, then building a house on L2, with ownership tied to the land on L1, transferring the land also transfers the house.
+Binding L2 assets to Bitcoin L1 assets, enabling the ownership of L2 assets to transfer along with Bitcoin L1 asset transfers. For example, having an Inscription on L1 that represents a piece of land, then building a house on L2, with ownership tied to the land on L1, transferring the land also transfers the house.
 
 **Deriving Assets**
 
-Deriving new assets from Bitcoin L1 assets, which is a model based on issuing new assets from existing ones. 
-For example, owning certain L1 assets could entitle the holder to certain L2 assets.
+Deriving new assets from Bitcoin L1 assets, which is a model based on issuing new assets from existing ones. For example, owning certain L1 assets could entitle the holder to certain L2 assets.
 
 **Props and Identity**
 
-Using Bitcoin L1 assets as props or identity in applications. For example, a certain Inscription representing game equipment, directly used in games on L2.
-Or using L1 assets for voting governance.
+Using Bitcoin L1 assets as props or identity in applications. For example, a certain Inscription representing game equipment, directly used in games on L2. Or using L1 assets for voting governance.
 
-Further exploration of these models is needed. We refer to this approach as the "**stackable**" application construction mode, where **applications build an additional layer of state on top of the chain's state to repurpose existing data and assets**. 
-For more details on the "stackable" mode, please refer to [Stackable L2](./stackable-l2).
+Further exploration of these models is needed. We refer to this approach as the "**stackable**" application construction mode, where **applications build an additional layer of state on top of the chain's state to repurpose existing data and assets**. For more details on the "stackable" mode, please refer to [Stackable L2](./stackable-l2.en-US.mdx).
 
 ### Distributed State Tree Protocol (DSTP)
 
-VApp containers are independent, so how can they be connected into a network? And how can the state and assets be interoperable? 
-This is the challenge that the Distributed State Tree Protocol aims to solve.
+VApp containers are independent, so how can they be connected into a network? And how can the state and assets be interoperable? This is the challenge that the Distributed State Tree Protocol aims to solve.
 
-The idea behind the DSTP is to distribute different sub-trees of the stackable state tree across nodes in a P2P network, 
-achieving scalability and parallel processing. 
-Through the DSTP, the entire network can support an unlimited number of applications with parallel scalability, 
-while still using a global state to share data and assets and enable interoperability of applications.
+The idea behind the DSTP is to distribute different sub-trees of the stackable state tree across nodes in a P2P network, achieving scalability and parallel processing. Through the DSTP, the entire network can support an unlimited number of applications with parallel scalability, while still using a global state to share data and assets and enable interoperability of applications.
 
-In the "stackable" state model, each VApp node contains the state of both Bitcoin and Rooch, which are the global state. 
-The state of individual applications is a sub-tree of the global state tree and can only exist on specific nodes. 
-If a transaction only modifies the state of an application without altering the global state, 
-it does not need to be broadcast to the network; 
-the application only needs to periodically sync its state root to the global state, essentially acting as application-specific sharding.
+In the "stackable" state model, each VApp node contains the state of both Bitcoin and Rooch, which are the global state. The state of individual applications is a sub-tree of the global state tree and can only exist on specific nodes. If a transaction only modifies the state of an application without altering the global state, it does not need to be broadcast to the network; the application only needs to periodically sync its state root to the global state, essentially acting as application-specific sharding.
 
 This creates a distributed state tree whose **Root on Bitcoin, with data spread across various application nodes in the P2P network**. 
+This forms a distributed state tree with **Root on Bitcoin and data scattered on each application node. Assets within applications can move between state trees and also interact with Bitcoin assets.
 
 ![Distributed State Tree Protocol](/blog/bitcoin-application-layer/dstp.svg)
-
-Assets within applications can move between state trees and also interact with Bitcoin assets.
 
 The Distributed State Tree Protocol can be extended in two directions:
 
 1. Integration with state channels. State channels can be understood as a special kind of lifecycle-managed state tree. When state channels involving multiple participants open, the state tree is created; when the channels settle, the application can discard or settle the states in the state tree. This scenario, combined with a P2P network, is highly suitable for multiplayer interactive applications (such as games).
 2. Support for other types of state trees. In theory, existing state trees can be mounted as sub-trees within the distributed state tree, such as git repositories. This allows applications to directly read files from git repositories.
 
+### Asset Leap Protocol
 
-### Cross-Layer Asset Migration Protocol
-
-Settling directly on Bitcoin L1 still faces issues with high transaction costs and long confirmation times. 
-How to migrate assets from Bitcoin to L2 is a current industry challenge:
+Settling directly on Bitcoin L1 still faces issues with high transaction costs and long confirmation times. How to bridge assets from Bitcoin to L2 is a current industry challenge:
 
 1. Custodial bridge models are widely used. How to use Bitcoin to ensure the bridge's safety and decentralization is still an area of exploration. Rooch will collaborate with dedicated cross-chain bridge projects to implement asset bridging and enhance the bridge's security through Rooch's programming capabilities.
 2. Non-custodial models: This is the main direction Rooch is exploring, such as the [statechains](https://bitcoinops.org/en/topics/statechains/).
 
-For the Client-side validation assets, we will try to design a cross-layer asset migration protocol. 
+For the Client-side validation assets, we will try to design a asset leap protocol. 
 
-Off-chain smart contracts can provide computational scalability for Bitcoin, while the asset migration protocol aims to achieve state scalability.
+If a large number of new assets are issued on Bitcoin in the future, a protocol to facilitate asset migration between the Bitcoin network and L2 is needed to reduce the state storage pressure on Bitcoin. Also, new assets issued on L2 should be able to migrate to Bitcoin, thereby gaining higher security and broader circulation capabilities.
 
-If a large number of new assets are issued on Bitcoin in the future, a protocol to facilitate asset migration between the Bitcoin network and L2 is needed to reduce the state storage pressure on Bitcoin.
-Also, new assets issued on L2 should be able to migrate to Bitcoin, thereby gaining higher security and broader circulation capabilities.
+**The core idea of the asset leap protocol is as follows**: 
 
-The core idea of the asset migration protocol is as follows: 
+Assets like RGB/Ordinals that are based on client-side validation use Bitcoin to register ownership, but their validity is verified by the client.
 
-Assets like RGB/Ordinals that are based on client-side validation use Bitcoin to register ownership, 
-but their validity is verified by the client. 
-If we define a protocol instruction to migrate assets from L1 to L2, or vice versa, and then enable clients to verify on both side, we can facilitate cross-layer asset migration.
+If we define a protocol instruction `leap` to migrate assets from L1 to L2, or vice versa, and then enable clients to verify on both side, we can facilitate asset migration.
 
 This protocol has several advantages over the current bridge models:
 
 1. It does not concentrate large amounts of assets in the bridge, thus avoiding centralization risks. The risk associated with asset migration is distributed. Both the migration out and migration in are triggered by users, and the client tracks ownership. As long as the destruction operation when migrating out and the reissuance operation when migrating in are matched, the assets are secure.
-2. Assets will truly migrate between networks like "cash." Separating the storage of assets from their application scenarios can solve the state explosion problem as well as issues related to the massive issuance of new assets.
+2. Assets can migrate between networks like "cash." Separating the storage of assets from their application scenarios can solve the state explosion problem as well as issues related to the massive issuance of new assets.
 3. This model requires wallets to play a significant role, not just as the current "dumb" wallets that only trust RPC, but rather more "smart" ones.
 
-To this end, the Rooch team has designed the SFT protocol based on Ordinals, [Bitseed](https://bitseed.pro/), and will explore asset migration protocols based on the Bitseed protocol in the future.
+To this end, the Rooch team has designed the SFT protocol based on Ordinals, [Bitseed](https://bitseed.pro/), and will explore asset migration protocols based on the Bitseed protocol in the future. For more details, please refer to the asset leap protocol section of the [Client-side validation protocol](/learn/core-concepts/client-side-validation/).
 
 ### Security Issues
 
@@ -155,8 +132,7 @@ The previous solutions did not address security issues. In the Rooch network, se
 
 The security for applications can be customized based on the scenario and development stage, with several options:
 
-1. Bitcoin-based time-slot rotating nodes + data availability layer + fraud proofs: This method uses time-slot rotations to switch between multiple nodes, ensuring high availability and
-decentralization of the application, with fraud proofs to penalize malicious nodes. This is the approach that Rooch Network will use, and we will explore with partners how to use Bitcoin as a source of security.
+1. Bitcoin-based time-slot rotating nodes + data availability layer + fraud proofs: This method uses time-slot rotations to switch between multiple nodes, ensuring high availability and decentralization of the application, with fraud proofs to penalize malicious nodes. This is the approach that Rooch Network will use, and we will explore with partners how to use Bitcoin as a source of security.
 2. PoA nodes + data availability layer: This type of application can ensure the verifiability of data, allowing anyone to run an independent node to verify data.
 3. PoA nodes: This type of application can provide state proofs to the public, allowing wallets to verify their data. However, without a data availability layer to ensure transaction availability, there is a risk of data being hidden. It serves as a transitional model from Web2 to Web3 applications.
 4. Multisig among all participants: Suitable for state channel applications.
@@ -189,6 +165,4 @@ The VApp provides an operating environment for applications, the Distributed Sta
 
 ![Bitcoin Application Layer](/blog/bitcoin-application-layer/bitcoin-application-layer.svg)
 
-Of course, there are many issues yet to be resolved before this blueprint can be fully implemented, but we believe that many technological solutions evolve from practice, not from planned designs.
-We are like explorers in the Age of Discovery, roughly knowing the direction and value of the treasure, but the specific path requires searching and exploration.
-We can only start with some assumptions, then design minimal protocols and products, validate them in the market, solve problems, adjust directions, and keep iterating. Ultimately, we will find that **One Piece**.
+Of course, there are many issues yet to be resolved before this blueprint can be fully implemented, but we believe that many technological solutions evolve from practice, not from planned designs. We are like explorers in the Age of Discovery, roughly knowing the direction and value of the treasure, but the specific path requires searching and exploration. We can only start with some assumptions, then design minimal protocols and products, validate them in the market, solve problems, adjust directions, and keep iterating. Ultimately, we will find that **One Piece**.

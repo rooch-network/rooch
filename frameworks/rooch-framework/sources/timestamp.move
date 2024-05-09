@@ -13,7 +13,6 @@ module rooch_framework::timestamp {
     use moveos_std::core_addresses;
 
     friend rooch_framework::genesis;
-    friend rooch_framework::ethereum_light_client;
 
     /// A object holding the current Unix time in milliseconds
     struct Timestamp has key {

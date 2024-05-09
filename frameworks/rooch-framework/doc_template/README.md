@@ -10,3 +10,6 @@ This is the reference documentation of the Rooch Framework.
 
 * [MoveStdlib](https://github.com/rooch-network/rooch/tree/main/frameworks/move-stdlib/doc)
 * [MoveosStdlib](https://github.com/rooch-network/rooch/tree/main/frameworks/moveos-stdlib/doc)
+* [RoochFramework](https://github.com/rooch-network/rooch/tree/main/frameworks/rooch-framework/doc)
+* [BitcoinMove](https://github.com/rooch-network/rooch/tree/main/frameworks/bitcoin-move/doc)
+* [RoochNursery](https://github.com/rooch-network/rooch/tree/main/frameworks/rooch-nursery/doc)

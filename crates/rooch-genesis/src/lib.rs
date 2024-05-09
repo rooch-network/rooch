@@ -20,6 +20,7 @@ use rooch_framework::natives::gas_parameter::gas_member::{
     FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule,
 };
 use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
+use rooch_genesis_builder::{ALL_STDLIB_PACKAGE_NAMES, ALL_STDLIB_PACKAGE_NAMES_STABLE};
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
 use rooch_types::bitcoin::network::Network;
 use rooch_types::error::GenesisError;
@@ -151,8 +152,16 @@ impl RoochGenesis {
             BuildOption::Fresh => Self::build_stdlib()?,
             BuildOption::Release => Self::load_stdlib()?,
         };
+        //TODO put the stdlib package names to RoochChainID
+        let stdlib_package_names = if genesis_ctx.chain_id == RoochChainID::LOCAL.chain_id().id()
+            || genesis_ctx.chain_id == RoochChainID::DEV.chain_id().id()
+        {
+            ALL_STDLIB_PACKAGE_NAMES.to_vec()
+        } else {
+            ALL_STDLIB_PACKAGE_NAMES_STABLE.to_vec()
+        };
 
-        let bundles = stdlib.module_bundles()?;
+        let bundles = stdlib.module_bundles(stdlib_package_names.as_slice())?;
 
         let genesis_tx = RoochTransaction::new_genesis_tx(
             ROOCH_FRAMEWORK_ADDRESS.into(),

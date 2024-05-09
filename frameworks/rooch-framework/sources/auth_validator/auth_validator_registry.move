@@ -21,7 +21,7 @@ module rooch_framework::auth_validator_registry {
         id: u64,
     }
 
-    struct ValidatorRegistry has key,store {
+    struct ValidatorRegistry has key {
         /// Number of registered validators
         validator_num: u64,
         validators: Table<u64, AuthValidator>,

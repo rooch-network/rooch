@@ -9,6 +9,7 @@ It is used to test or demo some use cases
 
 -  [Resource `Empty`](#0x3_empty_Empty)
 -  [Function `empty`](#0x3_empty_empty)
+-  [Function `empty_with_signer`](#0x3_empty_empty_with_signer)
 
 
 <pre><code><b>use</b> <a href="">0x2::object</a>;
@@ -35,4 +36,15 @@ This empty function does nothing
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="empty.md#0x3_empty">empty</a>()
+</code></pre>
+
+
+
+<a name="0x3_empty_empty_with_signer"></a>
+
+## Function `empty_with_signer`
+
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="empty.md#0x3_empty_empty_with_signer">empty_with_signer</a>(_sender: &<a href="">signer</a>)
 </code></pre>
