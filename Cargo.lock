@@ -6329,6 +6329,7 @@ dependencies = [
  "bcs",
  "codespan-reporting",
  "itertools 0.10.5",
+ "log",
  "move-binary-format",
  "move-command-line-common",
  "move-compiler",

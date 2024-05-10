@@ -1,10 +1,9 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::metadata::{
-    check_metadata_format, get_metadata_from_compiled_module, is_allowed_input_struct,
-    is_defined_or_allowed_in_current_module,
-};
+use std::collections::BTreeMap;
+use std::ops::Deref;
+
 use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMError, VMResult};
 use move_binary_format::file_format::{
@@ -22,20 +21,45 @@ use move_vm_runtime::data_cache::TransactionCache;
 use move_vm_runtime::session::{LoadedFunctionInstantiation, Session};
 use move_vm_types::loaded_data::runtime_types::Type;
 use once_cell::sync::Lazy;
-use std::ops::Deref;
+
+use crate::metadata::{
+    check_metadata_format, get_metadata_from_compiled_module, is_allowed_input_struct,
+    is_defined_or_allowed_in_current_module,
+};
 
 pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("init").unwrap());
 
-pub fn verify_module<Resolver>(module: &CompiledModule, db: Resolver) -> VMResult<bool>
+pub fn verify_modules<Resolver>(modules: &Vec<CompiledModule>, db: Resolver) -> VMResult<bool>
 where
     Resolver: ModuleResolver,
 {
-    verify_private_generics(module, &db)?;
+    let mut verified_modules: BTreeMap<ModuleId, CompiledModule> = BTreeMap::new();
+    for module in modules {
+        verify_private_generics(module, &db, &mut verified_modules)?;
+        verify_entry_function_at_publish(module)?;
+        verify_global_storage_access(module)?;
+        verify_gas_free_function(module)?;
+        verify_data_struct(module, &db, &mut verified_modules)?;
+        verify_init_function(module)?;
+    }
+
+    Ok(true)
+}
+
+pub fn verify_module<Resolver>(
+    module: &CompiledModule,
+    db: Resolver,
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+) -> VMResult<bool>
+where
+    Resolver: ModuleResolver,
+{
+    verify_private_generics(module, &db, verified_modules)?;
     verify_entry_function_at_publish(module)?;
     verify_global_storage_access(module)?;
     verify_gas_free_function(module)?;
-    verify_data_struct(module, &db)?;
+    verify_data_struct(module, &db, verified_modules)?;
     verify_init_function(module)
 }
 
@@ -310,7 +334,11 @@ fn vm_error_for_init_func_checking(
         .finish(Location::Module(module_id))
 }
 
-pub fn verify_private_generics<Resolver>(module: &CompiledModule, db: &Resolver) -> VMResult<bool>
+pub fn verify_private_generics<Resolver>(
+    module: &CompiledModule,
+    db: &Resolver,
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+) -> VMResult<bool>
 where
     Resolver: ModuleResolver,
 {
@@ -370,8 +398,13 @@ where
                         if let Bytecode::CallGeneric(finst_idx) = instr {
                             // Find the module where a function is located based on its InstantiationIndex,
                             // and then find the metadata of the module.
-                            let compiled_module_opt =
-                                load_compiled_module_from_finst_idx(db, &view, finst_idx);
+                            let compiled_module_opt = load_compiled_module_from_finst_idx(
+                                db,
+                                &view,
+                                finst_idx,
+                                verified_modules,
+                                true,
+                            );
 
                             if let Some(compiled_module) = compiled_module_opt {
                                 if let Err(err) = check_metadata_format(&compiled_module) {
@@ -666,7 +699,11 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
     Ok(true)
 }
 
-pub fn verify_data_struct<Resolver>(caller_module: &CompiledModule, db: &Resolver) -> VMResult<bool>
+pub fn verify_data_struct<Resolver>(
+    caller_module: &CompiledModule,
+    db: &Resolver,
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+) -> VMResult<bool>
 where
     Resolver: ModuleResolver,
 {
@@ -687,7 +724,7 @@ where
         }
 
         Some(metadata) => {
-            let data_structs_map = metadata.data_struct_map;
+            let mut data_structs_map = metadata.data_struct_map;
             let mut data_structs_func_map = metadata.data_struct_func_map;
             let view = BinaryIndexedView::Module(caller_module);
 
@@ -697,8 +734,13 @@ where
                         if let Bytecode::CallGeneric(finst_idx) = instr {
                             // Find the module where a function is located based on its InstantiationIndex,
                             // and then find the metadata of the module.
-                            let compiled_module_opt =
-                                load_compiled_module_from_finst_idx(db, &view, finst_idx);
+                            let compiled_module_opt = load_compiled_module_from_finst_idx(
+                                db,
+                                &view,
+                                finst_idx,
+                                verified_modules,
+                                true,
+                            );
 
                             if let Some(callee_module) = compiled_module_opt {
                                 if let Err(err) = check_metadata_format(&callee_module) {
@@ -763,18 +805,63 @@ where
                                                 view.struct_handle_at(*struct_handle_idx);
                                             let module_handle =
                                                 view.module_handle_at(struct_handle.module);
-                                            let full_struct_name = format!(
-                                                "{}::{}::{}",
+                                            let module_name = format!(
+                                                "{}::{}",
                                                 view.address_identifier_at(module_handle.address)
                                                     .to_hex_literal(),
                                                 view.identifier_at(module_handle.name),
+                                            );
+
+                                            // load module from struct handle
+                                            let compiled_module_opt =
+                                                load_compiled_module_from_struct_handle(
+                                                    db,
+                                                    &view,
+                                                    *struct_handle_idx,
+                                                    verified_modules,
+                                                );
+                                            if let Some(callee_module) = compiled_module_opt {
+                                                if let Err(err) =
+                                                    check_metadata_format(&callee_module)
+                                                {
+                                                    return Err(PartialVMError::new(
+                                                        StatusCode::MALFORMED,
+                                                    )
+                                                    .with_message(err.to_string())
+                                                    .finish(Location::Module(
+                                                        callee_module.self_id(),
+                                                    )));
+                                                }
+
+                                                // Find the definition records of compile-time data_struct from CompiledModule.
+                                                let metadata_opt =
+                                                    get_metadata_from_compiled_module(
+                                                        &callee_module,
+                                                    );
+                                                if let Some(metadata) = metadata_opt {
+                                                    let _ = metadata
+                                                        .data_struct_map
+                                                        .iter()
+                                                        .map(|(key, value)| {
+                                                            data_structs_map
+                                                                .insert(key.clone(), *value);
+                                                        })
+                                                        .collect::<Vec<_>>();
+                                                }
+                                            }
+
+                                            let full_struct_name = format!(
+                                                "{}::{}",
+                                                module_name,
                                                 view.identifier_at(struct_handle.name)
                                             );
                                             let is_data_struct_opt =
                                                 data_structs_map.get(full_struct_name.as_str());
                                             if is_data_struct_opt.is_none() {
-                                                let error_msg = format!("The type parameter {} when calling function {} is not a data_struct",
-                                                                        full_path_func_name, full_struct_name);
+                                                let caller_func_name =
+                                                    build_full_function_name(&func.function, view);
+                                                let error_msg = format!("function {:} call {:} with type {:} is not a data struct.",
+                                                                        caller_func_name, full_path_func_name, full_struct_name);
                                                 return generate_vm_error(
                                                     StatusCode::TYPE_MISMATCH,
                                                     error_msg,
@@ -811,6 +898,7 @@ where
         }
     }
 
+    verified_modules.insert(caller_module.self_id(), caller_module.clone());
     Ok(true)
 }
 
@@ -941,11 +1029,34 @@ fn check_gas_charge_post_function(
     matches!(first_return_signature, SignatureToken::Bool)
 }
 
+fn load_compiled_module_from_struct_handle<Resolver>(
+    db: &Resolver,
+    view: &BinaryIndexedView,
+    struct_idx: StructHandleIndex,
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+) -> Option<CompiledModule>
+where
+    Resolver: ModuleResolver,
+{
+    let struct_handle = view.struct_handle_at(struct_idx);
+    let module_handle = view.module_handle_at(struct_handle.module);
+    let module_address = view.address_identifier_at(module_handle.address);
+    let module_name = view.identifier_at(module_handle.name);
+    let module_id = ModuleId::new(*module_address, Identifier::from(module_name));
+
+    match verified_modules.get(&module_id) {
+        None => get_module_from_db(&module_id, db),
+        Some(m) => Some(m.clone()),
+    }
+}
+
 // Find the module where a function is located based on its InstantiationIndex.
 fn load_compiled_module_from_finst_idx<Resolver>(
     db: &Resolver,
     view: &BinaryIndexedView,
     finst_idx: FunctionInstantiationIndex,
+    verified_modules: &mut BTreeMap<ModuleId, CompiledModule>,
+    search_verified_modules: bool,
 ) -> Option<CompiledModule>
 where
     Resolver: ModuleResolver,
@@ -961,13 +1072,25 @@ where
     let module_address = view.address_identifier_at(module_handle.address);
     let module_name = view.identifier_at(module_handle.name);
     let module_id = ModuleId::new(*module_address, Identifier::from(module_name));
-    match db.get_module(&module_id) {
+    if search_verified_modules {
+        match verified_modules.get(&module_id) {
+            None => get_module_from_db(&module_id, db),
+            Some(m) => Some(m.clone()),
+        }
+    } else {
+        get_module_from_db(&module_id, db)
+    }
+}
+
+fn get_module_from_db<Resolver>(module_id: &ModuleId, db: &Resolver) -> Option<CompiledModule>
+where
+    Resolver: ModuleResolver,
+{
+    match db.get_module(module_id) {
         Err(_) => None,
         Ok(value) => match value {
             None => None,
-            Some(bytes) => {
-                return CompiledModule::deserialize(bytes.as_slice()).ok();
-            }
+            Some(bytes) => CompiledModule::deserialize(bytes.as_slice()).ok(),
         },
     }
 }
