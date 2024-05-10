@@ -42,12 +42,9 @@ is `rooch-benchmarks/config/bench_tx.toml`.
 ```rust
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize, Parser, Eq)]
 pub struct BenchTxConfig {
-    pub tx_type: Option<TxType>,
-    // empty(default)/transfer/btc-block
+    pub tx_type: Option<TxType>,    // empty(default)/transfer/btc-block
     pub data_import_flag: bool,
-    // utxo(default)/ord/none/full
-    pub btc_block_dir: Option<String>,
-    // btc block dir, file name: <height>.hex
+    pub btc_block_dir: Option<String>, // btc block dir, file name: <height>.hex
     pub pprof_output: Option<PProfOutput>, // flamegraph(default)/proto
 }
 ```
