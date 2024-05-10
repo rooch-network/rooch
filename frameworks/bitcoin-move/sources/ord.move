@@ -26,6 +26,7 @@ module bitcoin_move::ord {
     
     friend bitcoin_move::genesis;
     friend bitcoin_move::bitcoin;
+    friend bitcoin_move::bitseed;
 
     /// How may blocks between halvings.
     const SUBSIDY_HALVING_INTERVAL: u32 = 210_000;
@@ -916,8 +917,8 @@ module bitcoin_move::ord {
 
     // ==== Inscription Metaprotocol Validity ==== //
 
-    // Seal the metaprotocol validity for the given inscription_id.
     #[private_generics(T)]
+    /// Seal the metaprotocol validity for the given inscription_id.
     public fun seal_metaprotocol_validity<T>(inscription_id: InscriptionID, is_valid: bool, invalid_reason: Option<String>) {
         let store_obj_id = object::named_object_id<InscriptionStore>();
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
@@ -935,7 +936,22 @@ module bitcoin_move::ord {
         object::upsert_field(inscription_obj, METAPROTOCOL_VALIDITY, validity);
     }
 
-    // Borrow the metaprotocol validity for the given inscription_id.
+    /// Returns true if Inscription `object` contains metaprotocol validity
+    public fun exists_metaprotocol_validity(inscription_id: InscriptionID): bool{
+        let store_obj_id = object::named_object_id<InscriptionStore>();
+        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
+
+        let inscription_object_id = derive_inscription_id(inscription_id);
+        let exists = object::contains_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+        if (!exists) {
+            return false
+        };
+
+        let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+        object::contains_field(inscription_obj, METAPROTOCOL_VALIDITY)
+    }
+
+    /// Borrow the metaprotocol validity for the given inscription_id.
     public fun borrow_metaprotocol_validity(inscription_id: InscriptionID): &MetaprotocolValidity {
         let store_obj_id = object::named_object_id<InscriptionStore>();
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
@@ -944,6 +960,12 @@ module bitcoin_move::ord {
         let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
 
         object::borrow_field(inscription_obj, METAPROTOCOL_VALIDITY)
+    }
+
+    /// Check the MetaprotocolValidity's protocol_type whether match
+    public fun metaprotocol_validity_protocol_match<T>(validity: &MetaprotocolValidity): bool {
+        let protocol_type = type_info::type_name<T>();
+        protocol_type == validity.protocol_type
     }
 
     /// Get the MetaprotocolValidity's protocol_type
@@ -965,7 +987,7 @@ module bitcoin_move::ord {
     struct TestProtocol has key {}
 
     #[test_only]
-    fun new_inscription_id_for_test(        
+    public fun new_inscription_id_for_test(        
         txid: address,
         index: u32,
     ) : InscriptionID {
@@ -1004,14 +1026,12 @@ module bitcoin_move::ord {
         }
     }
 
-    #[test(genesis_account=@0x4)]
-    fun test_metaprotocol_validity(genesis_account: &signer){
+    #[test_only]
+    public fun setup_inscription_for_test(genesis_account: &signer, test_address: address, test_txid: address, test_index: u32) : InscriptionID {
         genesis_init(genesis_account);
 
         // prepare test inscription
-        let test_address = @0x5416690eaaf671031dc609ff8d36766d2eb91ca44f04c85c27628db330f40fd1;
-        let test_txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
-        let test_inscription_id = new_inscription_id_for_test(test_txid, 0);
+        let test_inscription_id = new_inscription_id_for_test(test_txid, test_index);
         let test_inscription = new_inscription_for_test(
             test_txid,
             0,
@@ -1029,13 +1049,31 @@ module bitcoin_move::ord {
         let test_inscription_obj = create_obj(test_inscription);
         object::transfer_extend(test_inscription_obj, test_address);
 
+        test_inscription_id
+    }
+
+    #[test(genesis_account=@0x4)]
+    fun test_metaprotocol_validity(genesis_account: &signer){
+        // prepare test inscription
+        let test_address = @0x5416690eaaf671031dc609ff8d36766d2eb91ca44f04c85c27628db330f40fd1;
+        let test_txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let test_inscription_id = setup_inscription_for_test(genesis_account, test_address, test_txid, 0);
+
+        // Check whether exists metaprotocol_validity
+        let is_exists = exists_metaprotocol_validity(test_inscription_id);
+        assert!(!is_exists, 1);
+
         // seal TestProtocol valid to test_inscription_id
         seal_metaprotocol_validity<TestProtocol>(test_inscription_id, true, option::none());
+
+        // Check whether exists metaprotocol_validity
+        let is_exists = exists_metaprotocol_validity(test_inscription_id);
+        assert!(is_exists, 1);
 
         // borrow metaprotocol validity from test_inscription_id
         let metaprotocol_validity = borrow_metaprotocol_validity(test_inscription_id);
         let is_valid = metaprotocol_validity_is_valid(metaprotocol_validity);
-        assert!(is_valid, 1);
+        assert!(is_valid, 2);
 
         // seal TestProtocol not valid to test_inscription_id
         let test_invalid_reason = string::utf8(b"Claimed first by another");
@@ -1045,11 +1083,11 @@ module bitcoin_move::ord {
         let metaprotocol_validity = borrow_metaprotocol_validity(test_inscription_id);
 
         let is_valid = metaprotocol_validity_is_valid(metaprotocol_validity);
-        assert!(!is_valid, 1);
+        assert!(!is_valid, 31);
 
         let invalid_reason_option = metaprotocol_validity_invalid_reason(metaprotocol_validity);
         let invalid_reason = option::borrow(&invalid_reason_option);
-        assert!(invalid_reason == &test_invalid_reason, 1);
+        assert!(invalid_reason == &test_invalid_reason, 4);
     }
 
     // ==== Prase InscriptionID ==== //

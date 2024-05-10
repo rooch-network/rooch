@@ -36,8 +36,11 @@ EOF
   esac
 done
 
+export RUST_LOG=debug 
+export RUST_BACKTRACE=1
+
 if [ ! -z "$UNIT_TEST" ]; then
-  cargo run --bin rooch move test -p frameworks/bitcoin-move ord
+  cargo run --bin rooch move test -p frameworks/bitcoin-move bitseed
 fi
 
 if [ ! -z "$INT_TEST" ]; then

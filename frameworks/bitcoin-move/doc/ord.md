@@ -56,7 +56,9 @@
 -  [Function `remove_temp_state`](#0x4_ord_remove_temp_state)
 -  [Function `drop_temp_area`](#0x4_ord_drop_temp_area)
 -  [Function `seal_metaprotocol_validity`](#0x4_ord_seal_metaprotocol_validity)
+-  [Function `exists_metaprotocol_validity`](#0x4_ord_exists_metaprotocol_validity)
 -  [Function `borrow_metaprotocol_validity`](#0x4_ord_borrow_metaprotocol_validity)
+-  [Function `metaprotocol_validity_protocol_match`](#0x4_ord_metaprotocol_validity_protocol_match)
 -  [Function `metaprotocol_validity_protocol_type`](#0x4_ord_metaprotocol_validity_protocol_type)
 -  [Function `metaprotocol_validity_is_valid`](#0x4_ord_metaprotocol_validity_is_valid)
 -  [Function `metaprotocol_validity_invalid_reason`](#0x4_ord_metaprotocol_validity_invalid_reason)
@@ -702,6 +704,7 @@ Drop the bag, whether it's empty or not
 
 ## Function `seal_metaprotocol_validity`
 
+Seal the metaprotocol validity for the given inscription_id.
 
 
 <pre><code>#[private_generics(#[T])]
@@ -710,13 +713,38 @@ Drop the bag, whether it's empty or not
 
 
 
+<a name="0x4_ord_exists_metaprotocol_validity"></a>
+
+## Function `exists_metaprotocol_validity`
+
+Returns true if Inscription <code><a href="">object</a></code> contains metaprotocol validity
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_exists_metaprotocol_validity">exists_metaprotocol_validity</a>(inscription_id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): bool
+</code></pre>
+
+
+
 <a name="0x4_ord_borrow_metaprotocol_validity"></a>
 
 ## Function `borrow_metaprotocol_validity`
 
+Borrow the metaprotocol validity for the given inscription_id.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_metaprotocol_validity">borrow_metaprotocol_validity</a>(inscription_id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): &<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_metaprotocol_validity_protocol_match"></a>
+
+## Function `metaprotocol_validity_protocol_match`
+
+Check the MetaprotocolValidity's protocol_type whether match
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_metaprotocol_validity_protocol_match">metaprotocol_validity_protocol_match</a>&lt;T&gt;(validity: &<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>): bool
 </code></pre>
 
 

@@ -213,6 +213,22 @@ module bitcoin_move::bitseed {
             return (false, option::some(std::string::utf8(b"metadata.attributes.generator inscription not exists")))
         };
 
+        if (!ord::exists_metaprotocol_validity(inscription_id)) {
+            return (false, option::some(std::string::utf8(b"metadata.attributes.generator inscription metaprotocol validity not exists")))
+        };
+
+        let metaprotocol_validity = ord::borrow_metaprotocol_validity(inscription_id);
+
+        let is_match = ord::metaprotocol_validity_protocol_match<Bitseed>(metaprotocol_validity);
+        if (!is_match) {
+            return (false, option::some(std::string::utf8(b"metadata.attributes.generator inscription metaprotocol validity protocol not match")))
+        };
+
+        let is_valid = ord::metaprotocol_validity_is_valid(metaprotocol_validity);
+        if (!is_valid) {
+            return (false, option::some(std::string::utf8(b"metadata.attributes.generator inscription metaprotocol validity not valid")))
+        };
+
         (true, option::none<String>())
     }
 
@@ -399,8 +415,12 @@ module bitcoin_move::bitseed {
         }
     }
 
-    #[test]
-    fun test_is_valid_bitseed_deploy_ok(){
+    #[test(genesis_account=@0x4)]
+    fun test_is_valid_bitseed_deploy_ok(genesis_account: &signer){
+        let test_address = @0x5416690eaaf671031dc609ff8d36766d2eb91ca44f04c85c27628db330f40fd1;
+        let test_txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let test_inscription_id = ord::setup_inscription_for_test(genesis_account, test_address, test_txid, 0);
+
         let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e741903e86a61747472696275746573a366726570656174016967656e657261746f72784f2f696e736372697074696f6e2f3666353534373563653635303534616138333731643631386432313764613863396137363463656364616634646562636263653864363331326665366234643869306b6465706c6f795f617267738178377b22686569676874223a7b2274797065223a2272616e6765222c2264617461223a7b226d696e223a312c226d6178223a313030307d7d7d";
         let metadata = cbor::to_map(metadata_bytes);
         let (is_valid, reason) = is_valid_bitseed_deploy(&metadata);

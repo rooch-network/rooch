@@ -160,19 +160,27 @@ fn native_fn_dispatch(
     field_key: KeyState,
     f: impl FnOnce(&dyn TypeLayoutLoader, &mut RuntimeField) -> PartialVMResult<Option<Value>>,
 ) -> PartialVMResult<NativeResult> {
+    log::debug!("native_fn_dispatch 1");
+
     let object_context = context.extensions().get::<ObjectRuntimeContext>();
     let binding = object_context.object_runtime();
     let mut object_runtime = binding.write();
 
+    log::debug!("native_fn_dispatch 2");
+
     let (object, object_load_gas) =
         object_runtime.load_object(context, object_context.resolver(), &object_id)?;
+        log::debug!("native_fn_dispatch 3");
     let field_key_bytes = field_key.key.len() as u64;
     let (tv, field_load_gas) =
         object.load_field(context, object_context.resolver(), field_key.clone())?;
+        log::debug!("native_fn_dispatch 4");
     let gas_cost = base
         + per_byte_serialized * NumBytes::new(field_key_bytes)
         + common_gas_params.calculate_load_cost(object_load_gas)
         + common_gas_params.calculate_load_cost(field_load_gas);
+
+    log::debug!("native_fn_dispatch 5");
 
     let result = f(context, tv);
     match result {
@@ -181,6 +189,8 @@ fn native_fn_dispatch(
             ret.map(|v| smallvec![v]).unwrap_or(smallvec![]),
         )),
         Err(err) => {
+            log::debug!("native_fn_dispatch err 1");
+
             let abort_code = match err.major_status() {
                 StatusCode::MISSING_DATA => ERROR_NOT_FOUND,
                 StatusCode::TYPE_MISMATCH => ERROR_TYPE_MISMATCH,

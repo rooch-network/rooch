@@ -11,9 +11,6 @@ use move_vm_types::{
 };
 use smallvec::smallvec;
 use std::collections::VecDeque;
-use log::debug;
-
-const E_TYPE_NOT_MATCH: u64 = 1;
 
 #[derive(Debug, Clone)]
 pub struct FromBytesGasParameters {
