@@ -21,6 +21,17 @@ use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("display");
 
+pub fn get_display_id_from_object_struct_tag(struct_tag: StructTag) -> ObjectID {
+    let object_type_tag = TypeTag::from(struct_tag);
+    let display_struct_tag = StructTag {
+        address: MOVEOS_STD_ADDRESS,
+        name: ident_str!("Display").to_owned(),
+        module: MODULE_NAME.to_owned(),
+        type_params: vec![object_type_tag],
+    };
+    object::named_object_id(&display_struct_tag)
+}
+
 pub fn get_object_display_id(value_type: TypeTag) -> ObjectID {
     let object_tag = StructTag {
         address: MOVEOS_STD_ADDRESS,
@@ -28,14 +39,7 @@ pub fn get_object_display_id(value_type: TypeTag) -> ObjectID {
         module: ident_str!("object").to_owned(),
         type_params: vec![value_type],
     };
-    let object_type = TypeTag::from(object_tag);
-    let struct_tag = StructTag {
-        address: MOVEOS_STD_ADDRESS,
-        name: ident_str!("Display").to_owned(),
-        module: MODULE_NAME.to_owned(),
-        type_params: vec![object_type],
-    };
-    object::named_object_id(&struct_tag)
+    get_display_id_from_object_struct_tag(object_tag)
 }
 
 pub fn get_resource_display_id(value_type: TypeTag) -> ObjectID {

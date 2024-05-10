@@ -249,11 +249,16 @@ fn test_state_store() -> Result<()> {
     assert_eq!(query_object_states.len(), 0);
 
     // test for querying batch objects with filter ObjectStateFilter::ObjectId
-    let object_ids = update_object_states.into_iter().map(|state| state.object_id).collect::<Vec<ObjectID>>();
+    let object_ids = update_object_states
+        .into_iter()
+        .map(|state| state.object_id)
+        .collect::<Vec<ObjectID>>();
+    let num_objs = object_ids.len();
     let filter = ObjectStateFilter::ObjectId(object_ids);
-    let query_object_states = indexer_reader.query_object_states_with_filter(filter, None, object_ids.len(), true)?;
-    assert_eq!(query_object_states.len(), object_ids.len());
-    
+    let query_object_states =
+        indexer_reader.query_object_states_with_filter(filter, None, num_objs, true)?;
+    assert_eq!(query_object_states.len(), num_objs);
+
     let talbe_handle = ObjectID::from_str("0x0")?;
     let filter = FieldStateFilter::ObjectId(talbe_handle);
     let query_field_states =

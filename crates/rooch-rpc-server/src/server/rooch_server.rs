@@ -13,7 +13,10 @@ use moveos_types::{
     access_path::AccessPath,
     h256::H256,
     moveos_std::{
-        display::{get_object_display_id, get_resource_display_id, RawDisplay},
+        display::{
+            get_display_id_from_object_struct_tag, get_object_display_id, get_resource_display_id,
+            RawDisplay,
+        },
         object::ObjectEntity,
     },
     state::{AnnotatedKeyState, AnnotatedState, KeyState},
@@ -42,7 +45,7 @@ use rooch_rpc_api::{
     jsonrpc_types::BytesView,
 };
 use rooch_types::indexer::event_filter::IndexerEventID;
-use rooch_types::indexer::state::IndexerStateID;
+use rooch_types::indexer::state::{IndexerStateID, ObjectStateFilter};
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::{address::MultiChainAddress, multichain_id::RoochMultiChainID};
 use std::cmp::min;
@@ -658,7 +661,21 @@ impl RoochAPIServer for RoochServer {
         data.truncate(limit_of);
 
         if query_option.show_display {
-            // TODO: query display fields.
+            let display_obj_ids = data
+                .iter()
+                .map(|s| get_display_id_from_object_struct_tag(*s.object_type))
+                .collect::<Vec<_>>();
+
+            let display_objs_filter = ObjectStateFilter::ObjectId(display_obj_ids);
+            let display_objs = self
+                .rpc_service
+                .query_object_states(display_objs_filter, None, display_obj_ids.len(), False)
+                .await?
+                .into_iter()
+                .map(|s| (s.object_id, s))
+                .collect::<std::collections::HashMap<_, _>>();
+
+            // TODO: Render display fields.
         }
 
         let next_cursor = data.last().cloned().map_or(cursor, |t| {

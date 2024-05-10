@@ -96,7 +96,7 @@ impl ObjectStateFilter {
             ObjectStateFilter::ObjectType(object_type) => object_type == &item.object_type,
             ObjectStateFilter::Owner(owner) => owner == &item.owner,
             ObjectStateFilter::ObjectId(object_ids) => {
-                object_ids.len() == 1 && object_ids[0] == item.object_id,
+                object_ids.len() == 1 && object_ids[0] == item.object_id
             }
         })
     }

@@ -381,6 +381,7 @@ pub struct IndexerObjectStateView {
     pub state_index: u64,
     pub created_at: u64,
     pub updated_at: u64,
+    pub display_fields: Option<DisplayFieldsView>,
 }
 
 impl IndexerObjectStateView {
@@ -400,7 +401,13 @@ impl IndexerObjectStateView {
             state_index: state.state_index,
             created_at: state.created_at,
             updated_at: state.updated_at,
+            display_fields: None,
         }
+    }
+
+    pub fn with_display_fields(mut self, display_fields: Option<DisplayFieldsView>) -> Self {
+        self.display_fields = display_fields;
+        self
     }
 }
 
