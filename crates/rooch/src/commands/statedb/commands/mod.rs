@@ -17,6 +17,10 @@ pub mod export;
 pub mod genesis_utxo;
 pub mod import;
 
+pub const BATCH_SIZE: usize = 5000;
+
+pub const GLOBAL_STATE_TYPE_OBJECT: &str = "objectstate";
+pub const GLOBAL_STATE_TYPE_FIELD: &str = "fieldstate";
 pub fn init_statedb(
     base_data_dir: Option<PathBuf>,
     chain_id: Option<RoochChainID>,

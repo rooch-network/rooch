@@ -14,8 +14,6 @@ use smt::{TreeChangeSet, UpdateSet};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-pub const BATCH_SIZE: usize = 2000;
-
 /// Import statedb
 #[derive(Debug, Parser)]
 pub struct ImportCommand {

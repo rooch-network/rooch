@@ -3,7 +3,7 @@
 
 use crate::cli_types::WalletContextOptions;
 use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
-use crate::commands::statedb::commands::init_statedb;
+use crate::commands::statedb::commands::{init_statedb, BATCH_SIZE};
 use anyhow::{Error, Result};
 use bitcoin::{PublicKey, Txid};
 use clap::Parser;
@@ -39,7 +39,6 @@ use std::str::FromStr;
 use std::time::SystemTime;
 use tracing::log;
 
-pub const BATCH_SIZE: usize = 5000;
 pub const SCRIPT_TYPE_P2MS: &str = "p2ms";
 pub const SCRIPT_TYPE_P2PK: &str = "p2pk";
 pub const SCRIPT_TYPE_NON_STANDARD: &str = "non-standard";

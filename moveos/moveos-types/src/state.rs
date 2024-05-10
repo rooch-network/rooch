@@ -665,6 +665,17 @@ impl State {
         let decoded_value = annotator.view_value(&self.value_type, &self.value)?;
         Ok(AnnotatedState::new(self, decoded_value))
     }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        bcs::from_bytes(bytes).map_err(|e| anyhow::anyhow!("Deserialize the State error: {:?}", e))
+    }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>> {
+        bcs::to_bytes(self).map_err(|e| anyhow::anyhow!("Serialize the State error: {:?}", e))
+    }
 }
 
 #[derive(Debug, Clone)]
