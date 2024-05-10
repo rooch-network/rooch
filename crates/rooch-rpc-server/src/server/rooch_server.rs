@@ -23,8 +23,8 @@ use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
     account_view::BalanceInfoView, FieldStateFilterView, IndexerEventPageView,
     IndexerFieldStatePageView, IndexerFieldStateView, IndexerObjectStatePageView,
-    IndexerObjectStateView, KeyStateView, ObjectStateFilterView, StateKVView, StateOptions,
-    TxOptions,
+    IndexerObjectStateView, KeyStateView, ObjectStateFilterView, QueryOptions, StateKVView,
+    StateOptions, TxOptions,
 };
 use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
@@ -601,13 +601,14 @@ impl RoochAPIServer for RoochServer {
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
+        query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerObjectStatePageView> {
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
-        let descending_order = descending_order.unwrap_or(true);
+        let query_option = query_option.unwrap_or(QueryOptions::default());
+        let descending_order = query_option.descending;
 
         // resolve multichain address
         let resolve_address = match filter.clone() {
@@ -655,6 +656,11 @@ impl RoochAPIServer for RoochServer {
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
+
+        if query_option.show_display {
+            // TODO: query display fields.
+        }
+
         let next_cursor = data.last().cloned().map_or(cursor, |t| {
             Some(IndexerStateID::new(t.tx_order, t.state_index))
         });
