@@ -29,7 +29,7 @@ use move_vm_types::{
 };
 use moveos_types::moveos_std::move_module::MoveModuleId;
 use smallvec::smallvec;
-use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
+use std::collections::{BTreeSet, HashMap, VecDeque};
 use std::hash::Hash;
 use std::str::FromStr;
 
@@ -175,18 +175,24 @@ fn native_sort_and_verify_modules_inner(
     let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
     let mut module_ids = vec![];
     let mut init_identifier = vec![];
-    let mut verified_modules: BTreeMap<ModuleId, CompiledModule> = BTreeMap::new();
+
+    let verify_result =
+        moveos_verifier::verifier::verify_modules(&compiled_modules, module_context.resolver);
+    match verify_result {
+        Ok(_) => {}
+        Err(e) => {
+            log::info!("modules verification error: {:?}", e);
+            return Ok(NativeResult::err(cost, E_MODULE_VERIFICATION_ERROR));
+        }
+    }
+
     for module in &compiled_modules {
         let module_address = *module.self_id().address();
 
         if module_address != account_address {
             return Ok(NativeResult::err(cost, E_ADDRESS_NOT_MATCH_WITH_SIGNER));
         }
-        let result = moveos_verifier::verifier::verify_module(
-            module,
-            module_context.resolver,
-            &mut verified_modules,
-        );
+        let result = moveos_verifier::verifier::verify_init_function(module);
         match result {
             Ok(res) => {
                 if res {

@@ -4,7 +4,6 @@
 use crate::cli_types::{CommandAction, TransactionOptions, WalletContextOptions};
 use async_trait::async_trait;
 use clap::Parser;
-use move_binary_format::CompiledModule;
 use move_cli::Move;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
 use moveos::vm::dependency_order::sort_by_dependency_order;
@@ -93,7 +92,7 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
         let sorted_modules = sort_by_dependency_order(modules.iter_modules())?;
         let resolver = context.get_client().await?;
         // Serialize and collect module binaries into bundles
-        let mut verified_modules: BTreeMap<ModuleId, CompiledModule> = BTreeMap::new();
+        verifier::verify_modules(&sorted_modules, &resolver)?;
         for module in sorted_modules {
             let module_address = module.self_id().address().to_owned();
             if module_address != pkg_address {
@@ -103,7 +102,6 @@ impl CommandAction<ExecuteTransactionResponseView> for Publish {
                     pkg_address.clone(),
                 )));
             };
-            verifier::verify_module(&module, &resolver, &mut verified_modules)?;
             let mut binary: Vec<u8> = vec![];
             module.serialize(&mut binary)?;
             bundles.push(binary);

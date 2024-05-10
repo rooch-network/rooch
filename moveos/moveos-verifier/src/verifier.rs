@@ -30,6 +30,23 @@ use crate::metadata::{
 pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new("init").unwrap());
 
+pub fn verify_modules<Resolver>(modules: &Vec<CompiledModule>, db: Resolver) -> VMResult<bool>
+where
+    Resolver: ModuleResolver,
+{
+    let mut verified_modules: BTreeMap<ModuleId, CompiledModule> = BTreeMap::new();
+    for module in modules {
+        verify_private_generics(module, &db, &mut verified_modules)?;
+        verify_entry_function_at_publish(module)?;
+        verify_global_storage_access(module)?;
+        verify_gas_free_function(module)?;
+        verify_data_struct(module, &db, &mut verified_modules)?;
+        verify_init_function(module)?;
+    }
+
+    Ok(true)
+}
+
 pub fn verify_module<Resolver>(
     module: &CompiledModule,
     db: Resolver,
@@ -386,7 +403,7 @@ where
                                 &view,
                                 finst_idx,
                                 verified_modules,
-                                false,
+                                true,
                             );
 
                             if let Some(compiled_module) = compiled_module_opt {
