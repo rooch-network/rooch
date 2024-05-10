@@ -8663,6 +8663,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "better_any",
+ "bitcoin 0.31.0",
  "brotli",
  "fastcrypto",
  "framework-builder",

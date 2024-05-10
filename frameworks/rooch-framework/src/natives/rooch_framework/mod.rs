@@ -3,4 +3,5 @@
 
 //TODO remove bcs;
 pub mod bcs;
+pub mod bitcoin_address;
 pub mod crypto;
