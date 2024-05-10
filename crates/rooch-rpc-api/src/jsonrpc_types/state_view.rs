@@ -417,7 +417,7 @@ pub enum ObjectStateFilterView {
     /// Query by owner.
     Owner(AccountAddressView),
     /// Query by object id.
-    ObjectId(ObjectID),
+    ObjectId(Vec<ObjectID>),
     /// Query by multi chain address
     MultiChainAddress { multichain_id: u64, address: String },
 }
@@ -438,7 +438,7 @@ impl ObjectStateFilterView {
                 ObjectStateFilter::ObjectType(object_type.into())
             }
             ObjectStateFilterView::Owner(owner) => ObjectStateFilter::Owner(owner.into()),
-            ObjectStateFilterView::ObjectId(object_id) => ObjectStateFilter::ObjectId(object_id),
+            ObjectStateFilterView::ObjectId(object_ids) => ObjectStateFilter::ObjectId(object_ids),
             ObjectStateFilterView::MultiChainAddress {
                 multichain_id: _,
                 address: _,
