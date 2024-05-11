@@ -998,9 +998,7 @@ impl<'a> ExtendedChecker<'a> {
             .iter()
             .filter(|(key, _)| match extract_module_name(key) {
                 None => false,
-                Some(module_name) => {
-                    module_name == module_env.get_full_name_str()
-                }
+                Some(module_name) => module_name == module_env.get_full_name_str(),
             })
             .map(|(key, value)| (key.clone(), *value))
             .collect();
