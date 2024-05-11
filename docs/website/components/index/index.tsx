@@ -60,10 +60,10 @@ export default function Index({
   return (
     <>
       {/* HERO */}
-      <div className="flex flex-col items-center justify-center h-[85vh] px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col items-center justify-center h-[85vh] px-4 sm:px-6 lg:px-20">
         {/* <!-- Title --> */}
         <div className="mt-5 max-w-3xl text-center mx-auto">
-          <p className="block font-bold text-gray-800 text-4xl md:text-5xl lg:text-5xl dark:text-gray-200">
+          <p className="block font-bold text-gray-800 text-4xl md:text-5xl lg:text-6xl dark:text-gray-200">
             {heroTitle}
           </p>
           {heroSlogan ? (
@@ -101,7 +101,7 @@ export default function Index({
       </div>
 
       {/* FEATURES */}
-      <div className="py-16 md:py-32 px-4 sm:px-6 lg:px-8 bg-[#F5F5F5] flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
+      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-[#F5F5F5] flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
         <div className="px-4 max-w-[854px] w-full h-full">
           <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929]">
             {featuresTitle.split(' ').slice(0, -1).join(' ')}{' '}
@@ -137,7 +137,7 @@ export default function Index({
       </div>
 
       {/* EXPLORE */}
-      <div className="py-16 md:py-32 px-4 sm:px-6 lg:px-8 bg-white flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
+      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-white flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
         <div className="px-4 max-w-[854px] h-full w-full">
           <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929]">
             {exploreTitle.split(' ').slice(0, -2).join(' ')}{' '}
@@ -178,7 +178,7 @@ export default function Index({
       </div>
 
       {/* ECOSYSTEM */}
-      <div className="py-8 md:py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center gap-6 md:gap-0 bg-[#F5F5F5] w-full">
+      <div className="py-8 md:py-20 px-4 sm:px-6 lg:px-20 flex flex-col items-center justify-center gap-6 md:gap-0 bg-[#F5F5F5] w-full">
         <div className="flex flex-col items-center justify-center h-full gap-2">
           <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929]">
             {ecosystemTitle.split(' ').slice(0, -1).join(' ')}{' '}
@@ -205,10 +205,13 @@ export default function Index({
       </div>
 
       {/* BLOGS */}
-      <div className="py-20">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-gray-800">{blogsTitle}</h2>
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-white flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0 bg-gradient-blogs">
+        <div className="px-4 w-full h-full">
+          <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929]">
+            {blogsTitle.split(' ').slice(0, -1).join(' ')}{' '}
+            <span className="text-[#FF914B]">{blogsTitle.split(' ').slice(-1).join(' ')}</span>
+          </h2>
+          <div className="mt-8 flex flex-col gap-4">
             {blogs?.map((blog, index) => (
               <div key={index} className="bg-white shadow-lg rounded-lg p-6">
                 <h3 className="text-xl font-bold text-gray-800">{blog.title}</h3>
