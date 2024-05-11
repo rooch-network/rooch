@@ -67,7 +67,6 @@ export default function Index({
     <>
       {/* HERO */}
       <div className="flex flex-col items-center justify-center h-[85vh] px-4 sm:px-6 lg:px-20">
-        {/* <!-- Title --> */}
         <div className="mt-5 max-w-3xl text-center mx-auto">
           <p className="block font-bold text-gray-800 text-4xl md:text-5xl lg:text-6xl dark:text-gray-200">
             {heroTitle}
@@ -80,13 +79,9 @@ export default function Index({
             ''
           )}
         </div>
-        {/* <!-- End Title --> */}
-
         <div className="mt-5 max-w-2xl text-center mx-auto">
           <p className="text-lg text-gray-600 dark:text-gray-400">{heroDescription}</p>
         </div>
-
-        {/* <!-- Buttons --> */}
         <div className="mt-8 grid gap-3 w-full sm:inline-flex sm:justify-center cta-container">
           <Link
             className="inline-flex justify-center items-center gap-x-3 text-center bg-gradient-to-tl border border-transparent text-sm font-medium rounded-md  py-3 px-6 cta"
@@ -103,7 +98,6 @@ export default function Index({
             </svg>
           </Link>
         </div>
-        {/* <!-- End Buttons --> */}
       </div>
 
       {/* FEATURES */}
@@ -145,12 +139,14 @@ export default function Index({
       {/* EXPLORE */}
       <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-white flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
         <div className="px-4 max-w-[854px] h-full w-full">
-          <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929]">
+          <h2 className="text-4xl md:text-6xl font-semibold text-center text-[#2E2929]">
             {exploreTitle.split(' ').slice(0, -2).join(' ')}{' '}
             <span className="text-[#46977E]">{exploreTitle.split(' ').slice(-2).join(' ')}</span>
           </h2>
-          <div className="flex flex-col items-center justify-center md:items-start md:justify-start gap-6">
-            <h3 className="text-[#737B7D] text-base font-normal max-w-2xl">{exploreContent}</h3>
+          <div className="flex flex-col items-center justify-center gap-6">
+            <h3 className="text-[#737B7D] text-base font-normal max-w-2xl text-center">
+              {exploreContent}
+            </h3>
             <Image
               src="/logo/explore/explore_logo.svg"
               alt="explore logo"
