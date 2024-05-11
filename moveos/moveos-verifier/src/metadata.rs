@@ -927,6 +927,22 @@ impl<'a> ExtendedChecker<'a> {
     }
 }
 
+pub fn extract_module_name(item: &str) -> Option<(String, String)> {
+    let func_name_split = item.split("::");
+    let parts_vec = func_name_split.collect::<Vec<&str>>();
+    if (parts_vec.len() as u32) < 3 {
+        return None;
+    }
+
+    let module_address = parts_vec.first().unwrap();
+    let module_name = parts_vec.get(1).unwrap();
+    let last_name = parts_vec.get(2).unwrap();
+    Some((
+        format!("{}::{}", module_address, module_name),
+        last_name.to_string(),
+    ))
+}
+
 impl<'a> ExtendedChecker<'a> {
     fn check_data_struct(&mut self, module_env: &ModuleEnv) {
         let mut available_data_structs = BTreeMap::new();
@@ -984,6 +1000,10 @@ impl<'a> ExtendedChecker<'a> {
 
         let data_struct_map: BTreeMap<String, bool> = available_data_structs
             .iter()
+            .filter(|(key, _)| match extract_module_name(key) {
+                None => false,
+                Some((module_name, _)) => module_name == module_env.get_full_name_str(),
+            })
             .map(|(key, value)| (key.clone(), *value))
             .collect();
 
