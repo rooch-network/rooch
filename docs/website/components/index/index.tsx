@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import brand from '../pages/brand'
 
 interface Card {
   title: string
@@ -11,6 +10,13 @@ interface Card {
 interface Brand {
   brandLogo: string
   brandTitle: string
+}
+
+interface Blog {
+  title: string
+  date: string
+  link: string
+  image: string
 }
 
 interface IndexProps {
@@ -37,7 +43,7 @@ interface IndexProps {
 
   // BLOGS
   blogsTitle: string
-  blogs: { title: string; date: string; link: string }[]
+  blogs: Blog[]
 }
 
 export default function Index({
@@ -204,7 +210,7 @@ export default function Index({
         </div>
       </div>
 
-      {/* BLOGS */}
+      {/* BLOG */}
       <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-white flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0 bg-gradient-blogs">
         <div className="px-4 w-full h-full">
           <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929]">
@@ -213,12 +219,31 @@ export default function Index({
           </h2>
           <div className="mt-8 flex flex-col gap-4">
             {blogs?.map((blog, index) => (
-              <div key={index} className="bg-white shadow-lg rounded-lg p-6">
-                <h3 className="text-xl font-bold text-gray-800">{blog.title}</h3>
-                <p className="text-gray-600 mt-2">{blog.date}</p>
-                <Link href={blog.link}>
+              <div
+                key={index}
+                className="bg-white shadow-lg rounded-[32px] border border-1 border-black border-b-4 hover:border-zinc-500 hover:shadow-xl transition-all flex flex-col md:flex-row overflow-hidden h-full items-center justify-between"
+              >
+                <div className="h-auto w-auto">
+                  <Image
+                    src={blog.image}
+                    alt={blog.title}
+                    height={501}
+                    width={236}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="flex md:items-start md:justify-start flex-col px-4 w-full ml-4 h-full gap-8 my-4 md:my-0">
+                  <h3 className="text-2xl md:text-3xl font-normal text-gray-800">{blog.title}</h3>
+                  <p className="text-gray-600 mt-2 text-sm">{blog.date}</p>
+                </div>
+                <Link href={blog.link} className="mr-8 hidden md:block">
                   <button className="text-blue-500 hover:text-blue-700 mt-4 inline-block">
-                    Read More
+                    <Image
+                      src="/logo/blogs/chevron_right.svg"
+                      alt="Chevron right"
+                      width={48}
+                      height={55}
+                    />
                   </button>
                 </Link>
               </div>
