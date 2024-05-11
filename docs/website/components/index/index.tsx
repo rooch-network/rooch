@@ -189,8 +189,14 @@ export default function Index({
         <div className="flex items-center justify-center w-full mt-2">
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 justify-items-center">
             {ecosystemBrand.map((brand) => (
-              <div className="card bg-white rounded-lg p-4 flex flex-col items-center justify-center border border-b-4 border-black shadow-lg w-52 h-32 gap-2 hover:border-zinc-500 hover:cursor-pointer hover:shadow-xl transition-all">
-                <Image src={brand.brandLogo} alt={brand.brandTitle} width={60} height={60} />
+              <div className="card bg-white rounded-full md:rounded-lg p-4 flex flex-row md:flex-col items-center md:justify-center justify-start border border-b-4 border-black shadow-lg w-full h-14 md:w-52 md:h-32 gap-2 hover:border-zinc-500 hover:cursor-pointer hover:shadow-xl transition-all">
+                <Image
+                  src={brand.brandLogo}
+                  alt={brand.brandTitle}
+                  width={60}
+                  height={60}
+                  className="w-[25px] h-[25px] md:w-[60px] md:h-[60px]"
+                />
                 <p className="text-center text-base font-semibold">{brand.brandTitle}</p>
               </div>
             ))}
