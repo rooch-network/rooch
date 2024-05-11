@@ -996,15 +996,13 @@ impl<'a> ExtendedChecker<'a> {
 
         let data_struct_map: BTreeMap<String, bool> = available_data_structs
             .iter()
-            .filter(|(key, _)| {
-                match extract_module_name(*key) {
-                    None => false,
-                    Some(module_name) => {
-                        if module_name == module_env.get_full_name_str() {
-                            true
-                        } else {
-                            false
-                        }
+            .filter(|(key, _)| match extract_module_name(*key) {
+                None => false,
+                Some(module_name) => {
+                    if module_name == module_env.get_full_name_str() {
+                        true
+                    } else {
+                        false
                     }
                 }
             })
