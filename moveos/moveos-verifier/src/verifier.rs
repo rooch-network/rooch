@@ -392,6 +392,19 @@ where
 
             for (full_func_name, _) in type_name_indices.iter() {
                 check_module_owner(full_func_name, module)?;
+                let (exists, _) = check_if_function_exist_in_module(module, full_func_name);
+                if !exists {
+                    return generate_vm_error(
+                        StatusCode::RESOURCE_DOES_NOT_EXIST,
+                        format!(
+                            "Function {} not exist in module {}",
+                            full_func_name,
+                            module.self_id().to_string()
+                        ),
+                        None,
+                        module,
+                    );
+                }
             }
 
             let view = BinaryIndexedView::Module(module);
