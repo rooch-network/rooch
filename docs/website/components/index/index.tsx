@@ -1,10 +1,16 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import brand from '../pages/brand'
 
 interface Card {
   title: string
   description: string
   logo: string
+}
+
+interface Brand {
+  brandLogo: string
+  brandTitle: string
 }
 
 interface IndexProps {
@@ -27,6 +33,7 @@ interface IndexProps {
   // ECOSYSTEM
   ecosystemTitle: string
   ecosystemContent: string
+  ecosystemBrand: Brand[]
 
   // BLOGS
   blogsTitle: string
@@ -46,13 +53,14 @@ export default function Index({
   explores,
   ecosystemTitle,
   ecosystemContent,
+  ecosystemBrand,
   blogsTitle,
   blogs,
 }: IndexProps) {
   return (
     <>
       {/* HERO */}
-      <div className="mx-auto px-4 sm:px-6 lg:px-8 pt-60 pb-60">
+      <div className="flex flex-col items-center justify-center h-[85vh] px-4 sm:px-6 lg:px-8">
         {/* <!-- Title --> */}
         <div className="mt-5 max-w-3xl text-center mx-auto">
           <p className="block font-bold text-gray-800 text-4xl md:text-5xl lg:text-5xl dark:text-gray-200">
@@ -93,8 +101,8 @@ export default function Index({
       </div>
 
       {/* FEATURES */}
-      <div className="py-16 md:py-32 px-6 md:px-24 bg-[#F5F5F5] flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
-        <div className="px-4 max-w-[854px]">
+      <div className="py-16 md:py-32 px-4 sm:px-6 lg:px-8 bg-[#F5F5F5] flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
+        <div className="px-4 max-w-[854px] w-full h-full">
           <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929]">
             {featuresTitle.split(' ').slice(0, -1).join(' ')}{' '}
             <span className="text-[#FF914B]">{featuresTitle.split(' ').slice(-1)}</span>
@@ -118,7 +126,7 @@ export default function Index({
             ))}
           </div>
         </div>
-        <div>
+        <div className="flex flex-wrap justify-center gap-4 w-full md:w-[580px] md:h-[410px]">
           <Image
             src="/logo/features/features_logo.svg"
             alt="features logo"
@@ -129,7 +137,7 @@ export default function Index({
       </div>
 
       {/* EXPLORE */}
-      <div className="py-16 md:py-32 px-6 md:px-24 bg-white flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
+      <div className="py-16 md:py-32 px-4 sm:px-6 lg:px-8 bg-white flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
         <div className="px-4 max-w-[854px] h-full w-full">
           <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929]">
             {exploreTitle.split(' ').slice(0, -2).join(' ')}{' '}
@@ -170,10 +178,23 @@ export default function Index({
       </div>
 
       {/* ECOSYSTEM */}
-      <div className="py-20 bg-gray-100">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold text-gray-800">{ecosystemTitle}</h2>
+      <div className="py-8 md:py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center gap-6 md:gap-0 bg-[#F5F5F5] w-full">
+        <div className="flex flex-col items-center justify-center h-full gap-2">
+          <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929]">
+            {ecosystemTitle.split(' ').slice(0, -1).join(' ')}{' '}
+            <span className="text-[#FF914B]">{ecosystemTitle.split(' ').slice(-1).join(' ')}</span>
+          </h2>
           <p className="text-gray-600 mt-4">{ecosystemContent}</p>
+        </div>
+        <div className="flex items-center justify-center w-full mt-2">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 justify-items-center">
+            {ecosystemBrand.map((brand) => (
+              <div className="card bg-white rounded-lg p-4 flex flex-col items-center justify-center border border-b-4 border-black shadow-lg w-52 h-32 gap-2 hover:border-zinc-500 hover:cursor-pointer hover:shadow-xl transition-all">
+                <Image src={brand.brandLogo} alt={brand.brandTitle} width={60} height={60} />
+                <p className="text-center text-base font-semibold">{brand.brandTitle}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
