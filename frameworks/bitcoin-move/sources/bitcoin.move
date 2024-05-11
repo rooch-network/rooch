@@ -18,7 +18,6 @@ module bitcoin_move::bitcoin{
     use bitcoin_move::types::{Self, Block, Header, Transaction};
     use bitcoin_move::ord::{Self, Inscription, bind_multichain_address, Flotsam, SatPoint};
     use bitcoin_move::utxo::{Self, UTXOSeal};
-    use bitcoin_move::bitseed;
 
     friend bitcoin_move::genesis;
 
@@ -26,7 +25,6 @@ module bitcoin_move::bitcoin{
     const ErrorBlockAlreadyProcessed:u64 = 2;
 
     const ORDINAL_GENESIS_HEIGHT:u64 = 767430;
-    const BITSEED_GENESIS_HEIGHT:u64 = 940000;
 
     struct TxProgressErrorLogEvent has copy, drop{
         txid: address,
@@ -43,6 +41,8 @@ module bitcoin_move::bitcoin{
         hash_to_height: Table<address, u64>,
         /// tx id -> tx
         txs: Table<address, Transaction>,
+        /// tx id -> tx
+        tx_to_height: Table<address, u64>,
         /// tx id list, we can use this to scan txs
         tx_ids: TableVec<address>,
     }
@@ -54,6 +54,7 @@ module bitcoin_move::bitcoin{
             height_to_hash: table::new(),
             hash_to_height: table::new(),
             txs: table::new(),
+            tx_to_height: table::new(),
             tx_ids: table_vec::new(),
         };
         let obj = object::new_named_object(btc_block_store);
@@ -130,6 +131,7 @@ module bitcoin_move::bitcoin{
         let flotsams = process_utxo(tx, block_height);
         let txid = types::tx_id(tx);
         table::add(&mut btc_block_store.txs, txid, *tx);
+        table::add(&mut btc_block_store.tx_to_height, txid, block_height);
         table_vec::push_back(&mut btc_block_store.tx_ids, txid);
         flotsams
     }
@@ -204,11 +206,6 @@ module bitcoin_move::bitcoin{
 
         // create new utxo
         handle_new_utxo(tx, &mut output_seals);
-
-        // handle bitseed
-        if(need_process_bitseed(block_height)) {
-            bitseed::process(tx);
-        };
 
         simple_multimap::drop(output_seals);
         flotsams
@@ -296,6 +293,16 @@ module bitcoin_move::bitcoin{
         }
     }
 
+    public fun get_tx_height(txid: address): Option<u64>{
+        let btc_block_store_obj = borrow_block_store();
+        let btc_block_store = object::borrow(btc_block_store_obj);
+        if(table::contains(&btc_block_store.txs, txid)){
+            option::some(*table::borrow(&btc_block_store.tx_to_height, txid))
+        }else{
+            option::none()
+        }
+    }
+
     /// Get block via block_hash
     public fun get_block(block_hash: address): Option<Header>{
         let btc_block_store_obj = borrow_block_store();
@@ -340,15 +347,6 @@ module bitcoin_move::bitcoin{
         let btc_network = network::network();
         if(network::is_mainnet(btc_network)){
             block_height >= ORDINAL_GENESIS_HEIGHT
-        }else{
-            true
-        }
-    }
-    
-    public fun need_process_bitseed(block_height: u64) : bool {
-        let btc_network = network::network();
-        if(network::is_mainnet(btc_network)){
-            block_height >= BITSEED_GENESIS_HEIGHT
         }else{
             true
         }

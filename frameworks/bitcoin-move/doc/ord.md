@@ -25,6 +25,8 @@
 -  [Function `process_transaction`](#0x4_ord_process_transaction)
 -  [Function `txid`](#0x4_ord_txid)
 -  [Function `index`](#0x4_ord_index)
+-  [Function `input`](#0x4_ord_input)
+-  [Function `offset`](#0x4_ord_offset)
 -  [Function `body`](#0x4_ord_body)
 -  [Function `content_encoding`](#0x4_ord_content_encoding)
 -  [Function `content_type`](#0x4_ord_content_type)
@@ -32,6 +34,8 @@
 -  [Function `metaprotocol`](#0x4_ord_metaprotocol)
 -  [Function `parent`](#0x4_ord_parent)
 -  [Function `pointer`](#0x4_ord_pointer)
+-  [Function `inscription_id_txid`](#0x4_ord_inscription_id_txid)
+-  [Function `inscription_id_index`](#0x4_ord_inscription_id_index)
 -  [Function `new_sat_point`](#0x4_ord_new_sat_point)
 -  [Function `unpack_sat_point`](#0x4_ord_unpack_sat_point)
 -  [Function `sat_point_object_id`](#0x4_ord_sat_point_object_id)
@@ -359,6 +363,28 @@ How may blocks between halvings.
 
 
 
+<a name="0x4_ord_input"></a>
+
+## Function `input`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_input">input</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): u32
+</code></pre>
+
+
+
+<a name="0x4_ord_offset"></a>
+
+## Function `offset`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_offset">offset</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): u64
+</code></pre>
+
+
+
 <a name="0x4_ord_body"></a>
 
 ## Function `body`
@@ -432,6 +458,28 @@ How may blocks between halvings.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_pointer">pointer</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;u64&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_inscription_id_txid"></a>
+
+## Function `inscription_id_txid`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_inscription_id_txid">inscription_id_txid</a>(self: &<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x4_ord_inscription_id_index"></a>
+
+## Function `inscription_id_index`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_inscription_id_index">inscription_id_index</a>(self: &<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): u32
 </code></pre>
 
 

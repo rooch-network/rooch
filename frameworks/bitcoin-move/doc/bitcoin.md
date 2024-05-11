@@ -10,12 +10,12 @@
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_bitcoin_genesis_init)
 -  [Function `get_tx`](#0x4_bitcoin_get_tx)
+-  [Function `get_tx_height`](#0x4_bitcoin_get_tx_height)
 -  [Function `get_block`](#0x4_bitcoin_get_block)
 -  [Function `get_block_height`](#0x4_bitcoin_get_block_height)
 -  [Function `get_block_by_height`](#0x4_bitcoin_get_block_by_height)
 -  [Function `get_latest_block_height`](#0x4_bitcoin_get_latest_block_height)
 -  [Function `need_process_oridinals`](#0x4_bitcoin_need_process_oridinals)
--  [Function `need_process_bitseed`](#0x4_bitcoin_need_process_bitseed)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
@@ -30,7 +30,6 @@
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
 <b>use</b> <a href="">0x3::timestamp</a>;
-<b>use</b> <a href="bitseed.md#0x4_bitseed">0x4::bitseed</a>;
 <b>use</b> <a href="network.md#0x4_network">0x4::network</a>;
 <b>use</b> <a href="ord.md#0x4_ord">0x4::ord</a>;
 <b>use</b> <a href="types.md#0x4_types">0x4::types</a>;
@@ -75,15 +74,6 @@
 
 
 
-<a name="0x4_bitcoin_BITSEED_GENESIS_HEIGHT"></a>
-
-
-
-<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_BITSEED_GENESIS_HEIGHT">BITSEED_GENESIS_HEIGHT</a>: u64 = 940000;
-</code></pre>
-
-
-
 <a name="0x4_bitcoin_ErrorBlockAlreadyProcessed"></a>
 
 
@@ -120,6 +110,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_tx">get_tx</a>(txid: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="types.md#0x4_types_Transaction">types::Transaction</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_bitcoin_get_tx_height"></a>
+
+## Function `get_tx_height`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_tx_height">get_tx_height</a>(txid: <b>address</b>): <a href="_Option">option::Option</a>&lt;u64&gt;
 </code></pre>
 
 
@@ -178,15 +179,4 @@ Get latest block height
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_need_process_oridinals">need_process_oridinals</a>(block_height: u64): bool
-</code></pre>
-
-
-
-<a name="0x4_bitcoin_need_process_bitseed"></a>
-
-## Function `need_process_bitseed`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_need_process_bitseed">need_process_bitseed</a>(block_height: u64): bool
 </code></pre>

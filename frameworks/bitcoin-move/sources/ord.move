@@ -459,6 +459,14 @@ module bitcoin_move::ord {
         self.index
     }
 
+    public fun input(self: &Inscription): u32{
+        self.input
+    }
+
+    public fun offset(self: &Inscription): u64{
+        self.offset
+    }
+
     public fun body(self: &Inscription): vector<u8>{
         self.body
     }
@@ -501,6 +509,14 @@ module bitcoin_move::ord {
             parent: _,
             pointer: _,
         } = self;
+    }
+
+    public fun inscription_id_txid(self: &InscriptionID): address {
+        self.txid
+    }
+
+    public fun inscription_id_index(self: &InscriptionID): u32 {
+        self.index
     }
 
     // ===== SatPoint ========== //
@@ -1027,11 +1043,14 @@ module bitcoin_move::ord {
     }
 
     #[test_only]
-    public fun setup_inscription_for_test(genesis_account: &signer, test_address: address, test_txid: address, test_index: u32) : InscriptionID {
+    public fun setup_inscription_for_test(genesis_account: &signer) : (address, InscriptionID) {
         genesis_init(genesis_account);
 
         // prepare test inscription
-        let test_inscription_id = new_inscription_id_for_test(test_txid, test_index);
+        let test_address = @0x5416690eaaf671031dc609ff8d36766d2eb91ca44f04c85c27628db330f40fd1;
+        let test_txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
+        let test_inscription_id = new_inscription_id_for_test(test_txid, 0);
+
         let test_inscription = new_inscription_for_test(
             test_txid,
             0,
@@ -1049,15 +1068,13 @@ module bitcoin_move::ord {
         let test_inscription_obj = create_obj(test_inscription);
         object::transfer_extend(test_inscription_obj, test_address);
 
-        test_inscription_id
+        (test_address, test_inscription_id)
     }
 
     #[test(genesis_account=@0x4)]
     fun test_metaprotocol_validity(genesis_account: &signer){
         // prepare test inscription
-        let test_address = @0x5416690eaaf671031dc609ff8d36766d2eb91ca44f04c85c27628db330f40fd1;
-        let test_txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
-        let test_inscription_id = setup_inscription_for_test(genesis_account, test_address, test_txid, 0);
+        let (_test_address, test_inscription_id) = setup_inscription_for_test(genesis_account);
 
         // Check whether exists metaprotocol_validity
         let is_exists = exists_metaprotocol_validity(test_inscription_id);
