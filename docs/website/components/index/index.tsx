@@ -1,8 +1,10 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface Feature {
   title: string
   description: string
+  logo: string
 }
 
 interface IndexProps {
@@ -89,17 +91,39 @@ export default function Index({
       </div>
 
       {/* FEATURES */}
-      <div className="py-20 bg-gray-100">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-gray-800">{featuresTitle}</h2>
+      <div className="py-16 md:py-32 px-6 md:px-24 bg-[#F5F5F5] flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
+        <div className="px-4 max-w-[854px]">
+          <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929]">
+            {featuresTitle.split(' ').slice(0, -1).join(' ')}{' '}
+            <span className="text-[#FF914B]">{featuresTitle.split(' ').slice(-1)}</span>
+          </h2>
           <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
             {features?.map((feature, index) => (
-              <div key={index} className="bg-white shadow-lg rounded-lg p-6">
-                <h3 className="text-xl font-bold text-gray-800">{feature.title}</h3>
-                <p className="text-gray-600 mt-2">{feature.description}</p>
+              <div
+                key={index}
+                className="flex flex-col items-center justify-center md:items-start md:justify-start"
+              >
+                <div className="w-12 h-12 md:w-16 md:h-16">
+                  <Image src={feature.logo} alt="features logo" width={40} height={40} />
+                </div>
+                <h3 className="text-4xl font-medium text-[#FF914B] text-center md:text-start">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600 mt-2 text-center md:text-start">
+                  {feature.description}
+                </p>
               </div>
             ))}
           </div>
+        </div>
+        {/* FEATURES LOGO */}
+        <div>
+          <Image
+            src="/logo/features/features_logo.svg"
+            alt="features logo"
+            width={433}
+            height={410}
+          />
         </div>
       </div>
 
