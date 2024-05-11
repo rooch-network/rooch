@@ -334,6 +334,35 @@ fn vm_error_for_init_func_checking(
         .finish(Location::Module(module_id))
 }
 
+fn check_module_owner(item: &String, current_module: &CompiledModule) -> VMResult<bool> {
+    let func_name_split = item.split("::");
+    let parts_vec = func_name_split.collect::<Vec<&str>>();
+    if (parts_vec.len() as u32) < 3 {
+        return Err(PartialVMError::new(StatusCode::MALFORMED)
+            .with_message("incorrect format of the item name in metadata".to_string())
+            .finish(Location::Module(current_module.self_id())));
+    }
+
+    let module_address = parts_vec.first().unwrap();
+    let module_name = parts_vec.get(1).unwrap();
+
+    let current_module_address = current_module.address().to_hex_literal();
+    let current_module_name = current_module.name().to_string();
+
+    if *module_address != current_module_address.as_str()
+        || *module_name != current_module_name.as_str()
+    {
+        return Err(PartialVMError::new(StatusCode::MALFORMED)
+            .with_message(format!(
+                "the metadata item {} is not belongs to {} module",
+                item,
+                current_module.self_id().to_string()
+            ))
+            .finish(Location::Module(current_module.self_id())));
+    }
+    Ok(true)
+}
+
 pub fn verify_private_generics<Resolver>(
     module: &CompiledModule,
     db: &Resolver,
@@ -362,32 +391,7 @@ where
             let mut type_name_indices = metadata.private_generics_indices;
 
             for (full_func_name, _) in type_name_indices.iter() {
-                let func_name_split = full_func_name.split("::");
-                let parts_vec = func_name_split.collect::<Vec<&str>>();
-                if (parts_vec.len() as u32) < 3 {
-                    return Err(PartialVMError::new(StatusCode::MALFORMED)
-                        .with_message(
-                            "incorrect format of the function name in metadata".to_string(),
-                        )
-                        .finish(Location::Module(module.self_id())));
-                }
-
-                let module_address = parts_vec.first().unwrap();
-                let module_name = parts_vec.get(1).unwrap();
-
-                let current_module_address = module.address().to_hex_literal();
-                let current_module_name = module.name().to_string();
-
-                if *module_address != current_module_address.as_str()
-                    || *module_name != current_module_name.as_str()
-                {
-                    return Err(PartialVMError::new(StatusCode::MALFORMED)
-                        .with_message(
-                            "the information of private_generics is not belongs to this module"
-                                .to_string(),
-                        )
-                        .finish(Location::Module(module.self_id())));
-                }
+                check_module_owner(full_func_name, module)?;
             }
 
             let view = BinaryIndexedView::Module(module);
@@ -521,7 +525,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                 // check the existence of the #[gas_free] function, if not we will return failed info.
                 // The existence means that the #[gas_free] function must be defined in current module.
                 let (func_exists, func_handle_index) =
-                    check_if_function_exist(module, gas_free_function);
+                    check_if_function_exist_in_module(module, gas_free_function);
 
                 if !func_exists {
                     let full_path_module_name = generate_full_module_name(func_handle_index, view);
@@ -542,7 +546,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                 // check the existence of the 'gas validate' function, if not we will return failed info.
                 let gas_validate_function = gas_function_def.gas_validate.clone();
                 let (func_exists, func_handle_index) =
-                    check_if_function_exist(module, &gas_validate_function);
+                    check_if_function_exist_in_module(module, &gas_validate_function);
                 if !func_exists {
                     let full_path_module_name = generate_full_module_name(func_handle_index, view);
 
@@ -619,7 +623,7 @@ pub fn verify_gas_free_function(module: &CompiledModule) -> VMResult<bool> {
                 // check if the parameters and return types of the 'gas charge' function are legally.
                 let gas_charge_post_function = gas_function_def.gas_charge_post.clone();
                 let (func_exists, func_handle_index) =
-                    check_if_function_exist(module, &gas_charge_post_function);
+                    check_if_function_exist_in_module(module, &gas_charge_post_function);
                 if !func_exists {
                     let full_path_module_name = generate_full_module_name(func_handle_index, view);
 
@@ -726,6 +730,41 @@ where
         Some(metadata) => {
             let mut data_structs_map = metadata.data_struct_map;
             let mut data_structs_func_map = metadata.data_struct_func_map;
+
+            for (full_struct_name, _) in data_structs_map.iter() {
+                check_module_owner(full_struct_name, caller_module)?;
+                let exists = check_if_struct_exist_in_module(caller_module, full_struct_name);
+                if !exists {
+                    return generate_vm_error(
+                        StatusCode::RESOURCE_DOES_NOT_EXIST,
+                        format!(
+                            "Struct {} not exist in module {}",
+                            full_struct_name,
+                            caller_module.self_id().to_string()
+                        ),
+                        None,
+                        caller_module,
+                    );
+                }
+            }
+
+            for (full_func_name, _) in data_structs_func_map.iter() {
+                check_module_owner(full_func_name, caller_module)?;
+                let (exists, _) = check_if_function_exist_in_module(caller_module, full_func_name);
+                if !exists {
+                    return generate_vm_error(
+                        StatusCode::RESOURCE_DOES_NOT_EXIST,
+                        format!(
+                            "Function {} not exist in module {}",
+                            full_func_name,
+                            caller_module.self_id().to_string()
+                        ),
+                        None,
+                        caller_module,
+                    );
+                }
+            }
+
             let view = BinaryIndexedView::Module(caller_module);
 
             for func in &caller_module.function_defs {
@@ -929,7 +968,24 @@ pub fn generate_vm_error(
         .finish(Location::Module(module.self_id())))
 }
 
-fn check_if_function_exist(
+fn check_if_struct_exist_in_module(module: &CompiledModule, origin_struct_name: &String) -> bool {
+    let module_bin_view = BinaryIndexedView::Module(module);
+    for struct_def in module.struct_defs.iter() {
+        let module_address = module.address().to_hex_literal();
+        let module_name = module.name().to_string();
+        let struct_handle = module_bin_view.struct_handle_at(struct_def.struct_handle);
+        let struct_name = module_bin_view
+            .identifier_at(struct_handle.name)
+            .to_string();
+        let full_struct_name = format!("{}::{}::{}", module_address, module_name, struct_name);
+        if full_struct_name == *origin_struct_name {
+            return true;
+        }
+    }
+    false
+}
+
+fn check_if_function_exist_in_module(
     module: &CompiledModule,
     function_name: &String,
 ) -> (bool, FunctionHandleIndex) {
