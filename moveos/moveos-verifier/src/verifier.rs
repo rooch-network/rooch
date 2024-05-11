@@ -23,8 +23,8 @@ use move_vm_types::loaded_data::runtime_types::Type;
 use once_cell::sync::Lazy;
 
 use crate::metadata::{
-    check_metadata_format, get_metadata_from_compiled_module, is_allowed_input_struct,
-    is_defined_or_allowed_in_current_module,
+    check_metadata_format, extract_module_name, get_metadata_from_compiled_module,
+    is_allowed_input_struct, is_defined_or_allowed_in_current_module,
 };
 
 pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
@@ -981,37 +981,52 @@ pub fn generate_vm_error(
         .finish(Location::Module(module.self_id())))
 }
 
-fn check_if_struct_exist_in_module(module: &CompiledModule, origin_struct_name: &String) -> bool {
-    let module_bin_view = BinaryIndexedView::Module(module);
-    for struct_def in module.struct_defs.iter() {
-        let module_address = module.address().to_hex_literal();
-        let module_name = module.name().to_string();
-        let struct_handle = module_bin_view.struct_handle_at(struct_def.struct_handle);
-        let struct_name = module_bin_view
-            .identifier_at(struct_handle.name)
-            .to_string();
-        let full_struct_name = format!("{}::{}::{}", module_address, module_name, struct_name);
-        if full_struct_name == *origin_struct_name {
-            return true;
+fn check_if_struct_exist_in_module(module: &CompiledModule, origin_struct_name: &str) -> bool {
+    let module_name_opt = extract_module_name(origin_struct_name);
+    match module_name_opt {
+        None => return false,
+        Some((module_name, simple_struct_name)) => {
+            if module_name != module.self_id().short_str_lossless() {
+                return false;
+            }
+
+            let module_bin_view = BinaryIndexedView::Module(module);
+            for struct_def in module.struct_defs.iter() {
+                let struct_handle = module_bin_view.struct_handle_at(struct_def.struct_handle);
+                let struct_name = module_bin_view
+                    .identifier_at(struct_handle.name)
+                    .to_string();
+                if struct_name == simple_struct_name {
+                    return true;
+                }
+            }
         }
     }
+
     false
 }
 
 fn check_if_function_exist_in_module(
     module: &CompiledModule,
-    function_name: &String,
+    function_name: &str,
 ) -> (bool, FunctionHandleIndex) {
-    let module_bin_view = BinaryIndexedView::Module(module);
-    for fdef in module.function_defs.iter() {
-        let func_handle = module_bin_view.function_handle_at(fdef.function);
-        let module_address = module.address().to_hex_literal();
-        let module_name = module.name().to_string();
-        let func_name = module_bin_view.identifier_at(func_handle.name).to_string();
-        let full_func_name = format!("{}::{}::{}", module_address, module_name, func_name);
-        if &full_func_name == function_name {
-            let fhandle_index = fdef.function.0;
-            return (true, FunctionHandleIndex::new(fhandle_index));
+    let module_name_opt = extract_module_name(function_name);
+    match module_name_opt {
+        None => return (false, FunctionHandleIndex::new(0)),
+        Some((module_name, simple_func_name)) => {
+            if module_name != module.self_id().short_str_lossless() {
+                return (false, FunctionHandleIndex::new(0));
+            }
+
+            let module_bin_view = BinaryIndexedView::Module(module);
+            for func_def in module.function_defs.iter() {
+                let func_handle = module_bin_view.function_handle_at(func_def.function);
+                let func_name = module_bin_view.identifier_at(func_handle.name).to_string();
+                if func_name == simple_func_name {
+                    let fhandle_index = func_def.function.0;
+                    return (true, FunctionHandleIndex::new(fhandle_index));
+                }
+            }
         }
     }
 
