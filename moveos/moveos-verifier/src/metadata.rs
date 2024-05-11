@@ -927,7 +927,7 @@ impl<'a> ExtendedChecker<'a> {
     }
 }
 
-fn extract_module_name(item: &String) -> Option<String> {
+fn extract_module_name(item: &str) -> Option<String> {
     let func_name_split = item.split("::");
     let parts_vec = func_name_split.collect::<Vec<&str>>();
     if (parts_vec.len() as u32) < 3 {
@@ -996,14 +996,10 @@ impl<'a> ExtendedChecker<'a> {
 
         let data_struct_map: BTreeMap<String, bool> = available_data_structs
             .iter()
-            .filter(|(key, _)| match extract_module_name(*key) {
+            .filter(|(key, _)| match extract_module_name(key) {
                 None => false,
                 Some(module_name) => {
-                    if module_name == module_env.get_full_name_str() {
-                        true
-                    } else {
-                        false
-                    }
+                    module_name == module_env.get_full_name_str()
                 }
             })
             .map(|(key, value)| (key.clone(), *value))

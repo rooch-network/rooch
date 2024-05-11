@@ -356,7 +356,7 @@ fn check_module_owner(item: &String, current_module: &CompiledModule) -> VMResul
             .with_message(format!(
                 "the metadata item {} is not belongs to {} module",
                 item,
-                current_module.self_id().to_string()
+                current_module.self_id()
             ))
             .finish(Location::Module(current_module.self_id())));
     }
@@ -399,7 +399,7 @@ where
                         format!(
                             "Function {} not exist in module {}",
                             full_func_name,
-                            module.self_id().to_string()
+                            module.self_id()
                         ),
                         None,
                         module,
@@ -753,7 +753,7 @@ where
                         format!(
                             "Struct {} not exist in module {}",
                             full_struct_name,
-                            caller_module.self_id().to_string()
+                            caller_module.self_id()
                         ),
                         None,
                         caller_module,
@@ -770,7 +770,7 @@ where
                         format!(
                             "Function {} not exist in module {}",
                             full_func_name,
-                            caller_module.self_id().to_string()
+                            caller_module.self_id()
                         ),
                         None,
                         caller_module,
