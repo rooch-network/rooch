@@ -678,6 +678,25 @@ impl State {
     }
 }
 
+impl std::fmt::Display for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let hex_state = hex::encode(
+            self.to_bytes()
+                .map_err(|e| std::fmt::Error::custom(e.to_string()))?,
+        );
+        write!(f, "0x{}", hex_state)
+    }
+}
+
+impl FromStr for State {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let state = hex::decode(s.strip_prefix("0x").unwrap_or(s))
+            .map_err(|_| anyhow::anyhow!("Invalid state str: {}", s))?;
+        State::from_bytes(state.as_slice())
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct AnnotatedState {
     pub state: State,

@@ -19,6 +19,7 @@ pub mod import;
 
 pub const BATCH_SIZE: usize = 5000;
 
+pub const GLOBAL_STATE_PREFIX: &str = "states";
 pub const GLOBAL_STATE_TYPE_OBJECT: &str = "objectstate";
 pub const GLOBAL_STATE_TYPE_FIELD: &str = "fieldstate";
 pub fn init_statedb(

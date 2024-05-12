@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::WalletContextOptions;
-use crate::commands::statedb::commands::{init_statedb, BATCH_SIZE};
+use crate::commands::statedb::commands::{init_statedb, BATCH_SIZE, GLOBAL_STATE_PREFIX};
 use anyhow::Error;
 use anyhow::Result;
 use clap::Parser;
@@ -167,13 +167,17 @@ impl ExportCommand {
             .expect("state should exist.")
             .as_raw_object()?;
 
-        // write csv header.
+        // write csv object states.
         {
-            writer.write_field("objectstates")?;
-            writer.write_field("start")?;
+            let mut object_record = vec![];
+            object_record.push(record_field);
+            writer.serialize(record)?;
+            writer.write_field(GLOBAL_STATE_PREFIX.to_string())?;
+            writer.write_field(root_state_root.to_string())?;
             writer.write_record(None::<&[u8]>)?;
         }
 
+        // write csv field states
         Self::export_object_fields(
             moveos_store,
             H256::from(utxo_store_obj.state_root.into_bytes()),
@@ -195,6 +199,24 @@ impl ExportCommand {
             writer,
         )?;
 
+        Ok(())
+    }
+
+    fn write_object_state<W: std::io::Write>(
+        // moveos_store: &MoveOSStore,
+        // state_root: H256,
+        writer: &mut Writer<W>,
+
+    ) -> Result<()> {
+        // let mut record = vec![];
+        writer.write_field(k.to_bytes()?)?;
+        writer.write_field(v.to_bytes()?)?;
+        // writer.serialize(record)?;
+        writer.write_record(None::<&[u8]>)?;
+
+        // flush csv writer
+        writer.flush()?;
+        println!("state_root: {:?} export field counts {}", state_root, count);
         Ok(())
     }
 
