@@ -67,7 +67,12 @@ impl StoredObjectState {
     pub fn try_into_indexer_global_state(&self) -> Result<IndexerObjectState, anyhow::Error> {
         let object_id = ObjectID::from_str(self.object_id.as_str())?;
         let owner = AccountAddress::from_hex_literal(self.owner.as_str())?;
-        let object_type = StructTag::from_str(self.object_type.as_str())?;
+        let obj_type_str = if !self.object_type.starts_with("0x") {
+            format!("0x{}", self.object_type)
+        } else {
+            self.object_type.clone()
+        };
+        let object_type = StructTag::from_str(obj_type_str.as_str())?;
         let state_root = AccountAddress::from_hex_literal(self.state_root.as_str())?;
 
         let state = IndexerObjectState {

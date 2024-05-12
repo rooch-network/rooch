@@ -224,6 +224,10 @@ fn test_state_store() -> Result<()> {
     let indexer_reader = IndexerReader::new(indexer_db)?;
 
     let mut new_object_states = random_new_object_states()?;
+    let new_object_ids = new_object_states
+        .iter()
+        .map(|state| state.object_id.clone())
+        .collect::<Vec<ObjectID>>();
     let mut update_object_states = random_update_object_states(new_object_states.clone());
     let remove_object_states = random_remove_object_states();
 
@@ -233,7 +237,7 @@ fn test_state_store() -> Result<()> {
 
     //Merge new global states and update global states
     new_object_states.append(&mut update_object_states);
-    indexer_store.persist_or_update_object_states(new_object_states)?;
+    indexer_store.persist_or_update_object_states(new_object_states.clone())?;
     indexer_store.delete_object_states(remove_object_states)?;
 
     //Merge new table states and update table states
@@ -249,12 +253,8 @@ fn test_state_store() -> Result<()> {
     assert_eq!(query_object_states.len(), 0);
 
     // test for querying batch objects with filter ObjectStateFilter::ObjectId
-    let object_ids = update_object_states
-        .into_iter()
-        .map(|state| state.object_id)
-        .collect::<Vec<ObjectID>>();
-    let num_objs = object_ids.len();
-    let filter = ObjectStateFilter::ObjectId(object_ids);
+    let num_objs = new_object_ids.len();
+    let filter = ObjectStateFilter::ObjectId(new_object_ids);
     let query_object_states =
         indexer_reader.query_object_states_with_filter(filter, None, num_objs, true)?;
     assert_eq!(query_object_states.len(), num_objs);
