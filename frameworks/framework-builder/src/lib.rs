@@ -285,7 +285,7 @@ impl Stdlib {
 
     pub fn module_bundles(
         &self,
-        package_names: &[&str],
+        package_names: &[String],
     ) -> Result<Vec<(AccountAddress, Vec<Vec<u8>>)>> {
         let mut bundles = vec![];
         for package_name in package_names {
@@ -298,7 +298,7 @@ impl Stdlib {
             );
         }
         for package in &self.packages {
-            if package_names.contains(&package.package_name.as_str()) {
+            if package_names.contains(&package.package_name) {
                 let mut module_bundle = vec![];
                 for module in package.modules()? {
                     let mut binary = vec![];

@@ -35,11 +35,11 @@ use rooch_types::address::{BitcoinAddress, MultiChainAddress, RoochAddress};
 use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
 use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
 use rooch_types::bitcoin::{types, utxo};
-use rooch_types::chain_id::RoochChainID;
 use rooch_types::error::{RoochError, RoochResult};
 use rooch_types::framework::address_mapping::AddressMappingWrapper;
 use rooch_types::into_address::IntoAddress;
 use rooch_types::multichain_id::RoochMultiChainID;
+use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
 use crate::cli_types::WalletContextOptions;

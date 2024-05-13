@@ -3,7 +3,7 @@
 
 use crate::binding_test;
 use moveos_types::{module_binding::MoveFunctionCaller, state_resolver::StateResolver};
-use rooch_types::{chain_id::RoochChainID, framework::chain_id::ChainID};
+use rooch_types::{framework::chain_id::ChainID, rooch_network::BuiltinChainID};
 
 #[test]
 fn test_chain_id() {
@@ -15,5 +15,5 @@ fn test_chain_id() {
     let chain_id_module =
         binding_test.as_module_binding::<rooch_types::framework::chain_id::ChainIDModule>();
     let chain_id = chain_id_module.chain_id().unwrap();
-    assert_eq!(chain_id, RoochChainID::LOCAL.chain_id().id());
+    assert_eq!(chain_id, BuiltinChainID::Local.chain_id().id());
 }

@@ -8,21 +8,6 @@ use framework_builder::{Stdlib, StdlibBuildConfig};
 use move_package::BuildConfig;
 use once_cell::sync::Lazy;
 
-pub const ALL_STDLIB_PACKAGE_NAMES: [&str; 5] = [
-    "MoveStdlib",
-    "MoveosStdlib",
-    "RoochFramework",
-    "BitcoinMove",
-    "RoochNursery",
-];
-
-pub const ALL_STDLIB_PACKAGE_NAMES_STABLE: [&str; 4] = [
-    "MoveStdlib",
-    "MoveosStdlib",
-    "RoochFramework",
-    "BitcoinMove",
-];
-
 static STDLIB_BUILD_CONFIGS: Lazy<Vec<StdlibBuildConfig>> = Lazy::new(|| {
     let move_stdlib_path = path_in_crate("../../frameworks/move-stdlib")
         .canonicalize()
