@@ -101,9 +101,9 @@ export default function Index({
       </div>
 
       {/* FEATURES */}
-      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-[#F5F5F5] flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
+      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-[#F5F5F5] dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
         <div className="px-4 max-w-[854px] w-full h-full">
-          <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929]">
+          <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929] dark:text-[#EEEBEB]">
             {featuresTitle.split(' ').slice(0, -1).join(' ')}{' '}
             <span className="text-[#FF914B]">{featuresTitle.split(' ').slice(-1)}</span>
           </h2>
@@ -114,12 +114,18 @@ export default function Index({
                 className="flex flex-col items-center justify-center md:items-start md:justify-start"
               >
                 <div className="w-12 h-12 md:w-16 md:h-16">
-                  <Image src={feature.logo} alt="features logo" width={40} height={40} />
+                  <Image
+                    src={feature.logo}
+                    alt="features logo"
+                    width={40}
+                    height={40}
+                    className="dark:filter dark:invert dark:brightness-150"
+                  />
                 </div>
                 <h3 className="text-4xl font-medium text-[#FF914B] text-center md:text-start">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600 mt-2 text-center md:text-start">
+                <p className="text-gray-600 mt-2 text-center md:text-start dark:text-[#EAEAEA]">
                   {feature.description}
                 </p>
               </div>
