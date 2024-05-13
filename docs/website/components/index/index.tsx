@@ -216,9 +216,9 @@ export default function Index({
       </div>
 
       {/* BLOG */}
-      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-white flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
+      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-white dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
         <div className="px-4 w-full h-full">
-          <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929]">
+          <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929] dark:text-[#E9E9E9]">
             {blogsTitle.split(' ').slice(0, -1).join(' ')}{' '}
             <span className="text-[#FF914B]">{blogsTitle.split(' ').slice(-1).join(' ')}</span>
           </h2>
@@ -226,7 +226,7 @@ export default function Index({
             {blogs?.map((blog, index) => (
               <div
                 key={index}
-                className="bg-white shadow-lg rounded-[32px] border border-1 border-black border-b-4 transition-all flex flex-col md:flex-row overflow-hidden h-full items-center justify-between hover:cursor-default"
+                className="bg-white dark:bg-inherit shadow-lg rounded-[32px] border border-1 border-b-4 border-black dark:border-zinc-400 transition-all flex flex-col md:flex-row overflow-hidden h-full items-center justify-between md:hover:cursor-default hover:cursor-pointer dark:hover:border-zinc-500"
               >
                 <div className="h-auto w-auto">
                   <Image
@@ -238,8 +238,10 @@ export default function Index({
                   />
                 </div>
                 <div className="flex md:items-start md:justify-start flex-col px-4 w-full ml-4 h-full gap-8 my-4 md:my-0">
-                  <h3 className="text-2xl md:text-3xl font-normal text-gray-800">{blog.title}</h3>
-                  <p className="text-gray-600 mt-2 text-sm">{blog.date}</p>
+                  <h3 className="text-2xl md:text-3xl font-normal text-gray-800 dark:text-zinc-200">
+                    {blog.title}
+                  </h3>
+                  <p className="text-gray-600 mt-2 text-sm dark:text-zinc-400">{blog.date}</p>
                 </div>
                 <Link href={blog.link} className="mr-8 hidden md:block">
                   <button className="text-blue-500 hover:text-blue-700 mt-4 inline-block">
@@ -248,6 +250,7 @@ export default function Index({
                       alt="Chevron right"
                       width={48}
                       height={55}
+                      className="dark:filter dark:invert dark:brightness-50"
                     />
                   </button>
                 </Link>
