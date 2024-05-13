@@ -66,7 +66,7 @@ export default function Index({
   return (
     <>
       {/* HERO */}
-      <div className="flex flex-col items-center justify-center h-[85vh] px-4 sm:px-6 lg:px-20">
+      <div className="flex flex-col items-center justify-center h-[85vh] px-4 sm:px-6 lg:px-20 dark:border-b dark:border-b-zinc-800">
         <div className="mt-5 max-w-3xl text-center mx-auto">
           <p className="block font-bold text-gray-800 text-4xl md:text-5xl lg:text-6xl dark:text-gray-200">
             {heroTitle}
@@ -101,7 +101,7 @@ export default function Index({
       </div>
 
       {/* FEATURES */}
-      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-[#F5F5F5] dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
+      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-[#F5F5F5] dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0 dark:border-b dark:border-b-zinc-800">
         <div className="px-4 max-w-[854px] w-full h-full">
           <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929] dark:text-[#EEEBEB]">
             {featuresTitle.split(' ').slice(0, -1).join(' ')}{' '}
@@ -143,7 +143,7 @@ export default function Index({
       </div>
 
       {/* EXPLORE */}
-      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-white flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0 dark:bg-inherit">
+      <div className="py-20 px-4 sm:px-6 lg:px-20 bg-white flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0 dark:bg-inherit dark:border-b dark:border-b-zinc-800">
         <div className="px-4 max-w-[854px] h-full w-full">
           <h2 className="text-4xl md:text-6xl font-semibold text-center text-[#2E2929] dark:text-[#E4E4E4]">
             {exploreTitle.split(' ').slice(0, -2).join(' ')}{' '}
@@ -160,7 +160,7 @@ export default function Index({
               height={280}
               className="dark:filter dark:invert dark:brightness-200"
             />
-            <div className="mt-16">
+            <div className="md:mt-16">
               <Image
                 src="/logo/explore/explore_button.svg"
                 alt="explore button"
@@ -173,9 +173,9 @@ export default function Index({
         </div>
 
         {/* EXPLORE CARDS */}
-        <div className="flex flex-wrap justify-center gap-4">
+        <div className="flex flex-wrap justify-center gap-4 mt-4 md:mt-0">
           {explores.map((explore) => (
-            <div className="bg-[#BFC9C6] rounded-2xl border border-1 border-black shadow-lg p-6 w-full md:w-60 md:h-85 flex flex-col items-start justify-center gap-1 hover:cursor-default">
+            <div className="bg-[#BFC9C6] rounded-2xl border border-1 border-black p-6 w-full md:w-60 md:h-85 flex flex-col items-start justify-center gap-1 hover:cursor-default shadow-lg">
               <div className="flex items-center justify-end w-full">
                 <Image src={explore.logo} alt={explore.title} width={100} height={100} />
               </div>
@@ -187,7 +187,7 @@ export default function Index({
       </div>
 
       {/* ECOSYSTEM */}
-      <div className="py-8 md:py-20 px-4 sm:px-6 lg:px-20 flex flex-col items-center justify-center gap-6 md:gap-0 bg-[#F5F5F5] dark:bg-inherit w-full">
+      <div className="py-20 px-4 sm:px-6 lg:px-20 flex flex-col items-center justify-center gap-6 md:gap-0 bg-[#F5F5F5] dark:bg-inherit w-full dark:border-b dark:border-b-zinc-800">
         <div className="flex flex-col items-center justify-center h-full gap-2">
           <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929] dark:text-[#E6E6E6]">
             {ecosystemTitle.split(' ').slice(0, -1).join(' ')}{' '}
