@@ -149,7 +149,7 @@ export default function Index({
             {exploreTitle.split(' ').slice(0, -2).join(' ')}{' '}
             <span className="text-[#46977E]">{exploreTitle.split(' ').slice(-2).join(' ')}</span>
           </h2>
-          <div className="flex flex-col items-center justify-center gap-6">
+          <div className="flex flex-col items-center justify-center gap-6 mt-4">
             <h3 className="text-[#737B7D] dark:text-[#81888A] text-base font-normal max-w-2xl text-center">
               {exploreContent}
             </h3>
@@ -187,18 +187,18 @@ export default function Index({
       </div>
 
       {/* ECOSYSTEM */}
-      <div className="py-8 md:py-20 px-4 sm:px-6 lg:px-20 flex flex-col items-center justify-center gap-6 md:gap-0 bg-[#F5F5F5] w-full">
+      <div className="py-8 md:py-20 px-4 sm:px-6 lg:px-20 flex flex-col items-center justify-center gap-6 md:gap-0 bg-[#F5F5F5] dark:bg-inherit w-full">
         <div className="flex flex-col items-center justify-center h-full gap-2">
-          <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929]">
+          <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929] dark:text-[#E6E6E6]">
             {ecosystemTitle.split(' ').slice(0, -1).join(' ')}{' '}
             <span className="text-[#FF914B]">{ecosystemTitle.split(' ').slice(-1).join(' ')}</span>
           </h2>
-          <p className="text-gray-600 mt-4">{ecosystemContent}</p>
+          <p className="mt-4 text-[#737B7D] dark:text-[#81888A]">{ecosystemContent}</p>
         </div>
         <div className="flex items-center justify-center w-full mt-2">
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 justify-items-center">
             {ecosystemBrand.map((brand) => (
-              <div className="card bg-white rounded-full md:rounded-lg p-4 flex flex-row md:flex-col items-center md:justify-center justify-start border border-b-4 border-black shadow-lg w-full h-14 md:w-52 md:h-32 gap-2 hover:border-zinc-500 hover:cursor-pointer hover:shadow-xl transition-all">
+              <div className="card bg-white dark:bg-inherit rounded-full md:rounded-lg p-4 flex flex-row md:flex-col items-center md:justify-center justify-start border border-b-4 border-black dark:border-zinc-400 dark:hover:border-zinc-500 shadow-lg w-full h-14 md:w-52 md:h-32 gap-2 hover:border-zinc-500 hover:cursor-pointer hover:shadow-xl transition-all">
                 <Image
                   src={brand.brandLogo}
                   alt={brand.brandTitle}
@@ -206,7 +206,9 @@ export default function Index({
                   height={60}
                   className="w-[25px] h-[25px] md:w-[60px] md:h-[60px]"
                 />
-                <p className="text-center text-base font-semibold">{brand.brandTitle}</p>
+                <p className="text-center text-base font-semibold dark:text-zinc-200">
+                  {brand.brandTitle}
+                </p>
               </div>
             ))}
           </div>
