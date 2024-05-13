@@ -143,14 +143,14 @@ export default function Index({
       </div>
 
       {/* EXPLORE */}
-      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-white flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
+      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-white flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0 dark:bg-inherit">
         <div className="px-4 max-w-[854px] h-full w-full">
-          <h2 className="text-4xl md:text-6xl font-semibold text-center text-[#2E2929]">
+          <h2 className="text-4xl md:text-6xl font-semibold text-center text-[#2E2929] dark:text-[#E4E4E4]">
             {exploreTitle.split(' ').slice(0, -2).join(' ')}{' '}
             <span className="text-[#46977E]">{exploreTitle.split(' ').slice(-2).join(' ')}</span>
           </h2>
           <div className="flex flex-col items-center justify-center gap-6">
-            <h3 className="text-[#737B7D] text-base font-normal max-w-2xl text-center">
+            <h3 className="text-[#737B7D] dark:text-[#81888A] text-base font-normal max-w-2xl text-center">
               {exploreContent}
             </h3>
             <Image
@@ -158,6 +158,7 @@ export default function Index({
               alt="explore logo"
               width={280}
               height={280}
+              className="dark:filter dark:invert dark:brightness-200"
             />
             <div className="mt-16">
               <Image
@@ -174,11 +175,11 @@ export default function Index({
         {/* EXPLORE CARDS */}
         <div className="flex flex-wrap justify-center gap-4">
           {explores.map((explore) => (
-            <div className="bg-[#BFC9C6] rounded-2xl border border-1 border-black shadow-lg p-6 w-full md:w-60 md:h-85 flex flex-col items-start justify-center gap-1">
+            <div className="bg-[#BFC9C6] rounded-2xl border border-1 border-black shadow-lg p-6 w-full md:w-60 md:h-85 flex flex-col items-start justify-center gap-1 hover:cursor-default">
               <div className="flex items-center justify-end w-full">
                 <Image src={explore.logo} alt={explore.title} width={100} height={100} />
               </div>
-              <h4 className="text-[#413434] font-bold text-2xl">{explore.title}</h4>
+              <h4 className="text-[#413434] font-bold text-2xl leading-7">{explore.title}</h4>
               <h4 className="text-[#413434] text-sm">{explore.description}</h4>
             </div>
           ))}
