@@ -207,7 +207,7 @@ export default function Index({
       </div>
 
       {/* BLOG */}
-      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-white flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0 bg-gradient-blogs">
+      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-white flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
         <div className="px-4 w-full h-full">
           <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929]">
             {blogsTitle.split(' ').slice(0, -1).join(' ')}{' '}
@@ -217,7 +217,7 @@ export default function Index({
             {blogs?.map((blog, index) => (
               <div
                 key={index}
-                className="bg-white shadow-lg rounded-[32px] border border-1 border-black border-b-4 hover:border-zinc-500 hover:shadow-xl transition-all flex flex-col md:flex-row overflow-hidden h-full items-center justify-between"
+                className="bg-white shadow-lg rounded-[32px] border border-1 border-black border-b-4 transition-all flex flex-col md:flex-row overflow-hidden h-full items-center justify-between hover:cursor-default"
               >
                 <div className="h-auto w-auto">
                   <Image
