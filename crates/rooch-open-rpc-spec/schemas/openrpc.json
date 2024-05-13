@@ -487,9 +487,9 @@
           }
         },
         {
-          "name": "descending_order",
+          "name": "query_option",
           "schema": {
-            "type": "boolean"
+            "$ref": "#/components/schemas/QueryOptions"
           }
         }
       ],
@@ -1205,6 +1205,16 @@
             "format": "uint64",
             "minimum": 0.0
           },
+          "display_fields": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DisplayFieldsView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "flag": {
             "type": "integer",
             "format": "uint8",
@@ -1849,7 +1859,10 @@
             ],
             "properties": {
               "object_id": {
-                "$ref": "#/components/schemas/ObjectID"
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ObjectID"
+                }
               }
             },
             "additionalProperties": false
@@ -2231,6 +2244,21 @@
                 "type": "null"
               }
             ]
+          }
+        }
+      },
+      "QueryOptions": {
+        "type": "object",
+        "properties": {
+          "descending": {
+            "description": "If true, return query items in descending order.",
+            "default": false,
+            "type": "boolean"
+          },
+          "showDisplay": {
+            "description": "If true, result with display rendered is returned",
+            "default": false,
+            "type": "boolean"
           }
         }
       },

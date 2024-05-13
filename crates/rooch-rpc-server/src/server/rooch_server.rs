@@ -8,26 +8,30 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     RpcModule,
 };
-use move_core_types::account_address::AccountAddress;
+use move_core_types::language_storage::{StructTag, TypeTag};
+use move_core_types::{account_address::AccountAddress, ident_str};
 use moveos_types::{
     access_path::AccessPath,
     h256::H256,
     moveos_std::{
         display::{
             get_display_id_from_object_struct_tag, get_object_display_id, get_resource_display_id,
-            RawDisplay,
+            is_display_struct, RawDisplay,
         },
         object::ObjectEntity,
     },
     state::{AnnotatedKeyState, AnnotatedState, KeyState},
 };
-use rooch_rpc_api::jsonrpc_types::event_view::{EventFilterView, EventView, IndexerEventView};
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
-    account_view::BalanceInfoView, FieldStateFilterView, IndexerEventPageView,
-    IndexerFieldStatePageView, IndexerFieldStateView, IndexerObjectStatePageView,
-    IndexerObjectStateView, KeyStateView, ObjectStateFilterView, QueryOptions, StateKVView,
-    StateOptions, TxOptions,
+    account_view::BalanceInfoView, AnnotatedMoveValueView, FieldStateFilterView,
+    IndexerEventPageView, IndexerFieldStatePageView, IndexerFieldStateView,
+    IndexerObjectStatePageView, IndexerObjectStateView, KeyStateView, ObjectStateFilterView,
+    QueryOptions, StateKVView, StateOptions, TxOptions,
+};
+use rooch_rpc_api::jsonrpc_types::{
+    event_view::{EventFilterView, EventView, IndexerEventView},
+    AnnotatedMoveStructView,
 };
 use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
@@ -48,8 +52,10 @@ use rooch_types::indexer::event_filter::IndexerEventID;
 use rooch_types::indexer::state::{IndexerStateID, ObjectStateFilter};
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::{address::MultiChainAddress, multichain_id::RoochMultiChainID};
-use std::cmp::min;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use std::str::FromStr;
+use std::{cmp::min, collections::BTreeMap};
 use tracing::info;
 
 pub struct RoochServer {
@@ -118,6 +124,38 @@ impl RoochServer {
             });
         }
         Ok(display_field_views)
+    }
+
+    fn render_display_fields(
+        &self,
+        display_obj: &AnnotatedMoveStructView,
+        display_json: Value,
+    ) -> Result<DisplayFieldsView> {
+        debug_assert!(
+            is_display_struct(&display_obj.type_.0),
+            "It should be a 0x2::display::Display struct."
+        );
+        println!("render_display_fields: {:?}", display_obj);
+        // let mut templates: BTreeMap<String, String> = BTreeMap::new();
+        // let field_name = ident_str!("simple_map").to_owned();
+        // let simple_map = match display_obj.value.get(&field_name) {
+        //     Some(AnnotatedMoveValueView::Struct(simple_map)) => simple_map,
+        //     _ => anyhow::bail!("Invalid 0x2::display::Display struct."),
+        // };
+        // let field_name = ident_str!("data").to_owned();
+        // let data = match simple_map.value.get(&field_name) {
+        //     Some(AnnotatedMoveValueView::Vector(data)) => data,
+        //     _ => anyhow::bail!("Invalid 0x2::display::Display struct."),
+        // };
+
+        // for item in data {
+        //     let key_name = ident_str!("key").to_owned();
+        //     let value_name = ident_str!("value").to_owned();
+        //     let key = match item.value.get(&key_name) {
+        //         Some(AnnotatedMoveValueView::Vector(key)) => key,
+        //     }
+        // }
+        todo!()
     }
 }
 
@@ -663,19 +701,39 @@ impl RoochAPIServer for RoochServer {
         if query_option.show_display {
             let display_obj_ids = data
                 .iter()
-                .map(|s| get_display_id_from_object_struct_tag(*s.object_type))
+                .map(|s| get_object_display_id(TypeTag::from(s.object_type.0.clone())))
                 .collect::<Vec<_>>();
 
-            let display_objs_filter = ObjectStateFilter::ObjectId(display_obj_ids);
+            println!("display_obj_ids: {:?}", display_obj_ids.clone());
+            let num_objs = display_obj_ids.len();
+            let display_objs_filter = ObjectStateFilter::ObjectId(display_obj_ids.clone());
             let display_objs = self
                 .rpc_service
-                .query_object_states(display_objs_filter, None, display_obj_ids.len(), False)
+                .query_object_states(display_objs_filter, None, num_objs, false)
                 .await?
                 .into_iter()
-                .map(|s| (s.object_id, s))
+                .map(|s| (s.object_id.clone(), s))
                 .collect::<std::collections::HashMap<_, _>>();
 
-            // TODO: Render display fields.
+            // let display_objs = display_obj_ids
+            //     .into_iter()
+            //     .map(|obj_id| display_objs.get(&obj_id).map(|s| s.clone()))
+            //     .collect::<Vec<_>>();
+
+            let mut display_fields = vec![];
+            for display_id in display_obj_ids {
+                if let Some(obj) = display_objs.get(&display_id) {
+                    println!("value str: {:?}", obj.value.clone());
+                    let json_value: Value = serde_json::from_str(obj.value.as_str())?;
+                    println!("json_value: {:?}", json_value);
+                    let value: AnnotatedMoveStructView = serde_json::from_str(obj.value.as_str())?;
+                    println!("value: {:?}", value.clone());
+                    let fields = self.render_display_fields(&value)?;
+                    display_fields.push(Some(fields));
+                } else {
+                    display_fields.push(None);
+                }
+            }
         }
 
         let next_cursor = data.last().cloned().map_or(cursor, |t| {

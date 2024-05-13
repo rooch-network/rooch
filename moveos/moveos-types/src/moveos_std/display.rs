@@ -21,6 +21,12 @@ use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("display");
 
+pub fn is_display_struct(struct_tag: &StructTag) -> bool {
+    struct_tag.address == MOVEOS_STD_ADDRESS
+        && struct_tag.module == MODULE_NAME.to_owned()
+        && struct_tag.name == ident_str!("Display").to_owned()
+}
+
 pub fn get_display_id_from_object_struct_tag(struct_tag: StructTag) -> ObjectID {
     let object_type_tag = TypeTag::from(struct_tag);
     let display_struct_tag = StructTag {
@@ -163,7 +169,7 @@ fn parse_template(template: &str, move_value: &AnnotatedMoveValue) -> Result<Str
 /// Display struct in rust, binding for moveos_std::display::Display
 #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize)]
 pub struct RawDisplay {
-    pub fields: SimpleMap<MoveString, MoveString>,
+    pub sample_map: SimpleMap<MoveString, MoveString>,
 }
 
 impl RawDisplay {
@@ -183,7 +189,7 @@ impl RawDisplay {
 
     pub fn to_btree_map(&self) -> BTreeMap<String, String> {
         let mut btree_map = BTreeMap::new();
-        for element in &self.fields.data {
+        for element in &self.sample_map.data {
             btree_map.insert(element.key.to_string(), element.value.to_string());
         }
         btree_map
