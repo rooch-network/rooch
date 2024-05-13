@@ -29,7 +29,7 @@ fn test_session_key_rooch() {
     let sender = keystore.addresses()[0];
     let sequence_number = 0;
 
-    let session_auth_key = keystore.generate_session_key(&sender, None).unwrap();
+    let session_auth_key = keystore.generate_session_key(&sender, None, None).unwrap();
 
     let session_scope = SessionScope::new(
         ROOCH_FRAMEWORK_ADDRESS,
@@ -147,4 +147,127 @@ fn test_session_key_rooch() {
             panic!("Expect move abort")
         }
     }
+}
+
+#[test]
+fn test_session_key_from_session_key_failure_rooch() {
+    // prepare test
+    let _ = tracing_subscriber::fmt::try_init();
+    let mut first_binding_test = binding_test::RustBindingTest::new().unwrap();
+
+    let mut keystore = InMemKeystore::new_insecure_for_tests(1);
+    let sender = keystore.addresses()[0];
+    let sequence_number = 0;
+
+    // create first session key
+    let first_session_auth_key = keystore.generate_session_key(&sender, None, None).unwrap();
+
+    let session_scope_clone = SessionScope::new(
+        ROOCH_FRAMEWORK_ADDRESS,
+        Empty::MODULE_NAME.as_str(),
+        Empty::EMPTY_FUNCTION_NAME.as_str(),
+    )
+    .unwrap();
+    let test_app_name = MoveString::from_str("test").unwrap();
+    let test_app_url = MoveAsciiString::from_str("https://test-seed.rooch.network").unwrap();
+    let max_inactive_interval = 100;
+    let test_action =
+        rooch_types::framework::session_key::SessionKeyModule::create_session_key_action(
+            test_app_name,
+            test_app_url,
+            first_session_auth_key.as_ref().to_vec(),
+            session_scope_clone.clone(),
+            max_inactive_interval,
+        );
+    let test_tx_data = RoochTransactionData::new_for_test(sender, sequence_number, test_action);
+    let test_tx = keystore
+        .sign_transaction(&sender, test_tx_data, None)
+        .unwrap();
+    first_binding_test.execute(test_tx).unwrap();
+
+    // bind first session key
+    let test_session_key_module = first_binding_test
+        .as_module_binding::<rooch_types::framework::session_key::SessionKeyModule>(
+    );
+    let test_session_key_option = test_session_key_module
+        .get_session_key(sender.into(), &first_session_auth_key)
+        .unwrap();
+    assert!(
+        test_session_key_option.is_some(),
+        "Test session key not found"
+    );
+    let test_session_key_clone = test_session_key_option.clone().unwrap();
+    assert_eq!(
+        &test_session_key_clone.authentication_key,
+        first_session_auth_key.as_ref()
+    );
+    assert_eq!(test_session_key_clone.scopes, vec![session_scope_clone]);
+    assert_eq!(
+        test_session_key_clone.max_inactive_interval,
+        max_inactive_interval
+    );
+    keystore
+        .binding_session_key(sender, test_session_key_clone)
+        .unwrap();
+
+    // send transaction via first session key
+    let test_action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
+    let test_tx_data =
+        RoochTransactionData::new_for_test(sender, sequence_number + 1, test_action.clone());
+    let test_tx = keystore
+        .sign_transaction_via_session_key(
+            &sender,
+            test_tx_data.clone(),
+            &first_session_auth_key,
+            None,
+        )
+        .unwrap();
+    first_binding_test.execute(test_tx).unwrap();
+
+    // create second session key from first session key
+    let second_session_auth_key = keystore
+        .generate_session_key(&sender, None, test_session_key_option)
+        .unwrap();
+
+    let session_scope = SessionScope::new(
+        ROOCH_FRAMEWORK_ADDRESS,
+        Empty::MODULE_NAME.as_str(),
+        Empty::EMPTY_FUNCTION_NAME.as_str(),
+    )
+    .unwrap();
+    let dev_app_name = MoveString::from_str("dev").unwrap();
+    let dev_app_url = MoveAsciiString::from_str("https://dev-seed.rooch.network").unwrap();
+    let dev_action =
+        rooch_types::framework::session_key::SessionKeyModule::create_session_key_action(
+            dev_app_name,
+            dev_app_url,
+            second_session_auth_key.as_ref().to_vec(),
+            session_scope.clone(),
+            max_inactive_interval,
+        );
+    let dev_tx_data = RoochTransactionData::new_for_test(sender, sequence_number + 2, dev_action);
+    let dev_tx = keystore
+        .sign_transaction(&sender, dev_tx_data, None)
+        .unwrap();
+    first_binding_test.execute(dev_tx).unwrap();
+
+    // let dev_session_key_module =
+    //     second_binding_test.as_module_binding::<rooch_types::framework::session_key::SessionKeyModule>();
+    // let dev_session_key_option = dev_session_key_module
+    //     .get_session_key(sender.into(), &second_session_auth_key)
+    //     .unwrap();
+    // assert!(dev_session_key_option.is_some(), "Dev session key not found");
+    // let dev_session_key = dev_session_key_option.unwrap();
+    // assert_eq!(&dev_session_key.authentication_key, second_session_auth_key.as_ref());
+    // assert_eq!(dev_session_key.scopes, vec![session_scope]);
+    // assert_eq!(dev_session_key.max_inactive_interval, max_inactive_interval);
+    // keystore.binding_session_key(sender, dev_session_key).unwrap();
+
+    // send transaction via second session key
+    // let dev_action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
+    // let test_tx_data = RoochTransactionData::new_for_test(sender, sequence_number + 2, test_action.clone());
+    // let dev_tx = keystore
+    //     .sign_transaction_via_session_key(&sender, test_tx_data.clone(), &second_session_auth_key, None)
+    //     .unwrap();
+    // first_binding_test.execute(dev_tx).unwrap();
 }

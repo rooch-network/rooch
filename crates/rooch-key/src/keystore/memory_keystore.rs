@@ -5,6 +5,7 @@ use super::types::LocalAccount;
 use crate::key_derive::get_key_pair_from_red;
 use crate::keystore::account_keystore::AccountKeystore;
 use crate::keystore::base_keystore::BaseKeyStore;
+use rooch_types::framework::session_key::SessionKey;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
     address::RoochAddress,
@@ -125,8 +126,10 @@ impl AccountKeystore for InMemKeystore {
         &mut self,
         address: &RoochAddress,
         password: Option<String>,
+        session_key: Option<SessionKey>,
     ) -> Result<AuthenticationKey, anyhow::Error> {
-        self.keystore.generate_session_key(address, password)
+        self.keystore
+            .generate_session_key(address, password, session_key)
     }
 
     fn binding_session_key(

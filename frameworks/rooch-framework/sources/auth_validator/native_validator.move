@@ -15,7 +15,7 @@ module rooch_framework::native_validator {
     use rooch_framework::auth_validator;
 
     /// there defines auth validator id for each blockchain
-    const NATIVE_VALIDATOR_ID: u64 = 0;
+    const NATIVE_AUTH_VALIDATOR_ID: u64 = 0;
 
     // error code
     const ErrorInvalidPublicKeyLength: u64 = 1;
@@ -23,7 +23,7 @@ module rooch_framework::native_validator {
     struct NativeValidator has store, drop {}
 
     public fun auth_validator_id(): u64 {
-        NATIVE_VALIDATOR_ID
+        NATIVE_AUTH_VALIDATOR_ID
     }
 
     public entry fun rotate_authentication_key_entry(

@@ -199,6 +199,7 @@ pub trait AccountKeystore {
         &mut self,
         address: &RoochAddress,
         password: Option<String>,
+        session_key: Option<SessionKey>,
     ) -> Result<AuthenticationKey, anyhow::Error>;
 
     /// Binding on-chain SessionKey to LocalSessionKey

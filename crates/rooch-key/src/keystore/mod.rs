@@ -5,6 +5,7 @@ use crate::keystore::account_keystore::AccountKeystore;
 use crate::keystore::file_keystore::FileBasedKeystore;
 use enum_dispatch::enum_dispatch;
 use memory_keystore::InMemKeystore;
+use rooch_types::framework::session_key::SessionKey;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
     address::RoochAddress,
@@ -205,12 +206,15 @@ impl AccountKeystore for Keystore {
         &mut self,
         address: &RoochAddress,
         password: Option<String>,
+        session_key: Option<SessionKey>,
     ) -> Result<AuthenticationKey, anyhow::Error> {
         // Implement this method to generate a session key for the appropriate variant (File or InMem)
         match self {
-            Keystore::File(file_keystore) => file_keystore.generate_session_key(address, password),
+            Keystore::File(file_keystore) => {
+                file_keystore.generate_session_key(address, password, session_key)
+            }
             Keystore::InMem(inmem_keystore) => {
-                inmem_keystore.generate_session_key(address, password)
+                inmem_keystore.generate_session_key(address, password, session_key)
             }
         }
     }

@@ -6,6 +6,7 @@ use crate::key_derive::retrieve_key_pair;
 use crate::keystore::account_keystore::AccountKeystore;
 use crate::keystore::base_keystore::BaseKeyStore;
 use anyhow::anyhow;
+use rooch_types::framework::session_key::SessionKey;
 use rooch_types::key_struct::{MnemonicData, MnemonicResult};
 use rooch_types::{
     address::RoochAddress,
@@ -137,8 +138,11 @@ impl AccountKeystore for FileBasedKeystore {
         &mut self,
         address: &RoochAddress,
         password: Option<String>,
+        session_key: Option<SessionKey>,
     ) -> Result<AuthenticationKey, anyhow::Error> {
-        let auth_key = self.keystore.generate_session_key(address, password)?;
+        let auth_key = self
+            .keystore
+            .generate_session_key(address, password, session_key)?;
         self.save()?;
         Ok(auth_key)
     }

@@ -223,6 +223,7 @@ impl AccountKeystore for BaseKeyStore {
         &mut self,
         address: &RoochAddress,
         password: Option<String>,
+        session_key: Option<SessionKey>,
     ) -> Result<AuthenticationKey, anyhow::Error> {
         //TODO define derivation_path for session key
         let result = generate_new_key_pair(None, None, None, password.clone())?;
@@ -231,7 +232,7 @@ impl AccountKeystore for BaseKeyStore {
         let authentication_key = kp.public().authentication_key();
         let inner_map = self.session_keys.entry(*address).or_default();
         let local_session_key = LocalSessionKey {
-            session_key: None,
+            session_key,
             private_key: result.key_pair_data.private_key_encryption,
         };
         inner_map.insert(authentication_key.clone(), local_session_key);

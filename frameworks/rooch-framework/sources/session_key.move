@@ -201,7 +201,7 @@ module rooch_framework::session_key {
         };
 
         let auth_key = native_validator::get_authentication_key_from_authenticator_payload(&authenticator_payload);
-        
+
         let session_key_option = get_session_key(sender_addr, auth_key);
         if (option::is_none(&session_key_option)){
             return option::none()

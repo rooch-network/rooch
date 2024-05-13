@@ -99,8 +99,10 @@ module rooch_framework::transaction_validator {
         // otherwise return the authentication validator via the auth validator id
         let session_key_option = session_key::validate(auth_validator_id, authenticator_payload);
         if (option::is_some(&session_key_option)) {
+            std::debug::print(&auth_validator_id);
+            std::debug::print(&session_key_option);
             auth_validator::new_tx_validate_result(auth_validator_id, option::none(), session_key_option)
-        }else {
+        } else {
             let auth_validator = auth_validator_registry::borrow_validator(auth_validator_id);
             let validator_id = auth_validator::validator_id(auth_validator);
             // builtin auth validator id do not need to install

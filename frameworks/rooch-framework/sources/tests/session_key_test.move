@@ -12,9 +12,6 @@ module rooch_framework::session_key_test{
     use rooch_framework::session_key;
     use rooch_framework::timestamp;
 
-    /// Create session key in this context is not allowed
-    const ErrorSessionKeyCreatePermissionDenied: u64 = 1;
-
     #[test]
     fun test_session_key_end_to_end(){
         rooch_framework::genesis::init_for_test();
@@ -39,30 +36,4 @@ module rooch_framework::session_key_test{
         assert!(session_key::is_expired_session_key(sender_addr, authentication_key), 1004);
         session_key::remove_session_key(&sender, authentication_key);
     }
-
-    #[test]
-    #[expected_failure(abort_code = ErrorSessionKeyCreatePermissionDenied, location = Self)]
-    fun test_session_key_from_session_key(){
-        rooch_framework::genesis::init_for_test();
-        let sender_addr = tx_context::sender();
-        let sender = moveos_std::account::create_signer_for_testing(sender_addr);
-        let scope = session_key::new_session_scope(@0x1, std::ascii::string(b"*"), std::ascii::string(b"*"));
-        let authentication_key = bcs::to_bytes(&sender_addr);
-        let max_inactive_interval = 10;
-        let app_name = std::string::utf8(b"test");
-        let app_url = std::ascii::string(b"https://test-seed.rooch.network");
-        session_key::create_session_key(&sender, app_name, app_url, authentication_key, vector::singleton(scope), max_inactive_interval);
-        let session_key_opt = session_key::get_session_key(sender_addr, authentication_key);
-        assert!(option::is_some(&session_key_opt), 1000);
-
-        let session_key = bcs::to_bytes(&option::extract(&mut session_key_opt));
-        std::debug::print(&session_key);
-        session_key::create_session_key(&sender, app_name, app_url, session_key, vector::singleton(scope), max_inactive_interval);
-        let other_session_key_opt = session_key::get_session_key(sender_addr, session_key);
-        assert!(option::is_some(&other_session_key_opt), 1000);
-
-        let other_session_key = bcs::to_bytes(&option::extract(&mut other_session_key_opt));
-        std::debug::print(&other_session_key);
-    }
-
 }

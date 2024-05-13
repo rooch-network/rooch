@@ -89,13 +89,31 @@ module rooch_framework::auth_validator {
     }
 
     /// Get the auth validator's id from the TxValidateResult in the TxContext
-    public fun get_validator_id_from_ctx(): u64 {
-        let validate_result = get_validate_result_from_ctx();
-        validate_result.auth_validator_id
+    /// If the TxValidateResult or AuthValidatorId is None, return None
+    public fun get_auth_validator_id_from_ctx_option(): u64 {
+        let validate_result_opt = tx_context::get_attribute<TxValidateResult>();
+        if (option::is_some(&validate_result_opt)) {
+            let validate_result = option::extract(&mut validate_result_opt);
+            validate_result.auth_validator_id
+        }else {
+            option::none<u64>()
+        }
+    }
+
+    /// Get the auth validator from the TxValidateResult in the TxContext
+    /// If the TxValidateResult or AuthValidator is None, return None
+    public fun get_auth_validator_from_ctx_option(): Option<AuthValidator> {
+        let validate_result_opt = tx_context::get_attribute<TxValidateResult>();
+        if (option::is_some(&validate_result_opt)) {
+            let validate_result = option::extract(&mut validate_result_opt);
+            validate_result.auth_validator
+        }else {
+            option::none<AuthValidator>()
+        }
     }
 
     /// Get the session key from the TxValidateResult in the TxContext
-    /// If the TxValidateResult, AuthValidator or SessionKey is None, return None
+    /// If the TxValidateResult or SessionKey is None, return None
     public fun get_session_key_from_ctx_option(): Option<vector<u8>> {
         let validate_result_opt = tx_context::get_attribute<TxValidateResult>();
         if (option::is_some(&validate_result_opt)) {
@@ -106,9 +124,24 @@ module rooch_framework::auth_validator {
         }
     }
 
+    /// The current tx is validate via the auth validator or not
+    public fun is_validate_via_auth_validator(): bool {
+        option::is_some(&get_auth_validator_from_ctx_option())
+    }
+
     /// The current tx is validate via the session key or not
     public fun is_validate_via_session_key(): bool {
+        std::debug::print(&get_auth_validator_id_from_ctx_option());
+        std::debug::print(&get_session_key_from_ctx_option());
+        std::debug::print(&option::is_some(&get_session_key_from_ctx_option()));
         option::is_some(&get_session_key_from_ctx_option())
+    }
+
+    /// Get the auth validator from the TxValidateResult in the TxContext
+    /// Only can be called after the transaction is validated
+    public fun get_auth_validator_from_ctx(): AuthValidator {
+        assert!(is_validate_via_auth_validator(), ErrorMustExecuteAfterValidate);
+        option::extract(&mut get_auth_validator_from_ctx_option())
     }
 
     /// Get the session key from the TxValidateResult in the TxContext
