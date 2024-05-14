@@ -29,6 +29,7 @@ interface IndexProps {
 
   // FEATURES
   featuresTitle: string
+  featuresButton: string
   features: Card[]
 
   // EXPLORE
@@ -53,6 +54,7 @@ export default function Index({
   heroButton,
   heroButtonHref,
   featuresTitle,
+  featuresButton,
   features,
   exploreTitle,
   exploreContent,
@@ -66,7 +68,7 @@ export default function Index({
   return (
     <>
       {/* HERO */}
-      <div className="flex flex-col items-center justify-center h-[85vh] px-4 sm:px-6 lg:px-20 dark:border-b dark:border-b-zinc-800">
+      <div className="flex flex-col items-center justify-center h-[85vh] px-4 sm:px-6 md:px-8 lg:px-20 dark:border-b dark:border-b-zinc-800">
         <div className="mt-5 max-w-3xl text-center mx-auto">
           <p className="block font-bold text-gray-800 text-4xl md:text-5xl lg:text-6xl dark:text-gray-200">
             {heroTitle}
@@ -84,7 +86,7 @@ export default function Index({
         </div>
         <div className="mt-8 grid gap-3 w-full sm:inline-flex sm:justify-center cta-container">
           <Link
-            className="inline-flex justify-center items-center gap-x-3 text-center bg-gradient-to-tl border border-transparent text-sm font-medium rounded-md  py-3 px-6 cta"
+            className="inline-flex justify-center items-center gap-x-3 text-center bg-gradient-to-tl border border-transparent text-sm font-medium rounded-md py-3 px-6 cta"
             href={heroButtonHref}
           >
             {heroButton}
@@ -101,19 +103,19 @@ export default function Index({
       </div>
 
       {/* FEATURES */}
-      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-[#F5F5F5] dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0 dark:border-b dark:border-b-zinc-800">
-        <div className="px-4 max-w-[854px] w-full h-full">
+      <div className="py-16 md:py-20 px-4 sm:px-6 md:px-8 lg:px-20 bg-[#F5F5F5] dark:bg-inherit flex flex-col md:flex-row items-center justify-between gap-12 md:gap-8 dark:border-b dark:border-b-zinc-800">
+        <div className="px-4 max-w-[900px] w-full h-full">
           <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929] dark:text-[#EEEBEB]">
             {featuresTitle.split(' ').slice(0, -1).join(' ')}{' '}
             <span className="text-[#FF914B]">{featuresTitle.split(' ').slice(-1)}</span>
           </h2>
-          <div className="mt-16 md:mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-            {features?.map((feature, index) => (
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features?.map((feature) => (
               <div
-                key={index}
-                className="flex flex-col items-center justify-center md:items-start md:justify-start"
+                key={feature.title}
+                className="flex flex-col items-center md:items-start justify-center md:justify-start bg-white dark:bg-[#333] p-6 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden hover:cursor-default"
               >
-                <div className="w-12 h-12 md:w-16 md:h-16">
+                <div className="w-12 h-12 md:w-16 md:h-16 mb-4">
                   <Image
                     src={feature.logo}
                     alt="features logo"
@@ -122,83 +124,85 @@ export default function Index({
                     className="dark:filter dark:invert dark:brightness-150"
                   />
                 </div>
-                <h3 className="text-4xl font-medium text-[#FF914B] text-center md:text-start">
+                <h3 className="text-xl md:text-2xl font-medium text-[#FF914B] text-center md:text-start mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600 mt-2 text-center md:text-start dark:text-[#EAEAEA]">
+                <p className="text-gray-600 text-center md:text-start dark:text-[#EAEAEA]">
                   {feature.description}
                 </p>
               </div>
             ))}
           </div>
         </div>
-        <div className="flex flex-wrap justify-center gap-4 w-full md:w-[580px] md:h-[410px]">
+        <div className="flex flex-wrap justify-center items-center w-full md:w-auto">
           <Image
             src="/logo/features/features_logo.svg"
             alt="features logo"
             width={433}
             height={410}
+            className="w-full h-auto md:w-[433px] md:h-[410px] object-contain"
           />
         </div>
       </div>
 
       {/* EXPLORE */}
-      <div className="py-20 px-4 sm:px-6 lg:px-20 bg-white flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0 dark:bg-inherit dark:border-b dark:border-b-zinc-800">
-        <div className="px-4 max-w-[854px] h-full w-full">
+      <div className="py-20 px-4 sm:px-6 md:px-8 lg:px-20 bg-white dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 dark:border-b dark:border-b-zinc-800">
+        <div className="px-4 max-w-[854px] w-full h-full">
           <h2 className="text-4xl md:text-6xl font-semibold text-center text-[#2E2929] dark:text-[#E4E4E4]">
             {exploreTitle.split(' ').slice(0, -2).join(' ')}{' '}
             <span className="text-[#46977E]">{exploreTitle.split(' ').slice(-2).join(' ')}</span>
           </h2>
-          <div className="flex flex-col items-center justify-center gap-6 mt-4">
+          <div className="flex flex-col items-center justify-center md:justify-start gap-6 mt-8">
             <h3 className="text-[#737B7D] dark:text-[#81888A] text-base font-normal max-w-2xl text-center">
               {exploreContent}
             </h3>
             <Image
               src="/logo/explore/explore_logo.svg"
               alt="explore logo"
-              width={280}
-              height={280}
+              width={250}
+              height={250}
               className="dark:filter dark:invert dark:brightness-200"
             />
-            <div className="md:mt-16">
-              <Image
-                src="/logo/explore/explore_button.svg"
-                alt="explore button"
-                width={360}
-                height={60}
-                className="hover:cursor-pointer overflow-hidden hover:opacity-80 transition-all"
-              />
+            <div className="mt-8 md:mt-16 h-12">
+              <button className=" px-8 py-4 bg-[#FF914B] font-bold text-lg text-center rounded-full border border-1 border-b-[6px] border-black active:border-b-4 active:transform active:translate-y-0.5 transition-all hover:shadow-custom1 dark:border-white dark:shadow-custom1 duration-300">
+                {featuresButton}
+              </button>
             </div>
           </div>
         </div>
 
         {/* EXPLORE CARDS */}
-        <div className="flex flex-wrap justify-center gap-4 mt-4 md:mt-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 md:mt-0 w-full">
           {explores.map((explore) => (
-            <div className="bg-[#BFC9C6] rounded-2xl border border-1 border-black p-6 w-full md:w-60 md:h-85 flex flex-col items-start justify-center gap-1 hover:cursor-default shadow-lg">
-              <div className="flex items-center justify-end w-full">
+            <div
+              key={explore.title}
+              className="bg-[#BFC9C6] rounded-2xl border border-black p-6 flex flex-col items-start justify-center gap-4 hover:cursor-default hover:shadow-lg transition-shadow duration-300"
+            >
+              <div className="flex items-center justify-end w-full mb-4">
                 <Image src={explore.logo} alt={explore.title} width={100} height={100} />
               </div>
               <h4 className="text-[#413434] font-bold text-2xl leading-7">{explore.title}</h4>
-              <h4 className="text-[#413434] text-sm">{explore.description}</h4>
+              <p className="text-[#413434] text-sm">{explore.description}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* ECOSYSTEM */}
-      <div className="py-20 px-4 sm:px-6 lg:px-20 flex flex-col items-center justify-center gap-6 md:gap-0 bg-[#F5F5F5] dark:bg-inherit w-full dark:border-b dark:border-b-zinc-800">
+      <div className="py-20 px-4 sm:px-6 md:px-8 lg:px-20 flex flex-col items-center justify-center gap-6 md:gap-0 bg-[#F5F5F5] dark:bg-inherit w-full dark:border-b dark:border-b-zinc-800">
         <div className="flex flex-col items-center justify-center h-full gap-2">
           <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929] dark:text-[#E6E6E6]">
             {ecosystemTitle.split(' ').slice(0, -1).join(' ')}{' '}
             <span className="text-[#FF914B]">{ecosystemTitle.split(' ').slice(-1).join(' ')}</span>
           </h2>
-          <p className="mt-4 text-[#737B7D] dark:text-[#81888A]">{ecosystemContent}</p>
+          <p className="mt-4 text-[#737B7D] dark:text-[#81888A] text-center md:text-start">
+            {ecosystemContent}
+          </p>
         </div>
         <div className="flex items-center justify-center w-full mt-2">
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 justify-items-center">
             {ecosystemBrand.map((brand) => (
-              <div className="card bg-white dark:bg-inherit rounded-full md:rounded-lg p-4 flex flex-row md:flex-col items-center md:justify-center justify-start border border-b-4 border-black dark:border-zinc-400 dark:hover:border-zinc-500 shadow-lg w-full h-14 md:w-52 md:h-32 gap-2 hover:border-zinc-500 hover:cursor-pointer hover:shadow-xl transition-all">
+              <button className="relative bg-white dark:bg-inherit rounded-full md:rounded-lg p-4 flex flex-row md:flex-col items-center md:justify-center justify-start border border-1 border-b-[6px] border-black dark:border-white active:border-b-4 active:transform active:translate-y-0.5 transition-all shadow-sm w-full h-14 md:w-52 md:h-32 gap-2 hover:cursor-pointer hover:shadow-md">
                 <Image
                   src={brand.brandLogo}
                   alt={brand.brandTitle}
@@ -209,52 +213,51 @@ export default function Index({
                 <p className="text-center text-base font-semibold dark:text-zinc-200">
                   {brand.brandTitle}
                 </p>
-              </div>
+              </button>
             ))}
           </div>
         </div>
       </div>
 
       {/* BLOG */}
-      <div className="py-16 md:py-20 px-4 sm:px-6 lg:px-20 bg-white dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-0">
+      <div className="py-16 md:py-20 px-4 sm:px-6 md:px-8 lg:px-20 bg-white dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
         <div className="px-4 w-full h-full">
           <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929] dark:text-[#E9E9E9]">
             {blogsTitle.split(' ').slice(0, -1).join(' ')}{' '}
             <span className="text-[#FF914B]">{blogsTitle.split(' ').slice(-1).join(' ')}</span>
           </h2>
-          <div className="mt-8 flex flex-col gap-4">
-            {blogs?.map((blog, index) => (
-              <div
-                key={index}
-                className="bg-white dark:bg-inherit shadow-lg rounded-[32px] border border-1 border-b-4 border-black dark:border-zinc-400 transition-all flex flex-col md:flex-row overflow-hidden h-full items-center justify-between md:hover:cursor-default hover:cursor-pointer dark:hover:border-zinc-500"
-              >
-                <div className="h-auto w-auto">
-                  <Image
-                    src={blog.image}
-                    alt={blog.title}
-                    height={501}
-                    width={236}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className="flex md:items-start md:justify-start flex-col px-4 w-full ml-4 h-full gap-8 my-4 md:my-0">
-                  <h3 className="text-2xl md:text-3xl font-normal text-gray-800 dark:text-zinc-200">
-                    {blog.title}
-                  </h3>
-                  <p className="text-gray-600 mt-2 text-sm dark:text-zinc-400">{blog.date}</p>
-                </div>
-                <Link href={blog.link} className="mr-8 hidden md:block">
-                  <button className="text-blue-500 hover:text-blue-700 mt-4 inline-block">
+          <div className="mt-8 flex flex-col gap-8">
+            {blogs?.map((blog) => (
+              <Link key={blog.title} href={blog.link} className="block">
+                <div className="bg-inherit md:bg-white dark:bg-[#333] shadow-xl md:shadow-md hover:shadow-xl rounded-lg md:border border-gray-200 dark:border-[#333] transition-all duration-300 flex flex-col md:flex-row overflow-hidden">
+                  <div className="md:w-1/3 w-full h-auto">
                     <Image
-                      src="/logo/blogs/chevron_right.svg"
-                      alt="Chevron right"
-                      width={48}
-                      height={55}
-                      className="dark:filter dark:invert dark:brightness-50"
+                      src={blog.image}
+                      alt={blog.title}
+                      height={501}
+                      width={236}
+                      className="h-full w-full object-cover md:rounded-lg dark:scale-105"
                     />
-                  </button>
-                </Link>
-              </div>
+                  </div>
+                  <div className="flex flex-col p-6 md:p-8 w-full justify-between">
+                    <div>
+                      <h3 className="text-2xl md:text-3xl font-semibold text-gray-800 dark:text-zinc-200">
+                        {blog.title}
+                      </h3>
+                      <p className="text-gray-600 mt-2 text-sm dark:text-zinc-400">{blog.date}</p>
+                    </div>
+                    <button className="mt-4 self-end text-blue-500 hover:text-blue-700 transition-colors">
+                      <Image
+                        src="/logo/blogs/chevron_right.svg"
+                        alt="Chevron right"
+                        width={24}
+                        height={24}
+                        className="dark:filter dark:invert"
+                      />
+                    </button>
+                  </div>
+                </div>
+              </Link>
             ))}
           </div>
         </div>
