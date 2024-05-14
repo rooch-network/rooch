@@ -9,6 +9,7 @@ use cucumber::{given, then, World as _};
 use jpst::TemplateContext;
 use rooch::RoochCli;
 use rooch_config::{rooch_config_dir, RoochOpt, ServerOpt};
+use rooch_key::key_derive::{generate_new_key_pair, retrieve_key_pair};
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_rpc_server::Service;
 use serde_json::Value;
@@ -16,7 +17,7 @@ use tracing::{debug, error, info};
 
 use images::bitcoin::BitcoinD;
 use images::ord::Ord;
-use rooch_types::bitcoin::network::Network;
+use rooch_types::{bitcoin::network::Network, crypto::RoochKeyPair};
 use std::time::Duration;
 use testcontainers::{
     clients::Cli,
@@ -71,7 +72,7 @@ async fn start_server(w: &mut World, _scenario: String) {
             opt.btc_rpc_password = Some(RPC_PASS.to_string());
             opt.btc_start_block_height = Some(0);
             opt.data_import_flag = false; // Enable data import without writing indexes
-            opt.btc_network = Some(Network::NetworkTestnet.to_num());
+            opt.btc_network = Some(Network::Testnet.to_num());
             info!("config btc rpc ok");
 
             w.bitcoind = Some(bitcoind);
@@ -81,7 +82,14 @@ async fn start_server(w: &mut World, _scenario: String) {
         }
     }
 
-    let server_opt = ServerOpt::new();
+    let mut server_opt = ServerOpt::new();
+
+    let result = generate_new_key_pair(None, None, None, None).unwrap();
+    let kp: RoochKeyPair =
+        retrieve_key_pair(&result.key_pair_data.private_key_encryption, None).unwrap();
+    server_opt.sequencer_keypair = Some(kp.copy());
+    server_opt.proposer_keypair = Some(kp.copy());
+    server_opt.relayer_keypair = Some(kp.copy());
 
     service.start(&opt, server_opt).await.unwrap();
 

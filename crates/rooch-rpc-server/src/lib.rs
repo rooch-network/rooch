@@ -6,7 +6,7 @@ use crate::server::rooch_server::RoochServer;
 use crate::service::aggregate_service::AggregateService;
 use crate::service::rpc_logger::RpcLogger;
 use crate::service::rpc_service::RpcService;
-use anyhow::{Error, Result};
+use anyhow::{bail, Error, Result};
 use coerce::actor::scheduler::timer::Timer;
 use coerce::actor::{system::ActorSystem, IntoActor};
 use hyper::header::HeaderValue;
@@ -34,7 +34,6 @@ use rooch_indexer::actor::reader_indexer::IndexerReaderActor;
 use rooch_indexer::indexer_reader::IndexerReader;
 use rooch_indexer::proxy::IndexerProxy;
 use rooch_indexer::IndexerStore;
-use rooch_key::key_derive::{generate_new_key_pair, retrieve_key_pair};
 use rooch_pipeline_processor::actor::processor::PipelineProcessorActor;
 use rooch_pipeline_processor::proxy::PipelineProcessorProxy;
 use rooch_proposer::actor::messages::ProposeBlock;
@@ -47,10 +46,8 @@ use rooch_sequencer::actor::sequencer::SequencerActor;
 use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
 use rooch_types::address::RoochAddress;
-use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
-use rooch_types::bitcoin::network::Network;
-use rooch_types::crypto::RoochKeyPair;
 use rooch_types::error::{GenesisError, RoochError};
+use rooch_types::rooch_network::{RoochChainID, RoochNetwork};
 use serde_json::json;
 use std::env;
 use std::fmt::Debug;
@@ -171,14 +168,14 @@ pub async fn start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<Serve
 }
 
 // run json-rpc server
-pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Result<ServerHandle> {
+pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<ServerHandle> {
     // We may call `start_server` multiple times in testing scenarios
     // tracing_subscriber can only be inited once.
     let _ = tracing_subscriber::fmt::try_init();
 
     let config = ServerConfig::new_with_port(opt.port());
 
-    let chain_id_opt = opt.chain_id.clone().unwrap_or_default();
+    let chain_id = opt.chain_id.clone().unwrap_or_default();
 
     let actor_system = ActorSystem::global_system();
 
@@ -199,37 +196,29 @@ pub async fn run_start_server(opt: &RoochOpt, mut server_opt: ServerOpt) -> Resu
         || server_opt.proposer_keypair.is_none()
         || server_opt.relayer_keypair.is_none()
     {
-        // only for integration test, generate test key pairs
-        if chain_id_opt.is_test_or_dev_or_local() {
-            let result = generate_new_key_pair(None, None, None, None)?;
-            let kp: RoochKeyPair =
-                retrieve_key_pair(&result.key_pair_data.private_key_encryption, None)?;
-            server_opt.sequencer_keypair = Some(kp.copy());
-            server_opt.proposer_keypair = Some(kp.copy());
-            server_opt.relayer_keypair = Some(kp.copy());
-        } else {
-            return Err(Error::from(
-                RoochError::InvalidSequencerOrProposerOrRelayerKeyPair,
-            ));
-        }
+        return Err(Error::from(
+            RoochError::InvalidSequencerOrProposerOrRelayerKeyPair,
+        ));
     }
 
     let sequencer_keypair = server_opt.sequencer_keypair.unwrap();
     let sequencer_account: RoochAddress = (&sequencer_keypair.public()).into();
 
-    let btc_network = opt.btc_network.unwrap_or(Network::default().to_num());
     let data_import_flag = opt.data_import_flag;
 
+    let genesis_file = arc_base_config.base_data_dir().path().join("genesis");
     if root.is_genesis() {
-        let genesis_ctx = chain_id_opt.genesis_ctx(sequencer_account);
-        let bitcoin_genesis_ctx = BitcoinGenesisContext::new(btc_network);
-        let genesis: RoochGenesis = RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
+        let mut network: RoochNetwork = match chain_id {
+            RoochChainID::Builtin(chain_id) => chain_id.into(),
+            _ => bail!("Custom chain_id is not supported auto genesis, please use `rooch genesis` to init genesis. "),
+        };
+        //TODO only set sequencer account if the network is local/dev
+        network.set_sequencer_account(sequencer_account.into());
+        let genesis: RoochGenesis = RoochGenesis::build(network)?;
         root = genesis.init_genesis(&mut moveos_store)?;
+        genesis.save_to(genesis_file)?;
     } else {
-        //TODO if root is not genesis, we should load genesis from store
-        let genesis_ctx = chain_id_opt.genesis_ctx(sequencer_account);
-        let bitcoin_genesis_ctx = BitcoinGenesisContext::new(btc_network);
-        let genesis: RoochGenesis = RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
+        let genesis: RoochGenesis = RoochGenesis::load_from(genesis_file)?;
         genesis.check_genesis(moveos_store.get_config_store())?;
     };
 

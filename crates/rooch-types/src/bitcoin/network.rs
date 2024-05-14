@@ -17,10 +17,10 @@ pub const MODULE_NAME: &IdentStr = ident_str!("network");
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 #[repr(u8)]
 pub enum Network {
-    NetworkBitcoin = 1,
-    NetworkTestnet = 2,
-    NetworkSignet = 3,
-    NetworkRegtest = 4,
+    Bitcoin = 1,
+    Testnet = 2,
+    Signet = 3,
+    Regtest = 4,
 }
 
 impl TryFrom<u8> for Network {
@@ -28,10 +28,10 @@ impl TryFrom<u8> for Network {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            1 => Ok(Network::NetworkBitcoin),
-            2 => Ok(Network::NetworkTestnet),
-            3 => Ok(Network::NetworkSignet),
-            4 => Ok(Network::NetworkRegtest),
+            1 => Ok(Network::Bitcoin),
+            2 => Ok(Network::Testnet),
+            3 => Ok(Network::Signet),
+            4 => Ok(Network::Regtest),
             _ => Err(anyhow::anyhow!("Bitcoin network {} is invalid", value)),
         }
     }
@@ -43,10 +43,10 @@ impl TryFrom<&str> for Network {
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let value = value.to_uppercase();
         match value.as_str() {
-            "bitcoin" => Ok(Network::NetworkBitcoin),
-            "testnet" => Ok(Network::NetworkTestnet),
-            "signet" => Ok(Network::NetworkSignet),
-            "regtest" => Ok(Network::NetworkRegtest),
+            "bitcoin" => Ok(Network::Bitcoin),
+            "testnet" => Ok(Network::Testnet),
+            "signet" => Ok(Network::Signet),
+            "regtest" => Ok(Network::Regtest),
             _ => Err(anyhow::anyhow!("Bitcoin network {} is invalid", value)),
         }
     }
@@ -55,10 +55,10 @@ impl TryFrom<&str> for Network {
 impl std::fmt::Display for Network {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Network::NetworkBitcoin => write!(f, "bitcoin"),
-            Network::NetworkTestnet => write!(f, "testnet"),
-            Network::NetworkSignet => write!(f, "signet"),
-            Network::NetworkRegtest => write!(f, "regtest"),
+            Network::Bitcoin => write!(f, "bitcoin"),
+            Network::Testnet => write!(f, "testnet"),
+            Network::Signet => write!(f, "signet"),
+            Network::Regtest => write!(f, "regtest"),
         }
     }
 }
@@ -66,10 +66,10 @@ impl std::fmt::Display for Network {
 impl Network {
     pub fn bech32_hrp(&self) -> bitcoin::bech32::Hrp {
         match self {
-            Network::NetworkBitcoin => bitcoin::bech32::hrp::BC,
-            Network::NetworkTestnet => bitcoin::bech32::hrp::TB,
-            Network::NetworkSignet => bitcoin::bech32::hrp::TB,
-            Network::NetworkRegtest => bitcoin::bech32::hrp::BCRT,
+            Network::Bitcoin => bitcoin::bech32::hrp::BC,
+            Network::Testnet => bitcoin::bech32::hrp::TB,
+            Network::Signet => bitcoin::bech32::hrp::TB,
+            Network::Regtest => bitcoin::bech32::hrp::BCRT,
         }
     }
 
@@ -78,25 +78,25 @@ impl Network {
     }
 
     pub fn is_mainnet(&self) -> bool {
-        *self == Network::NetworkBitcoin
+        *self == Network::Bitcoin
     }
 }
 
 impl Default for Network {
     // default bitcoin main network
     fn default() -> Self {
-        Self::NetworkBitcoin
+        Self::Bitcoin
     }
 }
 
 impl From<bitcoin::Network> for Network {
     fn from(network: bitcoin::Network) -> Self {
         match network {
-            bitcoin::Network::Bitcoin => Self::NetworkBitcoin,
-            bitcoin::Network::Testnet => Self::NetworkTestnet,
-            bitcoin::Network::Signet => Self::NetworkSignet,
-            bitcoin::Network::Regtest => Self::NetworkRegtest,
-            _ => Self::NetworkRegtest,
+            bitcoin::Network::Bitcoin => Self::Bitcoin,
+            bitcoin::Network::Testnet => Self::Testnet,
+            bitcoin::Network::Signet => Self::Signet,
+            bitcoin::Network::Regtest => Self::Regtest,
+            _ => Self::Regtest,
         }
     }
 }
@@ -104,10 +104,10 @@ impl From<bitcoin::Network> for Network {
 impl From<Network> for bitcoin::Network {
     fn from(network: Network) -> Self {
         match network {
-            Network::NetworkBitcoin => bitcoin::Network::Bitcoin,
-            Network::NetworkTestnet => bitcoin::Network::Testnet,
-            Network::NetworkSignet => bitcoin::Network::Signet,
-            Network::NetworkRegtest => bitcoin::Network::Regtest,
+            Network::Bitcoin => bitcoin::Network::Bitcoin,
+            Network::Testnet => bitcoin::Network::Testnet,
+            Network::Signet => bitcoin::Network::Signet,
+            Network::Regtest => bitcoin::Network::Regtest,
         }
     }
 }

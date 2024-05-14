@@ -9,8 +9,8 @@ use rooch_key::key_derive::verify_password;
 use rooch_key::keystore::account_keystore::AccountKeystore;
 use rooch_rpc_server::Service;
 use rooch_types::address::RoochAddress;
-use rooch_types::chain_id::RoochChainID;
 use rooch_types::error::{RoochError, RoochResult};
+use rooch_types::rooch_network::BuiltinChainID;
 use rpassword::prompt_password;
 use std::str::FromStr;
 use tokio::signal::ctrl_c;
@@ -145,16 +145,14 @@ impl CommandAction<()> for StartCommand {
             .map_err(RoochError::from)?;
 
         // Automatically switch env when use start server, if network is local or dev seed
-        // let mut context = self.context_options.build()?;
-        // let active_env = context.client_config.get_active_env()?;
         let rooch_chain_id = self.opt.chain_id.unwrap_or_default();
-        let chain_name = rooch_chain_id.chain_name().to_lowercase();
+        let chain_name = rooch_chain_id.chain_name();
         // When chain_id is not equals to env alias
         let switch_env = if active_env.alias != chain_name {
-            if RoochChainID::LOCAL == rooch_chain_id {
-                Some(RoochChainID::LOCAL.chain_name().to_lowercase())
-            } else if RoochChainID::DEV == rooch_chain_id {
-                Some(RoochChainID::DEV.chain_name().to_lowercase())
+            if rooch_chain_id.is_local() {
+                Some(BuiltinChainID::Local.chain_name())
+            } else if rooch_chain_id.is_dev() {
+                Some(BuiltinChainID::Dev.chain_name())
             } else {
                 println!(
                     "Warning! The active env is not equals to chain_id when server start, current chain_id is `{}`, while active env is `{}`",

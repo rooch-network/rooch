@@ -3,8 +3,9 @@
 
 use super::RawTransaction;
 use super::{authenticator::Authenticator, AuthenticatorInfo};
+use crate::address::RoochAddress;
 use crate::crypto::{Ed25519RoochSignature, RoochKeyPair, Signature};
-use crate::{address::RoochAddress, chain_id::RoochChainID};
+use crate::rooch_network::BuiltinChainID;
 use anyhow::Result;
 use moveos_types::gas_config::GasConfig;
 use moveos_types::h256::H256;
@@ -50,7 +51,7 @@ impl RoochTransactionData {
         Self {
             sender,
             sequence_number,
-            chain_id: RoochChainID::LOCAL.chain_id().id(),
+            chain_id: BuiltinChainID::Local.chain_id().id(),
             max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT * 100,
             action,
         }

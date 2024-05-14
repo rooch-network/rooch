@@ -80,6 +80,10 @@ fn test_submit_block() {
 //RUST_LOG=debug cargo test --release --package rooch-framework-tests --lib -- --include-ignored tests::bitcoin_test::test_utxo_progress
 #[test]
 fn test_utxo_progress() {
+    if cfg!(debug_assertions) {
+        println!("test_utxo_progress is ignored in debug mode, please run it in release mode");
+        return;
+    }
     let _ = tracing_subscriber::fmt::try_init();
     let mut binding_test = binding_test::RustBindingTest::new().unwrap();
 
