@@ -8,7 +8,7 @@ use move_binary_format::binary_views::BinaryIndexedView;
 use move_binary_format::errors::{Location, PartialVMError, PartialVMResult, VMError, VMResult};
 use move_binary_format::file_format::{
     Bytecode, FunctionDefinition, FunctionDefinitionIndex, FunctionHandleIndex,
-    FunctionInstantiation, FunctionInstantiationIndex, Signature, SignatureToken,
+    FunctionInstantiation, FunctionInstantiationIndex, Signature, SignatureToken, StructDefinition,
     StructHandleIndex, Visibility,
 };
 use move_binary_format::IndexKind;
@@ -24,7 +24,8 @@ use once_cell::sync::Lazy;
 
 use crate::metadata::{
     check_metadata_format, extract_module_name, get_metadata_from_compiled_module,
-    is_allowed_input_struct, is_defined_or_allowed_in_current_module,
+    is_allowed_data_struct_type, is_allowed_input_struct, is_defined_or_allowed_in_current_module,
+    is_std_option_type,
 };
 
 pub static INIT_FN_NAME_IDENTIFIER: Lazy<Identifier> =
@@ -744,6 +745,8 @@ where
             let mut data_structs_map = metadata.data_struct_map;
             let mut data_structs_func_map = metadata.data_struct_func_map;
 
+            validate_data_struct_map(&data_structs_map, caller_module)?;
+
             for (full_struct_name, _) in data_structs_map.iter() {
                 check_module_owner(full_struct_name, caller_module)?;
                 let exists = check_if_struct_exist_in_module(caller_module, full_struct_name);
@@ -979,6 +982,167 @@ pub fn generate_vm_error(
     Err(err_incomplete
         .at_code_offset(FunctionDefinitionIndex::new(fdef_idx.0), 0_u16)
         .finish(Location::Module(module.self_id())))
+}
+
+fn struct_def_from_struct_handle(
+    module: &CompiledModule,
+    struct_handle_idx: &StructHandleIndex,
+) -> Option<StructDefinition> {
+    for struct_def in module.struct_defs.iter() {
+        if struct_def.struct_handle == *struct_handle_idx {
+            return Some(struct_def.clone());
+        }
+    }
+    None
+}
+
+fn validate_data_struct_map(
+    data_struct_map: &BTreeMap<String, bool>,
+    module: &CompiledModule,
+) -> VMResult<bool> {
+    let module_bin_view = BinaryIndexedView::Module(module);
+    for (data_struct_name, _) in data_struct_map.iter() {
+        let module_name_opt = extract_module_name(data_struct_name);
+
+        match module_name_opt {
+            None => {
+                return generate_vm_error(
+                    StatusCode::DATA_FORMAT_ERROR,
+                    format!(
+                        "Struct name {} is not a valid struct name.",
+                        data_struct_name,
+                    ),
+                    None,
+                    module,
+                );
+            }
+            Some((_, simple_struct_name)) => {
+                for struct_def in module.struct_defs.iter() {
+                    let struct_handle = module_bin_view.struct_handle_at(struct_def.struct_handle);
+                    let struct_name = module_bin_view
+                        .identifier_at(struct_handle.name)
+                        .to_string();
+                    if struct_name == simple_struct_name
+                        && !validate_struct_fields(struct_def, module, &module_bin_view)
+                    {
+                        return generate_vm_error(
+                            StatusCode::RESOURCE_DOES_NOT_EXIST,
+                            format!(
+                                "Struct {} in module {} is not a valid data_struct.",
+                                data_struct_name,
+                                module.self_id()
+                            ),
+                            None,
+                            module,
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(true)
+}
+
+fn is_primitive_type(field_type: &SignatureToken) -> bool {
+    matches!(
+        field_type,
+        SignatureToken::Bool
+            | SignatureToken::U8
+            | SignatureToken::U64
+            | SignatureToken::U128
+            | SignatureToken::Address
+            | SignatureToken::U16
+            | SignatureToken::U32
+            | SignatureToken::U256
+    )
+}
+
+fn validate_struct_fields(
+    struct_def: &StructDefinition,
+    module: &CompiledModule,
+    module_bin_view: &BinaryIndexedView,
+) -> bool {
+    let struct_handle = module_bin_view.struct_handle_at(struct_def.struct_handle);
+    let abilities_set = struct_handle.abilities;
+    if !(abilities_set.has_copy() && abilities_set.has_drop()) {
+        return false;
+    }
+
+    let field_count = struct_def.declared_field_count().unwrap();
+    if let Some(idx) = (0..field_count).next() {
+        let struct_field_def_opt = struct_def.field(idx as usize);
+        return match struct_field_def_opt {
+            None => false,
+            Some(struct_fields_def) => {
+                let field_type = struct_fields_def.signature.0.clone();
+                validate_fields_type(&field_type, module, module_bin_view)
+            }
+        };
+    }
+    false
+}
+
+fn validate_fields_type(
+    field_type: &SignatureToken,
+    module: &CompiledModule,
+    module_bin_view: &BinaryIndexedView,
+) -> bool {
+    return if is_primitive_type(field_type) {
+        true
+    } else {
+        match field_type {
+            SignatureToken::Vector(type_arg) => {
+                validate_fields_type(type_arg.deref(), module, module_bin_view)
+            }
+            SignatureToken::Struct(struct_handle_idx) => {
+                let struct_full_name =
+                    struct_full_name_from_sid(struct_handle_idx, module_bin_view);
+
+                validate_struct(
+                    &struct_full_name,
+                    struct_handle_idx,
+                    module,
+                    module_bin_view,
+                )
+            }
+            SignatureToken::StructInstantiation(struct_handle_idx, type_args) => {
+                let struct_full_name =
+                    struct_full_name_from_sid(struct_handle_idx, module_bin_view);
+
+                if is_std_option_type(&struct_full_name) {
+                    if let Some(field_type) = type_args.first() {
+                        return validate_fields_type(field_type, module, module_bin_view);
+                    }
+                }
+
+                validate_struct(
+                    &struct_full_name,
+                    struct_handle_idx,
+                    module,
+                    module_bin_view,
+                )
+            }
+            _ => false,
+        }
+    };
+}
+
+fn validate_struct(
+    struct_name: &str,
+    struct_handle_idx: &StructHandleIndex,
+    module: &CompiledModule,
+    module_bin_view: &BinaryIndexedView,
+) -> bool {
+    if is_allowed_data_struct_type(struct_name) {
+        return true;
+    }
+
+    let struct_def_opt = struct_def_from_struct_handle(module, struct_handle_idx);
+    match struct_def_opt {
+        Some(struct_def) => validate_struct_fields(&struct_def, module, module_bin_view),
+        None => false,
+    }
 }
 
 fn check_if_struct_exist_in_module(module: &CompiledModule, origin_struct_name: &str) -> bool {
