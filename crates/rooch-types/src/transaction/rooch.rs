@@ -7,8 +7,8 @@ use crate::address::RoochAddress;
 use crate::crypto::{Ed25519RoochSignature, RoochKeyPair, Signature};
 use crate::rooch_network::BuiltinChainID;
 use anyhow::Result;
-use moveos_types::gas_config::GasConfig;
 use moveos_types::h256::H256;
+use moveos_types::moveos_std::gas_schedule::GasScheduleConfig;
 use moveos_types::moveos_std::object::RootObjectEntity;
 use moveos_types::{
     moveos_std::tx_context::TxContext,
@@ -52,7 +52,7 @@ impl RoochTransactionData {
             sender,
             sequence_number,
             chain_id: BuiltinChainID::Local.chain_id().id(),
-            max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT * 100,
+            max_gas_amount: GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT,
             action,
         }
     }

@@ -5,10 +5,8 @@
 /// This test module is used to test the gas coin
 module rooch_framework::gas_coin_test{
 
-    use moveos_std::signer;
     use rooch_framework::account as account_entry;
     use rooch_framework::coin;
-    use rooch_framework::timestamp;
     use rooch_framework::gas_coin::{Self, GasCoin};
 
     #[test]
@@ -35,26 +33,5 @@ module rooch_framework::gas_coin_test{
         std::debug::print(&gas_coin::balance(user));
         assert!(gas_coin::balance(user) == init_gas, 1000);
         
-    }
-
-    #[test(sender=@0x42)]
-    #[expected_failure(abort_code = 1, location = rooch_framework::gas_coin)]
-    public fun test_faucet_interval_fail(sender: &signer) {
-        rooch_framework::genesis::init_for_test();
-        let user = signer::address_of(sender);
-        account_entry::create_account_for_testing(user);
-        gas_coin::faucet_entry(sender); 
-        gas_coin::faucet_entry(sender); 
-    }
-
-    #[test(sender=@0x42)]
-    public fun test_faucet_interval(sender: &signer) {
-        rooch_framework::genesis::init_for_test();
-        let user = signer::address_of(sender);
-        account_entry::create_account_for_testing(user);
-        gas_coin::faucet_entry(sender); 
-        let interval = 24 * 60 * 60; // 1 day
-        timestamp::update_global_time_for_test_secs(timestamp::now_seconds() + interval);
-        gas_coin::faucet_entry(sender); 
     }
 }

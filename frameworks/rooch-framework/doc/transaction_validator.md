@@ -12,6 +12,7 @@
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x2::account</a>;
+<b>use</b> <a href="">0x2::gas_schedule</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::tx_context</a>;
 <b>use</b> <a href="">0x2::tx_result</a>;
@@ -57,12 +58,11 @@ Just using to get module signer
 
 
 
-<a name="0x3_transaction_validator_ErrorOutOfGas"></a>
-
-Transaction exceeded its allocated max gas
+<a name="0x3_transaction_validator_ErrorMaxGasAmountExceeded"></a>
 
 
-<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_ErrorOutOfGas">ErrorOutOfGas</a>: u64 = 1;
+
+<pre><code><b>const</b> <a href="transaction_validator.md#0x3_transaction_validator_ErrorMaxGasAmountExceeded">ErrorMaxGasAmountExceeded</a>: u64 = 1008;
 </code></pre>
 
 

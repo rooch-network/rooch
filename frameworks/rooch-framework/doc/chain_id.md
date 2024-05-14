@@ -13,6 +13,7 @@
 -  [Function `chain_id`](#0x3_chain_id_chain_id)
 -  [Function `is_local`](#0x3_chain_id_is_local)
 -  [Function `is_dev`](#0x3_chain_id_is_dev)
+-  [Function `is_local_or_dev`](#0x3_chain_id_is_local_or_dev)
 -  [Function `is_test`](#0x3_chain_id_is_test)
 -  [Function `is_main`](#0x3_chain_id_is_main)
 
@@ -137,6 +138,17 @@ The ChainID in the global storage
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_dev">is_dev</a>(): bool
+</code></pre>
+
+
+
+<a name="0x3_chain_id_is_local_or_dev"></a>
+
+## Function `is_local_or_dev`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="chain_id.md#0x3_chain_id_is_local_or_dev">is_local_or_dev</a>(): bool
 </code></pre>
 
 

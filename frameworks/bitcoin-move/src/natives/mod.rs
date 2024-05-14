@@ -8,12 +8,14 @@ use rooch_framework::natives::gas_parameter::gas_member::{
     FromOnChainGasSchedule, ToOnChainGasSchedule,
 };
 use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
+use serde::Deserialize;
+use serde::Serialize;
 use std::collections::BTreeMap;
 
 mod gas_parameter;
 pub mod ord;
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Serialize, PartialEq, Eq, Deserialize)]
 pub struct GasParameters {
     ord: ord::GasParameters,
 }

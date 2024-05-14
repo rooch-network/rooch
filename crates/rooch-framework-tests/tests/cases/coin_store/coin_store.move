@@ -17,7 +17,7 @@ script {
 }
 
 //Get gas from faucet
-//# run rooch_framework::gas_coin::faucet_entry --signers test 
+//# run rooch_framework::gas_coin::faucet_entry --signers test --args u256:10000000000
 
 //Transfer via coin store
 //# run --signers test --args object:0xd073508b9582eff4e01078dc2e62489c15bbef91b6a2e568ac8fb33f0cf54daa

@@ -33,7 +33,7 @@ Feature: Rooch CLI integration tests
       Then assert: "'{{$.rpc[-1].balance}}' == '0'"
 
       # Get gas
-      Then cmd: "move run --function rooch_framework::gas_coin::faucet_entry"
+      Then cmd: "move run --function rooch_framework::gas_coin::faucet_entry --args u256:10000000000"
       Then assert: "{{$.move[-1].execution_info.status.type}} == executed"
 
       # session key

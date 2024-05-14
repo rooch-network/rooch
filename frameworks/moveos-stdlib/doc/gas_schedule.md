@@ -10,11 +10,13 @@
 -  [Resource `GasSchedule`](#0x2_gas_schedule_GasSchedule)
 -  [Struct `GasScheduleConfig`](#0x2_gas_schedule_GasScheduleConfig)
 -  [Constants](#@Constants_0)
+-  [Function `initial_max_gas_amount`](#0x2_gas_schedule_initial_max_gas_amount)
 -  [Function `genesis_init`](#0x2_gas_schedule_genesis_init)
 -  [Function `new_gas_schedule_config`](#0x2_gas_schedule_new_gas_schedule_config)
 -  [Function `new_gas_entry`](#0x2_gas_schedule_new_gas_entry)
 -  [Function `update_gas_schedule`](#0x2_gas_schedule_update_gas_schedule)
 -  [Function `gas_schedule`](#0x2_gas_schedule_gas_schedule)
+-  [Function `gas_schedule_max_gas_amount`](#0x2_gas_schedule_gas_schedule_max_gas_amount)
 -  [Function `gas_schedule_version`](#0x2_gas_schedule_gas_schedule_version)
 -  [Function `gas_schedule_entries`](#0x2_gas_schedule_gas_schedule_entries)
 
@@ -89,6 +91,26 @@
 
 
 
+<a name="0x2_gas_schedule_InitialMaxGasAmount"></a>
+
+
+
+<pre><code><b>const</b> <a href="gas_schedule.md#0x2_gas_schedule_InitialMaxGasAmount">InitialMaxGasAmount</a>: u64 = 1000000000;
+</code></pre>
+
+
+
+<a name="0x2_gas_schedule_initial_max_gas_amount"></a>
+
+## Function `initial_max_gas_amount`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="gas_schedule.md#0x2_gas_schedule_initial_max_gas_amount">initial_max_gas_amount</a>(): u64
+</code></pre>
+
+
+
 <a name="0x2_gas_schedule_genesis_init"></a>
 
 ## Function `genesis_init`
@@ -106,7 +128,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="gas_schedule.md#0x2_gas_schedule_new_gas_schedule_config">new_gas_schedule_config</a>(entries: <a href="">vector</a>&lt;<a href="gas_schedule.md#0x2_gas_schedule_GasEntry">gas_schedule::GasEntry</a>&gt;): <a href="gas_schedule.md#0x2_gas_schedule_GasScheduleConfig">gas_schedule::GasScheduleConfig</a>
+<pre><code><b>public</b> <b>fun</b> <a href="gas_schedule.md#0x2_gas_schedule_new_gas_schedule_config">new_gas_schedule_config</a>(max_gas_amount: u64, entries: <a href="">vector</a>&lt;<a href="gas_schedule.md#0x2_gas_schedule_GasEntry">gas_schedule::GasEntry</a>&gt;): <a href="gas_schedule.md#0x2_gas_schedule_GasScheduleConfig">gas_schedule::GasScheduleConfig</a>
 </code></pre>
 
 
@@ -140,6 +162,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="gas_schedule.md#0x2_gas_schedule">gas_schedule</a>(): &<a href="gas_schedule.md#0x2_gas_schedule_GasSchedule">gas_schedule::GasSchedule</a>
+</code></pre>
+
+
+
+<a name="0x2_gas_schedule_gas_schedule_max_gas_amount"></a>
+
+## Function `gas_schedule_max_gas_amount`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="gas_schedule.md#0x2_gas_schedule_gas_schedule_max_gas_amount">gas_schedule_max_gas_amount</a>(schedule: &<a href="gas_schedule.md#0x2_gas_schedule_GasSchedule">gas_schedule::GasSchedule</a>): u64
 </code></pre>
 
 

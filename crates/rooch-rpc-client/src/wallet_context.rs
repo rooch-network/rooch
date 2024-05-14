@@ -6,7 +6,7 @@ use crate::Client;
 use anyhow::{anyhow, Result};
 use move_command_line_common::address::ParsedAddress;
 use move_core_types::account_address::AccountAddress;
-use moveos_types::gas_config::GasConfig;
+use moveos_types::moveos_std::gas_schedule::GasScheduleConfig;
 use moveos_types::transaction::MoveAction;
 use rooch_config::config::{Config, PersistedConfig};
 use rooch_config::server_config::ServerConfig;
@@ -157,7 +157,7 @@ impl WalletContext {
             sender,
             sequence_number,
             chain_id,
-            max_gas_amount.unwrap_or(GasConfig::DEFAULT_MAX_GAS_AMOUNT),
+            max_gas_amount.unwrap_or(GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT),
             action,
         );
         Ok(tx_data)

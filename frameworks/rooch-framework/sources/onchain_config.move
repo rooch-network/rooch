@@ -50,14 +50,18 @@ module rooch_framework::onchain_config {
         object::borrow(obj)
     }
 
+    public fun ensure_sequencer(account: &signer) {
+        let sender = signer::address_of(account);
+        assert!(sender == sequencer(), ErrorNotSequencer);
+    }
+
     /******  API for update module publishing allowlist. ******/
 
     /// When module_publishing_allowlist_feature is enabled, only address in allowlist 
     /// can publish modules.
     /// Add `publisher` to publishing allowlist.
     public entry fun add_to_publishing_allowlist(account: &signer, publisher: address) {
-        let sender = signer::address_of(account);
-        assert!(sender == sequencer(), ErrorNotSequencer);
+        ensure_sequencer(account);
         let system_account = signer::module_signer<OnchainConfig>();
         let allowlist = move_module::borrow_mut_allowlist();
         move_module::add_to_allowlist(allowlist, &system_account, publisher);
@@ -65,8 +69,7 @@ module rooch_framework::onchain_config {
 
     /// Remove `publisher` from publishing allowlist.
     public entry fun remove_from_publishing_allowlist(account: &signer, publisher: address) {
-        let sender = signer::address_of(account);
-        assert!(sender == sequencer(), ErrorNotSequencer);
+        ensure_sequencer(account);
         let system_account = signer::module_signer<OnchainConfig>();
         let allowlist = move_module::borrow_mut_allowlist();
         move_module::remove_from_allowlist(allowlist, &system_account, publisher);
@@ -77,8 +80,7 @@ module rooch_framework::onchain_config {
 
     /// Enable or disable features. You can find all feature flags in moveos_std::features.
     public entry fun change_feature_flags(account: &signer, enable: vector<u64>, disable: vector<u64>) {
-        let sender = signer::address_of(account);
-        assert!(sender == sequencer(), ErrorNotSequencer);
+        ensure_sequencer(account);
         let system_account = signer::module_signer<OnchainConfig>();
         features::change_feature_flags(&system_account, enable, disable);
     }
