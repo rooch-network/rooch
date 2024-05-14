@@ -6,16 +6,125 @@ Rooch 内置了 [bitcoin-move](https://github.com/rooch-network/rooch/tree/main/
 
 ## 在合约中读取 Bitcoin 区块和交易
 
+在 Rooch 中，Bitcoin 区块和交易被中继器（Relayer）读取并写入到 Rooch 的全局状态中，所有状态都储存在 `0x4::bitcoin::BitcoinBlockStore` 中。开发者可以通过 `0x4::bitcoin` 模块提供的接口来读取 Bitcoin 区块和交易数据。
+
+### 1. `BitcoinBlockStore` 结构体与读取接口
+
+`BitcoinBlockStore` 结构体储存了所有的区块头和交易数据。其字段如下：
+
+- `latest_block_height`: 可选的 `u64`，表示最新区块的高度。
+- `blocks`: `Table<address, Header>`，存储区块哈希到区块头部的映射，开发者可以通过区块哈希读取对应的区块头。
+- `height_to_hash`: `Table<u64, address>`，存储区块高度到区块哈希的映射。
+- `hash_to_height`: `Table<address, u64>`，存储区块哈希到区块高度的映射。
+- `txs`: `Table<address, Transaction>`，存储交易哈希到交易的映射。
+- `tx_ids`: `TableVec<address>`，存储所有的交易哈希。
+
+`BitcoinBlockStore` 存放在 shared object 中，任何人都可以通过 `0x4::bitcoin` 模块提供的接口来读取 `BitcoinBlockStore` 对象中储存的区块和交易数据。
+
+具体的接口如下：
+
+- `get_tx`: 获取指定交易哈希的交易。
+
+    - 参数
+
+        - `txid`: `address`，表示交易哈希。
+
+    - 返回值
+
+        - `Option<Transaction>`: 如果交易存在，则返回交易，否则返回 none。
+
+- `get_block`: 获取指定区块哈希的区块头。
+
+    - 参数
+
+        - `block_hash`: `address`，表示区块的哈希。
+
+    - 返回值
+
+        - `Option<Header>`: 如果区块存在，则返回区块头，否则返回 none。
+
+- `get_block_height`: 获取指定区块哈希的区块高度。
+
+    - 参数
+
+        - `block_hash`: `address`，表示区块的哈希。
+
+    - 返回值
+
+        - `Option<u64>`: 如果区块存在，则返回其区块高度，否则返回 none。
+
+- `get_block_by_height`：获取指定区块高度的区块头。
+
+    - 参数
+
+        - `block_height`: `u64`，表示区块的高度。
+
+    - 返回值
+
+        - `Option<Header>`: 如果区块存在，则返回区块头，否则返回 none。
+
+- `get_latest_block_height`: 于获取最新区块的高度。
+
+    - 返回值
+
+        - `Option<u64>`: 如果存在最新区块，则返回区块高度，否则返回 none。
+
+### 2. `Header` 结构体与读取接口
+
+`Header` 结构体表示比特币的区块头，用于存储区块的元数据，包括版本号、前一个区块的哈希、默克尔树的根哈希、时间戳、目标值和随机数。在 Rooch 中，Header 可以通过 `0x4::bitcoin::get_block` 和 `0x4::bitcoin::get_block_by_height` 接口来读取。
+
+其字段定义如下：
+
+- `version`: `u32`，表示区块的版本号，现在用于软分叉信号。
+- `prev_blockhash`: `address`，表示前一个区块的哈希。
+- `merkle_root`: `address`，表示区块中交易的默克尔树的根哈希。
+- `time`: `u32`，表示区块的时间戳，由矿工提供。
+- `bits`: `u32`，表示区块目标值，区块哈希必须低于此值。
+- `nonce`: `u32`，表示选择的随机数，以获得足够低的区块哈希。
+
+其相应的读取接口在 `0x4::types` 模块中定义。
+
+### 3. `Transaction` 结构体与读取接口
+
+`Transaction` 结构体表示比特币的交易，用于存储交易的元数据，包括版本号、输入、输出、锁定时间和交易哈希。在 Rooch 中，Transaction 可以通过 `0x4::bitcoin::get_tx` 接口来读取。
+
+其字段定义如下：
+
+- `id`: `address`，表示交易的唯一标识符（txid）。
+- `version`: `u32`，表示交易的协议版本，目前预期为1或2（BIP 68）。
+- `lock_time`: `u32`，表示锁定的区块高度或时间戳，在此区块高度或时间戳之前，交易不能被包含在区块。
+- `input`: `vector<TxIn>`，表示交易的输入列表。
+- `output`: `vector<TxOut>`，表示交易的输出列表。
+
+其中，`TxIn` 表示比特币交易中的一个输入。它包含了对前一个交易输出的引用、脚本签名、序列号和见证数据。字段如下：
+
+- `previous_output`: `OutPoint`，表示前一个交易输出的引用。
+- `script_sig`: `vector<u8>`，表示脚本签名，它将值推入栈中，以使引用的输出脚本被接受。
+- `sequence`: `u32`，表示序列号，它建议矿工选择两个冲突交易中的哪一个，或者设置为0xFFFFFFFF来忽略这个特性。这个特性通常不会被使用，因为矿工行为无法强制执行。
+- `witness`: `Witness`，表示见证数据，这是一个字节数组的数组。
+
+`TxIn` 结构体是比特币交易的关键组成部分，它定义了交易的输入来源。`previous_output` 字段引用了一个前一个交易的输出，`script_sig` 字段包含了用于验证引用输出脚本的数据，`sequence` 字段用于指定交易的顺序，而 `witness` 字段则包含了见证数据，用于支持某些类型的交易。
+
+`TxOut` 表示比特币交易中的一个输出。它包含了输出的金额和脚本。字段如下：
+
+- `value`: `u64`，表示输出的金额，以 satoshi 为单位。
+- `script_pubkey`: `vector<u8>`，表示输出脚本，它定义了接收者如何证明他们拥有这笔资金。
+- `recipient_address`: `BitcoinAddress`, 表示输出的接收地址。如果已知，这将是一个有效的比特币地址；如果未知，则地址字节将为空
+
+`Transaction`, `TxIn`, `TxOut` 字段的读取接口都在 `0x4::types` 模块中定义。
+
 <Callout>
 TODO: 这部分文档需要改进
 
-1. 如何读取交易，以及交易字段说明
-2. 如何读取区块，以及区块字段说明
-3. 需要说明 Bitcoin 哈希在 Move 中的表达方式以及区别
+1. 需要说明 Bitcoin 哈希在 Move 中的表达方式以及区别
 </Callout>
+
 
 ## 应用场景
 
 1. 利用 Bitcoin 哈希作为随机数种子，实现一个随机数生成器。注意，这种场景需要使用未来的区块哈希，避免被预测。
 2. 将应用数据通过 `OP_RETURN` 写入 Bitcoin 中，然后通过 Move 合约读取交易中的 `OP_RETURN` 数据，进行处理。
 3. 在 Move 中校验 Bitcoin 交易的 Script，实现 Move 和 Bitcoin Script 混合编程。这个特性尚在开发中，可以跟踪 [Issue #1651](https://github.com/rooch-network/rooch/issues/1651)。
+
+## 示例
+1. [btc_blind_box](https://github.com/rooch-network/rooch/blob/main/examples/btc_blind_box)：一个简单的开盲盒示例，使用 Bitcoin 区块哈希作为随机数种子，实现了开盲盒的功能。
