@@ -38,13 +38,13 @@ module rooch_framework::account_authentication {
    }
 
    /// A resource that holds the authentication keys for this account.
-   struct AuthenticationKeys has key, store{
+   struct AuthenticationKeys has key{
       authentication_keys: TypeTable,
    }
 
    //TODO should we use the AuthenticationKeys to indecate the auth validator is installed for the account?
    /// A resource that holds the auth validator ids for this account has installed.
-   struct InstalledAuthValidator has key,store {
+   struct InstalledAuthValidator has key {
       validators: vector<u64>,
    }
 

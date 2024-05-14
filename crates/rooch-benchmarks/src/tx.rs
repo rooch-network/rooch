@@ -49,11 +49,9 @@ use rooch_sequencer::proxy::SequencerProxy;
 use rooch_store::RoochStore;
 use rooch_test_transaction_builder::TestTransactionBuilder;
 use rooch_types::address::RoochAddress;
-use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
-use rooch_types::bitcoin::network::Network;
-use rooch_types::chain_id::RoochChainID;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::multichain_id::RoochMultiChainID;
+use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::transaction::L1BlockWithBody;
 
@@ -77,7 +75,6 @@ pub async fn setup_service(
     let _ = tracing_subscriber::fmt::try_init();
 
     let actor_system = ActorSystem::global_system();
-    let chain_id = RoochChainID::LOCAL;
 
     // init storage
     let (mut moveos_store, rooch_store) = init_storage(datadir)?;
@@ -98,12 +95,9 @@ pub async fn setup_service(
     let _relayer_account = RoochAddress::from(&relayer_keypair.public());
 
     // Init executor
-    let btc_network = Network::default().to_num();
-    let _data_import_flag = false;
-
-    let genesis_ctx = chain_id.genesis_ctx(rooch_account);
-    let bitcoin_genesis_ctx = BitcoinGenesisContext::new(btc_network);
-    let genesis: RoochGenesis = RoochGenesis::build(genesis_ctx, bitcoin_genesis_ctx)?;
+    let mut network: RoochNetwork = BuiltinChainID::Dev.into();
+    network.set_sequencer_account(rooch_account.into());
+    let genesis: RoochGenesis = RoochGenesis::build(network)?;
     let root = genesis.init_genesis(&mut moveos_store)?;
 
     let executor_actor =

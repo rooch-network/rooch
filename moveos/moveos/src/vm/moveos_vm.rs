@@ -203,7 +203,8 @@ where
                     Err(err) => return Err(err.finish(Location::Undefined)),
                 };
                 let script_module = script_into_module(compiled_script);
-                let result = moveos_verifier::verifier::verify_module(&script_module, self.remote);
+                let modules = vec![script_module];
+                let result = moveos_verifier::verifier::verify_modules(&modules, self.remote);
                 match result {
                     Ok(_) => {}
                     Err(err) => return Err(err),
@@ -247,8 +248,16 @@ where
                     )?;
 
                 let mut init_function_modules = vec![];
+
+                let result =
+                    moveos_verifier::verifier::verify_modules(&compiled_modules, self.remote);
+                match result {
+                    Ok(_) => {}
+                    Err(err) => return Err(err),
+                }
+
                 for module in &compiled_modules {
-                    let result = moveos_verifier::verifier::verify_module(module, self.remote);
+                    let result = moveos_verifier::verifier::verify_init_function(module);
                     match result {
                         Ok(res) => {
                             if res {

@@ -86,6 +86,7 @@ MOVE_TEST_CRATES="\
   frameworks/moveos-stdlib\
   frameworks/rooch-framework\
   frameworks/bitcoin-move\
+  frameworks/rooch-nursery\
 "
 
 if [ ! -z "$CHECK" ]; then

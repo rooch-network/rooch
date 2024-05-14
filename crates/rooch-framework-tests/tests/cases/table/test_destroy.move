@@ -7,7 +7,7 @@ module test::m {
     
     use moveos_std::account;
 
-    struct KVStore has store, key {
+    struct KVStore has key {
         table: Table<String,vector<u8>>,
     }
 

@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use std::str::FromStr;
+
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use anyhow::Result;
 use move_core_types::{account_address::AccountAddress, ident_str, identifier::IdentStr};
@@ -13,18 +15,48 @@ use moveos_types::{
     state::{MoveStructState, MoveStructType},
     transaction::FunctionCall,
 };
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("chain_id");
 
-#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Serialize, Deserialize, Eq, PartialEq, JsonSchema)]
 pub struct ChainID {
     pub id: u64,
 }
 
 impl ChainID {
+    pub fn new(id: u64) -> Self {
+        ChainID { id }
+    }
+
+    pub fn id(&self) -> u64 {
+        self.id
+    }
+
     pub fn chain_id_object_id() -> ObjectID {
         object::named_object_id(&Self::struct_tag())
+    }
+}
+
+impl std::fmt::Display for ChainID {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.id)
+    }
+}
+
+impl FromStr for ChainID {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let id: u64 = s.parse()?;
+        Ok(Self::new(id))
+    }
+}
+
+impl From<u64> for ChainID {
+    fn from(id: u64) -> Self {
+        Self::new(id)
     }
 }
 

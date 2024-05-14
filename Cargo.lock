@@ -1489,9 +1489,9 @@ dependencies = [
 
 [[package]]
 name = "chrono"
-version = "0.4.31"
+version = "0.4.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f2c685bad3eb3d45a01354cedb7d5faa66194d1d58ba6e267a8de788f79db38"
+checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
@@ -1499,7 +1499,7 @@ dependencies = [
  "num-traits 0.2.16",
  "serde 1.0.195",
  "wasm-bindgen",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.4",
 ]
 
 [[package]]
@@ -6350,6 +6350,7 @@ dependencies = [
  "bcs",
  "codespan-reporting",
  "itertools 0.10.5",
+ "log",
  "move-binary-format",
  "move-command-line-common",
  "move-compiler",
@@ -8455,6 +8456,7 @@ dependencies = [
  "bcs",
  "bcs-ext",
  "bitcoin 0.31.0",
+ "chrono",
  "clap 4.5.4",
  "codespan-reporting",
  "csv",
@@ -8685,6 +8687,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "better_any",
+ "bitcoin 0.31.0",
  "brotli",
  "fastcrypto",
  "framework-builder",

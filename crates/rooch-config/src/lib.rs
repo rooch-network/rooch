@@ -14,8 +14,8 @@ use serde::{Deserialize, Serialize};
 
 use moveos_config::{temp_dir, DataDirPath};
 use rooch_types::bitcoin::network::Network;
-use rooch_types::chain_id::RoochChainID;
 use rooch_types::crypto::RoochKeyPair;
+use rooch_types::rooch_network::{BuiltinChainID, RoochChainID};
 
 use crate::da_config::DAConfig;
 use crate::store_config::StoreConfig;
@@ -164,7 +164,7 @@ impl RoochOpt {
 
         RoochOpt {
             base_data_dir: Some(random_dir),
-            chain_id: Some(RoochChainID::LOCAL),
+            chain_id: Some(BuiltinChainID::Local.into()),
             store: StoreConfig::default(),
             port: None,
             eth_rpc_url: None,

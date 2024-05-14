@@ -8,7 +8,6 @@ export class AuthenticatorPayload implements bcs.Serializable {
   private readonly signInfoPrefix: Array<U8>
   private readonly signInfo: Array<U8>
   private readonly publicKey: Array<U8>
-  private readonly multiAddress: Array<U8>
   private readonly fromAddress: Array<U8>
 
   constructor(
@@ -16,14 +15,12 @@ export class AuthenticatorPayload implements bcs.Serializable {
     signInfoPrefix: Array<U8>,
     signInfo: Array<U8>,
     publicKey: Array<U8>,
-    multiAddress: Array<U8>,
     fromAddress: Array<U8>,
   ) {
     this.sign = sign
     this.signInfoPrefix = signInfoPrefix
     this.signInfo = signInfo
     this.publicKey = publicKey
-    this.multiAddress = multiAddress
     this.fromAddress = fromAddress
   }
 
@@ -38,7 +35,6 @@ export class AuthenticatorPayload implements bcs.Serializable {
     bcs.Helpers.serializeVectorU8(this.signInfoPrefix, se)
     bcs.Helpers.serializeVectorU8(this.signInfo, se)
     bcs.Helpers.serializeVectorU8(this.publicKey, se)
-    bcs.Helpers.serializeVectorU8(this.multiAddress, se)
     bcs.Helpers.serializeVectorU8(this.fromAddress, se)
   }
 }

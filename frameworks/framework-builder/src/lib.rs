@@ -28,6 +28,7 @@ pub struct Stdlib {
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct StdlibPackage {
+    pub package_name: String,
     pub genesis_account: AccountAddress,
     pub modules: Vec<Vec<u8>>,
 }
@@ -45,6 +46,11 @@ impl StdlibPackage {
             })
             .collect::<Result<Vec<Vec<u8>>>>()?;
         Ok(Self {
+            package_name: compiled_package
+                .compiled_package_info
+                .package_name
+                .as_str()
+                .to_owned(),
             genesis_account,
             modules,
         })
@@ -263,7 +269,7 @@ impl Stdlib {
         Ok(modules)
     }
 
-    pub fn module_bundles(&self) -> Result<Vec<(AccountAddress, Vec<Vec<u8>>)>> {
+    pub fn all_module_bundles(&self) -> Result<Vec<(AccountAddress, Vec<Vec<u8>>)>> {
         let mut bundles = vec![];
         for package in &self.packages {
             let mut module_bundle = vec![];
@@ -274,6 +280,35 @@ impl Stdlib {
             }
             bundles.push((package.genesis_account, module_bundle));
         }
+        Ok(bundles)
+    }
+
+    pub fn module_bundles(
+        &self,
+        package_names: &[String],
+    ) -> Result<Vec<(AccountAddress, Vec<Vec<u8>>)>> {
+        let mut bundles = vec![];
+        for package_name in package_names {
+            ensure!(
+                self.packages
+                    .iter()
+                    .any(|package| package.package_name == *package_name),
+                "Package {} not found",
+                package_name
+            );
+        }
+        for package in &self.packages {
+            if package_names.contains(&package.package_name) {
+                let mut module_bundle = vec![];
+                for module in package.modules()? {
+                    let mut binary = vec![];
+                    module.serialize(&mut binary)?;
+                    module_bundle.push(binary);
+                }
+                bundles.push((package.genesis_account, module_bundle));
+            }
+        }
+
         Ok(bundles)
     }
 }

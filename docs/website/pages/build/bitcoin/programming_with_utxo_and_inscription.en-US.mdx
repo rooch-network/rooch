@@ -1,0 +1,45 @@
+# Programming with Bitcoin's UTXO and Inscription
+
+import { Callout, FileTree } from 'nextra/components'
+
+In Rooch, Bitcoin's UTXO and Inscription are parsed into Move's [Object](https://rooch.network/learn/core-concepts/objects/object), allowing developers to manipulate Bitcoin's UTXO and Inscription via Object-related APIs.
+
+## Atomic State Binding
+
+Rooch implements atomic binding between Bitcoin state and Rooch L2 state through the nesting capabilities of Move's Object.
+
+![Atomic-binding UTXO](/blog/stackable-l2/rooch-atomic-binding-utxo.svg)
+
+For example, the UTXO X shown above is expressed as an Object in Move, which includes a Temporary area. The states nested within this area are cleared when the UTXO is spent. This is akin to RGB's "one-time seals," leveraging the fact that a UTXO can only be spent once. For instance, an application that offers Bitcoin mining features might store user's stake information in this area, which gets lost once the UTXO is consumed. If the protocol supports UTXO mapping tracking, a Permanent Area can be provided to facilitate atomic transfers of state between L1 and L2.
+
+![Atomic-binding Inscription](/blog/stackable-l2/rooch-atomic-binding-ord.svg)
+
+As shown above, this represents a Bitcoin blockchain state in Move, such as an Ordinals Inscription (similar to RGB). Its Permanent Area can hold permanent states, such as Coins or NFTs. When the Inscription is transferred on L1, the states in the Temporary Area are cleared, but those in the Permanent Area are retained and transferred to the new owner.
+
+## Programming with UTXO
+
+<Callout>
+TODO: This section of the document needs improvement
+
+1. Explanation of UTXO fields
+2. How to accept UTXO as method parameters
+3. How to store data in the UTXO's temporary area
+</Callout>
+
+### Examples
+
+1. [btc_holder_coin](https://github.com/rooch-network/rooch/blob/main/examples/btc_holder_coin): A simple UTXO example that implements token distribution based on the duration a Bitcoin is held.
+2. [btc_holder_farmer](https://github.com/rooch-network/rooch/blob/main/examples/btc_holder_farmer): A more complex UTXO example that implements token rewards for Bitcoin holders through a DeFi farmer model.
+
+## Programming with Inscription
+
+<Callout>
+TODO: This section of the document needs improvement
+1. Explanation of Inscription fields
+2. How to accept Inscription as method parameters
+3. How to store data in the Inscription's temporary and permanent areas
+</Callout>
+
+### Examples
+
+1. [bitcoin_plants](https://github.com/rooch-network/rooch/blob/main/examples/bitcoin_plants): A simple Inscription example that implements a game on Layer2 where Bitcoin Inscriptions serve as seeds to grow plants. Ownership of the plant transfers along with the Inscription.

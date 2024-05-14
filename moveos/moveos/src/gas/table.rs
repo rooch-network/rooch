@@ -321,9 +321,9 @@ pub struct VMGasParameters {
 impl VMGasParameters {
     pub fn initial() -> Self {
         Self {
-            instruction_gas_parameter: InstructionParameter::zeros(),
-            storage_gas_parameter: StorageGasParameter::zeros(),
-            abstract_value_parameter: AbstractValueSizeGasParameter::zeros(),
+            instruction_gas_parameter: InstructionParameter::initial(),
+            storage_gas_parameter: StorageGasParameter::initial(),
+            abstract_value_parameter: AbstractValueSizeGasParameter::initial(),
         }
     }
 

@@ -7,7 +7,6 @@ module bitcoin_move::genesis{
     use moveos_std::signer;
     use bitcoin_move::bitcoin;
     use bitcoin_move::ord;
-    use bitcoin_move::brc20;
     use bitcoin_move::utxo;
     use bitcoin_move::network;
 
@@ -25,7 +24,6 @@ module bitcoin_move::genesis{
         let genesis_context = option::destroy_some(genesis_context_option);
         network::genesis_init(genesis_context.network);
         utxo::genesis_init();
-        brc20::genesis_init(&genesis_account);
         ord::genesis_init(&genesis_account);
         bitcoin::genesis_init(&genesis_account);
     }

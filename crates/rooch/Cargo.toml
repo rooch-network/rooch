@@ -16,10 +16,11 @@ rust-version = { workspace = true }
 [dependencies]
 anyhow = { workspace = true }
 bcs = { workspace = true }
-clap = { features = [ "derive", ], workspace = true }
+clap = { features = ["derive", ], workspace = true }
+chrono = { workspace = true }
 datatest-stable = { git = "https://github.com/rooch-network/diem-devtools", branch = "feature/pub-test-opts" }
 tokio = { features = ["full"], workspace = true }
-dirs  = { workspace = true }
+dirs = { workspace = true }
 serde = { workspace = true }
 serde_with = { workspace = true }
 serde_yaml = { workspace = true }

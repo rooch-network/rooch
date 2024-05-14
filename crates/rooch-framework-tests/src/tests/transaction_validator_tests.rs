@@ -77,8 +77,8 @@ fn test_session_key_rooch() {
 
     let action = MoveAction::new_function_call(
         FunctionId::new(
-            ModuleId::new(ROOCH_FRAMEWORK_ADDRESS, ident_str!("account").to_owned()),
-            ident_str!("create_account_entry").to_owned(),
+            ModuleId::new(ROOCH_FRAMEWORK_ADDRESS, ident_str!("empty").to_owned()),
+            ident_str!("empty_with_signer").to_owned(),
         ),
         vec![],
         vec![MoveValue::Address(AccountAddress::random())

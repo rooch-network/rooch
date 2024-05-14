@@ -61,18 +61,23 @@ For more details, please refer to https://rooch.network/docs/developer-guides/ob
 -  [Function `as_mut_ref`](#0x2_object_as_mut_ref)
 -  [Function `mut_entity_as_object`](#0x2_object_mut_entity_as_object)
 -  [Function `add_field`](#0x2_object_add_field)
+-  [Function `add_field_internal`](#0x2_object_add_field_internal)
 -  [Function `add_object_field`](#0x2_object_add_object_field)
 -  [Function `add_object_field_with_id`](#0x2_object_add_object_field_with_id)
 -  [Function `borrow_field`](#0x2_object_borrow_field)
 -  [Function `borrow_object_field`](#0x2_object_borrow_object_field)
+-  [Function `borrow_field_internal`](#0x2_object_borrow_field_internal)
 -  [Function `borrow_field_with_default`](#0x2_object_borrow_field_with_default)
 -  [Function `borrow_mut_field`](#0x2_object_borrow_mut_field)
+-  [Function `borrow_mut_field_internal`](#0x2_object_borrow_mut_field_internal)
 -  [Function `borrow_mut_field_with_default`](#0x2_object_borrow_mut_field_with_default)
 -  [Function `borrow_mut_object_field`](#0x2_object_borrow_mut_object_field)
 -  [Function `upsert_field`](#0x2_object_upsert_field)
 -  [Function `remove_field`](#0x2_object_remove_field)
+-  [Function `remove_field_internal`](#0x2_object_remove_field_internal)
 -  [Function `remove_object_field`](#0x2_object_remove_object_field)
 -  [Function `contains_field`](#0x2_object_contains_field)
+-  [Function `contains_field_internal`](#0x2_object_contains_field_internal)
 -  [Function `contains_field_with_type`](#0x2_object_contains_field_with_type)
 -  [Function `contains_object_field`](#0x2_object_contains_object_field)
 -  [Function `field_size`](#0x2_object_field_size)
@@ -913,6 +918,17 @@ object, and cannot be discovered from it.
 
 
 
+<a name="0x2_object_add_field_internal"></a>
+
+## Function `add_field_internal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_add_field_internal">add_field_internal</a>&lt;T: key, K: <b>copy</b>, drop, V&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K, val: V)
+</code></pre>
+
+
+
 <a name="0x2_object_add_object_field"></a>
 
 ## Function `add_object_field`
@@ -966,6 +982,18 @@ Borrow the child object by <code>key</code>
 
 
 
+<a name="0x2_object_borrow_field_internal"></a>
+
+## Function `borrow_field_internal`
+
+Borrow FieldValue and return the val of FieldValue
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_field_internal">borrow_field_internal</a>&lt;K: <b>copy</b>, drop, V&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): &V
+</code></pre>
+
+
+
 <a name="0x2_object_borrow_field_with_default"></a>
 
 ## Function `borrow_field_with_default`
@@ -989,6 +1017,19 @@ Aborts if there is no field for <code>key</code>.
 
 <pre><code>#[private_generics(#[T])]
 <b>public</b> <b>fun</b> <a href="object.md#0x2_object_borrow_mut_field">borrow_mut_field</a>&lt;T: key, K: <b>copy</b>, drop, V: store&gt;(obj: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K): &<b>mut</b> V
+</code></pre>
+
+
+
+<a name="0x2_object_borrow_mut_field_internal"></a>
+
+## Function `borrow_mut_field_internal`
+
+Acquire a mutable reference to the value which <code>key</code> maps to.
+Aborts if there is no field for <code>key</code>.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_borrow_mut_field_internal">borrow_mut_field_internal</a>&lt;K: <b>copy</b>, drop, V&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): &<b>mut</b> V
 </code></pre>
 
 
@@ -1048,6 +1089,17 @@ Aborts if there is no field for <code>key</code>.
 
 
 
+<a name="0x2_object_remove_field_internal"></a>
+
+## Function `remove_field_internal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_remove_field_internal">remove_field_internal</a>&lt;T: key, K: <b>copy</b>, drop, V&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): V
+</code></pre>
+
+
+
 <a name="0x2_object_remove_object_field"></a>
 
 ## Function `remove_object_field`
@@ -1068,6 +1120,17 @@ Returns true if <code><a href="object.md#0x2_object">object</a></code> contains 
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="object.md#0x2_object_contains_field">contains_field</a>&lt;T: key, K: <b>copy</b>, drop&gt;(obj: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;T&gt;, key: K): bool
+</code></pre>
+
+
+
+<a name="0x2_object_contains_field_internal"></a>
+
+## Function `contains_field_internal`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="object.md#0x2_object_contains_field_internal">contains_field_internal</a>&lt;K: <b>copy</b>, drop&gt;(obj_id: <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>, key: K): bool
 </code></pre>
 
 

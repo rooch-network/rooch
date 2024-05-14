@@ -8,7 +8,7 @@ use raw_store::rocks::RocksDB;
 use raw_store::StoreInstance;
 use rooch_config::store_config::StoreConfig;
 use rooch_config::{BaseConfig, RoochOpt};
-use rooch_types::chain_id::RoochChainID;
+use rooch_types::rooch_network::RoochChainID;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tracing::info;
