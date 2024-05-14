@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::state_store::NodeDBStore;
-use anyhow::{ensure, Error, Result};
+use anyhow::{Error, Result};
 use move_core_types::effects::Op;
 use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::moveos_std::object::GENESIS_STATE_ROOT;
+use moveos_types::state::FieldChange;
+use moveos_types::state::KeyState;
 use moveos_types::state::ObjectChange;
 use moveos_types::state::StateChangeSet;
-use moveos_types::state::{FieldChange, MoveState, MoveType, ObjectState};
-use moveos_types::state::{FieldState, KeyState};
 use moveos_types::state_resolver::RootObjectResolver;
 use moveos_types::state_resolver::StateKV;
 use moveos_types::state_resolver::StateResolver;
@@ -150,66 +150,66 @@ impl StateDBStore {
         self.smt.iter(state_root, starting_key)
     }
 
-    // Batch dump child object states of specified object by object id
-    pub fn dump_child_object_states(
-        &self,
-        parent_id: ObjectID,
-        state_root: H256,
-        starting_key: Option<KeyState>,
-        with_parent: bool,
-    ) -> Result<(Vec<ObjectState>, Option<KeyState>)> {
-        let iter = self.iter(state_root, starting_key)?;
-        let mut data = Vec::new();
-        let mut counter = 0;
-        let mut next_key = None;
-        for item in iter {
-            if counter >= STATEDB_DUMP_BATCH_SIZE {
-                break;
-            };
-            let (k, v) = item?;
-            ensure!(k.key_type == ObjectID::type_tag());
-            let obj_id = ObjectID::from_bytes(k.key.clone())?;
-            if (with_parent && obj_id == parent_id) || obj_id.is_child(parent_id.clone()) {
-                let obj = v.as_raw_object()?;
-                let object_change = ObjectChange::new(Op::New(v));
-                let object_state = ObjectState::new(
-                    H256::from(obj.state_root.into_bytes()),
-                    obj.size,
-                    obj.id,
-                    object_change,
-                );
-                data.push(object_state);
+    // // Batch dump child object states of specified object by object id
+    // pub fn dump_child_object_states(
+    //     &self,
+    //     parent_id: ObjectID,
+    //     state_root: H256,
+    //     starting_key: Option<KeyState>,
+    //     with_parent: bool,
+    // ) -> Result<(Vec<ObjectState>, Option<KeyState>)> {
+    //     let iter = self.iter(state_root, starting_key)?;
+    //     let mut data = Vec::new();
+    //     let mut counter = 0;
+    //     let mut next_key = None;
+    //     for item in iter {
+    //         if counter >= STATEDB_DUMP_BATCH_SIZE {
+    //             break;
+    //         };
+    //         let (k, v) = item?;
+    //         ensure!(k.key_type == ObjectID::type_tag());
+    //         let obj_id = ObjectID::from_bytes(k.key.clone())?;
+    //         if (with_parent && obj_id == parent_id) || obj_id.is_child(parent_id.clone()) {
+    //             let obj = v.as_raw_object()?;
+    //             let object_change = ObjectChange::new(Op::New(v));
+    //             let object_state = ObjectState::new(
+    //                 H256::from(obj.state_root.into_bytes()),
+    //                 obj.size,
+    //                 obj.id,
+    //                 object_change,
+    //             );
+    //             data.push(object_state);
+    //
+    //             counter += 1;
+    //         };
+    //         next_key = Some(k);
+    //     }
+    //     Ok((data, next_key))
+    // }
 
-                counter += 1;
-            };
-            next_key = Some(k);
-        }
-        Ok((data, next_key))
-    }
-
-    /// Batch dump filed states of specified object by object id
-    pub fn dump_field_states(
-        &self,
-        _object_id: ObjectID,
-        state_root: H256,
-        starting_key: Option<KeyState>,
-    ) -> Result<(Vec<FieldState>, Option<KeyState>)> {
-        let iter = self.iter(state_root, starting_key)?;
-        let mut data = Vec::new();
-        let mut next_key = None;
-        for (counter, item) in iter.enumerate() {
-            if counter >= STATEDB_DUMP_BATCH_SIZE {
-                break;
-            };
-            let (k, v) = item?;
-            let field_change = FieldChange::new_normal(Op::New(v));
-            let field_state = FieldState::new(k.clone(), field_change);
-            data.push(field_state);
-
-            next_key = Some(k);
-        }
-        Ok((data, next_key))
-    }
+    // /// Batch dump filed states of specified object by object id
+    // pub fn dump_field_states(
+    //     &self,
+    //     _object_id: ObjectID,
+    //     state_root: H256,
+    //     starting_key: Option<KeyState>,
+    // ) -> Result<(Vec<FieldState>, Option<KeyState>)> {
+    //     let iter = self.iter(state_root, starting_key)?;
+    //     let mut data = Vec::new();
+    //     let mut next_key = None;
+    //     for (counter, item) in iter.enumerate() {
+    //         if counter >= STATEDB_DUMP_BATCH_SIZE {
+    //             break;
+    //         };
+    //         let (k, v) = item?;
+    //         let field_change = FieldChange::new_normal(Op::New(v));
+    //         let field_state = FieldState::new(k.clone(), field_change);
+    //         data.push(field_state);
+    //
+    //         next_key = Some(k);
+    //     }
+    //     Ok((data, next_key))
+    // }
 }
 
 impl StatelessResolver for StateDBStore {

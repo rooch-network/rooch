@@ -2,21 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::WalletContextOptions;
-use crate::commands::statedb::commands::{init_statedb, BATCH_SIZE, GLOBAL_STATE_PREFIX};
-use anyhow::Error;
+use crate::commands::statedb::commands::{init_statedb, BATCH_SIZE, STATE_HEADER_PREFIX};
 use anyhow::Result;
 use clap::Parser;
 use csv::Writer;
-// use move_core_types::effects::Op;
-// use moveos_store::state_store::statedb::STATEDB_DUMP_BATCH_SIZE;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
-// use moveos_types::moveos_std::object::ObjectID;
-// use moveos_types::state::{
-//     FieldChange, FieldState, KeyState, MoveState, MoveType, ObjectChange, ObjectState,
-// };
+use moveos_types::moveos_std::object::ObjectID;
 use moveos_types::state_resolver::StatelessResolver;
-// use proptest_derive::Arbitrary;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::bitcoin::ord::InscriptionStore;
 use rooch_types::bitcoin::utxo::BitcoinUTXOStore;
@@ -83,6 +76,10 @@ pub struct ExportCommand {
     /// statedb export mode, default is genesis mode
     pub mode: Option<u8>,
 
+    /// export object id, for object mode
+    #[clap(long, short = 'i')]
+    pub object_id: Option<ObjectID>,
+
     /// If local chainid, start the service with a temporary data store.
     /// All data will be deleted when the service is stopped.
     #[clap(long, short = 'n', help = R_OPT_NET_HELP)]
@@ -103,13 +100,11 @@ impl ExportCommand {
 
         let mut _start_time = SystemTime::now();
         let file_name = self.output.display().to_string();
-        // let writer = BufWriter::new(File::open(file_name)?);
         let mut writer_builder = csv::WriterBuilder::new();
-        // let writer_builder = writer_builder.delimiter(b'\t').double_quote(false);
         let writer_builder = writer_builder.delimiter(b',').double_quote(false);
-        let mut writer = writer_builder
-            .from_path(file_name)
-            .map_err(|e| RoochError::from(Error::msg(format!("Invalid output path: {}", e))))?;
+        let mut writer = writer_builder.from_path(file_name).map_err(|e| {
+            RoochError::from(anyhow::Error::msg(format!("Invalid output path: {}", e)))
+        })?;
         let root_state_root = self
             .state_root
             .unwrap_or(H256::from(root.state_root.into_bytes()));
@@ -126,7 +121,10 @@ impl ExportCommand {
                 todo!()
             }
             ExportMode::Object => {
-                todo!()
+                let obj_id = self
+                    .object_id
+                    .expect("Object id should exist in object mode");
+                Self::export_object(&moveos_store, root_state_root, obj_id, &mut writer)?;
             }
         }
 
@@ -143,106 +141,144 @@ impl ExportCommand {
         let inscription_store_id = InscriptionStore::object_id();
         let address_mapping_id = AddressMappingWrapper::mapping_object_id();
         let reverse_mapping_id = AddressMappingWrapper::reverse_mapping_object_id();
-        println!("utxo_store_id: {:?}", utxo_store_id);
-        println!("inscription_store_id: {:?}", inscription_store_id);
+        println!("export_genesis utxo_store_id: {:?}", utxo_store_id);
         println!(
-            "address_mapping_id: {:?}, reverse_mapping_id {:?}",
+            "export_genesis inscription_store_id: {:?}",
+            inscription_store_id
+        );
+        println!(
+            "export_genesis address_mapping_id: {:?}, reverse_mapping_id {:?}",
             address_mapping_id, reverse_mapping_id
         );
 
-        let utxo_store_obj = moveos_store
-            .get_field_at(root_state_root, &utxo_store_id.to_key())?
-            .expect("state should exist.")
-            .as_raw_object()?;
-        let inscription_store_obj = moveos_store
-            .get_field_at(root_state_root, &inscription_store_id.to_key())?
-            .expect("state should exist.")
-            .as_raw_object()?;
-        let address_mapping_obj = moveos_store
-            .get_field_at(root_state_root, &address_mapping_id.to_key())?
-            .expect("state should exist.")
-            .as_raw_object()?;
-        let reverse_mapping_obj = moveos_store
-            .get_field_at(root_state_root, &reverse_mapping_id.to_key())?
-            .expect("state should exist.")
-            .as_raw_object()?;
+        let mut genesis_object_ids = vec![];
+        genesis_object_ids.push(utxo_store_id.clone());
+        genesis_object_ids.push(inscription_store_id.clone());
+        genesis_object_ids.push(address_mapping_id);
+        genesis_object_ids.push(reverse_mapping_id);
 
         // write csv object states.
         {
-            let mut object_record = vec![];
-            object_record.push(record_field);
-            writer.serialize(record)?;
-            writer.write_field(GLOBAL_STATE_PREFIX.to_string())?;
-            writer.write_field(root_state_root.to_string())?;
+            writer.write_field(STATE_HEADER_PREFIX.to_string())?;
+            writer.write_field(format!("{:?}", root_state_root))?;
+            writer.write_record(None::<&[u8]>)?;
+        }
+        let mut genesis_objects = vec![];
+        for object_id in genesis_object_ids.into_iter() {
+            let state = moveos_store
+                .get_field_at(root_state_root, &object_id.to_key())?
+                .expect("state should exist.");
+            let object = state.clone().as_raw_object()?;
+            genesis_objects.push(object);
+
+            writer.write_field(object_id.to_key().to_string())?;
+            writer.write_field(state.to_string())?;
             writer.write_record(None::<&[u8]>)?;
         }
 
         // write csv field states
-        Self::export_object_fields(
-            moveos_store,
-            H256::from(utxo_store_obj.state_root.into_bytes()),
-            writer,
-        )?;
-        Self::export_object_fields(
-            moveos_store,
-            H256::from(inscription_store_obj.state_root.into_bytes()),
-            writer,
-        )?;
-        Self::export_object_fields(
-            moveos_store,
-            H256::from(address_mapping_obj.state_root.into_bytes()),
-            writer,
-        )?;
-        Self::export_object_fields(
-            moveos_store,
-            H256::from(reverse_mapping_obj.state_root.into_bytes()),
-            writer,
-        )?;
+        for obj in genesis_objects.into_iter() {
+            let has_child = obj.id == utxo_store_id || obj.id == inscription_store_id;
+            Self::export_object_fields(
+                moveos_store,
+                H256::from(obj.state_root.into_bytes()),
+                has_child,
+                writer,
+            )?;
+        }
+
+        // flush csv writer
+        writer.flush()?;
+        println!("export_genesis root state_root: {:?}", root_state_root);
 
         Ok(())
     }
 
-    fn write_object_state<W: std::io::Write>(
-        // moveos_store: &MoveOSStore,
-        // state_root: H256,
+    fn export_object<W: std::io::Write>(
+        moveos_store: &MoveOSStore,
+        root_state_root: H256,
+        object_id: ObjectID,
         writer: &mut Writer<W>,
-
     ) -> Result<()> {
-        // let mut record = vec![];
-        writer.write_field(k.to_bytes()?)?;
-        writer.write_field(v.to_bytes()?)?;
-        // writer.serialize(record)?;
+        println!("export_object object_id: {:?}", object_id);
+        let utxo_store_id = BitcoinUTXOStore::object_id();
+        let inscription_store_id = InscriptionStore::object_id();
+
+        // write csv object states.
+        {
+            writer.write_field(STATE_HEADER_PREFIX.to_string())?;
+            writer.write_field(format!("{:?}", root_state_root))?;
+            writer.write_record(None::<&[u8]>)?;
+        }
+        let state = moveos_store
+            .get_field_at(root_state_root, &object_id.to_key())?
+            .expect("state should exist.");
+        let obj = state.clone().as_raw_object()?;
+
+        writer.write_field(object_id.to_key().to_string())?;
+        writer.write_field(state.to_string())?;
         writer.write_record(None::<&[u8]>)?;
+
+        // write csv field states
+        let has_child = object_id == utxo_store_id || object_id == inscription_store_id;
+        Self::export_object_fields(
+            moveos_store,
+            H256::from(obj.state_root.into_bytes()),
+            has_child,
+            writer,
+        )?;
 
         // flush csv writer
         writer.flush()?;
-        println!("state_root: {:?} export field counts {}", state_root, count);
+        println!("export_object root state_root: {:?}", root_state_root);
+
         Ok(())
     }
 
     fn export_object_fields<W: std::io::Write>(
         moveos_store: &MoveOSStore,
         state_root: H256,
+        has_child: bool,
         writer: &mut Writer<W>,
     ) -> Result<()> {
         let starting_key = None;
         let mut count: u64 = 0;
 
+        // write csv header.
+        {
+            writer.write_field(STATE_HEADER_PREFIX.to_string())?;
+            writer.write_field(format!("{:?}", state_root))?;
+            writer.write_record(None::<&[u8]>)?;
+        }
         let iter = moveos_store
             .get_state_store()
-            .iter(state_root, starting_key)?;
+            .iter(state_root, starting_key.clone())?;
+
+        let mut child_state_roots = vec![];
         for item in iter {
             let (k, v) = item?;
-            // let mut record = vec![];
-            writer.write_field(k.to_bytes()?)?;
-            writer.write_field(v.to_bytes()?)?;
-            // writer.serialize(record)?;
+            if has_child {
+                let object = v.clone().as_raw_object()?;
+                if object.size > 0 {
+                    child_state_roots.push(object.state_root);
+                }
+            }
+            writer.write_field(k.to_string())?;
+            writer.write_field(v.to_string())?;
             writer.write_record(None::<&[u8]>)?;
 
             count += 1;
         }
-        // flush csv writer
-        writer.flush()?;
+
+        for child_state_root in child_state_roots.into_iter() {
+            Self::export_object_fields(
+                moveos_store,
+                H256::from(child_state_root.into_bytes()),
+                false,
+                writer,
+            )?;
+        }
+
         println!("state_root: {:?} export field counts {}", state_root, count);
         Ok(())
     }
