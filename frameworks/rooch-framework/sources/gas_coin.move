@@ -5,30 +5,16 @@
 module rooch_framework::gas_coin {
     use std::string;
     use moveos_std::signer;
-    
     use moveos_std::object::{Self, Object};
-    use moveos_std::account;
-    use rooch_framework::timestamp;
     use rooch_framework::coin::{Self, Coin, CoinInfo};
     use rooch_framework::account_coin_store;
+    use rooch_framework::onchain_config;
 
     friend rooch_framework::genesis;
     friend rooch_framework::transaction_validator;
 
-    //TODO should we allow user to transfer gas coin?
     //If not, we can remove `store` ability from GasCoin.
     struct GasCoin has key, store {}
-
-    /// Record the last time when faucet is called for each address.
-    struct FaucetRecord has key, store {
-        last_time: u64
-    }
-
-    /// Faucet interval in seconds
-    const FAUCET_INTERVAL: u64 = 24 * 60 * 60; // 1 day
-
-    /// Faucet too frequently
-    const ErrorFaucetTooFrequently: u64 = 1; 
 
     public fun balance(addr: address): u256 {
         account_coin_store::balance<GasCoin>(addr)
@@ -71,21 +57,10 @@ module rooch_framework::gas_coin {
         faucet(addr, amount);
     }
 
-    public entry fun faucet_entry(account: &signer) { 
-        //100 RGC
-        let amount = 100_000_000_000_000_000_000u256;
-        let addr = signer::address_of(account);
-
-        if (account::exists_resource<FaucetRecord>(addr)) {
-            let record = account::borrow_mut_resource<FaucetRecord>(addr);
-            assert!(timestamp::now_seconds() - record.last_time >= FAUCET_INTERVAL, ErrorFaucetTooFrequently);
-            record.last_time = timestamp::now_seconds();
-        } else {
-            account::move_resource_to(account, FaucetRecord {
-                last_time: timestamp::now_seconds()
-            });
-        };
-
+    /// Entry point for the faucet, Only sequencer account can call this function.
+    public entry fun faucet_entry(account: &signer, amount: u256) {
+        onchain_config::ensure_sequencer(account);
+        let addr = signer::address_of(account); 
         faucet(addr, amount);
     }
 

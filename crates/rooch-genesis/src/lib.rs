@@ -84,6 +84,10 @@ impl FrameworksGasParameters {
         )
     }
 
+    pub fn load_from_gas_config(gas_config: &GasScheduleConfig) -> Result<Self> {
+        Self::load_from_gas_entries(gas_config.max_gas_amount, gas_config.entries.clone())
+    }
+
     pub fn load_from_gas_entries(max_gas_amount: u64, entries: Vec<GasEntry>) -> Result<Self> {
         let entries = entries
             .into_iter()
