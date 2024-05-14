@@ -68,14 +68,17 @@ const Index = ({
   // Function to check if the string contains Chinese characters
   const containsChinese = (text: string) => /[\u4e00-\u9fa5]/.test(text)
 
-  // Function to highlight specific characters
-  const highlightSpecificWords = (text: string, wordsToHighlight: string[]) => {
+  const highlightSpecificWords = (
+    text: string,
+    wordsToHighlight: string[],
+    highlightColor: string,
+  ) => {
     if (!containsChinese(text)) return text // Only process if it's Chinese text
     return (
       <>
         {text.split('').map((char, index) =>
           wordsToHighlight.includes(char) ? (
-            <span key={index} className="text-[#FF914B]">
+            <span key={index} style={{ color: highlightColor }}>
               {char}
             </span>
           ) : (
@@ -86,15 +89,15 @@ const Index = ({
     )
   }
 
-  const highlightTitle = (title: string, wordsToHighlight: string[]) => {
+  const highlightTitle = (title: string, wordsToHighlight: string[], highlightColor: string) => {
     if (containsChinese(title)) {
-      return highlightSpecificWords(title, wordsToHighlight)
+      return highlightSpecificWords(title, wordsToHighlight, highlightColor)
     } else {
       const words = title.split(' ')
       return (
         <>
           {words.slice(0, -1).join(' ')}{' '}
-          <span className="text-[#FF914B]">{words.slice(-1).join(' ')}</span>
+          <span style={{ color: highlightColor }}>{words.slice(-1).join(' ')}</span>
         </>
       )
     }
@@ -105,6 +108,9 @@ const Index = ({
   const wordsToHighlightForExplore = ['新', '型', '架', '构']
   const wordsToHighlightForEcosystem = ['生', '态']
   const wordsToHighlightForBlogs = ['博', '客']
+
+  const highlightColor = '#FF914B'
+  const highlightColorForExplore = '#46977E'
 
   return (
     <>
@@ -146,7 +152,7 @@ const Index = ({
         <div className="py-16 md:py-20 px-4 sm:px-6 md:px-8 lg:px-20 bg-[#F5F5F5] dark:bg-inherit flex flex-col md:flex-row items-center justify-between gap-12 md:gap-8 dark:border-b dark:border-b-zinc-800">
           <div className="px-4 max-w-[900px] w-full h-full">
             <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929] dark:text-[#EEEBEB]">
-              {highlightTitle(featuresTitle, wordsToHighlightForFeatures)}
+              {highlightTitle(featuresTitle, wordsToHighlightForFeatures, highlightColor)}
             </h2>
             <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {features?.map((feature) => (
@@ -188,7 +194,7 @@ const Index = ({
         <div className="py-20 px-4 sm:px-6 md:px-8 lg:px-20 bg-white dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 dark:border-b dark:border-b-zinc-800">
           <div className="px-4 max-w-[854px] w-full h-full">
             <h2 className="text-4xl md:text-6xl font-semibold text-center text-[#2E2929] dark:text-[#E4E4E4]">
-              {highlightTitle(exploreTitle, wordsToHighlightForExplore)}
+              {highlightTitle(exploreTitle, wordsToHighlightForExplore, highlightColorForExplore)}
             </h2>
             <div className="flex flex-col items-center justify-center md:justify-start gap-6 mt-8">
               <h3 className="text-[#737B7D] dark:text-[#81888A] text-base font-normal max-w-2xl text-center">
@@ -230,7 +236,7 @@ const Index = ({
         <div className="py-20 px-4 sm:px-6 md:px-8 lg:px-20 flex flex-col items-center justify-center gap-6 md:gap-0 bg-[#F5F5F5] dark:bg-inherit w-full dark:border-b dark:border-b-zinc-800">
           <div className="flex flex-col items-center justify-center h-full gap-2">
             <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929] dark:text-[#E6E6E6]">
-              {highlightTitle(ecosystemTitle, wordsToHighlightForEcosystem)}
+              {highlightTitle(ecosystemTitle, wordsToHighlightForEcosystem, highlightColor)}
             </h2>
             <p className="mt-4 text-[#737B7D] dark:text-[#81888A] text-center md:text-start">
               {ecosystemContent}
@@ -260,7 +266,7 @@ const Index = ({
         <div className="py-16 md:py-20 px-4 sm:px-6 md:px-8 lg:px-20 bg-white dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
           <div className="px-4 w-full h-full">
             <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929] dark:text-[#E9E9E9]">
-              {highlightTitle(blogsTitle, wordsToHighlightForBlogs)}
+              {highlightTitle(blogsTitle, wordsToHighlightForBlogs, highlightColor)}
             </h2>
             <div className="mt-8 flex flex-col gap-8">
               {blogs?.map((blog) => (
