@@ -164,8 +164,8 @@ const Index = ({
                     <Image
                       src={feature.logo}
                       alt="features logo"
-                      width={40}
-                      height={40}
+                      width={50}
+                      height={50}
                       className="dark:filter dark:invert dark:brightness-150"
                     />
                   </div>
