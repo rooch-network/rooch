@@ -16,6 +16,11 @@ module rooch_framework::gas_coin {
     //If not, we can remove `store` ability from GasCoin.
     struct GasCoin has key, store {}
 
+    const DECIMALS: u8 = 8;
+    public fun decimals() : u8 {
+        DECIMALS
+    }
+
     public fun balance(addr: address): u256 {
         account_coin_store::balance<GasCoin>(addr)
     }
@@ -69,7 +74,7 @@ module rooch_framework::gas_coin {
         let coin_info_obj = coin::register_extend<GasCoin>(
             string::utf8(b"Rooch Gas Coin"),
             string::utf8(b"RGC"),
-            18, // decimals
+            DECIMALS, // decimals
         );
         object::transfer(coin_info_obj, @rooch_framework)
     }
