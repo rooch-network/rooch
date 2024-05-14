@@ -9,6 +9,7 @@ module rooch_framework::gas_coin {
     use rooch_framework::coin::{Self, Coin, CoinInfo};
     use rooch_framework::account_coin_store;
     use rooch_framework::onchain_config;
+    use rooch_framework::chain_id;
 
     friend rooch_framework::genesis;
     friend rooch_framework::transaction_validator;
@@ -62,9 +63,11 @@ module rooch_framework::gas_coin {
         faucet(addr, amount);
     }
 
-    /// Entry point for the faucet, Only sequencer account can call this function.
+    /// Entry point for the faucet, anyone can get Gas via this function on local/dev net, otherwise only sequencer account can call this function.
     public entry fun faucet_entry(account: &signer, amount: u256) {
-        onchain_config::ensure_sequencer(account);
+        if(!chain_id::is_local_or_dev()){
+            onchain_config::ensure_sequencer(account);
+        };
         let addr = signer::address_of(account); 
         faucet(addr, amount);
     }

@@ -21,6 +21,7 @@ This module defines Rooch Gas Coin.
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="account_coin_store.md#0x3_account_coin_store">0x3::account_coin_store</a>;
+<b>use</b> <a href="chain_id.md#0x3_chain_id">0x3::chain_id</a>;
 <b>use</b> <a href="coin.md#0x3_coin">0x3::coin</a>;
 <b>use</b> <a href="onchain_config.md#0x3_onchain_config">0x3::onchain_config</a>;
 </code></pre>
@@ -113,7 +114,7 @@ Mint gas coin to the given account.
 
 ## Function `faucet_entry`
 
-Entry point for the faucet, Only sequencer account can call this function.
+Entry point for the faucet, anyone can get Gas via this function on local/dev net, otherwise only sequencer account can call this function.
 
 
 <pre><code><b>public</b> entry <b>fun</b> <a href="gas_coin.md#0x3_gas_coin_faucet_entry">faucet_entry</a>(<a href="">account</a>: &<a href="">signer</a>, amount: u256)

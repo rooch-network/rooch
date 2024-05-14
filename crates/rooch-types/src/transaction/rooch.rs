@@ -52,7 +52,7 @@ impl RoochTransactionData {
             sender,
             sequence_number,
             chain_id: BuiltinChainID::Local.chain_id().id(),
-            max_gas_amount: GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT * 100,
+            max_gas_amount: GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT,
             action,
         }
     }
