@@ -37,7 +37,12 @@ impl MoveStructState for GasEntry {
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct GasScheduleConfig {
+    pub max_gas_amount: u64,
     pub entries: Vec<GasEntry>,
+}
+
+impl GasScheduleConfig {
+    pub const INITIAL_MAX_GAS_AMOUNT: u64 = 1_000_000_000u64;
 }
 
 impl MoveStructType for GasScheduleConfig {
@@ -48,15 +53,17 @@ impl MoveStructType for GasScheduleConfig {
 
 impl MoveStructState for GasScheduleConfig {
     fn struct_layout() -> MoveStructLayout {
-        MoveStructLayout::new(vec![MoveTypeLayout::Vector(Box::new(
-            GasEntry::type_layout(),
-        ))])
+        MoveStructLayout::new(vec![
+            MoveTypeLayout::U64,
+            MoveTypeLayout::Vector(Box::new(GasEntry::type_layout())),
+        ])
     }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct GasSchedule {
     pub schedule_version: u64,
+    pub max_gas_amount: u64,
     pub entries: Vec<GasEntry>,
 }
 
@@ -75,6 +82,7 @@ impl MoveStructType for GasSchedule {
 impl MoveStructState for GasSchedule {
     fn struct_layout() -> MoveStructLayout {
         MoveStructLayout::new(vec![
+            MoveTypeLayout::U64,
             MoveTypeLayout::U64,
             MoveTypeLayout::Vector(Box::new(GasEntry::type_layout())),
         ])

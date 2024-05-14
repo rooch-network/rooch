@@ -26,7 +26,7 @@ module moveos_std::genesis {
     /// init the genesis context for test
     public fun init_for_test(){
         let genesis_account = moveos_std::signer::module_signer<GenesisContext>();
-        tx_context::add_attribute_via_system(&genesis_account, gas_schedule::new_gas_schedule_config(std::vector::empty()));
+        tx_context::add_attribute_via_system(&genesis_account, gas_schedule::new_gas_schedule_config(gas_schedule::initial_max_gas_amount(),std::vector::empty()));
         init()
     }
 }

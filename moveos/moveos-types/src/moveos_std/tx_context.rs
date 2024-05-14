@@ -4,10 +4,10 @@
 //Source origin from https://github.com/MystenLabs/sui/blob/598f106ef5fbdfbe1b644236f0caf46c94f4d1b7/crates/sui-types/src/base_types.rs
 
 use crate::addresses::MOVEOS_STD_ADDRESS;
-use crate::gas_config::GasConfig;
 use crate::h256::{self, H256};
 use crate::move_std::string::MoveString;
 use crate::moveos_std::copyable_any::{Any, AnyTrait};
+use crate::moveos_std::gas_schedule::GasScheduleConfig;
 use crate::moveos_std::object::ObjectID;
 use crate::moveos_std::simple_map::SimpleMap;
 use crate::state::{MoveState, MoveStructState, MoveStructType};
@@ -77,7 +77,7 @@ impl TxContext {
         Self::new(
             sender,
             0,
-            GasConfig::DEFAULT_MAX_GAS_AMOUNT,
+            GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT,
             H256::zero(),
             0,
         )
@@ -102,7 +102,7 @@ impl TxContext {
         Self {
             sender: AccountAddress::ZERO,
             sequence_number: 0,
-            max_gas_amount: GasConfig::DEFAULT_MAX_GAS_AMOUNT,
+            max_gas_amount: GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT,
             tx_hash: vec![0u8; h256::LENGTH],
             tx_size: 0,
             ids_created: 0,
@@ -136,7 +136,7 @@ impl TxContext {
         Self::new(
             AccountAddress::random(),
             0,
-            GasConfig::DEFAULT_MAX_GAS_AMOUNT,
+            GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT,
             H256::random(),
             1,
         )

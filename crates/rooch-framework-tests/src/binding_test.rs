@@ -7,8 +7,8 @@ use move_core_types::vm_status::KeptVMStatus;
 use moveos_config::DataDirPath;
 use moveos_store::MoveOSStore;
 use moveos_types::function_return_value::FunctionResult;
-use moveos_types::gas_config::GasConfig;
 use moveos_types::module_binding::MoveFunctionCaller;
+use moveos_types::moveos_std::gas_schedule::GasScheduleConfig;
 use moveos_types::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use moveos_types::moveos_std::tx_context::TxContext;
 use moveos_types::state_resolver::RootObjectResolver;
@@ -124,7 +124,7 @@ impl RustBindingTest {
         sequence_number: u64,
         l1_block: L1BlockWithBody,
     ) -> TxContext {
-        let max_gas_amount = GasConfig::DEFAULT_MAX_GAS_AMOUNT * 1000;
+        let max_gas_amount = GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT * 1000;
         let tx_hash = l1_block.block.tx_hash();
         let tx_size = l1_block.block.tx_size();
         TxContext::new(

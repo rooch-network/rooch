@@ -4,7 +4,6 @@
 pub mod access_path;
 pub mod addresses;
 pub mod function_return_value;
-pub mod gas_config;
 pub mod genesis_info;
 pub mod h256;
 pub mod module_binding;
