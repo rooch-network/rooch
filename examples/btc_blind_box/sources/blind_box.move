@@ -14,15 +14,14 @@
 /// The box will be determined after request stage, and is not predictable, as no ones knows the block hash of the given block height in the future.
 
 module btc_blind_box::blind_box {
-
-    use std::string;
     use std::option;
     use std::vector;
     use std::bcs;
     use std::hash;
+    use moveos_std::signer;
     use moveos_std::tx_context;
     use moveos_std::object::{Self, Object};
-    use rooch_framework::account;
+    use moveos_std::account as moveos_account;
     use rooch_framework::timestamp;
     use bitcoin_move::bitcoin;
     use bitcoin_move::types::{Self, Header};
@@ -50,6 +49,7 @@ module btc_blind_box::blind_box {
         request_deadline: u64,
         claimable_start: u64,
         sold_amount: u64,
+        claimed_amount: u64,
     }
 
     /// The project owner who can open the sale of the blind box
@@ -63,6 +63,7 @@ module btc_blind_box::blind_box {
             request_deadline: request_deadline,
             claimable_start: claimable_start,
             sold_amount: 0,
+            claimed_amount: 0,
         });
         object::to_shared(status_obj);
     }
@@ -72,32 +73,34 @@ module btc_blind_box::blind_box {
         let status = object::borrow_mut(sale_status);
         assert!(status.sold_amount < status.total_amount, ErrorSoldOut);
         assert!(latest_block_height() <= status.request_deadline, ErrorExceedRequestDeadline);
-        status.sold_amount += 1;
-        account::move_resource_to<Voucher>(player, Voucher { magic_number: generate_magic_number() });
+        status.sold_amount = status.sold_amount + 1;
+        moveos_account::move_resource_to<Voucher>(player, Voucher { magic_number: generate_magic_number() });
     }
 
     /// Player claim the blind box with the voucher.
-    public fun claim_box(player: &signer, sale_status: &Object<SaleStatus>) {
-        let status = object::borrow(sale_status);
-        let block_height = latest_block_height;
+    public fun claim_box(player: &signer, sale_status: &mut Object<SaleStatus>) {
+        let status = object::borrow_mut(sale_status);
+        let block_height = latest_block_height();
         assert!(block_height >= status.claimable_start, ErrorClaimNotStarted);
-        let voucher = account::move_resource_from<Voucher>(player);
+        status.claimed_amount = status.claimed_amount + 1;
+
+        let voucher = moveos_account::move_resource_from<Voucher>(signer::address_of(player));
         let block = bitcoin::get_block_by_height(block_height);
-        assert!(option::is_some(block), ErrorBitcoinClientError);
-        let block = option::extract(block);
+        assert!(option::is_some<Header>(&block), ErrorBitcoinClientError);
+        let block = option::extract(&mut block);
 
         let box = generate_box(&block, voucher.magic_number);
         object::transfer(object::new(box), signer::address_of(player));
         let Voucher { magic_number: _ } = voucher;
     }
 
-    fun latest_block_height() -> u64 {
+    fun latest_block_height(): u64 {
         let height = bitcoin::get_latest_block_height();
-        assert!(option::is_some(height), ErrorBitcoinClientError);
-        option::extract(height)
+        assert!(option::is_some<u64>(&height), ErrorBitcoinClientError);
+        option::extract<u64>(&mut height)
     }
 
-    fun generate_magic_number() -> u128 {
+    fun generate_magic_number(): u128 {
         // generate a random number from tx_context
         let bytes = vector::empty<u8>();
         vector::append(&mut bytes, bcs::to_bytes(&tx_context::sequence_number()));
@@ -110,10 +113,10 @@ module btc_blind_box::blind_box {
         magic_number
     }
 
-    fun generate_box(block: &Header, magic_number: u128) -> Box {
+    fun generate_box(block: &Header, magic_number: u128): Box {
         // generate the box with the block hash and the magic number
         let bytes = vector::empty<u8>();
-        vector::append(&mut bytes, bcs::to_bytes(&block));
+        vector::append(&mut bytes, bcs::to_bytes(block));
         vector::append(&mut bytes, bcs::to_bytes(&magic_number));
         vector::append(&mut bytes, bcs::to_bytes(&tx_context::sequence_number()));
         vector::append(&mut bytes, bcs::to_bytes(&tx_context::sender()));
@@ -122,16 +125,16 @@ module btc_blind_box::blind_box {
         let seed = hash::sha3_256(bytes);
         let value = bytes_to_u128(seed);
 
-        let rand_value = value % 10000 // An uniform distribution random number range in [0, 10000)
+        let rand_value = value % 10000; // An uniform distribution random number range in [0, 10000)
 
         // Infer box rarity according to the random number
-        if rand_value < 1 {
+        if (rand_value < 1) {
             Box { rarity: 5 }
-        } else if rand_value < 10 {
+        } else if (rand_value < 10) {
             Box { rarity: 4 }
-        } else if rand_value < 100 {
+        } else if (rand_value < 100) {
             Box { rarity: 3 }
-        } else if rand_value < 1000 {
+        } else if (rand_value < 1000) {
             Box { rarity: 2 }
         } else {
             Box { rarity: 1 }
@@ -142,7 +145,7 @@ module btc_blind_box::blind_box {
         let value = 0u128;
         let i = 0u64;
         while (i < 16) {
-            value = value | ((*Vector::borrow(&bytes, i) as u128) << ((8 * (15 - i)) as u8));
+            value = value | ((*vector::borrow(&bytes, i) as u128) << ((8 * (15 - i)) as u8));
             i = i + 1;
         };
         return value
@@ -151,17 +154,29 @@ module btc_blind_box::blind_box {
     #[test_only]
     use rooch_framework::account;
 
-    #[test]
-    fun test_request_and_claim() {
+    #[test(sender=@0x42)]
+    fun test_request_and_claim(sender: &signer) {
         rooch_framework::genesis::init_for_test();
         bitcoin_move::genesis::init_for_test();
-
         let module_owner = account::create_account_for_testing(@btc_blind_box);
+
         opne_sale(&module_owner, 100, 5, 10);
 
-        let header = types::new_header_for_test(1, @0x0, @abcdef123, 10000, 8, 1);
-        bitcoin_move::add_block_for_test(1, @0x1234, header);
-        let status_obj_id = object::named_object_id<SaleStatus>()
-        let status_obj = object::borrow_mut_object_shared(status_obj_id);
+        let status_obj_id = object::named_object_id<SaleStatus>();
+        let status_obj = object::borrow_mut_object_shared<SaleStatus>(status_obj_id);
+
+        // request box
+        let header = types::new_header_for_test(1, @0x123, @0xabcdef123, 50000, 8, 1);
+        bitcoin::submit_block_for_test(5, @0x1234, &header);
+        request_box(sender, status_obj);
+        assert!(object::borrow(status_obj).sold_amount == 1, 101);
+
+        // claim box
+        let header = types::new_header_for_test(1, @0x2345, @0xabcdef234, 100000, 8, 10);
+        bitcoin::submit_block_for_test(10, @0x2345, &header);
+        claim_box(sender, status_obj);
+        assert!(object::borrow(status_obj).claimed_amount == 1, 102);
     }
+
+    // TODO: Add more test cases
 }
