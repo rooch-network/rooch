@@ -47,7 +47,7 @@ interface IndexProps {
   blogs: Blog[]
 }
 
-export default function Index({
+const Index = ({
   heroTitle,
   heroSlogan,
   heroDescription,
@@ -64,7 +64,48 @@ export default function Index({
   ecosystemBrand,
   blogsTitle,
   blogs,
-}: IndexProps) {
+}: IndexProps) => {
+  // Function to check if the string contains Chinese characters
+  const containsChinese = (text: string) => /[\u4e00-\u9fa5]/.test(text)
+
+  // Function to highlight specific characters
+  const highlightSpecificWords = (text: string, wordsToHighlight: string[]) => {
+    if (!containsChinese(text)) return text // Only process if it's Chinese text
+    return (
+      <>
+        {text.split('').map((char, index) =>
+          wordsToHighlight.includes(char) ? (
+            <span key={index} className="text-[#FF914B]">
+              {char}
+            </span>
+          ) : (
+            char
+          ),
+        )}
+      </>
+    )
+  }
+
+  const highlightTitle = (title: string, wordsToHighlight: string[]) => {
+    if (containsChinese(title)) {
+      return highlightSpecificWords(title, wordsToHighlight)
+    } else {
+      const words = title.split(' ')
+      return (
+        <>
+          {words.slice(0, -1).join(' ')}{' '}
+          <span className="text-[#FF914B]">{words.slice(-1).join(' ')}</span>
+        </>
+      )
+    }
+  }
+
+  // Define words to highlight for Chinese text
+  const wordsToHighlightForFeatures = ['比', '特', '币']
+  const wordsToHighlightForExplore = ['新', '型', '架', '构']
+  const wordsToHighlightForEcosystem = ['生', '态']
+  const wordsToHighlightForBlogs = ['博', '客']
+
   return (
     <>
       <div className="antialiased">
@@ -78,9 +119,7 @@ export default function Index({
               <p className="block pt-2 font-bold text-gray-800 text-2xl md:text-3xl lg:text-4xl dark:text-gray-200">
                 {heroSlogan}
               </p>
-            ) : (
-              ''
-            )}
+            ) : null}
           </div>
           <div className="mt-5 max-w-2xl text-center mx-auto">
             <p className="text-lg text-gray-600 dark:text-gray-400">{heroDescription}</p>
@@ -107,8 +146,7 @@ export default function Index({
         <div className="py-16 md:py-20 px-4 sm:px-6 md:px-8 lg:px-20 bg-[#F5F5F5] dark:bg-inherit flex flex-col md:flex-row items-center justify-between gap-12 md:gap-8 dark:border-b dark:border-b-zinc-800">
           <div className="px-4 max-w-[900px] w-full h-full">
             <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929] dark:text-[#EEEBEB]">
-              {featuresTitle.split(' ').slice(0, -1).join(' ')}{' '}
-              <span className="text-[#FF914B]">{featuresTitle.split(' ').slice(-1)}</span>
+              {highlightTitle(featuresTitle, wordsToHighlightForFeatures)}
             </h2>
             <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {features?.map((feature) => (
@@ -150,8 +188,7 @@ export default function Index({
         <div className="py-20 px-4 sm:px-6 md:px-8 lg:px-20 bg-white dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 dark:border-b dark:border-b-zinc-800">
           <div className="px-4 max-w-[854px] w-full h-full">
             <h2 className="text-4xl md:text-6xl font-semibold text-center text-[#2E2929] dark:text-[#E4E4E4]">
-              {exploreTitle.split(' ').slice(0, -1).join(' ')}{' '}
-              <span className="text-[#46977E]">{exploreTitle.split(' ').slice(-1).join(' ')}</span>
+              {highlightTitle(exploreTitle, wordsToHighlightForExplore)}
             </h2>
             <div className="flex flex-col items-center justify-center md:justify-start gap-6 mt-8">
               <h3 className="text-[#737B7D] dark:text-[#81888A] text-base font-normal max-w-2xl text-center">
@@ -165,7 +202,7 @@ export default function Index({
                 className="dark:filter dark:invert dark:brightness-200"
               />
               <div className="mt-8 h-12">
-                <button className=" px-8 py-4 bg-[#FF914B] font-bold text-lg text-center rounded-full border border-1 border-b-[6px] border-black active:border-b-4 active:transform active:translate-y-0.5 transition-all hover:shadow-custom1 dark:border-white dark:shadow-custom1 duration-300">
+                <button className="px-8 py-4 bg-[#FF914B] font-bold text-lg text-center rounded-full border border-1 border-b-[6px] border-black active:border-b-4 active:transform active:translate-y-0.5 transition-all hover:shadow-custom1 dark:border-white dark:shadow-custom1 duration-300">
                   {featuresButton}
                 </button>
               </div>
@@ -193,10 +230,7 @@ export default function Index({
         <div className="py-20 px-4 sm:px-6 md:px-8 lg:px-20 flex flex-col items-center justify-center gap-6 md:gap-0 bg-[#F5F5F5] dark:bg-inherit w-full dark:border-b dark:border-b-zinc-800">
           <div className="flex flex-col items-center justify-center h-full gap-2">
             <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929] dark:text-[#E6E6E6]">
-              {ecosystemTitle.split(' ').slice(0, -1).join(' ')}{' '}
-              <span className="text-[#FF914B]">
-                {ecosystemTitle.split(' ').slice(-1).join(' ')}
-              </span>
+              {highlightTitle(ecosystemTitle, wordsToHighlightForEcosystem)}
             </h2>
             <p className="mt-4 text-[#737B7D] dark:text-[#81888A] text-center md:text-start">
               {ecosystemContent}
@@ -226,8 +260,7 @@ export default function Index({
         <div className="py-16 md:py-20 px-4 sm:px-6 md:px-8 lg:px-20 bg-white dark:bg-inherit flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8">
           <div className="px-4 w-full h-full">
             <h2 className="text-4xl md:text-6xl font-semibold text-center md:text-start text-[#2E2929] dark:text-[#E9E9E9]">
-              {blogsTitle.split(' ').slice(0, -1).join(' ')}{' '}
-              <span className="text-[#FF914B]">{blogsTitle.split(' ').slice(-1).join(' ')}</span>
+              {highlightTitle(blogsTitle, wordsToHighlightForBlogs)}
             </h2>
             <div className="mt-8 flex flex-col gap-8">
               {blogs?.map((blog) => (
@@ -269,3 +302,5 @@ export default function Index({
     </>
   )
 }
+
+export default Index
