@@ -3,7 +3,6 @@
 
 use crate::natives::helpers::{make_module_natives, make_native};
 use better_any::{Tid, TidAble};
-use framework_builder::dependency_order::sort_by_dependency_order;
 use itertools::zip_eq;
 use move_binary_format::{
     compatibility::Compatibility,
@@ -27,6 +26,7 @@ use move_vm_types::{
     pop_arg,
     values::{Struct, Value, Vector, VectorRef},
 };
+use moveos_compiler::dependency_order::sort_by_dependency_order;
 use moveos_types::moveos_std::move_module::MoveModuleId;
 use smallvec::smallvec;
 use std::collections::{BTreeSet, HashMap, VecDeque};
