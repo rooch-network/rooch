@@ -1,20 +1,14 @@
 # Session key
 
-## What is the session key?
-
 Rooch's Session Key is a temporary key that facilitates users to interact with the chain.
-
-## What is the session key used for?
 
 When interacting with Rooch applications, each application generates a session key. It has an expiration time and will become invalid if there is no interaction for a long time.
 
 The purpose of the session key is to simplify the interaction process between the wallet and the DApp. The session key is generated during the first interaction. As long as the session key has not expired in subsequent operations, the DApp does not need to call the wallet again for signature.
 
-## Advantage
-
 Rooch's session keys provide several advantages:
 
-1. Shorten the complicated signing steps of chain game interaction. Taking the 2048 mini-game as an example, each step needs to send a transaction to the chain. The client will frequently call the wallet to sign, which is a very time-consuming process. Some wallets may use a delegation agent, which means prepaying a portion of Gas, and when the budgeted Gas is exhausted, a one-time signature transaction will be uploaded to the chain. This form of custody involves financial risks and game cheating. When using a session key, you only need to sign a transaction once when you start the game. During subsequent game executions, as long as the session key has not expired, the Rooch system will automatically sign the transaction on the chain at each step.
+1. Shorten the complicated signing steps of chain interaction. Taking the 2048 mini-game as an example, each step needs to send a transaction to the chain. The client will frequently call the wallet to sign, which is a very time-consuming process. Some wallets may use a delegation agent, which means prepaying a portion of Gas, and when the budgeted Gas is exhausted, a one-time signature transaction will be uploaded to the chain. This form of custody involves financial risks and game cheating. When using a session key, you only need to sign a transaction once when you start the game. During subsequent game executions, as long as the session key has not expired, the Rooch system will automatically sign the transaction on the chain at each step.
 2. Provide better permission management. Which functions can be used for different account addresses can be determined when signing for the first time.
 3. It is more user-friendly and provides end users with the same smooth experience using Web3 as Web2.
 
