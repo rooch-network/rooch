@@ -215,10 +215,16 @@ export const AssetsCoin = () => {
                   </div>
 
                   {/* CTA */}
-                  <Button variant="default" size="default" className="w-full mt-6 font-sans gap-1">
-                    <span>Send</span>
+                  <Button
+                    variant="default"
+                    size="default"
+                    className="w-full mt-6 font-sans gap-1"
+                    disabled={true}
+                  >
+                    {/*<span>Send</span>*/}
                     <span className="font-semibold text-blue-400 dark:text-blue-600">
-                      {selectedCoin?.name}
+                      {/*{selectedCoin?.name}*/}
+                      COMING SOON...
                     </span>
                   </Button>
                 </div>
