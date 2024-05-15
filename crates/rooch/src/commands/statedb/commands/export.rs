@@ -9,6 +9,7 @@ use csv::Writer;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectID;
+use moveos_types::state::KeyState;
 use moveos_types::state_resolver::StatelessResolver;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::bitcoin::ord::InscriptionStore;
@@ -18,6 +19,7 @@ use rooch_types::framework::address_mapping::AddressMappingWrapper;
 use rooch_types::rooch_network::RoochChainID;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::time::SystemTime;
 
 /// Export statedb
@@ -54,6 +56,38 @@ impl TryFrom<u8> for ExportMode {
 impl ExportMode {
     pub fn to_num(self) -> u8 {
         self as u8
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ExportID {
+    pub prefix: String,
+    pub object_id: ObjectID,
+}
+
+impl ExportID {
+    pub fn new(prefix: String, object_id: ObjectID) -> Self {
+        Self { prefix, object_id }
+    }
+}
+
+impl std::fmt::Display for ExportID {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}", self.prefix, self.object_id.to_string())
+    }
+}
+
+impl FromStr for ExportID {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut parts = s.split(":");
+        let prefix = parts
+            .next()
+            .ok_or(anyhow::anyhow!("invalid export id"))?
+            .to_string();
+        let object_id =
+            ObjectID::from_str(parts.next().ok_or(anyhow::anyhow!("invalid export id"))?)?;
+        Ok(ExportID::new(prefix, object_id))
     }
 }
 
@@ -159,7 +193,8 @@ impl ExportCommand {
 
         // write csv object states.
         {
-            writer.write_field(STATE_HEADER_PREFIX.to_string())?;
+            let root_export_id = ExportID::new(STATE_HEADER_PREFIX.to_string(), ObjectID::root());
+            writer.write_field(root_export_id.to_string())?;
             writer.write_field(format!("{:?}", root_state_root))?;
             writer.write_record(None::<&[u8]>)?;
         }
@@ -178,11 +213,12 @@ impl ExportCommand {
 
         // write csv field states
         for obj in genesis_objects.into_iter() {
-            let has_child = obj.id == utxo_store_id || obj.id == inscription_store_id;
+            // let has_child = obj.id == utxo_store_id || obj.id == inscription_store_id;
             Self::export_object_fields(
                 moveos_store,
                 H256::from(obj.state_root.into_bytes()),
-                has_child,
+                obj.id,
+                // has_child,
                 writer,
             )?;
         }
@@ -206,7 +242,8 @@ impl ExportCommand {
 
         // write csv object states.
         {
-            writer.write_field(STATE_HEADER_PREFIX.to_string())?;
+            let export_id = ExportID::new(STATE_HEADER_PREFIX.to_string(), object_id.clone());
+            writer.write_field(export_id.to_string())?;
             writer.write_field(format!("{:?}", root_state_root))?;
             writer.write_record(None::<&[u8]>)?;
         }
@@ -220,11 +257,10 @@ impl ExportCommand {
         writer.write_record(None::<&[u8]>)?;
 
         // write csv field states
-        let has_child = object_id == utxo_store_id || object_id == inscription_store_id;
         Self::export_object_fields(
             moveos_store,
             H256::from(obj.state_root.into_bytes()),
-            has_child,
+            object_id,
             writer,
         )?;
 
@@ -238,7 +274,7 @@ impl ExportCommand {
     fn export_object_fields<W: std::io::Write>(
         moveos_store: &MoveOSStore,
         state_root: H256,
-        has_child: bool,
+        object_id: ObjectID,
         writer: &mut Writer<W>,
     ) -> Result<()> {
         let starting_key = None;
@@ -246,7 +282,8 @@ impl ExportCommand {
 
         // write csv header.
         {
-            writer.write_field(STATE_HEADER_PREFIX.to_string())?;
+            let export_id = ExportID::new(STATE_HEADER_PREFIX.to_string(), object_id);
+            writer.write_field(export_id.to_string())?;
             writer.write_field(format!("{:?}", state_root))?;
             writer.write_record(None::<&[u8]>)?;
         }
@@ -254,13 +291,13 @@ impl ExportCommand {
             .get_state_store()
             .iter(state_root, starting_key.clone())?;
 
-        let mut child_state_roots = vec![];
+        let mut child_objects = vec![];
         for item in iter {
             let (k, v) = item?;
-            if has_child {
+            if object_id.has_child() {
                 let object = v.clone().as_raw_object()?;
                 if object.size > 0 {
-                    child_state_roots.push(object.state_root);
+                    child_objects.push(object);
                 }
             }
             writer.write_field(k.to_string())?;
@@ -270,16 +307,19 @@ impl ExportCommand {
             count += 1;
         }
 
-        for child_state_root in child_state_roots.into_iter() {
+        for child_object in child_objects.into_iter() {
             Self::export_object_fields(
                 moveos_store,
-                H256::from(child_state_root.into_bytes()),
-                false,
+                H256::from(child_object.state_root.into_bytes()),
+                child_object.id,
                 writer,
             )?;
         }
 
-        println!("state_root: {:?} export field counts {}", state_root, count);
+        println!(
+            "export_object_fields state_root: {:?} export field counts {}",
+            state_root, count
+        );
         Ok(())
     }
 
