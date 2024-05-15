@@ -44,6 +44,7 @@
     "react-hot-toast": "2.4.0",
     "react-i18next": "^14.0.3",
     "react-jazzicon": "^1.0.4",
+    "react-loading-skeleton": "^3.4.0",
     "react-router-dom": "^6.22.0",
     "react-syntax-highlighter": "^15.5.0",
     "tailwind-merge": "^2.2.1",

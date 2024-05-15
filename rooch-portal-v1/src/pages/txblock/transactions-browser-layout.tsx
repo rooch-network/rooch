@@ -38,7 +38,7 @@ export const TransactionsBrowserLayout = () => {
       {/* Transaction Bar */}
       <TransactionsBrowserTab items={tabItems} />
 
-      {/* Trasaction Details */}
+      {/* Transaction Details */}
       <div className="rounded-2xl bg-accent/75 h-full w-full">
         <div className="m-3 rounded-2xl bg-background/95 h-full p-4 shadow-sm">
           <TransactionDetails
