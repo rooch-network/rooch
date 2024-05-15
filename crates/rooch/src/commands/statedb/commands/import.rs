@@ -158,10 +158,7 @@ fn produce_updates(
             let state_root_key = last_state_root_key
                 .clone()
                 .expect("State root key should have value");
-            let update_set = updates
-                .states
-                .entry(state_root_key)
-                .or_insert(UpdateSet::new());
+            let update_set = updates.states.entry(state_root_key).or_default();
             update_set.put(key_state, state);
         }
         if updates.states.is_empty() {

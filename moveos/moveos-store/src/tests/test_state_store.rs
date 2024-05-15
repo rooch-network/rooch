@@ -3,7 +3,6 @@
 
 use crate::MoveOSStore;
 use anyhow::Result;
-use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
 use moveos_types::h256::H256;
 use moveos_types::move_std::string::MoveString;
@@ -14,7 +13,7 @@ use moveos_types::state::{
     FieldChange, KeyState, MoveState, MoveType, ObjectChange, StateChangeSet,
 };
 use moveos_types::state_resolver::StatelessResolver;
-use moveos_types::test_utils::{random_state_change_set, random_state_change_set_for_child_object};
+use moveos_types::test_utils::random_state_change_set;
 use smt::NodeReader;
 use std::str::FromStr;
 

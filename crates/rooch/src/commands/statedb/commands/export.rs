@@ -72,14 +72,14 @@ impl ExportID {
 
 impl std::fmt::Display for ExportID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}:{}", self.prefix, self.object_id.to_string())
+        write!(f, "{}:{:?}", self.prefix, self.object_id)
     }
 }
 
 impl FromStr for ExportID {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut parts = s.split(":");
+        let mut parts = s.split(':');
         let prefix = parts
             .next()
             .ok_or(anyhow::anyhow!("invalid export id"))?
@@ -185,11 +185,12 @@ impl ExportCommand {
             address_mapping_id, reverse_mapping_id
         );
 
-        let mut genesis_object_ids = vec![];
-        genesis_object_ids.push(utxo_store_id.clone());
-        genesis_object_ids.push(inscription_store_id.clone());
-        genesis_object_ids.push(address_mapping_id);
-        genesis_object_ids.push(reverse_mapping_id);
+        let genesis_object_ids = vec![
+            utxo_store_id.clone(),
+            inscription_store_id.clone(),
+            address_mapping_id,
+            reverse_mapping_id,
+        ];
 
         let mut genesis_objects = vec![];
         let mut genesis_states = vec![];
