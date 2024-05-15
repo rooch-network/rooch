@@ -106,7 +106,6 @@ impl Faucet {
     //     }
     // }
 
-    // ./rooch move run --function 0x3::transfer::transfer_coin_to_multichain_address --type-args 0x3::gas_coin::GasCoin --args 0u64 --args address:bcrt1pyltxam359x8fryn0pnr9xvd7g6prxvgs48wd859hqx2w04ld59hq7pnlk4 100000u256
     // TODO: add queue bitch run ?
     // TODO: retry ?
     // TODO: record faucet address
