@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-import ManageSessions from "@/pages/settings/components/manage-sessions.tsx";
+import ManageSessions from '@/pages/settings/components/manage-sessions.tsx'
 
 export const SettingsLayout = () => {
   return (
