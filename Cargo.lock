@@ -9333,6 +9333,7 @@ dependencies = [
  "move-package",
  "move-resource-viewer",
  "moveos",
+ "moveos-compiler",
  "moveos-config",
  "moveos-stdlib",
  "moveos-store",

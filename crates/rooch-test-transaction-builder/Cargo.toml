@@ -40,6 +40,7 @@ moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
 raw-store = { workspace = true }
 moveos-config = { workspace = true }
+moveos-compiler = { workspace = true }
 
 rooch-config = { workspace = true }
 rooch-types ={ workspace = true }

@@ -32,7 +32,7 @@ impl Explain {
         let address_mapping = context.address_mapping();
         let module_id = self.location.into_module_id(&address_mapping)?;
         let error_descriptions = framework_types::error_descriptions::ERROR_DESCRIPTIONS.clone();
-        let error_description_bytes = error_descriptions.get(&module_id.address());
+        let error_description_bytes = error_descriptions.get(module_id.address());
 
         match error_description_bytes {
             Some(bytes) => {

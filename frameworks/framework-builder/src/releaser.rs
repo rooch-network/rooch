@@ -56,15 +56,12 @@ pub fn release(version: StdlibVersion, check_compatibility: bool) -> Result<()> 
                 version.as_string(),
                 pre_version.as_string()
             );
-            let prev_stdlib = pre_version.load_from_file().expect(&format!(
-                "load previous stdlib (version {:}) failed",
-                pre_version.as_string()
-            ));
+            let prev_stdlib = pre_version.load_from_file()?;
             assert_stdlib_compatibility(&curr_stdlib, &prev_stdlib);
         }
     }
 
-    version.save(&curr_stdlib).expect("save stdlib failed");
+    version.save(&curr_stdlib)?;
     info!(
         "Release stdlib version {:?} successfully.",
         version.as_string()
@@ -109,7 +106,6 @@ fn assert_stdlib_compatibility(curr_stdlib: &Stdlib, prev_stdlib: &Stdlib) {
 
     let incompatible_module_ids = new_modules_map
         .values()
-        .into_iter()
         .filter_map(|module| {
             let module_id = module.self_id();
             if module_id.address() == &ROOCH_NURSERY_ADDRESS {
@@ -151,7 +147,6 @@ fn assert_stdlib_compatibility(curr_stdlib: &Stdlib, prev_stdlib: &Stdlib) {
 
     let deleted_module_ids = old_modules_map
         .keys()
-        .into_iter()
         .filter_map(|module_id| {
             if !new_modules_map.contains_key(module_id) {
                 Some(module_id.clone())

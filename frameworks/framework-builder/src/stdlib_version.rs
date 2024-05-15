@@ -61,7 +61,7 @@ impl StdlibVersion {
 
     pub(crate) fn load_from_file(&self) -> Result<Stdlib> {
         let file = self.output_file();
-        Stdlib::load_from_file(&file)
+        Stdlib::load_from_file(file)
     }
 
     /// Load stdlib from static include file
