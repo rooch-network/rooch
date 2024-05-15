@@ -3,7 +3,7 @@
   <br />
   <a href="https://rooch.network"><img alt="Rooch" src="https://rooch.network/logo/rooch_black_combine.svg" width=384></a>
   <br />
-  <h3><a href="https://rooch.network">Rooch</a> is a Modular Fully on-chain Application Container, with <a href="https://github.com/move-language/move">Move</a> language.</h3>
+  <h3><a href="https://rooch.network">Rooch</a> is a VApp Container with <a href="https://github.com/move-language/move">Move</a> language.</h3>
   <br />
 </div>
 
@@ -11,11 +11,8 @@
 [![License](https://img.shields.io/badge/license-Apache-green.svg)](LICENSE)
 <!-- [![LoC](https://tokei.rs/b1/github/rooch-network/rooch?category=lines)](https://github.com/rooch-network/rooch) -->
 
-## Usage
+**[VApp](https://rooch.network/learn/core-concepts/vapp)** stands for Verifiable Application. A Verifiable Application aims to ensure the verifiability of both computations and states within the application, thereby guaranteeing the transparency and reliability of its operations.
 
-* **RoochNetwork(Multi-Chain Modular Layer2)**: Rooch(Execution) + Multi-Chain(Settlement) + Ethereum(Arbitration) + DA
-* **X-Chain Rollup**: Rooch(Execution) + X-Chain(Settlement + Arbitration) + DA
-* **Sovereign Rollup**: Rooch + DA
 
 ## Developer Network Information
 
