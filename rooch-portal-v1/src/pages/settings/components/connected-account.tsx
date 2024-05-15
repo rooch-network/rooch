@@ -11,8 +11,9 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Copy, Unplug } from 'lucide-react'
-import { formatAddress } from '../../../utils/format'
-import { useWalletStore } from '@roochnetwork/rooch-sdk-kit'
+import { formatAddress } from '@/utils/format.ts'
+import { useCurrentAccount } from '@roochnetwork/rooch-sdk-kit'
+import toast from 'react-hot-toast'
 
 const networks = [
   {
@@ -20,17 +21,45 @@ const networks = [
     address: 'bc1pr6mdxnc348lua02c32ad4uyyaw3kavjz4c8jzkh5ffvuq4ryvxhsf879j5',
     status: true,
   },
-  {
-    network: 'Ethereum',
-    address: '0xa4Baa73f17719173Ce5f31556349c5e1D5c8BB51',
-    status: false,
-  },
+  // {
+  //   network: 'Ethereum',
+  //   address: '0xa4Baa73f17719173Ce5f31556349c5e1D5c8BB51',
+  //   status: false,
+  // },
 ]
 
 export const ConnectedAccount = () => {
-  const account = useWalletStore((state) => state.currentAccount)
+  const account = useCurrentAccount()
 
-  console.log(account?.address)
+  const handleClickCopy = (accountType: string) => {
+    let textToCopy: string | null = ''
+
+    if (!account) {
+      toast('Please connect your wallet', {
+        icon: '✨',
+      })
+      return
+    }
+
+    if (accountType === 'btc') {
+      textToCopy = account.address
+    } else if (accountType === 'rooch') {
+      textToCopy = account.getRoochAddress()
+    }
+
+    if (textToCopy) {
+      navigator.clipboard
+        .writeText(textToCopy)
+        .then(() => {
+          toast('Copied to clipboard!', {
+            icon: '🌟',
+          })
+        })
+        .catch((err) => {
+          console.error('Failed to copy:', err)
+        })
+    }
+  }
 
   return (
     <div className="rounded-lg border w-full">
@@ -40,7 +69,7 @@ export const ConnectedAccount = () => {
           <TableRow>
             <TableHead className="w-[100px]">Networks</TableHead>
             <TableHead>Address</TableHead>
-            <TableHead className="text-center">Action</TableHead>
+            <TableHead className="text-right">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -65,7 +94,12 @@ export const ConnectedAccount = () => {
                       {account?.address ? (
                         <>
                           <p>{formatAddress(account.address)}</p>
-                          <Button variant="ghost" size="icon" className=" w-6 h-6">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className=" w-6 h-6"
+                            onClick={() => handleClickCopy('btc')}
+                          >
                             <Copy className="w-3 h-3" />
                           </Button>
                         </>
@@ -86,7 +120,7 @@ export const ConnectedAccount = () => {
                       </Button>
                     </span>
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-right">
                     {account?.address ? (
                       <Button
                         variant="link"
