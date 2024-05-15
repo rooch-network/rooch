@@ -1,11 +1,13 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use crate::{release_dir, Stdlib, STATIC_FRAMEWORK_DIR};
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::fmt::Formatter;
 use std::fmt::{Debug, Display};
+use std::path::PathBuf;
 use std::str::FromStr;
 
 #[derive(Clone, Copy, Default, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
@@ -47,6 +49,49 @@ impl StdlibVersion {
     /// If `version`` is compatible with previous version
     pub fn compatible_with_previous(_version: &StdlibVersion) -> bool {
         true
+    }
+
+    fn dir_with_file(&self) -> PathBuf {
+        PathBuf::from(self.to_string()).join("stdlib")
+    }
+
+    pub fn output_file(&self) -> PathBuf {
+        release_dir().join(self.dir_with_file())
+    }
+
+    pub(crate) fn load_from_file(&self) -> Result<Stdlib> {
+        let file = self.output_file();
+        Stdlib::load_from_file(file)
+    }
+
+    /// Load stdlib from static include file
+    pub fn load(&self) -> Result<Stdlib> {
+        STATIC_FRAMEWORK_DIR
+            .get_file(self.dir_with_file())
+            .ok_or_else(|| anyhow!("stdlib not found"))
+            .and_then(|f| {
+                Stdlib::decode(f.contents()).map_err(|e| {
+                    anyhow!(
+                        "Load stdlib from static include file {:?} failed: {:?}",
+                        f.path(),
+                        e
+                    )
+                })
+            })
+    }
+
+    pub fn save(&self, stdlib: &Stdlib) -> Result<()> {
+        let file = self.output_file();
+        let parent = file
+            .parent()
+            .ok_or_else(|| anyhow!("Parent dir not found"))?;
+        if !parent.exists() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| anyhow!("Create dir {:?} failed: {:?}", parent, e))?;
+        }
+        stdlib
+            .save_to_file(&file)
+            .map_err(|e| anyhow!("Save stdlib to {:?} failed: {:?}", file, e))
     }
 }
 

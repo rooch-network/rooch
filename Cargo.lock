@@ -3706,7 +3706,10 @@ dependencies = [
  "better_any",
  "codespan-reporting",
  "fastcrypto",
+ "framework-types",
  "hex",
+ "include_dir",
+ "itertools 0.10.5",
  "linked-hash-map",
  "move-binary-format",
  "move-bytecode-utils",
@@ -3724,30 +3727,50 @@ dependencies = [
  "move-vm-runtime",
  "move-vm-test-utils",
  "move-vm-types",
+ "moveos-compiler",
+ "moveos-stdlib",
  "moveos-types",
  "moveos-verifier",
  "once_cell",
  "pathdiff",
- "petgraph 0.5.1",
  "serde 1.0.195",
  "serde_bytes",
  "sha3 0.9.1",
  "smallvec 1.11.0",
+ "tracing",
 ]
 
 [[package]]
 name = "framework-release"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "clap 4.5.4",
  "framework-builder",
- "itertools 0.10.5",
  "move-binary-format",
  "move-core-types",
+ "move-package",
+ "moveos-stdlib",
  "moveos-types",
- "rooch-genesis-builder",
- "rooch-types",
- "rpassword",
+ "once_cell",
+ "serde 1.0.195",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "framework-types"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap 4.5.4",
+ "move-core-types",
+ "moveos-stdlib",
+ "moveos-types",
+ "once_cell",
+ "serde 1.0.195",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -6188,6 +6211,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "moveos-compiler"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-core-types",
+ "move-resource-viewer",
+ "move-vm-types",
+ "petgraph 0.5.1",
+ "serde 1.0.195",
+]
+
+[[package]]
 name = "moveos-config"
 version = "0.1.0"
 dependencies = [
@@ -6250,7 +6287,6 @@ dependencies = [
  "bs58 0.5.1",
  "ciborium",
  "fastcrypto",
- "framework-builder",
  "hex",
  "itertools 0.10.5",
  "linked-hash-map",
@@ -6267,6 +6303,7 @@ dependencies = [
  "move-vm-runtime",
  "move-vm-test-utils",
  "move-vm-types",
+ "moveos-compiler",
  "moveos-object-runtime",
  "moveos-types",
  "moveos-verifier",
@@ -8464,6 +8501,7 @@ dependencies = [
  "dirs 4.0.0",
  "fastcrypto",
  "framework-builder",
+ "framework-types",
  "hex",
  "itertools 0.10.5",
  "log",
@@ -8485,6 +8523,7 @@ dependencies = [
  "move-vm-test-utils",
  "moveos",
  "moveos-common",
+ "moveos-compiler",
  "moveos-object-runtime",
  "moveos-stdlib",
  "moveos-store",
@@ -8690,7 +8729,6 @@ dependencies = [
  "bitcoin 0.31.0",
  "brotli",
  "fastcrypto",
- "framework-builder",
  "hex",
  "http",
  "linked-hash-map",
@@ -8801,7 +8839,6 @@ dependencies = [
  "moveos-verifier",
  "once_cell",
  "rooch-framework",
- "rooch-genesis-builder",
  "rooch-types",
  "serde 1.0.195",
  "serde_bytes",
@@ -8809,43 +8846,6 @@ dependencies = [
  "smallvec 1.11.0",
  "tracing",
  "tracing-subscriber",
-]
-
-[[package]]
-name = "rooch-genesis-builder"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bcs",
- "better_any",
- "fastcrypto",
- "framework-builder",
- "hex",
- "linked-hash-map",
- "move-binary-format",
- "move-bytecode-utils",
- "move-bytecode-verifier",
- "move-command-line-common",
- "move-core-types",
- "move-package",
- "move-prover",
- "move-stdlib",
- "move-unit-test",
- "move-vm-runtime",
- "move-vm-test-utils",
- "move-vm-types",
- "moveos",
- "moveos-stdlib",
- "moveos-store",
- "moveos-types",
- "moveos-verifier",
- "once_cell",
- "rooch-framework",
- "rooch-types",
- "serde 1.0.195",
- "serde_bytes",
- "sha3 0.9.1",
- "smallvec 1.11.0",
 ]
 
 [[package]]
@@ -9357,6 +9357,7 @@ dependencies = [
  "move-package",
  "move-resource-viewer",
  "moveos",
+ "moveos-compiler",
  "moveos-config",
  "moveos-stdlib",
  "moveos-store",
@@ -9367,7 +9368,6 @@ dependencies = [
  "rooch-config",
  "rooch-framework",
  "rooch-genesis",
- "rooch-genesis-builder",
  "rooch-key",
  "rooch-rpc-client",
  "rooch-types",
@@ -9393,6 +9393,8 @@ dependencies = [
  "ethers",
  "eyre",
  "fastcrypto",
+ "framework-builder",
+ "framework-types",
  "hex",
  "move-binary-format",
  "move-command-line-common",

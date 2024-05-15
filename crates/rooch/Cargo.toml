@@ -69,7 +69,10 @@ moveos-common = { workspace = true }
 moveos = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-object-runtime = { workspace = true }
+moveos-compiler = { workspace = true }
+
 framework-builder = { workspace = true }
+framework-types = { workspace = true }
 raw-store = { workspace = true }
 smt = { workspace = true }
 bitcoin = { workspace = true }

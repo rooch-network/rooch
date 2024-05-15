@@ -1,5 +1,5 @@
 [package]
-name = "framework-release"
+name = "framework-types"
 version = "0.1.0"
 
 # Workspace inherited keys
@@ -22,13 +22,6 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 move-core-types = { workspace = true }
-move-binary-format = { workspace = true }
-move-package = { workspace = true }
 
 moveos-types = { workspace = true }
 moveos-stdlib = { workspace = true }
-
-framework-builder = { workspace = true }
-
-[build-dependencies]
-framework-builder = { workspace = true }
