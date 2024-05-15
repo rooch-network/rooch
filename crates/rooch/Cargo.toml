@@ -41,6 +41,9 @@ bcs-ext = { workspace = true }
 rpassword = { workspace = true }
 fastcrypto = { workspace = true }
 log = { workspace = true }
+proptest = { optional = true, workspace = true }
+proptest-derive = { optional = true, workspace = true }
+csv = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }

@@ -263,6 +263,7 @@ celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev 
 opendal = "0.44.1"
 bitcoincore-rpc-json = "0.18.0"
 toml = "0.8.12"
+csv = "1.2.1"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

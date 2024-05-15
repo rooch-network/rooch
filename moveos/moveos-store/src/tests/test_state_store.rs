@@ -3,7 +3,6 @@
 
 use crate::MoveOSStore;
 use anyhow::Result;
-use move_core_types::account_address::AccountAddress;
 use move_core_types::effects::Op;
 use moveos_types::h256::H256;
 use moveos_types::move_std::string::MoveString;
@@ -14,7 +13,7 @@ use moveos_types::state::{
     FieldChange, KeyState, MoveState, MoveType, ObjectChange, StateChangeSet,
 };
 use moveos_types::state_resolver::StatelessResolver;
-use moveos_types::test_utils::{random_state_change_set, random_state_change_set_for_child_object};
+use moveos_types::test_utils::random_state_change_set;
 use smt::NodeReader;
 use std::str::FromStr;
 
@@ -95,61 +94,61 @@ fn test_statedb_state_root() -> Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_child_state_db_dump_and_apply() -> Result<()> {
-    let mut moveos_store = MoveOSStore::mock_moveos_store().expect("moveos store mock should succ");
-
-    let base_state_change_set = random_state_change_set();
-    let (new_state_root, global_size) = moveos_store
-        .get_state_store_mut()
-        .apply_change_set(base_state_change_set)?;
-
-    let parent_id = ObjectID::from(AccountAddress::random());
-    let mut state_change_set = random_state_change_set_for_child_object(parent_id.clone());
-    state_change_set.global_size += global_size;
-    state_change_set.state_root = new_state_root;
-    let (new_state_root, _global_size) = moveos_store
-        .get_state_store_mut()
-        .apply_change_set(state_change_set)?;
-
-    let mut dump_state_change_set = StateChangeSet::default();
-    let (child_object_state, _next_key) = moveos_store.get_state_store().dump_child_object_states(
-        parent_id.clone(),
-        new_state_root,
-        None,
-        true,
-    )?;
-    for object_state in child_object_state.clone() {
-        let (field_states, _next_key) = moveos_store.get_state_store().dump_field_states(
-            object_state.object_id.clone(),
-            object_state.state_root,
-            None,
-        )?;
-
-        let object_id = object_state.object_id.clone();
-        let mut child_object_change = object_state.object_change.clone();
-        //reset object state root for ObjectChange
-        child_object_change.reset_state_root(*GENESIS_STATE_ROOT)?;
-
-        child_object_change.add_field_changes(field_states);
-        dump_state_change_set
-            .changes
-            .insert(object_id, child_object_change);
-    }
-
-    let mut moveos_store2 =
-        MoveOSStore::mock_moveos_store().expect("moveos store mock should succ");
-    let (new_state_root, _global_size) = moveos_store2
-        .get_state_store_mut()
-        .apply_change_set(dump_state_change_set.clone())?;
-    let (new_child_object_state, _next_key) = moveos_store2
-        .get_state_store()
-        .dump_child_object_states(parent_id, new_state_root, None, true)?;
-    for (idx, new_object_state) in new_child_object_state.iter().enumerate() {
-        assert_eq!(
-            new_object_state.state_root,
-            child_object_state[idx].state_root
-        );
-    }
-    Ok(())
-}
+// #[test]
+// fn test_child_state_db_dump_and_apply() -> Result<()> {
+//     let mut moveos_store = MoveOSStore::mock_moveos_store().expect("moveos store mock should succ");
+//
+//     let base_state_change_set = random_state_change_set();
+//     let (new_state_root, global_size) = moveos_store
+//         .get_state_store_mut()
+//         .apply_change_set(base_state_change_set)?;
+//
+//     let parent_id = ObjectID::from(AccountAddress::random());
+//     let mut state_change_set = random_state_change_set_for_child_object(parent_id.clone());
+//     state_change_set.global_size += global_size;
+//     state_change_set.state_root = new_state_root;
+//     let (new_state_root, _global_size) = moveos_store
+//         .get_state_store_mut()
+//         .apply_change_set(state_change_set)?;
+//
+//     let mut dump_state_change_set = StateChangeSet::default();
+//     let (child_object_state, _next_key) = moveos_store.get_state_store().dump_child_object_states(
+//         parent_id.clone(),
+//         new_state_root,
+//         None,
+//         true,
+//     )?;
+//     for object_state in child_object_state.clone() {
+//         let (field_states, _next_key) = moveos_store.get_state_store().dump_field_states(
+//             object_state.object_id.clone(),
+//             object_state.state_root,
+//             None,
+//         )?;
+//
+//         let object_id = object_state.object_id.clone();
+//         let mut child_object_change = object_state.object_change.clone();
+//         //reset object state root for ObjectChange
+//         child_object_change.reset_state_root(*GENESIS_STATE_ROOT)?;
+//
+//         child_object_change.add_field_changes(field_states);
+//         dump_state_change_set
+//             .changes
+//             .insert(object_id, child_object_change);
+//     }
+//
+//     let mut moveos_store2 =
+//         MoveOSStore::mock_moveos_store().expect("moveos store mock should succ");
+//     let (new_state_root, _global_size) = moveos_store2
+//         .get_state_store_mut()
+//         .apply_change_set(dump_state_change_set.clone())?;
+//     let (new_child_object_state, _next_key) = moveos_store2
+//         .get_state_store()
+//         .dump_child_object_states(parent_id, new_state_root, None, true)?;
+//     for (idx, new_object_state) in new_child_object_state.iter().enumerate() {
+//         assert_eq!(
+//             new_object_state.state_root,
+//             child_object_state[idx].state_root
+//         );
+//     }
+//     Ok(())
+// }

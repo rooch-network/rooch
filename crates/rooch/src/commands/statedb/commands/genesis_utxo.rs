@@ -1,6 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::cli_types::WalletContextOptions;
+use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
 use std::collections::hash_map::Entry;
 use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
@@ -42,8 +44,6 @@ use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::rooch_network::RoochChainID;
 use smt::UpdateSet;
 
-use crate::cli_types::WalletContextOptions;
-use crate::commands::statedb::commands::import::{apply_fields, apply_nodes};
 use crate::commands::statedb::commands::init_statedb;
 
 pub const SCRIPT_TYPE_P2MS: &str = "p2ms";
