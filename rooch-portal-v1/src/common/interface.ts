@@ -74,4 +74,5 @@ export type PaymentTypes = {
 export type TabItem = {
   id: string
   label: string
+  available: boolean
 }
