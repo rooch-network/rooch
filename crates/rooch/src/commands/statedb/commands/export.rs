@@ -9,7 +9,6 @@ use csv::Writer;
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
 use moveos_types::moveos_std::object::ObjectID;
-use moveos_types::state::KeyState;
 use moveos_types::state_resolver::StatelessResolver;
 use rooch_config::R_OPT_NET_HELP;
 use rooch_types::bitcoin::ord::InscriptionStore;
@@ -166,6 +165,7 @@ impl ExportCommand {
         Ok(())
     }
 
+    /// Field state must be export first, and then object state
     fn export_genesis<W: std::io::Write>(
         moveos_store: &MoveOSStore,
         root_state_root: H256,
@@ -191,6 +191,27 @@ impl ExportCommand {
         genesis_object_ids.push(address_mapping_id);
         genesis_object_ids.push(reverse_mapping_id);
 
+        let mut genesis_objects = vec![];
+        let mut genesis_states = vec![];
+        for object_id in genesis_object_ids.into_iter() {
+            let state = moveos_store
+                .get_field_at(root_state_root, &object_id.to_key())?
+                .expect("state should exist.");
+            let object = state.clone().as_raw_object()?;
+            genesis_states.push((object_id.to_key(), state));
+            genesis_objects.push(object);
+        }
+
+        // write csv field states
+        for obj in genesis_objects.into_iter() {
+            Self::export_field_states(
+                moveos_store,
+                H256::from(obj.state_root.into_bytes()),
+                obj.id,
+                writer,
+            )?;
+        }
+
         // write csv object states.
         {
             let root_export_id = ExportID::new(STATE_HEADER_PREFIX.to_string(), ObjectID::root());
@@ -198,29 +219,10 @@ impl ExportCommand {
             writer.write_field(format!("{:?}", root_state_root))?;
             writer.write_record(None::<&[u8]>)?;
         }
-        let mut genesis_objects = vec![];
-        for object_id in genesis_object_ids.into_iter() {
-            let state = moveos_store
-                .get_field_at(root_state_root, &object_id.to_key())?
-                .expect("state should exist.");
-            let object = state.clone().as_raw_object()?;
-            genesis_objects.push(object);
-
-            writer.write_field(object_id.to_key().to_string())?;
-            writer.write_field(state.to_string())?;
+        for (k, v) in genesis_states.into_iter() {
+            writer.write_field(k.to_string())?;
+            writer.write_field(v.to_string())?;
             writer.write_record(None::<&[u8]>)?;
-        }
-
-        // write csv field states
-        for obj in genesis_objects.into_iter() {
-            // let has_child = obj.id == utxo_store_id || obj.id == inscription_store_id;
-            Self::export_object_fields(
-                moveos_store,
-                H256::from(obj.state_root.into_bytes()),
-                obj.id,
-                // has_child,
-                writer,
-            )?;
         }
 
         // flush csv writer
@@ -237,8 +239,19 @@ impl ExportCommand {
         writer: &mut Writer<W>,
     ) -> Result<()> {
         println!("export_object object_id: {:?}", object_id);
-        let utxo_store_id = BitcoinUTXOStore::object_id();
-        let inscription_store_id = InscriptionStore::object_id();
+
+        let state = moveos_store
+            .get_field_at(root_state_root, &object_id.to_key())?
+            .expect("state should exist.");
+        let obj = state.clone().as_raw_object()?;
+
+        // write csv field states
+        Self::export_field_states(
+            moveos_store,
+            H256::from(obj.state_root.into_bytes()),
+            object_id.clone(),
+            writer,
+        )?;
 
         // write csv object states.
         {
@@ -247,22 +260,9 @@ impl ExportCommand {
             writer.write_field(format!("{:?}", root_state_root))?;
             writer.write_record(None::<&[u8]>)?;
         }
-        let state = moveos_store
-            .get_field_at(root_state_root, &object_id.to_key())?
-            .expect("state should exist.");
-        let obj = state.clone().as_raw_object()?;
-
         writer.write_field(object_id.to_key().to_string())?;
         writer.write_field(state.to_string())?;
         writer.write_record(None::<&[u8]>)?;
-
-        // write csv field states
-        Self::export_object_fields(
-            moveos_store,
-            H256::from(obj.state_root.into_bytes()),
-            object_id,
-            writer,
-        )?;
 
         // flush csv writer
         writer.flush()?;
@@ -271,7 +271,7 @@ impl ExportCommand {
         Ok(())
     }
 
-    fn export_object_fields<W: std::io::Write>(
+    fn export_field_states<W: std::io::Write>(
         moveos_store: &MoveOSStore,
         state_root: H256,
         object_id: ObjectID,
@@ -280,26 +280,40 @@ impl ExportCommand {
         let starting_key = None;
         let mut count: u64 = 0;
 
+        let mut iter = moveos_store
+            .get_state_store()
+            .iter(state_root, starting_key.clone())?;
+
+        if object_id.has_child() {
+            for item in iter {
+                let (_k, v) = item?;
+                let object = v.clone().as_raw_object()?;
+                if object.size > 0 {
+                    Self::export_field_states(
+                        moveos_store,
+                        H256::from(object.state_root.into_bytes()),
+                        object.id,
+                        writer,
+                    )?;
+                }
+            }
+
+            // seek from starting_key
+            iter = moveos_store
+                .get_state_store()
+                .iter(state_root, starting_key.clone())?;
+        }
+
         // write csv header.
         {
-            let export_id = ExportID::new(STATE_HEADER_PREFIX.to_string(), object_id);
+            let export_id = ExportID::new(STATE_HEADER_PREFIX.to_string(), object_id.clone());
             writer.write_field(export_id.to_string())?;
             writer.write_field(format!("{:?}", state_root))?;
             writer.write_record(None::<&[u8]>)?;
         }
-        let iter = moveos_store
-            .get_state_store()
-            .iter(state_root, starting_key.clone())?;
 
-        let mut child_objects = vec![];
         for item in iter {
             let (k, v) = item?;
-            if object_id.has_child() {
-                let object = v.clone().as_raw_object()?;
-                if object.size > 0 {
-                    child_objects.push(object);
-                }
-            }
             writer.write_field(k.to_string())?;
             writer.write_field(v.to_string())?;
             writer.write_record(None::<&[u8]>)?;
@@ -307,80 +321,10 @@ impl ExportCommand {
             count += 1;
         }
 
-        for child_object in child_objects.into_iter() {
-            Self::export_object_fields(
-                moveos_store,
-                H256::from(child_object.state_root.into_bytes()),
-                child_object.id,
-                writer,
-            )?;
-        }
-
         println!(
-            "export_object_fields state_root: {:?} export field counts {}",
-            state_root, count
+            "export_field_states object_id {:?}, state_root: {:?} export field counts {}",
+            object_id, state_root, count
         );
         Ok(())
     }
-
-    // // Batch dump child object states of specified object by object id
-    // fn dump_child_object_states(
-    //     &self,
-    //     parent_id: ObjectID,
-    //     state_root: H256,
-    //     starting_key: Option<KeyState>,
-    //     with_parent: bool,
-    // ) -> Result<(Vec<ObjectState>, Option<KeyState>)> {
-    //     let iter = self.iter(state_root, starting_key)?;
-    //     let mut data = Vec::new();
-    //     let mut counter = 0;
-    //     let mut next_key = None;
-    //     for item in iter {
-    //         if counter >= STATEDB_DUMP_BATCH_SIZE {
-    //             break;
-    //         };
-    //         let (k, v) = item?;
-    //         ensure!(k.key_type == ObjectID::type_tag());
-    //         let obj_id = ObjectID::from_bytes(k.key.clone())?;
-    //         if (with_parent && obj_id == parent_id) || obj_id.is_child(parent_id.clone()) {
-    //             let obj = v.as_raw_object()?;
-    //             let object_change = ObjectChange::new(Op::New(v));
-    //             let object_state = ObjectState::new(
-    //                 H256::from(obj.state_root.into_bytes()),
-    //                 obj.size,
-    //                 obj.id,
-    //                 object_change,
-    //             );
-    //             data.push(object_state);
-    //
-    //             counter += 1;
-    //         };
-    //         next_key = Some(k);
-    //     }
-    //     Ok((data, next_key))
-    // }
-    //
-    // /// Batch dump filed states of specified object by object id
-    // fn dump_field_states(
-    //     &self,
-    //     _object_id: ObjectID,
-    //     state_root: H256,
-    //     starting_key: Option<KeyState>,
-    // ) -> Result<(Vec<FieldState>, Option<KeyState>)> {
-    //     let iter = self.iter(state_root, starting_key)?;
-    //     let mut data = Vec::new();
-    //     let mut next_key = None;
-    //     for (counter, item) in iter.enumerate() {
-    //         if counter >= STATEDB_DUMP_BATCH_SIZE {
-    //             break;
-    //         };
-    //         let (k, v) = item?;
-    //         let field_change = FieldChange::new_normal(Op::New(v));
-    //         let field_state = FieldState::new(k.clone(), field_change);
-    //         data.push(field_state);
-    //
-    //         next_key = Some(k);
-    //     }
-    //     Ok((data, next_key))
-    // }
 }

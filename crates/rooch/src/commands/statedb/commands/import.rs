@@ -2,44 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::WalletContextOptions;
-use std::collections::hash_map::Entry;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, SyncSender};
+use std::sync::{mpsc, Arc};
 use std::thread;
 use std::time::SystemTime;
 
 use anyhow::{Error, Result};
-use bitcoin::{PublicKey, Txid};
 use chrono::{DateTime, Local};
 use clap::Parser;
-use move_core_types::account_address::AccountAddress;
-use move_core_types::language_storage::TypeTag;
 use serde::{Deserialize, Serialize};
 
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
-use moveos_types::moveos_std::object::{
-    ObjectEntity, ObjectID, RootObjectEntity, GENESIS_STATE_ROOT, SHARED_OBJECT_FLAG_MASK,
-    SYSTEM_OWNER_ADDRESS,
-};
-use moveos_types::moveos_std::simple_multimap::SimpleMultiMap;
-use moveos_types::moveos_std::table::TablePlaceholder;
+use moveos_types::moveos_std::object::{ObjectID, RawObject, RootObjectEntity};
 use moveos_types::startup_info::StartupInfo;
-use moveos_types::state::{KeyState, MoveState, MoveType, State};
+use moveos_types::state::{KeyState, State};
+use moveos_types::state_resolver::StatelessResolver;
 use rooch_config::R_OPT_NET_HELP;
-use rooch_types::address::{BitcoinAddress, MultiChainAddress, RoochAddress};
-use rooch_types::addresses::BITCOIN_MOVE_ADDRESS;
-use rooch_types::bitcoin::utxo::{BitcoinUTXOStore, UTXO};
-use rooch_types::bitcoin::{types, utxo};
 use rooch_types::error::{RoochError, RoochResult};
-use rooch_types::framework::address_mapping::AddressMappingWrapper;
-use rooch_types::into_address::IntoAddress;
-use rooch_types::multichain_id::RoochMultiChainID;
 use rooch_types::rooch_network::RoochChainID;
 use smt::{TreeChangeSet, UpdateSet};
 
@@ -74,23 +59,22 @@ impl ImportCommand {
         let input_path = self.input.clone();
         let batch_size = self.batch_size.unwrap();
         let (root, moveos_store, start_time) = self.init();
-        let pre_root_state_root = H256::from(root.state_root.into_bytes());
+        let root_state_root = H256::from(root.state_root.into_bytes());
         let (tx, rx) = mpsc::sync_channel(2);
 
-        let produce_updates_thread =
-            thread::spawn(move || produce_updates(tx, input_path, batch_size));
-        let apply_updates_thread = thread::spawn(move || {
-            apply_updates_to_state(
-                rx,
-                &moveos_store,
-                root.size,
-                pre_root_state_root,
-                *GENESIS_STATE_ROOT,
-                start_time,
-            );
+        let moveos_store_arc = Arc::new(moveos_store.clone());
+        let produce_updates_thread = thread::spawn(move || {
+            produce_updates(tx, &moveos_store, input_path, root_state_root, batch_size)
         });
-        produce_updates_thread.join()?;
-        apply_updates_thread.join()?;
+        let apply_updates_thread = thread::spawn(move || {
+            apply_updates_to_state(rx, moveos_store_arc, root_state_root, root.size, start_time)
+        });
+        let _ = produce_updates_thread
+            .join()
+            .map_err(|_e| RoochError::from(Error::msg("Produce updates error".to_string())))?;
+        let _ = apply_updates_thread
+            .join()
+            .map_err(|_e| RoochError::from(Error::msg("Produce updates error ".to_string())))?;
 
         Ok(())
     }
@@ -110,119 +94,6 @@ impl ImportCommand {
         println!("root object: {:?}", root);
         (root, moveos_store, start_time)
     }
-}
-
-// csv format: c1,c2
-fn parse_state_data_from_csv_line(line: &str) -> Result<(String, String)> {
-    let str_list: Vec<&str> = line.trim().split(',').collect();
-    if str_list.len() != 2 {
-        return Err(Error::from(RoochError::from(Error::msg(format!(
-            "Invalid csv line: {}",
-            line
-        )))));
-    }
-    let c1 = str_list[1].to_string();
-    let c2 = str_list[1].to_string();
-    Ok((c1, c2))
-}
-
-fn apply_updates_to_state(
-    rx: Receiver<BatchUpdates>,
-    moveos_store: &MoveOSStore,
-
-    root_size: u64,
-    root_state_root: H256,
-
-    mut state_root: H256,
-
-    task_start_time: SystemTime,
-) {
-    let mut state_count = 0;
-    // let mut address_mapping_count = 0;
-
-    let mut last_state_root = state_root;
-
-    while let Ok(batch) = rx.recv() {
-        let loop_start_time = SystemTime::now();
-
-        let mut nodes: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
-
-        let cnt = batch.state_updates.len();
-        let mut utxo_tree_change_set =
-            apply_fields(moveos_store, state_root, batch.state_updates).unwrap();
-        nodes.append(&mut utxo_tree_change_set.nodes);
-        state_root = utxo_tree_change_set.state_root;
-        state_count += cnt as u64;
-
-        apply_nodes(moveos_store, nodes).expect("failed to apply nodes");
-
-        println!(
-            "{} utxo, {} addr_mapping applied. This bacth cost: {:?}",
-            // because we skip the first line, count result keep missing one.
-            // e.g. batch_size = 8192:
-            // 8191 utxo applied in: 1.000000000s
-            // 16383 utxo applied in: 1.000000000s
-            state_count,
-            address_mapping_count,
-            loop_start_time.elapsed().unwrap()
-        );
-
-        log::debug!(
-            "last_state_root: {:?}, new state_root: {:?}; "
-            last_state_root, state_root,
-        );
-
-        last_state_root = state_root;
-    }
-
-    finish_task(
-        state_count,
-        address_mapping_count,
-        moveos_store,
-        root_size,
-        root_state_root,
-        state_root,
-        address_mapping_state_root,
-        reverse_address_mapping_state_root,
-        task_start_time,
-    );
-}
-
-fn finish_task(
-    state_count: u64,
-    address_mapping_count: u64,
-
-    moveos_store: &MoveOSStore,
-
-    root_size: u64,
-    mut root_state_root: H256,
-    state_root: H256,
-    address_mapping_state_root: H256,
-    reverse_address_mapping_state_root: H256,
-
-    task_start_time: SystemTime,
-) {
-    // Update UTXOStore Object
-    let mut genesis_utxostore_object = create_genesis_utxostore_object().unwrap();
-    genesis_utxostore_object.size += state_count;
-    genesis_utxostore_object.state_root = state_root.into_address();
-    let mut update_set = UpdateSet::new();
-    let parent_id = BitcoinUTXOStore::object_id();
-    update_set.put(parent_id.to_key(), genesis_utxostore_object.into_state());
-
-    // Update Startup Info
-    let new_startup_info = StartupInfo::new(root_state_root, root_size);
-    moveos_store
-        .get_config_store()
-        .save_startup_info(new_startup_info)
-        .unwrap();
-
-    let startup_info = moveos_store.get_config_store().get_startup_info().unwrap();
-    println!(
-        "Done in {:?}. New startup_info: {:?}",
-        task_start_time.elapsed().unwrap(),
-        startup_info
-    );
 }
 
 struct BatchUpdates {
@@ -250,12 +121,13 @@ impl StateRootKey {
 
 fn produce_updates(
     tx: SyncSender<BatchUpdates>,
+    moveos_store: &MoveOSStore,
     input: PathBuf,
-    // last_state_root: Option<H256>,
+    root_state_root: H256,
     batch_size: usize,
-) -> Result() {
+) -> Result<()> {
     let mut csv_reader = BufReader::new(File::open(input).unwrap());
-    // let mut state_root = last_state_root.unwrap_or(H256::zero());
+    let mut last_state_root_key = None;
     loop {
         let mut updates = BatchUpdates {
             states: BTreeMap::new(),
@@ -267,16 +139,29 @@ fn produce_updates(
                 let (c1, c2) = parse_state_data_from_csv_line(&line)?;
                 let export_id = ExportID::from_str(&c1)?;
                 let eventual_state_root = H256::from_str(&c2)?;
-                let state_root_key = StateRootKey::new(export_id.object_id, eventual_state_root);
-                updates.states.insert(state_root_key, UpdateSet::new());
+                // TODO add cache to avoid duplicate read smt
+                let obj =
+                    get_raw_object(moveos_store, root_state_root, export_id.object_id.clone())?;
+
+                let state_root_key =
+                    StateRootKey::new(export_id.object_id, obj.state_root(), eventual_state_root);
+                updates
+                    .states
+                    .insert(state_root_key.clone(), UpdateSet::new());
+                last_state_root_key = Some(state_root_key);
                 continue;
             }
 
             let (c1, c2) = parse_state_data_from_csv_line(&line)?;
             let key_state = KeyState::from_str(&c1)?;
             let state = State::from_str(&c2)?;
-            // let (key, state, address_mapping_data) = gen_state_update(utxo_data).unwrap();
-            let update_set = updates.states.entry(state_root_key).or_insert(UpdateSet::new());
+            let state_root_key = last_state_root_key
+                .clone()
+                .expect("State root key should have value");
+            let update_set = updates
+                .states
+                .entry(state_root_key)
+                .or_insert(UpdateSet::new());
             update_set.put(key_state, state);
         }
         if updates.states.is_empty() {
@@ -287,6 +172,99 @@ fn produce_updates(
 
     drop(tx);
     Ok(())
+}
+
+// csv format: c1,c2
+fn parse_state_data_from_csv_line(line: &str) -> Result<(String, String)> {
+    let str_list: Vec<&str> = line.trim().split(',').collect();
+    if str_list.len() != 2 {
+        return Err(Error::from(RoochError::from(Error::msg(format!(
+            "Invalid csv line: {}",
+            line
+        )))));
+    }
+    let c1 = str_list[1].to_string();
+    let c2 = str_list[1].to_string();
+    Ok((c1, c2))
+}
+
+fn apply_updates_to_state(
+    rx: Receiver<BatchUpdates>,
+    moveos_store: Arc<MoveOSStore>,
+    root_state_root: H256,
+    root_size: u64,
+    task_start_time: SystemTime,
+) -> Result<()> {
+    // let mut _count = 0;
+    let mut last_state_root = root_state_root;
+    while let Ok(batch) = rx.recv() {
+        let loop_start_time = SystemTime::now();
+
+        for (state_root_key, update_set) in batch.states.into_iter() {
+            let mut tree_change_set =
+                apply_fields(&moveos_store, state_root_key.state_root, update_set)?;
+            let mut nodes: BTreeMap<H256, Vec<u8>> = BTreeMap::new();
+            nodes.append(&mut tree_change_set.nodes);
+            last_state_root = tree_change_set.state_root;
+
+            apply_nodes(&moveos_store, nodes).expect("failed to apply nodes");
+
+            log::debug!(
+                "state_root: {:?}, new state_root: {:?} execpt state_root: {:?}",
+                state_root_key.state_root,
+                last_state_root,
+                state_root_key.eventual_state_root
+            );
+        }
+
+        println!("This bacth cost: {:?}", loop_start_time.elapsed().unwrap());
+    }
+
+    finish_task(&moveos_store, last_state_root, root_size, task_start_time);
+    Ok(())
+}
+
+fn finish_task(
+    moveos_store: &MoveOSStore,
+    root_state_root: H256,
+    root_size: u64,
+    task_start_time: SystemTime,
+) {
+    // Update Startup Info
+    let new_startup_info = StartupInfo::new(root_state_root, root_size);
+    moveos_store
+        .get_config_store()
+        .save_startup_info(new_startup_info)
+        .unwrap();
+
+    let startup_info = moveos_store.get_config_store().get_startup_info().unwrap();
+    println!(
+        "Done in {:?}. New startup_info: {:?}",
+        task_start_time.elapsed().unwrap(),
+        startup_info
+    );
+}
+
+pub fn get_raw_object(
+    moveos_store: &MoveOSStore,
+    root_state_root: H256,
+    object_id: ObjectID,
+) -> Result<RawObject> {
+    let state_root = match object_id.parent() {
+        Some(parent_id) => {
+            let state = moveos_store
+                .get_field_at(root_state_root, &parent_id.to_key())?
+                .expect("state should exist.");
+            let obj = state.clone().as_raw_object()?;
+            H256::from(obj.state_root.into_bytes())
+        }
+        None => root_state_root,
+    };
+    let state = moveos_store
+        .get_field_at(state_root, &object_id.to_key())?
+        .expect("state should exist.");
+    let obj = state.clone().as_raw_object()?;
+    Ok(obj)
 }
 
 pub fn apply_fields<I>(
