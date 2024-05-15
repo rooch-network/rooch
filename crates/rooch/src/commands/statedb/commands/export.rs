@@ -287,14 +287,16 @@ impl ExportCommand {
         if object_id.has_child() {
             for item in iter {
                 let (_k, v) = item?;
-                let object = v.clone().as_raw_object()?;
-                if object.size > 0 {
-                    Self::export_field_states(
-                        moveos_store,
-                        H256::from(object.state_root.into_bytes()),
-                        object.id,
-                        writer,
-                    )?;
+                if v.is_object() {
+                    let object = v.clone().as_raw_object()?;
+                    if object.size > 0 {
+                        Self::export_field_states(
+                            moveos_store,
+                            H256::from(object.state_root.into_bytes()),
+                            object.id,
+                            writer,
+                        )?;
+                    }
                 }
             }
 

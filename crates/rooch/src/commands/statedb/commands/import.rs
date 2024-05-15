@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 
 use moveos_store::MoveOSStore;
 use moveos_types::h256::H256;
-use moveos_types::moveos_std::object::{ObjectID, RawObject, RootObjectEntity};
+use moveos_types::moveos_std::object::{ObjectID, RootObjectEntity, GENESIS_STATE_ROOT};
 use moveos_types::startup_info::StartupInfo;
 use moveos_types::state::{KeyState, State};
 use moveos_types::state_resolver::StatelessResolver;
@@ -140,11 +140,11 @@ fn produce_updates(
                 let export_id = ExportID::from_str(&c1)?;
                 let eventual_state_root = H256::from_str(&c2)?;
                 // TODO add cache to avoid duplicate read smt
-                let obj =
-                    get_raw_object(moveos_store, root_state_root, export_id.object_id.clone())?;
+                let state_root =
+                    get_state_root(moveos_store, root_state_root, export_id.object_id.clone())?;
 
                 let state_root_key =
-                    StateRootKey::new(export_id.object_id, obj.state_root(), eventual_state_root);
+                    StateRootKey::new(export_id.object_id, state_root, eventual_state_root);
                 updates
                     .states
                     .insert(state_root_key.clone(), UpdateSet::new());
@@ -183,7 +183,7 @@ fn parse_state_data_from_csv_line(line: &str) -> Result<(String, String)> {
             line
         )))));
     }
-    let c1 = str_list[1].to_string();
+    let c1 = str_list[0].to_string();
     let c2 = str_list[1].to_string();
     Ok((c1, c2))
 }
@@ -245,26 +245,35 @@ fn finish_task(
     );
 }
 
-pub fn get_raw_object(
+pub fn get_state_root(
     moveos_store: &MoveOSStore,
     root_state_root: H256,
     object_id: ObjectID,
-) -> Result<RawObject> {
-    let state_root = match object_id.parent() {
+) -> Result<H256> {
+    let parent_state_root_opt = match object_id.parent() {
         Some(parent_id) => {
-            let state = moveos_store
-                .get_field_at(root_state_root, &parent_id.to_key())?
-                .expect("state should exist.");
-            let obj = state.clone().as_raw_object()?;
-            H256::from(obj.state_root.into_bytes())
+            let state_opt = moveos_store.get_field_at(root_state_root, &parent_id.to_key())?;
+            match state_opt {
+                Some(state) => Some(H256::from(
+                    state.clone().as_raw_object()?.state_root.into_bytes(),
+                )),
+                None => None,
+            }
         }
-        None => root_state_root,
+        None => Some(root_state_root),
     };
-    let state = moveos_store
-        .get_field_at(state_root, &object_id.to_key())?
-        .expect("state should exist.");
-    let obj = state.clone().as_raw_object()?;
-    Ok(obj)
+    let state_root = match parent_state_root_opt {
+        Some(parent_state_root) => {
+            let state_opt = moveos_store.get_field_at(parent_state_root, &object_id.to_key())?;
+            match state_opt {
+                Some(state) => H256::from(state.as_raw_object()?.state_root.into_bytes()),
+                None => *GENESIS_STATE_ROOT,
+            }
+        }
+        None => *GENESIS_STATE_ROOT,
+    };
+
+    Ok(state_root)
 }
 
 pub fn apply_fields<I>(
