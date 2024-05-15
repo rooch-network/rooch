@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use clap::Parser;
 use move_cli::Move;
 use move_core_types::{identifier::Identifier, language_storage::ModuleId};
-use moveos::vm::dependency_order::sort_by_dependency_order;
+use moveos_compiler::dependency_order::sort_by_dependency_order;
 use moveos_types::{
     addresses::MOVEOS_STD_ADDRESS, move_types::FunctionId, transaction::MoveAction,
 };

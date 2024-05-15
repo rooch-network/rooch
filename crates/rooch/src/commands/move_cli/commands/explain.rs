@@ -1,21 +1,14 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::cli_types::WalletContextOptions;
 use bcs_ext;
 use clap::*;
 use move_core_types::errmap::{ErrorDescription, ErrorMapping};
 use move_core_types::language_storage::ModuleId;
 use move_core_types::vm_status::AbortLocation;
-use moveos_types::addresses::MOVEOS_STD_ADDRESS;
-use moveos_types::addresses::MOVE_STD_ADDRESS;
-use rooch_genesis::{
-    move_std_error_descriptions, moveos_std_error_descriptions, rooch_framework_error_descriptions,
-};
-use rooch_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use rooch_types::function_arg::ParsedModuleId;
 use serde::{Deserialize, Serialize};
-
-use crate::cli_types::WalletContextOptions;
 
 ///Explain Move abort codes. Errors are defined as
 ///a global category + module-specific reason for the error.
@@ -38,15 +31,8 @@ impl Explain {
         let context = self.context_options.build()?;
         let address_mapping = context.address_mapping();
         let module_id = self.location.into_module_id(&address_mapping)?;
-
-        let error_description_bytes = {
-            match *module_id.address() {
-                MOVE_STD_ADDRESS => Some(move_std_error_descriptions()),
-                MOVEOS_STD_ADDRESS => Some(moveos_std_error_descriptions()),
-                ROOCH_FRAMEWORK_ADDRESS => Some(rooch_framework_error_descriptions()),
-                _ => None,
-            }
-        };
+        let error_descriptions = framework_types::error_descriptions::ERROR_DESCRIPTIONS.clone();
+        let error_description_bytes = error_descriptions.get(module_id.address());
 
         match error_description_bytes {
             Some(bytes) => {

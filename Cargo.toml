@@ -14,11 +14,11 @@ members = [
     "moveos/moveos-config",
     "moveos/moveos-wasm",
     "moveos/moveos-object-runtime",
+    "moveos/moveos-compiler",
     "crates/rooch-key",
     "crates/rooch-types",
     "crates/rooch-framework-tests",
     "crates/rooch-genesis",
-    "crates/rooch-genesis-builder",
     "crates/rooch-integration-test-runner",
     "crates/rooch-relayer",
     "crates/rooch-rpc-server",
@@ -45,7 +45,8 @@ members = [
     "frameworks/framework-release",
     "frameworks/moveos-stdlib",
     "frameworks/rooch-framework",
-    "frameworks/bitcoin-move"
+    "frameworks/bitcoin-move",
+    "frameworks/framework-types"
 ]
 
 default-members = [
@@ -81,6 +82,7 @@ metrics = { path = "moveos/metrics" }
 moveos-config = { path = "moveos/moveos-config" }
 moveos-wasm = { path = "moveos/moveos-wasm" }
 moveos-object-runtime = { path = "moveos/moveos-object-runtime" }
+moveos-compiler = { path = "moveos/moveos-compiler" }
 
 # crates for Rooch
 rooch = { path = "crates/rooch" }
@@ -89,7 +91,6 @@ rooch-types = { path = "crates/rooch-types" }
 rooch-framework-tests = { path = "crates/rooch-framework-tests" }
 rooch-integration-test-runner = { path = "crates/rooch-integration-test-runner" }
 rooch-genesis = { path = "crates/rooch-genesis" }
-rooch-genesis-builder = { path = "crates/rooch-genesis-builder" }
 rooch-relayer = { path = "crates/rooch-relayer" }
 rooch-rpc-server = { path = "crates/rooch-rpc-server" }
 rooch-rpc-client = { path = "crates/rooch-rpc-client" }
@@ -112,6 +113,7 @@ rooch-test-transaction-builder = { path = "crates/rooch-test-transaction-builder
 data-verify = { path = "crates/data_verify" }
 
 # frameworks
+framework-types = { path = "frameworks/framework-types" }
 framework-builder = { path = "frameworks/framework-builder" }
 framework-release = { path = "frameworks/framework-release" }
 moveos-stdlib = { path = "frameworks/moveos-stdlib" }
@@ -213,6 +215,7 @@ hyper = { version = "0.14.12", features = ["full"] }
 http = "0.2.6"
 num_enum = "0.5.7"
 libc = "^0.2"
+include_dir = { version = "0.6.2" }
 nostr = "0.22"
 serde-reflection = "0.3.6"
 serde-generate = "0.25.1"
@@ -263,6 +266,7 @@ celestia-types = { git = "https://github.com/eigerco/celestia-node-rs.git", rev 
 opendal = "0.44.1"
 bitcoincore-rpc-json = "0.18.0"
 toml = "0.8.12"
+csv = "1.2.1"
 
 # Note: the BEGIN and END comments below are required for external tooling. Do not remove.
 # BEGIN MOVE DEPENDENCIES

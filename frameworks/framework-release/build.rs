@@ -72,6 +72,6 @@ fn main() {
                 .join("sources")
                 .display()
         );
-        rooch_genesis_builder::build_and_save_stdlib().expect("Build stdlib failed")
+        framework_builder::releaser::release_latest().expect("Release stdlib latest failed")
     }
 }

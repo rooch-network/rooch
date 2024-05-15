@@ -286,6 +286,22 @@ impl RoochNetwork {
         Self::new(builtin_id.into(), builtin_id.genesis_config().clone())
     }
 
+    pub fn local() -> Self {
+        Self::builtin(BuiltinChainID::Local)
+    }
+
+    pub fn dev() -> Self {
+        Self::builtin(BuiltinChainID::Dev)
+    }
+
+    pub fn test() -> Self {
+        Self::builtin(BuiltinChainID::Test)
+    }
+
+    pub fn main() -> Self {
+        Self::builtin(BuiltinChainID::Main)
+    }
+
     pub fn set_sequencer_account(&mut self, account: AccountAddress) {
         self.genesis_config.sequencer_account = account;
     }

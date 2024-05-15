@@ -47,7 +47,6 @@ move-prover = { workspace = true }
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-stdlib = { workspace = true }
-framework-builder = { workspace = true }
 moveos = { workspace = true }
 
 rooch-types = { workspace = true }

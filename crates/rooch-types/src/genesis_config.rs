@@ -2,25 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use ethers::types::H256;
+use framework_builder::stdlib_version::StdlibVersion;
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
 use moveos_types::moveos_std::object::ObjectID;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-
-pub const ALL_STDLIB_PACKAGE_NAMES: [&str; 5] = [
-    "MoveStdlib",
-    "MoveosStdlib",
-    "RoochFramework",
-    "BitcoinMove",
-    "RoochNursery",
-];
-
-pub const ALL_STDLIB_PACKAGE_NAMES_STABLE: [&str; 4] = [
-    "MoveStdlib",
-    "MoveosStdlib",
-    "RoochFramework",
-    "BitcoinMove",
-];
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct GenesisObject {
@@ -37,7 +23,7 @@ pub struct GenesisConfig {
     pub timestamp: u64,
     pub sequencer_account: AccountAddress,
     pub genesis_objects: Vec<GenesisObject>,
-    pub stdlib_package_names: Vec<String>,
+    pub stdlib_version: StdlibVersion,
 }
 
 pub static G_LOCAL_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
@@ -46,11 +32,7 @@ pub static G_LOCAL_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     timestamp: 0,
     sequencer_account: AccountAddress::ONE,
     genesis_objects: vec![],
-    stdlib_package_names: ALL_STDLIB_PACKAGE_NAMES
-        .iter()
-        .copied()
-        .map(|s| s.to_owned())
-        .collect(),
+    stdlib_version: StdlibVersion::Latest,
 });
 
 pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
@@ -59,11 +41,7 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     timestamp: 0,
     sequencer_account: AccountAddress::ONE,
     genesis_objects: vec![],
-    stdlib_package_names: ALL_STDLIB_PACKAGE_NAMES
-        .iter()
-        .copied()
-        .map(|s| s.to_owned())
-        .collect(),
+    stdlib_version: StdlibVersion::Latest,
 });
 
 pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
@@ -74,11 +52,7 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         timestamp: 0,
         sequencer_account: AccountAddress::ONE,
         genesis_objects: vec![],
-        stdlib_package_names: ALL_STDLIB_PACKAGE_NAMES_STABLE
-            .iter()
-            .copied()
-            .map(|s| s.to_owned())
-            .collect(),
+        stdlib_version: StdlibVersion::Version(1),
     }
 });
 
@@ -90,10 +64,6 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         timestamp: 0,
         sequencer_account: AccountAddress::ONE,
         genesis_objects: vec![],
-        stdlib_package_names: ALL_STDLIB_PACKAGE_NAMES_STABLE
-            .iter()
-            .copied()
-            .map(|s| s.to_owned())
-            .collect(),
+        stdlib_version: StdlibVersion::Version(1),
     }
 });

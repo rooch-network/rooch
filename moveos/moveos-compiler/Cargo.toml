@@ -1,0 +1,17 @@
+[package]
+name = "moveos-compiler"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = { workspace = true }
+serde = { workspace = true }
+petgraph = { workspace = true }
+
+move-core-types = { workspace = true }
+move-vm-types = { workspace = true }
+move-resource-viewer = { workspace = true }
+move-bytecode-utils = { workspace = true }
+move-binary-format = { workspace = true }

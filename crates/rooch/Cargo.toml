@@ -41,6 +41,9 @@ bcs-ext = { workspace = true }
 rpassword = { workspace = true }
 fastcrypto = { workspace = true }
 log = { workspace = true }
+proptest = { optional = true, workspace = true }
+proptest-derive = { optional = true, workspace = true }
+csv = { workspace = true }
 
 move-bytecode-utils = { workspace = true }
 move-binary-format = { workspace = true }
@@ -66,7 +69,10 @@ moveos-common = { workspace = true }
 moveos = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-object-runtime = { workspace = true }
+moveos-compiler = { workspace = true }
+
 framework-builder = { workspace = true }
+framework-types = { workspace = true }
 raw-store = { workspace = true }
 smt = { workspace = true }
 bitcoin = { workspace = true }

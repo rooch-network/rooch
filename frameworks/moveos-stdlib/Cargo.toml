@@ -50,9 +50,9 @@ move-prover = { workspace = true }
 
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
-framework-builder = { workspace = true }
 moveos-wasm = { workspace = true }
 wasmer = { workspace = true }
 moveos-object-runtime = { workspace = true }
+moveos-compiler = { workspace = true }
 
 smt = { workspace = true }

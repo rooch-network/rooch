@@ -3,12 +3,13 @@
 
 use anyhow::{ensure, Result};
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
-use dependency_order::sort_by_dependency_order;
+use include_dir::{include_dir, Dir};
 use move_binary_format::{errors::Location, CompiledModule};
 use move_cli::base::reroot_path;
 use move_core_types::account_address::AccountAddress;
 use move_model::model::GlobalEnv;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig, ModelConfig};
+use moveos_compiler::dependency_order::sort_by_dependency_order;
 use moveos_verifier::build::run_verifier;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -19,7 +20,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub mod dependency_order;
+pub mod releaser;
+pub mod stdlib_configs;
+pub mod stdlib_version;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Stdlib {
@@ -77,6 +80,8 @@ pub struct StdlibBuildConfig {
     pub document_template: PathBuf,
     pub document_output_directory: PathBuf,
     pub build_config: BuildConfig,
+    /// Whether the stdlib is stable, Only stable stdlib will be included in the release version
+    pub stable: bool,
 }
 
 impl StdlibBuildConfig {
@@ -311,4 +316,21 @@ impl Stdlib {
 
         Ok(bundles)
     }
+}
+
+pub(crate) fn path_in_crate<S>(relative: S) -> PathBuf
+where
+    S: AsRef<Path>,
+{
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.push(relative);
+    path
+}
+
+pub(crate) const RELEASE_DIR: &str = "../framework-release/released/";
+
+pub(crate) const STATIC_FRAMEWORK_DIR: Dir = include_dir!("../framework-release/released/");
+
+pub(crate) fn release_dir() -> PathBuf {
+    path_in_crate(RELEASE_DIR)
 }
