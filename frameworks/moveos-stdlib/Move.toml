@@ -1,6 +1,6 @@
 [package]
 name = "MoveosStdlib"
-version = "0.0.1"
+version = "1.0.0"
 
 [addresses]
 std = "0x1"
