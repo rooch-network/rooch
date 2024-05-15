@@ -1,5 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -10,18 +11,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Copy } from 'lucide-react'
+import { Copy, Check } from 'lucide-react'
 import { formatAddress } from '@/utils/format.ts'
 import { useCurrentAccount } from '@roochnetwork/rooch-sdk-kit'
 import toast from 'react-hot-toast'
 
 export const ConnectedAccount = () => {
   const account = useCurrentAccount()
-
-  console.log(account)
+  const [copied, setCopied] = useState(false)
 
   const handleClickCopy = () => {
-    let textToCopy = account?.address || ''
+    const textToCopy = account?.address || ''
 
     if (!account) {
       toast('Please connect your wallet', {
@@ -33,9 +33,8 @@ export const ConnectedAccount = () => {
     navigator.clipboard
       .writeText(textToCopy)
       .then(() => {
-        toast('Copied to clipboard!', {
-          icon: '🌟',
-        })
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
       })
       .catch((err) => {
         console.error('Failed to copy:', err)
@@ -67,7 +66,11 @@ export const ConnectedAccount = () => {
                       className="w-6 h-6"
                       onClick={handleClickCopy}
                     >
-                      <Copy className="w-3 h-3" />
+                      {copied ? (
+                        <Check className="w-3 h-3 text-green-500" />
+                      ) : (
+                        <Copy className="w-3 h-3" />
+                      )}
                     </Button>
                   </>
                 ) : (
