@@ -23,6 +23,8 @@ use serde_with::DisplayFromStr;
 use std::fmt::Display;
 use std::str::FromStr;
 
+pub const MODULE_NAME: &IdentStr = ident_str!("session_key");
+
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub struct SessionScope {
     pub module_address: AccountAddress,
@@ -71,7 +73,7 @@ impl SessionScope {
 
 impl MoveStructType for SessionScope {
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("session_key");
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("SessionScope");
 }
 
@@ -163,7 +165,7 @@ impl SessionKey {
 
 impl MoveStructType for SessionKey {
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("session_key");
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("SessionKey");
 }
 
