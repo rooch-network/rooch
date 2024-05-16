@@ -7,35 +7,35 @@ import { IAccount } from '@roochnetwork/rooch-sdk'
 import { roochMutationKeys } from '../../constants/roochMutationKeys'
 import { useRoochClient } from './index'
 
-type UseTransferObjectArgs = {
+type UseTransferCoinArgs = {
   account: IAccount
-  toAddress: string
-  objId: string
-  objType: string
+  recipient: string
+  amount: number
+  coinType: string
 }
 
-type UseTransferObjectResult = void
+type UseTransferCoinResult = void
 
 type UseSwitchNetworkMutationOptions = Omit<
-  UseMutationOptions<UseTransferObjectResult, Error, UseTransferObjectArgs, unknown>,
+  UseMutationOptions<UseTransferCoinResult, Error, UseTransferCoinArgs, unknown>,
   'mutationFn'
 >
 
-export function useTransferObject({
+export function useTransferCoin({
   mutationKey,
   ...mutationOptions
 }: UseSwitchNetworkMutationOptions = {}): UseMutationResult<
-  UseTransferObjectResult,
+  UseTransferCoinResult,
   Error,
-  UseTransferObjectArgs,
+  UseTransferCoinArgs,
   unknown
 > {
   const client = useRoochClient()
 
   return useMutation({
-    mutationKey: roochMutationKeys.transferObject(mutationKey),
+    mutationKey: roochMutationKeys.transferCoin(mutationKey),
     mutationFn: async (args) => {
-      const struct = args.objType.split('::')
+      const struct = args.coinType.split('::')
 
       if (struct.length !== 3) {
         console.log('type args is error')
@@ -45,23 +45,23 @@ export function useTransferObject({
       const result = await client.executeTransaction({
         address: args.account.getAddress(),
         authorizer: args.account.getAuthorizer(),
-        funcId: '0x3::transfer::transfer_object',
+        funcId: '0x3::transfer::transfer_coin',
         args: [
           {
             type: 'Address',
-            value: args.toAddress,
+            value: args.recipient,
           },
           {
-            type: 'ObjectID',
-            value: args.objId,
+            type: 'U256',
+            value: BigInt(args.amount),
           },
         ],
         tyArgs: [
           {
             Struct: {
-              address: struct[0],
-              module: struct[1],
-              name: struct[2],
+              address: '0x3',
+              module: 'gas_coin',
+              name: 'GasCoin',
             },
           },
         ],

@@ -13,7 +13,7 @@ import {
   useSession,
   useWalletStore,
 } from '../hooks'
-import { getInstalledWallets } from '../utils/walletUtils'
+import { checkWallets } from '../utils/walletUtils'
 import { BaseWallet, UniSatWallet, WalletAccount } from '../types'
 import { SupportChain } from '../feature'
 import { useCurrentNetwork } from '../hooks'
@@ -55,7 +55,7 @@ export function WalletProvider({
   const network = useCurrentNetwork()
 
   useEffect(() => {
-    getInstalledWallets(client).then((v) => setWallets(v))
+    checkWallets(client).then((v) => setWallets(v))
   }, [chain, client])
 
   useEffect(() => {
