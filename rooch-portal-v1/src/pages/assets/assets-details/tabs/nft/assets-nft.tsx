@@ -8,7 +8,7 @@ import {
   useTransferObject,
 } from '@roochnetwork/rooch-sdk-kit'
 
-import { ArrowLeft, Copy } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Copy } from 'lucide-react'
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -175,8 +175,18 @@ export const AssetsNft = () => {
   if (isLoading || isError) {
     return (
       <div className="relative p-40">
-        <div className="absolute inset-0 bg-inherit bg-opacity-50 flex justify-center items-center">
-          {isLoading ? <LoadingSpinner /> : <div>Error loading data</div>}
+        <div className="absolute inset-0 bg-inherit flex justify-center items-center">
+          {isLoading ? (
+            <LoadingSpinner />
+          ) : (
+            <div className="flex flex-col items-center justify-center text-center">
+              <AlertCircle className="w-12 h-12 mb-4 text-red-500" />
+              <p className="text-xl text-red-500 font-semibold">Error loading data</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Something went wrong while fetching the data. Please try again later.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     )
