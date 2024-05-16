@@ -215,14 +215,12 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
         network.set_sequencer_account(sequencer_account.into());
         let genesis: RoochGenesis = RoochGenesis::build(network)?;
         root = genesis.init_genesis(&mut moveos_store)?;
-    } else {
-        if let RoochChainID::Builtin(chain_id) = chain_id {
-            let mut network: RoochNetwork = chain_id.into();
-            //TODO only set sequencer account if the network is local/dev
-            network.set_sequencer_account(sequencer_account.into());
-            let genesis = RoochGenesis::build(network)?;
-            genesis.check_genesis(moveos_store.get_config_store())?;
-        }
+    } else if let RoochChainID::Builtin(chain_id) = chain_id {
+        let mut network: RoochNetwork = chain_id.into();
+        //TODO only set sequencer account if the network is local/dev
+        network.set_sequencer_account(sequencer_account.into());
+        let genesis = RoochGenesis::build(network)?;
+        genesis.check_genesis(moveos_store.get_config_store())?;
     };
 
     let executor_actor =
