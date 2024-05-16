@@ -105,7 +105,7 @@ impl CommandAction<()> for Init {
 
                 None => {
                     println!(
-                        "Creating client config file [{:?}] with rooch native validator.",
+                        "Creating client config file [{:?}].",
                         client_config_path
                     );
                     let url = if self.server_url.is_none() {
