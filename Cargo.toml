@@ -51,6 +51,7 @@ members = [
 
 default-members = [
     "moveos/moveos",
+    "frameworks/framework-release",
     "crates/rooch",
 ]
 
