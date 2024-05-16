@@ -6,7 +6,7 @@ use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
 use move_core_types::language_storage::ModuleId;
 use move_core_types::value::MoveValue;
-use move_core_types::vm_status::{AbortLocation, VMStatus};
+use move_core_types::vm_status::{AbortLocation, KeptVMStatus, VMStatus};
 use moveos_types::module_binding::MoveFunctionCaller;
 use moveos_types::move_std::ascii::MoveAsciiString;
 use moveos_types::move_std::string::MoveString;
@@ -31,18 +31,13 @@ fn test_session_key_rooch() {
 
     let session_auth_key = keystore.generate_session_key(&sender, None).unwrap();
 
-    let session_scope = SessionScope::new(
-        ROOCH_FRAMEWORK_ADDRESS,
-        Empty::MODULE_NAME.as_str(),
-        Empty::EMPTY_FUNCTION_NAME.as_str(),
-    )
-    .unwrap();
+    let session_scope = SessionScope::new(ROOCH_FRAMEWORK_ADDRESS, "*", "*").unwrap();
     let app_name = MoveString::from_str("test").unwrap();
     let app_url = MoveAsciiString::from_str("https:://test.rooch.network").unwrap();
     let max_inactive_interval = 100;
     let action = rooch_types::framework::session_key::SessionKeyModule::create_session_key_action(
-        app_name,
-        app_url,
+        app_name.clone(),
+        app_url.clone(),
         session_auth_key.as_ref().to_vec(),
         session_scope.clone(),
         max_inactive_interval,
@@ -59,11 +54,11 @@ fn test_session_key_rooch() {
     assert!(session_key_option.is_some(), "Session key not found");
     let session_key = session_key_option.unwrap();
     assert_eq!(&session_key.authentication_key, session_auth_key.as_ref());
-    assert_eq!(session_key.scopes, vec![session_scope]);
+    assert_eq!(session_key.scopes, vec![session_scope.clone()]);
     assert_eq!(session_key.max_inactive_interval, max_inactive_interval);
     keystore.binding_session_key(sender, session_key).unwrap();
 
-    // send transaction via session key
+    // send transaction via session key, it in the scop of session key, so it should success.
 
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
     let tx_data = RoochTransactionData::new_for_test(sender, sequence_number + 1, action);
@@ -73,11 +68,11 @@ fn test_session_key_rooch() {
 
     binding_test.execute(tx).unwrap();
 
-    // test the session key call function is out the scope.
+    // test the session key call function which not in the scope of session key, it should be rejected.
 
     let action = MoveAction::new_function_call(
         FunctionId::new(
-            ModuleId::new(ROOCH_FRAMEWORK_ADDRESS, ident_str!("empty").to_owned()),
+            ModuleId::new(AccountAddress::random(), ident_str!("empty").to_owned()),
             ident_str!("empty_with_signer").to_owned(),
         ),
         vec![],
@@ -113,17 +108,55 @@ fn test_session_key_rooch() {
         }
     }
 
+    // test create session key with session key, it should fail.
+
+    let new_session_auth_key = keystore.generate_session_key(&sender, None).unwrap();
+    let action = rooch_types::framework::session_key::SessionKeyModule::create_session_key_action(
+        app_name,
+        app_url,
+        new_session_auth_key.as_ref().to_vec(),
+        session_scope.clone(),
+        max_inactive_interval,
+    );
+    // because previous transaction is failed, so the sequence number is not increased.
+    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number + 2, action);
+    // sign with the old session key
+    let tx = keystore
+        .sign_transaction_via_session_key(&sender, tx_data, &session_auth_key, None)
+        .unwrap();
+
+    let execute_result = binding_test.execute_as_result(tx).unwrap();
+    match execute_result.output.status {
+        KeptVMStatus::MoveAbort(l, code) => {
+            match l {
+                AbortLocation::Module(module_id) => {
+                    assert_eq!(
+                        module_id,
+                        SessionKeyModule::module_id(),
+                        "expect session key module"
+                    );
+                }
+                _ => panic!("expect move abort in module"),
+            }
+            // ErrorSessionKeyCreatePermissionDenied = 5
+            assert_eq!(code, 1, "expect ErrorSessionKeyCreatePermissionDenied");
+        }
+        _ => {
+            panic!("Expect move abort")
+        }
+    }
+
     // test session key expired
     let update_time_action =
         TimestampModule::create_fast_forward_seconds_for_local_action(max_inactive_interval + 1);
-    // because previous transaction is failed, so the sequence number is not increased.
+
     let tx_data =
-        RoochTransactionData::new_for_test(sender, sequence_number + 2, update_time_action);
+        RoochTransactionData::new_for_test(sender, sequence_number + 3, update_time_action);
     let tx = keystore.sign_transaction(&sender, tx_data, None).unwrap();
     binding_test.execute(tx).unwrap();
 
     let action = MoveAction::new_function_call(Empty::empty_function_id(), vec![], vec![]);
-    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number + 3, action);
+    let tx_data = RoochTransactionData::new_for_test(sender, sequence_number + 4, action);
     let tx = keystore
         .sign_transaction_via_session_key(&sender, tx_data, &session_auth_key, None)
         .unwrap();
