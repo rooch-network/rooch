@@ -11,8 +11,7 @@
 -  [Function `transfer_object`](#0x3_transfer_transfer_object)
 
 
-<pre><code><b>use</b> <a href="">0x1::debug</a>;
-<b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x2::account</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="account.md#0x3_account">0x3::account</a>;

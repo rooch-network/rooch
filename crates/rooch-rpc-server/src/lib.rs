@@ -206,7 +206,6 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
 
     let data_import_flag = opt.data_import_flag;
 
-    let genesis_file = arc_base_config.base_data_dir().path().join("genesis");
     if root.is_genesis() {
         let mut network: RoochNetwork = match chain_id {
             RoochChainID::Builtin(chain_id) => chain_id.into(),
@@ -216,9 +215,11 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
         network.set_sequencer_account(sequencer_account.into());
         let genesis: RoochGenesis = RoochGenesis::build(network)?;
         root = genesis.init_genesis(&mut moveos_store)?;
-        genesis.save_to(genesis_file)?;
-    } else {
-        let genesis: RoochGenesis = RoochGenesis::load_from(genesis_file)?;
+    } else if let RoochChainID::Builtin(chain_id) = chain_id {
+        let mut network: RoochNetwork = chain_id.into();
+        //TODO only set sequencer account if the network is local/dev
+        network.set_sequencer_account(sequencer_account.into());
+        let genesis = RoochGenesis::build(network)?;
         genesis.check_genesis(moveos_store.get_config_store())?;
     };
 
