@@ -45,10 +45,12 @@ move-prover = { workspace = true }
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
 moveos-stdlib = { workspace = true }
-framework-builder = { workspace = true }
 moveos = { workspace = true }
 moveos-store = { workspace = true }
 
 rooch-framework = { workspace = true }
 rooch-types = { workspace = true }
 bitcoin-move = { workspace = true }
+
+framework-builder = { workspace = true }
+framework-release = { workspace = true }

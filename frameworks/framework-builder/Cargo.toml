@@ -29,7 +29,6 @@ codespan-reporting = { workspace = true }
 pathdiff = { workspace = true }
 itertools = { workspace = true }
 tracing = { workspace = true }
-include_dir = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-bytecode-utils = { workspace = true }

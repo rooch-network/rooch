@@ -3,7 +3,6 @@
 
 use anyhow::{ensure, Result};
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
-use include_dir::{include_dir, Dir};
 use move_binary_format::{errors::Location, CompiledModule};
 use move_cli::base::reroot_path;
 use move_core_types::account_address::AccountAddress;
@@ -328,8 +327,6 @@ where
 }
 
 pub(crate) const RELEASE_DIR: &str = "../framework-release/released/";
-
-pub(crate) const STATIC_FRAMEWORK_DIR: Dir = include_dir!("../framework-release/released/");
 
 pub(crate) fn release_dir() -> PathBuf {
     path_in_crate(RELEASE_DIR)

@@ -1,7 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{release_dir, Stdlib, STATIC_FRAMEWORK_DIR};
+use crate::{release_dir, Stdlib};
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -51,7 +51,7 @@ impl StdlibVersion {
         true
     }
 
-    fn dir_with_file(&self) -> PathBuf {
+    pub fn dir_with_file(&self) -> PathBuf {
         PathBuf::from(self.to_string()).join("stdlib")
     }
 
@@ -62,22 +62,6 @@ impl StdlibVersion {
     pub(crate) fn load_from_file(&self) -> Result<Stdlib> {
         let file = self.output_file();
         Stdlib::load_from_file(file)
-    }
-
-    /// Load stdlib from static include file
-    pub fn load(&self) -> Result<Stdlib> {
-        STATIC_FRAMEWORK_DIR
-            .get_file(self.dir_with_file())
-            .ok_or_else(|| anyhow!("stdlib not found"))
-            .and_then(|f| {
-                Stdlib::decode(f.contents()).map_err(|e| {
-                    anyhow!(
-                        "Load stdlib from static include file {:?} failed: {:?}",
-                        f.path(),
-                        e
-                    )
-                })
-            })
     }
 
     pub fn save(&self, stdlib: &Stdlib) -> Result<()> {

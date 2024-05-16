@@ -284,7 +284,7 @@ impl RoochGenesis {
     }
 
     pub fn load_stdlib(stdlib_version: StdlibVersion) -> Result<Stdlib> {
-        stdlib_version.load()
+        framework_release::load_stdlib(stdlib_version)
     }
 
     pub fn load_from<P: AsRef<Path>>(genesis_file: P) -> Result<Self> {
