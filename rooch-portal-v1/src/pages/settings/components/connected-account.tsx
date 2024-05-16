@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Copy, Check } from 'lucide-react'
+import { Copy, Check, CircleUser } from 'lucide-react'
 import { formatAddress } from '@/utils/format.ts'
 import { useCurrentAccount } from '@roochnetwork/rooch-sdk-kit'
 import toast from 'react-hot-toast'
@@ -39,6 +39,24 @@ export const ConnectedAccount = () => {
       .catch((err) => {
         console.error('Failed to copy:', err)
       })
+  }
+
+  if (!account) {
+    return (
+      <div className="relative p-40">
+        <div className="absolute inset-0 bg-inherit bg-opacity-50 flex justify-center items-center">
+          {account ? (
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          ) : (
+            <div className="flex flex-col items-center justify-center text-center">
+              <CircleUser className="w-12 h-12 mb-4 text-gray-500" />
+              <p className="text-xl text-zinc-500 font-semibold">Could not find your account</p>
+              <p className="text-sm text-muted-foreground mt-2">Please connect to wallet.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -8,9 +8,9 @@ import {
 import { NoData } from '@/components/no-data'
 import { Card, CardHeader } from '@/components/ui/card'
 import CustomPagination from '@/components/custom-pagination.tsx'
-import { LoadingSpinner } from '@/components/loading-spinner.tsx'
 
 import { hexToString } from '@/utils/format.ts'
+import { AlertCircle } from 'lucide-react'
 
 // test address
 // const testAddress = ''
@@ -56,9 +56,19 @@ export const IndexedAssetsOrdi = () => {
 
   if (isLoading || isError) {
     return (
-      <div className="relative my-12">
-        <div className="absolute inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          {isLoading ? <LoadingSpinner /> : <div>Error loading data</div>}
+      <div className="relative p-24">
+        <div className="absolute inset-0 bg-inherit bg-opacity-50 flex justify-center items-center">
+          {isLoading ? (
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          ) : (
+            <div className="flex flex-col items-center justify-center text-center">
+              <AlertCircle className="w-12 h-12 mb-4 text-red-500" />
+              <p className="text-xl text-red-500 font-semibold">Error loading data</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Something went wrong while fetching the data. Please try again later.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     )
