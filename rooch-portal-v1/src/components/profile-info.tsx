@@ -26,7 +26,11 @@ export const ProfileInfo = () => {
             Rooch Network
           </h3>
           <div className="leading-none text-muted-foreground flex items-center justify-start font-normal text-xs sm:text-sm">
-            <p>{formatAddress(account?.getRoochAddress())}</p>
+            {account ? (
+              <p>{formatAddress(account?.getRoochAddress())}</p>
+            ) : (
+              <p>Connect to wallet</p>
+            )}
             <Button
               variant="ghost"
               size="icon"
