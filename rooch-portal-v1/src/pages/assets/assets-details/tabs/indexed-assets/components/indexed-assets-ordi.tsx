@@ -56,8 +56,8 @@ export const IndexedAssetsOrdi = () => {
 
   if (isLoading || isError) {
     return (
-      <div className="relative my-12">
-        <div className="absolute inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+      <div className="relative p-24">
+        <div className="absolute inset-0 bg-inherit bg-opacity-50 flex justify-center items-center">
           {isLoading ? <LoadingSpinner /> : <div>Error loading data</div>}
         </div>
       </div>
