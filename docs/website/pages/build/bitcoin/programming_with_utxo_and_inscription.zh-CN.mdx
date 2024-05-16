@@ -50,7 +50,7 @@ UTXO（Unspent Transaction Output）是比特币系统中的一个核心概念�
 
 以下是一些示例代码：
 
-```move
+```rust
 struct TempState has store, copy, drop {
     value: u64,
 }
@@ -102,6 +102,12 @@ Inscription 结构体包含了以下字段：
 - `metaprotocol`: 元协议，类型为 `Option<String>`。
 - `parent`: 父对象ID，类型为 `Option<ObjectID>`。
 - `pointer`: 指针，类型为 `Option<u64>`。
+
+<Callout>
+TODO: 这部分文档需要改进
+
+1. 更详细的描述 Inscription 字段。
+</Callout>
 
 ### 2. 如何通过方法参数接受 Inscription
 

@@ -50,7 +50,7 @@ The `Temporary Area` in the code is used to store temporary state data related t
 
 Here are some example codes:
 
-```move
+```rust
 struct TempState has store, copy, drop {
     value: u64,
 }
@@ -102,6 +102,12 @@ The Inscription structure includes the following fields:
 - `metaprotocol`: Meta-protocol, of type `Option<String>`.
 - `parent`: Parent object ID, of type `Option<ObjectID>`.
 - `pointer`: Pointer, of type `Option<u64>`.
+
+<Callout>
+TODO: This section of the document requires improvement.
+
+1. Provide a more detailed description of the "Inscription" field.
+</Callout>
 
 ### 2. How to Accept Inscription as Method Parameters
 
