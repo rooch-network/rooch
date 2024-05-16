@@ -3,7 +3,6 @@
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -59,7 +58,6 @@ export const Tokens = () => {
   return (
     <div className="rounded-lg border w-full">
       <Table>
-        <TableCaption className="text-left pl-2 mb-2">Lorem ipsum dolor sit.</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[150px]">SFT Name</TableHead>
