@@ -81,7 +81,7 @@ export function typeTagToSCS(ty: TypeTag): rooch_types.TypeTag {
 
 export function structTagToSCS(data: StructTag): rooch_types.StructTag {
   return new rooch_types.StructTag(
-    addressToSCS(data.address),
+    addressToSCS(normalizeRoochAddress(data.address)),
     new rooch_types.Identifier(data.module),
     new rooch_types.Identifier(data.name),
     data.type_params ? data.type_params.map((t) => typeTagToSCS(t)) : [],

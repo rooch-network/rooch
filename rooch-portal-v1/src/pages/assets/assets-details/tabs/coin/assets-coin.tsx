@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BalanceInfoView } from '@roochnetwork/rooch-sdk'
-import { useCurrentAccount, useRoochClientQuery } from '@roochnetwork/rooch-sdk-kit'
+import {
+  useCurrentSession,
+  useRoochClientQuery,
+  useTransferCoin,
+} from '@roochnetwork/rooch-sdk-kit'
 
 import { ArrowLeft } from 'lucide-react'
 import {
@@ -23,11 +27,17 @@ import { LoadingSpinner } from '@/components/loading-spinner.tsx'
 import CustomPagination from '@/components/custom-pagination.tsx'
 
 export const AssetsCoin = () => {
-  const account = useCurrentAccount()
+  const sessionKey = useCurrentSession()
 
+  const { mutateAsync: transferCoin } = useTransferCoin()
+
+  const [recipient, setRecipient] = useState('')
+  const [amount, setAmount] = useState('0')
+  const [transferLoading, setTransferLoading] = useState(false)
   // ** PAGINATION
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 1 })
   const mapPageToNextCursor = useRef<{ [page: number]: string | null }>({})
+
   const handlePageChange = (selectedPage: number) => {
     if (selectedPage < 0) {
       return
@@ -46,7 +56,7 @@ export const AssetsCoin = () => {
   )
 
   const { data, isLoading, isError } = useRoochClientQuery('getBalances', {
-    address: account?.getRoochAddress() || '',
+    address: sessionKey?.getAddress() || '',
     cursor: queryOptions.cursor,
     limit: queryOptions.pageSize,
   })
@@ -107,6 +117,24 @@ export const AssetsCoin = () => {
       mapPageToNextCursor.current[paginationModel.page] = data.next_cursor ?? null
     }
   }, [paginationModel, data])
+
+  const handleTransferCoin = async () => {
+    if (recipient === '' || amount === '0') {
+      return
+    }
+
+    setTransferLoading(true)
+
+    await transferCoin({
+      account: sessionKey!,
+      recipient: recipient,
+      amount: Number.parseInt(amount),
+      coinType: selectedCoin!.coin_type,
+    })
+
+    handleClose()
+    setTransferLoading(false)
+  }
 
   if (isLoading || isError) {
     return (
@@ -180,6 +208,11 @@ export const AssetsCoin = () => {
                       id="address"
                       placeholder="Enter Address..."
                       className="h-14 resize-none overflow-hidden rounded-2xl bg-gray-50 dark:bg-gray-200 text-gray-800 w-96"
+                      value={recipient}
+                      onChange={(event) => {
+                        setRecipient(event.target.value)
+                      }}
+                      disabled={transferLoading}
                       required
                       rows={1}
                     />
@@ -206,11 +239,17 @@ export const AssetsCoin = () => {
                       <Input
                         className="h-10 rounded-2xl bg-gray-50 dark:bg-gray-200 text-gray-800 w-48 pr-8 mr-2 overflow-hidden border-none"
                         placeholder="0.0"
+                        value={amount}
+                        onChange={(event) => {
+                          setAmount(event.target.value)
+                        }}
+                        disabled={transferLoading}
                         required
                       />
-                      <button className="text-blue-500 absolute end-4 font-sans text-xs focus:outline-none focus:ring-0 hover:text-blue-300 transition-all bg-gray-50 h-8 w-8 dark:bg-gray-200 rounded-2xl">
-                        MAX
-                      </button>
+                      {/*TODO need Calculating gas */}
+                      {/*<button className="text-blue-500 absolute end-4 font-sans text-xs focus:outline-none focus:ring-0 hover:text-blue-300 transition-all bg-gray-50 h-8 w-8 dark:bg-gray-200 rounded-2xl">*/}
+                      {/*  MAX*/}
+                      {/*</button>*/}
                     </div>
                   </div>
 
@@ -219,12 +258,12 @@ export const AssetsCoin = () => {
                     variant="default"
                     size="default"
                     className="w-full mt-6 font-sans gap-1"
-                    disabled={true}
+                    onClick={handleTransferCoin}
+                    disabled={transferLoading}
                   >
-                    {/*<span>Send</span>*/}
+                    <span>Send</span>
                     <span className="font-semibold text-blue-400 dark:text-blue-600">
-                      {/*{selectedCoin?.name}*/}
-                      COMING SOON...
+                      {selectedCoin?.name}
                     </span>
                   </Button>
                 </div>

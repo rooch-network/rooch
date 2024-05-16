@@ -495,11 +495,11 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7(@types/react-dom@18.2.17)(@types/react@18.2.63)(react-dom@18.2.0)(react@18.2.0)
       '@roochnetwork/rooch-sdk':
-        specifier: 0.1.1
-        version: 0.1.1
+        specifier: workspace:*
+        version: link:../sdk/typescript/rooch-sdk
       '@roochnetwork/rooch-sdk-kit':
-        specifier: 0.1.1
-        version: 0.1.1(@types/react@18.2.63)(react-native@0.72.4)
+        specifier: workspace:*
+        version: link:../sdk/typescript/rooch-sdk-kit
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.12.2(react@18.2.0)
@@ -532,7 +532,7 @@ importers:
         version: 2.4.0(csstype@3.1.2)(react-dom@18.2.0)(react@18.2.0)
       react-i18next:
         specifier: ^14.0.3
-        version: 14.0.5(i18next@23.10.0)(react-dom@18.2.0)(react-native@0.72.4)(react@18.2.0)
+        version: 14.0.5(i18next@23.10.0)(react-dom@18.2.0)(react@18.2.0)
       react-jazzicon:
         specifier: ^1.0.4
         version: 1.0.4(react-dom@18.2.0)(react@18.2.0)
@@ -3866,7 +3866,7 @@ packages:
       react: 18.2.0
     dev: false
 
-  /@emotion/styled@11.10.6(@emotion/react@11.10.6)(@types/react@18.2.63)(react@18.2.0):
+  /@emotion/styled@11.10.6(@emotion/react@11.10.6)(react@18.2.0):
     resolution: {integrity: sha512-OXtBzOmDSJo5Q0AFemHCfl+bUueT8BIcPSxu0EGTpGk6DmI5dnhSzQANm1e1ze0YZL7TDyAyy6s/b/zmGOS3Og==}
     peerDependencies:
       '@emotion/react': ^11.0.0-rc.0
@@ -3883,8 +3883,8 @@ packages:
       '@emotion/serialize': 1.1.2
       '@emotion/use-insertion-effect-with-fallbacks': 1.0.1(react@18.2.0)
       '@emotion/utils': 1.2.1
-      '@types/react': 18.2.63
       react: 18.2.0
+    dev: true
 
   /@emotion/unitless@0.8.1:
     resolution: {integrity: sha512-KOEGMu6dmJZtpadb476IsZBclKvILjopjUii3V+7MnXIQCYh8W3NgNcgwo21n9LXZX6EDIKvqfjYxXebDwxKmQ==}
@@ -5445,26 +5445,11 @@ packages:
       - react-native
     dev: false
 
-  /@metamask/sdk-install-modal-web@0.14.1(@types/react@18.2.63)(react-native@0.72.4):
-    resolution: {integrity: sha512-emT8HKbnfVwGhPxyUfMja6DWzvtJvDEBQxqCVx93H0HsyrrOzOC43iGCAosslw6o5h7gOfRKLqWmK8V7jQAS2Q==}
-    dependencies:
-      '@emotion/react': 11.10.6(@types/react@18.2.63)(react@18.2.0)
-      '@emotion/styled': 11.10.6(@emotion/react@11.10.6)(@types/react@18.2.63)(react@18.2.0)
-      i18next: 22.5.1
-      qr-code-styling: 1.6.0-rc.1
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-      react-i18next: 13.5.0(i18next@22.5.1)(react-dom@18.2.0)(react-native@0.72.4)(react@18.2.0)
-    transitivePeerDependencies:
-      - '@types/react'
-      - react-native
-    dev: false
-
   /@metamask/sdk-install-modal-web@0.5.1:
     resolution: {integrity: sha512-83Pw2mWYuIu7XXOKjFlFj19rYf4C17e8FSyT8H1fUR5Vnb4I8h4NVHoNsTZckl6bM6QaFfgoB9GN0kZBa2RZAg==}
     dependencies:
       '@emotion/react': 11.10.6(@types/react@18.2.63)(react@18.2.0)
-      '@emotion/styled': 11.10.6(@emotion/react@11.10.6)(@types/react@18.2.63)(react@18.2.0)
+      '@emotion/styled': 11.10.6(@emotion/react@11.10.6)(react@18.2.0)
       qr-code-styling: 1.6.0-rc.1
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
@@ -5500,54 +5485,6 @@ packages:
       '@metamask/providers': 10.2.1
       '@metamask/sdk-communication-layer': 0.14.1
       '@metamask/sdk-install-modal-web': 0.14.1(@types/react@18.2.42)(react-native@0.72.4)
-      '@react-native-async-storage/async-storage': 1.21.0(react-native@0.72.4)
-      '@types/dom-screen-wake-lock': 1.0.1
-      bowser: 2.11.0
-      cross-fetch: 4.0.0
-      eciesjs: 0.3.17
-      eth-rpc-errors: 4.0.3
-      eventemitter2: 6.4.9
-      extension-port-stream: 2.1.1
-      i18next: 22.5.1
-      i18next-browser-languagedetector: 7.2.0
-      obj-multiplex: 1.0.0
-      pump: 3.0.0
-      qrcode-terminal-nooctal: 0.12.1
-      react: 18.2.0
-      react-i18next: 13.5.0(i18next@22.5.1)(react-dom@18.2.0)(react-native@0.72.4)(react@18.2.0)
-      react-native: 0.72.4(@babel/core@7.23.5)(@babel/preset-env@7.22.14)(react@18.2.0)
-      react-native-webview: 11.26.1(react-native@0.72.4)(react@18.2.0)
-      readable-stream: 2.3.8
-      rollup-plugin-visualizer: 5.10.0
-      socket.io-client: 4.7.2(bufferutil@4.0.8)(utf-8-validate@6.0.3)
-      util: 0.12.5
-      uuid: 8.3.2
-    transitivePeerDependencies:
-      - '@types/react'
-      - bufferutil
-      - encoding
-      - react-dom
-      - rollup
-      - supports-color
-      - utf-8-validate
-    dev: false
-
-  /@metamask/sdk@0.14.1(@types/react@18.2.63)(react-dom@18.2.0)(react-native@0.72.4)(react@18.2.0):
-    resolution: {integrity: sha512-52kfvnlyMXRO8/oPGoQOFMevSjgkLzpl8aGG6Ivx/6jiqSv5ScuOg6YdSWXR937Ts0zWE0V8KTUBMfnGGt0S9Q==}
-    peerDependencies:
-      react: ^18.2.0
-      react-native: '*'
-    peerDependenciesMeta:
-      react:
-        optional: true
-      react-native:
-        optional: true
-    dependencies:
-      '@metamask/onboarding': 1.0.1
-      '@metamask/post-message-stream': 6.2.0
-      '@metamask/providers': 10.2.1
-      '@metamask/sdk-communication-layer': 0.14.1
-      '@metamask/sdk-install-modal-web': 0.14.1(@types/react@18.2.63)(react-native@0.72.4)
       '@react-native-async-storage/async-storage': 1.21.0(react-native@0.72.4)
       '@types/dom-screen-wake-lock': 1.0.1
       bowser: 2.11.0
@@ -9453,77 +9390,6 @@ packages:
     requiresBuild: true
     dev: true
     optional: true
-
-  /@roochnetwork/rooch-sdk-kit@0.1.1(@types/react@18.2.63)(react-native@0.72.4):
-    resolution: {integrity: sha512-xsy18JfDZ8KyIN+O1pnzbpQ9i8xDZJOpY+lqbUuGRn82YvPu3qcvRzQ1NUilZ9atxbebHtZ5VaNrDDswkUx9qA==}
-    engines: {node: '>=18.0.0'}
-    dependencies:
-      '@metamask/detect-provider': 2.0.0
-      '@metamask/sdk': 0.14.1(@types/react@18.2.63)(react-dom@18.2.0)(react-native@0.72.4)(react@18.2.0)
-      '@noble/hashes': 1.3.2
-      '@roochnetwork/rooch-sdk': 0.1.0
-      '@tanstack/react-query': 5.12.2(react@18.2.0)
-      base58-js: 1.0.5
-      bech32: 2.0.0
-      bitcoinjs-lib: 6.1.5
-      buffer: 6.0.0
-      clsx: 2.1.0
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-      sha256-uint8array: 0.10.7
-      zustand: 4.4.7(@types/react@18.2.63)(react@18.2.0)
-    transitivePeerDependencies:
-      - '@types/react'
-      - bufferutil
-      - encoding
-      - immer
-      - react-native
-      - rollup
-      - supports-color
-      - utf-8-validate
-    dev: false
-
-  /@roochnetwork/rooch-sdk@0.1.0:
-    resolution: {integrity: sha512-mx4jaZYWAmjYB6NnmCgr5QxVhT3S5FSIQbhDtkeyoOKI2d1i2m4T86aIpZLBuW27GuWZR1eGq/ecDhAK4cvJ8Q==}
-    engines: {node: '>=18.0.0'}
-    dependencies:
-      '@ethersproject/bytes': 5.7.0
-      '@kayahr/text-encoding': 1.2.0
-      '@noble/hashes': 1.3.2
-      '@open-rpc/client-js': 1.8.1
-      '@scure/bip39': 1.2.1
-      '@suchipi/femver': 1.0.0
-      '@types/ws': 8.5.5
-      events: 3.3.0
-      isomorphic-fetch: 3.0.0
-      superstruct: 1.0.3
-      tweetnacl: 1.0.3
-    transitivePeerDependencies:
-      - bufferutil
-      - encoding
-      - utf-8-validate
-    dev: false
-
-  /@roochnetwork/rooch-sdk@0.1.1:
-    resolution: {integrity: sha512-NcJ1PgMnGj0glp62CGPGl9cH30wN4o3LeUi5TXHeMS6Y+rvc7rfM/VsxmungaiWYp90qd+UnCSxPSL2y2vzONg==}
-    engines: {node: '>=18.0.0'}
-    dependencies:
-      '@ethersproject/bytes': 5.7.0
-      '@kayahr/text-encoding': 1.2.0
-      '@noble/hashes': 1.3.2
-      '@open-rpc/client-js': 1.8.1
-      '@scure/bip39': 1.2.1
-      '@suchipi/femver': 1.0.0
-      '@types/ws': 8.5.5
-      events: 3.3.0
-      isomorphic-fetch: 3.0.0
-      superstruct: 1.0.3
-      tweetnacl: 1.0.3
-    transitivePeerDependencies:
-      - bufferutil
-      - encoding
-      - utf-8-validate
-    dev: false
 
   /@rushstack/eslint-patch@1.3.3:
     resolution: {integrity: sha512-0xd7qez0AQ+MbHatZTlI1gu5vkG8r7MYRUJAHPAHJBmGLs16zpkrpAVLvjQKQOqaXPDUBwOiJzNc00znHSCVBw==}
@@ -19633,7 +19499,7 @@ packages:
       react-native: 0.72.4(@babel/core@7.23.5)(@babel/preset-env@7.22.14)(react@18.2.0)
     dev: false
 
-  /react-i18next@14.0.5(i18next@23.10.0)(react-dom@18.2.0)(react-native@0.72.4)(react@18.2.0):
+  /react-i18next@14.0.5(i18next@23.10.0)(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-5+bQSeEtgJrMBABBL5lO7jPdSNAbeAZ+MlFWDw//7FnVacuVu3l9EeWFzBQvZsKy+cihkbThWOAThEdH8YjGEw==}
     peerDependencies:
       i18next: '>= 23.2.3'
@@ -19651,7 +19517,6 @@ packages:
       i18next: 23.10.0
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
-      react-native: 0.72.4(@babel/core@7.23.5)(@babel/preset-env@7.22.14)(react@18.2.0)
     dev: false
 
   /react-is@16.13.1:
