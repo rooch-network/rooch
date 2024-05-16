@@ -98,7 +98,7 @@ init() {
   ord wallet inscriptions
 
   # Step 9: start rooch node
-  cargo run --package rooch --bin rooch server start --btc-rpc-url ${btc_rpc_url} --btc-rpc-username ${btc_rpc_username} --btc-rpc-password ${btc_rpc_password} --btc-start-block-height 0 --btc-network 4
+  cargo run --package rooch --bin rooch server start --btc-rpc-url ${btc_rpc_url} --btc-rpc-username ${btc_rpc_username} --btc-rpc-password ${btc_rpc_password} --btc-start-block-height 0
 }
 
 clean() {

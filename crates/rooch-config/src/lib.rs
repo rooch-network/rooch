@@ -11,9 +11,7 @@ use clap::Parser;
 use once_cell::sync::Lazy;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-
 use moveos_config::{temp_dir, DataDirPath};
-use rooch_types::bitcoin::network::Network;
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::rooch_network::{BuiltinChainID, RoochChainID};
 
@@ -122,11 +120,6 @@ pub struct RoochOpt {
     /// The end block height of the Bitcoin chain to stop relaying from, default is none.
     pub btc_end_block_height: Option<u64>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long)]
-    /// The bitcoin network, default is regtest.
-    pub btc_network: Option<u8>,
-
     /// The address of the sequencer account
     #[clap(long)]
     pub sequencer_account: Option<String>,
@@ -173,7 +166,6 @@ impl RoochOpt {
             btc_rpc_password: None,
             btc_start_block_height: None,
             btc_end_block_height: None,
-            btc_network: Some(Network::default().to_num()),
             sequencer_account: None,
             proposer_account: None,
             relayer_account: None,

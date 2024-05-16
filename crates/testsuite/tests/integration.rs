@@ -75,7 +75,6 @@ async fn start_server(w: &mut World, _scenario: String) {
             opt.btc_rpc_password = Some(RPC_PASS.to_string());
             opt.btc_start_block_height = Some(0);
             opt.data_import_flag = false; // Enable data import without writing indexes
-            opt.btc_network = Some(Network::Testnet.to_num());
             info!("config btc rpc ok");
 
             w.bitcoind = Some(bitcoind);
