@@ -6,7 +6,7 @@ Rooch 内置了 [bitcoin-move](https://github.com/rooch-network/rooch/tree/main/
 
 ## 在合约中读取 Bitcoin 区块和交易
 
-在 Rooch 中，Bitcoin 区块和交易被中继器（Relayer）读取并写入到 Rooch 的全局状态中，所有状态都储存在 `0x4::bitcoin::BitcoinBlockStore` 中。开发者可以通过 `0x4::bitcoin` 模块提供的接口来读取 Bitcoin 区块和交易数据。
+在 Rooch 中，Bitcoin 区块和交易被中继器（Relayer）写入到 Rooch 的全局状态中，所有状态都储存在 `0x4::bitcoin::BitcoinBlockStore` 中。开发者可以通过 `0x4::bitcoin` 模块提供的接口来读取 Bitcoin 区块和交易数据。
 
 ### 1. `BitcoinBlockStore` 结构体与读取接口
 
@@ -127,4 +127,5 @@ TODO: 这部分文档需要改进
 3. 在 Move 中校验 Bitcoin 交易的 Script，实现 Move 和 Bitcoin Script 混合编程。这个特性尚在开发中，可以跟踪 [Issue #1651](https://github.com/rooch-network/rooch/issues/1651)。
 
 ## 示例
-1. [btc_blind_box](https://github.com/rooch-network/rooch/blob/main/examples/btc_blind_box)：一个简单的开盲盒示例，使用 Bitcoin 区块哈希作为随机数种子，实现了开盲盒的功能。
+1. [btc_blind_box](https://github.com/rooch-network/rooch/blob/main/examples/btc_blind_box)
+    一个简单的开盲盒示例，使用 Bitcoin 区块哈希作为随机数种子，实现了开盲盒的功能。领取盲盒分两个阶段：1. 申请阶段；2.领取阶段。在申请阶段，玩家可以申请一个盲盒，得到一个随机的 magic number，申请期结束后，所有玩家的 magic number 不可变更。然后经过一定间隔后，进入领取阶段，领取阶段以 Bitcoin 最新的区块头为随机种子，结合玩家的 magic number 得到一个随机数，从而确定玩家得到的盲盒等级，这保证了充分的随机性；同时，在申请阶段，玩家无法预测未来区块头的信息，因此也保证了不可预测性。

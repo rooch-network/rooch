@@ -18,21 +18,13 @@ Rooch 通过 Move 的 Object 嵌套特效，实现 Bitcoin 状态和 Rooch L2 �
 
 ## 用 UTXO 编程
 
-<Callout>
-TODO: 这部分文档需要改进
-
-1. UTXO 的字段说明
-2. 如何通过方法参数接受 UTXO
-3. 如何在 UTXO 的临时区域中存储数据
-</Callout>
-
 ### 1. UTXO 的字段说明
 
 UTXO（Unspent Transaction Output）是比特币系统中的一个核心概念，代表未花费的交易输出。在 Rooch Bitcoin framework 中，`UTXO` 结构体定义了 UTXO 的几个关键字段：
 
-- `txid`: 表示产生该 UTXO 的交易的哈希值（`address` 类型，这里应该是指比特币地址，但通常使用哈希值表示）。
-- `vout`: 表示该 UTXO 在其交易中的位置索引（`u32` 类型）。
-- `value`: 表示该 UTXO 的价值，即它包含的比特币数量（`u64` 类型）。
+- `txid`: `address`, 表示产生该 UTXO 的交易的哈希值。
+- `vout`: `u32`, 表示该 UTXO 在其交易中的位置索引。
+- `value`: `u64`, 表示该 UTXO 的价值，即它包含的比特币数量。
 - `seals`: 表示与该 UTXO 相关联的协议铭文，使用 `SimpleMultiMap` 结构体存储，映射了协议名称（`String` 类型）到对象 ID（`ObjectID` 类型）。
 
 ### 2. 如何通过方法参数接受 UTXO
@@ -92,13 +84,6 @@ let removed_state = remove_temp_state::<TempState>(&mut utxo);
 2. [btc_holder_farmer](https://github.com/rooch-network/rooch/blob/main/examples/btc_holder_farmer)：一个更复杂的 UTXO 示例，实现了给 Bitcoin 持有者通过 DeFi farmer 模式发放代币奖励的功能。
 
 ## 用 Inscription 编程
-
-<Callout>
-TODO: 这部分文档需要改进
-1. Inscription 的字段说明
-2. 如何通过方法参数接受 Inscription
-3. 如何在 Inscription 的临时区域和永久区域中存储数据
-</Callout>
 
 ### 1. Inscription 的字段说明
 
