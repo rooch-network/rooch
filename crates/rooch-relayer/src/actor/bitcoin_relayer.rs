@@ -24,7 +24,6 @@ pub struct BitcoinRelayer {
     // only for data import
     end_block_height: Option<u64>,
     rpc_client: BitcoinClientProxy,
-    //TODO if we want make the relayer to an independent process, we need to replace the executor proxy with a rooch rpc client
     move_caller: ExecutorProxy,
     buffer: Vec<BlockResult>,
     sync_block_interval: u64,
@@ -45,7 +44,7 @@ impl BitcoinRelayer {
         executor: ExecutorProxy,
     ) -> Result<Self> {
         Ok(Self {
-            start_block_height: config.btc_start_block_height,
+            start_block_height: Some(0),
             end_block_height: config.btc_end_block_height,
             rpc_client,
             move_caller: executor,

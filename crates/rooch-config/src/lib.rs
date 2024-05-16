@@ -8,12 +8,12 @@ use std::{fmt::Debug, path::Path, path::PathBuf};
 
 use anyhow::Result;
 use clap::Parser;
+use moveos_config::{temp_dir, DataDirPath};
 use once_cell::sync::Lazy;
 use rand::Rng;
-use serde::{Deserialize, Serialize};
-use moveos_config::{temp_dir, DataDirPath};
 use rooch_types::crypto::RoochKeyPair;
 use rooch_types::rooch_network::{BuiltinChainID, RoochChainID};
+use serde::{Deserialize, Serialize};
 
 use crate::da_config::DAConfig;
 use crate::store_config::StoreConfig;
@@ -111,11 +111,6 @@ pub struct RoochOpt {
     pub btc_rpc_password: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long, env = "BTC_START_BLOCK_HEIGHT")]
-    /// The start block height of the Bitcoin chain to start relaying from, default is latest.
-    pub btc_start_block_height: Option<u64>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long, env = "BTC_END_BLOCK_HEIGHT")]
     /// The end block height of the Bitcoin chain to stop relaying from, default is none.
     pub btc_end_block_height: Option<u64>,
@@ -164,7 +159,6 @@ impl RoochOpt {
             btc_rpc_url: None,
             btc_rpc_username: None,
             btc_rpc_password: None,
-            btc_start_block_height: None,
             btc_end_block_height: None,
             sequencer_account: None,
             proposer_account: None,
@@ -199,7 +193,6 @@ impl RoochOpt {
             btc_rpc_url: self.btc_rpc_url.clone().unwrap(),
             btc_rpc_user_name: self.btc_rpc_username.clone().unwrap(),
             btc_rpc_password: self.btc_rpc_password.clone().unwrap(),
-            btc_start_block_height: self.btc_start_block_height,
             btc_end_block_height: self.btc_end_block_height,
         })
     }
@@ -219,7 +212,6 @@ pub struct BitcoinRelayerConfig {
     pub btc_rpc_url: String,
     pub btc_rpc_user_name: String,
     pub btc_rpc_password: String,
-    pub btc_start_block_height: Option<u64>,
     pub btc_end_block_height: Option<u64>,
 }
 
