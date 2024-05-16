@@ -22,7 +22,6 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { LoadingSpinner } from '@/components/loading-spinner.tsx'
 
 import CustomPagination from '@/components/custom-pagination.tsx'
 
@@ -139,9 +138,9 @@ export const AssetsCoin = () => {
   if (isLoading || isError) {
     return (
       <div className="relative p-40">
-        <div className="absolute inset-0 bg-inherit flex justify-center items-center">
+        <div className="absolute inset-0 bg-inherit bg-opacity-50 flex justify-center items-center">
           {isLoading ? (
-            <LoadingSpinner />
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
           ) : (
             <div className="flex flex-col items-center justify-center text-center">
               <AlertCircle className="w-12 h-12 mb-4 text-red-500" />

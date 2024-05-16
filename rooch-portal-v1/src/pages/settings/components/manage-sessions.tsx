@@ -1,5 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+import { useState } from 'react'
 import {
   Table,
   TableBody,
@@ -10,13 +11,12 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
 import {
   useCurrentSession,
   useRemoveSession,
   useRoochClientQuery,
 } from '@roochnetwork/rooch-sdk-kit'
-import { Copy, ChevronDown, ChevronUp, Check } from 'lucide-react'
+import { Copy, ChevronDown, ChevronUp, Check, AlertCircle } from 'lucide-react'
 
 interface Session {
   authenticationKey: string
@@ -60,7 +60,11 @@ const copyToClipboard = async (text: string, setCopied: (value: boolean) => void
 export const ManageSessions: React.FC = () => {
   const sessionKey = useCurrentSession()
   const { mutateAsync: removeSession } = useRemoveSession()
-  const { data: sessionKeys } = useRoochClientQuery('querySessionKeys', {
+  const {
+    data: sessionKeys,
+    isLoading,
+    isError,
+  } = useRoochClientQuery('querySessionKeys', {
     address: sessionKey?.getAddress() || '',
   })
 
@@ -78,6 +82,40 @@ export const ManageSessions: React.FC = () => {
     maxInactiveInterval: session.maxInactiveInterval.toString(),
   })
 
+  if (isLoading || isError) {
+    return (
+      <div className="relative p-40">
+        <div className="absolute inset-0 bg-inherit bg-opacity-50 flex justify-center items-center">
+          {isLoading ? (
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          ) : (
+            <div className="flex flex-col items-center justify-center text-center">
+              <AlertCircle className="w-12 h-12 mb-4 text-red-500" />
+              <p className="text-xl text-red-500 font-semibold">Error loading data</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Something went wrong while fetching the data. Please try again later.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (!sessionKeys?.data.length) {
+    return (
+      <div className="rounded-lg border w-full flex justify-center items-center h-full p-20">
+        <div className="flex flex-col items-center justify-center text-center text-xl text-muted-foreground">
+          <AlertCircle className="w-12 h-12 mb-4 text-blue-500" />
+          <p className="mb-2 font-semibold">No Data</p>
+          <p className="text-base text-gray-500">
+            No session keys found. Please check again later.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="rounded-lg border w-full">
       <Table>
@@ -93,7 +131,7 @@ export const ManageSessions: React.FC = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sessionKeys?.data.map((session: SessionInfoResult) => (
+          {sessionKeys.data.map((session: SessionInfoResult) => (
             <ExpandableRow
               key={session.authenticationKey}
               session={formatSession(session)}

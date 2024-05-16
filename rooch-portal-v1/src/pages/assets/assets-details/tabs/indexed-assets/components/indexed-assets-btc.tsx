@@ -9,7 +9,6 @@ import {
 import { NoData } from '@/components/no-data.tsx'
 import CustomPagination from '@/components/custom-pagination.tsx'
 
-import { LoadingSpinner } from '@/components/loading-spinner.tsx'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { AlertCircle } from 'lucide-react'
 
@@ -57,9 +56,9 @@ export const IndexedAssetsBTC = () => {
   if (isLoading || isError) {
     return (
       <div className="relative p-24">
-        <div className="absolute inset-0 bg-inherit flex justify-center items-center">
+        <div className="absolute inset-0 bg-inherit bg-opacity-50 flex justify-center items-center">
           {isLoading ? (
-            <LoadingSpinner />
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
           ) : (
             <div className="flex flex-col items-center justify-center text-center">
               <AlertCircle className="w-12 h-12 mb-4 text-red-500" />
