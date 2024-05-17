@@ -43,9 +43,12 @@ module rooch_framework::genesis {
         gas_coin::genesis_init(genesis_account);
         transaction_fee::genesis_init(genesis_account);
         timestamp::genesis_init(genesis_account, genesis_context.timestamp);
-        address_mapping::genesis_init(genesis_account); 
-
+        address_mapping::genesis_init(genesis_account);
         onchain_config::genesis_init(genesis_account, genesis_context.sequencer);
+        
+        account::create_account_internal(genesis_context.sequencer);
+        // give some gas coin to the sequencer
+        gas_coin::faucet(genesis_context.sequencer, 1000000_00000000u256);
     }
 
 

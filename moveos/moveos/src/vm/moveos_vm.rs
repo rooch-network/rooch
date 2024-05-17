@@ -316,7 +316,7 @@ where
                 let resolved_args = self.resolve_argument(&loaded_function, call.args, location)?;
                 let serialized_args = self.load_arguments(resolved_args)?;
                 if bypass_visibility {
-                    // bypass visibility call is system call, we do not charge gas for it
+                    // bypass visibility call is system call, we do not charge gas for it, like L1 block transaction
                     self.gas_meter.stop_metering();
                     let result = self
                         .session

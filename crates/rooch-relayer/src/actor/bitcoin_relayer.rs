@@ -12,11 +12,10 @@ use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_config::BitcoinRelayerConfig;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_types::{
-    bitcoin::{genesis, BitcoinModule},
+    bitcoin::BitcoinModule,
     multichain_id::RoochMultiChainID,
     transaction::{L1Block, L1BlockWithBody},
 };
-use std::cmp::max;
 use tracing::{debug, info};
 
 pub struct BitcoinRelayer {
