@@ -41,17 +41,6 @@ impl IndexerActor {
         })
     }
 
-    // pub fn resolve_raw_object_value_to_json(
-    //     resolver: &dyn MoveResolver,
-    //     raw_object: &RawObject,
-    // ) -> Result<String> {
-    //     let obj_value = MoveValueAnnotator::new(resolver)
-    //         .view_resource(&raw_object.value.struct_tag, &raw_object.value.value)?;
-    //     let obj_value_view = AnnotatedMoveStructView::from(obj_value);
-    //     let raw_object_value_json = serde_json::to_string(&obj_value_view)?;
-    //     Ok(raw_object_value_json)
-    // }
-
     pub fn resolve_state_to_json(
         resolver: &dyn MoveResolver,
         ty_tag: &TypeTag,
