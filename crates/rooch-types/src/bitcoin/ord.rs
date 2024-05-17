@@ -237,7 +237,7 @@ pub struct InscriptionState {
 }
 
 impl InscriptionState {
-    pub fn new_from_global_state(
+    pub fn new_from_object_state(
         state: IndexerObjectState,
         inscription: Inscription,
         owner_bitcoin_address: Option<BitcoinAddress>,

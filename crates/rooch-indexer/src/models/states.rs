@@ -29,9 +29,6 @@ pub struct StoredObjectState {
     /// The table state root of the object
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub state_root: String,
-    /// The value of the object, json format
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    pub value: String,
     /// The table length
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     pub size: i64,
@@ -55,7 +52,6 @@ impl From<IndexedObjectState> for StoredObjectState {
             object_id: state.object_id.to_string(),
             owner: state.owner.to_hex_literal(),
             flag: state.flag as i16,
-            value: state.value,
             object_type: state.object_type,
             state_root: state.state_root.to_hex_literal(),
             size: state.size as i64,
@@ -78,7 +74,6 @@ impl StoredObjectState {
             object_id,
             owner,
             flag: self.flag as u8,
-            value: self.value.clone(),
             object_type,
             state_root,
             size: self.size as u64,
@@ -103,9 +98,6 @@ pub struct StoredFieldState {
     /// The key of the table, json format
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub key_str: String,
-    /// The value of the table, json format
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    pub value: String,
     /// The type tag of the key
     #[diesel(sql_type = diesel::sql_types::Text)]
     pub key_type: String,
@@ -132,7 +124,6 @@ impl From<IndexedFieldState> for StoredFieldState {
             object_id: state.object_id.to_string(),
             key_hex: state.key_hex,
             key_str: state.key_str,
-            value: state.value,
             key_type: state.key_type.to_string(),
             value_type: state.value_type.to_string(),
             tx_order: state.tx_order as i64,
@@ -153,7 +144,6 @@ impl StoredFieldState {
             object_id,
             key_hex: self.key_hex.clone(),
             key_str: self.key_str.clone(),
-            value: self.value.clone(),
             key_type,
             value_type,
             tx_order: self.tx_order as u64,

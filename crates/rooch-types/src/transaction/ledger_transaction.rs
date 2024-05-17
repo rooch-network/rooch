@@ -4,7 +4,7 @@
 use super::{RoochTransaction, TransactionSequenceInfo};
 use crate::multichain_id::MultiChainID;
 use anyhow::Result;
-use ethers::types::H256;
+use moveos_types::h256::H256;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, Hash, Eq, PartialEq, Serialize, Deserialize)]

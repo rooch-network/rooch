@@ -108,7 +108,7 @@ pub struct UTXOState {
 }
 
 impl UTXOState {
-    pub fn new_from_global_state(
+    pub fn new_from_object_state(
         state: IndexerObjectState,
         utxo: Option<UTXO>,
         owner_bitcoin_address: Option<BitcoinAddress>,
