@@ -7,7 +7,10 @@ use move_core_types::gas_algebra::{InternalGas, InternalGasPerByte, NumBytes};
 use move_core_types::vm_status::StatusCode;
 use move_vm_runtime::native_functions::{NativeContext, NativeFunction};
 use move_vm_types::{
-    loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::{Value, Struct, Vector},
+    loaded_data::runtime_types::Type,
+    natives::function::NativeResult,
+    pop_arg,
+    values::{Struct, Value, Vector},
 };
 use smallvec::smallvec;
 use std::collections::VecDeque;
@@ -53,12 +56,10 @@ fn native_from_bytes(
     let bytes = pop_arg!(args, Vec<u8>);
     cost += gas_params.per_byte_deserialize * NumBytes::new(bytes.len() as u64);
     let result = match Value::simple_deserialize(&bytes, &layout) {
-        Some(val) => {
-            Struct::pack(vec![Vector::pack(type_param, vec![val]).map_err(|e| {
-                PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-                    .with_message(format!("Failed to pack Option: {:?}", e))
-            })?])
-        },
+        Some(val) => Struct::pack(vec![Vector::pack(type_param, vec![val]).map_err(|e| {
+            PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+                .with_message(format!("Failed to pack Option: {:?}", e))
+        })?]),
         None => {
             // Pack the MoveOption None
             Struct::pack(vec![Vector::pack(type_param, vec![]).map_err(|e| {
@@ -68,10 +69,7 @@ fn native_from_bytes(
         }
     };
 
-    Ok(NativeResult::ok(
-        cost,
-        smallvec![Value::struct_(result)],
-    ))
+    Ok(NativeResult::ok(cost, smallvec![Value::struct_(result)]))
 }
 
 /***************************************************************************************************

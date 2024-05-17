@@ -174,7 +174,6 @@ fn native_fn_dispatch(
         + common_gas_params.calculate_load_cost(object_load_gas)
         + common_gas_params.calculate_load_cost(field_load_gas);
 
-
     let result = f(context, tv);
     match result {
         Ok(ret) => Ok(NativeResult::ok(

@@ -32,4 +32,6 @@ moveos-stdlib = { workspace = true }
 framework-builder = { workspace = true }
 
 [build-dependencies]
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 framework-builder = { workspace = true }

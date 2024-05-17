@@ -12,8 +12,6 @@
 -  [Function `genesis_init`](#0xa_bitseed_genesis_init)
 -  [Function `bitseed_deploy_key`](#0xa_bitseed_bitseed_deploy_key)
 -  [Function `bitseed_mint_key`](#0xa_bitseed_bitseed_mint_key)
--  [Function `inscribe_verify`](#0xa_bitseed_inscribe_verify)
--  [Function `process_inscription`](#0xa_bitseed_process_inscription)
 -  [Function `get_coin_info`](#0xa_bitseed_get_coin_info)
 -  [Function `coin_info_tick`](#0xa_bitseed_coin_info_tick)
 -  [Function `coin_info_generator`](#0xa_bitseed_coin_info_generator)
@@ -23,6 +21,8 @@
 -  [Function `coin_info_deploy_args_option`](#0xa_bitseed_coin_info_deploy_args_option)
 -  [Function `coin_info_deploy_args`](#0xa_bitseed_coin_info_deploy_args)
 -  [Function `coin_info_supply`](#0xa_bitseed_coin_info_supply)
+-  [Function `inscribe_verify`](#0xa_bitseed_inscribe_verify)
+-  [Function `process_inscription`](#0xa_bitseed_process_inscription)
 
 
 <pre><code><b>use</b> <a href="">0x1::bcs</a>;
@@ -133,28 +133,6 @@
 
 
 
-<a name="0xa_bitseed_inscribe_verify"></a>
-
-## Function `inscribe_verify`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_inscribe_verify">inscribe_verify</a>(wasm_bytes: <a href="">vector</a>&lt;u8&gt;, deploy_args: <a href="">vector</a>&lt;u8&gt;, seed: <a href="">vector</a>&lt;u8&gt;, user_input: <a href="">vector</a>&lt;u8&gt;, attributes_output: <a href="">vector</a>&lt;u8&gt;): bool
-</code></pre>
-
-
-
-<a name="0xa_bitseed_process_inscription"></a>
-
-## Function `process_inscription`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_process_inscription">process_inscription</a>(tx: &<a href="_Transaction">types::Transaction</a>, inscription: &<a href="_Inscription">ord::Inscription</a>)
-</code></pre>
-
-
-
 <a name="0xa_bitseed_get_coin_info"></a>
 
 ## Function `get_coin_info`
@@ -250,4 +228,26 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_coin_info_supply">coin_info_supply</a>(self: &<a href="bitseed.md#0xa_bitseed_BitseedCoinInfo">bitseed::BitseedCoinInfo</a>): u64
+</code></pre>
+
+
+
+<a name="0xa_bitseed_inscribe_verify"></a>
+
+## Function `inscribe_verify`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_inscribe_verify">inscribe_verify</a>(wasm_bytes: <a href="">vector</a>&lt;u8&gt;, deploy_args: <a href="">vector</a>&lt;u8&gt;, seed: <a href="">vector</a>&lt;u8&gt;, user_input: <a href="">vector</a>&lt;u8&gt;, attributes_output: <a href="">vector</a>&lt;u8&gt;): bool
+</code></pre>
+
+
+
+<a name="0xa_bitseed_process_inscription"></a>
+
+## Function `process_inscription`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_process_inscription">process_inscription</a>(inscription: &<a href="_Inscription">ord::Inscription</a>)
 </code></pre>

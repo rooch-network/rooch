@@ -9,15 +9,14 @@ module rooch_nursery::bitseed {
 
     use moveos_std::address;
     use moveos_std::hash;
-    use moveos_std::object::{Self, Object, ObjectID};
+    use moveos_std::object::{Self, Object};
     use moveos_std::string_utils;
     use moveos_std::simple_map::{Self, SimpleMap};
     use moveos_std::wasm;
     use moveos_std::table::{Self, Table};
     use moveos_std::cbor;
 
-    use bitcoin_move::types::{Self, Transaction};
-    use bitcoin_move::utxo;
+    use bitcoin_move::types;
     use bitcoin_move::ord::{Self, Inscription, InscriptionID};
     use bitcoin_move::bitcoin;
 
@@ -437,8 +436,11 @@ module rooch_nursery::bitseed {
     fun generate_seed_from_inscription(inscription: &Inscription): vector<u8> {
         let inscription_txid = ord::txid(inscription);
         let tx = bitcoin::get_tx(inscription_txid);
-
-        let input = types::tx_input(tx);
+        if (option::is_none(&tx)) {
+            return vector::empty()
+        };
+        let tx = option::destroy_some(tx);
+        let input = types::tx_input(&tx);
         let index = ord::input(inscription);
         let txin = vector::borrow(input, (index as u64));
         let outpoint = types::txin_previous_output(txin);
@@ -475,7 +477,7 @@ module rooch_nursery::bitseed {
 
     // ==== Process Bitseed Entry ==== //
     public fun process_inscription(inscription: &Inscription) {
-        let txid = ord::txid(tx);
+        let txid = ord::txid(inscription);
         let index = ord::index(inscription);
         let inscription_id = ord::new_inscription_id(txid, index);
 

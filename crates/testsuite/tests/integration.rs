@@ -16,11 +16,11 @@ use serde_json::Value;
 use std::path::Path;
 use tracing::{debug, error, info};
 
-use rooch_types::bitcoin::network::Network;
 use images::bitcoin::BitcoinD;
-use images::ord::Ord;
-use rooch_types::{bitcoin::network::Network, crypto::RoochKeyPair};
 use images::bitseed::{Bitseed, BitseedImageArgs};
+use images::ord::Ord;
+use rooch_types::bitcoin::network::Network;
+use rooch_types::{bitcoin::network::Network, crypto::RoochKeyPair};
 use std::time::Duration;
 use testcontainers::{
     clients::Cli,
