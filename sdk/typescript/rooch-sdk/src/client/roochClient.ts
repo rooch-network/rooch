@@ -234,15 +234,6 @@ export class RoochClient {
     )
   }
 
-  async queryGlobalStates(params: QueryObjectStatesParams): Promise<ObjectStateView> {
-    return await this.client.rooch_queryGlobalStates(
-      params.filter,
-      params.cursor || DEFAULT_NULL_CURSOR,
-      params.limit?.toString() || DEFAULT_LIMIT,
-      params.descending_order || true,
-    )
-  }
-
   async queryObjectStates(params: QueryObjectStatesParams): Promise<ObjectStateView> {
     return await this.client.rooch_queryObjectStates(
       params.filter,
@@ -254,15 +245,6 @@ export class RoochClient {
 
   async queryFieldStates(params: QueryFieldStatesParams): Promise<FieldStateView> {
     return await this.client.rooch_queryFieldStates(
-      params.filter,
-      params.cursor || DEFAULT_NULL_CURSOR,
-      params.limit?.toString() || DEFAULT_LIMIT,
-      params.descending_order || true,
-    )
-  }
-
-  async queryTableStates(params: QueryFieldStatesParams): Promise<FieldStateView> {
-    return await this.client.rooch_queryTableStates(
       params.filter,
       params.cursor || DEFAULT_NULL_CURSOR,
       params.limit?.toString() || DEFAULT_LIMIT,

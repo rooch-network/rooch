@@ -59,6 +59,9 @@ pub struct Inscription {
     pub index: u32,
     pub input: u32,
     pub offset: u64,
+    pub sequence_number: u32,
+    pub inscription_number: u32,
+    pub is_curse: bool,
     pub body: Vec<u8>,
     pub content_encoding: MoveOption<MoveString>,
     pub content_type: MoveOption<MoveString>,
@@ -81,6 +84,9 @@ impl MoveStructState for Inscription {
             u32::type_layout(),
             u32::type_layout(),
             u64::type_layout(),
+            u32::type_layout(),
+            u32::type_layout(),
+            bool::type_layout(),
             Vec::<u8>::type_layout(),
             MoveOption::<MoveString>::type_layout(),
             MoveOption::<MoveString>::type_layout(),
@@ -237,7 +243,7 @@ pub struct InscriptionState {
 }
 
 impl InscriptionState {
-    pub fn new_from_global_state(
+    pub fn new_from_object_state(
         state: IndexerObjectState,
         inscription: Inscription,
         owner_bitcoin_address: Option<BitcoinAddress>,

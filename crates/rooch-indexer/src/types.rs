@@ -161,8 +161,6 @@ pub struct IndexedObjectState {
     pub owner: AccountAddress,
     // A flag to indicate whether the object is shared or frozen
     pub flag: u8,
-    // The value of the object, json format
-    pub value: String,
     // The table state root of the object
     pub state_root: AccountAddress,
     // The table length
@@ -182,7 +180,6 @@ pub struct IndexedObjectState {
 impl IndexedObjectState {
     pub fn new_from_raw_object(
         raw_object: RawObject,
-        raw_object_value_json: String,
         object_type: String,
         tx_order: u64,
         state_index: u64,
@@ -191,7 +188,6 @@ impl IndexedObjectState {
             object_id: raw_object.id,
             owner: raw_object.owner,
             flag: raw_object.flag,
-            value: raw_object_value_json,
             state_root: raw_object.state_root,
             size: raw_object.size,
             object_type,
@@ -219,8 +215,6 @@ pub struct IndexedFieldState {
     // The key of the field, json format
     // `key` is a key word in SQlite, so use key_str as column name
     pub key_str: String,
-    // The value of the field, json format
-    pub value: String,
     // The type tag of the key
     pub key_type: TypeTag,
     // The type tag of the value
@@ -240,7 +234,6 @@ impl IndexedFieldState {
         object_id: ObjectID,
         key_hex: String,
         key_state_json: String,
-        state_value_json: String,
         key_type: TypeTag,
         value_type: TypeTag,
         tx_order: u64,
@@ -250,7 +243,6 @@ impl IndexedFieldState {
             object_id,
             key_hex,
             key_str: key_state_json,
-            value: state_value_json,
             key_type,
             value_type,
             tx_order,

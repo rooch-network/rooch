@@ -16,11 +16,10 @@ use move_core_types::language_storage::TypeTag;
 use move_core_types::resolver::MoveResolver;
 use move_resource_viewer::MoveValueAnnotator;
 use moveos_store::MoveOSStore;
-use moveos_types::moveos_std::object::RawObject;
 use moveos_types::moveos_std::object::{ObjectID, RootObjectEntity};
 use moveos_types::state::{FieldChange, KeyState, MoveStructType, ObjectChange, State};
 use moveos_types::state_resolver::RootObjectResolver;
-use rooch_rpc_api::jsonrpc_types::{AnnotatedMoveStructView, AnnotatedMoveValueView};
+use rooch_rpc_api::jsonrpc_types::AnnotatedMoveValueView;
 use rooch_types::bitcoin::utxo::UTXO;
 
 pub struct IndexerActor {
@@ -40,17 +39,6 @@ impl IndexerActor {
             indexer_store,
             moveos_store,
         })
-    }
-
-    pub fn resolve_raw_object_value_to_json(
-        resolver: &dyn MoveResolver,
-        raw_object: &RawObject,
-    ) -> Result<String> {
-        let obj_value = MoveValueAnnotator::new(resolver)
-            .view_resource(&raw_object.value.struct_tag, &raw_object.value.value)?;
-        let obj_value_view = AnnotatedMoveStructView::from(obj_value);
-        let raw_object_value_json = serde_json::to_string(&obj_value_view)?;
-        Ok(raw_object_value_json)
     }
 
     pub fn resolve_state_to_json(
@@ -77,18 +65,11 @@ impl IndexerActor {
         tx_order: u64,
         state_index: u64,
     ) -> Result<IndexedObjectState> {
-        let resolver = RootObjectResolver::new(self.root.clone(), &self.moveos_store);
         let raw_object = value.as_raw_object()?;
-        let obj_value_json = Self::resolve_raw_object_value_to_json(&resolver, &raw_object)?;
         let object_type = format_struct_tag(raw_object.value.struct_tag.clone());
 
-        let state = IndexedObjectState::new_from_raw_object(
-            raw_object,
-            obj_value_json,
-            object_type,
-            tx_order,
-            state_index,
-        );
+        let state =
+            IndexedObjectState::new_from_raw_object(raw_object, object_type, tx_order, state_index);
         Ok(state)
     }
 
@@ -104,13 +85,10 @@ impl IndexerActor {
         let key_hex = key.to_string();
         let key_state_json =
             Self::resolve_state_to_json(&resolver, &key.key_type, key.key.as_slice())?;
-        let state_json =
-            Self::resolve_state_to_json(&resolver, &value.value_type, value.value.as_slice())?;
         let state = IndexedFieldState::new(
             object_id,
             key_hex,
             key_state_json,
-            state_json,
             key.key_type,
             value.value_type,
             tx_order,

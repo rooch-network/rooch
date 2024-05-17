@@ -464,43 +464,6 @@
       }
     },
     {
-      "name": "rooch_queryGlobalStates",
-      "params": [
-        {
-          "name": "filter",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/ObjectStateFilterView"
-          }
-        },
-        {
-          "name": "cursor",
-          "schema": {
-            "$ref": "#/components/schemas/IndexerStateID"
-          }
-        },
-        {
-          "name": "limit",
-          "schema": {
-            "$ref": "#/components/schemas/usize"
-          }
-        },
-        {
-          "name": "descending_order",
-          "schema": {
-            "type": "boolean"
-          }
-        }
-      ],
-      "result": {
-        "name": "IndexerObjectStatePageView",
-        "required": true,
-        "schema": {
-          "$ref": "#/components/schemas/PageView_for_IndexerObjectStateView_and_IndexerStateID"
-        }
-      }
-    },
-    {
       "name": "rooch_queryObjectStates",
       "description": "Query the object states indexer by state filter",
       "params": [
@@ -535,43 +498,6 @@
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/PageView_for_IndexerObjectStateView_and_IndexerStateID"
-        }
-      }
-    },
-    {
-      "name": "rooch_queryTableStates",
-      "params": [
-        {
-          "name": "filter",
-          "required": true,
-          "schema": {
-            "$ref": "#/components/schemas/FieldStateFilterView"
-          }
-        },
-        {
-          "name": "cursor",
-          "schema": {
-            "$ref": "#/components/schemas/IndexerStateID"
-          }
-        },
-        {
-          "name": "limit",
-          "schema": {
-            "$ref": "#/components/schemas/usize"
-          }
-        },
-        {
-          "name": "descending_order",
-          "schema": {
-            "type": "boolean"
-          }
-        }
-      ],
-      "result": {
-        "name": "IndexerFieldStatePageView",
-        "required": true,
-        "schema": {
-          "$ref": "#/components/schemas/PageView_for_IndexerFieldStateView_and_IndexerStateID"
         }
       }
     },
@@ -1209,7 +1135,6 @@
           "state_index",
           "tx_order",
           "updated_at",
-          "value",
           "value_type"
         ],
         "properties": {
@@ -1246,7 +1171,14 @@
             "minimum": 0.0
           },
           "value": {
-            "$ref": "#/components/schemas/AnnotatedMoveValueView"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnnotatedMoveValueView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "value_type": {
             "$ref": "#/components/schemas/move_core_types::language_storage::TypeTag"
@@ -1265,8 +1197,7 @@
           "state_index",
           "state_root",
           "tx_order",
-          "updated_at",
-          "value"
+          "updated_at"
         ],
         "properties": {
           "created_at": {
@@ -1312,7 +1243,14 @@
             "minimum": 0.0
           },
           "value": {
-            "$ref": "#/components/schemas/AnnotatedMoveStructView"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnnotatedMoveValueView"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },

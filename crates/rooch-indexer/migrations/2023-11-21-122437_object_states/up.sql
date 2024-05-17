@@ -3,7 +3,6 @@ CREATE TABLE object_states
     object_id          VARCHAR        NOT NULL       PRIMARY KEY,
     owner              VARCHAR        NOT NULL,
     flag               SMALLINT       NOT NULL,
-    value              VARCHAR        NOT NULL,
     state_root         VARCHAR        NOT NULL,
     size               BIGINT         NOT NULL,
     object_type        VARCHAR        NOT NULL,
