@@ -338,4 +338,22 @@ module bitcoin_move::bitcoin{
         }
     }
     
+    #[test_only]
+    public fun submit_block_for_test(block_height: u64, block_hash: address, block_header: &Header){
+        let btc_block_store_obj = borrow_block_store_mut();
+        let btc_block_store = object::borrow_mut(btc_block_store_obj);
+        let time = types::time(block_header);
+        table::add(&mut btc_block_store.height_to_hash, block_height, block_hash);
+        table::add(&mut btc_block_store.hash_to_height, block_hash, block_height);
+        table::add(&mut btc_block_store.blocks, block_hash, *block_header);
+
+        let curr_latest_height = option::get_with_default(&btc_block_store.latest_block_height, 0);
+        if (block_height > curr_latest_height) {
+            btc_block_store.latest_block_height = option::some(block_height);
+        };
+
+        let timestamp_seconds = (time as u64);
+        let module_signer = signer::module_signer<BitcoinBlockStore>();
+        timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));    
+    }
 }
