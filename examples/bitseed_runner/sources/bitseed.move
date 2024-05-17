@@ -2,12 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_examples::bitseed_runner {
-   use std::string::{Self, String};
-   use std::vector;
 
-   use moveos_std::string_utils::parse_u64;
-   use moveos_std::simple_map::{Self, SimpleMap};
-   use moveos_std::json;
    use moveos_std::object;
 
    use bitcoin_move::ord::{InscriptionID, Inscription};
