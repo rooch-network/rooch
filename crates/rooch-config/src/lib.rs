@@ -121,9 +121,6 @@ pub struct RoochOpt {
     /// The address of the proposer account
     #[clap(long)]
     pub proposer_account: Option<String>,
-    /// The address of the relayer account
-    #[clap(long)]
-    pub relayer_account: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long)]
@@ -162,7 +159,6 @@ impl RoochOpt {
             btc_end_block_height: None,
             sequencer_account: None,
             proposer_account: None,
-            relayer_account: None,
             da: None,
             data_import_flag: false,
         }
@@ -267,7 +263,6 @@ pub struct ServerOpt {
     /// Sequencer, proposer and relayer keypair
     pub sequencer_keypair: Option<RoochKeyPair>,
     pub proposer_keypair: Option<RoochKeyPair>,
-    pub relayer_keypair: Option<RoochKeyPair>,
     pub active_env: Option<String>,
 }
 
@@ -286,7 +281,6 @@ impl ServerOpt {
         ServerOpt {
             sequencer_keypair: None,
             proposer_keypair: None,
-            relayer_keypair: None,
             active_env: None,
         }
     }

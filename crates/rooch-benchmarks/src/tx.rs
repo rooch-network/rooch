@@ -92,7 +92,6 @@ pub async fn setup_service(
     let relayer_keypair = rooch_key_pair.copy();
     let sequencer_account = RoochAddress::from(&sequencer_keypair.public());
     let proposer_account = RoochAddress::from(&proposer_keypair.public());
-    let _relayer_account = RoochAddress::from(&relayer_keypair.public());
 
     // Init executor
     let mut network: RoochNetwork = BuiltinChainID::Dev.into();
