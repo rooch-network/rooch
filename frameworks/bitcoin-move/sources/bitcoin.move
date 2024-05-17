@@ -18,7 +18,6 @@ module bitcoin_move::bitcoin{
     use bitcoin_move::types::{Self, Block, Header, Transaction};
     use bitcoin_move::ord::{Self, Inscription, bind_multichain_address, Flotsam, SatPoint};
     use bitcoin_move::utxo::{Self, UTXOSeal};
-    
 
     friend bitcoin_move::genesis;
 
@@ -42,6 +41,8 @@ module bitcoin_move::bitcoin{
         hash_to_height: Table<address, u64>,
         /// tx id -> tx
         txs: Table<address, Transaction>,
+        /// tx id -> tx
+        tx_to_height: Table<address, u64>,
         /// tx id list, we can use this to scan txs
         tx_ids: TableVec<address>,
     }
@@ -53,6 +54,7 @@ module bitcoin_move::bitcoin{
             height_to_hash: table::new(),
             hash_to_height: table::new(),
             txs: table::new(),
+            tx_to_height: table::new(),
             tx_ids: table_vec::new(),
         };
         let obj = object::new_named_object(btc_block_store);
@@ -129,6 +131,7 @@ module bitcoin_move::bitcoin{
         let flotsams = process_utxo(tx, block_height);
         let txid = types::tx_id(tx);
         table::add(&mut btc_block_store.txs, txid, *tx);
+        table::add(&mut btc_block_store.tx_to_height, txid, block_height);
         table_vec::push_back(&mut btc_block_store.tx_ids, txid);
         flotsams
     }
@@ -203,6 +206,7 @@ module bitcoin_move::bitcoin{
 
         // create new utxo
         handle_new_utxo(tx, &mut output_seals);
+
         simple_multimap::drop(output_seals);
         flotsams
     }
@@ -289,6 +293,16 @@ module bitcoin_move::bitcoin{
         }
     }
 
+    public fun get_tx_height(txid: address): Option<u64>{
+        let btc_block_store_obj = borrow_block_store();
+        let btc_block_store = object::borrow(btc_block_store_obj);
+        if(table::contains(&btc_block_store.txs, txid)){
+            option::some(*table::borrow(&btc_block_store.tx_to_height, txid))
+        }else{
+            option::none()
+        }
+    }
+
     /// Get block via block_hash
     public fun get_block(block_hash: address): Option<Header>{
         let btc_block_store_obj = borrow_block_store();
@@ -337,5 +351,22 @@ module bitcoin_move::bitcoin{
             true
         }
     }
-    
+    #[test_only]
+    public fun submit_block_for_test(block_height: u64, block_hash: address, block_header: &Header){
+        let btc_block_store_obj = borrow_block_store_mut();
+        let btc_block_store = object::borrow_mut(btc_block_store_obj);
+        let time = types::time(block_header);
+        table::add(&mut btc_block_store.height_to_hash, block_height, block_hash);
+        table::add(&mut btc_block_store.hash_to_height, block_hash, block_height);
+        table::add(&mut btc_block_store.blocks, block_hash, *block_header);
+
+        let curr_latest_height = option::get_with_default(&btc_block_store.latest_block_height, 0);
+        if (block_height > curr_latest_height) {
+            btc_block_store.latest_block_height = option::some(block_height);
+        };
+
+        let timestamp_seconds = (time as u64);
+        let module_signer = signer::module_signer<BitcoinBlockStore>();
+        timestamp::try_update_global_time(&module_signer, timestamp::seconds_to_milliseconds(timestamp_seconds));    
+    }
 }

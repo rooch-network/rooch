@@ -328,3 +328,34 @@ Feature: Rooch CLI integration tests
       Then stop the server
       Then stop the ord server 
       Then stop the bitcoind server 
+
+    @serial
+    Scenario: rooch bitseed test
+      # prepare servers
+      Given a bitcoind server for rooch_bitseed_test
+      Given a ord server for rooch_bitseed_test
+      Given a server for rooch_bitseed_test
+
+      # init wallet
+      Then cmd ord: "wallet create"
+      Then cmd ord: "wallet receive"
+
+      # mint utxos
+      Then cmd bitcoin-cli: "generatetoaddress 101 {{$.wallet[-1].address}}"
+      Then sleep: "10" # wait ord sync and index
+      Then cmd ord: "wallet balance"
+      Then assert: "{{$.wallet[-1].total}} == 5000000000"
+
+      # generator
+      Then cmd bitseed: "generator --fee-rate 1 --name random --generator /app/test-data/generator.wasm"
+      Then assert: "'{{$.generator[-1]}}' not_contains error"
+
+      # mine a block
+      Then cmd ord: "wallet receive"
+      Then cmd bitcoin-cli: "generatetoaddress 1 {{$.wallet[-1].address}}"
+      Then sleep: "5"
+      
+      # release servers
+      Then stop the server
+      Then stop the ord server 
+      Then stop the bitcoind server 

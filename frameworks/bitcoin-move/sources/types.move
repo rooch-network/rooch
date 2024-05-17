@@ -259,4 +259,15 @@ module bitcoin_move::types{
         (self.value, self.script_pubkey)
     }      
 
+    #[test_only]
+    public fun new_header_for_test(version: u32, prev_blockhash: address, merkle_root: address, time: u32, bits: u32, nonce: u32) : Header {
+        Header{
+            version,
+            prev_blockhash,
+            merkle_root,
+            time,
+            bits,
+            nonce,
+        }
+    }
 }

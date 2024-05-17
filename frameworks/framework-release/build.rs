@@ -5,6 +5,7 @@ use std::env::current_dir;
 
 fn main() {
     if std::env::var("SKIP_STDLIB_BUILD").is_err() {
+        let _ = tracing_subscriber::fmt::try_init();
         let current_dir = current_dir().expect("Should be able to get current dir");
         // Get the project root directory
         let mut root_dir = current_dir;

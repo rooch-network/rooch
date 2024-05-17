@@ -9,10 +9,12 @@ HEX (Base16) encoding utility.
 -  [Constants](#@Constants_0)
 -  [Function `encode`](#0x2_hex_encode)
 -  [Function `decode`](#0x2_hex_decode)
+-  [Function `decode_option`](#0x2_hex_decode_option)
 -  [Module Specification](#@Module_Specification_1)
 
 
-<pre><code><b>use</b> <a href="">0x1::vector</a>;
+<pre><code><b>use</b> <a href="">0x1::option</a>;
+<b>use</b> <a href="">0x1::vector</a>;
 </code></pre>
 
 
@@ -75,6 +77,21 @@ Aborts if the hex string contains non-valid hex characters (valid characters are
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="hex.md#0x2_hex_decode">decode</a>(<a href="hex.md#0x2_hex">hex</a>: <a href="">vector</a>&lt;u8&gt;): <a href="">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<a name="0x2_hex_decode_option"></a>
+
+## Function `decode_option`
+
+Decodes a hexadecimal string into an option of a byte vector.
+This function takes a hexadecimal string (no 0x prefix) and attempts to decode it into a byte vector.
+It returns an <code>Option&lt;<a href="">vector</a>&lt;u8&gt;&gt;</code> which will contain the decoded bytes if the decoding is successful,
+or <code>None</code> if the input string is not a valid hexadecimal string or has an odd length.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="hex.md#0x2_hex_decode_option">decode_option</a>(<a href="hex.md#0x2_hex">hex</a>: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;
 </code></pre>
 
 

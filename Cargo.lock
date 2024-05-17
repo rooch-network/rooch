@@ -10932,7 +10932,7 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 [[package]]
 name = "testcontainers"
 version = "0.15.0"
-source = "git+https://github.com/yubing744/testcontainers-rs?rev=dbb136ef39c1616a6bfa538d01c82a07b8e27524#dbb136ef39c1616a6bfa538d01c82a07b8e27524"
+source = "git+https://github.com/yubing744/testcontainers-rs?rev=6b87dc53ab3bc6eb4d15c7e73a3c57dcbf40d0af#6b87dc53ab3bc6eb4d15c7e73a3c57dcbf40d0af"
 dependencies = [
  "bollard-stubs",
  "futures",

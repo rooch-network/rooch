@@ -292,7 +292,8 @@ fn check_compatibililty_inner(
 ) -> PartialVMResult<NativeResult> {
     let mut cost = gas_params.base;
     // TODO: config compatibility through global configuration
-    let compat = Compatibility::full_check();
+    // We allow `friend` function to be broken
+    let compat = Compatibility::new(true, true, false);
     if compat.need_check_compat() {
         let old_bytecodes = pop_arg!(args, Vec<u8>);
         let new_bytecodes = pop_arg!(args, Vec<u8>);

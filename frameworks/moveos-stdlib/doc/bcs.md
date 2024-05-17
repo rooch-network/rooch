@@ -18,10 +18,12 @@ a general conversion back-and-force is needed, consider the <code>moveos_std::An
 -  [Function `to_u128`](#0x2_bcs_to_u128)
 -  [Function `to_address`](#0x2_bcs_to_address)
 -  [Function `from_bytes`](#0x2_bcs_from_bytes)
+-  [Function `from_bytes_option`](#0x2_bcs_from_bytes_option)
 -  [Function `native_from_bytes`](#0x2_bcs_native_from_bytes)
 
 
 <pre><code><b>use</b> <a href="">0x1::bcs</a>;
+<b>use</b> <a href="">0x1::option</a>;
 </code></pre>
 
 
@@ -29,6 +31,15 @@ a general conversion back-and-force is needed, consider the <code>moveos_std::An
 <a name="@Constants_0"></a>
 
 ## Constants
+
+
+<a name="0x2_bcs_ErrorInvalidBytes"></a>
+
+
+
+<pre><code><b>const</b> <a href="bcs.md#0x2_bcs_ErrorInvalidBytes">ErrorInvalidBytes</a>: u64 = 2;
+</code></pre>
+
 
 
 <a name="0x2_bcs_ErrorTypeNotMatch"></a>
@@ -121,11 +132,26 @@ Note the <code>private_generics</code> ensure only the <code>MoveValue</code>'s 
 
 
 
+<a name="0x2_bcs_from_bytes_option"></a>
+
+## Function `from_bytes_option`
+
+Function to deserialize a type T.
+Note the <code>private_generics</code> ensure only the <code>MoveValue</code>'s owner module can call this function
+If the bytes are invalid, it will return None.
+
+
+<pre><code>#[data_struct(#[MoveValue])]
+<b>public</b> <b>fun</b> <a href="bcs.md#0x2_bcs_from_bytes_option">from_bytes_option</a>&lt;MoveValue&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;MoveValue&gt;
+</code></pre>
+
+
+
 <a name="0x2_bcs_native_from_bytes"></a>
 
 ## Function `native_from_bytes`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bcs.md#0x2_bcs_native_from_bytes">native_from_bytes</a>&lt;MoveValue&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): MoveValue
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bcs.md#0x2_bcs_native_from_bytes">native_from_bytes</a>&lt;MoveValue&gt;(bytes: <a href="">vector</a>&lt;u8&gt;): <a href="_Option">option::Option</a>&lt;MoveValue&gt;
 </code></pre>

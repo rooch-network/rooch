@@ -3,8 +3,6 @@
   "transaction": "Transaction",
   "objects": "Object",
   "move-contracts": "Move concepts",
-  "client-side-validation": "Client-side Validation",
-  "vapp": "VApp",
   "token": {
     "title": "Token",
     "display": "hidden"

@@ -13,9 +13,11 @@ use rooch_key::key_derive::{generate_new_key_pair, retrieve_key_pair};
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_rpc_server::Service;
 use serde_json::Value;
+use std::path::Path;
 use tracing::{debug, error, info};
 
 use images::bitcoin::BitcoinD;
+use images::bitseed::Bitseed;
 use images::ord::Ord;
 use rooch_types::{bitcoin::network::Network, crypto::RoochKeyPair};
 use std::time::Duration;
@@ -29,6 +31,7 @@ use uuid::Uuid;
 const RPC_USER: &str = "roochuser";
 const RPC_PASS: &str = "roochpass";
 const RPC_PORT: u16 = 18443;
+const ORD_RPC_PORT: u16 = 80;
 
 #[derive(cucumber::World, Debug)]
 struct World {
@@ -157,7 +160,9 @@ async fn start_ord_server(w: &mut World, _scenario: String) {
         RPC_PASS.to_string(),
     )
     .into();
-    ord_image = ord_image.with_network(w.container_network.clone());
+    ord_image = ord_image
+        .with_network(w.container_network.clone())
+        .with_run_option(("--network-alias", "ord"));
 
     let ord = w.docker.run(ord_image);
     debug!("ord ok");
@@ -294,6 +299,86 @@ fn ord_bash_run_cmd(w: &mut World, input_tpl: String) {
     tpl_ctx
         .entry(format!("{}", cmd_name))
         .append::<String>(stdout_string);
+
+    debug!("current tpl_ctx: {:?}", tpl_ctx);
+}
+
+#[then(regex = r#"cmd bitseed: "(.*)?""#)]
+async fn bitseed_run_cmd(w: &mut World, input_tpl: String) {
+    let _bitcoind = w.bitcoind.as_ref().unwrap();
+    let _ord = w.ord.as_ref().unwrap();
+
+    let mut bitseed_args = vec![];
+
+    if w.tpl_ctx.is_none() {
+        let tpl_ctx = TemplateContext::new();
+        w.tpl_ctx = Some(tpl_ctx);
+    }
+    let tpl_ctx = w.tpl_ctx.as_mut().unwrap();
+    let input = eval_command_args(tpl_ctx, input_tpl);
+
+    let args: Vec<&str> = input.split_whitespace().collect();
+    let cmd_name = args[0].clone();
+
+    bitseed_args.extend(args.iter().map(|&s| s.to_string()));
+
+    let joined_args = bitseed_args.join(" ");
+    debug!("run cmd: bitseed {}", joined_args);
+
+    let mut bitseed_image: RunnableImage<Bitseed> = Bitseed::new(
+        format!("http://bitcoind:{}", RPC_PORT),
+        RPC_USER.to_string(),
+        RPC_PASS.to_string(),
+        format!("http://ord:{}", ORD_RPC_PORT),
+        bitseed_args,
+    )
+    .into();
+
+    let test_data_path = Path::new("./data")
+        .canonicalize()
+        .unwrap()
+        .into_os_string()
+        .into_string()
+        .unwrap_or_else(|_| panic!("Invalid Unicode path"));
+    debug!("test_data_path: {}", test_data_path);
+
+    bitseed_image = bitseed_image
+        .with_network(w.container_network.clone())
+        .with_volume((test_data_path, "/app/test-data"));
+
+    let mut bitseed_cmd = w.docker.run_cmd(bitseed_image);
+    let output = bitseed_cmd.output().expect("run bitseed cmd should be ok");
+
+    let stdout_string = match String::from_utf8(output.stdout) {
+        Ok(s) => s,
+        Err(e) => {
+            error!("Failed to convert stdout to String: {}", e);
+            String::from("Error converting stdout to String")
+        }
+    };
+
+    let stderr_string = match String::from_utf8(output.stderr) {
+        Ok(s) => s,
+        Err(e) => {
+            error!("Failed to convert stderr to String: {}", e);
+            String::from("Error converting stderr to String")
+        }
+    };
+
+    debug!("run cmd: bitseed stdout: {}", stdout_string);
+
+    // Check if stderr_string is not empty and panic if it contains any content.
+    if !stderr_string.is_empty() {
+        panic!("Command execution failed with errors: {}", stderr_string);
+    }
+
+    let result_json = extract_json(&stdout_string);
+    if let Ok(json_value) = result_json {
+        debug!("cmd bitseed: {} output: {}", cmd_name, json_value);
+        tpl_ctx.entry(cmd_name).append::<Value>(json_value);
+    } else {
+        debug!("result_json not ok!");
+    }
 
     debug!("current tpl_ctx: {:?}", tpl_ctx);
 }
@@ -444,7 +529,7 @@ async fn assert_output(world: &mut World, orginal_args: String) {
         orginal_args
     );
     for chunk in splited_args.chunks(3) {
-        let first = chunk.first().cloned();
+        let first = chunk.get(0).cloned();
         let op = chunk.get(1).cloned();
         let second = chunk.get(2).cloned();
 
@@ -457,6 +542,12 @@ async fn assert_output(world: &mut World, orginal_args: String) {
                 "contains" => assert!(
                     first.contains(&second),
                     "Assert {:?} contains {:?} failed",
+                    first,
+                    second
+                ),
+                "not_contains" => assert!(
+                    !first.contains(&second),
+                    "Assert {:?} not_contains {:?} failed",
                     first,
                     second
                 ),
@@ -556,6 +647,13 @@ fn check_port_in_use(port: u16) -> bool {
         Err(_e) => false,
     };
     in_use
+}
+
+fn extract_json(output: &String) -> Result<Value> {
+    let lines: Vec<&str> = output.lines().collect();
+    let last_line = lines.last().expect("No JSON found in output");
+    let json: Value = serde_json::from_str(last_line)?;
+    Ok(json)
 }
 
 #[tokio::main]

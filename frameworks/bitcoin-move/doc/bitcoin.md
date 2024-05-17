@@ -10,6 +10,7 @@
 -  [Constants](#@Constants_0)
 -  [Function `genesis_init`](#0x4_bitcoin_genesis_init)
 -  [Function `get_tx`](#0x4_bitcoin_get_tx)
+-  [Function `get_tx_height`](#0x4_bitcoin_get_tx_height)
 -  [Function `get_block`](#0x4_bitcoin_get_block)
 -  [Function `get_block_height`](#0x4_bitcoin_get_block_height)
 -  [Function `get_block_by_height`](#0x4_bitcoin_get_block_by_height)
@@ -109,6 +110,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_tx">get_tx</a>(txid: <b>address</b>): <a href="_Option">option::Option</a>&lt;<a href="types.md#0x4_types_Transaction">types::Transaction</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_bitcoin_get_tx_height"></a>
+
+## Function `get_tx_height`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_tx_height">get_tx_height</a>(txid: <b>address</b>): <a href="_Option">option::Option</a>&lt;u64&gt;
 </code></pre>
 
 

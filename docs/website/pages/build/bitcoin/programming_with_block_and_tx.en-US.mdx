@@ -6,12 +6,117 @@ Rooch incorporates the [bitcoin-move](https://github.com/rooch-network/rooch/tre
 
 ## Reading Bitcoin Blocks and Transactions in Contracts
 
+In Rooch, Bitcoin blocks and transactions are written into the global state of Rooch by a Relayer. All states are stored in `0x4::bitcoin::BitcoinBlockStore`. Developers can read Bitcoin block and transaction data through the interfaces provided by the `0x4::bitcoin` module.
+
+### 1. `BitcoinBlockStore` Structure and Reading Interfaces
+
+The `BitcoinBlockStore` structure stores all block headers and transaction data. Its fields are as follows:
+
+- `latest_block_height`: Optional `u64`, representing the height of the latest block.
+- `blocks`: `Table<address, Header>`, storing the mapping from block hash to block header. Developers can read the corresponding block header by block hash.
+- `height_to_hash`: `Table<u64, address>`, storing the mapping from block height to block hash.
+- `hash_to_height`: `Table<address, u64>`, storing the mapping from block hash to block height.
+- `txs`: `Table<address, Transaction>`, storing the mapping from transaction hash to transaction.
+- `tx_ids`: `TableVec<address>`, storing all transaction hashes.
+
+The `BitcoinBlockStore` is stored in a shared object, and anyone can read the block and transaction data stored in the `BitcoinBlockStore` object through the interfaces provided in the `0x4::bitcoin` module.
+
+The specific interfaces are as follows:
+
+- `get_tx`: Get the transaction with the specified transaction hash.
+
+    - Parameters
+
+        - `txid`: `address`, representing the transaction hash.
+
+    - Return Value
+
+        - `Option<Transaction>`: If the transaction exists, return the transaction; otherwise, return none.
+
+- `get_block`: Get the block header with the specified block hash.
+
+    - Parameters
+
+        - `block_hash`: `address`, representing the block hash.
+
+    - Return Value
+
+        - `Option<Header>`: If the block exists, return the block header; otherwise, return none.
+
+- `get_block_height`: Get the block height with the specified block hash.
+
+    - Parameters
+
+        - `block_hash`: `address`, representing the block hash.
+
+    - Return Value
+
+        - `Option<u64>`: If the block exists, return its block height; otherwise, return none.
+
+- `get_block_by_height`: Get the block header with the specified block height.
+
+    - Parameters
+
+        - `block_height`: `u64`, representing the block height.
+
+    - Return Value
+
+        - `Option<Header>`: If the block exists, return the block header; otherwise, return none.
+
+- `get_latest_block_height`: Get the height of the latest block.
+
+    - Return Value
+
+        - `Option<u64>`: If the latest block exists, return the block height; otherwise, return none.
+
+### 2. `Header` Structure and Reading Interfaces
+
+The `Header` structure represents the Bitcoin block header, used to store the metadata of the block, including the version number, the hash of the previous block, the root hash of the Merkle tree, the timestamp, the target value, and the nonce. In Rooch, the Header can be read through the `0x4::bitcoin::get_block` and `0x4::bitcoin::get_block_by_height` interfaces.
+
+Its field definitions are as follows:
+
+- `version`: `u32`, representing the version number of the block, currently used for signaling soft forks.
+- `prev_blockhash`: `address`, representing the hash of the previous block.
+- `merkle_root`: `address`, representing the root hash of the Merkle tree of transactions in the block.
+- `time`: `u32`, representing the timestamp of the block, provided by the miner.
+- `bits`: `u32`, representing the target value of the block, the block hash must be lower than this value.
+- `nonce`: `u32`, representing the chosen nonce to obtain a sufficiently low block hash.
+
+The corresponding reading interfaces are defined in the `0x4::types` module.
+
+### 3. `Transaction` Structure and Reading Interfaces
+
+The `Transaction` structure represents a Bitcoin transaction, used to store the metadata of the transaction, including the version number, inputs, outputs, lock time, and transaction hash. In Rooch, the Transaction can be read through the `0x4::bitcoin::get_tx` interface.
+
+Its field definitions are as follows:
+
+- `id`: `address`, representing the unique identifier (txid) of the transaction.
+- `version`: `u32`, representing the protocol version of the transaction, currently expected to be 1 or 2 (BIP 68).
+- `lock_time`: `u32`, representing the locked block height or timestamp, before which the transaction cannot be included in a block.
+- `input`: `vector<TxIn>`, representing the list of transaction inputs.
+- `output`: `vector<TxOut>`, representing the list of transaction outputs.
+
+`TxIn` represents an input in a Bitcoin transaction. It contains a reference to an output of a previous transaction, a script signature, a sequence number, and witness data. The fields are as follows:
+
+- `previous_output`: `OutPoint`, representing a reference to the output of a previous transaction.
+- `script_sig`: `vector<u8>`, representing the script signature, which pushes values onto the stack to make the referenced output script be accepted.
+- `sequence`: `u32`, representing the sequence number, which suggests to miners which of two conflicting transactions to choose, or set to 0xFFFFFFFF to ignore this feature. This feature is usually not used because miner behavior cannot be enforced.
+- `witness`: `Witness`, representing the witness data, which is an array of byte arrays.
+
+The `TxIn` structure is a key component of Bitcoin transactions, defining the source of transaction inputs. The `previous_output` field references an output of a previous transaction, the `script_sig` field contains data for verifying the referenced output script, the `sequence` field is used to specify the order of transactions, and the `witness` field contains witness data supporting certain types of transactions.
+
+`TxOut` represents an output in a Bitcoin transaction. It contains the amount of the output and the script. The fields are as follows:
+
+- `value`: `u64`, representing the amount of the output, in satoshis.
+- `script_pubkey`: `vector<u8>`, representing the output script, which defines how the recipient proves they own the funds.
+- `recipient_address`: `BitcoinAddress`, representing the recipient address of the output. If known, this will be a valid Bitcoin address; if unknown, the address bytes will be empty.
+
+The reading interfaces for the fields of `Transaction`, `TxIn`, and `TxOut` are defined in the `0x4::types` module.
+
 <Callout>
 TODO: This section of the document needs improvement
 
-1. How to read transactions, including explanations of transaction fields.
-2. How to read blocks, including explanations of block fields.
-3. An explanation of how Bitcoin hashes are expressed and differ in Move is required.
+1. An explanation of how Bitcoin hashes are expressed and differ in Move is required.
 </Callout>
 
 ## Application Scenarios
@@ -19,3 +124,7 @@ TODO: This section of the document needs improvement
 1. Use a Bitcoin hash as a random number seed to implement a random number generator. Note, this scenario requires using the hash of future blocks to prevent predictability.
 2. Embed application data in Bitcoin via OP_RETURN, then read the OP_RETURN data from the transaction using a Move contract for processing.
 3. Validate Bitcoin transaction scripts in Move to enable mixed programming with Move and Bitcoin Script. This feature is still in development, and progress can be tracked at [Issue #1651](https://github.com/rooch-network/rooch/issues/1651).
+
+## Example
+1. [btc_blind_box](https://github.com/rooch-network/rooch/blob/main/examples/btc_blind_box)
+    A simple blind box opening example that uses Bitcoin block hashes as the random number seed, implementing the functionality of opening blind boxes. The process of claiming a blind box is divided into two stages: 1. Application stage; 2. Claiming stage. During the application stage, players can apply for a blind box and receive a random magic number. After the application period ends, all players' magic numbers become unchangeable. Then, after a certain interval, the claiming stage begins, where the latest Bitcoin block header is used as the random seed, combined with the player's magic number to generate a random number, determining the rarity of the blind box the player receives. This ensures sufficient randomness; at the same time, during the application stage, players cannot predict the information of future block headers, thus ensuring unpredictability.
