@@ -221,10 +221,8 @@ pub async fn run_start_server(opt: &RoochOpt, server_opt: ServerOpt) -> Result<S
         } else {
             genesis.check_genesis(moveos_store.get_config_store())?;
         }
-    } else {
-        if root.is_genesis() {
-            bail!("Custom chain_id is not supported auto genesis, please use `rooch genesis` to init genesis. ");
-        }
+    } else if root.is_genesis() {
+        bail!("Custom chain_id is not supported auto genesis, please use `rooch genesis` to init genesis. ");
     }
 
     let executor_actor =

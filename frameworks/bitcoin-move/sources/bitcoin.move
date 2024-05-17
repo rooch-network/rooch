@@ -196,8 +196,8 @@ module bitcoin_move::bitcoin{
                         message: string::utf8(b"utxo not exists"),
                 });
                 //We allow the utxo not exists in the utxo store, because we may not sync the block from genesis
-                let genesis_block_height = get_genesis_block_height();
-                if(genesis_block_height == 0 || chain_id::is_main()){
+                //But we should not allow the utxo not exists in the mainnet
+                if(chain_id::is_main()){
                     abort ErrorBlockProcessError
                 };
             };
