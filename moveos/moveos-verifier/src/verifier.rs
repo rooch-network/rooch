@@ -910,6 +910,13 @@ where
                                                 module_name,
                                                 view.identifier_at(struct_handle.name)
                                             );
+                                            // allow string::String, ascii::String as data struct
+                                            if is_allowed_data_struct_type(
+                                                full_struct_name.as_str(),
+                                            ) {
+                                                continue;
+                                            }
+
                                             let is_data_struct_opt =
                                                 data_structs_map.get(full_struct_name.as_str());
                                             if is_data_struct_opt.is_none() {
