@@ -19,7 +19,7 @@ use tracing::{debug, error, info};
 use images::bitcoin::BitcoinD;
 use images::bitseed::Bitseed;
 use images::ord::Ord;
-use rooch_types::crypto::RoochKeyPair;
+use rooch_types::{bitcoin::network::Network, crypto::RoochKeyPair};
 use std::time::Duration;
 use testcontainers::{
     clients::Cli,
