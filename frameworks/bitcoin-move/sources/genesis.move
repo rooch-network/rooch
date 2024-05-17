@@ -33,7 +33,7 @@ module bitcoin_move::genesis{
     /// init the genesis context for test
     public fun init_for_test(){
         let genesis_account = moveos_std::signer::module_signer<BitcoinGenesisContext>();
-        tx_context::add_attribute_via_system(&genesis_account, BitcoinGenesisContext{network: network::network_signet()});
+        tx_context::add_attribute_via_system(&genesis_account, BitcoinGenesisContext{network: network::network_signet(), genesis_block_height: 0});
         init();
     }
 

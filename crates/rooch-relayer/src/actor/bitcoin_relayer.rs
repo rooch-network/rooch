@@ -12,7 +12,7 @@ use moveos_types::module_binding::MoveFunctionCaller;
 use rooch_config::BitcoinRelayerConfig;
 use rooch_executor::proxy::ExecutorProxy;
 use rooch_types::{
-    bitcoin::BitcoinModule,
+    bitcoin::{genesis, BitcoinModule},
     multichain_id::RoochMultiChainID,
     transaction::{L1Block, L1BlockWithBody},
 };
@@ -20,7 +20,7 @@ use std::cmp::max;
 use tracing::{debug, info};
 
 pub struct BitcoinRelayer {
-    start_block_height: Option<u64>,
+    genesis_block_height: u64,
     // only for data import
     end_block_height: Option<u64>,
     rpc_client: BitcoinClientProxy,
@@ -43,8 +43,10 @@ impl BitcoinRelayer {
         rpc_client: BitcoinClientProxy,
         executor: ExecutorProxy,
     ) -> Result<Self> {
+        let bitcoin_module = executor.as_module_binding::<BitcoinModule>();
+        let genesis_block_height = bitcoin_module.get_genesis_block_height()?;
         Ok(Self {
-            start_block_height: Some(0),
+            genesis_block_height,
             end_block_height: config.btc_end_block_height,
             rpc_client,
             move_caller: executor,
@@ -74,17 +76,11 @@ impl BitcoinRelayer {
             .get_block_header_info(latest_block_hash_in_bitcoin)
             .await?;
         let latest_block_height_in_bitcoin = latest_block_header_info.height as u64;
-        let start_block_height: u64 = match (self.start_block_height, latest_block_height_in_rooch)
-        {
-            (Some(start_block_height), Some(latest_block_height_in_rooch)) => {
-                max(start_block_height, latest_block_height_in_rooch + 1)
-            }
-            (Some(start_block_height), None) => start_block_height,
-            (None, Some(latest_block_height_in_rooch)) => latest_block_height_in_rooch + 1,
-            (None, None) => {
-                //if the start_block_height is None, and the latest_block_height_in_rooch is None
-                //we sync from the latest block
-                latest_block_height_in_bitcoin
+        let start_block_height: u64 = match latest_block_height_in_rooch {
+            Some(latest_block_height_in_rooch) => latest_block_height_in_rooch + 1,
+            None => {
+                // if the latest block height in rooch is None, then the genesis block height should be used
+                self.genesis_block_height
             }
         };
         let start_block_height_usize = start_block_height as usize;
