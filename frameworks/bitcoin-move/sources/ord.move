@@ -775,6 +775,79 @@ module bitcoin_move::ord {
         }
     }
 
+    // ==== Inscription Metaprotocol Validity ==== //
+
+    #[private_generics(T)]
+    /// Seal the metaprotocol validity for the given inscription_id.
+    public fun seal_metaprotocol_validity<T>(inscription_id: InscriptionID, is_valid: bool, invalid_reason: Option<String>) {
+        let store_obj_id = object::named_object_id<InscriptionStore>();
+        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
+
+        let inscription_object_id = derive_inscription_id(inscription_id);
+        let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+
+        let protocol_type = type_info::type_name<T>();
+        let validity = MetaprotocolValidity {
+            protocol_type,
+            is_valid,
+            invalid_reason,
+        };
+
+        object::upsert_field(inscription_obj, METAPROTOCOL_VALIDITY, validity);
+    }
+
+    /// Returns true if Inscription `object` contains metaprotocol validity
+    public fun exists_metaprotocol_validity(inscription_id: InscriptionID): bool{
+        let store_obj_id = object::named_object_id<InscriptionStore>();
+        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
+
+        let inscription_object_id = derive_inscription_id(inscription_id);
+        let exists = object::contains_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+        if (!exists) {
+            return false
+        };
+
+        let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+        object::contains_field(inscription_obj, METAPROTOCOL_VALIDITY)
+    }
+
+    /// Borrow the metaprotocol validity for the given inscription_id.
+    public fun borrow_metaprotocol_validity(inscription_id: InscriptionID): &MetaprotocolValidity {
+        let store_obj_id = object::named_object_id<InscriptionStore>();
+        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
+
+        let inscription_object_id = derive_inscription_id(inscription_id);
+        let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+
+        object::borrow_field(inscription_obj, METAPROTOCOL_VALIDITY)
+    }
+
+    /// Check the MetaprotocolValidity's protocol_type whether match
+    public fun metaprotocol_validity_protocol_match<T>(validity: &MetaprotocolValidity): bool {
+        let protocol_type = type_info::type_name<T>();
+        protocol_type == validity.protocol_type
+    }
+
+    /// Get the MetaprotocolValidity's protocol_type
+    public fun metaprotocol_validity_protocol_type(validity: &MetaprotocolValidity): String {
+        validity.protocol_type
+    }
+
+    /// Get the MetaprotocolValidity's is_valid
+    public fun metaprotocol_validity_is_valid(validity: &MetaprotocolValidity): bool {
+        validity.is_valid
+    }
+
+    /// Get the MetaprotocolValidity's invalid_reason
+    public fun metaprotocol_validity_invalid_reason(validity: &MetaprotocolValidity): Option<String> {
+        validity.invalid_reason
+    }
+
+    #[test_only]
+    public fun init_for_test(_genesis_account: &signer){
+        genesis_init(_genesis_account);
+    }
+
     #[test_only]
     public fun drop_temp_area_for_test(inscription: &mut Object<Inscription>) {
         drop_temp_area(inscription);
@@ -947,74 +1020,7 @@ module bitcoin_move::ord {
         assert!(!contains_temp_state<TempState>(inscription_obj), 1);
         assert!(contains_permanent_state<PermanentState>(inscription_obj), 2);
     }
-
-    // ==== Inscription Metaprotocol Validity ==== //
-
-    #[private_generics(T)]
-    /// Seal the metaprotocol validity for the given inscription_id.
-    public fun seal_metaprotocol_validity<T>(inscription_id: InscriptionID, is_valid: bool, invalid_reason: Option<String>) {
-        let store_obj_id = object::named_object_id<InscriptionStore>();
-        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
-
-        let inscription_object_id = derive_inscription_id(inscription_id);
-        let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
-
-        let protocol_type = type_info::type_name<T>();
-        let validity = MetaprotocolValidity {
-            protocol_type,
-            is_valid,
-            invalid_reason,
-        };
-
-        object::upsert_field(inscription_obj, METAPROTOCOL_VALIDITY, validity);
-    }
-
-    /// Returns true if Inscription `object` contains metaprotocol validity
-    public fun exists_metaprotocol_validity(inscription_id: InscriptionID): bool{
-        let store_obj_id = object::named_object_id<InscriptionStore>();
-        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
-
-        let inscription_object_id = derive_inscription_id(inscription_id);
-        let exists = object::contains_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
-        if (!exists) {
-            return false
-        };
-
-        let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
-        object::contains_field(inscription_obj, METAPROTOCOL_VALIDITY)
-    }
-
-    /// Borrow the metaprotocol validity for the given inscription_id.
-    public fun borrow_metaprotocol_validity(inscription_id: InscriptionID): &MetaprotocolValidity {
-        let store_obj_id = object::named_object_id<InscriptionStore>();
-        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
-
-        let inscription_object_id = derive_inscription_id(inscription_id);
-        let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
-
-        object::borrow_field(inscription_obj, METAPROTOCOL_VALIDITY)
-    }
-
-    /// Check the MetaprotocolValidity's protocol_type whether match
-    public fun metaprotocol_validity_protocol_match<T>(validity: &MetaprotocolValidity): bool {
-        let protocol_type = type_info::type_name<T>();
-        protocol_type == validity.protocol_type
-    }
-
-    /// Get the MetaprotocolValidity's protocol_type
-    public fun metaprotocol_validity_protocol_type(validity: &MetaprotocolValidity): String {
-        validity.protocol_type
-    }
-
-    /// Get the MetaprotocolValidity's is_valid
-    public fun metaprotocol_validity_is_valid(validity: &MetaprotocolValidity): bool {
-        validity.is_valid
-    }
-
-    /// Get the MetaprotocolValidity's invalid_reason
-    public fun metaprotocol_validity_invalid_reason(validity: &MetaprotocolValidity): Option<String> {
-        validity.invalid_reason
-    }
+ 
 
     #[test_only]
     struct TestProtocol has key {}
