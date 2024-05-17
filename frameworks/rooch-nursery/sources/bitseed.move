@@ -65,6 +65,53 @@ module rooch_nursery::bitseed {
         BIT_SEED_MINT
     }
 
+    public fun get_coin_info(bitseed_store_obj:&Object<BitseedStore>, tick: &String) : Option<BitseedCoinInfo> {
+        let tick = string_utils::to_lower_case(tick);
+        let bitseed_store = object::borrow(bitseed_store_obj);
+
+        if (table::contains(&bitseed_store.coins, tick)) {
+            option::some(*table::borrow(&bitseed_store.coins, tick))
+        } else {
+            option::none()
+        }
+    }
+
+    public fun coin_info_tick(self: &BitseedCoinInfo): String {
+        self.tick
+    }
+
+    public fun coin_info_generator(self: &BitseedCoinInfo): InscriptionID {
+        self.generator
+    }
+
+    public fun coin_info_max(self: &BitseedCoinInfo): u64 {
+        self.max
+    }
+
+    public fun coin_info_repeat(self: &BitseedCoinInfo): u64 {
+        self.repeat
+    }
+
+    public fun coin_info_has_user_input(self: &BitseedCoinInfo): bool {
+        self.has_user_input
+    }
+
+    public fun coin_info_deploy_args_option(self: &BitseedCoinInfo): Option<vector<u8>> {
+        self.deploy_args
+    }
+
+    public fun coin_info_deploy_args(self: &BitseedCoinInfo): vector<u8> {
+        if (option::is_some(&self.deploy_args)) {
+            *option::borrow(&self.deploy_args)
+        } else {
+            vector::empty()
+        }
+    }
+
+    public fun coin_info_supply(self: &BitseedCoinInfo): u64 {
+        self.supply
+    }
+
     fun is_bitseed(inscription: &Inscription) : bool {
         let metaprotocol = ord::metaprotocol(inscription);
         option::is_some<String>(&metaprotocol) && option::borrow(&metaprotocol) == &string::utf8(b"bitseed")
@@ -387,37 +434,10 @@ module rooch_nursery::bitseed {
         user_input: vector<u8>, user_input_key: vector<u8>,
     ): vector<u8>;
 
+    fun generate_seed_from_inscription(inscription: &Inscription): vector<u8> {
+        let inscription_txid = ord::txid(inscription);
+        let tx = bitcoin::get_tx(inscription_txid);
 
-    // ==== Process Bitseed ==== //
-    public fun process(tx: &Transaction) {
-        let txid = types::tx_id(tx);
-        let txoutput = types::tx_output(tx);
-        let idx = 0;
-        let txoutput_len = vector::length(txoutput);
-        while(idx < txoutput_len){
-            let vout = (idx as u32);
-            let output_point = types::new_outpoint(txid, vout);
-            let utxo_obj = utxo::borrow_utxo(output_point);
-            let utxo = object::borrow(utxo_obj);
-            let seals = utxo::get_seals<Inscription>(utxo);
-
-            // Track the Inscription via SatPoint
-            let j = 0;
-            let seals_len = vector::length<ObjectID>(&seals);
-            while(j < seals_len){
-                let seal_object_id = *vector::borrow(&seals, j);
-                let inscription_obj = object::borrow_object<Inscription>(seal_object_id);
-                let inscription = object::borrow(inscription_obj);
-                process_inscription(tx, inscription);
-
-                j = j + 1;
-            };
-
-            idx = idx + 1;
-        };
-    }
-
-    fun generate_seed_from_inscription_tx(tx: &Transaction, inscription: &Inscription): vector<u8> {
         let input = types::tx_input(tx);
         let index = ord::input(inscription);
         let txin = vector::borrow(input, (index as u64));
@@ -453,8 +473,9 @@ module rooch_nursery::bitseed {
         hash::sha3_256(buf)
     }
 
-    public fun process_inscription(tx: &Transaction, inscription: &Inscription) {
-        let txid = types::tx_id(tx);
+    // ==== Process Bitseed Entry ==== //
+    public fun process_inscription(inscription: &Inscription) {
+        let txid = ord::txid(tx);
         let index = ord::index(inscription);
         let inscription_id = ord::new_inscription_id(txid, index);
 
@@ -483,7 +504,7 @@ module rooch_nursery::bitseed {
 
                     ord::seal_metaprotocol_validity<Bitseed>(inscription_id, true, option::none());
                 } else if (option::borrow(&op) == &string::utf8(b"mint")) {
-                    let seed = generate_seed_from_inscription_tx(tx, inscription);
+                    let seed = generate_seed_from_inscription(inscription);
                     let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed);
                     ord::seal_metaprotocol_validity<Bitseed>(inscription_id, is_valid, reason);
                 } else if (option::borrow(&op) == &string::utf8(b"split")) {
@@ -501,54 +522,6 @@ module rooch_nursery::bitseed {
         }
     }
 
-    //=== Bitseed store ===
-
-    public fun get_coin_info(bitseed_store_obj:&Object<BitseedStore>, tick: &String) : Option<BitseedCoinInfo> {
-        let tick = string_utils::to_lower_case(tick);
-        let bitseed_store = object::borrow(bitseed_store_obj);
-
-        if (table::contains(&bitseed_store.coins, tick)) {
-            option::some(*table::borrow(&bitseed_store.coins, tick))
-        } else {
-            option::none()
-        }
-    }
-
-    public fun coin_info_tick(self: &BitseedCoinInfo): String {
-        self.tick
-    }
-
-    public fun coin_info_generator(self: &BitseedCoinInfo): InscriptionID {
-        self.generator
-    }
-
-    public fun coin_info_max(self: &BitseedCoinInfo): u64 {
-        self.max
-    }
-
-    public fun coin_info_repeat(self: &BitseedCoinInfo): u64 {
-        self.repeat
-    }
-
-    public fun coin_info_has_user_input(self: &BitseedCoinInfo): bool {
-        self.has_user_input
-    }
-
-    public fun coin_info_deploy_args_option(self: &BitseedCoinInfo): Option<vector<u8>> {
-        self.deploy_args
-    }
-
-    public fun coin_info_deploy_args(self: &BitseedCoinInfo): vector<u8> {
-        if (option::is_some(&self.deploy_args)) {
-            *option::borrow(&self.deploy_args)
-        } else {
-            vector::empty()
-        }
-    }
-
-    public fun coin_info_supply(self: &BitseedCoinInfo): u64 {
-        self.supply
-    }
 
     #[test_only]
     struct TestProtocol has key {}
