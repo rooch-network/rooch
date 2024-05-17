@@ -26,7 +26,6 @@ module bitcoin_move::ord {
     
     friend bitcoin_move::genesis;
     friend bitcoin_move::bitcoin;
-    friend bitcoin_move::bitseed;
 
     /// How may blocks between halvings.
     const SUBSIDY_HALVING_INTERVAL: u32 = 210_000;

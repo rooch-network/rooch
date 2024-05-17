@@ -74,7 +74,7 @@
 
 
 
-<a name="0x4_bitcoin_ErrorBlockAlreadyProcessed"></a>
+<a name="0x4_bitcoin_ErrorBlockNotFound"></a>
 
 
 

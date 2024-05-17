@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module rooch_nursery::bitseed {
-    use std::string;
-    use std::string::String;
     use std::vector;
     use std::option::{Self, Option};
     use std::string::{Self, String};
@@ -26,7 +24,7 @@ module rooch_nursery::bitseed {
     const BIT_SEED_DEPLOY: vector<u8> = b"bitseed_deploy";
     const BIT_SEED_MINT: vector<u8> = b"bitseed_mint";
 
-    friend bitcoin_move::genesis;
+    friend rooch_nursery::genesis;
 
     struct Bitseed has key {}
 
