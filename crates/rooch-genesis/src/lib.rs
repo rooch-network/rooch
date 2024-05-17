@@ -148,7 +148,10 @@ impl RoochGenesis {
             genesis_config.timestamp,
             genesis_config.sequencer_account,
         );
-        let bitcoin_genesis_ctx = BitcoinGenesisContext::new(genesis_config.bitcoin_network);
+        let bitcoin_genesis_ctx = BitcoinGenesisContext::new(
+            genesis_config.bitcoin_network,
+            genesis_config.bitcoin_block_height,
+        );
 
         let bundles = stdlib.all_module_bundles()?;
 

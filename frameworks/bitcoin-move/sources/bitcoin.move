@@ -4,8 +4,8 @@
 module bitcoin_move::bitcoin{
     use std::option::{Self, Option};
     use std::vector;
-    use std::string::{String};
-    use bitcoin_move::network;
+    use std::string::{Self, String};
+    
     use moveos_std::simple_multimap::SimpleMultiMap;
     use moveos_std::type_info;
     use moveos_std::table::{Self, Table};
@@ -14,14 +14,20 @@ module bitcoin_move::bitcoin{
     use moveos_std::table_vec::{Self, TableVec};
     use moveos_std::simple_multimap;
     use moveos_std::signer;
+    use moveos_std::event;
+    
     use rooch_framework::timestamp;
+    use rooch_framework::chain_id;
+    
+    use bitcoin_move::network;
     use bitcoin_move::types::{Self, Block, Header, Transaction};
     use bitcoin_move::ord::{Self, Inscription, bind_multichain_address, Flotsam, SatPoint};
     use bitcoin_move::utxo::{Self, UTXOSeal};
 
     friend bitcoin_move::genesis;
 
-    const ErrorBlockNotFound:u64 = 1;
+    /// If the process block failed, we need to stop the system and fix the issue
+    const ErrorBlockProcessError:u64 = 1;
     const ErrorBlockAlreadyProcessed:u64 = 2;
 
     const ORDINAL_GENESIS_HEIGHT:u64 = 767430;
@@ -32,6 +38,8 @@ module bitcoin_move::bitcoin{
     }
 
     struct BitcoinBlockStore has key{
+        /// The genesis start block height
+        genesis_block_height: u64,
         latest_block_height: Option<u64>,
         /// block hash -> block header
         blocks: Table<address, Header>,
@@ -47,8 +55,9 @@ module bitcoin_move::bitcoin{
         tx_ids: TableVec<address>,
     }
 
-    public(friend) fun genesis_init(_genesis_account: &signer){
+    public(friend) fun genesis_init(_genesis_account: &signer, genesis_block_height: u64){
         let btc_block_store = BitcoinBlockStore{
+            genesis_block_height: genesis_block_height,
             latest_block_height: option::none(),
             blocks: table::new(),
             height_to_hash: table::new(),
@@ -182,7 +191,15 @@ module bitcoin_move::bitcoin{
                 //The seals should be empty after utxo is spent
                 simple_multimap::destroy_empty(seals);
             }else {
+                event::emit(TxProgressErrorLogEvent{
+                        txid: types::tx_id(tx),
+                        message: string::utf8(b"utxo not exists"),
+                });
                 //We allow the utxo not exists in the utxo store, because we may not sync the block from genesis
+                //But we should not allow the utxo not exists in the mainnet
+                if(chain_id::is_main()){
+                    abort ErrorBlockProcessError
+                };
             };
 
             idx = idx + 1;
@@ -336,6 +353,12 @@ module bitcoin_move::bitcoin{
         }
     }
 
+    public fun get_genesis_block_height(): u64 {
+        let btc_block_store_obj = borrow_block_store();
+        let btc_block_store = object::borrow(btc_block_store_obj);
+        btc_block_store.genesis_block_height
+    }
+
     /// Get latest block height
     public fun get_latest_block_height(): Option<u64> {
         let btc_block_store_obj = borrow_block_store();
@@ -343,9 +366,8 @@ module bitcoin_move::bitcoin{
         btc_block_store.latest_block_height
     }
 
-    public fun need_process_oridinals(block_height: u64) : bool {
-        let btc_network = network::network();
-        if(network::is_mainnet(btc_network)){
+    fun need_process_oridinals(block_height: u64) : bool {
+        if(network::is_mainnet()){
             block_height >= ORDINAL_GENESIS_HEIGHT
         }else{
             true

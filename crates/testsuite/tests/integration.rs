@@ -6,26 +6,25 @@ mod images;
 use anyhow::{bail, Result};
 use clap::Parser;
 use cucumber::{given, then, World as _};
+use images::bitcoin::BitcoinD;
+use images::bitseed::Bitseed;
+use images::ord::Ord;
 use jpst::TemplateContext;
 use rooch::RoochCli;
 use rooch_config::{rooch_config_dir, RoochOpt, ServerOpt};
 use rooch_key::key_derive::{generate_new_key_pair, retrieve_key_pair};
 use rooch_rpc_client::wallet_context::WalletContext;
 use rooch_rpc_server::Service;
+use rooch_types::crypto::RoochKeyPair;
 use serde_json::Value;
 use std::path::Path;
-use tracing::{debug, error, info};
-
-use images::bitcoin::BitcoinD;
-use images::bitseed::Bitseed;
-use images::ord::Ord;
-use rooch_types::{bitcoin::network::Network, crypto::RoochKeyPair};
 use std::time::Duration;
 use testcontainers::{
     clients::Cli,
     core::{Container, ExecCommand, WaitFor},
     RunnableImage,
 };
+use tracing::{debug, error, info};
 use uuid::Uuid;
 
 const RPC_USER: &str = "roochuser";
@@ -73,9 +72,7 @@ async fn start_server(w: &mut World, _scenario: String) {
             opt.btc_rpc_url = Some(bitcoin_rpc_url);
             opt.btc_rpc_username = Some(RPC_USER.to_string());
             opt.btc_rpc_password = Some(RPC_PASS.to_string());
-            opt.btc_start_block_height = Some(0);
             opt.data_import_flag = false; // Enable data import without writing indexes
-            opt.btc_network = Some(Network::Testnet.to_num());
             info!("config btc rpc ok");
 
             w.bitcoind = Some(bitcoind);
@@ -92,7 +89,6 @@ async fn start_server(w: &mut World, _scenario: String) {
         retrieve_key_pair(&result.key_pair_data.private_key_encryption, None).unwrap();
     server_opt.sequencer_keypair = Some(kp.copy());
     server_opt.proposer_keypair = Some(kp.copy());
-    server_opt.relayer_keypair = Some(kp.copy());
 
     service.start(&opt, server_opt).await.unwrap();
 
@@ -318,7 +314,7 @@ async fn bitseed_run_cmd(w: &mut World, input_tpl: String) {
     let input = eval_command_args(tpl_ctx, input_tpl);
 
     let args: Vec<&str> = input.split_whitespace().collect();
-    let cmd_name = args[0].clone();
+    let cmd_name = args[0];
 
     bitseed_args.extend(args.iter().map(|&s| s.to_string()));
 

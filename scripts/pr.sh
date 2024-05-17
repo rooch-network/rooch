@@ -99,8 +99,8 @@ cargo build
 
 if [ ! -z "$ALSO_TEST" ]; then
     cargo nextest run --workspace --all-features --exclude rooch-framework-tests --exclude rooch-integration-test-runner -v
-    cargo nextest run -p rooch-framework-tests -p rooch-integration-test-runner -v -j 1
-    cargo test -p testsuite --test integration
+    cargo test --release run -p rooch-framework-tests -p rooch-integration-test-runner
+    RUST_LOG=warn cargo test -p testsuite --test integration
 fi
 
 if [ ! -z "$MOVE_TESTS" ]; then

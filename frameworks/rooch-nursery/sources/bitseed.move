@@ -622,7 +622,7 @@ module rooch_nursery::bitseed {
 
     #[test(genesis_account=@0x4)]
     fun test_is_valid_bitseed_deploy_fail_for_inscription_no_exists(genesis_account: &signer){
-        ord::genesis_init(genesis_account);
+        ord::init_for_test(genesis_account);
 
         let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f373764666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
         let metadata = cbor::to_map(metadata_bytes);

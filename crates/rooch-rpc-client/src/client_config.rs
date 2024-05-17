@@ -111,7 +111,7 @@ impl Env {
 impl Default for Env {
     fn default() -> Self {
         Env {
-            alias: BuiltinChainID::Dev.chain_name(),
+            alias: BuiltinChainID::Local.chain_name(),
             rpc: ServerConfig::default().url(false),
             ws: None,
         }

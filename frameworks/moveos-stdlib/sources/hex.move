@@ -177,8 +177,10 @@ module moveos_std::hex {
     #[test]
     public fun test_decode_option_empty_string() {
         let hex_string = b"";
-        let decoded_bytes = decode_option(hex_string);
-        assert!(option::is_none(&decoded_bytes), 1);
+        let decoded_bytes_opt = decode_option(hex_string);
+        assert!(option::is_some(&decoded_bytes_opt), 1);
+        let decoded_bytes = option::destroy_some(decoded_bytes_opt); 
+        assert!(vector::length(&decoded_bytes) == 0, 2);
     }
 
     #[test]

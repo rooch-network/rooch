@@ -175,7 +175,7 @@ impl CommandAction<()> for Init {
 
                 let client_config = ClientConfig {
                     keystore_path,
-                    envs: vec![env, dev_env],
+                    envs: vec![env, dev_env, Env::new_test_env()],
                     active_address: Some(result.address),
                     // make dev env as default env
                     active_env: Some(active_env_alias),
