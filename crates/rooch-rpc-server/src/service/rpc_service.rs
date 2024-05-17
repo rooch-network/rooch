@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
+use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::StructTag;
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
@@ -77,6 +78,17 @@ impl RpcService {
         &self,
         function_call: FunctionCall,
     ) -> Result<AnnotatedFunctionResult> {
+        let module_id = function_call.function_id.module_id.clone();
+        if !self
+            .exists_module(
+                module_id.address().clone(),
+                Identifier::from(module_id.name()),
+            )
+            .await?
+        {
+            return Err(anyhow::anyhow!("Module does not exist: {}", module_id));
+        }
+
         let resp = self.executor.execute_view_function(function_call).await?;
         Ok(resp)
     }
@@ -92,6 +104,17 @@ impl RpcService {
     pub async fn exists_account(&self, address: AccountAddress) -> Result<bool> {
         let mut resp = self
             .get_states(AccessPath::resource(address, Account::struct_tag()))
+            .await?;
+        Ok(resp.pop().flatten().is_some())
+    }
+
+    pub async fn exists_module(
+        &self,
+        address: AccountAddress,
+        module_name: Identifier,
+    ) -> Result<bool> {
+        let mut resp = self
+            .get_states(AccessPath::module(address, module_name))
             .await?;
         Ok(resp.pop().flatten().is_some())
     }
