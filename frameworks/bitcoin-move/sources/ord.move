@@ -6,6 +6,7 @@ module bitcoin_move::ord {
     use std::option::{Self, Option};
     use std::string;
     use std::string::String;
+
     use moveos_std::bcs;
     use moveos_std::event;
     use moveos_std::object::{Self, ObjectID, Object};
@@ -14,12 +15,15 @@ module bitcoin_move::ord {
     use moveos_std::table_vec::{Self, TableVec};
     use moveos_std::type_info;
     use moveos_std::bag;
+    use moveos_std::string_utils;
+    use moveos_std::address;
+
     use rooch_framework::address_mapping;
     use rooch_framework::multichain_address;
     use rooch_framework::bitcoin_address::BitcoinAddress;
     use bitcoin_move::types::{Self, Witness, Transaction};
     use bitcoin_move::utxo::{Self, UTXO};
-
+    
     friend bitcoin_move::genesis;
     friend bitcoin_move::bitcoin;
 
@@ -56,7 +60,7 @@ module bitcoin_move::ord {
         object_id: ObjectID,
     }
 
-    struct Inscription has key{
+    struct Inscription has key {
         txid: address,
         index: u32,
         /// Transaction input index
@@ -186,11 +190,7 @@ module bitcoin_move::ord {
         json::to_map(record.body)
     }
 
-    public fun exists_inscription(txid: address, index: u32): bool{
-        let id = InscriptionID{
-            txid: txid,
-            index: index,
-        };
+    public fun exists_inscription(id: InscriptionID): bool{
         let object_id = derive_inscription_id(id);
         object::exists_object_with_type<Inscription>(object_id)
     }
@@ -413,7 +413,7 @@ module bitcoin_move::ord {
             }else{
                 inscription.offset
             };
-            
+
             let inscription_obj = create_obj(inscription);
             let object_id = object::id(&inscription_obj);
             object::transfer_extend(inscription_obj, to_address);
@@ -423,6 +423,7 @@ module bitcoin_move::ord {
 
             //Auto create address mapping if not exist
             bind_multichain_address(to_address, bitcoin_address_opt);
+
             idx = idx + 1;
         };
         vector::destroy_empty(inscriptions);
@@ -455,6 +456,14 @@ module bitcoin_move::ord {
 
     public fun index(self: &Inscription): u32{
         self.index
+    }
+
+    public fun input(self: &Inscription): u32{
+        self.input
+    }
+
+    public fun offset(self: &Inscription): u64{
+        self.offset
     }
 
     public fun body(self: &Inscription): vector<u8>{
@@ -499,6 +508,14 @@ module bitcoin_move::ord {
             parent: _,
             pointer: _,
         } = self;
+    }
+
+    public fun inscription_id_txid(self: &InscriptionID): address {
+        self.txid
+    }
+
+    public fun inscription_id_index(self: &InscriptionID): u32 {
+        self.index
     }
 
     // ===== SatPoint ========== //
@@ -915,8 +932,8 @@ module bitcoin_move::ord {
 
     // ==== Inscription Metaprotocol Validity ==== //
 
-    // Seal the metaprotocol validity for the given inscription_id.
     #[private_generics(T)]
+    /// Seal the metaprotocol validity for the given inscription_id.
     public fun seal_metaprotocol_validity<T>(inscription_id: InscriptionID, is_valid: bool, invalid_reason: Option<String>) {
         let store_obj_id = object::named_object_id<InscriptionStore>();
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
@@ -934,7 +951,22 @@ module bitcoin_move::ord {
         object::upsert_field(inscription_obj, METAPROTOCOL_VALIDITY, validity);
     }
 
-    // Borrow the metaprotocol validity for the given inscription_id.
+    /// Returns true if Inscription `object` contains metaprotocol validity
+    public fun exists_metaprotocol_validity(inscription_id: InscriptionID): bool{
+        let store_obj_id = object::named_object_id<InscriptionStore>();
+        let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
+
+        let inscription_object_id = derive_inscription_id(inscription_id);
+        let exists = object::contains_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+        if (!exists) {
+            return false
+        };
+
+        let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
+        object::contains_field(inscription_obj, METAPROTOCOL_VALIDITY)
+    }
+
+    /// Borrow the metaprotocol validity for the given inscription_id.
     public fun borrow_metaprotocol_validity(inscription_id: InscriptionID): &MetaprotocolValidity {
         let store_obj_id = object::named_object_id<InscriptionStore>();
         let store_obj = object::borrow_mut_object_shared<InscriptionStore>(store_obj_id);
@@ -943,6 +975,12 @@ module bitcoin_move::ord {
         let inscription_obj = object::borrow_mut_object_field<InscriptionStore, Inscription>(store_obj, inscription_object_id);
 
         object::borrow_field(inscription_obj, METAPROTOCOL_VALIDITY)
+    }
+
+    /// Check the MetaprotocolValidity's protocol_type whether match
+    public fun metaprotocol_validity_protocol_match<T>(validity: &MetaprotocolValidity): bool {
+        let protocol_type = type_info::type_name<T>();
+        protocol_type == validity.protocol_type
     }
 
     /// Get the MetaprotocolValidity's protocol_type
@@ -964,7 +1002,7 @@ module bitcoin_move::ord {
     struct TestProtocol has key {}
 
     #[test_only]
-    fun new_inscription_id_for_test(        
+    public fun new_inscription_id_for_test(        
         txid: address,
         index: u32,
     ) : InscriptionID {
@@ -1003,14 +1041,15 @@ module bitcoin_move::ord {
         }
     }
 
-    #[test(genesis_account=@0x4)]
-    fun test_metaprotocol_validity(genesis_account: &signer){
+    #[test_only]
+    public fun setup_inscription_for_test(genesis_account: &signer) : (address, InscriptionID) {
         genesis_init(genesis_account);
 
         // prepare test inscription
         let test_address = @0x5416690eaaf671031dc609ff8d36766d2eb91ca44f04c85c27628db330f40fd1;
         let test_txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
         let test_inscription_id = new_inscription_id_for_test(test_txid, 0);
+
         let test_inscription = new_inscription_for_test(
             test_txid,
             0,
@@ -1028,13 +1067,29 @@ module bitcoin_move::ord {
         let test_inscription_obj = create_obj(test_inscription);
         object::transfer_extend(test_inscription_obj, test_address);
 
+        (test_address, test_inscription_id)
+    }
+
+    #[test(genesis_account=@0x4)]
+    fun test_metaprotocol_validity(genesis_account: &signer){
+        // prepare test inscription
+        let (_test_address, test_inscription_id) = setup_inscription_for_test(genesis_account);
+
+        // Check whether exists metaprotocol_validity
+        let is_exists = exists_metaprotocol_validity(test_inscription_id);
+        assert!(!is_exists, 1);
+
         // seal TestProtocol valid to test_inscription_id
         seal_metaprotocol_validity<TestProtocol>(test_inscription_id, true, option::none());
+
+        // Check whether exists metaprotocol_validity
+        let is_exists = exists_metaprotocol_validity(test_inscription_id);
+        assert!(is_exists, 1);
 
         // borrow metaprotocol validity from test_inscription_id
         let metaprotocol_validity = borrow_metaprotocol_validity(test_inscription_id);
         let is_valid = metaprotocol_validity_is_valid(metaprotocol_validity);
-        assert!(is_valid, 1);
+        assert!(is_valid, 2);
 
         // seal TestProtocol not valid to test_inscription_id
         let test_invalid_reason = string::utf8(b"Claimed first by another");
@@ -1044,10 +1099,75 @@ module bitcoin_move::ord {
         let metaprotocol_validity = borrow_metaprotocol_validity(test_inscription_id);
 
         let is_valid = metaprotocol_validity_is_valid(metaprotocol_validity);
-        assert!(!is_valid, 1);
+        assert!(!is_valid, 31);
 
         let invalid_reason_option = metaprotocol_validity_invalid_reason(metaprotocol_validity);
         let invalid_reason = option::borrow(&invalid_reason_option);
-        assert!(invalid_reason == &test_invalid_reason, 1);
+        assert!(invalid_reason == &test_invalid_reason, 4);
+    }
+
+    // ==== Prase InscriptionID ==== //
+    public fun parse_inscription_id(inscription_id: &String) : Option<InscriptionID> {
+        let offset = string::index_of(inscription_id, &std::string::utf8(b"i"));
+        if (offset == string::length(inscription_id)) {
+            return option::none()
+        };
+
+        let txid_str = string::sub_string(inscription_id, 0, offset);
+        let ascii_txid_option = std::ascii::try_string(string::into_bytes(txid_str));
+        if (option::is_none(&ascii_txid_option)) {
+            return option::none()
+        };
+
+        let txid_option = address::from_ascii_string(option::extract(&mut ascii_txid_option));
+        if (option::is_none(&txid_option)) {
+            return option::none()
+        };
+
+        let index_str = string::sub_string(inscription_id, offset+1, string::length(inscription_id));
+        let index_option = string_utils::parse_u64_option(&index_str);
+        if (option::is_none(&index_option)) {
+            return option::none()
+        };
+
+        option::some(InscriptionID{
+            txid: option::extract<address>(&mut txid_option),
+            index: (option::extract<u64>(&mut index_option) as u32),
+        })
+    }
+
+    #[test]
+    fun test_parse_inscription_id_ok(){
+        let inscription_id_str = std::string::utf8(b"6f55475ce65054aa8371d618d217da8c9a764cecdaf4debcbce8d6312fe6b4d8i0");
+        let inscription_id_option = parse_inscription_id(&inscription_id_str);
+        assert!(option::is_some(&inscription_id_option), 1);
+    }
+
+    #[test]
+    fun test_parse_inscription_id_fail_with_invalid_txid_str(){
+        let inscription_id_str = std::string::utf8(x"E4BDA0E5A5BD6930");
+        let inscription_id_option = parse_inscription_id(&inscription_id_str);
+        assert!(option::is_none(&inscription_id_option), 1);
+    }
+
+    #[test]
+    fun test_parse_inscription_id_fail_with_invalid_txid_address(){
+        let inscription_id_str = std::string::utf8(b"6x55475ce65054aa8371d618d217da8c9a764cecdaf4debcbce8d6312fe6b4d8i0");
+        let inscription_id_option = parse_inscription_id(&inscription_id_str);
+        assert!(option::is_none(&inscription_id_option), 1);
+    }
+
+    #[test]
+    fun test_parse_inscription_id_fail_with_without_i(){
+        let inscription_id_str = std::string::utf8(b"6f55475ce65054aa8371d618d217da8c9a764cecdaf4debcbce8d6312fe6b4d8");
+        let inscription_id_option = parse_inscription_id(&inscription_id_str);
+        assert!(option::is_none(&inscription_id_option), 1);
+    }
+
+    #[test]
+    fun test_parse_inscription_id_fail_with_invalid_index(){
+        let inscription_id_str = std::string::utf8(b"6f55475ce65054aa8371d618d217da8c9a764cecdaf4debcbce8d6312fe6b4d8ix");
+        let inscription_id_option = parse_inscription_id(&inscription_id_str);
+        assert!(option::is_none(&inscription_id_option), 1);
     }
 }

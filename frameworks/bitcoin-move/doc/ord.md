@@ -25,6 +25,8 @@
 -  [Function `process_transaction`](#0x4_ord_process_transaction)
 -  [Function `txid`](#0x4_ord_txid)
 -  [Function `index`](#0x4_ord_index)
+-  [Function `input`](#0x4_ord_input)
+-  [Function `offset`](#0x4_ord_offset)
 -  [Function `body`](#0x4_ord_body)
 -  [Function `content_encoding`](#0x4_ord_content_encoding)
 -  [Function `content_type`](#0x4_ord_content_type)
@@ -32,6 +34,8 @@
 -  [Function `metaprotocol`](#0x4_ord_metaprotocol)
 -  [Function `parent`](#0x4_ord_parent)
 -  [Function `pointer`](#0x4_ord_pointer)
+-  [Function `inscription_id_txid`](#0x4_ord_inscription_id_txid)
+-  [Function `inscription_id_index`](#0x4_ord_inscription_id_index)
 -  [Function `new_sat_point`](#0x4_ord_new_sat_point)
 -  [Function `unpack_sat_point`](#0x4_ord_unpack_sat_point)
 -  [Function `sat_point_object_id`](#0x4_ord_sat_point_object_id)
@@ -56,15 +60,20 @@
 -  [Function `remove_temp_state`](#0x4_ord_remove_temp_state)
 -  [Function `drop_temp_area`](#0x4_ord_drop_temp_area)
 -  [Function `seal_metaprotocol_validity`](#0x4_ord_seal_metaprotocol_validity)
+-  [Function `exists_metaprotocol_validity`](#0x4_ord_exists_metaprotocol_validity)
 -  [Function `borrow_metaprotocol_validity`](#0x4_ord_borrow_metaprotocol_validity)
+-  [Function `metaprotocol_validity_protocol_match`](#0x4_ord_metaprotocol_validity_protocol_match)
 -  [Function `metaprotocol_validity_protocol_type`](#0x4_ord_metaprotocol_validity_protocol_type)
 -  [Function `metaprotocol_validity_is_valid`](#0x4_ord_metaprotocol_validity_is_valid)
 -  [Function `metaprotocol_validity_invalid_reason`](#0x4_ord_metaprotocol_validity_invalid_reason)
+-  [Function `parse_inscription_id`](#0x4_ord_parse_inscription_id)
 
 
-<pre><code><b>use</b> <a href="">0x1::option</a>;
+<pre><code><b>use</b> <a href="">0x1::ascii</a>;
+<b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
+<b>use</b> <a href="">0x2::address</a>;
 <b>use</b> <a href="">0x2::bag</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
 <b>use</b> <a href="">0x2::event</a>;
@@ -72,6 +81,7 @@
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::simple_map</a>;
+<b>use</b> <a href="">0x2::string_utils</a>;
 <b>use</b> <a href="">0x2::table_vec</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x3::address_mapping</a>;
@@ -282,7 +292,7 @@ How may blocks between halvings.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_exists_inscription">exists_inscription</a>(txid: <b>address</b>, index: u32): bool
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_exists_inscription">exists_inscription</a>(id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): bool
 </code></pre>
 
 
@@ -349,6 +359,28 @@ How may blocks between halvings.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_index">index</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): u32
+</code></pre>
+
+
+
+<a name="0x4_ord_input"></a>
+
+## Function `input`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_input">input</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): u32
+</code></pre>
+
+
+
+<a name="0x4_ord_offset"></a>
+
+## Function `offset`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_offset">offset</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): u64
 </code></pre>
 
 
@@ -426,6 +458,28 @@ How may blocks between halvings.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_pointer">pointer</a>(self: &<a href="ord.md#0x4_ord_Inscription">ord::Inscription</a>): <a href="_Option">option::Option</a>&lt;u64&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_inscription_id_txid"></a>
+
+## Function `inscription_id_txid`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_inscription_id_txid">inscription_id_txid</a>(self: &<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): <b>address</b>
+</code></pre>
+
+
+
+<a name="0x4_ord_inscription_id_index"></a>
+
+## Function `inscription_id_index`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_inscription_id_index">inscription_id_index</a>(self: &<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): u32
 </code></pre>
 
 
@@ -698,6 +752,7 @@ Drop the bag, whether it's empty or not
 
 ## Function `seal_metaprotocol_validity`
 
+Seal the metaprotocol validity for the given inscription_id.
 
 
 <pre><code>#[private_generics(#[T])]
@@ -706,13 +761,38 @@ Drop the bag, whether it's empty or not
 
 
 
+<a name="0x4_ord_exists_metaprotocol_validity"></a>
+
+## Function `exists_metaprotocol_validity`
+
+Returns true if Inscription <code><a href="">object</a></code> contains metaprotocol validity
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_exists_metaprotocol_validity">exists_metaprotocol_validity</a>(inscription_id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): bool
+</code></pre>
+
+
+
 <a name="0x4_ord_borrow_metaprotocol_validity"></a>
 
 ## Function `borrow_metaprotocol_validity`
 
+Borrow the metaprotocol validity for the given inscription_id.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_borrow_metaprotocol_validity">borrow_metaprotocol_validity</a>(inscription_id: <a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>): &<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>
+</code></pre>
+
+
+
+<a name="0x4_ord_metaprotocol_validity_protocol_match"></a>
+
+## Function `metaprotocol_validity_protocol_match`
+
+Check the MetaprotocolValidity's protocol_type whether match
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_metaprotocol_validity_protocol_match">metaprotocol_validity_protocol_match</a>&lt;T&gt;(validity: &<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>): bool
 </code></pre>
 
 
@@ -749,4 +829,15 @@ Get the MetaprotocolValidity's invalid_reason
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_metaprotocol_validity_invalid_reason">metaprotocol_validity_invalid_reason</a>(validity: &<a href="ord.md#0x4_ord_MetaprotocolValidity">ord::MetaprotocolValidity</a>): <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;
+</code></pre>
+
+
+
+<a name="0x4_ord_parse_inscription_id"></a>
+
+## Function `parse_inscription_id`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ord.md#0x4_ord_parse_inscription_id">parse_inscription_id</a>(inscription_id: &<a href="_String">string::String</a>): <a href="_Option">option::Option</a>&lt;<a href="ord.md#0x4_ord_InscriptionID">ord::InscriptionID</a>&gt;
 </code></pre>
