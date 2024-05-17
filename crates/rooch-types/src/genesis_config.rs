@@ -3,6 +3,7 @@
 
 use ethers::types::H256;
 use framework_builder::stdlib_version::StdlibVersion;
+use framework_types::addresses::ROOCH_FRAMEWORK_ADDRESS;
 use move_core_types::{account_address::AccountAddress, language_storage::StructTag};
 use moveos_types::moveos_std::object::ObjectID;
 use once_cell::sync::Lazy;
@@ -30,7 +31,7 @@ pub static G_LOCAL_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     bitcoin_network: crate::bitcoin::network::Network::Regtest.to_num(),
     bitcoin_block_height: 0,
     timestamp: 0,
-    sequencer_account: AccountAddress::ONE,
+    sequencer_account: ROOCH_FRAMEWORK_ADDRESS,
     genesis_objects: vec![],
     stdlib_version: StdlibVersion::Latest,
 });
@@ -39,7 +40,7 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     bitcoin_network: crate::bitcoin::network::Network::Testnet.to_num(),
     bitcoin_block_height: 0,
     timestamp: 0,
-    sequencer_account: AccountAddress::ONE,
+    sequencer_account: ROOCH_FRAMEWORK_ADDRESS,
     genesis_objects: vec![],
     stdlib_version: StdlibVersion::Latest,
 });
@@ -53,7 +54,7 @@ pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         sequencer_account: AccountAddress::from_hex_literal(
             "0xbe2701d15ccdc282caf8ca6647e7a54db5721f8bcb7b980b4d0c65a151bf74da",
         )
-        .expect("Invalid address"),
+        .expect("Should be valid"),
         genesis_objects: vec![],
         stdlib_version: StdlibVersion::Version(1),
     }
@@ -65,7 +66,10 @@ pub static G_MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         bitcoin_network: crate::bitcoin::network::Network::Bitcoin.to_num(),
         bitcoin_block_height: 0,
         timestamp: 0,
-        sequencer_account: AccountAddress::ONE,
+        sequencer_account: AccountAddress::from_hex_literal(
+            "0xbe2701d15ccdc282caf8ca6647e7a54db5721f8bcb7b980b4d0c65a151bf74da",
+        )
+        .expect("Invalid address"),
         genesis_objects: vec![],
         stdlib_version: StdlibVersion::Version(1),
     }
