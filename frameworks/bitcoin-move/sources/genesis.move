@@ -15,6 +15,7 @@ module bitcoin_move::genesis{
     /// BitcoinGenesisContext is a genesis init config in the TxContext.
     struct BitcoinGenesisContext has copy,store,drop{
         network: u8,
+        genesis_block_height: u64, 
     }
 
     fun init(){
@@ -25,7 +26,7 @@ module bitcoin_move::genesis{
         network::genesis_init(genesis_context.network);
         utxo::genesis_init();
         ord::genesis_init(&genesis_account);
-        bitcoin::genesis_init(&genesis_account);
+        bitcoin::genesis_init(&genesis_account, genesis_context.genesis_block_height);
     }
 
     #[test_only]

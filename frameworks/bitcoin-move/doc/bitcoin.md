@@ -14,14 +14,15 @@
 -  [Function `get_block`](#0x4_bitcoin_get_block)
 -  [Function `get_block_height`](#0x4_bitcoin_get_block_height)
 -  [Function `get_block_by_height`](#0x4_bitcoin_get_block_by_height)
+-  [Function `get_genesis_block_height`](#0x4_bitcoin_get_genesis_block_height)
 -  [Function `get_latest_block_height`](#0x4_bitcoin_get_latest_block_height)
--  [Function `need_process_oridinals`](#0x4_bitcoin_need_process_oridinals)
 
 
 <pre><code><b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
 <b>use</b> <a href="">0x2::bcs</a>;
+<b>use</b> <a href="">0x2::event</a>;
 <b>use</b> <a href="">0x2::object</a>;
 <b>use</b> <a href="">0x2::signer</a>;
 <b>use</b> <a href="">0x2::simple_multimap</a>;
@@ -29,6 +30,7 @@
 <b>use</b> <a href="">0x2::table_vec</a>;
 <b>use</b> <a href="">0x2::type_info</a>;
 <b>use</b> <a href="">0x3::bitcoin_address</a>;
+<b>use</b> <a href="">0x3::chain_id</a>;
 <b>use</b> <a href="">0x3::timestamp</a>;
 <b>use</b> <a href="network.md#0x4_network">0x4::network</a>;
 <b>use</b> <a href="ord.md#0x4_ord">0x4::ord</a>;
@@ -74,11 +76,12 @@
 
 
 
-<a name="0x4_bitcoin_ErrorBlockNotFound"></a>
+<a name="0x4_bitcoin_ErrorBlockProcessError"></a>
+
+If the process block failed, we need to stop the system and fix the issue
 
 
-
-<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ErrorBlockNotFound">ErrorBlockNotFound</a>: u64 = 1;
+<pre><code><b>const</b> <a href="bitcoin.md#0x4_bitcoin_ErrorBlockProcessError">ErrorBlockProcessError</a>: u64 = 1;
 </code></pre>
 
 
@@ -98,7 +101,7 @@
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_genesis_init">genesis_init</a>(_genesis_account: &<a href="">signer</a>, genesis_block_height: u64)
 </code></pre>
 
 
@@ -160,6 +163,17 @@ Get block via block_height
 
 
 
+<a name="0x4_bitcoin_get_genesis_block_height"></a>
+
+## Function `get_genesis_block_height`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_genesis_block_height">get_genesis_block_height</a>(): u64
+</code></pre>
+
+
+
 <a name="0x4_bitcoin_get_latest_block_height"></a>
 
 ## Function `get_latest_block_height`
@@ -168,15 +182,4 @@ Get latest block height
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_get_latest_block_height">get_latest_block_height</a>(): <a href="_Option">option::Option</a>&lt;u64&gt;
-</code></pre>
-
-
-
-<a name="0x4_bitcoin_need_process_oridinals"></a>
-
-## Function `need_process_oridinals`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="bitcoin.md#0x4_bitcoin_need_process_oridinals">need_process_oridinals</a>(block_height: u64): bool
 </code></pre>
