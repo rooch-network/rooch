@@ -45,12 +45,15 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
 });
 
 pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    //TODO define test config
+    // curl -sSL "https://mempool.space/testnet/api/block/000000009373df1134670bd45e75a6b8f1fb07610a9eeb7933ef266da9507cb9"
     GenesisConfig {
         bitcoin_network: crate::bitcoin::network::Network::Testnet.to_num(),
-        bitcoin_block_height: 0,
-        timestamp: 0,
-        sequencer_account: AccountAddress::ONE,
+        bitcoin_block_height: 2815983,
+        timestamp: 1715941066000,
+        sequencer_account: AccountAddress::from_hex_literal(
+            "0xbe2701d15ccdc282caf8ca6647e7a54db5721f8bcb7b980b4d0c65a151bf74da",
+        )
+        .expect("Invalid address"),
         genesis_objects: vec![],
         stdlib_version: StdlibVersion::Version(1),
     }
