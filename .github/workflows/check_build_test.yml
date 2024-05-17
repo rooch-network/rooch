@@ -51,14 +51,15 @@ jobs:
         run: cargo build
       - name: Framework compatibiliy
         run: cargo run --package framework-release --bin framework-release
+      - name: Run Rooch init
+        run: cargo run --bin rooch init --skip-password
       - name: Execute Move stdlib and framework tests
         run: ./scripts/pr.sh -m
       - name: Execute rust tests
         run: ./scripts/pr.sh -t
       - name: Build and test example projects
         run: ./scripts/pr.sh -e
-      - name: Run Rooch init
-        run: cargo run --bin rooch init --skip-password
+      
 
       # web & sdk & dashboard
       - name: Use Node.js
