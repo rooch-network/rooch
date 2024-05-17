@@ -17,10 +17,9 @@ use std::path::Path;
 use tracing::{debug, error, info};
 
 use images::bitcoin::BitcoinD;
-use images::bitseed::{Bitseed, BitseedImageArgs};
+use images::bitseed::Bitseed;
 use images::ord::Ord;
-use rooch_types::bitcoin::network::Network;
-use rooch_types::{bitcoin::network::Network, crypto::RoochKeyPair};
+use rooch_types::crypto::RoochKeyPair;
 use std::time::Duration;
 use testcontainers::{
     clients::Cli,
@@ -306,8 +305,8 @@ fn ord_bash_run_cmd(w: &mut World, input_tpl: String) {
 
 #[then(regex = r#"cmd bitseed: "(.*)?""#)]
 async fn bitseed_run_cmd(w: &mut World, input_tpl: String) {
-    let bitcoind = w.bitcoind.as_ref().unwrap();
-    let ord = w.ord.as_ref().unwrap();
+    let _bitcoind = w.bitcoind.as_ref().unwrap();
+    let _ord = w.ord.as_ref().unwrap();
 
     let mut bitseed_args = vec![];
 
