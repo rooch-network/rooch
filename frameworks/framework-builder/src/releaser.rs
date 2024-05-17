@@ -184,6 +184,7 @@ fn check_compiled_module_compat(
     let new_m = Module::new(new_module);
     let old_m = Module::new(old_module);
     // TODO: config compatibility through global configuration
-    let compat = Compatibility::full_check();
+    // We allow `friend` function to be broken
+    let compat = Compatibility::new(true, true, false);
     compat.check(&old_m, &new_m)
 }
