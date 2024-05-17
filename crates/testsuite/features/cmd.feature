@@ -288,7 +288,7 @@ Feature: Rooch CLI integration tests
       # because the indexer is async update, so sleep 2 seconds to wait indexer update.
       Then sleep: "2"
 
-      Then cmd: "rpc request --method rooch_queryGlobalStates --params '[{"object_type":"{{$.address_mapping.default}}::child_object::Child"}, null, "10", true]'"
+      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"{{$.address_mapping.default}}::child_object::Child"}, null, "10", true]'"
       Then assert: "{{$.rpc[-1].data[0].object_id}} == {{$.event[-1].data[0].decoded_event_data.value.id}}"
 
       Then cmd: "move run --function default::third_party_module_for_child_object::update_child_age --args object:{{$.event[-1].data[0].decoded_event_data.value.id}} --args u64:10"
@@ -321,8 +321,8 @@ Feature: Rooch CLI integration tests
       Then assert: "{{$.wallet[-1].total}} == 5000000000"
 
       # query utxos and inscriptions
-      Then cmd: "rpc request --method rooch_queryGlobalStates --params '[{"object_type":"0x4::utxo::UTXO"}, null, "2", true]'"
-      Then cmd: "rpc request --method rooch_queryGlobalStates --params '[{"object_type":"0x4::ord::Inscription"}, null, "2", true]'"
+      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::utxo::UTXO"}, null, "2", true]'"
+      Then cmd: "rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::ord::Inscription"}, null, "2", true]'"
 
       # release servers
       Then stop the server

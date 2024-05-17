@@ -314,7 +314,7 @@ async fn bitseed_run_cmd(w: &mut World, input_tpl: String) {
     let input = eval_command_args(tpl_ctx, input_tpl);
 
     let args: Vec<&str> = input.split_whitespace().collect();
-    let cmd_name = args[0].clone();
+    let cmd_name = args[0];
 
     bitseed_args.extend(args.iter().map(|&s| s.to_string()));
 
