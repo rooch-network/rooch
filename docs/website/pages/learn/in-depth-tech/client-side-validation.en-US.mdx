@@ -1,4 +1,4 @@
-# Client-side Validation Protocol
+# Client-Side Validation Protocol
 
 The [Client Validation Protocol][1], a concept proposed by the developers of the Bitcoin ecosystem, allow a Bitcoin transaction to commit to some data whose validity is determined separate from the validity of the transaction under Bitcoin’s consensus rules. Assets created under this protocol use Bitcoin only to ensure asset ownership and prevent double-spending, while the validity of the assets is verified off-chain. In the following text, we refer to client-side validation simply as "CSV."
 
@@ -96,7 +96,7 @@ Notes:
 1. This process is simplified and does not account for scenarios where a user's transaction fails to get on-chain, requiring asset recovery.
 2. During asset leap, the asset container is destroyed, so the container's ID cannot be guaranteed consistent, necessitating an internal business ID to identify the asset.
 
-### Reference
+## Reference
 
 - [Client-side validation protocols][1] from bitcoinops.org
 - [Client side validation][2] from rgb.info

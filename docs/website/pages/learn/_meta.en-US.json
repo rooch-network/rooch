@@ -1,9 +1,8 @@
 {
-  "introduction": "Introduction",
-  "architecture": "Architecture",
+  "welcome": "Welcome",
+  "overview": "Overview",
+  "in-depth-tech": "In-Depth Tech",
   "core-concepts": "Core Concepts",
-  "in-depth-tech": "In-Depth-Tech",
-  "user-guides": "User guides",
-  "contribution-guides": "Contributing Guides",
-  "miscellaneous": "Miscellaneous"
+  "miscellaneous": "Miscellaneous",
+  "contribution-guides": "Contributing Guides"
 }
