@@ -339,10 +339,14 @@ mod tests {
             .get_object(&ModuleStore::module_store_id())
             .unwrap();
         assert!(module_store_state.is_some());
-        let _module_store_obj = module_store_state
+        let module_store_obj = module_store_state
             .unwrap()
             .into_object::<ModuleStore>()
             .unwrap();
+        assert!(
+            module_store_obj.size > 0,
+            "module store fields size should > 0"
+        );
         let chain_id_state = resolver
             .get_object(&rooch_types::framework::chain_id::ChainID::chain_id_object_id())
             .unwrap();
