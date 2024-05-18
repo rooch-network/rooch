@@ -5,6 +5,8 @@ use anyhow::{anyhow, Result};
 use framework_builder::{stdlib_version::StdlibVersion, Stdlib};
 use include_dir::{include_dir, Dir};
 
+pub mod error_descriptions;
+
 pub(crate) const STATIC_FRAMEWORK_DIR: Dir = include_dir!("released");
 
 pub fn load_stdlib(version: StdlibVersion) -> Result<Stdlib> {

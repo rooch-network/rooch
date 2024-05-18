@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_types::WalletContextOptions;
-use bcs_ext;
 use clap::*;
 use move_core_types::errmap::{ErrorDescription, ErrorMapping};
 use move_core_types::language_storage::ModuleId;
@@ -31,13 +30,16 @@ impl Explain {
         let context = self.context_options.build()?;
         let address_mapping = context.address_mapping();
         let module_id = self.location.into_module_id(&address_mapping)?;
-        let error_descriptions = framework_types::error_descriptions::ERROR_DESCRIPTIONS.clone();
-        let error_description_bytes = error_descriptions.get(module_id.address());
+        let error_descriptions = &framework_release::error_descriptions::ERROR_DESCRIPTIONS;
+        let error_mapping = error_descriptions.get(module_id.address());
 
-        match error_description_bytes {
-            Some(bytes) => {
-                let explain_result =
-                    explain_move_abort(AbortLocation::Module(module_id), self.abort_code, bytes);
+        match error_mapping {
+            Some(error_mapping) => {
+                let explain_result = explain_move_abort(
+                    AbortLocation::Module(module_id),
+                    self.abort_code,
+                    error_mapping,
+                );
                 println!("{}", explain_result)
             }
             None => {
@@ -54,11 +56,10 @@ impl Explain {
 pub fn get_explanation(
     module_id: &ModuleId,
     abort_code: u64,
-    data: &[u8],
+    error_mapping: &ErrorMapping,
 ) -> Option<ErrorDescription> {
-    let error_descriptions: ErrorMapping =
-        bcs_ext::from_bytes(data).expect("Decode err map failed");
-    error_descriptions.get_explanation(module_id.to_string().as_str(), abort_code)
+    let module_name = module_id.short_str_lossless();
+    error_mapping.get_explanation(&module_name, abort_code)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, Eq, PartialEq)]
@@ -90,10 +91,10 @@ impl std::fmt::Display for MoveAbortExplain {
 pub fn explain_move_abort(
     abort_location: AbortLocation,
     abort_code: u64,
-    data: &[u8],
+    error_mapping: &ErrorMapping,
 ) -> MoveAbortExplain {
     let err_description = match abort_location {
-        AbortLocation::Module(module_id) => get_explanation(&module_id, abort_code, data),
+        AbortLocation::Module(module_id) => get_explanation(&module_id, abort_code, error_mapping),
         AbortLocation::Script => None,
     };
     match err_description {

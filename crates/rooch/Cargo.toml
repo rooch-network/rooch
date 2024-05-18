@@ -87,5 +87,7 @@ rooch-rpc-server = { workspace = true }
 rooch-rpc-client = { workspace = true }
 rooch-integration-test-runner = { workspace = true }
 
+framework-release = { workspace = true }
+
 [features]
 dashboard = []

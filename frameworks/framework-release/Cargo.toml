@@ -21,6 +21,7 @@ serde = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 include_dir = { workspace = true }
+bcs = { workspace = true }
 
 move-core-types = { workspace = true }
 move-binary-format = { workspace = true }
@@ -29,6 +30,7 @@ move-package = { workspace = true }
 moveos-types = { workspace = true }
 moveos-stdlib = { workspace = true }
 
+framework-types = { workspace = true }
 framework-builder = { workspace = true }
 
 [build-dependencies]
