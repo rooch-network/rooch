@@ -378,21 +378,42 @@ module rooch_nursery::bitseed {
                 simple_map::drop(attributes);
                 return (false, option::some(std::string::utf8(b"metadata.attributes.user_input is required")))
             };
+
+            user_input = *option::borrow(&user_input_option);
         };
 
+        std::debug::print(&string::utf8(b"is_valid_bitseed_mint_1"));
+
         let generator_inscription_id = coin_info_generator(&coin_info);
+
+        std::debug::print(&string::utf8(b"is_valid_bitseed_mint_2"));
+        std::debug::print(&generator_inscription_id);
+
+        if (ord::exists_metaprotocol_validity(generator_inscription_id)) {
+            simple_map::drop(attributes);
+            return (false, option::some(std::string::utf8(b"generator_inscription_id is not validity bitseed")))
+        };
+
+        std::debug::print(&string::utf8(b"is_valid_bitseed_mint_3"));
+
         let object_id = object::custom_object_id<InscriptionID, Inscription>(generator_inscription_id);
         let inscription_obj = object::borrow_object<Inscription>(object_id);
+        std::debug::print(&string::utf8(b"is_valid_bitseed_mint_4"));
+
         let inscrption = object::borrow(inscription_obj);
         let wasm_bytes = ord::body(inscrption);
 
         let attributes_bytes = simple_map::borrow(metadata, &string::utf8(b"attributes"));
+
+        std::debug::print(&string::utf8(b"is_valid_bitseed_mint_5"));
 
         let is_valid = inscribe_verify(wasm_bytes, deploy_args, seed, user_input, *attributes_bytes);
         if (!is_valid) {
             simple_map::drop(attributes);
             return (false, option::some(std::string::utf8(b"inscribe verify fail")))
         };
+
+        std::debug::print(&string::utf8(b"is_valid_bitseed_mint_6"));
 
         simple_map::drop(attributes);
         (true, option::none<String>())
@@ -435,11 +456,12 @@ module rooch_nursery::bitseed {
 
     fun generate_seed_from_inscription(inscription: &Inscription): vector<u8> {
         let inscription_txid = ord::txid(inscription);
-        let tx = bitcoin::get_tx(inscription_txid);
-        if (option::is_none(&tx)) {
+        let tx_option = bitcoin::get_tx(inscription_txid);
+        if (option::is_none(&tx_option)) {
             return vector::empty()
         };
-        let tx = option::destroy_some(tx);
+
+        let tx = option::destroy_some(tx_option);
         let input = types::tx_input(&tx);
         let index = ord::input(inscription);
         let txin = vector::borrow(input, (index as u64));
@@ -725,17 +747,112 @@ module rooch_nursery::bitseed {
     }
 
     #[test(genesis_account=@0x4)]
-    fun test_is_valid_bitseed_mint_ok(genesis_account: &signer){
+    fun test_is_valid_bitseed_mint_fail_with_tick_not_deploy(genesis_account: &signer){
+        genesis_init(genesis_account);
+
+        let (_test_address, test_inscription_id) = ord::setup_inscription_for_test(genesis_account);
+        ord::seal_metaprotocol_validity<Bitseed>(test_inscription_id, true, option::none());
+
+        let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f373764666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
+        let metadata = cbor::to_map(metadata_bytes);
+        let seed = vector::empty();
+        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed);
+        simple_map::drop(metadata);
+
+        assert!(!is_valid, 1);
+        assert!(option::borrow(&reason) == &std::string::utf8(b"tick not deploy"), 1);
+    }
+
+    #[test(genesis_account=@0x4)]
+    fun test_is_valid_bitseed_mint_fail_with_maximum_supply_exceeded(genesis_account: &signer){
+        genesis_init(genesis_account);
+
         let (_test_address, test_inscription_id) = ord::setup_inscription_for_test(genesis_account);
         ord::seal_metaprotocol_validity<Bitseed>(test_inscription_id, true, option::none());
 
         let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e74016a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f373764666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
         let metadata = cbor::to_map(metadata_bytes);
         let (is_valid, reason) = is_valid_bitseed_deploy(&metadata);
+        
+        assert!(is_valid, 1);
+        assert!(option::is_none(&reason), 1);
+
+        let (ok, reason) = deploy_tick(&metadata);
+        assert!(ok, 1);
+        assert!(option::is_none(&reason), 1);
+
         simple_map::drop(metadata);
+
+        let metadata_bytes = x"a4626f70646d696e74647469636b646d6f766566616d6f756e7418646a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f377864666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
+        let metadata = cbor::to_map(metadata_bytes);
+        let seed = vector::empty();
+        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed);
+        simple_map::drop(metadata);
+
+        assert!(!is_valid, 1);
+        assert!(option::borrow(&reason) == &std::string::utf8(b"maximum supply exceeded"), 1);
+    }
+
+    #[test(genesis_account=@0x4)]
+    fun test_is_valid_bitseed_mint_fail_with_user_input_is_required(genesis_account: &signer){
+        genesis_init(genesis_account);
+
+        let (_test_address, test_inscription_id) = ord::setup_inscription_for_test(genesis_account);
+        ord::seal_metaprotocol_validity<Bitseed>(test_inscription_id, true, option::none());
+
+        let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e741927106a61747472696275746573a466726570656174056967656e657261746f72784f2f696e736372697074696f6e2f3737646663326665353938343139623030363431633239363138316139366366313639343336393766353733343830623032336237376363653832616461323169306e6861735f757365725f696e707574f56b6465706c6f795f617267738178377b22686569676874223a7b2274797065223a2272616e6765222c2264617461223a7b226d696e223a312c226d6178223a313030307d7d7d";
+        let metadata = cbor::to_map(metadata_bytes);
+        let (is_valid, reason) = is_valid_bitseed_deploy(&metadata);
 
         assert!(is_valid, 1);
         assert!(option::is_none(&reason), 1);
+
+        let (ok, reason) = deploy_tick(&metadata);
+        assert!(ok, 1);
+        assert!(option::is_none(&reason), 1);
+
+        simple_map::drop(metadata);
+
+        let metadata_bytes = x"a4626f70646d696e74647469636b646d6f766566616d6f756e7418646a61747472696275746573a16967656e657261746f72784f2f696e736372697074696f6e2f377864666332666535393834313962303036343163323936313831613936636631363934333639376635373334383062303233623737636365383261646132316930";
+        let metadata = cbor::to_map(metadata_bytes);
+        let seed = vector::empty();
+        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed);
+        simple_map::drop(metadata);
+
+        assert!(!is_valid, 1);
+        assert!(option::borrow(&reason) == &std::string::utf8(b"metadata.attributes.user_input is required"), 1);
     }
 
+    /*
+    #[test(genesis_account=@0x4)]
+    fun test_is_valid_bitseed_mint_fail_with_wasm_verify_fail(genesis_account: &signer){
+        genesis_init(genesis_account);
+
+        let (_test_address, test_inscription_id) = ord::setup_inscription_for_test(genesis_account);
+        ord::seal_metaprotocol_validity<Bitseed>(test_inscription_id, true, option::none());
+
+        let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e741927106a61747472696275746573a466726570656174056967656e657261746f72784f2f696e736372697074696f6e2f3737646663326665353938343139623030363431633239363138316139366366313639343336393766353733343830623032336237376363653832616461323169306e6861735f757365725f696e707574f56b6465706c6f795f617267738178377b22686569676874223a7b2274797065223a2272616e6765222c2264617461223a7b226d696e223a312c226d6178223a313030307d7d7d";
+        let metadata = cbor::to_map(metadata_bytes);
+        let (is_valid, reason) = is_valid_bitseed_deploy(&metadata);
+
+        assert!(is_valid, 1);
+        assert!(option::is_none(&reason), 1);
+
+        let (ok, reason) = deploy_tick(&metadata);
+        assert!(ok, 1);
+        assert!(option::is_none(&reason), 1);
+
+        simple_map::drop(metadata);
+
+        let metadata_bytes = x"a4626f70646d696e74647469636b646d6f766566616d6f756e74016a61747472696275746573a16a757365725f696e70757463787878";
+        let metadata = cbor::to_map(metadata_bytes);
+        let seed = vector::empty();
+        let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed);
+        simple_map::drop(metadata);
+
+        std::debug::print(&reason);
+        assert!(!is_valid, 1);
+        assert!(option::borrow(&reason) == &std::string::utf8(b"inscribe verify fail"), 1);
+    }
+    */
 }
