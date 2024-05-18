@@ -37,7 +37,7 @@ pub static G_LOCAL_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
 });
 
 pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
-    bitcoin_network: crate::bitcoin::network::Network::Testnet.to_num(),
+    bitcoin_network: crate::bitcoin::network::Network::Regtest.to_num(),
     bitcoin_block_height: 0,
     timestamp: 0,
     sequencer_account: ROOCH_FRAMEWORK_ADDRESS,
@@ -46,11 +46,12 @@ pub static G_DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
 });
 
 pub static G_TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    // curl -sSL "https://mempool.space/testnet/api/block/000000009373df1134670bd45e75a6b8f1fb07610a9eeb7933ef266da9507cb9"
+    // curl -sSL "https://mempool.space/testnet/api/block/00000000000000076f7641550f6c5b37c7e383eae883545fa72c05aa7a7a65ef"
+
     GenesisConfig {
         bitcoin_network: crate::bitcoin::network::Network::Testnet.to_num(),
-        bitcoin_block_height: 2815983,
-        timestamp: 1715941066000,
+        bitcoin_block_height: 2816175,
+        timestamp: 1716012694000,
         sequencer_account: AccountAddress::from_hex_literal(
             "0xbe2701d15ccdc282caf8ca6647e7a54db5721f8bcb7b980b4d0c65a151bf74da",
         )
