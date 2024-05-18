@@ -46,7 +46,7 @@ pub fn release(version: StdlibVersion, check_compatibility: bool) -> Result<()> 
             );
         }
     }
-
+    version.create_dir()?;
     let curr_stdlib = build_stdlib(!version.is_latest())?;
     // check compatibility
     if let Some(pre_version) = pre_version {

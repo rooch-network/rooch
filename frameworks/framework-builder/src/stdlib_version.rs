@@ -59,6 +59,14 @@ impl StdlibVersion {
         release_dir().join(self.dir_with_file())
     }
 
+    pub fn create_dir(&self) -> Result<()> {
+        let dir = release_dir().join(self.to_string());
+        if dir.exists() {
+            return Ok(());
+        }
+        std::fs::create_dir_all(&dir).map_err(|e| anyhow!("Create dir {:?} failed: {:?}", dir, e))
+    }
+
     pub(crate) fn load_from_file(&self) -> Result<Stdlib> {
         let file = self.output_file();
         Stdlib::load_from_file(file)

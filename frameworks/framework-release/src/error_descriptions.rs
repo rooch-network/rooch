@@ -12,7 +12,7 @@ pub static ERROR_DESCRIPTIONS: Lazy<BTreeMap<AccountAddress, ErrorMapping>> = La
 
     let move_stdlib_err: ErrorMapping = bcs::from_bytes(
         STATIC_FRAMEWORK_DIR
-            .get_file("latest/error_descriptions/move_stdlib_error_description.errmap")
+            .get_file("latest/move_stdlib_error_description.errmap")
             .unwrap()
             .contents(),
     )
@@ -21,7 +21,7 @@ pub static ERROR_DESCRIPTIONS: Lazy<BTreeMap<AccountAddress, ErrorMapping>> = La
 
     let moveos_std_err: ErrorMapping = bcs::from_bytes(
         STATIC_FRAMEWORK_DIR
-            .get_file("latest/error_descriptions/moveos_stdlib_error_description.errmap")
+            .get_file("latest/moveos_stdlib_error_description.errmap")
             .unwrap()
             .contents(),
     )
@@ -30,7 +30,7 @@ pub static ERROR_DESCRIPTIONS: Lazy<BTreeMap<AccountAddress, ErrorMapping>> = La
 
     let rooch_framework_err: ErrorMapping = bcs::from_bytes(
         STATIC_FRAMEWORK_DIR
-            .get_file("latest/error_descriptions/rooch_framework_error_description.errmap")
+            .get_file("latest/rooch_framework_error_description.errmap")
             .unwrap()
             .contents(),
     )
@@ -40,7 +40,7 @@ pub static ERROR_DESCRIPTIONS: Lazy<BTreeMap<AccountAddress, ErrorMapping>> = La
 
     let bitcoin_move_err: ErrorMapping = bcs::from_bytes(
         STATIC_FRAMEWORK_DIR
-            .get_file("latest/error_descriptions/bitcoin_move_error_description.errmap")
+            .get_file("latest/bitcoin_move_error_description.errmap")
             .unwrap()
             .contents(),
     )
@@ -50,7 +50,7 @@ pub static ERROR_DESCRIPTIONS: Lazy<BTreeMap<AccountAddress, ErrorMapping>> = La
 
     let rooch_nursery_err: ErrorMapping = bcs::from_bytes(
         STATIC_FRAMEWORK_DIR
-            .get_file("latest/error_descriptions/rooch_nursery_error_description.errmap")
+            .get_file("latest/rooch_nursery_error_description.errmap")
             .unwrap()
             .contents(),
     )
