@@ -3746,8 +3746,10 @@ name = "framework-release"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bcs",
  "clap 4.5.4",
  "framework-builder",
+ "framework-types",
  "include_dir",
  "move-binary-format",
  "move-core-types",
@@ -8517,6 +8519,7 @@ dependencies = [
  "dirs 4.0.0",
  "fastcrypto",
  "framework-builder",
+ "framework-release",
  "framework-types",
  "hex",
  "itertools 0.10.5",
