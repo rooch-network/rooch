@@ -53,6 +53,10 @@ module bitcoin_move::bitcoin{
         tx_to_height: Table<address, u64>,
         /// tx id list, we can use this to scan txs
         tx_ids: TableVec<address>,
+        /// chain reorg branchlen
+        reorg_branchlen: Option<u64>,
+        /// chain reorg status
+        reorg_status: Option<String>,
     }
 
     public(friend) fun genesis_init(_genesis_account: &signer, genesis_block_height: u64){
@@ -65,6 +69,8 @@ module bitcoin_move::bitcoin{
             txs: table::new(),
             tx_to_height: table::new(),
             tx_ids: table_vec::new(),
+            reorg_branchlen: option::none(),
+            reorg_status: option::none(),
         };
         let obj = object::new_named_object(btc_block_store);
         object::to_shared(obj);
@@ -87,11 +93,61 @@ module bitcoin_move::bitcoin{
 
         let block = bcs::from_bytes<Block>(block_bytes);
         process_txs(btc_block_store, &block, block_height);
-        let block_header = types::header(&block);
+        btc_block_store.reorg_status = option::some(string::utf8(b"active")); // reorg status is always active for newest block
+        btc_block_store.reorg_branchlen = option::some(0); // reorg branchlen is always 0 for newest block
 
+        // Here it means there already has an old block at the same height previously executed into the btc_block_store
+        // There needs to have a further progress to the next block of this block to detect if this block is the new longest chain
+        // If so, discard the old block and mark the old block as the valid-fork, otherwise, ignore the new block at the same height and mark the new block as the valid-headers or headers-only status
         if(table::contains(&btc_block_store.height_to_hash, block_height)){
-            //TODO handle reorg
+            // Chain reorganizations: https://learnmeabitcoin.com/technical/blockchain/chain-reorganisation/
+            // Save the second block at the same height with different hash as a stale block
+            // Chain reorg happens in two status: valid-fork and valid-headers
+            // In valid-fork, it performs chain-reorg to discard the old block and apply to the new longest chain
+            // In valid-hearders, it ignores the new block and continues to the next of the old block as the new longest chain
+            // API docs: https://developer.bitcoin.org/reference/rpc/getchaintips.html
+            let new_height = block_height + 1;
+            let new_block_hash = *table::borrow(&btc_block_store.height_to_hash, new_height);
+            std::debug::print(&new_block_hash);
+            let new_block_header_opt = option::some(*table::borrow(&btc_block_store.blocks, new_block_hash));
+            let new_block_header = option::extract<Header>(&mut new_block_header_opt);
+            std::debug::print(&new_block_header);
+            // Get the previous block hash and (TODO) merkle root hash
+            let prev_block_hash = types::prev_blockhash(&new_block_header);
+            // Perform the check set
+            std::debug::print(&prev_block_hash);
+            std::debug::print(&block_hash);
+            if (prev_block_hash == block_hash) {
+                // Perform chain reorg
+                //     NH
+                //     |
+                // H1  H2
+                // |
+                // PH
+                // Set valid-fork status to H1 and H2
+                btc_block_store.reorg_status = option::some(string::utf8(b"valid-fork"));
+                // Slash the old block from btc_block_store
+                table::remove(&mut btc_block_store.height_to_hash, block_height);
+                let old_block_hash = *table::borrow(&btc_block_store.height_to_hash, block_height);
+                table::remove(&mut btc_block_store.hash_to_height, old_block_hash);
+                table::remove(&mut btc_block_store.blocks, old_block_hash);
+            } else {
+                // Observe a possible chain reorg
+                // NH
+                // |
+                // H1  H2
+                // |
+                // PV
+                // Set valid-hearders status to H1 and H2
+                btc_block_store.reorg_status = option::some(string::utf8(b"valid-hearders"));
+                let block_header = types::header(&block);
+                let time = types::time(block_header);
+                return time
+            };
+            // get the tx count of the competing chain of blocks, normally, it would be 0 for the active or 1 for the valid-fork and valid-hearders status
+            btc_block_store.reorg_branchlen = option::some(1); // TODO: calculate the exact txs count
         };
+        let block_header = types::header(&block);
         let time = types::time(block_header);
         table::add(&mut btc_block_store.height_to_hash, block_height, block_hash);
         table::add(&mut btc_block_store.hash_to_height, block_hash, block_height);
