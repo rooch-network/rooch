@@ -1,4 +1,5 @@
 {
+  "vapp":"VApp",
   "accounts": "Account",
   "transaction": "Transaction",
   "objects": "Object",

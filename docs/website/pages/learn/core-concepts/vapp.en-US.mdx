@@ -1,0 +1,22 @@
+# VApp
+
+**VApp** stands for Verifiable Application. A Verifiable Application aims to ensure the verifiability of both computations and states within the application, thereby guaranteeing the transparency and reliability of its operations.
+
+## Key Differences
+
+- **Difference from DApp**: Decentralized Applications (DApps) emphasize decentralization, whereas VApps focus on the verifiability of components. VApps can initially be implemented in a centralized manner, provided they meet verifiability standards, and then gradually transition to DApps.
+- **Difference from Fully On-Chain App**: Fully on-chain applications emphasize that all computations and states are managed on the blockchain. In contrast, VApps stress the verifiability of computations and states, which can be hosted off-chain. This approach offers greater flexibility in application architecture and lower startup costs for the application.
+
+## VApp Container
+
+The container that provides an operating environment for VApps is known as the **VApp Container**. From a software engineering and single-node perspective, `rooch` serves as a **VApp Container**. It utilizes Move smart contracts to ensure the verifiability of computations and a state tree to guarantee the verifiability of states.
+
+### Components of the Rooch VApp Container
+
+The Rooch VApp Container includes several key modules designed to support and ensure the operation and verifiability of applications:
+
+![VApp Container](/blog/bitcoin-application-layer/vapp-container.svg)
+
+1. **MoveOS**: Includes MoveVM and a layered state tree, providing an execution environment for applications and maintaining their state, ensuring the verifiability of both computations and states.
+2. **Move Basic Library and Framework**: Comprises Move Stdlib, MoveOS Stdlib, RoochFramework, BitcoinMove, etc. These components offer foundational functionalities such as account abstraction, asset definition, and execution of Bitcoin protocols.
+3. **Basic Development Tools**: Includes RPC interfaces, indexing services, and an SDK to support application development and integration.
