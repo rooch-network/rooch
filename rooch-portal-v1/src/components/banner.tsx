@@ -18,12 +18,12 @@ export const Banner: React.FC<BannerProps> = ({ onClose }) => {
             <span className="sr-only">Rooch</span>
           </span>
           <span>
-            Rooch BTC Layer2 is comming soon{' '}
+            Learn more about{' '}
             <a
               href="https://rooch.network/"
               className="inline font-medium text-blue-600 underline dark:text-blue-500 underline-offset-2 decoration-600 dark:decoration-500 decoration-solid hover:text-blue-500 dark:hover:text-blue-400 transition-all"
             >
-              Learn more
+              Rooch
             </a>
             .
           </span>
