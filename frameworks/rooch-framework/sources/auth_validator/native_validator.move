@@ -137,15 +137,7 @@ module rooch_framework::native_validator {
 
     fun pre_execute() {}
 
-    fun post_execute() {
-        let account_addr = tx_context::sender();
-        let auth_key_option = account_authentication::get_authentication_key<NativeValidator>(account_addr);
-        // If the account does not have an authentication key, set the account address as the authentication key after the first transaction is executed.
-        if (option::is_none(&auth_key_option)) {
-            let authentication_key = default_authentication_key(account_addr);
-            rotate_authentication_key(account_addr, authentication_key);
-        }
-    }
+    fun post_execute() {}
 
     // this test ensures that the Rooch native public_key_to_address function is compatible with the one in the rust code
     #[test]

@@ -23,8 +23,6 @@ type ClientConfiguration = {
   client: RoochClient
   storage: StateStorage
   storageKey: string
-  // session: RoochSessionAccount[]
-  // currentSession?: RoochSessionAccount
 }
 
 export function createSessionStore({ client, storage, storageKey }: ClientConfiguration) {

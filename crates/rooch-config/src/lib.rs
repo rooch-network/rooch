@@ -8,14 +8,12 @@ use std::{fmt::Debug, path::Path, path::PathBuf};
 
 use anyhow::Result;
 use clap::Parser;
+use moveos_config::{temp_dir, DataDirPath};
 use once_cell::sync::Lazy;
 use rand::Rng;
-use serde::{Deserialize, Serialize};
-
-use moveos_config::{temp_dir, DataDirPath};
-use rooch_types::bitcoin::network::Network;
-use rooch_types::chain_id::RoochChainID;
 use rooch_types::crypto::RoochKeyPair;
+use rooch_types::rooch_network::{BuiltinChainID, RoochChainID};
+use serde::{Deserialize, Serialize};
 
 use crate::da_config::DAConfig;
 use crate::store_config::StoreConfig;
@@ -113,19 +111,9 @@ pub struct RoochOpt {
     pub btc_rpc_password: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long, env = "BTC_START_BLOCK_HEIGHT")]
-    /// The start block height of the Bitcoin chain to start relaying from, default is latest.
-    pub btc_start_block_height: Option<u64>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long, env = "BTC_END_BLOCK_HEIGHT")]
     /// The end block height of the Bitcoin chain to stop relaying from, default is none.
     pub btc_end_block_height: Option<u64>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[clap(long)]
-    /// The bitcoin network, default is regtest.
-    pub btc_network: Option<u8>,
 
     /// The address of the sequencer account
     #[clap(long)]
@@ -133,9 +121,6 @@ pub struct RoochOpt {
     /// The address of the proposer account
     #[clap(long)]
     pub proposer_account: Option<String>,
-    /// The address of the relayer account
-    #[clap(long)]
-    pub relayer_account: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[clap(long)]
@@ -164,19 +149,16 @@ impl RoochOpt {
 
         RoochOpt {
             base_data_dir: Some(random_dir),
-            chain_id: Some(RoochChainID::LOCAL),
+            chain_id: Some(BuiltinChainID::Local.into()),
             store: StoreConfig::default(),
             port: None,
             eth_rpc_url: None,
             btc_rpc_url: None,
             btc_rpc_username: None,
             btc_rpc_password: None,
-            btc_start_block_height: None,
             btc_end_block_height: None,
-            btc_network: Some(Network::default().to_num()),
             sequencer_account: None,
             proposer_account: None,
-            relayer_account: None,
             da: None,
             data_import_flag: false,
         }
@@ -207,7 +189,6 @@ impl RoochOpt {
             btc_rpc_url: self.btc_rpc_url.clone().unwrap(),
             btc_rpc_user_name: self.btc_rpc_username.clone().unwrap(),
             btc_rpc_password: self.btc_rpc_password.clone().unwrap(),
-            btc_start_block_height: self.btc_start_block_height,
             btc_end_block_height: self.btc_end_block_height,
         })
     }
@@ -227,7 +208,6 @@ pub struct BitcoinRelayerConfig {
     pub btc_rpc_url: String,
     pub btc_rpc_user_name: String,
     pub btc_rpc_password: String,
-    pub btc_start_block_height: Option<u64>,
     pub btc_end_block_height: Option<u64>,
 }
 
@@ -283,7 +263,6 @@ pub struct ServerOpt {
     /// Sequencer, proposer and relayer keypair
     pub sequencer_keypair: Option<RoochKeyPair>,
     pub proposer_keypair: Option<RoochKeyPair>,
-    pub relayer_keypair: Option<RoochKeyPair>,
     pub active_env: Option<String>,
 }
 
@@ -302,7 +281,6 @@ impl ServerOpt {
         ServerOpt {
             sequencer_keypair: None,
             proposer_keypair: None,
-            relayer_keypair: None,
             active_env: None,
         }
     }

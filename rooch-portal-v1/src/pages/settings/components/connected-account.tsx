@@ -1,5 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -10,27 +11,53 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Copy, Unplug } from 'lucide-react'
-import { formatAddress } from '../../../utils/format'
-import { useWalletStore } from '@roochnetwork/rooch-sdk-kit'
-
-const networks = [
-  {
-    network: 'Bitcoin',
-    address: 'bc1pr6mdxnc348lua02c32ad4uyyaw3kavjz4c8jzkh5ffvuq4ryvxhsf879j5',
-    status: true,
-  },
-  {
-    network: 'Ethereum',
-    address: '0xa4Baa73f17719173Ce5f31556349c5e1D5c8BB51',
-    status: false,
-  },
-]
+import { Copy, Check, CircleUser } from 'lucide-react'
+import { formatAddress } from '@/utils/format.ts'
+import { useCurrentAccount } from '@roochnetwork/rooch-sdk-kit'
+import toast from 'react-hot-toast'
 
 export const ConnectedAccount = () => {
-  const account = useWalletStore((state) => state.currentAccount)
+  const account = useCurrentAccount()
+  const [copied, setCopied] = useState(false)
 
-  console.log(account?.address)
+  const handleClickCopy = () => {
+    const textToCopy = account?.address || ''
+
+    if (!account) {
+      toast('Please connect your wallet', {
+        icon: '✨',
+      })
+      return
+    }
+
+    navigator.clipboard
+      .writeText(textToCopy)
+      .then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      })
+      .catch((err) => {
+        console.error('Failed to copy:', err)
+      })
+  }
+
+  if (!account) {
+    return (
+      <div className="relative p-40">
+        <div className="absolute inset-0 bg-inherit bg-opacity-50 flex justify-center items-center">
+          {account ? (
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          ) : (
+            <div className="flex flex-col items-center justify-center text-center">
+              <CircleUser className="w-12 h-12 mb-4 text-gray-500" />
+              <p className="text-xl text-zinc-500 font-semibold">Could not find your account</p>
+              <p className="text-sm text-muted-foreground mt-2">Please connect to wallet.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="rounded-lg border w-full">
@@ -39,78 +66,37 @@ export const ConnectedAccount = () => {
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">Networks</TableHead>
-            <TableHead>Address</TableHead>
-            <TableHead className="text-center">Action</TableHead>
+            <TableHead className="text-right">Address</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {networks.map((network) => (
-            <TableRow key={network.network}>
-              <TableCell className="font-medium">{network.network}</TableCell>
-              {network.network === 'Ethereum' ? (
-                <>
-                  {/* ETH Comming soon */}
-                  <TableCell>
-                    <span className="flex items-center justify-start gap-0.5 text-muted-foreground">
-                      Coming soon ⌛️
-                    </span>
-                  </TableCell>
-                  <TableCell></TableCell>
-                </>
-              ) : (
-                <>
-                  {/* BTC */}
-                  <TableCell className="hidden md:table-cell">
-                    <span className="flex items-center justify-start gap-0.5 text-muted-foreground">
-                      {account?.address ? (
-                        <>
-                          <p>{formatAddress(account.address)}</p>
-                          <Button variant="ghost" size="icon" className=" w-6 h-6">
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                        </>
+          <TableRow>
+            <TableCell className="font-medium">Bitcoin</TableCell>
+            <TableCell className="text-right">
+              <span className="flex items-center justify-end gap-0.5 text-muted-foreground">
+                {account?.address ? (
+                  <>
+                    <p className="hidden md:block">{account.address}</p>
+                    <p className="md:hidden">{formatAddress(account.address)}</p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="w-6 h-6"
+                      onClick={handleClickCopy}
+                    >
+                      {copied ? (
+                        <Check className="w-3 h-3 text-green-500" />
                       ) : (
-                        <p>No account found</p>
-                      )}
-                    </span>
-                  </TableCell>
-                  <TableCell className="md:hidden">
-                    <span className="flex items-center justify-start gap-0.5 text-muted-foreground">
-                      {account?.address ? (
-                        <p>{formatAddress(account.address)}</p>
-                      ) : (
-                        <p>Connect your wallet</p>
-                      )}
-                      <Button variant="ghost" size="icon" className=" w-6 h-6">
                         <Copy className="w-3 h-3" />
-                      </Button>
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {account?.address ? (
-                      <Button
-                        variant="link"
-                        size="sm"
-                        className="text-red-500 dark:text-red-400 dark:hover:text-red-300 hover:text-red-600"
-                      >
-                        <Unplug className="h-4 w-4 mr-1" />
-                        Disconnect
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="link"
-                        size="sm"
-                        className="text-green-500 dark:text-green-400 dark:hover:text-green-300 hover:text-green-600"
-                      >
-                        <Unplug className="h-4 w-4 mr-1" />
-                        Connect Wallet
-                      </Button>
-                    )}
-                  </TableCell>
-                </>
-              )}
-            </TableRow>
-          ))}
+                      )}
+                    </Button>
+                  </>
+                ) : (
+                  <p>No account found</p>
+                )}
+              </span>
+            </TableCell>
+          </TableRow>
         </TableBody>
       </Table>
     </div>

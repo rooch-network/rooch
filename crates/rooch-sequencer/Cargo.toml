@@ -1,6 +1,6 @@
 [package]
 name = "rooch-sequencer"
-version = "0.1.0"
+version = "0.4.1"
 
 # Workspace inherited keys
 authors = { workspace = true }

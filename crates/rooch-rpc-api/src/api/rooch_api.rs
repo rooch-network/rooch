@@ -142,19 +142,6 @@ pub trait RoochAPI {
         descending_order: Option<bool>,
     ) -> RpcResult<IndexerObjectStatePageView>;
 
-    #[deprecated(note = "please use `queryObjectStates` instead")]
-    #[method(name = "queryGlobalStates")]
-    async fn query_global_states(
-        &self,
-        filter: ObjectStateFilterView,
-        cursor: Option<IndexerStateID>,
-        limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
-    ) -> RpcResult<IndexerObjectStatePageView> {
-        self.query_object_states(filter, cursor, limit, descending_order)
-            .await
-    }
-
     /// Query the Object field states indexer by state filter
     #[method(name = "queryFieldStates")]
     async fn query_field_states(
@@ -165,18 +152,4 @@ pub trait RoochAPI {
         limit: Option<StrView<usize>>,
         descending_order: Option<bool>,
     ) -> RpcResult<IndexerFieldStatePageView>;
-
-    #[deprecated(note = "please use `queryFieldStates` instead")]
-    #[method(name = "queryTableStates")]
-    async fn query_table_states(
-        &self,
-        filter: FieldStateFilterView,
-        // exclusive cursor if `Some`, otherwise start from the beginning
-        cursor: Option<IndexerStateID>,
-        limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
-    ) -> RpcResult<IndexerFieldStatePageView> {
-        self.query_field_states(filter, cursor, limit, descending_order)
-            .await
-    }
 }

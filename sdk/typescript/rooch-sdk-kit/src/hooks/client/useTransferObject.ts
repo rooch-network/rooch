@@ -42,7 +42,6 @@ export function useTransferObject({
         return
       }
 
-      // 0xaaaadc4b88a708974d83102d057bff125ac450df2da21432fd7b46534caa46a9
       const result = await client.executeTransaction({
         address: args.account.getAddress(),
         authorizer: args.account.getAuthorizer(),

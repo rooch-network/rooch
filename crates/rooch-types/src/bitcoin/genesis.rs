@@ -12,6 +12,7 @@ pub const MODULE_NAME: &IdentStr = ident_str!("genesis");
 pub struct BitcoinGenesisContext {
     /// The bitcoin network
     pub network: u8,
+    pub genesis_block_height: u64,
 }
 
 impl MoveStructType for BitcoinGenesisContext {
@@ -24,12 +25,16 @@ impl MoveStructState for BitcoinGenesisContext {
     fn struct_layout() -> move_core_types::value::MoveStructLayout {
         move_core_types::value::MoveStructLayout::new(vec![
             move_core_types::value::MoveTypeLayout::U8,
+            move_core_types::value::MoveTypeLayout::U64,
         ])
     }
 }
 
 impl BitcoinGenesisContext {
-    pub fn new(network: u8) -> Self {
-        Self { network }
+    pub fn new(network: u8, genesis_block_height: u64) -> Self {
+        Self {
+            network,
+            genesis_block_height,
+        }
     }
 }

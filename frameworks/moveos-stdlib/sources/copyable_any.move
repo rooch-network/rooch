@@ -4,13 +4,14 @@
 /// Source from https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-stdlib/sources/copyable_any.move
 
 module moveos_std::copyable_any {
-    
+    use std::option;
     use std::string::String;
     use moveos_std::type_info;
     use moveos_std::bcs;
 
     /// The type provided for `unpack` is not the same as was given for `pack`.
     const ErrorTypeMismatch: u64 = 1;
+    const ErrorInvalidBytes: u64 = 2;
 
     /// The same as `any::Any` but with the copy ability.
     struct Any has drop, store, copy {
@@ -30,7 +31,9 @@ module moveos_std::copyable_any {
     /// Unpack a value from the `Any` representation. This aborts if the value has not the expected type `T`.
     public fun unpack<T>(x: Any): T {
         assert!(type_info::type_name<T>() == x.type_name, ErrorTypeMismatch);
-        bcs::native_from_bytes<T>(x.data)
+        let opt_result = bcs::native_from_bytes<T>(x.data);
+        assert!(option::is_some(&opt_result), ErrorInvalidBytes);
+        option::destroy_some(opt_result)
     }
 
     /// Returns the type name of this Any

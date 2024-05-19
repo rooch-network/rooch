@@ -44,11 +44,10 @@ impl SqliteIndexerStore {
             .into_iter()
             .map(|state| {
                 format!(
-                    "('{}', '{}', {}, '{}', '{}', '{}', {}, {}, {}, {}, {})",
+                    "('{}', '{}', {}, '{}', '{}', {}, {}, {}, {}, {})",
                     escape_sql_string(state.object_id),
                     escape_sql_string(state.owner),
                     state.flag,
-                    escape_sql_string(state.value),
                     escape_sql_string(state.object_type),
                     escape_sql_string(state.state_root),
                     state.size,
@@ -62,12 +61,11 @@ impl SqliteIndexerStore {
             .join(",");
         let query = format!(
             "
-                INSERT INTO object_states (object_id, owner, flag, value, object_type, state_root, size, tx_order, state_index, created_at, updated_at) \
+                INSERT INTO object_states (object_id, owner, flag, object_type, state_root, size, tx_order, state_index, created_at, updated_at) \
                 VALUES {} \
                 ON CONFLICT (object_id) DO UPDATE SET \
                 owner = excluded.owner, \
                 flag = excluded.flag, \
-                value = excluded.value, \
                 state_root = excluded.state_root, \
                 size = excluded.size, \
                 tx_order = excluded.tx_order, \
@@ -141,11 +139,10 @@ impl SqliteIndexerStore {
             .into_iter()
             .map(|state| {
                 format!(
-                    "('{}', '{}', '{}', '{}', '{}', '{}', {}, {}, {}, {})",
+                    "('{}', '{}', '{}', '{}', '{}', {}, {}, {}, {})",
                     escape_sql_string(state.object_id),
                     escape_sql_string(state.key_hex),
                     escape_sql_string(state.key_str),
-                    escape_sql_string(state.value),
                     escape_sql_string(state.key_type),
                     escape_sql_string(state.value_type),
                     state.tx_order,
@@ -158,10 +155,9 @@ impl SqliteIndexerStore {
             .join(",");
         let query = format!(
             "
-                INSERT INTO field_states (object_id, key_hex, key_str, value, key_type, value_type, tx_order, state_index, created_at, updated_at) \
+                INSERT INTO field_states (object_id, key_hex, key_str, key_type, value_type, tx_order, state_index, created_at, updated_at) \
                 VALUES {} \
                 ON CONFLICT (object_id, key_hex) DO UPDATE SET \
-                value = excluded.value, \
                 value_type = excluded.value_type, \
                 tx_order = excluded.tx_order, \
                 state_index = excluded.state_index, \

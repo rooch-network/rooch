@@ -81,6 +81,8 @@ impl<'a> BitcoinModule<'a> {
     pub const GET_UTXO_FUNCTION_NAME: &'static IdentStr = ident_str!("get_utxo");
     pub const SUBMIT_NEW_BLOCK_ENTRY_FUNCTION_NAME: &'static IdentStr =
         ident_str!("submit_new_block");
+    pub const GET_GENESIS_BLOCK_HEIGHT_FUNCTION_NAME: &'static IdentStr =
+        ident_str!("get_genesis_block_height");
     // pub const PROCESS_UTXOS_ENTRY_FUNCTION_NAME: &'static IdentStr = ident_str!("process_utxos");
 
     pub fn get_block(&self, block_hash: BlockHash) -> Result<Option<Header>> {
@@ -154,6 +156,24 @@ impl<'a> BitcoinModule<'a> {
                     .expect("should be a valid MoveOption<u64>")
             })?;
         Ok(height.into())
+    }
+
+    pub fn get_genesis_block_height(&self) -> Result<u64> {
+        let call = Self::create_function_call(
+            Self::GET_GENESIS_BLOCK_HEIGHT_FUNCTION_NAME,
+            vec![],
+            vec![],
+        );
+        let ctx = TxContext::new_readonly_ctx(AccountAddress::ZERO);
+        let height = self
+            .caller
+            .call_function(&ctx, call)?
+            .into_result()
+            .map(|mut values| {
+                let value = values.pop().expect("should have one return value");
+                bcs::from_bytes::<u64>(&value.value).expect("should be a valid u64")
+            })?;
+        Ok(height)
     }
 
     pub fn create_submit_new_block_call(block_height: u64, block: bitcoin::Block) -> FunctionCall {

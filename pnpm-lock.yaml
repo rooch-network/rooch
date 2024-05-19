@@ -495,11 +495,11 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7(@types/react-dom@18.2.17)(@types/react@18.2.63)(react-dom@18.2.0)(react@18.2.0)
       '@roochnetwork/rooch-sdk':
-        specifier: 0.1.1
-        version: 0.1.1
+        specifier: 0.1.2
+        version: 0.1.2
       '@roochnetwork/rooch-sdk-kit':
-        specifier: 0.1.1
-        version: 0.1.1(@types/react@18.2.63)(react-native@0.72.4)
+        specifier: 0.1.2
+        version: 0.1.2(@types/react@18.2.63)(react-native@0.72.4)
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.12.2(react@18.2.0)
@@ -536,6 +536,9 @@ importers:
       react-jazzicon:
         specifier: ^1.0.4
         version: 1.0.4(react-dom@18.2.0)(react@18.2.0)
+      react-loading-skeleton:
+        specifier: ^3.4.0
+        version: 3.4.0(react@18.2.0)
       react-router-dom:
         specifier: ^6.22.0
         version: 6.22.2(react-dom@18.2.0)(react@18.2.0)
@@ -1840,6 +1843,16 @@ packages:
       '@babel/core': 7.23.5
       '@babel/helper-plugin-utils': 7.22.5
 
+  /@babel/plugin-syntax-flow@7.22.5(@babel/core@7.22.11):
+    resolution: {integrity: sha512-9RdCl0i+q0QExayk2nOS7853w08yLucnnPML6EN9S8fgMPVtdLDCdx/cOQ/i44Lb9UeQX9A35yaqBBOMMZxPxQ==}
+    engines: {node: '>=6.9.0'}
+    peerDependencies:
+      '@babel/core': ^7.0.0-0
+    dependencies:
+      '@babel/core': 7.22.11
+      '@babel/helper-plugin-utils': 7.22.5
+    dev: true
+
   /@babel/plugin-syntax-flow@7.22.5(@babel/core@7.23.0):
     resolution: {integrity: sha512-9RdCl0i+q0QExayk2nOS7853w08yLucnnPML6EN9S8fgMPVtdLDCdx/cOQ/i44Lb9UeQX9A35yaqBBOMMZxPxQ==}
     engines: {node: '>=6.9.0'}
@@ -1930,6 +1943,16 @@ packages:
     dependencies:
       '@babel/core': 7.23.5
       '@babel/helper-plugin-utils': 7.22.5
+
+  /@babel/plugin-syntax-jsx@7.22.5(@babel/core@7.22.11):
+    resolution: {integrity: sha512-gvyP4hZrgrs/wWMaocvxZ44Hw0b3W8Pe+cMxc8V1ULQ07oh8VNbIRaoD1LRZVTvD+0nieDKjfgKg89sD7rrKrg==}
+    engines: {node: '>=6.9.0'}
+    peerDependencies:
+      '@babel/core': ^7.0.0-0
+    dependencies:
+      '@babel/core': 7.22.11
+      '@babel/helper-plugin-utils': 7.22.5
+    dev: true
 
   /@babel/plugin-syntax-jsx@7.22.5(@babel/core@7.23.0):
     resolution: {integrity: sha512-gvyP4hZrgrs/wWMaocvxZ44Hw0b3W8Pe+cMxc8V1ULQ07oh8VNbIRaoD1LRZVTvD+0nieDKjfgKg89sD7rrKrg==}
@@ -2994,6 +3017,20 @@ packages:
     dependencies:
       '@babel/core': 7.23.5
       '@babel/helper-plugin-utils': 7.22.5
+
+  /@babel/plugin-transform-react-jsx@7.22.5(@babel/core@7.22.11):
+    resolution: {integrity: sha512-rog5gZaVbUip5iWDMTYbVM15XQq+RkUKhET/IHR6oizR+JEoN6CAfTTuHcK4vwUyzca30qqHqEpzBOnaRMWYMA==}
+    engines: {node: '>=6.9.0'}
+    peerDependencies:
+      '@babel/core': ^7.0.0-0
+    dependencies:
+      '@babel/core': 7.22.11
+      '@babel/helper-annotate-as-pure': 7.22.5
+      '@babel/helper-module-imports': 7.22.5
+      '@babel/helper-plugin-utils': 7.22.5
+      '@babel/plugin-syntax-jsx': 7.22.5(@babel/core@7.22.11)
+      '@babel/types': 7.23.0
+    dev: true
 
   /@babel/plugin-transform-react-jsx@7.22.5(@babel/core@7.23.0):
     resolution: {integrity: sha512-rog5gZaVbUip5iWDMTYbVM15XQq+RkUKhET/IHR6oizR+JEoN6CAfTTuHcK4vwUyzca30qqHqEpzBOnaRMWYMA==}
@@ -9417,14 +9454,14 @@ packages:
     dev: true
     optional: true
 
-  /@roochnetwork/rooch-sdk-kit@0.1.1(@types/react@18.2.63)(react-native@0.72.4):
-    resolution: {integrity: sha512-xsy18JfDZ8KyIN+O1pnzbpQ9i8xDZJOpY+lqbUuGRn82YvPu3qcvRzQ1NUilZ9atxbebHtZ5VaNrDDswkUx9qA==}
+  /@roochnetwork/rooch-sdk-kit@0.1.2(@types/react@18.2.63)(react-native@0.72.4):
+    resolution: {integrity: sha512-3ZGiGr+BXaYT30VNvWwncXZncafd+UGVVQdqFP9vNIcl4aNRvQCem625Tva/lpmiPl52Tf85Atm1QbOq/s8bHg==}
     engines: {node: '>=18.0.0'}
     dependencies:
       '@metamask/detect-provider': 2.0.0
       '@metamask/sdk': 0.14.1(@types/react@18.2.63)(react-dom@18.2.0)(react-native@0.72.4)(react@18.2.0)
       '@noble/hashes': 1.3.2
-      '@roochnetwork/rooch-sdk': 0.1.0
+      '@roochnetwork/rooch-sdk': 0.1.2
       '@tanstack/react-query': 5.12.2(react@18.2.0)
       base58-js: 1.0.5
       bech32: 2.0.0
@@ -9446,29 +9483,8 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@roochnetwork/rooch-sdk@0.1.0:
-    resolution: {integrity: sha512-mx4jaZYWAmjYB6NnmCgr5QxVhT3S5FSIQbhDtkeyoOKI2d1i2m4T86aIpZLBuW27GuWZR1eGq/ecDhAK4cvJ8Q==}
-    engines: {node: '>=18.0.0'}
-    dependencies:
-      '@ethersproject/bytes': 5.7.0
-      '@kayahr/text-encoding': 1.2.0
-      '@noble/hashes': 1.3.2
-      '@open-rpc/client-js': 1.8.1
-      '@scure/bip39': 1.2.1
-      '@suchipi/femver': 1.0.0
-      '@types/ws': 8.5.5
-      events: 3.3.0
-      isomorphic-fetch: 3.0.0
-      superstruct: 1.0.3
-      tweetnacl: 1.0.3
-    transitivePeerDependencies:
-      - bufferutil
-      - encoding
-      - utf-8-validate
-    dev: false
-
-  /@roochnetwork/rooch-sdk@0.1.1:
-    resolution: {integrity: sha512-NcJ1PgMnGj0glp62CGPGl9cH30wN4o3LeUi5TXHeMS6Y+rvc7rfM/VsxmungaiWYp90qd+UnCSxPSL2y2vzONg==}
+  /@roochnetwork/rooch-sdk@0.1.2:
+    resolution: {integrity: sha512-SdddLSPC/8XnNSU67Ufp9BtgNb/vHjxsskuAdLg7/aSm2PxUqL4RLvFEzoRKmjfIM/qh1auu4b7NHNo5INeSyA==}
     engines: {node: '>=18.0.0'}
     dependencies:
       '@ethersproject/bytes': 5.7.0
@@ -13873,8 +13889,8 @@ packages:
       '@babel/plugin-transform-react-jsx': ^7.14.9
       eslint: ^8.1.0
     dependencies:
-      '@babel/plugin-syntax-flow': 7.22.5(@babel/core@7.23.5)
-      '@babel/plugin-transform-react-jsx': 7.22.5(@babel/core@7.23.5)
+      '@babel/plugin-syntax-flow': 7.22.5(@babel/core@7.22.11)
+      '@babel/plugin-transform-react-jsx': 7.22.5(@babel/core@7.22.11)
       eslint: 8.48.0
       lodash: 4.17.21
       string-natural-compare: 3.0.1
@@ -19655,6 +19671,14 @@ packages:
 
   /react-lifecycles-compat@3.0.4:
     resolution: {integrity: sha512-fBASbA6LnOU9dOU2eW7aQ8xmYBSXUIWr+UmF9b1efZBazGNO+rcXT/icdKnYm2pTwcRylVUYwW7H1PHfLekVzA==}
+    dev: false
+
+  /react-loading-skeleton@3.4.0(react@18.2.0):
+    resolution: {integrity: sha512-1oJEBc9+wn7BbkQQk7YodlYEIjgeR+GrRjD+QXkVjwZN7LGIcAFHrx4NhT7UHGBxNY1+zax3c+Fo6XQM4R7CgA==}
+    peerDependencies:
+      react: '>=16.8.0'
+    dependencies:
+      react: 18.2.0
     dev: false
 
   /react-native-codegen@0.71.5(@babel/preset-env@7.22.14):

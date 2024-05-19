@@ -1,3 +1,5 @@
-crates/rooch-framework/doc linguist-generated=true
-moveos/moveos-stdlib/move-stdlib/doc linguist-generated=true
-moveos/moveos-stdlib/moveos-stdlib/doc linguist-generated=true
+frameworks/rooch-framework/doc linguist-generated=true
+frameworks/move-stdlib/doc linguist-generated=true
+frameworks/moveos-stdlib/doc linguist-generated=true
+frameworks/bitcoin-move/doc linguist-generated=true
+frameworks/rooch-nursery/doc linguist-generated=true

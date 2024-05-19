@@ -460,7 +460,7 @@ impl fmt::Display for BitcoinAddress {
         // Write the Bitcoin address as a hexadecimal string
         // Default format as bitcoin mainnet address
         let bitcoin_address = self
-            .format(network::Network::NetworkBitcoin.to_num())
+            .format(network::Network::Bitcoin.to_num())
             .map_err(|e| std::fmt::Error::custom(e.to_string()))?;
         write!(fmt, "{}", bitcoin_address)
     }
@@ -478,7 +478,7 @@ impl BitcoinAddress {
     }
 
     pub fn get_pubkey_address_prefix(network: u8) -> u8 {
-        if network::Network::NetworkBitcoin.to_num() == network {
+        if network::Network::Bitcoin.to_num() == network {
             bitcoin::constants::PUBKEY_ADDRESS_PREFIX_MAIN
         } else {
             bitcoin::constants::PUBKEY_ADDRESS_PREFIX_TEST
@@ -486,7 +486,7 @@ impl BitcoinAddress {
     }
 
     pub fn get_script_address_prefix(network: u8) -> u8 {
-        if network::Network::NetworkBitcoin.to_num() == network {
+        if network::Network::Bitcoin.to_num() == network {
             bitcoin::constants::SCRIPT_ADDRESS_PREFIX_MAIN
         } else {
             bitcoin::constants::SCRIPT_ADDRESS_PREFIX_TEST
@@ -571,7 +571,7 @@ impl MoveStructState for BitcoinAddress {
 
 impl RoochSupportedAddress for BitcoinAddress {
     fn random() -> Self {
-        let bitcoin_network = Network::from(network::Network::NetworkRegtest);
+        let bitcoin_network = Network::from(network::Network::Regtest);
 
         let secp = Secp256k1::new();
         let p2pkh_address = Address::p2pkh(
@@ -865,7 +865,7 @@ mod test {
         let bitcoin_address = BitcoinAddress {
             bytes: bytes.clone(),
         };
-        let address_str = bitcoin_address.format(network::Network::NetworkBitcoin.to_num())?;
+        let address_str = bitcoin_address.format(network::Network::Bitcoin.to_num())?;
         println!("test_bitcoin_address bitcoin address {} ", address_str);
         let maddress = MultiChainAddress::new(RoochMultiChainID::Bitcoin, bytes.clone());
 
@@ -890,7 +890,7 @@ mod test {
         let bitcoin_address = BitcoinAddress {
             bytes: bytes.clone(),
         };
-        let address_str = bitcoin_address.format(network::Network::NetworkBitcoin.to_num())?;
+        let address_str = bitcoin_address.format(network::Network::Bitcoin.to_num())?;
         println!(
             "test_convert_bitcoin_address bitcoin address {} ",
             address_str
@@ -911,8 +911,7 @@ mod test {
     pub fn test_bitcoin_address_from_str() -> Result<()> {
         let bitcoin_address_str = "3MSqmLCmL5XW1PbUnabyLtkYdLXePGokCu";
         let bitcoin_address = BitcoinAddress::from_str(bitcoin_address_str)?;
-        let bitcoin_address_format =
-            bitcoin_address.format(network::Network::NetworkBitcoin.to_num())?;
+        let bitcoin_address_format = bitcoin_address.format(network::Network::Bitcoin.to_num())?;
         println!(
             "test_bitcoin_address_from_str bitcoin address format {} ",
             bitcoin_address_format

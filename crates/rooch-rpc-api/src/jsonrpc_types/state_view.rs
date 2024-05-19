@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    AccountAddressView, AnnotatedMoveStructView, AnnotatedMoveValueView, BytesView, StrView,
-    StructTagView, TypeTagView,
+    AccountAddressView, AnnotatedMoveValueView, BytesView, StrView, StructTagView, TypeTagView,
 };
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
@@ -374,7 +373,7 @@ pub struct IndexerObjectStateView {
     pub object_id: ObjectID,
     pub owner: AccountAddressView,
     pub flag: u8,
-    pub value: AnnotatedMoveStructView,
+    pub value: Option<AnnotatedMoveValueView>,
     pub object_type: StructTagView,
     pub state_root: AccountAddressView,
     pub size: u64,
@@ -385,15 +384,15 @@ pub struct IndexerObjectStateView {
 }
 
 impl IndexerObjectStateView {
-    pub fn try_new_from_global_state(
+    pub fn new_from_object_state(
+        annotated_state: Option<AnnotatedState>,
         state: IndexerObjectState,
-    ) -> Result<IndexerObjectStateView, anyhow::Error> {
-        let value: AnnotatedMoveStructView = serde_json::from_str(state.value.as_str())?;
-        let global_state_view = IndexerObjectStateView {
+    ) -> IndexerObjectStateView {
+        IndexerObjectStateView {
             object_id: state.object_id,
             owner: state.owner.into(),
             flag: state.flag,
-            value,
+            value: annotated_state.map(|v| AnnotatedMoveValueView::from(v.decoded_value)),
             object_type: state.object_type.into(),
             state_root: state.state_root.into(),
             size: state.size,
@@ -401,8 +400,7 @@ impl IndexerObjectStateView {
             state_index: state.state_index,
             created_at: state.created_at,
             updated_at: state.updated_at,
-        };
-        Ok(global_state_view)
+        }
     }
 }
 
@@ -454,7 +452,7 @@ pub struct IndexerFieldStateView {
     pub object_id: ObjectID,
     pub key_hex: String,
     pub key: AnnotatedMoveValueView,
-    pub value: AnnotatedMoveValueView,
+    pub value: Option<AnnotatedMoveValueView>,
     pub key_type: TypeTagView,
     pub value_type: TypeTagView,
     pub tx_order: u64,
@@ -464,16 +462,16 @@ pub struct IndexerFieldStateView {
 }
 
 impl IndexerFieldStateView {
-    pub fn try_new_from_table_state(
+    pub fn try_new_from_field_state(
+        annotated_state: Option<AnnotatedState>,
         state: IndexerFieldState,
     ) -> Result<IndexerFieldStateView, anyhow::Error> {
         let key: AnnotatedMoveValueView = serde_json::from_str(state.key_str.as_str())?;
-        let value: AnnotatedMoveValueView = serde_json::from_str(state.value.as_str())?;
         let state_view = IndexerFieldStateView {
             object_id: state.object_id,
             key_hex: state.key_hex,
             key,
-            value,
+            value: annotated_state.map(|v| AnnotatedMoveValueView::from(v.decoded_value)),
             key_type: state.key_type.into(),
             value_type: state.value_type.into(),
             tx_order: state.tx_order,

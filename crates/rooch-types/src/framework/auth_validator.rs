@@ -1,8 +1,6 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use super::ethereum_validator::EthereumValidatorModule;
-use super::native_validator::NativeValidatorModule;
 use super::transaction_validator::TransactionValidator;
 use crate::address::MultiChainAddress;
 use crate::addresses::ROOCH_FRAMEWORK_ADDRESS;
@@ -15,7 +13,6 @@ use move_core_types::{
 };
 use moveos_types::function_return_value::DecodedFunctionResult;
 use moveos_types::move_std::option::MoveOption;
-use moveos_types::transaction::MoveAction;
 use moveos_types::{
     module_binding::MoveFunctionCaller,
     move_std::ascii::MoveAsciiString,
@@ -26,6 +23,8 @@ use moveos_types::{
 };
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
+
+pub const MODULE_NAME: &IdentStr = ident_str!("auth_validator");
 
 /// The Authenticator auth validator which has builtin Rooch and Ethereum
 #[derive(
@@ -46,16 +45,19 @@ use strum_macros::{Display, EnumString};
 pub enum BuiltinAuthValidator {
     Rooch,
     Ethereum,
+    Bitcoin,
 }
 
 impl BuiltinAuthValidator {
     const ROOCH_FLAG: u8 = 0x00;
     const ETHEREUM_FLAG: u8 = 0x01;
+    const BITCOIN_FLAG: u8 = 0x02;
 
     pub fn flag(&self) -> u8 {
         match self {
             BuiltinAuthValidator::Rooch => Self::ROOCH_FLAG,
             BuiltinAuthValidator::Ethereum => Self::ETHEREUM_FLAG,
+            BuiltinAuthValidator::Bitcoin => Self::BITCOIN_FLAG,
         }
     }
 
@@ -69,37 +71,12 @@ impl BuiltinAuthValidator {
     pub fn from_flag_byte(byte_int: u8) -> Result<BuiltinAuthValidator, RoochError> {
         match byte_int {
             Self::ROOCH_FLAG => Ok(BuiltinAuthValidator::Rooch),
+            Self::ETHEREUM_FLAG => Ok(BuiltinAuthValidator::Ethereum),
+            Self::BITCOIN_FLAG => Ok(BuiltinAuthValidator::Bitcoin),
             _ => Err(RoochError::KeyConversionError(
                 "Invalid key auth validator".to_owned(),
             )),
         }
-    }
-
-    pub fn create_rotate_authentication_key_action(
-        &self,
-        public_key: Vec<u8>,
-    ) -> Result<MoveAction, RoochError> {
-        let action = match self {
-            BuiltinAuthValidator::Rooch => {
-                NativeValidatorModule::rotate_authentication_key_action(public_key)
-            }
-            BuiltinAuthValidator::Ethereum => {
-                EthereumValidatorModule::rotate_authentication_key_action(public_key)
-            }
-        };
-        Ok(action)
-    }
-
-    pub fn create_remove_authentication_key_action(&self) -> Result<MoveAction, RoochError> {
-        let action = match self {
-            BuiltinAuthValidator::Rooch => {
-                NativeValidatorModule::remove_authentication_key_action()
-            }
-            BuiltinAuthValidator::Ethereum => {
-                EthereumValidatorModule::remove_authentication_key_action()
-            }
-        };
-        Ok(action)
     }
 }
 
@@ -112,7 +89,7 @@ pub struct AuthValidator {
 
 impl MoveStructType for AuthValidator {
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("auth_validator");
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("AuthValidator");
 }
 
@@ -158,7 +135,7 @@ pub struct TxValidateResult {
 
 impl MoveStructType for TxValidateResult {
     const ADDRESS: AccountAddress = ROOCH_FRAMEWORK_ADDRESS;
-    const MODULE_NAME: &'static IdentStr = ident_str!("transaction_validtor");
+    const MODULE_NAME: &'static IdentStr = MODULE_NAME;
     const STRUCT_NAME: &'static IdentStr = ident_str!("TxValidateResult");
 }
 

@@ -3,7 +3,6 @@
 
 use crate::natives::helpers::{make_module_natives, make_native};
 use better_any::{Tid, TidAble};
-use framework_builder::dependency_order::sort_by_dependency_order;
 use itertools::zip_eq;
 use move_binary_format::{
     compatibility::Compatibility,
@@ -27,6 +26,7 @@ use move_vm_types::{
     pop_arg,
     values::{Struct, Value, Vector, VectorRef},
 };
+use moveos_compiler::dependency_order::sort_by_dependency_order;
 use moveos_types::moveos_std::move_module::MoveModuleId;
 use smallvec::smallvec;
 use std::collections::{BTreeSet, HashMap, VecDeque};
@@ -175,13 +175,24 @@ fn native_sort_and_verify_modules_inner(
     let module_context = context.extensions_mut().get_mut::<NativeModuleContext>();
     let mut module_ids = vec![];
     let mut init_identifier = vec![];
+
+    let verify_result =
+        moveos_verifier::verifier::verify_modules(&compiled_modules, module_context.resolver);
+    match verify_result {
+        Ok(_) => {}
+        Err(e) => {
+            log::info!("modules verification error: {:?}", e);
+            return Ok(NativeResult::err(cost, E_MODULE_VERIFICATION_ERROR));
+        }
+    }
+
     for module in &compiled_modules {
         let module_address = *module.self_id().address();
 
         if module_address != account_address {
             return Ok(NativeResult::err(cost, E_ADDRESS_NOT_MATCH_WITH_SIGNER));
         }
-        let result = moveos_verifier::verifier::verify_module(module, module_context.resolver);
+        let result = moveos_verifier::verifier::verify_init_function(module);
         match result {
             Ok(res) => {
                 if res {
@@ -281,7 +292,8 @@ fn check_compatibililty_inner(
 ) -> PartialVMResult<NativeResult> {
     let mut cost = gas_params.base;
     // TODO: config compatibility through global configuration
-    let compat = Compatibility::full_check();
+    // We allow `friend` function to be broken
+    let compat = Compatibility::new(true, true, false);
     if compat.need_check_compat() {
         let old_bytecodes = pop_arg!(args, Vec<u8>);
         let new_bytecodes = pop_arg!(args, Vec<u8>);

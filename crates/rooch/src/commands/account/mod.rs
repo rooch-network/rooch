@@ -6,6 +6,7 @@ use crate::commands::account::commands::balance::BalanceCommand;
 use async_trait::async_trait;
 use commands::{
     create::CreateCommand, list::ListCommand, nullify::NullifyCommand, switch::SwitchCommand,
+    transfer::TransferCommand,
 };
 use rooch_types::error::{RoochError, RoochResult};
 use std::path::PathBuf;
@@ -33,6 +34,7 @@ impl CommandAction<String> for Account {
             AccountCommand::Switch(switch) => switch.execute().await.map(|_| "".to_owned()),
             AccountCommand::Nullify(nullify) => nullify.execute().await.map(|_| "".to_owned()),
             AccountCommand::Balance(balance) => balance.execute().await.map(|_| "".to_owned()),
+            AccountCommand::Transfer(transfer) => transfer.execute().await.map(|_| "".to_owned()),
         }
         .map_err(RoochError::from)
     }
@@ -46,4 +48,5 @@ pub enum AccountCommand {
     Switch(SwitchCommand),
     Nullify(NullifyCommand),
     Balance(BalanceCommand),
+    Transfer(TransferCommand),
 }

@@ -632,13 +632,26 @@ impl RoochAPIServer for RoochServer {
             .ok_or(jsonrpsee::core::Error::Custom(
                 "limit value overflow".to_string(),
             ))?;
-        let mut data = self
+        let states = self
             .rpc_service
             .query_object_states(global_state_filter, cursor, limit_value, descending_order)
+            .await?;
+
+        let object_ids = states
+            .iter()
+            .map(|m| m.object_id.clone())
+            .collect::<Vec<_>>();
+        let access_path = AccessPath::objects(object_ids.clone());
+        let mut data = self
+            .rpc_service
+            .get_annotated_states(access_path)
             .await?
             .into_iter()
-            .map(IndexerObjectStateView::try_new_from_global_state)
-            .collect::<Result<Vec<_>>>()?;
+            .zip(states)
+            .map(|(annotated_state, state)| {
+                IndexerObjectStateView::new_from_object_state(annotated_state, state)
+            })
+            .collect::<Vec<_>>();
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
@@ -672,12 +685,25 @@ impl RoochAPIServer for RoochServer {
             .ok_or(jsonrpsee::core::Error::Custom(
                 "limit value overflow".to_string(),
             ))?;
-        let mut data = self
+        let states = self
             .rpc_service
             .query_field_states(filter.into(), cursor, limit_value, descending_order)
+            .await?;
+
+        let object_ids = states
+            .iter()
+            .map(|m| m.object_id.clone())
+            .collect::<Vec<_>>();
+        let access_path = AccessPath::objects(object_ids.clone());
+        let mut data = self
+            .rpc_service
+            .get_annotated_states(access_path)
             .await?
             .into_iter()
-            .map(IndexerFieldStateView::try_new_from_table_state)
+            .zip(states)
+            .map(|(annotated_state, state)| {
+                IndexerFieldStateView::try_new_from_field_state(annotated_state, state)
+            })
             .collect::<Result<Vec<_>>>()?;
 
         let has_next_page = data.len() > limit_of;

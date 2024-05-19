@@ -36,6 +36,7 @@ export abstract class ETHWallet extends BaseWallet {
   getNetwork(): string {
     throw new Error('Method not implemented.')
   }
+
   getSupportNetworks(): string[] {
     throw new Error('Method not implemented.')
   }
@@ -67,6 +68,7 @@ export abstract class ETHWallet extends BaseWallet {
   onAccountsChanged(callback: (account: Array<WalletAccount>) => void) {
     this.getTarget().on('accountsChanged', callback)
   }
+
   removeAccountsChanged(callback: (account: Array<WalletAccount>) => void) {
     this.getTarget().removeListener('accountsChanged', callback)
   }
@@ -113,11 +115,8 @@ export abstract class ETHWallet extends BaseWallet {
       Array.from(prefix_buf),
       Array.from(signatureInfoBytes),
       [],
-      [],
       Array.from(Buffer.from(this.account!.address.substring(2), 'hex')),
     )
-
-    console.log(authPayload)
 
     return authPayload.toBytes()
   }

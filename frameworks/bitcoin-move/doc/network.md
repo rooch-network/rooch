@@ -14,6 +14,8 @@
 -  [Function `network_signet`](#0x4_network_network_signet)
 -  [Function `network_regtest`](#0x4_network_network_regtest)
 -  [Function `is_mainnet`](#0x4_network_is_mainnet)
+-  [Function `is_testnet`](#0x4_network_is_testnet)
+-  [Function `is_signet`](#0x4_network_is_signet)
 -  [Function `from_str`](#0x4_network_from_str)
 -  [Function `network_name`](#0x4_network_network_name)
 -  [Function `bech32_hrp`](#0x4_network_bech32_hrp)
@@ -166,7 +168,29 @@ Get the current network from the onchain configuration.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network_is_mainnet">is_mainnet</a>(<a href="network.md#0x4_network">network</a>: u8): bool
+<pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network_is_mainnet">is_mainnet</a>(): bool
+</code></pre>
+
+
+
+<a name="0x4_network_is_testnet"></a>
+
+## Function `is_testnet`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network_is_testnet">is_testnet</a>(): bool
+</code></pre>
+
+
+
+<a name="0x4_network_is_signet"></a>
+
+## Function `is_signet`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="network.md#0x4_network_is_signet">is_signet</a>(): bool
 </code></pre>
 
 

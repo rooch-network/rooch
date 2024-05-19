@@ -1,7 +1,8 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-import { ConnectedAccount } from './components/connected-account'
-import { ManageSessions } from './components/manage-sessions'
+
+import ManageSessions from '@/pages/settings/components/manage-sessions.tsx'
+import { ConnectedAccount } from '@/pages/settings/components/connected-account.tsx'
 
 export const SettingsLayout = () => {
   return (
@@ -16,7 +17,6 @@ export const SettingsLayout = () => {
         </div>
         <ConnectedAccount />
       </div>
-
       {/* Mangage Sessions section */}
       <div>
         <div className="flex items-center justify-between space-y-2 mb-4">

@@ -1,6 +1,6 @@
 [package]
 name = "moveos-stdlib"
-version = "0.1.0"
+version = "0.4.1"
 
 # Workspace inherited keys
 authors = { workspace = true }
@@ -50,9 +50,9 @@ move-prover = { workspace = true }
 
 moveos-types = { workspace = true }
 moveos-verifier = { workspace = true }
-framework-builder = { workspace = true }
 moveos-wasm = { workspace = true }
 wasmer = { workspace = true }
 moveos-object-runtime = { workspace = true }
+moveos-compiler = { workspace = true }
 
 smt = { workspace = true }

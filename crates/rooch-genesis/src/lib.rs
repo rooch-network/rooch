@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use framework_builder::stdlib_version::StdlibVersion;
 use framework_builder::Stdlib;
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use move_vm_runtime::native_functions::NativeFunction;
@@ -20,39 +21,23 @@ use rooch_framework::natives::gas_parameter::gas_member::{
     FromOnChainGasSchedule, InitialGasSchedule, ToOnChainGasSchedule,
 };
 use rooch_framework::ROOCH_FRAMEWORK_ADDRESS;
-use rooch_genesis_builder::{ALL_STDLIB_PACKAGE_NAMES, ALL_STDLIB_PACKAGE_NAMES_STABLE};
 use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
-use rooch_types::bitcoin::network::Network;
 use rooch_types::error::GenesisError;
 use rooch_types::framework::genesis::GenesisContext;
+use rooch_types::rooch_network::{BuiltinChainID, RoochNetwork};
 use rooch_types::transaction::rooch::RoochTransaction;
-use rooch_types::{address::RoochAddress, chain_id::RoochChainID};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
-use std::{
-    fs::File,
-    io::Write,
-    path::{Path, PathBuf},
-};
+use std::{fs::File, io::Write, path::Path};
 
 pub static ROOCH_LOCAL_GENESIS: Lazy<RoochGenesis> = Lazy::new(|| {
-    // TODO: For now, ROOCH_LOCAL_GENESIS in only used in integration-test.
-    // There is no need to upgrade framework, so we set sequencer to 0x0.
-    // Setup sequencer for local genesis if there is only demands.
-    let mock_sequencer = RoochAddress::from_str("0x0").expect("parse sequencer address failed");
-    // genesis for integration test, we need to build the stdlib every time for `private_generic` check
-    // see moveos/moveos-verifier/src/metadata.rs#L27-L30
-    let bitcoin_genesis_ctx = BitcoinGenesisContext::new(Network::NetworkRegtest.to_num());
-    RoochGenesis::build_with_option(
-        RoochChainID::LOCAL.genesis_ctx(mock_sequencer),
-        bitcoin_genesis_ctx,
-        BuildOption::Release,
-    )
-    .expect("build rooch genesis failed")
+    let network: RoochNetwork = BuiltinChainID::Local.into();
+    RoochGenesis::build(network).expect("build rooch genesis failed")
 });
 
 pub struct FrameworksGasParameters {
+    pub max_gas_amount: u64,
     pub vm_gas_params: VMGasParameters,
     pub rooch_framework_gas_params: rooch_framework::natives::NativeGasParameters,
     pub bitcoin_move_gas_params: bitcoin_move::natives::GasParameters,
@@ -61,6 +46,7 @@ pub struct FrameworksGasParameters {
 impl FrameworksGasParameters {
     pub fn initial() -> Self {
         Self {
+            max_gas_amount: GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT,
             vm_gas_params: VMGasParameters::initial(),
             rooch_framework_gas_params: rooch_framework::natives::NativeGasParameters::initial(),
             bitcoin_move_gas_params: bitcoin_move::natives::GasParameters::initial(),
@@ -72,6 +58,7 @@ impl FrameworksGasParameters {
         entries.extend(self.rooch_framework_gas_params.to_on_chain_gas_schedule());
         entries.extend(self.bitcoin_move_gas_params.to_on_chain_gas_schedule());
         GasScheduleConfig {
+            max_gas_amount: self.max_gas_amount,
             entries: entries
                 .into_iter()
                 .map(|(key, val)| GasEntry {
@@ -88,10 +75,17 @@ impl FrameworksGasParameters {
             .get_object(&GasSchedule::gas_schedule_object_id())?
             .ok_or_else(|| anyhow::anyhow!("Gas schedule object not found"))?;
         let gas_schedule = gas_schedule_state.into_object::<GasSchedule>()?;
-        Self::load_from_gas_entries(gas_schedule.value.entries)
+        Self::load_from_gas_entries(
+            gas_schedule.value.max_gas_amount,
+            gas_schedule.value.entries,
+        )
     }
 
-    pub fn load_from_gas_entries(entries: Vec<GasEntry>) -> Result<Self> {
+    pub fn load_from_gas_config(gas_config: &GasScheduleConfig) -> Result<Self> {
+        Self::load_from_gas_entries(gas_config.max_gas_amount, gas_config.entries.clone())
+    }
+
+    pub fn load_from_gas_entries(max_gas_amount: u64, entries: Vec<GasEntry>) -> Result<Self> {
         let entries = entries
             .into_iter()
             .map(|entry| (entry.key.to_string(), entry.val))
@@ -105,6 +99,7 @@ impl FrameworksGasParameters {
             bitcoin_move::natives::GasParameters::from_on_chain_gas_schedule(&entries)
                 .ok_or_else(|| anyhow::anyhow!("Failed to load bitcoin move gas parameters"))?;
         Ok(Self {
+            max_gas_amount,
             vm_gas_params: vm_gas_parameter,
             rooch_framework_gas_params,
             bitcoin_move_gas_params,
@@ -125,7 +120,7 @@ impl FrameworksGasParameters {
 pub struct RoochGenesis {
     /// The root object after genesis initialization
     pub root: RootObjectEntity,
-    pub genesis_gas_entries: Vec<GasEntry>,
+    pub initial_gas_config: GasScheduleConfig,
     pub genesis_tx: RoochTransaction,
     pub genesis_moveos_tx: MoveOSTransaction,
 }
@@ -136,36 +131,33 @@ pub enum BuildOption {
 }
 
 impl RoochGenesis {
-    pub fn build(
-        genesis_ctx: GenesisContext,
-        bitcoin_genesis_ctx: BitcoinGenesisContext,
-    ) -> Result<Self> {
-        Self::build_with_option(genesis_ctx, bitcoin_genesis_ctx, BuildOption::Release)
+    pub fn build(network: RoochNetwork) -> Result<Self> {
+        Self::build_with_option(network, BuildOption::Release)
     }
 
-    pub fn build_with_option(
-        genesis_ctx: GenesisContext,
-        bitcoin_genesis_ctx: BitcoinGenesisContext,
-        option: BuildOption,
-    ) -> Result<Self> {
+    pub fn build_with_option(network: RoochNetwork, option: BuildOption) -> Result<Self> {
+        let genesis_config = network.genesis_config;
+
         let stdlib = match option {
             BuildOption::Fresh => Self::build_stdlib()?,
-            BuildOption::Release => Self::load_stdlib()?,
-        };
-        //TODO put the stdlib package names to RoochChainID
-        let stdlib_package_names = if genesis_ctx.chain_id == RoochChainID::LOCAL.chain_id().id()
-            || genesis_ctx.chain_id == RoochChainID::DEV.chain_id().id()
-        {
-            ALL_STDLIB_PACKAGE_NAMES.to_vec()
-        } else {
-            ALL_STDLIB_PACKAGE_NAMES_STABLE.to_vec()
+            BuildOption::Release => Self::load_stdlib(genesis_config.stdlib_version)?,
         };
 
-        let bundles = stdlib.module_bundles(stdlib_package_names.as_slice())?;
+        let genesis_ctx = GenesisContext::new(
+            network.chain_id.id,
+            genesis_config.timestamp,
+            genesis_config.sequencer_account,
+        );
+        let bitcoin_genesis_ctx = BitcoinGenesisContext::new(
+            genesis_config.bitcoin_network,
+            genesis_config.bitcoin_block_height,
+        );
+
+        let bundles = stdlib.all_module_bundles()?;
 
         let genesis_tx = RoochTransaction::new_genesis_tx(
             ROOCH_FRAMEWORK_ADDRESS.into(),
-            genesis_ctx.chain_id,
+            network.chain_id.id,
             //merge all the module bundles into one
             MoveAction::ModuleBundle(
                 bundles
@@ -198,7 +190,7 @@ impl RoochGenesis {
 
         Ok(Self {
             root: ObjectEntity::root_object(state_root, size),
-            genesis_gas_entries: gas_config.entries,
+            initial_gas_config: gas_config,
             genesis_tx,
             genesis_moveos_tx,
         })
@@ -260,8 +252,10 @@ impl RoochGenesis {
 
     pub fn init_genesis(&self, moveos_store: &mut MoveOSStore) -> Result<RootObjectEntity> {
         //we load the gas parameter from genesis binary, avoid the code change affect the genesis result
-        let genesis_gas_parameter =
-            FrameworksGasParameters::load_from_gas_entries(self.genesis_gas_entries.clone())?;
+        let genesis_gas_parameter = FrameworksGasParameters::load_from_gas_entries(
+            self.initial_gas_config.max_gas_amount,
+            self.initial_gas_config.entries.clone(),
+        )?;
         let moveos = MoveOS::new(
             moveos_store.clone(),
             genesis_gas_parameter.all_natives(),
@@ -289,11 +283,11 @@ impl RoochGenesis {
     }
 
     pub fn build_stdlib() -> Result<Stdlib> {
-        rooch_genesis_builder::build_stdlib()
+        framework_builder::stdlib_configs::build_stdlib(false)
     }
 
-    pub fn load_stdlib() -> Result<Stdlib> {
-        framework_builder::Stdlib::decode(GENESIS_STDLIB_BYTES)
+    pub fn load_stdlib(stdlib_version: StdlibVersion) -> Result<Stdlib> {
+        framework_release::load_stdlib(stdlib_version)
     }
 
     pub fn load_from<P: AsRef<Path>>(genesis_file: P) -> Result<Self> {
@@ -310,56 +304,23 @@ impl RoochGenesis {
     }
 }
 
-static GENESIS_STDLIB_BYTES: &[u8] = include_bytes!("../generated/stdlib");
-
-pub fn crate_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-}
-
-const MOVE_STD_ERROR_DESCRIPTIONS: &[u8] =
-    include_bytes!("../generated/move_std_error_description.errmap");
-
-pub fn move_std_error_descriptions() -> &'static [u8] {
-    MOVE_STD_ERROR_DESCRIPTIONS
-}
-
-const MOVEOS_STD_ERROR_DESCRIPTIONS: &[u8] =
-    include_bytes!("../generated/moveos_std_error_description.errmap");
-
-pub fn moveos_std_error_descriptions() -> &'static [u8] {
-    MOVEOS_STD_ERROR_DESCRIPTIONS
-}
-
-const ROOCH_FRAMEWORK_ERROR_DESCRIPTIONS: &[u8] =
-    include_bytes!("../generated/rooch_framework_error_description.errmap");
-
-pub fn rooch_framework_error_descriptions() -> &'static [u8] {
-    ROOCH_FRAMEWORK_ERROR_DESCRIPTIONS
-}
-
 #[cfg(test)]
 mod tests {
-    use move_core_types::account_address::AccountAddress;
+    use crate::FrameworksGasParameters;
     use moveos_store::MoveOSStore;
     use moveos_types::moveos_std::move_module::ModuleStore;
     use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
-    use rooch_types::bitcoin::genesis::BitcoinGenesisContext;
-    use rooch_types::bitcoin::network::{BitcoinNetwork, Network};
-    use rooch_types::chain_id::{BuiltinChainID, RoochChainID};
+    use rooch_types::bitcoin::network::BitcoinNetwork;
+    use rooch_types::rooch_network::RoochNetwork;
+    use tracing::info;
 
-    use crate::FrameworksGasParameters;
-
-    #[test]
-    fn test_genesis_init() {
-        let _ = tracing_subscriber::fmt::try_init();
-        let sequencer = AccountAddress::ONE.into();
-        let bitcoin_genesis_ctx = BitcoinGenesisContext::new(Network::NetworkRegtest.to_num());
-        let genesis = super::RoochGenesis::build_with_option(
-            RoochChainID::LOCAL.genesis_ctx(sequencer),
-            bitcoin_genesis_ctx,
-            crate::BuildOption::Fresh,
-        )
-        .expect("build rooch genesis failed");
+    fn genesis_init_test_case(network: RoochNetwork) {
+        info!(
+            "genesis init test case for network: {:?}",
+            network.chain_id.id
+        );
+        let genesis =
+            super::RoochGenesis::build(network.clone()).expect("build rooch genesis failed");
 
         let mut moveos_store = MoveOSStore::mock_moveos_store().unwrap();
 
@@ -378,10 +339,14 @@ mod tests {
             .get_object(&ModuleStore::module_store_id())
             .unwrap();
         assert!(module_store_state.is_some());
-        let _module_store_obj = module_store_state
+        let module_store_obj = module_store_state
             .unwrap()
             .into_object::<ModuleStore>()
             .unwrap();
+        assert!(
+            module_store_obj.size > 0,
+            "module store fields size should > 0"
+        );
         let chain_id_state = resolver
             .get_object(&rooch_types::framework::chain_id::ChainID::chain_id_object_id())
             .unwrap();
@@ -390,7 +355,7 @@ mod tests {
             .unwrap()
             .into_object::<rooch_types::framework::chain_id::ChainID>()
             .unwrap();
-        assert_eq!(chain_id.value.id, BuiltinChainID::Local.chain_id().id());
+        assert_eq!(chain_id.value.id, network.chain_id.id);
         let bitcoin_network_state = resolver
             .get_object(&rooch_types::bitcoin::network::BitcoinNetwork::object_id())
             .unwrap();
@@ -401,7 +366,16 @@ mod tests {
             .unwrap();
         assert_eq!(
             bitcoin_network.value.network,
-            Network::NetworkRegtest.to_num()
+            network.genesis_config.bitcoin_network
         );
+    }
+
+    #[test]
+    fn test_genesis_init() {
+        let _ = tracing_subscriber::fmt::try_init();
+        genesis_init_test_case(RoochNetwork::local());
+        genesis_init_test_case(RoochNetwork::dev());
+        genesis_init_test_case(RoochNetwork::test());
+        genesis_init_test_case(RoochNetwork::main());
     }
 }

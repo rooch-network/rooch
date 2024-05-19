@@ -1,0 +1,109 @@
+# Client-Side Validation Protocol
+
+The [Client Validation Protocol][1], a concept proposed by the developers of the Bitcoin ecosystem, allow a Bitcoin transaction to commit to some data whose validity is determined separate from the validity of the transaction under Bitcoin’s consensus rules. Assets created under this protocol use Bitcoin only to ensure asset ownership and prevent double-spending, while the validity of the assets is verified off-chain. In the following text, we refer to client-side validation simply as "CSV."
+
+Different protocols submit data to Bitcoin in various ways. For example, the [RGB][2] protocol only commits to a promise on-chain, [Taproot assets][4] commit the root of the state tree, while the [Ordinals][3] protocol submits data directly, effectively using Bitcoin as a data availability layer.
+
+We consider protocols like Ordinals, which rely on off-chain indexers, as falling within the scope of the CSV protocol. Off-chain indexers are essentially a type of 'fat client.' As the RGB protocol evolves, similar mechanisms will likely be developed to validate assets on behalf of users, reducing the cost of use.
+
+## Why CSV is Needed
+
+1. Bitcoin's scalability is limited; defining asset protocols on Bitcoin can only be achieved through the CSV model.
+2. CSV represents a new model of expansion, allowing asset validation to occur at various levels.
+3. CSV is the correct approach to data assetization, ensuring that data ownership belongs to the user from the outset.
+
+## Layering of CSV Asset Protocols
+
+A CSV asset protocol, defined via the CSV method, can be abstracted into the following layers:
+
+**Asset Repository Layer**
+
+We abstract the platforms that store assets as "asset repositories," which can be a blockchain like Bitcoin or non-blockchain infrastructure. However, these repositories must ensure verifiability, allowing asset validators to verify and track assets.
+
+Bitcoin serves as both a platform for defining asset types and as an asset repository. Different asset repositories offer varying levels of security and functionality, prompting users to balance application scenarios and security when migrating assets between repositories.
+
+**Asset Container Layer**
+
+An asset container serves as the carrier for assets, expressing asset ownership but not concerning itself with asset validity. For instance, Inscription is a typical asset container. Since CSV-type assets are directly created by users, they might generate invalid assets, necessitating a container to initially carry and express ownership.
+
+**Asset Validator Layer**
+
+The asset validator is the logical implementation of the protocol, operating either in end-users' wallets or on off-chain indexers. If an asset validator is accessible publicly, it can be termed a "public asset validator."
+
+Rooch will offer an extension mechanism for asset validators, allowing developers to customize Bitcoin's asset protocols through Move contracts to suit their application scenarios.
+
+**Asset Protocol Layer**
+
+This layer provides the namespace for assets and defines the basic asset formats and validation rules.
+
+**Asset Layer**
+
+This is the specific layer of assets, where each asset is an instantiation of an asset protocol. Each asset has a unique identifier, unique within the asset protocol.
+
+The following diagram illustrates the layering of the CSV asset protocol, using the Ordinals protocol as an example:
+
+![layerd-csv-asset-protocol](/docs/client-side-validation/layerd-csv-asset-protocol.svg)
+
+Bitcoin provides storage capabilities and ownership of UTXOs, serving as the asset repository layer.
+
+The Ordinals protocol defines an ID and tracks asset ownership, leaving Metadata and Content for expansion, which we refer to as the asset container layer.
+
+Higher-level protocols, like BRC20/BRC1024, define asset protocols by writing JSON in Content or expanding Metadata, known as the asset protocol layer.
+
+Above that is the specific issued asset, the asset layer, where different assets have different validation rules. These rules are currently implemented through mechanisms provided in the asset protocol's deployment parameters, hard-coded in indexers. A more flexible extension method is now needed, directly integrated into applications, which is a challenge that Bitcoin's smart contract layer needs to address.
+
+This asset protocol's advantage is that the logic for validating asset validity is added layer by layer from the bottom up. Rules that comply with lower-layer data formats may not necessarily comply with higher-layer rules. This achieves scalability as lower-level protocols need not concern themselves with the validity of data in higher-level protocols.
+
+## Data, Resources, and Assets
+
+From the perspective of data assetization, data, resources, and assets are three distinct concepts:
+
+- "Data" in computer systems is a set of binaries, objects of program operations, which can have any number of copies and lack scarcity.
+- "Resources" embody the concept of scarcity and cannot be arbitrarily replicated, typically expressed through a unique ID.
+- "Assets" imply ownership and the potential for exchange or profit, are recognized by market consensus, and are bound to rights.
+
+Thus, there is no fundamental difference in format between data and assets. The pathway for data to become an asset should involve the user first submitting their data to the blockchain, storing it in an asset container to obtain ownership, and then having an asset validator verify that the data complies with the asset
+
+ protocol rules, thereby assetizing the data.
+
+## Asset Leap Protocol
+
+**Leap**: The process of asset migration, termed "leap," involves users moving assets from one asset repository to another. This process involves both destruction and re-creation. Note: The term "Leap" originally came from the RGB++ protocol, which we find very apt and have thus adopted.
+
+Current blockchain asset cross-chain protocols are based on a lock-and-map model, which does not reduce the state storage pressure on chains nor support the issuance of assets off-chain, making it difficult to support large-scale data assetization. CSV assets, however, can truly achieve asset migration between different asset repositories, as long as the asset validators can verify the assets on both sides.
+
+This asset migration mode has several advantages over the current bridge model:
+
+1. It avoids the concentration of large volumes of assets in a bridge, thus reducing centralized risk. The risk associated with asset migration is decentralized. Both asset exit and entry are triggered by users, and the client tracks ownership, ensuring asset safety as long as the operations of destruction upon exit and re-issuance upon entry match.
+2. Assets can migrate like "cash" between various networks. Separating asset storage from application scenarios addresses the issue of state explosion and facilitates the large-scale issuance of new types of assets.
+3. This mode requires wallets to play a significant role, not just the current "dumb" wallets that only trust RPC, but something smarter.
+
+Different CSV asset protocols may implement specific schemes for asset migration. We use the Inscription example to explain how assets can migrate from Bitcoin to Rooch and back to Bitcoin. Here, Bitcoin is the asset repository, while Rooch serves both as an asset repository and validator.
+
+![csv-leap](/docs/client-side-validation/csv-leap.svg)
+
+1. Alice mints an Inscription A on Bitcoin.
+2. This transaction is re-executed within the Rooch bitcoin module, generating a shadow asset A'.
+3. Rooch's asset validator verifies A''s validity and internally marks it as valid.
+4. At this point, asset A is minted and validated. Applications can query the status of asset A through Rooch—its ownership and validity. However, Bitcoin remains the asset repository for A; it can be used on Rooch but not traded directly.
+5. If Alice wishes to migrate asset A to Rooch, she must initiate a transaction on Bitcoin to destroy asset A and mark `leap_to rooch`.
+6. After executing this transaction, the Rooch bitcoin module also destroys shadow asset A' and automatically remints a new asset A within Rooch.
+7. Now, Rooch becomes the asset repository for A, where it can be used and traded directly.
+8. If Alice wants to migrate asset A back to Bitcoin, she needs to initiate a transaction on Rooch using the `leap_to bitcoin` contract, which destroys asset A. Then a new asset A is reminted on Bitcoin, marked as `leap_from rooch`.
+9. After executing this transaction, Rooch's asset validator uses the prior destruction status to verify and generate a shadow asset A', marking it valid. Thus, Bitcoin once again becomes the asset repository for A.
+
+Notes:
+1. This process is simplified and does not account for scenarios where a user's transaction fails to get on-chain, requiring asset recovery.
+2. During asset leap, the asset container is destroyed, so the container's ID cannot be guaranteed consistent, necessitating an internal business ID to identify the asset.
+
+## Reference
+
+- [Client-side validation protocols][1] from bitcoinops.org
+- [Client side validation][2] from rgb.info
+- [Ordinals][3] from ordinals.com
+- [Taproot assets][4] from lightning.engineering
+
+[1]: https://bitcoinops.org/en/topics/client-side-validation/
+[2]: https://docs.rgb.info/distributed-computing-concepts/client-side-validation
+[3]: https://docs.ordinals.com/
+[4]: https://docs.lightning.engineering/the-lightning-network/taproot-assets

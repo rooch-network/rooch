@@ -8,10 +8,10 @@ import { AssetsSft } from './tabs/sft/assets-sft'
 import { AssetsIndexedAssets } from './tabs/indexed-assets/assets-indexed-assets'
 
 const assetsTabItems: TabItem[] = [
-  { id: 'coin', label: 'Coin' },
-  { id: 'nft', label: 'NFT' },
+  { id: 'coin', label: 'Coin', available: true },
+  { id: 'nft', label: 'NFT', available: true },
   // { id: 'sft', label: 'SFT' },
-  { id: 'indexed_assets', label: 'Indexed Assets' },
+  { id: 'indexed_assets', label: 'Indexed Assets', available: true },
 ]
 
 export const AssetsDetails = () => {

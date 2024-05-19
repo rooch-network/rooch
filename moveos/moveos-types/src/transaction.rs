@@ -1,11 +1,16 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::moveos_std::object::{ObjectEntity, RootObjectEntity};
 use crate::{
-    gas_config::GasConfig, h256, h256::H256, move_types::FunctionId,
-    moveos_std::event::TransactionEvent, moveos_std::tx_context::TxContext,
-    moveos_std::tx_meta::TxMeta, state::StateChangeSet,
+    h256,
+    h256::H256,
+    move_types::FunctionId,
+    moveos_std::event::TransactionEvent,
+    moveos_std::gas_schedule::GasScheduleConfig,
+    moveos_std::object::{ObjectEntity, RootObjectEntity},
+    moveos_std::tx_context::TxContext,
+    moveos_std::tx_meta::TxMeta,
+    state::StateChangeSet,
 };
 use move_core_types::gas_algebra::InternalGas;
 use move_core_types::{
@@ -249,7 +254,7 @@ impl MoveOSTransaction {
         let ctx = TxContext::new(
             sender_and_action.0,
             0,
-            GasConfig::DEFAULT_MAX_GAS_AMOUNT,
+            GasScheduleConfig::INITIAL_MAX_GAS_AMOUNT,
             tx_hash,
             1,
         );

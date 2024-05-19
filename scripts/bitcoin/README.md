@@ -14,8 +14,8 @@ This directory contains scripts for setting up a local development environment f
 ## Development on rooch
 
 1. Run `rooch server start --btc-rpc-url http://127.0.0.1:18443 --btc-rpc-username roochuser --btc-rpc-password roochpass --btc-start-block-height 0`
-2. Run `rooch rpc request --method rooch_queryGlobalStates --params '[{"object_type":"0x4::utxo::UTXO"},null, "2", true]'` to query the UTXO set
-3. Run `rooch rpc request --method rooch_queryGlobalStates --params '[{"object_type":"0x4::ord::Inscription"},null, "2", true]'` to query the Inscription set
+2. Run `rooch rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::utxo::UTXO"},null, "2", true]'` to query the UTXO set
+3. Run `rooch rpc request --method rooch_queryObjectStates --params '[{"object_type":"0x4::ord::Inscription"},null, "2", true]'` to query the Inscription set
 
 ## Usage
 

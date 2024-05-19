@@ -99,6 +99,10 @@ impl ObjectID {
         !self.is_root()
     }
 
+    pub fn has_child(&self) -> bool {
+        self.is_root() || self.parent().is_some()
+    }
+
     pub fn is_child(&self, parent_id: ObjectID) -> bool {
         match self.parent() {
             Some(obj_id) => obj_id == parent_id,

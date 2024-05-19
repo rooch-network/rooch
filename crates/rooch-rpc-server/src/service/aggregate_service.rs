@@ -292,7 +292,6 @@ impl AggregateService {
 
         let data = states
             .into_iter()
-            // .enumerate()
             .map(|state| {
                 let utxo = objects.get(&state.object_id).cloned().flatten();
                 let reverse_mapping_opt =
@@ -303,7 +302,7 @@ impl AggregateService {
                         .map(|p| BitcoinAddress::new(p.raw_address.clone()))
                 });
 
-                Ok(UTXOState::new_from_global_state(
+                Ok(UTXOState::new_from_object_state(
                     state,
                     utxo,
                     reverse_address,
@@ -390,7 +389,7 @@ impl AggregateService {
                         .map(|p| BitcoinAddress::new(p.raw_address.clone()))
                 });
 
-                Ok(InscriptionState::new_from_global_state(
+                Ok(InscriptionState::new_from_object_state(
                     state,
                     inscription,
                     reverse_address,

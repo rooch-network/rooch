@@ -450,6 +450,24 @@ impl ObjectRuntime {
 
         module_field.move_to(runtime_field_value, value_layout, value_type)?;
 
+        if !is_republishing {
+            // If we directly publish module in Rust, not in Move, we need to increase the size of module store
+            // TODO we need to find a better way to handle this
+            let module_store_obj_value = module_store_obj.value.move_from()?;
+            let mut module_store_obj_entity = ObjectEntity::<ModuleStore>::from_runtime_value(
+                module_store_obj_value,
+            )
+            .map_err(|e| {
+                PartialVMError::new(StatusCode::TYPE_MISMATCH)
+                    .with_message(format!("expect ObjectEntity<ModuleStore>, but got {:?}", e))
+            })?;
+            module_store_obj_entity.size += 1;
+            let module_store_obj_value = module_store_obj_entity.to_runtime_value();
+            module_store_obj
+                .value
+                .move_to(module_store_obj_value)
+                .map_err(|(e, _)| e)?;
+        }
         Ok(())
     }
 

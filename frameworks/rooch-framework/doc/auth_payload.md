@@ -11,12 +11,10 @@
 -  [Function `sign_info_prefix`](#0x3_auth_payload_sign_info_prefix)
 -  [Function `sign_info`](#0x3_auth_payload_sign_info)
 -  [Function `public_key`](#0x3_auth_payload_public_key)
--  [Function `multi_address`](#0x3_auth_payload_multi_address)
 -  [Function `from_address`](#0x3_auth_payload_from_address)
 
 
 <pre><code><b>use</b> <a href="">0x2::bcs</a>;
-<b>use</b> <a href="multichain_address.md#0x3_multichain_address">0x3::multichain_address</a>;
 </code></pre>
 
 
@@ -84,17 +82,6 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="auth_payload.md#0x3_auth_payload_public_key">public_key</a>(payload: <a href="auth_payload.md#0x3_auth_payload_AuthPayload">auth_payload::AuthPayload</a>): <a href="">vector</a>&lt;u8&gt;
-</code></pre>
-
-
-
-<a name="0x3_auth_payload_multi_address"></a>
-
-## Function `multi_address`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="auth_payload.md#0x3_auth_payload_multi_address">multi_address</a>(payload: <a href="auth_payload.md#0x3_auth_payload_AuthPayload">auth_payload::AuthPayload</a>): <a href="multichain_address.md#0x3_multichain_address_MultiChainAddress">multichain_address::MultiChainAddress</a>
 </code></pre>
 
 

@@ -36,7 +36,6 @@ fn random_update_object_states(states: Vec<IndexedObjectState>) -> Vec<IndexedOb
             object_id: item.object_id,
             owner: item.owner,
             flag: item.flag,
-            value: random_string(),
             object_type: item.object_type,
             state_root: item.state_root,
             size: item.size + 1,
@@ -56,7 +55,6 @@ fn random_new_object_states() -> Result<Vec<IndexedObjectState>> {
     for n in 0..rng.gen_range(1..=10) {
         let state = IndexedObjectState::new_from_raw_object(
             random_table_object()?.to_raw(),
-            random_string(),
             random_struct_tag().to_canonical_string(),
             n as u64,
             state_index,
@@ -91,7 +89,6 @@ fn random_new_field_states() -> Vec<IndexedFieldState> {
             ObjectID::from(AccountAddress::random()),
             H256::random().to_string(),
             random_string(),
-            random_string(),
             random_type_tag(),
             random_type_tag(),
             n as u64,
@@ -111,7 +108,6 @@ fn random_update_field_states(states: Vec<IndexedFieldState>) -> Vec<IndexedFiel
             object_id: item.object_id,
             key_hex: item.key_hex,
             key_str: random_string(),
-            value: random_string(),
             key_type: random_type_tag(),
             value_type: random_type_tag(),
             tx_order: item.tx_order,

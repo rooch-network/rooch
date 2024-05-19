@@ -6,7 +6,7 @@ use anyhow::anyhow;
 use rooch_config::config::Config;
 use rooch_config::server_config::ServerConfig;
 use rooch_types::address::RoochAddress;
-use rooch_types::chain_id::RoochChainID;
+use rooch_types::rooch_network::BuiltinChainID;
 use serde::Deserialize;
 use serde::Serialize;
 use std::fmt::{Display, Formatter, Write};
@@ -93,7 +93,7 @@ impl Env {
 
     pub fn new_dev_env() -> Self {
         Self {
-            alias: RoochChainID::DEV.chain_name().to_lowercase(),
+            alias: BuiltinChainID::Dev.chain_name(),
             rpc: ROOCH_DEV_NET_URL.into(),
             ws: None,
         }
@@ -101,7 +101,7 @@ impl Env {
 
     pub fn new_test_env() -> Self {
         Self {
-            alias: RoochChainID::TEST.chain_name().to_lowercase(),
+            alias: BuiltinChainID::Test.chain_name(),
             rpc: ROOCH_TEST_NET_URL.into(),
             ws: None,
         }
@@ -111,7 +111,7 @@ impl Env {
 impl Default for Env {
     fn default() -> Self {
         Env {
-            alias: RoochChainID::LOCAL.chain_name().to_lowercase(),
+            alias: BuiltinChainID::Local.chain_name(),
             rpc: ServerConfig::default().url(false),
             ws: None,
         }

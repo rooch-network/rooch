@@ -1,6 +1,6 @@
 [package]
 name = "BitcoinMove"
-version = "0.0.1"
+version = "1.0.0"
 
 [addresses]
 vm_reserved = "0x0"

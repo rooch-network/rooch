@@ -21,7 +21,7 @@ crate::gas::native::define_gas_parameters_for_natives!(AbstractValueSizeGasParam
     [.per_u32_packed, "per_u32_packed", 4],
     [.per_u64_packed, "per_u64_packed", 8],
     [.per_u128_packed, "per_u128_packed", 16],
-    [.per_u256_packed, "per_u128_packed", 32],
+    [.per_u256_packed, "per_u256_packed", 32],
     [.per_bool_packed, "per_bool_packed", 1],
     [.per_address_packed, "per_address_packed", 32],
 ]);
