@@ -34,8 +34,11 @@ use rayon::iter::Either;
 
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::term::termcolor::Buffer;
+use move_core_types::metadata::Metadata;
 use move_ir_types::ast::{CopyableVal_, Exp_, Metadata as ASTMetadata};
 use move_model::options::ModelBuilderOptions;
+use moveos_verifier::build::ROOCH_METADATA_KEY;
+use moveos_verifier::metadata::RuntimeModuleMetadataV1;
 use regex::Regex;
 use std::ffi::CString;
 use std::string::ToString;
@@ -44,10 +47,7 @@ use std::{
     fmt::{Debug, Write as FmtWrite},
     path::Path,
 };
-use move_core_types::metadata::Metadata;
 use tempfile::NamedTempFile;
-use moveos_verifier::build::ROOCH_METADATA_KEY;
-use moveos_verifier::metadata::RuntimeModuleMetadataV1;
 
 const FIXED_TEMP_PATH: &str = "/tmp/tempfile";
 
