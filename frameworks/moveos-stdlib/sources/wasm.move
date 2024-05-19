@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module moveos_std::wasm {
+    use std::option::{Self,Option};
     use moveos_std::features;
 
     struct WASMInstance {
@@ -15,8 +16,21 @@ module moveos_std::wasm {
     public fun create_wasm_instance(bytecode: vector<u8>): WASMInstance {
         features::ensure_wasm_enabled();
 
-        let instance_id = native_create_wasm_instance(bytecode);
+        let (instance_id, error_code) = native_create_wasm_instance(bytecode);
+        assert!(error_code > 0, error_code);
+
         WASMInstance {id: instance_id }
+    }
+
+    public fun create_wasm_instance_option(bytecode: vector<u8>): Option<WASMInstance> {
+        features::ensure_wasm_enabled();
+
+        let (instance_id, error_code) = native_create_wasm_instance(bytecode);
+        if (error_code > 0) {
+            return option::none()
+        };
+
+        option::some(WASMInstance {id: instance_id })
     }
 
     public fun create_cbor_values(value: vector<vector<u8>>): vector<u8> {
@@ -48,7 +62,7 @@ module moveos_std::wasm {
         native_release_wasm_instance(instance)
     }
 
-    native fun native_create_wasm_instance(bytecodes: vector<u8>): u64;
+    native fun native_create_wasm_instance(bytecodes: vector<u8>): (u64, u64);
 
     native fun native_create_cbor_values(value: vector<vector<u8>>): vector<u8>;
 

@@ -71,33 +71,24 @@ fn native_create_wasm_instance(
             E_INCORRECT_LENGTH_OF_ARGS,
         ));
     }
+    
     let wasm_bytes = pop_arg!(args, Vec<u8>);
-    let wasm_instance = match create_wasm_instance(&wasm_bytes) {
-        Ok(v) => v,
-        Err(_) => {
-            return Ok(NativeResult::err(
-                gas_params.base_create_instance,
-                E_WASM_INSTANCE_CREATION_FAILED,
-            ))
-        }
-    };
-    let instance_id = match insert_wasm_instance(wasm_instance) {
-        Ok(v) => v,
-        Err(_) => {
-            return Ok(NativeResult::err(
-                gas_params.base_create_instance,
-                E_WASM_INSTANCE_CREATION_FAILED,
-            ))
-        }
-    };
+    let (instance_id, error_code) = create_wasm_instance(&wasm_bytes)
+        .map(|instance| {
+            match insert_wasm_instance(instance) {
+                Ok(id) => (id, 0), // No error
+                Err(_) => (0, E_WASM_INSTANCE_CREATION_FAILED),
+            }
+        })
+        .unwrap_or((0, E_WASM_INSTANCE_CREATION_FAILED));
 
     let mut cost = gas_params.base_create_instance;
     cost += gas_params.per_byte_instance * NumBytes::new(wasm_bytes.len() as u64);
 
-    Ok(NativeResult::Success {
+    Ok(NativeResult::ok(
         cost,
-        ret_vals: smallvec![Value::u64(instance_id)],
-    })
+        smallvec![Value::u64(instance_id), Value::u64(error_code)],
+    ))
 }
 
 #[derive(Debug, Clone)]

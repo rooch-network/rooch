@@ -26,7 +26,6 @@
 
 
 <pre><code><b>use</b> <a href="">0x1::bcs</a>;
-<b>use</b> <a href="">0x1::debug</a>;
 <b>use</b> <a href="">0x1::option</a>;
 <b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
@@ -239,7 +238,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_inscribe_verify">inscribe_verify</a>(wasm_bytes: <a href="">vector</a>&lt;u8&gt;, deploy_args: <a href="">vector</a>&lt;u8&gt;, seed: <a href="">vector</a>&lt;u8&gt;, user_input: <a href="">vector</a>&lt;u8&gt;, attributes_output: <a href="">vector</a>&lt;u8&gt;): bool
+<pre><code><b>public</b> <b>fun</b> <a href="bitseed.md#0xa_bitseed_inscribe_verify">inscribe_verify</a>(wasm_bytes: <a href="">vector</a>&lt;u8&gt;, deploy_args: <a href="">vector</a>&lt;u8&gt;, seed: <a href="">vector</a>&lt;u8&gt;, user_input: <a href="">vector</a>&lt;u8&gt;, attributes_output: <a href="">vector</a>&lt;u8&gt;): (bool, <a href="_Option">option::Option</a>&lt;<a href="_String">string::String</a>&gt;)
 </code></pre>
 
 

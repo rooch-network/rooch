@@ -403,10 +403,10 @@ module rooch_nursery::bitseed {
 
         let attributes_bytes = simple_map::borrow(metadata, &string::utf8(b"attributes"));
 
-        let is_valid = inscribe_verify(wasm_bytes, deploy_args, seed, user_input, *attributes_bytes);
+        let (is_valid, reason) = inscribe_verify(wasm_bytes, deploy_args, seed, user_input, *attributes_bytes);
         if (!is_valid) {
             simple_map::drop(attributes);
-            return (false, option::some(std::string::utf8(b"inscribe verify fail")))
+            return (false, reason)
         };
 
         simple_map::drop(attributes);
@@ -414,32 +414,32 @@ module rooch_nursery::bitseed {
     }
 
     public fun inscribe_verify(wasm_bytes: vector<u8>, deploy_args: vector<u8>,
-                               seed: vector<u8>, user_input: vector<u8>, attributes_output: vector<u8>): bool {
-        std::debug::print(&string::utf8(b"inscribe_verify 1"));
-        let wasm_instance = wasm::create_wasm_instance(wasm_bytes);
+                               seed: vector<u8>, user_input: vector<u8>, attributes_output: vector<u8>): (bool, Option<String>) {
+        let wasm_instance_option = wasm::create_wasm_instance_option(wasm_bytes);
+        if (option::is_none(&wasm_instance_option)) {
+            option::destroy_none(wasm_instance_option);
+            return (false, option::some(std::string::utf8(b"create wasm instance fail")))
+        };
 
+        let wasm_instance = option::destroy_some(wasm_instance_option);
         let function_name = b"inscribe_verify";
 
-        std::debug::print(&string::utf8(b"inscribe_verify 2"));
         let buffer = pack_inscribe_generate_args(deploy_args, seed, user_input);
         let arg_with_length = wasm::add_length_with_data(buffer);
 
-        std::debug::print(&string::utf8(b"inscribe_verify 3"));
         let arg_list = vector::empty<vector<u8>>();
         vector::push_back(&mut arg_list, arg_with_length);
         vector::push_back(&mut arg_list, attributes_output);
         let memory_args_list = wasm::create_memory_wasm_args(&mut wasm_instance, function_name, arg_list);
 
-        std::debug::print(&string::utf8(b"inscribe_verify 4"));
         let ret_val = wasm::execute_wasm_function(&mut wasm_instance, function_name, memory_args_list);
-        std::debug::print(&string::utf8(b"inscribe_verify 5"));
-
         wasm::release_wasm_instance(wasm_instance);
-        if (ret_val == 0 ) {
-            true
-        } else {
-            false
-        }
+
+        if (ret_val != 0 ) {
+            return (false, option::some(std::string::utf8(b"inscribe verify fail")))
+        };
+
+        (true, option::none<String>())
     }
 
     fun pack_inscribe_generate_args(deploy_args: vector<u8>, seed: vector<u8>, user_input: vector<u8>): vector<u8>{
@@ -853,9 +853,8 @@ module rooch_nursery::bitseed {
         let (is_valid, reason) = is_valid_bitseed_mint(&metadata, seed);
         simple_map::drop(metadata);
 
-        std::debug::print(&reason);
         assert!(!is_valid, 1);
-        assert!(option::borrow(&reason) == &std::string::utf8(b"inscribe verify fail"), 1);
+        assert!(option::borrow(&reason) == &std::string::utf8(b"create wasm instance fail"), 1);
     }
 
 }
