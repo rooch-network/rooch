@@ -1077,14 +1077,17 @@ module bitcoin_move::ord {
         let test_txid = @0x77dfc2fe598419b00641c296181a96cf16943697f573480b023b77cce82ada21;
         let test_inscription_id = new_inscription_id_for_test(test_txid, 0);
 
+        let content_type = b"application/wasm";
+        let body = x"0061736d0100000001080260017f00600000020f0107636f6e736f6c65036c6f670000030201010503010001071702066d656d6f727902000a68656c6c6f576f726c6400010a08010600410010000b0b14010041000b0e48656c6c6f2c20576f726c642100";
+
         let test_inscription = new_inscription_for_test(
             test_txid,
             0,
             0,
             0,
-            vector[],
+            body,
             option::none(),
-            option::none(),
+            option::some(string::utf8(content_type)),
             vector[],
             option::none(),
             option::none(),

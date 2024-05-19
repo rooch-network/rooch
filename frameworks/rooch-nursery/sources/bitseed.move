@@ -56,6 +56,11 @@ module rooch_nursery::bitseed {
         object::borrow_mut(bitseed_store_obj)
     }
 
+    #[test_only]
+    fun init_bitseed_store_for_test(_genesis_account: &signer) {
+        genesis_init(_genesis_account)
+    }
+
     public fun bitseed_deploy_key(): vector<u8> {
         BIT_SEED_DEPLOY
     }
@@ -382,30 +387,21 @@ module rooch_nursery::bitseed {
             user_input = *option::borrow(&user_input_option);
         };
 
-        std::debug::print(&string::utf8(b"is_valid_bitseed_mint_1"));
-
         let generator_inscription_id = coin_info_generator(&coin_info);
 
-        std::debug::print(&string::utf8(b"is_valid_bitseed_mint_2"));
-        std::debug::print(&generator_inscription_id);
-
-        if (ord::exists_metaprotocol_validity(generator_inscription_id)) {
+        if (!ord::exists_metaprotocol_validity(generator_inscription_id)) {
             simple_map::drop(attributes);
             return (false, option::some(std::string::utf8(b"generator_inscription_id is not validity bitseed")))
         };
 
-        std::debug::print(&string::utf8(b"is_valid_bitseed_mint_3"));
-
-        let object_id = object::custom_object_id<InscriptionID, Inscription>(generator_inscription_id);
-        let inscription_obj = object::borrow_object<Inscription>(object_id);
-        std::debug::print(&string::utf8(b"is_valid_bitseed_mint_4"));
+        let generator_txid = ord::inscription_id_txid(&generator_inscription_id);
+        let generator_index = ord::inscription_id_index(&generator_inscription_id);
+        let inscription_obj = ord::borrow_inscription(generator_txid, generator_index);
 
         let inscrption = object::borrow(inscription_obj);
         let wasm_bytes = ord::body(inscrption);
 
         let attributes_bytes = simple_map::borrow(metadata, &string::utf8(b"attributes"));
-
-        std::debug::print(&string::utf8(b"is_valid_bitseed_mint_5"));
 
         let is_valid = inscribe_verify(wasm_bytes, deploy_args, seed, user_input, *attributes_bytes);
         if (!is_valid) {
@@ -413,27 +409,30 @@ module rooch_nursery::bitseed {
             return (false, option::some(std::string::utf8(b"inscribe verify fail")))
         };
 
-        std::debug::print(&string::utf8(b"is_valid_bitseed_mint_6"));
-
         simple_map::drop(attributes);
         (true, option::none<String>())
     }
 
     public fun inscribe_verify(wasm_bytes: vector<u8>, deploy_args: vector<u8>,
                                seed: vector<u8>, user_input: vector<u8>, attributes_output: vector<u8>): bool {
+        std::debug::print(&string::utf8(b"inscribe_verify 1"));
         let wasm_instance = wasm::create_wasm_instance(wasm_bytes);
 
         let function_name = b"inscribe_verify";
 
+        std::debug::print(&string::utf8(b"inscribe_verify 2"));
         let buffer = pack_inscribe_generate_args(deploy_args, seed, user_input);
         let arg_with_length = wasm::add_length_with_data(buffer);
 
+        std::debug::print(&string::utf8(b"inscribe_verify 3"));
         let arg_list = vector::empty<vector<u8>>();
         vector::push_back(&mut arg_list, arg_with_length);
         vector::push_back(&mut arg_list, attributes_output);
         let memory_args_list = wasm::create_memory_wasm_args(&mut wasm_instance, function_name, arg_list);
 
+        std::debug::print(&string::utf8(b"inscribe_verify 4"));
         let ret_val = wasm::execute_wasm_function(&mut wasm_instance, function_name, memory_args_list);
+        std::debug::print(&string::utf8(b"inscribe_verify 5"));
 
         wasm::release_wasm_instance(wasm_instance);
         if (ret_val == 0 ) {
@@ -746,6 +745,9 @@ module rooch_nursery::bitseed {
         assert!(option::is_none(&deploy_args), 8)
     }
 
+    #[test_only]
+    use moveos_std::features;
+
     #[test(genesis_account=@0x4)]
     fun test_is_valid_bitseed_mint_fail_with_tick_not_deploy(genesis_account: &signer){
         genesis_init(genesis_account);
@@ -823,13 +825,14 @@ module rooch_nursery::bitseed {
         assert!(option::borrow(&reason) == &std::string::utf8(b"metadata.attributes.user_input is required"), 1);
     }
 
-    /*
     #[test(genesis_account=@0x4)]
     fun test_is_valid_bitseed_mint_fail_with_wasm_verify_fail(genesis_account: &signer){
-        genesis_init(genesis_account);
-
+        features::init_and_enable_all_features_for_test();
+        
         let (_test_address, test_inscription_id) = ord::setup_inscription_for_test(genesis_account);
         ord::seal_metaprotocol_validity<Bitseed>(test_inscription_id, true, option::none());
+
+        init_bitseed_store_for_test(genesis_account);
 
         let metadata_bytes = x"a4626f70666465706c6f79647469636b646d6f766566616d6f756e741927106a61747472696275746573a466726570656174056967656e657261746f72784f2f696e736372697074696f6e2f3737646663326665353938343139623030363431633239363138316139366366313639343336393766353733343830623032336237376363653832616461323169306e6861735f757365725f696e707574f56b6465706c6f795f617267738178377b22686569676874223a7b2274797065223a2272616e6765222c2264617461223a7b226d696e223a312c226d6178223a313030307d7d7d";
         let metadata = cbor::to_map(metadata_bytes);
@@ -854,5 +857,5 @@ module rooch_nursery::bitseed {
         assert!(!is_valid, 1);
         assert!(option::borrow(&reason) == &std::string::utf8(b"inscribe verify fail"), 1);
     }
-    */
+
 }
