@@ -23,23 +23,19 @@ export const ProfileInfo = () => {
         </Avatar>
         <div className="h-full w-full flex flex-col items-start justify-center">
           <h3 className="text-base font-semibold text-zinc-500 dark:text-zinc-300">
-            Rooch Network
+            Rooch Account
           </h3>
           <div className="leading-none text-muted-foreground flex items-center justify-start font-normal text-xs sm:text-sm">
-            {account ? (
-              <p>{formatAddress(account?.getRoochAddress())}</p>
-            ) : (
-              <p>Connect to wallet</p>
-            )}
+            {account ? <p>{formatAddress(account?.address)}</p> : <p>Connect to wallet</p>}
             <Button
               variant="ghost"
               size="icon"
               className="rounded-full h-4 w-4 transition-all hover:cursor-default ml-1"
             >
               <img
-                src="/rooch_white_logo.svg"
-                alt="rooch logo"
-                className="w-4 h-4 rounded-full bg-gray-700 p-0.5 dark:bg-inherit"
+                src="/icon-btc.svg"
+                alt="btc logo"
+                className="w-4 h-4 rounded-full bg-gray-700 dark:bg-inherit"
               />
             </Button>
           </div>
