@@ -128,6 +128,7 @@ impl ExecutorActor {
             block_body,
         } = l1_block;
         match RoochMultiChainID::try_from(chain_id.id())? {
+            // TODO: wait three blocks for `submit_new_block` for bitcoin chain reorg
             RoochMultiChainID::Bitcoin => {
                 let action = VerifiedMoveAction::Function {
                     call: BitcoinModule::create_submit_new_block_call_bytes(

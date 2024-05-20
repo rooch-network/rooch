@@ -176,6 +176,7 @@ impl<'a> BitcoinModule<'a> {
         Ok(height)
     }
 
+    // TODO: three blocks for chain reorg
     pub fn create_submit_new_block_call(block_height: u64, block: bitcoin::Block) -> FunctionCall {
         let block_hash = block.block_hash();
         let block = crate::bitcoin::types::Block::from(block);
@@ -192,6 +193,7 @@ impl<'a> BitcoinModule<'a> {
         )
     }
 
+    // TODO: three hashes for chain reorg
     pub fn create_submit_new_block_call_bytes(
         block_height: u64,
         block_hash: Vec<u8>,
