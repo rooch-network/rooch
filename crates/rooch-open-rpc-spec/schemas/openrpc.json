@@ -411,9 +411,9 @@
           }
         },
         {
-          "name": "descending_order",
+          "name": "query_option",
           "schema": {
-            "type": "boolean"
+            "$ref": "#/components/schemas/QueryOptions"
           }
         }
       ],
@@ -449,9 +449,9 @@
           }
         },
         {
-          "name": "descending_order",
+          "name": "query_option",
           "schema": {
-            "type": "boolean"
+            "$ref": "#/components/schemas/QueryOptions"
           }
         }
       ],
@@ -525,9 +525,9 @@
           }
         },
         {
-          "name": "descending_order",
+          "name": "query_option",
           "schema": {
-            "type": "boolean"
+            "$ref": "#/components/schemas/QueryOptions"
           }
         }
       ],

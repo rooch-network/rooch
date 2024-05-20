@@ -117,7 +117,7 @@ pub trait RoochAPI {
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<StrView<u64>>,
         limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
+        query_option: Option<QueryOptions>,
     ) -> RpcResult<TransactionWithInfoPageView>;
 
     /// Query the events indexer by event filter
@@ -128,7 +128,7 @@ pub trait RoochAPI {
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerEventID>,
         limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
+        query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerEventPageView>;
 
     /// Query the object states indexer by state filter
@@ -150,6 +150,6 @@ pub trait RoochAPI {
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
+        query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerFieldStatePageView>;
 }

@@ -120,7 +120,6 @@ fn get_value_from_move_struct(move_value: &AnnotatedMoveValue, var_name: &str) -
         }
     }
 
-    println!(">>>>>> {:?}....{:?}", parts, current_value);
     match current_value {
         AnnotatedMoveValue::Vector(_, _) | AnnotatedMoveValue::Bytes(_) => {
             anyhow::bail!(
@@ -148,14 +147,7 @@ fn parse_template(template: &str, move_value: &AnnotatedMoveValue) -> Result<Str
             '}' if !escaped => {
                 in_braces = false;
                 let value = get_value_from_move_struct(move_value, &var_name)?;
-                println!(
-                    "#### {:?}, {:?}, {:?}",
-                    var_name,
-                    value.clone(),
-                    output.clone()
-                );
                 output = output.replace(&format!("{{{}}}", var_name), &value);
-                println!("####> {:?}", output.clone());
             }
             _ if !escaped => {
                 if in_braces {
@@ -178,13 +170,11 @@ pub struct RawDisplay {
 impl RawDisplay {
     /// Render the display with given MoveStruct instance.
     pub fn render(&self, annotated_obj: &AnnotatedMoveValue) -> BTreeMap<String, String> {
-        println!(">>>>>> AnnotatedMoveValue: {:?}", annotated_obj);
-        println!(">>>>> template: {:?}", self.to_btree_map());
         let fields = self.to_btree_map().into_iter().map(|entry| {
             match parse_template(&entry.1, annotated_obj) {
                 Ok(value) => (entry.0, value),
                 Err(err) => {
-                    println!("Display template render error: {:?}", err);
+                    tracing::debug!("Display template render error: {:?}", err);
                     entry // TODO: handle render error
                 }
             }
