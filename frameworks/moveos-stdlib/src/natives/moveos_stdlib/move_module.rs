@@ -85,16 +85,16 @@ fn native_module_id_inner(
 }
 
 /***************************************************************************************************
- * native fun module_id_from_name_inner(account: address, name: String): String;
+ * native fun module_id_from_name(account: address, name: String): String;
  **************************************************************************************************/
 #[derive(Clone, Debug)]
-pub struct ModuleIdFromNameInnerGasParameters {
+pub struct ModuleIdFromNameGasParameters {
     pub base: InternalGas,
     pub per_byte_in_str: InternalGasPerByte,
 }
 
-fn native_module_id_from_name_inner(
-    gas_params: &ModuleIdFromNameInnerGasParameters,
+fn native_module_id_from_name(
+    gas_params: &ModuleIdFromNameGasParameters,
     _context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -755,7 +755,7 @@ fn unpack_string_to_identifier(value: Value) -> PartialVMResult<Identifier> {
 #[derive(Debug, Clone)]
 pub struct GasParameters {
     pub module_id_inner: ModuleIdInnerGasParameters,
-    pub module_id_from_name_inner: ModuleIdFromNameInnerGasParameters,
+    pub module_id_from_name: ModuleIdFromNameGasParameters,
     pub sort_and_verify_modules_inner: VerifyModulesGasParameters,
     pub request_init_functions: RequestInitFunctionsGasParameters,
     pub check_compatibililty_inner: CheckCompatibilityInnerGasParameters,
@@ -775,7 +775,7 @@ impl GasParameters {
                 base: 0.into(),
                 per_byte_in_str: 0.into(),
             },
-            module_id_from_name_inner: ModuleIdFromNameInnerGasParameters {
+            module_id_from_name: ModuleIdFromNameGasParameters {
                 base: 0.into(),
                 per_byte_in_str: 0.into(),
             },
@@ -831,11 +831,8 @@ pub fn make_all(gas_params: GasParameters) -> impl Iterator<Item = (String, Nati
             make_native(gas_params.module_id_inner, native_module_id_inner),
         ),
         (
-            "module_id_from_name_inner",
-            make_native(
-                gas_params.module_id_from_name_inner,
-                native_module_id_from_name_inner,
-            ),
+            "module_id_from_name",
+            make_native(gas_params.module_id_from_name, native_module_id_from_name),
         ),
         (
             "sort_and_verify_modules_inner",

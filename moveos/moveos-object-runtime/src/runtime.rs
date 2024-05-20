@@ -25,7 +25,8 @@ use moveos_types::{
     addresses::MOVEOS_STD_ADDRESS,
     h256::H256,
     moveos_std::{
-        move_module::{ModuleStore, MoveModule},
+        module_store::ModuleStore,
+        move_module::MoveModule,
         object::{
             ModuleStoreObject, ObjectEntity, ObjectID, Root, RootObjectEntity, GENESIS_STATE_ROOT,
         },

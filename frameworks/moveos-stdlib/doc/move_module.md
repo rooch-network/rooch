@@ -3,14 +3,10 @@
 
 # Module `0x2::move_module`
 
-<code><a href="move_module.md#0x2_move_module">move_module</a></code> provides some basic functions for handle Move module in Move.
-ModuleObject is part of the StorageAbstraction
-It is used to store the modules
+<code><a href="move_module.md#0x2_move_module">move_module</a></code> wraps module bytes and provides some basic functions for handle Move module in Move.
 
 
 -  [Struct `MoveModule`](#0x2_move_module_MoveModule)
--  [Resource `Allowlist`](#0x2_move_module_Allowlist)
--  [Resource `ModuleStore`](#0x2_move_module_ModuleStore)
 -  [Constants](#@Constants_0)
 -  [Function `new`](#0x2_move_module_new)
 -  [Function `new_batch`](#0x2_move_module_new_batch)
@@ -26,20 +22,8 @@ It is used to store the modules
 -  [Function `replace_constant_u8`](#0x2_move_module_replace_constant_u8)
 -  [Function `replace_constant_u64`](#0x2_move_module_replace_constant_u64)
 -  [Function `replace_constant_u256`](#0x2_move_module_replace_constant_u256)
--  [Function `module_store_id`](#0x2_move_module_module_store_id)
--  [Function `init_module_store`](#0x2_move_module_init_module_store)
--  [Function `borrow_module_store`](#0x2_move_module_borrow_module_store)
--  [Function `borrow_mut_module_store`](#0x2_move_module_borrow_mut_module_store)
--  [Function `exists_module`](#0x2_move_module_exists_module)
--  [Function `exists_module_id`](#0x2_move_module_exists_module_id)
--  [Function `publish_modules`](#0x2_move_module_publish_modules)
--  [Function `publish_modules_entry`](#0x2_move_module_publish_modules_entry)
--  [Function `publish_modules_internal`](#0x2_move_module_publish_modules_internal)
--  [Function `borrow_allowlist`](#0x2_move_module_borrow_allowlist)
--  [Function `borrow_mut_allowlist`](#0x2_move_module_borrow_mut_allowlist)
--  [Function `add_to_allowlist`](#0x2_move_module_add_to_allowlist)
--  [Function `remove_from_allowlist`](#0x2_move_module_remove_from_allowlist)
--  [Function `is_in_allowlist`](#0x2_move_module_is_in_allowlist)
+-  [Function `module_id_from_name`](#0x2_move_module_module_id_from_name)
+-  [Function `sort_and_verify_modules_inner`](#0x2_move_module_sort_and_verify_modules_inner)
 -  [Function `request_init_functions`](#0x2_move_module_request_init_functions)
 -  [Function `replace_address_identifiers`](#0x2_move_module_replace_address_identifiers)
 -  [Function `replace_identifiers`](#0x2_move_module_replace_identifiers)
@@ -52,11 +36,7 @@ It is used to store the modules
 
 <pre><code><b>use</b> <a href="">0x1::string</a>;
 <b>use</b> <a href="">0x1::vector</a>;
-<b>use</b> <a href="core_addresses.md#0x2_core_addresses">0x2::core_addresses</a>;
 <b>use</b> <a href="features.md#0x2_features">0x2::features</a>;
-<b>use</b> <a href="object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="signer.md#0x2_signer">0x2::signer</a>;
-<b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 </code></pre>
 
 
@@ -68,30 +48,6 @@ It is used to store the modules
 
 
 <pre><code><b>struct</b> <a href="move_module.md#0x2_move_module_MoveModule">MoveModule</a> <b>has</b> <b>copy</b>, drop, store
-</code></pre>
-
-
-
-<a name="0x2_move_module_Allowlist"></a>
-
-## Resource `Allowlist`
-
-Allowlist for module function invocation
-
-
-<pre><code><b>struct</b> <a href="move_module.md#0x2_move_module_Allowlist">Allowlist</a> <b>has</b> store, key
-</code></pre>
-
-
-
-<a name="0x2_move_module_ModuleStore"></a>
-
-## Resource `ModuleStore`
-
-It is used to store the modules
-
-
-<pre><code><b>struct</b> <a href="move_module.md#0x2_move_module_ModuleStore">ModuleStore</a> <b>has</b> key
 </code></pre>
 
 
@@ -137,16 +93,6 @@ Module verification error
 
 
 <pre><code><b>const</b> <a href="move_module.md#0x2_move_module_ErrorModuleVerificationError">ErrorModuleVerificationError</a>: u64 = 2;
-</code></pre>
-
-
-
-<a name="0x2_move_module_ErrorNotAllowToPublish"></a>
-
-Not allow to publish module
-
-
-<pre><code><b>const</b> <a href="move_module.md#0x2_move_module_ErrorNotAllowToPublish">ErrorNotAllowToPublish</a>: u64 = 5;
 </code></pre>
 
 
@@ -322,164 +268,29 @@ Replace given u256 constant to the new ones
 
 
 
-<a name="0x2_move_module_module_store_id"></a>
+<a name="0x2_move_module_module_id_from_name"></a>
 
-## Function `module_store_id`
+## Function `module_id_from_name`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_module_store_id">module_store_id</a>(): <a href="object.md#0x2_object_ObjectID">object::ObjectID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_module_id_from_name">module_id_from_name</a>(<a href="account.md#0x2_account">account</a>: <b>address</b>, name: <a href="_String">string::String</a>): <a href="_String">string::String</a>
 </code></pre>
 
 
 
-<a name="0x2_move_module_init_module_store"></a>
+<a name="0x2_move_module_sort_and_verify_modules_inner"></a>
 
-## Function `init_module_store`
+## Function `sort_and_verify_modules_inner`
 
-Create a new module object space
+Sort modules by dependency order and then verify.
+Return
+The first vector is the module ids of all the modules.
+The second vector is the module ids of the modules with init function.
+The third vector is the indices in input modules of each sorted modules.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_init_module_store">init_module_store</a>()
-</code></pre>
-
-
-
-<a name="0x2_move_module_borrow_module_store"></a>
-
-## Function `borrow_module_store`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_borrow_module_store">borrow_module_store</a>(): &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="move_module.md#0x2_move_module_ModuleStore">move_module::ModuleStore</a>&gt;
-</code></pre>
-
-
-
-<a name="0x2_move_module_borrow_mut_module_store"></a>
-
-## Function `borrow_mut_module_store`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_borrow_mut_module_store">borrow_mut_module_store</a>(): &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="move_module.md#0x2_move_module_ModuleStore">move_module::ModuleStore</a>&gt;
-</code></pre>
-
-
-
-<a name="0x2_move_module_exists_module"></a>
-
-## Function `exists_module`
-
-Check if the module object has a module with the given name
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_exists_module">exists_module</a>(module_object: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="move_module.md#0x2_move_module_ModuleStore">move_module::ModuleStore</a>&gt;, <a href="account.md#0x2_account">account</a>: <b>address</b>, name: <a href="_String">string::String</a>): bool
-</code></pre>
-
-
-
-<a name="0x2_move_module_exists_module_id"></a>
-
-## Function `exists_module_id`
-
-Check if the module object has a module with the given id
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_exists_module_id">exists_module_id</a>(module_object: &<a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="move_module.md#0x2_move_module_ModuleStore">move_module::ModuleStore</a>&gt;, module_id: <a href="_String">string::String</a>): bool
-</code></pre>
-
-
-
-<a name="0x2_move_module_publish_modules"></a>
-
-## Function `publish_modules`
-
-Publish modules to the account's storage
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_publish_modules">publish_modules</a>(module_store: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="move_module.md#0x2_move_module_ModuleStore">move_module::ModuleStore</a>&gt;, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;)
-</code></pre>
-
-
-
-<a name="0x2_move_module_publish_modules_entry"></a>
-
-## Function `publish_modules_entry`
-
-Entry function to publish modules
-The order of modules must be sorted by dependency order.
-
-
-<pre><code><b>public</b> entry <b>fun</b> <a href="move_module.md#0x2_move_module_publish_modules_entry">publish_modules_entry</a>(<a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, modules: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;)
-</code></pre>
-
-
-
-<a name="0x2_move_module_publish_modules_internal"></a>
-
-## Function `publish_modules_internal`
-
-Publish modules to the module object's storage
-Return true if the modules are upgraded
-
-
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_publish_modules_internal">publish_modules_internal</a>(module_object: &<b>mut</b> <a href="object.md#0x2_object_Object">object::Object</a>&lt;<a href="move_module.md#0x2_move_module_ModuleStore">move_module::ModuleStore</a>&gt;, account_address: <b>address</b>, modules: <a href="">vector</a>&lt;<a href="move_module.md#0x2_move_module_MoveModule">move_module::MoveModule</a>&gt;): bool
-</code></pre>
-
-
-
-<a name="0x2_move_module_borrow_allowlist"></a>
-
-## Function `borrow_allowlist`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_borrow_allowlist">borrow_allowlist</a>(): &<a href="move_module.md#0x2_move_module_Allowlist">move_module::Allowlist</a>
-</code></pre>
-
-
-
-<a name="0x2_move_module_borrow_mut_allowlist"></a>
-
-## Function `borrow_mut_allowlist`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_borrow_mut_allowlist">borrow_mut_allowlist</a>(): &<b>mut</b> <a href="move_module.md#0x2_move_module_Allowlist">move_module::Allowlist</a>
-</code></pre>
-
-
-
-<a name="0x2_move_module_add_to_allowlist"></a>
-
-## Function `add_to_allowlist`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_add_to_allowlist">add_to_allowlist</a>(allowlist: &<b>mut</b> <a href="move_module.md#0x2_move_module_Allowlist">move_module::Allowlist</a>, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
-</code></pre>
-
-
-
-<a name="0x2_move_module_remove_from_allowlist"></a>
-
-## Function `remove_from_allowlist`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_remove_from_allowlist">remove_from_allowlist</a>(allowlist: &<b>mut</b> <a href="move_module.md#0x2_move_module_Allowlist">move_module::Allowlist</a>, <a href="account.md#0x2_account">account</a>: &<a href="">signer</a>, publisher: <b>address</b>)
-</code></pre>
-
-
-
-<a name="0x2_move_module_is_in_allowlist"></a>
-
-## Function `is_in_allowlist`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="move_module.md#0x2_move_module_is_in_allowlist">is_in_allowlist</a>(allowlist: &<a href="move_module.md#0x2_move_module_Allowlist">move_module::Allowlist</a>, publisher: <b>address</b>): bool
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="move_module.md#0x2_move_module_sort_and_verify_modules_inner">sort_and_verify_modules_inner</a>(modules: <a href="">vector</a>&lt;<a href="">vector</a>&lt;u8&gt;&gt;, account_address: <b>address</b>): (<a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, <a href="">vector</a>&lt;<a href="_String">string::String</a>&gt;, <a href="">vector</a>&lt;u64&gt;)
 </code></pre>
 
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::moveos_std::account::Account;
-use crate::moveos_std::move_module::ModuleStore;
+use crate::moveos_std::module_store::ModuleStore;
 use crate::state::KeyState;
 use crate::{
     move_types::{random_identity, random_struct_tag},

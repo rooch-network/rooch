@@ -4,7 +4,7 @@
 use super::table::TablePlaceholder;
 use crate::h256;
 use crate::moveos_std::account::Account;
-use crate::moveos_std::move_module::ModuleStore;
+use crate::moveos_std::module_store::ModuleStore;
 use crate::state::{KeyState, PlaceholderStruct};
 use crate::{
     addresses::MOVEOS_STD_ADDRESS,

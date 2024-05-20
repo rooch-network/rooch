@@ -331,7 +331,7 @@ impl RoochGenesis {
 mod tests {
     use crate::FrameworksGasParameters;
     use moveos_store::MoveOSStore;
-    use moveos_types::moveos_std::move_module::ModuleStore;
+    use moveos_types::moveos_std::module_store::ModuleStore;
     use moveos_types::state_resolver::{RootObjectResolver, StateResolver};
     use rooch_store::RoochStore;
     use rooch_types::bitcoin::network::BitcoinNetwork;

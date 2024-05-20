@@ -14,8 +14,8 @@ module rooch_examples::publish {
 
     public entry fun publish_modules_entry(account: &signer, module_bytes: vector<u8>) {
         let m: MoveModule = move_module::new(module_bytes);
-        let module_store = move_module::borrow_mut_module_store();
-        move_module::publish_modules(module_store, account, vector::singleton(m));
+        let module_store = module_store::borrow_mut_module_store();
+        module_store::publish_modules(module_store, account, vector::singleton(m));
     }
 
     // TODO: uncomment when the move_module::binding_module_address is ready
@@ -27,7 +27,7 @@ module rooch_examples::publish {
     //     let old_address = @0x42;
     //     let new_address = signer::address_of(account);
     //     let remapped_modules = move_module::binding_module_address(modules, old_address, new_address);
-    //     let module_store = move_module::borrow_mut_module_store();
-    //     move_module::publish_modules(module_store, account, remapped_modules);
+    //     let module_store = module_store::borrow_mut_module_store();
+    //     module_store::publish_modules(module_store, account, remapped_modules);
     // }
 }
