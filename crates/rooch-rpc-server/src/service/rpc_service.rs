@@ -3,7 +3,6 @@
 
 use anyhow::Result;
 use move_core_types::account_address::AccountAddress;
-use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{ModuleId, StructTag};
 use moveos_types::access_path::AccessPath;
 use moveos_types::function_return_value::AnnotatedFunctionResult;
@@ -106,7 +105,7 @@ impl RpcService {
         let mut resp = self
             .get_states(AccessPath::module(
                 *module_id.address(),
-                Identifier::from(module_id.name()),
+                module_id.name().into(),
             ))
             .await?;
         Ok(resp.pop().flatten().is_some())
