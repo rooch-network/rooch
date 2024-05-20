@@ -16,7 +16,7 @@ import { AlertCircle } from 'lucide-react'
 // const testAddress = ''
 
 // TODO: 1, loading, 2 pagination, 3 目前只处理了json 铭文，其他类型还需添加ui
-export const IndexedAssetsOrdi = () => {
+export const BitcoinAssetsOrdi = () => {
   // const account = useCurrentAccount()
 
   // ** PAGINATION

@@ -5,13 +5,13 @@ import { TabItem } from '@/common/interface'
 import { AssetsCoin } from './tabs/coin/assets-coin'
 import { AssetsNft } from './tabs/nft/assets-nft'
 import { AssetsSft } from './tabs/sft/assets-sft'
-import { AssetsIndexedAssets } from './tabs/indexed-assets/assets-indexed-assets'
+import { AssetsBitcoinAssets } from '@/pages/assets/assets-details/tabs/bitcoin-assets/assets-bitcoin-assets.tsx'
 
 const assetsTabItems: TabItem[] = [
   { id: 'coin', label: 'Coin', available: true },
   { id: 'nft', label: 'NFT', available: true },
   // { id: 'sft', label: 'SFT' },
-  { id: 'indexed_assets', label: 'Indexed Assets', available: true },
+  { id: 'bitcoin_assets', label: 'Bitcoin Assets', available: true },
 ]
 
 export const AssetsDetails = () => {
@@ -29,8 +29,8 @@ export const AssetsDetails = () => {
         return <AssetsNft />
       case 'sft':
         return <AssetsSft />
-      case 'indexed_assets':
-        return <AssetsIndexedAssets />
+      case 'bitcoin_assets':
+        return <AssetsBitcoinAssets />
       default:
         return <AssetsCoin />
     }

@@ -15,7 +15,7 @@ import { AlertCircle } from 'lucide-react'
 // test address
 // const testAddress = ''
 
-export const IndexedAssetsBTC = () => {
+export const BitcoinAssetsBtc = () => {
   // const account = useCurrentAccount()
 
   // ** PAGINATION
