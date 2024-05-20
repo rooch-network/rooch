@@ -1,8 +1,7 @@
 // Copyright (c) RoochNetwork
 // SPDX-License-Identifier: Apache-2.0
-
-import ManageSessions from '@/pages/settings/components/manage-sessions.tsx'
-import { ConnectedAccount } from '@/pages/settings/components/connected-account.tsx'
+import ManageSessions from '@/pages/settings/components/manage-sessions'
+import { RoochAddress } from '@/pages/settings/components/rooch-address'
 
 export const SettingsLayout = () => {
   return (
@@ -11,20 +10,20 @@ export const SettingsLayout = () => {
       <div>
         <div className="flex items-center justify-between space-y-2 mb-4">
           <span>
-            <h1 className="text-3xl font-bold tracking-tight">Connected Account</h1>
-            <p className="text-muted-foreground text-wrap">Manage and view your accounts.</p>
+            <h1 className="text-3xl font-bold tracking-tight">Rooch Address</h1>
+            <p className="text-muted-foreground">
+              Your Rooch address is used in the smart contract functions.
+            </p>
           </span>
         </div>
-        <ConnectedAccount />
+        <RoochAddress />
       </div>
-      {/* Mangage Sessions section */}
+      {/* Manage Sessions section */}
       <div>
         <div className="flex items-center justify-between space-y-2 mb-4">
           <span>
             <h1 className="text-3xl font-bold tracking-tight">Manage Sessions</h1>
-            <p className="text-muted-foreground text-wrap">
-              Account {} is connected to these sites. They can view your account address.
-            </p>
+            <p className="text-muted-foreground">Account is connected to these sites.</p>
           </span>
         </div>
         <ManageSessions />
