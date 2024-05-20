@@ -25,7 +25,7 @@ Rooch Portal is a comprehensive dashboard designed to simplify the management of
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/TwilightLogic/rooch-portal-v1.git
+git clone https://github.com/rooch-network/rooch.git
 ```
 
 2. Navigate to the project directory:
