@@ -8557,6 +8557,7 @@ dependencies = [
  "rooch-config",
  "rooch-framework",
  "rooch-genesis",
+ "rooch-indexer",
  "rooch-integration-test-runner",
  "rooch-key",
  "rooch-rpc-api",
