@@ -21,12 +21,6 @@ use serde::{Deserialize, Serialize};
 
 pub const MODULE_NAME: &IdentStr = ident_str!("display");
 
-pub fn is_display_struct(struct_tag: &StructTag) -> bool {
-    struct_tag.address == MOVEOS_STD_ADDRESS
-        && struct_tag.module == MODULE_NAME.to_owned()
-        && struct_tag.name == ident_str!("Display").to_owned()
-}
-
 pub fn get_display_id_from_object_struct_tag(struct_tag: StructTag) -> ObjectID {
     let object_type_tag = TypeTag::from(struct_tag);
     let display_struct_tag = StructTag {
@@ -68,13 +62,14 @@ fn display_move_string(move_struct: &AnnotatedMoveStruct) -> Result<String> {
 }
 
 /// Convert 0x2::object::ObjectID to displayable string.
-fn display_object_id(move_struct: &AnnotatedMoveStruct) -> String {
-    if let AnnotatedMoveValue::Address(address) = &move_struct.value[0].1 {
-        address.to_canonical_string()
-    } else {
-        unreachable!("Invalid object_id type")
-    }
-}
+// fn display_object_id(move_struct: &AnnotatedMoveStruct) -> String {
+//     ObjectID::try_from(*move_struct)
+//     if let AnnotatedMoveValue::Address(address) = &move_struct.value[0].1 {
+//         address.to_canonical_string()
+//     } else {
+//         unreachable!("Invalid object_id type")
+//     }
+// }
 
 fn get_string_from_valid_move_struct(move_struct: &AnnotatedMoveStruct) -> Result<String> {
     let move_std_string = StructTag {
@@ -85,7 +80,7 @@ fn get_string_from_valid_move_struct(move_struct: &AnnotatedMoveStruct) -> Resul
     };
     let moveos_std_object_id = StructTag {
         address: MOVEOS_STD_ADDRESS,
-        module: ident_str!("object_id").to_owned(),
+        module: ident_str!("object").to_owned(),
         name: ident_str!("ObjectID").to_owned(),
         type_params: vec![],
     };
@@ -93,7 +88,7 @@ fn get_string_from_valid_move_struct(move_struct: &AnnotatedMoveStruct) -> Resul
     if move_struct.type_ == move_std_string {
         display_move_string(move_struct)
     } else if move_struct.type_ == moveos_std_object_id {
-        Ok(display_object_id(move_struct))
+        Ok(ObjectID::try_from_annotated_move_struct_ref(move_struct)?.to_hex())
     } else {
         anyhow::bail!("Invalid move type to display");
     }
@@ -106,7 +101,7 @@ fn get_value_from_move_struct(move_value: &AnnotatedMoveValue, var_name: &str) -
     }
     let mut current_value = move_value;
     // iterate over the parts and try to access the corresponding field
-    for part in parts {
+    for part in parts.clone() {
         match current_value {
             AnnotatedMoveValue::Struct(move_struct) => {
                 let mut fields = BTreeMap::new();
@@ -125,6 +120,7 @@ fn get_value_from_move_struct(move_value: &AnnotatedMoveValue, var_name: &str) -
         }
     }
 
+    println!(">>>>>> {:?}....{:?}", parts, current_value);
     match current_value {
         AnnotatedMoveValue::Vector(_, _) | AnnotatedMoveValue::Bytes(_) => {
             anyhow::bail!(
@@ -152,7 +148,14 @@ fn parse_template(template: &str, move_value: &AnnotatedMoveValue) -> Result<Str
             '}' if !escaped => {
                 in_braces = false;
                 let value = get_value_from_move_struct(move_value, &var_name)?;
+                println!(
+                    "#### {:?}, {:?}, {:?}",
+                    var_name,
+                    value.clone(),
+                    output.clone()
+                );
                 output = output.replace(&format!("{{{}}}", var_name), &value);
+                println!("####> {:?}", output.clone());
             }
             _ if !escaped => {
                 if in_braces {
@@ -175,6 +178,8 @@ pub struct RawDisplay {
 impl RawDisplay {
     /// Render the display with given MoveStruct instance.
     pub fn render(&self, annotated_obj: &AnnotatedMoveValue) -> BTreeMap<String, String> {
+        println!(">>>>>> AnnotatedMoveValue: {:?}", annotated_obj);
+        println!(">>>>> template: {:?}", self.to_btree_map());
         let fields = self.to_btree_map().into_iter().map(|entry| {
             match parse_template(&entry.1, annotated_obj) {
                 Ok(value) => (entry.0, value),

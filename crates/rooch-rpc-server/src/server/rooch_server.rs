@@ -8,30 +8,23 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     RpcModule,
 };
-use move_core_types::language_storage::{StructTag, TypeTag};
-use move_core_types::{account_address::AccountAddress, ident_str};
+use move_core_types::account_address::AccountAddress;
 use moveos_types::{
     access_path::AccessPath,
     h256::H256,
     moveos_std::{
-        display::{
-            get_display_id_from_object_struct_tag, get_object_display_id, get_resource_display_id,
-            is_display_struct, RawDisplay,
-        },
+        display::{get_object_display_id, get_resource_display_id, RawDisplay},
         object::ObjectEntity,
     },
     state::{AnnotatedKeyState, AnnotatedState, KeyState},
 };
+use rooch_rpc_api::jsonrpc_types::event_view::{EventFilterView, EventView, IndexerEventView};
 use rooch_rpc_api::jsonrpc_types::transaction_view::TransactionFilterView;
 use rooch_rpc_api::jsonrpc_types::{
-    account_view::BalanceInfoView, AnnotatedMoveValueView, FieldStateFilterView,
-    IndexerEventPageView, IndexerFieldStatePageView, IndexerFieldStateView,
-    IndexerObjectStatePageView, IndexerObjectStateView, KeyStateView, ObjectStateFilterView,
-    QueryOptions, StateKVView, StateOptions, TxOptions,
-};
-use rooch_rpc_api::jsonrpc_types::{
-    event_view::{EventFilterView, EventView, IndexerEventView},
-    AnnotatedMoveStructView,
+    account_view::BalanceInfoView, FieldStateFilterView, IndexerEventPageView,
+    IndexerFieldStatePageView, IndexerFieldStateView, IndexerObjectStatePageView,
+    IndexerObjectStateView, KeyStateView, ObjectStateFilterView, QueryOptions, StateKVView,
+    StateOptions, TxOptions,
 };
 use rooch_rpc_api::jsonrpc_types::{transaction_view::TransactionWithInfoView, EventOptions};
 use rooch_rpc_api::jsonrpc_types::{
@@ -49,13 +42,11 @@ use rooch_rpc_api::{
     jsonrpc_types::BytesView,
 };
 use rooch_types::indexer::event_filter::IndexerEventID;
-use rooch_types::indexer::state::{IndexerStateID, ObjectStateFilter};
+use rooch_types::indexer::state::IndexerStateID;
 use rooch_types::transaction::rooch::RoochTransaction;
 use rooch_types::{address::MultiChainAddress, multichain_id::RoochMultiChainID};
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use std::cmp::min;
 use std::str::FromStr;
-use std::{cmp::min, collections::BTreeMap};
 use tracing::info;
 
 pub struct RoochServer {
@@ -124,38 +115,6 @@ impl RoochServer {
             });
         }
         Ok(display_field_views)
-    }
-
-    fn render_display_fields(
-        &self,
-        display_obj: &AnnotatedMoveStructView,
-        display_json: Value,
-    ) -> Result<DisplayFieldsView> {
-        debug_assert!(
-            is_display_struct(&display_obj.type_.0),
-            "It should be a 0x2::display::Display struct."
-        );
-        println!("render_display_fields: {:?}", display_obj);
-        // let mut templates: BTreeMap<String, String> = BTreeMap::new();
-        // let field_name = ident_str!("simple_map").to_owned();
-        // let simple_map = match display_obj.value.get(&field_name) {
-        //     Some(AnnotatedMoveValueView::Struct(simple_map)) => simple_map,
-        //     _ => anyhow::bail!("Invalid 0x2::display::Display struct."),
-        // };
-        // let field_name = ident_str!("data").to_owned();
-        // let data = match simple_map.value.get(&field_name) {
-        //     Some(AnnotatedMoveValueView::Vector(data)) => data,
-        //     _ => anyhow::bail!("Invalid 0x2::display::Display struct."),
-        // };
-
-        // for item in data {
-        //     let key_name = ident_str!("key").to_owned();
-        //     let value_name = ident_str!("value").to_owned();
-        //     let key = match item.value.get(&key_name) {
-        //         Some(AnnotatedMoveValueView::Vector(key)) => key,
-        //     }
-        // }
-        todo!()
     }
 }
 
@@ -559,14 +518,15 @@ impl RoochAPIServer for RoochServer {
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<StrView<u64>>,
         limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
+        query_option: Option<QueryOptions>,
     ) -> RpcResult<TransactionWithInfoPageView> {
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
         let cursor = cursor.map(|v| v.0);
-        let descending_order = descending_order.unwrap_or(true);
+        let query_option = query_option.unwrap_or_default();
+        let descending_order = query_option.descending;
 
         let limit_value = limit_of
             .checked_add(1)
@@ -601,13 +561,14 @@ impl RoochAPIServer for RoochServer {
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerEventID>,
         limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
+        query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerEventPageView> {
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
-        let descending_order = descending_order.unwrap_or(true);
+        let query_option = query_option.unwrap_or_default();
+        let descending_order = query_option.descending;
 
         let limit_value = limit_of
             .checked_add(1)
@@ -648,7 +609,7 @@ impl RoochAPIServer for RoochServer {
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
-        let query_option = query_option.unwrap_or(QueryOptions::default());
+        let query_option = query_option.unwrap_or_default();
         let descending_order = query_option.descending;
 
         // resolve multichain address
@@ -684,57 +645,48 @@ impl RoochAPIServer for RoochServer {
             .map(|m| m.object_id.clone())
             .collect::<Vec<_>>();
         let access_path = AccessPath::objects(object_ids.clone());
-        let mut data = self
-            .rpc_service
-            .get_annotated_states(access_path)
-            .await?
+        let annotated_states = self.rpc_service.get_annotated_states(access_path).await?;
+
+        let annotated_states_with_display = if query_option.show_display {
+            let valid_states = annotated_states
+                .iter()
+                .filter_map(|s| s.as_ref())
+                .collect::<Vec<_>>();
+            let mut valid_display_field_views = self
+                .get_display_fields_and_render(valid_states, true)
+                .await?;
+            valid_display_field_views.reverse();
+            annotated_states
+                .into_iter()
+                .map(|option_annotated_s| match option_annotated_s {
+                    Some(s) => {
+                        debug_assert!(
+                            !valid_display_field_views.is_empty(),
+                            "display fields should not be empty"
+                        );
+                        (Some(s), valid_display_field_views.pop().unwrap())
+                    }
+                    None => (None, None),
+                })
+                .collect::<Vec<_>>()
+        } else {
+            annotated_states
+                .into_iter()
+                .map(|s| (s, None))
+                .collect::<Vec<_>>()
+        };
+
+        let mut data = annotated_states_with_display
             .into_iter()
             .zip(states)
-            .map(|(annotated_state, state)| {
+            .map(|((annotated_state, display_fields), state)| {
                 IndexerObjectStateView::new_from_object_state(annotated_state, state)
+                    .with_display_fields(display_fields)
             })
             .collect::<Vec<_>>();
 
         let has_next_page = data.len() > limit_of;
         data.truncate(limit_of);
-
-        if query_option.show_display {
-            let display_obj_ids = data
-                .iter()
-                .map(|s| get_object_display_id(TypeTag::from(s.object_type.0.clone())))
-                .collect::<Vec<_>>();
-
-            println!("display_obj_ids: {:?}", display_obj_ids.clone());
-            let num_objs = display_obj_ids.len();
-            let display_objs_filter = ObjectStateFilter::ObjectId(display_obj_ids.clone());
-            let display_objs = self
-                .rpc_service
-                .query_object_states(display_objs_filter, None, num_objs, false)
-                .await?
-                .into_iter()
-                .map(|s| (s.object_id.clone(), s))
-                .collect::<std::collections::HashMap<_, _>>();
-
-            // let display_objs = display_obj_ids
-            //     .into_iter()
-            //     .map(|obj_id| display_objs.get(&obj_id).map(|s| s.clone()))
-            //     .collect::<Vec<_>>();
-
-            let mut display_fields = vec![];
-            for display_id in display_obj_ids {
-                if let Some(obj) = display_objs.get(&display_id) {
-                    println!("value str: {:?}", obj.value.clone());
-                    let json_value: Value = serde_json::from_str(obj.value.as_str())?;
-                    println!("json_value: {:?}", json_value);
-                    let value: AnnotatedMoveStructView = serde_json::from_str(obj.value.as_str())?;
-                    println!("value: {:?}", value.clone());
-                    let fields = self.render_display_fields(&value)?;
-                    display_fields.push(Some(fields));
-                } else {
-                    display_fields.push(None);
-                }
-            }
-        }
 
         let next_cursor = data.last().cloned().map_or(cursor, |t| {
             Some(IndexerStateID::new(t.tx_order, t.state_index))
@@ -753,13 +705,14 @@ impl RoochAPIServer for RoochServer {
         // exclusive cursor if `Some`, otherwise start from the beginning
         cursor: Option<IndexerStateID>,
         limit: Option<StrView<usize>>,
-        descending_order: Option<bool>,
+        query_option: Option<QueryOptions>,
     ) -> RpcResult<IndexerFieldStatePageView> {
         let limit_of = min(
             limit.map(Into::into).unwrap_or(DEFAULT_RESULT_LIMIT_USIZE),
             MAX_RESULT_LIMIT_USIZE,
         );
-        let descending_order = descending_order.unwrap_or(true);
+        let query_option = query_option.unwrap_or_default();
+        let descending_order = query_option.descending;
 
         let limit_value = limit_of
             .checked_add(1)

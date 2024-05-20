@@ -63,7 +63,9 @@ impl InscriptionFilterView {
                 let obj_id = ord::derive_inscription_id(&inscription_id);
                 ObjectStateFilter::ObjectId(vec![obj_id])
             }
-            InscriptionFilterView::ObjectId(object_id) => ObjectStateFilter::ObjectId(vec![object_id]),
+            InscriptionFilterView::ObjectId(object_id) => {
+                ObjectStateFilter::ObjectId(vec![object_id])
+            }
             InscriptionFilterView::All => ObjectStateFilter::ObjectType(Inscription::struct_tag()),
         })
     }

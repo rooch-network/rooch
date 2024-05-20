@@ -65,7 +65,7 @@ impl TxOptions {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema, Eq, PartialEq, Default)]
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema, Eq, PartialEq)]
 #[serde(rename_all = "camelCase", default)]
 pub struct QueryOptions {
     /// If true, return query items in descending order.
@@ -75,10 +75,6 @@ pub struct QueryOptions {
 }
 
 impl QueryOptions {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn descending(mut self, descending: bool) -> Self {
         self.descending = descending;
         self
@@ -87,5 +83,14 @@ impl QueryOptions {
     pub fn show_display(mut self, show_display: bool) -> Self {
         self.show_display = show_display;
         self
+    }
+}
+
+impl Default for QueryOptions {
+    fn default() -> Self {
+        Self {
+            descending: true,
+            show_display: false,
+        }
     }
 }

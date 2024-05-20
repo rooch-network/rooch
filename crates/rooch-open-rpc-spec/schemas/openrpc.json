@@ -2252,7 +2252,7 @@
         "properties": {
           "descending": {
             "description": "If true, return query items in descending order.",
-            "default": false,
+            "default": true,
             "type": "boolean"
           },
           "showDisplay": {
